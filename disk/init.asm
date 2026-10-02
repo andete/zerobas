@@ -509,6 +509,14 @@ set_ramad:
                 ld      (DRVCNT), a         ; $F347 logical-drive count (LOGIN/SELDSK read it)
                 xor     a
                 ld      (CURDRV_CELL), a    ; $F247 current drive = A: ($00)
+                ; 🔴 D-STROUT (2026-10-02): RES_PRINT ($F1C9), the $-string print routine
+                ; the kernel CALLs for BDOS $09 STROUT, is installed UNCONDITIONALLY too.
+                ; It lived only in build_resident, below the RAMAD $FF gate, so on the
+                ; C-BIOS target (RAMAD0 = $C9) $F1C9 stayed $FF: STROUT printed nothing
+                ; (ours' banner lacked "COMMAND version 1.08") and slid through RST 38h,
+                ; which also killed COMMAND.COM's BASIC command (D-DOSBASIC). Same class
+                ; as the DRVCNT/CURDRV move above. scratchpad/strout_run.out.
+                call    install_res_print
                 ; --- RAMAD: fill only when the host left it uninitialised ($FF) ------
                 ld      a, (RAMAD0)
                 inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?

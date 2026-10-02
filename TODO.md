@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28554 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28589 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27310,6 +27310,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pattern table in SCREEN 1, not the name table (VDP R#2).
       🤖 **AUTONOMOUS** — the reference settles it.
 
+- [x] ✅ **D-STROUT — BDOS `$09` STROUT PRINTED NOTHING ON OURS: RES_PRINT ($F1C9) WAS NEVER
+      INSTALLED ON THE C-BIOS TARGET (found and fixed 2026-10-02, tracing D-DOSBASIC)**
+      🎚️ TIER 1 — happy path: STROUT is the commonest way a DOS program prints a line.
+      📏 **HOW IT WAS FOUND, OURS ONLY** (registers and our own code):
+      - `A>BASIC`'s disk-ROM trace ([`dosbasic_trace.out`](scratchpad/dosbasic_trace.out))
+        entered only CONOUT, so COMMAND.COM decided without our ROM.
+      - A PC trace ([`dosbasic_pcs.out`](scratchpad/dosbasic_pcs.out)) showed its
+        last BDOS call was **C = `$09`**. The dispatcher jumps to **`$F1C9`**,
+        which held `$FF`, so the CPU ran RST 38h over and over.
+      - A one-line COM ([`strout_run.out`](scratchpad/strout_run.out)): the
+        CF-3300 prints `HELLO-STROUT`, ours nothing. Ours' DOS banner also
+        lacked `COMMAND version 1.08` all along (STROUT).
+      🔬 **CAUSE:** RES_PRINT (`res_print_tmpl`, M15) is installed by
+      `build_resident`, which runs only BELOW `set_ramad`'s RAMAD `$FF` gate. On
+      the C-BIOS target RAMAD0 is `$C9`, so the gate returns early and `$F1C9`
+      stays `$FF`. The same class as the earlier DRVCNT/CURDRV move above the gate.
+      🔴 **CLEAN-ROOM NEAR-MISS, recorded:** a first work-area read watchpoint
+      logged VALUES on the CF-3300 too. The watchpoint also fires on
+      INSTRUCTION FETCHES, so on the reference a value can be a byte of its
+      RAM-resident code (§8.5). That log was deleted unopened; the probe logs
+      addresses and PCs only on the reference.
+      🛠 **FIX:** `set_ramad` calls `install_res_print` UNCONDITIONALLY, before the
+      gate (3 B).
+      ✅ **AFTER** ([`strout_after.out`](scratchpad/strout_after.out)): ours prints
+      `HELLO-STROUT`, its banner shows `COMMAND version 1.08`, and DOS's own
+      `Bad command or file name` now appears.
+      ⚠️ **The rest of `build_resident`** (the `$F24E..$F2B7` RET stubs, the drive-A
+      DPB at `$F195`, `p1_blit`, the `$F365` stub, WA_SEG) is ALSO skipped on C-BIOS.
+      None measured broken yet. D-DOSBASIC's remaining cause may be one of them.
+
 - [ ] 🔴 **D-DOSBASIC — MSX-DOS'S `BASIC` COMMAND DOES NOTHING ON OURS: `A>BASIC` RETURNS TO `A>`
       (found 2026-10-01 measuring D-DOSDATEBASIC)**
       🎚️ TIER 1 — happy path: leaving MSX-DOS for disk BASIC is ordinary use.
@@ -27317,11 +27347,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and 58 s: `A>BASIC` and `A>` again, twice; the BASIC lines typed after it
       land at the DOS prompt (`A>NEW`, `A>"DDB.BAS"`). The CF-3300 enters disk
       BASIC and SAVEs.
-      🛠 **FIRST STEP:** find which disk-ROM entry COMMAND.COM's `BASIC` reaches
-      on OURS -- the first page-1 PCs after typing it, the SDATE method
-      (`sdatemem_probe.py`; our own code, never the reference's) -- and what
-      ours does there. Then the CF-3300's state on arrival in BASIC, read as
-      work-area RAM.
+      🔬 **CAUSE 1 FOUND: D-STROUT (above, fixed).** `BASIC` prints with STROUT
+      first, and on ours that ran into `$F1C9`'s `$FF`.
+      📏 **STILL OPEN** ([`sdatebasic_after.out`](scratchpad/sdatebasic_after.out)):
+      after the STROUT fix `A>BASIC` returns to `A>` with no message and no
+      RST storm. A second cause is still there.
+      🛠 **NEXT STEP:** the PC trace (`dosbasic_pcs.py`) from after the STROUT
+      to the prompt: which slot calls COMMAND.COM makes, and which fails. The
+      first suspects are the other `build_resident` routines C-BIOS skips
+      (`$F365` especially: stock executed `$F365..$F367` in its window, and
+      ours there is a bare `$C9`).
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN

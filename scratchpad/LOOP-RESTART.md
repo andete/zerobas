@@ -87,8 +87,11 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   read it. `dosdate-acceptance` is in the battery.
   📏 D-DOSDATEBASIC: the CF-3300's BASIC stamps the DOS date (279Fh);
   ours is BLOCKED -- 🔴 **D-DOSBASIC: `A>BASIC` does nothing on ours.**
-  ➡️ **NEXT, by tier: D-DOSBASIC (TIER 1, trace the entry first), then
-  D-DOSDATEBASIC, then S10.B (TIER 2).** D-BLKIOPERCALL is TIER 5.
+  ✅ D-STROUT fixed: RES_PRINT was never installed on C-BIOS (under the RAMAD
+  $FF gate), so STROUT printed nothing. The rest of build_resident is ALSO
+  skipped on C-BIOS -- unmeasured.
+  ➡️ **NEXT, by tier: D-DOSBASIC's second cause (PC trace after the STROUT;
+  suspect $F365), then D-DOSDATEBASIC, then S10.B (TIER 2).**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

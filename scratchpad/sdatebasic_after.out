@@ -1,0 +1,47 @@
+--- STOCK screen at 38 s:
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+--- STOCK screen at 58 s:
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 REM
+   |  SAVE"DDB.BAS"
+   |  Ok
+   |  color auto  goto  list  run
+STOCK: DDB.BAS time 0000 date 279F = 1999-12-31  size 9
+--- OURS screen at 38 s:
+   |  MSX-DOS version 1.03
+   |  Copyright 1984 by Microsoft
+   |  COMMAND version 1.08
+   |  A>SDATEX
+   |  A>BASIC
+   |  A>
+   |  A>S
+   |     Bad command or file name
+   |  A>BASIC
+   |  A>
+--- OURS screen at 58 s:
+   |  Copyright 1984 by Microsoft
+   |  COMMAND version 1.08
+   |  A>SDATEX
+   |  A>BASIC
+   |  A>
+   |  A>S
+   |     Bad command or file name
+   |  A>BASIC
+   |  A>NEW
+   |       Bad command or file name
+   |  A>EMVE"DDB.BAS"
+   |                 Bad command or
+   |   file name
+   |  A>
+OURS: DDB.BAS NOT WRITTEN

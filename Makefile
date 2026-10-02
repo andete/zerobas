@@ -2231,6 +2231,11 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- strout-acceptance: BDOS $09 STROUT prints, as on the CF-3300 (D-STROUT) ----------
+# RES_PRINT ($F1C9) lived below the RAMAD $FF gate, so the C-BIOS target never had it.
+strout-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_strout.py
+
 # --- dosdate-acceptance: DOS dates as the CF-3300 (D-CLOSESTAMP, D-DOSDATE) -----
 # FCLOSE re-dating a WRRND-written file, and SDATE moving GDATE and the file stamp.
 # In the battery since both landed (2026-10-01).
