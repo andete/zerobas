@@ -39,10 +39,17 @@
 ; — TAPIOF, ERRMARK, then `ret` — because the bodies reach it by `jp` from
 ; several stack depths, including from inside disk_putbyte, where the `ret`
 ; resumes the CALLER's loop rather than aborting ([[load-error-is-not-abort]]).
-; Changing that would silently change control flow on the error path, so it is
-; preserved; the only difference is that the message is not printed here. The
-; resident stub sees SV_STAT and reports ONCE, which also removes the
-; double-report the resident path could produce mid-loop.
+; That used to be preserved here as "changing it would silently change control
+; flow on the error path". 🔴 D-DISKFULLRETRY (2026-10-02) MEASURED WHAT THE
+; RESUME COSTS AND IT IS NOW AN ABORT: a BSAVE of 16 KB onto a disk with one
+; free cluster answered 66 in 3.2 s on the CF-3300 and NOTHING on ours in a
+; 900 s EMULATED run window (scratchpad/bsvfull_probe.py, bsvfull_before.out) --
+; every byte after the failure resumed into disk_putbyte and retried the doomed
+; flush. `svt_go` notes SP at dispatch
+; and sv_load_error restores it, so the FIRST failure ends the engine, as the
+; resident path (disk_error raises) and disk.rom's hk_dpsave already do. The
+; message is still not printed here: the resident stub sees SV_STAT and reports
+; ONCE.
 ;
 ; INTERRUPTS. The cassette engines hold the CPU for the length of a tape write.
 ; subrom_call enters DI, so this tenant re-enables interrupts at entry and
@@ -70,40 +77,37 @@
 save_tenant:
                 xor     a
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
-                xor     a
                 ld      (SV_STAT),a         ; assume success; sv_load_error flips it
-                ld      a,(SV_OP)
                 ei                          ; the tape engines need a live ISR;
                                             ; htimi_guard makes that safe while
                                             ; page 1 is ours
-                or      a
-                jr      z,sv_t_bsv_disk
-                dec     a
-                jr      z,sv_t_bsv_cas
-                dec     a
-                jr      z,sv_t_out          ; SV_OP_SAV_DISK: served by disk.rom now
-                call    tape_save_basic     ; SV_OP_SAV_CAS
-                jr      sv_t_out
-sv_t_bsv_disk:
-                call    bsv_open
-                jr      sv_t_out
-sv_t_bsv_cas:
-                call    bsv_cas_open
-                jr      sv_t_out
-sv_t_out:
+                call    svt_go              ; every engine, and sv_load_error's
+                                            ; abort, returns HERE
                 di                          ; subrom_call's CALSLT returns under DI
                 ret
+; svt_go -- note SP (= the return address into save_tenant) and jump to the
+; engine; D-DISKFULLRETRY made sv_load_error unwind to that SP.
+svt_go:
+                ld      (SVT_SP),sp
+                ld      a,(SV_OP)
+                or      a
+                jp      z,bsv_open          ; SV_OP_BSV_DISK
+                dec     a
+                jp      z,bsv_cas_open      ; SV_OP_BSV_CAS
+                dec     a
+                ret     z                   ; SV_OP_SAV_DISK: served by disk.rom now
+                jp      tape_save_basic     ; SV_OP_SAV_CAS
 
-; sv_load_error — sub-local reporter. See the ERROR PATH note in the header: the
-; `ret`-not-abort shape is deliberate and byte-for-byte the resident one's, minus
-; the print.
+; sv_load_error — sub-local reporter. See the ERROR PATH note in the header: it
+; ABORTS to save_tenant (D-DISKFULLRETRY), whatever depth it is reached from.
 sv_load_error:
                 call    TAPIOF
                 ld      a,$EE
                 ld      (ERRMARK),a
                 ld      a,1
                 ld      (SV_STAT),a
-                ret
+                ld      sp,(SVT_SP)         ; D-DISKFULLRETRY: ABORT, from any depth
+                ret                         ; -> save_tenant, after `call svt_go`
 
 ; --- sub-local COPIES of the resident helpers the engines call --------------
 ; Each of these keeps a resident caller too (header, "WHAT STAYS RESIDENT"), so

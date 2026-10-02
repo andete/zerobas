@@ -1543,6 +1543,9 @@ SW_TYPE         equ     $E22D   ; 1 B: its type (1 = string, 2/4/8 numeric)
 SW_ADDR1        equ     $E22E   ; 2 B: operand 1, held across operand 2's parse
 SW_TYPE1        equ     $E230   ; 1 B: operand 1's type
 SW_MODE         equ     $E231   ; 1 B: 0 = this operand MAY be created, 1 = must exist
+SVT_SP          equ     SW_ADDR ; 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its
+                                ; sv_load_error ABORTS (D-DISKFULLRETRY). Borrowed: SWAP is a
+                                ; statement and never runs inside a BSAVE/SAVE/CSAVE
 ; --- D-CLP: the CLEAR string-pool partition RAM (docs/spec-basic-clearpool.md)
 ; zerobas used to have ONE free gap between the variable area (up to ARYEND) and
 ; the string heap (down from the ceiling C); the reference has TWO POOLS split by

@@ -113,11 +113,15 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   did NOT wait for S10.B; it went in on today's main path. Main is at 8 B free
   — RE-READ IT with `make basic-reloc`, never from here. disk.rom's SAVE now
   aborts at its first failure (`hkds_run`/`DPSAVE_SP`); the sub tenant does
-  not (D-DISKFULLRETRY, TIER 2, measure first).
+  ~~not (D-DISKFULLRETRY, TIER 2, measure first)~~ — and since the same
+  evening it does too: D-DISKFULLRETRY was measured (no answer in 900 s) and
+  fixed (`svt_go`/`SVT_SP`). It left D-DISKFULLSTAMP (TIER 3): a lost cluster
+  on a mid-write disk full.
   ➡️ **NEXT: S10.B per spec §6.6bc's build plan.** It must KEEP D-DISKFULL's
   behaviour: a failed CLOSE keeps the channel open, and PRINT# raises 66. It
   is expected to move `diskfull-acceptance`'s PRINT# pin from I = 24 to 12.
-  D-DISKFULLRETRY (TIER 2) is a smaller item that could go first.
+  ~~D-DISKFULLRETRY (TIER 2) is a smaller item that could go first.~~ Done.
+  D-DISKFULLSTAMP (TIER 3) is smaller than S10.B and comes first by tier.
   D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the

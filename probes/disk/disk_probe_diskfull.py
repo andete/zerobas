@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
 """D-DISKFULL (gate: diskfull-acceptance): a full disk is `Disk full` (ERR 66)
-on ours as on the CF-3300, in its three faces, each on a fresh disk with every
+on ours as on the CF-3300, in its four faces, each on a fresh disk with every
 free cluster marked used (full_disk, below):
 
   CLOSE  OPEN FOR OUTPUT + PRINT#1,"HELLO" + CLOSE#1: the first cluster is
@@ -12,6 +12,10 @@ free cluster marked used (full_disk, below):
          the fix (no prompt in a 60 s window); a hang must FAIL by the run
          window, so the verdict is read off a sentinel line the loop's
          successor prints, never assumed.
+  BSAVE  16 KB: 66. 🔴 The sub-ROM SAVE tenant RESUMED its loop after a
+         failure (D-DISKFULLRETRY), retrying the doomed flush on every
+         remaining byte -- no answer in a 900 s emulated window. Like PRINT#,
+         a regression fails by the window.
 
 Each case is boot-per-case with its own disk and ends in ONE summary line
 (`R a b c #`, `S e #`, `P e i #`) because the screen holds 24 rows and the
@@ -43,6 +47,7 @@ CASES = {
     "print": (['OPEN"PF.TXT"FOR OUTPUT AS#1',
                'FOR I=1TO40:PRINT#1,STRING$(20,65):NEXT',
                'PRINT"P";ERR;I;"#"'], 30.0),
+    "bsave": (['BSAVE"BF.BIN",&H8000,&HBFFF', 'PRINT"V";ERR;"#"'], 30.0),
 }
 
 
@@ -97,7 +102,7 @@ def run(machine, tag, name):
 def verdict(name, scr):
     """The face's fields, read off the screen; None where the summary line never
     printed (a hang, or a capture that came too early)."""
-    key = {"close": "R", "save": "S", "print": "P"}[name]
+    key = {"close": "R", "save": "S", "print": "P", "bsave": "V"}[name]
     m = re.search(r"\b" + key + r" ?((?:-?\d+ ?)+)#", scr)
     v = {"summary": [int(x) for x in m.group(1).split()] if m else None,
          "disk_full": scr.count("Disk full")}
@@ -133,7 +138,7 @@ def main():
             bad.append(f"{name}: CF-3300 {s} vs ours {o}")
     for b in bad:
         print("DIVERGES " + b)
-    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all three faces")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces")
     return 1 if bad else 0
 
 

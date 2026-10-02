@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28801 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28834 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26576,7 +26576,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          first 256 B record). S10.B puts PRINT# on the 256 B record and should
          move it; that pin then goes red on purpose.
 
-- [ ] **D-DISKFULLRETRY — A BSAVE THAT FILLS THE DISK MID-WRITE MAY RETRY A DOOMED FLUSH PER
+- [x] ✅ **D-DISKFULLRETRY — A BSAVE THAT FILLS THE DISK MID-WRITE MAY RETRY A DOOMED FLUSH PER
       BYTE (from the code 2026-10-02, NOT MEASURED)**
       🎚️ TIER 2 — reasonable time: the answer (66) is right; only its time is in doubt.
       🔬 D-DISKFULL left the sub-ROM SAVE tenant's `sv_load_error` as a `ret` into
@@ -26588,6 +26588,39 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       it against the CF-3300. If it is slow, the fix is disk.rom's (`hkds_run`
       / `DPSAVE_SP`), which needs a RAM cell on the sub side.
       🤖 **AUTONOMOUS** — the CF-3300 times it.
+      📏 **MEASURED THE SAME DAY, AND WORSE THAN "SLOW"**
+      ([`bsvfull_probe.py`](scratchpad/bsvfull_probe.py) →
+      [`bsvfull_before.out`](scratchpad/bsvfull_before.out)): `BSAVE` of
+      `&H8000-&HBFFF` onto a disk with ONE free cluster. The CF-3300 answers 66 in
+      3.2 s. Ours printed NOTHING in a 900 s emulated run window.
+      ✅ **FIXED 2026-10-02:** the sub tenant now aborts like disk.rom's SAVE.
+      - `save_tenant` dispatches through `svt_go`, which notes SP in `SVT_SP` (a
+        borrowed SWAP cell, SW_ADDR).
+      - `sv_load_error` restores that SP, so the first failure ends the engine.
+      - The header's "the resume is preserved" paragraph is inverted, not
+        deleted.
+      - After the fix ([`bsvfull_after.out`](scratchpad/bsvfull_after.out)): 66
+        in 1 tick.
+      - `diskfull-acceptance` gains a BSAVE face on a full disk. KNIFED: without
+        the `ld sp` the face has no summary line and the gate FAILs.
+
+- [ ] **D-DISKFULLSTAMP — A WRITE THAT FILLS THE DISK MID-FILE LEAVES A LOST CLUSTER ON OURS;
+      THE CF-3300 POINTS THE DIRECTORY AT IT (MEASURED 2026-10-02)**
+      🎚️ TIER 3 — common errors: a full disk is ordinary, and it should not
+      quietly cost disk space.
+      📏 [`bsvfull_after.out`](scratchpad/bsvfull_after.out): the same BSAVE onto
+      one free cluster (714).
+      - CF-3300: BF.BIN's entry → cluster 714, size **8**; FAT[714] = FFF.
+      - Ours: BF.BIN's entry → cluster 0, size 0; FAT[714] = FFF. Allocated
+        and unreferenced: a LOST cluster that CHKDSK-style tools would report.
+      🔬 Cause: every write engine's error path skips `fat_io_close`, so the
+      directory is never stamped ("DOCUMENTED DIVERGENCE (no write rollback)"
+      in basic/sv-diskwr.inc). Before D-DISKFULL this BSAVE never finished at
+      all, so the leak was not reachable.
+      ❓ Open: what the CF-3300's size of 8 IS. It is neither the bytes written
+      (1 KB) nor the request (16 KB + 7). Measure it before choosing what ours
+      stamps: try other free-cluster counts and other lengths.
+      🤖 **AUTONOMOUS** — the CF-3300's entry settles what to stamp.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**

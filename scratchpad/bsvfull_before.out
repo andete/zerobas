@@ -1,0 +1,5 @@
+== CF-3300: ERR 66, 192 ticks (3.2 s)
+   screen tail:  Ok NEW Ok 10 ON ERROR GOTO 90 20 TIME=0 30 BSAVE,&H8000,&HBFFF 40 PRINT;0;TIME;:END 90 PRINT;ERR;TIME;:END RUN B 66 192 # Ok color auto goto list run 
+== OURS: NO READING
+   screen tail:  ZB NEW ZB 10 ON ERROR GOTO 90 20 TIME=0 30 BSAVE,&H8000,&HBFFF 40 PRINT;0;TIME;:END 90 PRINT;ERR;TIME;:END RUN color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored
