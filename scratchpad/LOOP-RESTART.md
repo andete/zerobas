@@ -90,8 +90,10 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   ✅ D-STROUT fixed: RES_PRINT was never installed on C-BIOS (under the RAMAD
   $FF gate), so STROUT printed nothing. The rest of build_resident is ALSO
   skipped on C-BIOS -- unmeasured.
-  ➡️ **NEXT, by tier: D-DOSBASIC's second cause (PC trace after the STROUT;
-  suspect $F365), then D-DOSDATEBASIC, then S10.B (TIER 2).**
+  ➡️ **NEXT, by tier: D-DOSBASIC's second cause -- COMMAND.COM treats BASIC as
+  a no-op (decided at start-up). Lead: stock RDSLTs the BASIC ROM at
+  $7D2F..30 during DOS init; watch what it writes next (ADDRESSES only on the
+  reference). Then D-DOSDATEBASIC, then S10.B (TIER 2).**
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the
   CF-3300 is exact. Fix it first: a byte-offset transfer looping per sector.

@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28589 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28606 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27352,11 +27352,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📏 **STILL OPEN** ([`sdatebasic_after.out`](scratchpad/sdatebasic_after.out)):
       after the STROUT fix `A>BASIC` returns to `A>` with no message and no
       RST storm. A second cause is still there.
-      🛠 **NEXT STEP:** the PC trace (`dosbasic_pcs.py`) from after the STROUT
-      to the prompt: which slot calls COMMAND.COM makes, and which fails. The
-      first suspects are the other `build_resident` routines C-BIOS skips
-      (`$F365` especially: stock executed `$F365..$F367` in its window, and
-      ours there is a bare `$C9`).
+      📏 **TRAIL, 2026-10-02 (ours: registers and our own code; the CF-3300:
+      call targets and registers only):**
+      - After the STROUT fix, `BASIC` makes NO slot call and no warm boot
+        (`dosbasic_bios.py`). Its only BDOS calls are STROUT (a newline, then
+        the prompt) and `$0A` (read the next line). So COMMAND.COM treats it
+        as nothing to do. The decision is made EARLIER, presumably cached
+        when COMMAND.COM or the kernel starts.
+      - From boot to the prompt, stock makes **2838 slot BIOS calls** (1038
+        RDSLT, 1036 WRSLT, 349 CALSLT, 202 CALLF); **ours makes 9**, all
+        C-BIOS's ROM scan ([`dosboot_bios.out`](scratchpad/dosboot_bios.out)).
+        Our DOS boot pages directly, so this is a different path by design,
+        not in itself the bug.
+      - 🎯 **LEAD:** during stock's DOS init (6.9147 s, IX = F1AA, SP in the
+        kernel area) it RDSLTs the MAIN BASIC ROM at **`$7D2F..$7D30`**, then
+        CALSLTs main-ROM `$006F` (INIT32) and CALLFs `$9F` repeatedly. Two
+        bytes read from the BASIC ROM at that moment look like the disk ROM
+        capturing a BASIC address (where to return to BASIC?). Ours captures
+        nothing like it. A HYPOTHESIS, not a finding.
+      🛠 **NEXT STEP:** what does stock WRITE right after that `$7D2F` read (a
+      write watchpoint, ADDRESSES only on the reference), and what do those
+      cells hold on ours (values allowed)? Then whether COMMAND.COM reads them
+      when it starts.
       🤖 **AUTONOMOUS** — the reference settles it.
 
 - [x] ✅ **D-CLOSESTAMP — DOES THE CF-3300'S FCLOSE DATE A FILE THAT WAS ONLY WRRND-WRITTEN
