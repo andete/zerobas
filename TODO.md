@@ -3648,7 +3648,7 @@ item — do **one item per session** to keep context lean.
       all — `tools/gen_resident_abi.py` could carry main's own declared width
       across, which would close most of the disk map's remainder mechanically.
 
-- [ ] 🛑 **A HOOK BODY USING `disk.rom`'s OWN FAT ENGINE WOULD CORRUPT MAIN'S
+- [x] ✅ **A HOOK BODY USING `disk.rom`'s OWN FAT ENGINE WOULD CORRUPT MAIN'S
       RAM — THE "NEVER WHILE BASIC IS LIVE" PREMISE IS GOING STALE.**
       🎚️ TIER 2 — it is a correctness constraint on the disk-code eviction, not
       an apparatus nicety.
@@ -3682,6 +3682,28 @@ item — do **one item per session** to keep context lean.
       decision, which was taken (step 9 shipped on it, 2026-09-20). The hazard
       itself is step 10's to SOLVE (the item above says so).
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      ✅ **CLOSED 2026-10-03 AS ALREADY SOLVED — IT WAS LEFT OPEN, NOT LEFT
+      UNDONE.**
+      - D-BUFMERGE (6e1722b7, 2026-09-24, Joost: *"(b) One shared buffer"*)
+        took this item's own third option. disk.rom's `SECTOR_BUF`/`WBUF` ARE
+        main's `FSECTOR_BUF`/`FWBUF` ($E5C0/$E7C0), asserted equal at build
+        time in disk/disk.asm.
+      - Every BASIC-verb crossing is bracketed by `chan_gate`'s save/restage
+        (audit 6f2a1fe5).
+      - BDOS/PHYDIO from user machine code with a file open was ruled out of
+        scope.
+      - The cells this item named ($E375.., the TEMPPOOL, GFX_*) are no longer
+        under any disk buffer (docs/ram-map.md's cross-component rows
+        80 → 26), and disk/equates.inc says *"Was $E2A0, on top of main's
+        TEMPPOOL and GFX_* cells"*.
+      - Found while scoping S10.B. disk.rom's own FAT engine already runs in
+        the middle of a BASIC statement there (`hk_dpsave` since step 12, and
+        `fat_fits` since D-SAVEFULLSTAMP), on the merged buffer, which is what
+        made the item's premise checkable.
+      ⚠️ What S10.B still inherits from it: a disk-side channel handler fills
+      the SAME buffer the live channel stages in. So it must go through the
+      bracket, or keep its record in the channel's own FCB block (S10.B's plan,
+      spec §6.6bc).
 
 - [ ] 🔴 **`refcache-check` GOES RED ON THE CALENDAR, AND THE RETRY ARM CALLS IT
       "REAL".**
@@ -6045,7 +6067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28951 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28973 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6211,7 +6233,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11045 (T-6FE392)8 (T-529ABE)` from `TODO.md:23619 (T-529ABE)`: a
+      `TODO.md:11067 (T-6FE392)8 (T-529ABE)` from `TODO.md:23641 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11892,7 +11914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23619 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23641 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
