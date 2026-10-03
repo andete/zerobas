@@ -6067,7 +6067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28973 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29003 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26597,6 +26597,36 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          on ours (the first 512 B sector flush) and at I = 12 on the CF-3300 (its
          first 256 B record). S10.B puts PRINT# on the 256 B record and should
          move it; that pin then goes red on purpose.
+
+- [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY
+      EMPTIED THAT CHANNEL'S FILE (found and fixed 2026-10-03 while scoping S10.B; MEASURED)**
+      🎚️ TIER 1 — happy path: a program writing a log file that also SAVEs is
+      ordinary, there is no error anywhere, and the data is gone.
+      📏 [`asavechan_probe.py`](scratchpad/asavechan_probe.py): `OPEN"P1.TXT"FOR
+      OUTPUT AS#1 : PRINT#1,"AAA" : <verb> : PRINT#1,"BBB" : CLOSE#1`.
+      - CF-3300: P1.TXT = `AAA\r\nBBB\r\n` + Ctrl-Z (11 B), for all three verbs.
+      - Ours, `SAVE ,A`: P1.TXT EMPTY (0 B, no cluster), and Q.BAS 21 B where it
+        should be 15 -- the post-SAVE `PRINT#1` and the close's Ctrl-Z were
+        counted into it.
+      - Ours, `BSAVE`: the same loss (Q.BAS 29 B for 23).
+      - Ours, tokenised `SAVE`: already safe -- it crosses into disk.rom through
+        `chan_gate`, which saves the live channel first.
+      🔬 Cause, from the code: main's `ascii_save` and the BSAVE disk tenant
+      stream through the SAME engine globals (FWR_*) an OUTPUT channel lives in,
+      and neither saved the live channel or cleared FCH_ACTIVE first.
+      ✅ **FIXED:** `xor a / call fch_claim` before each (basic/save.asm) saves the
+      live channel and leaves the globals to nobody, so the next `PRINT#1`
+      re-selects and reloads it.
+      - 8 main bytes, paid by the D-TAILIX2 carve: `ld (FACTYP),a / jp
+        flt_to_int16` stood at three sites; one labelled copy, `fac_typ_int16`,
+        saves 7 B.
+      - Gate `asavechan-acceptance` (three verbs live against the CF-3300).
+        KNIFED: without the parks the asave and bsave faces FAIL with exactly
+        the lost file.
+      📌 Divergence left, not compared: CLUSTER ORDER. Parking flushes the
+      channel's partial sector, so P1 takes cluster 9 and Q 10. The CF-3300,
+      which commits lazily, has them the other way round. Tokenised SAVE already
+      showed the same.
 
 - [x] ✅ **D-DISKFULLRETRY — A BSAVE THAT FILLS THE DISK MID-WRITE MAY RETRY A DOOMED FLUSH PER
       BYTE (from the code 2026-10-02, NOT MEASURED)**

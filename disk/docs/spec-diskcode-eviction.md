@@ -4315,6 +4315,35 @@ RAM data only), for `OPEN FOR OUTPUT : PRINT#1,"AB" : CLOSE`:
    `fat-error` rows, a NEW multi-record probe (several 256 B records, two
    channels alternating, APPEND), and D-DISKFULL's two probes.
 
+📏 **S10.B DESIGN INPUT 2 (2026-10-03): LOF AND LOC ON AN OUTPUT CHANNEL**
+([`loflive_probe.py`](../../scratchpad/loflive_probe.py) →
+[`loflive_run.out`](../../scratchpad/loflive_run.out)). After 0, 10, 300 and
+600 bytes of `PRINT#`, then the file reopened for input:
+- CF-3300 `LOF`/`LOC`: **0/0, 0/0, 256/256, 512/512**, then 601. Both read
+  the bytes committed in WHOLE 256 B records (the FCB's size), and the final
+  601 is the CLOSE's Ctrl-Z.
+- Ours: **0 throughout**, then 601. Main's engine resets `FAT_FILESIZE` at
+  create and never moves it.
+- Predicted: LOF hit, LOC missed (I guessed a record count; it is bytes).
+➡️ It folds into S10.B at ZERO main bytes. `ev_ff_lof` (and LOC, which joins
+it for a sequential channel) reads `FAT_FILESIZE` after `fch_select`. So the
+sub-ROM's `t_fch_load`, which must stop copying the 50 B engine row for a
+mode-2 channel anyway (point 3), copies the row FCB's +16..19 into
+`FAT_FILESIZE` instead. WRBLK keeps +16 at the committed size, record by
+record.
+
+🔬 **S10.B RAM SAFETY, READ 2026-10-03.** Calling `wrblk_body` (and FMAKE's
+and the close's bodies) from a PRINT# hook in the middle of a BASIC statement
+needs their scratch to be safe there:
+- The FAT cells ($E4A0..$E4C1) sit in a gap main does not use.
+- `BDOS_BYTESLEFT` and its neighbours overlap only main's DRAW scratch
+  (`GFX_D*`), which is dead outside a DRAW statement.
+- The sector buffers are the merged pair (D-BUFMERGE).
+- `wrblk_body` takes its FCB from DE (into IX), so `$DA40` is a calling
+  convention, not a fixed cell.
+- The channel being written is mode 2, and selecting it has already saved
+  whatever channel was active, so `FSECTOR_BUF` is free for the record write.
+
 🔴 **D-CFWSTALL WAS MINE, AND IT IS THE DOCUMENTED CLASS.** `run_cases` captures
 `step` seconds after RUN, and `cap_gap` never moves it. omsx_repl's docstring
 says *"a capture taken too early looks like a defect, not like a timeout"*

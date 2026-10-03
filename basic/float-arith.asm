@@ -521,7 +521,8 @@ raf_noround:
 ; direction inverted. (docs/spec-basic-ngram14.md §2)
 fac_dbl_int16:
                 ld      a,8
-                ld      (FACTYP),a
+fac_typ_int16:                              ; D-TAILIX2 (2026-10-03): FACTYP := A, then
+                ld      (FACTYP),a          ; the int16 tail -- shared by the single
                 jp      flt_to_int16        ; tail call: sets DE, returns to our caller
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to cpow_x0_pos,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
@@ -620,8 +621,7 @@ rsp_noround:
                                             ; header comment)
                 call    arga_pack_single
                 ld      a,4
-                ld      (FACTYP),a
-                jp      flt_to_int16        ; tail call: sets DE, returns to our caller
+                jr      fac_typ_int16       ; D-TAILIX2: FACTYP := 4, DE := the int
 ; --- fac_zero_mantissa: make a ZERO FAC byte-identical to the reference's ----
 ; docs/spec-basic-faczero.md (D-FACZERO). in: A = 0. Clears FAC+1..FAC+7.
 ; Clobbers HL and B; A stays 0, so every caller's following `ld a,<type>` is

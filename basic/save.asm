@@ -166,6 +166,13 @@ bsv_open:
                 ; ⚠️ Junk after the arguments now meets exec_stmt: ERR 2, but AFTER
                 ; the write -- the reference's order for BSAVE is unmeasured.
                 push    hl
+                ; 🔴 D-ASAVECHAN (2026-10-03): PARK THE LIVE CHANNEL FIRST. The tenant
+                ; streams through the SAME engine globals an OUTPUT channel lives in,
+                ; so an open `PRINT#1` file lost every byte and its bytes landed in
+                ; this file (scratchpad/asavechan_probe.py). fch_claim with A = 0
+                ; saves the live channel and leaves the globals to nobody.
+                xor     a
+                call    fch_claim
                 ld      a,SV_OP_BSV_DISK
                 call    sv_tenant           ; BSAVE -> disk: the write engine is a tenant
                 pop     hl
@@ -266,6 +273,8 @@ sav_ascii_flag:
 ; path, same as PRINT#). Clean-room: public ASCII listing format + our own
 ; detokeniser; no reference-ROM read. See basic/docs/spec-ascii-saveload.md §5.
 ascii_save:
+                xor     a                   ; D-ASAVECHAN: park the live channel -- this
+                call    fch_claim           ; stream reuses its engine globals (BSAVE's note)
                 call    disk_write_begin    ; create/truncate; reset the write state
                 ld      a,1
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to the file

@@ -2262,6 +2262,13 @@ savedate-acceptance: repack-machine $(DISK_TEST_DSK)
 diskfull-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_diskfull.py
 
+# --- asavechan-acceptance: a disk write beside an open OUTPUT channel (D-ASAVECHAN)
+# SAVE ,A / BSAVE / SAVE between two PRINT#1s: P1.TXT must come back whole, as on the
+# CF-3300. Main's SAVE ,A and the BSAVE tenant used to stream through the live
+# channel's engine globals and silently emptied it.
+asavechan-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_asavechan.py
+
 # --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
 # The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's

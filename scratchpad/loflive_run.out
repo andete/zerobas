@@ -1,0 +1,5 @@
+== CF-3300: 0 0 0 0 256 256 512 512 601 
+   screen tail: 1,:NEX T 90 L(6)=LOF(1):L(7)=LOC(1) 100 CLOSE#1:OPENFOR INPUT AS#1: L(8)=LOF(1):CLOSE#1 110 PRINT;:FOR I=0 TO 8:PRINT L(I);: NEXT:PRINT RUN L 0 0 0 0 256 256 512 512 601 # Ok color auto goto list run 
+== OURS: 0 0 0 0 0 0 0 0 601 
+   screen tail: 0:PRINT#1,:N EXT 90 L(6)=LOF(1):L(7)=LOC(1) 100 CLOSE#1:OPENFOR INPUT AS# 1:L(8)=LOF(1):CLOSE#1 110 PRINT;:FOR I=0 TO 8:PRINT L(I) ;:NEXT:PRINT RUN L 0 0 0 0 0 0 0 0 601 # ZB color auto goto list run 
+   fields: LOF/LOC after 0 B, 10 B, 300 B, 600 B written; then LOF of the file reopened for input

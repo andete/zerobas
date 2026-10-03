@@ -226,8 +226,8 @@ usr_ret:
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
 ur_flt:
-                ld      (FACTYP),a          ; the float result is already in FAC (= DAC)
-                jp      flt_to_int16        ; DE = the rounded int; FAC/FACTYP stand
+                jp      fac_typ_int16       ; the float result is already in FAC (= DAC):
+                                            ; FACTYP := A, DE = the rounded int (D-TAILIX2)
 usr_undef:
                 pop     ix                  ; restore the cursor
                 jp      errmark_ret0        ; expression-error marker, DE = 0
