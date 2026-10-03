@@ -6067,7 +6067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29031 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29113 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24141,6 +24141,83 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
+- [ ] ⌨️ **D-EDCTRL — THE SCREEN EDITOR DROPS EVERY CTRL EDITING KEY: TAB, CTRL-E, CTRL-U,
+      CTRL-B/F, CTRL-N (filed 2026-10-03 from the D-SCREDIT note; NOT MEASURED)**
+      🎚️ TIER 1 — happy path: TAB, erase-to-end and erase-line are everyday line
+      editing on an MSX.
+      🔬 From the code: `sub/readline.asm`'s key dispatch handles Ctrl-C (3), BS
+      (8), Enter (13), HOME ($0B), CLS ($0C), INS (18), the cursor keys
+      ($1C..$1F) and DEL ($7F). Everything else below $20 meets `jp rl_more ;
+      other control bytes: dropped`. The editing codes the MSX screen editor
+      documents (MSX-BASIC manual's control-key table; MSX2 Technical Handbook,
+      screen editor), all DROPPED on ours today:
+      | key | code | documented effect |
+      |---|---|---|
+      | CTRL-B | `$02` | cursor to the previous word |
+      | CTRL-E | `$05` | erase from the cursor to the end of the line |
+      | CTRL-F | `$06` | cursor to the next word |
+      | TAB / CTRL-I | `$09` | to the next tab stop, blanking |
+      | CTRL-N | `$0E` | cursor to the end of the logical line |
+      | CTRL-U | `$15` | erase the whole logical line |
+      | SELECT / CTRL-X | `$18` | nothing on screen (a program reads it) -- confirm |
+      | ESC | `$1B` | nothing at the editor -- confirm |
+      ➡️ **MEASURE FIRST, on BOTH references** (VG-8020 and CF-3300), each key on a
+      wrapped logical line and at the line's ends. Read the screen AND `LINTTB`
+      (the D-INSMODE probe's shape, `scratchpad/insmode_probe.py`), and whether
+      INSFLG survives each key. The table above is the manuals' word, not a
+      reading; a key whose reference effect differs from it is the finding.
+      🤖 **AUTONOMOUS** — the references settle each key.
+
+- [ ] ⌨️ **D-EDFKEY — DO F1..F10 TYPE THEIR `KEY` STRINGS AT THE EDITOR? (filed 2026-10-03; NOT MEASURED)**
+      🎚️ TIER 1 — happy path: F1..F5 (`color`, `auto`, `goto`, `list`, `run`)
+      are how an MSX user types those words.
+      🔬 The function-key ROW is done (D-DSPFNK: `KEY ON` paints it, boot shows
+      it). Whether PRESSING a key injects its `FNKSTR` text into the line is
+      unmeasured on ours. C-BIOS's keyboard interrupt would have to do it; the
+      editor only sees the characters.
+      ➡️ **MEASURE:** F1 and SHIFT+F1 (F6) at the prompt and inside `INPUT` on
+      both references and ours, with a redefined `KEY 1,"ABC"` too. The harness
+      needs a held-key injector for the function-key row (matrix row 6/7; see
+      the `holds` machinery in probes/lib/omsx_repl.py).
+      🤖 **AUTONOMOUS** — the references settle it.
+
+- [ ] ⌨️ **D-EDINPUTCSR — CURSOR KEYS INSIDE `INPUT` ACROSS ROWS (filed 2026-10-03 from the
+      D-SCREDIT note; NOT MEASURED)**
+      🎚️ TIER 1 — happy path: correcting a long `INPUT` answer with the cursor
+      keys.
+      🔬 D-SCREDIT's spec (docs/spec-basic-screditor.md §3) put "cursor keys
+      inside `INPUT` across rows" out of the happy path's scope. Its §5 rows
+      cover only a wrapped answer typed straight through.
+      ➡️ **MEASURE:** an `INPUT A$` answer typed past one row, then cursor-up
+      into the first row, overtype, Enter. Does the answer include both rows,
+      and is the `? ` prompt still excluded (§5's rule)? On both references and
+      ours.
+      🤖 **AUTONOMOUS** — the references settle it.
+
+- [ ] ⌨️ **D-LINTTBWRAP — A PROGRAM `PRINT` THAT WRAPS ON THE BOTTOM ROW LOSES ITS CONTINUATION
+      MARK ON C-BIOS (MEASURED 2026-09-11 in D-SCREDIT; filed as its own item 2026-10-03)**
+      🎚️ TIER 3 — common errors: a corner of re-entry, not its happy path.
+      📏 docs/spec-basic-screditor.md §1, after `PRINT STRING$(39,"a");"bc";` on
+      the bottom row:
+      - Reference: `3 2 0 175 1` for the last five `LINTTB` rows (the `a` row
+        continues).
+      - Ours: `1 1 1 1 24` (the mark is dropped).
+      Re-entering that line takes its last row alone. The reader's ECHO path
+      already writes the mark for a TYPED wrap on the bottom row; program output
+      does not (C-BIOS's `CHPUT` scroll-then-wrap).
+      🤖 **AUTONOMOUS** — the spec's rows are the reference.
+
+- [ ] ⌨️ **D-LINTTBSTALE — OLDER ROWS CAN CARRY STALE "CONTINUES" MARKS AFTER SCROLLS (filed
+      2026-10-03 from the D-SCREDIT note; mechanism named there, NOT MEASURED as a failing row)**
+      🎚️ TIER 3 — common errors: a corner of re-entry after scrolling.
+      🔬 The note: C-BIOS never rewrites two `LINTTB` entries on a scroll, and
+      the reader's upward walk can follow a stale zero into an unrelated row
+      above.
+      ➡️ **MEASURE FIRST:** build the failing row before any fix. Scroll a
+      wrapped line off the top, then re-enter a line printed after it. Compare
+      the executed text with both references.
+      🤖 **AUTONOMOUS** — the references settle it.
+
 - [x] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated
       input buffer), so the user can cursor-up to any visible output, edit it
@@ -24299,6 +24376,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 **AND `sub/readline.asm` WAS NOT IN `SUB_PARTS`** — two builds shipped the
       first tenant unchanged; the wall reading that could not have stayed the same
       (sub page 1: 144 B twice) was the tell, exactly as D-PUDOT's note warned.
+      🔁 **2026-10-03: EACH OF THESE IS NOW ITS OWN OPEN ITEM** (above), because
+      a note inside a CLOSED item is invisible to the tier scan. `INS` mode and
+      `DEL` mid-row were already done by D-INSMODE, the function-key ROW by
+      D-DSPFNK. Open: D-EDCTRL (CTRL keys, SELECT), D-EDFKEY (pressing F1..F10),
+      D-EDINPUTCSR, D-LINTTBWRAP, D-LINTTBSTALE.
       ⚠️ Later tiers, filed here: `INS` mode, `DEL` mid-row, `CTRL`+key, the
       function-key row and `SELECT`; a program `PRINT` that wraps on the bottom
       row loses its continuation mark on C-BIOS (re-entering it takes the last
