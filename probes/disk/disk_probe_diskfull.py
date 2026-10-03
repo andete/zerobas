@@ -19,6 +19,9 @@ free cluster marked used (full_disk, below):
   SSTAMP tokenised SAVE of a ~2 KB program, ONE cluster free
          (D-SAVEFULLSTAMP): the CF-3300 refuses it WHOLE too -- SF.BAS = the
          $FF marker alone, size 1, one cluster, and NO Ctrl-Z.
+  ASTAMP the same program SAVEd ,A (D-ASAVEFULLSTAMP): the CF-3300 STREAMS
+         it, so SA.BAS keeps the first 1024 B, stamped; ours left a lost
+         cluster.
   BSTAMP the same BSAVE with ONE cluster free, and the directory read back
          (D-DISKFULLSTAMP): the CF-3300 writes the header, refuses the block
          whole and CLOSES -- BF.BIN = header + Ctrl-Z, size 8, in that one
@@ -60,9 +63,12 @@ CASES = {
     # a ~2 KB program (30 REM lines) onto ONE free cluster (D-SAVEFULLSTAMP)
     "sstamp": ([f"{100 + i} REM " + "X" * 60 for i in range(30)]
                + ['SAVE"SF.BAS"', 'PRINT"T";ERR;"#"'], 30.0),
+    # the same program as an ASCII listing (D-ASAVEFULLSTAMP)
+    "astamp": ([f"{100 + i} REM " + "X" * 60 for i in range(30)]
+               + ['SAVE"SA.BAS",A', 'PRINT"U";ERR;"#"'], 30.0),
 }
 # case -> (free clusters to leave, the file whose entry and content are compared)
-STAMP = {"bstamp": (1, "BF", "BIN"), "sstamp": (1, "SF", "BAS")}
+STAMP = {"bstamp": (1, "BF", "BIN"), "sstamp": (1, "SF", "BAS"), "astamp": (1, "SA", "BAS")}
 
 
 def full_disk(path):
@@ -159,7 +165,7 @@ def stamp(path, stem, ext):
 def verdict(name, scr):
     """The face's fields, read off the screen; None where the summary line never
     printed (a hang, or a capture that came too early)."""
-    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W", "sstamp": "T"}[name]
+    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W", "sstamp": "T", "astamp": "U"}[name]
     m = re.search(r"\b" + key + r" ?((?:-?\d+ ?)+)#", scr)
     v = {"summary": [int(x) for x in m.group(1).split()] if m else None,
          "disk_full": scr.count("Disk full")}
@@ -197,7 +203,7 @@ def main():
             bad.append(f"{name}: CF-3300 {s} vs ours {o}")
     for b in bad:
         print("DIVERGES " + b)
-    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE and SAVE leave the CF-3300's file")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE, SAVE and SAVE ,A leave the CF-3300's file")
     return 1 if bad else 0
 
 

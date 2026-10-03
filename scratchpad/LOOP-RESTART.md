@@ -127,7 +127,9 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   FIRST), which comes before S10.B by tier. ✅ Measured and done for tokenised
   SAVE (refused whole: `FF`, size 1). It split into D-ASAVEFULLSTAMP (SAVE ,A
   stamps the partial; main bytes) and D-PRINTFULLSTAMP (the CF-3300 commits no
-  FAT; best decided WITH S10.B, which rewrites that path).
+  FAT; best decided WITH S10.B, which rewrites that path). ✅ D-ASAVEFULLSTAMP
+  done 2026-10-03 at ZERO main bytes (the stamp is in the sub-ROM's flush,
+  gated off channels). ➡️ NEXT: S10.B, with D-PRINTFULLSTAMP folded in.
   D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the

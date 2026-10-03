@@ -1265,7 +1265,11 @@ ffds_nopad:
 ffds_alloc:
                 ; allocate a new cluster (first one, or chain extension).
                 call    fat_alloc_cluster
+    IF SUB_BUILD
+                jr      c, ffds_full        ; disk full: D-ASAVEFULLSTAMP, below
+    ELSE
                 ret     c                   ; disk full
+    ENDIF
                 ; HL = new cluster. Link it: if a previous cluster exists, point it
                 ; at HL; else record HL as the file's first cluster.
                 ld      de, (FWR_CLUS)
@@ -1314,6 +1318,41 @@ ffds_mul:
                 ld      (FWR_SECIDX), a
                 or      a                   ; Cy = 0 success
                 ret
+    IF SUB_BUILD
+; ffds_full -- D-ASAVEFULLSTAMP (2026-10-02): a sequential write that fills the
+; disk keeps what is ALREADY ON IT. MEASURED (scratchpad/savefull_run.out): the
+; CF-3300's `SAVE ,A` of a ~2 KB listing onto one free cluster stamps SA.BAS
+; with the first 1024 B; ours raised 66 with the entry at 0/0 and the cluster
+; allocated -- LOST. So stamp the bytes on disk (FWR_BYTES less the buffer that
+; could not be placed) before the failure goes back up.
+; ⚠️ ONLY when no CHANNEL is active: PRINT#+CLOSE is the opposite answer on the
+; CF-3300 (it commits nothing, D-PRINTFULLSTAMP, to settle with S10.B), and only
+; for 66 (a disk-full, not an I/O fault). Sub-ROM only: main reaches this body
+; through its fatprim stub, so it costs no main byte; disk.rom's copy serves the
+; BDOS, whose DOS semantics are not this.
+ffds_full:
+                ld      a, (FCH_ACTIVE)
+                or      a
+                jr      nz, ffds_full_x     ; a channel: not this rule
+                ld      a, (DISKOP_ERR)
+                cp      66
+                jr      nz, ffds_full_x     ; an I/O fault: leave it
+                ld      hl, (FWR_BYTES)
+                ld      de, (FWR_BUFLEN)
+                or      a
+                sbc     hl, de
+                ld      (FWR_BYTES), hl
+                ld      hl, (FWR_BYTES + 2)
+                ld      de, 0
+                sbc     hl, de              ; the borrow into the high word
+                ld      (FWR_BYTES + 2), hl
+                call    fat_dir_update      ; size + first cluster, as close does
+                ld      a, 66               ; its successful DSKIO cleared the code
+                ld      (DISKOP_ERR), a
+ffds_full_x:
+                scf                         ; still a failure
+                ret
+    ENDIF
 
 ; fat_dir_create — find/make a root-directory slot for an 8.3 name and write a
 ; fresh entry; record the slot's sector + offset in FWR_DIRSEC/FWR_DIROFF.

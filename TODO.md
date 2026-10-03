@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28937 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28951 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26692,7 +26692,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         region pinned at $75A5, into the free one before $5FE5.
       namspc 135/135 again.
 
-- [ ] **D-ASAVEFULLSTAMP — `SAVE ,A` THAT FILLS THE DISK: THE CF-3300 STAMPS THE PART WRITTEN,
+- [x] ✅ **D-ASAVEFULLSTAMP — `SAVE ,A` THAT FILLS THE DISK: THE CF-3300 STAMPS THE PART WRITTEN,
       OURS LOSES IT (MEASURED 2026-10-02)**
       🎚️ TIER 3 — common errors.
       📏 [`savefull_run.out`](scratchpad/savefull_run.out): the CF-3300 STREAMS
@@ -26707,6 +26707,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (fat-prim-body, zero main bytes) would ALSO hit PRINT#, whose CF-3300
       answer is the opposite (D-PRINTFULLSTAMP): the two must not share it.
       🤖 **AUTONOMOUS** — the CF-3300's entry settles it.
+      ✅ **FIXED 2026-10-03 AT ZERO MAIN BYTES.** Both halves of the shape note
+      above were too pessimistic.
+      - Main's `fat_flush_data_sector` is a STUB onto the sub-ROM's real one,
+        so the stamp lives there: `ffds_full` (basic/fat-prim-body.inc,
+        `IF SUB_BUILD`).
+      - It is gated on FCH_ACTIVE = 0, which keeps it off PRINT#'s path, and on
+        a pending 66.
+      - It stamps FWR_BYTES − FWR_BUFLEN with `fat_dir_update`, then restores
+        the 66 that call's successful DSKIO cleared.
+      - Ours now matches the CF-3300 to the byte: SA.BAS cluster 714, size 1024,
+        the same first 16 and last 8 bytes.
+      - `diskfull-acceptance` gains an `astamp` face. KNIFED: with the stamp
+        skipped ours reads 0/0 and the gate FAILs.
+      - Sub page 1: 253 → 205 B.
 
 - [ ] **D-PRINTFULLSTAMP — PRINT#+CLOSE THAT FILLS THE DISK: THE CF-3300 COMMITS NOTHING (ENTRY
       0/0, THE CLUSTER STAYS FREE), OURS LEAVES IT ALLOCATED (MEASURED 2026-10-02)**
