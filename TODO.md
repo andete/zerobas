@@ -6067,7 +6067,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29003 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29031 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26598,6 +26598,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          first 256 B record). S10.B puts PRINT# on the 256 B record and should
          move it; that pin then goes red on purpose.
 
+- [ ] **D-INPUTDNOHASH — `INPUT$(n,1)`, THE FILE NUMBER WITHOUT `#`, IS `Type mismatch` ON
+      OURS; THE CF-3300 READS THE FILE (found 2026-10-03 by a probe's own control; MEASURED)**
+      🎚️ TIER 1 — happy path: `#` is optional in the documented form
+      `INPUT$(n[,[#]file])`, and programs write it either way.
+      📏 [`chanside_probe.py`](scratchpad/chanside_probe.py)'s first input-side
+      draft, with `OPEN"HI.TXT"FOR INPUT AS#1 : A1$=INPUT$(5,1)`:
+      - CF-3300: `Hello`.
+      - Ours: **Type mismatch** (and again on `INPUT$(LOF(1)-5,1)`).
+      - The `#1` form agrees on both.
+      ➡️ First read where `INPUT$`'s second argument is parsed, and whether the
+      `#`-less form reaches the channel path at all. Then check the other
+      file-number functions for the same `#`-optional rule (EOF/LOC/LOF take
+      no `#`; which others take an optional one?).
+      🤖 **AUTONOMOUS** — the CF-3300 settles it.
+
 - [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY
       EMPTIED THAT CHANNEL'S FILE (found and fixed 2026-10-03 while scoping S10.B; MEASURED)**
       🎚️ TIER 1 — happy path: a program writing a log file that also SAVEs is
@@ -26627,6 +26642,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       channel's partial sector, so P1 takes cluster 9 and Q 10. The CF-3300,
       which commits lazily, has them the other way round. Tokenised SAVE already
       showed the same.
+      🔴 **AND THE CLASS WAS WIDER: BLOAD, IN BOTH DIRECTIONS (D-ASAVECHAN2, same
+      day).** [`chanside_probe.py`](scratchpad/chanside_probe.py) ran the other
+      verbs that reach main's FAT engine without `chan_gate`:
+      - `BLOAD` beside an open OUTPUT file: lost it exactly as SAVE ,A did.
+      - `BLOAD` beside an open INPUT file: the read after it came back EMPTY.
+      - `DSKI$`: fine both ways.
+      - SAVE ,A beside an INPUT file: fine since the park.
+      Fixed with the same park. The three sites now `call fch_park` (basic/
+      subromcall.asm, LOW region: page 1 had 2 B, and a call is a byte cheaper
+      than the inline pair). Main is down to 1 B low + 1 B page 1.
+      `asavechan-acceptance` grows a `bload` face and the INPUT-side faces
+      `in_bload` and `in_asave`. KNIFED: with BLOAD's park removed, exactly
+      `bload` and `in_bload` FAIL.
 
 - [x] ✅ **D-DISKFULLRETRY — A BSAVE THAT FILLS THE DISK MID-WRITE MAY RETRY A DOOMED FLUSH PER
       BYTE (from the code 2026-10-02, NOT MEASURED)**

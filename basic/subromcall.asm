@@ -224,3 +224,16 @@ sub_int_template_end:
     IF (sub_int_template_end - sub_int_template) > (INT_MAIN_PRIM - SUB_INT_RAM)
                 db      INT_TRAMPOLINE_GREW_INTO_INT_MAIN_PRIM__SHRINK_OR_MOVE
     ENDIF
+
+; --- fch_park (D-ASAVECHAN, 2026-10-03): park the live file channel --------
+; Saves the active channel's engine state into its context and hands the engine
+; globals to nobody (fch_claim with A = 0), so the next statement that names the
+; channel reloads it. For the verbs that stream through those SAME globals
+; without chan_gate's bracket -- SAVE ,A (ascii_save), the BSAVE and BLOAD
+; tenants: an open OUTPUT file lost every byte beside them, an INPUT one its
+; place (scratchpad/asavechan_probe.py, chanside_probe.py).
+; Sited in the LOW region on purpose: its three callers are page 1, which had no
+; room, and a `call` here is a byte cheaper than the inline pair at each site.
+fch_park:
+                xor     a
+                jp      fch_claim

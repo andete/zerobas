@@ -55,6 +55,11 @@ do_bload:
                 ; drops pays for the two `ld hl,(FN_RESUME)` its arms gain.
                 call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ld      (BL_PTR),hl         ; staged name ptr -> tenant
+                call    fch_park            ; D-ASAVECHAN2 (2026-10-03): park the live
+                                            ; channel -- the tenant's disk read reuses its
+                                            ; engine globals, and an open INPUT file lost
+                                            ; its place, an OUTPUT one its bytes
+                                            ; (scratchpad/chanside_probe.py)
                 ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD
                 call    sc_call             ; D-SCCALL: tenant call + absent raise
                 ; D-BLNF: BL_STAT is now THREE-VALUED, and the third value is why
