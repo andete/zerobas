@@ -331,4 +331,5 @@ t_fat_rand_put:
 ; own copies of dskio_calslt/read_sector/write_sector (inside fat-prim-
 ; body.inc) ARE the tenant's sub-local CALSLT path (see header).
                 include "basic/fat-prim-body.inc"
+                include "basic/fatfits-body.inc"     ; fat_fits (D-SAVEFULLSTAMP)
                 include "basic/fat-delete-body.inc"

@@ -1097,6 +1097,14 @@ ftc_done:
 ; without leaving the slot. Main's 13 B stub onto the sub-ROM tenant had no
 ; other caller and is deleted.
 fat_count_free:
+                ld      de, $FFFF           ; no limit: DSKF counts them all
+; fat_count_upto -- the same count, STOPPING once DE free clusters are found
+; (D-SAVEFULLSTAMP: fat_fits only asks "at least N?", and a full count before
+; every SAVE/BSAVE made both slower -- 0.42x -> 0.70x the reference's time, and
+; namspc's SAVE + FILES rows overran their capture window). The limit rides in
+; FAT_BYTEIDX, the allocator's per-operation scratch, dead during a count.
+fat_count_upto:
+                ld      (FAT_BYTEIDX), de
                 call    fat_mount
                 jp      c, fcf_zero
                 call    fat_total_clusters  ; DE = total clusters (2 + data)
@@ -1201,6 +1209,10 @@ fcf_free:
                 ld      hl, (FAT_WRTMP2)
                 inc     hl
                 ld      (FAT_WRTMP2), hl    ; free++
+                ld      de, (FAT_BYTEIDX)
+                or      a
+                sbc     hl, de
+                jr      z, fcf_done         ; the caller's limit is reached
 fcf_used:
                 ld      hl, (FWR_CLUS)
                 inc     hl

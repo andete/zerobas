@@ -16,6 +16,9 @@ free cluster marked used (full_disk, below):
          failure (D-DISKFULLRETRY), retrying the doomed flush on every
          remaining byte -- no answer in a 900 s emulated window. Like PRINT#,
          a regression fails by the window.
+  SSTAMP tokenised SAVE of a ~2 KB program, ONE cluster free
+         (D-SAVEFULLSTAMP): the CF-3300 refuses it WHOLE too -- SF.BAS = the
+         $FF marker alone, size 1, one cluster, and NO Ctrl-Z.
   BSTAMP the same BSAVE with ONE cluster free, and the directory read back
          (D-DISKFULLSTAMP): the CF-3300 writes the header, refuses the block
          whole and CLOSES -- BF.BIN = header + Ctrl-Z, size 8, in that one
@@ -54,8 +57,12 @@ CASES = {
     "bsave": (['BSAVE"BF.BIN",&H8000,&HBFFF', 'PRINT"V";ERR;"#"'], 30.0),
     # ONE free cluster left (STAMP below): what the directory says afterwards
     "bstamp": (['BSAVE"BF.BIN",&H8000,&HBFFF', 'PRINT"W";ERR;"#"'], 30.0),
+    # a ~2 KB program (30 REM lines) onto ONE free cluster (D-SAVEFULLSTAMP)
+    "sstamp": ([f"{100 + i} REM " + "X" * 60 for i in range(30)]
+               + ['SAVE"SF.BAS"', 'PRINT"T";ERR;"#"'], 30.0),
 }
-STAMP = {"bstamp": 1}                               # case -> free clusters to leave
+# case -> (free clusters to leave, the file whose entry and content are compared)
+STAMP = {"bstamp": (1, "BF", "BIN"), "sstamp": (1, "SF", "BAS")}
 
 
 def full_disk(path):
@@ -100,7 +107,7 @@ def run(machine, tag, name):
     shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
     full_disk(dsk)
     if name in STAMP:
-        free_last(dsk, STAMP[name])
+        free_last(dsk, STAMP[name][0])
     kw = {"run_gap": run_gap} if run_gap else {}
     raw = omsx_repl.run_cases(machine, [("direct", lines)], batch=False,
                               reset=("", "SCREEN 0"), boot=14.0, step=4.0,
@@ -134,10 +141,10 @@ def free_last(path, n):
     open(path, "wb").write(b)
 
 
-def stamp(path):
-    """BF.BIN's entry and its first `size` bytes (at most 16) -- the file's
-    CONTENT, never the slack after it (the CF-3300 leaves FF there, ours 00)."""
-    ent = RT.Fat12(path).dirent("BF", "BIN")
+def stamp(path, stem, ext):
+    """The file's entry and its first `size` bytes (at most 16) -- its CONTENT,
+    never the slack after it (the CF-3300 leaves FF there, ours 00)."""
+    ent = RT.Fat12(path).dirent(stem, ext)
     if not ent:
         return None
     out = {"cluster": ent["cluster"], "size": ent["size"]}
@@ -152,7 +159,7 @@ def stamp(path):
 def verdict(name, scr):
     """The face's fields, read off the screen; None where the summary line never
     printed (a hang, or a capture that came too early)."""
-    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W"}[name]
+    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W", "sstamp": "T"}[name]
     m = re.search(r"\b" + key + r" ?((?:-?\d+ ?)+)#", scr)
     v = {"summary": [int(x) for x in m.group(1).split()] if m else None,
          "disk_full": scr.count("Disk full")}
@@ -169,7 +176,7 @@ def main():
             scr, dsk = run(machine, tag, name)
             got[(tag, name)] = verdict(name, scr)
             if name in STAMP:
-                got[(tag, name)]["stamp"] = stamp(dsk)
+                got[(tag, name)]["stamp"] = stamp(dsk, *STAMP[name][1:])
             print(f"== {tag} {name}: {got[(tag, name)]}")
             print(f"   screen tail: {scr[-260:]}")
     if any(got[("STOCK", n)]["summary"] is None for n in CASES):
@@ -190,7 +197,7 @@ def main():
             bad.append(f"{name}: CF-3300 {s} vs ours {o}")
     for b in bad:
         print("DIVERGES " + b)
-    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE leaves the CF-3300's file")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE and SAVE leave the CF-3300's file")
     return 1 if bad else 0
 
 

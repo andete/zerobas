@@ -6045,7 +6045,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:28872 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:28937 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26644,7 +26644,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - Sub page 1: 354 → 275 B.
       ⚠️ The other writers are NOT measured: D-SAVEFULLSTAMP below.
 
-- [ ] **D-SAVEFULLSTAMP — WHAT DO SAVE, SAVE ,A AND PRINT#+CLOSE LEAVE ON THE DISK WHEN IT
+- [x] ✅ **D-SAVEFULLSTAMP — WHAT DO SAVE, SAVE ,A AND PRINT#+CLOSE LEAVE ON THE DISK WHEN IT
       FILLS MID-FILE? (filed 2026-10-02 from D-DISKFULLSTAMP; NOT MEASURED)**
       🎚️ TIER 3 — common errors: same class as D-DISKFULLSTAMP.
       🔬 From the code: on ours, every one of them aborts or raises without
@@ -26659,6 +26659,71 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       program or file bigger than a cluster: the CF-3300's entry and content.
       It may not refuse whole the way BSAVE's block write does.
       🤖 **AUTONOMOUS** — the CF-3300's entries settle it.
+      📏 **MEASURED 2026-10-02 — THREE WRITERS, THREE DIFFERENT ANSWERS**
+      ([`savefull_probe.py`](scratchpad/savefull_probe.py) →
+      [`savefull_run.out`](scratchpad/savefull_run.out); a ~2 KB program or
+      file onto ONE free cluster):
+      | writer | CF-3300 | ours (before) |
+      |---|---|---|
+      | tokenised SAVE | refused WHOLE: `FF` only, size 1, cluster 714 | 0/0, FAT[714] lost |
+      | SAVE ,A | STREAMED: the first 1024 B stamped, cluster 714 | 0/0, FAT[714] lost |
+      | PRINT#+CLOSE | 66 at I = 59; entry 0/0 and FAT[714] **FREE** | I = 70; 0/0, FAT[714] lost |
+      ✅ **FIXED 2026-10-02 FOR TOKENISED SAVE:** a shared `fat_fits`
+      (basic/fatfits-body.inc, now also behind BSAVE) and disk.rom's
+      `sav_fits`/`sav_full`, sited in the free region because the engine's own
+      region (pinned at $75A5) had no room. Ours now writes `FF`, size 1,
+      cluster 714. `diskfull-acceptance` gains an `sstamp` face. KNIFED: with
+      the verdict forced to "fits" ours reads 0/0 and the gate FAILs.
+      The other two have their own semantics and their own items:
+      D-ASAVEFULLSTAMP and D-PRINTFULLSTAMP, below.
+      🔴 **THE FULL BATTERY CAUGHT A SPEED REGRESSION THE FIX MADE (145/146):**
+      namspc's five `w.save*` rows (direct-mode SAVE, then FILES) read an
+      UNREADABLE screen. Not a wrong answer: a traced run (SAVE then FILES on
+      ours) listed every entry. It was the FULL free-cluster count now run before
+      every SAVE (and BSAVE, 0551b02b). The tier sheet already showed it: SAVE
+      0.42× → 0.70× and BSAVE 0.45× → 0.74× of the reference's time. The rows'
+      tight capture window was the first gate to feel it. Fixed:
+      - `fat_count_upto` stops at a limit. The limit rides in FAT_BYTEIDX, the
+        allocator's scratch.
+      - `fat_fits` passes its sectors-needed figure, so a disk with room stops
+        after a few entries.
+      - DSKF still counts them all.
+      - The bytes came from moving `hk_aopen`/`hk_agetb` out of disk.rom's
+        region pinned at $75A5, into the free one before $5FE5.
+      namspc 135/135 again.
+
+- [ ] **D-ASAVEFULLSTAMP — `SAVE ,A` THAT FILLS THE DISK: THE CF-3300 STAMPS THE PART WRITTEN,
+      OURS LOSES IT (MEASURED 2026-10-02)**
+      🎚️ TIER 3 — common errors.
+      📏 [`savefull_run.out`](scratchpad/savefull_run.out): the CF-3300 STREAMS
+      the listing. SA.BAS = its first 1024 B (`10 ON ERROR GOTO...`), stamped,
+      cluster 714. Ours raises 66 from main's resident path (`sv_load_error` =
+      `disk_error`) without `fat_io_close`: entry 0/0 and FAT[714] = FFF, a
+      LOST cluster.
+      🛠 Shape: on the failed flush, stamp the directory with the bytes already
+      ON DISK (FWR_BYTES − FWR_BUFLEN) before raising. It is MAIN-resident
+      code, so price it against main's wall first (7 B free page 1 on
+      2026-10-02, re-read it). A stamp inside the shared failure path
+      (fat-prim-body, zero main bytes) would ALSO hit PRINT#, whose CF-3300
+      answer is the opposite (D-PRINTFULLSTAMP): the two must not share it.
+      🤖 **AUTONOMOUS** — the CF-3300's entry settles it.
+
+- [ ] **D-PRINTFULLSTAMP — PRINT#+CLOSE THAT FILLS THE DISK: THE CF-3300 COMMITS NOTHING (ENTRY
+      0/0, THE CLUSTER STAYS FREE), OURS LEAVES IT ALLOCATED (MEASURED 2026-10-02)**
+      🎚️ TIER 3 — common errors.
+      📏 [`savefull_run.out`](scratchpad/savefull_run.out): PRINT# lines past one
+      free cluster, then the handler's CLOSE (which fails again, `Disk full in
+      90`).
+      - CF-3300: PF.TXT 0/0 and FAT[714] **000**. MSX-DOS 1 writes the FAT at
+        close, and the close failed.
+      - Ours: 0/0 and FAT[714] = FFF. Our allocator writes the FAT entry at
+        allocation, so the cluster is lost.
+      The I divergence (59 vs 70: 256 B records vs 512 B sectors) is
+      `diskfull-acceptance`'s pinned one, S10.B's to move.
+      🛠 Shape, to decide with S10.B (it rewrites this path): either free the
+      chain when a channel's flush fails for good, or defer FAT commits to
+      CLOSE as stock does.
+      🤖 **AUTONOMOUS** — the CF-3300's FAT settles it.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**

@@ -1130,6 +1130,87 @@ basent_tramp:
                 ld      hl, ($4002)         ; the main ROM's cartridge INIT
                 jp      (hl)
 basent_tramp_end:
+                include "basic/fatfits-body.inc"     ; fat_fits (D-SAVEFULLSTAMP): here,
+                                                     ; not with fat-prim-body (no room)
+; --- sav_fits / sav_full: tokenised SAVE's half of D-SAVEFULLSTAMP ------------
+; Source: black-box measurement on the CF-3300 (entry, size and file bytes the
+; machine wrote; no ROM byte read); own code over our own FAT engine.
+; Sited here because basic/sv-savdisk.inc's region (pinned at $75A5) has no
+; room. MEASURED on the CF-3300 (scratchpad/savefull_probe.py): a program that
+; cannot fit is refused WHOLE -- the $FF marker alone, size 1, one cluster, NO
+; Ctrl-Z (BSAVE's refusal has one) -- then 66.
+sav_fits:
+                ld      hl,(PRGEND)
+                ld      de,TXTBASE
+                or      a
+                sbc     hl,de
+                ld      de,2
+                add     hl,de               ; HL = marker + image - 1 (the image is
+                                            ; TXTBASE..PRGEND+1), CF = bit 16
+                jp      fat_fits            ; A = 0 fits, $FF does not
+sav_full:
+                call    fat_io_close        ; the marker alone, stamped
+                jp      c,sv_load_error     ; its code is already pending
+                ld      a,66                ; Disk full
+                ld      (DISKOP_ERR),a
+                jp      sv_load_error
+
+; (hk_aopen/hk_agetb sited here since D-SAVEFULLSTAMP (2026-10-02): the region
+;  pinned at $75A5 needed their bytes for fat_count_upto's early exit)
+; --- hk_aopen: open an ASCII program file and prime the read (step 11) -------
+; `MERGE` and ASCII `LOAD` arrive here. Main keeps the LINE loop and the
+; tokeniser -- that is not a concession, it is what the reference does: its disk
+; side never owns MERGE's line loop, the crossing is entered exactly ONCE for a
+; 2-line file and once for a 100-line one, and the per-LINE cells sit in a band
+; NEITHER measured vendor claims (expansion-protocol.md §8.6a, D-MERGESHAPE).
+;
+; 🔴 MOUNT AND FIND SEPARATELY, for hk_dpload's reason: their two carries are
+; what tells `File not found` from a mount/I-O fault. `fat_io_find` is the
+; zero-byte label inside fat_io_open that splits them (D-BLNF), and it leaves
+; the stream primed, which is why nothing else is needed here.
+; ⚠️ DISKOP_STATUS IS WRITTEN ONCE, LAST, on every arm -- it is a SHARED channel
+; (main's FAT primitives marshal through the same cell) and pre-setting it is
+; what made `NAME ... AS ...` answer Syntax error at an empty drive (§6.6an).
+hk_aopen:
+                call    fat_mount
+                jr      c,hka_io            ; 3: mount / I-O
+                call    fat_io_find
+                jr      c,hka_nf            ; 1: not found
+                xor     a                   ; 0: open and primed
+hka_st:
+                ld      (DISKOP_STATUS),a
+                scf                         ; CF=1: mine
+                ret
+hka_nf:
+                ld      a,1
+                jr      hka_st
+hka_io:
+                ld      a,3
+                jr      hka_st
+
+; --- hk_agetb: one byte of the open ASCII file (step 11) ---------------------
+; Sources: the per-byte shape is MEASURED, not chosen -- disk/docs/
+; expansion-protocol.md §8.6a (D-MERGESHAPE) counts $FE8A (H.INDS) entered
+; exactly once per byte of an ASCII LOAD or MERGE on both reference vendors,
+; and zero times on the tokenised path. The register contract (BC crossing
+; intact both ways) is spec-diskbasic-hook-rearchitecture.md's measured ABI.
+; Clean-room: entry counts and register file only; no reference ROM byte read.
+; 🔴 THE BYTE COMES BACK IN C, NOT IN CF+A, AND chan_gate IS WHY. The gate uses
+; CF as the CLAIMED/unclaimed answer (`or a` / `jp (hl)` / `cg_back: ret c`), so
+; a handler cannot also return a disposition in it. C carries the byte -- BC
+; crosses intact both ways (the measured ABI) -- and DISKOP_STATUS carries EOF.
+; Main's dsk_agetbyte turns the pair back into the `A = byte, CF = EOF` contract
+; ARL_GETBYTE's other sources already honour.
+hk_agetb:
+                call    fat_io_getbyte      ; A = byte, CF set = EOF
+                ld      c,a
+                ld      a,1                 ; 1 = EOF
+                jr      c,hkg_st
+                xor     a                   ; 0 = C holds a byte
+hkg_st:
+                ld      (DISKOP_STATUS),a
+                scf
+                ret
 
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
@@ -3158,72 +3239,20 @@ hk_dpsave:
 hkds_run:
                 ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
                 jp      sav_disk_write
+; (sited here, beside its unwind point, since D-SAVEFULLSTAMP grew the engine
+; above past the shared `disk_write_end`'s `jr c,sv_load_error` reach)
+sv_load_error:
+                ld      a,3                 ; mount / disk full / write / I-O
+                ld      (DISKOP_STATUS),a
+                ld      sp,(DPSAVE_SP)      ; D-DISKFULL: unwind to hk_dpsave, from
+                ret                         ; whatever depth the failure was found at
 
 ; sv_load_error -- the disk-local reporter, rebound exactly as the sub-ROM
 ; tenant rebinds it. Resident it is a zero-byte EQU onto `load_error`, which
 ; PRINTS; here it must not print, because main's `disk_error` reports ONCE from
 ; the status this leaves behind -- the same contract step 9's arm already uses.
 ; No TAPIOF: a disk SAVE never armed the tape.
-; --- hk_aopen: open an ASCII program file and prime the read (step 11) -------
-; `MERGE` and ASCII `LOAD` arrive here. Main keeps the LINE loop and the
-; tokeniser -- that is not a concession, it is what the reference does: its disk
-; side never owns MERGE's line loop, the crossing is entered exactly ONCE for a
-; 2-line file and once for a 100-line one, and the per-LINE cells sit in a band
-; NEITHER measured vendor claims (expansion-protocol.md §8.6a, D-MERGESHAPE).
-;
-; 🔴 MOUNT AND FIND SEPARATELY, for hk_dpload's reason: their two carries are
-; what tells `File not found` from a mount/I-O fault. `fat_io_find` is the
-; zero-byte label inside fat_io_open that splits them (D-BLNF), and it leaves
-; the stream primed, which is why nothing else is needed here.
-; ⚠️ DISKOP_STATUS IS WRITTEN ONCE, LAST, on every arm -- it is a SHARED channel
-; (main's FAT primitives marshal through the same cell) and pre-setting it is
-; what made `NAME ... AS ...` answer Syntax error at an empty drive (§6.6an).
-hk_aopen:
-                call    fat_mount
-                jr      c,hka_io            ; 3: mount / I-O
-                call    fat_io_find
-                jr      c,hka_nf            ; 1: not found
-                xor     a                   ; 0: open and primed
-hka_st:
-                ld      (DISKOP_STATUS),a
-                scf                         ; CF=1: mine
-                ret
-hka_nf:
-                ld      a,1
-                jr      hka_st
-hka_io:
-                ld      a,3
-                jr      hka_st
 
-; --- hk_agetb: one byte of the open ASCII file (step 11) ---------------------
-; Sources: the per-byte shape is MEASURED, not chosen -- disk/docs/
-; expansion-protocol.md §8.6a (D-MERGESHAPE) counts $FE8A (H.INDS) entered
-; exactly once per byte of an ASCII LOAD or MERGE on both reference vendors,
-; and zero times on the tokenised path. The register contract (BC crossing
-; intact both ways) is spec-diskbasic-hook-rearchitecture.md's measured ABI.
-; Clean-room: entry counts and register file only; no reference ROM byte read.
-; 🔴 THE BYTE COMES BACK IN C, NOT IN CF+A, AND chan_gate IS WHY. The gate uses
-; CF as the CLAIMED/unclaimed answer (`or a` / `jp (hl)` / `cg_back: ret c`), so
-; a handler cannot also return a disposition in it. C carries the byte -- BC
-; crosses intact both ways (the measured ABI) -- and DISKOP_STATUS carries EOF.
-; Main's dsk_agetbyte turns the pair back into the `A = byte, CF = EOF` contract
-; ARL_GETBYTE's other sources already honour.
-hk_agetb:
-                call    fat_io_getbyte      ; A = byte, CF set = EOF
-                ld      c,a
-                ld      a,1                 ; 1 = EOF
-                jr      c,hkg_st
-                xor     a                   ; 0 = C holds a byte
-hkg_st:
-                ld      (DISKOP_STATUS),a
-                scf
-                ret
-
-sv_load_error:
-                ld      a,3                 ; mount / disk full / write / I-O
-                ld      (DISKOP_STATUS),a
-                ld      sp,(DPSAVE_SP)      ; D-DISKFULL: unwind to hk_dpsave, from
-                ret                         ; whatever depth the failure was found at
 
 ; --- hk_dpload: the tokenised LOAD loop, in the disk ROM ---------------------
 ; D-DPLMOVE. Step 9 of disk/docs/spec-diskcode-eviction.md §6.2, unblocked by
@@ -3263,9 +3292,9 @@ hk_dpload:
                 cp      FOPEN_SEL_SAVE
                 jr      z,hk_dpsave         ; step 12 (D-SAVEPORT)
                 cp      FOPEN_SEL_AOPEN
-                jr      z,hk_aopen          ; step 11 (D-MERGEPORT)
+                jp      z,hk_aopen          ; step 11 (D-MERGEPORT) -- far: D-SAVEFULLSTAMP moved it
                 cp      FOPEN_SEL_GETB
-                jr      z,hk_agetb          ; step 11, once per BYTE
+                jp      z,hk_agetb          ; step 11, once per BYTE -- far, likewise
                 cp      FOPEN_SEL_OCHK
                 jp      z,hk_ochk           ; D-OPENSAME: OPEN's same-file check
                 cp      FOPEN_SEL_LOAD

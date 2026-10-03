@@ -35,44 +35,14 @@ bsv_open:
                 ; and the file is CLOSED -- a Ctrl-Z after the header, size 8,
                 ; one cluster, then 66. Streaming on until the disk filled left
                 ; ours a LOST cluster (an allocated chain no entry points at).
-                ; So count first. The count borrows FWR_CLUS/FWR_FIRST and
-                ; FAT_DBUF as scratch; the buffer is still empty here and the
-                ; two cells are re-zeroed, so the stream starts as created.
-                call    fat_count_free      ; DE = free clusters
-                push    de
-                ld      hl,0
-                ld      (FWR_CLUS),hl
-                ld      (FWR_FIRST),hl
+                ; So count first (fat_fits, shared with tokenised SAVE).
                 ld      hl,(DSV_END)
                 ld      de,(CURPTR)
                 or      a
                 sbc     hl,de               ; HL = length - 1
                 ld      de,7
                 add     hl,de               ; HL = header + length - 1, CF = bit 16
-                ld      a,h
-                rra                         ; A = (header + length - 1) >> 9
-                inc     a
-                ld      c,a                 ; C = sectors needed (1..129)
-                ld      a,(FAT_SECPERCLUS)
-                ld      e,a
-                ld      b,0
-bsv_cl:
-                inc     b                   ; B = clusters needed = ceil(C / spc)
-                ld      a,c
-                sub     e
-                ld      c,a
-                jr      z,bsv_cld
-                jr      nc,bsv_cl
-bsv_cld:
-                pop     de                  ; DE = free clusters
-                ld      a,d
-                or      a
-                ld      a,0                 ; (flags kept) 256+ free: anything fits
-                jr      nz,bsv_hdr
-                ld      a,e
-                cp      b
-                sbc     a,a                 ; A = $FF: free < needed, 0: it fits
-bsv_hdr:
+                call    fat_fits            ; A = 0 fits, $FF does not
                 push    af                  ; the verdict, across the header writes
                 ; --- 7-byte header: $FE start(LE) end(LE) exec(LE) ----------
                 ; disk_putbyte clobbers ALL registers (its CALSLT may flush a

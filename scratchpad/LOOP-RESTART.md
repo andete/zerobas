@@ -124,7 +124,10 @@ CARRY its five rows (Joost 09-26); the last board-backed pin is `7c488429`'s.
   ~~D-DISKFULLSTAMP (TIER 3) is smaller than S10.B and comes first by tier.~~
   Done for BSAVE the same evening (the CF-3300 refuses the block WHOLE and
   closes: header + Ctrl-Z). Its siblings are D-SAVEFULLSTAMP (TIER 3, MEASURE
-  FIRST), which comes before S10.B by tier.
+  FIRST), which comes before S10.B by tier. ✅ Measured and done for tokenised
+  SAVE (refused whole: `FF`, size 1). It split into D-ASAVEFULLSTAMP (SAVE ,A
+  stamps the partial; main bytes) and D-PRINTFULLSTAMP (the CF-3300 commits no
+  FAT; best decided WITH S10.B, which rewrites that path).
   D-BLKIOPERCALL is TIER 5.
 - (was) 🔴 **THE PROOF FOUND D-WRBLKRS (TODO):** our WRBLK is only right at a record
   size of 128. At RS = 1 it allocates 32 clusters for 256 B, while the

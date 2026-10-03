@@ -1,0 +1,30 @@
+== save CF-3300: 66 
+   SF.BAS entry: {'idx': 6, 'cluster': 714, 'size': 1, 'attr': 0}
+   first 16 B: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+   cluster's last 8 B: 00 00 00 00 00 00 00 00
+   FAT[714] = FFF (000 = free)
+   screen tail: XXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 10 ON ERROR GOTO 90 20 SAVE 30 PRINT;0;:END 90 PRINT;ERR;:END RUN Q 66 # Ok color auto goto list run 
+== save OURS: 66 
+   SF.BAS entry: {'idx': 6, 'cluster': 714, 'size': 1, 'attr': 0}
+   first 16 B: ff 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+   cluster's last 8 B: 00 00 00 00 00 00 00 00
+   FAT[714] = FFF (000 = free)
+   screen tail: XXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 10 ON ERROR GOTO 90 20 SAVE 30 PRINT;0;:END 90 PRINT;ERR;:END RUN Q 66 # ZB color auto goto list run 
+== asave CF-3300: 66 
+   SA.BAS entry: {'idx': 6, 'cluster': 714, 'size': 1024, 'attr': 0}
+   first 16 B: 31 30 20 4f 4e 20 45 52 52 4f 52 20 47 4f 54 4f
+   cluster's last 8 B: 58 58 58 58 58 58 58 58
+   FAT[714] = FFF (000 = free)
+   screen tail: XXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 10 ON ERROR GOTO 90 20 SAVE,A 30 PRINT;0;:END 90 PRINT;ERR;:END RUN Q 66 # Ok color auto goto list run 
+== asave OURS: 66 
+   SA.BAS entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+   screen tail: XXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 10 ON ERROR GOTO 90 20 SAVE,A 30 PRINT;0;:END 90 PRINT;ERR;:END RUN Q 66 # ZB color auto goto list run 
+== print CF-3300: 66 59 30 
+   PF.TXT entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+   FAT[714] = 000 (000 = free)
+   screen tail:  I=1 TO 80:PRINT#1,STRING$(20,65) :NEXT 40 CLOSE#1 50 PRINT;0;I;:END 90 PRINT;ERR;I;ERL;:CLOSE:END RUN Q 66 59 30 # Disk full in 90 Ok color auto goto list run 
+== print OURS: 66 70 30 
+   PF.TXT entry: {'idx': 6, 'cluster': 0, 'size': 0, 'attr': 0}
+   FAT[714] = FFF (000 = free)
+   screen tail:  I=1 TO 80:PRINT#1,STRING$(20,6 5):NEXT 40 CLOSE#1 50 PRINT;0;I;:END 90 PRINT;ERR;I;ERL;:CLOSE:END RUN Q 66 70 30 # Disk full in 90 ZB color auto goto list run 
