@@ -259,25 +259,27 @@ def build(src_name, rom, sym):
                    capture_output=True)
 
 
+# D-STMTIDX (2026-10-03): the table is INDEXED -- one `dw handler` per keyword
+# statement token, in token order, $81 (END) .. $D8 (LOCATE), the dense range.
+# The three non-keyword statement bytes (COLON, '_', PEEK_PREFIX) have no row:
+# exec_stmt tests them in code, so they are asserted by EXECUTION only, below.
+STMT_TOK_LO, STMT_TOK_HI = 0x81, 0xD8
+
+
 def read_table(m):
     """Decode stmt_table out of the assembled image: [(token, handler_addr)].
 
-    Stops at the $00 terminator. Refuses to run away if the terminator is
-    missing -- a table that never ends would otherwise be 'read' as thousands
-    of junk entries and the per-entry assertions below would drown."""
+    Indexed layout (D-STMTIDX): row i is the handler of token STMT_TOK_LO + i.
+    The EXTENT is asserted at build time (basic/interp.asm refuses a table
+    that is not exactly one word per token, on `$`), so this reads the fixed
+    row count; a row dropped or doubled would shift every later row one token
+    over, and the by-name comparison below then reports the whole cascade."""
     a = m.addr("stmt_table")
+    n_want = STMT_TOK_HI - STMT_TOK_LO + 1
     out = []
-    while True:
-        tok = m.peek(a)[0]
-        if tok == 0:
-            break
-        lo, hi = m.peek(a + 1, 2)
-        out.append((tok, lo | (hi << 8)))
-        a += 3
-        if len(out) > 256:
-            raise AssertionError("stmt_table has no $00 terminator within 256 "
-                                 "entries -- the search loop would run off the "
-                                 "end of the table into whatever follows it")
+    for i in range(n_want):
+        lo, hi = m.peek(a + 2 * i, 2)
+        out.append((STMT_TOK_LO + i, lo | (hi << 8)))
     return out
 
 
@@ -315,32 +317,45 @@ def check_build(src_name, tag, rom_base):
     # unconditionally resident and the whole table is expected in the one build.
     want = {tokval(tname): (tname, hname) for tname, hname in EXPECTED}
     got = {t: a for t, a in table}
+    stmt_error = m.addr("stmt_error")
 
+    # D-STMTIDX: the expectation splits in two. Tokens inside the dense range
+    # are TABLE rows and are compared by name as before; the three outside it
+    # (COLON, '_', PEEK_PREFIX) are dispatched by `cp` in exec_stmt, so they
+    # have no row to compare and are asserted by EXECUTION in the loop below.
+    # An unused row in the range is `stmt_error` (what a missing `db` row got).
+    code_dispatched = []
     for tok, (tname, hname) in sorted(want.items()):
         if tok not in got:
-            fails.append(f"MISSING from stmt_table: {tname} (${tok:02X}) -> "
-                         f"{hname}. The statement is gone: it now falls through "
-                         f"to is_letter and a program using it gets `syntax "
-                         f"error`.")
+            if STMT_TOK_LO <= tok <= STMT_TOK_HI:
+                fails.append(f"MISSING from stmt_table: {tname} (${tok:02X}) "
+                             f"-> {hname}. The statement is gone: it now falls "
+                             f"through to stmt_error and a program using it "
+                             f"gets `syntax error`.")
+            elif hname not in m.sym:
+                fails.append(f"{tname} (${tok:02X}) should dispatch to {hname}, "
+                             f"which is not a symbol in this build")
+            else:
+                code_dispatched.append((tok, m.sym[hname]))
         elif got[tok] != m.sym.get(hname):
             at = names.get(got[tok], [f"${got[tok]:04X}"])[0]
+            if got[tok] == stmt_error:
+                at = "stmt_error (an EMPTY row)"
             fails.append(f"RE-POINTED: {tname} (${tok:02X}) should dispatch to "
                          f"{hname} but the table says {at}")
     for tok in sorted(set(got) - set(want)):
+        if got[tok] == stmt_error:
+            continue                        # an empty row: the token is no statement
         at = names.get(got[tok], [f"${got[tok]:04X}"])[0]
         fails.append(f"UNEXPECTED entry ${tok:02X} -> {at}: not in the "
                      f"pre-refactor chain. If a statement was added on purpose, "
                      f"add it to EXPECTED in this file.")
 
     # --- structural: the table itself ------------------------------------
-    toks = [t for t, _ in table]
-    dupes = sorted({t for t in toks if toks.count(t) > 1})
-    if dupes:
-        fails.append(f"duplicate token(s) in stmt_table: "
-                     f"{', '.join(f'${d:02X}' for d in dupes)} -- the second "
-                     f"entry is unreachable (linear search takes the first)")
-    if 0 in toks:
-        fails.append("a $00 token is in the table; $00 is the terminator")
+    # Every dispatch the behavioural half must exercise: the table rows that
+    # are real statements, plus the code-dispatched specials.
+    dispatch = [(t, a) for t, a in table if a != stmt_error] + code_dispatched
+    toks = [t for t, _ in dispatch]
     # 🔴 D-LETFIRST (2026-09-11, docs/spec-basic-speedprof.md): `exec_stmt` tests
     # the LETTER RANGE before it walks this table, so a token byte in $41..$5A
     # would be silently shadowed by the assignment path -- the statement would
@@ -354,13 +369,15 @@ def check_build(src_name, tag, rom_base):
             " lie in $41..$5A, which exec_stmt's D-LETFIRST range test reaches "
             "FIRST: the statement would run as an assignment. Move the token, or "
             "put the table walk back in front of the letter test.")
-    unresolved = [(t, a) for t, a in table if a not in names]
+    unresolved = [(t, a) for t, a in table if a not in names and a != stmt_error]
     for t, a in unresolved:
         fails.append(f"token ${t:02X} -> ${a:04X}, which is not any ex_* label "
                      f"(stale or corrupt table entry)")
 
     # --- behavioural: every entry actually dispatches ---------------------
-    for tok, addr in table:
+    # Rows AND the code-dispatched specials: for the specials this is the ONLY
+    # assertion, since there is no table byte to compare.
+    for tok, addr in dispatch:
         arrived, regs = [], []
         mm = Machine(rom, sym, rom_base=rom_base)
 
@@ -427,7 +444,7 @@ def check_build(src_name, tag, rom_base):
     # --- end of line must return without dispatching anything -------------
     mm = Machine(rom, sym, rom_base=rom_base)
     hit = []
-    for _, addr in table:
+    for _, addr in dispatch:
         mm.trap(addr, lambda _m, a=addr: hit.append(a))
     mm.poke(BUF, bytes([0x00]))
     mm.call("exec_stmt", hl=BUF)

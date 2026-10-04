@@ -193,25 +193,43 @@ def plant_fn(tok, kw=""):
     return (off, orig), None
 
 
+# D-STMTIDX (space plan B-6, 2026-10-04): stmt_table is INDEXED -- one `dw` per
+# keyword statement token, in token order from $81 (END) to $D8 (LOCATE), no
+# token bytes in it (basic/interp.asm, beside stmt_table). The old `db tok, dw
+# handler` walk below this line would now read handler bytes as tokens: a
+# plant would land on whatever row happened to hold the byte, and the
+# enumeration would stop at the first $00 address byte. Both read the row
+# straight off the token now.
+STMT_TOK_LO, STMT_TOK_HI = 0x81, 0xD8
+
+
+def stmt_row(tok):
+    """-> the ROM offset of `tok`'s stmt_table row, or exit if it has none."""
+    if not STMT_TOK_LO <= tok <= STMT_TOK_HI:
+        sys.exit(f"knife: token ${tok:02X} is outside stmt_table's $81..$D8 -- "
+                 "nothing was measured")
+    return syms()["stmt_table"] + 2 * (tok - STMT_TOK_LO)
+
+
 def plant(tok, dead):
     """Point the statement's table entry at `dead`. Returns (offset, original)."""
-    s = syms()
-    base = s["stmt_table"]
+    off = stmt_row(tok)
     rom = bytearray(io.open(ROM, "rb").read())
-    for i in range(0, 3 * 120, 3):
-        if rom[base + i] == tok:
-            off = base + i + 1
-            orig = bytes(rom[off:off + 2])
-            rom[off] = dead & 0xFF
-            rom[off + 1] = dead >> 8
-            io.open(ROM, "wb").write(bytes(rom))
-            # 🔴 READ IT BACK: an unplanted knife and a keyword with no defect
-            # report identically, so the plant is proved before the run.
-            back = io.open(ROM, "rb").read()[off:off + 2]
-            if back != bytes([dead & 0xFF, dead >> 8]):
-                sys.exit("knife: the plant did NOT take — nothing was measured")
-            return off, orig
-    sys.exit(f"knife: token ${tok:02X} is not in stmt_table — nothing was measured")
+    orig = bytes(rom[off:off + 2])
+    # 🔴 A ROW THAT IS ALREADY stmt_error IS NOT A CUT: the old search refused a
+    # token with no row, and a switched-off verb's row now holds stmt_error.
+    if orig == bytes([syms()["stmt_error"] & 0xFF, syms()["stmt_error"] >> 8]):
+        sys.exit(f"knife: token ${tok:02X}'s row is stmt_error (no handler) -- "
+                 "nothing was measured")
+    rom[off] = dead & 0xFF
+    rom[off + 1] = dead >> 8
+    io.open(ROM, "wb").write(bytes(rom))
+    # 🔴 READ IT BACK: an unplanted knife and a keyword with no defect
+    # report identically, so the plant is proved before the run.
+    back = io.open(ROM, "rb").read()[off:off + 2]
+    if back != bytes([dead & 0xFF, dead >> 8]):
+        sys.exit("knife: the plant did NOT take — nothing was measured")
+    return off, orig
 
 def install(before=None):
     """Re-install, and PROVE the images moved when a cut is in place.
@@ -385,7 +403,8 @@ def enumerate_targets():
     🔴 THE KEYWORD-PER-ROW MAPPING IMPORTS `tier_table.stmt_keyword`, the
     CONSUMER'S OWN parser. An ad-hoc regex here would be silent-failure mode 4:
     the last one admitted a bare `A` as a keyword and hid a real miss. The table
-    ends at a $00 token, which `es_scan` itself uses as its sentinel."""
+    is INDEXED (D-STMTIDX): row i is token $81+i, 88 rows, and a row holding
+    stmt_error is a token with no handler (a switched-off verb), not a target."""
     sys.path.insert(0, os.path.join(ROOT, "tools"))
     sys.path.insert(0, os.path.join(ROOT, "probes", "basic"))
     import tier_table
@@ -442,12 +461,12 @@ def enumerate_targets():
     for kw, key in kw2any.items():
         kw2row.setdefault(kw, key)
     rom = io.open(ROM, "rb").read()
-    base = syms()["stmt_table"]
+    err = syms()["stmt_error"]
     out, i = [], 0
-    while True:
-        tok = rom[base + i * 3]
-        if tok == 0:
-            break
+    for tok in range(STMT_TOK_LO, STMT_TOK_HI + 1):
+        off = stmt_row(tok)
+        if rom[off] | rom[off + 1] << 8 == err:
+            continue                            # no handler: nothing to cut
         kw = tok2kw.get(tok)
         if kw and kw in kw2row:
             # 🔴 CARRY THE TOKEN. It was re-derived later from the keyword NAME as

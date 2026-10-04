@@ -465,6 +465,8 @@ req_operand:
                 jp      z,loc_missing       ; `... :` likewise -> ERR 24
                 ret
 
+STMT_TABLE_ROWS equ     LOCATE_TOKEN - END_TOKEN + 1   ; D-STMTIDX: the dense keyword-token range $81..$D8, one dw row each
+
 ; --- pop_exec: `pop hl` then exec_stmt, as ONE jump ------------------------
 ; 💰 D-POPEXEC, the third instruction pair. `pop hl` / `jp exec_stmt` — a handler
 ; releasing its guarded cursor and returning to the statement driver — stood at
@@ -552,305 +554,180 @@ exec_stmt:
                 sub     'A'
                 cp      26
                 jp      c,ex_let            ; a letter: assignment, no table walk
-                ld      de,stmt_table
-es_scan:
-                ld      a,(de)
-                inc     de
-                or      a                   ; $00 terminates the table -- safe as a
-                                            ; sentinel because a $00 statement byte is
-                                            ; end-of-line and returned two lines above,
-                                            ; so it can never reach the search.
-                jr      z,es_noentry
-                cp      (hl)                ; compare against the statement byte IN PLACE
-                jr      z,es_hit
-                inc     de                  ; step over this entry's address
-                inc     de
-                jr      es_scan
-es_hit:
-                ex      de,hl               ; HL = &handler, DE = the live cursor
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a                 ; HL = the handler's address
-                ex      de,hl               ; HL = cursor again -- every handler's `in:`
-                ld      a,(hl)              ; contract is HL = cursor, A = the token
-                push    de                  ; ... and the address goes via the stack,
-                ret                         ; since HL is spoken for.
+                ; D-STMTIDX (2026-10-03): INDEXED DISPATCH. The keyword statement
+                ; tokens are DENSE -- $81 (END) .. $D8 (LOCATE), 88 of them, no hole
+                ; (measured against basic/sysvars.inc) -- so the handler's row is
+                ; the token itself, biased, and the `db token, dw handler` walk this
+                ; replaces (3 B a row + a $00 sentinel, ~35 cycles per row examined)
+                ; is gone. A is already token-'A' from the letter test above, so one
+                ; more `sub` biases it to token-$81; the three NON-keyword statement
+                ; bytes (':', '_' and the $FF function prefix) land outside 0..87.
+                ; They are tested on the token itself, re-read from the cursor
+                ; (1 B), because a handler's `in:` contract is A = THE TOKEN --
+                ; tests/test_stmt_dispatch.py asserts it for every dispatch, and
+                ; a biased compare (`cp low (COLON - END_TOKEN)`) handed ex_sep
+                ; A=$B9 on the first run.
+                sub     END_TOKEN-'A'       ; A = token - $81 (mod 256)
+                cp      STMT_TABLE_ROWS     ; 0..87 -> a keyword statement row
+                jr      c,es_idx
+                ld      a,(hl)              ; A = the token again
+                cp      COLON
+                jp      z,ex_sep            ; ':' separator / empty statement
+                cp      '_'
+                jp      z,ex_call_us        ; _<name> -- the CALL abbreviation
+                cp      PEEK_PREFIX
+                jp      z,ex_ff_stmt        ; $FF -> MID$ / STRIG starting a statement
 es_noentry:                                 ; a letter never reaches here (D-LETFIRST)
                 jp      stmt_error
+es_idx:
+                ld      e,a
+                ld      d,0
+                ex      de,hl               ; HL = the row, DE = the live cursor
+                add     hl,hl               ; *2 (word table)
+                push    de
+                ld      de,stmt_table
+                add     hl,de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the handler's address
+                pop     hl                  ; HL = cursor again -- every handler's `in:`
+                ld      a,(hl)              ; contract is HL = cursor, A = the token,
+                cp      (hl)                ; Z set (as the `jp z` chain left it) -- and
+                push    de                  ; B/C untouched. The address goes via the
+                ret                         ; stack, since HL is spoken for.
 
-; --- stmt_table: statement token -> handler (D-KW-2) -------------------------
-; `db <token>, dw <handler>`, $00-terminated. ORDER IS PRESERVED from the chain
-; this replaces: a linear search still pays per entry examined, so the hot
-; statements stay near the front exactly as they were.
-;
-; Two entries are not keyword tokens and never were: `'_'` is the CALL
-; abbreviation (a literal character) and PEEK_PREFIX is $FF, the prefix of a
-; two-byte function token that can START a statement (MID$/STRIG). Both were
-; plain `cp` compares in the chain and are plain table entries here.
-;
-; REM_TOKEN needed an IF/ELSE in the chain purely because the forward span
-; outgrew `jr`'s reach in the repack build; a table has no reach, so the pair
-; collapses to one unconditional entry.
+; --- stmt_table: statement token -> handler, INDEXED (D-STMTIDX, 2026-10-03) ---
+; One `dw <handler>` per keyword statement token, IN TOKEN ORDER, $81 (END) to
+; $D8 (LOCATE). The range is dense -- 88 tokens, 0 holes, measured against
+; basic/sysvars.inc -- so exec_stmt computes the row from the token (es_idx
+; above) instead of walking `db token, dw handler` triples: 2 B a statement
+; instead of 3 B + a $00 sentinel (274 B -> 176 B), and every statement now
+; dispatches in about what the OLD table's second row (NEXT) cost; LOCATE, its
+; 80th row, cost ~2900 cycles (D-STMTORDER could only move the hot rows to the
+; front). The three non-keyword statement bytes -- ':' (COLON), '_' (the CALL
+; abbreviation, a literal character) and PEEK_PREFIX ($FF, the prefix of a
+; two-byte function token that can START a statement: MID$/STRIG) -- sit far
+; outside the range and are tested in code, where the chain had them too.
+; ⚠️ ROW ORDER IS THE DISPATCH. A row at the wrong index is a statement that
+; silently runs the wrong handler. Two controls: tests/test_stmt_dispatch.py
+; resolves EVERY row by name against its independent expectation and then
+; EXECUTES it; and the count assert below refuses a table that is not exactly
+; STMT_TABLE_ROWS words (on `$`, not an end label: a 0 B label that no code
+; names reads as an orphan span to tools/check_dead_code.py). A switched-off
+; feature KEEPS its slot (`dw stmt_error`, the same disposition its missing
+; `db` row used to get), so no later row moves with a switch.
 stmt_table:
-                ; D-STMTORDER (2026-09-11, docs/spec-basic-speedprof.md): the HOT statements
-                ; first. A PC-sampling profile put 17% of a bare FOR/NEXT loop in this
-                ; walk -- NEXT was the 65th entry. A pure permutation, 0 B.
-                db      COLON
-                dw      ex_sep    ; ':' separator / empty statement
-                db      NEXT_TOKEN
-                dw      ex_next
-                db      FOR_TOKEN
-                dw      ex_for
-                db      IF_TOKEN
-                dw      ex_if
-                db      GOTO_TOKEN
-                dw      ex_goto
-                db      GOSUB_TOKEN
-                dw      ex_gosub
-                db      RETURN_TOKEN
-                dw      ex_return
-                db      PRINT_TOKEN
-                dw      ex_print
-                db      ON_TOKEN
-                dw      ex_on
-                db      LET_TOKEN
-                dw      ex_letkw
-                db      ELSE_TOKEN
-                dw      ex_rem    ; reached after a true THEN clause -> done
-                db      END_TOKEN
-                dw      ex_end
-                db      WAIT_TOKEN
-                dw      ex_wait
-                db      BLOAD_TOKEN
-                dw      ex_bload
-                db      CLOAD_TOKEN
-                dw      ex_cload
-                db      LOAD_TOKEN
-                dw      ex_load
-                db      RUN_TOKEN
-                dw      ex_run
-                db      NEW_TOKEN           ; D-NEWSTMT: NEW is a STATEMENT too --
-                dw      ex_new              ; without this a program reaching NEW
-                                            ; got `Syntax error`, where the
-                                            ; reference erases and stops
-                db      BSAVE_TOKEN
-                dw      ex_bsave
-                db      SAVE_TOKEN
-                dw      ex_save
-                db      FILES_TOKEN
-                dw      ex_files
-                ; D-LFILES (docs/spec-basic-lfiles.md). LFILES shares do_files's
-                ; whole head and the dirverb tenant's whole walk -- only the sink
-                ; and the layout differ, and both ride the op selector -- so this
-                ; row plus a 2-byte `ld a,n` IS the main-side cost of the verb.
-                ; The listing itself is sub-ROM page 1 (sub/dirverb.asm tnt_files).
-                db      LFILES_TOKEN
-                dw      ex_lfiles    ; LFILES ["<filespec>"] -- FILES to LPT:
-                ; D-DONOTHING3: SET / IPL / CMD are tokenised-but-unimplemented
-                ; on the reference — ERR 5 on sight, tail unparsed. `gb_illegal`
-                ; is already `ld a,5 / jp raise_error`, so three rows is the
-                ; ENTIRE main-side cost: 9 B here and nothing in the low region.
-                db      SET_TOKEN
-                dw      ex_donothing
-                db      IPL_TOKEN
-                dw      ex_donothing
-                db      CMD_TOKEN
-                dw      ex_donothing
-                db      MERGE_TOKEN
-                dw      ex_merge
-                db      OPEN_TOKEN
-                dw      ex_open
-                db      INPUT_TOKEN
-                dw      ex_input
-                db      LINE_TOKEN
-                dw      ex_line
-                db      CLOSE_TOKEN
-                dw      ex_close
-                db      KILL_TOKEN
-                dw      ex_kill
-                db      NAME_TOKEN
-                dw      ex_name
-                db      DSKO_TOKEN
-                dw      ex_dsko     ; DSKO$ d,s (D-DSKIO)
-                db      COPY_TOKEN
-                dw      ex_copy     ; COPY src TO dst (D-COPY)
-                db      MAX_TOKEN
-                dw      ex_maxfiles    ; MAX FILES = n
-                db      FIELD_TOKEN
-                dw      ex_field    ; FIELD #f, w AS v$[,...]
-                db      LSET_TOKEN
-                dw      ex_lset
-                db      RSET_TOKEN
-                dw      ex_rset
-                db      GET_TOKEN
-                dw      ex_get
-                db      PUT_TOKEN
-                dw      ex_put
-                db      CALL_TOKEN
-                dw      ex_call    ; CALL <name>
-                db      '_'
-                dw      ex_call_us    ; _<name> -- the CALL abbreviation, a CHARACTER
-                db      CSAVE_TOKEN
-                dw      ex_csave
-                db      POKE_TOKEN
-                dw      ex_poke
-                db      VPOKE_TOKEN
-                dw      ex_vpoke
-                db      OUT_TOKEN
-                dw      ex_out
-                db      CLEAR_TOKEN
-                dw      ex_clear
-                db      DEF_TOKEN
-                dw      ex_def
-                ; D-DEFINTTOK / D-DEFTYPETOK: the four DEF<type> verbs each have
-                ; their OWN token ($AB..$AE) and share ONE handler -- ex_deftype
-                ; steps over the token and the sub-ROM tenant reads it back to
-                ; pick the type code, so three of these four rows are the entire
-                ; main-ROM cost of the other three verbs. ex_def ($97) is now
-                ; DEF USR and nothing else.
-                db      DEFSTR_TOKEN
-                dw      ex_deftype
-                db      DEFINT_TOKEN
-                dw      ex_deftype
-                db      DEFSNG_TOKEN
-                dw      ex_deftype
-                db      DEFDBL_TOKEN
-                dw      ex_deftype
-                db      CLS_TOKEN
-                dw      ex_cls
-                db      SCREEN_TOKEN
-                dw      ex_screen
-                db      COLOR_TOKEN
-                dw      ex_color
-                db      WIDTH_TOKEN
-                dw      ex_width
-                db      KEY_TOKEN
-                dw      ex_key
-                db      LIST_TOKEN
-                dw      ex_list
-                db      REM_TOKEN
-                dw      ex_rem    ; rest of line is a comment
-                db      DATA_TOKEN
-                dw      ex_data    ; skipped at run time
-                db      READ_TOKEN
-                dw      ex_read
-                db      RESTORE_TOKEN
-                dw      ex_restore
-                db      STOP_TOKEN
-                dw      ex_stop
-                db      CONT_TOKEN
-                dw      ex_cont
-                db      PEEK_PREFIX
-                dw      ex_ff_stmt    ; $FF -> MID$ / STRIG starting a statement
-                db      DIM_TOKEN
-                dw      ex_dim    ; DIM A(n)[,...]
-                db      ERASE_TOKEN
-                dw      ex_erase    ; ERASE name[,...]
-                db      ERROR_TOKEN
-                dw      ex_error    ; ERROR n
-                db      RESUME_TOKEN
-                dw      ex_resume    ; RESUME family
-                db      SOUND_TOKEN
-                dw      ex_sound    ; SOUND reg,value
-                db      PLAY_TOKEN
-                dw      ex_play    ; PLAY "mml"[,..]
-                db      BEEP_TOKEN
-                dw      ex_beep    ; BEEP (no args)
-                db      PSET_TOKEN
-                dw      ex_pset    ; PSET (x,y)[,c]
-                db      PRESET_TOKEN
-                dw      ex_preset    ; PRESET (x,y)[,c]
-                db      CIRCLE_TOKEN
-                dw      ex_circle    ; CIRCLE (x,y),r[,...]
-                db      PAINT_TOKEN
-                dw      ex_paint    ; PAINT [STEP](x,y)[,...]
-    IF G6_RESIDENT
-                db      DRAW_TOKEN
-                dw      ex_draw    ; DRAW <string>
+                dw      ex_end            ; $81 END_TOKEN
+                dw      ex_for            ; $82 FOR_TOKEN
+                dw      ex_next           ; $83 NEXT_TOKEN
+                dw      ex_data           ; $84 DATA_TOKEN
+                dw      ex_input          ; $85 INPUT_TOKEN
+                dw      ex_dim            ; $86 DIM_TOKEN
+                dw      ex_read           ; $87 READ_TOKEN
+                dw      ex_letkw          ; $88 LET_TOKEN
+                dw      ex_goto           ; $89 GOTO_TOKEN
+                dw      ex_run            ; $8A RUN_TOKEN
+                dw      ex_if             ; $8B IF_TOKEN
+                dw      ex_restore        ; $8C RESTORE_TOKEN
+                dw      ex_gosub          ; $8D GOSUB_TOKEN
+                dw      ex_return         ; $8E RETURN_TOKEN
+                dw      ex_rem            ; $8F REM_TOKEN
+                dw      ex_stop           ; $90 STOP_TOKEN
+                dw      ex_print          ; $91 PRINT_TOKEN
+                dw      ex_clear          ; $92 CLEAR_TOKEN
+                dw      ex_list           ; $93 LIST_TOKEN
+                dw      ex_new            ; $94 NEW_TOKEN
+                dw      ex_on             ; $95 ON_TOKEN
+                dw      ex_wait           ; $96 WAIT_TOKEN
+                dw      ex_def            ; $97 DEF_TOKEN
+                dw      ex_poke           ; $98 POKE_TOKEN
+                dw      ex_cont           ; $99 CONT_TOKEN
+                dw      ex_csave          ; $9A CSAVE_TOKEN
+                dw      ex_cload          ; $9B CLOAD_TOKEN
+                dw      ex_out            ; $9C OUT_TOKEN
+                dw      ex_lprint         ; $9D LPRINT_TOKEN
+                dw      ex_llist          ; $9E LLIST_TOKEN
+                dw      ex_cls            ; $9F CLS_TOKEN
+                dw      ex_width          ; $A0 WIDTH_TOKEN
+                dw      ex_rem            ; $A1 ELSE_TOKEN
+                dw      ex_tron           ; $A2 TRON_TOKEN
+                dw      ex_troff          ; $A3 TROFF_TOKEN
+    IF SWAP_RESIDENT
+                dw      ex_swap           ; $A4 SWAP_TOKEN
+    ELSE
+                dw      stmt_error        ; $A4 SWAP_TOKEN -- not resident: Syntax error
     ENDIF
+                dw      ex_erase          ; $A5 ERASE_TOKEN
+                dw      ex_error          ; $A6 ERROR_TOKEN
+                dw      ex_resume         ; $A7 RESUME_TOKEN
+                dw      ex_delete         ; $A8 DELETE_TOKEN
+                dw      ex_auto           ; $A9 AUTO_TOKEN
+                dw      ex_renum          ; $AA RENUM_TOKEN
+                dw      ex_deftype        ; $AB DEFSTR_TOKEN
+                dw      ex_deftype        ; $AC DEFINT_TOKEN
+                dw      ex_deftype        ; $AD DEFSNG_TOKEN
+                dw      ex_deftype        ; $AE DEFDBL_TOKEN
+                dw      ex_line           ; $AF LINE_TOKEN
+                dw      ex_open           ; $B0 OPEN_TOKEN
+                dw      ex_field          ; $B1 FIELD_TOKEN
+                dw      ex_get            ; $B2 GET_TOKEN
+                dw      ex_put            ; $B3 PUT_TOKEN
+                dw      ex_close          ; $B4 CLOSE_TOKEN
+                dw      ex_load           ; $B5 LOAD_TOKEN
+                dw      ex_merge          ; $B6 MERGE_TOKEN
+                dw      ex_files          ; $B7 FILES_TOKEN
+                dw      ex_lset           ; $B8 LSET_TOKEN
+                dw      ex_rset           ; $B9 RSET_TOKEN
+                dw      ex_save           ; $BA SAVE_TOKEN
+                dw      ex_lfiles         ; $BB LFILES_TOKEN
+                dw      ex_circle         ; $BC CIRCLE_TOKEN
+                dw      ex_color          ; $BD COLOR_TOKEN
+    IF G6_RESIDENT
+                dw      ex_draw           ; $BE DRAW_TOKEN
+    ELSE
+                dw      stmt_error        ; $BE DRAW_TOKEN -- not resident: Syntax error
+    ENDIF
+                dw      ex_paint          ; $BF PAINT_TOKEN
+                dw      ex_beep           ; $C0 BEEP_TOKEN
+                dw      ex_play           ; $C1 PLAY_TOKEN
+                dw      ex_pset           ; $C2 PSET_TOKEN
+                dw      ex_preset         ; $C3 PRESET_TOKEN
+                dw      ex_sound          ; $C4 SOUND_TOKEN
+                dw      ex_screen         ; $C5 SCREEN_TOKEN
+                dw      ex_vpoke          ; $C6 VPOKE_TOKEN
     IF G7_RESIDENT
-                db      SPRITE_TOKEN
-                dw      ex_sprite    ; SPRITE$(n)=s$ / SPRITE ON|OFF|STOP
+                dw      ex_sprite         ; $C7 SPRITE_TOKEN
+    ELSE
+                dw      stmt_error        ; $C7 SPRITE_TOKEN -- not resident: Syntax error
     ENDIF
     IF G8_RESIDENT
-                ; G8: the pseudo-array assignments have NO statement token of
-                ; their own -- a statement that STARTS with the function token is
-                ; the assignment (docs/spec-basic-graphics-g8.md §2). `LET` in
-                ; front is ERR 2 on the reference, which falls out for free:
-                ; ex_letkw only accepts a variable name.
-                db      VDP_TOKEN
-                dw      ex_vdp_assign    ; VDP(n) = v
-                db      BASE_TOKEN
-                dw      ex_base_assign    ; BASE(n) = v
+                dw      ex_vdp_assign     ; $C8 VDP_TOKEN
+    ELSE
+                dw      stmt_error        ; $C8 VDP_TOKEN -- not resident: Syntax error
     ENDIF
-                ; TIME = v: no statement token of its own either -- a statement
-                ; that STARTS with the TIME factor token IS the assignment
-                ; (docs/spec-basic-time.md §2, the same shape as G8 above).
-                db      TIME_TOKEN
-                dw      ex_time_assign
-                ; --- the MISSING class (basic/missing.asm) --------------------
-                ; docs/spec-basic-missing-class.md. Repack-only with the rest of
-                ; the class, and at the TAIL: a linear search pays per entry
-                ; examined, and none of these five is a hot statement. LOCATE is
-                ; the warmest of them and still nowhere near PRINT/IF/FOR.
-                ; ⚠️ These entries are the FALSIFICATION HANDLE for this slice --
-                ; deleting one must fail exactly that word's gate rows and no
-                ; others (spec §7.4).
-                db      MOTOR_TOKEN
-                dw      ex_motor    ; MOTOR | MOTOR ON | MOTOR OFF
-                db      TRON_TOKEN
-                dw      ex_tron
-                db      TROFF_TOKEN
-                dw      ex_troff
-                db      LOCATE_TOKEN
-                dw      ex_locate    ; LOCATE [col][,[row][,cursor]]
-                ; --- the EDITOR class (D-DELETE, docs/spec-basic-delete.md) ----
-                ; At the tail for the MISSING class's reason and more so: DELETE
-                ; is typed by a human at the prompt, so a linear search paying
-                ; per entry examined costs it nothing anybody can perceive.
-                ; ⚠️ THIS ROW IS 3 B AND THAT FIGURE IS MEASURED, NOT COMPUTED --
-                ; D-KWGAP4's knife K5 added one row and watched page-1 free go
-                ; 6 B -> 3 B. What changed since is the WALL, not the rate: the
-                ; D-RETLN carve took page 1 to 124 B free.
-                ; ⚠️ AND AN ENTRY HERE IS NOT OPTIONAL WIRING. SWAP's note below
-                ; is the standing record of a build where the token and the code
-                ; both existed, this row did not, and every gate row read exactly
-                ; as if the verb were still absent.
-                db      DELETE_TOKEN
-                dw      ex_delete    ; DELETE [<line>][-[<line>]]
-                ; D-EDITVERB: the other three editor verbs. Three rows at 3 B is
-                ; the figure D-KWGAP4's knife K5 measured against a 6 B page-1
-                ; wall, which is why it filed them instead of landing them; the
-                ; wall is 356 B now (spec-basic-editverb.md §1.2).
-                db      LLIST_TOKEN
-                dw      ex_llist     ; LLIST [<line>][-[<line>]] -- LIST to LPT:
-                db      RENUM_TOKEN
-                dw      ex_renum     ; RENUM [<new>][,[<old>][,<inc>]]
-                db      AUTO_TOKEN
-                dw      ex_auto      ; AUTO [<start>][,<inc>]
-                ; D-LPTVERB (docs/spec-basic-lptverb.md). LPRINT shares ex_print's
-                ; whole item loop -- only the SINK differs -- so this row costs 3 B
-                ; and the head costs 20. ⚠️ $9D is BIN$ in the $FF alphabet; LPOS
-                ; ($FF,$9C) is dispatched from expr.asm's chain, NOT from here.
-                db      LPRINT_TOKEN
-                dw      ex_lprint    ; LPRINT [<items>] -- PRINT to LPT:
-    IF SWAP_RESIDENT
-                ; ⚠️ THIS ENTRY DID NOT EXIST when SWAP was gated off, and neither
-                ; sysvars.inc's SWAP_RESIDENT block nor spec §10 noticed: both said
-                ; the flag guarded "the kwtable row, the stmt_table dispatch row and
-                ; the code", and listed flipping the flag as the whole of the wiring.
-                ; Only two of the three were real. With the flag on and no arm here,
-                ; SWAP crunched to $A4 and then fell off the end of this table into
-                ; stmt_error, so EVERY row of the swap battery reported
-                ; `syntax error` -- indistinguishable from SWAP still being absent.
-                ; SWAP_TOKEN is $A4, the same byte as PDL_TOKEN in the $FF-prefixed
-                ; FUNCTION namespace; statement tokens are unprefixed, so they do not
-                ; collide (basic/sysvars.inc:2093 records the shared byte).
-                db      SWAP_TOKEN
-                dw      ex_swap    ; SWAP a,b
+    IF G8_RESIDENT
+                dw      ex_base_assign    ; $C9 BASE_TOKEN
+    ELSE
+                dw      stmt_error        ; $C9 BASE_TOKEN -- not resident: Syntax error
     ENDIF
-                db      0                   ; end of table
+                dw      ex_call           ; $CA CALL_TOKEN
+                dw      ex_time_assign    ; $CB TIME_TOKEN
+                dw      ex_key            ; $CC KEY_TOKEN
+                dw      ex_maxfiles       ; $CD MAX_TOKEN
+                dw      ex_motor          ; $CE MOTOR_TOKEN
+                dw      ex_bload          ; $CF BLOAD_TOKEN
+                dw      ex_bsave          ; $D0 BSAVE_TOKEN
+                dw      ex_dsko           ; $D1 DSKO_TOKEN
+                dw      ex_donothing      ; $D2 SET_TOKEN
+                dw      ex_name           ; $D3 NAME_TOKEN
+                dw      ex_kill           ; $D4 KILL_TOKEN
+                dw      ex_donothing      ; $D5 IPL_TOKEN
+                dw      ex_copy           ; $D6 COPY_TOKEN
+                dw      ex_donothing      ; $D7 CMD_TOKEN
+                dw      ex_locate         ; $D8 LOCATE_TOKEN
+    IF ($ - stmt_table) != 2 * STMT_TABLE_ROWS
+                db      STMT_TABLE_IS_NOT_ONE_ROW_PER_TOKEN_81_TO_D8__A_ROW_IS_MISSING_OR_DOUBLED
+    ENDIF
 
 ex_sep:
                 inc     hl

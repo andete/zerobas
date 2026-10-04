@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29121 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29143 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26702,6 +26702,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       file-number functions for the same `#`-optional rule (EOF/LOC/LOF take
       no `#`; which others take an optional one?).
       🤖 **AUTONOMOUS** — the CF-3300 settles it.
+
+- [ ] ⏱ **D-T5TWINREM — A T5 "KEYWORD ALONE" READING INCLUDES THE TWIN'S `REM` STAND-IN,
+      AND THAT STAND-IN'S COST JUST CHANGED UNDER IT (found 2026-10-05 by space plan B-6; MEASURED)**
+      🎚️ TIER 5 — on-par speed: T5 is a ratio that never ticks, so no level moved,
+      but its readings are what the speed work will rank by.
+      📏 B-6 (D-STMTIDX) replaced `exec_stmt`'s linear table walk with an indexed
+      dispatch. Statement rows' T5 fell as expected (LOCATE 3× -> 1.5×, VPOKE
+      2.9× -> 1.8×, RESTORE 4.5× -> 3.7×). But FUNCTION rows ROSE together:
+      AND/OR/XOR/EQV/IMP +0.16..0.2×, PEEK 0.7× -> 1.2×, VPEEK 0.35× -> 0.79×,
+      INKEY$ 0.56× -> 1.3×.
+      🔬 The mechanism, from `twin_bodies` in
+      [`basic_probe_kwtime.py`](probes/basic/basic_probe_kwtime.py): the twin
+      DELETES the carrying statement, and a line left empty becomes `REM`. REM
+      was entry 59 of the old walk (~2000 cycles to find) and is ~160 now, so
+      the TWIN got faster by far more than the row's own PRINT (entry 8) did.
+      `zb row - zb twin` grew with no change to any function body. The OLD
+      readings were the distorted ones: they understated zerobas's cost.
+      ➡️ Decide what a twin's filler should cost. Options: subtract a measured
+      `REM`-line baseline on each side, or keep the emptied line's `:` / REM but
+      say in the sheet that the reading includes one statement dispatch.
+      Re-read the function T5 column after, never before.
+      🤖 **AUTONOMOUS** — apparatus; both sides are measurable.
 
 - [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY
       EMPTIED THAT CHANNEL'S FILE (found and fixed 2026-10-03 while scoping S10.B; MEASURED)**
