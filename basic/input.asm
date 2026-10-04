@@ -364,9 +364,10 @@ inm_lp:
                 jr      z,inm_lp
                 scf                         ; anything else after the number
                 ret
-inm_ok:
-                ld      de,(SH_PTR)         ; the int16, when SH_LEN says int
-                ret
+inm_ok:                                     ; C4 shared tail (2026-10-03): str-engine's
+                ld      de,(SH_PTR)         ; the int16, when SH_LEN says int  -- VAL's
+                ret                         ; int arm (ev_ff_val) and expr.asm's FRE
+                                            ; (ev_fre_close) jump here
 
 ; inp_val: VAL's parse over the STRSCR field (sub op 19). Shared by console
 ; INPUT (inp_num, strict) and INPUT # (inp_numitem, lenient: the CF-3300 reads

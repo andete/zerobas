@@ -77,12 +77,11 @@ KNIVES = [
     # must not. Nothing changes size, so no address shifts.
     ("K-DS1  ERR-5 canonical value: gb_illegal `ld a,5` -> `ld a,9`",
      ROOT / "basic/interp.asm",
-     "gb_illegal:\n"
-     "                ld      a,5\n"
-     "                jp      raise_error         ; ERR 5 illegal function call",
-     "gb_illegal:\n"
+     # space plan B-3 (C4, 2026-10-04) reworded these comments; re-anchored
+     "                ld      a,5                 ; cg_unclaimed and str-engine's MID$ bound\n"
+     "                jp      raise_error         ; ERR 5 illegal function call  -- jump here",
      "                ld      a,9                 ; K-DS1\n"
-     "                jp      raise_error         ; ERR 5 illegal function call",
+     "                jp      raise_error         ; ERR 5 illegal function call  -- jump here",
      set(E5)),
     # The ERR-2 canonical value. The mirror, with the ERR-5 family as controls.
     ("K-DS2  ERR-2 canonical value: pl_syntax `ld a,2` -> `ld a,9`",

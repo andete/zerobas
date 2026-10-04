@@ -1349,8 +1349,8 @@ ev_ff_lof_checked:                          ; D-LOC joins here for a sequential 
                 or      d
                 or      e
                 jr      nz,lof_nz
-                ld      (FAC),a             ; 0: the int 0 flt_int_result already typed
-                jp      ret_de0     ; (A is 0 here)
+                jp      ecpst_fac0          ; 0: the int 0 flt_int_result already typed
+                                            ; (A is 0 here) -- C4 shared tail
 lof_nz:
                 ; The digit work is the SUBROM_IDX_LOFU32 tenant (sub/lofu32.asm):
                 ; the resident form of it cost 98 B of page 1 (129 -> 31 B free,
@@ -1705,8 +1705,9 @@ ev_fre_close:
                 call    call_strheap
                 pop     ix
                 call    flt_int_result      ; an int result even when the argument
-                ld      de,(SH_PTR)         ;  was a float or a string (A only)
-                ret
+                jp      inm_ok              ;  was a float or a string (A only):
+                                            ;  DE = (SH_PTR), ret -- input.asm's
+                                            ;  tail, C4 shared (2026-10-03)
 
     IF I2_RESIDENT
 ; --- PDL(n) / PAD(n): analog input devices, slice I2 -----------------------
@@ -1908,9 +1909,10 @@ evconv_pack_same_type:
 ecpst_dbl:
                 call    arga_pack_fac
                 jp      flt_to_int16
-ecpst_zero:
-                xor     a
-                ld      (FAC),a
+ecpst_zero:                                 ; C4 shared tail (2026-10-03): FAC := float
+                xor     a                   ; zero, DE = 0. var_load_fac's unset-float
+ecpst_fac0:                                 ; arm jumps here; ev_f_lof's zero arm (A
+                ld      (FAC),a             ; already 0) enters at ecpst_fac0.
                 jp      ret_de0
 
 
@@ -2582,12 +2584,14 @@ udiv_next:
 evsp_close:
                 call    ev_sp
                 cp      ')'
-                ret     z                   ; closed: A=')' and Z set, exactly as
-                                            ; the open-coded sites left them
-                inc     sp                  ; discard OUR return address -- the
-                inc     sp                  ; deferred error must return one frame
+                jp      ixsp_unwind         ; C4 (2026-10-03): the `ret z / inc sp /
+                                            ; inc sp / jp ev_f_empty` run above is
+                                            ; str-engine.asm's ixsp_paren_req tail,
+                                            ; byte for byte; closed: A=')' and Z set,
+                                            ; exactly as the open-coded sites left
+                                            ; them; else discard OUR return address
+                                            ; -- the deferred error returns one frame
                                             ; further out, as it did before
-                jp      ev_f_empty
 
 ; --- arga_widen: widen the live RHS into ARGA -------------------------------
 ; D-ARGAWIDEN. `ld hl,ARGA / call widen_rhs_operand` stood at TWELVE sites --

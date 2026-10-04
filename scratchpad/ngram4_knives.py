@@ -26,9 +26,13 @@ ROW = re.compile(r"^[a-z][a-z0-9]*\.[a-z0-9.]+$")
 
 KNIVES = [
     ("K-N4A retarget the shared body", [
-        ("""                pop     hl                  ; restore the caller's cursor guard
-                jp      str_eval_ok""",
-         """                pop     hl                  ; K-N4A CUT (restored on exit)
+        # space plan B-3 (C4, 2026-10-04): shx_tail's `pop hl / jp str_eval_ok`
+        # became `jr sfi_done` (that tail, shared); the cut replaces the jr, so it
+        # still lands on THIS body only, not on INKEY$/slice/sprite's shared exit.
+        ("""                call    shx_finish
+                jr      sfi_done            ; pop hl (the caller's cursor guard), then""",
+         """                call    shx_finish
+                pop     hl                  ; K-N4A CUT (restored on exit)
                 jp      str_arg_empty""")]),
     ("K-N4B drop the SH_OP store from the second entry", [
         ("""shx_op_tail:

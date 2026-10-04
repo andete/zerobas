@@ -258,11 +258,13 @@ init_no_diskbanner:
 ;     and the ASCII LOAD/MERGE/CLOAD funnel reach it through this one label.
 tokenise:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_TOKENISE
-                call    subrom_call         ; HL=src, DE=dest in; body 0-terminates
+                jp      sc_call             ; HL=src, DE=dest in; body 0-terminates
                                             ; dest in page-3 RAM; CF=1 if sub absent
-                ret     nc                  ; call completed -> back to program.asm
-                jp      subrom_absent_error ; reduced build w/o sub-ROM (never on the
-                                            ; merged machine, which always ships it)
+                                            ; -> subrom_absent_error (reduced build
+                                            ; w/o sub-ROM; never on the merged
+                                            ; machine, which always ships it), else
+                                            ; back to program.asm. C4 (2026-10-03):
+                                            ; the open-coded tail WAS sc_call's body
 
 ; keyword -> token table. Extracted to basic/kwtable.inc so its PLACEMENT could be
 ; moved (string-engine arc S3, spec §5b): it is assembled in the reclaimed low
@@ -1040,6 +1042,12 @@ ex_let_str:
 ; hours earlier and the docstring of the sweep tool WARNS about it — a warning is
 ; not a guard. Caught both times by the same arithmetic: 16 pairs removed against
 ; 17 calls added [[a-mechanical-fix-can-break-a-different-invariant]].
+; ➕ C4 (space plan B-3, 2026-10-04): TWO MORE ENTRIES, BY `jp` — tokenise
+; (interp.asm) and call_strheap (str-engine.asm) open-coded the same contract as
+; `call subrom_call / ret nc / jp subrom_absent_error` and now tail-jump here, so
+; no frame is added for them. COUNTED 2026-10-04, not carried: 17 `call sc_call`
+; sites and 5 `jp sc_call` entries (cload, field, program, and these two) -- the
+; "16" above is the D-SCCALL-day figure and has grown since.
 sc_call:
                 call    subrom_call
                 jp      c,subrom_absent_error
@@ -2035,19 +2043,16 @@ if_then:
                 or      e
                 jr      z,if_false
                 ld      a,(hl)              ; true: line number -> GOTO, else run
-                cp      LINENO_TOKEN
-                jr      z,if_branch
+if_lineno:                                  ; C4 shared tail (2026-10-03): the ELSE
+                cp      LINENO_TOKEN        ; arm jumps here with A = (HL)
+                jr      z,ex_goto_at        ; HL on $0E -> conditional GOTO
                 jp      exec_stmt
-if_branch:
-                jr      ex_goto_at          ; HL on $0E -> conditional GOTO
 if_false:
                 call    if_skip_to_else     ; scan to ELSE token or end of line
                 or      a
                 ret     z                   ; no ELSE -> line done
                 rst    $10                ; past the ELSE ($A1) token
-                cp      LINENO_TOKEN
-                jr      z,if_branch
-                jp      exec_stmt           ; ELSE <statements>
+                jr      if_lineno           ; ELSE <line> -> GOTO, else <statements>
 
 ; --- if_skip_to_else: token-aware scan to the ELSE token or EOL -------------
 ; out: HL on the $A1 ELSE token (A = $A1) or on the 0 terminator (A = 0).
@@ -2299,6 +2304,6 @@ ex_donothing    equ     gb_illegal
 ; alias rather than a reuse of `ex_donothing`, because that name says "statement"
 ; and `ATTR$` is reached from `ev_f`. Both are labels, not decisions.
 ev_f_attr       equ     gb_illegal
-gb_illegal:
-                ld      a,5
-                jp      raise_error         ; ERR 5 illegal function call
+gb_illegal:                                 ; C4 shared tail (2026-10-03): files.asm's
+                ld      a,5                 ; cg_unclaimed and str-engine's MID$ bound
+                jp      raise_error         ; ERR 5 illegal function call  -- jump here

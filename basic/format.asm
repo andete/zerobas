@@ -77,11 +77,11 @@ exc_name:
 exc_go:
                 push    hl                  ; save the statement-end cursor (CALSLT clobbers)
                 call    do_format
-                pop     hl
-                jp      c,load_error        ; format I/O error (or, repack: the tenant
-                                            ; absent/reporting an error — folded into
-                                            ; Cy by do_format below, spec §4)
-                jp      exec_stmt
+                jp      gp_fin              ; pop the cursor; CF -> load_error (format
+                                            ; I/O error, or repack: the tenant absent/
+                                            ; reporting an error — folded into Cy by
+                                            ; do_format below, spec §4); else exec_stmt.
+                                            ; C4 (2026-10-03): field.asm's tail, shared.
 
 ; fmt_match_format — CF set iff the 6 chars at (HL) are "FORMAT" (case-insensitive);
 ; HL is advanced past them on a match. Clobbers A, B, DE, HL.

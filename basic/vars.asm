@@ -155,16 +155,13 @@ vnk_suffix:
                 ret                         ; no suffix -> HL NOT advanced (unchanged)
 vnk_pct:
                 ld      a,2
-                ld      (VARTYPE),a
-                jr      vnk_eat
+                jr      vnk_type_eat
 vnk_bang:
                 ld      a,4
-                ld      (VARTYPE),a
-                jr      vnk_eat
+                jr      vnk_type_eat
 vnk_hash:
                 ld      a,8
-                ld      (VARTYPE),a
-                jr      vnk_eat
+                jr      vnk_type_eat
 vnk_dollar:
                 ; D-FORVAR (docs/spec-basic-forvar.md §4.2): this used to write 8
                 ; — byte for byte a default-double `A` — and five comments in
@@ -181,7 +178,8 @@ vnk_dollar:
                 ; both references (x.numstr), D-DEFSTR's own silent-wrong-answer
                 ; class in the explicitly-suffixed form that slice did not cover.
                 ld      a,DEFTBL_STR
-                ld      (VARTYPE),a
+vnk_type_eat:                               ; C4 shared tail (2026-10-03): %, !, #
+                ld      (VARTYPE),a         ; jump here with A = their type
 vnk_eat:
                 inc     hl
                 ret
@@ -601,8 +599,8 @@ var_load_fac:
                 ld      (FACTYP),a
                 cp      2
                 jp     z,vlf_unset_int
-                xor     a
-                ld      (FAC),a             ; lead byte 0 -> float zero
+                ; lead byte 0 -> float zero, DE = 0: C4 (2026-10-03) shares expr.asm's
+                ; ecpst_zero tail (`xor a / ld (FAC),a / jp ret_de0`) -- one jp below.
                 ; 🔴 D-FACZERO DELIBERATELY DOES *NOT* CALL fac_zero_mantissa HERE,
                 ; AND ITS OWN KNIFE IS WHY. K-FZ3 removed the call that used to sit
                 ; on this line and moved ZERO rows -- including `z.unset` /
@@ -614,7 +612,7 @@ var_load_fac:
                 ; ⚠️ IT COMES BACK THE DAY A CONSUMER READS FAC WITHOUT RE-PACKING,
                 ; and `MKS$`/`MKD$` are exactly that consumer -- see
                 ; docs/spec-basic-faczero.md §5.
-                jp      ret_de0
+                jp      ecpst_zero
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to vptr_none,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

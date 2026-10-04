@@ -40,9 +40,10 @@
 ; the two share one budget, and a low-region routine is visible to every caller.
 ixsp_paren_req:
                 call    ixsp_paren
-                ret     z
-                inc     sp
-                inc     sp
+ixsp_unwind:                                ; C4 shared tail (2026-10-03): expr.asm's
+                ret     z                   ; evsp_close jumps here after its `cp ')'`
+                inc     sp                  ; -- same frame discard, same deferred
+                inc     sp                  ; error, one copy (low: visible to both)
                 jp      ev_f_empty
 
 ; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
@@ -69,9 +70,9 @@ sh_call_op:
 ; Clobbers A, IX.
 call_strheap:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                call    subrom_call
-                ret     nc
-                jp      subrom_absent_error
+                jp      sc_call             ; C4 (2026-10-03): `call subrom_call / ret
+                                            ; nc / jp subrom_absent_error` IS sc_call
+                                            ; (interp.asm, page 1) -- one copy
 
 ; --- ctl_alloc / ctl_reset: the CONTROL POOL's two main-ROM entry points ----
 ; D-CTLPOOL (docs/spec-basic-trapsvc.md §11-§16). Both are thin wrappers over
@@ -416,8 +417,8 @@ sel_close:
                 ; before this landed.
 str_pub_ok:
                 ld      (STRPTR),hl
-                pop     hl                  ; HL = cursor past the operand
-                jp      str_eval_ok
+                jp      sfi_done            ; pop hl (cursor past the operand), then
+                                            ; str_eval_ok -- C4 shared tail (2026-10-03)
 
 ; --- print_strval (repack): emit the [len][ptr] descriptor at STRPTR via -----
 ; pchar (screen or file per PRDEST). Homed in the low region (page 1 full);
@@ -982,8 +983,8 @@ ev_ff_val:
                 ld      a,(SH_LEN)
                 or      a
                 jp      nz,flt_to_int16     ; DE = the rounded int16; FAC/FACTYP stand
-                ld      de,(SH_PTR)         ; DE = the parsed integer value
-                ret
+                jp      inm_ok              ; DE = the parsed integer value (SH_PTR),
+                                            ; ret -- input.asm's tail, C4 (2026-10-03)
 evv_refuse:
                 ld      e,4                 ; SH_ERR 4 -> syntax error
                 cp      5
@@ -1281,8 +1282,8 @@ str_fn_left:
                 ; source, D = the length, one saved cursor on the stack.
 str_slice_done:
                 call    str_temp_slice
-                pop     hl                  ; restore cursor
-                jp      str_eval_ok
+                jp      sfi_done            ; pop hl (restore cursor), then
+                                            ; str_eval_ok -- C4 shared tail (2026-10-03)
 
 ; RIGHT$(a$,n): the last min(n,len) bytes. Snapshot, then slice from (len-count).
 str_fn_right:
@@ -1560,8 +1561,8 @@ ems_range:
                 ; measured, MID$(A$,4)="X" and MID$(A$,255)="X" on a 3-char A$ --
                 ; not the `syntax error` the D-3 note above assumed was forced.
                 pop     hl                  ; discard the guarded cursor -> stack balanced
-                ld      a,5
-                jp      raise_error         ; Illegal function call
+                jp      gb_illegal          ; Illegal function call (ld a,5 / jp
+                                            ; raise_error: interp.asm's tail, C4 2026-10-03)
 ; D-MIDOP: the MID$ entry to D-MISS-1's shared numeric-RHS typecheck. It pops
 ; [n][m] and enters els_tc_common at statement-handler depth, exactly as
 ; els_typecheck pops its dest key and elas_typecheck pops [OFFSET].
@@ -1685,8 +1686,8 @@ shx_op_tail:
 shx_tail:
                 call    call_strheap
                 call    shx_finish
-                pop     hl                  ; restore the caller's cursor guard
-                jp      str_eval_ok
+                jr      sfi_done            ; pop hl (the caller's cursor guard), then
+                                            ; str_eval_ok -- C4 shared tail (2026-10-03)
 
 ; shx_finish: shared HEX_BUILD/OCT_BUILD result tail. Reads SH_ERR/SH_PTR
 ; (set by either op), maps SH_ERR=2 (temp-descriptor stack full) to FPERR=9
@@ -1766,10 +1767,10 @@ str_fn_inkey:
                 jr      sfi_done
 sfi_nowrite:
                 pop     af                  ; discard the guarded key byte (balance)     [CURSOR]
-sfi_done:
+sfi_done:                                   ; C4 shared tail (2026-10-03): str_pub_ok,
                 pop     hl                  ; restore cursor                                [ ]
-                jp      str_eval_ok
-sfi_empty:
+                jp      str_eval_ok         ; str_slice_done, shx_tail and graphics.asm's
+sfi_empty:                                  ; spr_rd_done end here too (one copy)
                 xor     a
                 call    str_temp_alloc      ; A=0 -> HL=temp desc(len0,ptr0), DE=0
                                             ; restore cursor                                [ ]

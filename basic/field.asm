@@ -284,6 +284,7 @@ ex_field:
                 inc     hl                  ; past the FIELD token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ld      hl,H_FIELD
+fld_gate_resume:                            ; C4 shared tail (2026-10-03): LSET/RSET
                 call    chan_gate_bare      ; unclaimed -> ERR 5, trappable.
                                             ; BARE: this verb WRITES the
                                             ; channel's record, so the full
@@ -569,12 +570,8 @@ lrset_common:
                 inc     hl                  ; past the LSET/RSET token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ex      de,hl               ; HL = this verb's own hook cell
-                call    chan_gate_bare      ; unclaimed -> ERR 5, trappable.
-                                            ; BARE: this verb WRITES the
-                                            ; channel's record, so the full
-                                            ; gate's restore would undo it
-                ld      hl,(FN_RESUME)      ; where the handler left it
-                jp      exec_stmt
+                jp      fld_gate_resume     ; chan_gate_bare, then resume at
+                                            ; FN_RESUME -- FIELD's tail (C4)
 
 ; --- lrset_tgt: call-back 1 -- the whole target parse AND the field lookup ----
 ; out: CF=1 -> HL = the FLD_TAB entry; CF=0 -> not fielded (D-LRVAR), FLD_CHAN

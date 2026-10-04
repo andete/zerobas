@@ -1168,8 +1168,8 @@ ev_f_sprite:
                 ld      b,0
                 ldir
 spr_rd_done:
-                pop     hl
-                jp      str_eval_ok
+                jp      sfi_done            ; pop hl, then str_eval_ok -- str-engine's
+                                            ; tail, C4 shared (2026-10-03)
 
 ; --- spr_parse_index: "(n)" -> GFX_SN, HL past ')' -------------------------
 ; n is an ordinary numeric expression (ERR 6 beyond int16, inside gfx_eval_int16);

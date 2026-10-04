@@ -167,8 +167,10 @@ cg_back:
                 ; the first suspect and restoring AF changed nothing.
                 jr      chan_restore_st
 cg_unclaimed:
-                ld      a,5                 ; Illegal function call -- TRAPPABLE,
-                jp      raise_error         ; which is what the reference gives
+                jp      gb_illegal          ; Illegal function call -- TRAPPABLE,
+                                            ; which is what the reference gives
+                                            ; (ld a,5 / jp raise_error: interp.asm's
+                                            ; tail, C4 shared 2026-10-03)
 
 ; --- fopen_cross (D-CARVEFO, 2026-09-27): the `$FE5D` open-hook crossing ------
 ; A = the FOPEN_SEL selector. Stores it, crosses H_FOPEN through chan_gate, and
@@ -1765,23 +1767,21 @@ fch_do_close_ch:
                 jr      z,fdcc_cas_out      ; 7 -> flush the final tape block + motor off
                 cp      CAS_IN_MODE
                 jr      z,fdcc_cas_in       ; 8 -> just stop the motor
-                ld      (hl),0              ; LPT/CRT device channel: clear entry, done
-                ret
+                jr      fdcc_closed         ; LPT/CRT device channel: clear entry, done
 fdcc_cas_out:
                 push    hl                  ; guard FCH_MODES[ch] ptr across the flush
                 call    cas_ascii_finish    ; Ctrl-Z EOF + pad the final block; the pad
                                             ; loop's 256th byte flushes it (TAPOON+256+
                                             ; TAPOOF), so the block is closed on return
-                call    TAPIOF              ; motor off
+fdcc_motor_off:                             ; C4 shared tail (2026-10-03): fdcc_cas_in
+                call    TAPIOF              ; motor off      joins here, HL on the stack
                 pop     hl
+fdcc_closed:                                ; and the LPT/CRT arm here
                 ld      (hl),0              ; FCH_MODES[ch] = 0 (closed)
                 ret
 fdcc_cas_in:
                 push    hl
-                call    TAPIOF              ; motor off (input channel: nothing to flush)
-                pop     hl
-                ld      (hl),0
-                ret
+                jr      fdcc_motor_off      ; motor off (input channel: nothing to flush)
 fdcc_disk:
                 ld      a,e
                 call    fch_select          ; load the channel; FCH_MODE = its mode
@@ -2111,7 +2111,8 @@ ex_merge:
                 jr      c,mrg_ioerr         ; primes -- CF set = it said no
                 call    dsk_ascii_drive     ; tokenise+store each line, bytes through
                                             ; the crossing; CF set = bad line
-                pop     hl                  ; restore the text cursor
+mrg_fin:                                    ; C4 shared tail (2026-10-03): the tape arm
+                pop     hl                  ; restore the text cursor      joins here
                 jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
                 ; 🔴 D-MERGERET (2026-09-12): MERGE RETURNS TO COMMAND LEVEL, and
                 ; `jp exec_stmt` carried on instead -- in BOTH modes. In a program,
@@ -2167,9 +2168,7 @@ merge_cas:
                 jr      c,mc_ioerr
                 ; NB: NO new_prog — MERGE inserts into the current program.
                 call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
-                pop     hl                  ; restore the text cursor
-                jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
-                jp      end_line_end        ; D-MERGERET: the tape arm of the same
+                jr      mrg_fin             ; D-MERGERET: the tape arm of the same
                                             ; contract as the disk arm above. NO ROW
                                             ; -- nothing here can PLAY a tape — so it
                                             ; is changed by the disk arm's reasoning
