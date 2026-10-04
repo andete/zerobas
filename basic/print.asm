@@ -648,13 +648,13 @@ exp_pos_arg:
                 push    af
                 call    skip_spaces
                 cp      ')'
-                jr      nz,exp_pos_syn
+                jp      nz,exp_pos_syn      ; `jp`: pl_syntax is out of jr range (B4)
                 inc     hl
                 pop     af
                 ret
-exp_pos_syn:
-                ld      a,2
-                jp      raise_error         ; ERR 2 syntax error
+; B4: an ALIAS, not a second copy -- byte-identical to play.asm's pl_syntax
+; (`ld a,2 / jp raise_error`), the family's canonical tail.
+exp_pos_syn     equ     pl_syntax           ; ERR 2 syntax error
 
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the

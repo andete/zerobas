@@ -1909,6 +1909,7 @@ kill_status:                            ; D-COPY shares this decode (0/1/2)
                 or      a
                 jp      z,df_notfound       ; 0 = nothing matched -> ERR 53
                 dec     a
+ks_nz_diskerr:                              ; B4: save.asm's disk SAVE exit shares this tail
                 jp      nz,disk_error       ; 2 = mount / DSKIO error -> the mapped code (D-DISKERR)
                 jp      exec_stmt
 

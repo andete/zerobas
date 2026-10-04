@@ -127,6 +127,7 @@ gfx_plot_go:
                 call    gfx_in_range        ; CF = 1 iff 0<=x<=255 and 0<=y<=191
                 jp      nc,exec_stmt        ; off-screen -> no plot (work area already moved)
                 ld      a,1                 ; GFX_OP = 1 -> tenant plot (PSET/PRESET)
+gfx_call_exec:                              ; B4: LINE shares `call gfx_call / jp exec_stmt`
                 call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
                 jp      exec_stmt           ; chain the next ':'-separated statement
 
@@ -301,8 +302,7 @@ elg_draw:
                 ; GFX_X2/GFX_Y2 in RAM, so they cost nothing there and freed 24
                 ; resident bytes (docs/spec-basic-graphics-g8.md §6).
                 ld      a,3                 ; GFX_OP = 3 -> tenant LINE/box
-                call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
-                jp      exec_stmt           ; chain the next ':'-separated statement
+                jp      gfx_call_exec       ; B4: `call gfx_call / jp exec_stmt`, PSET's tail
 ; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
 ; pl_syntax, which is the family's canonical tail because its four callers
 ; are the only ones close enough to reach it with `jr`. The NAME and every
@@ -657,9 +657,9 @@ cp_done:
                 or      a
                 jp      nz,raise_error      ; the tenant's ERR code (ERR 2/5/6 sites)
                 ld      a,4                 ; GFX_OP = 4 -> tenant CIRCLE geometry
-                ld      (GFX_OP),a
-                call    gfx_tenant
-                jp      c,gfx_absent
+                call    gfx_call            ; B4: GFX_OP := A, gfx_tenant, gfx_absent on
+                                            ; CF. Its push/pop of HL is harmless: HL is
+                                            ; reloaded from GFX_DPTR on the next line
                 ld      hl,(GFX_DPTR)       ; continue the statement stream after CIRCLE
                 jp      exec_stmt
 
@@ -1106,8 +1106,8 @@ spr_set:
                 jp      nz,gfx_syntax       ; bare SPRITE -> ERR 2 (measured)
 spr_on:
 spr_off:
-                inc     hl                  ; D-G7-4: accepted no-op (trap not built)
-                jp      exec_stmt
+                jp      ex_sep              ; D-G7-4: accepted no-op (trap not built);
+                                            ; B4: `inc hl / jp exec_stmt` is ex_sep
     ENDIF
 
 ; --- SPRITE$(n) = <string$> ------------------------------------------------

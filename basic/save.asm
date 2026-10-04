@@ -174,8 +174,7 @@ bsv_open:
                 call    fch_park
                 ld      a,SV_OP_BSV_DISK
                 call    sv_tenant           ; BSAVE -> disk: the write engine is a tenant
-                pop     hl
-                jp      exec_stmt
+                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt (B4)
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
@@ -254,8 +253,10 @@ sav_is_disk:
                 call    fopen_cross         ; unclaimed -> ERR 5; claimed -> it ran;
                                             ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)
                 pop     hl                  ; flags survive the pop
-                jp      nz,disk_error       ; 3 = mount / disk full / write / I-O
-                jp      exec_stmt           ; 0 = written: the rest of the line runs
+                jp      ks_nz_diskerr       ; B4: `jp nz,disk_error / jp exec_stmt`
+                                            ; (files.asm kill_status) -- 3 = mount /
+                                            ; disk full / write / I-O; 0 = written:
+                                            ; the rest of the line runs
 
 ; --- SAVE"name",A -> ASCII listing save --------------------------------------
 ; sav_ascii_flag: HL is at the ',' after the filename. Accept only ",A" (any

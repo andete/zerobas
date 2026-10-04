@@ -77,7 +77,7 @@ exc_name:
 exc_go:
                 push    hl                  ; save the statement-end cursor (CALSLT clobbers)
                 call    do_format
-                jp      gp_fin              ; pop the cursor; CF -> load_error (format
+                jr      gp_fin              ; pop the cursor; CF -> load_error (format
                                             ; I/O error, or repack: the tenant absent/
                                             ; reporting an error — folded into Cy by
                                             ; do_format below, spec §4); else exec_stmt.

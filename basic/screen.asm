@@ -255,6 +255,7 @@ ex_cls:
                 push    hl
                 xor     a                   ; CLS requires the zero flag set on entry
                 call    CLS
+cls_keyline:                                ; B4: WIDTH's re-init shares this tail
                 call    key_repaint         ; D-KEYCLS: the key line survives CLS
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
@@ -320,8 +321,8 @@ wid_apply:
                 ld      a,(SCRMOD)
                 push    hl
                 call    CHGMOD              ; re-init the screen at the new width
-                call    key_repaint         ; D-KEYCLS: the re-init cleared row 23
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+                jr      cls_keyline         ; B4: key_repaint (D-KEYCLS: the re-init
+                                            ; cleared row 23) + pop_exec, CLS's tail
                 ; Both rejects run at ex_width's OWN depth (exec_stmt `jp`s here),
                 ; so they need no return-address parking -- the same reason
                 ; ex_swap tests its operands at the handler's depth.

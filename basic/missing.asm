@@ -633,8 +633,8 @@ ex_troff:
                 xor     a
 tr_set:
                 ld      (TRACEFLAG),a
-                inc     hl                  ; past the TRON/TROFF token
-                jp      exec_stmt
+                jp      ex_sep              ; past the TRON/TROFF token, then exec_stmt
+                                            ; (B4: ex_sep is `inc hl / jp exec_stmt`)
 
 ; --- trace_line: emit `[<lineno>]` for the line about to run ----------------
 ; Called from run_program's FRESH-LINE-ENTRY point only (program.asm rp_lp); see
