@@ -131,9 +131,16 @@
 ; ⚠️ THE FLUSH'S Cy IS DISCARDED ON PURPOSE. A write error here (disk full) is
 ; re-raised by the channel's own `CLOSE`, which still has to flush; raising from
 ; inside the gate would give every verb a new error path it never had.
-; ⚠️ NO CALLER TESTS Cy AFTER `chan_gate` -- checked at all twelve call sites,
-; every one loads `DISKOP_STATUS` or `FN_RESUME` next -- so the claimed path is
-; free to end in a `jp` instead of the old `ret c`.
+; 🎯 GA-VERBRUN (2026-10-03): THE CLAIMED PATH RETURNS A = DISKOP_STATUS, AND
+; THAT IS LOAD-BEARING. chan_gate's only claimed-path exit is chan_restore_st,
+; whose last instruction before its `ret` is `ld (DISKOP_STATUS),a`, so A IS the
+; status when the caller gets control: verb_run, fopen_cross and kill_status
+; decode A directly and no longer reload the cell (3 B each). A future second
+; claimed-path exit must hand A back the same way. The unclaimed path raises
+; ERR 5 and never returns.
+; ⚠️ NO CALLER TESTS Cy AFTER `chan_gate` -- checked at every call site, each
+; one loads `FN_RESUME` next or decodes A with `or a`/`cp` -- so the claimed
+; path is free to end in a `jp` instead of the old `ret c`.
 chan_gate:
                 push    af                  ; ⚠️ KEEPS THE CALLER'S A ACROSS THE
                 ld      a,(FCH_ACTIVE)      ; GATE, which the original code did by
@@ -188,9 +195,8 @@ cg_unclaimed:
 ; 255 there and 53 here). chan_gate already carried A across the flush.
 fopen_cross:
                 ld      hl,H_FOPEN
-                call    chan_gate           ; A = the selector: stored after the flush
-                ld      a,(DISKOP_STATUS)
-                or      a
+                call    chan_gate           ; A = the selector: stored after the flush;
+                or      a                   ; back with A = DISKOP_STATUS (GA-VERBRUN)
                 ret
 
 ; chan_gate_bare -- the SAME crossing with NO channel bookkeeping, for the two
@@ -271,16 +277,28 @@ dirverb_op:
 ; either when their own bodies moved, so COPY was the last caller of both. That
 ; makes this the first verb whose saving is LOW-REGION bytes, the scarcer of the
 ; two budgets at 0 B free.
-ex_copy:
-                inc     hl                  ; HL -> bytes after the COPY token
+; --- verb_run: the whole-verb-in-disk.rom prologue (GA-VERBRUN, 2026-10-03) ---
+;   in   HL = the statement cursor ON the verb token, DE = the verb's hook cell
+;   out  A  = DISKOP_STATUS (chan_gate's claimed path returns it in A),
+;        HL = FN_RESUME, the cursor the handler resumed at; unclaimed -> ERR 5
+; COPY, FILES/LFILES, KILL and NAME opened with the same 10 B -- stage the
+; cursor past the token in FN_RESUME, cross the hook through chan_gate -- and
+; each then reloaded the status and the cursor: one 12 B body, 6 B per site.
+; `ex de,hl` is free because chan_gate clobbers DE building its return address.
+verb_run:
+                inc     hl                  ; HL -> bytes after the verb token
                 ld      (FN_RESUME),hl      ; stage the cursor for the handler
-                ld      hl,H_COPY
+                ex      de,hl               ; HL = the hook cell
                 call    chan_gate           ; unclaimed -> ERR 5 (trappable);
                                             ; claimed -> disk.rom ran the whole verb
-                ld      a,(DISKOP_STATUS)
+                ld      hl,(FN_RESUME)      ; the cursor the handler resumed at
+                ret
+
+ex_copy:
+                ld      de,H_COPY
+                call    verb_run            ; A = status, HL = resume cursor
                 cp      3
                 jp      z,gb_illegal        ; 3: refused, or no `TO` -> ERR 5
-                ld      hl,(FN_RESUME)
                 jp      kill_status         ; 0 / 1 / 2 exactly as KILL decodes them
 
 ; --- disk_error: raise the last DSKIO failure's code, else the old face --------
@@ -324,12 +342,8 @@ disk_error:
 ; someone adding a second one.
 ex_files:
 ex_lfiles:
-                inc     hl                  ; HL -> bytes after the token
-                ld      (FN_RESUME),hl      ; stage the cursor for the handler
-                ld      hl,H_FILE
-                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
-                                            ; claimed -> disk.rom ran the whole verb
-                ld      hl,(FN_RESUME)
+                ld      de,H_FILE
+                call    verb_run            ; A = status, HL = resume cursor
                 jp      kill_status         ; 0 none matched / 1 listed / 2 I-O
 ; df_notfound — R-LF4 + R-LF6: a filespec that matches nothing prints `File not
 ; found`, on the SCREEN, for LFILES *and* for FILES. Measured on the CF-3300 for
@@ -1874,13 +1888,9 @@ fcla_next:
 ; with no disk ROM the cell is unclaimed, chan_gate raises ERR 5 before anything
 ; else happens, and no filename is ever evaluated -- the same order as before.
 ex_kill:
-                inc     hl                  ; HL -> bytes after the KILL token
-                ld      (FN_RESUME),hl      ; stage the cursor for the handler
-                ld      hl,H_KILL
-                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
-                                            ; claimed -> disk.rom ran the whole verb
-                ld      hl,(FN_RESUME)      ; the cursor the handler resumed at
-                jr      kill_status
+                ld      de,H_KILL
+                call    verb_run            ; A = status, HL = resume cursor,
+                                            ; and FALLS THROUGH into kill_status
 ; The wildcard delete itself -- fat_delete finding, freeing and $E5-marking each
 ; match in turn -- is unchanged SOURCE, but it no longer runs where this used to
 ; say. 🧭 D-KILLLOCAL (disk/docs/spec-diskcode-eviction.md §6.6ay): the loop ran
@@ -1905,7 +1915,7 @@ ex_kill:
                 ; separates the mount (STATUS = 2) exactly as tnt_files does, and
                 ; these two lines are the head half of that: +4 B, not 0.
 kill_status:                            ; D-COPY shares this decode (0/1/2)
-                ld      a,(DISKOP_STATUS)
+                                        ; in: A = DISKOP_STATUS, from verb_run
                 or      a
                 jp      z,df_notfound       ; 0 = nothing matched -> ERR 53
                 dec     a
@@ -1951,15 +1961,10 @@ ks_nz_diskerr:                              ; B4: save.asm's disk SAVE exit shar
 ; i.e. LOOK THE OLD FILE UP FIRST, THEN EVALUATE THE NEW NAME. hk_name does them
 ; in that order for the same reason, and the `AS` check sits between them.
 ex_name:
-                inc     hl                  ; HL -> bytes after the NAME token
-                ld      (FN_RESUME),hl      ; stage the cursor for the handler
-                ld      hl,H_NAME
-                call    chan_gate           ; unclaimed -> ERR 5 (trappable);
-                                            ; claimed -> disk.rom ran the whole verb
-                ld      a,(DISKOP_STATUS)
+                ld      de,H_NAME
+                call    verb_run            ; A = status, HL = resume cursor
                 cp      4
                 jp      z,stmt_error        ; 4 = no `AS` -> Syntax error
-                ld      hl,(FN_RESUME)      ; resume past the NEW name expression
                 jr      kill_status         ; 0 not found / 1 renamed / 2 I-O
 
 ; --- MAXFILES = n — size the multi-channel table ---------------------------
