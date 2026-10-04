@@ -26,12 +26,8 @@
 ; domain_convert_core (dcc_bound5) reads these; keeping a resident copy avoids a
 ; cross-ROM reference now that the crunch lives in the sub-ROM. Unpacked digits,
 ; one per byte (MSX2 TH number format; oracle-pinned bounds).
-tkf_ref32767:
-                db      3,2,7,6,7           ; signed 16-bit ceiling
-tkf_ref65535:
-                db      6,5,5,3,5           ; unsigned 16-bit ceiling
-tkf_ref32768:
-                db      3,2,7,6,8           ; negative magnitude ceiling (-32768)
+; tkf_ref32767 / tkf_ref65535 / tkf_ref32768 -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the font island.
 
 ; =============================================================================
 ; Sign space/'-' + digits + ONE trailing space; E notation for BOTH

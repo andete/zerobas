@@ -1129,7 +1129,5 @@ autoexec_run:
                 call    disk_prog_load
                 jp      run_prog
 
-; --- autoexec_name: the upcased 11-byte 8.3 name we probe for on cold start ---
-; "AUTOEXEC" (8) + "BAS" (3) = exactly 11 non-space characters -- no padding
-; needed (see disk/docs/autoexec-bas-spec.md §3 point 2).
-autoexec_name:  db      "AUTOEXECBAS"
+; autoexec_name -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.

@@ -153,6 +153,20 @@ rdslt_scan:
                 ld      a,(SCAN_SLOT)
                 jp      RDSLT               ; tail call: RDSLT's RET returns to caller
 
+; --- D-ISLDATA2 (2026-10-03): five pure-DATA blocks, 58 B, into the font island --
+; Same rules as the $0160 block: absolute `ld` readers only. `rn_in` became an
+; equ alias of in_msg in basic/program.asm (both were " in ",0).
+rn_undefined:   db      "Undefined line ",0
+fmt_menu_text:  db      "1=360k 2=720k? ",0
+tkf_ref32767:
+                db      3,2,7,6,7           ; signed 16-bit ceiling
+tkf_ref65535:
+                db      6,5,5,3,5           ; unsigned 16-bit ceiling
+tkf_ref32768:
+                db      3,2,7,6,8           ; negative magnitude ceiling (-32768)
+in_msg:         db      " in ",0
+brk_msg:        db      "Break",0           ; repack: " in " moved into print_in_lineno
+
     IF $ > $1BBF
                 db      ISLAND_BEFORE_FONT_OVERRAN_1BBF__IT_WOULD_OVERWRITE_THE_FONT
     ENDIF
@@ -214,6 +228,68 @@ ttypos_col:
                 ld      a,(CSRX)
                 dec     a
                 ret
+
+; --- D-ISLDATA2 (2026-10-03): six more pure-DATA blocks, 61 B, to the brim --
+; Each is read by exactly the absolute `ld hl/de,<label>` sites its source file
+; still carries; none is a `jr` target, none is fallen into, nothing in sub/ or
+; disk/ names any of them, and no test decodes them by image offset. Order here
+; is free. The `IF $ > $0200` guard below is what refuses an overrun.
+; The precedence table: LOOSEST first, `db token, dw leaf`, $00-terminated.
+; EQV sits looser than XOR only because something had to; the two are measurably
+; indistinguishable (see the header), so this is a free choice, not a claim.
+logtab:
+                db      IMP_TOKEN
+                dw      lg_imp
+                db      EQV_TOKEN
+                dw      lg_eqv
+                db      XOR_TOKEN
+                dw      lg_xor
+                db      OR_TOKEN
+                dw      lg_or
+                db      AND_TOKEN
+                dw      lg_and
+                db      0                   ; terminator -> drop to ev_not
+; The single-numeric-argument $FF selectors, for the cpir set test above. Order is
+; free. Repack-only, like the scan that reads it.
+ev_ff_argtab:
+                db      PEEK_TOKEN          ; $97
+                db      VPEEK_TOKEN         ; $98
+                db      INP_TOKEN           ; $90
+                db      EOF_TOKEN           ; $AB
+                db      LOF_TOKEN           ; $AD
+                db      LOC_TOKEN           ; $AC  (D-LOC)
+                db      DSKF_TOKEN          ; $A6
+                db      POS_TOKEN           ; $91  (cursor cluster; arg DISCARDED)
+                db      LPOS_TOKEN          ; $9C  (D-LPTVERB; arg DISCARDED too)
+    IF I1_RESIDENT
+                db      STICK_TOKEN         ; $A2  (input devices, slice I1)
+                db      STRIG_TOKEN         ; $A3
+    ENDIF
+    IF I2_RESIDENT
+                db      PDL_TOKEN           ; $A4  (input devices, slice I2)
+                db      PAD_TOKEN           ; $A5
+    ENDIF
+ev_ff_argtab_len equ    $ - ev_ff_argtab
+; --- evmc_total_tab: <selector token>, <low byte of the sub-ROM entry> ------
+; The five rows carry what used to be five stub headers. All are COMPUTE-ONLY
+; tenants (they leave FAC correct but touch neither FACTYP nor DE), so
+; evmc_dispatch does the shared FACTYP:=8 + flt_to_int16 refresh for all of them.
+evmc_total_tab:
+                db      ATN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN) & $FF
+                db      SIN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN) & $FF
+                db      COS_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS) & $FF
+                db      TAN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN) & $FF
+                ; RND's argument VALUE is read by fp_rnd itself (ignored when
+                ; positive, consumed as mant14 when negative) -- nothing here
+                ; interprets it, so RND collapses with the other four.
+                db      RND_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND) & $FF
+; --- autoexec_name: the upcased 11-byte 8.3 name we probe for on cold start ---
+; "AUTOEXEC" (8) + "BAS" (3) = exactly 11 non-space characters -- no padding
+; needed (see disk/docs/autoexec-bas-spec.md §3 point 2).
+autoexec_name:  db      "AUTOEXECBAS"
+fmt_name:       db      "FORMAT"
+prompt_text:
+                db      "ZB",13,10,0
 
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS

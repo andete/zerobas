@@ -891,7 +891,8 @@ do_break:
                 ; (the reference prints a bare "Break" for a typed STOP -- measured),
                 ; so this tail stays a single unconditional jump.
                 jr      print_in_lineno
-brk_msg:        db      "Break",0           ; repack: " in " moved into print_in_lineno
+; brk_msg -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the font island.
 
 ; --- cont_record: record a CONT resume point (D-CONTR) -----------------------
 ; docs/spec-basic-cont-record.md §3.0. THE RUN LOOP RECORDS WHERE IT STOPPED AT
@@ -949,7 +950,8 @@ print_in_lineno:
                 call    cur_lineno          ; HL = line number
                 call    ln_div_entry
                 jp      print_crlf
-in_msg:         db      " in ",0
+; in_msg -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the font island.
 
 ; --- print_msg_stopcr / print_msg: the D-MSGENC message decoder ----------------
 ; docs/spec-basic-msgenc-carve.md §4.3. Error message strings are PHRASE-ENCODED
@@ -1446,8 +1448,9 @@ exr_done:
 ; pool encodes whole messages and this one has two NUMBERS spliced into it, so
 ; there is no message to look up -- and `Undefined line` is not a prefix of
 ; err_undefined's text in any form the decoder could share.
-rn_undefined:   db      "Undefined line ",0
-rn_in:          db      " in ",0
+; rn_undefined -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the font island.
+rn_in          equ     in_msg              ; D-ISLDATA2: both were " in ",0 -- one copy (5 B)
 
 ; --- ex_auto: AUTO [<start>][,<inc>] (D-EDITVERB) ----------------------------
 ; docs/spec-basic-editverb.md §3.3, measured in

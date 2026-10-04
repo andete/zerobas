@@ -10,9 +10,9 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 03856H
-round_single_and_pack equ 03395H
-round_and_finalize equ 03340H
+widen_rhs_operand equ 03847H
+round_single_and_pack equ 03386H
+round_and_finalize equ 03331H
 pu_deref_body equ 02822H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
@@ -53,15 +53,15 @@ FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E29H
-pdfcb_resume equ 06E22H
-dirverb_op equ 06BFFH
-main_fat_mount equ 06493H   ; main's fat_mount
-main_fat_find equ 06497H   ; main's fat_find
-parse_disk_fcb equ 0661FH
-field_prologue equ 07280H
-field_item equ 072B6H
-lrset_tgt equ 07371H
-lrset_rhs equ 07393H
-lrset_finish equ 073AAH
-fch_ctx_addr equ 06FB2H
+fname_expr equ 06DF2H
+pdfcb_resume equ 06DEBH
+dirverb_op equ 06BC8H
+main_fat_mount equ 06467H   ; main's fat_mount
+main_fat_find equ 0646BH   ; main's fat_find
+parse_disk_fcb equ 065F3H
+field_prologue equ 07249H
+field_item equ 0727FH
+lrset_tgt equ 0733AH
+lrset_rhs equ 0735CH
+lrset_finish equ 07373H
+fch_ctx_addr equ 06F7BH

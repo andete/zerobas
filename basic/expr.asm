@@ -165,21 +165,8 @@ lg_imp:         cpl
                 or      e                   ; IMP = (NOT a) OR b    [MEASURED]
                 ret
 
-; The precedence table: LOOSEST first, `db token, dw leaf`, $00-terminated.
-; EQV sits looser than XOR only because something had to; the two are measurably
-; indistinguishable (see the header), so this is a free choice, not a claim.
-logtab:
-                db      IMP_TOKEN
-                dw      lg_imp
-                db      EQV_TOKEN
-                dw      lg_eqv
-                db      XOR_TOKEN
-                dw      lg_xor
-                db      OR_TOKEN
-                dw      lg_or
-                db      AND_TOKEN
-                dw      lg_and
-                db      0                   ; terminator -> drop to ev_not
+; logtab -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.
 ev_not:
                 call    ev_sp
                 cp      NOT_TOKEN
@@ -1040,27 +1027,8 @@ ev_f_ff:
                 jr      z,ev_ff_arg
                 jp      ev_ff_mathconv      ; ABS/SGN/INT/FIX/CINT/CSNG/CDBL, else
                                             ; LEN/ASC/VAL (string->number), else ev_f_err
-; The single-numeric-argument $FF selectors, for the cpir set test above. Order is
-; free. Repack-only, like the scan that reads it.
-ev_ff_argtab:
-                db      PEEK_TOKEN          ; $97
-                db      VPEEK_TOKEN         ; $98
-                db      INP_TOKEN           ; $90
-                db      EOF_TOKEN           ; $AB
-                db      LOF_TOKEN           ; $AD
-                db      LOC_TOKEN           ; $AC  (D-LOC)
-                db      DSKF_TOKEN          ; $A6
-                db      POS_TOKEN           ; $91  (cursor cluster; arg DISCARDED)
-                db      LPOS_TOKEN          ; $9C  (D-LPTVERB; arg DISCARDED too)
-    IF I1_RESIDENT
-                db      STICK_TOKEN         ; $A2  (input devices, slice I1)
-                db      STRIG_TOKEN         ; $A3
-    ENDIF
-    IF I2_RESIDENT
-                db      PDL_TOKEN           ; $A4  (input devices, slice I2)
-                db      PAD_TOKEN           ; $A5
-    ENDIF
-ev_ff_argtab_len equ    $ - ev_ff_argtab
+; ev_ff_argtab (+ ev_ff_argtab_len) -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.
 ev_ff_arg:
                 ld      c,a                 ; C = selector (survives the parse)
                 call    ixsp_paren_req     ; D-IXSP
@@ -1862,19 +1830,8 @@ evmc_ts_hit:
                 ret     nz                  ; malformed/empty arg -> deferred syntax
                 jp      evmc_dispatch
 
-; --- evmc_total_tab: <selector token>, <low byte of the sub-ROM entry> ------
-; The five rows carry what used to be five stub headers. All are COMPUTE-ONLY
-; tenants (they leave FAC correct but touch neither FACTYP nor DE), so
-; evmc_dispatch does the shared FACTYP:=8 + flt_to_int16 refresh for all of them.
-evmc_total_tab:
-                db      ATN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ATN) & $FF
-                db      SIN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SIN) & $FF
-                db      COS_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_COS) & $FF
-                db      TAN_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TAN) & $FF
-                ; RND's argument VALUE is read by fp_rnd itself (ignored when
-                ; positive, consumed as mant14 when negative) -- nothing here
-                ; interprets it, so RND collapses with the other four.
-                db      RND_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND) & $FF
+; evmc_total_tab -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.
 
 ; Assembly-time guard: the table stores ONE byte per entry, so every one of the
 ; five must share SUBROM_ENTRY_BASE_P1's 256 B page. RND has the largest index of

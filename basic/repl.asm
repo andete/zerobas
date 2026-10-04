@@ -244,5 +244,5 @@ txt_mode:
 ; on its row and the typed line starts at column 0 of the next. Same-row `ZB`
 ; cost every typed line 2 columns the reference does not spend, which D-BOOTWIDTH
 ; exposed: at 37 columns a 35-37-char line wrapped here and not there.
-prompt_text:
-                db      "ZB",13,10,0
+; prompt_text -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.

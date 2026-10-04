@@ -103,7 +103,8 @@ fmf_lp:
 fmf_no:
                 or      a                   ; CF clear -> no match
                 ret
-fmt_name:       db      "FORMAT"
+; fmt_name -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the $0160 island.
 
 
 ; --- do_format — interactively pick a geometry, then write a fresh filesystem ----
@@ -160,4 +161,5 @@ fmt_dispatch:
 ; fmt_geom_byte (see that file) -- format-body.inc is sub-ROM-only
 ; in the repack build (sub/format.asm), not included resident here, so the menu
 ; needs its own text. Same 17 bytes, no functional difference.
-fmt_menu_text:  db      "1=360k 2=720k? ",0
+; fmt_menu_text -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
+; read only by absolute `ld` from main; now in the font island.
