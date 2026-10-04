@@ -10,7 +10,7 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 03839H
+widen_rhs_operand equ 03838H
 round_single_and_pack equ 03378H
 round_and_finalize equ 03324H
 pu_deref_body equ 02820H
@@ -53,15 +53,15 @@ FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06DA2H
-pdfcb_resume equ 06D9BH
-dirverb_op equ 06B78H
-main_fat_mount equ 0641DH   ; main's fat_mount
-main_fat_find equ 06421H   ; main's fat_find
-parse_disk_fcb equ 065A9H
-field_prologue equ 071F9H
-field_item equ 0722FH
-lrset_tgt equ 072EAH
-lrset_rhs equ 0730CH
-lrset_finish equ 07323H
-fch_ctx_addr equ 06F2BH
+fname_expr equ 06D90H
+pdfcb_resume equ 06D89H
+dirverb_op equ 06B66H
+main_fat_mount equ 0640BH   ; main's fat_mount
+main_fat_find equ 0640FH   ; main's fat_find
+parse_disk_fcb equ 06597H
+field_prologue equ 071E7H
+field_item equ 0721DH
+lrset_tgt equ 072D8H
+lrset_rhs equ 072FAH
+lrset_finish equ 07311H
+fch_ctx_addr equ 06F19H

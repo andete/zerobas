@@ -1569,6 +1569,14 @@ widen_int_to:
 ;     this call and pushes them immediately after.
 ; 🎯 So the sweep will keep ranking it, and the answer will keep being no.
 ; [[a-shared-tail-is-not-a-decision]]
+; GA-LHSTYP2 (2026-10-03) INVERTS THE SECOND HALF ONLY: the FRAME half (`push
+; de / call push_lhs_frame`) stays open-coded for exactly the reasons above,
+; but the `call set_factyp_int_ret` that followed it at all six sites is gone
+; -- THIS routine does the reset itself, AFTER its `push af` capture, by
+; ending in `jp set_factyp2` instead of `ret` (set_factyp2's own ret pops the
+; return address we re-pushed). No extra call frame, so the frame stays
+; contiguous. FOR's two sites (program.asm) get the store for free: their
+; very next call is slot_load, whose FIRST store is FACTYP.
 push_lhs_frame:
                 pop     de                  ; DE = our own return address (taken
                                             ; off the stack so it's not in the way)
@@ -1584,7 +1592,8 @@ push_lhs_frame:
                 push    af
                 push    de                  ; return address back on top of the
                                             ; frame we just pushed
-                ret
+                jp      set_factyp2         ; GA-LHSTYP2: FACTYP:=2 AFTER the
+                                            ; capture above, then its ret is ours
 
 ; --- pop_lhs_and_probe: shared preamble for combine_add/sub/mul/cmp -------
 ; (below): pops the lhs frame (FACTYP+FAC, written by push_lhs_frame above),
@@ -1647,9 +1656,10 @@ plap_ret:
 
 ; --- set_factyp_int_ret: FACTYP := 2, ret. Shared tail for combine_add/sub/
 ; mul's int-fast-path success returns (the result value is already in DE).
-; Clobbers A.
-set_factyp_int_ret:
-                jp      set_factyp2
+; Clobbers A. GA-LHSTYP2 (2026-10-03): an alias of expr.asm's set_factyp2 --
+; it was a 3 B jump-to-jump (low -> page 1); the name is kept for its two
+; `jp` users below and for the docs.
+set_factyp_int_ret equ set_factyp2
 
 ; --- widen_lhs_operand: HL = dest FPNUM base. Dispatches on LHS_FACTYP to --
 ; either widen_int_to(FP_LHSVAL) or widen_lhsframe_to. Clobbers as whichever

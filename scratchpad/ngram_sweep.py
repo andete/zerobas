@@ -130,14 +130,15 @@ DECLINED = {
         "D-EVFERR: a new `jp ev_f_err` is a factor deciding to fail with NO "
         "error code, which measured wrong at all seven sites that made it "
         "(basic/expr.asm, beside ev_f_err)",
-    ("push de", "call push_lhs_frame", "call set_factyp_int_ret"):
-        "D-NGRAM (2026-08-29): a FIXED-SIZE FRAME PROTOCOL -- a helper's return "
-        "address lands INSIDE the frame, and the tail-jump form that avoids that "
-        "cannot carry the FACTYP reset, because push_lhs_frame captures FACTYP "
-        "into the frame (basic/float-arith.asm, beside push_lhs_frame)",
+    # GA-LHSTYP2 (2026-10-04, space plan B-2) RETIRED the key that stood here,
+    # `push de / call push_lhs_frame / call set_factyp_int_ret`: push_lhs_frame
+    # now ends in `jp set_factyp2` AFTER its FACTYP capture, so the reset is gone
+    # from all six sites and the run no longer exists. Only its FRAME half stays
+    # declined, below.
     ("inc ix", "push de", "call push_lhs_frame"):
-        "D-NGRAM (2026-08-29): the same frame protocol -- see "
-        "basic/float-arith.asm beside push_lhs_frame",
+        "D-NGRAM (2026-08-29): a FIXED-SIZE FRAME PROTOCOL -- a helper's return "
+        "address lands INSIDE the frame (basic/float-arith.asm, beside "
+        "push_lhs_frame). The FACTYP-reset half was carved by GA-LHSTYP2",
 }
 
 
@@ -158,7 +159,7 @@ def _selftest():
         print(f"{'PASS' if cond else 'FAIL'}  {name}")
         ok = ok and bool(cond)
 
-    frame = ("push de", "call push_lhs_frame", "call set_factyp_int_ret")
+    frame = ("inc ix", "push de", "call push_lhs_frame")
     arm("D1 a declined shape is recognised", declined_reason(frame) is not None)
     arm("D2 a longer shape with the declined PREFIX is recognised",
         declined_reason(frame + ("call ev_mod",)) is not None)

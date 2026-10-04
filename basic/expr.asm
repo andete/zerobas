@@ -254,8 +254,8 @@ evr_rhs:
                 ; machine stack (same fixed-size frame protocol as the ev_e/
                 ; ev_t double-arithmetic sites) before the rhs eval clobbers
                 ; FAC, then reset FACTYP=2 for the rhs eval.
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 push    bc                  ; relation bits (in C)
                 call    ev_e                ; DE = rhs
                 pop     bc                  ; C = bits
@@ -352,16 +352,16 @@ ev_e_add:
                 ; stack (fixed-size frame) before the rhs eval clobbers FAC,
                 ; reset FACTYP=2 for the rhs eval. combine_add decides int-
                 ; fast-path (with signed-overflow-promotion) vs BCD add.
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 call    ev_mod              ; DE = rhs
                 call    combine_add         ; pops the frame; DE = result
                 jr      ev_e_lp
 ev_e_sub:
                 inc     ix
                 push    de                  ; lhs
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 call    ev_mod              ; DE = rhs
                 call    combine_sub
                 jr      ev_e_lp
@@ -420,16 +420,16 @@ ev_t_lp:
 ev_t_mul:
                 inc     ix
                 push    de                  ; lhs
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 call    ev_pw               ; DE = rhs
                 call    combine_mul
                 jr      ev_t_lp
 ev_t_div:
                 inc     ix
                 push    de                  ; lhs
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 call    ev_pw               ; DE = rhs
                 call    combine_div_float   ; ALWAYS float (spec §10.1)
                 jr      ev_t_lp
@@ -452,8 +452,8 @@ ev_pw_lp:
                 ret     nz
                 inc     ix
                 push    de                  ; lhs
-                call    push_lhs_frame
-                call    set_factyp_int_ret  ; FACTYP:=2 for the rhs eval
+                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
+                                            ; (GA-LHSTYP2: its own tail)
                 call    ev_f                ; rhs (ev_f's own unary-minus ->
                                             ; ev_pw call below gives the
                                             ; pinned right-nesting for free)
