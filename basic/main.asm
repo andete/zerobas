@@ -38,7 +38,7 @@
 ; Defined BEFORE sysvars.inc, which sites the string-engine RAM layout (STRMAX /
 ; STRSCR / the temp ring — see sysvars.inc "string-variable store" and
 ; docs/spec-basic-string-engine.md §5).
-BASIC_ORG:      equ     $2812
+BASIC_ORG:      equ     $2765
 
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).

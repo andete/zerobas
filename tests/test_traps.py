@@ -30,7 +30,7 @@ from msxtest import Machine, carry  # noqa: E402
 
 RES_ROM = tp("zb_traps_reloc.rom")
 RES_SYM = tp("zb_traps_reloc.sym")
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 
 # trap state-byte encoding (basic/sysvars.inc)
 ZTS_OFF, ZTS_ON, ZTS_STOP, ZTS_SERVICING = 0, 1, 2, 3

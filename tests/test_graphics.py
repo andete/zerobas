@@ -326,7 +326,7 @@ SUB_ROM = tp("zb_graphics_sub.rom")
 SUB_SYM = tp("zb_graphics_sub.sym")
 RES_ROM = tp("zb_graphics_res.rom")
 RES_SYM = tp("zb_graphics_res.sym")
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 
 # --- gfx_calc_addr (G1): (x,y) -> (pattern byte addr, MSB-first mask) ---------
 ADDR_CASES = [

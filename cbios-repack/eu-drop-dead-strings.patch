@@ -1,0 +1,41 @@
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -3153,10 +3153,6 @@
+ str_slot:
+                 ;       [01234567890123456789012345678]
+                 db      "Init ROM in slot: ",$00
+-
+-str_basic:
+-                ;       [01234567890123456789012345678]
+-                db      "Cannot execute a BASIC ROM.",$0D,$0A,$00
+ 
+ ;-------------------------------------
+ ; error messages
+@@ -3172,16 +3168,17 @@
+ str_stack_error:
+                 db      "STACK ERROR.",$00
+ 
+-str_nocart:
+-                ;       [01234567890123456789012345678]
+-                db      $0D,$0A,$0D,$0A
+-                db      "No cartridge found.",$0D,$0A
+-                db      $0D,$0A
+-                db      "This version of C-BIOS can",$0D,$0A
+-                db      "only start cartridges.",$0D,$0A
+-                db      "Please restart your MSX",$0D,$0A
+-                db      "(emulator) with a cartridge",$0D,$0A
+-                db      "inserted.",$00
++; zerobas repack (C3-CBIOS-TAIL-STRINGS): str_basic ("Cannot execute a BASIC
++; ROM.", 30 B) and str_nocart ("No cartridge found. ...", 143 B) are reclaimed.
++; On the merged machine the boot scan reaches zerobas-BASIC (slot 0, page 1)
++; FIRST and its INIT never returns, so run_basic_roms (the only str_basic site)
++; and the nothing-booted tail of the boot path (the only str_nocart site) never
++; execute. Both labels alias str_error_prompt so those two dead print sites
++; still assemble at the same size and nothing below the $1BBF font pin moves;
++; the 173 B of text move the scan-code tables and vdp_bios down, and zerobas's
++; BASIC_ORG (basic/main.asm) follows the new end of vdp_bios.
++str_basic:      equ     str_error_prompt
++str_nocart:     equ     str_error_prompt
+ 
+ ;-------------------------------------
+ ; scan code tables

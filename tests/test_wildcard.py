@@ -47,7 +47,7 @@ from msxtest import Machine, zero  # noqa: E402
 # defaulted: msxtest.Machine's old default was $4000, the retired lean
 # cart's org, so a BASIC test that omitted it silently tested the lean
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
-BASIC_BASE = 0x2812
+BASIC_BASE = 0x2765
 # The sub-ROM is a flat $0000-based 32 KB image spanning BOTH pages, so a symbol
 # in it is already at the address a real CALSLT would map it to (test_msgsub.py's
 # note). `name_cmp` is inside the page-1 fatprim tenant, i.e. $4000+.

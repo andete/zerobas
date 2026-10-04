@@ -49,7 +49,7 @@ from msxtest import Machine  # noqa: E402
 # tenants low and page-1 tenants high, exactly where a real CALSLT maps them.
 # The two halves live in DIFFERENT ROMs, so this test builds both.
 SUB_BASE = 0x0000     # sub image: flat $0000-$7FFF, page-0 low / page-1 high
-BASIC_BASE = 0x2812   # the shipped BASIC image's org
+BASIC_BASE = 0x2765   # the shipped BASIC image's org
 
 SUB_ROM = tp("zb_openlen_sub.rom")
 SUB_SYM = tp("zb_openlen_sub.sym")

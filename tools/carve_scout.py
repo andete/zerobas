@@ -15,7 +15,7 @@ TWO INDEPENDENT QUESTIONS, and conflating them is how a carve gets mis-sized:
      leaves page 1 is *the routines defined in the files you move*.
 
   2. IS IT LEGAL?  A page-0 tenant runs with slot-0 page 0 switched OUT: the
-     BIOS (< $2812) and the main low region ($2812-$3FFF) are NOT THERE. Main
+     BIOS (< $2765) and the main low region ($2765-$3FFF) are NOT THERE. Main
      page 1 stays mapped, so calling into it is fine -- BUT THE WALK MUST
      CONTINUE THROUGH IT. If a main page-1 callee itself calls the low region,
      the tenant crashes just the same, because the slot config persists across
@@ -81,7 +81,7 @@ from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E40
                                   data_targets, load_syms)
 
 PAGE1 = 0x4000
-LOWREGION = 0x2812
+LOWREGION = 0x2765
 DEFAULT_PLUMBING = ("subrom_call", "subrom_absent_error", "vars_reset")
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
 
@@ -274,7 +274,7 @@ def main() -> int:
         # The coverage limit made inspectable rather than left as prose: every
         # non-transfer identifier in the closure that is NOT a `label:` def. Most
         # are equ VALUES (token numbers, capacities) and RAM sysvars >= $8000;
-        # what needs an eye is an equ naming BIOS ROM data below $2812.
+        # what needs an eye is an equ naming BIOS ROM data below $2765.
         mentioned = set()
         for n in closure:
             mentioned |= data.get(n, set())

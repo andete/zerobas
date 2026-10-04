@@ -46,11 +46,16 @@ PATCHES = [
     # D-HOMEKEY: HOME gave $0C (CLS); an MSX gives $0B and CLS only with SHIFT.
     # 12 bytes in key_ascii -- which moves the font pad (and island 1) to $1ADB.
     os.path.join(REPO, "cbios-repack", "home-key.patch"),
+    # C3-CBIOS-TAIL-STRINGS: drop the two boot strings the merged machine can
+    # never print (str_nocart 143 B + str_basic 30 B, both AFTER the font pin
+    # and before the scan-code tables); vdp_bios ends at $2765, not $2812, and
+    # BASIC_ORG (basic/main.asm) / BASIC_BASE (build_mainrom.py) follow it.
+    os.path.join(REPO, "cbios-repack", "eu-drop-dead-strings.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "90e75754ea2af117a7fe26eea81a3646b7de8043"
+REPACKED_SHA1 = "91d549fed2f3b7ca42a888d098b6f18b5fad0938"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

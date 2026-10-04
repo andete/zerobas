@@ -50,7 +50,7 @@ if _TESTS not in sys.path:
 
 from msxtest import Machine  # noqa: E402  (path set up above)
 
-BASIC_BASE = 0x2812   # basic/main.asm's org
+BASIC_BASE = 0x2765   # basic/main.asm's org (BASIC_ORG; $2812 before C3)
 ROM_PATH = "/tmp/zerobas_basic_bastok.rom"
 SYM_PATH = "/tmp/zerobas_basic_bastok.sym"
 SRC_ADDR = 0xC000     # scratch: ASCII source line (free RAM in the host model)

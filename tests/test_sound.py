@@ -37,7 +37,7 @@ from msxtest import Machine  # noqa: E402
 
 ROM = tp("zb_sound.rom")
 SYM = tp("zb_sound.sym")
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 BUF = 0xC000   # scratch token buffer (free RAM)
 
 

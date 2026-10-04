@@ -5,7 +5,7 @@
 """Promotion scout — which low-region routines may move UP into main page 1.
 
 The mirror image of carve_scout.py. A carve moves page-1 code OUT to the sub-ROM;
-a PROMOTION moves main low-region code ($2812-$3FFF) UP into main page 1
+a PROMOTION moves main low-region code ($2765-$3FFF) UP into main page 1
 ($4000-$7FFF), inside the same assembly. It is the only way a page-1 carve can
 fund a LOW-REGION need: free page 1 first, then promote low-region content into
 the space (docs/spec-traps-t3-key.md §7.4).
@@ -58,7 +58,7 @@ from check_tenant_closure import (build_callgraph, build_datagraph,  # noqa: E40
 from carve_scout import reachable, shortest_path, sizes_by_symbol  # noqa: E402
 
 PAGE1 = 0x4000
-LOWREGION = 0x2812
+LOWREGION = 0x2765
 # The ISR-side pins. htimi_guard is the frame-skip decision itself; a trap hook
 # that must NOT skip a frame (zkey_isr -- a missed frame leaks an undiverted
 # keystroke, docs/spec-traps-t3-key.md §5) is pinned with its whole closure.

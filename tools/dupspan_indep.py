@@ -53,7 +53,7 @@ from __future__ import annotations
 import collections
 import sys
 
-BASE = 0x2812                       # the main image's load address
+BASE = 0x2765                       # the main image's load address
 
 # ---------------------------------------------------------------- Z80 decode
 
@@ -252,7 +252,7 @@ def main():
         total_nom += nominal
         vs = [(s, *verdict(s)) for s in g]
         # 🔴 A FOURTH THING NEITHER SWEEP NOR DECODER CAN SEE: THE REGION
-        # CONTRACT.  Main low ($2812-$3FFF) is switched OUT under a sub page-0
+        # CONTRACT.  Main low ($2765-$3FFF) is switched OUT under a sub page-0
         # tenant and main page 1 ($4000-$7FFF) is switched OUT under a sub
         # page-1 tenant.  Aliasing a LOW label onto a PAGE-1 address hands every
         # page-1 tenant that reaches it an address that is not there — and vice
@@ -290,7 +290,7 @@ def main():
         net = gain - widen
         total_safe += max(net, 0)
         # 🔴 PRICING BY FILE IS NOT PRICING BY REGION (D-LOADSWEEP).  The bytes
-        # come back where the ALIASED member sat, and low ($2812-$3FFF) is a
+        # come back where the ALIASED member sat, and low ($2765-$3FFF) is a
         # different wall from page 1 ($4000-$7FFF).
         if net > 0:
             for s2, code2, rec2, _ in vs:

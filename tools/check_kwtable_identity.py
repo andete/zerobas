@@ -60,7 +60,7 @@ import hashlib
 import re
 import sys
 
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 SUB_BASE = 0x0000
 
 # Measured from `rm -rf build && make basic-reloc`. Bump BOTH when

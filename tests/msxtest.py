@@ -111,7 +111,7 @@ def load_symbols(path):
     return syms
 
 
-BASIC_IMAGE_BASE = 0x2812   # basic/main.asm BASIC_ORG (islands may sit lower)
+BASIC_IMAGE_BASE = 0x2765   # basic/main.asm BASIC_ORG (islands may sit lower)
 
 
 class Machine:

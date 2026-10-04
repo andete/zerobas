@@ -46,7 +46,7 @@ from msxtest import Machine, StackLost  # noqa: E402
 
 # The shipped image at its ORG, named here rather than defaulted -- msxtest's old
 # default was $4000, the retired lean cart's org (docs/spec-lean-retire-s3-gates.md §5).
-BASIC_BASE = 0x2812
+BASIC_BASE = 0x2765
 ROM = tp("zb_hguard.rom")
 SYM = tp("zb_hguard.sym")
 CODE = 0xC000    # scratch: hand-assembled Z80 for the synthetic rows

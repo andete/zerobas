@@ -34,7 +34,7 @@ from msxtest import Machine, carry  # noqa: E402
 # defaulted: msxtest.Machine's old default was $4000, the retired lean
 # cart's org, so a BASIC test that omitted it silently tested the lean
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
-BASIC_BASE = 0x2812
+BASIC_BASE = 0x2765
 
 ROM = tp("zb_vars.rom")
 SYM = tp("zb_vars.sym")

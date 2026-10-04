@@ -57,7 +57,7 @@ from msxtest import Machine  # noqa: E402
 
 ROM = tp("zb_strcmp.rom")
 SYM = tp("zb_strcmp.sym")
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 
 SRC = 0xC000       # ASCII expression / line-body source
 TOKBUF = 0xC100    # crunched-token buffer

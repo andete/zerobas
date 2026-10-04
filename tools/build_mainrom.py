@@ -9,9 +9,9 @@ MSX-spec BIOS-low + BASIC-high layout -- rather than two disjoint IPS patches. T
 splices the three source components into that combined image:
 
   1. the repacked C-BIOS (page 0 BIOS; its dead ROM-BASIC placeholder dropped so
-     $2812-$3FFF is free, contiguous below page 1) -- the base,
-  2. the relocated BASIC ($2812-$7FFF, basic/main.asm; "AB" header pinned at
-     $4000, reclaimed low region $2812-$3FFF reserved $00 for now), and
+     $2765-$3FFF is free, contiguous below page 1) -- the base,
+  2. the relocated BASIC ($2765-$7FFF, basic/main.asm; "AB" header pinned at
+     $4000, reclaimed low region $2765-$3FFF reserved $00 for now), and
   3. the zerobas-tape page-0 completions (LPTOUT vector $00A5, GTPAD/GTPDL vectors
      $00DB/$00DE, cassette vectors $00E2-$00F6, routine bodies $09EE-tape_end --
      the $00DB/$00DE vectors repoint C-BIOS's GTPAD/GTPDL debug stubs; D5 rev 2026-07-11:
@@ -21,7 +21,7 @@ splices the three source components into that combined image:
 Overlay order is BASIC then tape: BASIC's reserved low region is $00, and the tape
 bodies sit below it ($09EE-tape_end, C-BIOS gap-1 fill), so order no longer
 matters, but tape still lands last. The two never conflict
-in the vector regions ($00A5/$00E1 are below BASIC's $2812 base).
+in the vector regions ($00A5/$00E1 are below BASIC's $2765 base).
 
 Safety: reuses overlay_page1's ref check -- if BASIC would clobber any repacked
 byte that a direct CALL/JP targets, stop. Asserts the tape body region is free
@@ -44,7 +44,7 @@ def sym_value(sym_path: str, label: str) -> int:
             return int(parts[-1].rstrip("Hh"), 16)
     raise SystemExit(f"label {label!r} not found in {sym_path}")
 
-BASIC_BASE = 0x2812   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
+BASIC_BASE = 0x2765   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
 TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body
@@ -116,7 +116,7 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int,
 
     merged = bytearray(repacked)
 
-    # 1) splice BASIC over $2812-$7FFF, checking we clobber no referenced stub.
+    # 1) splice BASIC over $2765-$7FFF, checking we clobber no referenced stub.
     overwritten = [BASIC_BASE + i for i in range(len(basic))
                    if repacked[BASIC_BASE + i] != 0
                    and repacked[BASIC_BASE + i] != basic[i]]

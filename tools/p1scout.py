@@ -4,7 +4,7 @@
 """PAGE-1-tenancy scout: mirror of carve_scout's page-0 legality question.
 
 A page-1 tenant runs with MAIN PAGE 1 switched OUT and main page 0 (BIOS + the
-low region $2812-$3FFF: eval's float bottom, the whole float pack) MAPPED.
+low region $2765-$3FFF: eval's float bottom, the whole float pack) MAPPED.
 So the only fatal escapes are calls to MAIN routines >= $4000 outside the moved
 set.  Reports the FRONTIER -- the direct dependencies you must dissolve -- not
 the whole transitive tail, which is unreadable and misleading.

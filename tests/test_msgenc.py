@@ -32,7 +32,7 @@ ROOT = os.path.dirname(HERE)
 
 ROM = tp("zb_msgenc_reloc.rom")
 SYM = tp("zb_msgenc_reloc.sym")
-LOW = 0x2812                    # basic/main-reloc.asm ROM_BASE: image offset origin
+LOW = 0x2765                    # basic/main-reloc.asm ROM_BASE: image offset origin
 
 # The decoded text every message MUST still produce, typed independently of the
 # `db` lines that encode them. Capitalisation is load-bearing: the arrays arc's

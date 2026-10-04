@@ -4,8 +4,8 @@
 
 """Verify the relocated BASIC image (cbios-repack arc -> string-engine arc S3).
 
-The image (basic/main.asm, org $2812) spans $2812-$7FFF, with the string engine
-and its keyword table in the reclaimed low region $2812-$3FFF (string-engine arc,
+The image (basic/main.asm, org $2765) spans $2765-$7FFF, with the string engine
+and its keyword table in the reclaimed low region $2765-$3FFF (string-engine arc,
 spec §5b). Until 2026-07-29 a second, page-1-only "lean" build existed that could
 not fit them; it is retired (docs/spec-lean-retire-s3-gates.md), along with this
 file's 4th check, which pinned that build to a frozen baseline.
@@ -16,10 +16,10 @@ was empty $00 pad. Once the string engine grows into the low region and widens
 STRMAX (repack build), the reloc page-1 body legitimately DIFFERS from lean, so that
 assertion is superseded (spec §5b). The durable guarantees this gate enforces:
 
-  1. the relocated image spans $2812-$7FFF exactly (22510 bytes),
+  1. the relocated image spans $2765-$7FFF exactly (22683 bytes),
   2. the "AB" cartridge header is pinned at $4000 (C-BIOS boots via the page-1
      cartridge scan; page 0 is never scanned), and
-  3. the reclaimed low region $2812-$3FFF is OCCUPIED (not all $00) — i.e. the
+  3. the reclaimed low region $2765-$3FFF is OCCUPIED (not all $00) — i.e. the
      string engine actually landed there, the point of the re-layout.
 
     python3 tools/check_reloc.py build/basic-reloc.rom build/basic-reloc.sym
@@ -63,10 +63,10 @@ def load_syms(path):
                 syms[m.group(1)] = int(m.group(2), 16)
     return syms
 
-LOW = 0x2812
+LOW = 0x2765
 HDR = 0x4000
 TOP = 0x8000
-SIZE = TOP - LOW  # 22510
+SIZE = TOP - LOW  # 22683
 
 
 def main() -> int:
@@ -76,11 +76,11 @@ def main() -> int:
     off = HDR - LOW  # header offset within the relocated image
     errs = []
     if len(reloc) != SIZE:
-        errs.append(f"reloc size {len(reloc)} != {SIZE} ($2812-$7FFF)")
+        errs.append(f"reloc size {len(reloc)} != {SIZE} ($2765-$7FFF)")
     if reloc[off:off + 2] != b"AB":
         errs.append(f'"AB" header not at $4000 (offset {off:#x}): {reloc[off:off+2]!r}')
     if set(reloc[:off]) in ({0}, set()):
-        errs.append("reclaimed low region $2812-$3FFF is empty ($00) — the string "
+        errs.append("reclaimed low region $2765-$3FFF is empty ($00) — the string "
                     "engine did not land there (expected occupied per spec §5b)")
     if errs:
         for e in errs:
@@ -88,7 +88,7 @@ def main() -> int:
         return 1
     used = max((i for i, b in enumerate(reloc[:off]) if b != 0), default=-1) + 1
     print(f"OK: relocated image {len(reloc)} B, header @ $4000, low region "
-          f"$2812-$3FFF holds {used} B of string engine")
+          f"$2765-$3FFF holds {used} B of string engine")
 
     # The wall readout. Both labels are REQUIRED to be present: a missing one used
     # to print nothing and still exit 0, which is a wall measurement that silently
@@ -103,7 +103,7 @@ def main() -> int:
     low_end = syms["__MEAS_LOW_END"]
     p1_end = syms["__MEAS_PAGE1_END"]
     print(f"    measure: page-0 low region free = {HDR - low_end} B "
-          f"($2812-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
+          f"($2765-$3FFF, __MEAS_LOW_END @ {low_end:#06x})")
     print(f"    measure: page-1 free            = {TOP - p1_end} B "
           f"($4000-$7FFF, __MEAS_PAGE1_END @ {p1_end:#06x}) "
           f"<- subrom wave-2 tokeniser-eviction relief")

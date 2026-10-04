@@ -13,10 +13,10 @@ visibility (docs/decision-phase3-space-strategy.md §8d, subrom-tenant-playbook 
     wild jump / hang. (This bit us twice: cmp16_bits @ $4A02, div10 @ $5233.)
 
   * PAGE-0 tenant (e.g. dtk_tenant, ary_engine, pu_tofield_tenant) runs with
-    slot-0 PAGE 0 (BIOS + the low region $2812-$3FFF + the $0038 ISR) switched
+    slot-0 PAGE 0 (BIOS + the low region $2765-$3FFF + the $0038 ISR) switched
     OUT, while main PAGE 1 stays mapped. So every callee must be SUB-LOCAL (the
     sub-ROM's own page-0 code / RAM) or a MAIN PAGE-1 routine ($4000-$7FFF); a
-    call into the main low region ($2812-$3FFF) or the BIOS (< $2812) hits code
+    call into the main low region ($2765-$3FFF) or the BIOS (< $2765) hits code
     that is paged out -> crash. It must ALSO not reach the sub-ROM's OWN page 1
     (>= $4000 sub-local), which is unmapped during a page-0 call.
     🔁 SINCE MAKING ROOM lever A (2026-09-25) a MAIN PAGE-1 callee is refused as
@@ -64,7 +64,7 @@ import sys
 import glob
 
 PAGE1 = 0x4000
-LOWREGION = 0x2812   # main page-0 low region starts here; below it is BIOS
+LOWREGION = 0x2765   # main page-0 low region starts here; below it is BIOS
 
 _SYM = re.compile(r'^(\S+)\s+EQU\s+([0-9A-Fa-f]+)H', re.IGNORECASE)
 _LBL = re.compile(r'^([A-Za-z_]\w*):')
@@ -508,8 +508,8 @@ def check_page0(argv) -> int:
                 escapes.append((n, addr, f"sub page-1 (own $4000+ island, unmapped "
                                          f"during a page-0 call), {how}"))
         elif addr < PAGE1:
-            where = ("main low region $2812-$3FFF" if addr >= LOWREGION
-                     else "main BIOS < $2812")
+            where = ("main low region $2765-$3FFF" if addr >= LOWREGION
+                     else "main BIOS < $2765")
             escapes.append((n, addr,
                             f"{where} (switched out under a page-0 call), {how}"))
 

@@ -25,7 +25,7 @@ universal; the BPS is CRC-locked to that exact stock ROM and fails cleanly on a
 mismatch.
 
   main (--main)    the merged repack main ROM (D4): repacked C-BIOS + relocated
-                   BASIC ($2812-$7FFF) + tape, diffed vs pristine stock built from
+                   BASIC ($2765-$7FFF) + tape, diffed vs pristine stock built from
                    the pinned tag -> zerobas-main-eu.ips / .bps.
 
     python3 tools/build_patches.py [STOCK_ROM]          # page-1 BASIC patch
@@ -146,7 +146,7 @@ def build_page1(explicit_stock):
 #
 # 🔴 AND IT WOULD HAVE FAILED IF IT RAN. `ensure_basic_rom()` assembled basic/main.asm
 # and called `pad_rom.py <rom> 16384` -- but basic/main.asm has assembled at
-# BASIC_ORG = $2812, spanning to $8000, since the same retirement: 22510 bytes, which
+# BASIC_ORG = $2765, spanning to $8000, since the same retirement: 22683 bytes, which
 # pad_rom now answers with `exceeds target 16384`. Dead code does not rot quietly; it
 # rots into a call that takes the build down the first time anything reaches it.
 # The retired mode itself is documented in docs/spec-lean-retire-s2-switch.md.
@@ -203,7 +203,7 @@ def build_tape(explicit_stock, out_dir=None):
 
 def build_main(cbios_checkout, out_dir=None):
     """Merged main-ROM patch (cbios-repack arc, WS-3 / D4): repacked C-BIOS +
-    relocated BASIC ($2812-$7FFF) + tape, diffed vs the PRISTINE stock built from
+    relocated BASIC ($2765-$7FFF) + tape, diffed vs the PRISTINE stock built from
     the same pinned tag -> one zerobas-main-eu.ips/.bps. The repacked + pristine
     ROMs are built reproducibly from the user's C-BIOS checkout (no C-BIOS bytes
     in-repo, D1).
@@ -226,11 +226,11 @@ def build_main(cbios_checkout, out_dir=None):
     print("building repacked + pristine C-BIOS from the pinned tag...")
     run([PY, os.path.join(TOOLS, "build_repacked_cbios.py"),
          "--cbios", cbios_checkout, "-o", repacked, "--pristine", pristine])
-    print("assembling relocated BASIC ($2812) + its C-BIOS-padding islands + tape...")
+    print("assembling relocated BASIC ($2765) + its C-BIOS-padding islands + tape...")
     with tempfile.TemporaryDirectory() as work:
         # MAKING ROOM lever B: pasmo emits ONE image from the lowest org, so an
-        # island below $2812 shifts it; split_islands cuts it back into the
-        # $2812-$7FFF shape every consumer expects plus the islands blob.
+        # island below $2765 shifts it; split_islands cuts it back into the
+        # $2765-$7FFF shape every consumer expects plus the islands blob.
         full = os.path.join(work, "basic-full.bin")
         islands = os.path.join(build, "basic-islands.bin")
         run([PASMO, "--bin", os.path.join(REPO, "basic", "main.asm"), full])

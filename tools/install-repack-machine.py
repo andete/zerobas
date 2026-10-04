@@ -8,7 +8,7 @@ The standing acceptance gates (diskbasic_acceptance.py / disk_bdos_acceptance.py
 "C-BIOS_MSX1_EU_BASIC_DISK": stock C-BIOS with zerobas BASIC applied as a page-1 IPS patch,
 plus zerobas-disk in slot 3-1. That machine proves the LEAN 16 KB basic.rom against the
 CF-3300 oracle. But the string-engine arc (S3+) introduced a second, BEHAVIOURALLY DISTINCT
-build — the relocated BASIC ($2812-$7FFF, STRMAX=64, concat-aware str_eval, relocated
+build — the relocated BASIC ($2765-$7FFF, STRMAX=64, concat-aware str_eval, relocated
 kwtable) merged into C-BIOS as build/zerobas-main-eu.rom. "lean matches the oracle" no
 longer implies "repack matches the oracle" for the string-touching verbs.
 

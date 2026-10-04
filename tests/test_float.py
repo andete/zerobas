@@ -42,7 +42,7 @@ from msxtest import Machine  # noqa: E402
 
 ROM = tp("zb_float.rom")
 SYM = tp("zb_float.sym")
-RELOC_BASE = 0x2812
+RELOC_BASE = 0x2765
 
 # The float PRINT formatter (flt_out) was evicted to the sub-ROM (subrom S2b):
 # it now lives in build/sub.rom's page 0 and ends in `ret` (writing FOUTBUF in

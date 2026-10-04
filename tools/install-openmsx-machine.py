@@ -6,7 +6,7 @@
 
 This writes a "C-BIOS_MSX1_EU_BASIC" machine that is byte-for-byte the stock EU
 machine with ONE load-time patch on its main ROM: zerobas-main-eu.ips, the merged
-repack main ROM (repacked C-BIOS + the relocated BASIC spanning $2812-$7FFF + the
+repack main ROM (repacked C-BIOS + the relocated BASIC spanning $2765-$7FFF + the
 cassette patch, all in one image). C-BIOS's cold-boot cartridge scan finds zerobas's
 "AB" header at $4000 and calls it, so the machine boots straight to the zerobas
 prompt with no cartridge inserted, and the baked-in tape code fills in C-BIOS's
