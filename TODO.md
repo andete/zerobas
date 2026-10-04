@@ -3117,6 +3117,14 @@ item — do **one item per session** to keep context lean.
       likely the unused TAIL of C-BIOS "gap-1" after our tape bodies (spliced
       at `$09EE` by `tools/build_mainrom.py`) — confirm before counting it; the
       21 B at `$09D9` is too small to bother.
+      ✅ **2026-10-04 (space plan A3): BOTH ARE USED NOW.** Confirmed as
+      C-BIOS's `src/main.asm:631` `ds $0D01 - $` (debug.asm's end up to the
+      pinned compat tail at `$0D01`); after the tape bodies it is 56 B at `$0CC9`
+      today, not 99 B at `$0C9E` (the tape grew since). The 21 B at `$09D9` was
+      not too small: it holds `fperr_to_err` (13 B). Islands 3 and 4 hold DATA
+      only (`fperr_to_err`, `err_msgtab` 50 B); `build_mainrom.py` refuses a
+      tape ending past `$0CC9`. Page 1 +63 B. The pad is also C-BIOS's
+      "wrong jumper" slide to the RET at `$0D01`; recorded in basic/islands.asm.
       🧭 **(2) THE BUILD PLAN — THE PRECEDENT EXISTS:** `tools/build_mainrom.py`
       ALREADY splices a second component into C-BIOS padding (the tape bodies
       at `$09EE`, checked `$00` fill). Extend it: BASIC (`basic/main.asm`, one
@@ -6067,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29113 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29121 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6233,7 +6241,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11067 (T-6FE392)8 (T-529ABE)` from `TODO.md:23641 (T-529ABE)`: a
+      `TODO.md:11075 (T-6FE392)8 (T-529ABE)` from `TODO.md:23649 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11914,7 +11922,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23641 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23649 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

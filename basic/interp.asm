@@ -1302,78 +1302,11 @@ fp_runtime_error:
 ; deleted all three -- see fp_runtime_error's header above. They existed to give
 ; ONE ERR code a second message that differed only in case; exact wording made
 ; the two spellings identical, so there is no second message to point at.)
-fperr_to_err:
-                db      6                   ; FPERR 1: overflow (err_overflow, program.asm's
-                                            ; own string, dl_overflow -- REUSED byte-for-byte)
-                db      11                  ; FPERR 2: division by zero (err_fp_divzero)
-                db      5                   ; FPERR 3: illegal function call -- math pack
-                                            ; slice 1b SQR(x<0)/LOG, and the deferred
-                                            ; ASC domain check (ev_f_ifc). A REAL ENTRY
-                                            ; since D-MSGEXACT: it was a `db 0` placeholder
-                                            ; while FPERR=3 was intercepted upstream to get
-                                            ; a LOWERCASE message. Same ERR 5, same string
-                                            ; as FPERR=8 now -- knife K3 cuts this slot.
-                db      2                   ; FPERR 4: syntax error (D-F2-3 empty
-                                            ; parenthesised/argument expression; reuses
-                                            ; stmt_error's own ERR-2 table entry)
-                db      9                   ; FPERR 5: subscript out of range -- arrays
-                                            ; slice-1 (§4.1 #3/#8): index out of range, or
-                                            ; wrong dimension count
-                db      7                   ; FPERR 6: out of memory (DIM/auto-dim OOM via
-                                            ; ary_errmap). A REAL ENTRY since D-MSGEXACT --
-                                            ; was a `db 0` placeholder while FPERR=6 was
-                                            ; intercepted upstream to get the CAPITALISED
-                                            ; message; that is now the only spelling.
-                db      10                  ; FPERR 7: redimensioned array -- arrays
-                                            ; slice-1 (§4.1 #4): a second DIM of a live array
-                db      5                   ; FPERR 8: illegal function call -- arrays
-                                            ; slice-1 (§4.1 #9): negative subscript; arrays'
-                                            ; OWN reference-verbatim capitalised
-                                            ; "Illegal function call" (basic/arrays.asm
-                                            ; err_illegal_fn_arr; §9.5 pins the array error
-                                            ; surface oracle-exact, unlike the lowercase
-                                            ; shared FPERR=3 SQR/LOG keep) -- ERR-5's table
-                                            ; entry still points at THAT string, not FPERR=3's
-                db      16                  ; FPERR 9: string formula too complex -- arrays
-                                            ; slice-4a (docs/spec-basic-arrays-slice4a-
-                                            ; string-heap.md §6/§11): temp-descriptor stack
-                                            ; overflow (basic/str-engine.asm err_too_complex,
-                                            ; low region)
-                db      13                  ; FPERR 10: type mismatch -- a string function
-                                            ; given a NON-string arg (LEN(5)/ASC(5)/VAL(5));
-                                            ; ev_f_tmm (expr.asm) defers this via FPERR=10.
-                                            ; Same ERR-13 table entry type_mismatch_error uses.
-    IF CLEARPOOL
-                db      14                  ; FPERR 11 (= FPERR_STROOM, sysvars.inc):
-                                            ; OUT OF STRING SPACE -- the string heap could
-                                            ; not allocate, which with the D-CLP partition
-                                            ; ON means the pool `CLEAR n` sized ran out.
-                                            ; ⚠️ Deliberately NOT FPERR=6/ERR 7: an ARRAY
-                                            ; that will not fit is out of MEMORY, and the
-                                            ; probe's oos-vs-oom row pins the two apart.
-                                            ; Unlike 3 and 6 this needs no special case in
-                                            ; fp_runtime_error -- ERR 14 has exactly one
-                                            ; message (err_out_of_str, str-engine.asm) and
-                                            ; flows through the generic err_msgtab lookup.
-    ENDIF
-                db      24                  ; FPERR_MISSOP (sysvars.inc, D-MISSOP): MISSING
-                                            ; OPERAND -- a factor was REQUIRED and the
-                                            ; statement ended instead (end of line, ':', or
-                                            ; a byte that cannot start one). Deferred by
-                                            ; ev_f_err, expr.asm. ⚠️ THIS `db` MUST FOLLOW
-                                            ; the CLEARPOOL block, not sit inside it: the
-                                            ; table is DENSE and FPERR_MISSOP's value moves
-                                            ; with the switch (12 with CLEARPOOL, 11
-                                            ; without), which is why the equ lives beside
-                                            ; FPERR_STROOM rather than being a literal.
-                db      15                  ; FPERR_STRLONG (= FPERR_MISSOP+1, sysvars.inc,
-                                            ; D-STRLONG): STRING TOO LONG -- a `+` fold whose
-                                            ; combined length exceeds STRMAX. sh_append used
-                                            ; to clamp it to 255 and return that; both
-                                            ; references raise here instead. Same DENSE-table
-                                            ; caveat as the entry above: this `db` must stay
-                                            ; LAST, because FPERR_MISSOP moves with CLEARPOOL
-                                            ; and this code is defined relative to it.
+; fperr_to_err -- MOVED to basic/islands.asm (D-ISLDATA, MAKING ROOM lever B):
+; the dense FPERR -> ERR byte map now lives in C-BIOS's $0160 padding island
+; (page 0, always mapped with main), still reached only by the absolute
+; `ld hl,fperr_to_err` in fp_runtime_error above. Table body, bound and the
+; CLEARPOOL / FPERR_MISSOP ordering rule moved verbatim.
 ; D-MSGMIGRATE: err_fp_divzero's TEXT is sub-ROM-hosted (em_fp_divzero, ERRFLG
 ; = 11). fp_runtime_error reaches it through fperr_to_err -> raise_error ->
 ; err_msgtab entry 11, which is now err_subhosted -- one table operand, 0 B.
@@ -1675,110 +1608,11 @@ rel_direct:
                 ; event under DIFFERENT rules, and the cheaper shape is wrong.
                 ret
 
-; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
-; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
-; (this table replaces the old FPERR-indexed fre_msgtab AND every direct
-; site's own `ld hl,msg`); holes (12/14/15/18/19/20/21/22 -- not yet raised by
-; any S2a site) point at the code-23 "unprintable error" string, same as an
-; out-of-table `ERROR n` argument (raise_error, above). The capitalised
-; arrays-arc strings (err_subscript/err_redim/err_mem_arr/err_illegal_fn_arr)
-; stay separate from the lowercase shared strings, unmerged (spec-basic-
-; arrays §9.5) -- their codes (9/10/7/5) just index this table at their own
-; entries, same string, no new copy.
-err_msgtab:
-                dw      err_subhosted       ; 1: next without for
-                dw      err_syntax          ; 2: syntax error
-                dw      err_subhosted       ; 3: return without gosub
-                dw      err_subhosted       ; 4: out of data
-                dw      err_illegal_fn_arr  ; 5: illegal function call (arrays' own
-                                            ; capitalised string; §9.5 keep)
-                dw      err_subhosted       ; 6: Overflow. D-MSGMIGRATE: sub-hosted
-                                            ; (em_overflow) -- and it only became
-                                            ; migratable when dl_overflow's float arm
-                                            ; was FIXED to store ERRFLG at all. Until
-                                            ; then this code had one ERRFLG-keyed reader
-                                            ; and one that was not keyed on anything.
-                dw      err_mem             ; 7: out of memory (program.asm err_mem;
-                                            ; err_stack aliases it -- program.asm)
-                dw      err_subhosted       ; 8: undefined line number (zerobas's own
-                                            ; "undefined line" wording, spec-basic-error-
-                                            ; handling.md §4)
-                dw      err_subscript       ; 9: subscript out of range (arrays' own
-                                            ; capitalised string; §9.5 keep)
-                dw      err_redim           ; 10: redimensioned array (arrays' own
-                                            ; capitalised string; §9.5 keep)
-                dw      err_subhosted       ; 11: division by zero
-                dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
-                                            ; lives in the sub-ROM tenant, keyed on
-                                            ; ERRFLG. Still not RAISED by any zerobas
-                                            ; site -- `ERROR 12` is the only way here --
-                                            ; but it no longer prints the wrong thing.
-                dw      err_subhosted       ; 13: type mismatch
-    IF CLEARPOOL
-                dw      err_out_of_str      ; 14: out of string space (D-CLP; was a
-    ELSE                                    ; hole until the pool could raise it)
-                dw      err_unprintable     ; 14: out of string space (hole)
-    ENDIF
-                                            ; hole until the pool could raise it)
-                dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
-                                            ; not raised by any zerobas site)
-                dw      err_too_complex     ; 16: string formula too complex
-                dw      err_subhosted       ; 17: can't continue
-                dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
-                                            ; sub-hosted; not raised -- DEF FN's own
-                                            ; slice would be the raiser)
-                dw      err_subhosted       ; 19: Device I/O error (D-MSGSUB, sub-hosted).
-                                            ; The load_error family unification that would
-                                            ; RAISE it is still its own later item
-                                            ; (S1 §9.1) -- this fixes the TEXT only.
-                dw      err_verify          ; 20: Verify error. 🎯 D-MSGEXACT: this was a
-                                            ; HOLE pointing at "unprintable error" while
-                                            ; cload.asm's own err_verify -- already the
-                                            ; reference's exact `Verify error`, measured
-                                            ; 2026-08-02 on a real CLOAD? mismatch -- sat
-                                            ; right there on a separate path. Repointing
-                                            ; costs 0 B and is the whole fix: `ERROR 20`
-                                            ; now says what the tape path has always said.
-                dw      err_no_resume       ; 21: no resume (D-ERR21, docs/spec-basic-
-                                            ; err21-no-resume.md -- was a hole until the
-                                            ; run loop could raise it: falling off the
-                                            ; END of the program while still owing a
-                                            ; RESUME. The string and e21_no_resume both
-                                            ; live in basic/arrays.asm's low region;
-                                            ; this entry also gives `ERROR 21` the right
-                                            ; message, which it did not have)
-                dw      err_subhosted       ; 22: RESUME without error (raised by
-                                            ; raise_error_forced, below)
-                dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
-                                            ; an out-of-table code, or any hole above)
-                dw      err_subhosted       ; 24: missing operand. The table used to stop
-                                            ; at 23, so this code -- ALREADY raised by
-                                            ; graphics.asm g8_missing and time.asm
-                                            ; tm_err24 -- printed "unprintable error" on
-                                            ; every site that used it. Found by LOCATE,
-                                            ; which is the third: `LOCATE` bare reads
-                                            ; `Missing operand` on the reference and read
-                                            ; `unprintable error` here. Adding the entry
-                                            ; fixes all three at once. raise_error's own
-                                            ; range test moved from `cp 23` to `cp 24`
-                                            ; with it -- the table bound and that test are
-                                            ; one fact in two places.
-                dw      err_subhosted       ; 25: line buffer overflow (D-LINEMAX R-2 --
-                                            ; the crunched body exceeded TOKMAX_BODY=314).
-                                            ; Same two-places-one-fact pair -- and the
-                                            ; SECOND place did NOT move when this entry
-                                            ; landed: `cp 24` stayed, so this entry was
-                                            ; two bytes of DEAD TABLE and `ERROR 25` read
-                                            ; `unprintable error` for the whole of
-                                            ; D-LINEMAX. Fixed 2026-07-29 (`cp 24` ->
-                                            ; `cp 25`, zero bytes). It went unnoticed
-                                            ; because the ONLY raiser of 25 -- program.asm
-                                            ; dl_overflow -- deliberately bypasses this
-                                            ; table (see its header), so linemax-acceptance
-                                            ; was green throughout. MEASURED on the
-                                            ; VG-8020 before landing: `ERROR 25` ->
-                                            ; `Line buffer overflow`, `ERROR 26` ->
-                                            ; `Unprintable error` (so 25 IS the bound).
+; err_msgtab -- MOVED to basic/islands.asm (D-ISLDATA, MAKING ROOM lever B):
+; the ERR code -> message word table now lives in C-BIOS's $0160 padding
+; island (page 0, always mapped with main), still reached only by raise_error's
+; absolute `ld hl,err_msgtab` above; `cp 25` there is still its bound.
+; err_subhosted / err_unprintable stay HERE -- their adjacency is load-bearing.
 ; --- err_subhosted: the whole main-side cost of D-MSGSUB's message text ------
 ; ONE BYTE. A body consisting of just MSGESC_SUB tells print_msg_stopcr's pm_sub
 ; arm (basic/program.asm) to dispatch to the sub-ROM page-1 tenant, which reads

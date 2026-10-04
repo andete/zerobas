@@ -58,7 +58,11 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # refuses the build.
 # D-HOMEKEY (2026-09-26): cbios-repack patch #4 adds 12 bytes to key_ascii, which
 # sits BEFORE that pad, so the pad -- and island 1 -- start at $1ADB, not $1ACF.
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1ADB, 0x1BBF))
+# Space plan A3 (2026-10-04): the two remainders of C-BIOS gap 1 around the tape
+# bodies -- $09D9-$09ED before TAPE_BODY_LO and $0CC9-$0D00 after tape_end, up to
+# the pinned compat tail at $0D01 (basic/islands.asm, islands 3 and 4).
+ISLAND4_LO = 0x0CC9
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1ADB, 0x1BBF), (0x09D9, 0x09EE), (ISLAND4_LO, 0x0D01))
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).
@@ -138,6 +142,12 @@ def build(repacked: bytes, basic: bytes, tape: bytes, tape_end: int,
     merged[BASIC_BASE:TOP] = basic
 
     # 2) overlay tape. Assert the body region is free in the repacked base first.
+    # Space plan A3: and that it ends before island 4. The island overlay skips
+    # $00 bytes and refuses only a non-zero island byte on a non-zero base byte,
+    # so a tape grown into island 4 would silently replace a table's $00 entries.
+    if tape_end > ISLAND4_LO:
+        sys.exit(f"error: tape ends at ${tape_end:04X}, past island 4 (${ISLAND4_LO:04X}) "
+                 f"-- move island 4's contents (basic/islands.asm) before growing the tape")
     body = merged[TAPE_BODY_LO:tape_end]
     if any(x != 0 for x in body):
         bad = TAPE_BODY_LO + next(i for i, x in enumerate(body) if x)
