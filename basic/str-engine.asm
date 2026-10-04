@@ -59,7 +59,8 @@ arga_dig_iszero:
 ; call_strheap: clobbers A, IX; returns with the tenant's results in RAM.
 sh_call_op:
                 ld      (SH_OP),a
-                jr      call_strheap
+                ; ...and FALLS THROUGH into call_strheap (the `jr` here was to the
+                ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 ; --- call_strheap: dispatch to the string-heap tenant (SUBROM_IDX_STRHEAP) -
 ; Shared tail every SH_* glue wrapper below funnels through (13 call sites)
@@ -611,12 +612,14 @@ sst_op:
                 jr      z,sst_overflow
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; heap OOM (sysvars.inc)
-                jr      sh_publish          ; D-CARVE2 (-4 B, low region)
+                ; ...and FALLS THROUGH sst_ok into sh_publish (D-CARVE2; the `jr`
+                ; here was to the very next instruction: -2 B, GA-CROSS-ROMSCAN)
 sst_ok:
                 ; 🎯 D-CARVE2: the canonical "publish SH_PTR as the result" tail.
-                ; Reached by fallthrough from sst_ok AND by jp from the two
-                ; string-space-overflow arms, which differ only in the
-                ; `penderr_set` they run FIRST -- the decision stays with them.
+                ; Reached by fallthrough from sst_ok (and from the heap-OOM arm
+                ; above it) AND by jp from the string-space-overflow arm, which
+                ; differs only in the `penderr_set` it runs FIRST -- the decision
+                ; stays with them.
 sh_publish:
                 ld      hl,(SH_PTR)
                 ld      (STRPTR),hl
@@ -1548,8 +1551,8 @@ ems_close:
                 call    sh_call_op         ; op = 9 (MID_STORE)
                 ld      a,(SH_ERR)
                 cp      3
-                jr      z,ems_range         ; range error (n<1/n>255/n>La)
-                jp      pop_exec            ; HL = continue cursor
+                jp      nz,pop_exec         ; HL = continue cursor; else the range
+                                            ; error (n<1/n>255/n>La) falls into
 ems_range:
                 ; The only range error the tenant still reports is n > LEN(A$)
                 ; (n<1 / n>255 are now rejected by eval_pos_arg before the tenant
@@ -1654,7 +1657,8 @@ str_fn_radix:
                 push    hl                  ; guard cursor
                 ld      (SH_NUM),de
                 ld      a,c                 ; op = 6 HEX / 7 OCT / 14 BIN
-                jr      shx_op_tail
+                ; ...and FALLS THROUGH into shx_op_tail (the `jr` here was to the
+                ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 ; --- shx_op_tail / shx_tail: the sub-ROM string-op RESULT tail (D-NGRAM4) ---
 ; Four verbs ended with the identical 10 B run -- CHR$ (str_fn_chr),

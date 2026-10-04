@@ -93,8 +93,7 @@ pl_voice:
                 inc     b
                 ld      a,b
                 cp      3
-                jr      nc,pl_syntax        ; a 4th voice string -> Syntax error
-                jr      pl_voice
+                jr      c,pl_voice          ; a 4th voice string falls into Syntax error
 pl_syntax:
                 ld      a,2                 ; Syntax error. D-PLAYOP: NOT "missing/bad
                                             ; voice operand" any more -- a MISSING one is

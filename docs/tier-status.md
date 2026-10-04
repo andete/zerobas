@@ -225,7 +225,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `VPOKE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.26× address-value T5 2.9× address-value T6✓ | knife ✓ · 1/1 forms |
 | `WAIT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.27× port-mask T5 1.8× port-mask T6✓ | knife ✓ · 2/2 forms |
 | `WIDTH` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.5× same-width T5 0.81× text-width T6— | knife ✓ · 3/3 forms |
-| `XOR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× bitwise-xor T5 0.61× bitwise-xor T6✓ | knife ✓ · 1/1 forms |
+| `XOR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× bitwise-xor T5 0.6× bitwise-xor T6✓ | knife ✓ · 1/1 forms |
 
 ## Composite and channel statements
 

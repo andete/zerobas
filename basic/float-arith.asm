@@ -73,8 +73,7 @@ c16_ne:
                 jp      m,c16_lt            ; V clear -> less iff S set
                 jr      c16_gt
 c16_vset:
-                jp      p,c16_lt            ; V set  -> less iff S clear
-                jr      c16_gt
+                jp      m,c16_gt            ; V set  -> less iff S clear
 c16_lt:
                 ld      a,1
                 ret
@@ -389,7 +388,7 @@ arga_inc14:
                 ld      b,14
                 scf
 ai14_lp:
-                jr      nc,ai14_done
+                ret     nc                  ; (was `jr nc,ai14_done`, a bare ret)
                 ld      a,(hl)
                 add     a,1
                 cp      10
@@ -551,7 +550,7 @@ arga_inc6:
                 ld      b,6
                 scf
 ai6_lp:
-                jr      nc,ai6_done
+                ret     nc                  ; (was `jr nc,ai6_done`, a bare ret)
                 ld      a,(hl)
                 add     a,1
                 cp      10
@@ -1673,8 +1672,7 @@ widen_rhs_operand:
                 push    hl
                 call    factyp_is2
                 pop     hl
-                jr      nz,wro_float
-                jr      widen_int_to
+                jr      z,widen_int_to
 wro_float:
                 jp      widen_fac_to
 
@@ -2172,18 +2170,17 @@ signed_div_de_bc:
 sdiv_applied:
                 ld      a,(FP_RSIGN)
                 or      a
-                jr      nz,sdiv_ret         ; a negative-signed quotient never escapes
+                ret     nz                  ; a negative-signed quotient never escapes
                                             ; int16 this way (min reachable magnitude is
                                             ; 32768 only for the +32768 case below)
                 ld      a,d
                 cp      $80
-                jr      nz,sdiv_ret
+                ret     nz
                 ld      a,e
                 or      a
-                jr      nz,sdiv_ret
                 ; DE == $8000 with the intended sign positive -> the true value
                 ; is +32768, which does not fit int16: promote to double.
-                jp      flt_ret_32768       ; D-CARVE2 (-10 B, low region)
+                jp      z,flt_ret_32768     ; D-CARVE2 (-10 B, low region)
 sdiv_ret:
                 ret
 

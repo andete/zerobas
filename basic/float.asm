@@ -253,7 +253,8 @@ flo_write_digits:
                 ld      a,(FOSIGCOUNT)
                 ld      b,a
                 ld      c,0
-                jr      flo_write_digits_range
+                ; ...and FALLS THROUGH into flo_write_digits_range (the `jr` here
+                ; was to the very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 ; --- flo_write_digits_range: write B ASCII digits from TKDIG[C..] at (HL) -
 ; out: HL advanced past the written digits. Clobbers A, B, D, E.

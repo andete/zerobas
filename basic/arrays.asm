@@ -857,8 +857,7 @@ asw_coerced:
                 ret     nz                  ; coercion overflow -> drop the store
                 ld      a,(VS_TARGET_TYPE)
                 cp      2
-                jr      z,asw_wb_int
-                jp      vsf_wb_copy         ; A = byte count (4 single / 8 double),
+                jp      nz,vsf_wb_copy      ; A = byte count (4 single / 8 double),
                                             ; HL = the element: FAC -> it verbatim.
                                             ; vars.asm's scalar store ran the same 11
                                             ; bytes (D-SEQEOF funding carve, -8 B)

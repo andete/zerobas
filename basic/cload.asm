@@ -341,7 +341,9 @@ dr_cas_close:
                 ret     c                   ; D-CASTAIL defect B: the load FAILED and has
                                             ; already reported -- RUN"CAS:x" must run
                                             ; NOTHING, not the resident program
-                jr      run_prog_top        ; ...and run it, at TOP LEVEL -- see
+                ; ...and FALL THROUGH into run_prog_top (the `jr` here was to the
+                ; very next instruction: -2 B, GA-CROSS-ROMSCAN) to run it, at
+                ; TOP LEVEL -- see
                                             ; run_prog_top below. D-CASTAIL closes the
                                             ; D-RUNTAIL §9 residual: this site had the
                                             ; IDENTICAL defect A and was left alone only

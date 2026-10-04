@@ -196,8 +196,8 @@ bsv_is_cas:
                 or      a
                 jr      z,bsv_cas_open      ; no 4th arg
                 cp      2
-                jr      z,bsv_cas_exec      ; expression -> exec
-                jp      load_error          ; A=1: ",S" VRAM-to-tape not supported
+                jp      nz,load_error       ; A=1: ",S" VRAM-to-tape not supported;
+                                            ; A=2: expression -> exec
 bsv_cas_exec:
                 ld      (EXECPTR),de
 bsv_cas_open:
@@ -511,8 +511,7 @@ csav_speed:
                 cp      1
                 jr      z,csav_sp_1200
                 cp      2
-                jr      z,csav_sp_2400
-                jr      csav_sp_err         ; only ,1 / ,2 are valid
+                jr      nz,csav_sp_err      ; only ,1 / ,2 are valid
 csav_sp_2400:
                 ld      de,CAS_LOW_2400     ; selected active-LOW word
                 jr      csav_sp_apply

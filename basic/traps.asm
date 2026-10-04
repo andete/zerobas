@@ -97,8 +97,8 @@ event_poll:
                 ; loads on the common no-trap path.
                 ld      a,(TRAPSVC)
                 or      a
-                jr      nz,ep_live
     IF TRAPS_T5
+                jr      nz,ep_live
                 ; ...AND a third term, because TRAPENA counts only ON traps.
                 ; MEASURED (docs/spec-traps-t5-interval.md §1.4, P_on_reloads):
                 ; with INTERVAL the sole trap and it STOPped, TRAPENA and TRAPSVC
@@ -120,9 +120,8 @@ event_poll:
                 jr      nz,ep_live
                 ld      a,(ZINTVAL+1)
                 or      a
-                jr      nz,ep_live
     ENDIF
-                jp      ep_out              ; nothing ON, nothing servicing, no INTERVAL
+                jp      z,ep_out            ; nothing ON, nothing servicing, no INTERVAL
                                             ; (`jp`: D-STOPTAP's schedule pushed ep_out
                                             ; out of `jr` reach)
 ep_live:
@@ -558,6 +557,5 @@ trap_return_check:
                 ld      a,(hl)
                 and     ZTS_PENDING         ; re-latched during the handler?
                 ret     z
-                call    trap_pend   ; yes -> fire again at the next boundary
-                ret
+                jp      trap_pend   ; yes -> fire again at the next boundary
 

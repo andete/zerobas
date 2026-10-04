@@ -871,8 +871,8 @@ ep_draw:
                 call    gfx_call            ; op in A; HL restored, gfx_absent owns the bail
                 ld      a,(GFX_POVF)
                 or      a
-                jr      nz,ep_overflow      ; span-stack overflow -> ERR 7 (spec §4 D3)
-                jp      exec_stmt           ; chain the next ':'-separated statement
+                jp      z,exec_stmt         ; chain the next ':'-separated statement;
+                                            ; span-stack overflow -> ERR 7 (spec §4 D3)
 ep_overflow:
                 ld      a,7                 ; Out of memory (measured, spec §4 D3)
                 jp      raise_error

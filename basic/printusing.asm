@@ -167,8 +167,7 @@ pu_msep_chk:
                 cp      ';'
                 jr      z,pu_msep
                 cp      ','
-                jr      z,pu_msep
-                jr      pu_endlist          ; no separator -> value list done
+                jr      nz,pu_endlist       ; no separator -> value list done
 pu_msep:
                 inc     hl
                 ld      a,(PU_FLAGS)

@@ -62,8 +62,11 @@ KNIVES = [
     dict(name="K-PL4",
          what="the 4th-voice site to loc_missing -- the one TODO.md marked "
               "UNMEASURED and which the measurement says is already right",
-         old="                jr      nc,pl_syntax        ; a 4th voice string -> Syntax error",
-         new="                jp      nc,loc_missing      ; K-PL4",
+         # Space plan B-1 (GA-CROSS-ROMSCAN, 2026-10-04) folded `jr nc,pl_syntax /
+         # jr pl_voice` into `jr c,pl_voice` + fallthrough, so the knife now plants a
+         # `jp loc_missing` on that fallthrough -- the same cut, the new shape.
+         old="                jr      c,pl_voice          ; a 4th voice string falls into Syntax error",
+         new="                jr      c,pl_voice          ; K-PL4\n                jp      loc_missing",
          moves={'p.four': '24'}),
 ]
 

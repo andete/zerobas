@@ -527,7 +527,8 @@ print_crlf:
                 ld      a,13
                 rst     $18
                 ld      a,10
-                jr      pchar
+                ; ...and FALLS THROUGH into pchar (the `jr` here was to the very
+                ; next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 ; pchar — emit the byte in A to the current PRINT destination: the screen via
 ; CHPUT when PRDEST=0, or the open file channel via fat_io_putbyte when PRDEST=1.

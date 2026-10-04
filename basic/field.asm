@@ -631,7 +631,8 @@ lrf_var:
                 ld      (LRSET_W),a         ; -- it never changes (measured: n.len)
                 call    pu_deref_body       ; HL = the body (main LOW region)
                 ld      (LRSET_DEST),hl
-                jr      lrset_store
+                ; ...and FALLS THROUGH into lrset_store (the `jr` here was to the
+                ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 lrset_store:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
