@@ -86,6 +86,12 @@ CASES = [
     ("h.kill",   'KILL"NOSUCH.XXX"'),
     ("h.name",   'NAME"A"AS"B"'),
     ("h.open",   'OPEN"X"FOR OUTPUT AS#1'),
+    # D-ASCIINUM (2026-10-05): `AS 1` without `#` stores the 1 as an ASCII digit
+    # (the tokeniser takes it as part of the name AS), and the EVALUATOR must
+    # read it -- generic code, so the diskless target gets a row. CRT: is a
+    # device every MSX1 BASIC opens without a disk ROM; `#` is the control.
+    ("c.crtas",  'OPEN"CRT:"FOR OUTPUT AS 1:PRINT#1,"Q";:CLOSE 1:PRINT"!"'),
+    ("c.crtash", 'OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"Q";:CLOSE#1:PRINT"!"'),
     ("k.dski",   'PRINT LEN(DSKI$(0,0))'),      # D-DSKIO: ERR 5 on both, before any parse
     ("h.dsko",   'DSKO$ 0,0'),
     ("h.copy",   'COPY"A"TO"B"'),            # D-COPY: ERR 5 on both diskless sides

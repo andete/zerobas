@@ -36,6 +36,12 @@ inc_eval         CLOBBER  returns the value in DE; A is scratch, HL the advanced
 #                         THROUGH into it (D-INCEVAL), so eval's own `ret` unwinds
 #                         to inc_eval's caller and the contract is eval's verbatim.
 #                         A caller's `ld a,(hl)` after it is LIVE. Read 2026-09-09.
+eval             CLOBBER  returns the value in DE; A is scratch, HL the advanced cursor
+#                         RE-ADMITTED 2026-10-05 (D-INPUTDNOHASH): INPUT$'s file
+#                         number now starts after an OPTIONAL `#`, so sid_fnum
+#                         calls eval directly and reloads `ld a,(hl)` for the
+#                         `)` test. The 2026-09-09 reading below holds verbatim:
+#                         eval's exits leave A as scratch, so that load is LIVE.
 # eval -- RETIRED 2026-09-09 (D-INCEVAL). It read:
 #     eval  CLOBBER  returns the value in DE; A is scratch, HL the advanced cursor
 #   The verdict was RIGHT and it MOVED rather than expired: all seventeen

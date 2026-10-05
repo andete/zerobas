@@ -580,12 +580,13 @@ ev_f_notword:
                 cp      INT_DIGIT_BASE      ; $11
                 jr      c,ev_f_var
                 cp      $1A+1               ; $11..$1A -> digit token
-                jr      c,ev_f_digit
+                jp      c,ev_f_digit        ; jp: D-ASCIINUM's arm pushed it past jr
                 ; fall through: letter -> variable (or error)
 ev_f_var:
                 ld      a,(ix+0)
                 call    is_letter           ; must start with a letter
-                jr      nc,ev_f_missop      ; D-MISSOP: THE missing-operand site
+                jr      nc,ev_f_nonlet      ; an ASCII number (D-ASCIINUM), else
+                                            ; D-MISSOP: THE missing-operand site
                 push    ix
                 pop     hl                  ; HL = cursor
                 call    var_name_key        ; BC = key, HL past the (multi-char) name
@@ -629,6 +630,44 @@ ev_f_ifc:                                   ; deferred FPERR=3 "illegal function
                                             ; carrier -- ev_f_err zeroes DE below.
                 ld      e,3
                 jr      ev_f_defer
+; --- ev_f_nonlet: a factor that is not a letter -- an ASCII number, or missing ---
+; 🔴 D-ASCIINUM (2026-10-05, from D-INPUTDNOHASH). A number that follows a
+; letter run and a space stays ASCII in the stored line: `OPEN"X"AS 1` stores
+; `41 53 20 31` on the VG-8020 exactly as here (scratchpad/asnum_crunch.py) --
+; the tokeniser takes digits after letters as part of a name. A FACTOR that then
+; starts on that digit was Missing operand / Syntax error here, while the
+; CF-3300 reads it as the number: `AS 1` opens #1, `AS 1+1` opens #2, `AS 12` is
+; Bad file number (52) and `AS 1 LEN=8` opens a random file
+; (scratchpad/nohash_probe.py). So an ASCII digit run is a decimal integer
+; factor. 🎯 Only an UNTOKENISED word leaves a factor starting there -- OPEN's
+; `AS` is the case that exists -- so nothing that tokenised can reach this arm.
+; ⚠️ Integer digits only, wrapping at 16 bits: what a channel number needs. An
+; ASCII `1.5` or `1E3` reads its leading digits and stops at the `.`/`E`.
+ev_f_nonlet:
+                sub     '0'
+                cp      10
+                jr      nc,evnl_miss
+                ld      de,0
+evnl_lp:
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                add     hl,hl
+                add     hl,de
+                add     hl,hl               ; HL = DE * 10
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ex      de,hl               ; DE = DE * 10 + the digit
+                inc     ix
+                ld      a,(ix+0)
+                sub     '0'
+                cp      10
+                jr      c,evnl_lp
+                ret                         ; DE = the value, IX past the digits
+evnl_miss:
+                ld      a,(ix+0)            ; ev_f_missop reads the byte in A
+                ; falls into ev_f_missop
 ev_f_missop:                                ; D-MISSOP (docs/spec-basic-missop.md §5/§13):
                                             ; a factor was REQUIRED and what is here cannot
                                             ; start one -- end of line, ':', or a stray

@@ -245,7 +245,8 @@ basic_probe_nodisk: k.mks; k.mkd; k.cvs; k.mki; k.cvi; v.dskf; v.cvistr; v.mkifl
 # slices. Four probes read UNFILED; THREE OF THEM ARE DEBT FROM THIS SESSION'S
 # OWN SLICES, which is the shape this entry keeps recording -- "the debt a new
 # probe leaves". Each row below is adjudicated from the RUN, not from memory.
-asciidigit_probe: o.as1; n.as5 -- "EIGHT KEYWORDS THE REFERENCE TOKENISES AND ZEROBAS DOES NOT" / D-ASCIIDIGIT: `OPEN"TS.DAT"AS 1` and `NAME"HI.TXT"AS 5` are Syntax error here and work on the reference. 🙋 The `ev_f` ASCII-digit arm is over the 20 B budget and is Joost's call, so DECLINED-pending-decision, not unnoticed. Also pinned to exact values in probes/basic/basic_probe_asciidigit.py (rows 5, pinned 2), so a regression reddens `make asciidigit-acceptance` too
+# asciidigit_probe: o.as1; n.as5 -- REMOVED 2026-10-05: both rows AGREE since D-ASCIINUM
+# (basic/expr.asm ev_f_nonlet; Joost ruled the fix 2026-09-27). Nothing left to adjudicate.
 bareform_probe: CLOAD -- "no row can carry a hang", the `LOAD"CAS:"` class. ⚠️ BOTH references read `<none>` here because `CLOAD` WAITS FOR TAPE; zerobas answers `legal`. The probe's own output says it: "an absence, not agreement, and each needs a reason". So this is apparatus-bounded, NOT a measured divergence, and pinning it says exactly that rather than letting it read as unnoticed
 # --- and the two with no verdict channel, kind established from the probe, not
 # from the family name (the file's standing rule).

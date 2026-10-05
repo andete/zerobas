@@ -120,8 +120,13 @@ CASES = [
 
 
 PINNED = {
+    # 🟢 2026-10-05: ALL FOUR NAME PINS BELOW ARE GONE -- the rows agree. The
+    # "cursor defect" the block explains was the evaluator refusing a factor that
+    # starts on an ASCII digit (`AS 5` keeps the 5 ASCII after the name-like AS);
+    # D-ASCIINUM (basic/expr.asm ev_f_nonlet) reads it, so eval reaches the operand
+    # and 13 / 11 fall out exactly as predicted below. Kept as history.
     # row: (cf3300, zerobas) -- the CURRENT truth, measured 2026-09-04.
-    "name.ex5": ("13", "2"),   # D-NAMEORD's open half: els_tc_common's re-drive
+    # "name.ex5": ("13", "2"),   -- DELETED 2026-10-05, now agrees   # D-NAMEORD's open half: els_tc_common's re-drive
                                # reports "no operand" -> ERR 2 where 13 is due.
     # \U0001f534 THE SAME DEFECT, AND THIS ROW IS WHAT NAMES IT (2026-09-09).
     # `KILL 1/0` answers 11 on both machines, so the re-drive tail WORKS -- the
@@ -130,7 +135,7 @@ PINNED = {
     # `eval` is not reaching it at all. That makes this a CURSOR defect, not a
     # face defect: the fix is not "produce 13 here", it is "hand els_tc_common
     # the operand", after which 13 and 11 both fall out. One pin, one mechanism.
-    "name.exdiv": ("11", "2"),
+    # "name.exdiv": ("11", "2"),   -- DELETED 2026-10-05, now agrees
     # `name.exok` IS NO LONGER PINNED. It was ("65", "0"): the CF-3300 refuses a
     # rename onto an existing name with 65 `File already exists` and zerobas
     # performed it. D-NAMEEXIST (2026-09-28) added the check in hk_name and the
@@ -139,8 +144,8 @@ PINNED = {
     # added for: 65 is raised only after the SECOND fname_expr site has parsed.
     # The same mechanism as name.ex5, at two more operand shapes. Pinned together
     # because they are ONE defect: see the block comment on name.ex5.
-    "name.ex55": ("13", "2"),
-    "name.exsp": ("13", "2"),
+    # "name.ex55": ("13", "2"),   -- DELETED 2026-10-05, now agrees
+    # "name.exsp": ("13", "2"),   -- DELETED 2026-10-05, now agrees
 }
 
 

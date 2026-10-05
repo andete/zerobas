@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29189 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29220 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6241,7 +6241,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11075 (T-6FE392)8 (T-529ABE)` from `TODO.md:23649 (T-529ABE)`: a
+      `TODO.md:11076 (T-6FE392)8 (T-529ABE)` from `TODO.md:23660 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6800,6 +6800,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
               basic_probe_nodisk       PINNED               8 rows
               asciidigit               via its GATE TWIN
                                        basic_probe_asciidigit.PINNED   2 rows
+              (2026-10-05: both gone -- the rows AGREE since D-ASCIINUM)
             NO face pin anywhere      11 probes            50 rows
 
       🎯 **SO THE REMAINING WORK IS 50 ROWS ACROSS 11 PROBES, AND THE TEMPLATE
@@ -7214,7 +7215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       SLICES**, which is this entry's standing shape, *"the debt a new probe
       leaves"*, recurring inside a single night. All adjudicated from the RUN:
       `asciidigit_probe` (2), `putdomain_probe` (8), `dskibytes_probe` (3) and
-      `bareform_probe` (1, apparatus-bounded: both references read `<none>`
+      [`bareform_probe`](scratchpad/bareform_probe.py) (1, apparatus-bounded: both references read `<none>`
       because `CLOAD` waits for tape). Two more had no verdict channel and are
       now declared NO-VERDICT with their kind established from the probe rather
       than the family name: `deffn_nestdepth_probe`, `dskilow_probe`.
@@ -11922,7 +11923,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23649 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23660 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14049,7 +14050,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       rather than pinning a copy, so it re-verified the NEW text
       (`PRESENT 'clean-room MSX-BASIC implementation'`) on the same run. A gate
       that derives its expectation instead of freezing one costs nothing here.
-- [ ] 🔴 **`NAME "old" AS <non-string>` DIVERGES ~~TWICE~~ ONCE, AND `NAME` IS THE VERB
+- [x] ✅ **`NAME "old" AS <non-string>` DIVERGED ~~TWICE~~ ONCE, AND `NAME` IS THE VERB
       D-FNEXPR2's OWN PLAN NAMED AND ITS MEASUREMENT SKIPPED.** Measured
       2026-08-26 by D-TODOSWEEP tranche 65
       ([`scratchpad/sweep_tranche65.py`](scratchpad/sweep_tranche65.py),
@@ -14991,7 +14992,17 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — FIX `OPEN"f"AS 1` / `NAME ... AS 5`, carve first.** The
       ASCII-digit arm in `ev_f`, as designed above; `asciidigit-acceptance`'s two
       pins flip to agreement and are deleted.
-      🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      ✅ **DONE 2026-10-05 (D-ASCIINUM, found again from the other end by
+      D-INPUTDNOHASH's class sweep).** The carve came first and big: the space plan
+      left main 877 B free. `basic/expr.asm` `ev_f_nonlet`: a factor that starts on
+      an ASCII digit is a decimal integer read from the text (36 B, no RAM cell,
+      no sub-ROM call). ⚠️ NOT the priced VAL-tenant design: integer digits only,
+      so an ASCII `1.5` reads 1 -- enough for every channel/file number, and no
+      row here needs more. Pins deleted, every row AGREEING with the CF-3300:
+      `asciidigit-acceptance` o.as1 (0/0) and n.as5 (13/13); `namegate-acceptance`
+      name.ex5 (13), name.exdiv (11 -- the operand's own fault wins, as the pin note
+      predicted), name.ex55 (13), name.exsp (13). The filed-row record in
+      tools/filed-row-known.txt is removed with them.
 
 - [x] ✅ **A TRAP HANDLER LEFT WITHOUT ITS `RETURN` IS PERMANENTLY DEAD — AND
       THAT IS FAITHFUL** ~~; WHAT IS NOT IS THE SIX-EVENT CAP~~ — **the cap half
@@ -26688,20 +26699,40 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          first 256 B record). S10.B puts PRINT# on the 256 B record and should
          move it; that pin then goes red on purpose.
 
-- [ ] **D-INPUTDNOHASH — `INPUT$(n,1)`, THE FILE NUMBER WITHOUT `#`, IS `Type mismatch` ON
-      OURS; THE CF-3300 READS THE FILE (found 2026-10-03 by a probe's own control; MEASURED)**
+- [x] ✅ **D-INPUTDNOHASH — `INPUT$(n,1)`, THE FILE NUMBER WITHOUT `#`, WAS `Type mismatch` ON
+      OURS; THE CF-3300 READS THE FILE (found 2026-10-03 by a probe's own control; FIXED 2026-10-05)**
       🎚️ TIER 1 — happy path: `#` is optional in the documented form
       `INPUT$(n[,[#]file])`, and programs write it either way.
-      📏 [`chanside_probe.py`](scratchpad/chanside_probe.py)'s first input-side
-      draft, with `OPEN"HI.TXT"FOR INPUT AS#1 : A1$=INPUT$(5,1)`:
-      - CF-3300: `Hello`.
-      - Ours: **Type mismatch** (and again on `INPUT$(LOF(1)-5,1)`).
-      - The `#1` form agrees on both.
-      ➡️ First read where `INPUT$`'s second argument is parsed, and whether the
-      `#`-less form reaches the channel path at all. Then check the other
-      file-number functions for the same `#`-optional rule (EOF/LOC/LOF take
-      no `#`; which others take an optional one?).
-      🤖 **AUTONOMOUS** — the CF-3300 settles it.
+      📏 First seen in [`chanside_probe.py`](scratchpad/chanside_probe.py)'s
+      draft (`A1$=INPUT$(5,1)`: CF-3300 `Hello`, ours Type mismatch).
+      ✅ **Measured over the class, then fixed** — [`disk_probe_nohash.py`](probes/disk/disk_probe_nohash.py),
+      gate `make nohash-acceptance`, 11 cases against the CF-3300:
+      - `INPUT$` (basic/strvar.asm `sid_filef`): `#` was REQUIRED and had to
+        follow the comma directly, so `INPUT$(5,1)` was Type mismatch and even
+        `INPUT$(5, #1)` was Syntax error. Now CHRGTR past the comma and spaces,
+        `#` optional. 1 B smaller.
+      - CLOSE 1, FIELD 1, PUT 1, GET 1 already agreed (no change).
+      - 🔴 **A SECOND CAUSE, FOUND BY THE CLASS SWEEP — D-ASCIINUM.** `OPEN ...
+        AS 1` was Syntax error. Not OPEN's parse: the tokeniser stores `AS 1` as
+        `41 53 20 31`, the 1 left ASCII as part of the name AS -- on the VG-8020
+        too ([`asnum_crunch.py`](scratchpad/asnum_crunch.py), 7 bodies, all
+        byte-identical). The CF-3300 then evaluates that ASCII digit as a number
+        (`AS 1` opens #1, `AS 1+1` #2, `AS 12` is 52, `AS 1 LEN=8` opens a
+        random file); our factor refused it. basic/expr.asm `ev_f_nonlet`: an
+        ASCII digit run is a decimal integer factor (36 B, integer digits only).
+        This is the fix Joost ruled on 2026-09-27 for the `NAME "old" AS
+        <non-string>` item (D-ASCIIDIGIT), which it closes: six pinned rows across
+        asciidigit- and namegate-acceptance now agree and their pins are deleted.
+        The generic forms (`PRINT AS 12`, `X=AS 1.5`, `X=2+AS 3`) already agreed
+        on the VG-8020 ([`asciinum_eval.py`](scratchpad/asciinum_eval.py)) --
+        names skip spaces and keep two significant characters, so those never
+        start a factor on the digit.
+      - Diskless rows `c.crtas` / `c.crtash` (`OPEN"CRT:"... AS 1` and `AS#1`)
+        in `nodisk-acceptance`: VG-8020, ours with and without disk agree.
+      🔪 [`nohash_knives.py`](scratchpad/nohash_knives.py): K-NH1 (`#` required
+      again) moves exactly the four `inputd*` rows; K-NH2 (non-letter factor
+      straight to ev_f_missop) exactly the four `openas*` rows. ROM moved both
+      times (knife_guard).
 
 - [ ] ⏱ **D-T5TWINREM — A T5 "KEYWORD ALONE" READING INCLUDES THE TWIN'S `REM` STAND-IN,
       AND THAT STAND-IN'S COST JUST CHANGED UNDER IT (found 2026-10-05 by space plan B-6; MEASURED)**

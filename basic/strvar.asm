@@ -466,11 +466,17 @@ str_inputd:
                 ld      (ARL_GETBYTE),hl
                 jr      sid_read
 sid_filef:
+                ; 🔴 D-INPUTDNOHASH (2026-10-05): THE `#` IS OPTIONAL, and spaces may
+                ; follow the comma. This required `#` IMMEDIATELY after the comma, so
+                ; `INPUT$(5,1)` was Type mismatch and `INPUT$(5, #1)` Syntax error,
+                ; while the CF-3300 reads the file for both (the documented form is
+                ; INPUT$(n[,[#]f]); scratchpad/nohash_probe.py). 1 B smaller, too.
+                rst     $10                 ; CHRGTR: past ',' and spaces; A = (HL)
+                cp      '#'
+                jr      nz,sid_fnum         ; no '#': the file number starts here
                 inc     hl
-                ld      a,(hl)
-                cp      '#'                 ; file form requires '#f'
-                jp      nz,str_eval_no
-                call    inc_eval            ; DE = channel f; HL advanced
+sid_fnum:
+                call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
                 jp      nz,str_eval_no

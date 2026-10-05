@@ -52,10 +52,12 @@ SIDES = {"cf3300": ("National_CF-3300", 14.0), "zb": (ZB, 8.0)}
 # the reference and is a Syntax error here; the pin exists so the divergence
 # cannot rot in either direction -- a fix that lands makes this gate RED and says
 # to delete the pin.
-PINNED = {
-    "o.as1": ("0", "2"),
-    "n.as5": ("13", "2"),
-}
+# 🟢 BOTH PINS DELETED 2026-10-05: the rows AGREE. D-ASCIINUM (basic/expr.asm
+# ev_f_nonlet, landed with D-INPUTDNOHASH) reads an ASCII digit run as a number
+# factor, as Joost ruled on 2026-09-27 ("YES -- fix OPEN"f"AS 1 / NAME ... AS 5").
+# o.as1 now opens (0/0) and n.as5 reaches NAME's type check (13/13). Any return to
+# the old values is now an UNPINNED divergence, i.e. red.
+PINNED = {}
 GATE = "--gate" in sys.argv
 
 CASES = [

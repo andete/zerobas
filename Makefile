@@ -2280,6 +2280,13 @@ diskfull-acceptance: repack-machine $(DISK_TEST_DSK)
 asavechan-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_asavechan.py
 
+# --- nohash-acceptance: the optional `#` of a file number (D-INPUTDNOHASH) ------
+# INPUT$(n,1), INPUT$(n, #1), CLOSE 1, FIELD/GET/PUT 1, OPEN ... AS 1 (+ AS 1+1,
+# AS 12 -> 52, AS 1 LEN=8): each against the CF-3300. `AS 1` stores the 1 as an
+# ASCII digit, so its rows also gate the evaluator's ASCII-number arm (D-ASCIINUM).
+nohash-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_nohash.py
+
 # --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
 # The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's
