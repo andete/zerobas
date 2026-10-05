@@ -109,9 +109,10 @@ def run():
               + ("" if ok else f"   want {want:#04x}")
               + f"  ({desc})")
 
-    # --- error path: missing comma -> poke_err -> stmt_error -----------------
-    # poke.asm: if ',' is absent, jr z,poke_err pops the saved address and
-    # calls stmt_error, which writes ERRMARK=$DD and prints an error string.
+    # --- error path: missing comma -> req_comma -> stmt_error ----------------
+    # poke.asm: if ',' is absent, req_comma jumps to stmt_error (B-12; it was
+    # poke_err, which popped the saved address first), which writes ERRMARK=$DD
+    # and prints an error string.
     # We confirm ERRMARK is set (observable; no comma in the stream).
     m.mem[m.sym["ERRMARK"]] = 0x00          # clear first
     m.capture_chput()                       # absorb any error-string output
@@ -131,12 +132,25 @@ def run():
     # never measuring stmt_error; it was measuring where 2M steps happened to
     # land, and it agreed for the wrong reason for as long as it did.
     # Trapping fre_abort_low samples the byte at the one moment the test is
-    # actually about, and removes the runaway entirely: poke_err reaches it via
-    # `jp stmt_error` -> `jp raise_error` -> ... -> `jp fre_abort_low` with no
-    # intervening frame, so the trap's RET goes straight back to m.call's
-    # sentinel. No except-guard: a genuine runaway must now be LOUD.
+    # actually about, and removes the runaway entirely.
+    # 🔴 THE TRAP MODELS THE FUNNEL'S SP RESET, because the depth is not fixed.
+    # Until space plan B-12 the path was `jp poke_err` (= ex_let_err: pop the
+    # saved address, `jp stmt_error`) with NO intervening frame, so a plain
+    # trap RET happened to land on m.call's sentinel. C5-lite routed the check
+    # through `call req_comma`, whose return address is still on the stack when
+    # it jumps to stmt_error -- harmless on the machine (the funnel's `ld
+    # sp,(SAVSTK)` discards it) but the plain RET resumed do_poke past the
+    # failed comma and ran away for 2M steps. The real funnel never returns to
+    # where it was raised; neither does this one: SP goes back to m.call's own
+    # frame (msxtest.call: SP = $F380, then the sentinel is pushed), whatever
+    # depth the error came from. No except-guard: a genuine runaway must be LOUD.
     seen = []
-    m.trap("fre_abort_low", lambda mm: seen.append(mm.mem[mm.sym["ERRMARK"]]))
+
+    def abort_funnel(mm):
+        seen.append(mm.mem[mm.sym["ERRMARK"]])
+        mm.cpu.sp = 0xF380 - 2          # the sentinel's frame: the funnel's SP reset
+
+    m.trap("fre_abort_low", abort_funnel)
     bad_stream = hex_tok(0xC600) + b'\x00'  # addr token then EOL (no comma, no value)
     m.poke(BUF, bad_stream)
     m.call("do_poke", hl=BUF)

@@ -18,9 +18,12 @@
 do_poke:
                 call    eval_addr           ; spec §10.3: POKE's arguments are the
                 push    de                  ; save address
-                call    skip_comma          ; comma required
-                jp     nz,poke_err
-                inc     hl
+                call    req_comma           ; comma required, consumed; none -> ERR 2
+                                            ; (C5-lite, space plan B-12: this was the
+                                            ; open-coded `skip_comma / jp nz,poke_err
+                                            ; / inc hl`, and poke_err = ex_let_err is
+                                            ; the same Syntax error -- raise_error
+                                            ; resets SP, so the pushed address is moot)
                 call    eval_byte_checked   ; DE = value 0..255, HL = cursor
                                             ; 🔴 D-RAWVAL: the VALUE is a BYTE, not an
                                             ; address. `eval_addr` applies the ADDRESS
@@ -40,8 +43,5 @@ do_poke:
                 ld      a,e                 ; low byte of value
                 ld      (bc),a              ; the POKE
                 jp      exec_stmt           ; HL = cursor; run the next statement
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ex_let_err,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-poke_err        equ     ex_let_err
+; (poke_err -- D-DUPSPAN2's alias of ex_let_err -- is gone: space plan B-12 routed
+; its one user through req_comma, and make dead-alias-check caught the orphan.)

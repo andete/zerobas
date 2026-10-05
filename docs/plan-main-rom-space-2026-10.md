@@ -106,6 +106,36 @@ Two sources nobody had worked were not spent:
 
 Predict each wall before building it, and score the prediction.
 
+### Progress (2026-10-05): phases A and B are DONE
+
+Main ROM free (low + page 1), measured by `make basic-reloc` after each commit.
+Every slice ran the FULL battery green before its commit.
+
+| slice | main B (plan → measured) | free after | what differed from the row below |
+|---|---|---|---|
+| start | | 2 | |
+| A1 C3 | 173 → 173 | 175 | |
+| A2 DT-3 | 124 → 124 | 299 | |
+| A3 DT-2 + C2-GAP1 | 63 + 53 → 63 | 362 | DT-3 + DT-2 did NOT both fit islands 1/2 (a miscount here); A3 became C2-GAP1's islands 3/4 holding DT-2's tables, so A4 folded into A3. |
+| B-1 GA-CROSS-ROMSCAN | 41 → 41 | 403 | K-PL4 (`scratchpad/playop_knives.py`) re-aimed: its anchor was a rewritten line. |
+| B-2 GA-LHSTYP2 | 19 → 19 | 422 | `scratchpad/ngram_sweep.py`'s declined key for the removed run retired (selftest D6 went red on it). |
+| B-3 C4 | 68 → 68 | 490 | Two knives re-anchored (K-N4A, K-DS1). |
+| B-4 B4 | 32 → 23 | 513 | B-1/B-3 had already made three of its hunks; SPRITE ON/OFF sits in an unassembled IF arm; +2 from two `jr`s it opened. |
+| B-5 GA-VERBRUN | 30 → 30 | 543 | |
+| B-6 DT-1 | 82 → 82 | 625 | kwknife.py's plant/enumerate rewritten in the same commit; filed D-T5TWINREM. |
+| B-7 C6-FORMAT | 48 → 32 | 657 | A2 had already moved the 17 B menu text out of main; disk.rom +69 B. |
+| B-8 SBH-3 | 52 → 52 | 709 | sub p1 −24 B, as costed. |
+| B-9 DT-6 | 5 → 6 | 715 | +1 from a `jr` back in reach. |
+| B-10 C8 | 73 → 80 | 795 | The worktree's ARGA argument was FALSE (it named CVT's widen); re-derived. A pointer-walk strip (+7) took back most of a float-PRINT slowdown: ~0.18 ms per printed float remains, timed alone on both builds. |
+| B-11 B1 | 29+ → 70 | 865 | Stubs sited LOW (disk.rom and sub page-1 tenants call low routines with page 1 switched out); extended to the low sites; three hot paths kept open-coded; new gate `stubinl-check`. |
+| B-12 C5 → **C5-lite** | 37 → 12 | **877** | C5's SYNCHR at `rst $08` skipped spaces first, which breaks the published contract (§4 rule): DROPPED. Its byte saving taken instead by pointing three open-coded comma checks at `req_comma`. `$08` itself filed as D-SYNCHR. |
+
+**Phase B delivered 515 B against ~330 B planned** -- the plan undercounted B-6,
+B-10 and B-11 and overcounted B-4, B-7 and B-12. Filed along the way:
+D-T5TWINREM (T5 includes the twin's REM, and T5 is not stable run to run),
+D-SYNCHR, D-KWTIMESYMRACE. Phase C still waits on eviction step 13; rulings R4
+and R5 (§4) are still open.
+
 ### Phase A: C-BIOS capacity (no ruling, ~413 B)
 
 | # | slice | main B | slice-specific conditions (from the refuter) |

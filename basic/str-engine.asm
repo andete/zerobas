@@ -1459,12 +1459,10 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                                             ; survive the arg parse's VARPTR)
                 ld      (MIDS_DEST),hl      ; stash dest; cursor kept on the stack
                 pop     hl                  ; HL = cursor
-                call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
-                                            ; SKIPS SPACES first, which a bare
-                                            ; `ld a,(hl)` did not. BYTE-NEUTRAL:
-                                            ; 3 B for 3 B.
-                jp      nz,stmt_error
-                inc     hl
+                call    req_comma           ; ',' required and consumed, spaces skipped
+                                            ; first (D-FNSPACE); none -> ERR 2. C5-lite
+                                            ; (space plan B-12): this was req_comma's
+                                            ; own body, open-coded.
                 call    eval_pos_arg        ; DE = n, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; [n]
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it

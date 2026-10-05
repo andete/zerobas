@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29151 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29189 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26732,6 +26732,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       this is fixed, a slice's speed cost has to be read by timing the rows ALONE
       on both builds (B-10 did: `--only`), never off the sheet's T5 column.
       🤖 **AUTONOMOUS** — apparatus; both sides are measurable.
+
+- [ ] 🔌 **D-SYNCHR — `RST $08` (SYNCHR) IS STILL C-BIOS'S DEBUG STUB: IT PRINTS "SYNCHR" AND
+      RETURNS (found 2026-10-05 by space plan B-12; NOT MEASURED on a machine-code row)**
+      🎚️ TIER 6 — a published BIOS entry that machine-code routines and CALL
+      extension ROMs parse with, not a keyword. Re-tier if that surface is in
+      scope sooner.
+      🔬 C5 (the 2026-10-03 space hunt) noted that C-BIOS's `$0008` is `jp` onto
+      a debug stub ("NOTE: this implementation is still a stub!" in C-BIOS's own
+      source, which is ours to read). zerobas already implements `$10` CHRGTR and
+      `$18` OUTDO (tools/build_mainrom.py PATCH_RANGES); `$08` was never done.
+      C5 itself put a SPACE-SKIPPING SYNCHR there and was dropped for it
+      (Joost's 2026-10-04 rule: a published entry keeps its contract); B-12 took
+      the byte saving another way (C5-lite, `req_comma`) and left `$08` alone.
+      The published contract (MSX2 Technical Handbook, BIOS `$0008`): `(HL)` is
+      compared with the byte AFTER the RST; a mismatch is Syntax error; a match
+      continues as CHRGTR (HL+1, spaces skipped, A = the char, CY if a digit, Z
+      at end of statement). NO space skip before the compare.
+      ➡️ Measure first: a `DEFUSR` routine that sets HL at a typed `,` and does
+      `RST 8 / DB ","` (then `DB ";"` for the mismatch), on both references and
+      ours. Then implement it exactly at `$08` through PATCH_RANGES (~12 B; an
+      island, if one has room). Check the other RST vectors (`$20` DCOMPR, `$28`
+      GETYPR, `$30` CALLF) the same way.
+      🤖 **AUTONOMOUS** — the references settle it.
+
+- [ ] 🧰 **D-KWTIMESYMRACE — `kwtime` CAN DIE IN 0 s ON `KeyError: 'tokenise'` WHEN ANOTHER BATTERY
+      UNIT REWRITES main's .sym (found twice: 2026-10-04 during B-3, 2026-10-05 during B-11; MEASURED)**
+      🎚️ TIER 6 — apparatus: the runner's serial retry turns it green both
+      times, but a flake that hides behind a retry is one a real red can hide
+      behind too.
+      🔬 `basic_probe_kwtime.py` imports `basic_probe_kwsweep`, whose MODULE
+      LEVEL builds `TAPE_PROGRAM` through `bas_tokenise.make_multiline_program`,
+      which loads the main ROM's .sym and calls `tokenise` on the host core. If
+      a concurrent unit is mid-rewrite of that .sym, the lookup misses and the
+      import dies (the battery's own kwtime log showed this traceback both times).
+      ➡️ Build `TAPE_PROGRAM` lazily (on first use, not at import), or have
+      kwtime read a snapshot of the .sym taken at the warm-up. Then put kwtime
+      back in the pool without the retry hiding it.
+      🤖 **AUTONOMOUS** — apparatus.
 
 - [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY
       EMPTIED THAT CHANNEL'S FILE (found and fixed 2026-10-03 while scoping S10.B; MEASURED)**

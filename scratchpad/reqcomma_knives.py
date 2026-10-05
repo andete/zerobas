@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 r"""D-NGRAM17 K-C1/K-C2 + S1 — the two halves of `req_comma`.
 
-  S1     STATIC: 0 open-coded runs left, exactly 4 calls, matcher alive.
+  S1     STATIC: 0 open-coded runs left, exactly 10 calls (re-pinned 2026-10-05), matcher alive.
   K-C1   drop the `inc hl`, so the comma is matched but NOT CONSUMED and each
          verb reads it as the start of its next argument.
          PREDICTED: every `g.*` row moves; the `b.*` rows HOLD -- they already
@@ -51,7 +51,11 @@ EXPECT = {
     "K-C1": {"g.swap", "g.sound", "g.input", "g.field2"},
     "K-C2": {"b.sound", "b.input"},
 }
-PAT = ["call skip_spaces", "cp ','", "jp nz,stmt_error", "inc hl"]
+# 🔁 RE-SHAPED 2026-10-05 (space plan B-12): the body has been `call skip_comma
+# / jp nz,stmt_error / inc hl` since a later pair carve folded `call skip_spaces
+# / cp ','` into skip_comma, so the old 4-instruction PAT matched NOTHING and S1
+# could only fail -- unnoticed, because this script is not in the battery.
+PAT = ["call skip_comma", "jp nz,stmt_error", "inc hl"]
 
 
 def sh(cmd, log):
@@ -89,9 +93,14 @@ def main():
     calls = sum(1 for e in ins if e[3] == "call req_comma")
     alive, stale = knife_guard.pattern_alive(PAT, (e[3] for e in ins))
     # the BODY is one such run, so 1 is the honest expectation, not 0.
-    ok = (occ == 1 and calls == 4 and alive)
+    # 🔁 CALLS RE-PINNED 2026-10-05 (space plan B-12, C5-lite): 4 -> 10. The pin
+    # had ALREADY drifted to 7 (later slices added req_comma callers; this script
+    # is not in the battery, so nothing re-read it). B-12 then routed POKE's,
+    # VDP()='s and MID$='s open-coded runs through it: 10. With PAT re-shaped
+    # (above) the run count reads 1 -- the body -- measured, not assumed.
+    ok = (occ == 1 and calls == 10 and alive)
     print(f"{'PASS' if ok else 'FAIL'}  S1 {occ} run(s) in basic/ (want 1 -- the "
-          f"BODY is one, and 0 would mean it vanished), {calls} call(s) (want 4), "
+          f"BODY is one, and 0 would mean it vanished), {calls} call(s) (want 10), "
           f"matcher{'' if alive else ' 🔴 STALE: ' + str(stale)} alive")
     if not ok:
         fails.append("S1")

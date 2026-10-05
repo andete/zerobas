@@ -135,11 +135,8 @@ do_out:
                 ld      a,e                 ; A = low byte of value
                 out     (c),a               ; raw Z80 port write
                 jp      exec_stmt           ; HL still the cursor (out preserves it)
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ex_let_err,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-vdp_err         equ     ex_let_err
+; (vdp_err -- D-DUPSPAN2's alias of ex_let_err -- is gone: space plan B-12 routed
+; its one user through req_comma, and make dead-alias-check caught the orphan.)
 
 ; --- vdp_comma_byte: `,<byte>` after a first argument (D-VDPCB, 2026-09-30) -----
 ; in: DE = the first argument (already checked by the caller's own domain),
@@ -147,13 +144,15 @@ vdp_err         equ     ex_let_err
 ; (eval_byte_checked: ERR 5 outside 0..255, ERR 6 outside int16), HL past it.
 ; 💰 `push de / call skip_comma / jp nz,vdp_err / inc hl / call eval_byte_checked`
 ; stood at THREE sites (VPOKE, OUT, WAIT), and two of them popped the saved
-; argument into BC at once -- so the pop moves in here too. vdp_err raises
-; (raise_error resets SP), so the extra return address on that path is harmless.
+; argument into BC at once -- so the pop moves in here too. A missing comma
+; raises Syntax error from inside req_comma (B-12; was vdp_err), and raise_error
+; resets SP, so the extra return addresses on that path are harmless.
 vdp_comma_byte:
                 push    de
-                call    skip_comma          ; comma required
-                jp      nz,vdp_err
-                inc     hl
+                call    req_comma           ; comma required, consumed; none -> ERR 2
+                                            ; (C5-lite, space plan B-12: was `skip_comma
+                                            ; / jp nz,vdp_err / inc hl`; vdp_err =
+                                            ; ex_let_err raises the same Syntax error)
                 call    eval_byte_checked   ; DE = 0..255, HL = cursor
                 pop     bc
                 ret
