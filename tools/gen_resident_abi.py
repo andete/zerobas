@@ -69,6 +69,13 @@ REQUIRED_SUB = [
     # one -- so `PRINT USING` and `PRINT` cannot disagree about what a number
     # looks like. Low-region by construction (basic/float.asm).
     "flt_fmt",
+    # D-EDCTRL (2026-10-05): the screen editor's cell helpers moved from
+    # sub/readline.asm to main's low region (basic/edscreen.asm) so main's own
+    # CTRL-B/E/F/N/U handlers share them; the readline tenant imports them here.
+    "rl_vpeek",
+    "rl_vpoke",
+    "rl_vaddr",
+    "rl_lastrow",
 ]
 
 # --- the DISK ROM's profile (D-DISKABI, docs/spec-basic-nodisk.md §13) -------

@@ -78,6 +78,9 @@ DISK_BUILD      equ     0
 ; zerobas-sub discovery recorder + dispatch helper (subrom S2b): lives in the
 ; page-0 low region freed by evicting the float PRINT formatter (page 1 is full).
                 include "basic/subromcall.asm"
+; The screen editor's cell helpers (D-EDCTRL): low, because the sub-ROM readline
+; tenant calls them from page 1 and main's own editing keys call them too.
+                include "basic/edscreen.asm"
 ; Interrupt-traps T3: the KEY event source. Low-region (not page 1) because it
 ; fires from inside C-BIOS's keyboard scan, i.e. the $0038 ISR, which can land
 ; while a sub-ROM page-1 tenant owns page 1 — and a skipped frame would LEAK an

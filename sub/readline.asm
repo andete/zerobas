@@ -317,85 +317,13 @@ rl_scrolled:
                 dec     (hl)
                 ret
 
-; --- rl_vpeek: A = the screen character at row B, column C (both 1-based) ----
-; The name table is NAMBAS + (row-1)*stride + margin + (col-1); the stride is
-; the mode's (40 in SCREEN 0, 32 in SCREEN 1), not LINLEN, and the margin centres
-; the LINLEN-wide window in it (see rl_vcol). Preserves BC, DE.
-rl_vpeek:
-                push    bc
-                push    de
-                call    rl_vaddr
-                call    RDVRM               ; A = VRAM byte at HL (BIOS)
-                pop     de
-                pop     bc
-                ret
-
-; --- rl_vpoke: the screen character at row B, column C := A. Preserves BC, DE. -
-rl_vpoke:
-                push    bc
-                push    de
-                push    af
-                call    rl_vaddr
-                pop     af
-                call    WRTVRM
-                pop     de
-                pop     bc
-                ret
-
-; --- rl_vaddr: HL = the name-table address of row B, column C. Clobbers A,B,DE.
-rl_vaddr:
-                ld      a,(SCRMOD)
-                or      a
-                ld      e,40
-                jr      z,rl_stride
-                ld      e,32
-rl_stride:
-                ld      d,0
-                ld      hl,(NAMBAS)
-                dec     b
-                jr      z,rl_vcol
-rl_vrow:
-                add     hl,de
-                djnz    rl_vrow
-rl_vcol:
-                ; The text window is CENTRED in the name table: column 1 sits at
-                ; index (stride + 1 - LINLEN) / 2 -- measured: 1 at WIDTH 39 on
-                ; C-BIOS (the prompt row reads `| ZB` with CSRX = 3), and the
-                ; VG-8020's captures show two blanks at its default 37. 0 at 40.
-                ld      a,e                 ; the stride
-                inc     a
-                ld      e,a
-                ld      a,(LINLEN)
-                ld      d,a
-                ld      a,e
-                sub     d                   ; stride + 1 - LINLEN
-                srl     a                   ; the left margin
-                add     a,c
-                dec     a                   ; + (col - 1)
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                ret
-
-; --- rl_lastrow: B = the last row of the logical line that holds the cursor ----
-; Walks down while LINTTB says the row continues (0), never past the bottom row.
-; Clobbers A, DE, HL.
-rl_lastrow:
-                ld      a,(CSRY)
-                ld      b,a
-rl_lr_lp:
-                ld      a,(CRTCNT)
-                cp      b
-                ret     z                   ; the bottom row ends every line
-                ld      hl,LINTTB-1
-                ld      e,b
-                ld      d,0
-                add     hl,de               ; LINTTB[row-1]
-                ld      a,(hl)
-                or      a
-                ret     nz                  ; this row ends the line
-                inc     b
-                jr      rl_lr_lp
+; --- rl_vpeek / rl_vpoke / rl_vaddr / rl_lastrow: MOVED TO MAIN'S LOW REGION ---
+; basic/edscreen.asm (D-EDCTRL, 2026-10-05). They are pure screen arithmetic over
+; documented work-area cells and the RDVRM/WRTVRM BIOS entries, so they run
+; unchanged from page 0, which stays mapped while this tenant owns page 1; the
+; resident ABI imports them (tools/gen_resident_abi.py REQUIRED_SUB). Main's own
+; screen-editor keys (CTRL-B/E/F/N/U) use the same four, and this tenant's page
+; 1 got the bytes back.
 
 ; --- rl_shift_right: open a blank cell at the cursor (insert mode) -------------
 ; Every cell from the cursor to the logical line's end moves one right. If the
