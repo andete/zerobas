@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29220 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29262 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24185,7 +24185,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (the D-INSMODE probe's shape, `scratchpad/insmode_probe.py`), and whether
       INSFLG survives each key. The table above is the manuals' word, not a
       reading; a key whose reference effect differs from it is the finding.
+      📏 **MEASURED 2026-10-05** ([`edctrl_probe.py`](scratchpad/edctrl_probe.py),
+      VG-8020 vs ours, 15 cases): **13 DIFF, and TWO causes, not one.**
+      - 🔴 **CAUSE 1 IS BELOW THE EDITOR -- filed as D-CTRLKEYS.** On ours a CTRL
+        key arrives as its LOWERCASE LETTER: CTRL-E typed at the prompt puts an
+        `e` in the line. The editor never sees `$05`.
+      - **CAUSE 2 IS THE EDITOR.** TAB arrives as `$09` on both and ours drops
+        it. The VG-8020's effects, read from the screen, CSRX and LINTTB (they
+        match the manual's table):
+        | key | VG-8020 |
+        |---|---|
+        | CTRL-E | erases cursor..end of the LOGICAL line; a continuation row goes and its LINTTB mark becomes "ends"; cursor stays |
+        | CTRL-U | erases the whole logical line; cursor to column 1 of its first row |
+        | CTRL-B | to the start of the previous word (`AB CD EF`: end -> `E` -> `C`) |
+        | CTRL-F | to the start of the next word (`A` -> `C` -> `E`) |
+        | CTRL-N | to just past the last character of the logical line, onto its continuation row |
+        | TAB | blanks to the next 8-column stop, OVERWRITING (`ABCDEFGHIJ`, cursor on B, TAB X -> `A.......X`) |
+        | SELECT, ESC | nothing (SAME on ours) |
+        | any of them in insert mode | INSFLG -> 0 (insert ends) |
+      ➡️ Fix order: D-CTRLKEYS first (without it no CTRL key reaches the editor),
+      then the six handlers in `sub/readline.asm`. TAB alone can land now.
       🤖 **AUTONOMOUS** — the references settle each key.
+
+- [ ] ⌨️ **D-CTRLKEYS — A CTRL+LETTER KEY READS AS THE LOWERCASE LETTER, NOT ITS CONTROL CODE
+      (found 2026-10-05 by D-EDCTRL; MEASURED)**
+      🎚️ TIER 1 — happy path: every program that reads CTRL keys through
+      INKEY$/INPUT$ gets the wrong code, and the screen editor's CTRL keys
+      (D-EDCTRL) cannot work at all. Even CTRL-C at the editor (readline handles
+      `3`) cannot be produced.
+      📏 [`ctrlkey_probe.py`](scratchpad/ctrlkey_probe.py): `A$=INPUT$(1):PRINT
+      ASC(A$)` then the key, VG-8020 vs ours:
+      | key | VG-8020 | ours |
+      |---|---|---|
+      | CTRL-A / B / E / F / N / U / Z | 1 / 2 / 5 / 6 / 14 / 21 / 26 | **97 / 98 / 101 / 102 / 110 / 117 / 122** |
+      | TAB, ESC, plain `e` | 9, 27, 101 | 9, 27, 101 (SAME) |
+      So the CTRL modifier is lost in the keyboard decode, which is C-BIOS's
+      (the matrix -> character tables patched before by
+      `cbios-repack/home-key.patch` and `ins-del-keys.patch`). The fix is one
+      more repack patch: with CTRL held, a letter key yields its code AND $1F.
+      🙋 **NEEDS-JOOST** — a PERMISSION, not a decision (2026-10-05): reading the
+      C-BIOS source the repack patches (`~/projects/cbios`, outside this repo)
+      was refused by the session's permission check, so the patch is not
+      written. Allowing that read (or naming the decode routine) unblocks it,
+      and from there the VG-8020 settles every code autonomously.
 
 - [ ] ⌨️ **D-EDFKEY — DO F1..F10 TYPE THEIR `KEY` STRINGS AT THE EDITOR? (filed 2026-10-03; NOT MEASURED)**
       🎚️ TIER 1 — happy path: F1..F5 (`color`, `auto`, `goto`, `list`, `run`)
