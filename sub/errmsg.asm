@@ -26,6 +26,8 @@
 ; a status byte and a main-side fallback.
 ;
 ; 🎯 PLAIN STRINGS, NOT PHRASE-ENCODED, AND THAT IS A DECISION (spec §3.3).
+; (DT-6 (space plan B-9, 2026-10-05) retired MAIN's phrase table too, so both ROMs now store every
+; message as plain text and the drift risk below no longer exists anywhere.)
 ; D-MSGENC measured the decoder at 44 B and msg_phrase_tab at 40 B. Duplicating
 ; both here would buy back roughly 20 B of literal text out of a 3 KB budget AND
 ; create a SECOND phrase table that a future edit to main's could silently

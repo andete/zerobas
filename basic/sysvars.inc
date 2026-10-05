@@ -5079,36 +5079,16 @@ SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
 ; reads SUBSLOT, not EXBRSA (R4). Source: MSX2 Technical Handbook work-area map.
 EXBRSA          equ     $FAF8
 
-; --- D-MSGENC: error-message phrase escapes (repack build only) ---------------
-; docs/spec-basic-msgenc-carve.md §4.1. These are the BYTE VALUES that appear
-; inside an encoded message string; print_msg_stopcr (basic/program.asm) expands
-; them from msg_phrase_tab, which must list the phrases in exactly this order.
-; Values stay below $20 so no printable literal can collide, and the decoder's
-; single `cp MSGESC_HI + 1` is an exact test (the baked 13,10 are gone, §4.2).
-MSGESC_ERROR    equ     1       ; " error"
-MSGESC_UTOF     equ     2       ; "ut of "              (leading letter dropped:
-MSGESC_ILLFN    equ     3       ; "llegal function call"  "Out of"/"out of" and
-; 🎯 D-MSGMIGRATE DELETED MSGESC_WITHOUT (4, " without") AND MSGESC_FILE
-; (5, "file "). Every user of both migrated into the sub-ROM tenant, where
-; strings are stored PLAIN -- MSGESC_WITHOUT had THREE (err_noret, err_nofor and,
-; the one the filed estimate missed, err_resume_noerr) and MSGESC_FILE two
-; (err_bad_filenum, err_bad_filemode). A phrase with no users is dead DATA; the
-; dead-code gate walks spans of CODE and cannot see it, so it has to be found by
-; enumerating users -- which is the same instrument that refuted the "different
-; key" claim this slice was filed under.
-; ⚠️ THEY WERE THE TOP TWO VALUES, so nothing below renumbers and MSGESC_HI simply
-; follows MSGESC_ILLFN. Re-adding a phrase must APPEND (4, then 5) and re-point
-; MSGESC_HI at it -- never insert below, which would silently re-spell every
-; message that uses a lower escape.
-                                ; ("bad file number" / "file not open") are the only
-                                ; pair in the corpus that shares a substring neither
-                                ; of the four above covers. Added rather than spelled
-                                ; out because the phrase table is PAGE 1 and the two
-                                ; messages are LOW REGION: it spends 6 bytes of the
-                                ; roomy wall to save 8 of the scarce one. The decoder
-                                ; needs no change -- it is bounded by MSGESC_HI.
-MSGESC_LO       equ     MSGESC_ERROR                    ; share one entry, so the
-MSGESC_HI       equ     MSGESC_ILLFN                    ; decoder needs NO case flag
+; --- D-MSGENC: error-message phrase escapes -- RETIRED BY DT-6 ----------------
+; docs/spec-basic-msgenc-carve.md §4.1 defined MSGESC_ERROR/UTOF/ILLFN (1..3,
+; once 1..5) as byte values inside a message string that print_msg_stopcr
+; (basic/program.asm) expanded from msg_phrase_tab. D-MSGMIGRATE moved sixteen
+; messages into the sub-ROM tenant, where strings are stored PLAIN, and deleted
+; the two phrases that lost every user; that left EIGHT users saving 54 B of
+; literal text against a 25 B decoder arm + 35 B table (measured on the .sym at
+; fab3f01d), so DT-6 retired the whole mechanism: every message is plain text,
+; the three constants and msg_phrase_tab are gone, and tests/test_msgenc.py
+; pins the plain bytes out of the ROM image. Only MSGESC_SUB below survives.
 
 ; --- D-MSGSUB: the SUB-ROM-HOSTED marker (docs/spec-basic-msgsub.md §3.1) -----
 ; NOT a phrase. A message body that is just this byte says "the text lives in the
@@ -5117,14 +5097,9 @@ MSGESC_HI       equ     MSGESC_ILLFN                    ; decoder needs NO case 
 ; CRLF and the run-mode " in <line>" suffix, so this is a BODY substitution and
 ; nothing about fre_abort_low's two arms changes.
 ;
-; ⚠️ DELIBERATELY ABOVE MSGESC_HI, AND THE DECODER TESTS IT **BEFORE** THE PHRASE
-; BOUND. Two separate reasons, both load-bearing:
-;   * MSGESC_HI bounds msg_phrase_tab's LENGTH, and tests/test_msgenc.py reads
-;     exactly MSGESC_HI - MSGESC_LO + 1 phrases out of the ROM. Folding this byte
-;     into the phrase range would make that read run one entry PAST the table and
-;     compare against whatever follows -- a readout that fails by producing
-;     plausible garbage rather than by going red. test_msgenc.py now asserts
-;     MSGESC_SUB > MSGESC_HI to keep a future tidy-up from doing exactly that.
-;   * Being above the bound means `cp MSGESC_HI + 1 / jr nc,pm_lit` would treat
-;     it as a LITERAL and pchar a raw $06. The pm_sub test must precede it.
+; Since DT-6 retired the phrase escapes this is the ONLY byte below $20 a message
+; body may contain (tests/test_msgenc.py refuses any other control byte -- a
+; baked CR/LF, or a leftover escape); the decoder tests it and pchars everything
+; else. The value 6 is historical (it had to sit ABOVE MSGESC_HI = 3 while the
+; phrase range existed); any value below $20 would do now.
 MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant

@@ -722,7 +722,7 @@ verify_error:
                 call    print_msg                       ; D-MSGENC
                 scf                             ; a mismatch is a FAILED load: CF out
                 ret                             ; (docs/spec-basic-castail.md §3.2)
-err_verify:     db      "Verify",MSGESC_ERROR,0         ; 15 B -> 8 B
+err_verify:     db      "Verify error",0
 
 ; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
 ; Reached from do_tape_prog's header dispatch when byte 0 is $EA (ASCII)

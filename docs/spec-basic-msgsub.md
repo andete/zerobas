@@ -70,6 +70,11 @@ that tenant is page-1 rather than page-0.
 
 ### 3.1 One new escape byte, and the table entries do the rest
 
+> **Since DT-6 (space plan B-9, 2026-10-05):** the phrase escapes and `msg_phrase_tab` are retired,
+> so `MSGESC_SUB` is the decoder's ONLY escape and `MSGESC_HI` no longer exists.
+> `err_unprintable` is spelled out (`db "Unprintable error",0`). The design
+> below is otherwise unchanged.
+
 `MSGESC_SUB equ 6` — **above** `MSGESC_HI` (which stays `MSGESC_FILE` = 5), so
 the phrase table's length and the decoder's phrase bound stay one fact in one
 place. `print_msg_stopcr` gains an explicit test **ahead of** the phrase bound:

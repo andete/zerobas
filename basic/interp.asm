@@ -1514,8 +1514,8 @@ rel_direct:
 ; err_overflow/err_linebuf_overflow gap control, and for the same reason: the
 ; pull to "tidy up" a one-byte string is real).
 err_subhosted:  db      MSGESC_SUB          ; D-MSGSUB -- falls through, deliberately
-err_unprintable:                            ; D-MSGENC (§4.4): 20 B -> 13 B. Note this
-                db      "Unprintable",MSGESC_ERROR,0    ; SHRINKS at the very spot the
+err_unprintable:                            ; D-MSGENC (§4.4) encoded this; DT-6 spelled
+                db      "Unprintable error",0   ; it out again. Note it once SHRANK at the very spot the
                 ; err_missing_operand itself lives in basic/missing.asm. Sited
                 ; there rather than here because 17 bytes inserted at this point
                 ; land between page 1's dense forward `jr`s and their targets --
@@ -1572,11 +1572,15 @@ ee_raise:
 ex_resume:
                 ld      a,(ONEFLG)
                 or      a
-                jr      z,ex_resume_noerr   ; `jp`, not `jr`: the err_msgtab entry for
-                                            ; ERR 24 pushed this forward span one byte
-                                            ; past `jr`'s reach. Same reason REM_TOKEN
-                                            ; needed an IF/ELSE in the old dispatch
-                                            ; chain; +1 B, repack-only, no behaviour.
+                jr      z,ex_resume_noerr   ; this span crosses err_unprintable. It
+                                            ; was a `jp` twice -- the err_msgtab entry
+                                            ; for ERR 24 pushed it past `jr`'s reach,
+                                            ; and DT-6 spelling that string out (+5 B)
+                                            ; did again -- but A3 moved err_msgtab into
+                                            ; an island and B-6's indexed stmt_table
+                                            ; shrank the span: back in reach
+                                            ; (jr_mapper, 2026-10-05). If pasmo says
+                                            ; "Relative jump out of range" here, `jp`.
                 xor     a                   ; RESUME resets ERR to 0 (ERL is KEPT --
                 ld      (ERRFLG),a         ; empirically pinned VG-8020, all four RESUME
                                             ; forms: `0 / 20`, not `0 / 0`). Placed on the

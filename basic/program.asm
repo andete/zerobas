@@ -954,10 +954,13 @@ print_in_lineno:
 ; read only by absolute `ld` from main; now in the font island.
 
 ; --- print_msg_stopcr / print_msg: the D-MSGENC message decoder ----------------
-; docs/spec-basic-msgenc-carve.md §4.3. Error message strings are PHRASE-ENCODED
-; in the repack build: bytes MSGESC_LO..MSGESC_HI index msg_phrase_tab, everything
-; >= $20 is a literal, and the CRLF is emitted HERE instead of being baked into
-; every message (§4.2 — 2 B x 25 messages).
+; docs/spec-basic-msgenc-carve.md §4.3. Error message strings WERE phrase-encoded
+; (bytes MSGESC_LO..MSGESC_HI indexed msg_phrase_tab); DT-6 retired that: after
+; D-MSGMIGRATE moved sixteen messages sub-side, the phrase arm (25 B) plus the
+; table (35 B) cost MORE than the 54 B of literal text its eight remaining users
+; saved (measured on the .sym at fab3f01d), so the strings are plain again and
+; MSGESC_SUB is the one escape left. Everything >= $20 is a literal, and the CRLF
+; is still emitted HERE instead of being baked into every message (§4.2).
 ;
 ; 🔴 THIS CANNOT GO INTO print_string. print_string also carries USER DATA --
 ; DETOKBUF (LIST output), NUMBUF, FOUTBUF -- so an escape check there would expand
@@ -977,28 +980,11 @@ pm_lp:          ld      a,(hl)
                 inc     hl
                 or      a
                 ret     z
-                cp      MSGESC_SUB          ; D-MSGSUB: the sub-ROM-hosted marker.
-                jr      z,pm_sub            ; MUST precede the phrase bound -- it is
-                                            ; ABOVE MSGESC_HI, so `jr nc,pm_lit` below
-                                            ; would pchar a raw $06 (sysvars.inc has
-                                            ; the two reasons it sits there).
-                cp      MSGESC_HI + 1       ; MSGESC_LO..MSGESC_HI -> phrase escape;
-                jr      nc,pm_lit           ; every literal is >= $20 (the baked
-                                            ; 13,10 are gone), so this is exact
-                push    hl
-                ld      hl,msg_phrase_tab
-                dec     a                   ; escape 1 -> phrase 0 (no skip)
-                jr      z,pm_emit
-                ld      b,a                 ; skip B whole NUL-terminated phrases
-pm_skip:        ld      a,(hl)
-                inc     hl
-                or      a
-                jr      nz,pm_skip
-                djnz    pm_skip
-pm_emit:        call    print_string        ; phrases are plain NUL-terminated text
-                pop     hl
-                jr      pm_lp
-pm_lit:         rst     $18                 ; PRDEST sink (fre_abort_low zeroed it)
+                cp      MSGESC_SUB          ; D-MSGSUB: the sub-ROM-hosted marker --
+                jr      z,pm_sub            ; since DT-6 the ONLY escape; every other
+                                            ; byte is a literal >= $20 (the baked
+                                            ; 13,10 are gone)
+                rst     $18                 ; PRDEST sink (fre_abort_low zeroed it)
                 jr      pm_lp
 
 ; --- pm_sub: the body lives in the sub-ROM (D-MSGSUB, docs/spec-basic- --------
@@ -1067,26 +1053,17 @@ pm_sub:         push    bc                  ; 🎯 D-MSGMIGRATE: THE FENCE. See 
 print_msg:      call    print_msg_stopcr    ; direct mode: body + CRLF
                 jp      print_crlf
 
-; --- msg_phrase_tab: §4.1's four phrases, NUL-terminated, in escape order ------
-; ⚠️ MSGESC_UTOF and MSGESC_ILLFN DELIBERATELY DROP THE LEADING LETTER so that
-; "Out of"/"out of" and "Illegal"/"illegal" share ONE entry with no case-fold flag
-; in the decoder above. The arrays arc's §9.5 capitalisation split and PROVENANCE
-; §851's lowercase-strings policy are therefore untouched: each message still
-; spells its own first letter.
-msg_phrase_tab:
-                db      " error",0          ; MSGESC_ERROR
-                db      "ut of ",0          ; MSGESC_UTOF
-                db      "llegal function call",0 ; MSGESC_ILLFN
-; 🎯 D-MSGMIGRATE deleted MSGESC_WITHOUT (" without") and MSGESC_FILE ("file "):
-; every user of both migrated to the sub-ROM tenant, where strings are stored
-; PLAIN. A phrase with no users is dead DATA, which the dead-code gate reads
-; spans of CODE and cannot see -- so it had to be found by enumerating the users,
-; and that enumeration is also what turned up the third " without" user
-; (err_resume_noerr) that the filed estimate had missed.
-; ⚠️ Both were the TOP TWO escape values, so MSGESC_HI drops 5 -> 3 and nothing
-; below renumbers. MSGESC_SUB stays 6, so `MSGESC_SUB > MSGESC_HI` (the invariant
-; tests/test_msgenc.py pins, and the reason pm_sub's test must precede the phrase
-; bound) gains slack rather than losing it.
+; --- err_subscript / err_redim: fp_runtime_error's message strings (interp.asm's
+; fre_msgtab, `dw` entries). DT-6's REBALANCE: retiring msg_phrase_tab (which sat
+; right here) freed 60 B of page 1, but re-spelling the five LOW-REGION escape
+; users grew that region by 39 B against a 1 B wall, so these two (43 B plain,
+; 38 B encoded) moved UP from basic/arrays.asm into the slot the table vacated.
+; Both readers are absolute addresses, so placement is free -- arrays.asm's own
+; note said exactly that when it homed them low for the mirror-image reason.
+; Wording is reference-VERBATIM capitalised text (spec-basic-arrays.md §9.5),
+; unchanged; tests/test_msgenc.py pins it out of the ROM image.
+err_subscript:  db      "Subscript out of range",0
+err_redim:      db      "Redimensioned array",0
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
 ; STOP halts the program and records where to continue, so a following CONT
@@ -2368,8 +2345,9 @@ exr_bad:
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
                 jp      raise_error
 ; D-MSGMIGRATE: err_data is sub-ROM-hosted (em_data, ERRFLG 4). MSGESC_UTOF
-; SURVIVES this one -- it still has three low-region users (err_subscript,
-; err_mem_arr, err_out_of_str), unlike MSGESC_WITHOUT/MSGESC_FILE.
+; survived that move with three low-region users (err_subscript, err_mem_arr,
+; err_out_of_str) -- until DT-6 (space plan B-9, 2026-10-05) retired every phrase escape; those three
+; are plain text now.
 
 ; --- ex_restore: RESTORE [<line>] --------------------------------------------
 ; Reset the DATA cursor to the program start, or to a given line. The optional

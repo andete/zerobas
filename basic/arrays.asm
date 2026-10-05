@@ -34,12 +34,12 @@
 ; sub/arrays.asm's own header for the split rationale and PROVENANCE.md.
 
 
-; --- err_subscript / err_redim: fp_runtime_error's message strings for -----
-; FPERR 5/7 (interp.asm's fre_msgtab). Homed HERE (the low region) rather
-; than alongside interp.asm's other error strings (page 1) because page 1 is
-; nearly full (~30 B free pre-slice-1) and these ~49 B do not need to be
-; page-1 resident — only the table's own pointer word does, and an absolute
-; address costs the same regardless of which region it targets.
+; --- the arrays arc's message strings (fp_runtime_error / fre_msgtab) --------
+; err_subscript / err_redim were homed HERE (the low region) because page 1 was
+; nearly full and an absolute `dw` address costs the same whichever region it
+; targets; DT-6 moved them the OTHER way, into basic/program.asm, for the
+; mirror-image reason (retiring the phrase table grew the low region's strings
+; by 39 B against a 1 B wall). The three below stay.
 ; Wording: reference-VERBATIM capitalised text ("Subscript out of range" /
 ; "Redimensioned array" / "Illegal function call"), NOT the lowercase house
 ; style of the D-2/D-F2-1 messages — spec §9.5 pins the array error surface
@@ -49,19 +49,14 @@
 ; division by zero / the shared FPERR=3 illegal-function-call that SQR/LOG
 ; still raise); the negative-subscript case therefore gets its OWN FPERR
 ; code (8) + capitalised string below instead of reusing FPERR=3.
-; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4): phrase-encoded. This whole
-; §9.5 capitalisation is UNCHANGED and still spelled out per message -- the
-; escapes deliberately exclude the leading letter, so "Illegal"/"illegal" and
-; "Out of"/"out of" share a phrase while each message keeps its own case. The
-; §9.7 differential compares the DECODED screen tail, which is byte-identical.
-err_subscript:
-                db      "Subscript o",MSGESC_UTOF,"range",0     ; 25 B -> 18 B
-err_redim:
-                db      "Redimensioned array",0                 ; 22 B -> 20 B
+; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.4) phrase-encoded these; DT-6
+; retired the phrase table (basic/program.asm print_msg_stopcr) and they are
+; plain text again. The §9.5 capitalisation is unchanged either way, and the
+; §9.7 differential compares the screen tail, which is byte-identical.
 err_illegal_fn_arr:
-                db      "I",MSGESC_ILLFN,0                      ; 24 B -> 3 B
+                db      "Illegal function call",0
 err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is set ONLY
-                db      "O",MSGESC_UTOF,"memory",0              ; 16 B -> 9 B
+                db      "Out of memory",0
                                             ; by ary_errmap entry 4 -- the ALLOCATION
                                             ; OOMs: DIM, auto-dim, and the scalar
                                             ; insert (scv_oom). D-ARYOOS moved the
@@ -78,7 +73,7 @@ err_mem_arr:                                ; FPERR=6 (fre_msgtab entry 6) is se
                                             ; printed directly, never via FPERR) is
                                             ; untouched.
 err_syntax:                                 ; interp.asm's own stmt_error + fre_msgtab
-                db      "Syntax",MSGESC_ERROR,0     ; D-MSGENC: 15 B -> 8 B
+                db      "Syntax error",0
                                             ; entry 4 (D-F2-3) both reference this by
                                             ; absolute address; relocated here by the
                                             ; slice-3 space

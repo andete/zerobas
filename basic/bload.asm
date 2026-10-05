@@ -218,4 +218,4 @@ load_error:
                 ld      hl,err_io
                 jp      print_msg                   ; D-MSGENC
 err_io:
-                db      "load",MSGESC_ERROR,0       ; 13 B -> 6 B
+                db      "load error",0

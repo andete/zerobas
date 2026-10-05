@@ -1,25 +1,27 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: D-MSGENC phrase-encoded error messages decode to their literal text.
+"""Unit test: main's user-visible error messages are the exact literal text.
 
-docs/spec-basic-msgenc-carve.md §7. The slice re-spells 25 user-visible message
-strings as escape sequences over a shared phrase table, so the ONE invariant that
-matters is that the decoded bytes are unchanged. The emulator differentials cover
-a handful of them end-to-end (error-trap's ERROR 23..26, fat-error's 'load error',
-arrays' 'Illegal function call'); this is the cheap layer that covers ALL of them,
-including the ones no acceptance row happens to print.
+docs/spec-basic-msgenc-carve.md §7, as DT-6 left it. D-MSGENC re-spelled the
+message strings as escape sequences over a shared phrase table; DT-6 retired
+that table once D-MSGMIGRATE had moved sixteen messages sub-side (the decoder
+arm + table cost more than the eight remaining users saved), so the strings are
+plain NUL-terminated text again. The ONE invariant that matters is unchanged:
+the bytes in the ROM image are the text the reference prints. The emulator
+differentials cover a handful of them end-to-end (error-trap's ERROR 23..26,
+fat-error's 'load error', arrays' 'Illegal function call'); this is the cheap
+layer that covers ALL of them, including the ones no acceptance row prints.
 
 ⚠️ WHAT MAKES THIS TEST REAL, per docs/... and the recurring arc lesson: it
-DECODES THE ROM IMAGE, it does not re-derive the expected text from the same
+READS THE ROM IMAGE, it does not re-derive the expected text from the same
 source line that produced it. The expected strings below are typed out
-independently, so a wrong phrase-table entry, a wrong escape constant, a wrong
-phrase ORDER, or a stray baked CRLF all fail here.
+independently, so a mis-spelled `db`, a dropped letter, a stray baked CRLF or a
+leftover phrase escape byte all fail here.
 
-FALSIFIED (spec §7): corrupt any msg_phrase_tab entry -- e.g. change " error" to
-" errer" in basic/program.asm -- and every message using MSGESC_ERROR fails this
-test. Swap two phrases in the table and the same happens. Verified by doing it,
-2026-07-29; without that check a table read that silently returned b"" would let
-every row "agree" on the empty string.
+FALSIFIED (spec §7): corrupt any string -- e.g. change "Syntax error" to
+"Syntax errer" in basic/arrays.asm -- and that row fails this test. Leave a
+phrase escape in (`db "Verify",1,0`) and the control-byte check fails. Verified
+by doing it, 2026-07-29 (phrase form) and 2026-10-03 (plain form).
 """
 
 import os
@@ -34,11 +36,10 @@ ROM = tp("zb_msgenc_reloc.rom")
 SYM = tp("zb_msgenc_reloc.sym")
 LOW = 0x2765                    # basic/main-reloc.asm ROM_BASE: image offset origin
 
-# The decoded text every message MUST still produce, typed independently of the
-# `db` lines that encode them. Capitalisation is load-bearing: the arrays arc's
+# The text every message MUST still produce, typed independently of the `db`
+# lines that encode them. Capitalisation is load-bearing: the arrays arc's
 # §9.5 pins its four strings to the reference's capitalised wording, while the
-# D-2 house strings are lowercase, and MSGESC_UTOF/MSGESC_ILLFN are shared
-# ACROSS that split (each message spells its own first letter).
+# D-2 house strings are lowercase.
 # 🔴 D-MSGMIGRATE REMOVED SIXTEEN ENTRIES FROM THIS DICT, AND THAT MADE THIS TEST
 # WEAKER. Type mismatch / Division by zero / RESUME without error / Undefined
 # line number / Can't CONTINUE / RETURN without GOSUB / NEXT without FOR /
@@ -93,7 +94,7 @@ def build():
 
 
 def load_syms(path):
-    """pasmo .sym rows look like `msg_phrase_tab\tEQU 077DFH`."""
+    """pasmo .sym rows look like `err_syntax\tEQU 03CDEH`."""
     syms = {}
     for ln in open(path):
         parts = ln.split()
@@ -106,57 +107,38 @@ def load_syms(path):
     return syms
 
 
-def read_phrases(rom, syms):
-    """The phrase table as the DECODER sees it: NUL-terminated, in escape order.
+def decode(rom, addr):
+    """The message as print_msg_stopcr walks it: NUL-terminated plain text.
 
-    ⚠️ The COUNT is taken from the ROM's own MSGESC_HI, not hardcoded. The
-    decoder is bounded by that constant (`cp MSGESC_HI + 1`), so reading a fixed
-    four entries would have let S-FCH-2's fifth phrase land with the bound
-    un-bumped -- the exact "one fact in two places" drift that left err_msgtab's
-    ERR 25 entry dead for a whole arc (basic/interp.asm, msgtab-bound-drift).
-    Now the table and the bound are read from the same build and must agree.
+    Any byte below $20 is refused: a baked CR/LF (the CRLF is emitted by the
+    printer, never stored -- spec §4.2) or a leftover phrase escape from before
+    DT-6. MSGESC_SUB (err_subhosted) is deliberately NOT in EXPECT.
     """
-    at = syms["msg_phrase_tab"] - LOW
-    phrases = []
-    for _ in range(syms["MSGESC_HI"] - syms["MSGESC_LO"] + 1):
-        end = rom.index(b"\0", at)
-        phrases.append(rom[at:end].decode("latin-1"))
-        at = end + 1
-    return phrases
-
-
-def decode(rom, addr, phrases):
     out, at = [], addr - LOW
     while rom[at] != 0:
         b = rom[at]
-        if 1 <= b <= len(phrases):
-            out.append(phrases[b - 1])
-        elif b < 0x20:
+        if b < 0x20:
             raise AssertionError(f"raw control byte {b} at ${addr:04X} "
-                                 f"(a baked CR/LF, or an out-of-range escape)")
-        else:
-            out.append(chr(b))
+                                 f"(a baked CR/LF, or a leftover phrase escape)")
+        out.append(chr(b))
         at += 1
     return "".join(out)
 
 
 def main():
     rom, syms = build()
-    phrases = read_phrases(rom, syms)
 
     fails = []
-    # Guard the instrument before trusting a single row: a table read that
-    # returned empty strings would make every message "decode" to its literal
-    # residue and quietly pass. (gate-can-be-green-while-measuring-nothing)
-    if [p for p in phrases if not p]:
-        raise SystemExit(f"phrase table read empty entries: {phrases!r}")
-    print(f"phrase table: {phrases!r}")
-
     for lbl, want in sorted(EXPECT.items()):
         if lbl not in syms:
             fails.append(f"{lbl}: absent from the sym file")
             continue
-        got = decode(rom, syms[lbl], phrases)
+        try:
+            got = decode(rom, syms[lbl])
+        except AssertionError as e:
+            fails.append(f"{lbl}: {e}")
+            print(f"FAIL  {lbl:22} {e}")
+            continue
         ok = got == want
         print(f"{'PASS' if ok else 'FAIL'}  {lbl:22} {got!r}")
         if not ok:
@@ -179,22 +161,11 @@ def main():
     # real -- it is worth exactly 9 B, and knife K5 measured that by restoring the
     # overlap and watching ERR 25 print `Line buffer Overflow`. A future carve hunt
     # that "spots" the 9 B would silently corrupt ERR 25; this row is what stops it.
-    # --- D-MSGSUB control 1: the new escape must stay OUTSIDE the phrase range --
-    # read_phrases() above reads exactly MSGESC_HI - MSGESC_LO + 1 entries out of
-    # msg_phrase_tab. MSGESC_SUB is not a phrase -- it has no table entry -- so
-    # folding it into the range (the obvious "tidy-up": MSGESC_HI equ MSGESC_SUB)
-    # would make that read run one entry PAST the table and compare every message
-    # against whatever bytes follow it. That fails by producing plausible garbage,
-    # not by going red, which is the failure shape this tree keeps meeting.
-    if syms["MSGESC_SUB"] <= syms["MSGESC_HI"]:
-        fails.append(
-            f"MSGESC_SUB ({syms['MSGESC_SUB']}) is inside the phrase range "
-            f"(MSGESC_LO..MSGESC_HI = {syms['MSGESC_LO']}..{syms['MSGESC_HI']}). "
-            f"It has no msg_phrase_tab entry, so read_phrases() would overrun the "
-            f"table -- and print_msg_stopcr's `cp MSGESC_HI + 1` would stop "
-            f"reaching the pm_sub arm. See basic/sysvars.inc.")
-    else:
-        print("PASS  escape   MSGESC_SUB is outside the phrase range")
+    # --- D-MSGSUB control 1 RETIRED WITH THE PHRASE RANGE (DT-6) ---------------
+    # It asserted MSGESC_SUB > MSGESC_HI so that the phrase-table read could not
+    # run one entry past the table. There is no table and no MSGESC_HI any more;
+    # what remains of the escape space is "exactly one control byte, MSGESC_SUB",
+    # which decode() enforces per message above.
 
     # --- D-MSGSUB control 2: the ABSENT-sub-ROM fall-through ------------------
     # err_subhosted is one byte (MSGESC_SUB) sited so that err_unprintable is the
@@ -216,6 +187,14 @@ def main():
             f"them -- see basic/interp.asm and docs/spec-basic-msgsub.md §3.1.")
     else:
         print("PASS  adjacent err_unprintable directly follows err_subhosted")
+    # The byte err_subhosted holds must still be the one escape the decoder
+    # dispatches on; a plain-text "tidy-up" of that one-byte string would print
+    # a raw control character instead of reaching the sub-ROM tenant.
+    if rom[syms["err_subhosted"] - LOW] != syms["MSGESC_SUB"]:
+        fails.append(f"err_subhosted no longer holds MSGESC_SUB "
+                     f"({rom[syms['err_subhosted'] - LOW]} vs {syms['MSGESC_SUB']})")
+    else:
+        print("PASS  escape   err_subhosted is exactly MSGESC_SUB")
 
     # 🔴 THIS CONTROL MOVED SUB-SIDE WITH ITS SUBJECT (D-MSGMIGRATE). It used to
     # assert that err_overflow and err_linebuf_overflow are INDEPENDENT strings,
@@ -231,7 +210,7 @@ def main():
     if fails:
         print("\n" + "\n".join(fails))
         return 1
-    print(f"\nALL {len(EXPECT)} messages decode to their literal text")
+    print(f"\nALL {len(EXPECT)} messages are their literal text")
     return 0
 
 

@@ -23,16 +23,19 @@ error is latent until the day it matters.
 The ROM's own source, so the alphabet cannot drift from the machine:
 
   * `sub/errmsg.asm` — the sub-ROM tenant. Plain `db "...",0` bodies.
-  * the main ROM's message strings, which are ESCAPE-ENCODED (D-MSGENC):
-    `db "Subscript o",MSGESC_UTOF,"range",0` is `Subscript out of range`. The
-    phrase values and spellings come from `basic/sysvars.inc`, parsed here rather
-    than restated, so deleting a phrase (D-MSGMIGRATE deleted two) cannot leave a
-    stale expansion behind.
+  * the main ROM's message strings. These WERE escape-encoded (D-MSGENC:
+    `db "Subscript o",MSGESC_UTOF,"range",0`); DT-6 (space plan B-9, 2026-10-05) retired the phrase
+    table, and every main string is plain `db "...",0` again. The phrase parser
+    below is KEPT and now reads an EMPTY table (no `MSGESC_<NAME> equ n ; "..."`
+    line is left in `basic/sysvars.inc`; `MSGESC_SUB`, the one escape that
+    remains, carries no spelling and is not a phrase). So a body that still used
+    a retired escape would be DROPPED, not half-expanded -- the same refusal as
+    before, and the right one.
 
-⚠️ THE ESCAPES DROP A LEADING LETTER ON PURPOSE — `MSGESC_UTOF` is `"ut of "`,
-so `"O",MSGESC_UTOF,"memory"` and a lowercase `"o"` share one table entry. A
-decoder that "helpfully" restored the letter would produce two plausible strings
-neither of which the machine prints.
+⚠️ (History.) The escapes dropped a leading letter on purpose -- `MSGESC_UTOF`
+was `"ut of "`, so `"O",MSGESC_UTOF,"memory"` and a lowercase `"o"` shared one
+table entry. A decoder that "helpfully" restored the letter would have produced
+two plausible strings neither of which the machine printed.
 
 ## Using it
 

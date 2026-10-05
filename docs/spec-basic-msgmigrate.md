@@ -204,6 +204,11 @@ and `tests/` are the ones listed above.
 
 ### 4.4 The phrase table — −15 B, and one more phrase dies than §8 predicted
 
+> **Superseded by DT-6 (space plan B-9, 2026-10-05).** With the eight users below left, the decoder
+> arm (25 B) and the table (35 B) cost more than the 54 B of literal text they
+> saved, so DT-6 retired the whole mechanism: every main string is plain text and
+> `MSGESC_SUB` is the only escape. This section is the record of the step before.
+
 | escape | users | after migration |
 |---|---|---|
 | `MSGESC_ERROR` (1) | `err_syntax`, `err_io`, `err_verify`, `err_resume_noerr`, `err_unprintable` | 4 remain → **keep** |

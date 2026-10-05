@@ -468,6 +468,9 @@ err_notopen_raise:                          ; EOF()/LOF() on a closed channel (E
 ; from main -- em_bad_filenum / em_file_notopen in sub/errmsg.asm. err_bad_filenum
 ; was one of MSGESC_FILE's two users; err_bad_filemode (basic/missing.asm) was the
 ; other, and it migrated too, so that phrase is deleted from msg_phrase_tab.
+; (DT-6 (space plan B-9, 2026-10-05) then retired msg_phrase_tab itself and every escape but MSGESC_SUB:
+; main's strings are plain text, so the leading-letter reasoning below is
+; history -- the TEXT constraint it records still holds.)
 ;
 ; ⚠️ D-MSGEXACT's reading about ERR 59 is preserved because it still constrains the
 ; TEXT, which the move does not change: `File not OPEN` cannot use the "file "
