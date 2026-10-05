@@ -58,11 +58,12 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # refuses the build.
 # D-HOMEKEY (2026-09-26): cbios-repack patch #4 adds 12 bytes to key_ascii, which
 # sits BEFORE that pad, so the pad -- and island 1 -- start at $1ADB, not $1ACF.
+# D-CTRLKEYS (2026-10-05): patch #6 adds 23 more there -- island 1 starts at $1AF2.
 # Space plan A3 (2026-10-04): the two remainders of C-BIOS gap 1 around the tape
 # bodies -- $09D9-$09ED before TAPE_BODY_LO and $0CC9-$0D00 after tape_end, up to
 # the pinned compat tail at $0D01 (basic/islands.asm, islands 3 and 4).
 ISLAND4_LO = 0x0CC9
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1ADB, 0x1BBF), (0x09D9, 0x09EE), (ISLAND4_LO, 0x0D01))
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF2, 0x1BBF), (0x09D9, 0x09EE), (ISLAND4_LO, 0x0D01))
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).

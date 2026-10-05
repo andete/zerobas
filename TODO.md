@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29273 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29289 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24204,7 +24204,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         | SELECT, ESC | nothing (SAME on ours) |
         | any of them in insert mode | INSFLG -> 0 (insert ends) |
       ➡️ Fix order: D-CTRLKEYS first (without it no CTRL key reaches the editor),
-      then the five CTRL handlers in `sub/readline.asm`.
+      then the five CTRL handlers in `sub/readline.asm`. ✅ D-CTRLKEYS SHIPPED
+      2026-10-05: the codes now arrive, and readline drops them -- the handlers
+      are what is left.
       ✅ **TAB SHIPPED 2026-10-05.** Measured further first (three more cases):
       from column 33 or later on a 37-column row TAB fills to the edge and WRAPS
       to column 1 of a continuation row (LINTTB marks the row continued), and in
@@ -24218,7 +24220,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Sub page 1: 181 -> 158 B.
       🤖 **AUTONOMOUS** — the references settle each key.
 
-- [ ] ⌨️ **D-CTRLKEYS — A CTRL+LETTER KEY READS AS THE LOWERCASE LETTER, NOT ITS CONTROL CODE
+- [x] ✅ **D-CTRLKEYS — A CTRL+LETTER KEY READ AS THE LOWERCASE LETTER, NOT ITS CONTROL CODE
       (found 2026-10-05 by D-EDCTRL; MEASURED)**
       🎚️ TIER 1 — happy path: every program that reads CTRL keys through
       INKEY$/INPUT$ gets the wrong code, and the screen editor's CTRL keys
@@ -24234,11 +24236,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (the matrix -> character tables patched before by
       `cbios-repack/home-key.patch` and `ins-del-keys.patch`). The fix is one
       more repack patch: with CTRL held, a letter key yields its code AND $1F.
-      🙋 **NEEDS-JOOST** — a PERMISSION, not a decision (2026-10-05): reading the
-      C-BIOS source the repack patches (`~/projects/cbios`, outside this repo)
-      was refused by the session's permission check, so the patch is not
-      written. Allowing that read (or naming the decode routine) unblocks it,
-      and from there the VG-8020 settles every code autonomously.
+      ~~🙋 NEEDS-JOOST — a PERMISSION~~ — Joost granted the C-BIOS source read
+      the same day.
+      ✅ **FIXED 2026-10-05 — `cbios-repack/ctrl-keys.patch` (repack patch #6).**
+      Measured the WHOLE main block first
+      ([`ctrlmatrix_probe.py`](scratchpad/ctrlmatrix_probe.py): CTRL held over
+      all 48 keys of matrix rows 0-5, each code POKEd to RAM). The VG-8020 gives
+      30 codes: letters 1..26, `\` `[` `]` 28 27 29, `` ` `` 0 -- and NOTHING
+      for digits and `- = ; ' , . /`. So the rule is: CTRL held, a byte of $40 or
+      more becomes `byte AND $1F` (0 is stored), a byte below $40 gives no
+      character; rows 6-11 (keypad, cursor, specials) untouched -- unmeasured.
+      `key_ascii` gains that arm (23 B, AF' as scratch -- free there). It sits
+      BEFORE C-BIOS's font pad, so the pad and zerobas's island 1 move from
+      $1ADB to $1AF2 (`basic/islands.asm`, `ISLAND_RANGES`); `rn_undefined`
+      (16 B) moved to island 2 to make room. Island 1 10 B free, island 2 48 B.
+      Gate `ctrlkeys-acceptance`
+      ([`basic_probe_ctrlkeys.py`](probes/basic/basic_probe_ctrlkeys.py)): the
+      ten codes and the 48-key sweep against the VG-8020, all agree. 🔪 Knife:
+      the arm's `and $02` -> `and $FF` in the installed ROM -- exactly the seven
+      CTRL-letter codes and the sweep go red, TAB/ESC/`e` stay green.
 
 - [ ] ⌨️ **D-EDFKEY — DO F1..F10 TYPE THEIR `KEY` STRINGS AT THE EDITOR? (filed 2026-10-03; NOT MEASURED)**
       🎚️ TIER 1 — happy path: F1..F5 (`color`, `auto`, `goto`, `list`, `run`)

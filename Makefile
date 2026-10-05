@@ -2428,6 +2428,13 @@ diskascii-acceptance: repack-machine $(DISK_TEST_DSK)
 	fi; \
 	exit $$rc
 
+# --- ctrlkeys-acceptance: a CTRL key reads as its control code (D-CTRLKEYS) -------
+# cbios-repack/ctrl-keys.patch: CTRL-E read 101 (`e`) where the VG-8020 reads 5.
+# Ten keys through INPUT$, plus CTRL over all 48 keys of matrix rows 0-5, against
+# the VG-8020. Runs the DISKLESS machine (the keyboard is the same main ROM).
+ctrlkeys-acceptance: repack-machine
+	python3 probes/basic/basic_probe_ctrlkeys.py
+
 # --- D-SCREDIT: the screen editor's happy path (docs/spec-basic-screditor.md) ------
 screditor-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py

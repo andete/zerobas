@@ -8,7 +8,8 @@
 ; *"B first, then A"*). C-BIOS pads to pinned addresses with `ds`; those runs
 ; are zero in OUR merged image, in the SAME slot as main, and always mapped with
 ; it. Each island below is one such run, confirmed in the C-BIOS source:
-;   $1ADB..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;   $1AF2..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;                 (was $1ADB until cbios-repack patch #6, D-CTRLKEYS, 2026-10-05)
 ;                 ($1ACF until cbios-repack patch #4, D-HOMEKEY, added 12 bytes
 ;                 to C-BIOS's key_ascii before it: the pad now starts 12 later)
 ;   $0160..$01FF  src/main.asm:620  `ds $0200 - $` -- pad up to jump_table
@@ -25,8 +26,11 @@
 ; from the main slot (a sub-ROM PAGE-0 tenant cannot reach it).
 ; ===========================================================================
 
-; --- island 1: before the font ($1ADB..$1BBE, 228 B usable) -----------------
-                org     $1ADB
+; --- island 1: before the font ($1AF2..$1BBE, 205 B usable) -----------------
+; D-CTRLKEYS (2026-10-05): cbios-repack/ctrl-keys.patch puts 23 bytes in
+; key_ascii, BEFORE the font pad, so the pad -- and this island -- start 23 B
+; later than D-HOMEKEY's $1ADB. rn_undefined moved to island 2 to make room.
+                org     $1AF2
 
 ; try_init_slot -- boot-time: does the slot in A carry an "AB" ROM, and if so
 ; CALSLT its INIT. From basic/initext.asm, unchanged. Better here than in page 1:
@@ -158,7 +162,8 @@ rdslt_scan:
 ; disk.rom on 2026-10-04 -- four blocks, 41 B, now.)
 ; Same rules as the $0160 block: absolute `ld` readers only. `rn_in` became an
 ; equ alias of in_msg in basic/program.asm (both were " in ",0).
-rn_undefined:   db      "Undefined line ",0
+; rn_undefined -- MOVED to island 2 (D-CTRLKEYS, 2026-10-05): island 1 lost
+; 23 B to the CTRL arm in C-BIOS's key_ascii. Same readers, same rules.
 ; fmt_menu_text WAS here (D-ISLDATA2) until space plan B-7 (C6-FORMAT,
 ; 2026-10-04) moved CALL FORMAT's menu into disk.rom's hk_format, text and all.
 tkf_ref32767:
@@ -293,6 +298,9 @@ autoexec_name:  db      "AUTOEXECBAS"
 fmt_name:       db      "FORMAT"
 prompt_text:
                 db      "ZB",13,10,0
+; rn_undefined -- from island 1 (D-CTRLKEYS, 2026-10-05): pure data, absolute
+; `ld` readers only, exactly as in its D-ISLDATA2 home.
+rn_undefined:   db      "Undefined line ",0
 
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS

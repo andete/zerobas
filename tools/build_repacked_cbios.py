@@ -51,11 +51,16 @@ PATCHES = [
     # and before the scan-code tables); vdp_bios ends at $2765, not $2812, and
     # BASIC_ORG (basic/main.asm) / BASIC_BASE (build_mainrom.py) follow it.
     os.path.join(REPO, "cbios-repack", "eu-drop-dead-strings.patch"),
+    # D-CTRLKEYS: CTRL+letter read as the lowercase letter, not its control
+    # code. 23 bytes in key_ascii (rows 0-5, CTRL held: a byte >= $40 becomes
+    # byte AND $1F, one below $40 gives no character -- the VG-8020's answer
+    # for all 48 keys). They sit BEFORE the font pad: island 1 moves to $1AF2.
+    os.path.join(REPO, "cbios-repack", "ctrl-keys.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "91d549fed2f3b7ca42a888d098b6f18b5fad0938"
+REPACKED_SHA1 = "daeac96df7d5c9ae239000832b1d7e24b9a25f7d"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

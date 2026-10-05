@@ -1,0 +1,36 @@
+diff --git a/src/main.asm b/src/main.asm
+index 5fecb76..f6f0c93 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2884,8 +2884,31 @@ key_ascii:
+                 ld      a,$0C
+                 sbc     a,0
+ key_ascii_go:
++                ; zerobas repack (D-CTRLKEYS): CTRL held turns a main-block key
++                ; into its control code, as the VG-8020 does (measured over all 48
++                ; keys of rows 0-5): a character of $40 or more becomes char AND
++                ; $1F -- the letters 1..26, `[` `\` `]` 27..29, and `` ` `` 0, which
++                ; is stored too -- and anything below $40 (digits, - = ; ' , . /)
++                ; gives NO character. Rows 6-11 (C < 6) are not touched: unmeasured.
++                ; CTRL is row 6 bit 1, active low. AF' is free here: key_chk_lp
++                ; parked only the row's new byte in it, and reads (de) afresh.
++                ex      af,af'          ; park the character
++                ld      a,c
++                cp      6
++                jr      c,key_ctl_none  ; rows 6-11
++                ld      a,(NEWKEY + 6)
++                and     $02
++                jr      nz,key_ctl_none ; CTRL not held
++                ex      af,af'
++                cp      $40
++                jr      c,key_store_end2 ; CTRL + a key below $40: nothing
++                and     $1F
++                jr      key_ctl_put     ; stored even when it is 0
++key_ctl_none:
++                ex      af,af'
+                 and     a               ; dead key?
+                 jr      z,key_store_end2
++key_ctl_put:
+                 ; Store ASCII value in key buffer.
+                 ; Since a full buffer is indicated by PUTPNT == GETPNT - 1,
+                 ; it is always safe to store a character, but if the buffer
