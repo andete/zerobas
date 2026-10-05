@@ -46,78 +46,64 @@ flt_out:
                 call    flt_fmt
                 jp      print_string
 flt_fmt:
-                ld      a,(FACTYP)
-                cp      8
-                jr      z,flo_dblsz
-                ld      a,6
-                ld      (TKPC),a
-                ld      a,3
-                ld      (FOMBYTES),a
-                jr      flo_unpackgo
-flo_dblsz:
-                ld      a,14
-                ld      (TKPC),a
-                ld      a,7
-                ld      (FOMBYTES),a
-flo_unpackgo:
+                ; --- C8 (2026-10-03): the unpack IS widen_fac_to -----------------
+                ; This used to open-code what float-arith.asm's widen_fac_to already
+                ; does -- lead byte -> sign / signed dec_exp / one digit per byte --
+                ; into TKDEXP/TKDIG, with its own FACTYP->TKPC/FOMBYTES dispatch and
+                ; its own nibble loop (a byte-for-byte twin of wsrc_unpack). Now the
+                ; value is widened into ARGA, the FPNUM record the float pack already
+                ; owns, and the flo_* readers below read the record's fields.
+                ; WHY ARGA IS DEAD HERE (space plan B-10 rewrote this; the first
+                ; draft said domain_convert_core "already widens into it" -- it
+                ; widens into CVT, $F0C8, not ARGA). Checked at every ARGA writer:
+                ; each one either packs ARGA straight back (arga_widen followed by
+                ; round_and_finalize / round_single_and_pack / fp_trunc+pack) or
+                ; hands it to a leaf that never evaluates (the evmc_* math tenants,
+                ; the combine_* operators -- whose LHS lives in the push_lhs_frame
+                ; stack frame, never in ARGA, while the RHS is evaluated). The one
+                ; writer that RESUMES parsing with ARGA loaded is CIRCLE's DREQ 3
+                ; (basic/graphics.asm), and its tenant copies ARGA out
+                ; (cpt_angle_from_arga / the aspect) on resume, before it requests
+                ; the next argument. So when STR$ formats mid-expression, PRINT
+                ; formats an evaluated item, or the PRINT USING tenant runs after
+                ; round_and_finalize packed ARGA into FAC, nothing still reads it.
+                ; ⚠️ A NEW ARGA WRITER THAT EVALUATES BEFORE CONSUMING IT BREAKS
+                ; THIS -- `VAL(STR$(x))` as that argument would overwrite it here.
+                ; The precision dispatch is gone too: widen_fac_to zero-pads the
+                ; record to 15 digits, so the trailing-zero strip simply starts at
+                ; 15 and lands on the same last nonzero digit for either precision.
+                ; Cost: the pad (9 B for a single, 1 for a double) and up to nine
+                ; extra strip iterations for a SINGLE -- on the PRINT path only, the
+                ; wsrc_unpack loop itself is untouched.
                 ld      a,(FAC)
                 or      a
                 jr      z,flo_zero
-                ld      (FOSIGN),a          ; stash the raw lead byte (sign in bit7)
-                and     $7F
-                sub     64                  ; A = dec_exp (signed, -64..63)
-                ld      l,a
-                ld      h,0
-                bit     7,a
-                jr      z,flo_dexp_ok
-                ld      h,$FF
-flo_dexp_ok:
-                ld      (TKDEXP),hl
-                ; unpack the mantissa bytes into TKDIG (one digit value per byte)
-                ld      a,(FOMBYTES)
-                ld      b,a
-                ld      hl,FAC+1
-                ld      de,TKDIG
-flo_unpack:
-                ld      a,(hl)
-                ld      c,a
-                and     $F0
-                rrca
-                rrca
-                rrca
-                rrca
-                ld      (de),a
-                inc     de
-                ld      a,c
-                and     $0F
-                ld      (de),a
-                inc     de
-                inc     hl
-                djnz    flo_unpack
+                ld      hl,ARGA
+                call    widen_fac_to        ; ARGA := sign / dec_exp / 15 digits
                 ; strip trailing zeros -> s (>=1: lead<>0 guarantees a nonzero digit)
-                ld      a,(TKPC)
-                ld      c,a
+                ; 🎯 A POINTER WALK DOWN FROM THE LAST DIGIT (space plan B-10). C8
+                ; made every value strip from 15 (widen_fac_to pads a single), and
+                ; the loop this replaces recomputed ARGA+FPNUM_DIG+c-1 on every
+                ; pass (~82 cycles): `PRINT VAL("1E3")` paid 9 extra passes and its
+                ; whole-row time went 1.8x -> 2.2x the VG-8020's. ~40 cycles a pass
+                ; here, so 14 passes cost about what the old 5 did, and 7 B less.
+                ; DE is no longer written; flo_is_fixed sets it before any read.
+                ld      hl,ARGA+FPNUM_DIG+14
+                ld      c,15
 flo_strip:
-                ld      a,c
-                dec     a
-                ld      l,a
-                ld      h,0
-                ld      de,TKDIG
-                add     hl,de
                 ld      a,(hl)
                 or      a
                 jr      nz,flo_strip_done
+                dec     hl
                 dec     c
-                ld      a,c
-                or      a
                 jr      nz,flo_strip
 flo_strip_done:
                 ld      a,c
                 ld      (FOSIGCOUNT),a
                 ; --- sign char, then dispatch fixed vs E form ---
                 ld      hl,FOUTBUF
-                ld      a,(FOSIGN)
-                and     $80
+                ld      a,(ARGA+FPNUM_SIGN) ; 0 / $80 -- widen_fac_to masked it
+                or      a
                 jr      z,flo_possign
                 ld      a,'-'
                 jr      flo_signwr
@@ -153,14 +139,14 @@ flo_zero:
 ; Clobbers A, DE.
 flo_is_fixed:
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,14
                 call    cmp16_bits
                 pop     hl
                 cp      4
                 jr      z,flo_notfixed
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,$FFFF            ; -1
                 call    cmp16_bits
                 pop     hl
@@ -178,7 +164,7 @@ flo_notfixed:
 ; digits[dec_exp..s). Clobbers A, B, C, D, E.
 flo_emit_fixed:
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,0
                 call    cmp16_bits
                 pop     hl
@@ -186,7 +172,7 @@ flo_emit_fixed:
                 jr      z,flo_fx_bc
                 ld      (hl),'.'
                 inc     hl
-                ld      de,(TKDEXP)
+                ld      de,(ARGA+FPNUM_DEXP)
                 call    neg_de              ; DE = -dec_exp (>=0)
                 ld      a,d
                 or      e
@@ -201,7 +187,7 @@ flo_fx_a_digits:
 flo_fx_bc:
                 ld      a,(FOSIGCOUNT)
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      c,l
                 pop     hl
                 cp      c
@@ -209,7 +195,7 @@ flo_fx_bc:
                 jr      z,flo_fx_case_b
                 ; case (c): 0 < dec_exp < s
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      a,l
                 pop     hl
                 ld      b,a
@@ -218,7 +204,7 @@ flo_fx_bc:
                 ld      (hl),'.'
                 inc     hl
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      a,l
                 pop     hl
                 ld      c,a
@@ -232,7 +218,7 @@ flo_fx_case_b:
                 ld      c,0
                 call    flo_write_digits_range   ; all s digits
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      a,l
                 pop     hl
                 ld      c,a
@@ -248,7 +234,7 @@ flo_fx_b_zloop:
                 djnz    flo_fx_b_zloop
                 ret
 
-; --- flo_write_digits: write all FOSIGCOUNT digits from TKDIG[0..] --------
+; --- flo_write_digits: write all FOSIGCOUNT digits from ARGA's digits[0..] (C8)
 flo_write_digits:
                 ld      a,(FOSIGCOUNT)
                 ld      b,a
@@ -256,18 +242,18 @@ flo_write_digits:
                 ; ...and FALLS THROUGH into flo_write_digits_range (the `jr` here
                 ; was to the very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
-; --- flo_write_digits_range: write B ASCII digits from TKDIG[C..] at (HL) -
+; --- flo_write_digits_range: write B ASCII digits from ARGA's digits[C..] at (HL) (C8)
 ; out: HL advanced past the written digits. Clobbers A, B, D, E.
 flo_write_digits_range:
                 ld      a,b
                 or      a
                 ret     z
                 push    hl
-                ld      hl,TKDIG
+                ld      hl,ARGA+FPNUM_DIG
                 ld      d,0
                 ld      e,c
                 add     hl,de
-                ex      de,hl               ; DE = TKDIG[C] read cursor
+                ex      de,hl               ; DE = ARGA digit[C] read cursor
                 pop     hl                  ; HL = write cursor
 fwdr_lp:
                 ld      a,(de)
@@ -282,7 +268,7 @@ fwdr_lp:
 ; digit0 [+ '.' + digits[1..s) if s>1] + 'E' + sign + 2-digit |dec_exp-1|.
 ; Clobbers A, B, C, D, E.
 flo_emit_e:
-                ld      a,(TKDIG)
+                ld      a,(ARGA+FPNUM_DIG)
                 add     a,'0'
                 ld      (hl),a
                 inc     hl
@@ -299,7 +285,7 @@ flo_e_nodp:
                 ld      (hl),'E'
                 inc     hl
                 push    hl
-                ld      hl,(TKDEXP)
+                ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,$FFFF            ; -1
                 add     hl,de               ; HL = dec_exp - 1
                 ld      a,h

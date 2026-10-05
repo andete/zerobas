@@ -530,9 +530,9 @@ second one is the question a per-component map cannot answer.
 | `$F05F` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
 | `$F060` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
 | `$F062` | 1 B | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
-| `$F063` | 1 B | `basic` | `FOSIGN` | 0 / $80 = the value's sign bit (1) |  |
+| `$F063` | 1 B | `basic` | `FOSIGN` | UNUSED since C8 -- the sign is ARGA+FPNUM_SIGN |  |
 | `$F064` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
-| `$F065` | 1 B | `basic` | `FOMBYTES` | mantissa byte count: 3 (single) / 7 (double) (1) |  |
+| `$F065` | 1 B | `basic` | `FOMBYTES` | (1 B) UNUSED since C8 -- widen_fac_to reads |  |
 | `$F067` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
 | `$F069` | 1 B | `basic` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F069` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |

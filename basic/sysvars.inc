@@ -4234,8 +4234,11 @@ TKPC            equ     $F05F   ; target precision digit count: 6 / 14 (1)
 TKDEXP          equ     $F060   ; signed dec_exp, pre-/post-round (2)
 TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (1)
 ; flt_out formatter scratch (own choice — free RAM; transient, dead between
-; PRINT items). TKPC/TKDEXP/TKDIG above are reused here too — flt_out never runs
-; concurrently with tk_float.
+; PRINT items). TKPC/TKDEXP/TKDIG above WERE reused here too until C8
+; (2026-10-03): flt_fmt now widens FAC into ARGA with widen_fac_to and formats
+; from that FPNUM record, so of the cells below only FOSIGCOUNT is still written.
+; The no-interleaving argument that follows still holds (and still matters for
+; FOSIGCOUNT / TKVALEND): flt_out never runs concurrently with tk_float.
 ; 🔴 AND THE REASON FOR THAT CHANGED ON 2026-08-30. It used to be "tokenising a
 ; line always finishes before any statement, including PRINT, executes", and
 ; D-VALFLT MADE THAT SENTENCE FALSE: `VAL` calls tk_float AT STATEMENT TIME, from
@@ -4245,8 +4248,9 @@ TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (
 ;   * tk_float calls only its own tkf_* helpers plus the sub-local `upcase` /
 ;     `cmp16_bits` clones. It never reaches the evaluator or PRINT, so no flt_out
 ;     can start inside a scan.
-;   * flt_out/flt_fmt calls only flo_* plus cmp16_bits and print_string. It never
-;     reaches VAL, so no scan can start inside a format.
+;   * flt_out/flt_fmt calls only flo_* plus widen_fac_to/zero_fill (C8),
+;     cmp16_bits and print_string. It never reaches VAL, so no scan can start
+;     inside a format.
 ; So every use is a COMPLETED call, and the cells are dead across the boundary in
 ; both directions. D-STRFLT (str_fn_str calling flt_fmt directly) is the closest
 ; the two now come, and it is still strictly sequential: VAL finishes, then the
@@ -4257,17 +4261,26 @@ TKLEAD          equ     $F062   ; computed lead byte (sign+excess-64 exponent) (
 ; live invariant about this machine, and it is not one any more.
 ; [[a-fix-falsifies-the-justification-beside-it]]
 ; D-VALFLOAT: the VAL-mode SOURCE BOUND for tk_float, aliased onto two of the
-; formatter's own cells. FOSIGCOUNT/FOMBYTES are written ONLY by flt_out
-; (`basic/float.asm`) and appear ZERO times in `sub/tkfloat.asm`, so they are
-; dead for the whole of a tk_float scan -- the same sharing argument the block
-; above already makes for TKDIG/TKPC/TKDEXP, applied in the other direction.
+; formatter's own cells. FOSIGCOUNT is written ONLY by flt_out
+; (`basic/float.asm`; FOMBYTES was too, until C8 left it unwritten) and both
+; appear ZERO times in `sub/tkfloat.asm`, so they are dead for the whole of a
+; tk_float scan -- the same sharing argument the block above made for
+; TKDIG/TKPC/TKDEXP while flt_out still used them, applied in the other direction.
 ; 0 = no bound (ordinary tokenising); otherwise the first address PAST the
 ; source. `tokenise` clears it on entry, so only VAL can ever set it.
 TKVALEND        equ     $F064   ; VAL-mode source bound, 0 = unbounded (2)
-FOSIGN          equ     $F063   ; 0 / $80 = the value's sign bit (1)
+FOSIGN          equ     $F063   ; UNUSED since C8 -- the sign is ARGA+FPNUM_SIGN
+                                ; now, so the cell is reclaimable. It held 0 / $80,
+                                ; the value's sign bit (1)
 FOSIGCOUNT      equ     $F064   ; significant digit count = s, trailing zeros
                                 ; stripped (1)
-FOMBYTES        equ     $F065   ; mantissa byte count: 3 (single) / 7 (double) (1)
+FOMBYTES        equ     $F065   ; (1 B) UNUSED since C8 -- widen_fac_to reads
+                                ; FACTYP itself. It also sits on TKVALEND's high
+                                ; half. It held the mantissa length, 3 single /
+                                ; 7 double. The width is spelled `(1 B)`, not a
+                                ; trailing `(1)`: the comment paragraph below joins
+                                ; this one in tools/ram_map.py, so nothing here is
+                                ; at the END of the joined comment.
 ; tk_float's own final-encode helpers (tkf_int_value/tkf_calc_and_round/
 ; tkf_emit_mantissa) all use HL as scratch to walk TKDIG -- but HL is also
 ; tk_float's LIVE SOURCE CURSOR, which tk_loop needs back, unclobbered, the
