@@ -3408,6 +3408,12 @@ H_LSET          equ     $FE21   ; LSET handler
 H_RSET          equ     $FE26   ; RSET handler
 H_FIELD         equ     $FE2B   ; FIELD handler
 H_FILE          equ     $FE7B
+; D-FMTHOOK: CALL FORMAT's cell -- H.FORM in the MSX2 TH hook table, and one of
+; the 35 cells the CF-3300's disk ROM claims (docs/spec-basic-nodisk.md §5.2
+; census). Main's do_format gates on DISKSLOT_OK, then crosses here through
+; chan_gate_bare; disk/kernel.asm's hk_format runs the geometry menu and the
+; sub-ROM dispatch that basic/format.asm used to keep resident.
+H_FORM          equ     $FFAC   ; CALL FORMAT handler (D-FMTHOOK)
 
 ; --- H_FOPEN / FOPEN_SEL: see disk/equates.inc for the full rationale --------
 ; 🏗️ Joost's ruling, 2026-09-19 (spec-diskcode-eviction.md §6.6m): the hook is

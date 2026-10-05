@@ -153,11 +153,14 @@ rdslt_scan:
                 ld      a,(SCAN_SLOT)
                 jp      RDSLT               ; tail call: RDSLT's RET returns to caller
 
-; --- D-ISLDATA2 (2026-10-03): five pure-DATA blocks, 58 B, into the font island --
+; --- D-ISLDATA2 (2026-10-03): pure-DATA blocks into the font island ---------------
+; (five blocks, 58 B, when it landed; space plan B-7 took fmt_menu_text out to
+; disk.rom on 2026-10-04 -- four blocks, 41 B, now.)
 ; Same rules as the $0160 block: absolute `ld` readers only. `rn_in` became an
 ; equ alias of in_msg in basic/program.asm (both were " in ",0).
 rn_undefined:   db      "Undefined line ",0
-fmt_menu_text:  db      "1=360k 2=720k? ",0
+; fmt_menu_text WAS here (D-ISLDATA2) until space plan B-7 (C6-FORMAT,
+; 2026-10-04) moved CALL FORMAT's menu into disk.rom's hk_format, text and all.
 tkf_ref32767:
                 db      3,2,7,6,7           ; signed 16-bit ceiling
 tkf_ref65535:

@@ -123,6 +123,8 @@ H_LSET          equ     $FE21   ; LSET
 H_RSET          equ     $FE26   ; RSET
 H_FIELD         equ     $FE2B   ; FIELD
 H_FILE          equ     $FE7B
+H_FORM          equ     $FFAC   ; CALL FORMAT (D-FMTHOOK): H.FORM, MSX2 TH hook table;
+                                ; in the 35-cell census (docs/spec-basic-nodisk.md §5.2)
 ; --- H_FOPEN: the cell every file-OPENING verb arrives at (D-DPLMOVE) --------
 ; 🏗️ RULED BY JOOST 2026-09-19 (spec-diskcode-eviction.md §6.6m): "the reference
 ; is the better oracle then me, so go with FE5D + selector". "Every disk command

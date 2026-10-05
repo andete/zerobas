@@ -89,6 +89,11 @@ REQUIRED_DISK_CODE = [
                                 # where MKI$/MKS$/MKD$ stage their result, so a
                                 # pointer parked there is overwritten by the very
                                 # round trip these verbs exist for
+    "subrom_call",              # D-FMTHOOK: hk_format dispatches the sub-ROM
+                                # page-1 format_tenant itself. The dispatcher is
+                                # low-region by policy (basic/subrom-boot.asm), so
+                                # it is callable by absolute address while
+                                # disk.rom holds page 1; CALSLT nests.
 ]
 # RAM: NOT ceiling-checked, and that exemption is the point -- these are work-area
 # cells above $8000, always mapped, and applying the page-0-resident test to them
@@ -211,6 +216,16 @@ REQUIRED_DISK_RAM = [
     "LPT_MODE",                 # ⚠️ a CONSTANT, not a cell: modes below it are
                                 # disk files. Published so the disk side's test
                                 # cannot drift from fch_mode_class's `cp LPT_MODE`
+    # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
+    # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
+    # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
+    # entry constants come from main's sym file for the same reason as the rest:
+    # a sysvar move or an entry-table change must not leave disk.rom stale.
+    "FMT_GEOMSEL",              # main/disk -> tenant: 0 = 360k, 1 = 720k
+    "FMT_RESULT",               # tenant -> main: 0 ok / 1 write error (or absent)
+    "LINEBUF",                  # read_line's line buffer: the typed choice
+    "SUBROM_ENTRY_BASE_P1",     # ⚠️ a CONSTANT: the sub-ROM page-1 jp-table base
+    "SUBROM_IDX_FORMAT",        # ⚠️ a CONSTANT: format_tenant's entry index
 ]
 # CALL-BACK: main PAGE-1 targets, reached by an INTER-SLOT CALL, not by an
 # absolute one -- the third class, and the one the hook re-architecture needs
@@ -272,6 +287,12 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # globals (main_FWR_DIRSEC above); a saved one is in its context block,
     # whose address only main can compute (the sub-ROM strheap op 18).
     "fch_ctx_addr",             # A = channel -> HL = its context block
+    # D-FMTHOOK: CALL FORMAT's menu runs in disk.rom (hk_format) and reads its
+    # answer with MAIN's line editor, so the CHGET wait happens with main in
+    # page 1 (PLAY and the traps keep ticking -- basic/repl.asm's rule). The
+    # prompt itself is CHPUT'd from disk.rom: its text is there, and a
+    # print_string call-back would read main page 1 at the text's address.
+    "read_line",                # LINEBUF <- one edited line, echoed
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

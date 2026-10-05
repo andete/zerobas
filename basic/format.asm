@@ -38,9 +38,11 @@
 ; sector-build/write BULK (everything past the menu — clear/stamp/boot-write, the
 ; geometry helpers, the GEOM_* tables) straddles both main-BASIC page-1 (console I/O)
 ; and the page-0 BIOS (write_sector -> CALSLT), so it can't be a single-shape sub-ROM
-; tenant (playbook §3). The design is a SPLIT: this file keeps the dispatch + the
-; interactive menu RESIDENT (console I/O is page-1 main, trivially resident); the
-; bulk moves to a sub-ROM PAGE-1 tenant (sub/format.asm format_tenant) that carries
+; tenant (playbook §3). The design is a SPLIT: this file keeps the CALL dispatch
+; and the DISKSLOT_OK gate RESIDENT; the interactive menu + the tenant dispatch
+; moved on to disk.rom (D-FMTHOOK, disk/kernel.asm hk_format behind H_FORM --
+; they were resident until 2026-10-04, space plan B-7); the bulk is a sub-ROM
+; PAGE-1 tenant (sub/format.asm format_tenant) that carries
 ; its own sub-local CALSLT write path. The bulk's CODE is shared verbatim via
 ; basic/format-body.inc (the c3fc2d8 printusing.asm pattern).
 
@@ -113,10 +115,11 @@ fmf_no:
 ; A real CALL FORMAT lets you choose the disk geometry; with two geometries there now
 ; IS something to choose, so zerobas prompts a minimal 1=360K / 2=720K menu (its own —
 ; zerobas-disk's CHOICE offers none) and reads the answer via the REPL line editor.
-; The MENU stays resident (console I/O is main-BASIC page-1); the build/write engine
-; past the choice is dispatched to the sub-ROM page-1 tenant (sub/format.asm
-; format_tenant),
-; marshalling just the 1-byte geometry selector through RAM (FMT_GEOMSEL).
+; Only the DISKSLOT_OK gate and the H_FORM crossing are resident now (D-FMTHOOK):
+; the menu and the dispatch to the sub-ROM page-1 tenant (sub/format.asm
+; format_tenant) run in disk.rom's hk_format, which marshals the 1-byte geometry
+; selector through RAM (FMT_GEOMSEL) and reads the tenant's answer back from
+; FMT_RESULT, exactly as this file did while the menu was resident.
 do_format:
                 ld      a,(DISKSLOT_OK)
                 or      a
@@ -124,42 +127,31 @@ do_format:
                 scf                         ; no disk -> error
                 ret
 fmt_menu:
-                ld      hl,fmt_menu_text
-                call    print_string
-                call    read_line           ; LINEBUF <- the typed choice (echoed)
-                ld      a,(LINEBUF)
-                cp      '1'
-                jr      z,fmt_sel_360
-                cp      '2'
-                jr      z,fmt_sel_720
-                jr      fmt_menu            ; invalid -> re-prompt (like the CF-3300 '?')
-fmt_sel_360:
-                xor     a                   ; A = 0 -> 360k (format_tenant's GEOM select)
-                jr      fmt_dispatch
-fmt_sel_720:
-                ld      a,1                 ; A = 1 -> 720k
-fmt_dispatch:
-                ld      (FMT_GEOMSEL),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made).
-                                            ; No live pointer to guard here: exc_go already
-                                            ; saved HL (the token cursor) before `call
-                                            ; do_format`, and IX is not otherwise live.
-                ret     c                   ; absent -> Cy=1 (do_format's own error contract;
-                                            ; exc_go folds it into the same load_error as a
-                                            ; real DSKIO error, spec §4)
-                ld      a,(FMT_RESULT)      ; the tenant's DSKIO disposition (RAM, not CF --
-                                            ; subrom_call's CF is claimed by the absence
-                                            ; signal, spec §4)
+                ; D-FMTHOOK (C6-FORMAT, space plan B-7): the menu, the choice and
+                ; the dispatch to the sub-ROM format_tenant RUN IN DISK.ROM now
+                ; (disk/kernel.asm hk_format), behind H_FORM $FFAC -- H.FORM in
+                ; the MSX2 TH hook table, the cell the published BIOS FORMAT entry
+                ; ($0147) goes through, and one of the 35 cells the CF-3300's disk
+                ; ROM claims (docs/spec-basic-nodisk.md §5.2). Everything past the
+                ; gate above is disk-only behaviour, so it lives with the disk
+                ; code; a diskless machine never reaches the cell (DISKSLOT_OK is
+                ; 0 there) and answers exactly as before.
+                ; chan_gate_bare, not chan_gate: FORMAT stages no channel sector
+                ; and the tenant rewrites the whole medium anyway. No live
+                ; pointer to guard: exc_go saved HL before `call do_format`.
+                ld      hl,H_FORM
+                call    chan_gate_bare      ; claimed -> back here. The body's
+                                            ; disposition crosses in RAM: CF is the
+                                            ; gate's own claimed/unclaimed answer.
+                ld      a,(FMT_RESULT)      ; 0 ok / 1 the tenant's write error OR
+                                            ; the sub-ROM absent (hk_format folds
+                                            ; both into one disposition, spec §4)
                 or      a
-                ret     z                   ; tenant ok -> Cy=0 (subrom_call already cleared
-                                            ; it on a completed call)
-                scf                         ; tenant reported a write error -> Cy=1
+                ret     z                   ; ok -> Cy=0
+                scf                         ; error -> Cy=1 (exc_go: load_error)
                 ret
-; fmt_menu_text has its own copy here (resident); a second copy lives INSIDE
-; basic/format-body.inc, at its original position between fmt_boot and
-; fmt_geom_byte (see that file) -- format-body.inc is sub-ROM-only
-; in the repack build (sub/format.asm), not included resident here, so the menu
-; needs its own text. Same 17 bytes, no functional difference.
-; fmt_menu_text -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
-; read only by absolute `ld` from main; now in the font island.
+; The "1=360k 2=720k? " text has no copy in MAIN any more: it lives in
+; disk/kernel.asm beside hk_format, and a second copy stays INSIDE
+; basic/format-body.inc (sub-ROM-only in the repack build, sub/format.asm).
+; Its island copy (D-ISLDATA2, basic/islands.asm) went with it -- 17 B of the
+; font island are free again.

@@ -1212,6 +1212,58 @@ hkg_st:
                 scf
                 ret
 
+; --- hk_format: CALL FORMAT's geometry menu + tenant dispatch, RUNNING IN THE DISK ROM (docs/spec-basic-nodisk.md §9) ---
+; D-FMTHOOK (C6-FORMAT-TO-DISKROM, 2026-10-03). Behind H_FORM ($FFAC): H.FORM in
+; the MSX2 TH hook table, and one of the 35 cells the CF-3300's disk ROM claims
+; (docs/spec-basic-nodisk.md §5.2). Main's do_format keeps only its DISKSLOT_OK
+; gate and the chan_gate_bare crossing; what used to follow the gate in
+; basic/format.asm -- the "1=360k 2=720k? " prompt, the re-prompt loop and the
+; subrom_call to the sub-ROM page-1 format_tenant -- is here, same behaviour.
+;   * The PROMPT goes through CHPUT (hke_pr's loop, BIOS page 0) because its
+;     text is in THIS ROM: a call-back to main's print_string would run with
+;     this ROM switched out and read main page 1 at the text's address.
+;   * The LINE is read by main's read_line through `calbak` (an inter-slot
+;     call, MSX2 TH): the wait in CHGET happens with MAIN in page 1, so PLAY
+;     and the traps tick exactly as they did while the menu was resident
+;     (basic/repl.asm read_line's own rule: a page-1 tenant must never wait).
+;   * subrom_call is main's LOW-REGION dispatcher (disk/basic-resident-abi.inc),
+;     callable by absolute address while this ROM holds page 1; CALSLT nests,
+;     and page 1 comes back to this ROM when the tenant returns.
+;   in   nothing (FOPEN_SEL is not consulted; the gate stored nothing)
+;   out  FMT_GEOMSEL = 0 (360k) / 1 (720k), the tenant's selector
+;        FMT_RESULT  = 0 ok / 1 the tenant's write error, OR the sub-ROM absent
+;                      (folded into one disposition, docs/spec-evict-call-format.md §4)
+;        CF = 1 (claimed), which is what chan_gate_bare tests
+; 📍 SITED IN THE FILL ABOVE `ds $5FE5 - $` for hkc_resolve's reason: the tail
+; after runtime.asm is nearly full, and code here shifts nothing downstream.
+hk_format:
+                ld      hl,fmt_menu_text
+                call    hke_pr              ; CHPUT the 0-terminated prompt (its CF=1 is ignored)
+                ld      ix,read_line
+                call    calbak              ; main: LINEBUF <- the typed choice (echoed)
+                ld      a,(LINEBUF)
+                cp      '1'
+                jr      z,hkfm_360
+                cp      '2'
+                jr      z,hkfm_720
+                jr      hk_format           ; invalid -> re-prompt (like the CF-3300's '?')
+hkfm_360:
+                xor     a                   ; 0 -> 360k (format_tenant's GEOM select)
+                jr      hkfm_go
+hkfm_720:
+                ld      a,1                 ; 1 -> 720k
+hkfm_go:
+                ld      (FMT_GEOMSEL),a
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT
+                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+                jr      nc,hkfm_done        ; completed: FMT_RESULT is the tenant's own
+                ld      a,1
+                ld      (FMT_RESULT),a      ; absent -> the same face as a write error
+hkfm_done:
+                scf                         ; claimed
+                ret
+fmt_menu_text:  db      "1=360k 2=720k? ",0
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
@@ -3074,6 +3126,8 @@ hook_tab:
                 dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
+                dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
+                                             ; dispatch live HERE (main keeps the gate)
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,

@@ -14,6 +14,7 @@ widen_rhs_operand equ 0382CH
 round_single_and_pack equ 0336CH
 round_and_finalize equ 03318H
 pu_deref_body equ 0281CH
+subrom_call equ 03B22H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
 FN_RESUME equ 0E227H   ; D-FNEXPR: cursor past a filename expr (2 B)
@@ -51,6 +52,11 @@ FCH_MODES equ 0EA00H   ; 16 B ($EA00..$EA0F)
 FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
+FMT_GEOMSEL equ 0E0F5H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
+FMT_RESULT equ 0E0F6H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+LINEBUF equ 0EB00H   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
+SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
+SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06CFEH
@@ -65,3 +71,4 @@ lrset_tgt equ 0721FH
 lrset_rhs equ 07241H
 lrset_finish equ 07258H
 fch_ctx_addr equ 06E87H
+read_line equ 045CDH
