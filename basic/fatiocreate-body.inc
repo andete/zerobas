@@ -8,15 +8,17 @@
 ; of a second hand-maintained one. This is the WRITE mirror of fatio-body.inc,
 ; which does the same for the read cursor and sub/bload.asm.
 ;
-; The resident copy STAYS -- do_save's ASCII path, the file verbs and pch_disk
-; all use it. A duplicate in the sub-ROM costs no main page-1 bytes. On the
-; resident side fat_mount / fat_dir_create / fat_flush_data_sector /
-; fat_dir_update are marshalling STUBS over the fatprim tenant; inside the
-; tenant the same source text binds to the REAL implementations sitting beside
-; it in sub/fatprim.asm -- four plain in-page calls. That is the whole trick.
+; 🔴 SBH-3 (2026-10-03): THE RESIDENT COPY IS GONE. The body below assembles
+; only under SUB_BUILD / DISK_BUILD; in main, fat_io_create is a stub in
+; basic/fat.asm's shim block (DISKOP_SEL_FAT_IO_CREATE, fatprim row 23, served
+; by sub/save.asm's t_fat_io_create). It used to stay resident, with
+; fat_mount / fat_dir_create as marshalling STUBS over the fatprim tenant on
+; that side; inside the tenant (and in disk.rom) the same source text binds to
+; the REAL implementations sitting beside it in sub/fatprim.asm -- plain
+; in-page calls. One crossing per create now instead of two.
 ;
-; fat.asm includes this at its ORIGINAL POSITION in both builds, so the file's
-; emitted bytes are unchanged.
+; fat.asm still includes this at its ORIGINAL POSITION, so the stub's callers
+; and the sub/disk bodies share one source text.
 ;
 ; CLEAN-ROOM: our own code, moved. FAT12 provenance unchanged
 ; (basic/PROVENANCE.md §disk DSKIO host engine).
@@ -28,6 +30,7 @@
 ; Mounts, makes/reuses a root-dir slot (fat_dir_create), and resets the write
 ; iterator: no cluster yet, empty buffer, zero bytes. The first cluster is
 ; allocated lazily on the first flush.
+    IF SUB_BUILD + DISK_BUILD
 fat_io_create:
                 ; 🔴 D-DISKFULL (2026-10-02): THE WRITE STATE IS RESET FIRST, before
                 ; the mount and the directory entry, not after them. A failed
@@ -61,3 +64,4 @@ fat_io_create:
                 ret     c
                 ld      hl, DISK_FCB_NAME
                 jp      fat_dir_create      ; tail: Cy = 0 created, 1 = dir full / I-O
+    ENDIF

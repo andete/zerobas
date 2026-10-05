@@ -71,7 +71,7 @@ fatprim_tenant:
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
                 ld      c,a
-                ld      b,0                 ; BC = op (0..22)
+                ld      b,0                 ; BC = op (0..24)
                 ld      ix,fp_table
                 add     ix,bc
                 add     ix,bc
@@ -116,6 +116,10 @@ fp_table:
 ; one ROM. HL = the context block on entry to both.
                 jp      t_fch_save              ; 21 DISKOP_SEL_FCH_SAVE
                 jp      t_fch_load              ; 22 DISKOP_SEL_FCH_LOAD
+; SBH-3 (2026-10-03): the sequential WRITE cursor's open/close as rows. The
+; arms sit in sub/save.asm beside the bodies they call.
+                jp      t_fat_io_create         ; 23 DISKOP_SEL_FAT_IO_CREATE
+                jp      t_fat_io_close          ; 24 DISKOP_SEL_FAT_IO_CLOSE
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from

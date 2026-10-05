@@ -168,18 +168,28 @@ fat_flush_data_sector:
 ; the tenant, where fat_restage_channel / fat_detach_channel are called locally.
 ; Selectors 19/20 and their tenant rows stay: the numbering is published.)
 
-; fat_dir_create — see basic/fat-prim-body.inc for the full contract.
-fat_dir_create:
-                ld      a,DISKOP_SEL_FAT_DIR_CREATE
+; fat_io_create / fat_io_close — SBH-3 (2026-10-03): the sequential WRITE
+; cursor's open and close (basic/fatiocreate-body.inc, basic/fatiow-body.inc)
+; run as fatprim rows 23/24 (sub/save.asm t_fat_io_create / t_fat_io_close);
+; these stubs replace main's copies of the bodies. Every main caller tests Cy
+; only (do_open's oo_create, fdcc_disk, disk_write_begin / disk_write_end),
+; which fatprim_bounce returns exactly as the bodies did: Cy = 1 on a tenant
+; error OR a missing sub-ROM. fat_io_close is the block's last stub and falls
+; through, as fat_dir_update did before it.
+fat_io_create:
+                ld      a,DISKOP_SEL_FAT_IO_CREATE
                 jr      fatprim_bounce
-
-; fat_dir_update — see basic/fat-prim-body.inc for the full contract. Two call
-; sites tail-call this via `jp` (field.asm frp_overlay, fat_io_close below) --
-; transparent to a shim entered by `call` OR `jp`, since it still ends in `ret`
-; either way.
-fat_dir_update:
-                ld      a,DISKOP_SEL_FAT_DIR_UPDATE
+fat_io_close:
+                ld      a,DISKOP_SEL_FAT_IO_CLOSE
                 ; fall through
+
+; (SBH-3, 2026-10-03: the fat_dir_create / fat_dir_update shims are gone. Their
+; only main callers were the fat_io_create / fat_io_close bodies, which now
+; assemble only under SUB_BUILD / DISK_BUILD -- `make deadcode` reported both,
+; 0x64af ~4 B and 0x64b3 ~2 B, with the bodies gated and the shims still in.
+; Selectors 12/13 and their tenant rows stay: the numbering is published. The
+; field.asm frp_overlay tail-call the old comment here named had already moved
+; into the tenant with the fat_rand_* engine.)
 
 ; fatprim_bounce — the ONE body the thirteen uniform shims share.
 ;   in:  A = DISKOP_SEL_* selector; the primitive's own register inputs are
@@ -245,7 +255,7 @@ fatprim_bounce:
                 include "basic/fatio-body.inc"
 
 
-                include "basic/fatiocreate-body.inc"   ; fat_io_create (shared with sub/save.asm)
+                include "basic/fatiocreate-body.inc"   ; fat_io_create: body under SUB_BUILD/DISK_BUILD only; main's stub is in the shim block above (SBH-3)
 
 ; fat_io_append — open the file named in DISK_FCB_NAME for sequential WRITE,
 ; positioned at end-of-file (text APPEND). New bytes extend the file instead of
@@ -328,7 +338,7 @@ fia_empty:
                 ret
 
 
-                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close
+                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc (resident); fat_io_close body under SUB_BUILD/DISK_BUILD only, stub above (SBH-3)
 
 ; fat_delete — RESIDENT SHIM DELETED FROM THIS BUILD (D-ENDIFWALK, 5 B).
 ; It was the thirteenth uniform shim (`ld a,DISKOP_SEL_FAT_DELETE / jp

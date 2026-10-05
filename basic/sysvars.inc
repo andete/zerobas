@@ -3144,6 +3144,12 @@ DISKOP_SEL_FCH_DETACH           equ 20  ; the inverse: flush the dirty partial
 ; layout is known in ONE ROM. HL = the context block (fch_ctx_addr).
 DISKOP_SEL_FCH_SAVE             equ 21  ; flush, then globals + record -> block
 DISKOP_SEL_FCH_LOAD             equ 22  ; block -> globals + record, then re-stage
+; DISKOP_SEL_FAT_IO_CREATE / _CLOSE (SBH-3, 2026-10-03): the sequential WRITE
+; cursor's open and close (basic/fatiocreate-body.inc, basic/fatiow-body.inc)
+; as fatprim rows -- main keeps two stubs in basic/fat.asm's shim block; the
+; bodies assemble only under SUB_BUILD / DISK_BUILD. Never renumber.
+DISKOP_SEL_FAT_IO_CREATE        equ 23  ; mount + dir-create + reset write state
+DISKOP_SEL_FAT_IO_CLOSE         equ 24  ; flush partial sector + dir update
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim
 ; (index 12) and dirverb (index 13) are never in flight at once (one subrom_call
@@ -3440,7 +3446,7 @@ FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
                                     ; ours -- see disk/equates.inc (§6.6p)
 FOPEN_SEL_OCHK  equ     $4F         ; D-OPENSAME: is DISK_FCB_NAME already open on
                                     ; a channel? (OPEN's 54). Same rule: outside
-                                    ; every DISKOP_SEL_* range (fatprim 0..22).   ; FILES handler
+                                    ; every DISKOP_SEL_* range (fatprim 0..24).   ; FILES handler
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
                                 ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --
