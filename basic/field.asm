@@ -632,8 +632,9 @@ lrf_var:
                 ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
 lrset_store:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST
-                jp      sc_call     ; no args, no result, cannot fail
+                call    sc_inl0             ; D-STUBINL: no args, no result, cannot fail
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST)
+                ret
 
 ; ===========================================================================
 ; fld_lookup — READ hook for str_eval's variable path.
@@ -674,8 +675,8 @@ fld_lookup:
                 push    hl                  ; guard the entry across the select
                 call    fch_select          ; FSECTOR_BUF = this channel's record buffer
                 pop     hl                  ; HL = entry (the tenant's only arg)
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK
-                call    sc_call             ; fills FLD_DESC/RVDESC, sets STRPTR
+                call    sc_inl0             ; D-STUBINL: fills FLD_DESC/RVDESC, sets STRPTR
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK)
                 scf                         ; fielded
                 ret
 

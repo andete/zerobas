@@ -360,5 +360,6 @@ fia_empty:
 ; returns: CF=1 iff the sub-ROM is absent. Clobbers IX, as subrom_call does.
 fatprim_op:
                 ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM
-                jp      subrom_call
+                call    sr_inl1             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FATPRIM)
+                ret

@@ -184,8 +184,9 @@ ctl_reset:
                 ret     nz                  ; not recorded yet -- CSP=0 stands
                 ld      a,20
                 ld      (SH_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                jp      subrom_call         ; CF set = not discovered yet: harmless
+                call    sr_inl0             ; D-STUBINL: CF set = not discovered yet: harmless
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP)
+                ret
 
 ; --- penderr_set: FIRST-ERROR-WINS, AS A PROPERTY OF THE WRITE --------------
 ; (D-PENDERR, docs/spec-basic-penderr.md §4.) FPERR is the interpreter's single

@@ -109,8 +109,8 @@ pl_syntax:
 pl_dispatch:
                 call    check_expr_errors   ; surface a deferred string error (FPERR/TMISMATCH)
                 push    hl                  ; save the statement cursor -- CALSLT clobbers HL
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+                call    sr_inl1             ; D-STUBINL: CF=1 iff the sub-ROM is absent (no call made)
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE)
                 pop     hl                  ; restore cursor so exec_stmt chains the next stmt
                 jp      c,pl_absent
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)

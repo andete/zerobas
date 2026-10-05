@@ -297,8 +297,8 @@ fat_io_seqbyte:
                 ld      l,0
 seq_call:
                 push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO
-                call    sc_call             ; A = the byte (subrom_call's `or a`)
+                call    sc_inl1             ; D-STUBINL: A = the byte (subrom_call's `or a`)
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO)
                 pop     ix
                 ld      c,a
                 ld      a,(SEQ_EOF)

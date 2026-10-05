@@ -452,6 +452,15 @@ layout-invariant-selftest:
 redundant-load-check: $(RELOC_SYM)
 	python3 tools/redundant_load_sweep.py
 
+# --- Inline-index tenant calls (D-STUBINL, space plan B-11) --------------------
+# basic/subromcall.asm's sc_inl0/sc_inl1/sr_inl0/sr_inl1 read the byte AFTER their
+# `call` as the tenant's entry. A site that forgets that `db` runs the next opcode
+# as the index and calls some other tenant -- no emulator gate can name which.
+# Reads the source only: every reference is an unconditional `call` followed by
+# its own table's `db low (...)`, and never inside a body sub/ or disk/ assembles.
+stubinl-check:
+	python3 tools/check_stub_inline.py
+
 # --- Wall-assertion check (D-WALLDATE) ----------------------------------------
 # D-REPRICE found FOUR open TODO items asserting a CURRENT free-space figure in
 # prose, all four wrong, three of them UNDERSTATING the wall -- so each read as

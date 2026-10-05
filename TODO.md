@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29143 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29151 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26723,6 +26723,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `REM`-line baseline on each side, or keep the emptied line's `:` / REM but
       say in the sheet that the reading includes one statement dispatch.
       Re-read the function T5 column after, never before.
+      🔴 **AND T5 IS NOT STABLE RUN TO RUN (2026-10-05, space plan B-11).** One
+      gates-fast after B-11 -- a change that touches only cold sub-ROM tenant
+      calls -- moved T5 on rows it cannot reach: RESTORE 3.7× -> 1.6×, WAIT
+      1.6× -> 4.2×, INKEY$ 1.3× -> 0.61×, RETURN 0.91× -> 1.4×, while every T2
+      cell held. A ratio of two small differences amplifies batch jitter; the
+      relative floor (NOISE_REL, 1% of the row) is evidently not enough. Until
+      this is fixed, a slice's speed cost has to be read by timing the rows ALONE
+      on both builds (B-10 did: `--only`), never off the sheet's T5 column.
       🤖 **AUTONOMOUS** — apparatus; both sides are measurable.
 
 - [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY

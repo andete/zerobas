@@ -195,8 +195,8 @@ rl_get:
                 ld      (RL_KEY),a          ; interrupts live (PLAY, the traps), and the
                                             ; harness's injector latch (latch-check) sees
                                             ; the same wait it always modelled
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_READLINE
-                call    subrom_call         ; one key
+                call    sr_inl1             ; D-STUBINL: one key
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_READLINE)
                 jp      c,subrom_absent_error
                 ld      a,(RL_STAT)
                 ld      hl,(RL_HL)          ; HL = the end of the text (AUTO's empty test)
@@ -211,8 +211,9 @@ rl_break:                                   ; Ctrl-STOP while AUTO polls: the cu
                 ret
 ; rl_cursor: E = 1 show / 0 remove the line editor's block cursor.
 rl_cursor:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CURSOR
-                jp      subrom_call
+                call    sr_inl1             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CURSOR)
+                ret
 
 ; --- txt_mode: back to the LAST TEXT MODE if a graphics mode is up ------------
 ; Measured on both references (docs/spec-basic-screditor.md §7): the prompt after

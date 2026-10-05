@@ -263,8 +263,9 @@ chan_restore_st:
 ; absent. Clobbers IX, as subrom_call does.
 dirverb_op:
                 ld      (DISKOP_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB
-                jp      subrom_call
+                call    sr_inl1             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB)
+                ret
 
 ; --- COPY "src" TO "dst" — the run half (D-COPY) -----------------------------------
 ; copy_parse (low region) did the gate and both names; this runs dirverb op 7

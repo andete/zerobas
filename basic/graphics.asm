@@ -49,8 +49,9 @@
 ; expr.asm and float-arith.asm -- the hot interpreter core the speed item is about
 ; -- so they were left alone. A carve is not free just because it is mechanical.
 gfx_tenant:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
-                jp      subrom_call         ; CF=1 iff the sub-ROM is absent (no call made)
+                call    sr_inl0             ; D-STUBINL: CF=1 iff the sub-ROM is absent (no call made)
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS)
+                ret
 
 gfx_call:
                 ld      (GFX_OP),a
@@ -615,8 +616,8 @@ ex_circle:
                 ld      (GFX_DRESUME),a     ; first entry is a fresh parse
                 ld      (GFX_RES),a         ; clear the tenant error slot
 cp_loop:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CIRCLEPARSE
-                call    subrom_call         ; run the page-1 parse tenant; CF=1 if absent
+                call    sr_inl1             ; D-STUBINL: run the page-1 parse tenant; CF=1 if absent
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CIRCLEPARSE)
                 jp      c,gfx_absent
                 ld      a,(GFX_DREQ)
                 or      a

@@ -1362,8 +1362,8 @@ lof_nz:
                 ; `PRINT LOF(1)` on the machine read `Syntax error` -- while the
                 ; resident cut, which never touched IX, was correct. Four bytes.
                 push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LOFU32
-                call    subrom_call         ; ARGA := the size, unpacked; CF=1 iff
+                call    sr_inl0             ; D-STUBINL: ARGA := the size, unpacked; CF=1 iff
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LOFU32)
                 pop     ix                  ;   the sub-ROM is absent (flags survive)
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM, as evmc_sqr
                 call    arga_pack_fac       ; ARGA -> FAC as a double (14 digits, exact)

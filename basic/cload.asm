@@ -449,8 +449,8 @@ ccn_set:
 ; set = not found or tape error) -- all 3 call sites (do_tape_prog below,
 ; files.asm merge_cas/oo_dev_cas) are unchanged, they already just test CF.
 cas_open_match:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASMATCH
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASMATCH)
                 ld      a,(CM_STATUS)
                 or      a
                 ret     z                   ; matched -> CF clear
@@ -879,8 +879,9 @@ cal_getbyte:
                 ; back-to-back with the drain, one CALSLT later.
                 ld      l,0
 casget_call:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASGET
-                jp      sc_call             ; A = the tenant's answer, CF clear
+                call    sc_inl1             ; D-STUBINL: A = the tenant's answer, CF clear
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASGET)
+                ret
 
 ; --- cas_in_getbyte: OPEN"CAS:" FOR INPUT byte source (ARL_GETBYTE target) ----
 ; Wraps cal_getbyte with the sequential-file EOF rule: a Ctrl-Z ($1A) in the data

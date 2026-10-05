@@ -93,6 +93,107 @@ err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "ille
                                             ; fre_abort_low (arrays.asm). Direct print,
                                             ; no suffix (unchanged behaviour).
 
+; --- sc_inl0/sc_inl1/sr_inl0/sr_inl1: a tenant call with its entry INLINE -----
+; 💰 D-STUBINL (B1 of the 2026-10-03 space hunt; landed as space plan B-11,
+; 2026-10-05). A resident tenant call was `ld ix,BASE+3*idx` (4 B) + `call
+; sc_call` / `call subrom_call` (3 B). Behind these four entries it is `call
+; <stub>` (3 B) + `db low (BASE+3*idx)` (1 B): the stub reads the byte after the
+; call, builds IX from it (the high byte is the table's: $00 for the page-0
+; table, $40 for the page-1 one), steps the return address past the byte, and
+; either falls into sc_call below (sc_inl*: raise if the sub-ROM is absent) or
+; jumps to the raw subrom_call (sr_inl*: CF=1 iff absent, the site decides). A
+; `jp sc_call` / `jp subrom_call` tail becomes `call` + `db` + `ret` (5 B
+; against 7). Mode in A: bit 7 = raw, bits 6..0 = high byte / 2, so one
+; `add a,a` yields CF = raw and A = the high byte. Preserves BC/DE/HL (the
+; tenants' argument registers); clobbers A, F and IX -- subrom_call overwrites A
+; before the CALSLT anyway, so A was never a tenant input. Documented opcodes
+; only: the host core (tests/z80.py) runs a DD-prefixed reg/reg move on the
+; PLAIN register, so `ld ixh,a` / `ld ixl,a` would have broken every host test
+; that crosses the sub-ROM bridge.
+; ⚠️ A NEW CALL SHAPE: a site that forgets its `db` executes the next opcode as
+; the index, and NO emulator gate would see which. `make stubinl-check`
+; (tools/check_stub_inline.py) refuses a stub reached by anything but `call`, a
+; `call` not followed by its `db low (...)`, a db naming the OTHER table, a label
+; on the db, and a stub used in a body that sub/ or disk/ also assembles.
+; 🎯 SITED LOW, beside subrom_call, and sc_call moved here with it. disk.rom and
+; the sub-ROM's page-1 tenants call main's LOW routines while page 1 is THEIR
+; ROM, so a low routine that called a page-1 stub would jump into the wrong
+; ROM. Low is reachable from every context that can run main code.
+; ⏱ ~130 cycles per tenant call. The per-element / per-string-op paths keep
+; their open-coded `ld ix` for that reason: ary_engine_call (arrays.asm),
+; call_strheap (str-engine.asm) and str_set_key (vars.asm).
+STUBINL_P0H     equ     high SUBROM_ENTRY_BASE_P0
+STUBINL_P1H     equ     high SUBROM_ENTRY_BASE_P1
+                IF STUBINL_P1H & $81
+                db      STUBINL_P1_HIGH_BYTE_NOT_ENCODABLE__FIX_THE_MODE_CONSTANTS
+                ENDIF
+                IF STUBINL_P0H
+                db      STUBINL_P0_HIGH_BYTE_NOT_ZERO__sc_inl0_HARDCODES_IT
+                ENDIF
+sr_inl1:
+                ld      a,$80 | STUBINL_P1H/2   ; raw call, page-1 table
+                jr      inl_go
+sr_inl0:
+                ld      a,$80                   ; raw call, page-0 table
+                jr      inl_go
+sc_inl1:
+                ld      a,STUBINL_P1H/2         ; raise if absent, page-1 table
+                jr      inl_go
+sc_inl0:
+                xor     a                       ; raise if absent, page-0 table
+inl_go:
+                add     a,a                 ; CF = raw flag, A = the entry's high byte
+                ex      (sp),hl             ; HL -> the inline byte; caller's HL parked
+                push    hl
+                ld      l,(hl)              ; L = the entry's low byte
+                ld      h,a
+                push    hl
+                pop     ix                  ; IX = the tenant's entry
+                pop     hl
+                inc     hl                  ; past the byte
+                ex      (sp),hl             ; caller's HL back; return address fixed
+                jr      c,subrom_call       ; raw: subrom_call's CF returns to the site
+                ; falls into sc_call
+; --- sc_call: subrom_call, and raise if the sub-ROM is absent -------------
+; 🔁 RE-SITED LOW by space plan B-11 (2026-10-05): the stubs above fall into
+; it, and they must be low (see their header). The paragraph below that says
+; "SITED IN PAGE 1" is its history, from when low was the scarce wall.
+; 💰 D-SCCALL, the fifth instruction pair. `call subrom_call` /
+; `jp c,subrom_absent_error` — every marshalled call into a sub-ROM tenant —
+; stood at SIXTEEN sites, SIX bytes each, so a 3-byte `call sc_call` saves **3 B
+; per site**: the largest per-site saving of the five pairs.
+; 🎯 SITED IN PAGE 1 THOUGH BOTH CALLEES LIVE LOW. subrom_call and
+; subrom_absent_error are in basic/subromcall.asm, a low-region include, and the
+; helper could sit beside them — but 15 of the 16 sites are in page 1 and LOW is
+; the scarce wall (9 B against 104 B). Putting the 7 bytes in page 1 turns the one
+; low site into a +3 B gain instead of a −4 B loss. Which region a helper lives in
+; is a reading of today's split, not a property of the helper.
+; ⚠️ It adds ONE stack frame while subrom_call runs its CALSLT. The absent path
+; never returns (subrom_absent_error raises, and raise_error resets SP), and the
+; present path returns through this `ret` with subrom_call's registers and flags
+; untouched — which is the whole contract the 16 sites already relied on.
+; 🔴 THIS BODY ATE ITSELF ON THE FIRST RUN — FOR THE SECOND TIME IN ONE NIGHT.
+; The script writes the helper and THEN sweeps for the pair, and the helper's body
+; IS the pair, so it became `sc_call: call sc_call / ret`: infinite recursion, in
+; the routine 16 sites had just been pointed at. `skip_comma` did exactly this
+; hours earlier and the docstring of the sweep tool WARNS about it — a warning is
+; not a guard. Caught both times by the same arithmetic: 16 pairs removed against
+; 17 calls added [[a-mechanical-fix-can-break-a-different-invariant]].
+; ➕ C4 (space plan B-3, 2026-10-04): TWO MORE ENTRIES, BY `jp` — tokenise
+; (interp.asm) and call_strheap (str-engine.asm) open-coded the same contract as
+; `call subrom_call / ret nc / jp subrom_absent_error` and now tail-jump here, so
+; no frame is added for them. COUNTED 2026-10-04, not carried: 17 `call sc_call`
+; sites and 5 `jp sc_call` entries (cload, field, program, and these two) -- the
+; "16" above is the D-SCCALL-day figure and has grown since.
+; 🔁 RECOUNTED 2026-10-05 (space plan B-11): D-STUBINL moved every cold site to
+; the inline-index stubs above, which FALL INTO this body. Direct users left: two
+; `call sc_call` (ary_engine_call, str_set_key) and one `jp sc_call`
+; (call_strheap) -- the hot paths, kept open-coded for speed.
+sc_call:
+                call    subrom_call
+                jr      c,subrom_absent_error   ; jr: both low, same file (B-11)
+                ret
+
 ; htimi_guard: page-1-safety gate for the H.TIMI PLAY servicer seam
 ; (docs/spec-traps-t1-htimi-page1-safety.md). play_install points H.TIMI here
 ; instead of straight at play_service. WHY: play_service is main-ROM PAGE-1

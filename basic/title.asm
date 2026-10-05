@@ -27,5 +27,6 @@
 ; and carry on booting. Every other tenant guards a statement whose silent failure
 ; would be a bug; a cosmetic banner's is not.
 show_title:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TITLE
-                jp      subrom_call         ; CF=1 (absent) -> no header, just return
+                call    sr_inl1             ; D-STUBINL: CF=1 (absent) -> no header, just return
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_TITLE)
+                ret

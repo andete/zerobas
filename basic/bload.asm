@@ -60,8 +60,8 @@ do_bload:
                                             ; engine globals, and an open INPUT file lost
                                             ; its place, an OUTPUT one its bytes
                                             ; (scratchpad/chanside_probe.py)
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD)
                 ; D-BLNF: BL_STAT is now THREE-VALUED, and the third value is why
                 ; BLOAD could not be fixed by D-LOADERR-FIX's DISKOP_OP test. The
                 ; tenant calls the REAL sub-side fat_find as a plain in-page call,
@@ -127,8 +127,8 @@ load_handoff:
 ;   in:  HL -> first filename char.  out: HL -> closing '"', CF = reject.
 build_83_name:
                 ld      (BN_PTR),hl         ; source ptr -> tenant
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME)
                 ld      hl,(BN_PTR)         ; tenant wrote back the advanced ptr
                 ld      a,(BN_STAT)
                 rra                         ; BN_STAT bit0 -> CF (1 = reject)

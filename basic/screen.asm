@@ -357,8 +357,8 @@ key_repaint:
                 push    ix
                 ld      a,KEYOP_FNKPAINT
                 ld      (KEYARG),a
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
                 pop     ix
                 pop     hl
                 ret
@@ -486,7 +486,7 @@ key_disp:
 kd_op:
                 ld      (KEYARG),a
                 push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
                 pop     ix
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt

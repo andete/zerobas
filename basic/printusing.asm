@@ -245,8 +245,8 @@ phf_yes:
 ; fragile value-render/deref paths (pu_do_number/pu_do_string/pu_fmt_int) stay
 ; resident, unchanged.
 pu_to_field:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TOFIELD
-                call    subrom_call         ; tenant: emit leading literals -> DETOKBUF,
+                call    sr_inl0             ; D-STUBINL: tenant: emit leading literals -> DETOKBUF,
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TOFIELD)
                                             ; set PU_TYPE/PU_W/PU_POS, A = no-field flag
                 jp      c,subrom_absent_error
                 push    af                  ; guard the no-field flag across the drain
@@ -288,8 +288,8 @@ pu_do_number:
                 call    arga_widen          ; D-ARGAWIDEN
                 call    round_and_finalize
 pu_num_flt:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM)
                 ld      b,a                 ; the rendered length
                 jr      pu_num_typed
 pu_num_int:
@@ -313,8 +313,8 @@ pu_num_typed:
                 ld      a,(PU_FLAGS)
                 bit     3,a
                 jr      z,pu_num_nosign
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUSIGN
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUSIGN)
                 ld      b,a                 ; the rewritten length
 pu_num_nosign:
                 ; --- D-PUEMIT: the pad + emit is a sub-ROM tenant now -----------
@@ -325,8 +325,8 @@ pu_num_nosign:
                 ; which is always switched out under a tenant).
                 ; 22 B back in a page 1 that had 18, which is what `.` is waiting
                 ; on. docs/spec-basic-pufloat.md.
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUEMIT
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUEMIT)
                 ld      hl,DB_WIN          
                 call    print_string
                 pop     hl

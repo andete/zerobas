@@ -750,8 +750,8 @@ expect_comma_eval:
 ;   in: A = SV_OP_* engine selector. Everything else is already in RAM.
 sv_tenant:
                 ld      (SV_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE)
                 ld      a,(SV_STAT)         ; D-DISKERR: a DSKIO failure raises its code below
                 or      a
                 jr      nz,disk_error       ; the tenant hit sv_load_error: report ONCE --

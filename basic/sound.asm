@@ -180,8 +180,8 @@ ex_beep:
                 ; HL (the statement cursor) is guarded across the CALSLT.
                 inc     hl                  ; past the BEEP token
                 push    hl
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP
-                call    subrom_call
+                call    sr_inl0             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP)
                 pop     hl
                 jp      c,subrom_absent_error
                 jp      exec_stmt           ; chain the next statement (HL preserved)

@@ -382,8 +382,8 @@ run_kw:         db      "RUN",0
 ; results ride back in PLN_NUM/PLN_PTR, because CALSLT owns the registers on the
 ; way out (the same reason fatprim_bounce reloads DISKOP_HL/DISKOP_A).
 parse_lineno:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN
-                call    sc_call             ; reduced build w/o sub-ROM (never on
+                call    sc_inl1             ; D-STUBINL: reduced build w/o sub-ROM (never on
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN)
                                             ; the merged machine, which always ships it)
                 ld      bc,(PLN_NUM)        ; the parsed number ($FFFF if it saturated)
                 ld      hl,(PLN_PTR)        ; LINEBUF pointer at the body
@@ -1041,8 +1041,8 @@ pm_sub:         push    bc                  ; 🎯 D-MSGMIGRATE: THE FENCE. See 
                 push    de
                 push    ix
                 push    hl                  ; the fall-through pointer, not an arg
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG
-                call    subrom_call
+                call    sr_inl1             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG)
                 pop     hl
                 pop     ix                  ; ⚠️ POP does not touch flags, so the CF
                 pop     de                  ;    tested below is still subrom_call's --
@@ -1311,8 +1311,8 @@ err_mem         equ     err_mem_arr
 le_call_op:
                 ld      (LE_OP),a
 le_call:
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
                 ld      a,(LE_STATUS)
                 or      a
                 ret
@@ -1320,8 +1320,9 @@ le_call:
 relink:
                 ld      a,1                 ; LE_OP_RELINK
                 ld      (LE_OP),a
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
-                jp      sc_call             ; D-SCCALL: tenant call + absent raise
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
+                ret
 
 ; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
 ; docs/spec-basic-delete.md, measured in docs/delete-msx1-characterization.md.
@@ -2406,8 +2407,8 @@ ers_undef:
 ; out: A = 0 out of data / 1 item read / 2 the item is not a number (D-READVAR);
 ;      DE = the value in numeric mode, STRSCR = [len][bytes] in string mode.
 read_one_value:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_READVAL
-                call    subrom_call         ; CF=1 iff the sub-ROM is absent
+                call    sr_inl0             ; D-STUBINL: CF=1 iff the sub-ROM is absent
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_READVAL)
                 ld      de,(RDV_VAL)
                 ld      a,0                 ; NOT `xor a` -- subrom_call's CF is the
                 ret     c                   ; test below and xor would clear it.
