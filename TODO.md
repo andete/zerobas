@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29262 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29273 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24204,7 +24204,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         | SELECT, ESC | nothing (SAME on ours) |
         | any of them in insert mode | INSFLG -> 0 (insert ends) |
       ➡️ Fix order: D-CTRLKEYS first (without it no CTRL key reaches the editor),
-      then the six handlers in `sub/readline.asm`. TAB alone can land now.
+      then the five CTRL handlers in `sub/readline.asm`.
+      ✅ **TAB SHIPPED 2026-10-05.** Measured further first (three more cases):
+      from column 33 or later on a 37-column row TAB fills to the edge and WRAPS
+      to column 1 of a continuation row (LINTTB marks the row continued), and in
+      insert mode it INSERTS the spaces and insert mode STAYS ON -- unlike the
+      CTRL keys. All of that is "a space through the ordinary character path
+      until (CSRX-1) is a multiple of 8", which is what `rl_tab` is (the echo
+      path became a returning `rl_char1`). 5/5 TAB cases agree with the
+      VG-8020; `screditor-acceptance` gains `e.tab` (LEN 5) and `e.tabwrap`
+      (LEN 37), the same on the VG-8020 and CF-3300; cut, they read 3 and 29.
+      `insmode_probe.py` still 0/12 DIFF after the echo-path restructure.
+      Sub page 1: 181 -> 158 B.
       🤖 **AUTONOMOUS** — the references settle each key.
 
 - [ ] ⌨️ **D-CTRLKEYS — A CTRL+LETTER KEY READS AS THE LOWERCASE LETTER, NOT ITS CONTROL CODE

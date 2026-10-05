@@ -89,7 +89,25 @@ rl_key:
                 jr      z,rl_ctl
                 cp      $0C                 ; CLS
                 jr      z,rl_ctl
+                cp      9                   ; TAB (D-EDCTRL)
+                jr      z,rl_tab
                 jp      rl_more             ; other control bytes: dropped, as before
+; 🔤 TAB (D-EDCTRL, 2026-10-05): it TYPES SPACES to the next 8-column stop --
+; the VG-8020 read, scratchpad/edctrl_probe.py: `AB`+TAB puts the cursor on
+; column 9 (blanks 3..8), and over existing text it OVERWRITES (`ABCDEFGHIJ`,
+; cursor on B, TAB -> `A.......` + cursor on 9). From column 33 or later on a
+; 37-column row it fills to the edge and WRAPS to column 1 of a continuation row
+; (LINTTB marks the row continued), and in insert mode it INSERTS the spaces and
+; insert mode stays on. Every one of those is "a space through the ordinary
+; character path, until (CSRX-1) is a multiple of 8", so that is what this is.
+rl_tab:
+                ld      a,' '
+                call    rl_char1
+                ld      a,(CSRX)
+                dec     a
+                and     7
+                jr      nz,rl_tab
+                jp      rl_more
 rl_ins:
                 ld      a,(INSFLG)
                 cpl
@@ -100,8 +118,14 @@ rl_ctl:
                 xor     a
                 ld      (INSFLG),a          ; a cursor key / HOME / CLS ends insert mode
                 ld      a,c
-                jr      rl_echo
+                call    rl_echo
+                jp      rl_more
 rl_char:
+                call    rl_char1
+                jp      rl_more
+; rl_char1: A = a printable byte, typed at the cursor -- insert-aware echo that
+; RETURNS (TAB loops over it). rl_echo is its overwrite half, also returning.
+rl_char1:
                 ld      c,a
                 ld      a,(INSFLG)
                 or      a
@@ -125,20 +149,17 @@ rl_echo:
                 call    CHPUT
                 ld      a,(CSRX)
                 cp      b
-                jr      nc,rl_more_far      ; the column advanced: no wrap. A wrap
+                ret     nc                  ; the column advanced: no wrap. A wrap
                                             ; leaves it BELOW where it was, whether
                                             ; C-BIOS wraps on the 40th character
                                             ; (CSRX 1) or on the 41st (CSRX 2).
                 ; Wrapped on the bottom row: the screen scrolled. C-BIOS shifted
                 ; LINTTB but dropped the mark of the row that wrapped (measured)
                 ; -- write it -- and the row where input began moved up too.
-                call    rl_scrolled
-rl_more_far:
-                jp      rl_more
+                jp      rl_scrolled         ; tail: its ret is ours
 rl_put:
                 ld      a,c
-                call    CHPUT
-                jp      rl_more
+                jp      CHPUT               ; tail: CHPUT's ret is ours
 rl_bs:
                 ld      a,(CSRX)
                 dec     a

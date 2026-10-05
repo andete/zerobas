@@ -44,6 +44,9 @@ CASES = {
     # TAB: to the next tab stop -- blanking, or moving?
     "tab":         "AB" + TAB + "X",
     "tab_over":    "ABCDEFGHIJ" + L * 9 + TAB + "X",    # over existing text
+    "tab_32":      LONG[:32] + TAB + "X",                # cursor ON a stop (col 33)
+    "tab_34":      LONG[:34] + TAB + "X",                # past the last stop on a 37-col row
+    "ins_tab":     "ABCD" + L + L + INS + TAB + "Q",      # does TAB end insert mode?
     # SELECT / ESC: nothing at the editor?
     "select":      "ABC" + L + SEL + "X",
     "esc":         "ABC" + L + ESC + "X",

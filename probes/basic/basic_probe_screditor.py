@@ -23,6 +23,9 @@ byte-identical to none (D-EDITLINE).
               prompt returns to SCREEN 0 (both references)
     s2.input  INPUT inside SCREEN 2 -> mode 0 and the answer read
     s2.long   a 46-char line typed after a SCREEN 2 program -> 46
+    e.tab     `A$="AB` TAB `X"` -> LEN 5: TAB blanks to the next 8-column stop
+    e.tabwrap 28 x on a WIDTH 40 row, TAB from the column-33 stop -> LEN 37:
+              it blanks to the row's end and wraps (D-EDCTRL)
 Expectations are the two references' faces, measured 2026-09-11 (and 09-07 for
 the x.* rows); --survey shows their columns.
 """
@@ -31,7 +34,7 @@ import argparse, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl, probe_sides                                   # noqa: E402
-UP, LEFT, HOME, DOWN = "\x1e", "\x1d", "\x0b", "\x1f"
+UP, LEFT, HOME, DOWN, TAB = "\x1e", "\x1d", "\x0b", "\x1f", "\x09"
 PAY = "A=A+1:PRINT A"
 ANS = "x" * 45
 # The re-entry rows build the screen FROM A PROGRAM and navigate with HOME +
@@ -54,10 +57,17 @@ CASES = [
     ("s2.prompt", ['10 SCREEN 2:END', 'RUN', 'PRINT"[s2.prompt";PEEK(&HFCAF);"]"']),
     ("s2.input",  ['10 SCREEN 2:INPUT A$:PRINT"[s2.input";PEEK(&HFCAF);A$;"]"', 'RUN', 'xy']),
     ("s2.long",   ['10 SCREEN 2:END', 'RUN', 'A$="0123456789012345678901234567890123456789012345":PRINT"[s2.long";LEN(A$);"]"']),
+    # D-EDCTRL (2026-10-05): TAB types spaces to the next 8-column stop. `A$="AB`
+    # leaves the cursor on column 7, so TAB blanks 7..8 and X lands on 9: LEN 5.
+    ("e.tab",     ['WIDTH 40:CLS', 'A$="AB' + TAB + 'X":PRINT"[e.tab";LEN(A$);"]"']),
+    # ...and from a stop at column 33 it blanks to the row's end and WRAPS: the Y
+    # is on a continuation row, still in the same string. 28 x + 8 blanks + Y.
+    ("e.tabwrap", ['WIDTH 40:CLS', 'A$="' + "x" * 28 + TAB + 'Y":PRINT"[e.tabwrap";LEN(A$);"]"']),
 ]
 EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1",
           "i.wrap": "45 xxxx", "i.top": "45 xx",
-          "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46"}
+          "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
+          "e.tab": "5", "e.tabwrap": "37"}
 
 def fence(tag, cap):
     """The printed `[tag ...]`, never the typed echo (an echo carries `";`)."""
