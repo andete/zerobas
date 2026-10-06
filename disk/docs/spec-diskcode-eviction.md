@@ -4332,6 +4332,17 @@ mode-2 channel anyway (point 3), copies the row FCB's +16..19 into
 `FAT_FILESIZE` instead. WRBLK keeps +16 at the committed size, record by
 record.
 
+📏 **S10.B DESIGN INPUT 3 (2026-10-06): `CLEAR` CLOSES EVERY FILE ON THE CF-3300**
+([`clearopen_probe.py`](../../scratchpad/clearopen_probe.py) →
+[`clearopen_run.out`](../../scratchpad/clearopen_run.out)). An accepted CLEAR
+(`CLEAR 500`, `CLEAR 200,&HE000`, bare) closes the channel: the next `PRINT#`
+is 59 and the file holds its bytes plus Ctrl-Z; a rejected one (ERR 5/7)
+leaves it open. Ours kept it open -- fixed as D-CLEARCLOSE (`basic/clear.asm`
+`clr_files`, gate `clearclose-acceptance`). So a disk-side cache of a channel's
+block address cannot be left pointing at a block a `CLEAR n` moved: the block
+table's base is derived from POOLSIZE and HIMEM, and no channel survives the
+CLEAR that changes them. (MAXFILES also closes everything first.)
+
 🔬 **S10.B RAM SAFETY, READ 2026-10-03.** Calling `wrblk_body` (and FMAKE's
 and the close's bodies) from a PRINT# hook in the middle of a BASIC statement
 needs their scratch to be safe there:

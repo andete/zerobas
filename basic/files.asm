@@ -2059,7 +2059,9 @@ ex_maxfiles:
                 ; 3 bytes the `jp exec_stmt` it replaces did. Written out inline
                 ; it was 8 bytes, and page 1 had 1. (S-FCH-1's lesson a third
                 ; time: the cost was SITING.)
-                jp      clr_done
+                ; D-CLEARCLOSE (2026-10-06): `clr_wipe`, past the bare CLEAR's own
+                ; close-all -- the files are closed above already.
+                jp      clr_wipe
 
 ; --- MERGE "name" — merge an ASCII program from disk ------------------------
 ; Reads a SAVE",A"-style ASCII (line-numbered text) program file and stores each

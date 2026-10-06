@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29347 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29387 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -25805,6 +25805,46 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (K=280/290) even a flat expression now refuses with ERR 7 where it used to
       run, and `B=((…8…))` at K=300 is ERR 7 where the VG-8020 completes — zerobas
       spends ~27 B of stack per nesting level. Economy (TIER 4), not corruption.
+
+- [x] 🔴 **AN ACCEPTED `CLEAR` DID NOT CLOSE THE OPEN FILES — `PRINT#` AFTER IT WROTE ON
+      (D-CLEARCLOSE, found 2026-10-06 measuring S10.B's design inputs)** — ✅ **FIXED
+      2026-10-06.**
+      🎚️ TIER 3 — common errors: a program that CLEARs with a file open gets 59 on
+      the reference, and its file ends where the CLEAR was.
+      📏 [`scratchpad/clearopen_probe.py`](scratchpad/clearopen_probe.py) →
+      [`scratchpad/clearopen_run.out`](scratchpad/clearopen_run.out): after 10 B
+      of `PRINT#1`, `CLEAR 500`, `CLEAR 200,&HE000` and a bare `CLEAR` all CLOSE
+      the file on the CF-3300 -- the next `PRINT#1` is **59** and the file reads
+      back **11 B** (the 10 + its Ctrl-Z). A **REJECTED** CLEAR (`CLEAR -1`,
+      `CLEAR 200,&H100`: 5; `CLEAR 30000`: 7) leaves it open (16 B), and ours
+      already agreed there. Ours kept the channel open on every accepted form.
+      🎯 Predicted 59 and "10 B, maybe the Ctrl-Z" -- hit; no prediction made for
+      the rejected forms.
+      ✅ [`basic/clear.asm`](basic/clear.asm) `clr_h_fits` / `clr_done` →
+      `clr_files` (`fch_close_all`, HL kept), AFTER `check_expr_errors` so a
+      rejected CLEAR closes nothing, and UNDER THE OLD POOL SIZE AND CEILING:
+      `sh_chan_addr` locates each channel's 265 B block from both, and the new
+      pool size is already stored by then. MAXFILES, which closes everything
+      itself, now enters at `clr_wipe`. Main page 1 **246 → 216 B**.
+      ⏱ kwtime's `CLEAR` string-space T5 read **2.8× → 3.1×** in the gates-fast
+      run after the fix: plausibly the close-all loop (it walks every channel
+      slot even when none is open). T5 readings swing run to run and the
+      ratio is tracked, never barred; NOT re-timed alone (`kwtime --only`), so
+      the +0.3× is a single reading, not a measured cost.
+      Gate `clearclose-acceptance`
+      ([`probes/disk/disk_probe_clearclose.py`](probes/disk/disk_probe_clearclose.py),
+      7 rows against the CF-3300, incl. `twochan`: a PARKED second channel closes
+      whole). Knives ([`scratchpad/clearclose_knives.py`](scratchpad/clearclose_knives.py)):
+      K-CC1 (no close) moves exactly `clear500`/`bare`/`himem`/`twochan`;
+      🔴 **K-CC2 (close under the NEW size) moves NOTHING** -- predicted ~40 %
+      that `twochan` would see it, MISSED the other way. A parked OUTPUT channel
+      was flushed when parked and is re-read when restaged, so only the ACTIVE
+      channel's 256 B copy lands in the wrong block, in RAM the CLEAR resets --
+      unless a near-floor `CLEAR n,h` puts the new table over the program text
+      (`CLR_HIMEM_MARGIN` does not count the table). The ordering is kept as
+      correct by construction and recorded as unwitnessed.
+      ➡️ **For S10.B:** the cached block address cannot go stale across a CLEAR
+      any more -- every channel is closed by it, as on the CF-3300.
 
 - [x] 🔴 **`RUN` DID NOT CLOSE THE FILES A PROGRAM LEFT OPEN — the next program
       could still write the old channel (D-RUNCLOSE, found 2026-09-27 by T6

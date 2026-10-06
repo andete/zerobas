@@ -227,8 +227,27 @@ clr_h_store:
                 ld      (POOLSIZE),bc       ; the raise; nothing else was stored yet
 clr_h_fits:
                 call    check_expr_errors   ; raise BEFORE the store and the wipe
+                ; 🔴 D-CLEARCLOSE (2026-10-06): AN ACCEPTED CLEAR CLOSES EVERY FILE,
+                ; as on the CF-3300 (scratchpad/clearopen_probe.py: after `CLEAR
+                ; 500`, `CLEAR 200,&HE000` or a bare `CLEAR`, `PRINT#1` is 59 and
+                ; the file holds what was written plus its Ctrl-Z); a REJECTED one
+                ; (ERR 5 / 7, raised just above) leaves them open, there and here.
+                ; The channels close under the OLD pool size and ceiling: each
+                ; channel's 265 B block is located from both (sub/strheap.asm
+                ; sh_chan_addr), and the new pool size is already stored.
+                push    de                  ; the new ceiling
+                ld      de,(POOLSIZE)
+                push    de                  ; the new pool size
+                ld      (POOLSIZE),bc       ; the OLD one while the files close
+                call    clr_files
+                pop     de
+                ld      (POOLSIZE),de
+                pop     de
                 ld      (HIMEM),de          ; record CLEAR's ceiling
-clr_done:
+                jr      clr_wipe
+clr_done:                                   ; a bare CLEAR: nothing moved yet
+                call    clr_files
+clr_wipe:
                 push    hl                  ; clear_vars clobbers HL; guard the
                 ; 🔴 CLEAR MOVES THE POOL'S FRONTIER, AND SINCE D-SPMERGE THE MACHINE
                 ; STACK IS BASED ON IT (docs/spec-basic-spmerge.md §9). A bigger string
@@ -263,3 +282,9 @@ clr_done:
                                             ; move, SP and SAVSTK all come for free
 clr_nomove:
                 jp      pop_exec            ; HL = cursor; run the next statement
+
+clr_files:                                  ; close every file, HL kept
+                push    hl
+                call    fch_close_all
+                pop     hl
+                ret

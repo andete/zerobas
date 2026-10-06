@@ -2287,6 +2287,13 @@ asavechan-acceptance: repack-machine $(DISK_TEST_DSK)
 nohash-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_nohash.py
 
+# --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
+# CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
+# holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it
+# open; a PARKED second channel closes whole. Each against the CF-3300.
+clearclose-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_clearclose.py
+
 # --- wrblkalt-acceptance: two FCBs, RS = 1, alternating WRBLK (D-WRBLKRS) ------
 # The BDOSX RAM gate is BLIND to disk writes; this reads the persisted artifact.
 # Our WRBLK positioned as if every record were 128 B, so RS = 1 -- MSX-DOS1's
