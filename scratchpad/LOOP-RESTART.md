@@ -1,10 +1,54 @@
-# Loop restart — paste-ready state (written 2026-09-12)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-06)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-09-24 EVENING — THIS IS THE CURRENT ONE. EVERYTHING BELOW IS HISTORY.
+## 🟢 STATE AS OF 2026-10-06 EVENING — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT); ITS QUEUE IS HISTORY.
+
+**What shipped since 2026-10-04 (`git log --oneline 203cd2b1..`):** the
+screen-editor run -- D-EDCTRL (TAB, CTRL-B/E/F/N/U), D-CTRLKEYS (C-BIOS patch
+#6), D-EDFKEY and D-EDINPUTCSR (both "agree, now gated") -- then D-CLEARCLOSE
+(an accepted CLEAR closes files), **S10.B increments 1 + 2** (a disk file
+open FOR OUTPUT or APPEND is disk.rom's: an MSX-DOS FCB in the channel's engine
+row, 256 B records written by main's engine as disk.rom assembles it, LOF = the
+FCB's size and LOC its random record -- `dout-acceptance`), and D-PRNUMWRAP (a
+PRINT number that does not fit moves whole). Mode 2 is no longer stored.
+
+**Walls (`make basic-reloc`, 2026-10-06 evening): main low 215 B, page 1 202 B;
+sub p0 18 B, sub p1 195 B; disk 4594 B.** Recount before quoting.
+
+➡️ **NEXT, by tier (`python3 tools/tier_table.py --all`; recount):**
+- TIER 1: only the three standing meta items (the rung proofs, T6's bound, the
+  keyword remainder) -- long tails; read their LAST live marker before picking.
+- TIER 2: S10.B's later increments (TODO, the STEP 9/10 item, "Left for later
+  increments"): the input side through `$FE8A` (S10.C), main's own write
+  engine's deletion (SAVE ,A still uses it), the speed (4200 B: 14.2 s vs the
+  CF-3300's 11.8), the dead `cp 2` mode tests.
+- TIER 3: D-LINTTBWRAP, D-LINTTBSTALE, **D-FDCDI** (keys typed during long
+  disk work are lost; an interruptible first-DRQ wait was TRIED and REVERTED --
+  read the item), the KILL/NAME/re-OPEN item, COPY TO (🙋).
+- APPARATUS: **D-DEADSEED** (check_dead_code stayed green with an uncalled
+  routine), badfnum's one parallel-pool red (3/3 green alone; its log was not
+  kept).
+
+🔴 **LESSONS OF 2026-10-06, each paid for:**
+- **A CALLF / CALSLT RETURNS DI ON C-BIOS** (cbios `src/slot.asm`
+  `calslt_restore`), and disk.rom's driver keeps the CALLER's interrupt state
+  (`fdc_di_save`). A call-back made before disk work masked a whole OPEN and
+  typed keys were lost. `ei` after every call-back that precedes sector I/O.
+- **A STOPWATCH KEYED ON THE CURSOR ROW, OR ON JIFFY/TIME, IS NOT A CLOCK** --
+  a silent loop never moves the row, and JIFFY stops while a sector op holds DI.
+  Time marker to marker (`scratchpad/s10b_stopwatch.py`).
+- **TWO EXPERIMENTS IN ONE RUN CONFOUND THE SCORE** -- the `ei` fix read MISS
+  while a driver experiment rode along; alone it passed.
+- **A PROBE'S CAPTURE WINDOW MUST NOT BE NARROWER ON OURS THAN ON THE
+  REFERENCE** (namspc gave ours 2.5 s, the CF-3300 4.5 s; ours, the faster,
+  read UNREADABLE).
+- **A SQUASH CARRIES WHAT THE MESSAGE SAYS IT DOESN'T** -- c6d03ec8 claimed two
+  `ei`s were not shipped; they were (corrected in 8863d46c).
+
+## 🟢 STATE AS OF 2026-09-24 EVENING — superseded above (its RULINGS table is still current).
 
 **Tree CLEAN, all pushed, head `02eac1ba`.** Since the afternoon hand-off
 `6b6d7b49` (SHAs from `git log`): `a49d233f` D-KWUNTIME · `fd27aa59` D-VDPIE
