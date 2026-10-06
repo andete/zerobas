@@ -1302,6 +1302,31 @@ dsr_mul:
                 ld      hl, FAT_DBUF
                 jp      read_sector
 dwr_fail:
+                ; 🔴 D-PRINTFULLSTAMP (2026-10-06): a FAILING CLOSE (DOUT_DEAD is set
+                ; before its writes) commits nothing, as the CF-3300's: MSX-DOS 1
+                ; writes the FAT at close, so a close that fails leaves the entry
+                ; 0/0 AND the clusters free (scratchpad/savefull_run.out: FAT[714]
+                ; 000 there, FFF here). Our allocator commits each cluster as it
+                ; takes it, so the chain is released here; the entry was never
+                ; updated (the directory is written only by a CLOSE that succeeds).
+                ; A PRINT# failure keeps the chain: the channel is still open, and
+                ; a later CLOSE retries. The pending code (66 / a DSKIO one) is held
+                ; across the freeing, whose successful reads clear DISKOP_ERR.
+                bit     DOUT_DEAD, (ix+DOUT_FLG)
+                jr      z, dwr_raise
+                ld      a, (DISKOP_ERR)
+                push    af
+                ld      l, (ix+DOUT_FIRST)
+                ld      h, (ix+DOUT_FIRST+1)
+                call    fat_free_chain      ; (its own I/O failure: nothing more to do)
+                xor     a
+                ld      (ix+DOUT_FIRST), a
+                ld      (ix+DOUT_FIRST+1), a
+                ld      (ix+DOUT_CLUS), a
+                ld      (ix+DOUT_CLUS+1), a
+                pop     af
+                ld      (DISKOP_ERR), a
+dwr_raise:
                 ld      ix, disk_error
                 jp      calbak              ; raises; does not return
 

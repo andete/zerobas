@@ -34,6 +34,15 @@ fat_delete:
                 ret     c                   ; not found
                 ; --- free the cluster chain from FAT_FIRSTCLUS ---
                 ld      hl, (FAT_FIRSTCLUS)
+                call    fat_free_chain
+                ret     c
+                jr      fdl_marked
+
+; fat_free_chain -- write 0 to every FAT entry of the chain from HL (in every
+; FAT copy), stopping at a non-data cluster. Cy = 1 on an I/O error. Split out
+; of fat_delete for D-PRINTFULLSTAMP (2026-10-06): disk.rom releases an OUTPUT
+; channel's chain when its CLOSE fails, as the CF-3300 never commits it.
+fat_free_chain:
 fdl_free:
                 ; stop on a non-data cluster (clus < 2, or >= $FF8 end-of-chain).
                 ld      a, h
@@ -41,14 +50,14 @@ fdl_free:
                 jr      nz, fdl_hi
                 ld      a, l
                 cp      2
-                jr      c, fdl_marked       ; cluster 0/1 -> nothing more to free
+                jr      c, fdl_done         ; cluster 0/1 -> nothing more to free
                 jr      fdl_isdata          ; 2..255 -> data cluster
 fdl_hi:
                 cp      $0F
                 jr      c, fdl_isdata       ; high < $0F -> data (clus < $F00)
                 ld      a, l
                 cp      $F8
-                jr      nc, fdl_marked      ; clus >= $FF8 -> end-of-chain, stop
+                jr      nc, fdl_done        ; clus >= $FF8 -> end-of-chain, stop
 fdl_isdata:
                 push    hl                  ; save the current cluster
                 call    fat_next_cluster    ; HL = next cluster (uses FSECTOR_BUF)
@@ -60,6 +69,9 @@ fdl_isdata:
                 pop     hl                  ; HL = next cluster
                 jr      c, fdl_err
                 jr      fdl_free
+fdl_done:
+                or      a                   ; Cy = 0: the chain is free
+                ret
 fdl_marked:
                 ; --- mark the directory entry deleted ($E5) and write it back ---
                 ld      de, (FWR_DIRSEC)

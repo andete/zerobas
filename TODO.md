@@ -616,7 +616,11 @@ item — do **one item per session** to keep context lean.
       is UNMEASURED -- re-run it under load before believing "flake". Alone it
       read green 3/3 the same evening, and its timing is in emulated time, which
       host load does not move -- so a wall-clock limit in the harness is the
-      first suspect, not the ROM.
+      first suspect, not the ROM. 🔁 The NEXT FULL battery (D-PRINTFULLSTAMP's)
+      had `kwsweep` red in the pool and green on the serial retry too, its first
+      log overwritten the same way: two pool-only reds in a day, both suites
+      with disk rows, both since S10.B. ➡️ Keep the failing attempt's log for
+      every retried unit (run_gates.py), then read one.
       ➡️ **Left for later increments:** main's own write engine's deletion
       (SAVE ,A still uses it), the input side through `$FE8A` (S10.C), the speed
       (keep a sector's first half instead of re-reading it), and the `cp 2`
@@ -6251,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29597 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29615 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6417,7 +6421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11252 (T-6FE392)8 (T-529ABE)` from `TODO.md:23836 (T-529ABE)`: a
+      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23840 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12099,7 +12103,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23840 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -27368,8 +27372,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         skipped ours reads 0/0 and the gate FAILs.
       - Sub page 1: 253 → 205 B.
 
-- [ ] **D-PRINTFULLSTAMP — PRINT#+CLOSE THAT FILLS THE DISK: THE CF-3300 COMMITS NOTHING (ENTRY
-      0/0, THE CLUSTER STAYS FREE), OURS LEAVES IT ALLOCATED (MEASURED 2026-10-02)**
+- [x] ✅ **D-PRINTFULLSTAMP — PRINT#+CLOSE THAT FILLS THE DISK: THE CF-3300 COMMITS NOTHING (ENTRY
+      0/0, THE CLUSTER STAYS FREE), OURS LEFT IT ALLOCATED (MEASURED 2026-10-02; FIXED 2026-10-06)**
       🎚️ TIER 3 — common errors.
       📏 [`savefull_run.out`](scratchpad/savefull_run.out): PRINT# lines past one
       free cluster, then the handler's CLOSE (which fails again, `Disk full in
@@ -27383,7 +27387,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🛠 Shape, to decide with S10.B (it rewrites this path): either free the
       chain when a channel's flush fails for good, or defer FAT commits to
       CLOSE as stock does.
-      🤖 **AUTONOMOUS** — the CF-3300's FAT settles it.
+      ✅ **FIXED with S10.B's writer, shape 1:** the directory entry is written
+      only by a CLOSE that succeeds (so it stays 0/0), and a FAILING CLOSE
+      (DOUT_DEAD is set before its writes) now releases the channel's chain in
+      `dwr_fail`, holding the pending 66 across it -- the freeing's own
+      successful reads clear DISKOP_ERR. A PRINT# failure keeps the chain: the
+      channel is still open. `fat_free_chain` was split out of the shared
+      `fat_delete` body (basic/fat-delete-body.inc) for it.
+      📏 ([`savefull_probe.py`](scratchpad/savefull_probe.py), `CASE=print`):
+      the CF-3300 and ours both read `66 59 30`, PF.TXT 0/0 and FAT[714] free
+      (the I divergence 59-vs-70 had already closed with S10.B's 256 B records).
+      Gate row `pstamp` in `diskfull-acceptance`: ERR/I/ERL, the entry and the
+      FAT entry of the one cluster left free, against the CF-3300. Knife
+      ([`printfull_knife.py`](scratchpad/printfull_knife.py)): K-PFS (no
+      release) moves exactly `pstamp`. 🎯 Predicted the I to match and the
+      cluster to leak before the fix -- both hit; the fix and the knife, hit.
 
 - [ ] 🔴 **D-INPQUOTE2 — WHAT FOLLOWS A CLOSING QUOTE, AND AN UNCLOSED ONE, ARE NOT
       THE REFERENCE's (MEASURED 2026-09-30 WHILE SHIPPING D-INPQUOTE)**

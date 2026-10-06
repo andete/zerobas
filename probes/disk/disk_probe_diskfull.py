@@ -67,9 +67,16 @@ CASES = {
     # the same program as an ASCII listing (D-ASAVEFULLSTAMP)
     "astamp": ([f"{100 + i} REM " + "X" * 60 for i in range(30)]
                + ['SAVE"SA.BAS",A', 'PRINT"U";ERR;"#"'], 30.0),
+    # PRINT# past ONE free cluster, then the handler's CLOSE (which fails again):
+    # the CF-3300 commits NOTHING -- entry 0/0 and the cluster stays free
+    # (D-PRINTFULLSTAMP; MSX-DOS 1 writes the FAT at close). Summary: ERR I ERL.
+    "pstamp": (["NEW", "10 ON ERROR GOTO 90", '20 OPEN"PF.TXT"FOR OUTPUT AS#1',
+                "30 FOR I=1 TO 80:PRINT#1,STRING$(20,65):NEXT", "40 CLOSE#1",
+                '50 PRINT"X";0;I;"#":END', '90 PRINT"X";ERR;I;ERL;"#":CLOSE:END', "RUN"], 30.0),
 }
 # case -> (free clusters to leave, the file whose entry and content are compared)
-STAMP = {"bstamp": (1, "BF", "BIN"), "sstamp": (1, "SF", "BAS"), "astamp": (1, "SA", "BAS")}
+STAMP = {"bstamp": (1, "BF", "BIN"), "sstamp": (1, "SF", "BAS"), "astamp": (1, "SA", "BAS"),
+         "pstamp": (1, "PF", "TXT")}
 
 
 def full_disk(path):
@@ -163,10 +170,21 @@ def stamp(path, stem, ext):
     return out
 
 
+def fat_last(path):
+    """FAT[the last data cluster] -- the one free_last() left free: 0 if the run
+    left it free (nothing committed), else what was written there."""
+    b = open(path, "rb").read()
+    bps, resv, nfat, spf, spc, first_data, nclus = geometry(b)
+    c, i = nclus - 1, resv * bps + (nclus - 1) * 3 // 2
+    v = b[i] | b[i + 1] << 8
+    return v >> 4 if c & 1 else v & 0xFFF
+
+
 def verdict(name, scr):
     """The face's fields, read off the screen; None where the summary line never
     printed (a hang, or a capture that came too early)."""
-    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W", "sstamp": "T", "astamp": "U"}[name]
+    key = {"close": "R", "save": "S", "print": "P", "bsave": "V", "bstamp": "W", "sstamp": "T", "astamp": "U",
+           "pstamp": "X"}[name]
     m = re.search(r"\b" + key + r" ?((?:-?\d+ ?)+)#", scr)
     v = {"summary": [int(x) for x in m.group(1).split()] if m else None,
          "disk_full": scr.count("Disk full")}
@@ -184,6 +202,8 @@ def main():
             got[(tag, name)] = verdict(name, scr)
             if name in STAMP:
                 got[(tag, name)]["stamp"] = stamp(dsk, *STAMP[name][1:])
+            if name == "pstamp":
+                got[(tag, name)]["fat_last"] = fat_last(dsk)
             print(f"== {tag} {name}: {got[(tag, name)]}")
             print(f"   screen tail: {scr[-260:]}")
     if any(got[("STOCK", n)]["summary"] is None for n in CASES):
@@ -204,7 +224,7 @@ def main():
             bad.append(f"{name}: CF-3300 {s} vs ours {o}")
     for b in bad:
         print("DIVERGES " + b)
-    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE, SAVE and SAVE ,A leave the CF-3300's file")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: a full disk is Disk full in all four faces, and BSAVE, SAVE, SAVE ,A and PRINT#+CLOSE leave the CF-3300's file")
     return 1 if bad else 0
 
 
