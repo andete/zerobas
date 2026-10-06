@@ -290,7 +290,7 @@ __MEAS_LOW_END:
 ; the shadow LOOKUP is the sub-ROM half (sub/arrays.asm scv_find).
                 include "basic/deffn.asm"
 
-; The PRINT statement (defines `ex_print`, `print_number`, `print_crlf`).
+; The PRINT statement (defines `ex_print`, `pn_fmt`, `pnum_fit`, `print_crlf`).
                 include "basic/print.asm"
 
 ; PRINT USING formatted output (defines `ex_print_using`; reuses print.asm's div10

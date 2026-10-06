@@ -167,8 +167,9 @@ cg_back:
                 ; S10.B: C-BIOS's CALSLT -- which a hook's CALLF is -- RETURNS WITH
                 ; INTERRUPTS OFF (cbios src/slot.asm calslt_restore: `di`, no `ei`).
                 ; Every older path went on through subrom_call's own `ei`; OPEN FOR
-                ; OUTPUT now ends here, and the keys typed after it were not scanned
-                ; (diskbasic-acceptance's PRINT# row lost its next line's first 8).
+                ; OUTPUT now ends here. Hygiene, NOT a measured fix: it was written
+                ; for diskbasic-acceptance's lost keys and MEASURED not to cure them
+                ; (the WRBLK record writer's sector count was the cause, TODO S10.B).
                 ei
                 jr      nc,cg_unclaimed     ; claimed -> the verb may have refilled
                 ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- WRITE IT ONCE, LAST.

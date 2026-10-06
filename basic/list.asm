@@ -191,7 +191,7 @@ lst_lp:
                 sbc     a,d                 ; name a stored line (lst-lomid: `LIST
                 jr      c,lst_skip          ; 25-30` prints only line 30).
                 push    hl                  ; guard the body pointer
-                ld      d,b                 ; print_number wants the value in DE
+                ld      d,b                 ; list_num wants the value in DE
                 ld      e,c
                 ; D-DOTLINE writer (b) (docs/spec-basic-dotline.md §2 R-DOT3b):
                 ; `.` records the LAST LINE THE WALK PRINTED. Three measured
@@ -231,7 +231,7 @@ lst_stop:
                 ret                         ; the walk (lines are ascending)
 
 ; --- list_num: print DE as an unsigned decimal line number ------------------
-; print_number formats a *signed* value with a leading sign space and a trailing
+; pn_fmt (PRINT's) formats a *signed* value with a leading sign space and a trailing
 ; space; a line number wants neither, so we format the magnitude ourselves into
 ; NUMBUF (reusing div10 from print.asm) with no sign and no trailing space.
 list_num:

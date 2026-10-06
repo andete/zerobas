@@ -228,14 +228,15 @@ exp_num:
                 call    check_expr_errors   ; D-2/D-F2-1 (interp.asm): abort the whole
                                             ; line before the newline/next item
                 call    factyp_is2         ; §9.4: exp_num dispatches on FACTYP after eval
+                push    hl                  ; the formatters clobber the token cursor
                 jr      nz,exp_num_float
-                push    hl                  ; print_number divides the value in HL,
-                call    print_number        ;  clobbering the token cursor — guard it
-                pop     hl                  ;  (same as exp_strvar does for print_strval)
-                jr      exp_loop
+                call    pn_fmt              ; HL = NUMBUF, the text
+                jr      exp_num_put
 exp_num_float:
-                push    hl                  ; flt_out ends in print_string, which guards
-                call    flt_out             ;  HL across CHPUT the same way (basic/float.asm)
+                call    flt_fmt             ; HL = FOUTBUF (basic/float.asm)
+exp_num_put:
+                call    pnum_fit            ; D-PRNUMWRAP: a new line first if it
+                call    print_string        ; does not fit the rest of this one
                 pop     hl
                 jr      exp_loop
 exp_strvar:
@@ -387,10 +388,13 @@ exp_comma:
                 call    print_comma_zone    ; pad to the next 14-column zone
                 jr      exp_stmt_end        ; D-CARVE3 (-10 B, main page 1)
 
-; --- print_number: DE = signed-16 value -> screen --------------------------
-; Formats into NUMBUF (sign/space, digits, trailing space, 0) then print_string.
-; The conversion touches no BIOS, so registers are safe until print_string.
-print_number:
+; --- pn_fmt: DE = signed-16 value -> NUMBUF ------------------------------------
+; Formats into NUMBUF (sign/space, digits, trailing space, 0). The conversion
+; touches no BIOS. (Was print_number, which also printed it; see below.)
+; pn_fmt: DE = signed-16 value -> NUMBUF's text (sign/space, digits, trailing
+; space, 0), HL = NUMBUF. D-PRNUMWRAP (2026-10-06): this was `print_number`,
+; which printed it too; PRINT -- its only caller -- now asks pnum_fit first.
+pn_fmt:
                 ld      a,d
                 add     a,a                 ; CF = sign bit (bit 7 of D)
                 jr      c,pn_neg
@@ -417,13 +421,58 @@ pn_tail:
                 ld      a,' '               ; trailing space (MSX number format)
                 ld      (de),a
                 inc     de
-                ; 🎯 D-CARVE3: canonical "0-terminate NUMBUF and print it" tail;
-                ; basic/list.asm's line-number emitter jumps here.
-num_publish:
+                ; FALLS INTO num_fmt_end.
+num_fmt_end:
                 xor     a
                 ld      (de),a              ; 0-terminate
                 ld      hl,NUMBUF
+                ret
+                ; 🎯 D-CARVE3: canonical "0-terminate NUMBUF and print it" tail;
+                ; basic/list.asm's line-number emitter jumps here. ⚠️ It does NOT
+                ; take pnum_fit's new line: a number LIST or an error message
+                ; ("in 10") prints mid-line is unmeasured at the line edge.
+num_publish:
+                call    num_fmt_end
                 jp      print_string        ; guards HL across CHPUT
+
+; --- pnum_fit: D-PRNUMWRAP (2026-10-06) ----------------------------------------
+; A PRINT number item that does not fit the rest of the screen line goes to the
+; next one WHOLE. MEASURED (WIDTH 37, `PRINT STRING$(n,"x");v;`): n=35 v=601 and
+; n=30 v=12345678 print the number on the next line on the VG-8020 (and 601 on
+; the CF-3300), where ours split it (`6`|`01`); n=36 v=7 moves ` 7` with its sign
+; space; n=33 v=601 fits exactly and stays -- only the TRAILING space may wrap
+; alone. So the test is: sign space + digits (the text less its trailing space)
+; past LINLEN from the cursor column -> CR LF first. Never at column 1 (a number
+; longer than the line just wraps), and the screen only (PRDEST = 0): PRINT# and
+; LPRINT keep their own, unmeasured.
+; in: HL = the number's text (0-terminated, ending in its trailing space). Kept.
+pnum_fit:
+                ld      a,(PRDEST)
+                or      a
+                ret     nz                  ; a file or device: not here
+                push    hl
+                ld      b,-1                ; the length less the trailing space
+pnf_len:
+                ld      a,(hl)
+                inc     hl
+                inc     b
+                or      a
+                jr      nz,pnf_len
+                pop     hl
+                dec     b                   ; B = the text's length; less its trailing space
+                ld      a,(CSRX)
+                dec     a                   ; columns already used
+                ret     z                   ; column 1: never a new line
+                add     a,b
+                ld      c,a
+                ld      a,(LINLEN)
+                cp      c
+                ret     nc                  ; it fits
+                ld      a,13
+                rst     $18
+                ld      a,10
+                rst     $18
+                ret
 
 ; --- dgt_push: HL -> decimal digits on the STACK, LSB first, under a sentinel -
 ; D-DGTPUSH (2026-09-05). THREE main-ROM sites carried this eleven-byte loop

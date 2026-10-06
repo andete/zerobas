@@ -560,7 +560,12 @@ item — do **one item per session** to keep context lean.
       (diskbasic-acceptance's PRINT# round-trip read `txt" for input…`). Two
       `ei` fixes (after each hook return -- C-BIOS's CALSLT returns DI, cbios
       `src/slot.asm` `calslt_restore` -- and at the handlers' entry) were
-      MEASURED not to help and are not shipped; the record writer cured it.
+      MEASURED not to help; the record writer cured it. 🔴 **CORRECTED the same
+      day: both `ei`s DID ship** (c6d03ec8's message and this line said they
+      did not -- the squash carried them). They are kept, as interrupt hygiene
+      and nothing more: a CALLF's return leaves interrupts off where every older
+      path ran on through subrom_call's `ei`, and a long handler should not
+      starve the keyboard between sector ops. No row witnesses either.
       🔴 **AND A STOPWATCH WAS WRONG TWICE ON THE WAY:** keyed on the cursor ROW
       settling, it read the parked build at "27.1 s vs 13.4" -- a silent loop
       never moves the row, and JIFFY/TIME stop while a sector op holds DI, so
@@ -577,9 +582,9 @@ item — do **one item per session** to keep context lean.
       it), the input side through `$FE8A` (S10.C), and the speed (keep a
       sector's first half instead of re-reading it).
 
-- [ ] 🖨️ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE IS SPLIT
+- [x] ✅ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE WAS SPLIT
       ACROSS IT ON OURS; THE VG-8020 AND CF-3300 MOVE IT WHOLE TO THE NEXT LINE (found
-      2026-10-06 by dout-acceptance's first lofloc reading; MEASURED)**
+      2026-10-06 by dout-acceptance's first lofloc reading; FIXED THE SAME DAY)**
       🎚️ TIER 1 — happy path: any `PRINT I;` loop that reaches the line end.
       📏 (`WIDTH 37`, `PRINT STRING$(n,"x");v;`, VG-8020 against ours):
       | n, v | VG-8020 | ours |
@@ -597,7 +602,24 @@ item — do **one item per session** to keep context lean.
       LPRINT first). Then rows in a PRINT gate (n = 33/35/36, a float, a
       negative), and the strings' rule measured beside them (a string is not
       expected to move).
-      🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **FIXED:** `pnum_fit` ([`basic/print.asm`](basic/print.asm)) -- PRINT's
+      number items only (`exp_num`, both the integer and the float path), the
+      screen only (`PRDEST` = 0): if sign space + digits run past `LINLEN` from
+      a column other than 1, CR LF first. `print_number` became the format-only
+      `pn_fmt`, and `flt_out` -- PRINT was the only caller of both -- is gone
+      (`flt_fmt` is the entry). `num_publish` (LIST, "in 10") does NOT take the
+      check: a number printed mid-line there is unmeasured at the edge. Main
+      page 1 171 → 128 B, low 209 → 215 B.
+      Gate `prnumwrap-acceptance`
+      ([`probes/basic/basic_probe_prnumwrap.py`](probes/basic/basic_probe_prnumwrap.py)):
+      the seven rows against the VG-8020 -- n35/n30/n36, n33 (fits exactly, only
+      the trailing space wraps), a float, a negative, and a string, which wraps
+      character by character on both and does NOT move. Knife
+      ([`prnumwrap_knife.py`](scratchpad/prnumwrap_knife.py)): K-PNW (pnum_fit
+      returns at once) moves exactly n35, n30, n36, flt, neg. 🔴 The first form
+      of the probe `.strip()`ped its rows and was BLIND on `n36` (` 7` and `7`
+      read the same); it compares the rows right-trimmed only.
+      🎯 Predicted: every number case as the VG-8020, the string unmoved -- hit.
 
 - [ ] ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO KEYS
       TYPED DURING LONG DISK WORK ARE LOST; THE CF-3300 KEEPS SCANNING (filed 2026-10-06
@@ -6168,7 +6190,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29480 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29502 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6334,7 +6356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11169 (T-6FE392)8 (T-529ABE)` from `TODO.md:23753 (T-529ABE)`: a
+      `TODO.md:11191 (T-6FE392)8 (T-529ABE)` from `TODO.md:23775 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12016,7 +12038,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23753 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23775 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

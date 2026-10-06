@@ -921,12 +921,13 @@ DOUT_DIROFF     equ     DOUT_FLG+8      ; and its offset in it
     ENDIF
 ; 📍 In the $5602..$5FE4 fill, beside hk_ochk / close_read.
 ; ⏱ INTERRUPTS ON AT ENTRY (`ei`), which hk_kill's note said a long body here
-; would need. A hook is entered with them OFF, and this ROM's DSKIO never turns
-; them on; main's engine ran each FAT primitive as its own `di / CALSLT / ei`
-; sub-ROM call, so the keyboard was scanned between sectors. The first build
-; ran a whole CLOSE (a record write, the directory, the re-date) with them off,
-; and diskbasic-acceptance's PRINT# row lost the first 10 keys typed meanwhile
-; (`xt" for input as #1...` -- Syntax error). Safe: the ISR is page 0's, and
+; would need. A hook is entered with them OFF; the driver's fdc_di_save /
+; fdc_io_done restore the CALLER's state around each sector op, so with this
+; the keyboard is scanned between sector ops, as it was when main's engine ran
+; each FAT primitive as its own `di / CALSLT / ei` sub-ROM call. Hygiene, NOT a
+; measured fix: it was added for diskbasic-acceptance's lost keys in the first
+; (wrblk_body) build and MEASURED not to cure them -- that build's 17 sector
+; ops a statement were the cause (TODO S10.B). Safe: the ISR is page 0's, and
 ; htimi_guard skips main's timer work while page 1 is not main.
 
 ; dout_row -- A = channel -> HL = its engine row. Clobbers A, DE.

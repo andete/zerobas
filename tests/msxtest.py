@@ -311,6 +311,15 @@ class Machine:
         the byte under test is register A on each entry."""
         out = []
         self.trap(name, lambda m: out.append(m.cpu.a))
+        # D-PRNUMWRAP (2026-10-06): PRINT now reads the cursor column and the
+        # line length (pnum_fit) before a number. On a machine they are never
+        # 0 -- CSRX is 1-based, LINLEN the width -- so a test that left zeroed
+        # RAM would see "column 0 of a 0-wide line" and a CR LF before every
+        # number. Start from the cold prompt's state wherever a test has not
+        # set its own (test_repl.py models a full screen and sets both).
+        for cell, cold in (("CSRX", 1), ("LINLEN", 40)):
+            if cell in self.sym and self.mem[self.sym[cell]] == 0:
+                self.mem[self.sym[cell]] = cold
         return out
 
     def record(self, name, regs=("a", "bc", "de", "hl")):

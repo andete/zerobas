@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: BASIC-ROM `print_number` and `print_crlf` (print.asm), no emulator.
+"""Unit test: BASIC-ROM `pn_fmt` (was print_number) and `print_crlf` (print.asm), no emulator.
 
 Tier-2 (BIOS-stub) tests: CHPUT is trapped and every emitted byte accumulated.
 
@@ -123,9 +123,13 @@ def run():
     for label, value in pn_cases:
         # DE holds the value; negative values use two's complement in 16 bits.
         de_val = value & 0xFFFF
-        out = m.capture_chput()
-        m.call("print_number", de=de_val)
-        got = bytes(out)
+        # D-PRNUMWRAP (2026-10-06): print_number became the format-only pn_fmt
+        # (HL = NUMBUF); PRINT asks pnum_fit, then print_string. The text is
+        # what this matrix pins.
+        cpu = m.call("pn_fmt", de=de_val)
+        a, got = cpu.hl, b""
+        while m.mem[a]:
+            got += bytes([m.mem[a]]); a += 1
         want = expected_number(value)
         ok = got == want
         fails += not ok

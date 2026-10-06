@@ -506,10 +506,13 @@ def run():
         facbytes = hx(fac_hex)
         m.poke(FAC, facbytes + b"\x00" * (8 - len(facbytes)))
         m.poke(FACTYP, factyp)
-        out = m.capture_chput()
-        m.call("flt_out")
-        got = "".join(chr(b) for b in out)
-        ck(f"flt_out(FAC={fac_hex},FACTYP={factyp})", got, want)
+        # D-PRNUMWRAP (2026-10-06): flt_out is gone; PRINT calls flt_fmt (HL =
+        # the text), asks pnum_fit, then print_string. The text is the subject.
+        cpu = m.call("flt_fmt")
+        a, got = cpu.hl, ""
+        while m.mem[a]:
+            got += chr(m.mem[a]); a += 1
+        ck(f"flt_fmt(FAC={fac_hex},FACTYP={factyp})", got, want)
 
     print("# --- flt_to_int16: TRUNCATING, address domain (spec §10.3, F2) ---")
     # F2 correction (spec §10.3): the reference TRUNCATES toward zero (not F1's

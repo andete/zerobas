@@ -2449,6 +2449,13 @@ diskascii-acceptance: repack-machine $(DISK_TEST_DSK)
 ctrlkeys-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctrlkeys.py
 
+# --- prnumwrap-acceptance: a PRINT number that does not fit moves whole (D-PRNUMWRAP)
+# basic/print.asm pnum_fit: ours split ` 601` at the line edge (`6`|`01`) where
+# the VG-8020 moves it to the next line whole. Seven rows (n33 fits exactly; a
+# string does NOT move), against the VG-8020, on the DISKLESS machine.
+prnumwrap-acceptance: repack-machine
+	python3 probes/basic/basic_probe_prnumwrap.py
+
 # --- D-SCREDIT: the screen editor's happy path (docs/spec-basic-screditor.md) ------
 screditor-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_screditor.py
