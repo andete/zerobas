@@ -4343,6 +4343,17 @@ block address cannot be left pointing at a block a `CLEAR n` moved: the block
 table's base is derived from POOLSIZE and HIMEM, and no channel survives the
 CLEAR that changes them. (MAXFILES also closes everything first.)
 
+🔨 **S10.B INCREMENT 1, BUILT AND PARKED (2026-10-06; local branch `s10b-wip`).**
+The design above, built with `wrblk_body` as the record writer: LOF/LOC and
+the full-disk PRINT# point (I = 12) match the CF-3300, but the canonical BDOS
+block write re-mounts, re-finds and rewrites the directory on every record --
+17 DSKIO calls for a one-record OPEN/PRINT#/CLOSE against the old engine's 7,
+4200 B in 27.1 emulated s against the CF-3300's 13.4 -- and with the driver
+holding DI through each sector op, keys typed during the CLOSE are lost
+([`s10b_wip_measure.out`](../../scratchpad/s10b_wip_measure.out); D-FDCDI
+filed). The row has 10 spare bytes: the next build caches cluster, sector and
+directory position there and writes the directory once, at CLOSE.
+
 🔬 **S10.B RAM SAFETY, READ 2026-10-03.** Calling `wrblk_body` (and FMAKE's
 and the close's bodies) from a PRINT# hook in the middle of a BASIC statement
 needs their scratch to be safe there:

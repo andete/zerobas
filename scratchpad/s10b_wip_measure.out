@@ -1,0 +1,11 @@
+# S10.B increment 1 (branch s10b-wip, c9210ebc), measured 2026-10-06 against the C-BIOS_MSX1_EU_REPACK_DISK machine built from it.
+# 1. DSKIO calls (breakpoint on our own disk.rom 'dskio'), logical sector + R/W, for one line typed after a file exists:
+new  open-for-output + print#1,"hello world" + close:
+n=17 0R 0R 7R 7W 0R 7R 0R 1R 1R 1W 4W 30R 30W 7R 7W 7R 7W
+old  open-for-append  + print#1,"hello world" + close (main's engine):
+n=7 0R 0R 7R 28R 28W 7R 7W
+# 2. 4200 B of PRINT# + CLOSE, emulated seconds from Enter to the prompt row settling (100 ms samples):
+ours (new path): 27.1 s
+CF-3300: 13.4 s
+# 3. filewrite round-trip on the branch: line 2 typed 3 s after line 1's Enter; first 8 keys lost (gap 6/12/20 s: none lost; APPEND at 3 s: none lost).
+   8|  txt" for input as #1:line input#1,a$:
