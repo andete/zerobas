@@ -611,16 +611,15 @@ item — do **one item per session** to keep context lean.
       2.5 s window and the CF-3300 4.5; a disk row now gets at least the
       CF-3300's window on every side. And `badfnum-acceptance` went red ONCE in
       the parallel FULL battery and green on the serial retry (the runner calls
-      it a flake); the failing log was not kept (`gate_flakes/` holds only the
-      excluded five's), so whether its disk rows share namspc's window problem
-      is UNMEASURED -- re-run it under load before believing "flake". Alone it
-      read green 3/3 the same evening, and its timing is in emulated time, which
-      host load does not move -- so a wall-clock limit in the harness is the
-      first suspect, not the ROM. 🔁 The NEXT FULL battery (D-PRINTFULLSTAMP's)
-      had `kwsweep` red in the pool and green on the serial retry too, its first
-      log overwritten the same way: two pool-only reds in a day, both suites
-      with disk rows, both since S10.B. ➡️ Keep the failing attempt's log for
-      every retried unit (run_gates.py), then read one.
+      it a flake). Then `kwsweep` did the same in the next FULL battery.
+      🔴 **CORRECTED the same evening: BOTH LOGS WERE KEPT** -- under
+      `/tmp/zerobas/gate_flakes/` (D-FLAKEKEEP, the sanctioned temp root), not
+      `scratchpad/gate_flakes/`, where I looked and wrongly wrote "not kept".
+      Read, neither is S10.B's: `kwsweep`'s first attempt died of
+      `FileNotFoundError: /dev/cu.usbmodem101` -- the USB rig dropping off, the
+      known intermittent; `badfnum`'s read ONE row, `fld_c16` (`FIELD #16,10 AS
+      A$` -> 52), as no reading on ours -- a capture miss on a row with no disk
+      write in it (3/3 green alone the same evening).
       ➡️ **Left for later increments:** main's own write engine's deletion
       (SAVE ,A still uses it), the input side through `$FE8A` (S10.C), the speed
       (keep a sector's first half instead of re-reading it), and the `cp 2`
