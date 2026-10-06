@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29333 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29347 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24313,8 +24313,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       nothing on all three machines). The rows tap instead: `hold_lead=0.1`,
       `hold_secs=0.5`.
 
-- [ ] ⌨️ **D-EDINPUTCSR — CURSOR KEYS INSIDE `INPUT` ACROSS ROWS (filed 2026-10-03 from the
-      D-SCREDIT note; NOT MEASURED)**
+- [x] ✅ **D-EDINPUTCSR — CURSOR KEYS INSIDE `INPUT` ACROSS ROWS (filed 2026-10-03 from the
+      D-SCREDIT note; CLOSED 2026-10-06: OURS AGREES, NO FIX NEEDED)**
       🎚️ TIER 1 — happy path: correcting a long `INPUT` answer with the cursor
       keys.
       🔬 D-SCREDIT's spec (docs/spec-basic-screditor.md §3) put "cursor keys
@@ -24324,7 +24324,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       into the first row, overtype, Enter. Does the answer include both rows,
       and is the `? ` prompt still excluded (§5's rule)? On both references and
       ours.
-      🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **MEASURED 2026-10-06 (`scratchpad/edinputcsr_probe.py`): 9/9 SAME** as
+      the VG-8020, on a 45-character answer of distinct characters: typed
+      straight through; UP and overtype, Enter on the first row; UP and Enter
+      with no edit; UP, overtype, DOWN, Enter on the second row (all 45, the
+      edit in place, the `? ` excluded); the cursor LEFT onto the `?` and a key
+      typed there (45, unchanged); UP twice onto the `INPUT A$` row; a short
+      answer with DOWN (empty), UP (`INPUT A$`, 8) and RIGHT past its end (3).
+      🎯 Prediction scored: the four straight cases SAME -- hit; a divergence
+      among the three that put Enter on or above the prompt row -- **MISSED**,
+      all SAME. The first run's one DIFF (`up2`) was the `ZB` prompt marker
+      alone; the probe now folds it to `Ok`, as edctrl_probe does.
+      Gate row `i.csrup` in `screditor-acceptance` (UP into the first row,
+      overtype, Enter -> `45 01234Q6789hi`), the same on the VG-8020 and
+      CF-3300. A reader of the cursor's row alone gives 38, an appending
+      buffer 46.
 
 - [ ] ⌨️ **D-LINTTBWRAP — A PROGRAM `PRINT` THAT WRAPS ON THE BOTTOM ROW LOSES ITS CONTINUATION
       MARK ON C-BIOS (MEASURED 2026-09-11 in D-SCREDIT; filed as its own item 2026-10-03)**
@@ -24511,8 +24525,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔁 **2026-10-03: EACH OF THESE IS NOW ITS OWN OPEN ITEM** (above), because
       a note inside a CLOSED item is invisible to the tier scan. `INS` mode and
       `DEL` mid-row were already done by D-INSMODE, the function-key ROW by
-      D-DSPFNK. Open: D-EDINPUTCSR, D-LINTTBWRAP, D-LINTTBSTALE (D-EDCTRL and
-      D-EDFKEY closed 2026-10-05/06).
+      D-DSPFNK. Open: D-LINTTBWRAP, D-LINTTBSTALE (D-EDCTRL, D-EDFKEY and
+      D-EDINPUTCSR closed 2026-10-05/06).
       ⚠️ Later tiers, filed here: `INS` mode, `DEL` mid-row, `CTRL`+key, the
       function-key row and `SELECT`; a program `PRINT` that wraps on the bottom
       row loses its continuation mark on C-BIOS (re-entering it takes the last

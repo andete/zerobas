@@ -118,6 +118,7 @@ from `LINTTB`), and an `INPUT` row with a wrapped answer at the bottom row
 |---|---|---|---|---|
 | `i.wrap` | 23 blank `PRINT`s, `INPUT A$`, 45 × `x` ⏎; `LEN(A$)` and its ends | `45 xxxx` | `45 xxxx` | `45 xxxx` |
 | `i.top` | `CLS`, `INPUT A$`, 45 × `x` ⏎ | `45 xx` | `45 xx` | `45 xx` |
+| `i.csrup` | `CLS`, `INPUT A$`, 45 distinct characters, cursor UP into the first row, `Q` ⏎ (D-EDINPUTCSR, 2026-10-06) | `45 01234Q6789hi` | `45 01234Q6789hi` | `45 01234Q6789hi` |
 
 The reference excludes the `? ` prompt from a wrapped answer even when the
 answer's first row scrolled off the bottom while it was typed — so the start

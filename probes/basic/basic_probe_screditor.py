@@ -19,6 +19,8 @@ byte-identical to none (D-EDITLINE).
     i.wrap    INPUT at the bottom row, a 45-char answer that wraps and scrolls
               -> 45, the prompt excluded (the start column survives the scroll)
     i.top     the same at the top -> 45
+    i.csrup   the same 45 distinct characters, cursor UP into the first row,
+              overtype one, Enter -> 45, the edit in place (D-EDINPUTCSR)
     s2.prompt after `SCREEN 2:END`, the next line reads PEEK(&HFCAF) -> 0: the
               prompt returns to SCREEN 0 (both references)
     s2.input  INPUT inside SCREEN 2 -> mode 0 and the answer read
@@ -41,6 +43,7 @@ UP, LEFT, HOME, DOWN, TAB = "\x1e", "\x1d", "\x0b", "\x1f", "\x09"
 CB, CE, CF, CN, CU = "\x02", "\x05", "\x06", "\x0e", "\x15"   # CTRL-B/E/F/N/U
 PAY = "A=A+1:PRINT A"
 ANS = "x" * 45
+ANS2 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"       # 45, every cell distinct
 # The re-entry rows build the screen FROM A PROGRAM and navigate with HOME +
 # DOWN x n: zerobas prints a `ZB` prompt where the references print an `Ok`
 # line, so a cursor-UP count from the prompt lands on different rows per
@@ -57,6 +60,11 @@ CASES = [
     ("x.vpoke",   ['10 WIDTH 40:CLS:LOCATE 0,5:PRINT"' + PAY + '":FORI=0TO39:VPOKE160+I,39:NEXT:END', 'RUN', HOME + DOWN * 5, 'PRINT"[x.vpoke";A;"]"']),
     ("i.wrap",    ['10 WIDTH 40:FOR I=1 TO 23:PRINT:NEXT:INPUT A$:PRINT"[i.wrap";LEN(A$);LEFT$(A$,2);RIGHT$(A$,2);"]"', 'RUN', ANS]),
     ("i.top",     ['10 WIDTH 40:CLS:INPUT A$:PRINT"[i.top";LEN(A$);LEFT$(A$,2);"]"', 'RUN', ANS]),
+    # D-EDINPUTCSR (2026-10-06): a wrapped answer, cursor UP into its first row,
+    # overtype, Enter there. 45 distinct characters: the answer starts on column
+    # 3, so 38 fill row 1 and the cursor ends on row 2 column 8; UP lands on the
+    # `5`. A reader of the cursor's ROW alone gives 38; a buffer that appends gives 46.
+    ("i.csrup",   ['10 WIDTH 40:CLS:INPUT A$:PRINT"[i.csrup";LEN(A$);LEFT$(A$,10);RIGHT$(A$,2);"]"', 'RUN', ANS2 + UP + 'Q']),
     # after a graphics program the line is read in SCREEN 0 -- the prompt's and INPUT's
     ("s2.prompt", ['10 SCREEN 2:END', 'RUN', 'PRINT"[s2.prompt";PEEK(&HFCAF);"]"']),
     ("s2.input",  ['10 SCREEN 2:INPUT A$:PRINT"[s2.input";PEEK(&HFCAF);A$;"]"', 'RUN', 'xy']),
@@ -90,7 +98,7 @@ CASES = [
 # matrix keys held from the RUN: F1 = row 6 bit 5; SHIFT = row 6 bit 0
 HOLDS = {"e.f1": (6, 0x20), "e.f6": ((6, 0x01), (6, 0x20))}
 EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1",
-          "i.wrap": "45 xxxx", "i.top": "45 xx",
+          "i.wrap": "45 xxxx", "i.top": "45 xx", "i.csrup": "45 01234Q6789hi",
           "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
           "e.tab": "5", "e.tabwrap": "37",
           "e.ctrle": "ABC", "e.ctrlu": "OK", "e.ctrlb": "AB XD", "e.ctrlf": "AB XD",
