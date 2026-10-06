@@ -223,6 +223,19 @@ REQUIRED_DISK_RAM = [
     "LPT_MODE",                 # ⚠️ a CONSTANT, not a cell: modes below it are
                                 # disk files. Published so the disk side's test
                                 # cannot drift from fch_mode_class's `cp LPT_MODE`
+    # S10.B: an OUTPUT channel is an MSX-DOS FCB disk.rom keeps in the channel's
+    # engine row. The mode and the row's layout are main's declarations (the
+    # sub-ROM's t_fch_save/t_fch_load read them too), published so three ROMs
+    # agree on one layout.
+    "DOUT_MODE",                # ⚠️ a CONSTANT: FCH_MODES value of such a channel
+    "DOUT_BLK",                 # ⚠️ a CONSTANT: row offset of the cached block address
+    "DOUT_FLG",                 # ⚠️ a CONSTANT: row offset of the flags byte
+    "DOUT_RFULL",               # ⚠️ a CONSTANT: flag bit, a full record awaits its write
+    "DOUT_DEAD",                # ⚠️ a CONSTANT: flag bit, a CLOSE failed
+    # ⚠️ ALIASED: disk.rom has its own FAT_FILESIZE ($E4AE, its FAT's scratch).
+    # LOF on a live OUTPUT channel reads MAIN's, which disk.rom keeps at the
+    # FCB's size after every record it writes.
+    "main_FAT_FILESIZE=FAT_FILESIZE",
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
@@ -294,6 +307,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # globals (main_FWR_DIRSEC above); a saved one is in its context block,
     # whose address only main can compute (the sub-ROM strheap op 18).
     "fch_ctx_addr",             # A = channel -> HL = its context block
+    # S10.B: a record write that fails (66 disk full, or a DSKIO code) RAISES
+    # from inside H_CHOUT / H_CHCLOSE, as hk_kill's call-backs may: the code is
+    # pending in DISKOP_ERR, and disk_error raises it (load_error if none).
+    "disk_error",
     # D-FMTHOOK: CALL FORMAT's menu runs in disk.rom (hk_format) and reads its
     # answer with MAIN's line editor, so the CHGET wait happens with main in
     # page 1 (PLAY and the traps keep ticking -- basic/repl.asm's rule). The

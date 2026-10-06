@@ -9,3 +9,4 @@ ours (new path): 27.1 s
 CF-3300: 13.4 s
 # 3. filewrite round-trip on the branch: line 2 typed 3 s after line 1's Enter; first 8 keys lost (gap 6/12/20 s: none lost; APPEND at 3 s: none lost).
    8|  txt" for input as #1:line input#1,a$:
+# 🔴 CORRECTION (same day): the '27.1 s / 13.4 s' of #2 came from a stopwatch keyed on the cursor ROW settling, which a silent loop never moves; re-timed marker to marker (scratchpad/s10b_stopwatch.py) the CF-3300 takes 11.8 s. The parked build itself was not re-timed. See s10b_ship_measure.out.

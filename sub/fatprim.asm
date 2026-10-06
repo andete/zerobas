@@ -235,6 +235,8 @@ t_fch_load:
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the channel's engine row; CF = none
                 jr      c,tfl_rec           ; a device channel keeps no engine state
+                cp      DOUT_MODE-1
+                jr      z,tfl_dout          ; S10.B: the row is disk.rom's FCB
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
                 ldir                        ; engine row -> globals
@@ -246,6 +248,26 @@ tfl_rec:
                 ld      bc,FCH_RECMAX
                 ldir
                 jr      t_fch_restage
+; S10.B: a DOUT_MODE row is an MSX-DOS FCB (+16..19 its size, +37..38 the cached
+; block address). The block cannot move while the channel is open -- CLEAR and
+; MAXFILES close every file first (D-CLEARCLOSE) -- but every load re-caches it
+; anyway, the cost of one store. LOF reads FAT_FILESIZE: the FCB's size, i.e.
+; the bytes committed in whole records, as on the CF-3300 (spec-diskcode-
+; eviction.md, S10.B DESIGN INPUT 2). No record copy and no re-stage: the record
+; lives in the block, and FSECTOR_BUF is not this channel's.
+tfl_dout:
+                ld      bc,DOUT_BLK
+                add     hl,bc
+                pop     de                  ; DE = the block
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ld      bc,16-DOUT_BLK-1
+                add     hl,bc               ; HL = FCB +16, the size
+                ld      de,FAT_FILESIZE
+                ld      bc,4
+                ldir
+                jp      fp_stash_ok
 
 ; t_fch_save (D-FCBSHAPE S0): flush, then the engine globals -> channel context
 ; block at HL. Was main's fch_save_active body, moved whole.
@@ -264,6 +286,8 @@ t_fch_save:
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the engine row; CF = no disk channel
                 jr      c,tfs_rec
+                cp      DOUT_MODE-1
+                jr      z,tfs_dout          ; S10.B: nothing of main's to keep
                 ex      de,hl               ; DE = the row
                 ld      hl,FCH_STATE0       ; the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
@@ -276,6 +300,13 @@ tfs_rec:
                 ld      hl,FSECTOR_BUF      ; D-FIELDFIX: the record travels too
                 ld      bc,FCH_RECMAX
                 ldir
+                jr      tfs_end
+tfs_dout:
+                ; S10.B: a DOUT_MODE channel's state is all disk.rom's (the FCB in
+                ; the row, the record in the block). Copying main's globals over
+                ; the row, or FSECTOR_BUF over the record, would destroy both.
+                pop     hl                  ; the block
+tfs_end:
                 pop     af
                 pop     hl
                 jr      t_fch_result

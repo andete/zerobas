@@ -1,0 +1,12 @@
+# S10.B as shipped (the record writer: main's engine as disk.rom assembles it, the write cursor in the channel's row, the directory written at CLOSE), measured 2026-10-06 on the C-BIOS_MSX1_EU_REPACK_DISK build of 2386c296.
+# 1. DSKIO calls (breakpoint on our own disk.rom 'dskio'), logical sector + R/W, one line after a file exists:
+new  open-for-output + print#1,"hello world" + close:  n=12 0R 0R 7R 7W 0R 1R 1R 1W 4W 30W 7R 7W
+old  open-for-append  + print#1,"hello world" + close:  n=7 0R 0R 7R 28R 28W 7R 7W   (main's engine)
+   (the parked wrblk_body build: n=17 for the 'new' line)
+# 2. 4200 B of PRINT# + CLOSE, emulated seconds, marker to marker (scratchpad/s10b_stopwatch.py):
+ours, OUTPUT (record writer): t=14.201062425531735
+ours, APPEND (main's engine): t=7.860595690234373
+CF-3300, OUTPUT:              t=11.780661788020545
+   -> 1.2x the CF-3300 (main's engine: 0.67x). T2 (10x) met; T5 tracks it.
+# 3. diskbasic-acceptance's PRINT# round-trip (line 2 typed 3 s after line 1's Enter): PASS -- no keys lost.
+# 4. dout-acceptance 8/8 against the CF-3300; knives K-DO1 (no step-back) -> twochan/append/input exactly, K-DO2 (no directory stamp) -> all 8.

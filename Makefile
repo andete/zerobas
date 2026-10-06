@@ -2287,6 +2287,13 @@ asavechan-acceptance: repack-machine $(DISK_TEST_DSK)
 nohash-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_nohash.py
 
+# --- dout-acceptance: a disk file open FOR OUTPUT is disk.rom's (S10.B) ---------
+# LOF/LOC across 256 B records, two OUTPUT channels alternating, OUTPUT beside
+# APPEND and beside INPUT, OPEN/KILL/NAME of an open file (54/64/64), an empty
+# file, exactly 256 B, truncation: each against the CF-3300.
+dout-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dout.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

@@ -164,6 +164,12 @@ cg_cross:
                 or      a                   ; `ret` lands here; unclaimed it is a
                 jp      (hl)                ; bare `ret` and lands here at once
 cg_back:
+                ; S10.B: C-BIOS's CALSLT -- which a hook's CALLF is -- RETURNS WITH
+                ; INTERRUPTS OFF (cbios src/slot.asm calslt_restore: `di`, no `ei`).
+                ; Every older path went on through subrom_call's own `ei`; OPEN FOR
+                ; OUTPUT now ends here, and the keys typed after it were not scanned
+                ; (diskbasic-acceptance's PRINT# row lost its next line's first 8).
+                ei
                 jr      nc,cg_unclaimed     ; claimed -> the verb may have refilled
                 ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- WRITE IT ONCE, LAST.
                 ; The re-stage is itself a DISKOP and lands its own result there,
@@ -622,7 +628,11 @@ oo_setmode:
                 call    fat_io_open         ; INPUT: mount + find + prime read
                 jr      oo_done
 oo_create:
-                call    fat_io_create       ; OUTPUT: make/truncate + prime write
+                ; S10.B: OUTPUT is disk.rom's -- the channel is an MSX-DOS FCB
+                ; it creates in the channel's engine row (hk_fmake)
+                ld      a,FOPEN_SEL_MAKE
+                call    fopen_cross         ; A = status, 0 = created
+                add     a,$FF               ; CF iff status != 0
                 jr      oo_done
 oo_append:
                 call    fat_io_append       ; APPEND: open existing + position at EOF
@@ -637,22 +647,25 @@ oo_done:
                 pop     hl
                 jr      c,oo_fail           ; not found / dir-full / mount / I-O error
                 ; success: record the open mode in the channel table + the mirror.
-                ; APPEND (3) behaves exactly like OUTPUT (2) for every later op
-                ; (PRINT#/CLOSE), so it is stored as 2 — the action distinction only
-                ; mattered at open. The FCH_MODES address math uses HL, so guard the
-                ; text cursor (HL) that exec_stmt needs to continue the line.
+                ; S10.B (2026-10-06): the two write actions SWAP here. OUTPUT (2)
+                ; is stored as DOUT_MODE (3), disk.rom's FCB channel; APPEND (3)
+                ; as 2, main's own engine, which every older `cp 2` serves. The
+                ; FCH_MODES address math uses HL, so guard the text cursor (HL)
+                ; that exec_stmt needs to continue the line.
                 ld      a,e
                 ld      (FCH_NUM),a
                 ld      a,(FCH_MODE)
-                cp      3
-                jr      nz,oo_storemode
-                ld      a,2                 ; normalise APPEND -> OUTPUT for the table
+                cp      2
+                jr      c,oo_storemode      ; 1 INPUT
+                cp      4
+                jr      nc,oo_storemode     ; 4 RANDOM
+                xor     1                   ; 2 <-> 3
                 ld      (FCH_MODE),a
 oo_storemode:
                 push    hl
                 ld      a,e
                 call    fch_modes_ptr
-                ld      a,(FCH_MODE)        ; 1 (INPUT) or 2 (OUTPUT/APPEND)
+                ld      a,(FCH_MODE)        ; 1 INPUT, 2 APPEND, 3 OUTPUT, 4 RANDOM
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 oo_fail:
@@ -1801,12 +1814,21 @@ fdcc_disk:
                 ld      a,e
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
+                cp      DOUT_MODE
+                jr      z,fdcc_dout         ; S10.B: disk.rom closes its own FCB
                 cp      2
                 jr      nz,fdcc_clear       ; INPUT (or none): no dirty state to flush
                 ld      a,$1A               ; OUTPUT: CP/M text-EOF (Ctrl-Z), as on the
                 call    fat_io_putbyte      ; real CF-3300 CLOSE of a sequential file
                 call    nc,fat_io_close     ; flush partial sector + dir size/cluster
                 jr      c,fdcc_fail         ; D-DISKFULL: the flush failed
+                jr      fdcc_clear
+fdcc_dout:
+                ; Ctrl-Z, the last record, the re-date. A failure RAISES from in
+                ; there (66) and leaves the channel open, marked so that the next
+                ; CLOSE frees it silently -- D-DISKFULL's face, kept.
+                call    H_CHCLOSE
+                ei                          ; a CALLF returns DI (cg_back's note)
 fdcc_clear:
                 ; 🧭 CLOSE LEAVES THE FIELD DEFINITIONS ALONE (2026-09-01,
                 ; Joost's call: match the reference). This used to

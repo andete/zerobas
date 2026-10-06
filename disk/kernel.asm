@@ -889,6 +889,333 @@ cr_err:
                 ld      a, $FF
                 ret
 
+; ===== S10.B (2026-10-06): an OUTPUT channel is an MSX-DOS FCB, in this ROM ==
+; spec-diskcode-eviction.md §6.6bc. The CF-3300's channel is a record-size-1
+; MSX-DOS FCB moved by 256 B block I/O: the FCB changes only at record
+; boundaries, header +6 of the channel's 265 B block is the byte position, and
+; the record is the block's +9 (S10.0). Ours is the same shape:
+;   row  = DSK_ENGTAB + ch * FCH_STATESZ, main's per-channel engine row, which a
+;          DOUT_MODE channel does not otherwise use. +0..36 the FCB (RS = 1, so
+;          the random record +33..35 is the committed byte count), +DOUT_BLK
+;          the block's address (main's fch_ctx_addr, cached; t_fch_load
+;          re-caches it on every switch), +DOUT_FLG the flags.
+;   block+6 = the position in the record; block+9.. = the record.
+; A full record is written AT ONCE, so the FCB's size -- LOF -- moves at byte
+; 256, 512, ... as on the CF-3300 (S10.B DESIGN INPUT 2), and a full disk fails
+; PRINT# at the record that does not fit. The writer is main's own engine as
+; this ROM assembles it (fat_flush_data_sector: allocate, link, write), with the
+; channel's write cursor kept in the row between records -- NOT wrblk_body,
+; whose re-mount / re-find / directory rewrite on every call made a one-record
+; OPEN+PRINT#+CLOSE 17 sector operations against the old engine's 7
+; (scratchpad/s10b_wip_measure.out). The directory is written once, at CLOSE.
+; Row fields past DOUT_FLG are this ROM's alone: Main reaches these at H_CHOUT / H_CHCLOSE (a byte / a CLOSE) and the
+; H_FOPEN selector FOPEN_SEL_MAKE (OPEN); it guarantees the live channel is a
+; DOUT_MODE one before it calls the first two.
+DOUT_FIRST      equ     DOUT_FLG+1      ; the file's first cluster (0 = none yet)
+DOUT_CLUS       equ     DOUT_FLG+3      ; the cluster being filled
+DOUT_SECIDX     equ     DOUT_FLG+5      ; the sector in it the next record goes to
+DOUT_DIRSEC     equ     DOUT_FLG+6      ; the directory entry: its sector,
+DOUT_DIROFF     equ     DOUT_FLG+8      ; and its offset in it
+    IF DOUT_DIROFF+2 > FCH_STATESZ
+                db      DOUT_ROW_FIELDS_OVERRUN_FCH_STATESZ
+    ENDIF
+; 📍 In the $5602..$5FE4 fill, beside hk_ochk / close_read.
+; ⏱ INTERRUPTS ON AT ENTRY (`ei`), which hk_kill's note said a long body here
+; would need. A hook is entered with them OFF, and this ROM's DSKIO never turns
+; them on; main's engine ran each FAT primitive as its own `di / CALSLT / ei`
+; sub-ROM call, so the keyboard was scanned between sectors. The first build
+; ran a whole CLOSE (a record write, the directory, the re-date) with them off,
+; and diskbasic-acceptance's PRINT# row lost the first 10 keys typed meanwhile
+; (`xt" for input as #1...` -- Syntax error). Safe: the ISR is page 0's, and
+; htimi_guard skips main's timer work while page 1 is not main.
+
+; dout_row -- A = channel -> HL = its engine row. Clobbers A, DE.
+dout_row:
+                ld      hl, TXTMAX-(FCH_CEIL+1)*FCH_STATESZ
+                ld      de, FCH_STATESZ
+drw_lp:
+                add     hl, de
+                dec     a
+                jr      nz, drw_lp
+                ret
+
+; dout_live -- IX = the live channel's row. Clobbers A, DE, HL.
+dout_live:
+                ld      a, (FCH_ACTIVE)
+                call    dout_row
+                push    hl
+                pop     ix
+                ret
+
+; dout_pos -- HL = &block+6, the record position. IX = the row. Clobbers A.
+dout_pos:
+                ld      l, (ix+DOUT_BLK)
+                ld      h, (ix+DOUT_BLK+1)
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                ret
+
+; hk_fmake -- OPEN FOR OUTPUT (H_FOPEN, FOPEN_SEL_MAKE). FCH_ACTIVE is the
+; channel being opened (fch_claim); DISK_FCB_NAME the parsed 8.3 name.
+; Creates (or truncates) the file through the same fat_dir_create main's
+; fat_io_create used, and builds the FCB as FMAKE does (fmake_fcb_fill: date,
+; +24, +25). Status 0 = open; otherwise the code is pending in DISKOP_ERR and
+; hk_claim_status keeps it from the restore (main's oo_fail raises it).
+hk_fmake:
+                ei
+                call    dout_live           ; IX = the row
+                push    ix
+                pop     de
+                xor     a
+                ld      (de), a             ; +0: the default drive
+                inc     de
+                ld      hl, DISK_FCB_NAME
+                ld      bc, 11
+                ldir                        ; +1..11: the name
+                ex      de, hl
+                ld      b, DOUT_DIROFF+2-12 ; +12..: zero (block, size, records,
+hfm_z:                                      ; the cached address, flags, cursor)
+                ld      (hl), a
+                inc     hl
+                djnz    hfm_z
+                inc     a
+                ld      (ix+14), a          ; RS = 1: a record is a byte
+                call    fat_mount
+                jr      c, hfm_fail
+                push    ix
+                pop     hl
+                inc     hl
+                call    fat_dir_create      ; HL = the 8.3 name; make or truncate
+                jr      c, hfm_fail
+                ld      hl, (FWR_DIRSEC)    ; where the entry is, for CLOSE
+                ld      (ix+DOUT_DIRSEC), l
+                ld      (ix+DOUT_DIRSEC+1), h
+                ld      hl, (FWR_DIROFF)
+                ld      (ix+DOUT_DIROFF), l
+                ld      (ix+DOUT_DIROFF+1), h
+                ld      a, (FCH_ACTIVE)
+                ld      ix, fch_ctx_addr
+                call    calbak              ; HL = the channel's 265 B block
+                push    hl
+                call    dout_live           ; (calbak consumed IX)
+                pop     hl
+                ld      (ix+DOUT_BLK), l
+                ld      (ix+DOUT_BLK+1), h
+                call    dout_pos
+                xor     a
+                ld      (hl), a             ; position 0
+                ld      hl, 0
+                ld      (main_FAT_FILESIZE), hl
+                ld      (main_FAT_FILESIZE+2), hl   ; LOF: 0, as the CF-3300
+                jp      hdl_answer          ; status 0, selector disarmed, claimed
+hfm_fail:
+                xor     a
+                ld      (FOPEN_SEL), a      ; disarm, as hdl_answer does
+                inc     a
+                jp      hk_claim_status     ; status 1; a pending code survives
+
+; hk_chout -- PRINT# to an OUTPUT channel (H_CHOUT): A = the byte.
+hk_chout:
+                ei
+                push    af
+                call    dout_live
+                pop     af
+                call    dout_put
+                scf                         ; claimed
+                ret
+
+; dout_put -- store A in the record at the position; write the record when it
+; is full. A full record whose write FAILED is written first, so a full disk
+; fails every later PRINT# the same way (D-DISKFULL) and a CLOSE retries it.
+; IX = the row. Raises on a failed write (never returns then).
+dout_put:
+                push    af
+                bit     DOUT_RFULL, (ix+DOUT_FLG)
+                ld      hl, 256
+                call    nz, dout_write      ; the full record, again
+                call    dout_pos
+                ld      e, (hl)             ; E = the position
+                inc     (hl)                ; Z iff the record is now full
+                pop     bc                  ; B = the byte
+                push    af                  ; [the full flag]
+                ld      d, 0
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the record
+                add     hl, de
+                ld      (hl), b
+                pop     af
+                ret     nz
+                set     DOUT_RFULL, (ix+DOUT_FLG)
+                ld      hl, 256             ; FALLS INTO dout_write
+
+; dout_write -- write the record's first HL bytes (1..256) at the file's end:
+; the committed size (FCB +16) is a whole number of records, so the record is
+; one HALF of a 512 B sector -- the first half when size bit 8 is 0. The
+; engine's write cursor (DOUT_CLUS/FIRST/SECIDX) goes into this ROM's FWR_*
+; for fat_flush_data_sector, which allocates and links a cluster when one is
+; needed and writes FAT_DBUF; a first half is written padded and the cursor
+; stepped BACK onto its sector (as fat_detach_channel does), so the second
+; half re-reads it and completes it. On success: size += HL, LOF (main's
+; FAT_FILESIZE) follows, DOUT_RFULL clears. On failure raise what is pending --
+; 66 from fac_full, or a DSKIO code -- through main's disk_error, the row as
+; it was. IX = the row (kept).
+dout_write:
+                push    hl                  ; [the count]
+                ld      l, (ix+DOUT_CLUS)
+                ld      h, (ix+DOUT_CLUS+1)
+                ld      (FWR_CLUS), hl
+                ld      l, (ix+DOUT_FIRST)
+                ld      h, (ix+DOUT_FIRST+1)
+                ld      (FWR_FIRST), hl
+                ld      a, (ix+DOUT_SECIDX)
+                ld      (FWR_SECIDX), a
+                ld      de, FAT_DBUF
+                bit     0, (ix+17)          ; size bit 8: the sector's second half?
+                jr      z, dwr_copy
+                call    dout_secread        ; its first half, as written
+                jp      c, dwr_fail
+                ld      de, FAT_DBUF+256
+dwr_copy:
+                call    dout_pos
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the record
+                pop     bc
+                push    bc
+                ldir
+                pop     hl                  ; the count
+                push    hl
+                bit     0, (ix+17)
+                jr      z, dwr_len
+                inc     h                   ; + the first half
+dwr_len:
+                ld      (FWR_BUFLEN), hl
+                call    fat_flush_data_sector
+                pop     bc                  ; BC = the count
+                jp      c, dwr_fail
+                bit     0, (ix+17)
+                jr      nz, dwr_keep        ; the sector is complete: move on
+                ld      hl, FWR_SECIDX
+                dec     (hl)                ; back onto it, for the second half
+dwr_keep:
+                ld      hl, (FWR_CLUS)
+                ld      (ix+DOUT_CLUS), l
+                ld      (ix+DOUT_CLUS+1), h
+                ld      hl, (FWR_FIRST)
+                ld      (ix+DOUT_FIRST), l
+                ld      (ix+DOUT_FIRST+1), h
+                ld      a, (FWR_SECIDX)
+                ld      (ix+DOUT_SECIDX), a
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                add     hl, bc
+                ld      (ix+16), l
+                ld      (ix+17), h
+                jr      nc, dwr_lof
+                inc     (ix+18)
+                jr      nz, dwr_lof
+                inc     (ix+19)
+dwr_lof:
+                res     DOUT_RFULL, (ix+DOUT_FLG)
+                push    ix
+                pop     hl
+                ld      de, 16
+                add     hl, de              ; FCB +16: the size
+                ld      de, main_FAT_FILESIZE
+                ld      bc, 4
+                ldir
+                ret
+
+; dout_secread -- FAT_DBUF := the sector at (FWR_CLUS, FWR_SECIDX). Cy = I/O.
+dout_secread:
+                ld      hl, (FWR_CLUS)
+                ld      de, 2
+                or      a
+                sbc     hl, de
+                ex      de, hl              ; DE = cluster - 2
+                ld      hl, 0
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+dsr_mul:
+                add     hl, de
+                djnz    dsr_mul             ; HL = (cluster-2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ld      a, (FWR_SECIDX)
+                ld      e, a
+                ld      d, 0
+                add     hl, de
+                ex      de, hl              ; DE = the sector
+                ld      hl, FAT_DBUF
+                jp      read_sector
+dwr_fail:
+                ld      ix, disk_error
+                jp      calbak              ; raises; does not return
+
+; hk_chclose -- CLOSE of an OUTPUT channel (H_CHCLOSE): Ctrl-Z, the last
+; record, the directory entry. A failure raises with
+; DOUT_DEAD set and the channel still open, so a re-OPEN is 54 and the NEXT
+; CLOSE lands here, clears it and frees the channel without touching the disk
+; -- D-DISKFULL's measured CF-3300 face.
+hk_chclose:
+                ei
+                call    dout_live
+                bit     DOUT_DEAD, (ix+DOUT_FLG)
+                jr      nz, hcc_done        ; the failed CLOSE's second: just free it
+                set     DOUT_DEAD, (ix+DOUT_FLG)
+                ld      a, $1A              ; CP/M text EOF, as the CF-3300's CLOSE
+                call    dout_put
+                call    dout_pos
+                ld      a, (hl)
+                or      a
+                jr      z, hcc_stamp        ; the Ctrl-Z filled the record: written
+                ld      l, a
+                ld      h, 0
+                call    dout_write          ; the partial last record
+hcc_stamp:
+                ; the directory entry, once: first cluster, size, the date
+                ; (fat_dir_update dates it as the CF-3300 dates a written file)
+                ld      l, (ix+DOUT_DIRSEC)
+                ld      h, (ix+DOUT_DIRSEC+1)
+                ld      (FWR_DIRSEC), hl
+                ld      l, (ix+DOUT_DIROFF)
+                ld      h, (ix+DOUT_DIROFF+1)
+                ld      (FWR_DIROFF), hl
+                ld      l, (ix+DOUT_FIRST)
+                ld      h, (ix+DOUT_FIRST+1)
+                ld      (FWR_FIRST), hl
+                push    ix
+                pop     hl
+                ld      de, 16
+                add     hl, de
+                ld      de, FWR_BYTES
+                ld      bc, 4
+                ldir                        ; the size
+                call    fat_dir_update
+                jp      c, dwr_fail
+hcc_done:
+                scf                         ; claimed; main frees the channel
+                ret
+
+; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B: its name is
+; the FCB's +1..11, no sector to read. CF=1 a match.
+hoc_dout:
+                push    bc
+                ld      a, b
+                call    dout_row
+                inc     hl                  ; the FCB's name
+                ld      de, DISK_FCB_NAME
+                call    name_cmp            ; Z = it matches the pattern
+                pop     bc
+                scf
+                ret     z
+                jp      hoc_next
+
 
 ; ===== D-DOSDATE (2026-10-01): the DOS date, kept as the CF-3300 keeps it ====
 ; DATE_DAYS ($F33B) is a day count since 1980-01-01 (a Tuesday): 1461 from boot
@@ -3128,6 +3455,8 @@ hook_tab:
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
                                              ; dispatch live HERE (main keeps the gate)
+                dw      H_CHOUT, hk_chout    ; S10.B: PRINT# to an OUTPUT channel, a byte
+                dw      H_CHCLOSE, hk_chclose ; S10.B: its CLOSE
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,
@@ -3351,6 +3680,8 @@ hk_dpload:
                 jp      z,hk_agetb          ; step 11, once per BYTE -- far, likewise
                 cp      FOPEN_SEL_OCHK
                 jp      z,hk_ochk           ; D-OPENSAME: OPEN's same-file check
+                cp      FOPEN_SEL_MAKE
+                jp      z,hk_fmake          ; S10.B: OPEN FOR OUTPUT
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.
@@ -3636,6 +3967,8 @@ hoc_loop:
                 jr      z,hoc_next          ; closed
                 cp      LPT_MODE
                 jr      nc,hoc_next         ; a device or cassette channel
+                cp      DOUT_MODE
+                jp      z,hoc_dout          ; S10.B: its name is in its FCB
                 push    bc
                 ld      a,(FCH_ACTIVE)
                 cp      b

@@ -189,6 +189,10 @@ FOPEN_SEL_SAVE  equ     $53     ; step 12 (D-SAVEPORT): tokenised SAVE. Same
                                 ; rule as LOAD's $4C -- outside DISKOP_SEL_*'s
                                 ; 0..7 range, so an idle cell can never read as
                                 ; "SAVE is asking".
+FOPEN_SEL_MAKE  equ     $4D     ; S10.B (2026-10-06): OPEN FOR OUTPUT -- create
+                                ; DISK_FCB_NAME as the live channel's FCB (hk_fmake)
+H_CHOUT         equ     $FE85   ; S10.B: one byte out of an OUTPUT channel (A)
+H_CHCLOSE       equ     $FE62   ; S10.B: CLOSE of an OUTPUT channel
 FOPEN_SEL_OCHK  equ     $4F     ; D-OPENSAME (2026-09-29): OPEN's same-file check
                                 ; -- is DISK_FCB_NAME open on a channel? The
                                 ; CF-3300 answers `File already open` (54) to a

@@ -524,42 +524,80 @@ item — do **one item per session** to keep context lean.
         sector state on the disk side, not only the OPEN arm.
       ([`chanhook_run.out`](scratchpad/chanhook_run.out),
       [`hookclaim_run.out`](scratchpad/hookclaim_run.out))
-      🔨 **S10.B INCREMENT 1 BUILT, MEASURED AND PARKED (2026-10-06) — local branch
-      `s10b-wip` (c9210ebc), NOT on main.** OUTPUT became mode 3 (`DOUT_MODE`,
-      APPEND stays 2 on main's engine), its channel an MSX-DOS FCB in the
-      channel's engine row, OPEN through `FOPEN_SEL_MAKE`, PRINT# through `$FE85`
-      a byte (the record = the block's +9, the position its +6), CLOSE through
-      `$FE62`; each full record written by `wrblk_body`. Before it,
-      D-CLEARCLOSE (shipped, 9b8c0291) settled the one design risk: no channel
-      survives the `CLEAR` that would move its block.
-      ✅ **Functionally right:** LOF/LOC read `0 0 0 0 256 256 512 512 601`, the
-      CF-3300's (loflive_probe), and diskfull's PRINT# fails at **I = 12**, the
-      CF-3300's (the 24 pin moved, as predicted); fat-error, clearclose,
-      asavechan, nohash, lof, loc, savedate, wprotect and badfnum all green.
-      🔴 **Why it is parked — `wrblk_body` IS THE WRONG ENGINE FOR A BYTE
-      CHANNEL** ([`s10b_wip_measure.out`](scratchpad/s10b_wip_measure.out)): the
-      canonical BDOS block write re-mounts, re-finds and rewrites the directory
-      on EVERY record. One OPEN + PRINT# + CLOSE of a 15 B file is **17 DSKIO
-      calls against the old engine's 7** (the CLOSE alone 13, two of them
-      close_read's redundant directory re-date), and 4200 B of PRINT# takes
-      **27.1 emulated s against the CF-3300's 13.4**. And because our driver
-      holds DI through each whole sector op (`fdc_di_save`), keys typed during
-      the longer CLOSE are LOST: diskbasic-acceptance's PRINT# round-trip read
-      `txt" for input…` -- its next line's first 8 keys gone (typed 6 s or more
-      after the Enter: none lost). Two `ei` fixes were tried and MEASURED not to
-      help (after each hook return, since C-BIOS's CALSLT returns DI --
-      cbios `src/slot.asm` `calslt_restore`; and at the handlers' entry).
-      🎯 Predictions: loflive parity -- hit; diskfull's pin moving to 12 --
-      hit; the two `ei` fixes curing the lost keys -- **MISSED twice**.
-      ➡️ **NEXT for S10.B: a dedicated record writer in disk.rom**, not WRBLK:
-      the row has 10 spare bytes (40 used of `FCH_STATESZ` 50) for the current
-      cluster, sector and directory position, so a record costs one sector
-      write (plus a read for a sector's second half, and the FAT at a cluster
-      boundary), and the directory is written once, at CLOSE. Then re-measure
-      the DSKIO count, the 4200 B stopwatch and diskbasic's round-trip. The
-      branch's main/sub-ROM half (mode 3, the save/load arms, the open-check
-      arm, the ABI exports) carries over unchanged. The CF-3300 settles every
-      face; the design is ours.
+      ✅ **S10.B INCREMENT 1 SHIPPED (2026-10-06): A DISK FILE OPEN FOR OUTPUT IS
+      DISK.ROM'S.** OUTPUT is mode 3 (`DOUT_MODE`; APPEND stays 2 on main's
+      engine), its channel an MSX-DOS FCB in the channel's engine row: OPEN
+      through `FOPEN_SEL_MAKE` (hk_fmake), PRINT# through `$FE85` a byte
+      (hk_chout: the record = the block's +9, the position its +6), CLOSE
+      through `$FE62` (hk_chclose: Ctrl-Z, the last record, the directory once).
+      A full 256 B record is written AT ONCE by main's own engine as disk.rom
+      assembles it (`fat_flush_data_sector`), with the write cursor -- first
+      cluster, cluster, sector, directory position -- kept in the row's spare
+      bytes. The sub-ROM's t_fch_save/t_fch_load leave a mode-3 row alone and
+      re-cache its block address; LOF reads the FCB's size;
+      hkk_open_check matches a mode-3 channel by its FCB name. D-CLEARCLOSE
+      (9b8c0291) settled the one design risk first: no channel survives the
+      `CLEAR` that would move its block.
+      📏 ([`s10b_ship_measure.out`](scratchpad/s10b_ship_measure.out)) LOF/LOC
+      read `0 0 0 0 256 256 512 512 601`, the CF-3300's (was 0 throughout); a
+      full disk fails PRINT# at **I = 12**, the CF-3300's (diskfull's pin, 24,
+      moved as it was written to); gate **`dout-acceptance`**
+      ([`probes/disk/disk_probe_dout.py`](probes/disk/disk_probe_dout.py)) 8/8
+      against the CF-3300 -- two OUTPUT channels alternating, OUTPUT beside
+      APPEND and INPUT, OPEN/KILL/NAME of an open file (54/64/64), empty, exactly
+      256 B, truncation. Knives ([`dout_knives.py`](scratchpad/dout_knives.py)):
+      K-DO1 (no step-back after a first half) moves exactly twochan/append/input,
+      K-DO2 (no directory stamp) all eight.
+      ⏱ 4200 B of PRINT# + CLOSE: **14.2 emulated s against the CF-3300's 11.8
+      (1.2×)**; main's engine took 7.9 (0.67×) -- a CALLF a byte, and a record
+      in a sector's second half re-reads the first. T2 met; T5 tracks it.
+      🔴 **THE FIRST BUILD WROTE RECORDS WITH `wrblk_body` AND WAS PARKED**
+      ([`s10b_wip_measure.out`](scratchpad/s10b_wip_measure.out)): the canonical
+      BDOS block write re-mounts, re-finds and rewrites the directory on EVERY
+      record -- 17 DSKIO calls for a one-record OPEN/PRINT#/CLOSE against the
+      old engine's 7 (the record writer: 12) -- and with the driver holding DI
+      through each sector op, keys typed during that longer CLOSE were LOST
+      (diskbasic-acceptance's PRINT# round-trip read `txt" for input…`). Two
+      `ei` fixes (after each hook return -- C-BIOS's CALSLT returns DI, cbios
+      `src/slot.asm` `calslt_restore` -- and at the handlers' entry) were
+      MEASURED not to help and are not shipped; the record writer cured it.
+      🔴 **AND A STOPWATCH WAS WRONG TWICE ON THE WAY:** keyed on the cursor ROW
+      settling, it read the parked build at "27.1 s vs 13.4" -- a silent loop
+      never moves the row, and JIFFY/TIME stop while a sector op holds DI, so
+      neither is a clock here. Re-timed marker to marker
+      ([`s10b_stopwatch.py`](scratchpad/s10b_stopwatch.py)).
+      🎯 Predictions: loflive parity -- hit; diskfull's pin to 12 -- hit; the
+      two `ei` fixes -- MISSED twice; the record writer at ~10 DSKIO calls --
+      12, near; it beating the CF-3300's time -- **MISSED** (1.2×); dout 7-8/8 --
+      8/8 once its own three apparatus faults were fixed (a number wrapping at
+      the row edge -- which was D-PRNUMWRAP, a real divergence -- an integer
+      `MOD` overflow, and a trap MAXFILES had cleared).
+      ➡️ **Left for later increments:** APPEND through the same writer (then
+      mode 2 retires), main's own write engine's deletion (SAVE ,A still uses
+      it), the input side through `$FE8A` (S10.C), and the speed (keep a
+      sector's first half instead of re-reading it).
+
+- [ ] 🖨️ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE IS SPLIT
+      ACROSS IT ON OURS; THE VG-8020 AND CF-3300 MOVE IT WHOLE TO THE NEXT LINE (found
+      2026-10-06 by dout-acceptance's first lofloc reading; MEASURED)**
+      🎚️ TIER 1 — happy path: any `PRINT I;` loop that reaches the line end.
+      📏 (`WIDTH 37`, `PRINT STRING$(n,"x");v;`, VG-8020 against ours):
+      | n, v | VG-8020 | ours |
+      |---|---|---|
+      | 35, `601` | `x…x` / ` 601` | `x…x 6` / `01` |
+      | 30, `12345678` | `x…x` / ` 12345678` | `x…x 123456` / `78` |
+      | 36, `7` | `x…x` / ` 7` | `x…x ` / `7` (the sign space stays behind) |
+      | 33, `601` | `x…x 601` (fits exactly; the trailing space wraps alone) | the same |
+      The rule the rows fit: if the number's text WITHOUT its trailing space
+      (sign space + digits) does not fit in the columns left, a CR LF comes
+      first. CF-3300: `601` moved whole too (dout-acceptance's first `lofloc`).
+      ➡️ Both number paths end in `print_string` -- `num_publish`
+      (basic/print.asm) and `flt_out` (basic/float.asm) -- so one check on that
+      tail, for the screen sink only (PRINT# and LPRINT keep theirs; measure
+      LPRINT first). Then rows in a PRINT gate (n = 33/35/36, a float, a
+      negative), and the strings' rule measured beside them (a string is not
+      expected to move).
+      🤖 **AUTONOMOUS** — the references settle it.
 
 - [ ] ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO KEYS
       TYPED DURING LONG DISK WORK ARE LOST; THE CF-3300 KEEPS SCANNING (filed 2026-10-06
@@ -6130,7 +6168,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29442 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29480 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6296,7 +6334,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11131 (T-6FE392)8 (T-529ABE)` from `TODO.md:23715 (T-529ABE)`: a
+      `TODO.md:11169 (T-6FE392)8 (T-529ABE)` from `TODO.md:23753 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -11978,7 +12016,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23715 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23753 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -52,6 +52,12 @@ FCH_MODES equ 0EA00H   ; 16 B ($EA00..$EA0F)
 FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
+DOUT_MODE equ 00003H   ; FCH_MODES value: disk OUTPUT through disk.rom's FCB
+DOUT_BLK equ 00025H   ; its row: +0..36 the FCB, +37..38 the channel's
+DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
+DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
+DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
+main_FAT_FILESIZE equ 0E9CEH   ; main's FAT_FILESIZE -- file size in bytes (4-byte LE)
 FMT_GEOMSEL equ 0E0F5H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0E0F6H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0EB00H   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
@@ -59,16 +65,17 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06DFBH
-pdfcb_resume equ 06DF4H
-dirverb_op equ 06BD8H
-main_fat_mount equ 064C0H   ; main's fat_mount
-main_fat_find equ 064C4H   ; main's fat_find
-parse_disk_fcb equ 06613H
-field_prologue equ 07231H
-field_item equ 07267H
-lrset_tgt equ 0731CH
-lrset_rhs equ 0733EH
-lrset_finish equ 07355H
-fch_ctx_addr equ 06F84H
+fname_expr equ 06E1EH
+pdfcb_resume equ 06E17H
+dirverb_op equ 06BF3H
+main_fat_mount equ 064DAH   ; main's fat_mount
+main_fat_find equ 064DEH   ; main's fat_find
+parse_disk_fcb equ 0662DH
+field_prologue equ 0725EH
+field_item equ 07294H
+lrset_tgt equ 07349H
+lrset_rhs equ 0736BH
+lrset_finish equ 07382H
+fch_ctx_addr equ 06FA7H
+disk_error equ 06C15H
 read_line equ 045C0H

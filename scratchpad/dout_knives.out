@@ -1,0 +1,6 @@
+  ROM 2386c296 d10d5b0f 2adfdc9b 3f24adcc  ->  2386c296 d10d5b0f 722cc2b8 3f24adcc
+PASS  K-DO1: diverged ['append', 'input', 'twochan'] (want exactly ['append', 'input', 'twochan'])
+  ROM 2386c296 d10d5b0f 722cc2b8 3f24adcc  ->  2386c296 d10d5b0f 23435e24 3f24adcc
+PASS  K-DO2: diverged ['append', 'empty', 'exact', 'input', 'lofloc', 'openchk', 'trunc', 'twochan'] (want exactly ['append', 'empty', 'exact', 'input', 'lofloc', 'openchk', 'trunc', 'twochan'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

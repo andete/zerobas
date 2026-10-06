@@ -114,6 +114,7 @@ ex_print:
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
                 pop     hl
                 ld      a,(FCH_MODE)
+                and     $FE                 ; S10.B: 3 (OUTPUT) or 2 (APPEND)
                 cp      2                   ; must be open FOR OUTPUT
                 jp      nz,load_error
                 xor     a
@@ -595,6 +596,23 @@ pch_lpt_home:
                 ld      (LPTPOS),a
                 jr      pch_done
 pch_disk:
+                ; S10.B: an OUTPUT channel's byte goes to disk.rom (H_CHOUT), which
+                ; raises 66 itself on a full disk. FCH_ACTIVE first: SAVE ,A parks
+                ; the channels (fch_park) and streams through here with FCH_MODE
+                ; still naming the last one. IX is guarded: a hook call is a CALLF.
+                ld      a,(FCH_ACTIVE)
+                or      a
+                jr      z,pch_main
+                ld      a,(FCH_MODE)
+                cp      DOUT_MODE
+                jr      nz,pch_main
+                ld      a,c
+                push    ix
+                call    H_CHOUT
+                ei                          ; a CALLF returns DI (cg_back's note)
+                pop     ix
+                jr      pch_done
+pch_main:
                 ld      a,c
                 call    fat_io_putbyte
                 jp      c,disk_error        ; D-DISKFULL: a full disk is ERR 66 here,

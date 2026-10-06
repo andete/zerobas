@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **103** in the MSX standard work area at or above `$F380`.
-* **disk** — 134 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **27** in the MSX standard work area at or above `$F380`.
+* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **105** in the MSX standard work area at or above `$F380`.
+* **disk** — 135 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **29** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -408,6 +408,7 @@ second one is the question a per-component map cannot answer.
 | `$E9CB` | 1 B | `basic` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
 | `$E9CC` | 2 B | `basic` | `FAT_FIRSTCLUS` | first cluster of the found file (word) |  |
 | `$E9CE` | 4 B | `basic` | `FAT_FILESIZE` | file size in bytes (4-byte LE) |  |
+| `$E9CE` | 4 B | `disk` | `main_FAT_FILESIZE` | main's FAT_FILESIZE -- file size in bytes (4-byte LE) |  |
 | `$E9D2` | 1 B | `basic` | `FAT_NUMFATS` | number of FAT copies (byte; from BPB +16) (1 B) |  |
 | `$E9D3` | 2 B | `basic` | `FAT_SECPERFAT` | sectors per FAT copy (word; from BPB +22) |  |
 | `$E9D5` | 1 B | `basic` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
@@ -746,8 +747,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE49` |  | `disk` | `H_CVD` | CVD |  |
 | `$FE5D` |  | `basic` | `H_FOPEN` |  |  |
 | `$FE5D` |  | `disk` | `H_FOPEN` |  |  |
+| `$FE62` |  | `basic` | `H_CHCLOSE` | FILES handler |  |
+| `$FE62` |  | `disk` | `H_CHCLOSE` | S10.B: CLOSE of an OUTPUT channel |  |
 | `$FE7B` |  | `basic` | `H_FILE` |  |  |
 | `$FE7B` |  | `disk` | `H_FILE` |  |  |
+| `$FE85` |  | `basic` | `H_CHOUT` |  |  |
+| `$FE85` |  | `disk` | `H_CHOUT` | S10.B: one byte out of an OUTPUT channel (A) |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |

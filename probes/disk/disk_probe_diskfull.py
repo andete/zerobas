@@ -30,10 +30,11 @@ free cluster marked used (full_disk, below):
 Each case is boot-per-case with its own disk and ends in ONE summary line
 (`R a b c #`, `S e #`, `P e i #`) because the screen holds 24 rows and the
 early rows scroll away. Every field is compared with the CF-3300's, live,
-except PRINT#'s I: the CF-3300 fails at its first 256 B RECORD flush (I = 12)
-and ours at its first 512 B SECTOR flush (I = 24) -- a pinned divergence that
-S10.B (PRINT# on the channel's 256 B record) is expected to move; when it does,
-this pin goes red ON PURPOSE.
+except PRINT#'s I, which stays a pin: the CF-3300 fails at its first 256 B
+RECORD write (I = 12). Ours failed at its first 512 B SECTOR flush (I = 24)
+until S10.B (2026-10-06) moved an OUTPUT channel onto disk.rom's 256 B record
+writer -- the pin went red ON PURPOSE, as it was written to, and now pins
+the same 12 on both.
 
 Exit 0 when every face agrees; 1 on a divergence; 2 when the CF-3300 itself
 did not answer (no reference).
@@ -47,7 +48,7 @@ import probe_tmp                                    # noqa: E402
 import disk_probe_wrblk_roundtrip as RT             # noqa: E402
 import struct                                       # noqa: E402
 
-PRINT_I_PIN = {"STOCK": 12, "OURS": 24}             # 256 B record vs 512 B sector
+PRINT_I_PIN = {"STOCK": 12, "OURS": 12}             # S10.B: ours writes the 256 B record too
 
 CASES = {
     "close": (['OPEN"CF.TXT"FOR OUTPUT AS#1', 'PRINT#1,"HELLO"', 'CLOSE#1',

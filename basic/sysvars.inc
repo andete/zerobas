@@ -1658,6 +1658,15 @@ OO_DEVTYPE      equ     $E0CD   ; OPEN device-channel type being parsed (transie
 ; load, then restores the default before returning. Fills the last 2 bytes of
 ; the $E0CC gap (below CONTLINE $E0D0).
 ARL_GETBYTE     equ     $E0CE   ; ascii_read_lines byte-source vector (2)
+; S10.B (2026-10-06): a disk file open FOR OUTPUT is mode 3 -- its channel is an
+; MSX-DOS FCB in disk.rom (the row of DSK_ENGTAB, record = the block's +9), and
+; its bytes cross at H_CHOUT. APPEND is stored as 2 and stays on main's engine
+; until it moves too. 3 was free: APPEND used to be normalised to 2 at OPEN.
+DOUT_MODE       equ     3       ; FCH_MODES value: disk OUTPUT through disk.rom's FCB
+DOUT_BLK        equ     37      ; its row: +0..36 the FCB, +37..38 the channel's
+DOUT_FLG        equ     39      ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
+DOUT_RFULL      equ     0       ; bit: the record is full and not yet written
+DOUT_DEAD       equ     1       ; bit: a CLOSE failed; the next CLOSE frees it
 LPT_MODE        equ     5       ; FCH_MODES value: channel open to the LPT: printer device
 CRT_MODE        equ     6       ; FCH_MODES value: channel open to the CRT: screen device
 ; Cassette sequential channels (OPEN"CAS:name" FOR OUTPUT|INPUT). Like LPT/CRT
@@ -3446,7 +3455,16 @@ FOPEN_SEL_LOAD  equ     $4C         ; NOT 0: 0 is a live DISKOP_OP value and
                                     ; ours -- see disk/equates.inc (§6.6p)
 FOPEN_SEL_OCHK  equ     $4F         ; D-OPENSAME: is DISK_FCB_NAME already open on
                                     ; a channel? (OPEN's 54). Same rule: outside
-                                    ; every DISKOP_SEL_* range (fatprim 0..24).   ; FILES handler
+                                    ; every DISKOP_SEL_* range (fatprim 0..24).
+FOPEN_SEL_MAKE  equ     $4D         ; S10.B: OPEN FOR OUTPUT -- create DISK_FCB_NAME
+                                    ; as the live channel's FCB (disk.rom hk_fmake)
+; S10.B: the CF-3300's per-byte and per-CLOSE channel cells (spec-diskcode-
+; eviction.md §6.6bb: PRINT# enters $FE85 once a byte, CLOSE $FE62 once).
+; Our contract, not the reference's: A = the byte, the live channel is
+; FCH_ACTIVE; claimed only by disk.rom, so a diskless machine never calls them
+; (it cannot open a disk file).
+H_CHOUT         equ     $FE85
+H_CHCLOSE       equ     $FE62   ; FILES handler
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
                                 ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --
