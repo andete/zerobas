@@ -26,6 +26,9 @@ byte-identical to none (D-EDITLINE).
     e.tab     `A$="AB` TAB `X"` -> LEN 5: TAB blanks to the next 8-column stop
     e.tabwrap 28 x on a WIDTH 40 row, TAB from the column-33 stop -> LEN 37:
               it blanks to the row's end and wraps (D-EDCTRL)
+    e.ctrl*   CTRL-E/U/B/F/N edit the line they are typed into (D-EDCTRL)
+    e.f1      F1 PRESSED (key matrix) during INPUT$(6) -> `color `
+    e.f6      SHIFT+F1 with KEY 6,"Q6"+CHR$(13), during LINE INPUT -> Q6 (D-EDFKEY)
 Expectations are the two references' faces, measured 2026-09-11 (and 09-07 for
 the x.* rows); --survey shows their columns.
 """
@@ -76,12 +79,22 @@ CASES = [
     ("e.ctrlb",   ['WIDTH 40:CLS', 'A$="AB CD' + CB + 'X' + CN + '":PRINT"[e.ctrlb";A$;"]"']),
     # CTRL-F from the first word to the next one, overtype, CTRL-N to the end
     ("e.ctrlf",   ['WIDTH 40:CLS', 'A$="AB CD' + LEFT * 5 + CF + 'X' + CN + '":PRINT"[e.ctrlf";A$;"]"']),
+    # D-EDFKEY (2026-10-06): a PRESSED function key types its KEY string. These
+    # rows press the key through the MATRIX (HOLDS below) -- typed text goes to
+    # KEYBUF and could never reach the function-key decode. F1's default string
+    # read by INPUT$(6); SHIFT+F1 = F6, redefined with a CR, read by LINE INPUT
+    # through the screen editor.
+    ("e.f1",      ['10 A$=INPUT$(6):PRINT"[e.f1";A$;"]"', 'RUN']),
+    ("e.f6",      ['KEY 6,"Q6"+CHR$(13)', '10 LINE INPUT A$:PRINT"[e.f6";A$;"]"', 'RUN']),
 ]
+# matrix keys held from the RUN: F1 = row 6 bit 5; SHIFT = row 6 bit 0
+HOLDS = {"e.f1": (6, 0x20), "e.f6": ((6, 0x01), (6, 0x20))}
 EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1",
           "i.wrap": "45 xxxx", "i.top": "45 xx",
           "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
           "e.tab": "5", "e.tabwrap": "37",
-          "e.ctrle": "ABC", "e.ctrlu": "OK", "e.ctrlb": "AB XD", "e.ctrlf": "AB XD"}
+          "e.ctrle": "ABC", "e.ctrlu": "OK", "e.ctrlb": "AB XD", "e.ctrlf": "AB XD",
+          "e.f1": "color", "e.f6": "Q6"}
 
 def fence(tag, cap):
     """The printed `[tag ...]`, never the typed echo (an echo carries `";`)."""
@@ -96,8 +109,13 @@ def fence(tag, cap):
 def read(side, cfg):
     out = {}
     for tag, lines in CASES:
+        hold = HOLDS.get(tag)
+        # a TAP, not a hold: pressed once the program waits (hold_lead, after
+        # run_gap) and released 0.4 s later -- a hold over the run_gap window
+        # autorepeats the key's string down the screen
+        kw = dict(holds=[hold], hold_secs=0.5, hold_lead=0.1) if hold else {}
         cap = omsx_repl.run_cases(cfg["machine"], [(tag, lines)], batch=False, boot=cfg["boot"],
-                                  reset=cfg["reset"], run_gap=25.0)[0]
+                                  reset=cfg["reset"], run_gap=25.0, **kw)[0]
         out[tag] = fence(tag, cap)
     return out
 

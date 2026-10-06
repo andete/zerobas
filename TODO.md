@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29316 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29333 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24283,7 +24283,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the arm's `and $02` -> `and $FF` in the installed ROM -- exactly the seven
       CTRL-letter codes and the sweep go red, TAB/ESC/`e` stay green.
 
-- [ ] ⌨️ **D-EDFKEY — DO F1..F10 TYPE THEIR `KEY` STRINGS AT THE EDITOR? (filed 2026-10-03; NOT MEASURED)**
+- [x] ✅ **D-EDFKEY — DO F1..F10 TYPE THEIR `KEY` STRINGS AT THE EDITOR? (filed 2026-10-03; CLOSED
+      2026-10-06: THEY DO, ON OURS AS ON THE VG-8020 -- NO FIX NEEDED)**
       🎚️ TIER 1 — happy path: F1..F5 (`color`, `auto`, `goto`, `list`, `run`)
       are how an MSX user types those words.
       🔬 The function-key ROW is done (D-DSPFNK: `KEY ON` paints it, boot shows
@@ -24294,7 +24295,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       both references and ours, with a redefined `KEY 1,"ABC"` too. The harness
       needs a held-key injector for the function-key row (matrix row 6/7; see
       the `holds` machinery in probes/lib/omsx_repl.py).
-      🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **MEASURED 2026-10-06 (`scratchpad/edfkey_probe.py`, keys pressed through
+      the matrix): 14/14 cases SAME** as the VG-8020 -- F1..F5, SHIFT+F1..F5
+      (F6..F10, with the CR in `color 15,4,4`, `run` and `cont`), F1 twice, a
+      redefined `KEY 1` and `KEY 6`, and F1 inside `INPUT`. C-BIOS's keyboard
+      interrupt already injects the `FNKSTR` text, SHIFT included.
+      🎯 Prediction scored: F1..F5 and `INPUT` SAME -- hit; F6..F10 and `KEY 6`
+      DIFF (no SHIFT in C-BIOS) -- **MISSED**, all SAME.
+      Gate rows in `screditor-acceptance` so it stays true: `e.f1` (F1 tapped
+      during `INPUT$(6)` -> `color`) and `e.f6` (SHIFT+F1 after `KEY
+      6,"Q6"+CHR$(13)`, during `LINE INPUT` -> `Q6`), the same on the VG-8020
+      and CF-3300. Teeth by construction: no press leaves `INPUT$` waiting (no
+      reading); a dropped SHIFT types F1's string, which has no CR, so `LINE
+      INPUT` never ends; an ignored `KEY 6` reads `color 15,4,4`.
+      ⚠️ Apparatus: `holds` keeps the key down until `run_gap` has passed, and a
+      25 s hold AUTOREPEATS the string down the screen (the first `e.f6` read
+      nothing on all three machines). The rows tap instead: `hold_lead=0.1`,
+      `hold_secs=0.5`.
 
 - [ ] ⌨️ **D-EDINPUTCSR — CURSOR KEYS INSIDE `INPUT` ACROSS ROWS (filed 2026-10-03 from the
       D-SCREDIT note; NOT MEASURED)**
@@ -24494,8 +24511,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔁 **2026-10-03: EACH OF THESE IS NOW ITS OWN OPEN ITEM** (above), because
       a note inside a CLOSED item is invisible to the tier scan. `INS` mode and
       `DEL` mid-row were already done by D-INSMODE, the function-key ROW by
-      D-DSPFNK. Open: D-EDCTRL (CTRL keys, SELECT), D-EDFKEY (pressing F1..F10),
-      D-EDINPUTCSR, D-LINTTBWRAP, D-LINTTBSTALE.
+      D-DSPFNK. Open: D-EDINPUTCSR, D-LINTTBWRAP, D-LINTTBSTALE (D-EDCTRL and
+      D-EDFKEY closed 2026-10-05/06).
       ⚠️ Later tiers, filed here: `INS` mode, `DEL` mid-row, `CTRL`+key, the
       function-key row and `SELECT`; a program `PRINT` that wraps on the bottom
       row loses its continuation mark on C-BIOS (re-entering it takes the last
