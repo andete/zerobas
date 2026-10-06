@@ -29,8 +29,12 @@ sub p0 18 B, sub p1 195 B; disk 4594 B.** Recount before quoting.
   disk work are lost; an interruptible first-DRQ wait was TRIED and REVERTED --
   read the item), the KILL/NAME/re-OPEN item, COPY TO (🙋).
 - APPARATUS: **D-DEADSEED** (check_dead_code stayed green with an uncalled
-  routine), badfnum's one parallel-pool red (3/3 green alone; its log was not
-  kept).
+  routine). A unit retried green in the pool keeps its FAILING log under
+  **`/tmp/zerobas/gate_flakes/`** (D-FLAKEKEEP) -- read it before calling it a
+  flake (2026-10-06: kwsweep's was the USB rig dropping off, badfnum's one
+  capture miss on `fld_c16`).
+- DONE since this section was written: D-LINTTBWRAP + D-LINTTBSTALE
+  (cbios-repack patch #7, island 1 at `$1AF5`), D-PRINTFULLSTAMP.
 
 🔴 **LESSONS OF 2026-10-06, each paid for:**
 - **A CALLF / CALSLT RETURNS DI ON C-BIOS** (cbios `src/slot.asm`
