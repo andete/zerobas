@@ -1,0 +1,13 @@
+== print_in   CF-3300  e52@30
+== print_in   OURS     e52@30
+== print_rnd  CF-3300  e61@20
+== print_rnd  OURS     e61@20
+== input_out  CF-3300  e52@20
+== input_out  OURS     e52@20
+== linein_out CF-3300  e52@20
+== linein_out OURS     e52@20
+== input_rnd  CF-3300  e61@20
+== input_rnd  OURS     e61@20
+== input_app  CF-3300  e52@30
+== input_app  OURS     e52@30
+refcache: 0 hit, 12 miss, 12 stored

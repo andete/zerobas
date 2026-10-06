@@ -25,6 +25,8 @@ with `e<err>@<erl>` inside it for each error the trap caught.
   app6     APPEND to a 6 B file: LOF/LOC after the OPEN, 10 B and 300 B; the size
            and checksum after (LOF and LOC DIFFER on an APPEND channel)
   app256   the same on a 256 B file whose Ctrl-Z is the record's last byte
+  dir_*    PRINT# / INPUT# / LINE INPUT# the wrong way (52) or on RANDOM (61),
+           trapped (D-CHDIR)
 
 Exit 0 all agree; 1 a divergence; 2 the CF-3300 gave no reading for a case.
 
@@ -75,6 +77,17 @@ CASES = {
 # FOR APPEND on a 6 B file LOF 6 / LOC 0; on a 256 B one (its Ctrl-Z the 256th
 # byte) 256 / 0, and the first appended byte overwrites that Ctrl-Z, completing
 # the record: 256 / 256. Then the size reopened and the content's checksum.
+# D-CHDIR (2026-10-06): PRINT# / INPUT# / LINE INPUT# on a channel open the
+# other way is 52, on a RANDOM one 61 -- both TRAPPABLE on the CF-3300
+# (scratchpad/chdir_run.out); ours printed `load error` past the trap.
+for _tag, _body in (
+        ("dir_print_in", ['OPEN"P1.TXT"FOR OUTPUT AS#1:CLOSE#1', 'OPEN"P1.TXT"FOR INPUT AS#1', 'PRINT#1,"A"']),
+        ("dir_print_rnd", ['OPEN"P2.DAT"AS#1', 'PRINT#1,"A"']),
+        ("dir_input_out", ['OPEN"P3.TXT"FOR OUTPUT AS#1', 'INPUT#1,A$']),
+        ("dir_linein_out", ['OPEN"P4.TXT"FOR OUTPUT AS#1', 'LINE INPUT#1,A$']),
+        ("dir_input_rnd", ['OPEN"P5.DAT"AS#1', 'INPUT#1,A$']),
+        ("dir_input_app", ['OPEN"P6.TXT"FOR OUTPUT AS#1:CLOSE#1', 'OPEN"P6.TXT"FOR APPEND AS#1', 'INPUT#1,A$'])):
+    CASES[_tag] = _body + ['PRINT"R<";">#"']
 for _tag, _first in (("app6", 'PRINT#1,"OLD"'), ("app256", 'PRINT#1,STRING$(255,"A");')):
     CASES[_tag] = ["CLEAR 400", 'OPEN"AP.TXT"FOR OUTPUT AS#1', _first, "CLOSE#1", "DIM L(5)",
                    'OPEN"AP.TXT"FOR APPEND AS#1:L(0)=LOF(1):L(1)=LOC(1)',

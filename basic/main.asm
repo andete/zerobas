@@ -462,6 +462,7 @@ oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR
                 xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
                 ld      (FCH_MODE),a        ; (the provisional mode must not survive
                                             ; a failed OPEN)
+err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong way (52)
                 ld      a,52
                 jp      raise_error
 err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)

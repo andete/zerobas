@@ -1,0 +1,172 @@
+keyword case                                           National_CF-   C-BIOS_MSX1_
+OPEN    OPEN "NOSUCH.TXT" FOR INPUT AS #1                  (53, 20)       (53, 20)
+OPEN    OPEN "A" FOR INPUT AS #16                          (52, 20)       (52, 20)
+OPEN    OPEN 5 FOR INPUT AS #1                             (13, 20)       (13, 20)
+OPEN    OPEN "A" FOR INPUT                                  (2, 20)        (2, 20)
+OPEN    OPEN "A*.TXT" FOR INPUT AS #1                      (56, 20)       (53, 20)
+OPEN    OPEN "X1.TXT" FOR OUTPUT AS #1:OPEN "X1.TXT" FOR INPUT AS #2       (52, 20)       (52, 20)
+OPEN    OPEN "A" FOR INPUT AS #0                           (52, 20)       (52, 20)
+OPEN    OPEN "Q:X.TXT" FOR OUTPUT AS #1                    (62, 20)       (62, 20)
+OPEN    OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1       (54, 20)       (54, 20)
+OPEN    OPEN "X.TXT" FOR OUTPUT AS #"A"                    (13, 20)       (13, 20)
+OPEN    OPEN "" FOR OUTPUT AS #1                           (56, 20)       (56, 20)
+OPEN    OPEN "NOSUCH.TXT" FOR APPEND AS #1                 (53, 20)       (53, 20)
+OPEN    OPEN "X.TXT" FOR APPEND AS 1,2                      (2, 20)       (53, 20)
+OPEN    OPEN "R.DAT" AS #1 LEN=0                            (5, 20)        (5, 20)
+OPEN    OPEN "R.DAT" AS #1 LEN=257                          (5, 20)        (5, 20)
+OPEN    OPEN "R.DAT" AS #1 LEN="A"                         (13, 20)        (5, 20)
+OPEN    OPEN "R.DAT" AS #1 LEN                              (2, 20)        (5, 20)
+CLOSE   CLOSE 1,                                           (24, 20)       (24, 20)
+CLOSE   CLOSE "A"                                          (13, 20)       (13, 20)
+CLOSE   CLOSE #16                                          (52, 20)       (52, 20)
+CLOSE   CLOSE #"A"                                         (13, 20)       (13, 20)
+CLOSE   CLOSE #-1                                           (5, 20)        (5, 20)
+KILL    KILL "NOSUCH.TXT"                                  (53, 20)       (53, 20)
+KILL    KILL 5                                             (13, 20)       (13, 20)
+KILL    KILL                                               (24, 20)       (24, 20)
+KILL    OPEN "K1.TXT" FOR OUTPUT AS #1:KILL "K1.TXT"       (64, 20)       (64, 20)
+KILL    KILL "Q:A.TXT"                                     (62, 20)       (62, 20)
+NAME    NAME "NOSUCH.TXT" AS "B.TXT"                       (53, 20)       (53, 20)
+NAME    NAME 5 AS "B"                                      (13, 20)       (13, 20)
+NAME    NAME "A.TXT"                                       (53, 20)       (53, 20)
+NAME    OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"       (65, 20)       (65, 20)
+FILES   FILES 5                                            (13, 20)       (13, 20)
+FILES   FILES,                                              (2, 20)        (2, 20)
+FILES   FILES "NOSUCH.*"                                   (53, 20)       (53, 20)
+FILES   FILES "Q:*.*"                                      (62, 20)       (62, 20)
+FIELD   FIELD #1,4 AS A$                                   (59, 20)       (59, 20)
+FIELD   OPEN "R1.DAT" AS #1 LEN=8:FIELD #1,9 AS A$         (50, 20)       (50, 20)
+FIELD   OPEN "R2.DAT" AS #1:FIELD #1,4 AS A                (13, 20)       (13, 20)
+FIELD   FIELD #16,4 AS A$                                  (52, 20)       (52, 20)
+FIELD   OPEN "R3.DAT" AS #1:FIELD #1,4                      (2, 20)        (2, 20)
+LSET    LSET A=1                                           (13, 20)       (13, 20)
+LSET    LSET A$                                             (2, 20)        (2, 20)
+LSET    LSET 5="A"                                          (2, 20)        (2, 20)
+RSET    RSET A=1                                           (13, 20)       (13, 20)
+RSET    RSET A$                                             (2, 20)        (2, 20)
+RSET    RSET 5="A"                                          (2, 20)        (2, 20)
+EOF     A=EOF(1)                                           (59, 20)       (59, 20)
+EOF     A=EOF(16)                                          (52, 20)       (52, 20)
+EOF     A=EOF("A")                                         (13, 20)       (13, 20)
+EOF     OPEN "E1.TXT" FOR OUTPUT AS #1:A=EOF(1)            (61, 20)       (61, 20)
+LOC     A=LOC(1)                                           (59, 20)       (59, 20)
+LOC     A=LOC(16)                                          (52, 20)       (52, 20)
+LOC     A=LOC("A")                                         (13, 20)       (13, 20)
+LOF     A=LOF(1)                                           (59, 20)       (59, 20)
+LOF     A=LOF(16)                                          (52, 20)       (52, 20)
+LOF     A=LOF("A")                                         (13, 20)       (13, 20)
+MERGE   MERGE "NOSUCH.BAS"                                 (53, 20)       (53, 20)
+MERGE   MERGE 5                                            (13, 20)       (13, 20)
+MERGE   MERGE                                              (24, 20)       (24, 20)
+LOAD    LOAD "NOSUCH.BAS"                                  (53, 20)       (53, 20)
+LOAD    LOAD 5                                             (13, 20)       (13, 20)
+LOAD    LOAD                                               (24, 20)       (24, 20)
+LOAD    LOAD "NOSUCH.BAS",R                                (53, 20)       (53, 20)
+LOAD    LOAD "X.BAS",Q                                      (2, 20)             OK
+SAVE    SAVE 5                                             (13, 20)       (13, 20)
+SAVE    SAVE "Q:X.BAS"                                     (62, 20)       (62, 20)
+SAVE    SAVE                                               (24, 20)       (24, 20)
+SAVE    SAVE "X.BAS",B                                      (2, 20)           None
+SAVE    SAVE "X.BAS",A,1                                    (2, 20)           None
+BLOAD   BLOAD "NOSUCH.BIN"                                 (53, 20)       (53, 20)
+BLOAD   BLOAD 5                                            (13, 20)       (13, 20)
+BLOAD   BLOAD                                              (24, 20)       (24, 20)
+BLOAD   BLOAD "NOSUCH.BIN",R                               (53, 20)       (53, 20)
+BLOAD   BLOAD "NOSUCH.BIN",S                               (53, 20)       (53, 20)
+BLOAD   BLOAD "X.BIN",Q                                    (53, 20)             OK
+BSAVE   BSAVE "X.BIN",&HC000                                (2, 20)        (2, 20)
+BSAVE   BSAVE "X.BIN","A",1                                (13, 20)       (13, 20)
+BSAVE   BSAVE 5,1,2                                        (13, 20)       (13, 20)
+BSAVE   BSAVE "X.BIN",&HC000,&HC010,"A"                    (13, 20)       (13, 20)
+BSAVE   BSAVE "X.BIN",&HC000,&HC010,1,2                     (2, 20)        (2, 20)
+COPY    COPY "NOSUCH.TXT" TO "B.TXT"                       (53, 20)       (53, 20)
+COPY    COPY 5 TO "B"                                      (13, 20)       (13, 20)
+COPY    COPY "A.TXT"                                       (53, 20)       (53, 20)
+DSKI$   A$=DSKI$(0,9999)                                         OK             OK
+DSKI$   A$=DSKI$(5,0)                                      (62, 20)       (62, 20)
+DSKI$   A$=DSKI$("A",0)                                    (13, 20)       (13, 20)
+DSKI$   A$=DSKI$(0)                                         (2, 20)        (2, 20)
+DSKO$   DSKO$ 0,9999                                             OK             OK
+DSKO$   DSKO$ 5,0                                          (62, 20)       (62, 20)
+DSKO$   DSKO$ "A",0                                        (13, 20)       (13, 20)
+DSKO$   DSKO$ 0                                             (2, 20)        (2, 20)
+GET #   GET #1,1                                           (59, 20)       (59, 20)
+GET #   OPEN "R4.DAT" AS #1:GET #1,0                        (5, 20)        (5, 20)
+GET #   OPEN "R5.DAT" AS #1:GET #1,"A"                     (13, 20)        (5, 20)
+GET #   GET #16                                            (52, 20)       (52, 20)
+PUT #   PUT #1,1                                           (59, 20)       (59, 20)
+PUT #   OPEN "R6.DAT" AS #1:PUT #1,0                        (5, 20)        (5, 20)
+PUT #   OPEN "R7.DAT" AS #1:PUT #1,"A"                     (13, 20)        (5, 20)
+PUT #   PUT #16                                            (52, 20)       (52, 20)
+INPUT # INPUT #1,A$                                        (59, 20)       (59, 20)
+INPUT # INPUT #16,A$                                       (52, 20)       (52, 20)
+INPUT # OPEN "I1.TXT" FOR OUTPUT AS #1:INPUT #1,A$         (52, 20)             OK
+INPUT # OPEN "I2.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I2.TXT" FOR INPUT AS #1:INPUT #1,A$       (55, 20)       (55, 20)
+PRINT # PRINT #1,"A"                                       (59, 20)       (59, 20)
+PRINT # PRINT #16,"A"                                      (52, 20)       (52, 20)
+PRINT # OPEN "I3.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I3.TXT" FOR INPUT AS #1:PRINT #1,"A"       (52, 20)             OK
+MAX FILES MAXFILES=16                                         (5, 20)        (5, 20)
+MAX FILES MAXFILES="A"                                       (13, 20)       (13, 20)
+MAX FILES MAXFILES                                            (2, 20)        (2, 20)
+MAX FILES MAXFILES=-1                                         (5, 20)        (5, 20)
+INPUT$  A$=INPUT$(0)                                        (5, 20)             OK
+INPUT$  A$=INPUT$("A")                                     (13, 20)       (13, 20)
+INPUT$  A$=INPUT$(256)                                      (5, 20)             OK
+INPUT$  A$=INPUT$(1,#1)                                    (59, 20)       (59, 20)
+INPUT$  A$=INPUT$(1,#16)                                   (52, 20)       (52, 20)
+INPUT$  A$=INPUT$(0,#1)                                    (59, 20)       (59, 20)
+INPUT$  OPEN "I4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I4.TXT" FOR INPUT AS #1:A$=INPUT$(1,#1)       (55, 20)       (55, 20)
+CALL    CALL FOO                                            (2, 20)        (2, 20)
+CALL    CALL                                                (2, 20)        (2, 20)
+CALL    CALL 5                                              (2, 20)        (2, 20)
+RUN     RUN,                                                (2, 20)        (2, 20)
+RUN     RUN 1,2                                                None        (8, 20)
+   ⚠️ RUN 'RUN 1,2': NO READING on the reference -- not scored
+RUN     RUN 99                                                 None        (8, 20)
+   ⚠️ RUN 'RUN 99': NO READING on the reference -- not scored
+RUN     RUN "A",5                                           (2, 20)             OK
+RUN     RUN "NOSUCH.BAS"                                   (53, 20)       (53, 20)
+RUN     RUN "Q:X.BAS"                                      (62, 20)       (62, 20)
+
+# the reference's error set per keyword form (code: first case)
+OPEN   input          2: OPEN "A" FOR INPUT  13: OPEN 5 FOR INPUT AS #1  52: OPEN "A" FOR INPUT AS #16  53: OPEN "NOSUCH.TXT" FOR INPUT AS #1  56: OPEN "A*.TXT" FOR INPUT AS #1
+OPEN   output         13: OPEN "X.TXT" FOR OUTPUT AS #"A"  54: OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1  56: OPEN "" FOR OUTPUT AS #1  62: OPEN "Q:X.TXT" FOR OUTPUT AS #1
+OPEN   append         2: OPEN "X.TXT" FOR APPEND AS 1,2  53: OPEN "NOSUCH.TXT" FOR APPEND AS #1
+OPEN   random         2: OPEN "R.DAT" AS #1 LEN  5: OPEN "R.DAT" AS #1 LEN=0  13: OPEN "R.DAT" AS #1 LEN="A"
+CLOSE  all            13: CLOSE "A"  24: CLOSE 1,
+CLOSE  channel        5: CLOSE #-1  13: CLOSE #"A"  52: CLOSE #16
+KILL   delete-file    13: KILL 5  24: KILL  53: KILL "NOSUCH.TXT"  62: KILL "Q:A.TXT"  64: OPEN "K1.TXT" FOR OUTPUT AS #1:KILL "K1.TXT"
+NAME   rename         13: NAME 5 AS "B"  53: NAME "NOSUCH.TXT" AS "B.TXT"  65: OPEN "N1.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "N2.TXT" FOR OUTPUT AS #1:CLOSE:NAME "N1.TXT" AS "N2.TXT"
+FILES  bare           2: FILES,  13: FILES 5
+FILES  pattern        53: FILES "NOSUCH.*"  62: FILES "Q:*.*"
+FIELD  bind-buffer    2: OPEN "R3.DAT" AS #1:FIELD #1,4  13: OPEN "R2.DAT" AS #1:FIELD #1,4 AS A  50: OPEN "R1.DAT" AS #1 LEN=8:FIELD #1,9 AS A$  52: FIELD #16,4 AS A$  59: FIELD #1,4 AS A$
+LSET   left-justify   2: LSET A$  13: LSET A=1
+RSET   right-justify  2: RSET A$  13: RSET A=1
+EOF    at-end         13: A=EOF("A")  52: A=EOF(16)  59: A=EOF(1)  61: OPEN "E1.TXT" FOR OUTPUT AS #1:A=EOF(1)
+LOC    position       13: A=LOC("A")  52: A=LOC(16)  59: A=LOC(1)
+LOF    length         13: A=LOF("A")  52: A=LOF(16)  59: A=LOF(1)
+MERGE  merge-file     13: MERGE 5  24: MERGE  53: MERGE "NOSUCH.BAS"
+LOAD   plain          13: LOAD 5  24: LOAD  53: LOAD "NOSUCH.BAS"
+LOAD   run            2: LOAD "X.BAS",Q  53: LOAD "NOSUCH.BAS",R
+SAVE   tokenised      13: SAVE 5  24: SAVE  62: SAVE "Q:X.BAS"
+SAVE   ascii          2: SAVE "X.BAS",B
+BLOAD  plain          13: BLOAD 5  24: BLOAD  53: BLOAD "NOSUCH.BIN"
+BLOAD  run            53: BLOAD "NOSUCH.BIN",R
+BLOAD  vram           53: BLOAD "NOSUCH.BIN",S
+BSAVE  range          2: BSAVE "X.BIN",&HC000  13: BSAVE "X.BIN","A",1
+BSAVE  with-entry     2: BSAVE "X.BIN",&HC000,&HC010,1,2  13: BSAVE "X.BIN",&HC000,&HC010,"A"
+COPY   file-to-file   13: COPY 5 TO "B"  53: COPY "NOSUCH.TXT" TO "B.TXT"
+DSKI$  read-sector    2: A$=DSKI$(0)  13: A$=DSKI$("A",0)  62: A$=DSKI$(5,0)
+DSKO$  write-sector   2: DSKO$ 0  13: DSKO$ "A",0  62: DSKO$ 5,0
+GET #  fielded-record 5: OPEN "R4.DAT" AS #1:GET #1,0  13: OPEN "R5.DAT" AS #1:GET #1,"A"  52: GET #16  59: GET #1,1
+PUT #  fielded-record 5: OPEN "R6.DAT" AS #1:PUT #1,0  13: OPEN "R7.DAT" AS #1:PUT #1,"A"  52: PUT #16  59: PUT #1,1
+INPUT # string-read    52: INPUT #16,A$  55: OPEN "I2.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I2.TXT" FOR INPUT AS #1:INPUT #1,A$  59: INPUT #1,A$
+PRINT # channel-write  52: PRINT #16,"A"  59: PRINT #1,"A"
+MAX FILES set            2: MAXFILES  5: MAXFILES=16  13: MAXFILES="A"
+INPUT$ console        5: A$=INPUT$(0)  13: A$=INPUT$("A")
+INPUT$ channel        52: A$=INPUT$(1,#16)  55: OPEN "I4.TXT" FOR OUTPUT AS #1:CLOSE:OPEN "I4.TXT" FOR INPUT AS #1:A$=INPUT$(1,#1)  59: A$=INPUT$(1,#1)
+CALL   refuse         2: CALL FOO
+RUN    bare           2: RUN,
+RUN    line           2: RUN "A",5
+RUN    file           53: RUN "NOSUCH.BAS"  62: RUN "Q:X.BAS"
+refcache: 0 hit, 2 miss, 2 stored

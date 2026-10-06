@@ -1,0 +1,6 @@
+  ROM cd59008c 69c6d2d8 450724dc 66a555f7  ->  07b0d616 69c6d2d8 2d7523b9 38cafc3f
+PASS  K-CD1: diverged ['dir_print_in', 'dir_print_rnd'] (want exactly ['dir_print_in', 'dir_print_rnd'])
+  ROM 07b0d616 69c6d2d8 2d7523b9 38cafc3f  ->  635b7150 69c6d2d8 4e338bcc 8a4f1da4
+PASS  K-CD2: diverged ['dir_input_app', 'dir_input_out', 'dir_input_rnd', 'dir_linein_out'] (want exactly ['dir_input_app', 'dir_input_out', 'dir_input_rnd', 'dir_linein_out'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

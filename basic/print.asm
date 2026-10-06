@@ -114,9 +114,15 @@ ex_print:
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
                 pop     hl
                 ld      a,(FCH_MODE)
+                ; 🔴 D-CHDIR (2026-10-06): the CF-3300 RAISES here, trappably --
+                ; PRINT# to a channel open FOR INPUT is 52, to a RANDOM one 61
+                ; (scratchpad/chdir_run.out). load_error printed and went on, so
+                ; an ON ERROR handler never saw it.
+                cp      4
+                jp      z,sid_badmode       ; RANDOM: 61 (Bad file mode)
                 and     $FE                 ; S10.B: 3 (OUTPUT) or 2 (APPEND)
                 cp      2                   ; must be open FOR OUTPUT
-                jp      nz,load_error
+                jp      nz,err_badfnum_raise ; INPUT: 52 (Bad file number)
                 xor     a
                 ld      (PRDEV),a           ; 0 = disk sink
                 jr      exp_sep

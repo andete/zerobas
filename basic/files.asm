@@ -1214,8 +1214,13 @@ input_common:
                 call    fch_select          ; make channel e live; FCH_MODE = its mode
                 pop     hl
                 ld      a,(FCH_MODE)
+                ; D-CHDIR (2026-10-06): as PRINT#'s -- 61 on a RANDOM channel, 52
+                ; on one open FOR OUTPUT / APPEND, both trappable on the CF-3300
+                ; (scratchpad/chdir_run.out); load_error printed and went on.
+                cp      4
+                jp      z,sid_badmode
                 cp      1                   ; a channel must be open for INPUT
-                jp      nz,load_error
+                jp      nz,err_badfnum_raise
 inp_setsrc:
                 ; D-CASINP: the two-way source choice moved to arl_set_src
                 ; (basic/input.asm) so INPUT$ can make it too. -11 B here.

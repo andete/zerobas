@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29615 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29645 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26633,6 +26633,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in batch mode a wrong one poisons its neighbours); the denominator in
       `tools/kwerrset.py` still holds them, so OPEN, KILL, NAME, FILES, EOF,
       LOAD, SAVE, BSAVE, GET #, PUT #, INPUT # and INPUT$ stay T6-.
+      📏 **RE-MEASURED 2026-10-06 — 15 DIVERGE, NOT 32**
+      ([`t6enum_b8_zb_1006.out`](scratchpad/t6enum_b8_zb_1006.out), every case
+      booted alone on both machines; the list above is 09-27's). 🎯 Predicted
+      ~12 -- near, a miss by 3. Reference → ours:
+      • ✅ **channel direction (2) -- FIXED THE SAME DAY as D-CHDIR (below):**
+        `INPUT #` on an OUTPUT channel and `PRINT #` on an INPUT one 52 → no
+        error (ours printed `load error` past the trap).
+      • **wrong code (6):** `OPEN "A*.TXT"` 56 → 53; `OPEN … AS 1,2` 2 → 53;
+        `LEN="A"` 13 → 5; bare `LEN` 2 → 5; `GET`/`PUT #1,"A"` 13 → 5.
+      • **extra arguments accepted (5):** `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok;
+        `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` / `INPUT$(256)` 5 → ok.
+      • **no reading at all (2):** `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the
+        CF-3300).
+
+- [x] ✅ **D-CHDIR — PRINT# / INPUT# / LINE INPUT# ON A CHANNEL OPEN THE OTHER WAY RAISED NOTHING
+      TRAPPABLE: the CF-3300 says 52, and 61 on a RANDOM channel (split from D-DISKERRS
+      and FIXED 2026-10-06)**
+      🎚️ TIER 3 — common errors: reading a file opened for writing, or the reverse.
+      📏 ([`chdir_probe.py`](scratchpad/chdir_probe.py) → [`chdir_run.out`](scratchpad/chdir_run.out))
+      under ON ERROR, the CF-3300 traps `PRINT #` to an INPUT channel and
+      `INPUT #` / `LINE INPUT #` on an OUTPUT or APPEND one as **52** (Bad file
+      number), and either on a RANDOM channel as **61** (Bad file mode). Ours went
+      to `load_error`, which prints and goes on: the handler never saw it.
+      🎯 Predicted 52 for the direction cases -- hit; RANDOM was unknown (61).
+      ✅ Both mode checks (basic/print.asm PRINT#, basic/files.asm INPUT#) now
+      send RANDOM to `sid_badmode` (61) and any other mismatch to
+      `err_badfnum_raise` -- a 0-byte label on OPEN's own `ld a,52` (main.asm).
+      Main page 1 202 → 192 B. dout-acceptance gains the six `dir_*` rows (ERR
+      and ERL against the CF-3300); knives ([`chdir_knives.py`](scratchpad/chdir_knives.py))
+      K-CD1 (PRINT#'s check reverted) moves exactly the two print rows, K-CD2
+      (INPUT#'s) exactly the four input rows.
 
 - [x] ✅ **FIXED 2026-09-28 (D-SAVECOLON): `SAVE`, `BSAVE` AND `BLOAD` LET THE REST OF
       THEIR LINE RUN.** 🎚️ TIER 1 — happy path: `BLOAD"X.BIN":DEFUSR=&HC000` is how
