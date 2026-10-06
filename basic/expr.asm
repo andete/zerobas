@@ -1377,12 +1377,23 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                                             ; above, including why channel 0 never
                                             ; reaches the class test
 ev_ff_lof_checked:                          ; D-LOC joins here for a sequential channel
+                ld      bc,FAT_FILESIZE
+ev_ff_field:                                ; S10.B: BC = the 4-byte field to answer
                 call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_ifc         ; D-EVFERR: ERR 5, as ev_ff_eof above
                 ld      a,e
+                push    bc
                 call    fch_select
-                ld      hl,(FAT_FILESIZE)   ; DE:HL = the size, unsigned 32-bit
-                ld      de,(FAT_FILESIZE+2)
+                pop     hl
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                ld      h,b
+                ld      l,c                 ; DE:HL = the value, unsigned 32-bit
                 ld      a,h
                 or      l
                 or      d
@@ -1424,7 +1435,18 @@ ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 call    fch_modes_ptr       ; HL = &FCH_MODES[E]
                 ld      a,(hl)
                 cp      4                   ; RANDOM (basic/files.asm: mode = 4)
+                jr      z,loc_rand
+                ; S10.B increment 2: a disk OUTPUT/APPEND channel (DOUT_MODE) is
+                ; the CF-3300's FCB, and LOC is its random record -- the bytes in
+                ; whole records written -- which is NOT LOF on an APPEND channel
+                ; (6 B file: LOF 6, LOC 0; scratchpad/applof_run.out). disk.rom
+                ; keeps it in FWR_BYTES, an engine global the channel has no
+                ; other use for.
+                cp      DOUT_MODE
                 jr      nz,ev_ff_lof_checked ; sequential/device: LOC == LOF
+                ld      bc,FWR_BYTES
+                jr      ev_ff_field
+loc_rand:
                 ld      hl,FCH_RECNOS
                 ld      d,0
                 add     hl,de

@@ -22,6 +22,9 @@ with `e<err>@<erl>` inside it for each error the trap caught.
   exact    exactly 256 B then CLOSE: the Ctrl-Z starts a second record
   trunc    a file OPENed FOR OUTPUT over an existing longer one: the old
            tail is gone
+  app6     APPEND to a 6 B file: LOF/LOC after the OPEN, 10 B and 300 B; the size
+           and checksum after (LOF and LOC DIFFER on an APPEND channel)
+  app256   the same on a 256 B file whose Ctrl-Z is the record's last byte
 
 Exit 0 all agree; 1 a divergence; 2 the CF-3300 gave no reading for a case.
 
@@ -67,6 +70,18 @@ CASES = {
               'OPEN"T1.TXT"FOR OUTPUT AS#1', 'PRINT#1,"SHORT"', "CLOSE#1",
               'F$="T1.TXT"', "GOSUB 800", 'PRINT"R<";N;C;">#"'],
 }
+# S10.B increment 2: APPEND on the same writer. LOF is the FCB's size, LOC its
+# random record -- they differ on APPEND (scratchpad/applof_run.out): after OPEN
+# FOR APPEND on a 6 B file LOF 6 / LOC 0; on a 256 B one (its Ctrl-Z the 256th
+# byte) 256 / 0, and the first appended byte overwrites that Ctrl-Z, completing
+# the record: 256 / 256. Then the size reopened and the content's checksum.
+for _tag, _first in (("app6", 'PRINT#1,"OLD"'), ("app256", 'PRINT#1,STRING$(255,"A");')):
+    CASES[_tag] = ["CLEAR 400", 'OPEN"AP.TXT"FOR OUTPUT AS#1', _first, "CLOSE#1", "DIM L(5)",
+                   'OPEN"AP.TXT"FOR APPEND AS#1:L(0)=LOF(1):L(1)=LOC(1)',
+                   'PRINT#1,"ABCDEFGH":L(2)=LOF(1):L(3)=LOC(1)',
+                   'FOR I=1 TO 29:PRINT#1,"ABCDEFGH":NEXT:L(4)=LOF(1):L(5)=LOC(1)',
+                   'CLOSE#1:F$="AP.TXT":GOSUB 800',
+                   'PRINT"R<";:FOR I=0 TO 5:PRINT MID$(STR$(L(I)),2);",";:NEXT:PRINT N;C;">#"']
 
 
 # `append` alternates an OUTPUT channel (disk.rom's record writer) with an
@@ -82,7 +97,7 @@ def prog(body):
     resumes. The trap is armed AFTER a MAXFILES, which clears it (as CLEAR
     does), and every reading prints from a fresh line with E$ inside the fence,
     so no reading wraps at the screen edge mid-number."""
-    if body[0].startswith("MAXFILES"):
+    if body[0].startswith(("MAXFILES", "CLEAR")):     # both clear the trap
         body = [body[0], "ON ERROR GOTO 900"] + body[1:]
     else:
         body = ["ON ERROR GOTO 900"] + body

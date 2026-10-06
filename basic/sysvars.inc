@@ -3458,6 +3458,7 @@ FOPEN_SEL_OCHK  equ     $4F         ; D-OPENSAME: is DISK_FCB_NAME already open 
                                     ; every DISKOP_SEL_* range (fatprim 0..24).
 FOPEN_SEL_MAKE  equ     $4D         ; S10.B: OPEN FOR OUTPUT -- create DISK_FCB_NAME
                                     ; as the live channel's FCB (disk.rom hk_fmake)
+FOPEN_SEL_APND  equ     $50         ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)
 ; S10.B: the CF-3300's per-byte and per-CLOSE channel cells (spec-diskcode-
 ; eviction.md §6.6bb: PRINT# enters $FE85 once a byte, CLOSE $FE62 once).
 ; Our contract, not the reference's: A = the byte, the live channel is

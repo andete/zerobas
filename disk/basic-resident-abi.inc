@@ -58,6 +58,7 @@ DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
 DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
 main_FAT_FILESIZE equ 0E9CEH   ; main's FAT_FILESIZE -- file size in bytes (4-byte LE)
+main_FWR_BYTES equ 0E9F3H   ; main's FWR_BYTES -- total bytes written so far = final file size (4-byte LE)
 FMT_GEOMSEL equ 0E0F5H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0E0F6H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0EB00H   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
@@ -65,17 +66,17 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E49H
-pdfcb_resume equ 06E42H
-dirverb_op equ 06C1EH
-main_fat_mount equ 06505H   ; main's fat_mount
-main_fat_find equ 06509H   ; main's fat_find
-parse_disk_fcb equ 06658H
-field_prologue equ 07289H
-field_item equ 072BFH
-lrset_tgt equ 07374H
-lrset_rhs equ 07396H
-lrset_finish equ 073ADH
-fch_ctx_addr equ 06FD2H
-disk_error equ 06C40H
+fname_expr equ 06DFFH
+pdfcb_resume equ 06DF8H
+dirverb_op equ 06BD5H
+main_fat_mount equ 06515H   ; main's fat_mount
+main_fat_find equ 06519H   ; main's fat_find
+parse_disk_fcb equ 0660FH
+field_prologue equ 0723FH
+field_item equ 07275H
+lrset_tgt equ 0732AH
+lrset_rhs equ 0734CH
+lrset_finish equ 07363H
+fch_ctx_addr equ 06F88H
+disk_error equ 06BF7H
 read_line equ 045C0H

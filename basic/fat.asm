@@ -257,85 +257,11 @@ fatprim_bounce:
 
                 include "basic/fatiocreate-body.inc"   ; fat_io_create: body under SUB_BUILD/DISK_BUILD only; main's stub is in the shim block above (SBH-3)
 
-; fat_io_append — open the file named in DISK_FCB_NAME for sequential WRITE,
-; positioned at end-of-file (text APPEND). New bytes extend the file instead of
-; truncating it. A MISSING file is REFUSED (Cy=1 -> do_open's oo_fail ->
-; load_error), matching the CF-3300: it raises `File not found`, opens NO channel
-; (the following LOF(1) reports ERR 59) and writes NO directory entry — measured
-; two-sidedly, screen AND the machine's own disk image (D-APPMISS,
-; docs/spec-basic-append-missing-refuse.md; lof-cf3300-characterization §4).
-; ⚠️ This used to `jp c,fat_io_create` and the comment here called that settled
-; CF-3300 parity, citing disk_probe_append.py — which creates its file with
-; OUTPUT first and only ever appends to an EXISTING one. That probe's parity
-; claim is real for the Ctrl-Z rule below and never reached the missing case.
-; If the existing file ends in a Ctrl-Z ($1A) soft-EOF, the write cursor is placed
-; ON that marker so it is overwritten and re-stamped at the next CLOSE — matching
-; the real National CF-3300 (disk_probe_append.py: "first\r\n\x1a" + APPEND
-; "second" -> "first\r\nsecond\r\n\x1a", the original Ctrl-Z gone).
-;   out: Cy = 0 ready (write stream primed at EOF); Cy = 1 = missing / mount /
-;        I-O error.
-; Method: find the file (fat_find records FAT_FIRSTCLUS/FILESIZE + FWR_DIRSEC/OFF),
-; walk the cluster chain reading every data sector (the last stays in FSECTOR_BUF),
-; then prime the write iterator to RESUME at the res. Reuses the read-side
-; fat_open/fat_read_file_sector to walk; no new chain logic. Size handled as 16-bit
-; (loader text files; a >64 KB append is out of scope — documented limit).
-fat_io_append:
-                call    fat_mount
-                ret     c
-                ld      hl,DISK_FCB_NAME
-                call    fat_find
-                ret     c                   ; not found -> REFUSE (-> oo_fail -> load error)
-                ; reuse the existing dir entry (FWR_DIRSEC/OFF set by fat_find) + chain.
-                ld      hl,(FAT_FIRSTCLUS)
-                ld      (FWR_FIRST),hl
-                ld      hl,(FAT_FILESIZE)   ; size (low 16 bits)
-                ld      a,h
-                or      l
-                jr      z,fia_empty         ; empty file -> write from offset 0
-                ; nsec = ceil(size / 512) = (size + 511) >> 9 (high byte >> 1).
-                ld      de,511
-                add     hl,de
-                ld      a,h
-                srl     a
-                ld      (FAT_WRTMP),a       ; loop counter = sectors to walk
-                xor     a
-                ld      (FAT_WRTMP+1),a
-                ; walk the chain; fat_read_file_sector leaves the LAST sector in
-                ; FSECTOR_BUF and FAT_CURCLUS/FAT_CLUSSEC on it (CLUSSEC = sec+1).
-                call    fat_open
-fia_walk:
-                ld      hl,(FAT_WRTMP)
-                ld      a,h
-                or      l
-                jr      z,fia_walked
-                call    fat_read_file_sector
-                ld      hl,(FAT_WRTMP)
-                dec     hl
-                ld      (FAT_WRTMP),hl
-                jr      fia_walk
-; fia_walked -- resident shim (docs/spec-eviction-g7-space.md, carve 2). The body
-; is a page-1 fatprim-tenant row; every path in it returns Cy = 0, so the shim
-; only has to make the call and clear carry.
-fia_walked:
-                ld      a,DISKOP_SEL_FIA_WALKED
-                call    fatprim_op
-                                           ; CF=1 iff the sub-ROM is absent
-                ret     c
-                or      a                   ; success: Cy = 0, like the body
-                ret
-fia_empty:
-                ; existing but EMPTY file: write from offset 0, reusing the dir entry
-                ; (FWR_DIRSEC/OFF from fat_find; FWR_FIRST = FAT_FIRSTCLUS = 0). Same
-                ; primed state as fat_io_create but without making a new dir slot.
-                xor     a
-                ld      (FWR_SECIDX),a
-                ld      hl,0
-                ld      (FWR_CLUS),hl
-                ld      (FWR_BUFLEN),hl
-                ld      (FWR_BYTES),hl
-                ld      (FWR_BYTES+2),hl
-                or      a                   ; Cy = 0 success
-                ret
+; 🔴 S10.B increment 2 (2026-10-06): `fat_io_append` (main's APPEND open -- the
+; chain walk, the Ctrl-Z resume, the refusal of a missing file) IS GONE. APPEND is
+; disk.rom's hk_fapp now, on the same 256 B record writer as OUTPUT; its rules
+; moved with it (disk/kernel.asm). The fatprim tenant row 18 it called
+; (sub/fiawalk.asm) keeps its table slot: the rows are numbered.
 
 
                 include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc (resident); fat_io_close body under SUB_BUILD/DISK_BUILD only, stub above (SBH-3)

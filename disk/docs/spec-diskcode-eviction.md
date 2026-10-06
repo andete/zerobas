@@ -4358,6 +4358,12 @@ past the FCB, the cached block address and the flags), the directory written
 once at CLOSE: 12 DSKIO calls, 4200 B in 14.2 emulated s against the CF-3300's
 11.8, no keys lost; gate `dout-acceptance`
 ([`s10b_ship_measure.out`](../../scratchpad/s10b_ship_measure.out)).
+Increment 2 (same day): APPEND on the same writer -- `hk_fapp` resumes the FCB at
+the last whole record (its random record, +33, the size rounded down; the
+record re-loaded; a trailing Ctrl-Z stepped back onto). Records go to the random
+record, and LOF (the FCB's size) and LOC (its random record) differ on APPEND as
+on the CF-3300 ([`applof_run.out`](../../scratchpad/applof_run.out)). Mode 2 is
+no longer stored; main's `fat_io_append` is gone.
 
 🔬 **S10.B RAM SAFETY, READ 2026-10-03.** Calling `wrblk_body` (and FMAKE's
 and the close's bodies) from a PRINT# hook in the middle of a BASIC statement

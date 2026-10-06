@@ -236,6 +236,9 @@ REQUIRED_DISK_RAM = [
     # LOF on a live OUTPUT channel reads MAIN's, which disk.rom keeps at the
     # FCB's size after every record it writes.
     "main_FAT_FILESIZE=FAT_FILESIZE",
+    # ⚠️ ALIASED likewise (disk.rom's FWR_BYTES is BDOS_WRBYTES): LOC on such a
+    # channel reads MAIN's, which disk.rom keeps at the FCB's random record.
+    "main_FWR_BYTES=FWR_BYTES",
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the

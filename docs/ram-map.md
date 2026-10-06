@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **105** in the MSX standard work area at or above `$F380`.
-* **disk** — 135 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **29** in the MSX standard work area at or above `$F380`.
+* **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (122 with a machine-readable width), plus **29** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -428,6 +428,7 @@ second one is the question a per-component map cannot answer.
 | `$E9F0` | 1 B | `basic` | `FWR_SECIDX` | sector index within the current cluster (byte) |  |
 | `$E9F1` | 2 B | `basic` | `FWR_BUFLEN` | bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
 | `$E9F3` | 4 B | `basic` | `FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
+| `$E9F3` | 4 B | `disk` | `main_FWR_BYTES` | main's FWR_BYTES -- total bytes written so far = final file size (4-byte LE) |  |
 | `$E9F7` | 2 B | `basic` | `FWR_DIRSEC` | logical sector holding the open file's dir entry (word) |  |
 | `$E9F7` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- logical sector holding the open file's dir entry (word) |  |
 | `$E9F9` | 2 B | `basic` | `FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |

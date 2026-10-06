@@ -960,14 +960,11 @@ dout_pos:
                 inc     hl
                 ret
 
-; hk_fmake -- OPEN FOR OUTPUT (H_FOPEN, FOPEN_SEL_MAKE). FCH_ACTIVE is the
-; channel being opened (fch_claim); DISK_FCB_NAME the parsed 8.3 name.
-; Creates (or truncates) the file through the same fat_dir_create main's
-; fat_io_create used, and builds the FCB as FMAKE does (fmake_fcb_fill: date,
-; +24, +25). Status 0 = open; otherwise the code is pending in DISKOP_ERR and
-; hk_claim_status keeps it from the restore (main's oo_fail raises it).
-hk_fmake:
-                ei
+; dout_open -- the FCB both OPENs build in the live channel's row: drive 0, the
+; name, +12.. zero (block, size, random record, flags, cursor), RS = 1, the
+; channel's block address (main's fch_ctx_addr) cached with position 0, then the
+; disk mounted. IX = the row; CF = the mount failed.
+dout_open:
                 call    dout_live           ; IX = the row
                 push    ix
                 pop     de
@@ -978,46 +975,197 @@ hk_fmake:
                 ld      bc, 11
                 ldir                        ; +1..11: the name
                 ex      de, hl
-                ld      b, DOUT_DIROFF+2-12 ; +12..: zero (block, size, records,
-hfm_z:                                      ; the cached address, flags, cursor)
+                ld      b, DOUT_DIROFF+2-12 ; +12..: zero
+dop_z:
                 ld      (hl), a
                 inc     hl
-                djnz    hfm_z
+                djnz    dop_z
                 inc     a
-                ld      (ix+14), a          ; RS = 1: a record is a byte
-                call    fat_mount
-                jr      c, hfm_fail
-                push    ix
-                pop     hl
-                inc     hl
-                call    fat_dir_create      ; HL = the 8.3 name; make or truncate
-                jr      c, hfm_fail
-                ld      hl, (FWR_DIRSEC)    ; where the entry is, for CLOSE
-                ld      (ix+DOUT_DIRSEC), l
-                ld      (ix+DOUT_DIRSEC+1), h
-                ld      hl, (FWR_DIROFF)
-                ld      (ix+DOUT_DIROFF), l
-                ld      (ix+DOUT_DIROFF+1), h
+                ld      (ix+14), a          ; RS = 1: a record is a byte, so the
+                                            ; random record +33 is a byte offset
                 ld      a, (FCH_ACTIVE)
                 ld      ix, fch_ctx_addr
                 call    calbak              ; HL = the channel's 265 B block
+                ei                          ; CALSLT returns DI (cbios slot.asm), and
+                                            ; the mount and the directory work below
+                                            ; must not run masked: the driver keeps
+                                            ; the CALLER's state (fdc_di_save), so a
+                                            ; DI here masked the whole OPEN and the
+                                            ; keys typed meanwhile were lost
                 push    hl
                 call    dout_live           ; (calbak consumed IX)
                 pop     hl
                 ld      (ix+DOUT_BLK), l
                 ld      (ix+DOUT_BLK+1), h
                 call    dout_pos
+                ld      (hl), 0             ; position 0
+                jp      fat_mount
+
+; dout_dirpos -- the directory entry fat_dir_create / fat_find just located
+; (FWR_DIRSEC/FWR_DIROFF) into the row, for CLOSE.
+dout_dirpos:
+                ld      hl, (FWR_DIRSEC)
+                ld      (ix+DOUT_DIRSEC), l
+                ld      (ix+DOUT_DIRSEC+1), h
+                ld      hl, (FWR_DIROFF)
+                ld      (ix+DOUT_DIROFF), l
+                ld      (ix+DOUT_DIROFF+1), h
+                ret
+
+; dout_mirror -- main's view of the FCB: FAT_FILESIZE := the size (+16, LOF)
+; and FWR_BYTES := the random record (+33, LOC), as the CF-3300's LOF and LOC
+; read its FCB (scratchpad/applof_run.out: after OPEN FOR APPEND on a 6 B file
+; LOF 6, LOC 0; once a record is written, 256 and 256). Main's engine globals
+; are not otherwise this channel's. IX = the row.
+dout_mirror:
+                push    ix
+                pop     hl
+                ld      de, 16
+                add     hl, de
+                ld      de, main_FAT_FILESIZE
+                ld      bc, 4
+                ldir                        ; the size
+                ld      de, 33-20
+                add     hl, de
+                ld      de, main_FWR_BYTES
+                ld      bc, 3
+                ldir                        ; the random record
                 xor     a
-                ld      (hl), a             ; position 0
-                ld      hl, 0
-                ld      (main_FAT_FILESIZE), hl
-                ld      (main_FAT_FILESIZE+2), hl   ; LOF: 0, as the CF-3300
+                ld      (de), a
+                ret
+
+; hk_fmake -- OPEN FOR OUTPUT (H_FOPEN, FOPEN_SEL_MAKE). FCH_ACTIVE is the
+; channel being opened (fch_claim); DISK_FCB_NAME the parsed 8.3 name. Creates
+; (or truncates) the file through the same fat_dir_create main's fat_io_create
+; used. Status 0 = open; otherwise the code is pending in DISKOP_ERR and
+; hk_claim_status keeps it from the restore (main's oo_fail raises it).
+hk_fmake:
+                ei
+                call    dout_open
+                jr      c, hfm_fail
+                push    ix
+                pop     hl
+                inc     hl
+                call    fat_dir_create      ; HL = the 8.3 name; make or truncate
+                jr      c, hfm_fail
+hfm_ok:
+                call    dout_dirpos
+                call    dout_mirror         ; LOF / LOC as the FCB says
+                xor     a
                 jp      hdl_answer          ; status 0, selector disarmed, claimed
 hfm_fail:
                 xor     a
                 ld      (FOPEN_SEL), a      ; disarm, as hdl_answer does
                 inc     a
                 jp      hk_claim_status     ; status 1; a pending code survives
+
+; hk_fapp -- OPEN FOR APPEND (H_FOPEN, FOPEN_SEL_APND), S10.B increment 2. A
+; MISSING file is refused, as main's own APPEND open refused it (D-APPMISS). The
+; FCB resumes at the last WHOLE record: random record = the size rounded down to
+; 256, and that record's bytes are re-loaded into the block -- a size that is a
+; whole number of records re-loads the last record entire, marked full and
+; unwritten (DOUT_RFULL), its offset one record back. A trailing Ctrl-Z is
+; stepped back onto, so the next byte overwrites it: "first\r\n\x1a" + APPEND
+; "second" -> "first\r\nsecond\r\n\x1a" (disk_probe_append.py, the CF-3300).
+; The size field keeps the file's size (LOF), the random record is LOC: 6 and 0
+; after OPEN FOR APPEND on a 6 B file, as on the CF-3300 (applof_run.out).
+hk_fapp:
+                ei
+                call    dout_open
+                jr      c, hfm_fail
+                ld      hl, DISK_FCB_NAME
+                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
+                jr      nc, hfa_found
+                ld      a, 53               ; not found: refused, `File not found`, as
+                ld      (DISKOP_ERR), a     ; main's own APPEND open raised it (its
+                jp      hfm_fail            ; df_or_loaderr keyed on fat_find's OP)
+hfa_found:
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+DOUT_FIRST), l
+                ld      (ix+DOUT_FIRST+1), h
+                ld      hl, (FAT_FILESIZE)
+                ld      (ix+16), l
+                ld      (ix+17), h          ; the size (a 64 KB file at most, as
+                                            ; main's engine took it)
+                ld      a, h
+                or      l
+                jr      z, hfm_ok           ; empty: nothing to resume
+                ld      b, l                ; B = bytes into the last record
+                ld      l, 0
+                ld      a, b
+                or      a
+                jr      nz, hfa_rr
+                dec     h                   ; a whole last record: re-load it all
+hfa_rr:
+                ld      (ix+33), l
+                ld      (ix+34), h          ; the random record: that record's start
+                push    bc                  ; [B = the count, 0 = 256]
+                ld      a, h
+                srl     a                   ; A = the record's sector in the file
+                ld      c, 0                ; C = its cluster's index in the chain
+                ld      hl, FAT_SECPERCLUS
+hfa_div:
+                cp      (hl)
+                jr      c, hfa_divd
+                sub     (hl)
+                inc     c
+                jr      hfa_div
+hfa_divd:
+                ld      (ix+DOUT_SECIDX), a
+                ld      (FWR_SECIDX), a
+                ld      l, (ix+DOUT_FIRST)
+                ld      h, (ix+DOUT_FIRST+1)
+                ld      a, c
+hfa_walk:
+                or      a
+                jr      z, hfa_clus
+                push    af
+                call    fat_next_cluster    ; HL = the next cluster
+                pop     af
+                dec     a
+                jr      hfa_walk
+hfa_clus:
+                ld      (ix+DOUT_CLUS), l
+                ld      (ix+DOUT_CLUS+1), h
+                ld      (FWR_CLUS), hl
+                call    dout_secread        ; FAT_DBUF = the record's sector
+                pop     bc
+                jp      c, hfm_fail
+                ld      hl, FAT_DBUF
+                bit     0, (ix+34)          ; the sector's second half?
+                jr      z, hfa_src
+                inc     h
+hfa_src:
+                push    hl
+                call    dout_pos
+                inc     hl
+                inc     hl
+                inc     hl
+                ex      de, hl              ; DE = the record
+                pop     hl                  ; HL = its bytes on disk
+                ld      c, b
+                ld      b, 0
+                ld      a, c
+                or      a
+                jr      nz, hfa_cnt
+                inc     b                   ; BC = 256
+hfa_cnt:
+                push    bc
+                ldir
+                pop     bc
+                dec     de
+                ld      a, (de)             ; the last byte
+                cp      $1A
+                jr      nz, hfa_pos
+                dec     bc                  ; a Ctrl-Z: the next byte goes ON it
+hfa_pos:
+                call    dout_pos
+                ld      (hl), c             ; the position in the record
+                ld      a, b
+                or      a
+                jp      z, hfm_ok           ; under 256: a partial record
+                set     DOUT_RFULL, (ix+DOUT_FLG)   ; 256: whole, to be rewritten
+                jp      hfm_ok
 
 ; hk_chout -- PRINT# to an OUTPUT channel (H_CHOUT): A = the byte.
 hk_chout:
@@ -1054,15 +1202,16 @@ dout_put:
                 set     DOUT_RFULL, (ix+DOUT_FLG)
                 ld      hl, 256             ; FALLS INTO dout_write
 
-; dout_write -- write the record's first HL bytes (1..256) at the file's end:
-; the committed size (FCB +16) is a whole number of records, so the record is
-; one HALF of a 512 B sector -- the first half when size bit 8 is 0. The
+; dout_write -- write the record's first HL bytes (1..256) at the random record
+; (FCB +33, a byte offset: RS = 1), which is a whole number of records, so the
+; record is one HALF of a 512 B sector -- the first half when its bit 8 is 0. The
 ; engine's write cursor (DOUT_CLUS/FIRST/SECIDX) goes into this ROM's FWR_*
 ; for fat_flush_data_sector, which allocates and links a cluster when one is
 ; needed and writes FAT_DBUF; a first half is written padded and the cursor
 ; stepped BACK onto its sector (as fat_detach_channel does), so the second
-; half re-reads it and completes it. On success: size += HL, LOF (main's
-; FAT_FILESIZE) follows, DOUT_RFULL clears. On failure raise what is pending --
+; half re-reads it and completes it. On success: random record += HL, size :=
+; max(size, random record) -- WRBLK's own rule, and the CF-3300's LOF -- main's
+; LOF/LOC mirrors follow (dout_mirror), DOUT_RFULL clears. On failure raise what is pending --
 ; 66 from fac_full, or a DSKIO code -- through main's disk_error, the row as
 ; it was. IX = the row (kept).
 dout_write:
@@ -1076,7 +1225,7 @@ dout_write:
                 ld      a, (ix+DOUT_SECIDX)
                 ld      (FWR_SECIDX), a
                 ld      de, FAT_DBUF
-                bit     0, (ix+17)          ; size bit 8: the sector's second half?
+                bit     0, (ix+34)          ; offset bit 8: the sector's second half?
                 jr      z, dwr_copy
                 call    dout_secread        ; its first half, as written
                 jp      c, dwr_fail
@@ -1091,7 +1240,7 @@ dwr_copy:
                 ldir
                 pop     hl                  ; the count
                 push    hl
-                bit     0, (ix+17)
+                bit     0, (ix+34)
                 jr      z, dwr_len
                 inc     h                   ; + the first half
 dwr_len:
@@ -1099,7 +1248,7 @@ dwr_len:
                 call    fat_flush_data_sector
                 pop     bc                  ; BC = the count
                 jp      c, dwr_fail
-                bit     0, (ix+17)
+                bit     0, (ix+34)
                 jr      nz, dwr_keep        ; the sector is complete: move on
                 ld      hl, FWR_SECIDX
                 dec     (hl)                ; back onto it, for the second half
@@ -1112,25 +1261,23 @@ dwr_keep:
                 ld      (ix+DOUT_FIRST+1), h
                 ld      a, (FWR_SECIDX)
                 ld      (ix+DOUT_SECIDX), a
-                ld      l, (ix+16)
-                ld      h, (ix+17)
+                ld      l, (ix+33)
+                ld      h, (ix+34)
                 add     hl, bc
-                ld      (ix+16), l
-                ld      (ix+17), h
-                jr      nc, dwr_lof
-                inc     (ix+18)
-                jr      nz, dwr_lof
-                inc     (ix+19)
+                ld      (ix+33), l
+                ld      (ix+34), h          ; the random record (64 KB: the size
+                                            ; field's high word stays 0, as below)
+                ld      e, (ix+16)
+                ld      d, (ix+17)
+                ex      de, hl
+                or      a
+                sbc     hl, de              ; size - random record
+                jr      nc, dwr_lof         ; the size already reaches it
+                ld      (ix+16), e
+                ld      (ix+17), d          ; size := the random record
 dwr_lof:
                 res     DOUT_RFULL, (ix+DOUT_FLG)
-                push    ix
-                pop     hl
-                ld      de, 16
-                add     hl, de              ; FCB +16: the size
-                ld      de, main_FAT_FILESIZE
-                ld      bc, 4
-                ldir
-                ret
+                jp      dout_mirror
 
 ; dout_secread -- FAT_DBUF := the sector at (FWR_CLUS, FWR_SECIDX). Cy = I/O.
 dout_secread:
@@ -3683,6 +3830,8 @@ hk_dpload:
                 jp      z,hk_ochk           ; D-OPENSAME: OPEN's same-file check
                 cp      FOPEN_SEL_MAKE
                 jp      z,hk_fmake          ; S10.B: OPEN FOR OUTPUT
+                cp      FOPEN_SEL_APND
+                jp      z,hk_fapp           ; S10.B increment 2: OPEN FOR APPEND
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.

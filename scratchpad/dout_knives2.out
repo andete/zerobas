@@ -1,0 +1,6 @@
+  ROM 24f55ba7 91f998de 82b90f04 22b25346  ->  24f55ba7 91f998de 93aa606f 22b25346
+PASS  K-AP1: diverged ['app256', 'app6', 'append'] (want exactly ['app256', 'app6', 'append'])
+  ROM 24f55ba7 91f998de 93aa606f 22b25346  ->  2742e797 91f998de 82b90f04 9880cdb4
+PASS  K-AP2: diverged ['app256', 'app6'] (want exactly ['app256', 'app6'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

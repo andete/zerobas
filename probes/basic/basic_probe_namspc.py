@@ -1312,10 +1312,19 @@ def run_side(side: str, only: list[str]) -> dict:
             out[label] = tokens(caps[0])
             continue
         body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
+        # 🔴 A DISK ROW GETS AT LEAST THE CF-3300's WINDOW ON EVERY SIDE (S10.B
+        # increment 2, 2026-10-06). `f.appvarx` (OPEN..AS, CLOSE, OPEN..FOR
+        # APPEND, CLOSE) runs 2.28 s on ours and 3.40 s on the CF-3300 (marker to
+        # marker), which this table gave 4.5 s and ours 2.5 -- ours was scraped
+        # still running and read UNREADABLE while being the FASTER machine. The
+        # rows' subject is the name parse, not the time.
+        step = cfg["step"]
+        if kind in ("dsk", "dskerr", "dsklist"):
+            step = max(step, SIDES["cf3300"]["step"])
         caps = omsx_repl.run_cases(
             cfg["machine"],
             [("direct", list(cfg["reset"]) + body + ["RUN"])],
-            batch=False, reset=(), boot=cfg["boot"], step=cfg["step"], **kw)
+            batch=False, reset=(), boot=cfg["boot"], step=step, **kw)
         out[label] = {"dskerr": errface, "err": errface,
                       "dsklist": listface}.get(kind, bracket)(caps[0])
     return out

@@ -629,14 +629,15 @@ oo_setmode:
                 call    fat_io_open         ; INPUT: mount + find + prime read
                 jr      oo_done
 oo_create:
-                ; S10.B: OUTPUT is disk.rom's -- the channel is an MSX-DOS FCB
-                ; it creates in the channel's engine row (hk_fmake)
+                ; S10.B: OUTPUT and APPEND are disk.rom's -- the channel is an
+                ; MSX-DOS FCB in the channel's engine row (hk_fmake / hk_fapp)
                 ld      a,FOPEN_SEL_MAKE
-                call    fopen_cross         ; A = status, 0 = created
-                add     a,$FF               ; CF iff status != 0
-                jr      oo_done
+                jr      oo_cross
 oo_append:
-                call    fat_io_append       ; APPEND: open existing + position at EOF
+                ld      a,FOPEN_SEL_APND
+oo_cross:
+                call    fopen_cross         ; A = status, 0 = open
+                add     a,$FF               ; CF iff status != 0
                 jr      oo_done
 oo_random_setup:
                 ; RANDOM: open-or-create the on-disk file and seed the channel's
@@ -648,11 +649,11 @@ oo_done:
                 pop     hl
                 jr      c,oo_fail           ; not found / dir-full / mount / I-O error
                 ; success: record the open mode in the channel table + the mirror.
-                ; S10.B (2026-10-06): the two write actions SWAP here. OUTPUT (2)
-                ; is stored as DOUT_MODE (3), disk.rom's FCB channel; APPEND (3)
-                ; as 2, main's own engine, which every older `cp 2` serves. The
-                ; FCH_MODES address math uses HL, so guard the text cursor (HL)
-                ; that exec_stmt needs to continue the line.
+                ; S10.B (2026-10-06): both write actions are stored as DOUT_MODE
+                ; (3), disk.rom's FCB channel (APPEND since increment 2; mode 2,
+                ; main's own channel engine, is no longer stored). The FCH_MODES
+                ; address math uses HL, so guard the text cursor (HL) that
+                ; exec_stmt needs to continue the line.
                 ld      a,e
                 ld      (FCH_NUM),a
                 ld      a,(FCH_MODE)
@@ -660,13 +661,13 @@ oo_done:
                 jr      c,oo_storemode      ; 1 INPUT
                 cp      4
                 jr      nc,oo_storemode     ; 4 RANDOM
-                xor     1                   ; 2 <-> 3
+                ld      a,DOUT_MODE         ; 2 OUTPUT, 3 APPEND
                 ld      (FCH_MODE),a
 oo_storemode:
                 push    hl
                 ld      a,e
                 call    fch_modes_ptr
-                ld      a,(FCH_MODE)        ; 1 INPUT, 2 APPEND, 3 OUTPUT, 4 RANDOM
+                ld      a,(FCH_MODE)        ; 1 INPUT, 3 OUTPUT/APPEND, 4 RANDOM
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 oo_fail:

@@ -266,7 +266,14 @@ tfl_dout:
                 add     hl,bc               ; HL = FCB +16, the size
                 ld      de,FAT_FILESIZE
                 ld      bc,4
-                ldir
+                ldir                        ; LOF
+                ld      bc,33-20
+                add     hl,bc               ; HL = FCB +33, the random record
+                ld      de,FWR_BYTES
+                ld      bc,3
+                ldir                        ; LOC (S10.B increment 2: on an APPEND
+                xor     a                   ; channel it is not LOF)
+                ld      (de),a
                 jp      fp_stash_ok
 
 ; t_fch_save (D-FCBSHAPE S0): flush, then the engine globals -> channel context

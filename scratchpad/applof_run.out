@@ -1,0 +1,6 @@
+== 6B    CF-3300 : 6,0,6,0,256,256,306,
+== 6B    OURS    : 6,6,6,6,6,6,306,
+== 256B  CF-3300 : 256,0,256,256,512,512,556,
+== 256B  OURS    : 256,256,256,256,256,256,556,
+   fields: LOF,LOC after OPEN APPEND; after 10 B; after 300 B; size reopened
+refcache: 0 hit, 4 miss, 4 stored

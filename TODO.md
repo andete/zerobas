@@ -577,10 +577,47 @@ item — do **one item per session** to keep context lean.
       8/8 once its own three apparatus faults were fixed (a number wrapping at
       the row edge -- which was D-PRNUMWRAP, a real divergence -- an integer
       `MOD` overflow, and a trap MAXFILES had cleared).
-      ➡️ **Left for later increments:** APPEND through the same writer (then
-      mode 2 retires), main's own write engine's deletion (SAVE ,A still uses
-      it), the input side through `$FE8A` (S10.C), and the speed (keep a
-      sector's first half instead of re-reading it).
+      ✅ **INCREMENT 2 SHIPPED (2026-10-06): APPEND IS DISK.ROM'S TOO; mode 2 is no
+      longer stored.** `FOPEN_SEL_APND` → `hk_fapp`: a missing file is refused
+      (53, `File not found`, as before -- disk.rom now leaves the code itself);
+      the FCB resumes at the last WHOLE record -- its random record (+33) the
+      size rounded down, that record's bytes re-loaded into the block (a size
+      that is a whole number of records re-loads the last record entire,
+      DOUT_RFULL) -- and a trailing Ctrl-Z is stepped back onto. Records go to
+      the random record now, not the size: LOF is the FCB's size and LOC its
+      random record, and **they DIFFER on APPEND**
+      ([`applof_run.out`](scratchpad/applof_run.out), the CF-3300): a 6 B file
+      reads 6/0 after the OPEN, 6/0 after 10 B, 256/256 after 300; a 256 B one
+      256/0, then 256/256 (the first byte overwrote its Ctrl-Z and completed
+      the record), 512/512. Ours read LOF = LOC = the open size throughout --
+      fixed with it: LOC on a mode-3 channel reads `FWR_BYTES`, which disk.rom
+      keeps at the random record (`dout_mirror`; t_fch_load re-reads it).
+      Main's `fat_io_append` is gone (page 1 113 → 202 B; its fatprim row 18
+      keeps its numbered slot). dout-acceptance gains `app6`/`app256`, 10/10;
+      knives ([`dout_knives2.py`](scratchpad/dout_knives2.py)) K-AP1 (no
+      Ctrl-Z step-back) moves exactly app6/app256/append, K-AP2 (LOC = LOF) app6/app256.
+      🔴 **A CALL-BACK RETURNS DI, AND IT MASKED THE WHOLE OPEN.** Increment 2's
+      shared `dout_open` calls `fch_ctx_addr` back in main BEFORE the mount;
+      C-BIOS's CALSLT returns DI, the driver keeps the CALLER's interrupt state
+      (`fdc_di_save`), so every sector op of the OPEN ran masked and
+      diskbasic-acceptance's PRINT# round-trip lost keys again (`opent.txt"…`).
+      One `ei` after the call-back fixed it (2/2, 4200 B still 14.2 s).
+      ⚠️ My first scoring of that `ei` was a MISS -- but the run carried a
+      driver experiment too (D-FDCDI below) that made it worse; with the
+      experiment out, the `ei` alone passes. Confounded, not refuted.
+      ⏱ **THE BATTERY'S TWO TIMING CASUALTIES:** namspc's `f.appvarx` (OPEN..AS,
+      CLOSE, OPEN..FOR APPEND, CLOSE) read UNREADABLE -- ours runs it in 2.28 s
+      and the CF-3300 in 3.40 (marker to marker), but the probe gave ours a
+      2.5 s window and the CF-3300 4.5; a disk row now gets at least the
+      CF-3300's window on every side. And `badfnum-acceptance` went red ONCE in
+      the parallel FULL battery and green on the serial retry (the runner calls
+      it a flake); the failing log was not kept (`gate_flakes/` holds only the
+      excluded five's), so whether its disk rows share namspc's window problem
+      is UNMEASURED -- re-run it under load before believing "flake".
+      ➡️ **Left for later increments:** main's own write engine's deletion
+      (SAVE ,A still uses it), the input side through `$FE8A` (S10.C), the speed
+      (keep a sector's first half instead of re-reading it), and the `cp 2`
+      mode tests main still carries for a mode nothing stores.
 
 - [x] ✅ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE WAS SPLIT
       ACROSS IT ON OURS; THE VG-8020 AND CF-3300 MOVE IT WHOLE TO THE NEXT LINE (found
@@ -621,6 +658,20 @@ item — do **one item per session** to keep context lean.
       read the same); it compares the rows right-trimmed only.
       🎯 Predicted: every number case as the VG-8020, the string unmoved -- hit.
 
+- [ ] 🔧 **D-DEADSEED — `check_dead_code` STAYED GREEN WITH `fat_io_append` UNCALLED (found
+      2026-10-06 by S10.B increment 2; NOT TRACED)**
+      🎚️ APPARATUS — a gate's blind spot, not a keyword defect.
+      📏 After `oo_append` stopped calling it, main's `fat_io_append` (89 B of
+      page 1, with `fia_walk`/`fia_walked`/`fia_empty`) had no caller anywhere
+      in code -- grep found only its own label -- yet `make basic-reloc`'s
+      sweep read `main: … -> 0 dead`. Not prose: `external_names` reads the
+      code column only, and the disk-side comment that named it was reworded
+      first with no change. It was deleted by hand.
+      ➡️ **TRACE IT:** restore the block on a scratch build and ask the sweep
+      which seed or edge reaches it (it has no `--why`; add one). A seed that
+      keeps one dead routine alive keeps others.
+      🤖 **AUTONOMOUS** — the sweep's own data settles it.
+
 - [ ] ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO KEYS
       TYPED DURING LONG DISK WORK ARE LOST; THE CF-3300 KEEPS SCANNING (filed 2026-10-06
       from S10.B; NOT YET A FAILING ROW ON main)**
@@ -638,6 +689,13 @@ item — do **one item per session** to keep context lean.
       ours. If ours loses keys, the candidate is DI only around the data
       transfer (after the first DRQ), not the seek; the a3 §8.34 LOST-DATA
       livelock that `fdc_di_save` exists for is the risk to re-check.
+      🔬 **TRIED 2026-10-06 AND REVERTED:** an `fdc_drq_wait` that polled for the
+      FIRST DRQ in `ei / nop / di` windows (attempt 1 only; the retry masked).
+      JIFFY did run (101 frames in 3 s, was ~15), but keys were still lost: an
+      IRQ straddling a first DRQ costs a lost-data failure, the retry waits a
+      whole rotation MASKED (0.2 s at `fdc_rd_wait`, scratchpad ktrace), and
+      ~4 keys go in that window. Not shipped. Next idea: keep the retry
+      interruptible too, bounded, and measure the lost-data rate on its own.
       🤖 **AUTONOMOUS** — the CF-3300 settles it.
 
 - [x] 🟢 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
@@ -6190,7 +6248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29502 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29560 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6356,7 +6414,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11191 (T-6FE392)8 (T-529ABE)` from `TODO.md:23775 (T-529ABE)`: a
+      `TODO.md:11249 (T-6FE392)8 (T-529ABE)` from `TODO.md:23833 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12038,7 +12096,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23775 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23833 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
