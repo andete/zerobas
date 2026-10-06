@@ -6251,7 +6251,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29581 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29597 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24547,8 +24547,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a three-file cut: no patch, old SHA-1, island 1 at `$1AF2`): `x.botwrap`
       reads 1 and the flags `1 1 1`. 🎯 Predicted both, hit.
 
-- [ ] ⌨️ **D-LINTTBSTALE — OLDER ROWS CAN CARRY STALE "CONTINUES" MARKS AFTER SCROLLS (filed
-      2026-10-03 from the D-SCREDIT note; mechanism named there, NOT MEASURED as a failing row)**
+- [x] ✅ **D-LINTTBSTALE — OLDER ROWS COULD CARRY STALE "CONTINUES" MARKS AFTER SCROLLS (filed
+      2026-10-03 from the D-SCREDIT note; MEASURED AND FIXED 2026-10-06, by D-LINTTBWRAP's patch)**
       🎚️ TIER 3 — common errors: a corner of re-entry after scrolling.
       🔬 The note: C-BIOS never rewrites two `LINTTB` entries on a scroll, and
       the reader's upward walk can follow a stale zero into an unrelated row
@@ -24556,7 +24556,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ **MEASURE FIRST:** build the failing row before any fix. Scroll a
       wrapped line off the top, then re-enter a line printed after it. Compare
       the executed text with both references.
-      🤖 **AUTONOMOUS** — the references settle it.
+      ✅ **MEASURED, AND IT WAS REAL -- AND ALREADY FIXED BY cbios-repack patch #7
+      (D-LINTTBWRAP, 207d8299).** The item's own recipe (a wrap scrolled off the
+      top, `wrap_off`; one still on screen, `wrap_mid`) read A = 1 on the
+      VG-8020 and on ours, BEFORE the patch too -- blind: those geometries never
+      reach the defect. Read from the C-BIOS source, the old scroll's LINTTB move
+      was one entry short, so the SECOND-TO-LAST entry stayed put while its row's
+      content moved up: the stale zero needs a wrap whose first row is the
+      second-to-last one, then a scroll (`wrap_low`). Built that way
+      ([`linttbstale_probe.py`](scratchpad/linttbstale_probe.py)), re-entering the
+      payload printed after it: the unpatched build reads **A = 0** (the wrap's
+      quote row glued in front, a REM), the VG-8020 and the patched build **1**
+      ([`linttbwrap_knife.out`](scratchpad/linttbwrap_knife.out)).
+      🎯 Predicted A = 1 everywhere after the patch -- hit; predicted a 0 from
+      the recipe's own two cases on the old build -- **MISSED** (blind); the
+      third, read off the source, found it.
+      Gate row `x.stale` in `screditor-acceptance`: 1 on the VG-8020, the
+      CF-3300 and ours.
 
 - [x] **Screen-editor REPL** — real MSX BASIC does not use a sequential prompt
       loop; Enter reads the *current cursor line from VRAM* (not a dedicated

@@ -18,6 +18,8 @@ byte-identical to none (D-EDITLINE).
     x.vpoke   the same fill by VPOKE -> 1 (no continuation: the row alone)
     x.botwrap a PRINT that wraps on the BOTTOM row (and scrolls), re-entered
               from its first row -> 2: both rows are one line (D-LINTTBWRAP)
+    x.stale   a wrap on the second-to-last row, a scroll, then the payload:
+              re-entered alone -> 1, no stale mark glues the row above (D-LINTTBSTALE)
     i.wrap    INPUT at the bottom row, a 45-char answer that wraps and scrolls
               -> 45, the prompt excluded (the start column survives the scroll)
     i.top     the same at the top -> 45
@@ -66,6 +68,12 @@ CASES = [
     # up: the prompt, the wrap's second row, its first; Enter on the first must
     # read both (A=1 ... :A=A+1 -> 2), not the first alone (A=1 -> 1).
     ("x.botwrap", ['10 CLS:FOR I=1 TO 30:PRINT:NEXT:PRINT"A=1";SPC(34);":A=A+1";:END', 'RUN', UP * 3, 'PRINT"[x.botwrap";A;"]"']),
+    # D-LINTTBSTALE (2026-10-06): a wrap whose FIRST row is the second-to-last,
+    # then a scroll -- the old scroll's one-short LINTTB move left that row's
+    # zero in place under moved content, gluing the wrap's quote row onto the
+    # payload printed next (A stayed 0: a REM). Re-entering the payload alone:
+    # 1. Fixed by the same cbios-repack patch #7 (scratchpad/linttbstale_probe.py).
+    ("x.stale",   ['10 CLS:FOR I=1 TO 30:PRINT I:NEXT:LOCATE 0,CSRLIN-1:PRINT STRING$(41,"\'");:PRINT:PRINT"' + PAY + '";:END', 'RUN', UP * 2, 'PRINT"[x.stale";A;"]"']),
     ("i.wrap",    ['10 WIDTH 40:FOR I=1 TO 23:PRINT:NEXT:INPUT A$:PRINT"[i.wrap";LEN(A$);LEFT$(A$,2);RIGHT$(A$,2);"]"', 'RUN', ANS]),
     ("i.top",     ['10 WIDTH 40:CLS:INPUT A$:PRINT"[i.top";LEN(A$);LEFT$(A$,2);"]"', 'RUN', ANS]),
     # D-EDINPUTCSR (2026-10-06): a wrapped answer, cursor UP into its first row,
@@ -105,7 +113,7 @@ CASES = [
 ]
 # matrix keys held from the RUN: F1 = row 6 bit 5; SHIFT = row 6 bit 0
 HOLDS = {"e.f1": (6, 0x20), "e.f6": ((6, 0x01), (6, 0x20))}
-EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1", "x.botwrap": "2",
+EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1", "x.botwrap": "2", "x.stale": "1",
           "i.wrap": "45 xxxx", "i.top": "45 xx", "i.csrup": "45 01234Q6789hi",
           "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
           "e.tab": "5", "e.tabwrap": "37",

@@ -6,7 +6,11 @@ repack's old SHA-1 and island 1 back at $1AF2) and read ours again.
 
   K-LTW  -> screditor's x.botwrap reads 1 (only the wrapped line's first row
             runs) and scratchpad/linttbwrap_probe.py's flags read `1 1 1`
-            (the wrapped row's "continues" mark is lost)
+            (the wrapped row's "continues" mark is lost); and
+            scratchpad/linttbstale_probe.py (D-LINTTBSTALE) is read too: its
+            wrap_low reads A = 0 there (a stale zero glues the row above), 1 on
+            the patched build and on the VG-8020; wrap_off / wrap_mid read 1
+            either way (they cannot reach the defect)
 
 A three-file cut, so not kwknife's one-anchor shape: originals held in memory
 and put back by try/finally AND atexit; knife_guard proves the cut reached the
@@ -64,6 +68,11 @@ print('x.botwrap', m.read('zb', cfg['zb']))
         print(sub.stdout.strip().splitlines()[0] if sub.stdout.strip() else sub.stderr[-300:])
         sub = subprocess.run(["python3", "-u", "scratchpad/linttbwrap_probe.py"],
                              capture_output=True, text=True, timeout=600)
+        print("\n".join(l for l in sub.stdout.splitlines() if "NODISK" in l))
+        # D-LINTTBSTALE's probe too: does the unpatched scroll leave a STALE
+        # zero above a later row (the item's mechanism)?
+        sub = subprocess.run(["python3", "-u", "scratchpad/linttbstale_probe.py"],
+                             capture_output=True, text=True, timeout=900)
         print("\n".join(l for l in sub.stdout.splitlines() if "NODISK" in l))
     finally:
         restore()
