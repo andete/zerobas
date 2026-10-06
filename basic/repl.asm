@@ -195,6 +195,9 @@ rl_get:
                 ld      (RL_KEY),a          ; interrupts live (PLAY, the traps), and the
                                             ; harness's injector latch (latch-check) sees
                                             ; the same wait it always modelled
+                call    ek_ctrl             ; D-EDCTRL: CTRL-B/E/F/N/U are main's
+                jr      z,rl_wait           ; (basic/edctrl.asm); Z = handled
+                ld      a,(RL_KEY)
                 call    sr_inl1             ; D-STUBINL: one key
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_READLINE)
                 jp      c,subrom_absent_error

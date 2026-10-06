@@ -6075,7 +6075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29289 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29316 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24160,7 +24160,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       reference fires them there is UNMEASURED — so the conservative answer is
       gated in at one RAM load rather than changed as a side effect. Spec §6 names
       the characterization that closes it.
-- [ ] ⌨️ **D-EDCTRL — THE SCREEN EDITOR DROPS EVERY CTRL EDITING KEY: TAB, CTRL-E, CTRL-U,
+- [x] ✅ **D-EDCTRL — THE SCREEN EDITOR DROPPED EVERY CTRL EDITING KEY: TAB, CTRL-E, CTRL-U,
       CTRL-B/F, CTRL-N (filed 2026-10-03 from the D-SCREDIT note; NOT MEASURED)**
       🎚️ TIER 1 — happy path: TAB, erase-to-end and erase-line are everyday line
       editing on an MSX.
@@ -24207,6 +24207,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       then the five CTRL handlers in `sub/readline.asm`. ✅ D-CTRLKEYS SHIPPED
       2026-10-05: the codes now arrive, and readline drops them -- the handlers
       are what is left.
+      ✅ **THE FIVE CTRL KEYS SHIPPED 2026-10-05 (part 2).** Measured further
+      first (9 more cases): a WORD is a run of letters and digits (`A,B.CD EF`:
+      E -> C -> B); CTRL-B / CTRL-F scan the WHOLE SCREEN, not the logical line
+      (CTRL-B from a line's first column lands on the prompt row above; CTRL-F
+      with no word ahead stops on the window's last cell); CTRL-N on a line that
+      fills its row goes to column 1 of the continuation row; CTRL-U inside INPUT
+      erases only from where input began (`? ` stays), CTRL-E from the cursor
+      wherever it is. In MAIN, not the sub-ROM tenant (`basic/edctrl.asm`,
+      called from `rl_get` before the key goes to the tenant): 302 B of main page
+      1 against 158 B left in sub page 1. Its cell arithmetic is the tenant's
+      own, moved to main's low region first (`basic/edscreen.asm`, a separate
+      no-behaviour commit). `edctrl_probe.py`: 25/27 agree with the VG-8020; the
+      two left are cosmetic -- `ctrlb_start` lands on our `ZB` prompt where the
+      reference's says `Ok`, and `ctrlf_end` differs only in the font bytes
+      below the text window. (`ctrlf_wrap` is not a valid reading on either
+      machine: 41 typed cursor-lefts had not finished by the readout.)
+      🔴 **THE FIRST BUILD CORRUPTED RAM, AND THE PROBE CAUGHT IT.** CTRL-E's
+      LINTTB-marking loop ended `cp d / inc b / jr nz` -- `inc` sets Z itself,
+      so it never stopped at the last row and wrote 1 over LINTTB..$FCB0, SCRMOD
+      included: the cursor was drawn at a SCREEN 1 address and the next key was
+      lost. Compare after the inc.
+      Gate rows in `screditor-acceptance`: `e.ctrle` (ABC), `e.ctrlu` (OK),
+      `e.ctrlb` / `e.ctrlf` (AB XD), the same on the VG-8020 and CF-3300.
+      🔪 Hook knife (CTRL keys to the tenant again): `e.ctrlu` None, `e.ctrlb`
+      `AB CDX`, `e.ctrlf` `X`, `e.ctrle` `ABCDEF`. ⚠️ `e.ctrle`'s first form was
+      BLIND (typing on after the CTRL-E overwrote the tail anyway) -- it now
+      presses Enter right after the CTRL-E.
       ✅ **TAB SHIPPED 2026-10-05.** Measured further first (three more cases):
       from column 33 or later on a 37-column row TAB fills to the edge and WRAPS
       to column 1 of a continuation row (LINTTB marks the row continued), and in

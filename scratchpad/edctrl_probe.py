@@ -52,6 +52,21 @@ CASES = {
     "esc":         "ABC" + L + ESC + "X",
     # does insert mode survive a CTRL edit key?
     "ins_ctrle":   "ABCD" + L + L + INS + CE + "Q",
+    # --- the semantics D-EDCTRL part 2 needs (2026-10-05) ---
+    # what is a WORD: punctuation
+    "ctrlb_punct": "A,B.CD EF" + CB + CB + CB,
+    "ctrlf_punct": "A,B.CD EF" + L * 9 + CF + CF + CF,
+    # across a wrapped row: 33 A + ' BCDE FG' = 41 -> row 2 holds 'E FG'
+    "ctrlb_wrap":  "A" * 33 + " BCDE FG" + CB + CB,
+    "ctrlf_wrap":  "A" * 33 + " BCDE FG" + L * 41 + CF + CF,
+    # at the line's ends
+    "ctrlb_start": "AB CD" + L * 5 + CB,
+    "ctrlf_end":   "AB CD" + CF,
+    # a line that fills its row exactly (37), cursor back into it
+    "ctrln_exact": LONG + "!" + L * 5 + CN,
+    # inside INPUT: is the `? ` prompt part of what CTRL-U / CTRL-E erase?
+    "ctrlu_input": "INPUT A$\\r" + "XYZ" + CU,
+    "ctrle_input": "INPUT A$\\r" + "XYZ" + L * 4 + CE,
 }
 
 

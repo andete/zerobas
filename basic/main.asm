@@ -258,6 +258,7 @@ __MEAS_LOW_END:
 
 ; Keyboard line editor + read/eval loop (defines `repl`, `print_string`).
                 include "basic/repl.asm"
+                include "basic/edctrl.asm"   ; D-EDCTRL: CTRL-B/E/F/N/U at the editor
 
 ; Integer variable store (defines `var_get`, `var_set`, `clear_vars`) + the
 ; minimal string-variable store (defines `str_find`, `str_get_key`,

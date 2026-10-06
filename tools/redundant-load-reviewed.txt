@@ -30,6 +30,7 @@ ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state
 str_lr_count     CLOBBER  returns A = E = the CLAMPED count; HL = temp, so (HL) is templen -- a different value (RIGHT$ needs it; D-SAVECOLON 2026-09-28)
 tgt_desc_fix     POINTER  returns HL = offset + ARYTAB (the D-ARYLV §13a fixup)
 df_entptr        POINTER  returns HL = FSECTOR_BUF + entry offset
+ek_hladd         POINTER  returns HL = HL + A (a LINTTB entry, basic/edctrl.asm); A is the low sum, the load reads the row's mark (D-EDCTRL 2026-10-05)
 
 inc_eval         CLOBBER  returns the value in DE; A is scratch, HL the advanced
 #                         cursor. It IS `eval`: a one-byte `inc hl` that FALLS

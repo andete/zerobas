@@ -35,6 +35,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); REPO = os.path.dirname(os.pat
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl, probe_sides                                   # noqa: E402
 UP, LEFT, HOME, DOWN, TAB = "\x1e", "\x1d", "\x0b", "\x1f", "\x09"
+CB, CE, CF, CN, CU = "\x02", "\x05", "\x06", "\x0e", "\x15"   # CTRL-B/E/F/N/U
 PAY = "A=A+1:PRINT A"
 ANS = "x" * 45
 # The re-entry rows build the screen FROM A PROGRAM and navigate with HOME +
@@ -63,11 +64,24 @@ CASES = [
     # ...and from a stop at column 33 it blanks to the row's end and WRAPS: the Y
     # is on a continuation row, still in the same string. 28 x + 8 blanks + Y.
     ("e.tabwrap", ['WIDTH 40:CLS', 'A$="' + "x" * 28 + TAB + 'Y":PRINT"[e.tabwrap";LEN(A$);"]"']),
+    # D-EDCTRL part 2 (2026-10-05): the CTRL editing keys, each read back through
+    # the line it edited. CTRL-E erases from the cursor to the line's end, then
+    # ENTER at once -- the unterminated literal ends there. 🔴 The first cut kept
+    # typing after the CTRL-E and was BLIND: the text typed next overwrote the
+    # `DEF` tail anyway, so a dropped CTRL-E read `ABC` too (the hook knife).
+    ("e.ctrle",   ['WIDTH 40:CLS', 'A$="ABCDEF' + LEFT * 3 + CE, 'PRINT"[e.ctrle";A$;"]"']),
+    # CTRL-U erases the whole line: only what is typed after it runs
+    ("e.ctrlu",   ['WIDTH 40:CLS', 'A$="JUNK' + CU + 'A$="OK":PRINT"[e.ctrlu";A$;"]"']),
+    # CTRL-B to the previous word's start, overtype it, CTRL-N to the line's end
+    ("e.ctrlb",   ['WIDTH 40:CLS', 'A$="AB CD' + CB + 'X' + CN + '":PRINT"[e.ctrlb";A$;"]"']),
+    # CTRL-F from the first word to the next one, overtype, CTRL-N to the end
+    ("e.ctrlf",   ['WIDTH 40:CLS', 'A$="AB CD' + LEFT * 5 + CF + 'X' + CN + '":PRINT"[e.ctrlf";A$;"]"']),
 ]
 EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1",
           "i.wrap": "45 xxxx", "i.top": "45 xx",
           "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
-          "e.tab": "5", "e.tabwrap": "37"}
+          "e.tab": "5", "e.tabwrap": "37",
+          "e.ctrle": "ABC", "e.ctrlu": "OK", "e.ctrlb": "AB XD", "e.ctrlf": "AB XD"}
 
 def fence(tag, cap):
     """The printed `[tag ...]`, never the typed echo (an echo carries `";`)."""
