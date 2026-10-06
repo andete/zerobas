@@ -1,0 +1,50 @@
+diff --git a/src/chput.asm b/src/chput.asm
+index 8bedf16..23c820e 100644
+--- a/src/chput.asm
++++ b/src/chput.asm
+@@ -410,22 +410,36 @@ chput_esc_m_loop:
+ chput_esc_m_loop_end:
+                 djnz    chput_esc_m_loop        ; endloop
+ 
+-                call    chput_esc_k             ; clear till end of line
+-                pop     hl                      ; restore cursor position
+-                ld      (CSRY),hl
+-
+-                ld      h,0                     ; update LINTTB
+-                ld      a,(CRTCNT)              ; BC := (CRTCNT) - (CRSY) - 1
+-                sub     l                       
+-                dec     a
++                ; zerobas repack (D-LINTTBWRAP): LINTTB moves up WITH the rows,
++                ; BEFORE the new bottom line is cleared. The clear (chput_esc_k)
++                ; marks the bottom row's entry as ending a line, and it used to
++                ; run first -- overwriting the entry that was about to move up --
++                ; and the move was one entry short, so the bottom row's own entry
++                ; never moved at all. A program PRINT that wrapped on the bottom
++                ; row (and so scrolled) lost its "continues" mark: the VG-8020
++                ; reads `3 2 0 175 1` for the last five rows after
++                ; `PRINT STRING$(39,"a");"bc";` there, C-BIOS read `1 1 1 1 24`.
++                ; Every row below the deleted one moves: (CRTCNT) - (CSRY)
++                ; entries, none when the bottom row itself is deleted (the old
++                ; count was -1 there, and LDIR moved 255 bytes past LINTTB).
++                pop     hl                      ; L = the deleted row
++                push    hl
++                ld      h,0
++                ld      a,(CRTCNT)
++                sub     l
++                jr      z,chput_esc_m_nomove
+                 ld      c,a
+                 ld      b,0
+-                ld      de,LINTTB-1             ; DE := LINTTB + (CSRY)
++                ld      de,LINTTB-1             ; DE := LINTTB + (CSRY) - 1
+                 add     hl,de
+                 ld      d,h
+                 ld      e,l
+                 inc     hl                      ; HL := DE + 1
+                 ldir
++chput_esc_m_nomove:
++                call    chput_esc_k             ; clear till end of line
++                pop     hl                      ; restore cursor position
++                ld      (CSRY),hl
+                 ret
+ 
+ ; -- Copy line: from HL to DE

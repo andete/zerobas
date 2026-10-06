@@ -8,7 +8,8 @@
 ; *"B first, then A"*). C-BIOS pads to pinned addresses with `ds`; those runs
 ; are zero in OUR merged image, in the SAME slot as main, and always mapped with
 ; it. Each island below is one such run, confirmed in the C-BIOS source:
-;   $1AF2..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;   $1AF5..$1BBE  src/main.asm:3091 `ds $1bbf - $` -- pad up to the font
+;                 (was $1AF2 until cbios-repack patch #7, D-LINTTBWRAP, 2026-10-06)
 ;                 (was $1ADB until cbios-repack patch #6, D-CTRLKEYS, 2026-10-05)
 ;                 ($1ACF until cbios-repack patch #4, D-HOMEKEY, added 12 bytes
 ;                 to C-BIOS's key_ascii before it: the pad now starts 12 later)
@@ -26,11 +27,13 @@
 ; from the main slot (a sub-ROM PAGE-0 tenant cannot reach it).
 ; ===========================================================================
 
-; --- island 1: before the font ($1AF2..$1BBE, 205 B usable) -----------------
+; --- island 1: before the font ($1AF5..$1BBE, 202 B usable) -----------------
+; D-LINTTBWRAP (2026-10-06): cbios-repack/linttb-scroll.patch adds 3 bytes to
+; chput_esc_m, before the font pad: this island starts 3 B later than $1AF2.
 ; D-CTRLKEYS (2026-10-05): cbios-repack/ctrl-keys.patch puts 23 bytes in
 ; key_ascii, BEFORE the font pad, so the pad -- and this island -- start 23 B
 ; later than D-HOMEKEY's $1ADB. rn_undefined moved to island 2 to make room.
-                org     $1AF2
+                org     $1AF5
 
 ; try_init_slot -- boot-time: does the slot in A carry an "AB" ROM, and if so
 ; CALSLT its INIT. From basic/initext.asm, unchanged. Better here than in page 1:

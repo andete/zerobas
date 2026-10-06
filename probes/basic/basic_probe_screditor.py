@@ -16,6 +16,8 @@ byte-identical to none (D-EDITLINE).
     x.reenter a PRINT-wrapped apostrophe row above the payload, same keys -> 0
               (the wrapped row is part of the logical line, so the ' REMs it)
     x.vpoke   the same fill by VPOKE -> 1 (no continuation: the row alone)
+    x.botwrap a PRINT that wraps on the BOTTOM row (and scrolls), re-entered
+              from its first row -> 2: both rows are one line (D-LINTTBWRAP)
     i.wrap    INPUT at the bottom row, a 45-char answer that wraps and scrolls
               -> 45, the prompt excluded (the start column survives the scroll)
     i.top     the same at the top -> 45
@@ -58,6 +60,12 @@ CASES = [
     ("x.plain",   ['10 WIDTH 40:CLS:LOCATE 0,5:PRINT"' + PAY + '":END', 'RUN', HOME + DOWN * 5, 'PRINT"[x.plain";A;"]"']),
     ("x.reenter", ['10 WIDTH 40:CLS:LOCATE 0,4:PRINT STRING$(40,"\'");"' + PAY + '":END', 'RUN', HOME + DOWN * 5, 'PRINT"[x.reenter";A;"]"']),
     ("x.vpoke",   ['10 WIDTH 40:CLS:LOCATE 0,5:PRINT"' + PAY + '":FORI=0TO39:VPOKE160+I,39:NEXT:END', 'RUN', HOME + DOWN * 5, 'PRINT"[x.vpoke";A;"]"']),
+    # D-LINTTBWRAP (2026-10-06): the same re-entry when the PRINT wrapped on the
+    # BOTTOM row and so scrolled -- C-BIOS's scroll dropped the wrapped row's
+    # "continues" mark (cbios-repack/linttb-scroll.patch). Rows from the cursor
+    # up: the prompt, the wrap's second row, its first; Enter on the first must
+    # read both (A=1 ... :A=A+1 -> 2), not the first alone (A=1 -> 1).
+    ("x.botwrap", ['10 CLS:FOR I=1 TO 30:PRINT:NEXT:PRINT"A=1";SPC(34);":A=A+1";:END', 'RUN', UP * 3, 'PRINT"[x.botwrap";A;"]"']),
     ("i.wrap",    ['10 WIDTH 40:FOR I=1 TO 23:PRINT:NEXT:INPUT A$:PRINT"[i.wrap";LEN(A$);LEFT$(A$,2);RIGHT$(A$,2);"]"', 'RUN', ANS]),
     ("i.top",     ['10 WIDTH 40:CLS:INPUT A$:PRINT"[i.top";LEN(A$);LEFT$(A$,2);"]"', 'RUN', ANS]),
     # D-EDINPUTCSR (2026-10-06): a wrapped answer, cursor UP into its first row,
@@ -97,7 +105,7 @@ CASES = [
 ]
 # matrix keys held from the RUN: F1 = row 6 bit 5; SHIFT = row 6 bit 0
 HOLDS = {"e.f1": (6, 0x20), "e.f6": ((6, 0x01), (6, 0x20))}
-EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1",
+EXPECT = {"e.left": "2", "e.csr": "2", "x.plain": "1", "x.reenter": "0", "x.vpoke": "1", "x.botwrap": "2",
           "i.wrap": "45 xxxx", "i.top": "45 xx", "i.csrup": "45 01234Q6789hi",
           "s2.prompt": "0", "s2.input": "0 xy", "s2.long": "46",
           "e.tab": "5", "e.tabwrap": "37",

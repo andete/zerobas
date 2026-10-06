@@ -56,11 +56,16 @@ PATCHES = [
     # byte AND $1F, one below $40 gives no character -- the VG-8020's answer
     # for all 48 keys). They sit BEFORE the font pad: island 1 moves to $1AF2.
     os.path.join(REPO, "cbios-repack", "ctrl-keys.patch"),
+    # D-LINTTBWRAP: a wrap on the bottom row (which scrolls) lost its "continues"
+    # mark -- chput_esc_m cleared the new bottom line BEFORE moving LINTTB up, and
+    # moved one entry too few. 3 bytes in chput.asm, before the font pad: island 1
+    # moves to $1AF5.
+    os.path.join(REPO, "cbios-repack", "linttb-scroll.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "daeac96df7d5c9ae239000832b1d7e24b9a25f7d"
+REPACKED_SHA1 = "f0e3e80512bc5c70d968ca868241a3f18dd838ce"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

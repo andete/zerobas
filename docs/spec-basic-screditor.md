@@ -29,12 +29,15 @@ that the 09-07 finding priced as non-zero costs **nothing**: the reader reads
 
 **Scrolls shift the table on both machines** (a wrap at row 21 followed by
 three scrolling `PRINT`s: the zero moves to row 18 on the VG-8020 and to row 19
-on zerobas, whose screen has one more row). The one case C-BIOS gets wrong is
+on zerobas, whose screen has one more row). The one case C-BIOS got wrong is
 the wrap that itself scrolls: after `PRINT STRING$(39,"a");"bc";` on the
 bottom row the reference reads `3 2 0 175 1` for the last five rows (the
-`a` row continues), zerobas reads `1 1 1 1 24` (the mark is dropped). The
+`a` row continues), zerobas read `1 1 1 1 24` (the mark was dropped). The
 reader's echo path writes that one mark when a typed character wraps on the
-bottom row; program output wrapping there stays an edge (filed). A first
+bottom row; for program output it is FIXED in C-BIOS itself since 2026-10-06
+(D-LINTTBWRAP, cbios-repack/linttb-scroll.patch: the scroll's delete-line
+cleared the bottom line before moving LINTTB up, and moved one entry too few).
+Gate row `x.botwrap` below. A first
 reading of this case was taken INSIDE a `PRINT` that had scrolled the screen
 again and was off by a row — the values are captured into variables first now.
 

@@ -6251,7 +6251,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29563 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29581 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -24516,8 +24516,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300. A reader of the cursor's row alone gives 38, an appending
       buffer 46.
 
-- [ ] ⌨️ **D-LINTTBWRAP — A PROGRAM `PRINT` THAT WRAPS ON THE BOTTOM ROW LOSES ITS CONTINUATION
-      MARK ON C-BIOS (MEASURED 2026-09-11 in D-SCREDIT; filed as its own item 2026-10-03)**
+- [x] ✅ **D-LINTTBWRAP — A PROGRAM `PRINT` THAT WRAPS ON THE BOTTOM ROW LOST ITS CONTINUATION
+      MARK ON C-BIOS (MEASURED 2026-09-11 in D-SCREDIT; filed 2026-10-03; FIXED 2026-10-06)**
       🎚️ TIER 3 — common errors: a corner of re-entry, not its happy path.
       📏 docs/spec-basic-screditor.md §1, after `PRINT STRING$(39,"a");"bc";` on
       the bottom row:
@@ -24527,7 +24527,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Re-entering that line takes its last row alone. The reader's ECHO path
       already writes the mark for a TYPED wrap on the bottom row; program output
       does not (C-BIOS's `CHPUT` scroll-then-wrap).
-      🤖 **AUTONOMOUS** — the spec's rows are the reference.
+      ✅ **FIXED -- cbios-repack patch #7, `linttb-scroll.patch`.** The cause, read
+      in the C-BIOS source: a wrap marks its row as continuing, then LF on the
+      bottom row scrolls through `chput_esc_m` (delete line), which CLEARED the
+      new bottom line -- writing that row's LINTTB entry -- BEFORE moving LINTTB
+      up, and moved one entry too few (on the bottom row itself its count was -1
+      and LDIR ran 255 bytes past LINTTB). Now (CRTCNT) - (CSRY) entries move
+      first, none when that is 0, then the clear. 3 bytes before the font pad:
+      island 1 moves to `$1AF5` (repack SHA-1 f0e3e805…).
+      📏 ([`linttbwrap_probe.py`](scratchpad/linttbwrap_probe.py)) after
+      `PRINT STRING$(41,"a");` from the bottom row, the three LINTTB flags ending
+      at the cursor's row read `1 0 1` on the VG-8020 and now on ours (`1 1 1`
+      before). ⚠️ The first form indexed from CRTCNT and read `0 1 1` against
+      `1 0 1`: the VG-8020's function-key row makes CRTCNT a row longer than its
+      text area, so it indexes from CSRY now.
+      Gate row `x.botwrap` in `screditor-acceptance`: the wrap re-entered from
+      its first row executes both rows (`A=1 … :A=A+1` → 2) on the VG-8020,
+      the CF-3300 and ours. Knife ([`linttbwrap_knife.py`](scratchpad/linttbwrap_knife.py),
+      a three-file cut: no patch, old SHA-1, island 1 at `$1AF2`): `x.botwrap`
+      reads 1 and the flags `1 1 1`. 🎯 Predicted both, hit.
 
 - [ ] ⌨️ **D-LINTTBSTALE — OLDER ROWS CAN CARRY STALE "CONTINUES" MARKS AFTER SCROLLS (filed
       2026-10-03 from the D-SCREDIT note; mechanism named there, NOT MEASURED as a failing row)**
