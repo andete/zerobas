@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29645 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29670 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26644,8 +26644,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `LEN="A"` 13 → 5; bare `LEN` 2 → 5; `GET`/`PUT #1,"A"` 13 → 5.
       • **extra arguments accepted (5):** `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok;
         `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` / `INPUT$(256)` 5 → ok.
-      • **no reading at all (2):** `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the
-        CF-3300).
+      • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
+        `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
+
+- [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
+      RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED
+      2026-10-06)**
+      🎚️ TIER 3 — common errors: a mistyped SAVE option.
+      📏 Under ON ERROR, `SAVE "X.BAS",B` / `,A,1` read **2 in 30** on the CF-3300
+      and `SAVE "CAS:X",B` / `,A,1` the same on the VG-8020; ours printed `load
+      error` and stopped (the D-DISKERRS row read "no reading at all").
+      🎯 Predicted the cassette face to be 2 as well -- hit.
+      ✅ `sav_flag_a` ([`basic/save.asm`](basic/save.asm)), the one body both the
+      disk and cassette ASCII SAVE parse their option with: its two `jp
+      nz,load_error` are `jp nz,stmt_error` -- 0 bytes.
+      Gate `savetail-acceptance`
+      ([`probes/disk/disk_probe_savetail.py`](probes/disk/disk_probe_savetail.py)),
+      the four faces plus a `,A` control -- which showed that a SAVE completing
+      inside a program returns to the PROMPT on both machines (read as ENDED).
+      Knives ([`savetail_knives.py`](scratchpad/savetail_knives.py)): K-ST1 moves
+      exactly the two `,B` rows, K-ST2 the two `,A,1` rows.
+      🔴 **THE FIRST FIX BROKE `SAVE "X",A:…` AND THE FULL BATTERY CAUGHT IT**
+      (wprotect-acceptance's `wp_asave`, `SAVE "X.BAS",A:PRINT…` on a protected
+      disk: 2 where the CF-3300 says 68). The second check was `rst $10 / or a`
+      -- end of LINE, so the `:` read as junk -- and the old `load_error` only
+      ever worked because it prints and RETURNS, falling back into the save. A
+      raise exposed it. Now `stmt_bare_end` (Z iff 0 or `:`, D-SAVECOLON's
+      test), +1 B; savetail gains `disk_acolon` (saves and ends, both).
 
 - [x] ✅ **D-CHDIR — PRINT# / INPUT# / LINE INPUT# ON A CHANNEL OPEN THE OTHER WAY RAISED NOTHING
       TRAPPABLE: the CF-3300 says 52, and 61 on a RANDOM channel (split from D-DISKERRS

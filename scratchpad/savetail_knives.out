@@ -1,0 +1,6 @@
+  ROM 3d32a218 69c6d2d8 32a7d95c 560d4ca1  ->  7a2a6cb7 69c6d2d8 32a7d95c 04d21751
+PASS  K-ST1: diverged ['cas_b', 'disk_b'] (want exactly ['cas_b', 'disk_b'])
+  ROM 7a2a6cb7 69c6d2d8 32a7d95c 04d21751  ->  21aa2005 69c6d2d8 32a7d95c e100aa35
+PASS  K-ST2: diverged ['cas_a1', 'disk_a1'] (want exactly ['cas_a1', 'disk_a1'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

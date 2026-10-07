@@ -330,8 +330,10 @@ sav_is_cas:
                 jr      cas_ascii_save      ; no flag -> ASCII, exactly as ,A does
 
 ; --- sav_flag_a: accept the `,A` of SAVE"...",A -- ONE body, TWO callers ----
-; in: HL at the ',' . out: HL past the 'A' and end-of-statement checked, or the
-; statement is ABORTED with `load error`.
+; in: HL at the ',' . out: HL past the 'A' and end-of-statement checked, or a
+; Syntax error (2) -- TRAPPABLE, as on the VG-8020 (cassette) and the CF-3300
+; (disk): `SAVE "X",B` and `SAVE "X",A,1` read `2 in 30` under ON ERROR on both
+; (D-SAVETAIL, 2026-10-06; it used to ABORT with `load error`).
 ; 🎯 THE DISK AND CASSETTE FLAG SCANS WERE TWENTY BYTES OF THE SAME PARSE, TWICE
 ; (tools/clone_scout.py: `sav_ascii_flag, sav_cas_flag`, page 1). They are NOT
 ; an `equ` alias and D-DUPSPAN2 was right to leave them alone -- they are
@@ -346,18 +348,23 @@ sav_is_cas:
 ; build that had otherwise just succeeded, and it is the same blind spot from
 ; the other side: a carve that PRESERVES a fallthrough has to preserve what is
 ; NEXT IN THE FILE, not just what the labels say.
-; ⚠️ AND THE `jp nz,load_error` OUT OF A `call`ED BODY IS SAFE FOR A MEASURED
-; REASON, not a hopeful one: the abort resets SP from SAVSTK before it prints,
-; so it is DEPTH-INDEPENDENT -- the same argument D-LOCPARK wrote into
+; ⚠️ AND THE `jp nz,stmt_error` OUT OF A `call`ED BODY IS SAFE FOR A MEASURED
+; REASON, not a hopeful one: a raise resets SP from SAVSTK, so it is
+; DEPTH-INDEPENDENT -- the same argument D-LOCPARK wrote into
 ; basic/missing.asm when it put eval_byte_checked behind a call.
 sav_flag_a:
                 rst    $10                ; past the ','
                 call    upcase
                 cp      'A'
-                jp      nz,load_error       ; only ,A is supported
-                rst    $10                ; past the 'A'
-                or      a
-                jp      nz,load_error       ; trailing junk after ,A
+                jp      nz,stmt_error       ; only ,A is supported: Syntax error
+                ; 🔴 END OF STATEMENT, NOT END OF LINE: `SAVE "X.BAS",A:PRINT 1`
+                ; is legal (wprotect-acceptance's wp_asave). This was `rst $10 /
+                ; or a / jp nz,load_error`, which took the `:` for junk -- and it
+                ; only ever WORKED because load_error prints and RETURNS, falling
+                ; back into the save. As a raise (D-SAVETAIL) that read 2 where the
+                ; CF-3300 gets on to 68. stmt_bare_end: Z iff 0 or ':' (D-SAVECOLON).
+                call    stmt_bare_end       ; past the 'A'
+                jp      nz,stmt_error       ; trailing junk after ,A: likewise
                 ret
 
 sav_cas_flag:

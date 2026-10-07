@@ -2294,6 +2294,13 @@ nohash-acceptance: repack-machine $(DISK_TEST_DSK)
 dout-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dout.py
 
+# --- savetail-acceptance: SAVE's bad option tail is a trappable 2 (D-SAVETAIL) --
+# `SAVE "X.BAS",B` / `,A,1` (CF-3300) and `SAVE "CAS:X",B` / `,A,1` (VG-8020)
+# read `2 in 30` under ON ERROR; ours aborted with `load error`. Plus the
+# `,A` control (a SAVE inside a program returns to the prompt on both).
+savetail-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_savetail.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it
