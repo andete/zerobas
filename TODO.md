@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29886 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30023 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26672,6 +26672,143 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       all four agree, `LEN=0`/`257` and record 0 still 5. Their four pairs are
       kwsweep rows now (`t8openrandom13`, `t8openrandom2`,
       `t8getfieldedrecord13`, `t8putfieldedrecord13`), all SUPPORTED.
+
+- [x] ✅ **D-INPUTDN — `INPUT$(0)` AND `INPUT$(256)` RETURNED `""`; THE CF-3300 AND VG-8020 SAY
+      ILLEGAL FUNCTION CALL (split from D-DISKERRS and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a computed count that comes out 0.
+      📏 Under ON ERROR (`5 in 30`) on the CF-3300: `INPUT$(0)`, `(256)`,
+      `(-1)`, and -- measured here first -- `(0,#1)` / `(256,#1)` on an OPEN
+      INPUT channel; on the diskless VG-8020, `INPUT$(0)`. Ours: `""` for the 0
+      and 256 counts (only the LOW byte was kept, and 256's is 0) and a wait
+      for 255 keys for -1.
+      🔴 **THE FIRST FIX CHOSE THE WRONG ONE OF TWO RULES THAT AGREED ON EVERY
+      ROW IT HAD** [[two-rules-that-coincide-on-every-row-you-have]]. `INPUT$(0,#1)`
+      with #1 NOT open is 59 on both machines, so the first fix range-checked
+      the count at the READ, after the channel. Batch 8's whole re-measure
+      ([`t6enum_b8_zb_1007.out`](scratchpad/t6enum_b8_zb_1007.out)) then showed
+      `INPUT$("A")` going 13 → 5 -- the deferred type mismatch now lost to the
+      new check. Three rows separate the rules, and the CF-3300 took the second
+      on all three (predicted -- 3/3): `INPUT$("A")` 13, `INPUT$(70000)` 6,
+      `INPUT$(256,#1)` with #1 closed **5, not 59**
+      ([`inputdn_sep.out`](scratchpad/inputdn_sep.out)). The count is a BYTE
+      argument typed at the eval; only 0 waits for the read.
+      🎯 First pass: predicted the six reference readings -- 6/6; predicted ours
+      "no reading" for `(256)` -- MISSED, it read `""` (the low byte, above).
+      ✅ `str_inputd` ([`basic/strvar.asm`](basic/strvar.asm)) takes the count
+      through `eval_byte_checked` (13 / 6 / 5 at the eval); `sid_read`, where
+      the console, disk and CAS arms meet after their channel checks, raises 5
+      on 0. +7 B main page 1.
+      Gate `inputdn-acceptance`
+      ([`probes/disk/disk_probe_inputdn.py`](probes/disk/disk_probe_inputdn.py)),
+      eleven rows incl. the 59 and `AB` controls and the three separators
+      ([`inputdn_before.out`](scratchpad/inputdn_before.out),
+      [`inputdn_before2.out`](scratchpad/inputdn_before2.out) →
+      [`inputdn_after.out`](scratchpad/inputdn_after.out)). Knives
+      ([`inputdn_knives.py`](scratchpad/inputdn_knives.py),
+      [`inputdn_knives.out`](scratchpad/inputdn_knives.out)): K-ID1 (the read's
+      0 refusal) moves exactly `con_0` / `ch_0` / `nd_0`; K-ID2 (a bare `eval`
+      for the typed one) exactly `con_str` / `con_big` / `con_neg` /
+      `ch_closed256` -- `con_256` / `ch_256` keep agreeing through the read's
+      check, as predicted. kwsweep row `t8inputconsole5` SUPPORTED (console set
+      {5, 13} complete). ⚠️ The channel form's 5 is measured but NOT in
+      `tools/kwerrset.py`'s channel set ({52, 55, 59}) -- batch 8 only asked
+      `(0,#1)` on a closed channel.
+
+- [x] ✅ **D-LOADTAIL — `LOAD "X.BAS",Q` AND `RUN "A",5` PRINTED `load error` AND RAN ON; THE
+      REFERENCES RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS
+      and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a mistyped LOAD / RUN option.
+      📏 Under ON ERROR, `LOAD "X.BAS",Q` and `RUN "A",5` read **2 in 30** on the
+      CF-3300, `LOAD "CAS:X",Q` and `RUN "CAS:X",5` the same on the VG-8020;
+      ours printed `load error` and reached the next line (`[OK]`) -- all four
+      `pcr_noquote` failures went to the print-and-RETURN load_error
+      (D-LOADERRRET). 🔴 And one NOT on D-DISKERRS' list, measured while
+      building the gate: `LOAD "X.BAS",S` is **2** on the CF-3300 -- `,S` is
+      BLOAD's option -- where ours accepted it and searched the disk (53).
+      🎯 Predicted all six readings (four 2s, the `,S` 2, the `,R` control 53
+      on both) -- 6/6 hit.
+      ✅ `pcr_load` ([`basic/bload.asm`](basic/bload.asm)): `pcr_noquote`, then
+      `stmt_error` on a parse failure or on `,S`; LOAD's two arms and RUN's two
+      call it. Gate `loadtail-acceptance`
+      ([`probes/disk/disk_probe_loadtail.py`](probes/disk/disk_probe_loadtail.py)):
+      the five faces plus the `LOAD "NOSUCH.BAS",R` control
+      ([`loadtail_before.out`](scratchpad/loadtail_before.out) 5 DIFF →
+      [`loadtail_after.out`](scratchpad/loadtail_after.out) 0). Knives
+      ([`loadtail_knives.py`](scratchpad/loadtail_knives.py),
+      [`loadtail_knives.out`](scratchpad/loadtail_knives.out)): K-LT1 moves
+      exactly the four `,Q`/`,5` rows, K-LT2 exactly `disk_ls`. kwsweep row
+      `t8loadrun2` SUPPORTED (LOAD's `run` set {2, 53} complete). RUN has no
+      T6 set (`tools/kwerrset.py`: RUN disarms ON ERROR in kwsweep's shape),
+      so its faces live in the gate only.
+
+- [x] ✅ **D-BLOADOFS — BLOAD'S `,offset` WAS NOT IMPLEMENTED: `BLOAD "X.BIN",Q` READ 53 ON THE
+      CF-3300 (it took `Q` as the offset and went to the disk) AND `load error` HERE (filed and
+      FIXED 2026-10-07, from D-DISKERRS)**
+      🎚️ TIER 1 — happy path: `BLOAD "f"[,R][,S][,offset]` is the documented
+      form, and a relocated load is how a program places one binary at two
+      addresses.
+      📏 Measured on the CF-3300 (registers and RAM only;
+      [`bloadofs_before.out`](scratchpad/bloadofs_before.out)): the offset is
+      added to the header's start, END and EXEC alike -- `,R,&H1000` runs the
+      code at exec+&H1000; `,&HF000` wraps to &HB000; `,S,&H100` moves a VRAM
+      load. 🎯 Predicted all seven readings -- 7/7.
+      🔴 Two rules again [[two-rules-that-coincide-on-every-row-you-have]]: is
+      the offset an int16 (with `&HF000` passing only because a hex literal ≥
+      `&H8000` is negative) or an ADDRESS (-32768..65535)? Decimal `61440`
+      separates them -- it loads at &HB000 on the CF-3300: an address
+      ([`bloadofs_dec.out`](scratchpad/bloadofs_dec.out); predicted, hit).
+      A string is 13, 70000 is 6, and `BLOAD "NOSUCH.BIN","A"` is 13 -- the tail
+      is parsed BEFORE the file is looked up
+      ([`bloadofs_order.out`](scratchpad/bloadofs_order.out); predicted, hit).
+      ✅ Main parses the whole tail: `pcr_bload` ([`basic/bload.asm`](basic/bload.asm))
+      -- `[,R|,S][,offset]`, the offset through `eval_addr` +
+      `check_expr_errors`, into `BL_OFS` (an alias of SWAP's scratch
+      `SW_ADDR`, never live across a BLOAD). The sub-ROM tenant
+      ([`basic/bload-body.inc`](basic/bload-body.inc)) no longer parses: it
+      adds `BL_OFS` to start / end / exec after each header read
+      (`bl_apply_ofs`, disk AND tape paths). The tenant's own copy of the tail
+      parse and its `bl_skip_spaces` clone are deleted (sub page 1 187 → 248 B
+      free); main page 1 150 → 61 B (`pcr_bload`, ~85 B -- the low region
+      still has 215 B, one budget).
+      Gate `bloadofs-acceptance`
+      ([`probes/disk/disk_probe_bloadofs.py`](probes/disk/disk_probe_bloadofs.py)),
+      ten rows → 0 DIFF ([`bloadofs_after.out`](scratchpad/bloadofs_after.out)),
+      plus a DISKLESS row (Joost 2026-09-03): `BLOAD "CAS:X","A"` is 13 on the
+      VG-8020 and on ours -- the tail is parsed before the tape
+      ([`bloadofs_nd.out`](scratchpad/bloadofs_nd.out); predicted, hit).
+      Knives ([`bloadofs_knives.py`](scratchpad/bloadofs_knives.py),
+      [`bloadofs_knives.out`](scratchpad/bloadofs_knives.out)): K-BO1 (offset
+      read as 0) moves exactly the five relocation rows, K-BO3 (exec not
+      relocated) exactly `exec`, K-BO2 (main's `check_expr_errors` cut)
+      exactly `order`. 🎯 K-BO2 was predicted to move `str` and `big` too --
+      MISSED ([`bloadofs_knives_miss.out`](scratchpad/bloadofs_knives_miss.out)):
+      the pending error is still raised later in the statement, AFTER the
+      load, so only the missing-file row shows the check is what raises first.
+      `disk/docs/diskbasic-option-surface.md` and
+      `disk/docs/spec-diskbasic-option-closure.md` (Q1.4) corrected.
+      🔴 **AND A PROBE HAD PINNED THE OLD DESIGN -- THE FULL BATTERY'S EXCLUDED
+      FIVE CAUGHT IT, MY SEARCH DID NOT.** `disk_probe_option_hygiene.py`
+      (diskbasic-acceptance's ours-only `OPTION(hygiene)`) asserted that
+      `BLOAD"..",X` and `BLOAD"..",S,100` load NOTHING -- "we DELIBERATELY
+      diverge from stock ... until the offset follow-on lands". I had searched
+      for "offset deferred" in `*.md` only. 🎯 FULL was predicted green: the pool
+      was 157/157, diskbasic-acceptance was not -- a MISS. Rewritten: its BLOAD
+      negatives are now `,R,` (a missing offset) and `,"A"` (13), which really
+      are malformed, under an `ON ERROR GOTO`/`RESUME NEXT` because BLOAD's
+      rejects raise now; 5/5 alone
+      ([`bloadofs_hygiene.out`](scratchpad/bloadofs_hygiene.out)),
+      diskbasic-acceptance 34/34 ([`bloadofs_diskbasic.out`](scratchpad/bloadofs_diskbasic.out)).
+      **Grep the PROBES for a design you are retiring, not just the prose.**
+      ⚠️ **UNMEASURED: the CASSETTE face** -- the tape path calls the same
+      `bl_apply_ofs`, but no tape fixture holds a BSAVEd binary, so no row
+      reads `BLOAD "CAS:X",&H1000` on the VG-8020.
+      ⚠️ **AN EDGE, MEASURED ONCE, MECHANISM UNPROVEN:** the offset is
+      evaluated AFTER the filename was staged; an offset expression whose
+      evaluation writes the staging buffer could overwrite the name before the
+      tenant reads it. Row `strfn` (`BLOAD "T.BIN",VAL(STR$(4096))`) AGREES
+      ([`bloadofs_strfn.out`](scratchpad/bloadofs_strfn.out)) -- 🎯 predicted
+      ours would FAIL: missed. Whether `STR$` simply writes elsewhere, or the
+      name is safe for every string function, is not established by one row.
 
 - [x] ✅ **D-INPUTDN — `INPUT$(0)` AND `INPUT$(256)` RETURNED `""`; THE CF-3300 AND VG-8020 SAY
       ILLEGAL FUNCTION CALL (split from D-DISKERRS and FIXED 2026-10-07)**

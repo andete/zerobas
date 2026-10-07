@@ -1,0 +1,8 @@
+  ROM 73476835 d4385fca 4b4b296d 9d6639d0  ->  73476835 d5a4253f 4b4b296d 9d6639d0
+PASS  K-BO1: diverged ['dec', 'exec', 'ram', 'vram', 'wrap'] (want exactly ['dec', 'exec', 'ram', 'vram', 'wrap'])
+  ROM 73476835 d5a4253f 4b4b296d 9d6639d0  ->  6b857fec d4385fca 4b4b296d fe6edbcd
+FAIL  K-BO2: diverged ['order'] (want exactly ['big', 'order', 'str'])
+  ROM 6b857fec d4385fca 4b4b296d fe6edbcd  ->  73476835 6651ccff 4b4b296d 9d6639d0
+PASS  K-BO3: diverged ['exec'] (want exactly ['exec'])
+
+FAILED: K-BO2

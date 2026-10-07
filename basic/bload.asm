@@ -27,7 +27,6 @@
 ; helpers under bl_-prefixed names so each side can bind them: resident these are
 ; zero-byte EQUs onto the real routines;
 ; in the tenant they bind to page-1-local clones (sub/bload.asm).
-bl_skip_spaces  equ     skip_spaces
 bl_upcase       equ     upcase
 bl_load_error   equ     load_error
 
@@ -55,6 +54,7 @@ do_bload:
                 ; drops pays for the two `ld hl,(FN_RESUME)` its arms gain.
                 call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ld      (BL_PTR),hl         ; staged name ptr -> tenant
+                call    pcr_bload           ; D-BLOADOFS: the whole tail, HERE
                 call    fch_park            ; D-ASAVECHAN2 (2026-10-03): park the live
                                             ; channel -- the tenant's disk read reuses its
                                             ; engine globals, and an open INPUT file lost
@@ -162,7 +162,8 @@ build_83_name:
 ; and the span is reported immediately. Filed in TODO.md as a gate residual,
 ; because the mechanism is general and this is one instance of it.
 ; "Honest at the walls" (closure-spec item 2): an unrecognized flag or a trailing
-; token (a second flag, or the deferred ,offset — Q1.2/Q1.4) is a clean error,
+; token (a second flag, or an argument) is a clean error -- LOAD / RUN's tail;
+; BLOAD's, which takes an `,offset`, is pcr_bload below (D-BLOADOFS) --
 ; never a silent no-op. Only ONE option flag is allowed, so ,R and ,S cannot
 ; combine.
 pcr_noquote:
@@ -201,6 +202,56 @@ pcr_err:
                 ret
 pcr_ok:
                 or      a                   ; CF clear = success
+                ret
+
+; --- pcr_bload: BLOAD's tail `[,R|,S][,offset]`, parsed in MAIN -------------
+; ✅ D-BLOADOFS (2026-10-07). The offset is the documented fourth form, and the
+; CF-3300 (probes/disk/disk_probe_bloadofs.py) adds it to the header's start,
+; END and EXEC alike (`,R,&H1000` runs the code at exec+&H1000), wrapping at 16
+; bits; it is an ADDRESS (-32768..65535: decimal 61440 is &HF000), a string is
+; 13 and 70000 is 6. Parsed HERE rather than in the tenant because `eval` is
+; main page 1, switched out while a page-1 tenant runs (the SAVE family's
+; reason), and BEFORE the disk is touched: a bad tail never opens the file.
+; Out: RUNFLAG, VRAM_FLAG, BL_OFS, FN_RESUME (past the tail, for load_handoff).
+pcr_bload:
+                ld      hl,0
+                ld      (BL_OFS),hl         ; no offset
+                ld      hl,(FN_RESUME)
+                xor     a
+                ld      (RUNFLAG),a
+                ld      (VRAM_FLAG),a
+                call    skipsp_test
+                jr      z,pcb_done          ; `BLOAD "f"`
+                cp      COLON
+                jr      z,pcb_done
+                cp      ','
+                jp      nz,stmt_error
+                rst     $10                 ; past the comma
+                call    upcase
+                ld      de,RUNFLAG
+                cp      'R'
+                jr      z,pcb_flag
+                ld      de,VRAM_FLAG
+                cp      'S'
+                jr      nz,pcb_ofs          ; not a flag: the offset itself
+pcb_flag:
+                ld      a,1
+                ld      (de),a
+                call    stmt_bare_end       ; past the letter; Z iff the end
+                jr      z,pcb_done
+                cp      ','
+                jp      nz,stmt_error
+                inc     hl                  ; past the comma
+pcb_ofs:
+                call    eval_addr           ; DE = the offset, wrapped to 16 bits
+                call    check_expr_errors   ; a string 13, past 65535 6
+                ld      (BL_OFS),de
+                call    skipsp_test
+                jr      z,pcb_done
+                cp      COLON
+                jp      nz,stmt_error
+pcb_done:
+                ld      (FN_RESUME),hl
                 ret
 
 ; --- pcr_load: LOAD / RUN's option tail -- pcr_noquote, then a TRAPPABLE 2 ---

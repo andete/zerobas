@@ -1389,6 +1389,11 @@ BL_STAT         equ     $E223   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
 ; ride. Own cells rather than DISKOP_OP/DISKOP_STATUS for BL_STAT's reason: the
 ; status is held ACROSS the whole write, during which the fatprim cells are live
 ; on every putbyte.
+; D-BLOADOFS (2026-10-07): BLOAD's `,offset`, parsed by main before the tenant
+; runs and added by the tenant to the header's start / end / exec. An ALIAS of
+; SWAP's operand scratch, which only ex_swap (basic/missing.asm) touches -- never
+; live across a BLOAD.
+BL_OFS          equ     SW_ADDR ; 2 B: main -> tenant, BLOAD's offset (0 = none)
 SV_OP           equ     $E224   ; 1 B: main -> tenant, SV_OP_* engine selector
 SV_STAT         equ     $E225   ; 1 B: tenant -> main, 0 = written, 1 = load_error
 SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)

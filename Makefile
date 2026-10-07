@@ -2315,6 +2315,13 @@ loadtail-acceptance: repack-machine $(DISK_TEST_DSK)
 inputdn-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_inputdn.py
 
+# --- bloadofs-acceptance: BLOAD's `,offset` (D-BLOADOFS) -----------------------
+# A RAM load relocated by &H1000, `,R,&H1000` running the relocated exec, a 16-bit
+# wrap, `,S,&H100` into VRAM, a decimal 61440 (an ADDRESS, not an int16), 70000
+# (6), "A" (13), a missing file with a string offset (13: parsed first), `,Q`=0.
+bloadofs-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_bloadofs.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

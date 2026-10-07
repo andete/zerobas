@@ -12,14 +12,21 @@ silent wrong-address load/save, the exact trap that hid the VRAM `,S` gap. The
 parsers now recognize exactly `R`/`S` (BLOAD) and `S`/numeric-exec (BSAVE) and
 reject everything else.
 
-OURS-ONLY, by design (NOT a CF-3300 differential). Our reject model is
-`load_error` (print "load error", CONTINUE the program); stock MSX raises a
-`Syntax error` that HALTS the program — so on the shared cases (`,X`, BSAVE `,Q`)
-the two AGREE that no load/save happens but DIVERGE on control flow, and for the
-deferred `,offset` case we DELIBERATELY diverge from stock (stock supports an
-offset; we reject it until the offset follow-on lands, closure-spec Q1.4). The
-common, gate-able truth — "a malformed option performs NO silent operation" — is
-asserted here on our machine. Provenance: exercises our own ROM only; no stock
+OURS-ONLY, by design (NOT a CF-3300 differential). The common, gate-able truth
+— "a malformed option performs NO silent operation" — is asserted here on our
+machine.
+
+🔄 REWRITTEN 2026-10-07 (D-BLOADOFS): THIS PROBE PINNED ITS OWN EXPIRY. Its NEG1
+was `BLOAD"..",X` ("unrecognized flag") and its NEG2 `BLOAD"..",S,100` ("we
+DELIBERATELY diverge from stock ... until the offset follow-on lands, closure-
+spec Q1.4"). The follow-on landed: `,X` is a VARIABLE offset (X = 0 -> a plain
+load, which the CF-3300 does too -- it reads `,Q` that way) and `,S,100` a VRAM
+load at +100. Both are VALID forms now, so they could no longer witness a reject.
+The BLOAD negatives are now forms that really are malformed -- `,R,` (a missing
+offset) and `,"A"` (a string offset, 13 on the CF-3300, parsed before the disk)
+-- and BLOAD's rejects RAISE (trappably) instead of printing `load error`, so
+the program carries an `ON ERROR GOTO 90` / `90 RESUME NEXT` to run all four
+negatives in one boot. NEG3 (BSAVE) still takes the print-and-return path. Provenance: exercises our own ROM only; no stock
 ROM is read.
 
 The `.bas` test program (readable BASIC, tokenised by OUR OWN ROM crunch via
@@ -30,20 +37,23 @@ load is caught:
     10 FORI=0TO16:POKE&HC000+I,I*3+7:NEXT     ' pattern in RAM
     20 BSAVE"A:SV.BIN",&HC000,&HC010           ' a valid BSAVE file to (not) load
     30 FORI=0TO16:POKE&HC000+I,&HA5:NEXT        ' wipe the region to $A5
-    40 BLOAD"A:SV.BIN",X                         ' NEG1 unrecognized flag -> reject
+    15 ON ERROR GOTO 90                          ' BLOAD's rejects RAISE (D-BLOADOFS)
+    40 BLOAD"A:SV.BIN",R,                        ' NEG1 a missing offset -> reject
     41 POKE&HD0F0,PEEK(&HC000)                    ' witness1 (expect $A5 = not loaded)
-    50 BLOAD"A:SV.BIN",S,100                      ' NEG2 deferred ,offset -> reject
+    50 BLOAD"A:SV.BIN","A"                        ' NEG2 a string offset -> 13
     51 POKE&HD0F1,PEEK(&HC000)                    ' witness2 (expect $A5 = not loaded)
     60 BSAVE"A:SV2.BIN",&HC000,&HC010,Q          ' NEG3 bad 4th token -> reject (no create)
     70 BLOAD"A:SV.BIN"                            ' POSITIVE control: valid load DOES restore
     71 POKE&HD0F2,PEEK(&HC000)                    ' witness3 (expect $07 = pattern[0], loaded)
     80 POKE&HD0FF,&H99                            ' DONE sentinel
+    85 END
+    90 RESUME NEXT
 
 Checks (all on OUR machine):
   1. VACUITY / non-fatal: $D0FF == $99 -- the program ran through ALL four negatives
      to completion (proves each reject was a non-fatal `load error`, not a crash).
-  2. NEG1 witness1 ($D0F0) == $A5 -- BLOAD",X" did NOT load (region stayed wiped).
-  3. NEG2 witness2 ($D0F1) == $A5 -- BLOAD",S,100" (deferred offset) did NOT load.
+  2. NEG1 witness1 ($D0F0) == $A5 -- BLOAD",R," did NOT load (region stayed wiped).
+  3. NEG2 witness2 ($D0F1) == $A5 -- BLOAD","A"" did NOT load.
   4. NEG3: SV2.BIN is ABSENT from the disk -- BSAVE",Q" rejected BEFORE the file
      create (the bad 4th token never reached disk_write_begin).
   5. POSITIVE control witness3 ($D0F2) == $07 (pattern[0]) -- the plain BLOAD"A:SV.BIN"
@@ -107,16 +117,19 @@ assert PATTERN0 != WIPE_BYTE
 
 AUTOEXEC_LINES = [
     (10, "FORI=0TO16:POKE&HC000+I,I*3+7:NEXT"),
+    (15, "ON ERROR GOTO 90"),                         # BLOAD's rejects RAISE now
     (20, 'BSAVE"A:SV.BIN",&HC000,&HC010'),
     (30, f"FORI=0TO16:POKE&HC000+I,&H{WIPE_BYTE:02X}:NEXT"),
-    (40, 'BLOAD"A:SV.BIN",X'),                       # NEG1 unrecognized flag
+    (40, 'BLOAD"A:SV.BIN",R,'),                      # NEG1 a missing offset
     (41, f"POKE&H{W1_ADDR:04X},PEEK(&HC000)"),
-    (50, 'BLOAD"A:SV.BIN",S,100'),                   # NEG2 deferred offset
+    (50, 'BLOAD"A:SV.BIN","A"'),                     # NEG2 a string offset (13)
     (51, f"POKE&H{W2_ADDR:04X},PEEK(&HC000)"),
     (60, 'BSAVE"A:SV2.BIN",&HC000,&HC010,Q'),        # NEG3 bad 4th token (no create)
     (70, 'BLOAD"A:SV.BIN"'),                          # POSITIVE control
     (71, f"POKE&H{W3_ADDR:04X},PEEK(&HC000)"),
     (80, f"POKE&H{DONE_ADDR:04X},&H{DONE_BYTE:02X}"),
+    (85, "END"),
+    (90, "RESUME NEXT"),
 ]
 
 
@@ -223,11 +236,11 @@ def main() -> int:
               f"(expect ${DONE_BYTE:02X} -- ran through all four negatives)")
 
         c1 = w1 == WIPE_BYTE
-        print(f"  [{'PASS' if c1 else 'FAIL'}] NEG1 BLOAD\"..\",X unrecognized flag: "
+        print(f"  [{'PASS' if c1 else 'FAIL'}] NEG1 BLOAD\"..\",R, missing offset: "
               f"$C000=${w1:02X} (expect ${WIPE_BYTE:02X} -- NOT loaded)")
 
         c2 = w2 == WIPE_BYTE
-        print(f"  [{'PASS' if c2 else 'FAIL'}] NEG2 BLOAD\"..\",S,100 deferred offset: "
+        print(f"  [{'PASS' if c2 else 'FAIL'}] NEG2 BLOAD\"..\",\"A\" string offset: "
               f"$C000=${w2:02X} (expect ${WIPE_BYTE:02X} -- NOT loaded)")
 
         c3 = not sv2

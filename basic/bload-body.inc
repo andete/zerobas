@@ -73,12 +73,10 @@ parse_dev:
                 jr      parse_dev
 is_tape:
                 pop     af                  ; discard saved filename start
-                ; HL points just past "CAS:" IN THE STAGED COPY, so the closing
-                ; '"' there is fname_expr's terminator and not program text; the
-                ; `,R` / `,S` tail is parsed from the real cursor (D-FNEXPR2).
-                ld      hl,(FN_RESUME)
-                call    pcr_noquote         ; optional ,R / ,S only
-                jp      c,bl_load_error
+                ; The `,R` / `,S` / `,offset` tail is ALREADY parsed: main's
+                ; pcr_bload (basic/bload.asm) did it before calling in, because
+                ; the offset needs `eval` (D-BLOADOFS). RUNFLAG / VRAM_FLAG /
+                ; BL_OFS are set.
                 ld      a,(VRAM_FLAG)
                 or      a
                 jp      nz,bl_load_error       ; ,S VRAM-from-tape not supported here
@@ -119,6 +117,7 @@ skip_hdr:
                 ld      (EXECPTR),a         ; exec low
                 call    TAPIN
                 ld      (EXECPTR+1),a       ; exec high
+                call    bl_apply_ofs        ; D-BLOADOFS: + BLOAD's ,offset
 
                 ; --- load loop: bytes start..end inclusive, verbatim --------
                 ; spec-bload-r.md §2. State lives in RAM because TAPIN trashes
@@ -147,6 +146,21 @@ load_done:
 ; load_handoff — shared ,R exec handoff (cassette + disk paths). spec-bload-r.md
 ; §3 / disk BLOAD: plain BLOAD returns; ,R jumps to the exec address (RUNFLAG was
 ; set by the parser; CURPTR/ENDPTR/EXECPTR are filled by whichever load ran).
+; bl_apply_ofs -- D-BLOADOFS: add BL_OFS (main's pcr_bload) to the header's
+; start, end and exec, wrapping at 16 bits, as the CF-3300 does to all three.
+bl_apply_ofs:
+                ld      de,(BL_OFS)
+                ld      hl,(CURPTR)
+                add     hl,de
+                ld      (CURPTR),hl
+                ld      hl,(ENDPTR)
+                add     hl,de
+                ld      (ENDPTR),hl
+                ld      hl,(EXECPTR)
+                add     hl,de
+                ld      (EXECPTR),hl
+                ret
+
 load_handoff:
     IF SUB_BUILD
                 ; TENANT: do nothing. This tail ends in `jp (hl)` INTO THE LOADED
@@ -179,10 +193,7 @@ load_handoff:
 is_disk:
                 pop     hl                  ; HL = filename start (staged copy)
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ; --- shared ,R parse, from the PROGRAM cursor (D-FNEXPR2) ---
-                ld      hl,(FN_RESUME)
-                call    pcr_noquote
-                jp      c,bl_load_error
+                ; (the tail was parsed by main's pcr_bload -- D-BLOADOFS)
                 ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
                 ; is set. Hand off to the disk loader.
                 jp      do_disk_bload
@@ -260,6 +271,7 @@ do_disk_bload:
                 call    fat_io_getbyte
                 jp      c,bl_load_error
                 ld      (EXECPTR+1),a       ; exec high
+                call    bl_apply_ofs        ; D-BLOADOFS: + BLOAD's ,offset
                 ; (3b) stream data bytes into [start..end] inclusive. With ",S"
                 ; (VRAM_FLAG) the start/end/exec header words are VRAM addresses
                 ; and each byte is stored via WRTVRM ($004D) instead of a RAM

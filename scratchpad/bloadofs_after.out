@@ -1,0 +1,13 @@
+ok   ram    National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+ok   exec   National_CF- 'V 42 62 201'    ours 'V 42 62 201'
+ok   wrap   National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+ok   vram   National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+ok   dec    National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+ok   big    National_CF- 'E 6 30'         ours 'E 6 30'
+ok   str    National_CF- 'E 13 30'        ours 'E 13 30'
+ok   strfn  National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+ok   order  National_CF- 'E 13 30'        ours 'E 13 30'
+ok   zero   National_CF- 'V 1 16'         ours 'V 1 16'
+
+PASS: BLOAD's ,offset as on the CF-3300 (0 divergence(s))
+refcache: 0 hit, 20 miss, 20 stored

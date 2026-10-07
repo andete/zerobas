@@ -1,0 +1,4 @@
+ok   strfn  National_CF- 'V 0 1 16'       ours 'V 0 1 16'
+
+PASS: BLOAD's ,offset as on the CF-3300 (0 divergence(s))
+refcache: 0 hit, 2 miss, 2 stored

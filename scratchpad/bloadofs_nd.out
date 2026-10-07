@@ -1,0 +1,4 @@
+ok   nd_str Philips_VG_8 'E 13 30'        ours 'E 13 30'
+
+PASS: BLOAD's ,offset as on the CF-3300 (0 divergence(s))
+refcache: 0 hit, 2 miss, 2 stored

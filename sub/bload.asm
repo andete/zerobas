@@ -71,16 +71,8 @@ bload_tenant:
 ; These are COPIES, not evictions: every one of them stays resident too, for
 ; callers outside bload.asm. A sub-ROM duplicate costs no main page-1 bytes.
 
-; bl_skip_spaces — byte-identical clone of basic/interp.asm. It needs a distinct
-; name because the sub image already defines `skip_spaces` in its PAGE 0
-; (sub/readdata.asm), which is unmapped while this page-1 tenant runs -- the same
-; reason fcbname.asm's upcaser is called fcb_upcase.
-bl_skip_spaces:
-                ld      a,(hl)
-                cp      ' '
-                ret     nz
-                inc     hl
-                jr      bl_skip_spaces
+; (bl_skip_spaces, the space-skipper clone, went with the tail parse it served
+; -- D-BLOADOFS, 2026-10-07; check_dead_code reported it the same build.)
 
 ; bl_upcase — page-1 upcaser clone. sub/fcbname.asm already carries an identical
 ; one (fcb_upcase), and `bl_upcase equ fcb_upcase` would have reused it — but
@@ -169,71 +161,10 @@ bl_stat_raise:
                 ld      (BL_STAT),a
                 ret
 
-; pcr_noquote — the `,R` / `,S` option tail. Near-verbatim copy of the resident
-; routine (basic/bload.asm); parse_disk_fcb needs no copy here, it arrives with
-; the body via basic/pdfcb-body.inc and binds to the sub-local build_83_name
-; rather than the resident marshalling shim.
-;
-; 🔴 D-FNEXPR2: THE `parse_close_run` HEAD IS **GONE FROM THIS COPY**, AND THE
-; DEADCODE GATE IS WHAT SAID SO. Once the filename is a string EXPRESSION the
-; tenant's two arms both enter at `pcr_noquote` — there is no closing quote in
-; the program text to consume, only the one `fname_expr` appended to its staged
-; copy in STRSCR — so the four-instruction quote check had no caller left in
-; THIS build and `check_dead_code.py` reported it as an unreachable 6 B span.
-; 🔴 AND THE RESIDENT COPY LOST ITS HEAD ONE COMMIT LATER (D-FNRUN), WHICH IS
-; NOT THE ASYMMETRY THIS NOTE ORIGINALLY CLAIMED. It read: *"the resident copy
-; KEEPS its head, and that asymmetry is the point rather than an oversight:
-; `do_run` still parses a literal quote out of program text."* True for exactly
-; one commit. `do_run` was the head's last caller anywhere, and once RUN took a
-; string EXPRESSION the resident four instructions were dead too.
-; ⚠️ **The gate did not say so, and the reason is in basic/bload.asm beside the
-; surviving routine**: the three mentions of the old name in THIS comment seeded
-; the main-build label, because `check_dead_code.py` scrapes identifiers out of
-; `sub/` and `tools/` including from comments. "Dead" is still per-build — that
-; part stands — but a per-build reading can be masked by prose in the other
-; build's tree.
-pcr_noquote:
-                xor     a
-                ld      (RUNFLAG),a         ; default: no ,R handoff
-                ld      (VRAM_FLAG),a       ; default: RAM load
-                call    bl_skip_spaces
-                or      a
-                jr      z,pcr_ok
-                cp      COLON
-                jr      z,pcr_ok
-                cp      ','
-                jr      nz,pcr_err
-                inc     hl                  ; past the comma
-                call    bl_skip_spaces
-                call    bl_upcase              ; accept ,r / ,s as well
-                cp      'R'
-                jr      z,pcr_run
-                cp      'S'
-                jr      z,pcr_vram
-                jr      pcr_err
-pcr_run:
-                ld      a,1
-                ld      (RUNFLAG),a
-                jr      pcr_flag_end
-pcr_vram:
-                ld      a,1
-                ld      (VRAM_FLAG),a
-pcr_flag_end:
-                inc     hl                  ; past the flag letter
-                call    bl_skip_spaces
-                or      a
-                jr      z,pcr_ok
-                cp      COLON
-                jr      z,pcr_ok
-                ; fall through to pcr_err
-pcr_err:
-                scf
-                ret
-pcr_ok:
-                ld      (FN_RESUME),hl      ; D-SAVECOLON: the cursor past the tail,
-                                            ; for main's load_handoff to continue at
-                or      a                   ; CF clear = success
-                ret
+; 🗑️ D-BLOADOFS (2026-10-07): the tenant's own copy of the option-tail parse is
+; GONE. BLOAD's tail now carries an `,offset` EXPRESSION, and `eval` is main page
+; 1, switched out while this page-1 tenant runs -- so main parses the whole tail
+; (basic/bload.asm pcr_bload) before calling in, as the SAVE family always has.
 
 ; dev_cas — the device name the body compares against.
 dev_cas:

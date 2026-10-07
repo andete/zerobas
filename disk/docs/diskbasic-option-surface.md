@@ -138,7 +138,7 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 | `LOAD` | `"[dev:]name"[,R]` | ◐ | `,R` disk ✅; **`,R` ignored on the `CAS:` branch** ([cload.asm:98](../../basic/cload.asm:98)); ASCII/tokenised autodetect ✅ |
 | `RUN"f"` | `"[dev:]name"[,R]` | ◐ | runs implicitly; no `CAS:`; trailing `,R` is a no-op |
 | `MERGE` | `"[dev:]name"` (ASCII) | ◐ | disk ASCII ✅; **no `CAS:` merge**; tokenised-file merge unsupported |
-| `BLOAD` | `"[dev:]name"[,R][,S][,offset]` | ✅ | `,S` VRAM ✅ (WRTVRM sink, [bload.asm](../../basic/bload.asm)); `,R` ✅; `CAS:` ✅; unrecognized flag → clean `load error` (2026-07-08); **`offset` deferred but cleanly rejected** (Q1.4) |
+| `BLOAD` | `"[dev:]name"[,R][,S][,offset]` | ✅ | `,S` VRAM ✅ (WRTVRM sink, [bload.asm](../../basic/bload.asm)); `,R` ✅; `CAS:` ✅; unrecognized flag → trappable Syntax error; **`,offset` ✅ (D-BLOADOFS, 2026-10-07)**: added to start, end AND exec, 16-bit wrap, an ADDRESS (-32768..65535), parsed before the file is opened -- disk measured on the CF-3300 (`probes/disk/disk_probe_bloadofs.py`); the cassette face is coded but UNMEASURED |
 | `BSAVE` | `"[dev:]name",start,end[,exec] \| ,start,end,S` | ✅ | `start,end[,exec]` ✅; `,S` VRAM ✅ (RDVRM source, [save.asm](../../basic/save.asm)); stray 4th token → clean `load error` (2026-07-08); `CAS:` ✅ (`,S` VRAM-to-tape rejected — disk-only this pass) |
 
 ### Sequential / channel I/O
@@ -199,7 +199,7 @@ error). "Ref" = the documented option. Evidence is `file:line` in `basic/`.
 - **OPEN device-name channels** (`CRT:`/`LPT:`/`GRP:`/`COM:`, and `CAS:` for OPEN) — no
   device-dispatch site exists at all. Overlaps general BASIC + the tape/printer stacks.
 - **OPEN random `LEN=`** — record length hard-wired to 256; `LEN=128` won't parse.
-- **BLOAD `offset`** — load address comes solely from the file header; no relocation param.
+- ~~**BLOAD `offset`** — load address comes solely from the file header; no relocation param.~~ ✅ D-BLOADOFS (2026-10-07).
 
 **Tier 3 — quality-of-life.**
 

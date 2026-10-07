@@ -1,0 +1,10 @@
+DIFF ram    National_CF- 'V 0 1 16'       ours 'V 0 0 0'
+DIFF exec   National_CF- 'V 42 62 201'    ours 'V 0 0 201'
+DIFF wrap   National_CF- 'V 0 1 16'       ours 'V 0 0 0'
+DIFF vram   National_CF- 'V 0 1 16'       ours 'V 0 0 0'
+DIFF big    National_CF- 'E 6 30'         ours 'OK'
+DIFF str    National_CF- 'E 13 30'        ours 'OK'
+DIFF zero   National_CF- 'V 1 16'         ours 'V 0 0'
+
+FAIL: BLOAD's ,offset as on the CF-3300 (7 divergence(s))
+refcache: 0 hit, 14 miss, 14 stored

@@ -13,6 +13,10 @@ SPDX-License-Identifier: 0BSD
 > Q1.4 (BLOAD `,offset`) resolved: **deferred, but the parser now rejects a
 > typed offset with a clean `load error`** (never a silent wrong-address load) and is
 > structured so real offset support is a one-branch add. See the Sign-off section.
+> ✅ **SUPERSEDED 2026-10-07 (D-BLOADOFS): the offset is implemented.** The "clean
+> `load error`" was PRINTED and RETURNED -- no ON ERROR handler ever saw it -- and
+> it was not one branch: the offset is an expression, so the parse moved into main
+> (`pcr_bload`, basic/bload.asm), where `eval` is mapped.
 > Per
 > [spec-before-implementation](../../README.md) this captures the design + verification
 > plan for the option gaps chosen from the sweep
