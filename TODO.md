@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29670 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29692 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26646,6 +26646,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` / `INPUT$(256)` 5 → ok.
       • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
         `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
+
+- [ ] 🔴 **D-LOADERRRET — `load_error` PRINTS AND RETURNS; ~15 SITES STILL `jp` TO IT WHERE THE
+      REFERENCE RAISES A TRAPPABLE CODE (filed 2026-10-07 from D-CHDIR / D-SAVETAIL)**
+      🎚️ TIER 3 — common errors: each site is an ordinary mistake (a bad
+      device option, a stray argument, a wrong channel) that the reference
+      lets an ON ERROR handler see.
+      🔬 `load_error` (basic/bload.asm) is `call TAPIOF / print "load error"`
+      and RETURNS. Two measured consequences today: it is UNTRAPPABLE
+      (D-CHDIR: 52/61 never reached the handler), and from a CALLED body it
+      FALLS THROUGH into whatever follows the call (D-SAVETAIL: SAVE's `,A:`
+      "junk" check only worked because the save then ran anyway).
+      📏 The live sites (`grep -n "j[pr] .*load_error" basic/*.asm`, comments
+      excluded), 2026-10-07: cload.asm ×4, files.asm ×1 (`jp z` at ~2146),
+      field.asm ×1, print.asm ×1 (PRINT# to a CAS-INPUT channel), save.asm ×5
+      (stray 4th token ×2, `,S` VRAM-to-tape, trailing junk after the name,
+      two `jp c`), str-engine.asm ×1 (sub-ROM absent -- likely right as is).
+      ➡️ **PER SITE:** reproduce it under ON ERROR on the reference that
+      owns the device (VG-8020 for tape and screen, CF-3300 for disk), read
+      ERR/ERL, and send the site to the raiser that gives the same code -- or
+      record why `load error` is the reference's own face there. A knife per
+      site, as D-CHDIR's.
+      🤖 **AUTONOMOUS** — the references settle each site.
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED
