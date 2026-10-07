@@ -3,9 +3,10 @@
 **zerobas** is a **clean-room reimplementation of MSX1 system software** — the BASIC
 interpreter, the cassette layer, and the disk interface — derived only from published
 interfaces and this project's own black-box observation of real machines, never from
-disassembly of the original ROMs. Three components mirror the hardware they replace:
-[`basic/`](basic/) (a standalone 16 KB cartridge ROM), [`tape/`](tape/) (a C-BIOS
-cassette patch), and [`disk/`](disk/) (a disk-interface ROM).
+disassembly of the original ROMs. The components mirror the hardware they replace:
+[`basic/`](basic/) (the interpreter, built into a C-BIOS main-ROM image) with its
+sub-ROM [`sub/`](sub/), [`tape/`](tape/) (the cassette BIOS layer), and
+[`disk/`](disk/) (a disk-interface ROM with its own Disk BASIC and file layer).
 
 It has **two co-equal goals**: producing the clean-room *implementations*, and —
 because the same discipline makes the resulting facts publishable — producing
@@ -22,10 +23,13 @@ write). Post-MSX1 axes (MSX2 / 2+ / Turbo-R, and extension hardware such as the 
 and Konami SCC/SCC+) are catalogued in [`TODO.md`](TODO.md) but remain out of charter
 until a charter raise.
 
-zerobas is a deliberately **separate project**. It is combined with an open MSX
-BIOS (such as C-BIOS) only *at runtime*, never merged into its source tree. This
-is a legal firewall: a provenance challenge to zerobas can never contaminate the
-mature, uncontested BIOS it runs alongside.
+zerobas is a deliberately **separate project** from the open BIOS it runs on
+(C-BIOS). It copies no C-BIOS code: it ships as a **patch** against a stock C-BIOS
+ROM, and the few edits it needs inside C-BIOS itself are kept as small, reviewable
+patch files against a pinned C-BIOS tag ([`cbios-repack/`](cbios-repack/)), whose
+BSD-2 notice travels with the result. This is a legal firewall: a provenance
+challenge to zerobas can never contaminate the mature, uncontested BIOS it runs
+alongside.
 
 ## Two co-equal goals
 
@@ -200,8 +204,10 @@ Windows install locations), or pass `STOCK=<path>`. ROMs land in the gitignored
 On a real machine BASIC sits in **slot 0 page 1 (`$4000-$7FFF`), right next to the
 BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that space free —
 which is exactly the space zerobas is built for, and then some: zerobas also
-reclaims `$2812-$3FFF` from C-BIOS's page 0, so the shipped image spans
-`$2812-$7FFF`.
+reclaims `$2765-$3FFF` from C-BIOS's page 0, so the shipped image spans
+`$2765-$7FFF`. Code that does not fit there lives in a **sub-ROM** in slot 3-2
+([`sub/`](sub/)), and Disk BASIC in its own **disk ROM** in slot 3-1
+([`disk/`](disk/)) — the same places a real MSX keeps them.
 
 zerobas therefore ships as a **patch** against a stock C-BIOS main ROM — the same
 legal firewall as everything else here: C-BIOS and zerobas stay separate trees and
@@ -215,24 +221,22 @@ a C-BIOS checkout (`CBIOS=<path>`). **Applying** it does not: that pristine ROM 
 byte-identical to openMSX's own bundled `cbios_main_msx1_eu.rom`.
 
 ⚠️ **EU only.** The repack rewrites C-BIOS's page-0 layout, so the shipped patch
-targets the EU ROM. Until 2026-07-29 zerobas also shipped `zerobas-msx1.ips/.bps`, a
-region-universal page-1 splice carrying a **lean 16 KB build** — but that build was
-not a smaller zerobas, it was one missing seven source files (no strings, no `INPUT`,
-no floats, no arrays, no error codes, no KEY traps), so it is retired. As of
-2026-07-29 it is gone from the source too: the 284 `IF ROM_BASE` gates that selected
-it are deleted and `basic/main.asm` assembles the one image
-([`docs/spec-lean-retire-s3-gates.md`](docs/spec-lean-retire-s3-gates.md)).
+targets the EU C-BIOS ROM.
 
 To run it in openMSX without touching any ROM, `make machines` installs ready
-machine configs into your openMSX user dir — a `C-BIOS_MSX1_EU_BASIC` and a
-`C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
-slot 3-2, plus a region-universal `*_TAPE` per C-BIOS region:
+machine configs into your openMSX user dir — a `C-BIOS_MSX1_EU_BASIC` (no disk) and
+a `C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
+slot 3-2, plus a `*_TAPE` machine per C-BIOS region:
 
 ```sh
-make machines                      # -> C-BIOS_MSX1[_BR/_EU/_JP]_BASIC[_DISK]
-openmsx -machine C-BIOS_MSX1_BASIC               # boots straight to the ZB prompt
-openmsx -machine C-BIOS_MSX1_BASIC_DISK -diska disk/test720.dsk   # + disk
+make machines                                        # -> C-BIOS_MSX1_EU_BASIC[_DISK]
+openmsx -machine C-BIOS_MSX1_EU_BASIC                # boots straight to the ZB prompt
+openmsx -machine C-BIOS_MSX1_EU_BASIC_DISK -diska disk/test720.dsk   # + disk
 ```
+
+For development, `make repack-machine` installs the two machines the test battery
+uses, built from your working tree: `C-BIOS_MSX1_EU_REPACK_DISK` and
+`C-BIOS_MSX1_EU_REPACK_NODISK`.
 
 These configs embed absolute paths to your openMSX ROMs and this repo, so they're
 an install (regenerated per environment), not a portable file — which is why
@@ -242,216 +246,91 @@ cleanly on a mismatch; the IPS is universal and is what the configs use. The
 `National_CF-3300_ZEROBASDISK` provider-oracle is a test machine — `make
 machines-oracle` — not part of the release set.)
 
-## Current status — byte-identical crunch + REM / POKE / PEEK + `BLOAD"CAS:",R`
+## What works
 
-The build has a real (if tiny) interpreter spine with a keyboard prompt, a
-16-bit integer expression evaluator, single-letter integer variables, and a
-`:`-separated statement loop. Statements: `BLOAD` (cassette load + `,R`
-handoff), `POKE`, `REM` (and its `'` abbreviation), a `<letter> = <expr>`
-assignment, and `PEEK(...)` as an expression function. On boot the cartridge
-INIT prints a startup header, then runs a read/eval loop: read a typed line,
-tokenise it, dispatch each statement, repeat.
+zerobas aims to run **any MSX1 BASIC program as a real MSX1 does**, and is most of
+the way there:
 
-Expressions are 16-bit unsigned integers: decimal and `&H` hex literals,
-single-letter variables `A`–`Z`, `PEEK(expr)`, parentheses, unary `-`, and
-`+ - *` (with `*` binding tighter). As of **Step A** the tokeniser crunches
-**byte-identically** to a real MSX-BASIC ROM: integer constants (`$11+n` /
-`$0F`,b / `$1C`,w-LE), `&H` constants (`$0C`,w-LE), and the operators
-`= + - *` (`$EF $F1 $F2 $F3`) all use the reference's exact token bytes
-(oracle-sourced, `spec-tokens-statements.md §3/§4`); letters are upcased outside
-string literals; and the evaluator *decodes* these tokens at run time. This is
-verified against the reference VG-8020 by a differential crunch test
-(`basic_probe_crunch.py`): zerobas's `TOKBUF` equals the reference's `KBUF`, byte
-for byte. ~~(Decimal `≥ 32768` — which the reference stores as a float — plus
-`&O`/`&B` and line-number references are out of scope for now; use `&H` for
-16-bit values.)~~ 📏 **Stale, and measured 2026-09-05**: `PRINT 40000` reads
-`40000`, `PRINT &O17` reads `15`, and the tokeniser emits the `$0E`
-line-number identification code for branch targets. **`&B` stays out on
-purpose**, not for want of work — the oracle emits no `&B` token, so zerobas
-fabricates none (`basic/PROVENANCE.md`, quarantined).
+- **The language** — integers, single- and double-precision floats with the MSX
+  BCD maths (`SIN`, `LOG`, `^`, …), strings, arrays, `DEF FN`, `PRINT USING`,
+  `DATA`/`READ`, the full control-flow set, and error handling (`ON ERROR`,
+  `RESUME`, `ERR`/`ERL`) that raises the reference's error code on the
+  reference's line.
+- **The machine** — the screen editor, `KEY` / `STOP` / `SPRITE` / `STRIG` /
+  `INTERVAL` traps, the MSX1 screen modes and graphics statements (`PSET`,
+  `LINE`, `CIRCLE`, `PAINT`, `DRAW`, sprites), `PLAY` and `SOUND`, joystick and
+  paddle input, `USR` / `DEFUSR` machine-code calls.
+- **Storage** — cassette (`CSAVE`/`CLOAD`, ASCII `SAVE`/`LOAD`/`MERGE`, `BSAVE`/
+  `BLOAD`, `OPEN"CAS:"`) and **Disk BASIC** (`FILES`, `KILL`, `NAME`, `COPY`,
+  sequential and random files with `FIELD`/`GET`/`PUT`, `BLOAD`/`BSAVE`, `DSKF`,
+  …) on a FAT12 floppy.
+- **Two targets** — a disk machine (checked against a National CF-3300) and a
+  **diskless** one (checked against a Philips VG-8020), where the cassette is the
+  default device as on a real cassette-only MSX.
 
-0. **header** — `INITXT` brings up the text screen; `CHPUT` prints a couple of
-   original left-aligned lines (the same role as MSX-BASIC's top-of-screen
-   header before its prompt — no reference text copied)
-1. **prompt + line editor** — print `ZB` (deliberately *not* `Ok`, so zerobas
-   is never mistaken for stock MSX-BASIC) and read a line via `CHGET`, echoing
-   with Backspace editing until Enter (both `$08` and `$7F`/DEL erase left, so
-   the Mac Backspace key — which openMSX delivers as the MSX DEL key — works)
-2. **tokenise** the line → **byte-identical to a real MSX-BASIC ROM**: keywords
-   (`BLOAD`→`$CF`, `POKE`→`$98`, `PEEK`→`$FF $97`, `REM`→`$8F`), the integer/`&H`
-   constants, and the `= + - *` operators all crunch to the reference's exact
-   token bytes; letters are upcased outside string literals; string literals and
-   the `REM`/`'` comment tail are kept verbatim; the line is `$00`-terminated
-   (see `spec-tokenise.md`, `spec-tokens-statements.md`)
-3. **execute** — walk the line statement-by-statement (`:` separated),
-   dispatching each on its leading token through the statement table; an empty
-   line reprompts and an unknown one raises `Syntax error`.
-   ~~dispatching each on its leading token: `POKE`, a `<letter> = <expr>`
-   assignment, `REM` (ends the line), `BLOAD`~~ 📏 **That four-statement list is
-   the loader-era slice.** The dispatcher now covers the MSX1 statement surface —
-   `make kwsweep` reports **0 MISSING** reserved words (2026-09-05); see *What is
-   implemented, and what is not* below.
-4. the **BLOAD handler** parses `"CAS:"` (device) and optional `,R`, then:
-   - `TAPION` — open tape, skip the file-header tone
-   - read + verify the 16-byte file header (binary id `$D0`)
-   - `TAPION` — skip the data-block tone
-   - read the 6-byte address header (start / end / exec, little-endian)
-   - load the payload bytes verbatim into RAM
-   - `TAPIOF`, then (for `,R`) `JP (exec)` — the handoff
+**The live, per-keyword status is [`docs/tier-status.md`](docs/tier-status.md)**,
+generated from measurements (`make tiers-md`), never typed by hand. For every one of
+the 159 MSX1 reserved words it shows which rungs are proven: every form agrees with
+the reference (T1), it completes within 10× the reference's time (T2), its common
+errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
+(T6) — and lists the open TODO items against it.
 
-This is the *interpreter half* of BLOAD. The *device half* (decoding the
-cassette signal) is the BIOS's job, via `TAPION`/`TAPIN`.
+**Known gaps**, all tracked in [`TODO.md`](TODO.md) by priority tier:
 
-### What is implemented, and what is not
+- **Speed.** The interpreter is roughly 2.5–4× slower than the reference — inside
+  the 10× "reasonable time" bar, but not on par yet.
+- **String space.** A string literal assigned in a program is still copied into
+  string space, where the reference points at the program text, so programs that
+  fill large string arrays from literals can run out of string space here only.
+- **RAM usage** is measured but not yet proven equal to the reference's.
+- **Rare error paths** — the long tail of unusual errors (TIER 6).
+- **MSX2 and later** are out of scope for now.
 
-> 📏 **THIS SECTION IS GENERATED FROM MEASUREMENTS, NOT FROM MEMORY**, and the
-> figures below were re-read on **2026-09-05**. Re-run them rather than trusting
-> them: `make kwsweep` for the keyword axis, `make gates` for the battery, and
-> `TODO.md`'s open list for the divergences. It replaces a *"Limitations (this
-> slice)"* section that described a game-loader-scoped slice from early in the
-> project — it listed `ON … GOTO` as "still out" and said variables were
-> single-letter integers with no strings or arrays, all of which predate the
-> string engine, the float pack and the array engine, and all of which the
-> charter change to **faithful full MSX1 BASIC** superseded.
+## How it is checked
 
-**The keyword axis is closed.** `make kwsweep` walks the MSX1 reserved-word list
-and reports, today: **0 MISSING**, 35 SUPPORTED, 1 DIVERGENT. It executes 37 of
-55 words; the other 18 are crunch-only and each says why (destructive, printer-
-bound, blocking on a keypress, or needing a disk fixture).
-
-⚠️ **The one DIVERGENT is not a defect and checking that is the point.** `CSRLIN`
-reads `4` on the reference and `3` here in a row that has no `CLS`, so it reports
-wherever the boot banner and the batch's own scrolling left the cursor — the
-reference disagrees with *itself* (4 vs 9) across differently-scrolled batches.
-`CSRLIN` is correct and gated at a pinned `WIDTH 40` by `cursor-acceptance`.
-
-**Variables and expressions are the real MSX1 surface**: integers, floats and
-strings with multi-character names and type suffixes (`% ! # $`), arrays with
-`DIM`, `DEF FN`, the full operator set including `/` and `^`, string functions,
-and `PRINT USING`. The three-page ROM layout that made a single-letter integer
-slice necessary is long gone.
-
-**What is measurably still divergent**, each with a row set and a TODO entry —
-this list is the honest part, and it is short:
-
-* **`SCREEN 3` pixel operations** — `PSET`/`LINE` draw on both references and
-  raise `Illegal function call` here. A whole feature: there is no SCREEN-3
-  rasteriser, and the refusal is correct for every mode that IS implemented.
-* **A SCREEN-2 `PAINT` with `C != B`** floods the whole screen on both
-  references; here it stops at any pixel whose colour is `B`. Measured
-  2026-09-05: the references do not bound the fill at all in that regime.
-* **`OPEN … LEN=r`** accepts any `1..256` on the CF-3300 and only the powers of
-  two here — a deliberate limit while `fat_rand_put`/`fat_rand_get` cannot span
-  two sectors, not an oversight.
-* **Unary `+` on a STRING** (`B$=+A$`) is `Type mismatch` here and the identity
-  there. The numeric forms were fixed 2026-09-05.
-* **`LOAD"CAS:"` on a tokenised tape** — the reference searches to end-of-tape
-  and does not return, which no acceptance row can express.
-
-**The battery is the standing answer to "does it still work":** `make gates`
-runs **114 units** — static checks plus differential probes that boot a real
-Philips VG-8020 and a National CF-3300 in openMSX beside the zerobas image and
-compare readings row by row.
-
-### Validation
-
-Run the oracle probes ([`probes/`](probes)) against this ROM:
-
-These run zerobas on the installed repack machine (`make repack-machine` first);
-the reference side, where a probe has one, is a stock Philips VG-8020. Nothing
-inserts a cartridge any more — the merged main ROM is slot 0.
+Every claim above is **measured against a real machine**, never against memory or
+a specification alone. The probes in [`probes/`](probes/) boot a stock Philips
+VG-8020 and a National CF-3300 in openMSX next to zerobas, type the same BASIC into
+both, and compare what comes back — screen text, error code and line, RAM, VRAM.
 
 ```sh
-# BLOAD pipeline (tokenise → execute → cassette load → ,R handoff)
-python3 probes/basic/basic_probe_bload.py \
-    --machine C-BIOS_MSX1_EU_REPACK_DISK
-
-# REM / POKE / PEEK / expression evaluator (results read back from RAM)
-python3 probes/basic/basic_probe_statements.py
-
-# Byte-identical crunch — zerobas TOKBUF vs reference KBUF, per line
-python3 probes/basic/basic_probe_crunch.py \
-    --machine Philips_VG_8020 --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
-
-# LIST / detokeniser round-trip, read off the SCREEN 0 name table
-python3 probes/basic/basic_probe_list.py
-
-# Cassette verbs (CSAVE/CLOAD/SAVE"CAS:"/LOAD"CAS:"/MERGE/OPEN"CAS:")
-python3 probes/basic/basic_probe_cas_verbs.py
+make repack-machine   # build + install the two machines the probes use
+make gates            # the whole battery: static checks + reference differentials
+make gates-fast       # the static half only
+make kwsweep          # every MSX1 keyword's forms, reference vs zerobas
+make tiers-md         # regenerate docs/tier-status.md from the measurements
 ```
 
-⚠️ **A probe moved between machines measures the MACHINE too.** Measured
-2026-07-29: a Philips VG-8020 lays SCREEN 0 text out at column **2** and a C-BIOS
-machine at column **1**, so a raw name-table diff across the two reports the margin
-as a PRINT defect. `basic_probe_print.py` pins the margin per capture off that
-capture's own echo row; any new cross-machine screen probe must do the same.
+A change is only accepted when it ships with its proof: a probe row that agreed
+with the reference **for the right reason**, and a **knife** — the fix deliberately
+cut out again, showing that exactly those rows go red. The reference ROMs
+themselves are never read: the oracle is used strictly as a black box.
 
-zerobas boots to its prompt, the probe types a line + Enter, and the
-result is observed by dumping RAM (no PRINT). Expected: `ALL PASS` for the
-statements probe, and `PASS marker JONG at 0xE000` / `PASS PC at landmark` for
-BLOAD — byte-for-byte identical to the reference MSX-BASIC's own behaviour.
-
-### Note on C-BIOS
-
-C-BIOS's *own* cassette routines (`TAPION`/`TAPIN`/`TAPIOF`) are **stubs that
-always fail** — so on bare C-BIOS a cassette `BLOAD` cannot complete (the ROM
-reaches `BLOAD`, calls `TAPION`, gets a failure, and takes its error path,
-observable as the byte `$EE` at `$E010`). The [`tape/`](tape/) component of
-this repo supplies real `TAPION`/`TAPIN`/`TAPIOF` in page 0, and the installer
-([tools/install-openmsx-machine.py](tools/install-openmsx-machine.py)) applies
-**both** IPS patches — tape (page 0) then zerobas (page 1) — so the full
-cassette `BLOAD` pipeline completes end-to-end: C-BIOS + tape (device half) +
-zerobas (interpreter half).
-
-The second transport is **disk** (`disk/` → `disk.rom`, slot 3-1) — **complete**:
-a standard disk-interface ROM provides the device half (`PHYDIO` / the `H.*`
-hooks + `GETDPB`), `basic.rom` owns the FAT12 filesystem and drives it through the
-standard `$4010` DSKIO interface, and the interpreter exposes a full Disk BASIC
-file-channel verb surface (`OPEN`/`PRINT#`/`INPUT#`, random-access
-`FIELD`/`GET`/`PUT`, `FILES`/`KILL`/`NAME`, `PRINT USING`, `CALL FORMAT`, …), each
-oracle-validated against a real National CF-3300. The verb surface was the
-**Phase 2** charter raise on the disk axis; **Phase 3** then raised the core
-*language* charter from loader-stub to **faithful full MSX1 BASIC** — floats, the
-full string engine, and arrays/DIM have since landed, with graphics and sound still
-ahead.
-See [`TODO.md`](TODO.md) for the per-verb status.
+Real programs are part of the check too: [`scratchpad/vleermuis/`](scratchpad/vleermuis/)
+loads a 1989 type-in game (MIT-licensed) from a generated cassette image on both
+machines and compares them — it found a string-space defect no keyword row had.
 
 ## Layout
 
 ```
 zerobas/
-├── README.md
-├── PROVENANCE.md      # provenance index -> per-component logs below
-├── Makefile           # `make` -> all deliverables; `make machines` -> openMSX configs
-├── build/             # gitignored build artifacts (disk.rom, sub.rom, ...)
-├── zerobas-main-eu.ips  # shipped BASIC: merged repack main ROM, IPS (EU; used by installer)
-├── zerobas-main-eu.bps  # shipped BASIC: merged repack main ROM, BPS (CRC-locked)
-├── basic/
-│   ├── main.asm       # org $2812 + "AB" header + includes + page padding ($00 fill)
-│   ├── interp.asm     # tokeniser + statement-loop executor (INIT entry)
-│   ├── title.asm      # startup header lines (INITXT + CHPUT)
-│   ├── repl.asm       # keyboard line editor + read/eval loop (ZB prompt)
-│   ├── vars.asm       # integer variable store (A..Z, 16-bit)
-│   ├── expr.asm       # 16-bit integer expression evaluator (incl. PEEK)
-│   ├── poke.asm       # the POKE statement handler
-│   ├── bload.asm      # the BLOAD statement handler + ,R handoff
-│   ├── sysvars.inc    # BIOS entry points + tokens + RAM scratch (all cited)
-│   └── PROVENANCE.md  # BASIC-component provenance log
-├── tape/
-│   ├── tape.asm       # cassette BIOS patch (TAPION / TAPIN / TAPIOF)
-│   ├── zerobas-tape-msx1.ips     # page-0 tape patch, IPS (used by installer)
-│   ├── zerobas-tape-msx1.bps     # page-0 tape patch, BPS (CRC-locked)
-│   ├── PROVENANCE.md  # tape-component provenance log
-│   ├── DESIGN.md      # design notes for the tape patch
-│   ├── docs/          # cassette spec and feasibility notes
-│   └── cassette-tool/ # host-side WAV/CAS analysis tools
-├── disk/
-│   └── PROVENANCE.md  # disk-component provenance log (FDC, FAT12, BDOS — complete)
-└── tools/
-    ├── pad_rom.py     # pad/verify the ROM to exactly 16 KB
-    ├── rom_patch.py   # make/apply/inspect IPS + BPS patches
-    ├── overlay_page1.py        # splice zerobas into C-BIOS page 1 + vet the splice
-    ├── build_patches.py        # build the IPS/BPS patches (portable; page-1 + --tape)
-    ├── openmsx_paths.py        # cross-platform openMSX / C-BIOS path discovery
-    └── install-openmsx-machine.py  # write *_BASIC machines that patch on load
+├── README.md, MISSION.md, PROVENANCE.md, CONTRIBUTING.md, PUBLISHING.md, LICENSE
+├── TODO.md                 # every open item, by priority tier
+├── Makefile                # `make` -> deliverables; `make machines`; `make gates`
+├── zerobas-main-eu.ips/.bps  # the shipped BASIC: a patch against stock C-BIOS (EU)
+├── basic/                  # the interpreter (relocated into the main ROM image)
+│   ├── main.asm            # the image: includes + layout
+│   ├── interp.asm          # tokeniser + statement executor
+│   ├── expr.asm, float*.asm, str-engine.asm, vars.asm, arrays.asm, ...
+│   ├── docs/               # behavioural specs
+│   └── PROVENANCE.md
+├── sub/                    # the sub-ROM (slot 3-2): heap, graphics, PLAY, ... tenants
+├── disk/                   # the disk-interface ROM (slot 3-1): Disk BASIC, FAT12, BDOS
+├── tape/                   # the cassette BIOS layer
+├── cbios-repack/           # our patches to C-BIOS source + its licence notice
+├── probes/                 # the black-box oracle harness (openMSX) and its probes
+├── tests/                  # emulator-free unit tests (`make unit-test`)
+├── tools/                  # build, patching, gate and measurement tools
+├── docs/                   # specs, characterisations, tier-status.md
+└── scratchpad/             # working evidence: probe outputs, knives, experiments
 ```
