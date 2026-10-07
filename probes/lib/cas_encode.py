@@ -164,6 +164,35 @@ def build_cas_basic_csave(name: str, program: bytes) -> bytes:
     return build_cas_basic_nopad(name, program) + bytes(CSAVE_TAIL)
 
 
+ASCII_ID = 0xEA
+
+
+def build_cas_ascii(name: str, text: str) -> bytes:
+    """Build a logical .cas image for an ASCII BASIC listing (SAVE"CAS:" form).
+
+    Source: MSX2 Technical Handbook, cassette file format -- an ASCII file is a
+    header block ($EA x10 + 6-char name) followed by DATA blocks of 256 bytes,
+    each behind its own sync marker; the text ends with Ctrl-Z ($1A) and the
+    last block is padded out with $1A. Lines end in CR LF.
+    ⚠️ VALIDATED against the reference's own writer, not only the handbook: the
+    Vleermuis side experiment SAVEs a listing to tape on the VG-8020 and diffs
+    that .cas against this builder's output (scratchpad/vleermuis/).
+
+    Parameters
+    ----------
+    name : str   filename (up to 6 chars, space-padded)
+    text : str   the listing; any line ending is normalised to CR LF
+    """
+    body = "\r\n".join(text.replace("\r\n", "\n").rstrip("\n").split("\n")) + "\r\n"
+    data = body.encode("ascii") + b"\x1a"
+    if len(data) % 256:
+        data += b"\x1a" * (256 - len(data) % 256)
+    buf = bytearray(CAS_SYNC + bytes([ASCII_ID] * 10) + name[:6].ljust(6).encode("ascii"))
+    for i in range(0, len(data), 256):
+        buf += CAS_SYNC + data[i:i + 256]
+    return bytes(buf)
+
+
 def selftest() -> int:
     """🔴 THE PADDED/UNPADDED DISTINCTION, PINNED — it is the one that cost a
     withdrawn TIER 1 filing, so it is asserted rather than described."""
@@ -196,6 +225,20 @@ def selftest() -> int:
     two = nop + build_cas_basic_nopad("ZR", prog)
     arm("a two-file tape puts the next SYNC straight after the end-link",
         two[len(nop):len(nop) + len(CAS_SYNC)] == CAS_SYNC)
+    # --- the ASCII ($EA) builder (Vleermuis side experiment, 2026-10-07) ---
+    asc = build_cas_ascii("ZQ", "10 PRINT 1\n20 END\n")
+    hdr = CAS_SYNC + bytes([ASCII_ID] * 10) + b"ZQ    "
+    arm("ASCII: the header block is SYNC + 10x $EA + the padded name", asc.startswith(hdr))
+    data = asc[len(hdr):]
+    arm("ASCII: one 256-byte data block behind its own SYNC",
+        data[:len(CAS_SYNC)] == CAS_SYNC and len(data) == len(CAS_SYNC) + 256)
+    body = data[len(CAS_SYNC):]
+    arm("ASCII: lines end CR LF, then Ctrl-Z", body.startswith(b"10 PRINT 1\r\n20 END\r\n\x1a"))
+    arm("ASCII: the block is padded with Ctrl-Z", body.rstrip(b"\x1a") == b"10 PRINT 1\r\n20 END\r\n")
+    big = build_cas_ascii("ZQ", "\n".join(f"{n} REM" for n in range(10, 1000, 10)))
+    arm("ASCII: a long listing is cut into 256-byte blocks, each behind a SYNC",
+        (len(big) - len(hdr)) % (len(CAS_SYNC) + 256) == 0 and big.count(CAS_SYNC) >= 3)
+    arm("NEGATIVE: the ASCII header is not the tokenised one", ASCII_ID != BASIC_ID)
     print("  cas_encode: PASS" if not fails else f"  cas_encode: {fails} FAILURE(S)")
     return 1 if fails else 0
 

@@ -1,0 +1,3 @@
+run   Philips_VG_8020        ['Syntax error in 1290 ']
+run   C-BIOS_MSX1_EU_REPACK_ ['Out of string space in 1070 ']
+refcache: 0 hit, 2 miss, 2 stored
