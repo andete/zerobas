@@ -144,9 +144,8 @@ dl_is_cas:
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dl_cas_close:
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: the closing '"' lives in
-                call    pcr_noquote         ; the STAGED copy, so resume past the
+                call    pcr_load            ; the STAGED copy, so resume past the
                                             ; expression and take only the ,R tail
-                jr      c,load_error
                 call    do_tape_prog        ; load the tokenised program off tape
                 jr      dl_loaded           ; D-SAVECOLON carve (-8 B page 1): the
                                             ; tail from here was dl_is_disk's 10
@@ -169,8 +168,7 @@ dl_cas_close:
 ; and run; standard MSX behaviour).
 dl_is_disk:
                 call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
-                call    pcr_noquote         ; ,R tail only -- no quote in the text
-                jr      c,load_error
+                call    pcr_load            ; ,R tail only -- no quote in the text
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
 dl_loaded:                                  ; the tape arm joins here (D-SAVECOLON)
                 ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
@@ -258,8 +256,7 @@ do_run:
                 ; so the disk path below still sees HL at the filename start.
                 jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
                 call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
-                call    pcr_noquote         ; the only '"' is fname_expr's own
-                jp      c,load_error
+                call    pcr_load            ; the only '"' is fname_expr's own
                 call    disk_prog_load      ; load the tokenised program into TXTBASE
                 ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
                                             ; already reported -- RUN"missing" must run
@@ -334,8 +331,7 @@ dr_is_cas:
                 call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
 dr_cas_close:
                 ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
-                call    pcr_noquote         ; (+ a harmless ,R: run is implicit)
-                jp      c,load_error
+                call    pcr_load            ; (+ a harmless ,R: run is implicit)
                 call    do_tape_prog        ; load the program off tape (tokenised OR
                                             ; $EA ASCII — do_tape_prog's 3-way dispatch)
                 ret     c                   ; D-CASTAIL defect B: the load FAILED and has

@@ -2301,6 +2301,13 @@ dout-acceptance: repack-machine $(DISK_TEST_DSK)
 savetail-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_savetail.py
 
+# --- loadtail-acceptance: LOAD / RUN's bad option tail is a trappable 2 (D-LOADTAIL)
+# `LOAD "X.BAS",Q` / `,S` / `RUN "A",5` (CF-3300) and `LOAD "CAS:X",Q` /
+# `RUN "CAS:X",5` (VG-8020) read `2 in 30` under ON ERROR; ours printed `load
+# error` and ran on (and took `,S` as an option). Plus the `,R` 53 control.
+loadtail-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_loadtail.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

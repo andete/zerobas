@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29772 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29820 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26645,8 +26645,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         2 → 53 (D-OPENEND, below -- a regression from S10.B increment 2 that
         kwsweep's gate could not fail on: D-KWDIVPIN); ✅ `LEN="A"` 13 → 5, bare
         `LEN` 2 → 5, `GET`/`PUT #1,"A"` 13 → 5 (D-RECLENERR, below).
-      • **extra arguments accepted (5):** `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok;
-        `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` / `INPUT$(256)` 5 → ok.
+      • **extra arguments accepted (5):** ✅ `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok
+        (D-LOADTAIL, below); `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` /
+        `INPUT$(256)` 5 → ok.
       • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
         `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
 
@@ -26662,6 +26663,52 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       all four agree, `LEN=0`/`257` and record 0 still 5. Their four pairs are
       kwsweep rows now (`t8openrandom13`, `t8openrandom2`,
       `t8getfieldedrecord13`, `t8putfieldedrecord13`), all SUPPORTED.
+
+- [x] ✅ **D-LOADTAIL — `LOAD "X.BAS",Q` AND `RUN "A",5` PRINTED `load error` AND RAN ON; THE
+      REFERENCES RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS
+      and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a mistyped LOAD / RUN option.
+      📏 Under ON ERROR, `LOAD "X.BAS",Q` and `RUN "A",5` read **2 in 30** on the
+      CF-3300, `LOAD "CAS:X",Q` and `RUN "CAS:X",5` the same on the VG-8020;
+      ours printed `load error` and reached the next line (`[OK]`) -- all four
+      `pcr_noquote` failures went to the print-and-RETURN load_error
+      (D-LOADERRRET). 🔴 And one NOT on D-DISKERRS' list, measured while
+      building the gate: `LOAD "X.BAS",S` is **2** on the CF-3300 -- `,S` is
+      BLOAD's option -- where ours accepted it and searched the disk (53).
+      🎯 Predicted all six readings (four 2s, the `,S` 2, the `,R` control 53
+      on both) -- 6/6 hit.
+      ✅ `pcr_load` ([`basic/bload.asm`](basic/bload.asm)): `pcr_noquote`, then
+      `stmt_error` on a parse failure or on `,S`; LOAD's two arms and RUN's two
+      call it. Gate `loadtail-acceptance`
+      ([`probes/disk/disk_probe_loadtail.py`](probes/disk/disk_probe_loadtail.py)):
+      the five faces plus the `LOAD "NOSUCH.BAS",R` control
+      ([`loadtail_before.out`](scratchpad/loadtail_before.out) 5 DIFF →
+      [`loadtail_after.out`](scratchpad/loadtail_after.out) 0). Knives
+      ([`loadtail_knives.py`](scratchpad/loadtail_knives.py),
+      [`loadtail_knives.out`](scratchpad/loadtail_knives.out)): K-LT1 moves
+      exactly the four `,Q`/`,5` rows, K-LT2 exactly `disk_ls`. kwsweep row
+      `t8loadrun2` SUPPORTED (LOAD's `run` set {2, 53} complete). RUN has no
+      T6 set (`tools/kwerrset.py`: RUN disarms ON ERROR in kwsweep's shape),
+      so its faces live in the gate only.
+
+- [ ] 🧩 **D-BLOADOFS — BLOAD'S `,offset` IS NOT IMPLEMENTED: `BLOAD "X.BIN",Q` READS 53 ON THE
+      CF-3300 (it took `Q` as the offset and went to the disk) AND `load error` HERE (filed
+      2026-10-07 from D-DISKERRS)**
+      🎚️ TIER 1 — happy path: `BLOAD "f"[,R][,S][,offset]` is the documented
+      form, and a relocated load is how a program places one binary at two
+      addresses.
+      📏 [`t6enum_b8_zb_1006.out`](scratchpad/t6enum_b8_zb_1006.out) (`BLOAD
+      "X.BIN",Q`: CF-3300 53, ours ok -- the parse failure goes through
+      sub/bload.asm's `pcr_noquote` to the print-and-RETURN load_error).
+      `disk/docs/diskbasic-option-surface.md` says "`offset` deferred but
+      cleanly rejected" (Q1.4, 2026-07-08) -- the rejection is that printed
+      `load error`, which no ON ERROR handler sees.
+      ➡️ **MEASURE FIRST** on the CF-3300 and VG-8020 (registers and RAM
+      only): `BLOAD "f",&H100` into RAM -- where it lands and whether the
+      start/end/exec in the work area move with it; `,R,offset` (does the exec
+      address move); `,S,offset` (VRAM); a negative and an overflowing offset;
+      then price it against the sub-ROM wall (`make basic-reloc`).
+      🤖 **AUTONOMOUS** — the references settle it.
 
 - [x] ✅ **D-OPENWILD — `OPEN "A*.TXT" FOR INPUT AS #1` READ 53; THE CF-3300 SAYS 56 (split from
       D-DISKERRS and FIXED 2026-10-07)**
@@ -26738,7 +26785,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       FALLS THROUGH into whatever follows the call (D-SAVETAIL: SAVE's `,A:`
       "junk" check only worked because the save then ran anyway).
       📏 The live sites (`grep -n "j[pr] .*load_error" basic/*.asm`, comments
-      excluded), 2026-10-07: cload.asm ×4, files.asm ×1 (`jp z` at ~2146),
+      excluded), 2026-10-07: ~~cload.asm ×4~~ (✅ D-LOADTAIL, the same day: all
+      four were LOAD / RUN's option tail), files.asm ×1 (`jp z` at ~2146),
       field.asm ×1, print.asm ×1 (PRINT# to a CAS-INPUT channel), save.asm ×5
       (stray 4th token ×2, `,S` VRAM-to-tape, trailing junk after the name,
       two `jp c`), str-engine.asm ×1 (sub-ROM absent -- likely right as is).

@@ -1,0 +1,9 @@
+ok   disk_lq  National_CF- 'E 2 30'     ours 'E 2 30'
+ok   disk_ls  National_CF- 'E 2 30'     ours 'E 2 30'
+ok   disk_runq National_CF- 'E 2 30'     ours 'E 2 30'
+ok   disk_lrmiss National_CF- 'E 53 30'    ours 'E 53 30'
+ok   cas_lq   Philips_VG_8 'E 2 30'     ours 'E 2 30'
+ok   cas_runq Philips_VG_8 'E 2 30'     ours 'E 2 30'
+
+PASS: LOAD / RUN's option tail as on the references (0 divergence(s))
+refcache: 2 hit, 10 miss, 10 stored

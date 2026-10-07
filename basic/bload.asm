@@ -203,6 +203,21 @@ pcr_ok:
                 or      a                   ; CF clear = success
                 ret
 
+; --- pcr_load: LOAD / RUN's option tail -- pcr_noquote, then a TRAPPABLE 2 ---
+; ✅ D-LOADTAIL (2026-10-07): `LOAD "X.BAS",Q`, `RUN "A",5` and the cassette
+; faces read `2 in 30` under ON ERROR on the CF-3300 / VG-8020; ours took the
+; parse failure to load_error, which PRINTS AND RETURNS (D-LOADERRRET), so the
+; program ran on. `,S` is BLOAD's option, not LOAD's: `LOAD "X.BAS",S` is 2 on
+; the CF-3300 where ours accepted it and searched the disk (53)
+; (probes/disk/disk_probe_loadtail.py). The four LOAD / RUN sites call this.
+pcr_load:
+                call    pcr_noquote
+                jp      c,stmt_error        ; unknown option or junk after it
+                ld      a,(VRAM_FLAG)
+                or      a
+                jp      nz,stmt_error       ; ,S
+                ret
+
 ; device name accepted by this build. Source: spec-bload-r.md §5 ("CAS:").
 dev_cas:
                 db      "CAS:",0

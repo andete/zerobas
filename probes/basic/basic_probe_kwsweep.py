@@ -4357,6 +4357,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:53 SUBJECT:LOAD FORM:plain"),
     ('t8loadrun53', 'load "nosuch.bas",r', 'LOAD "NOSUCH.BAS",R', "stored",
      "NEEDS-DISK: PROVES-T6:53 SUBJECT:LOAD FORM:run"),
+    ('t8loadrun2', 'load "x.bas",q', 'LOAD "X.BAS",Q', "stored",
+     "NEEDS-DISK: PROVES-T6:2 SUBJECT:LOAD FORM:run"),         # D-LOADTAIL (2026-10-07)
     ('t8savetokenised13', 'save 5', 'SAVE 5', "stored",
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:SAVE FORM:tokenised"),
     ('t8savetokenised24', 'save', 'SAVE', "stored",

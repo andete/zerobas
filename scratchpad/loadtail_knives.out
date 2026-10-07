@@ -1,0 +1,6 @@
+  ROM 3c5004bc 69c6d2d8 cedc7998 4d62df78  ->  e2126e85 69c6d2d8 cedc7998 38648d05
+PASS  K-LT1: diverged ['cas_lq', 'cas_runq', 'disk_lq', 'disk_runq'] (want exactly ['cas_lq', 'cas_runq', 'disk_lq', 'disk_runq'])
+  ROM e2126e85 69c6d2d8 cedc7998 38648d05  ->  99b98501 69c6d2d8 cedc7998 92b72b87
+PASS  K-LT2: diverged ['disk_ls'] (want exactly ['disk_ls'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
