@@ -483,6 +483,23 @@ do_open:
                 ld      de,dev_cas
                 call    dev_cmp
                 jp      z,oo_dev_cas
+                ; ✅ D-NODISKOPEN (2026-10-07): ON A DISKLESS MACHINE THE CASSETTE
+                ; IS THE DEFAULT DEVICE. Measured on the VG-8020 (no disk,
+                ; probes/basic/basic_probe_nodiskopen.py): `OPEN "X" FOR OUTPUT`
+                ; opens, and a second cassette OPEN beside it is 52 exactly as for
+                ; `OPEN "CAS:X"` -- the same device; a drive name (`"A:X"`) is 56.
+                ; Ours printed `load error` (oo_nodisk, now gone).
+                call    diskslot_test
+                jr      nz,oo_hasdisk
+                inc     hl
+                ld      a,(hl)              ; `d:` -- a drive, and there is none
+                dec     hl
+                cp      ':'
+                jp      nz,oo_dev_cas
+oo_fail_bfname:
+                ld      e,56                ; Bad file name
+                jp      oo_fail_e
+oo_hasdisk:
                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
                 ; D-OPENWILD (2026-10-07): a WILDCARD name is `Bad file name` (56)
                 ; on the CF-3300 (`OPEN "A*.TXT" FOR INPUT AS #1`); ours looked it
@@ -521,18 +538,23 @@ oo_wild:
                 ; oracle fact it encodes is unchanged and still written down at
                 ; the block above: the main-ROM tokeniser crunches "APPEND" to
                 ; $41 $50 $50 $81, so this matches bytes and not a keyword.
+                call    oo_is_app           ; D-NODISKOPEN: shared with the tape arm
+                jr      nz,oo_synerr
+                ld      a,3                 ; mode = APPEND (provisional open action)
+                jr      oo_setmode
+; oo_is_app: Z and HL past it iff HL is at APPEND ("APP" + END, crunched)
+oo_is_app:
                 ld      de,oo_app_seq
 oo_app_lp:
                 ld      a,(de)              ; expected byte
                 cp      (hl)                ; against the line
-                jr      nz,oo_synerr
+                ret     nz
                 inc     hl
                 inc     de
                 ld      a,(de)
                 or      a                   ; 0 terminates the sequence
                 jr      nz,oo_app_lp
-                ld      a,3                 ; mode = APPEND (provisional open action)
-                jr      oo_setmode
+                ret                         ; Z
 ; ⚠️ ONE LOCAL `stmt_error` TRAMPOLINE FOR THE WHOLE OPEN PARSE (D-INPLIST
 ; carve). Six sites reached it with `jp cc,stmt_error` (3 B each); they reach it
 ; with `jr cc,oo_synerr` (2 B) now, which pays for itself from the third site on.
@@ -607,8 +629,8 @@ oo_endok:
                 ld      a,(OO_RECLEN_CHAN)
                 ld      e,a
                 ld      d,0                 ; restore DE = channel for the rest of do_open
-                call    diskslot_test
-                jr      z,oo_nodisk         ; no disk -> fail BEFORE claiming a slot
+                ; (no disk here is impossible: a diskless OPEN went to the
+                ; cassette or 56 above, before pdfcb_resume -- D-NODISKOPEN)
                 ; 🔴 D-OPENSAME (2026-09-29): a file ALREADY OPEN on another channel
                 ; is `File already open` (54) on the CF-3300 in every mode, and the
                 ; first channel keeps its data (scratchpad/opensame_before.out).
@@ -714,10 +736,6 @@ oo_fail:
                 ; arithmetic and touches no disk primitive, so DISKOP_OP still
                 ; names the one that failed.
                 jp      df_or_loaderr
-oo_nodisk:
-                xor     a
-                ld      (FCH_MODE),a        ; no slot was claimed; leave FCH_ACTIVE alone
-                jp      load_error
 oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
@@ -855,13 +873,21 @@ oo_dev_cas:
                 ; require FOR INPUT | FOR OUTPUT
                 call    skip_spaces
                 cp      FOR_TOKEN
-                jr      nz,oo_fail_syn      ; CAS: needs FOR (no RANDOM cassette)
+                jr      nz,oocas_nofor      ; CAS: needs FOR (no RANDOM cassette)
                 rst    $10     
                 cp      INPUT_TOKEN
                 jr      z,oocas_in
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
                 jr      z,oocas_out
-                jr      oo_fail_syn         ; APPEND not supported on cassette
+                call    oo_is_app           ; D-NODISKOPEN: APPEND is 56 on the
+                jp      nz,oo_fail_syn      ; VG-8020 and CF-3300 alike; other
+                jp      oo_fail_bfname      ; junk after FOR stays 2 (casfoo)
+oocas_nofor:
+                ; RANDOM (`AS #n`, no FOR) is 56 on both references; other junk
+                ; is 2 (casjunk). The AS clause is parsed first, so a bad channel
+                ; there answers before the 56 -- that order is unmeasured.
+                call    oo_parse_as_chan    ; 2 unless `AS [#]n`
+                jp      oo_fail_bfname
 oocas_in:
                 inc     hl
                 ld      a,CAS_IN_MODE
@@ -870,7 +896,7 @@ oocas_out:
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
-                jr      nz,oo_fail_syn
+                jp      nz,oo_fail_syn
                 inc     hl
                 ld      a,CAS_OUT_MODE
 oocas_setmode:

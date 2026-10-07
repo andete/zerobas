@@ -1,0 +1,15 @@
+ok   out      'OK'         ours 'OK'
+ok   two      'E 52 30'    ours 'E 52 30'
+ok   twocas   'E 52 30'    ours 'E 52 30'
+ok   rand     'E 56 30'    ours 'E 56 30'
+ok   casrand  'E 56 30'    ours 'E 56 30'
+ok   casapp   'E 56 30'    ours 'E 56 30'
+ok   app      'E 56 30'    ours 'E 56 30'
+ok   drive    'E 56 30'    ours 'E 56 30'
+ok   casfoo   'E 2 30'     ours 'E 2 30'
+ok   casjunk  'E 2 30'     ours 'E 2 30'
+ok   dcasrand 'E 56 30'    ours 'E 56 30'
+ok   dcasapp  'E 56 30'    ours 'E 56 30'
+
+PASS: a diskless OPEN as on the VG-8020 (0 divergence(s))
+refcache: 10 hit, 14 miss, 14 stored

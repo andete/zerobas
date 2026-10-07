@@ -6255,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29982 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30008 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26918,23 +26918,49 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       is the first suspect. Fix the row or the capture, not the rule.
       🤖 **AUTONOMOUS** — the CF-3300 and the refcache settle it.
 
-- [ ] 💽 **D-NODISKOPEN — ON THE DISKLESS TARGET A DEVICE-LESS `OPEN` IS `load error`; THE VG-8020
-      OPENS `"X" FOR OUTPUT` AND ANSWERS `OPEN "X" AS #1` WITH 56 (measured 2026-10-07)**
+- [x] ✅ **D-NODISKOPEN — ON THE DISKLESS TARGET A DEVICE-LESS `OPEN` WAS `load error`; THE VG-8020
+      OPENS THE CASSETTE, AND REFUSES WHAT THE CASSETTE CANNOT DO WITH 56 (measured and FIXED
+      2026-10-07)**
       🎚️ TIER 3 — common errors / diskless happy path: a data file on a
       cassette machine.
-      📏 Under ON ERROR on the VG-8020 (no disk): `OPEN"X"FOR OUTPUT AS#1` --
-      NO error (the open succeeds; presumably the cassette, the only file
-      device a diskless machine has -- UNMEASURED which device); `OPEN"X"AS#1`
-      -- 56 (Bad file name). Ours: `load error` for both (oo_nodisk). Found
-      while booking nodisk-acceptance's `h.open`, whose pinned explanation
-      ("FOR OUTPUT is unparseable without Disk BASIC") turned out to be the
-      probe's own `;` suffix (D-OPENEND, above).
-      ➡️ **MEASURE FIRST:** which device the VG-8020 opened (a PRINT# + CLOSE
-      with a blank tape inserted, and the tape read back; FOR INPUT too), then
-      route a device-less name on a diskless machine there, and RANDOM to 56.
-      Rows in nodisk-acceptance (Joost 2026-09-03: disk-related work adds rows
-      there).
-      🤖 **AUTONOMOUS** — the VG-8020 settles it.
+      📏 Under ON ERROR, VG-8020 with no disk
+      ([`nodiskopen_before.out`](scratchpad/nodiskopen_before.out),
+      [`nodiskopen_more.out`](scratchpad/nodiskopen_more.out)):
+      `OPEN "X" FOR OUTPUT` opens; **which device** was the open question, and a
+      DISCRIMINATOR answered it -- `OPEN "X" FOR OUTPUT AS #1:OPEN "CAS:Y" FOR
+      OUTPUT AS #2` is 52 exactly as the all-`CAS:` pair is: the cassette.
+      `OPEN "X" AS #1` (RANDOM) 56, `FOR APPEND` 56, `"A:X"` (a drive on a machine
+      with none) 56; the CF-3300 refuses `"CAS:X" AS #1` / `FOR APPEND` with 56
+      too, where ours said 2. 🎯 Predicted the VG-8020's six first readings --
+      6/6. ⚠️ Our `out` row read `OK` BEFORE the fix too -- for the wrong reason
+      (`load error` printed and returned); `two` is the row that discriminates.
+      Two rule pairs agreed on every row and were SEPARATED before building
+      [[two-rules-that-coincide-on-every-row-you-have]]: `"CAS:X" FOR FOO` is 2,
+      not 56 (only APPEND is refused as a device limit), and `"CAS:X" FOO` is 2,
+      not 56 (only `AS` is) -- both predicted, both hit
+      ([`nodiskopen_foo.out`](scratchpad/nodiskopen_foo.out),
+      [`nodiskopen_junk.out`](scratchpad/nodiskopen_junk.out)).
+      ✅ basic/files.asm `do_open`: on a diskless machine (`diskslot_test`), a
+      name with no device goes to the cassette arm `oo_dev_cas`, a `d:` name
+      is 56 (`oo_fail_bfname`); the cassette arm answers RANDOM (`AS`, parsed
+      first) and APPEND (`oo_is_app`, now a subroutine the disk arm shares) with
+      56. The later no-disk check and `oo_nodisk`'s `load error` were
+      unreachable after it and are gone. Main page 1 90 → 65 B.
+      Gate `nodiskopen-acceptance`
+      ([`probes/basic/basic_probe_nodiskopen.py`](probes/basic/basic_probe_nodiskopen.py)),
+      twelve rows on the NODISK machine against the VG-8020 (ten) and on the DISK
+      machine against the CF-3300 (two) -- the diskless rows Joost's 2026-09-03
+      ruling asks disk work to add -- 12/12
+      ([`nodiskopen_after.out`](scratchpad/nodiskopen_after.out)). Knives
+      ([`nodiskopen_knives.py`](scratchpad/nodiskopen_knives.py),
+      [`nodiskopen_knives.out`](scratchpad/nodiskopen_knives.out)): K-ND1 (the
+      diskless dispatch skipped) moves exactly out/two/rand/app/drive, K-ND2
+      (RANDOM back to 2) exactly rand/casrand/dcasrand, K-ND3 (APPEND back to
+      2) exactly app/casapp/dcasapp.
+      ⚠️ UNMEASURED: `OPEN "X" FOR INPUT` on the diskless machine (it waits for
+      a tape on both, so no row can read it), a bad channel number in a
+      cassette RANDOM open (ours parses `AS #n` first, so 52/5 before the 56),
+      and other device names (`GRP:`, `COM:`) on either target.
 
 - [ ] 🔴 **D-LOADERRRET — `load_error` PRINTS AND RETURNS; ~15 SITES STILL `jp` TO IT WHERE THE
       REFERENCE RAISES A TRAPPABLE CODE (filed 2026-10-07 from D-CHDIR / D-SAVETAIL)**

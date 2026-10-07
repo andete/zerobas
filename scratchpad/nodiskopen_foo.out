@@ -1,0 +1,4 @@
+ok   casfoo   'E 2 30'     ours 'E 2 30'
+
+PASS: a diskless OPEN as on the VG-8020 (0 divergence(s))
+refcache: 0 hit, 2 miss, 2 stored

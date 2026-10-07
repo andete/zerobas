@@ -1,0 +1,8 @@
+/Users/joost/projects/zerobas/probes/basic/basic_probe_nodiskopen.py:21: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  dcasrand  OPEN "CAS:X" AS #1             \ the same two cassette refusals on the
+DIFF drive    'E 56 30'    ours 'OK'
+DIFF dcasrand 'E 56 30'    ours 'E 2 30'
+DIFF dcasapp  'E 56 30'    ours 'E 2 30'
+
+FAIL: a diskless OPEN as on the VG-8020 (3 divergence(s))
+refcache: 0 hit, 6 miss, 6 stored

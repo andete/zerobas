@@ -2322,6 +2322,13 @@ inputdn-acceptance: repack-machine $(DISK_TEST_DSK)
 bloadofs-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_bloadofs.py
 
+# --- nodiskopen-acceptance: a diskless OPEN is the cassette's (D-NODISKOPEN) -----
+# On the VG-8020 with no disk a device-less name opens the cassette (a second
+# cassette OPEN beside it is 52, as for "CAS:"), a drive name is 56, and the
+# cassette refuses RANDOM and APPEND with 56 -- the last two on the CF-3300 too.
+nodiskopen-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_nodiskopen.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it
