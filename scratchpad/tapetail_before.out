@@ -1,0 +1,8 @@
+DIFF bsaves    'OK'           ours 'load error'
+DIFF savejunk  'E 2 30'       ours 'load error'
+DIFF csavespd  'E 5 30'       ours 'load error'
+DIFF csavejunk 'E 2 30'       ours 'load error'
+ok   csaveok   'OK'           ours 'OK'
+
+FAIL: the tape save tails as on the VG-8020 (4 divergence(s))
+refcache: 0 hit, 10 miss, 10 stored

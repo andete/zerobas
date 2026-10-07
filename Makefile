@@ -2336,6 +2336,14 @@ nodiskopen-acceptance: repack-machine $(DISK_TEST_DSK)
 bsavevar-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_bsavevar.py
 
+# --- tapetail-acceptance: the cassette save verbs' bad tails (D-TAPETAIL) ------
+# On the diskless VG-8020: `SAVE "CAS:X" Q` 2, `CSAVE "X",3` 5, `CSAVE "X",1,2` 2;
+# a tape BSAVE's 4th argument is the exec VARIABLE even when it is S (S=70000 is
+# 6 on the VG-8020 and the CF-3300); a disk BSAVE's exec is typed (70000 6, "A"
+# 13, the file not created). Ours printed `load error` for the tape ones.
+tapetail-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_tapetail.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

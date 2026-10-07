@@ -1,0 +1,5 @@
+DIFF bsavesbig 'E 6 30'       ours 'load error'
+DIFF dbsavesbig 'E 6 30'       ours 'load error'
+
+FAIL: the tape save tails as on the VG-8020 (2 divergence(s))
+refcache: 0 hit, 4 miss, 4 stored

@@ -1,0 +1,14 @@
+ok   bsaves    'OK'           ours 'OK'
+ok   bsavesx   'OK'           ours 'OK'
+ok   dbsaves   'OK'           ours 'OK'
+ok   bsavesbig 'E 6 30'       ours 'E 6 30'
+ok   dbsavesbig 'E 6 30'       ours 'E 6 30'
+ok   dbsavebig 'E 6 30 N'     ours 'E 6 30 N'
+ok   dbsavestr 'E 13 30 N'    ours 'E 13 30 N'
+ok   savejunk  'E 2 30'       ours 'E 2 30'
+ok   csavespd  'E 5 30'       ours 'E 5 30'
+ok   csavejunk 'E 2 30'       ours 'E 2 30'
+ok   csaveok   'OK'           ours 'OK'
+
+PASS: the tape save tails as on the VG-8020 (0 divergence(s))
+refcache: 14 hit, 8 miss, 8 stored

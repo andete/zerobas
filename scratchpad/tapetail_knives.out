@@ -1,0 +1,10 @@
+  ROM e592796e fad7eb06 877bc684 395f9699  ->  d968aaa2 fad7eb06 877bc684 94af4585
+PASS  K-TT1: diverged ['bsavesbig', 'bsavesx', 'dbsavesbig'] (want exactly ['bsavesbig', 'bsavesx', 'dbsavesbig'])
+  ROM d968aaa2 fad7eb06 877bc684 94af4585  ->  3c20c68b fad7eb06 877bc684 f71c8eaf
+PASS  K-TT2: diverged ['bsavesbig', 'dbsavebig', 'dbsavesbig', 'dbsavestr'] (want exactly ['bsavesbig', 'dbsavebig', 'dbsavesbig', 'dbsavestr'])
+  ROM 3c20c68b fad7eb06 877bc684 f71c8eaf  ->  fe647aa5 fad7eb06 877bc684 1fb2ab48
+PASS  K-TT3: diverged ['csavespd'] (want exactly ['csavespd'])
+  ROM fe647aa5 fad7eb06 877bc684 1fb2ab48  ->  ff79018e fad7eb06 877bc684 a8092215
+PASS  K-TT4: diverged ['savejunk'] (want exactly ['savejunk'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

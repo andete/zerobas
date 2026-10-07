@@ -188,13 +188,15 @@ bsv_is_cas:
                 ; --- ,end --------------------------------------------------
                 call    expect_comma_eval   ; DE = end
                 ld      (TSV_END),de
-                ; --- optional 4th slot: ,exec (,S VRAM-to-tape unsupported) -
-                call    bsave_opt4          ; raises 2 itself (D-BSAVEVAR)
+                ; --- optional 4th slot: ,exec -- and ONLY ,exec on tape --------
+                ; ✅ D-TAPETAIL (2026-10-07): a tape BSAVE has no `,S` flag on EITHER
+                ; reference -- `S=70000:BSAVE "CAS:X",&HC000,&HC010,S` is Overflow
+                ; (6) on the VG-8020 AND the CF-3300, so S is the exec VARIABLE;
+                ; Disk BASIC's flag is a disk-BSAVE thing. Ours refused it with
+                ; `load error`.
+                call    bsave_opt4_cas      ; A = 0 none / 2 exec in DE
                 or      a
                 jr      z,bsv_cas_open      ; no 4th arg
-                cp      2
-                jp      nz,load_error       ; A=1: ",S" VRAM-to-tape not supported;
-                                            ; A=2: expression -> exec
 bsv_cas_exec:
                 ld      (EXECPTR),de
 bsv_cas_open:
@@ -313,7 +315,10 @@ sav_is_cas:
                 call    skip_comma
                 jr      z,sav_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
-                jp      nz,load_error       ; trailing junk after the name
+                jr      z,sav_cas_end
+                cp      ':'
+                jp      nz,stmt_error       ; D-TAPETAIL: junk after the name is 2
+sav_cas_end:                                ; on the VG-8020 (was `load error`)
                 ; ✅ D-CASSAVE: NO FLAG IS THE SAME AS `,A` — an ASCII ($EA) tape.
                 ; This arm used to `jp tape_save_basic` (tokenised, $D3), which
                 ; basic/save.asm's own header table documented as intended. It is
@@ -512,12 +517,12 @@ csav_speed:
                 call    eval                ; DE = speed value, HL past it
                 ld      a,d
                 or      a
-                jr      nz,csav_sp_err      ; > 255 -> invalid speed
+                jp      nz,gb_illegal       ; > 255 -> 5 (D-TAPETAIL: VG-8020)
                 ld      a,e
                 cp      1
                 jr      z,csav_sp_1200
                 cp      2
-                jr      nz,csav_sp_err      ; only ,1 / ,2 are valid
+                jp      nz,gb_illegal       ; only ,1 / ,2: `CSAVE "X",3` is 5
 csav_sp_2400:
                 ld      de,CAS_LOW_2400     ; selected active-LOW word
                 jr      csav_sp_apply
@@ -536,8 +541,7 @@ csav_sp_apply:
                 ret     z
                 ; fall through: trailing junk after ,speed
 csav_sp_err:
-                scf
-                ret
+                jp      stmt_error          ; junk: `CSAVE "X",1,2` is 2 (D-TAPETAIL)
 
 ; ===========================================================================
 ; do_csave — CSAVE ["name"][,speed]  (tokenised-BASIC save to cassette)
@@ -578,8 +582,7 @@ do_csave:
                 call    fname_expr          ; HL -> the staged '"'-terminated copy
                 call    tape_parse_name     ; fills TSV_NAME from the staged copy
                 ld      hl,(FN_RESUME)      ; resume just past the expression
-                call    csav_speed          ; optional ,1/,2 speed; CF=1 on bad speed/junk
-                jp      c,load_error
+                call    csav_speed          ; optional ,1/,2 speed; raises 5 / 2 itself
                 jr      tape_save_basic
 csav_comma:
                 ; D-CSAVENAME (2026-09-04): `CSAVE,2` -- no name, a speed --
@@ -686,6 +689,7 @@ tpn_fill:
 bsave_opt4:
                 call    skip_comma
                 jr      z,b4_have
+b4_none:
                 xor     a                   ; no 4th argument (A=0, CF clear)
                 ret
 b4_have:
@@ -698,9 +702,15 @@ b4_have:
                 ld      a,1                 ; A = 1: ",S" flag
                 or      a                   ; CF clear (success)
                 ret
+; bsave_opt4_cas -- the tape BSAVE's 4th slot: ,exec only (D-TAPETAIL, above)
+bsave_opt4_cas:
+                call    skip_comma
+                jr      nz,b4_none          ; no 4th argument
+                rst     $10                 ; past the comma
 b4_expr:
-                call    eval                ; DE = exec expression value
-                ld      a,2                 ; A = 2: expression
+                call    eval_addr           ; DE = exec, an ADDRESS (D-TAPETAIL: a
+                call    check_expr_errors   ; string 13, past 65535 6 -- was a bare
+                ld      a,2                 ; `eval`); A = 2: expression
                 or      a                   ; CF clear (success)
                 ret
 

@@ -1,0 +1,5 @@
+ok   dbsavebig 'E 6 30 N'     ours 'E 6 30 N'
+ok   dbsavestr 'E 13 30 N'    ours 'E 13 30 N'
+
+PASS: the tape save tails as on the VG-8020 (0 divergence(s))
+refcache: 0 hit, 4 miss, 4 stored

@@ -106,7 +106,7 @@ savedate-acceptance dosdate-acceptance strout-acceptance dosbasic-acceptance
 diskfull-acceptance asavechan-acceptance nohash-acceptance ctrlkeys-acceptance
 clearclose-acceptance dout-acceptance prnumwrap-acceptance savetail-acceptance
 loadtail-acceptance inputdn-acceptance bloadofs-acceptance
-nodiskopen-acceptance bsavevar-acceptance""".split()
+nodiskopen-acceptance bsavevar-acceptance tapetail-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --
