@@ -88,8 +88,8 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `CLS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3∅ T4— 0.45× no-argument T5 0.68× no-argument T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:26389) |
 | `CMD` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `COLOR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× background T5 2.7× border T6✓ | knife ✓ · 3/3 forms |
-| `CONT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6— | knife ✓ · 1/1 forms · 2 open, worst TIER 6 (TODO.md:8688 TODO.md:28823) |
-| `COPY` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.38× file-to-file T5 ~ T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 3 (TODO.md:26990) |
+| `CONT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6— | knife ✓ · 1/1 forms · 2 open, worst TIER 6 (TODO.md:8688 TODO.md:28842) |
+| `COPY` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.38× file-to-file T5 ~ T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 3 (TODO.md:27009) |
 | `COS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.4× cosine T5 5.4× cosine T6✓ | knife ✓ · 1/1 forms |
 | `CSAVE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.83× save-to-tape T6✓ | knife ✓ · 1/1 forms |
 | `CSNG` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.4× to-single T5 1.6× to-single T6✓ | knife ✓ · 1/1 forms |
@@ -97,7 +97,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `CVD` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.9× string-to-double T5 0.78× string-to-double T6✓ | knife ✓ · 1/1 forms |
 | `CVI` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1× int-to-string T5 1.1× int-to-string T6✓ | knife ✓ · 1/1 forms |
 | `CVS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.7× string-to-single T5 1.2× string-to-single T6✓ | knife ✓ · 1/1 forms |
-| `DATA` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.9× quoted-string T5 ~ T6— | knife ✓ · 4/4 forms · 2 open, worst TIER 6 (TODO.md:22493 TODO.md:28887) |
+| `DATA` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.9× quoted-string T5 ~ T6— | knife ✓ · 4/4 forms · 2 open, worst TIER 6 (TODO.md:22493 TODO.md:28906) |
 | `DEF` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
 | `DEFDBL` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.2× letter-range T5 ~ T6✓ | knife ✓ · 2/2 forms |
 | `DEFINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× letter-range T5 ~ T6✓ | knife ✓ · 2/2 forms |
@@ -107,7 +107,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `DIM` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.8× one-dimensional T5 ~ T6✓ | knife ✓ · 2/2 forms · 1 open, worst TIER 4 (TODO.md:26277) |
 | `DRAW` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× substring-exec T5 2.2× variable-substitution T6✓ | knife ✓ · 10/10 forms |
 | `DSKF` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.51× free-space T5 0.87× free-space T6✓ | knife ✓ · 1/1 forms |
-| `DSKI$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.26× read-sector T5 0.13× read-sector T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28068) |
+| `DSKI$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.26× read-sector T5 0.13× read-sector T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28087) |
 | `DSKO$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.26× write-sector T5 0.46× write-sector T6✓ | knife ✓ · 1/1 forms |
 | `ELSE` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | syntax particle — never a statement of its own |
 | `END` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3∅ T4— T5 ~ T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:26389) |
@@ -122,7 +122,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `FILES` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× pattern T5 0.27× pattern T6✓ | knife ✓ · 2/2 forms |
 | `FIX` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.3× truncate T5 1.1× truncate T6✓ | knife ✓ · 1/1 forms |
 | `FN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.3× string-valued T5 ~ T6✓ | knife ✓ · 2/2 forms · 1 open, worst TIER 6 (TODO.md:16555) |
-| `FOR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.4× step T5 ~ T6✓ | knife ✓ · 3/3 forms · 3 open, worst TIER 3 (TODO.md:13241 TODO.md:26166 TODO.md:26875) |
+| `FOR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.4× step T5 ~ T6✓ | knife ✓ · 3/3 forms · 3 open, worst TIER 3 (TODO.md:13241 TODO.md:26166 TODO.md:26894) |
 | `FRE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.1× free-ram T5 2.1× free-ram T6✓ | knife ✓ · 2/2 forms · 1 open, worst TIER 6 (TODO.md:22493) |
 | `GET` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
 | `GOSUB` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 2× call T6✓ | knife ✓ · 1/1 forms |
@@ -150,12 +150,12 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `LOCATE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.3× cursor-switch T5 1.4× omitted-column T6✓ | knife ✓ · 4/4 forms |
 | `LOF` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× length T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `LOG` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 3.8× logarithm T5 3.7× logarithm T6✓ | knife ✓ · 1/1 forms |
-| `LPOS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.84× column-read T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28895) |
+| `LPOS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.84× column-read T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28914) |
 | `LPRINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.33× print-to-printer T6— | knife ✓ · 1/1 forms |
 | `LSET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.45× left-justify T5 0.98× left-justify T6✓ | knife ✓ · 1/1 forms |
 | `MAX` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
 | `MERGE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms |
-| `MID$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.4× substring-3arg T5 1.4× assign T6— | knife ✓ · 3/3 forms · 1 open, worst TIER 6 (TODO.md:28903) |
+| `MID$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.4× substring-3arg T5 1.4× assign T6— | knife ✓ · 3/3 forms · 1 open, worst TIER 6 (TODO.md:28922) |
 | `MKD$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.7× double-to-string T5 0.78× double-to-string T6✓ | knife ✓ · 1/1 forms |
 | `MKI$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.98× int-to-string T5 0.75× int-to-string T6✓ | knife ✓ · 1/1 forms |
 | `MKS$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× single-to-string T5 1.2× single-to-string T6✓ | knife ✓ · 1/1 forms |
@@ -168,7 +168,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `OCT$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1× to-octal T5 0.95× to-octal T6✓ | knife ✓ · 1/1 forms |
 | `OFF` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | syntax particle — never a statement of its own |
 | `ON` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
-| `OPEN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.45× output T5 0.6× output T6✓ | knife ✓ · 4/4 forms · 2 open, worst TIER 3 (TODO.md:21569 TODO.md:26875) |
+| `OPEN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.45× output T5 0.6× output T6✓ | knife ✓ · 4/4 forms · 2 open, worst TIER 3 (TODO.md:21569 TODO.md:26894) |
 | `OR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× bitwise-or T5 0.77× bitwise-or T6✓ | knife ✓ · 1/1 forms |
 | `OUT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.4× port-value T5 3.5× port-value T6✓ | knife ✓ · 1/1 forms |
 | `PAD` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 3/3 forms |
@@ -178,13 +178,13 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `PLAY` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× notes T5 1.5× multi-voice T6✓ | knife ✓ · 10/10 forms · 1 open, worst TIER 6 (TODO.md:18535) |
 | `POINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.2× pixel-read T5 2× pixel-read T6✓ | knife ✓ · 1/1 forms |
 | `POKE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× address-value T5 ~ T6✓ | knife ✓ · 1/1 forms |
-| `POS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× column-read T5 0.82× column-read T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28895) |
+| `POS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× column-read T5 0.82× column-read T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:28914) |
 | `PRESET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.2× step-relative T5 ~ T6✓ | knife ✓ · 4/4 forms |
 | `PRINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1× trailing-suppress T5 1.6× trailing-suppress T6— | knife ✓ · 5/5 forms |
 | `PSET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.2× colour-default T5 ~ T6✓ | knife ✓ · 4/4 forms |
 | `PUT` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
-| `READ` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 1.5× read-data T6— | knife ✓ · 1/1 forms · 2 open, worst TIER 6 (TODO.md:28887 TODO.md:28913) |
-| `REM` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3∅ T4— 0.21× comment T5 ~ T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 5 (TODO.md:27439) |
+| `READ` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 1.5× read-data T6— | knife ✓ · 1/1 forms · 2 open, worst TIER 6 (TODO.md:28906 TODO.md:28932) |
+| `REM` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3∅ T4— 0.21× comment T5 ~ T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 5 (TODO.md:27458) |
 | `RENUM` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 4/4 forms |
 | `RESTORE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 1.6× line T6✓ | knife ✓ · 2/2 forms |
 | `RESUME` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 7.8× bare T6— | knife ✓ · 3/3 forms |
@@ -207,16 +207,16 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `STOP` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3∅ T4— T5 ~ T6— | knife ✓ · 1/1 forms |
 | `STR$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.58× number-to-string T5 0.76× number-to-string T6✓ | knife ✓ · 1/1 forms |
 | `STRIG` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 2/2 forms |
-| `STRING$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× repeat T5 0.91× repeat T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:29112) |
+| `STRING$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× repeat T5 0.91× repeat T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:29131) |
 | `SWAP` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.5× exchange T5 2.2× exchange T6✓ | knife ✓ · 1/1 forms |
-| `TAN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.7× tangent T5 2.8× tangent T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:29121) |
+| `TAN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.7× tangent T5 2.8× tangent T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (TODO.md:29140) |
 | `THEN` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | syntax particle — never a statement of its own |
 | `TIME` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.4× read T5 5× read T6✓ | knife ✓ · 2/2 forms |
 | `TO` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | syntax particle — never a statement of its own |
 | `TROFF` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.9× toggle T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `TRON` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.9× toggle T5 0.7× toggle T6✓ | knife ✓ · 1/1 forms |
 | `USING` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
-| `USR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 2/2 forms · 2 open, worst TIER 6 (TODO.md:26452 TODO.md:28830) |
+| `USR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 2/2 forms · 2 open, worst TIER 6 (TODO.md:26452 TODO.md:28849) |
 | `VAL` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2.2× exponent T5 1.4× exponent T6✓ | knife ✓ · 5/5 forms |
 | `VARPTR` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 2× variable T5 2.7× variable T6✓ | knife ✓ · 2/2 forms · 1 open, worst TIER 4 (TODO.md:17342) |
 | `VDP` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 3.1× write T5 2.3× write T6✓ | knife ✓ · 2/2 forms |
@@ -260,13 +260,13 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 |---|---|---|---|---|
 | — | TIER 1 | 🤖 | it is the bar every other item is measured against, and three | 25437 |
 | — | TIER 1 | 🤖 | it is part of the bar every other item is measured against. | 25696 |
-| — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | 29448 |
+| — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | 29467 |
 | `LOAD` | TIER 2 | 🤖 | reasonable time, on `LOAD`. | 220 |
 | — | TIER 2 | 🤖 | reasonable time; it is apparatus, and it gates steps 10-11. | 2714 |
-| `COPY`, `TO` | TIER 3 | 🙋 | a wildcard COPY is the ordinary way to copy a set of files. | 26990 |
-| `FOR`, `OPEN` | TIER 3 | 🤖 | a data file on a | 26875 |
+| `COPY`, `TO` | TIER 3 | 🙋 | a wildcard COPY is the ordinary way to copy a set of files. | 27009 |
+| `FOR`, `OPEN` | TIER 3 | 🤖 | a data file on a | 26894 |
 | — | TIER 3 | 🤖 | type-ahead during a long SAVE / PRINT# / CLOSE. | 681 |
-| — | TIER 3 | 🤖 | each site is an ordinary mistake (a bad | 26893 |
+| — | TIER 3 | 🤖 | each site is an ordinary mistake (a bad | 26912 |
 | `DIM` | TIER 4 | 🙋 | RAM usage (VG-8020): economy at the memory edge | 26277 |
 | `VARPTR` | TIER 4 | 🤖 | RAM usage (VG-8020): `MAXFILES` charges 306 B a channel where | 17342 |
 | — | TIER 4 | 🤖 | the rung's own definition; it is the bar every other item at | 1768 |
@@ -276,30 +276,30 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `LOAD` | TIER 5 | 🔭 | on-par speed, on `LOAD`. | 4043 |
 | `PAINT` | TIER 5 | 🤖 | `PAINT` 2× | 13615 |
 | `PUT` | TIER 5 | 🤖 | `PUT` (its untrappable-hang half is TIER 3) | 21800 |
-| `REM` | TIER 5 | 🤖 | T5 is a ratio that never ticks, so no level moved, | 27439 |
-| — | TIER 5 | 🤖 | inside T2's 10×, so this is the ratio, not the rung. | 28733 |
+| `REM` | TIER 5 | 🤖 | T5 is a ratio that never ticks, so no level moved, | 27458 |
+| — | TIER 5 | 🤖 | inside T2's 10×, so this is the ratio, not the rung. | 28752 |
 | `CIRCLE` | TIER 6 | 🤖 | `CIRCLE` with a negative radius | 26442 |
 | `CLEAR` | TIER 6 | 🤖 | `CLEAR` with three arguments | 26368 |
 | `CLS`, `END` | TIER 6 | 🤖 | `CLS` / `END` followed by an argument | 26389 |
 | `CONT` | TIER 6 | 🤖 | the error IS raised and is the right error; what differs is the | 8688 |
-| `CONT` | TIER 6 | 🤖 | CONT with nothing to continue. | 28823 |
+| `CONT` | TIER 6 | 🤖 | CONT with nothing to continue. | 28842 |
 | `DATA`, `FRE` | TIER 6 | 🤖 | `DATA` literal string-pool accounting (`FRE` differs) | 22493 |
-| `DATA`, `READ` | TIER 6 | 🤖 | READ into an integer variable out of its range. | 28887 |
+| `DATA`, `READ` | TIER 6 | 🤖 | READ into an integer variable out of its range. | 28906 |
 | `DEF`, `FN` | TIER 6 | 🤖 | `DEF FN` formals aliasing | 16555 |
 | `DEF`, `USR` | TIER 6 | 🤖 | `DEF USR[n]=` with an address past 65535 | 26452 |
 | `DEF` | TIER 6 | 🤖 | a DEF FN parameter that is not a variable name | 26461 |
-| `DSKI$` | TIER 6 | 🤖 | neither shape arises on an intact disk. | 28068 |
+| `DSKI$` | TIER 6 | 🤖 | neither shape arises on an intact disk. | 28087 |
 | `ERROR` | TIER 6 | 🤖 | `ERROR` with a malformed argument | 26378 |
 | `GOTO`, `IF` | TIER 6 | 🤖 | `IF … GOTO` with no line number | 26360 |
-| `LPOS`, `POS` | TIER 6 | 🤖 | `POS`/`LPOS` with a string dummy argument | 28895 |
-| `MID$` | TIER 6 | 🤖 | `MID$` with an extra or non-variable argument | 28903 |
+| `LPOS`, `POS` | TIER 6 | 🤖 | `POS`/`LPOS` with a string dummy argument | 28914 |
+| `MID$` | TIER 6 | 🤖 | `MID$` with an extra or non-variable argument | 28922 |
 | `OPEN` | TIER 6 | 🙋 | `OPEN` of the same file on two channels is accepted here, refused on the CF-3300 | 21569 |
 | `PLAY` | TIER 6 | 🔁 | `PLAY(n)` transient | 18535 |
-| `READ` | TIER 6 | 🤖 | `READ` of an out-of-range numeric DATA item | 28913 |
-| `STRING$` | TIER 6 | 🤖 | `STRING$` with an EMPTY string as its character argument | 29112 |
-| `TAN` | TIER 6 | 🤖 | `TAN` of a huge argument | 29121 |
-| `USR` | TIER 6 | 🤖 | `USR` without its argument. | 28830 |
+| `READ` | TIER 6 | 🤖 | `READ` of an out-of-range numeric DATA item | 28932 |
+| `STRING$` | TIER 6 | 🤖 | `STRING$` with an EMPTY string as its character argument | 29131 |
+| `TAN` | TIER 6 | 🤖 | `TAN` of a huge argument | 29140 |
+| `USR` | TIER 6 | 🤖 | `USR` without its argument. | 28849 |
 | — | TIER 6 | 🤖 | which of two applicable errors wins (`String too long` precedence) | 11255 |
-| — | TIER 6 | 🤖 | a published BIOS entry that machine-code routines and CALL | 27469 |
-| — | TIER 6 | 🤖 | the runner's serial retry turns it green both | 27492 |
-| — | TIER 6 | 🤖 | a program writes its own quotes AND text | 27727 |
+| — | TIER 6 | 🤖 | a published BIOS entry that machine-code routines and CALL | 27488 |
+| — | TIER 6 | 🤖 | the runner's serial retry turns it green both | 27511 |
+| — | TIER 6 | 🤖 | a program writes its own quotes AND text | 27746 |

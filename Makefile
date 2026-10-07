@@ -3647,6 +3647,7 @@ kwcover-report:
 # <1 s, read-only, no emulator. Same weight and the same non-prerequisite
 # reasoning as todo-citation-check above.
 todo-marker-check:
+	python3 tools/check_todo_markers.py --selftest
 	python3 tools/check_todo_markers.py
 
 # D-DEFERPIN. A DEFERRED row is measured, printed and never scored -- so its

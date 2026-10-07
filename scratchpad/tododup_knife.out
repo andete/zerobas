@@ -1,0 +1,23 @@
+== replay: the new rule on a542a339:TODO.md (the commit that carried the duplicate) ==
+🔴 UNCLASSIFIED OR AMBIGUOUS OPEN ITEM(S):
+  line 26676  ITEM ID D-INPUTDN HEADS 2 BLOCKS (lines 26676, 26813)
+  line 26717  ITEM ID D-LOADTAIL HEADS 2 BLOCKS (lines 26717, 26854)
+  line 26744  ITEM ID D-BLOADOFS HEADS 2 BLOCKS (lines 26744, 26881)
+rc 1
+
+== knife: the rule cut (len(lines) > 99) ==
+  ok    a marker in the disciplined shape passes  (want rc=0, got 0)
+  ok    bolded and colon-separated forms pass  (want rc=0, got 0)
+  ok    an unmarked open block fails  (want rc=1, got 1)
+  ok    prose beginning with a marker emoji is NOT a marker  (want rc=1, got 1)
+  ok    a mismatched emoji/name pair is not a marker  (want rc=1, got 1)
+  ok    two buckets in one block fail  (want rc=1, got 1)
+  ok    a CLOSED block needs no marker  (want rc=0, got 0)
+  FAIL  one item ID heading two blocks fails, open beside closed (D-TODODUP)  (want rc=1, got 0)
+        
+  ok    distinct item IDs pass, and a body mentioning another ID is not a header  (want rc=0, got 0)
+  ok    🔁 STANDING is a marker but not a work bucket  (want rc=0, got 0)
+9/10 selftest arms pass
+
+== restored ==
+10/10 selftest arms pass

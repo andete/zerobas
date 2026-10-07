@@ -91,6 +91,7 @@ MARKER = {
 LOOSE = {m: re.compile(r"^[ \t]*" + m + r" ", re.M) for m in BUCKETS}
 
 BLOCK_SPLIT = re.compile(r"\n(?=- \[[ x]\] )")
+ITEM_ID = re.compile(r"\*\*~*(D-[A-Z0-9]+)\b")
 
 
 def blocks(text):
@@ -141,6 +142,20 @@ def check(path="TODO.md", quiet=False):
         else:
             tally[hit[0]] += 1
 
+    # 🔴 D-TODODUP (2026-10-07): ONE ITEM ID MUST HEAD ONE BLOCK. a542a339
+    # duplicated 87 lines -- two closed items twice and a stale OPEN header
+    # beside its closed one -- and this gate passed it: every block was well
+    # formed, so a duplicate was invisible. Open AND closed blocks count.
+    seen = {}
+    for m in re.finditer(r"(?m)^- \[[ x]\] .*$", text):
+        idm = ITEM_ID.search(m.group(0))
+        if idm:
+            seen.setdefault(idm.group(1), []).append(text.count("\n", 0, m.start()) + 1)
+    for iid, lines in seen.items():
+        if len(lines) > 1:
+            bad.append((lines[0], f"ITEM ID {iid} HEADS {len(lines)} BLOCKS (lines "
+                                  + ", ".join(map(str, lines)) + ")", ""))
+
     inv = inventory_open_count(path)
     if inv is not None and inv != len(bs):
         bad.append((0, f"DENOMINATORS DISAGREE: this splitter {len(bs)}, "
@@ -188,6 +203,12 @@ ARMS = [
      "      \U0001f64b NEEDS-JOOST — the other half.\n", 1),
     ("a CLOSED block needs no marker",
      "- [x] **X**\n      done, no marker.\n" + OK_ONE, 0),
+    ("one item ID heading two blocks fails, open beside closed (D-TODODUP)",
+     "- [x] **D-FOO — done**\n      fixed.\n"
+     "- [ ] **D-FOO — still open?**\n      \U0001f916 AUTONOMOUS — a gate settles it.\n", 1),
+    ("distinct item IDs pass, and a body mentioning another ID is not a header",
+     "- [x] **D-FOO — done**\n      see **D-BAR — below**.\n"
+     "- [ ] **D-BAR — open**\n      \U0001f916 AUTONOMOUS — a gate settles it.\n", 0),
     ("\U0001f501 STANDING is a marker but not a work bucket",
      "- [ ] **X**\n      \U0001f501 STANDING — a ruling of his, kept visible.\n", 0),
 ]

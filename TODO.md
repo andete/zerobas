@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29936 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29955 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26855,6 +26855,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ Unmeasured: how often a FULL battery's batch run produces a both-sides
       divergence by apparatus alone -- the first FULL batteries with this rule
       will say.
+
+- [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
+      CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**
+      🎚️ APPARATUS — a gate blind to its own file's integrity.
+      🔬 Closing D-BLOADOFS, my edit script cut from the old header to the
+      D-INPUTDN header, which sat ABOVE it; `s[:a] + new + s[b:]` with b < a
+      copied the stretch between them again. It rode a FULL battery and a push
+      (a542a339): every block was well formed, so the checker -- which asks
+      only "does each OPEN block carry one marker" -- could not see it. Found
+      because `tools/tier_table.py --all` still listed BLOAD at TIER 1.
+      Repaired in c9f09097.
+      ✅ `tools/check_todo_markers.py`: an item ID (`**D-XXX`) that heads more
+      than one top-level block, open or closed, is a failure. The live file
+      has 117 headed IDs and no repeat. Two selftest arms (a repeat across
+      open/closed fails; distinct IDs with one named in a body pass), and
+      `make todo-marker-check` now runs the selftest first -- no gate ran it
+      before. Evidence ([`tododup_knife.out`](scratchpad/tododup_knife.out)):
+      the rule on a542a339's TODO.md fails naming exactly D-INPUTDN,
+      D-LOADTAIL and D-BLOADOFS; the rule cut, exactly the D-TODODUP arm goes red.
 
 - [ ] 🔧 **D-CHANFORREF — kwsweep's `chanfor` HAS READ THE CF-3300'S FUNCTION-KEY BAR, NOT ITS VALUE,
       ON EVERY BATCH RUN OF 2026-10-07 (filed 2026-10-07)**
