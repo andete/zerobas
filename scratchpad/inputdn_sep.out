@@ -1,0 +1,8 @@
+/Users/joost/projects/zerobas/probes/disk/disk_probe_inputdn.py:22: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  con_big    A$=INPUT$(70000)       \ these two SEPARATE "range-check the count
+DIFF con_str  National_CF- 'E 13 30'    ours 'E 5 30'
+DIFF con_big  National_CF- 'E 6 30'     ours 'E 5 30'
+DIFF ch_closed256 National_CF- 'E 5 30'     ours 'E 59 30'
+
+FAIL: INPUT$'s count range as on the references (3 divergence(s))
+refcache: 0 hit, 6 miss, 6 stored

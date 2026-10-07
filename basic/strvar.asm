@@ -441,9 +441,13 @@ str_inputd:
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
                 jp      nz,str_eval_no
-                call    inc_eval            ; DE = n (byte count); HL advanced past it
-                ld      a,e
-                ld      (INDLR_N),a         ; target count (low byte; n <= 255)
+                inc     hl
+                ; D-INPUTDN: the count is a BYTE argument, typed at the eval -- a
+                ; string is 13, 70000 is 6, 256 / -1 are 5, ALL before the channel
+                ; is looked at (`INPUT$(256,#1)` with #1 closed: 5 on the CF-3300,
+                ; not 59). Only 0 waits for the read, below.
+                call    eval_byte_checked   ; A = E = n (0..255); HL past it
+                ld      (INDLR_N),a         ; target count
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
@@ -533,6 +537,14 @@ sid_ok:
                 ld      a,2                 ; D-SEQEOF: INPUT$ reads RAW -- the CR-LF
                 ld      (FCH_RDMODE),a      ; pair is two bytes of data to it
 sid_read:
+                ; ✅ D-INPUTDN (2026-10-07): a count of 0 is 5 on the CF-3300 and
+                ; VG-8020 -- INPUT$(0), and INPUT$(0,#1) on an OPEN channel; ours
+                ; returned "". Raised HERE, at the read, because the reference
+                ; checks the channel FIRST for this one value: INPUT$(0,#1) with #1
+                ; not open is 59 on both (probes/disk/disk_probe_inputdn.py).
+                ld      a,(INDLR_N)
+                or      a
+                jp      z,gb_illegal        ; 5
                 call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
                 call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
                                             ; (arrays slice-4a §10); the eval cursor is

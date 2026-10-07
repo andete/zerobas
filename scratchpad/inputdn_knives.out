@@ -1,0 +1,6 @@
+  ROM cf5fe6e2 69c6d2d8 04431706 6c52654d  ->  f5fb3cc3 69c6d2d8 04431706 02f1b8df
+PASS  K-ID1: diverged ['ch_0', 'con_0', 'nd_0'] (want exactly ['ch_0', 'con_0', 'nd_0'])
+  ROM f5fb3cc3 69c6d2d8 04431706 02f1b8df  ->  9ce16bb0 69c6d2d8 bed4e45b 36caef7b
+PASS  K-ID2: diverged ['ch_closed256', 'con_big', 'con_neg', 'con_str'] (want exactly ['ch_closed256', 'con_big', 'con_neg', 'con_str'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

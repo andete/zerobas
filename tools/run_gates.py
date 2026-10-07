@@ -105,7 +105,7 @@ subrom-acceptance tgtspc-acceptance width-acceptance eofcas-acceptance wrblkalt-
 savedate-acceptance dosdate-acceptance strout-acceptance dosbasic-acceptance
 diskfull-acceptance asavechan-acceptance nohash-acceptance ctrlkeys-acceptance
 clearclose-acceptance dout-acceptance prnumwrap-acceptance savetail-acceptance
-loadtail-acceptance""".split()
+loadtail-acceptance inputdn-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

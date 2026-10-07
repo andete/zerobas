@@ -1,0 +1,8 @@
+DIFF con_0    National_CF- 'E 5 30'     ours 'OK'
+DIFF con_256  National_CF- 'E 5 30'     ours 'OK'
+DIFF con_neg  National_CF- 'E 5 30'     ours None
+DIFF ch_0     National_CF- 'E 5 30'     ours 'OK'
+DIFF ch_256   National_CF- 'E 5 30'     ours 'OK'
+ok   ch_closed0 National_CF- 'E 59 30'    ours 'E 59 30'
+INSTRUMENT FAULT: National_CF-3300 gave no reading for ch_2
+refcache: 0 hit, 14 miss, 14 stored

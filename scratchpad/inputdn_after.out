@@ -1,0 +1,14 @@
+ok   con_0    National_CF- 'E 5 30'     ours 'E 5 30'
+ok   con_256  National_CF- 'E 5 30'     ours 'E 5 30'
+ok   con_neg  National_CF- 'E 5 30'     ours 'E 5 30'
+ok   ch_0     National_CF- 'E 5 30'     ours 'E 5 30'
+ok   ch_256   National_CF- 'E 5 30'     ours 'E 5 30'
+ok   ch_closed0 National_CF- 'E 59 30'    ours 'E 59 30'
+ok   ch_2     National_CF- 'OKAB'       ours 'OKAB'
+ok   nd_0     Philips_VG_8 'E 5 30'     ours 'E 5 30'
+ok   con_str  National_CF- 'E 13 30'    ours 'E 13 30'
+ok   con_big  National_CF- 'E 6 30'     ours 'E 6 30'
+ok   ch_closed256 National_CF- 'E 5 30'     ours 'E 5 30'
+
+PASS: INPUT$'s count range as on the references (0 divergence(s))
+refcache: 1 hit, 21 miss, 21 stored

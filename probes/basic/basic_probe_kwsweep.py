@@ -4423,6 +4423,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:MAX_FILES FORM:set"),
     ('t8inputconsole13', 'a$=input$("a")', 'A$=INPUT$("A")', "stored",
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:INPUT$ FORM:console"),
+    ('t8inputconsole5', 'a$=input$(0)', 'A$=INPUT$(0)', "stored",
+     "NEEDS-DISK: PROVES-T6:5 SUBJECT:INPUT$ FORM:console"),   # D-INPUTDN (2026-10-07)
     ('t8inputchannel52', 'a$=input$(1,#16)', 'A$=INPUT$(1,#16)', "stored",
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:INPUT$ FORM:channel"),
     ('t8inputchannel59', 'a$=input$(1,#1)', 'A$=INPUT$(1,#1)', "stored",

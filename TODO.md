@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29820 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29886 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26466,9 +26466,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `DEF FNA$(5)=1` are Syntax error on the VG-8020 and stored here. A formal
       is a NAME. Blocks DEF FN's T6.
 
-- [ ] 🔴 **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
+- [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6
-      batch 8).**
+      batch 8; CLOSED 2026-10-07 -- every row fixed or split off, see the end).**
       🎚️ TIER 3 — common errors: a KILL, NAME or re-OPEN that the reference
       refuses goes through here, and reading past the end of a file returns
       nothing where the reference says Input past end.
@@ -26646,10 +26646,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         kwsweep's gate could not fail on: D-KWDIVPIN); ✅ `LEN="A"` 13 → 5, bare
         `LEN` 2 → 5, `GET`/`PUT #1,"A"` 13 → 5 (D-RECLENERR, below).
       • **extra arguments accepted (5):** ✅ `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok
-        (D-LOADTAIL, below); `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` /
-        `INPUT$(256)` 5 → ok.
+        (D-LOADTAIL, below); `BLOAD "X.BIN",Q` 53 → ok -- NOT a wrong code
+        but a missing feature, filed as D-BLOADOFS (below); ✅ `INPUT$(0)` /
+        `INPUT$(256)` 5 → ok (D-INPUTDN, below).
       • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
         `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
+      ✅ **CLOSED 2026-10-07 ON A WHOLE RE-MEASURE**
+      ([`t6enum_b8_zb_1007.out`](scratchpad/t6enum_b8_zb_1007.out), every case
+      booted alone): 4 of 116 diverge. `RUN 99` / `RUN 1,2` are the two the
+      reference cannot report (RUN disarms ON ERROR); `BLOAD "X.BIN",Q` is a
+      missing FEATURE, filed as D-BLOADOFS; and `A$=INPUT$("A")` 13 → 5 was a
+      regression of D-INPUTDN's FIRST fix, caught HERE before any gate ran and
+      fixed in the same commit (its gate row `con_str`). 🎯 Predicted 3 -- the
+      fourth was mine.
 
 - [x] ✅ **D-RECLENERR — `LEN="A"`, A BARE `LEN` AND `GET`/`PUT #1,"A"` READ 5; THE CF-3300 SAYS
       13, 2 AND 13 (split from D-DISKERRS and FIXED 2026-10-07)**
@@ -26663,6 +26672,47 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       all four agree, `LEN=0`/`257` and record 0 still 5. Their four pairs are
       kwsweep rows now (`t8openrandom13`, `t8openrandom2`,
       `t8getfieldedrecord13`, `t8putfieldedrecord13`), all SUPPORTED.
+
+- [x] ✅ **D-INPUTDN — `INPUT$(0)` AND `INPUT$(256)` RETURNED `""`; THE CF-3300 AND VG-8020 SAY
+      ILLEGAL FUNCTION CALL (split from D-DISKERRS and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a computed count that comes out 0.
+      📏 Under ON ERROR (`5 in 30`) on the CF-3300: `INPUT$(0)`, `(256)`,
+      `(-1)`, and -- measured here first -- `(0,#1)` / `(256,#1)` on an OPEN
+      INPUT channel; on the diskless VG-8020, `INPUT$(0)`. Ours: `""` for the 0
+      and 256 counts (only the LOW byte was kept, and 256's is 0) and a wait
+      for 255 keys for -1.
+      🔴 **THE FIRST FIX CHOSE THE WRONG ONE OF TWO RULES THAT AGREED ON EVERY
+      ROW IT HAD** [[two-rules-that-coincide-on-every-row-you-have]]. `INPUT$(0,#1)`
+      with #1 NOT open is 59 on both machines, so the first fix range-checked
+      the count at the READ, after the channel. Batch 8's whole re-measure
+      ([`t6enum_b8_zb_1007.out`](scratchpad/t6enum_b8_zb_1007.out)) then showed
+      `INPUT$("A")` going 13 → 5 -- the deferred type mismatch now lost to the
+      new check. Three rows separate the rules, and the CF-3300 took the second
+      on all three (predicted -- 3/3): `INPUT$("A")` 13, `INPUT$(70000)` 6,
+      `INPUT$(256,#1)` with #1 closed **5, not 59**
+      ([`inputdn_sep.out`](scratchpad/inputdn_sep.out)). The count is a BYTE
+      argument typed at the eval; only 0 waits for the read.
+      🎯 First pass: predicted the six reference readings -- 6/6; predicted ours
+      "no reading" for `(256)` -- MISSED, it read `""` (the low byte, above).
+      ✅ `str_inputd` ([`basic/strvar.asm`](basic/strvar.asm)) takes the count
+      through `eval_byte_checked` (13 / 6 / 5 at the eval); `sid_read`, where
+      the console, disk and CAS arms meet after their channel checks, raises 5
+      on 0. +7 B main page 1.
+      Gate `inputdn-acceptance`
+      ([`probes/disk/disk_probe_inputdn.py`](probes/disk/disk_probe_inputdn.py)),
+      eleven rows incl. the 59 and `AB` controls and the three separators
+      ([`inputdn_before.out`](scratchpad/inputdn_before.out),
+      [`inputdn_before2.out`](scratchpad/inputdn_before2.out) →
+      [`inputdn_after.out`](scratchpad/inputdn_after.out)). Knives
+      ([`inputdn_knives.py`](scratchpad/inputdn_knives.py),
+      [`inputdn_knives.out`](scratchpad/inputdn_knives.out)): K-ID1 (the read's
+      0 refusal) moves exactly `con_0` / `ch_0` / `nd_0`; K-ID2 (a bare `eval`
+      for the typed one) exactly `con_str` / `con_big` / `con_neg` /
+      `ch_closed256` -- `con_256` / `ch_256` keep agreeing through the read's
+      check, as predicted. kwsweep row `t8inputconsole5` SUPPORTED (console set
+      {5, 13} complete). ⚠️ The channel form's 5 is measured but NOT in
+      `tools/kwerrset.py`'s channel set ({52, 55, 59}) -- batch 8 only asked
+      `(0,#1)` on a closed channel.
 
 - [x] ✅ **D-LOADTAIL — `LOAD "X.BAS",Q` AND `RUN "A",5` PRINTED `load error` AND RAN ON; THE
       REFERENCES RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS
@@ -26755,6 +26805,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ Unmeasured: how often a FULL battery's batch run produces a both-sides
       divergence by apparatus alone -- the first FULL batteries with this rule
       will say.
+
+- [ ] 🔧 **D-CHANFORREF — kwsweep's `chanfor` HAS READ THE CF-3300'S FUNCTION-KEY BAR, NOT ITS VALUE,
+      ON EVERY BATCH RUN OF 2026-10-07 (filed 2026-10-07)**
+      🎚️ APPARATUS — a row that silently stops measuring.
+      📏 Three full kwsweep runs that day (the D-OPENWILD, D-LOADTAIL and
+      D-INPUTDN gates-fast) all printed `DIVERGENT chanfor` with ref
+      `'|||||||||||color   auto    goto    list    run'` and ours `[C 1 2 3 10 20
+      30 ]`; D-KWDIVPIN's rule judges that side unreadable and does not fail,
+      so the battery stays green and the row proves NOTHING. 10-06's note
+      (D-KWDIVPIN, above) saw it blank once in batch and SUPPORTED alone.
+      ➡️ First: is the reference reading LIVE each run or REPLAYED from the
+      refcache (a bad capture stored once would explain three identical
+      readings)? Then why the reference screen shows only the key bar --
+      the row's `MAXFILES=2` (a CLEAR, which may CLS) before the capture window
+      is the first suspect. Fix the row or the capture, not the rule.
+      🤖 **AUTONOMOUS** — the CF-3300 and the refcache settle it.
 
 - [ ] 💽 **D-NODISKOPEN — ON THE DISKLESS TARGET A DEVICE-LESS `OPEN` IS `load error`; THE VG-8020
       OPENS `"X" FOR OUTPUT` AND ANSWERS `OPEN "X" AS #1` WITH 56 (measured 2026-10-07)**
