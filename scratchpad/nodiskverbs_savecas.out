@@ -1,0 +1,4 @@
+DIFF savecas  'ENDED'      ours 'OK'
+
+FAIL: the diskless file verbs as on the VG-8020 (1 divergence(s), 0 row(s) the reference did not answer)
+refcache: 0 hit, 2 miss, 2 stored

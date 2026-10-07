@@ -489,17 +489,8 @@ do_open:
                 ; opens, and a second cassette OPEN beside it is 52 exactly as for
                 ; `OPEN "CAS:X"` -- the same device; a drive name (`"A:X"`) is 56.
                 ; Ours printed `load error` (oo_nodisk, now gone).
-                call    diskslot_test
-                jr      nz,oo_hasdisk
-                inc     hl
-                ld      a,(hl)              ; `d:` -- a drive, and there is none
-                dec     hl
-                cp      ':'
-                jp      nz,oo_dev_cas
-oo_fail_bfname:
-                ld      e,56                ; Bad file name
-                jp      oo_fail_e
-oo_hasdisk:
+                call    nodisk_dev          ; shared since D-NODISKVERBS (str-engine.asm)
+                jp      z,oo_dev_cas        ; no disk: the cassette; `d:` raised 56
                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
                 ; D-OPENWILD (2026-10-07): a WILDCARD name is `Bad file name` (56)
                 ; on the CF-3300 (`OPEN "A*.TXT" FOR INPUT AS #1`); ours looked it
@@ -740,6 +731,9 @@ oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
                 jp      stmt_error
+oo_fail_bfname:                             ; the cassette arm's RANDOM / APPEND
+                ld      e,56                ; refusal (D-NODISKOPEN): Bad file name
+                jp      oo_fail_e
 
 ; --- oo_fail_ifc: OPEN's ILLEGAL FUNCTION CALL reject (D-RECLEN2, ERR 5) -----
 ; Same channel-state cleanup as oo_fail_syn, different face. Measured: the
@@ -2187,9 +2181,9 @@ ex_merge:
                 ld      de,dev_cas
                 call    dev_cmp
                 jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
+                call    nodisk_dev          ; D-NODISKVERBS: no disk -> the tape, `d:` 56
+                jr      z,merge_cas         ; (was `load error`)
                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
-                call    diskslot_test
-                jp      z,load_error
                 push    hl                  ; guard the text cursor across the merge
                 call    dsk_aopen           ; step 11: the DISK ROM mounts, finds and
                 jr      c,mrg_ioerr         ; primes -- CF set = it said no

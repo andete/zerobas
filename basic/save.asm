@@ -115,7 +115,10 @@ sv_load_error   equ     disk_error          ; resident: a zero-byte EQU, so ever
 fname_dev:
                 call    fname_expr          ; HL -> the staged '"'-terminated copy
                 ld      de,dev_cas
-                jp      dev_cmp             ; TAIL -- Z and HL go to OUR caller
+                call    dev_cmp
+                ret     z                   ; "CAS:" -> the tape arm
+                jp      nodisk_dev          ; D-NODISKVERBS: no disk -> the tape arm
+                                            ; too (Z), `d:` -> 56; else NZ, the disk
 
 do_bsave:
                 xor     a
@@ -399,7 +402,12 @@ cas_ascii_save:
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink
                 ld      (PRDEV),a           ; restore the default (disk) device
-                ret                         ; back to the REPL
+                ; ✅ D-NODISKVERBS (2026-10-07): a SAVE to tape inside a program ENDS
+                ; the run on the VG-8020, as the disk SAVE does here (`SAVE
+                ; "CAS:X"` / `SAVE "X"` with no disk: ENDED there, and this `ret`
+                ; ran the next statement). CSAVE does NOT end it (tapetail's
+                ; csaveok reads OK on both) and is another path.
+                jp      end_line_end
 
 ; cas_write_ea_header — write the $EA cassette header block for the file named in
 ; TSV_NAME: TAPOON(long leader) + 10x $EA (ASCII id) + 6-char name (tape_name_emit)

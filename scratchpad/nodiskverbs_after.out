@@ -1,0 +1,13 @@
+ok   save     'ENDED'      ours 'ENDED'
+ok   savecas  'ENDED'      ours 'ENDED'
+ok   bsave    'OK'         ours 'OK'
+ok   loadd    'E 56 30'    ours 'E 56 30'
+ok   merged   'E 56 30'    ours 'E 56 30'
+ok   bloadd   'E 56 30'    ours 'E 56 30'
+ok   rund     'E 56 30'    ours 'E 56 30'
+ok   saved    'E 56 30'    ours 'E 56 30'
+ok   bsaved   'E 56 30'    ours 'E 56 30'
+ok   killd    'E 5 30'     ours 'E 5 30'
+
+PASS: the diskless file verbs as on the VG-8020 (0 divergence(s), 0 row(s) the reference did not answer)
+refcache: 10 hit, 10 miss, 10 stored

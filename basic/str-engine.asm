@@ -148,6 +148,25 @@ ca_full:
 pdf_badname:
                 ld      a,56
                 jp      raise_error
+; nodisk_dev -- D-NODISKVERBS (2026-10-07): ON A DISKLESS MACHINE THE CASSETTE IS
+; THE DEFAULT DEVICE, and a drive name is `Bad file name`. Measured on the VG-8020
+; with no disk: `SAVE "X"` / `BSAVE "X",..` save to tape, `OPEN "X" FOR OUTPUT`
+; opens it (D-NODISKOPEN's discriminator), and LOAD / MERGE / BLOAD / RUN / SAVE /
+; BSAVE / OPEN of `"A:X"` are 56 (probes/basic/basic_probe_nodiskverbs.py).
+;   in : HL = the staged name, past any device prefix the caller matched
+;   out: NZ -- a disk is present: the caller's disk arm (HL unchanged);
+;        Z  -- no disk, a device-less name: the caller's CASSETTE arm;
+;        a `d:` name with no disk RAISES 56 and does not return.
+nodisk_dev:
+                call    diskslot_test
+                ret     nz
+                inc     hl
+                ld      a,(hl)
+                dec     hl
+                cp      ':'
+                jr      z,pdf_badname
+                cp      a                   ; Z: the cassette
+                ret
 ; pdf_baddrive -- a drive past B: -> ERR 62 `Bad drive name` (D-DRVNAME; the full
 ; story is at its old site in basic/files.asm). Moved here 2026-09-28 (D-NEWARG).
 pdf_baddrive:

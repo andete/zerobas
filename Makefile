@@ -2344,6 +2344,13 @@ bsavevar-acceptance: repack-machine $(DISK_TEST_DSK)
 tapetail-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_tapetail.py
 
+# --- nodiskverbs-acceptance: the file verbs on the diskless target (D-NODISKVERBS)
+# VG-8020 with no disk: `SAVE "X"` / `SAVE "CAS:X"` save to tape and END the run,
+# `BSAVE "X",..` saves; LOAD / MERGE / BLOAD / RUN / SAVE / BSAVE of `"A:X"` are 56;
+# `KILL "A:X"` 5. Ours printed `load error` / 5 and ran on after a tape SAVE.
+nodiskverbs-acceptance: repack-machine
+	python3 probes/basic/basic_probe_nodiskverbs.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

@@ -1,0 +1,12 @@
+DIFF save     'ENDED'      ours 'E 5 30'
+DIFF bsave    'OK'         ours 'load error'
+DIFF loadd    'E 56 30'    ours 'load error'
+DIFF merged   'E 56 30'    ours 'load error'
+DIFF bloadd   'E 56 30'    ours 'load error'
+DIFF rund     'E 56 30'    ours 'load error'
+DIFF saved    'E 56 30'    ours 'E 5 30'
+DIFF bsaved   'E 56 30'    ours 'load error'
+ok   killd    'E 5 30'     ours 'E 5 30'
+
+FAIL: the diskless file verbs as on the VG-8020 (8 divergence(s), 0 row(s) the reference did not answer)
+refcache: 0 hit, 18 miss, 18 stored

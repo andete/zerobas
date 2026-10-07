@@ -192,6 +192,25 @@ load_handoff:
 ; basic/sysvars.inc DISK_FCB and PROVENANCE.md §disk-BLOAD scratch FCB.
 is_disk:
                 pop     hl                  ; HL = filename start (staged copy)
+                ; D-NODISKVERBS (2026-10-07): with no disk the CASSETTE is the
+                ; default device (VG-8020), and a drive name is 56. Main's
+                ; nodisk_dev cannot be called from here (main page 1 is switched
+                ; out), so the rule is restated: the tape path never reads the
+                ; name (TAPION takes the next file).
+                ld      a,(DISKSLOT_OK)
+                or      a
+                jr      nz,isd_disk
+                inc     hl
+                ld      a,(hl)
+                cp      ':'
+                jr      nz,isd_tape
+                ld      a,56                ; Bad file name -- main raises it
+                ld      (BL_STAT),a
+                ret
+isd_tape:
+                push    hl                  ; is_tape drops the saved name start
+                jp      is_tape
+isd_disk:
                 call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
                 ; (the tail was parsed by main's pcr_bload -- D-BLOADOFS)
                 ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG

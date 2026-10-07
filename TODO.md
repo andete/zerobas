@@ -6255,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30087 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30127 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26857,6 +26857,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       divergence by apparatus alone -- the first FULL batteries with this rule
       will say.
 
+- [x] ✅ **D-NODISKVERBS — ON THE DISKLESS TARGET THE FILE VERBS PRINTED `load error` (OR 5) WHERE THE
+      VG-8020 USES THE CASSETTE AND REFUSES A DRIVE NAME WITH 56 (measured and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors / diskless happy path: `SAVE "X"` on a
+      cassette machine.
+      📏 On the VG-8020 with no disk
+      ([`nodiskverbs_before.out`](scratchpad/nodiskverbs_before.out)): `SAVE
+      "X"` saves to tape and ENDS the run, `BSAVE "X",..` saves, and LOAD /
+      MERGE / BLOAD / RUN / SAVE / BSAVE of `"A:X"` are all 56 -- D-NODISKOPEN's
+      rule, verb by verb. Ours: `load error` for six, 5 for two. 🎯 Predicted 9
+      readings -- 8/9: `KILL "A:X"` is 5, not 56 (KILL is disk-only; it agreed
+      already). Rows that would WAIT for a tape (LOAD / MERGE / BLOAD / RUN of a
+      device-less name) are not asked; FILES / KILL / NAME of a device-less name
+      were nodisk-acceptance's rows already.
+      🔴 **AND A TAPE SAVE DID NOT END THE RUN** -- a separate, older defect the
+      diskless `SAVE "X"` row exposed: `SAVE "CAS:X"` inside a program is ENDED
+      on the VG-8020 and ran on here (`cas_ascii_save` ended in `ret`;
+      predicted the same split for the explicit `CAS:` row -- hit,
+      [`nodiskverbs_savecas.out`](scratchpad/nodiskverbs_savecas.out)). CSAVE
+      does NOT end it on the VG-8020 (tapetail's `csaveok`), so only SAVE's
+      path changed.
+      ✅ `nodisk_dev` (basic/str-engine.asm, beside `pdf_badname`): no disk and
+      a device-less name -> Z, the caller's cassette arm; a `d:` name -> 56.
+      Called by `fname_dev` (LOAD / RUN / SAVE / BSAVE), `do_open` (which
+      D-NODISKOPEN's inline copy now uses) and MERGE; the BLOAD tenant
+      restates it (main page 1 is switched out there). `cas_ascii_save` ends in
+      `jp end_line_end`. Main low 215 → 202 B, page 1 77 → 79 B, sub p1 350 →
+      328 B.
+      Gate `nodiskverbs-acceptance`
+      ([`probes/basic/basic_probe_nodiskverbs.py`](probes/basic/basic_probe_nodiskverbs.py)),
+      10/10 ([`nodiskverbs_after.out`](scratchpad/nodiskverbs_after.out));
+      nodiskopen-acceptance still 12/12. Knives
+      ([`nodiskverbs_knives.py`](scratchpad/nodiskverbs_knives.py),
+      [`nodiskverbs_knives.out`](scratchpad/nodiskverbs_knives.out)): K-NV1
+      (`fname_dev` skips it) moves exactly save/bsave/loadd/rund/saved/bsaved,
+      K-NV2 merged, K-NV3 bloadd, K-NV4 (`ret` again) save/savecas.
+      ⚠️ UNMEASURED: the tape-WAITING forms (a device-less LOAD / MERGE / BLOAD
+      / RUN on the diskless machine now wait for a tape, as the reference does
+      -- no row reads it), and other device names.
+
 - [x] ✅ **D-TAPETAIL — THE CASSETTE SAVE VERBS' BAD TAILS PRINTED `load error`; THE VG-8020 RAISES
       2 / 5, AND A TAPE BSAVE HAS NO `,S` FLAG ON EITHER REFERENCE (measured and FIXED 2026-10-07)**
       🎚️ TIER 3 — common errors: a mistyped SAVE / CSAVE / BSAVE to tape.
@@ -27051,7 +27090,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       "junk" check only worked because the save then ran anyway).
       📏 The live sites (`grep -n "j[pr] .*load_error" basic/*.asm`, comments
       excluded), 2026-10-07: ~~cload.asm ×4~~ (✅ D-LOADTAIL, the same day: all
-      four were LOAD / RUN's option tail), files.asm ×1 (`jp z` at ~2146),
+      four were LOAD / RUN's option tail), ~~files.asm ×1 (`jp z` at ~2146)~~
+      (✅ D-NODISKVERBS, 2026-10-07: MERGE's no-disk `load error`),
       field.asm ×1, print.asm ×1 (PRINT# to a CAS-INPUT channel), save.asm ×5
       (~~stray 4th token ×2~~ -- ✅ D-BSAVEVAR, 2026-10-07: it was not a stray
       token but the exec EXPRESSION; ~~`,S` VRAM-to-tape, trailing junk after
