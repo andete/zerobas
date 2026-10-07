@@ -110,7 +110,8 @@ fp_table:
 ; cluster->absolute-sector arithmetic it needs lives in this file twice over and
 ; main page 1 has 6 B free.
                 jp      t_fch_restage           ; 19 DISKOP_SEL_FCH_RESTAGE
-                jp      t_fch_detach            ; 20 DISKOP_SEL_FCH_DETACH
+                jp      fp_stash_ok             ; 20 retired (D-MODE2DEAD: no sender;
+                                                ; the detach flushed mode 2 only)
 ; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
 ; fch_save_active/fch_load_ctx bodies moved here so the block layout lives in
 ; one ROM. HL = the context block on entry to both.
@@ -276,20 +277,19 @@ tfl_dout:
                 ld      (de),a
                 jp      fp_stash_ok
 
-; t_fch_save (D-FCBSHAPE S0): flush, then the engine globals -> channel context
-; block at HL. Was main's fch_save_active body, moved whole.
-; ⚠️ The flush comes FIRST, while the globals still hold the live state: it
-; updates FWR_SECIDX (and FWR_CLUS/FWR_FIRST if it allocates), all inside the
-; saved span. ⚠️ And the FLUSH's result is what this op reports -- Cy, A and HL
-; as fat_detach_channel left them, carried across the copies. The old resident
-; path reached the flush through its own bounce and then only copied, so
-; DISKOP_STATUS after a save was the flush's, and chan_gate's claimed-status
-; logic reads it that way.
+; t_fch_save (D-FCBSHAPE S0): the engine globals -> channel context block at
+; HL. Was main's fch_save_active body, moved whole.
+; 🗑️ D-MODE2DEAD (2026-10-07): IT USED TO FLUSH FIRST (fat_detach_channel) and
+; report the flush's Cy/A/HL as its own result. Only a mode-2 channel -- OUTPUT
+; through main's engine -- could be dirty, and none has been stored since S10.B
+; increment 2, so for every stored mode the flush returned Cy=0 untouched: this
+; op reported success either way. It now says so directly. chan_gate discards
+; the result on purpose (basic/files.asm) and its claimed path reads the VERB's
+; status, set after the crossing, not this one.
 t_fch_save:
-                push    hl                  ; the ctx block
-                call    fat_detach_channel
-                ex      (sp),hl             ; HL = ctx; stack = the flush's HL
-                push    af                  ; the flush's A and Cy
+                ; D-MODE2DEAD (2026-10-07): no flush first any more -- only a mode-2
+                ; channel could be dirty, and none is stored. Nothing here can fail;
+                ; fch_save_active's three callers read no result.
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the engine row; CF = no disk channel
                 jr      c,tfs_rec
@@ -314,9 +314,7 @@ tfs_dout:
                 ; the row, or FSECTOR_BUF over the record, would destroy both.
                 pop     hl                  ; the block
 tfs_end:
-                pop     af
-                pop     hl
-                jr      t_fch_result
+                jp      fp_stash_ok
 
 ; fch_engrow (D-FCBSHAPE S2): -> HL = DSK_ENGTAB + ch*FCH_STATESZ for the channel
 ; in FCH_ACTIVE, CF clear -- or CF set when that channel is not a DISK file (mode
@@ -341,11 +339,6 @@ feng_lp:
                 djnz    feng_lp
                 ret
 
-t_fch_detach:
-                call    fat_detach_channel
-t_fch_result:
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
 
 ; t_fat_rand_open/get/put (docs/spec-eviction-g4-space.md §3, carve #1): call
 ; the sub-local bodies (sub/randio.asm, included after this file + dirverb.asm

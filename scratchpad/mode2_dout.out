@@ -1,0 +1,61 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_dout.py
+== CF-3300  lofloc   'R<0,0,0,0,256,256,512,512,601,>'
+== CF-3300  twochan  'R< 342 1458 385 3433 >'
+== CF-3300  append   'R< 537 1142 532 957 >'
+== CF-3300  input    'R< 432 1354 >'
+== CF-3300  openchk  'R<e54@50 e64@60 e64@70 15 688 >'
+== CF-3300  empty    'R<e55@800 1 0 >'
+== CF-3300  exact    'R< 256 257 1669 >'
+== CF-3300  trunc    'R< 8 2638 >'
+== CF-3300  dir_print_in 'R<e52@40 >'
+== CF-3300  dir_print_rnd 'R<e61@30 >'
+== CF-3300  dir_input_out 'R<e52@30 >'
+== CF-3300  dir_linein_out 'R<e52@30 >'
+== CF-3300  dir_input_rnd 'R<e61@30 >'
+== CF-3300  dir_input_app 'R<e52@40 >'
+== CF-3300  app6     'R<6,0,6,0,256,256, 306 1080 >'
+== CF-3300  app256   'R<256,0,256,256,512,512, 556 2965 >'
+== OURS     lofloc   'R<0,0,0,0,256,256,512,512,601,>'
+== OURS     twochan  'R< 342 1458 385 3433 >'
+== OURS     append   'R< 537 1142 532 957 >'
+== OURS     input    'R< 432 1354 >'
+== OURS     openchk  'R<e54@50 e64@60 e64@70 15 688 >'
+== OURS     empty    'R<e55@800 1 0 >'
+== OURS     exact    'R< 256 257 1669 >'
+== OURS     trunc    'R< 8 2638 >'
+== OURS     dir_print_in 'R<e52@40 >'
+== OURS     dir_print_rnd 'R<e61@30 >'
+== OURS     dir_input_out 'R<e52@30 >'
+== OURS     dir_linein_out 'R<e52@30 >'
+== OURS     dir_input_rnd 'R<e61@30 >'
+== OURS     dir_input_app 'R<e52@40 >'
+== OURS     app6     'R<6,0,6,0,256,256, 306 1080 >'
+== OURS     app256   'R<256,0,256,256,512,512, 556 2965 >'
+
+AGREE    lofloc   CF-3300 'R<0,0,0,0,256,256,512,512,601,>'  ours 'R<0,0,0,0,256,256,512,512,601,>'
+AGREE    twochan  CF-3300 'R< 342 1458 385 3433 >'  ours 'R< 342 1458 385 3433 >'
+AGREE    append   CF-3300 'R< 537 1142 532 957 >'  ours 'R< 537 1142 532 957 >'
+AGREE    input    CF-3300 'R< 432 1354 >'  ours 'R< 432 1354 >'
+AGREE    openchk  CF-3300 'R<e54@50 e64@60 e64@70 15 688 >'  ours 'R<e54@50 e64@60 e64@70 15 688 >'
+AGREE    empty    CF-3300 'R<e55@800 1 0 >'  ours 'R<e55@800 1 0 >'
+AGREE    exact    CF-3300 'R< 256 257 1669 >'  ours 'R< 256 257 1669 >'
+AGREE    trunc    CF-3300 'R< 8 2638 >'  ours 'R< 8 2638 >'
+AGREE    dir_print_in CF-3300 'R<e52@40 >'  ours 'R<e52@40 >'
+AGREE    dir_print_rnd CF-3300 'R<e61@30 >'  ours 'R<e61@30 >'
+AGREE    dir_input_out CF-3300 'R<e52@30 >'  ours 'R<e52@30 >'
+AGREE    dir_linein_out CF-3300 'R<e52@30 >'  ours 'R<e52@30 >'
+AGREE    dir_input_rnd CF-3300 'R<e61@30 >'  ours 'R<e61@30 >'
+AGREE    dir_input_app CF-3300 'R<e52@40 >'  ours 'R<e52@40 >'
+AGREE    app6     CF-3300 'R<6,0,6,0,256,256, 306 1080 >'  ours 'R<6,0,6,0,256,256, 306 1080 >'
+AGREE    app256   CF-3300 'R<256,0,256,256,512,512, 556 2965 >'  ours 'R<256,0,256,256,512,512, 556 2965 >'
+
+PASS: 16/16 OUTPUT-channel cases agree with the CF-3300
+refcache: 0 hit, 32 miss, 32 stored

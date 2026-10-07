@@ -622,8 +622,9 @@ item — do **one item per session** to keep context lean.
       write in it (3/3 green alone the same evening).
       ➡️ **Left for later increments:** main's own write engine's deletion
       (SAVE ,A still uses it), the input side through `$FE8A` (S10.C), the speed
-      (keep a sector's first half instead of re-reading it), and the `cp 2`
-      mode tests main still carries for a mode nothing stores.
+      (keep a sector's first half instead of re-reading it), and ~~the `cp 2`
+      mode tests main still carries for a mode nothing stores~~ (✅ D-MODE2DEAD,
+      2026-10-07 -- below).
 
 - [x] ✅ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE WAS SPLIT
       ACROSS IT ON OURS; THE VG-8020 AND CF-3300 MOVE IT WHOLE TO THE NEXT LINE (found
@@ -6254,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29955 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29982 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26855,6 +26856,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ Unmeasured: how often a FULL battery's batch run produces a both-sides
       divergence by apparatus alone -- the first FULL batteries with this rule
       will say.
+
+- [x] ✅ **D-MODE2DEAD — MODE 2 (OUTPUT THROUGH MAIN'S OWN ENGINE) IS NOT STORED SINCE S10.B
+      INCREMENT 2, AND ITS CODE WAS STILL IN BOTH ROMS (S10.B's "left for later"; DONE 2026-10-07)**
+      🎚️ TIER 2 — the S10 ownership move's clean-up; budget, not behaviour.
+      🔬 Every writer of `FCH_MODES` audited (main's OPEN maps OUTPUT and APPEND
+      to `DOUT_MODE` before storing; CLOSE stores 0, its old failure tail 1;
+      disk.rom only reads): nothing stores 2. Unreachable, and invisible to the
+      dead-code gate because each sat behind a live conditional branch:
+      • CLOSE's mode-2 arm (Ctrl-Z through `fat_io_putbyte`, `fat_io_close`) and
+        `fdcc_fail` (demote to INPUT on a failed flush) -- basic/files.asm;
+        D-DISKFULL's face is disk.rom's now (`hoc_dout` / `dwr_fail`);
+      • PRINT#'s `and $FE / cp 2` → `cp DOUT_MODE` -- basic/print.asm;
+      • `fat_restage_channel`'s `frst_write` re-read and the whole
+        `fat_detach_channel` (`fdet_maybe`) -- basic/fat-prim-body.inc, sub-only;
+      • `t_fch_save`'s flush-first (it reported a flush that always succeeded)
+        and op 20 `t_fch_detach`, which NO caller ever sent -- slot kept, now
+        `jp fp_stash_ok` (sub/fatprim.asm).
+      Main page 1 61 → 90 B, sub page 1 248 → 350 B. `fat_io_putbyte` /
+      `fat_io_close` stay: SAVE ,A / BSAVE still use main's engine (the next
+      later increment). `fch_save_active`'s three callers read no result, and
+      `chan_gate` discards it by design -- checked, not assumed.
+      Evidence: the audit above, then `dout-acceptance` 16/16
+      ([`mode2_dout.out`](scratchpad/mode2_dout.out)) and `diskfull-acceptance`
+      ([`mode2_diskfull.out`](scratchpad/mode2_diskfull.out)), every CLOSE and
+      PRINT# path, green on the carved ROM. No knife: a removal of unreachable
+      code has no row it could move.
 
 - [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
       CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**

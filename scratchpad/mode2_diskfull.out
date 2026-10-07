@@ -1,0 +1,44 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_diskfull.py
+== STOCK close: {'summary': [66, 54, 54], 'disk_full': 1, 'already_open': 1, 'c2': True}
+   screen tail:  Ok OPEN"CF.TXT"FOR OUTPUT AS#1 Ok PRINT#1,"HELLO" Ok CLOSE#1 Disk full Ok A=ERR Ok OPEN"CG.TXT"FOR OUTPUT AS#1 File already open Ok B=ERR Ok CLOSE#1:PRINT"[C2]" [C2] Ok PRINT"R";A;B;ERR;"#" R 66 54 54 # Ok color auto goto list run 
+== STOCK save: {'summary': [66], 'disk_full': 1}
+   screen tail:  Ok 10 REM SAVE"SF.BAS" Disk full Ok PRINT"S";ERR;"#" S 66 # Ok color auto goto list run 
+== STOCK print: {'summary': [66, 12], 'disk_full': 1}
+   screen tail:  Ok OPEN"PF.TXT"FOR OUTPUT AS#1 Ok FOR I=1TO40:PRINT#1,STRING$(20,65):NEXT Disk full Ok PRINT"P";ERR;I;"#" P 66 12 # Ok color auto goto list run 
+== STOCK bsave: {'summary': [66], 'disk_full': 1}
+   screen tail:  Ok BSAVE"BF.BIN",&H8000,&HBFFF Disk full Ok PRINT"V";ERR;"#" V 66 # Ok color auto goto list run 
+== STOCK bstamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 8, 'bytes': 'fe 00 80 ff bf 00 80 1a'}}
+   screen tail:  Ok BSAVE"BF.BIN",&H8000,&HBFFF Disk full Ok PRINT"W";ERR;"#" W 66 # Ok color auto goto list run 
+== STOCK sstamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 1, 'bytes': 'ff'}}
+   screen tail: XXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 128 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 129 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX SAVE"SF.BAS" Disk full Ok PRINT"T";ERR;"#" T 66 # Ok color auto goto list run 
+== STOCK astamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 1024, 'bytes': '31 30 30 20 52 45 4d 20 58 58 58 58 58 58 58 58'}}
+   screen tail: XXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 128 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX 129 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXX SAVE"SA.BAS",A Disk full Ok PRINT"U";ERR;"#" U 66 # Ok color auto goto list run 
+== STOCK pstamp: {'summary': [66, 59, 30], 'disk_full': 1, 'stamp': {'cluster': 0, 'size': 0}, 'fat_last': 0}
+   screen tail:  Ok NEW Ok 10 ON ERROR GOTO 90 20 OPEN"PF.TXT"FOR OUTPUT AS#1 30 FOR I=1 TO 80:PRINT#1,STRING$(20,65) :NEXT 40 CLOSE#1 50 PRINT"X";0;I;"#":END 90 PRINT"X";ERR;I;ERL;"#":CLOSE:END RUN X 66 59 30 # Disk full in 90 Ok color auto goto list run 
+== OURS close: {'summary': [66, 54, 54], 'disk_full': 1, 'already_open': 1, 'c2': True}
+   screen tail:  ZB OPEN"CF.TXT"FOR OUTPUT AS#1 ZB PRINT#1,"HELLO" ZB CLOSE#1 Disk full ZB A=ERR ZB OPEN"CG.TXT"FOR OUTPUT AS#1 File already open ZB B=ERR ZB CLOSE#1:PRINT"[C2]" [C2] ZB PRINT"R";A;B;ERR;"#" R 66 54 54 # ZB color auto goto list run 
+== OURS save: {'summary': [66], 'disk_full': 1}
+   screen tail:  ZB 10 REM SAVE"SF.BAS" Disk full ZB PRINT"S";ERR;"#" S 66 # ZB color auto goto list run 
+== OURS print: {'summary': [66, 12], 'disk_full': 1}
+   screen tail:  ZB OPEN"PF.TXT"FOR OUTPUT AS#1 ZB FOR I=1TO40:PRINT#1,STRING$(20,65):NE XT Disk full ZB PRINT"P";ERR;I;"#" P 66 12 # ZB color auto goto list run 
+== OURS bsave: {'summary': [66], 'disk_full': 1}
+   screen tail:  ZB BSAVE"BF.BIN",&H8000,&HBFFF Disk full ZB PRINT"V";ERR;"#" V 66 # ZB color auto goto list run 
+== OURS bstamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 8, 'bytes': 'fe 00 80 ff bf 00 80 1a'}}
+   screen tail:  ZB BSAVE"BF.BIN",&H8000,&HBFFF Disk full ZB PRINT"W";ERR;"#" W 66 # ZB color auto goto list run 
+== OURS sstamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 1, 'bytes': 'ff'}}
+   screen tail: XXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 128 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 129 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX SAVE"SF.BAS" Disk full ZB PRINT"T";ERR;"#" T 66 # ZB color auto goto list run 
+== OURS astamp: {'summary': [66], 'disk_full': 1, 'stamp': {'cluster': 714, 'size': 1024, 'bytes': '31 30 30 20 52 45 4d 20 58 58 58 58 58 58 58 58'}}
+   screen tail: XXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 128 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 129 REM XXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX SAVE"SA.BAS",A Disk full ZB PRINT"U";ERR;"#" U 66 # ZB color auto goto list run 
+== OURS pstamp: {'summary': [66, 59, 30], 'disk_full': 1, 'stamp': {'cluster': 0, 'size': 0}, 'fat_last': 0}
+   screen tail:  ZB NEW ZB 10 ON ERROR GOTO 90 20 OPEN"PF.TXT"FOR OUTPUT AS#1 30 FOR I=1 TO 80:PRINT#1,STRING$(20,6 5):NEXT 40 CLOSE#1 50 PRINT"X";0;I;"#":END 90 PRINT"X";ERR;I;ERL;"#":CLOSE:END RUN X 66 59 30 # Disk full in 90 ZB color auto goto list run 
+
+PASS: a full disk is Disk full in all four faces, and BSAVE, SAVE, SAVE ,A and PRINT#+CLOSE leave the CF-3300's file
+refcache: 0 hit, 16 miss, 16 stored

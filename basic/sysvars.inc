@@ -3150,7 +3150,8 @@ DISKOP_SEL_FIA_WALKED           equ 18
 ; (fat_read_file_sector's frs_incluster, fat_flush_data_sector's ffds_haveclus)
 ; and main page 1 has 6 B free.
 DISKOP_SEL_FCH_RESTAGE          equ 19
-DISKOP_SEL_FCH_DETACH           equ 20  ; the inverse: flush the dirty partial
+DISKOP_SEL_FCH_DETACH           equ 20  ; RETIRED 2026-10-07 (D-MODE2DEAD; it never
+                                        ; had a sender). Was: the inverse: flush the dirty partial
                                         ; sector in place before handing the
                                         ; shared buffer to another channel
 ; D-FCBSHAPE S0 (2026-09-29): the channel context save/load, main's

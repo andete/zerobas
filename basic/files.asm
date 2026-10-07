@@ -1857,15 +1857,13 @@ fdcc_disk:
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
                 cp      DOUT_MODE
-                jr      z,fdcc_dout         ; S10.B: disk.rom closes its own FCB
-                cp      2
-                jr      nz,fdcc_clear       ; INPUT (or none): no dirty state to flush
-                ld      a,$1A               ; OUTPUT: CP/M text-EOF (Ctrl-Z), as on the
-                call    fat_io_putbyte      ; real CF-3300 CLOSE of a sequential file
-                call    nc,fat_io_close     ; flush partial sector + dir size/cluster
-                jr      c,fdcc_fail         ; D-DISKFULL: the flush failed
-                jr      fdcc_clear
-fdcc_dout:
+                jr      nz,fdcc_clear       ; INPUT / RANDOM (or none): nothing to flush
+                ; 🗑️ D-MODE2DEAD (2026-10-07): mode 2 -- OUTPUT through main's own
+                ; engine -- has not been STORED since S10.B increment 2; OPEN maps
+                ; OUTPUT and APPEND to DOUT_MODE. Its arm here (Ctrl-Z through
+                ; fat_io_putbyte, fat_io_close, and fdcc_fail's demote-to-INPUT on a
+                ; failed flush) could not be reached; disk.rom's hoc_dout / dwr_fail
+                ; carry D-DISKFULL's face now (diskfull-acceptance).
                 ; Ctrl-Z, the last record, the re-date. A failure RAISES from in
                 ; there (66) and leaves the channel open, marked so that the next
                 ; CLOSE frees it silently -- D-DISKFULL's face, kept.
@@ -1896,19 +1894,6 @@ fdcc_clear:
                 ld      (FCH_MODE),a        ; mirror
                 ld      (FCH_ACTIVE),a      ; globals no longer hold a valid channel
                 ret
-; 🔴 D-DISKFULL (2026-10-02, measured on the CF-3300 with every cluster used):
-; a CLOSE whose flush fails is `Disk full` (66) and the channel STAYS OPEN -- a
-; re-OPEN of it is File already open (54) -- and a SECOND CLOSE frees it
-; without an error. So: demote the channel to INPUT (1), which the next CLOSE
-; frees at fdcc_clear without touching the disk, and raise what the write left
-; pending. The mirror FCH_MODE is not written: every reader runs fch_select
-; first, which re-stamps it. This used to drop the carry and free the channel.
-fdcc_fail:
-                ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
-                call    fch_modes_ptr
-                ld      (hl),1              ; FCH_MODES[ch] = INPUT: open, nothing to flush
-                jp      disk_error
-
 ; fch_close_all — close every open channel (flushing OUTPUT ones). Used by bare
 ; CLOSE and by MAXFILES (which reinitialises the channel table). Guard HL caller-
 ; side (CALSLT). Clobbers everything.

@@ -555,53 +555,13 @@ fat_restage_channel:
                 ld      a, (hl)             ; A = the live channel's own mode
                 dec     a
                 jr      z, frst_read        ; 1 = INPUT
-                dec     a
-                jr      z, frst_write       ; 2 = OUTPUT
-                or      a                   ; device channels own no sector; Cy=0
-                ret
-; fat_detach_channel — write the LIVE channel's dirty partial sector out, IN
-; PLACE, so the shared FAT_DBUF can be handed to another channel. The inverse
-; of fat_restage_channel; together they are the whole write-back cache.
-;   out: Cy = 1 on a write error (disk full), Cy = 0 otherwise (including the
-;        common "nothing dirty" case).
-;
-; ⚠️ Sited HERE, not resident, purely for space: as resident code this cost 43 B
-; of main page 1 against 6 B free (measured). Everything it touches
-; (fat_flush_data_sector, FWR_*) is already sub-local.
-; ⚠️ Reads FCH_MODES[FCH_ACTIVE], not the FCH_MODE mirror — same reason as
-; fat_restage_channel.
-; ⚠️ fat_flush_data_sector STEPS PAST the sector it writes. Mid-stream we are NOT
-; finishing this sector, so step back onto it: the re-stage then reads exactly
-; what we wrote and appending resumes at FWR_BUFLEN over the zero padding the
-; flush laid down. Stepping back is also right when the flush ALLOCATED a cluster
-; — it sets FWR_SECIDX=0, writes, then increments to 1, so the decrement lands on
-; sector 0 of the NEW FWR_CLUS.
-fat_detach_channel:
-                ld      a, (FCH_ACTIVE)
-                or      a
-                ret     z                   ; nothing live
-                ld      e, a
-                ld      d, 0
-                ld      hl, FCH_MODES
-                add     hl, de
-                ld      a, (hl)
-                cp      2                   ; only an OUTPUT channel can be dirty
-                jr      z, fdet_maybe
-                or      a                   ; Cy = 0 — `cp` LEAVES IT SET for A<2
-                ret
-fdet_maybe:
-                ld      hl, (FWR_BUFLEN)
-                ld      a, h
-                or      l
-                ret     z                   ; nothing buffered -> already clean
-                call    fat_flush_data_sector
-                ret     c                   ; disk full / write error
-                ld      a, (FWR_SECIDX)
-                dec     a
-                ld      (FWR_SECIDX), a
-                or      a                   ; Cy = 0 success
-                ret
-
+                or      a                   ; nothing else owns a staged sector:
+                ret                         ; mode 2 (main's own OUTPUT engine) is
+                                            ; not stored since S10.B, and its
+                                            ; frst_write re-read went with it
+                                            ; (D-MODE2DEAD); Cy=0
+; (fat_detach_channel, the write-back half of this cache, is gone: only a
+; mode-2 channel could be dirty, and none is stored -- D-MODE2DEAD, 2026-10-07.)
 frst_read:
                 ; the read iterator leaves FAT_CLUSSEC one PAST the staged sector
                 ; (fat_read_file_sector increments after the read), so step back
@@ -612,36 +572,6 @@ frst_read:
                 dec     a
                 ld      (FAT_CLUSSEC), a
                 jp      fat_read_file_sector
-frst_write:
-                ; fch_flush_active wrote this partial sector out IN PLACE and
-                ; stepped FWR_SECIDX back onto it, so (FWR_CLUS, FWR_SECIDX)
-                ; names it. FWR_BUFLEN survives in the saved state, so appending
-                ; resumes at the right offset over the zero padding the flush laid.
-                ld      hl, (FWR_BUFLEN)
-                ld      a, h
-                or      l
-                ret     z                   ; nothing buffered -> nothing to restore
-                ; absolute sector = firstData + (cluster-2)*secPerClus + WRSECIDX
-                ld      hl, (FWR_CLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de
-                ex      de, hl              ; DE = cluster - 2
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-frst_mul:
-                add     hl, de
-                djnz    frst_mul            ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
-                ld      a, (FWR_SECIDX)
-                ld      e, a
-                ld      d, 0
-                add     hl, de              ; HL = absolute logical sector
-                ex      de, hl
-                ld      hl, FAT_DBUF
-                jp      read_sector
     ENDIF
 
 ; ===========================================================================

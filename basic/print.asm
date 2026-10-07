@@ -120,8 +120,8 @@ ex_print:
                 ; an ON ERROR handler never saw it.
                 cp      4
                 jp      z,sid_badmode       ; RANDOM: 61 (Bad file mode)
-                and     $FE                 ; S10.B: 3 (OUTPUT) or 2 (APPEND)
-                cp      2                   ; must be open FOR OUTPUT
+                cp      DOUT_MODE           ; must be open FOR OUTPUT / APPEND (S10.B;
+                                            ; mode 2 is not stored -- D-MODE2DEAD)
                 jp      nz,err_badfnum_raise ; INPUT: 52 (Bad file number)
                 xor     a
                 ld      (PRDEV),a           ; 0 = disk sink
