@@ -146,8 +146,7 @@ bsv_is_disk:
                 ; bsave_opt4 classifies the slot: CF set -> reject a stray
                 ; identifier (jp c,load_error at THIS level so the abort unwinds to
                 ; the dispatcher); else A=0 none, A=1 ",S" (VRAM), A=2 exec (DE).
-                call    bsave_opt4
-                jp      c,load_error        ; stray 4th token -> honest reject
+                call    bsave_opt4          ; raises 2 itself (D-BSAVEVAR)
                 or      a
                 jr      z,bsv_open          ; no 4th arg -> exec defaulted to start
                 cp      2
@@ -190,8 +189,7 @@ bsv_is_cas:
                 call    expect_comma_eval   ; DE = end
                 ld      (TSV_END),de
                 ; --- optional 4th slot: ,exec (,S VRAM-to-tape unsupported) -
-                call    bsave_opt4
-                jp      c,load_error        ; stray 4th token -> honest reject
+                call    bsave_opt4          ; raises 2 itself (D-BSAVEVAR)
                 or      a
                 jr      z,bsv_cas_open      ; no 4th arg
                 cp      2
@@ -673,18 +671,18 @@ tpn_fill:
 ; ===========================================================================
 ; bsave_opt4 — classify the optional 4th BSAVE slot (,exec or ,S).
 ; in:  HL -> after the ,end argument (at the possible ',' or a terminator).
-; out: CF SET  -> reject: a bare identifier that is neither the standalone S nor
-;                 a number (closure-spec item 2 "honest at the walls"). The CALLER
-;                 does `jp c,load_error` at the do_bsave level — bsave_opt4 must NOT
-;                 branch to load_error itself: load_error ends in `ret`, so a `jp
-;                 load_error` from inside this subroutine would RESUME do_bsave right
-;                 after the `call bsave_opt4` (the stack top is do_bsave's
-;                 continuation, not the dispatcher) and wrongly create the file.
-;      CF CLEAR -> A = 0  no 4th argument   (HL at the terminator)
-;                  A = 1  literal ",S" flag (HL past the S; DE untouched)
-;                  A = 2  numeric expression (DE = value; HL past it)
-; Clobbers A, BC, DE, HL. Distinguishing S-the-flag from an S-started variable: the
-; flag is a lone 'S' followed by a statement terminator (NUL or ':'); "SX"/"S+1" reject.
+; out: A = 0  no 4th argument   (HL at the terminator)
+;      A = 1  literal ",S" flag (HL past the S; DE untouched)
+;      A = 2  exec expression   (DE = value; HL past it)
+;      -- or it RAISES Syntax error (2). Clobbers A, BC, DE, HL.
+; ✅ D-BSAVEVAR (2026-10-07), MEASURED ON THE CF-3300 AND VG-8020
+; (probes/disk/disk_probe_bsavevar.py): the exec is an EXPRESSION, so a VARIABLE
+; is its value -- `BSAVE "T",&HC000,&HC00F,Q` with Q=&HC005 saves exec &HC005, and
+; `BSAVE "CAS:T",...,Q` saves on the diskless VG-8020. This routine rejected every
+; letter but a lone `S` as "an unknown flag" (closure-spec item 2) with the print-
+; and-return load_error. AND AN `S` IS ALWAYS THE FLAG: `,SX` is Syntax error on
+; the CF-3300 -- the S is taken, the X is junk -- not the variable SX (predicted
+; a variable: MISSED). So: S then anything is 2; any other start is the exec.
 bsave_opt4:
                 call    skip_comma
                 jr      z,b4_have
@@ -694,24 +692,9 @@ b4_have:
                 rst    $10                ; past the comma
                 call    upcase
                 cp      'S'
-                jr      z,b4_maybe_s
-                ; not S: a bare letter (A..Z) is a rejected identifier; anything
-                ; else (digit, &H, '(', '-', ...) is a numeric exec expression.
-                cp      'A'
-                jr      c,b4_expr           ; below 'A' -> numeric expression
-                cp      'Z'+1
-                jr      nc,b4_expr          ; above 'Z' -> numeric-ish
-                scf                         ; a letter other than S -> reject (CF set)
-                ret
-b4_maybe_s:
-                push    hl                  ; remember the S position
+                jr      nz,b4_expr          ; anything else starts the exec expression
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,b4_is_s
-                pop     hl                  ; S starts a longer identifier/expr
-                scf                         ; (unsupported as an exec) -> reject (CF set)
-                ret
-b4_is_s:
-                pop     af                  ; drop the saved S position (HL kept)
+                jp      nz,stmt_error       ; `,SX` / `,S+1`: 2 on the CF-3300
                 ld      a,1                 ; A = 1: ",S" flag
                 or      a                   ; CF clear (success)
                 ret

@@ -1,0 +1,7 @@
+ok   lit    National_CF- 'V 42'         ours 'V 42'
+DIFF var    National_CF- 'V 42'         ours 'load error'
+DIFF svar   National_CF- 'E 2 14'       ours 'load error'
+DIFF cas    Philips_VG_8 'OK'           ours 'load error'
+
+FAIL: BSAVE's exec expression as on the references (3 divergence(s))
+refcache: 0 hit, 8 miss, 8 stored

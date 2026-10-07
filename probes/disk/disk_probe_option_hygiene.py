@@ -26,7 +26,12 @@ The BLOAD negatives are now forms that really are malformed -- `,R,` (a missing
 offset) and `,"A"` (a string offset, 13 on the CF-3300, parsed before the disk)
 -- and BLOAD's rejects RAISE (trappably) instead of printing `load error`, so
 the program carries an `ON ERROR GOTO 90` / `90 RESUME NEXT` to run all four
-negatives in one boot. NEG3 (BSAVE) still takes the print-and-return path. Provenance: exercises our own ROM only; no stock
+negatives in one boot.
+🔄 AND AGAIN THE SAME DAY (D-BSAVEVAR): NEG3 was `BSAVE"..",&HC000,&HC010,Q` --
+"a bad 4th token". It is not: BSAVE's fourth argument is the exec EXPRESSION,
+and the CF-3300 saves `,Q` with exec = Q. NEG3 is now `,SX`, which the CF-3300
+refuses with Syntax error (an `S` there is always the VRAM flag; the X is junk),
+raised before the file is created. Provenance: exercises our own ROM only; no stock
 ROM is read.
 
 The `.bas` test program (readable BASIC, tokenised by OUR OWN ROM crunch via
@@ -42,7 +47,7 @@ load is caught:
     41 POKE&HD0F0,PEEK(&HC000)                    ' witness1 (expect $A5 = not loaded)
     50 BLOAD"A:SV.BIN","A"                        ' NEG2 a string offset -> 13
     51 POKE&HD0F1,PEEK(&HC000)                    ' witness2 (expect $A5 = not loaded)
-    60 BSAVE"A:SV2.BIN",&HC000,&HC010,Q          ' NEG3 bad 4th token -> reject (no create)
+    60 BSAVE"A:SV2.BIN",&HC000,&HC010,SX         ' NEG3 `,S` + junk -> 2 (no create)
     70 BLOAD"A:SV.BIN"                            ' POSITIVE control: valid load DOES restore
     71 POKE&HD0F2,PEEK(&HC000)                    ' witness3 (expect $07 = pattern[0], loaded)
     80 POKE&HD0FF,&H99                            ' DONE sentinel
@@ -54,7 +59,7 @@ Checks (all on OUR machine):
      to completion (proves each reject was a non-fatal `load error`, not a crash).
   2. NEG1 witness1 ($D0F0) == $A5 -- BLOAD",R," did NOT load (region stayed wiped).
   3. NEG2 witness2 ($D0F1) == $A5 -- BLOAD","A"" did NOT load.
-  4. NEG3: SV2.BIN is ABSENT from the disk -- BSAVE",Q" rejected BEFORE the file
+  4. NEG3: SV2.BIN is ABSENT from the disk -- BSAVE",SX" rejected BEFORE the file
      create (the bad 4th token never reached disk_write_begin).
   5. POSITIVE control witness3 ($D0F2) == $07 (pattern[0]) -- the plain BLOAD"A:SV.BIN"
      DID restore the region, proving the file + load path are healthy, so the four
@@ -124,7 +129,7 @@ AUTOEXEC_LINES = [
     (41, f"POKE&H{W1_ADDR:04X},PEEK(&HC000)"),
     (50, 'BLOAD"A:SV.BIN","A"'),                     # NEG2 a string offset (13)
     (51, f"POKE&H{W2_ADDR:04X},PEEK(&HC000)"),
-    (60, 'BSAVE"A:SV2.BIN",&HC000,&HC010,Q'),        # NEG3 bad 4th token (no create)
+    (60, 'BSAVE"A:SV2.BIN",&HC000,&HC010,SX'),       # NEG3 `,S` + junk: 2 (no create)
     (70, 'BLOAD"A:SV.BIN"'),                          # POSITIVE control
     (71, f"POKE&H{W3_ADDR:04X},PEEK(&HC000)"),
     (80, f"POKE&H{DONE_ADDR:04X},&H{DONE_BYTE:02X}"),
@@ -244,7 +249,7 @@ def main() -> int:
               f"$C000=${w2:02X} (expect ${WIPE_BYTE:02X} -- NOT loaded)")
 
         c3 = not sv2
-        print(f"  [{'PASS' if c3 else 'FAIL'}] NEG3 BSAVE\"..\",Q bad 4th token: "
+        print(f"  [{'PASS' if c3 else 'FAIL'}] NEG3 BSAVE\"..\",SX bad 4th token: "
               f"SV2.BIN {'absent' if c3 else 'PRESENT'} (expect absent -- rejected before create)")
 
         c4 = w3 == PATTERN0

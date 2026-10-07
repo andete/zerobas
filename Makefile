@@ -2329,6 +2329,13 @@ bloadofs-acceptance: repack-machine $(DISK_TEST_DSK)
 nodiskopen-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/basic/basic_probe_nodiskopen.py
 
+# --- bsavevar-acceptance: BSAVE's exec is an expression (D-BSAVEVAR) -----------
+# A variable exec (`,Q`) is its value on the CF-3300 and, to tape, on the
+# diskless VG-8020; `,SX` is 2 -- an S there is always the VRAM flag -- and
+# creates nothing; a literal exec is the control.
+bsavevar-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_bsavevar.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

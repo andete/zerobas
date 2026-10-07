@@ -1,0 +1,7 @@
+ok   lit    National_CF- 'V 42'         ours 'V 42'
+ok   var    National_CF- 'V 42'         ours 'V 42'
+ok   svar   National_CF- 'E 2 14 N'     ours 'E 2 14 N'
+ok   cas    Philips_VG_8 'OK'           ours 'OK'
+
+PASS: BSAVE's exec expression as on the references (0 divergence(s))
+refcache: 2 hit, 6 miss, 6 stored

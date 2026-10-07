@@ -1,0 +1,9 @@
+BSAVE/BLOAD option-parse hygiene: a malformed flag must be rejected (our `load error`), never silently perform the op. OURS-ONLY behavioural.
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+  [PASS] non-fatal vacuity: ($D0FF)=$99 (expect $99 -- ran through all four negatives)
+  [PASS] NEG1 BLOAD"..",R, missing offset: $C000=$A5 (expect $A5 -- NOT loaded)
+  [PASS] NEG2 BLOAD"..","A" string offset: $C000=$A5 (expect $A5 -- NOT loaded)
+  [PASS] NEG3 BSAVE"..",SX bad 4th token: SV2.BIN absent (expect absent -- rejected before create)
+  [PASS] POSITIVE control BLOAD".." (no flag): $C000=$07 (expect $07 -- valid load DID restore)
+
+ALL PASS -- every malformed BSAVE/BLOAD option is rejected without silently performing the operation, and the valid load still works

@@ -6255,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30008 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30045 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26857,6 +26857,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       divergence by apparatus alone -- the first FULL batteries with this rule
       will say.
 
+- [x] ✅ **D-BSAVEVAR — BSAVE REFUSED A VARIABLE AS ITS EXEC ADDRESS: `BSAVE "F",&HC000,&HC00F,Q`
+      PRINTED `load error` AND SAVED NOTHING; THE CF-3300 AND VG-8020 SAVE WITH EXEC = Q (found and
+      FIXED 2026-10-07)**
+      🎚️ TIER 1 — happy path: `BSAVE "F",S,E,X` with variables is the ordinary
+      way to save a block a program computed.
+      🔬 Found by reading `bsave_opt4` (basic/save.asm) while auditing
+      D-LOADERRRET's sites: "a letter other than S -> reject" -- the same
+      flag-versus-variable confusion D-BLOADOFS had just removed from BLOAD.
+      📏 ([`bsavevar_before.out`](scratchpad/bsavevar_before.out); the saved
+      file BLOADed back with `,R` runs a marker routine at the exec):
+      `,Q` (Q=&HC005) → 42 on the CF-3300, `load error` here; `BSAVE
+      "CAS:T",...,Q` saves on the diskless VG-8020, `load error` here; the
+      literal control agrees. 🎯 Predicted `,SX` to be the variable SX too --
+      **MISSED**: the CF-3300 says Syntax error -- an `S` there is always the
+      VRAM flag and the X is junk.
+      ✅ `bsave_opt4`: any start but `S` is the exec expression; `,S` then
+      anything raises 2; the callers' `jp c,load_error` went with the CF exit.
+      Main page 1 65 → 85 B.
+      Gate `bsavevar-acceptance`
+      ([`probes/disk/disk_probe_bsavevar.py`](probes/disk/disk_probe_bsavevar.py))
+      4/4 ([`bsavevar_after.out`](scratchpad/bsavevar_after.out)). Knives
+      ([`bsavevar_knives.py`](scratchpad/bsavevar_knives.py),
+      [`bsavevar_knives.out`](scratchpad/bsavevar_knives.out)): K-BV1 (the
+      `,S`+junk raise cut) moves exactly `svar`, K-BV2 (letters refused again)
+      exactly `var`/`cas`. 🔴 **K-BV1's FIRST RUN MISSED**
+      ([`bsavevar_knives_miss.out`](scratchpad/bsavevar_knives_miss.out)):
+      `svar` read 2 in 14 either way -- the S was taken as the flag, the VRAM
+      SAVE RAN, and the X was junk afterwards. The row now witnesses the FILE
+      (`E 2 14 N`: not created, on the CF-3300 and ours;
+      [`bsavevar_svar.out`](scratchpad/bsavevar_svar.out)), the error alone
+      being a deferred witness [[a-guard-witnessed-only-by-a-deferred-error]].
+      diskbasic-acceptance's ours-only hygiene probe asserted `,Q` creates
+      nothing -- its NEG3 is `,SX` now (5/5,
+      [`bsavevar_hygiene.out`](scratchpad/bsavevar_hygiene.out)); grepped
+      `probes/` and `tools/` for the retired rule first, this time.
+
 - [x] ✅ **D-MODE2DEAD — MODE 2 (OUTPUT THROUGH MAIN'S OWN ENGINE) IS NOT STORED SINCE S10.B
       INCREMENT 2, AND ITS CODE WAS STILL IN BOTH ROMS (S10.B's "left for later"; DONE 2026-10-07)**
       🎚️ TIER 2 — the S10 ownership move's clean-up; budget, not behaviour.
@@ -26976,8 +27012,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       excluded), 2026-10-07: ~~cload.asm ×4~~ (✅ D-LOADTAIL, the same day: all
       four were LOAD / RUN's option tail), files.asm ×1 (`jp z` at ~2146),
       field.asm ×1, print.asm ×1 (PRINT# to a CAS-INPUT channel), save.asm ×5
-      (stray 4th token ×2, `,S` VRAM-to-tape, trailing junk after the name,
-      two `jp c`), str-engine.asm ×1 (sub-ROM absent -- likely right as is).
+      (~~stray 4th token ×2~~ -- ✅ D-BSAVEVAR, 2026-10-07: it was not a stray
+      token but the exec EXPRESSION; `,S` VRAM-to-tape, trailing junk after the
+      name, two `jp c`), str-engine.asm ×1 (sub-ROM absent -- likely right as is).
       ➡️ **PER SITE:** reproduce it under ON ERROR on the reference that
       owns the device (VG-8020 for tape and screen, CF-3300 for disk), read
       ERR/ERL, and send the site to the raiser that gives the same code -- or

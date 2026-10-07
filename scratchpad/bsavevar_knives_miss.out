@@ -1,0 +1,6 @@
+  ROM d70064c6 fad7eb06 a8b3255c 06cd59a5  ->  c19a5dbf fad7eb06 a8b3255c 65b3f049
+FAIL  K-BV1: diverged [] (want exactly ['svar'])
+  ROM c19a5dbf fad7eb06 a8b3255c 65b3f049  ->  e1bb534e fad7eb06 d9ad32d7 7ee575b2
+PASS  K-BV2: diverged ['cas', 'var'] (want exactly ['cas', 'var'])
+
+FAILED: K-BV1

@@ -1,0 +1,4 @@
+ok   svar   National_CF- 'E 2 14 N'     ours 'E 2 14 N'
+
+PASS: BSAVE's exec expression as on the references (0 divergence(s))
+refcache: 0 hit, 2 miss, 2 stored
