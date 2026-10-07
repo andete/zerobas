@@ -4256,6 +4256,8 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:OPEN FORM:input"),
     ('t8openinput52', 'open "a" for input as #16', 'OPEN "A" FOR INPUT AS #16', "stored",
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:OPEN FORM:input"),
+    ('t8openinput56', 'open "a*.txt" for input as #1', 'OPEN "A*.TXT" FOR INPUT AS #1', "stored",
+     "NEEDS-DISK: PROVES-T6:56 SUBJECT:OPEN FORM:input"),     # D-OPENWILD (2026-10-07)
     ('t8openinput53', 'open "nosuch.txt" for input as #1', 'OPEN "NOSUCH.TXT" FOR INPUT AS #1', "stored",
      "NEEDS-DISK: PROVES-T6:53 SUBJECT:OPEN FORM:input"),
     ('t8openoutput13', 'open "x.txt" for output as #"a"', 'OPEN "X.TXT" FOR OUTPUT AS #"A"', "stored",

@@ -484,6 +484,21 @@ do_open:
                 call    dev_cmp
                 jp      z,oo_dev_cas
                 call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
+                ; D-OPENWILD (2026-10-07): a WILDCARD name is `Bad file name` (56)
+                ; on the CF-3300 (`OPEN "A*.TXT" FOR INPUT AS #1`); ours looked it
+                ; up and said 53. The parser takes wildcards because KILL / FILES
+                ; need them (`*` fills with `?`), so OPEN refuses a `?` itself,
+                ; before any disk work.
+                push    hl
+                ld      hl,DISK_FCB_NAME
+                ld      b,11
+                ld      a,'?'
+oo_wild:
+                cp      (hl)
+                jp      z,pdf_badname       ; 56
+                inc     hl
+                djnz    oo_wild
+                pop     hl
                 call    skip_spaces
                 cp      FOR_TOKEN           ; FOR
                 jr      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)

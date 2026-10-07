@@ -1,0 +1,6 @@
+  ROM ef96e8ba 69c6d2d8 177b2b0d 9dfd2936  ->  88add5d3 69c6d2d8 177b2b0d d193a32b
+DIVERGENT     t8openinput56 OPEN "A*.TXT" FOR INPUT AS #1
+UNPINNED line: True
+make rc: 2
+PASS  K-OWD
+restored: ef96e8ba 69c6d2d8 177b2b0d 9dfd2936

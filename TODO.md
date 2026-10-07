@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29757 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29772 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26610,9 +26610,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `ON ERROR GOTO 60` and BOTH machines read `Undefined line number` — SUPPORTED
       for the wrong reason; `as_stored` packs statements into ≤34-char lines, so
       the handler is line 40.
-      ⚠️ Not asked: a WILDCARD name (`OPEN "A*.TXT"`, 56 on the CF-3300, 53 here)
-      while a matching file is open — the check would answer 54 first. It is the
-      same wrong-code case already listed below.
+      ⚠️ Not asked: a WILDCARD name (`OPEN "A*.TXT"`, 56 on the CF-3300)
+      while a matching file is open. Since D-OPENWILD (2026-10-07) ours refuses the
+      wildcard BEFORE this check and answers 56; the CF-3300's order is unmeasured.
       ✅ **D-EOFMODE (2026-09-30): `EOF` on a channel opened the other way is 61 now**
       (OUTPUT, APPEND and RANDOM alike); batch 8 re-measured the same day leaves 12
       real rows, listed below ([`t6enum_b8_0930.out`](scratchpad/t6enum_b8_0930.out)).
@@ -26621,7 +26621,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         just a missing code, zerobas reads the Ctrl-Z end marker as DATA and the
         textbook `IF EOF(1)` loop reads one line too many** — `EOF` / `INPUT #` /
         `PRINT #` on a channel opened the other way (61 / 52 → ok).
-      • **wrong code:** `OPEN "A*.TXT"` 56 → 53; `LEN="A"` 13 → 5; bare `LEN`
+      • **wrong code:** ~~`OPEN "A*.TXT"` 56 → 53~~ (D-OPENWILD); `LEN="A"` 13 → 5; bare `LEN`
         2 → 5; ~~`NAME "A.TXT"` 53 → 2; `COPY "A.TXT"` 53 → 5~~ (D-NOASTO); `GET`/`PUT #1,"A"`
         13 → 5; `BLOAD "X.BIN",Q` 53 → ok.
       • **wrong LINE:** BSAVE's `"A"` faults report **line 30** instead of 20.
@@ -26640,7 +26640,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       • ✅ **channel direction (2) -- FIXED THE SAME DAY as D-CHDIR (below):**
         `INPUT #` on an OUTPUT channel and `PRINT #` on an INPUT one 52 → no
         error (ours printed `load error` past the trap).
-      • **wrong code (6):** `OPEN "A*.TXT"` 56 → 53 (STILL OPEN); ✅ `OPEN … AS 1,2`
+      • ✅ **wrong code (6) -- ALL FIXED:** ✅ `OPEN "A*.TXT"` 56 → 53 (D-OPENWILD,
+        below); ✅ `OPEN … AS 1,2`
         2 → 53 (D-OPENEND, below -- a regression from S10.B increment 2 that
         kwsweep's gate could not fail on: D-KWDIVPIN); ✅ `LEN="A"` 13 → 5, bare
         `LEN` 2 → 5, `GET`/`PUT #1,"A"` 13 → 5 (D-RECLENERR, below).
@@ -26661,6 +26662,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       all four agree, `LEN=0`/`257` and record 0 still 5. Their four pairs are
       kwsweep rows now (`t8openrandom13`, `t8openrandom2`,
       `t8getfieldedrecord13`, `t8putfieldedrecord13`), all SUPPORTED.
+
+- [x] ✅ **D-OPENWILD — `OPEN "A*.TXT" FOR INPUT AS #1` READ 53; THE CF-3300 SAYS 56 (split from
+      D-DISKERRS and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a wildcard typed where one file is meant.
+      📏 [`t6enum_b8_zb_1006.out`](scratchpad/t6enum_b8_zb_1006.out). OPEN took
+      the expanded name (`*` fills the field with `?`) to the directory search,
+      which found nothing and said 53.
+      ✅ do_open (basic/files.asm) scans the 11-byte `DISK_FCB_NAME` for `?`
+      right after `pdfcb_resume` and leaves through `pdf_badname` (56) before
+      any disk work. Re-measured with every OPEN case: the wildcard agrees
+      (`56 in 20` on both), every other OPEN row unchanged. kwsweep row
+      `t8openinput56` SUPPORTED. Knife ([`openwild_knife.py`](scratchpad/openwild_knife.py),
+      [`openwild_knife.out`](scratchpad/openwild_knife.out)): the jump cut, the
+      row reads DIVERGENT and `make kwsweep` exits non-zero naming it.
 
 - [x] ✅ **D-OPENEND — `OPEN "X.TXT" FOR APPEND AS 1,2` WITH X.TXT MISSING READ 53; THE CF-3300
       SAYS 2 -- IT PARSES THE WHOLE STATEMENT BEFORE TOUCHING THE DISK (a regression from
