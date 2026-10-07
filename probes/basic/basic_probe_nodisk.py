@@ -210,9 +210,16 @@ CONTROLS = {"c.print", "c.str", "v.eof", "v.lof"}
 # free to build one in. The hook re-architecture paid for the bytes, the hook
 # address was already measured ($FE2B), and the row now AGREES. A pin is a
 # record of a divergence, so removing one is what FIXING it looks like.
-PINNED: dict[str, tuple[str, str]] = {
-    "h.open":  ("'ERR 2 '", "'load error                             '"),
-}
+# 🔴 `h.open` LEFT THIS SET 2026-10-07 -- AND ITS CHARACTERISATION ABOVE WAS
+# WRONG. The oracle's ERR 2 was never "FOR OUTPUT is unparseable without Disk
+# BASIC": it is the `;` run() appends to every statement (`30 {stmt};`). Without
+# it the VG-8020 OPENS `"X" FOR OUTPUT` (a device-less name: no error at all)
+# and answers `OPEN"X"AS#1` with 56 (Bad file name); with it, 2 -- junk after a
+# complete statement. Ours answered `load error` (oo_nodisk ran before anything
+# looked at the junk); since D-OPENEND checks the statement's end first, ours
+# says 2 for the SAME reason the oracle does, and the row agrees for real. The
+# two un-suffixed faces are D-NODISKOPEN in TODO (measured, not yet rows).
+PINNED: dict[str, tuple[str, str]] = {}
 
 
 def run(side, stmt):

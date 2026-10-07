@@ -6254,7 +6254,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:29692 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:29757 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26640,12 +26640,77 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       • ✅ **channel direction (2) -- FIXED THE SAME DAY as D-CHDIR (below):**
         `INPUT #` on an OUTPUT channel and `PRINT #` on an INPUT one 52 → no
         error (ours printed `load error` past the trap).
-      • **wrong code (6):** `OPEN "A*.TXT"` 56 → 53; `OPEN … AS 1,2` 2 → 53;
-        `LEN="A"` 13 → 5; bare `LEN` 2 → 5; `GET`/`PUT #1,"A"` 13 → 5.
+      • **wrong code (6):** `OPEN "A*.TXT"` 56 → 53 (STILL OPEN); ✅ `OPEN … AS 1,2`
+        2 → 53 (D-OPENEND, below -- a regression from S10.B increment 2 that
+        kwsweep's gate could not fail on: D-KWDIVPIN); ✅ `LEN="A"` 13 → 5, bare
+        `LEN` 2 → 5, `GET`/`PUT #1,"A"` 13 → 5 (D-RECLENERR, below).
       • **extra arguments accepted (5):** `LOAD "X.BAS",Q`, `RUN "A",5` 2 → ok;
         `BLOAD "X.BIN",Q` 53 → ok; `INPUT$(0)` / `INPUT$(256)` 5 → ok.
       • ✅ **no reading at all (2) -- FIXED THE SAME DAY as D-SAVETAIL (below):**
         `SAVE "X.BAS",B`, `SAVE "X.BAS",A,1` (2 on the CF-3300; ours `load error`).
+
+- [x] ✅ **D-RECLENERR — `LEN="A"`, A BARE `LEN` AND `GET`/`PUT #1,"A"` READ 5; THE CF-3300 SAYS
+      13, 2 AND 13 (split from D-DISKERRS and FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors: a mistyped record length or record number.
+      📏 [`t6enum_b8_zb_1006.out`](scratchpad/t6enum_b8_zb_1006.out). Both
+      arguments went through a bare `inc_eval`, so a string reached the RANGE
+      test (5); a `LEN` with no `=` went to the same bad-range exit.
+      ✅ `oo_parse_reclen` (basic/files.asm): no `=` is `oo_fail_syn` (2, the
+      provisional mode cleared), the value is `eval_int16_checked` (a string
+      is 13); GET/PUT's record number likewise (basic/field.asm). Re-measured:
+      all four agree, `LEN=0`/`257` and record 0 still 5. Their four pairs are
+      kwsweep rows now (`t8openrandom13`, `t8openrandom2`,
+      `t8getfieldedrecord13`, `t8putfieldedrecord13`), all SUPPORTED.
+
+- [x] ✅ **D-OPENEND — `OPEN "X.TXT" FOR APPEND AS 1,2` WITH X.TXT MISSING READ 53; THE CF-3300
+      SAYS 2 -- IT PARSES THE WHOLE STATEMENT BEFORE TOUCHING THE DISK (a regression from
+      ed213e5c; FIXED 2026-10-07)**
+      🎚️ TIER 3 — common errors.
+      🔬 OPEN never checked its own end: it opened, stored the channel and let
+      exec_stmt meet the junk. It read 2 until S10.B increment 2 only by
+      ACCIDENT -- a missing file went through the print-and-RETURN load_error
+      (D-LOADERRRET), and exec_stmt then raised 2 on the `,2`; once disk.rom
+      raised 53 properly, the junk was never reached. An OUTPUT open would also
+      have CREATED its file before the 2 (D-SAVECOLON's lesson, in OPEN).
+      ✅ do_open checks the statement's end right after the LEN clause, before
+      the open (`skip_spaces`; 0 or `:` else `oo_fail_syn`). kwsweep's
+      `t8openappend2` SUPPORTED again.
+
+- [x] ✅ **D-KWDIVPIN — `kwsweep` COULD NOT FAIL ON A SUPPORT DIVERGENCE: `t8openappend2` WENT
+      DIVERGENT AND RODE FOUR GREEN FULL BATTERIES (found and FIXED 2026-10-07)**
+      🎚️ APPARATUS — a gate that cannot fail on its subject.
+      🔬 Its exit status depended only on the control group and the CRUNCH pin;
+      every support DIVERGENT printed and the run exited 0. The only trace was
+      the regenerated `docs/tier-status.md`, which the chain regenerates and the
+      commit carries.
+      ✅ A support DIVERGENT where BOTH sides gave a real reading now exits 6
+      unless pinned in `SUPPORT_DIVERGENT_PINNED` (empty) with its why; a pin
+      that no longer diverges exits 6 too. A BLANK side is reported, not failed:
+      the same night `chanfor` read blank on the CF-3300 in batch (and SUPPORTED
+      alone) -- a reference capture miss must not redden the battery. Knife
+      ([`kwdivpin_knife.py`](scratchpad/kwdivpin_knife.py)): D-OPENEND's check
+      cut, `make kwsweep ONLY=t8openappend2` exits non-zero naming the row.
+      ⚠️ Unmeasured: how often a FULL battery's batch run produces a both-sides
+      divergence by apparatus alone -- the first FULL batteries with this rule
+      will say.
+
+- [ ] 💽 **D-NODISKOPEN — ON THE DISKLESS TARGET A DEVICE-LESS `OPEN` IS `load error`; THE VG-8020
+      OPENS `"X" FOR OUTPUT` AND ANSWERS `OPEN "X" AS #1` WITH 56 (measured 2026-10-07)**
+      🎚️ TIER 3 — common errors / diskless happy path: a data file on a
+      cassette machine.
+      📏 Under ON ERROR on the VG-8020 (no disk): `OPEN"X"FOR OUTPUT AS#1` --
+      NO error (the open succeeds; presumably the cassette, the only file
+      device a diskless machine has -- UNMEASURED which device); `OPEN"X"AS#1`
+      -- 56 (Bad file name). Ours: `load error` for both (oo_nodisk). Found
+      while booking nodisk-acceptance's `h.open`, whose pinned explanation
+      ("FOR OUTPUT is unparseable without Disk BASIC") turned out to be the
+      probe's own `;` suffix (D-OPENEND, above).
+      ➡️ **MEASURE FIRST:** which device the VG-8020 opened (a PRINT# + CLOSE
+      with a blank tape inserted, and the tape read back; FOR INPUT too), then
+      route a device-less name on a diskless machine there, and RANDOM to 56.
+      Rows in nodisk-acceptance (Joost 2026-09-03: disk-related work adds rows
+      there).
+      🤖 **AUTONOMOUS** — the VG-8020 settles it.
 
 - [ ] 🔴 **D-LOADERRRET — `load_error` PRINTS AND RETURNS; ~15 SITES STILL `jp` TO IT WHERE THE
       REFERENCE RAISES A TRAPPABLE CODE (filed 2026-10-07 from D-CHDIR / D-SAVETAIL)**

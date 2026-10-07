@@ -761,7 +761,10 @@ gp_nochan:
                 ; optional ", recno" (else default record 1)
                 call    skip_comma
                 jr      nz,gp_defrec
-                call    inc_eval            ; DE = record number
+                ; D-RECLENERR (2026-10-07): a string record number is Type
+                ; mismatch (13) on the CF-3300, not the 5 the bare eval reached.
+                inc     hl
+                call    eval_int16_checked  ; DE = record number
                 jr      gp_haverec
 gp_defrec:
                 ld      de,1

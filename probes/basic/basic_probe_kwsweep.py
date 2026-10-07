@@ -4268,6 +4268,12 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:53 SUBJECT:OPEN FORM:append"),
     ('t8openrandom5', 'open "r.dat" as #1 len=0', 'OPEN "R.DAT" AS #1 LEN=0', "stored",
      "NEEDS-DISK: PROVES-T6:5 SUBJECT:OPEN FORM:random"),
+    # D-RECLENERR (2026-10-07): these two diverged (both read 5 here) and were
+    # left out; they agree now (scratchpad/t6enum_b8_zb_1006.out re-measured).
+    ('t8openrandom13', 'open "r.dat" as #1 len="a"', 'OPEN "R.DAT" AS #1 LEN="A"', "stored",
+     "NEEDS-DISK: PROVES-T6:13 SUBJECT:OPEN FORM:random"),
+    ('t8openrandom2', 'open "r.dat" as #1 len', 'OPEN "R.DAT" AS #1 LEN', "stored",
+     "NEEDS-DISK: PROVES-T6:2 SUBJECT:OPEN FORM:random"),
     ('t8closeall13', 'close "a"', 'CLOSE "A"', "stored",
      "NEEDS-DISK: PROVES-T6:13 SUBJECT:CLOSE FORM:all"),
     ('t8closeall24', 'close 1,', 'CLOSE 1,', "stored",
@@ -4387,12 +4393,16 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:GET_# FORM:fielded-record"),
     ('t8getfieldedrecord59', 'get #1,1', 'GET #1,1', "stored",
      "NEEDS-DISK: PROVES-T6:59 SUBJECT:GET_# FORM:fielded-record"),
+    ('t8getfieldedrecord13', 'open "r5.dat" as #1:get #1,"a"', 'OPEN "R5.DAT" AS #1:GET #1,"A"', "stored",
+     "NEEDS-DISK: PROVES-T6:13 SUBJECT:GET_# FORM:fielded-record"),     # D-RECLENERR
     ('t8putfieldedrecord5', 'open "r6.dat" as #1:put #1,0', 'OPEN "R6.DAT" AS #1:PUT #1,0', "stored",
      "NEEDS-DISK: PROVES-T6:5 SUBJECT:PUT_# FORM:fielded-record"),
     ('t8putfieldedrecord52', 'put #16', 'PUT #16', "stored",
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:PUT_# FORM:fielded-record"),
     ('t8putfieldedrecord59', 'put #1,1', 'PUT #1,1', "stored",
      "NEEDS-DISK: PROVES-T6:59 SUBJECT:PUT_# FORM:fielded-record"),
+    ('t8putfieldedrecord13', 'open "r7.dat" as #1:put #1,"a"', 'OPEN "R7.DAT" AS #1:PUT #1,"A"', "stored",
+     "NEEDS-DISK: PROVES-T6:13 SUBJECT:PUT_# FORM:fielded-record"),     # D-RECLENERR
     ('t8inputstringread52', 'input #16,a$', 'INPUT #16,A$', "stored",
      "NEEDS-DISK: PROVES-T6:52 SUBJECT:INPUT_# FORM:string-read"),
     ('t8inputstringread59', 'input #1,a$', 'INPUT #1,A$', "stored",
@@ -5462,6 +5472,10 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 # DISKLESS VG-8020 answers ERR 5 to `SET`, `IPL`, `CMD` AND to `SET=1` -- so all
 # three are reserved in plain MSX BASIC and the VG-8020 is a perfectly good oracle
 # for them (scratchpad/donothing_probe.py, four sides).
+# D-KWDIVPIN (2026-10-07): support rows that diverge ON PURPOSE, each with its
+# measured why. Empty: every known divergence is fixed or filed elsewhere.
+SUPPORT_DIVERGENT_PINNED: dict[str, str] = {}
+
 CRUNCH_DIFF_PINNED = {
 }
 # 🎯 `LFILES` IS THE CONTROL THAT MAKES THIS A LIST AND NOT A CLASS: it is
@@ -6300,6 +6314,41 @@ def main() -> int:
                   "CRUNCH_DIFF_PINNED,\n    or a stale pin hides the next real "
                   "one.")
             return 5
+
+    # --- the SUPPORT pin (D-KWDIVPIN, 2026-10-07) ------------------------------
+    # 🔴 UNTIL HERE NO SUPPORT VERDICT COULD FAIL THIS GATE: a row that turned
+    # DIVERGENT printed and the run still exited 0. t8openappend2 (`OPEN "X.TXT"
+    # FOR APPEND AS 1,2`: 2 on the CF-3300) read 53 on ours from ed213e5c on and
+    # rode four green FULL batteries. A DIVERGENT row now FAILS when BOTH sides
+    # gave a real reading -- the shape a regression has -- unless it is pinned
+    # below with its why. A blank / unreadable side is reported, not failed: in
+    # batch mode the REFERENCE's capture can miss (chanfor, the same night, read
+    # blank on the CF-3300 and right on ours, and SUPPORTED alone).
+    if args.layer in ("support", "both"):
+        import re                                   # (not imported at module level)
+
+        def _readable(txt):
+            t = re.sub(r"color\s+auto\s+goto\s+list\s+run", " ", str(txt or ""))
+            return bool(re.search(r"[0-9A-Za-z]", re.sub(r"[|\s]+", " ", t)))
+        regress = []
+        for key, *_ in rows:
+            sv = results[key].get("support")
+            if (sv and sv[0] == "DIVERGENT" and key not in SUPPORT_DIVERGENT_PINNED
+                    and _readable(sv[2]) and _readable(sv[4])):
+                regress.append(key)
+        if regress:
+            print(f"\n*** \U0001f534 {len(regress)} UNPINNED SUPPORT DIVERGENCE(S), "
+                  f"both sides read: {', '.join(regress)}")
+            print("    A row the reference and zerobas BOTH answered, differently. "
+                  "Fix it, or pin it in\n    SUPPORT_DIVERGENT_PINNED with its "
+                  "measured why.")
+            return 6
+        stale = sorted(k for k in SUPPORT_DIVERGENT_PINNED
+                       if (results.get(k, {}).get("support") or ("-",))[0] == "SUPPORTED")
+        if stale:
+            print(f"\n*** \U0001f534 {len(stale)} SUPPORT PIN(S) NO LONGER DIVERGE: "
+                  f"{', '.join(stale)} -- book it: drop the pin")
+            return 6
 
     return 0
 

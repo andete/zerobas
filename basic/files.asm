@@ -561,6 +561,21 @@ oo_setmode:
                                             ; `Illegal function call` on the CF-3300
                                             ; (LEN=0 / 257 / 512 all ERR 5), NOT the
                                             ; `Syntax error` this used to raise
+                ; 🔴 D-OPENEND (2026-10-07): THE STATEMENT MUST END HERE, BEFORE ANY
+                ; DISK WORK. `OPEN "X.TXT" FOR APPEND AS 1,2` is Syntax error (2)
+                ; on the CF-3300 even with X.TXT missing: it parses the whole
+                ; statement first. Ours opened and let exec_stmt meet the `,2`
+                ; afterwards -- which read 2 only by ACCIDENT while a missing file
+                ; went through the print-and-return load_error (D-LOADERRRET), and
+                ; read 53 once disk.rom raised it (S10.B increment 2, ed213e5c;
+                ; kwsweep's t8openappend2, which its gate does not fail on). An
+                ; OUTPUT open would also have CREATED the file before the 2.
+                call    skip_spaces         ; A and HL only: DE (the reclen) survives
+                or      a
+                jr      z,oo_endok
+                cp      ':'
+                jp      nz,oo_fail_syn      ; junk after the clause: 2, nothing opened
+oo_endok:
                 push    hl                  ; GUARD the text cursor -- the store below
                                             ; uses HL as scratch (a bug once: the lost
                                             ; cursor abandoned a same-line ':' tail)
@@ -1106,9 +1121,14 @@ opr_default:
                 ret
 opr_have:
                 rst    $10                ; past $92
+                ; D-RECLENERR (2026-10-07): the CF-3300 answers a bare `LEN` with
+                ; Syntax error (2) and `LEN="A"` with Type mismatch (13); both
+                ; reached the range test here and read Illegal function call (5)
+                ; (scratchpad/t6enum_b8_zb_1006.out). Only the RANGE is 5.
                 cp      EQ_TOKEN            ; '='
-                jr      nz,opr_bad
-                call    inc_eval            ; DE = record length, HL past it
+                jp      nz,oo_fail_syn      ; no `=`: 2 (clears the provisional mode)
+                inc     hl
+                call    eval_int16_checked  ; DE = record length; a string is 13
                 ld      a,d
                 or      a
                 jr      z,opr_lowbyte       ; D=0 -> reclen 1..255

@@ -1,0 +1,6 @@
+  ROM 8caf8d2d 69c6d2d8 f8c3a9b2 81cd563a  ->  b08fa87b 69c6d2d8 8297588e dd522711
+DIVERGENT     t8openappend2 OPEN "X.TXT" FOR APPEND AS 1,2
+UNPINNED line: True
+make rc: 2
+PASS  K-KDP
+restored: 8caf8d2d 69c6d2d8 f8c3a9b2 81cd563a
