@@ -1,0 +1,4 @@
+DIFF midoom '30 DATA ABCDE | Out of string space in 16' ours '30 DATA ABCDE | Out of string space in 15'
+
+FAIL: READ strings point at the program text (1 divergence(s))
+refcache: 0 hit, 2 miss, 2 stored

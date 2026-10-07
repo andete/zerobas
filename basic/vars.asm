@@ -367,6 +367,51 @@ tsn_ary:
                                             ; is a one-row knife rather than a no-op).
                 jp      ary_store_write     ; array: element := DE, coerced
 
+; --- tgt_store_ref: a READ string, BY REFERENCE (D-READREF, 2026-10-07) -----
+; in:  BC = key (scalar targets only), DE = the item's first byte IN THE PROGRAM
+;      TEXT, STRSCR[0] = its length, (TGT_ADDR).
+; The descriptor [len][ptr] is written straight into the target: no heap body.
+; Both references charge a READ string nothing -- 9 x 40-char DATA rows READ into
+; A$() leave FRE("") at 200 on the VG-8020, and ran out of string space at the
+; fifth here (probes/basic/basic_probe_readref.py; Vleermuis, a 1989 type-in,
+; died on it). Joost's ruling 2026-09-27: point at the program text. The heap's
+; GC already leaves a descriptor that points outside [FRETOP,C) alone; MID$
+; copies such a body out before writing (sub/strheap.asm sh_mid_store); an edit,
+; NEW or LOAD clears the variables (row `edit`), so none can dangle.
+tgt_store_ref:
+                ld      hl,RVDESC
+                ld      a,(STRSCR)
+                ld      (hl),a
+                inc     hl
+                or      a
+                jr      nz,tsr_ptr
+                ld      d,a
+                ld      e,a                 ; length 0 -> ptr 0, the heap's convention
+tsr_ptr:
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                ld      de,(TGT_ADDR)
+                ld      a,d
+                or      e
+                jr      nz,tsr_put          ; an array element: DE = its descriptor
+                ld      (ARY_KEY),bc
+                ld      a,1
+                ld      (ARY_TYPE),a
+                ld      a,5                 ; op = SCALAR_ALLOC (find or insert)
+                ld      (ARY_OP),a
+                call    ary_engine_call     ; NZ: FPERR already set (OOM)
+                ret     nz
+                ld      hl,(ARY_ADDR)
+                ld      de,3
+                add     hl,de
+                ex      de,hl               ; DE -> the scalar's descriptor
+tsr_put:
+                ld      hl,RVDESC
+                ld      bc,3
+                ldir
+                ret
+
 ; --- tgt_store_str: the STRSCR field -> the resolved target -----------------
 ; in:  BC = key (scalar targets only), STRSCR = [len][bytes], (TGT_ADDR).
 ; Clobbers everything -- every caller already guards its text cursor on the

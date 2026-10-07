@@ -1566,6 +1566,8 @@ ems_close:
                                             ; ARYTAB move the arg parse caused (§5.1);
                                             ; a scalar target comes back verbatim
                 ld      (SH_DEST),hl        ; A$ descriptor address
+                call    mid_own             ; D-READREF: a body in the program text is
+                                            ; copied into the heap first
                 ld      a,9
                 call    sh_call_op         ; op = 9 (MID_STORE)
                 ld      a,(SH_ERR)
@@ -1580,6 +1582,57 @@ ems_range:
                 ; not the `syntax error` the D-3 note above assumed was forced.
                 pop     hl                  ; discard the guarded cursor -> stack balanced
                 jp      gb_illegal          ; Illegal function call (ld a,5 / jp
+; mid_own -- D-READREF (2026-10-07): A$'s body must be the HEAP's before MID$
+; writes into it. A READ string points at the DATA text (basic/vars.asm
+; tgt_store_ref), and on the VG-8020 a MID$ into one does NOT reach the program --
+; a re-READ gives the old bytes and LIST shows them (probes/basic/
+; basic_probe_readref.py `mid` / `list`). Nothing else with a length points below
+; VARTAB, so a body there is copied into a fresh heap body (op 0) and A$ repointed;
+; a heap body or a FIELD buffer is written in place as before. No room is 14 (the
+; VG-8020's `midoom`: `Out of string space in 16`, the MID$ line).
+;   in: HL = (SH_DEST) = A$'s descriptor. Clobbers A, BC, DE, HL.
+mid_own:
+                ld      c,(hl)              ; C = La
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = A$'s body
+                ld      a,c
+                or      a
+                ret     z
+                ld      hl,(VARTAB)
+                or      a
+                sbc     hl,de
+                ret     c                   ; above VARTAB: owned
+                ret     z
+                ld      a,c
+                ld      (SH_LEN),a
+                xor     a                   ; op 0: allocate SH_LEN bytes -> SH_PTR
+                call    sh_call_op
+                ld      a,(SH_ERR)
+                or      a
+                jr      nz,mo_oom
+                ld      hl,(SH_DEST)
+                ld      c,(hl)
+                ld      b,0                 ; BC = La
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the body in the program text
+                ex      de,hl               ; HL = it; DE -> the ptr's high byte
+                push    de
+                ld      de,(SH_PTR)
+                push    de
+                ldir
+                pop     de                  ; DE = the fresh body
+                pop     hl
+                ld      (hl),d
+                dec     hl
+                ld      (hl),e              ; A$ -> its own heap copy
+                ret
+mo_oom:
+                ld      a,14                ; Out of string space
+                jp      raise_error         ; resets SP
                                             ; raise_error: interp.asm's tail, C4 2026-10-03)
 ; D-MIDOP: the MID$ entry to D-MISS-1's shared numeric-RHS typecheck. It pops
 ; [n][m] and enters els_tc_common at statement-handler depth, exactly as

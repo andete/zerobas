@@ -1,0 +1,8 @@
+DIFF ary   '[OK 200 40 ]'                 ours 'Out of string space in 10'
+DIFF scal  '[OK 200 40 ]'                 ours '[OK 160 40 ]'
+ok   mid   '30 DATA ABC | [OKABC]'        ours '30 DATA ABC | [OKABC]'
+ok   list  '30 DATA ABC | 30 DATA ABC'    ours '30 DATA ABC | 30 DATA ABC'
+ok   edit  '[OK";A$;"] | [OK]'            ours '[OK";A$;"] | [OK]'
+
+FAIL: READ strings point at the program text (2 divergence(s))
+refcache: 0 hit, 10 miss, 10 stored

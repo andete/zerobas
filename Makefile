@@ -2351,6 +2351,14 @@ tapetail-acceptance: repack-machine $(DISK_TEST_DSK)
 nodiskverbs-acceptance: repack-machine
 	python3 probes/basic/basic_probe_nodiskverbs.py
 
+# --- readref-acceptance: a READ string points at the program text (D-READREF) ---
+# 9 x 40-char DATA rows READ into A$() / a scalar leave FRE("") at 200 (ours ran
+# out of string space); MID$ copies such a string out before writing (the program
+# is untouched, LIST shows it); its copy-out's no-room is 14 on the MID$ line;
+# LSET/RSET on one are 5; an edit clears the variables. VG-8020, diskless.
+readref-acceptance: repack-machine
+	python3 probes/basic/basic_probe_readref.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

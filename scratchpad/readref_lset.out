@@ -1,0 +1,5 @@
+ok   lset  '30 DATA ABC | Illegal function call in 10' ours '30 DATA ABC | Illegal function call in 10'
+ok   rset  '30 DATA ABC | Illegal function call in 10' ours '30 DATA ABC | Illegal function call in 10'
+
+PASS: READ strings point at the program text (0 divergence(s))
+refcache: 0 hit, 4 miss, 4 stored

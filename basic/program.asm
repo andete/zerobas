@@ -2315,7 +2315,8 @@ exr_lp:
                 pop     hl
                 jr      exr_after
 exr_str:
-                call    tgt_store_str       ; D-ARYLV: var$[key] = the DATA item's bytes,
+                call    tgt_store_ref       ; D-READREF: var$[key] -> the DATA text itself
+                                            ; (was tgt_store_str -- D-ARYLV: var$[key] = the DATA item's bytes,
                                             ; or the resolved element (op=3 COPY_STR)
                 pop     hl
                 ; The same arrays slice-4c (§7.3) hazard ex_input guards: a

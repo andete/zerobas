@@ -1,0 +1,6 @@
+  ROM 96c8b646 cd6a858d e254c811 2a3ae7f8  ->  edd88e4e cd6a858d e254c811 aef382bc
+PASS  K-RR1: diverged ['ary', 'midoom', 'scal'] (want exactly ['ary', 'midoom', 'scal'])
+  ROM edd88e4e cd6a858d e254c811 aef382bc  ->  fa0c84ff cd6a858d e254c811 3be1051b
+PASS  K-RR2: diverged ['list', 'mid', 'midoom'] (want exactly ['list', 'mid', 'midoom'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

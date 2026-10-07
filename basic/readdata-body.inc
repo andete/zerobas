@@ -127,13 +127,19 @@ rov_none:
 ; the end of the statement -- `DATA PAD  ,X` reads back as 'PAD  ', two trailing
 ; spaces intact. Trimming the tail as well is the obvious rule and it is WRONG.
 ; A leading '"' delimits instead, so a comma inside quotes is content.
+; ✅ D-READREF (2026-10-07): the item is also returned BY ADDRESS. Its bytes are
+; one contiguous run of the DATA text (DATA is not crunched), so the start pushed
+; below -- after the leading spaces, after an opening quote -- is what the shared
+; tail pops into DE (RDV_VAL), and ex_read points the variable there instead of
+; copying it into the string space, as both references do.
 rov_str:
                 call    skip_spaces         ; LEADING spaces are not part of the item
                 ld      de,STRSCR+1         ; DE -> the byte buffer
                 ld      b,0                 ; B = length so far
                 cp      '"'
-                jr      nz,rovs_lp
+                jr      nz,rovs_unq
                 inc     hl                  ; past the opening quote
+                push    hl                  ; the item's first byte (D-READREF)
 rovs_qlp:
                 ld      a,(hl)
                 or      a
@@ -144,6 +150,8 @@ rovs_qlp:
                 ld      c,a
                 call    rovs_put
                 jr      rovs_qlp
+rovs_unq:
+                push    hl                  ; the item's first byte (D-READREF)
 rovs_lp:
                 ld      a,(hl)
                 or      a
@@ -163,9 +171,8 @@ rovs_lp:
                 jr      rovs_lp
 rovs_done:
                 ld      a,b
-                ld      (STRSCR),a          ; STRSCR = [len][bytes]
-                push    de                  ; the tail pops a value; there is none in
-                                            ; string mode, so keep its stack shape
+                ld      (STRSCR),a          ; STRSCR = [len][bytes]; the start pushed
+                                            ; above is the value the tail pops
                 call    skip_spaces
                 cp      ','
                 jr      z,rov_comma

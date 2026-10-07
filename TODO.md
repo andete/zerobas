@@ -6255,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30127 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30200 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6421,7 +6421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23840 (T-529ABE)`: a
+      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23894 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12103,7 +12103,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23840 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23894 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22491,9 +22491,10 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       because `PUT` and `GET` share it — that is how the last attempt passed
       while writing 88 bytes past the buffer) and a knife per pass.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
-- [ ] ⚠️ **A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH
+- [x] ✅ **D-READREF — A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH
       REFERENCES AND 25 BYTES HERE — measured 2026-08-20 (D-ARYOOS §2.3), and
-      it is the S-CLP-5 body-ownership class with a new, sharper pair of rows.**
+      it is the S-CLP-5 body-ownership class with a new, sharper pair of rows.
+      RE-TIERED TIER 1 BY JOOST 2026-10-07 AND FIXED THE SAME DAY (see the end).**
 
       | row | program | vg8020 | cf3300 | zb |
       |---|---|---|---|---|
@@ -22510,7 +22511,8 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ⚠️ Carries the hazard S-CLP-4 already wrote down: a variable pointing into
       program text means `MID$(A$,1,1)="X"` writes into the PROGRAM. Unpriced,
       and it is a design question (store-by-reference), not a byte question.
-      🎚️ TIER 6 — `DATA` literal string-pool accounting (`FRE` differs)
+      🎚️ TIER 1 — happy path (Joost 2026-10-07, on the Vleermuis evidence below;
+      it was TIER 6, "`FRE` differs", while its rows needed a `CLEAR 60`)
       🔁 **PARKED (Joost, 2026-09-10): every TIER 5 item waits until TIERS 1–4 are clean, and
       *"when we get to TIER 5, we'll have to do a prioritization together"* —
       the TIER 5 order is a joint pass, not the loop's pick.
@@ -22519,6 +22521,58 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       descriptor points into the program like the reference's; a string body in
       text must be copied out before the program is edited, NEW'd or loaded over.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      🔴 **IT WAS NEVER A TIER 6 QUESTION.** Vleermuis (scratchpad/vleermuis/, a
+      1989 type-in, MIT) stopped at `Out of string space in 1070` on ours -- the
+      FIFTH `READ A$(A)` of a 40-character DATA row, in the default 200-byte
+      string space -- where the VG-8020 reads all 120. Any program READing more
+      than ~200 bytes of string DATA without a CLEAR died here.
+      📏 Measured before building (`probes/basic/basic_probe_readref.py`,
+      [`readref_before.out`](scratchpad/readref_before.out)): 9 x 40-char rows
+      into `A$()` -- `[OK 200 40]` on the VG-8020, `Out of string space` here;
+      into a scalar -- 200 vs 160. 🎯 Predicted a MID$ into a READ string to write
+      INTO THE PROGRAM (the hazard this item named) -- **MISSED**: on the VG-8020
+      a re-READ gives the old bytes and LIST shows them; MID$ copies the string
+      out first. Its no-room case is `Out of string space` on the MID$ line
+      (16), where ours ran out a line earlier ([`readref_midoom.out`](scratchpad/readref_midoom.out);
+      the first cut put both on one line and both said `in 10`, agreeing for
+      different statements). LSET / RSET on one are 5 on both
+      ([`readref_lset.out`](scratchpad/readref_lset.out)); a program edit
+      clears the variables on both, so nothing can dangle.
+      ✅ The READ tenant (basic/readdata-body.inc) returns the item's first byte
+      in the DATA text -- one contiguous run, DATA being uncrunched -- through
+      the value its shared tail already popped; `tgt_store_ref`
+      (basic/vars.asm) writes `[len][ptr]` straight into the target, scalar or
+      element, no heap body. `mid_own` (basic/str-engine.asm) copies a body below
+      VARTAB into a fresh heap body (op 0) before MID$ writes, 14 on no room.
+      The GC already leaves a pointer outside the heap alone. Main page 1 79 →
+      20 B, low 202 → 139 B.
+      Gate `readref-acceptance`, 8/8 ([`readref_after.out`](scratchpad/readref_after.out)).
+      Knives ([`readref_knives.py`](scratchpad/readref_knives.py),
+      [`readref_knives.out`](scratchpad/readref_knives.out)): K-RR1 (READ copies
+      again) moves exactly ary/scal/midoom, K-RR2 (no copy-out) mid/list/midoom.
+      **Vleermuis now runs identically on both machines** to the listing's own
+      bug, `Syntax error in 1290` with MSX = -1, A = 3825
+      (scratchpad/vleermuis/exp_after_*.screen).
+      ⚠️ NOT DONE here: a LITERAL assignment -- filed as D-LITREF (next item).
+
+- [ ] 🔴 **D-LITREF — A STRING LITERAL ASSIGNED IN A PROGRAM (`A$(I)="..."`) IS COPIED INTO THE STRING
+      SPACE HERE; THE REFERENCE POINTS AT THE PROGRAM TEXT, SO 9 x 40-CHAR LITERALS INTO A STRING ARRAY
+      RUN OUT OF STRING SPACE ON OURS ONLY (measured 2026-10-07)**
+      🎚️ TIER 1 — happy path: a string array initialised from literals is an
+      ordinary program shape, and it dies in the default 200-byte string space.
+      📏 `10 DIM A$(9):FOR I=1 TO 9:A$(I)="<40 x A>":NEXT` /
+      `20 PRINT"[OK";FRE("")"]"`: VG-8020 `[OK 200]`, ours `Out of string space
+      in 10` ([`litref_measure.out`](scratchpad/litref_measure.out); predicted,
+      hit). The FRE half was known (`hold-lit-prog` in clearpool, 2026-07-29);
+      the ERROR half is new.
+      ➡️ The same mechanism as D-READREF (above): store `[len][ptr]` into the
+      program text when the RHS is a literal of the running program (not a
+      direct-mode line, whose buffer is reused -- MEASURE what the reference does
+      with `A$="X"` typed directly), and `mid_own` already copies such a body
+      out before MID$ writes. Find where LET's string store copies.
+      🤖 **AUTONOMOUS** — Joost's 2026-09-27 ruling ("point at program text") was
+      for READ's DATA literals; this is the same principle for LET's, and the
+      references settle the details.
 
 - [x] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
       VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main
@@ -26998,6 +27052,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`mode2_diskfull.out`](scratchpad/mode2_diskfull.out)), every CLOSE and
       PRINT# path, green on the carved ROM. No knife: a removal of unreachable
       code has no row it could move.
+
+- [ ] 🔧 **D-STATICEMU — THE "STATIC" GATE TIER BOOTS EMULATORS: `kwsweep`, `kwtime` AND `kwram` SIT IN
+      `tools/run_gates.py`'s STATIC LIST AND COST ~26 OF ITS ~27 MINUTES (found 2026-10-07)**
+      🎚️ APPARATUS — a gate tier whose cost contradicts its own definition.
+      📏 The STATIC list's own header says a STATIC unit "reads tracked FILES; an
+      EMULATOR unit boots a machine", yet the list carries the three keyword
+      sweeps, which boot the references and ours for every row (kwsweep 482 s,
+      kwtime 1087 s in a run the same day). A LICENSE + README commit (32d38e6d)
+      sat 25 minutes in it before Joost asked why; its 44 file-reading units ran
+      in 168 s.
+      ➡️ Find WHY they were put there (most likely: `tiers-md-check`, the
+      post-check, needs a CURRENT kwsweep pin, and a STATIC-only run would
+      otherwise compare against a stale or missing one -- 32d38e6d met exactly
+      that: no pin in build/). Then move them to the EMULATOR tier and give the
+      STATIC tier a pin rule that does not need an emulator: skip
+      `tiers-md-check` with a stated reason when neither TODO.md nor
+      tier-status.md changed, or refuse loudly when the pin is absent. A
+      selftest arm: a docs-only plan must not schedule an emulator unit.
+      🤖 **AUTONOMOUS** — a tool change, the gate's own selftest settles it.
 
 - [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
       CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**
