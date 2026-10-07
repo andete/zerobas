@@ -1,6 +1,9 @@
 # cbios-repack — tracked patches that repack C-BIOS to free page-0 space
 
 Part of the C-BIOS repack arc ([`../docs/spec-cbios-repack-tooling.md`](../docs/spec-cbios-repack-tooling.md)).
+C-BIOS's licence, which applies to the C-BIOS code these patches edit and to the
+compiled result shipped in the root `.ips` / `.bps`: [`LICENSE.C-BIOS`](LICENSE.C-BIOS).
+
 These are **our own 0BSD patches** against a pinned C-BIOS source tag — they describe
 edits to BSD-2-clause C-BIOS source, so **no C-BIOS bytes live in this repo** (decision
 D1). The build applies a patch to the user's `~/projects/cbios` checkout, rebuilds, and

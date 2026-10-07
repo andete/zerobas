@@ -160,6 +160,12 @@ interoperates with: **C-BIOS** stays BSD-2-Clause and **openMSX** stays GPL — 
 combines with them at runtime only and copies no code from either (see the provenance
 firewall above).
 
+The shipped patches (`zerobas-main-eu.ips` / `.bps`) do carry **compiled C-BIOS bytes**:
+the repack edits C-BIOS source ([`cbios-repack/`](cbios-repack/)) and the result is part
+of the patched image. C-BIOS's own BSD-2 notice therefore travels with them —
+[`cbios-repack/LICENSE.C-BIOS`](cbios-repack/LICENSE.C-BIOS), verbatim from the pinned
+C-BIOS tag.
+
 ## Build
 
 The build is cross-platform — it needs only [pasmo](https://pasmo.speccy.org/) (the
