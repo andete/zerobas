@@ -1,10 +1,67 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-07)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-08)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-07 EVENING — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT); ITS QUEUE IS HISTORY.
+## 🟢 STATE AS OF 2026-10-08 AFTERNOON — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT); ITS QUEUE IS HISTORY.
+
+**What shipped on 2026-10-08 (`git log --oneline 81625211..`), every one FULL
+green except the two record commits:** D-LITREF (program string literals point
+at the text, TIER 1) · **S10 increment 3 / D-ASAVEDOUT** (disk `SAVE ,A` is
+disk.rom's -- OPEN FOR OUTPUT's selector with NO channel live; main's resident
+write engine deleted, **main page 1 15 -> 128 B**; D-ASAVEDEV: a save after a
+PRINT# to CRT:/LPT:, LPRINT or LLIST listed to that device) · D-CASPRDIR
+(PRINT# to a tape INPUT channel: 52) · **D-CASBRK** (a tape search broken with
+Ctrl-STOP: 19, raised -- ours ran on to the next line; MERGE raised a stale 255;
+castail's normaliser had hidden it) · **D-CASTYPE** (the tape search filters by
+FILE TYPE, silently: CLOAD = $D3, BLOAD = $D0, the rest $EA) · **D-CASBIN**
+(BLOAD"CAS:X" searched nothing and took the FIRST file -- a binary Y was loaded
+as X; LOAD/CLOAD now step over binaries) · two records: D-FDCDI measured on main
+(both machines lose keys during disk writes: ours keeps ~42 %, the CF-3300 ~77 %)
+and the tape-write Ctrl-STOP sites (not readable with the @BREAK rig).
+
+**Walls (`make basic-reloc`, 2026-10-08 afternoon): main low 55 B, page 1 112 B;
+sub p0 17 B, sub p1 236 B; disk ~4465 B.** Recount before quoting.
+
+➡️ **NEXT, by tier (`python3 tools/tier_table.py --all`; recount):**
+- TIER 1: the three standing meta items only.
+- TIER 2: **S10.C, the INPUT side through `$FE8A`** -- the item's own note says
+  its LOAD tier tag is stale and what is left is the ownership move. Main's
+  resident read engine still serves OPEN FOR INPUT (files.asm `fat_io_open`),
+  the `ARL_GETBYTE` default, EOF (`fat_io_eof`) and cload's vector restore.
+  A large slice, like S10.B increment 1: design first, measure the CF-3300's
+  per-byte cell use, then move. Also BSAVE to disk via a hook (faithfulness
+  only; the sub tenant's copy of the write engine serves it).
+- TIER 3: D-FDCDI (measured; a fix must measure its LOST-DATA rate first and
+  be scored as a RATE with repeats), D-LOADERRRET's leftovers (GET disk error
+  needs a mid-run eject the harness lacks; the tape-write breaks need another
+  rig; the rest are by design), COPY TO (🙋).
+- TIER 4: VARPTR / MAXFILES charge, DIM (🙋), the two RAM meta items.
+- APPARATUS: D-CHANFORREF, D-STATICEMU, D-DEADSEED; the RAM-map residual (41
+  pins; the "overruns" ones are deliberate time-shared overlays -- they need an
+  overlay notion in tools/ram_map.py, not widths).
+
+🔴 **LESSONS OF 2026-10-08, each paid for:**
+- **A NORMALISER CAN HIDE A DIVERGENCE FOR MONTHS.** castail mapped each side's
+  own failure text to one token; ours RETURNED where the references RAISED.
+  When a probe normalises, ask what the normalised-away string was doing.
+- **A TAPE FIXTURE MUST BE ONE A MACHINE COULD WRITE** -- `build_cas_basic`'s
+  16-byte pad faked a skip defect AGAIN (D-CLOADSKIP, 09-23). Use
+  `build_cas_basic_csave` [[a-tape-fixture-must-be-one-a-machine-could-write]].
+- **A DISK WRITE CAN OUTLIVE THE SESSION:** ending a differential ON the write
+  read the CF-3300's file at 0 B [[a-reference-disk-write-can-outlive-the-session]].
+- **A NEW SHARED .inc HAS THREE REGISTRATIONS** (attestation, DEPS, SUB_PARTS);
+  a NO-ATTEST aborts gates-fast's warm-up and cascades
+  [[a-new-shared-inc-has-three-registrations]].
+- **"NOTHING ARRIVED ON EITHER MACHINE" IS THE INSTRUMENT** -- twice in D-FDCDI
+  (wrong name-table address; `$(...)` inside a Tcl string). Build the control
+  that MUST arrive first.
+- **A ROM REGION CAN BE AT 0 B WHILE THE ROM HAS KILOBYTES** -- disk.rom
+  assembled EMPTY on a 5-byte dispatcher arm; read `check_disk_walls` per
+  region, and route through a roomy region instead.
+
+## 🟢 STATE AS OF 2026-10-07 EVENING — superseded above (its lessons still hold).
 
 **What shipped on 2026-10-07 (`git log --oneline 69f13961..`):** the
 `load error` clean-out, verb by verb, each measured on the CF-3300 / VG-8020
