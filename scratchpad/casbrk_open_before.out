@@ -1,0 +1,7 @@
+== popen  VG-8020 E19 in 20          ours no error
+== pmerge VG-8020 E19 in 20          ours E255 in 20
+DIVERGES popen: VG-8020 E19 in 20 vs ours no error
+DIVERGES pmerge: VG-8020 E19 in 20 vs ours E255 in 20
+
+FAIL: a tape search broken with Ctrl-STOP (0/2)
+refcache: 0 hit, 4 miss, 4 stored

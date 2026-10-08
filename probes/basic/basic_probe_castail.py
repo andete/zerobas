@@ -73,9 +73,11 @@ agree perfectly, and `<nothing>` is a legitimate answer for one row here
 
 ⚠️ ONE STRING IS NORMALISED PER SIDE, AND ONLY ONE -- exactly as in
 `basic_probe_runtail`. An aborted tape read answers `Device I/O error` on the
-references and zerobas's own lowercase `load error`: the quarantined no-disk /
-mount / I-O wording divergence (`basic/PROVENANCE.md`), deliberately NOT in
-scope. A tail that is EXACTLY that one message reads `<load-failed>` on both
+references -- and, since D-CASBRK (2026-10-08), on zerobas too: it printed its
+own lowercase `load error` and RETURNED, so inside a program the next line ran
+(basic_probe_casbrk.py: `19 in 20` on the VG-8020 under ON ERROR, `no error`
+here). The normalisation stays per side so the rows keep scoring SHAPE, not
+wording. A tail that is EXACTLY that one message reads `<load-failed>` on both
 sides, so the rows are scored on SHAPE -- how many messages, and did the
 resident program run -- without re-opening the wording. A tail that merely
 CONTAINS it is not normalised: the extra row is the subject.
@@ -181,7 +183,7 @@ SIDES = {
                    reset=("", "SCREEN 0", "NEW"), failmsg="Device I/O error",
                    diska=True),
     "zb":     dict(machine=ZB_MACHINE, boot=8.0, step=2.5,
-                   reset=("NEW",), failmsg="load error", diska=True),
+                   reset=("NEW",), failmsg="Device I/O error", diska=True),
 }
 
 FAILED = "<load-failed>"

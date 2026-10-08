@@ -921,7 +921,8 @@ oocas_argsok:
                 ; do), so the suppression is simply GONE — the search engine needed
                 ; no change at all.
                 call    cas_open_match      ; TAPION header + read id/name; CF = tape end
-                jr      c,oocas_ioerr
+                jp      c,dpl_dio           ; D-CASBRK: an I/O error / Ctrl-STOP is 19, raised
+                                            ; (the VG-8020's `19 in 20`); load_error returned
                 ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
                 jr      nz,oocas_ioerr
@@ -948,7 +949,8 @@ oocas_do_out:
 oocas_mark:
                 pop     hl                  ; text cursor
                 pop     de                  ; channel
-                jr      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1)
+                jp      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1); jp since
+                                            ; D-CASBRK's `jp c,dpl_dio` above (+1 B)
 oocas_ioerr:
                 pop     hl
                 pop     de
@@ -2238,7 +2240,9 @@ merge_cas:
                 ld      hl,(FN_RESUME)
                 push    hl                  ; guard the text cursor across the merge
                 call    cas_open_match      ; find the (named) $EA file; header consumed
-                jr      c,mc_ioerr
+                jp      c,dpl_dio           ; D-CASBRK: 19, raised. mc_ioerr's disk_error
+                                            ; raised the STALE disk code -- 255 on the
+                                            ; diskless machine (basic_probe_casbrk pmerge)
                 ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
                 jr      nz,mc_ioerr         ; tokenised / other -> cannot merge

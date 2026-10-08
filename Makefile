@@ -2249,6 +2249,12 @@ eofcas-acceptance: repack-machine
 casprdir-acceptance: repack-machine
 	python3 probes/basic/basic_probe_casprdir.py
 
+# --- casbrk-acceptance: a tape search broken with Ctrl-STOP is 19 (D-CASBRK) -----
+# LOAD typed (the message), and LOAD / CLOAD / RUN / OPEN FOR INPUT / MERGE "CAS:"
+# under ON ERROR (19 in 20 on the VG-8020; ours ran on, or raised a stale 255).
+casbrk-acceptance: repack-machine
+	python3 probes/basic/basic_probe_casbrk.py
+
 # --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
 # zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
 dosbasic-acceptance: repack-machine

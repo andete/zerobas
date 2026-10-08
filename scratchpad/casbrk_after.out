@@ -1,0 +1,9 @@
+== dload  VG-8020 Device I/O error   ours Device I/O error
+== pload  VG-8020 E19 in 20          ours E19 in 20
+== pcload VG-8020 E19 in 20          ours E19 in 20
+== prun   VG-8020 E19 in 20          ours E19 in 20
+== popen  VG-8020 E19 in 20          ours E19 in 20
+== pmerge VG-8020 E19 in 20          ours E19 in 20
+
+PASS: a tape search broken with Ctrl-STOP (6/6)
+refcache: 6 hit, 6 miss, 6 stored

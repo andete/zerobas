@@ -6310,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30308 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30345 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27284,6 +27284,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       not read the TEXT, and cload.asm's own note records the references'
       text there as `Device I/O error` where ours prints `load error`. The
       `@BREAK` rig exists; that is the next site to measure under ON ERROR.
+      ✅ **D-CASBRK (2026-10-08): A TAPE SEARCH BROKEN WITH Ctrl-STOP IS 19,
+      `Device I/O error`, RAISED -- AND INSIDE A PROGRAM OURS RAN ON TO THE NEXT
+      LINE.** [`basic_probe_casbrk.py`](probes/basic/basic_probe_casbrk.py), gate
+      `casbrk-acceptance`, the VG-8020 against the diskless build, no tape in:
+      typed `LOAD"CAS:NOSUCH"` + STOP prints `Device I/O error` there, `load
+      error` here; under ON ERROR, `LOAD` / `CLOAD` / `RUN "CAS:"` / `OPEN "CAS:"
+      FOR INPUT` / `MERGE "CAS:"` all read **`19 in 20`** there -- and here
+      **no error** for the first four (`load error` RETURNED and line 30 ran)
+      and **255** for MERGE: its `mc_ioerr` goes to `disk_error`, which raised
+      the STALE disk code the diskless machine holds
+      ([`casbrk_before.out`](scratchpad/casbrk_before.out),
+      [`casbrk_open_before.out`](scratchpad/casbrk_open_before.out)). 🔮 Predicted
+      `19` / no error on the first four: HIT; on MERGE, predicted no error: MISSED
+      -- 255.
+      🔧 New `dpl_dio` in cload.asm (motor off, `ld a,19 / jp raise_error`), and
+      the TAPE BIOS's carry arms go to it: the header search (`cas_open_match`)
+      in do_tape_prog, files.asm's OPEN FOR INPUT and MERGE, plus do_tape_prog's
+      TAPION / TAPIN arms and cas_ascii_load's header/first-block read. The
+      CONTENT faults stay on `dpl_err` / `oocas_ioerr` / `mc_ioerr` -- an
+      unrecognised file id, CLOAD? of an ASCII file, a non-numbered line: no row
+      has measured them [[a-shared-tail-is-not-a-decision]]. 6/6 after. Main
+      page 1 128 -> 117 B.
+      🔴 **castail WENT RED, AND THAT WAS ITS NORMALISER BEING HONEST AT LAST.**
+      It maps each side's own aborted-load text to one token -- ours was `load
+      error` -- so `cas2-opencase` (OPEN"CAS:<lowercase name>" broken mid-search)
+      had agreed with the references' `Device I/O error` on SHAPE while ours
+      returned and theirs raised. With ours' failmsg set to `Device I/O error`
+      too, it read `load error` raw: the OPEN arm, which is why OPEN and MERGE
+      joined the slice. castail now 47/47 with one string for all three sides.
+      🔪 Knives ([`casbrk_knives.out`](scratchpad/casbrk_knives.out)): K-CB1
+      (do_tape_prog's search back to `dpl_err`) -> dload/pload/pcload/prun,
+      K-CB2 (OPEN's) -> popen, K-CB3 (MERGE's) -> pmerge -- each exactly.
+      ➡️ **Left on this item:** field.asm's GET disk error, the tape OPEN / SAVE
+      header WRITES (STOP mid-write), `disk_error`'s fallback (by design),
+      str-engine.asm's sub-ROM-absent arm, the content-fault arms above -- and
+      🔴 `mc_ioerr`'s OTHER arm, MERGE of a non-ASCII tape file, which still goes
+      to `disk_error` and so would raise the same stale disk code (unmeasured).
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED

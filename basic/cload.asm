@@ -475,13 +475,15 @@ cas_open_match:
 ; disk half, so every failure exit here repoints at ZERO delta.
 ;
 ; ⚠️ COVERAGE, EXACTLY: only the cas_open_match exit is scored by a row (the
-; Ctrl-STOP abort -- the ONLY tape failure a reference reports and returns from;
+; Ctrl-STOP abort -- the ONLY tape failure a reference reports; 🔴 and it does NOT
+; "return from" it: it RAISES 19, trappable (D-CASBRK, 2026-10-08) -- that exit and
+; the TAPION/TAPIN ones now go to dpl_dio, not dpl_err;
 ; a missing tape file just searches past the end of the tape and waits forever,
 ; characterization §6). The rest carry the contract for COMPLETENESS, and the
 ; tokenised ($D3) exits are unreachable from every row in the battery.
 do_tape_prog:
                 call    cas_open_match      ; find the (named) file; header consumed
-                jp      c,dpl_err           ; not found / tape error / Ctrl-STOP abort
+                jp      c,dpl_dio           ; tape error / Ctrl-STOP abort: 19 (D-CASBRK)
                 ld      a,(CAS_HDRID)
                 cp      BASIC_ID            ; tokenised BASIC -> the store/compare loop
                 jr      z,ctp_data_tokenised
@@ -497,7 +499,7 @@ ctp_data_tokenised:
                 ; Like BLOAD, the program data is a SEPARATE tape block, so it
                 ; needs its own TAPION to re-lock onto the data block's leader.
                 call    TAPION
-                jp      c,dpl_err           ; D-CASTAIL CF contract
+                jp      c,dpl_dio           ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 
                 ; --- start a fresh program: store cursor at the text base ---
                 ld      hl,TXTBASE
@@ -531,7 +533,7 @@ ctp_data_tokenised:
                 ; relink (token-aware) recomputes them below.
 ctp_line:
                 call    TAPIN               ; link low
-                jp      c,dpl_err           ; D-CASTAIL CF contract
+                jp      c,dpl_dio           ; D-CASTAIL CF contract -> 19 (D-CASBRK)
                 push    af                  ; preserve link-low: TAPIN clobbers C
                 call    TAPIN               ; link high
                 jr      c,ctp_link_err      ; must pop before leaving
@@ -603,13 +605,13 @@ ctp_body:
 ; the stack from the push before that call.  Pop it to restore balance, then error.
 ctp_link_err:
                 pop     af
-                jp      dpl_err             ; D-CASTAIL CF contract
+                jp      dpl_dio             ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 
 ; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
 ; it before taking the shared error / out-of-memory path so the stack stays balanced.
 ctp_err_pop:
                 pop     de
-                jp      dpl_err             ; D-CASTAIL CF contract
+                jp      dpl_dio             ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 ctp_oom_pop:
                 pop     de
                 jr      ctp_oom
@@ -801,7 +803,7 @@ err_verify:     db      "Verify error",0
 ; do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
                 call    cas_ascii_setup     ; skip the rest of the header + prime block 1
-                jr      c,dpl_err           ; header / block-1 unreadable -> load error
+                jr      c,dpl_dio           ; header / block-1 unreadable -> 19 (D-CASBRK)
                                             ; (D-SAVECOLON carve: jp -> jr, in range
                                             ; since D-CARVECAS moved the reader out)
                 call    new_prog            ; LOAD replaces the current program
@@ -1017,8 +1019,10 @@ dpl_done        equ     load_commit_prog
 ; D-RUNTAIL: `call` + `scf`, not `jp` — this IS the CF-set half of the contract
 ; above, and load_error's own return carry belongs to its other ~50 callers.
 ;
-; ⚠️ D-CASTAIL: SHARED WITH do_tape_prog. Every tape failure exit repoints here
-; too (docs/spec-basic-castail.md §3.2), so defect B's PRODUCER costs 0 B on the
+; ⚠️ D-CASTAIL: SHARED WITH do_tape_prog. Every tape failure exit repointed here
+; (docs/spec-basic-castail.md §3.2) -- 🔴 until D-CASBRK (2026-10-08) moved the
+; TAPE BIOS failures (search / TAPION / TAPIN) to dpl_dio below, which RAISES 19
+; as the VG-8020 does; only the content faults stay. So defect B's PRODUCER costs 0 B on the
 ; tape path -- these five bytes already say exactly 'reported, and failed'. The
 ; `dpl_` prefix is therefore no longer disk-only; renaming it would churn eight
 ; disk call sites and make spec-basic-runtail.md §3.2's table stale for nothing.
@@ -1038,6 +1042,18 @@ dpl_err:
                 call    load_error
                 scf
                 ret
+; dpl_dio -- D-CASBRK (2026-10-08): a TAPE BIOS failure (TAPION / TAPIN / the
+; header search returning CF: an I/O error or Ctrl-STOP) RAISES 19, `Device I/O
+; error`, as the VG-8020 does (probes/basic/basic_probe_casbrk.py): typed, it
+; prints that; under ON ERROR a LOAD / CLOAD / RUN "CAS:" broken mid-search
+; reads `19 in 20`. dpl_err's `load error` RETURNED, and inside a program the
+; next line ran. Motor off first, as load_error did. The CONTENT faults (an
+; unrecognised file id, CLOAD? of an ASCII file, a non-numbered line) and the
+; disk arms stay on dpl_err: no row has measured them [[a-shared-tail-is-not-a-decision]].
+dpl_dio:
+                call    TAPIOF
+                ld      a,19                ; Device I/O error
+                jp      raise_error
 ; dpl_oom — store overflow: leave a clean (empty) program, report "out of memory".
 ; Mirrors ctp_oom for the disk store-overflow case. (No Close: read side is clean.)
 dpl_oom:

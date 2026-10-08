@@ -1,0 +1,11 @@
+== dload  VG-8020 Device I/O error   ours load error
+== pload  VG-8020 E19 in 20          ours no error
+== pcload VG-8020 E19 in 20          ours no error
+== prun   VG-8020 E19 in 20          ours no error
+DIVERGES dload: VG-8020 Device I/O error vs ours load error
+DIVERGES pload: VG-8020 E19 in 20 vs ours no error
+DIVERGES pcload: VG-8020 E19 in 20 vs ours no error
+DIVERGES prun: VG-8020 E19 in 20 vs ours no error
+
+FAIL: a tape search broken with Ctrl-STOP (0/4)
+refcache: 0 hit, 8 miss, 8 stored

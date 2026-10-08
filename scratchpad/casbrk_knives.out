@@ -1,0 +1,8 @@
+  ROM 54aa9bf4 5e2442c5 b33be60d 45997d34  ->  6f07ec00 5e2442c5 b33be60d 27d0635f
+PASS  K-CB1: diverged ['dload', 'pcload', 'pload', 'prun'] (want exactly ['dload', 'pcload', 'pload', 'prun'])
+  ROM 6f07ec00 5e2442c5 b33be60d 27d0635f  ->  955b60f6 5e2442c5 b33be60d 3430cbe0
+PASS  K-CB2: diverged ['popen'] (want exactly ['popen'])
+  ROM 955b60f6 5e2442c5 b33be60d 3430cbe0  ->  d9c9b8c4 5e2442c5 b33be60d d8dccb05
+PASS  K-CB3: diverged ['pmerge'] (want exactly ['pmerge'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
