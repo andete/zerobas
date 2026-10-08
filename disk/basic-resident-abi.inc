@@ -10,11 +10,11 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 0381EH
-round_single_and_pack equ 0335EH
-round_and_finalize equ 0330AH
-pu_deref_body equ 0282CH
-subrom_call equ 03B14H
+widen_rhs_operand equ 0386CH
+round_single_and_pack equ 033ACH
+round_and_finalize equ 03358H
+pu_deref_body equ 0287AH
+subrom_call equ 03B62H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
 FN_RESUME equ 0E227H   ; D-FNEXPR: cursor past a filename expr (2 B)
@@ -66,17 +66,17 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06EC9H
-pdfcb_resume equ 06EC2H
-dirverb_op equ 06C72H
-main_fat_mount equ 0655AH   ; main's fat_mount
-main_fat_find equ 0655EH   ; main's fat_find
-parse_disk_fcb equ 06657H
-field_prologue equ 072F4H
-field_item equ 0732AH
-lrset_tgt equ 073DFH
-lrset_rhs equ 07401H
-lrset_finish equ 07418H
-fch_ctx_addr equ 07059H
-disk_error equ 06C94H
-read_line equ 045C0H
+fname_expr equ 06ECEH
+pdfcb_resume equ 06EC7H
+dirverb_op equ 06C77H
+main_fat_mount equ 0655FH   ; main's fat_mount
+main_fat_find equ 06563H   ; main's fat_find
+parse_disk_fcb equ 0665CH
+field_prologue equ 072F9H
+field_item equ 0732FH
+lrset_tgt equ 073E4H
+lrset_rhs equ 07406H
+lrset_finish equ 0741DH
+fch_ctx_addr equ 0705EH
+disk_error equ 06C99H
+read_line equ 045C5H

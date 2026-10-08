@@ -1,0 +1,8 @@
+  ROM bb3e72c4 90bbe9fb 2eb83176 84385207  ->  7068b2c3 90bbe9fb 63e661f1 edff5a87
+PASS  K-LR1: diverged ['copyvar', 'scall'] (want exactly ['copyvar', 'scall'])
+  ROM 7068b2c3 90bbe9fb 63e661f1 edff5a87  ->  4aeb57e7 90bbe9fb 2eb83176 4b68268a
+PASS  K-LR2: diverged ['aryl'] (want exactly ['aryl'])
+  ROM 4aeb57e7 90bbe9fb 2eb83176 4b68268a  ->  aecbf88d 90bbe9fb 2eb83176 1a849d3a
+PASS  K-LR3: diverged ['mid'] (want exactly ['mid'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

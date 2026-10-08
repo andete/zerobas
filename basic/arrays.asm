@@ -1083,6 +1083,8 @@ ex_let_arr_str:
                                             ; DE = the CORRECTED elem_addr
                 ld      (ARY_ADDR),de       ; re-publish as op=3's INPUT (STRPTR
                                             ; already holds the stable RHS)
+                call    ary_let_ref         ; D-LITREF: a RHS in the program text is
+                jp      z,exec_stmt         ; stored by reference (the VG-8020: `aryl`)
                 ld      a,3
                 ld      (ARY_OP),a          ; op = 3 (COPY_STR, pure-RAM leaf)
                 push    hl                  ; [CURSOR] -- ary_engine_call/CALSLT

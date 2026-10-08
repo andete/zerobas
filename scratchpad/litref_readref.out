@@ -1,0 +1,11 @@
+ok   ary   '[OK 200 40 ]'                 ours '[OK 200 40 ]'
+ok   scal  '[OK 200 40 ]'                 ours '[OK 200 40 ]'
+ok   mid   '30 DATA ABC | [OKABC]'        ours '30 DATA ABC | [OKABC]'
+ok   list  '30 DATA ABC | 30 DATA ABC'    ours '30 DATA ABC | 30 DATA ABC'
+ok   lset  '30 DATA ABC | Illegal function call in 10' ours '30 DATA ABC | Illegal function call in 10'
+ok   rset  '30 DATA ABC | Illegal function call in 10' ours '30 DATA ABC | Illegal function call in 10'
+ok   midoom '30 DATA ABCDE | Out of string space in 16' ours '30 DATA ABCDE | Out of string space in 16'
+ok   edit  '[OK";A$;"] | [OK]'            ours '[OK";A$;"] | [OK]'
+
+PASS: READ strings point at the program text (0 divergence(s))
+refcache: 8 hit, 8 miss, 8 stored

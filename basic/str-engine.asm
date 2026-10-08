@@ -148,6 +148,74 @@ ca_full:
 pdf_badname:
                 ld      a,56
                 jp      raise_error
+; desc_in_text -- D-LITREF (2026-10-07): Z iff the descriptor at HL has a length
+; and its bytes lie below VARTAB -- the program text, the only body with a length
+; that lives there (mid_own below uses the same rule). On the VG-8020 such a
+; string costs the string space nothing when it is assigned: a program literal,
+; or a variable that already points at the text (`copyvar`: READ B$ : A$=B$ reads
+; FRE 200) -- the rule is WHERE the bytes are, not what kind of operand it was.
+;   in: HL = a descriptor. Clobbers A, DE, HL.
+desc_in_text:
+                ld      a,(hl)
+                or      a
+                jr      z,dit_no            ; "" is never stored by reference
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the body
+                ld      hl,(VARTAB)
+                scf
+                sbc     hl,de               ; CF iff body >= VARTAB
+                jr      c,dit_no
+                xor     a                   ; Z: the program text
+                ret
+dit_no:
+                or      1                   ; NZ
+                ret
+
+; --- let_ref: a scalar LET whose RHS lies in the program text (D-LITREF) -----
+; in:  BC = key, (STRPTR) = the RHS descriptor.
+; out: Z -- stored BY REFERENCE (a no-room error is pending in FPERR, raised by
+;      the caller's fp_stmt_done); NZ -- not in the text, BC intact: the caller
+;      copies it (str_set_key), as before.
+; The VG-8020 charges `A$="<40 chars>"` in a program nothing (FRE 200, ours was
+; 160), and 9 of them into A$() ran out of string space here only
+; (probes/basic/basic_probe_litref.py). Same mechanism as tgt_store_ref above.
+let_ref:
+                push    bc
+                ld      hl,(STRPTR)
+                call    desc_in_text
+                pop     bc
+                ret     nz
+                ld      hl,(STRPTR)
+                ld      de,RVDESC
+                push    bc
+                ld      bc,3
+                ldir                        ; RVDESC = the RHS descriptor itself
+                pop     bc
+                ld      hl,0
+                ld      (TGT_ADDR),hl       ; a scalar target
+                call    tgt_store_desc
+                xor     a                   ; Z: no copy, either way
+                ret
+
+; --- ary_let_ref: the array LET's twin (D-LITREF) ----------------------------
+; in:  (STRPTR) = the RHS, (ARY_ADDR) = the element's descriptor. HL preserved.
+; out: Z -- the element := the RHS descriptor itself, no heap body; NZ -- copy.
+ary_let_ref:
+                push    hl
+                ld      hl,(STRPTR)
+                call    desc_in_text
+                jr      nz,alr_no
+                ld      hl,(STRPTR)
+                ld      de,(ARY_ADDR)
+                ld      bc,3
+                ldir
+                xor     a
+alr_no:
+                pop     hl
+                ret
+
 ; nodisk_dev -- D-NODISKVERBS (2026-10-07): ON A DISKLESS MACHINE THE CASSETTE IS
 ; THE DEFAULT DEVICE, and a drive name is `Bad file name`. Measured on the VG-8020
 ; with no disk: `SAVE "X"` / `BSAVE "X",..` save to tape, `OPEN "X" FOR OUTPUT`

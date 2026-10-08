@@ -6255,7 +6255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30200 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30228 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6421,7 +6421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23894 (T-529ABE)`: a
+      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23922 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12103,7 +12103,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23894 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23922 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22555,7 +22555,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       (scratchpad/vleermuis/exp_after_*.screen).
       ⚠️ NOT DONE here: a LITERAL assignment -- filed as D-LITREF (next item).
 
-- [ ] 🔴 **D-LITREF — A STRING LITERAL ASSIGNED IN A PROGRAM (`A$(I)="..."`) IS COPIED INTO THE STRING
+- [x] ✅ **D-LITREF — A STRING LITERAL ASSIGNED IN A PROGRAM (`A$(I)="..."`) IS COPIED INTO THE STRING
       SPACE HERE; THE REFERENCE POINTS AT THE PROGRAM TEXT, SO 9 x 40-CHAR LITERALS INTO A STRING ARRAY
       RUN OUT OF STRING SPACE ON OURS ONLY (measured 2026-10-07)**
       🎚️ TIER 1 — happy path: a string array initialised from literals is an
@@ -22573,6 +22573,34 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🤖 **AUTONOMOUS** — Joost's 2026-09-27 ruling ("point at program text") was
       for READ's DATA literals; this is the same principle for LET's, and the
       references settle the details.
+      ✅ **FIXED 2026-10-07.** 📏 Measured first
+      ([`litref_before.out`](scratchpad/litref_before.out)): `aryl` `[OK 200]` /
+      ours out of string space; `scall` 200 / 160; and the ROW THAT CHOSE THE
+      RULE, `copyvar` (`READ B$ : A$=B$`): **200** on the VG-8020 (ours 195) --
+      so the rule is WHERE the bytes are, not "the RHS is a literal token": a
+      variable already pointing at the text is stored by reference too
+      (predicted, hit). `direct` (a literal typed in direct mode: the line
+      buffer is reused) 197 on both; `concat` 197 on both; `mid` leaves the
+      program line alone on both.
+      ✅ `desc_in_text` (basic/str-engine.asm): Z iff a descriptor has a length
+      and its bytes lie below VARTAB. The scalar LET (basic/interp.asm) calls
+      `let_ref`, which stores the RHS descriptor through D-READREF's store
+      (`tgt_store_desc`, the new entry after its RVDESC fill); the array LET
+      (basic/arrays.asm) calls `ary_let_ref`, which writes the element's
+      descriptor directly instead of the sub-ROM copy op. Both bodies sit in
+      the LOW region: the first cut put them in page 1 and the image overran
+      `$8000`. Main page 1 20 → 15 B, low 139 → 55 B -- **70 B combined: the
+      next slice needs a carve first.**
+      Gate `litref-acceptance` 6/6 ([`litref_after.out`](scratchpad/litref_after.out)),
+      readref-acceptance still 8/8. Knives
+      ([`litref_knives.py`](scratchpad/litref_knives.py),
+      [`litref_knives.out`](scratchpad/litref_knives.out)): K-LR1 (scalar
+      intercept cut) moves exactly scall/copyvar, K-LR2 (array) aryl, K-LR3
+      (`mid_own` cut) mid -- a literal now points at the text, so MID$ needs
+      the copy-out here too.
+      ⚠️ Not touched: `DEF FN`'s string-parameter binding (basic/deffn.asm,
+      `str_set_key`) still copies -- unmeasured whether the reference charges a
+      literal FN argument.
 
 - [x] 🟡 **`load error` IS PRINTED, NOT RAISED — ✅ FIXED AT ALL SIX MISSING-FILE
       VERBS (D-LOADERR-FIX 2026-08-20, 16 B; D-BLNF 2026-08-21, `BLOAD`, 4 B main

@@ -2359,6 +2359,13 @@ nodiskverbs-acceptance: repack-machine
 readref-acceptance: repack-machine
 	python3 probes/basic/basic_probe_readref.py
 
+# --- litref-acceptance: a program literal points at the program text (D-LITREF)
+# 9 x 40-char literals into A$() / one into a scalar / A$=B$ with B$ READ from
+# DATA leave FRE("") at 200; a DIRECT-mode literal and a computed string are still
+# copied (197); MID$ on a literal-assigned string leaves the program line alone.
+litref-acceptance: repack-machine
+	python3 probes/basic/basic_probe_litref.py
+
 # --- clearclose-acceptance: an accepted CLEAR closes every file (D-CLEARCLOSE) --
 # CLEAR 500 / bare CLEAR / CLEAR 200,&HE000 -> the next PRINT# is 59 and the file
 # holds what was written plus its Ctrl-Z; a REJECTED CLEAR (ERR 5 / 7) leaves it

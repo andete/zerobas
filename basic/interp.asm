@@ -894,6 +894,8 @@ ex_let_str:
                                             ; half directly (str_eval already owns D-2)
                 pop     bc                  ; BC = dest key
                 push    hl                  ; guard cursor across str_set_key
+                call    let_ref             ; D-LITREF: a RHS in the program text is
+                jr      z,fp_stmt_done      ; stored by reference, as on the VG-8020
                 ld      de,(STRPTR)         ; DE -> source descriptor
                 call    str_set_key         ; A$[key] := descriptor (clamped)
                 jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)

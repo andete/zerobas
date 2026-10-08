@@ -1,0 +1,9 @@
+ok   aryl  '[OK";FRE("");"] | [OK 200 ]'  ours '[OK";FRE("");"] | [OK 200 ]'
+ok   scall '[OK";FRE("");LEN(A$);"] | [OK 200 40 ]' ours '[OK";FRE("");LEN(A$);"] | [OK 200 40 ]'
+ok   copyvar '[OK";FRE("");A$;"] | [OK 200 ABCDE]' ours '[OK";FRE("");A$;"] | [OK 200 ABCDE]'
+ok   direct '[OK";FRE("");A$;"] | [OK 197 ABC]' ours '[OK";FRE("");A$;"] | [OK 197 ABC]'
+ok   mid   '[OKZBC] | 10 A$="ABC"'        ours '[OKZBC] | 10 A$="ABC"'
+ok   concat '[OK";FRE("");A$;"] | [OK 197 ABC]' ours '[OK";FRE("");A$;"] | [OK 197 ABC]'
+
+PASS: program literals point at the program text (0 divergence(s))
+refcache: 6 hit, 6 miss, 6 stored

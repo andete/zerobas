@@ -391,6 +391,7 @@ tsr_ptr:
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d
+tgt_store_desc:                             ; D-LITREF: RVDESC already filled
                 ld      de,(TGT_ADDR)
                 ld      a,d
                 or      e

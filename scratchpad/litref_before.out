@@ -1,0 +1,9 @@
+DIFF aryl  '[OK";FRE("");"] | [OK 200 ]'  ours '[OK";FRE("");"] | Out of string space in 10'
+DIFF scall '[OK";FRE("");LEN(A$);"] | [OK 200 40 ]' ours '[OK";FRE("");LEN(A$);"] | [OK 160 40 ]'
+DIFF copyvar '[OK";FRE("");A$;"] | [OK 200 ABCDE]' ours '[OK";FRE("");A$;"] | [OK 195 ABCDE]'
+ok   direct '[OK";FRE("");A$;"] | [OK 197 ABC]' ours '[OK";FRE("");A$;"] | [OK 197 ABC]'
+ok   mid   '[OKZBC] | 10 A$="ABC"'        ours '[OKZBC] | 10 A$="ABC"'
+ok   concat '[OK";FRE("");A$;"] | [OK 197 ABC]' ours '[OK";FRE("");A$;"] | [OK 197 ABC]'
+
+FAIL: program literals point at the program text (3 divergence(s))
+refcache: 2 hit, 10 miss, 10 stored
