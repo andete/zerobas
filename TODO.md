@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30584 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30621 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6511,7 +6511,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24077 (T-529ABE)`: a
+      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24094 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12193,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22363,6 +22363,23 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       sector once, not per call): ➡️ **ONE WRITE-CACHE DESIGN SERVES BOTH** --
       the record written into the channel's buffer, the sector written when
       the next PUT / GET needs another one, or at CLOSE.
+      ✅ **D-PUTDIR, THE FIRST STEP (2026-10-08): THE DIRECTORY IS STAMPED AT CLOSE,
+      NOT PER PUT -- 4.5x -> 3.3x.** `frp_done` (basic/randio-body.inc, the sub
+      tenant) ended `jp fat_dir_update`, a directory read + write every PUT; the
+      CF-3300 leaves the entry alone until CLOSE (D-LOF §4c). Now CLOSE / END /
+      RUN stamp it once (`fdcc_rnd`, basic/files.asm, fatprim row 13), from the
+      channel's engine state. [`disk_probe_putdir.py`](probes/disk/disk_probe_putdir.py),
+      gate `putdir-acceptance`, reads the IMAGE: PUT then NO CLOSE -> the entry
+      **size 0, no cluster** on both (ours was 128 / allocated before); PUT +
+      CLOSE -> 128 / allocated on both; LOF 128 live on both
+      ([`putdir_after.out`](scratchpad/putdir_after.out)). 20 PUTs + CLOSE
+      15.24 -> **11.24 s** against the CF-3300's 3.38
+      ([`putdir_after20.out`](scratchpad/putdir_after20.out)); the 16
+      put3consume rows unchanged. 🔮 Predicted 9-10 s: PARTLY MISSED. 🔪 K-PD1
+      (the per-PUT stamp back) -> noclose, K-PD2 (no stamp at CLOSE) -> close,
+      each exactly ([`putdir_knives.out`](scratchpad/putdir_knives.out)). Main
+      page 1 101 -> 87 B (2026-10-08).
+      ➡️ Left: the sector read-modify-write per PUT -- the write cache proper.
 
 - [x] 🟢 **D-RECLEN2 2026-08-30 — THE FACE SHIPPED, THE DOMAIN DID NOT**
       ([`docs/spec-basic-reclen2.md`](docs/spec-basic-reclen2.md)). An
@@ -27273,6 +27290,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ The loop's `make tiers-md` after gates-fast now renders from the LAST
       FULL's pin, not a fresh one; the next FULL re-checks the sheet against a
       fresh pin, and a keyword verdict a ROM change moved shows up there.
+      🔴 **AND IT DID, ON THE VERY NEXT ROM COMMIT (D-PUTDIR, 2026-10-08):** FULL
+      went 169/170, `tiers-md-check` red on two evidence cells the new ROM moved
+      (DSKI$ T5 0.14 -> 0.13, RSET T4 0.26 -> 0.45). Before this change gates-fast
+      measured the NEW ROM, so `make tiers-md` and FULL always agreed. ➡️ **LOOP
+      RULE until D-PINSTALE lands: a ROM-changing commit runs `make kwsweep kwtime
+      kwram` (with the knife pin) BEFORE `make tiers-md`;** a docs / probe commit
+      does not need to. That commit's sheet was re-rendered from FULL's fresh pins
+      (same ROM) and `tiers-md-check` re-run green alone.
+- [ ] 🔧 **D-PINSTALE — gates-fast SHOULD RE-MEASURE THE KEYWORD SWEEPS WHEN THE ROM HAS MOVED SINCE THEIR PINS
+      (filed 2026-10-08 by D-STATICEMU's first ROM commit)**
+      🎚️ APPARATUS — a manual loop step stands in for a check the tool can make.
+      📏 D-STATICEMU took kwsweep / kwtime / kwram out of STATIC and keeps the last
+      pins across the build wipe. For a docs commit that is right; for a ROM
+      commit the pins describe the OLD ROM, `make tiers-md` renders stale evidence
+      and FULL's post-check goes red (D-PUTDIR: 169/170, two T4/T5 cells).
+      ➡️ Record the ROM hashes a pin was measured against (beside the pin, or in
+      it), and have `run_gates.py --static` run the three sweeps itself when the
+      built ROM's hashes differ -- docs commits stay at ~2 min, ROM commits pay
+      the sweeps once, as before. A selftest arm for both branches.
+      🤖 **AUTONOMOUS** — a tool change; the gate's own selftest settles it.
 
 - [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
       CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**

@@ -1,0 +1,6 @@
+== noclose  CF-3300 size 0, cluster none       ours size 0, cluster none
+== close    CF-3300 size 128, cluster yes      ours size 128, cluster yes
+== lof      CF-3300 LOF 128                    ours LOF 128
+
+PASS: a RANDOM file's entry changes at CLOSE, not per PUT (3/3)
+refcache: 0 hit, 6 miss, 6 stored

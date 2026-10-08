@@ -1,0 +1,6 @@
+  ROM d72fbc1e d5862709 3bb82f70 48667544  ->  d72fbc1e 3ff1ba4a 3bb82f70 48667544
+PASS  K-PD1: diverged ['noclose'] (want exactly ['noclose'])
+  ROM d72fbc1e 3ff1ba4a 3bb82f70 48667544  ->  74464176 d5862709 d95aac27 43749cfe
+PASS  K-PD2: diverged ['close'] (want exactly ['close'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

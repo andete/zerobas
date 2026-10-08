@@ -467,7 +467,15 @@ frp_overlay:
                 jr      frp_pass
 frp_done:
                 call    frnd_update_size    ; FWR_BYTES = max(old, recno*reclen)
-                jp      fat_dir_update      ; tail: stamp first cluster + size into dir
+                ; 🔴 D-PUTDIR (2026-10-08): NO DIRECTORY WRITE HERE. This tail was
+                ; `jp fat_dir_update` -- a directory read + write on EVERY PUT, where
+                ; the CF-3300 leaves the entry alone until CLOSE (D-LOF §4c measured
+                ; it: after `PUT #1,1` LOF reads 256 while the on-disk entry still
+                ; holds 0). CLOSE stamps it now (basic/files.asm fdcc_rnd); the size
+                ; lives in FWR_BYTES / FAT_FILESIZE meanwhile, which is what LOF and
+                ; GET read. 20 PUTs + CLOSE were 4.5x the CF-3300 (putstopwatch20).
+                or      a                   ; Cy = 0: the record is written
+                ret
 
 ; frnd_pass_len — BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC.
 ; The bytes of the record that fit in the sector this pass is holding.

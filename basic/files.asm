@@ -1894,8 +1894,10 @@ fdcc_disk:
                 ld      a,e
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
+                cp      4
+                jr      z,fdcc_rnd          ; RANDOM: the directory, once (D-PUTDIR)
                 cp      DOUT_MODE
-                jr      nz,fdcc_clear       ; INPUT / RANDOM (or none): nothing to flush
+                jr      nz,fdcc_clear       ; INPUT (or none): nothing to flush
                 ; 🗑️ D-MODE2DEAD (2026-10-07): mode 2 -- OUTPUT through main's own
                 ; engine -- has not been STORED since S10.B increment 2; OPEN maps
                 ; OUTPUT and APPEND to DOUT_MODE. Its arm here (Ctrl-Z through
@@ -1907,6 +1909,15 @@ fdcc_disk:
                 ; CLOSE frees it silently -- D-DISKFULL's face, kept.
                 call    H_CHCLOSE
                 ei                          ; a CALLF returns DI (cg_back's note)
+                jr      fdcc_clear
+; fdcc_rnd -- D-PUTDIR (2026-10-08): a RANDOM channel's directory entry is
+; stamped HERE, once, from the channel's engine state fch_select just loaded
+; (FWR_FIRST / FWR_BYTES / FWR_DIRSEC / FWR_DIROFF) -- as the CF-3300 updates it
+; at CLOSE, not per PUT. A failure is the disk's code, raised.
+fdcc_rnd:
+                ld      a,DISKOP_SEL_FAT_DIR_UPDATE
+                call    fatprim_bounce
+                jp      c,disk_error
 fdcc_clear:
                 ; 🧭 CLOSE LEAVES THE FIELD DEFINITIONS ALONE (2026-09-01,
                 ; Joost's call: match the reference). This used to

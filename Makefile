@@ -2274,6 +2274,12 @@ casbin-acceptance: repack-machine
 fcbhdr-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_fcbhdr.py
 
+# --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
+# PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
+# ours stamped it at every PUT (D-PUTDIR). Read from the image.
+putdir-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_putdir.py
+
 # --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
 # zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
 dosbasic-acceptance: repack-machine
