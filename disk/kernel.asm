@@ -1041,6 +1041,9 @@ dout_mirror:
 ; hk_claim_status keeps it from the restore (main's oo_fail raises it).
 hk_fmake:
                 ei
+                ld      a, (FCH_ACTIVE)
+                or      a
+                jr      z, hk_asav          ; no channel: SAVE"name",A (below)
                 call    dout_open
                 jr      c, hfm_fail
                 push    ix
@@ -1058,6 +1061,81 @@ hfm_fail:
                 ld      (FOPEN_SEL), a      ; disarm, as hdl_answer does
                 inc     a
                 jp      hk_claim_status     ; status 1; a pending code survives
+
+; hk_asav -- SAVE"name",A's create, S10 increment 3 (D-ASAVEDOUT). It arrives
+; as an OPEN FOR OUTPUT (FOPEN_SEL_MAKE) with NO channel live: main parked the
+; live one (fch_park), and OPEN itself always claims its channel first, so
+; FCH_ACTIVE = 0 at hk_fmake is SAVE ,A and nothing else. The listing then
+; streams through H_CHOUT and ends at H_CHCLOSE, whose no-channel arms below
+; feed THIS ROM's sequential writer -- the fat_io_create / fat_io_putbyte /
+; fat_io_close bodies hk_dpsave's engine already includes, buffering into
+; FAT_DBUF a sector at a time exactly as main's resident copy did. So the file
+; is the one main wrote, byte for byte (asavedev-acceptance), and main's
+; write engine can go.
+; 📍 NO SELECTOR OF ITS OWN, BECAUSE THERE WAS NO BYTE FOR ONE: the first cut
+; added `cp FOPEN_SEL_ASAV / jp z,hk_asav` to hk_dpload's chain, and the
+; region that chain sits in ($607B..$75A5) had 0 B free -- disk.rom assembled
+; EMPTY. This fill had 752. The hook table enters through hk_chout_e /
+; hk_chclose_e for the same reason: a live channel goes on into the
+; unchanged bodies.
+; ⚠️ NOT dout_open's 256 B record writer: that needs a channel row and a
+; 265 B block, and SAVE ,A has neither -- the reference's #0 buffer would cost
+; 267 B of FRE(0) here. The sequential writer needs no RAM of its own.
+hk_asav:
+                call    fat_io_create       ; mount, make or truncate, reset the cursor
+                jr      c, hfm_fail         ; status 1, the code pending
+                xor     a
+                jp      hdl_answer          ; status 0, selector disarmed, claimed
+hk_chout_e:
+                push    af
+                ld      a, (FCH_ACTIVE)
+                or      a
+                jr      z, hco_asav         ; no channel: SAVE ,A's listing
+                pop     af
+                jp      hk_chout            ; a channel: its 256 B record writer
+hco_asav:
+                pop     af
+                ei                          ; as hk_chout's own entry
+                call    fat_io_putbyte
+                jr      nc, hco_tail
+                ; 🔴 D-ASAVEFULLSTAMP's RULE MOVED WITH SAVE ,A. A listing that
+                ; fills the disk keeps what is ALREADY ON IT: the CF-3300 stamps
+                ; SA.BAS with the 1024 B that fit (scratchpad/savefull_run.out).
+                ; That rule was ffds_full, in the SUB-ROM's flush -- which main's
+                ; old path reached through its stub, and this ROM's flush does not
+                ; carry (it serves the BDOS too, whose answer is not this). The
+                ; first build without it left the entry 0/0, and diskfull-
+                ; acceptance's `astamp` row said so. Only for 66, not an I/O fault.
+                ld      a, (DISKOP_ERR)
+                cp      66
+                scf
+                jr      nz, hco_tail        ; an I/O fault: leave the entry
+                ld      hl, (FWR_BYTES)
+                ld      de, (FWR_BUFLEN)    ; the full buffer that found no cluster
+                or      a
+                sbc     hl, de
+                ld      (FWR_BYTES), hl
+                ld      hl, (FWR_BYTES + 2)
+                ld      de, 0
+                sbc     hl, de              ; the borrow into the high word
+                ld      (FWR_BYTES + 2), hl
+                call    fat_dir_update      ; size + first cluster, as close does
+                ld      a, 66               ; its successful DSKIO cleared the code
+                ld      (DISKOP_ERR), a
+                scf
+hco_tail:
+                jp      c, dwr_raise        ; 66 (full) or a DSKIO code, pending
+                scf                         ; claimed
+                ret
+; SAVE ,A's end: the partial sector, then the directory entry (size, first
+; cluster). The Ctrl-Z is main's -- the listing's last byte, as before.
+hk_chclose_e:
+                ld      a, (FCH_ACTIVE)
+                or      a
+                jp      nz, hk_chclose      ; a channel: Ctrl-Z, record, entry
+                ei
+                call    fat_io_close
+                jr      hco_tail
 
 ; hk_fapp -- OPEN FOR APPEND (H_FOPEN, FOPEN_SEL_APND), S10.B increment 2. A
 ; MISSING file is refused, as main's own APPEND open refused it (D-APPMISS). The
@@ -1089,7 +1167,8 @@ hfa_found:
                                             ; main's engine took it)
                 ld      a, h
                 or      l
-                jr      z, hfm_ok           ; empty: nothing to resume
+                jp      z, hfm_ok           ; empty: nothing to resume (jp: hk_asav's
+                                            ; block now sits between)
                 ld      b, l                ; B = bytes into the last record
                 ld      l, 0
                 ld      a, b
@@ -3628,8 +3707,9 @@ hook_tab:
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
                                              ; dispatch live HERE (main keeps the gate)
-                dw      H_CHOUT, hk_chout    ; S10.B: PRINT# to an OUTPUT channel, a byte
-                dw      H_CHCLOSE, hk_chclose ; S10.B: its CLOSE
+                dw      H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
+                                             ; (and SAVE ,A's, increment 3: _e below)
+                dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise)
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,
@@ -3808,6 +3888,7 @@ sv_load_error:
 ; PRINTS; here it must not print, because main's `disk_error` reports ONCE from
 ; the status this leaves behind -- the same contract step 9's arm already uses.
 ; No TAPIOF: a disk SAVE never armed the tape.
+
 
 
 ; --- hk_dpload: the tokenised LOAD loop, in the disk ROM ---------------------

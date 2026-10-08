@@ -68,8 +68,9 @@
 ; PAGE-1 tenant (sub/fatprim.asm fatprim_tenant, SUBROM_IDX_FATPRIM) — a
 ; single selector-dispatched entry covering all 15 marshalled primitives
 ; (DISKOP_OP picks the routine; a subrom_call only reaches one tenant entry).
-; The BYTE-GRANULAR fat_io_* cursor (fat_io_open..fat_io_close) below stays
-; resident in BOTH builds: it is reached via the ARL_GETBYTE polymorphic RAM
+; The BYTE-GRANULAR fat_io_* cursor's READ half (fat_io_open/fat_io_getbyte) below
+; stays resident in BOTH builds (its WRITE half is not assembled in main since S10
+; increment 3, D-ASAVEDOUT): it is reached via the ARL_GETBYTE polymorphic RAM
 ; vector, valid only while the owning code is mapped in, so it cannot move
 ; yet (spec §11's empirical rationale). The shared bodies live in
 ; basic/fat-prim-body.inc (dskio_calslt..fat_dir_update) and
@@ -158,30 +159,18 @@ fat_read_file_sector:
                 ld      a,DISKOP_SEL_FAT_READ_FILE_SECTOR
                 jr      fatprim_bounce
 
-; fat_flush_data_sector — see basic/fat-prim-body.inc for the full contract.
-fat_flush_data_sector:
-                ld      a,DISKOP_SEL_FAT_FLUSH_DATA_SECTOR
-                jr      fatprim_bounce
-
 ; (D-FCBSHAPE S0, 2026-09-29: the fch_restage / fch_flush_active shims are gone.
 ; Their only callers were fch_load_ctx / fch_save_active, whose bodies moved into
 ; the tenant, where fat_restage_channel / fat_detach_channel are called locally.
 ; Selectors 19/20 and their tenant rows stay: the numbering is published.)
 
-; fat_io_create / fat_io_close — SBH-3 (2026-10-03): the sequential WRITE
-; cursor's open and close (basic/fatiocreate-body.inc, basic/fatiow-body.inc)
-; run as fatprim rows 23/24 (sub/save.asm t_fat_io_create / t_fat_io_close);
-; these stubs replace main's copies of the bodies. Every main caller tests Cy
-; only (do_open's oo_create, fdcc_disk, disk_write_begin / disk_write_end),
-; which fatprim_bounce returns exactly as the bodies did: Cy = 1 on a tenant
-; error OR a missing sub-ROM. fat_io_close is the block's last stub and falls
-; through, as fat_dir_update did before it.
-fat_io_create:
-                ld      a,DISKOP_SEL_FAT_IO_CREATE
-                jr      fatprim_bounce
-fat_io_close:
-                ld      a,DISKOP_SEL_FAT_IO_CLOSE
-                ; fall through
+; (S10 increment 3, D-ASAVEDOUT, 2026-10-08: the fat_flush_data_sector,
+; fat_io_create and fat_io_close stubs are gone -- 10 B of page 1. Their last
+; main callers were pchar's SAVE ,A arm (fat_io_putbyte, whose flush was the
+; first) and sv-diskwr.inc's disk_write_begin / _end; SAVE ,A is disk.rom's
+; now. Selectors 23/24 and their tenant rows stay: the numbering is published.
+; fat_io_close was the block's last stub and fell through into fatprim_bounce;
+; fat_read_file_sector, above, already ends `jr fatprim_bounce`.)
 
 ; (SBH-3, 2026-10-03: the fat_dir_create / fat_dir_update shims are gone. Their
 ; only main callers were the fat_io_create / fat_io_close bodies, which now
@@ -264,7 +253,7 @@ fatprim_bounce:
 ; (sub/fiawalk.asm) keeps its table slot: the rows are numbered.
 
 
-                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc (resident); fat_io_close body under SUB_BUILD/DISK_BUILD only, stub above (SBH-3)
+                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close: SUB_BUILD/DISK_BUILD only since D-ASAVEDOUT -- nothing assembles here
 
 ; fat_delete — RESIDENT SHIM DELETED FROM THIS BUILD (D-ENDIFWALK, 5 B).
 ; It was the thirteenth uniform shim (`ld a,DISKOP_SEL_FAT_DELETE / jp

@@ -84,11 +84,11 @@
 ; (scratchpad/errkeep2_probe.py wp_asave). disk_error raises the mapped DSKIO code
 ; when one is pending and falls to load_error otherwise -- a successful transfer
 ; clears DISKOP_ERR, so a failure that is not a DSKIO one keeps its old face.
-sv_load_error   equ     disk_error          ; resident: a zero-byte EQU, so every
-                                            ; `jp sv_load_error` in the shared bodies
-                                            ; assembles to the frozen cart's bytes.
-                                            ; In the tenant it is the sub-local
-                                            ; reporter that sets SV_STAT.
+; 🏗️ S10 increment 3 (D-ASAVEDOUT, 2026-10-08): the resident `sv_load_error equ
+; disk_error` that stood here is GONE -- its last user in main was sv-diskwr.inc
+; (SAVE ,A's disk_write_begin / putbyte / end), no longer included. SAVE ,A's
+; create now fails through fopen_cross -> `jp nz,disk_error`, the same raise. In
+; the tenant and in disk.rom sv_load_error is still each ROM's own reporter.
 
 ; ===========================================================================
 ; do_bsave — BSAVE <name>,start,end[,exec]     ("device:name" or any string expr)
@@ -278,9 +278,25 @@ sav_ascii_flag:
 ascii_save:
                 call    fch_park            ; D-ASAVECHAN: this stream reuses the live
                                             ; channel's engine globals (BSAVE's note)
-                call    disk_write_begin    ; create/truncate; reset the write state
-                ld      a,1
-                ld      (PRDEST),a          ; route pchar (LIST's emit) to the file
+                ; 🏗️ S10 increment 3 (D-ASAVEDOUT): DISK.ROM WRITES IT. The create
+                ; is OPEN FOR OUTPUT's own selector, each byte H_CHOUT and the
+                ; end H_CHCLOSE -- all with NO channel live (the park above),
+                ; which is how disk.rom tells this stream from an OPEN's. Main's
+                ; own write engine (fat_io_putbyte, disk_write_*) is gone.
+                ld      a,FOPEN_SEL_MAKE
+                call    fopen_cross         ; unclaimed -> ERR 5; Z iff created
+                jp      nz,disk_error       ; the pending code, as disk_write_begin's
+                ; 🔴 D-ASAVEDEV: AND PRDEV = 0, THE DISK, SET HERE. It is the
+                ; PRINT# device selector and this save never set it, so after
+                ; `OPEN"CRT:"FOR OUTPUT AS#1 : PRINT#1,"X" : CLOSE#1` the
+                ; listing went to the SCREEN and Q.BAS was 0 B, where the CF-3300
+                ; writes the file (asavedev-acceptance's `crt` row). One store
+                ; sets both: PRDEV is the byte after PRDEST.
+    IF PRDEV - PRDEST - 1
+                db      PRDEV_IS_NOT_THE_BYTE_AFTER_PRDEST
+    ENDIF
+                ld      hl,1
+                ld      (PRDEST),hl         ; PRDEST = 1 (pchar -> the file), PRDEV = 0
                 call    list_all            ; number + space + detok + CRLF, each line
                                             ; ⚠️ list_ALL, not list_walk: since
                                             ; D-LSTRNG the walk honours LST_LO/LST_HI,
@@ -305,7 +321,8 @@ ascii_save:
                 ; unwound one frame further than a handler body does. Calling it
                 ; leaves the stack exactly where `ex_list` has it when IT reaches
                 ; `end_line_end`.
-                call    disk_write_end      ; flush partial sector + stamp dir + Close
+                call    H_CHCLOSE           ; disk.rom: the partial sector + the entry
+                ei                          ; a CALLF returns DI (cg_back's note)
                 jp      end_line_end        ; ...and the run stops, as LIST's does
 
 ; --- tape SAVE path ---
@@ -746,8 +763,9 @@ expect_comma_eval:
                                             ; comma (D-CARVERC: the helper's body)
                 jp      eval                ; DE = value, HL advanced (BC clobbered)
 
-; ===========================================================================
-                include "basic/sv-diskwr.inc"       ; disk_write_* (copied into the tenant)
+; (S10 increment 3, D-ASAVEDOUT: basic/sv-diskwr.inc is no longer included
+; here. ascii_save was main's last caller of disk_write_begin / _end; the
+; sub-ROM save tenant and disk.rom include their own copies.)
 
 ; ===========================================================================
 ; sv_tenant — the one marshalling stub every carved engine jumps to (repack).

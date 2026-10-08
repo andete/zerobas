@@ -652,26 +652,16 @@ pch_lpt_home:
                 jr      pch_done
 pch_disk:
                 ; S10.B: an OUTPUT channel's byte goes to disk.rom (H_CHOUT), which
-                ; raises 66 itself on a full disk. FCH_ACTIVE first: SAVE ,A parks
-                ; the channels (fch_park) and streams through here with FCH_MODE
-                ; still naming the last one. IX is guarded: a hook call is a CALLF.
-                ld      a,(FCH_ACTIVE)
-                or      a
-                jr      z,pch_main
-                ld      a,(FCH_MODE)
-                cp      DOUT_MODE
-                jr      nz,pch_main
+                ; raises 66 itself on a full disk. IX is guarded: a hook call is a
+                ; CALLF. 🏗️ S10 increment 3 (D-ASAVEDOUT): EVERY disk byte now --
+                ; PRINT# reaches here only for a DOUT_MODE channel (its mode test),
+                ; and SAVE ,A with no channel live, which disk.rom sends to its
+                ; sequential writer. Main's fat_io_putbyte arm is gone.
                 ld      a,c
                 push    ix
                 call    H_CHOUT
                 ei                          ; a CALLF returns DI (cg_back's note)
                 pop     ix
-                jr      pch_done
-pch_main:
-                ld      a,c
-                call    fat_io_putbyte
-                jp      c,disk_error        ; D-DISKFULL: a full disk is ERR 66 here,
-                                            ; as on the CF-3300 (it used to be dropped)
 pch_done:
                 pop     af
                 pop     bc

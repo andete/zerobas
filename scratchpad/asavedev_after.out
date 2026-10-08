@@ -1,0 +1,9 @@
+== STOCK plain: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+== STOCK big: Q.BAS 2064 B b'10 REM ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDE'...
+== STOCK crt: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+== OURS plain: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+== OURS big: Q.BAS 2064 B b'10 REM ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDE'...
+== OURS crt: Q.BAS 15 B b'10 REM HELLO\r\n\x1a'
+
+PASS: SAVE ,A writes the CF-3300's file (3/3)
+refcache: 0 hit, 6 miss, 6 stored

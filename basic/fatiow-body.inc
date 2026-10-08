@@ -8,11 +8,12 @@
 ; of a second hand-maintained one. This is the WRITE mirror of fatio-body.inc,
 ; which does the same for the read cursor and sub/bload.asm.
 ;
-; fat_io_putbyte and fwr_bytes_inc STAY resident -- the per-byte hot path of
-; PRINT # and the ASCII SAVE. On the resident side fat_flush_data_sector is a
-; marshalling STUB over the fatprim tenant; inside the tenant (and in disk.rom)
-; the same source text binds to the REAL implementation beside it in
-; sub/fatprim.asm -- a plain in-page call.
+; ~~fat_io_putbyte and fwr_bytes_inc STAY resident -- the per-byte hot path of
+; PRINT # and the ASCII SAVE.~~ 🏗️ S10 increment 3 (D-ASAVEDOUT, 2026-10-08):
+; NOTHING HERE IS RESIDENT ANY MORE. PRINT# went to disk.rom's record writer in
+; S10.B, and SAVE ,A to disk.rom's copy of THIS file; main assembles none of
+; it. In the tenant and in disk.rom fat_flush_data_sector binds to the REAL
+; implementation beside it -- a plain in-page call.
 ; 🔴 SBH-3 (2026-10-03): fat_io_close's resident copy IS GONE. Its body
 ; assembles only under SUB_BUILD / DISK_BUILD; in main it is a stub in
 ; basic/fat.asm's shim block (DISKOP_SEL_FAT_IO_CLOSE, fatprim row 24, served
@@ -33,6 +34,11 @@
 ; the cluster chain as needed) and the buffer resets. FWR_BYTES accumulates the
 ; true byte count for fat_io_close to stamp into the directory entry. The flush's
 ; DSKIO clobbers all registers, so state is kept in RAM.
+; 🏗️ S10 increment 3 (D-ASAVEDOUT): MAIN NO LONGER ASSEMBLES THIS FILE'S
+; BODIES. Its last two callers -- pchar's SAVE ,A arm and sv-diskwr.inc's
+; disk_putbyte -- went to disk.rom (H_CHOUT with no channel live), so all
+; three are SUB_BUILD / DISK_BUILD only, like fat_io_close before them.
+    IF SUB_BUILD + DISK_BUILD
 fat_io_putbyte:
                 ld      c, a                ; C = byte to store
                 ; 🔴 D-DISKFULL (2026-10-02): THE FLUSH COMES FIRST, when the
@@ -99,7 +105,6 @@ fwr_bytes_inc:
 ;   out: Cy = 0 ok; Cy = 1 = I/O error.
 ; Flushes a buffered partial final sector (FWR_BUFLEN > 0), then rewrites the
 ; directory entry with the true byte count and first cluster.
-    IF SUB_BUILD + DISK_BUILD
 fat_io_close:
                 ld      hl, (FWR_BUFLEN)
                 ld      a, h

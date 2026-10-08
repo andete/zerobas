@@ -620,11 +620,66 @@ item — do **one item per session** to keep context lean.
       known intermittent; `badfnum`'s read ONE row, `fld_c16` (`FIELD #16,10 AS
       A$` -> 52), as no reading on ours -- a capture miss on a row with no disk
       write in it (3/3 green alone the same evening).
-      ➡️ **Left for later increments:** main's own write engine's deletion
-      (SAVE ,A still uses it), the input side through `$FE8A` (S10.C), the speed
+      ➡️ **Left for later increments:** ~~main's own write engine's deletion
+      (SAVE ,A still uses it)~~ (✅ increment 3, D-ASAVEDOUT, 2026-10-08 --
+      below), the input side through `$FE8A` (S10.C), the speed
       (keep a sector's first half instead of re-reading it), and ~~the `cp 2`
       mode tests main still carries for a mode nothing stores~~ (✅ D-MODE2DEAD,
       2026-10-07 -- below).
+      ✅ **INCREMENT 3 SHIPPED (2026-10-08, D-ASAVEDOUT): `SAVE"name",A` TO DISK
+      IS DISK.ROM'S, AND MAIN'S RESIDENT WRITE ENGINE IS GONE -- 113 B OF MAIN
+      PAGE 1 (15 -> 128).** The create is OPEN FOR OUTPUT's own selector
+      (`FOPEN_SEL_MAKE`) arriving with NO channel live -- the save parks the
+      live one first (`fch_park`), and OPEN always claims its channel, so
+      `FCH_ACTIVE` = 0 at `hk_fmake` means SAVE ,A and nothing else. Each byte
+      is `H_CHOUT`, the end `H_CHCLOSE`, both again with no channel live, and
+      disk.rom sends those to the sequential writer `hk_dpsave` already
+      includes (`fat_io_create` / `fat_io_putbyte` / `fat_io_close`, buffering
+      in the shared sector buffer exactly as main's copy did) -- NOT to
+      `dout_open`'s 256 B record writer, which needs a channel row and a 265 B
+      block: the reference's `#0` buffer would cost 267 B of `FRE(0)` here.
+      Deleted from main: `fat_io_putbyte`, `fwr_bytes_inc`, pchar's
+      `pch_main` arm and its mode tests (every disk byte is `H_CHOUT` now),
+      the `sv-diskwr.inc` copy, and the `fat_flush_data_sector` /
+      `fat_io_create` / `fat_io_close` stubs; the fatprim rows 11/23/24 they
+      sent to answer `fp_stash_ok` (sub page 1 +27 B). disk.rom 4558 -> 4509 B.
+      📏 ([`disk_probe_asavedev.py`](probes/disk/disk_probe_asavedev.py), gate
+      `asavedev-acceptance`, the image read back against the CF-3300): a
+      one-line program 15 B, ~2 KB over two clusters 2064 B, both byte for
+      byte before AND after the move.
+      🔴 **D-ASAVEDEV, FOUND BY ITS SEPARATING ROW AND FIXED WITH IT:** after
+      `OPEN"CRT:"FOR OUTPUT AS#1 : PRINT#1,"X" : CLOSE#1`, `SAVE"Q.BAS",A`
+      listed to the SCREEN and left Q.BAS **0 B** -- the CF-3300 writes its
+      15 B ([`asavedev_before.out`](scratchpad/asavedev_before.out)). `PRDEV`
+      is the PRINT# device selector and the save never set it; now one
+      `ld (PRDEST),hl` sets both (`PRDEV` is the next byte, asserted at
+      build time). `LLIST` and `LPRINT` set `PRDEV` = 1 and nothing resets
+      it, so either one then `SAVE ,A` sent the listing to the PRINTER -- read
+      from the code, NOT measured (the reference rig has no printer); the
+      same store fixes it. 🔮 Predicted the divergence: HIT; predicted
+      1 B (the Ctrl-Z): MISSED, the Ctrl-Z went to the screen too.
+      🔴 **AND D-ASAVEFULLSTAMP'S RULE HAD TO MOVE WITH IT.** The first build
+      turned diskfull-acceptance's `astamp` red: the CF-3300 stamps SA.BAS
+      with the 1024 B that fit on a full disk, ours left 0/0. The rule was
+      `ffds_full`, in the SUB-ROM's flush, which main's old path reached
+      through its stub; disk.rom's flush does not carry it (it serves the
+      BDOS too). It is in `hco_asav` now, for 66 only.
+      📍 **NO SELECTOR OF ITS OWN BECAUSE THERE WAS NO BYTE FOR ONE:** a first
+      cut added `FOPEN_SEL_ASAV` to `hk_dpload`'s chain and disk.rom assembled
+      EMPTY -- that region (`$607B..$75A5`) had **0 B** free, the fill beside
+      `hk_fmake` 752. The hook table enters through `hk_chout_e` /
+      `hk_chclose_e` for the same reason.
+      ⚠️ **AN APPARATUS MISS, MINE, ON THE WAY:** the `big` row read the
+      CF-3300 at **0 B** twice. I blamed the typed line length and reshaped
+      the row; it was the session ending before the reference's 2 KB write
+      had committed -- two trailing lines and it reads 2064, ours' size.
+      🔪 Knives ([`asavedout_knives.py`](scratchpad/asavedout_knives.py),
+      [`asavedout_knives.out`](scratchpad/asavedout_knives.out)): K-AD1 (no
+      `PRDEV` store) -> crt, K-AD2 (no partial stamp) -> astamp, K-AD3 (no
+      `fat_io_close` at the end) -> plain/big/crt -- each moved EXACTLY those rows (3/3 predicted).
+      ➡️ **Still left:** BSAVE to disk runs the SUB-ROM tenant's copy of the
+      engine (no hook -- a foreign disk ROM would still get ours, the reason
+      D-SAVEPORT moved tokenised SAVE), the input side (S10.C), the speed.
 
 - [x] ✅ **D-PRNUMWRAP — A PRINTED NUMBER THAT DOES NOT FIT THE REST OF THE LINE WAS SPLIT
       ACROSS IT ON OURS; THE VG-8020 AND CF-3300 MOVE IT WHOLE TO THE NEXT LINE (found
@@ -6255,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30228 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30283 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6421,7 +6476,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11256 (T-6FE392)8 (T-529ABE)` from `TODO.md:23922 (T-529ABE)`: a
+      `TODO.md:11311 (T-6FE392)8 (T-529ABE)` from `TODO.md:23977 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12103,7 +12158,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:23922 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:23977 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

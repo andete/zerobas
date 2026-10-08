@@ -119,26 +119,14 @@ sv_load_error:
 ; fat_mount/fat_dir_create/fat_flush_data_sector/fat_dir_update bind to
 ; sub/fatprim.asm's REAL implementations -- the whole reason this tenant is
 ; affordable (fatio-body.inc does the same for the read side in sub/bload.asm).
-; SBH-3 (2026-10-03): main no longer carries fat_io_create / fat_io_close
-; bodies; it reaches THESE through fatprim rows 23/24 (the arms below).
-; fat_io_putbyte / fwr_bytes_inc stay resident in main (per-byte hot path).
+; Main carries none of these bodies since S10 increment 3 (D-ASAVEDOUT): its
+; last user, SAVE ,A, is disk.rom's, which includes its own copies.
                 include "basic/fatiocreate-body.inc" ; fat_io_create
                 include "basic/fatiow-body.inc"      ; fat_io_putbyte/fwr_bytes_inc/
                                                      ; fat_io_close
-; t_fat_io_create / t_fat_io_close -- fatprim rows 23/24 (SBH-3, 2026-10-03).
-; Main's fat_io_create / fat_io_close are stubs over THESE (basic/fat.asm's
-; shim block). Same fp_stash_ok/err tail as every row in sub/fatprim.asm:
-; main's fatprim_bounce reads STATUS back and returns Cy, which is all its
-; four callers test. Entered only via fp_table (fatiow-body.inc above ends in
-; `jp fat_dir_update`, so nothing falls in).
-t_fat_io_create:
-                call    fat_io_create
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
-t_fat_io_close:
-                call    fat_io_close
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+; (t_fat_io_create / t_fat_io_close, fatprim rows 23/24 since SBH-3, are gone:
+; S10 increment 3, D-ASAVEDOUT, 2026-10-08. Main's stubs over them served
+; SAVE ,A, which disk.rom writes now; the rows answer fp_stash_ok.)
 
 ; --- the four engines themselves, shared with the resident side ------------
                 include "basic/sv-bsvdisk.inc"       ; bsv_open .. bsv_fin

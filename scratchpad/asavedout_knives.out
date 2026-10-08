@@ -1,0 +1,8 @@
+  ROM 1438c281 5e2442c5 01721c82 c00fd72e  ->  de304283 5e2442c5 8dddfce2 2fed7db4
+PASS  K-AD1: diverged ['crt'] (want exactly ['crt'])
+  ROM de304283 5e2442c5 8dddfce2 2fed7db4  ->  1438c281 5e2442c5 44c3d770 c00fd72e
+PASS  K-AD2: diverged ['astamp'] (want exactly ['astamp'])
+  ROM 1438c281 5e2442c5 44c3d770 c00fd72e  ->  1438c281 5e2442c5 00d00d24 c00fd72e
+PASS  K-AD3: diverged ['big', 'crt', 'plain'] (want exactly ['big', 'crt', 'plain'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

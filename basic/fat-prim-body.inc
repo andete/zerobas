@@ -1257,9 +1257,10 @@ ffds_mul:
 ; could not be placed) before the failure goes back up.
 ; ⚠️ ONLY when no CHANNEL is active: PRINT#+CLOSE is the opposite answer on the
 ; CF-3300 (it commits nothing, D-PRINTFULLSTAMP, to settle with S10.B), and only
-; for 66 (a disk-full, not an I/O fault). Sub-ROM only: main reaches this body
-; through its fatprim stub, so it costs no main byte; disk.rom's copy serves the
-; BDOS, whose DOS semantics are not this.
+; for 66 (a disk-full, not an I/O fault). Sub-ROM only: its own writers (BSAVE's
+; tenant) reach it; disk.rom's copy serves the BDOS, whose DOS semantics are not
+; this. 🏗️ SAVE ,A, which reached it through main's fatprim stub, is disk.rom's
+; since S10 increment 3 (D-ASAVEDOUT) -- the same rule is in hco_asav there.
 ffds_full:
                 ld      a, (FCH_ACTIVE)
                 or      a

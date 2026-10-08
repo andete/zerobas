@@ -2294,6 +2294,13 @@ nohash-acceptance: repack-machine $(DISK_TEST_DSK)
 dout-acceptance: repack-machine $(DISK_TEST_DSK)
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dout.py
 
+# --- asavedev-acceptance: SAVE ,A's file is disk.rom's (S10 increment 3) -------
+# SAVE"Q.BAS",A read back from the image, every byte against the CF-3300: a
+# one-line program, ~2 KB over two clusters, and the save after a PRINT# to a
+# CRT: channel (D-ASAVEDEV: the listing went to the screen, Q.BAS 0 B).
+asavedev-acceptance: repack-machine $(DISK_TEST_DSK)
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_asavedev.py
+
 # --- savetail-acceptance: SAVE's bad option tail is a trappable 2 (D-SAVETAIL) --
 # `SAVE "X.BAS",B` / `,A,1` (CF-3300) and `SAVE "CAS:X",B` / `,A,1` (VG-8020)
 # read `2 in 30` under ON ERROR; ours aborted with `load error`. Plus the

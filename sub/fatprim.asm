@@ -90,7 +90,8 @@ fp_table:
                 jp      t_fat_alloc_cluster     ; 8  DISKOP_SEL_FAT_ALLOC_CLUSTER
                 jp      t_fat_write_fat_entry   ; 9  DISKOP_SEL_FAT_WRITE_FAT_ENTRY
                 jp      t_fat_count_free        ; 10 DISKOP_SEL_FAT_COUNT_FREE
-                jp      t_fat_flush_data_sector ; 11 DISKOP_SEL_FAT_FLUSH_DATA_SECTOR
+                jp      fp_stash_ok             ; 11 retired (D-ASAVEDOUT: no sender;
+                                                ; main's flush stub went with SAVE ,A)
                 jp      t_fat_dir_create        ; 12 DISKOP_SEL_FAT_DIR_CREATE
                 jp      t_fat_dir_update        ; 13 DISKOP_SEL_FAT_DIR_UPDATE
                 jp      t_fat_delete            ; 14 DISKOP_SEL_FAT_DELETE
@@ -117,10 +118,11 @@ fp_table:
 ; one ROM. HL = the context block on entry to both.
                 jp      t_fch_save              ; 21 DISKOP_SEL_FCH_SAVE
                 jp      t_fch_load              ; 22 DISKOP_SEL_FCH_LOAD
-; SBH-3 (2026-10-03): the sequential WRITE cursor's open/close as rows. The
-; arms sit in sub/save.asm beside the bodies they call.
-                jp      t_fat_io_create         ; 23 DISKOP_SEL_FAT_IO_CREATE
-                jp      t_fat_io_close          ; 24 DISKOP_SEL_FAT_IO_CLOSE
+; SBH-3 (2026-10-03) made the sequential WRITE cursor's open/close rows 23/24;
+; S10 increment 3 (D-ASAVEDOUT, 2026-10-08) retired both -- main's stubs over
+; them were SAVE ,A's, and disk.rom writes that file now.
+                jp      fp_stash_ok             ; 23 retired (D-ASAVEDOUT)
+                jp      fp_stash_ok             ; 24 retired (D-ASAVEDOUT)
 
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
@@ -201,10 +203,6 @@ t_fat_count_free:
                 call    fat_count_free
                 ld      (FAT_WRTMP2),de
                 ret
-t_fat_flush_data_sector:
-                call    fat_flush_data_sector
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
 t_fat_dir_create:
                 call    fat_dir_create
                 jp      c,fp_stash_err
