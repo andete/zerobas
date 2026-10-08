@@ -1,0 +1,11 @@
+== crt    8020     2/253/-            ours 2/253/-
+== lpt    8020     2/254/-            ours 2/254/-
+== casout 8020     2/255/0            ours 2/255/0
+== casin  8020     1/255/0            ours 1/255/0
+== dout   CF-3300  2/0/0 2/0/2        ours 2/0/0 2/0/2
+== din    CF-3300  1/0/0              ours 1/0/0
+== dapp   CF-3300  2/0/26             ours 2/0/26
+== drnd   CF-3300  4/0/0              ours 4/0/0
+
+PASS: the FCB header's mode / device / position (8/8)
+refcache: 0 hit, 16 miss, 16 stored

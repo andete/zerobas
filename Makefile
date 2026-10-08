@@ -2268,6 +2268,12 @@ castype-acceptance: repack-machine
 casbin-acceptance: repack-machine
 	python3 probes/basic/basic_probe_casbin.py
 
+# --- fcbhdr-acceptance: the FCB header a program PEEKs through VARPTR(#n) -------
+# Mode +0, device +4, position +6 after OPEN, for CRT: / LPT: / CAS: (VG-8020)
+# and disk OUTPUT / INPUT / APPEND / RANDOM (CF-3300) -- D-FCBHDR.
+fcbhdr-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_fcbhdr.py
+
 # --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
 # zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
 dosbasic-acceptance: repack-machine

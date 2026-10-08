@@ -500,6 +500,18 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
       ⚠️ **THE TIER TAG IS STALE (2026-10-01):** `LOAD` is T2✓ on the sheet; what is
       left here, step 10, is the ownership move, not LOAD's speed.
+      🙋 **TIER QUESTION FOR JOOST (2026-10-08) -- and S10.C IS BIGGER THAN ITS
+      PLAN SAID.** Mapped before building: a disk channel's INPUT text rules (the
+      Ctrl-Z end, the numeric item's PEEK, EOF) live in the sub-ROM SEQIO tenant
+      (basic/input.asm `seq_call`, SUBROM_IDX_SEQIO). That tenant runs in PAGE 1,
+      and `$FE8A` is a CALLF into disk.rom, ALSO page 1 -- a page-1 tenant cannot
+      call it without switching itself out. So S10.C is not "point the byte
+      source at a hook": the text rules would have to be rebuilt INSIDE disk.rom
+      (as S10.B rebuilt the record writer), with D-INPQUOTE2's peek. No
+      user-visible defect is measured on the input side; the tag's own reason is
+      met. ➡️ Meanwhile the loop takes the next MEASURED, user-visible item (the
+      TIER 4 FCB header fields). The question: keep S10.C at TIER 2, or re-tier it
+      with the ownership work (S10.D/E)?
       ✅ **S10.0 ANSWERED 2026-10-01 (spec §6.6bc):** the CF-3300's channel is a
       record-size-1 MSX-DOS FCB moved by 256 B BLOCK I/O. The FCB changes only at
       record boundaries; header +6 is the byte position. The design that puts the
@@ -6333,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30447 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30492 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6499,7 +6511,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11334 (T-6FE392)8 (T-529ABE)` from `TODO.md:24000 (T-529ABE)`: a
+      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24045 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12181,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24000 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24045 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17556,9 +17568,42 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
         [`fcbs12_knife_fn.out`](scratchpad/fcbs12_knife_fn.out)).
       ➡️ **LEFT:** ~~`VARPTR(#n)`~~ SHIPPED as D-VARPTRCH (below, 23 B after the
       D-ONTRAPMERGE carve). Still open, all three MEASURED on 2026-09-30:
-      - the FCB header FIELDS (mode +0, device +4, position +6): nothing writes
+      - ~~the FCB header FIELDS (mode +0, device +4, position +6): nothing writes
         them. `PEEK(VARPTR(#1))` after `OPEN"CRT:"` reads 2 on both references
-        and 255 here.
+        and 255 here.~~ ✅ **D-FCBHDR (2026-10-08): OPEN writes them.**
+        [`basic_probe_fcbhdr.py`](probes/basic/basic_probe_fcbhdr.py), gate
+        `fcbhdr-acceptance`, mode / device / position after OPEN, each device on
+        the reference that owns it ([`fcbhdr_before.out`](scratchpad/fcbhdr_before.out)
+        0/8, [`fcbhdr_after.out`](scratchpad/fcbhdr_after.out) 8/8,
+        [`fcbhdr_dina.out`](scratchpad/fcbhdr_dina.out)):
+        | channel | the reference | ours before |
+        |---|---|---|
+        | CRT: / LPT: | 2 / $FD, 2 / $FE | 255 / 255 |
+        | CAS: OUTPUT / INPUT | 2 / $FF / 0, 1 / $FF / 0 | 255 / 255 / 255 |
+        | disk OUTPUT, then 2 B written | 2 / 0 / 0, 2 / 0 / 2 | 255 / 255 / 0, .. / 2 |
+        | disk INPUT, `A:` INPUT | 1 / 0 / 0, 1 / 1 / 0 | 255 / 255 / 255 |
+        | disk APPEND (26 B file) | **2** / 0 / 26 | 255 / 255 / 26 |
+        | RANDOM | 4 / 0 / 0 | 255 / 255 / 255 |
+        🔮 Predicted: CRT's $FD and the MODE codes for INPUT / OUTPUT / RANDOM --
+        HIT; LPT $FF and CAS $FE (SWAPPED -- MISSED), APPEND mode 8 (it is 2 --
+        MISSED), the disk device 1 for a bare name (it is the drive AS TYPED, 0 --
+        MISSED), the disk INPUT position 3 after three bytes (it is 2 -- MISSED,
+        below). Device channels' +6 is leftover RAM there (255 here, 0 in
+        fcbfields_probe.py): mode and device only.
+        🔧 Both OPEN tails share `oo_hdr_tail` (basic/files.asm): the block, then
+        fatprim row 23 `t_fch_hdr` (sub/fatprim.asm; slot 23 was freed by
+        D-ASAVEDOUT the same day), a (mode, device) table over the FCH_MODES value;
+        +6 zeroed except disk OUTPUT / APPEND, whose position disk.rom keeps. The
+        parser's drive default is 0 now (`basic/pdfcb-body.inc`; nothing else reads
+        it). Main page 1 112 -> 101 B, sub page 1 236 -> 177 B (2026-10-08).
+        🔪 Knives ([`fcbhdr_knives.out`](scratchpad/fcbhdr_knives.out)): K-FH1 (no
+        stamp) -> all 9, K-FH2 (drive default 1) -> dout/din/dapp/drnd, K-FH3 (no
+        disk-OUTPUT exemption) -> dapp -- each exactly.
+        ➡️ **LEFT:** the MOVING position of an INPUT channel and of a tape channel.
+        The CF-3300's disk INPUT +6 reads `0 0 1 2 3 4 5` over the first six
+        `INPUT$(1,1)`s and 25 after the 20-byte rest of the line -- the index of
+        the last byte read; ours keeps no position in the block (the SEQIO
+        tenant's read state is elsewhere), so it stays 0.
       - **FCB #0** (the LOAD/SAVE channel): `VARPTR(#0)` is an address on both
         references and ERR 59 here, because this tree reserves no FCB #0.
       - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,

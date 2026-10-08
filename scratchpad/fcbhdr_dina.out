@@ -1,0 +1,4 @@
+== dina   CF-3300  1/1/0              ours 1/1/0
+
+PASS: the FCB header's mode / device / position (1/1)
+refcache: 0 hit, 2 miss, 2 stored

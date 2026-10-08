@@ -2780,7 +2780,7 @@ SCAN_IY         equ     $E0D9   ; CALSLT slot word: high byte = slot (IYh) (2)
 ; retained for continuity with the parser; only the NAME field is load-bearing now.
 ; See basic/PROVENANCE.md §disk-BLOAD scratch FCB / §disk DSKIO host engine.
 DISK_FCB        equ     $E0DB   ; scratch name block ($E0DB.., 12 bytes)
-DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B; ignored)
+DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR)
 DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; Disk-ROM slot id recorded by the INIT scan (initext.asm) when it inits an
 ; external "AB" ROM, so the disk verbs can CALSLT the disk ROM's standard DSKIO
@@ -3163,7 +3163,8 @@ DISKOP_SEL_FCH_LOAD             equ 22  ; block -> globals + record, then re-sta
 ; cursor's open and close (basic/fatiocreate-body.inc, basic/fatiow-body.inc)
 ; as fatprim rows -- main keeps two stubs in basic/fat.asm's shim block; the
 ; bodies assemble only under SUB_BUILD / DISK_BUILD. Never renumber.
-DISKOP_SEL_FAT_IO_CREATE        equ 23  ; mount + dir-create + reset write state
+DISKOP_SEL_FCH_HDR              equ 23  ; D-FCBHDR: stamp a channel's FCB header (was
+                                        ; FAT_IO_CREATE, retired by D-ASAVEDOUT the same day)
 DISKOP_SEL_FAT_IO_CLOSE         equ 24  ; flush partial sector + dir update
 ; DISKOP_OP selector values for the dirverb_tenant (SUBROM_IDX_DIRVERB, Phase 2,
 ; spec §12). A SEPARATE value namespace on the SAME DISKOP_OP cell: fatprim

@@ -712,7 +712,8 @@ oo_storemode:
                 call    fch_modes_ptr
                 ld      a,(FCH_MODE)        ; 1 INPUT, 3 OUTPUT/APPEND, 4 RANDOM
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+                ld      (OO_DEVTYPE),a      ; D-FCBHDR: what the header stamp reads
+                jp      oo_hdr_tail
 oo_fail:
                 ; post-claim failure (DE = channel): release the slot we claimed and
                 ; mark the channel closed in the table (its globals are stale garbage).
@@ -831,6 +832,21 @@ oo_stamp_devtype:
                 call    fch_modes_ptr
                 ld      a,(OO_DEVTYPE)
                 ld      (hl),a
+                ; FALL THROUGH
+; oo_hdr_tail -- D-FCBHDR (2026-10-08): stamp the channel's FCB HEADER, the
+; bytes a program reads through VARPTR(#n): the MODE at +0, the DEVICE at +4,
+; the buffer position +6 zeroed (disk OUTPUT / APPEND keep disk.rom's). Ours
+; read 255 at +0 and +4 on every channel; the references write them at OPEN
+; (probes/basic/basic_probe_fcbhdr.py). The work is the FAT tenant's row 23
+; (sub/fatprim.asm t_fch_hdr), which maps OO_DEVTYPE -- the FCH_MODES value
+; just stored -- to the reference's codes.
+;   in:  E = the channel, OO_DEVTYPE = its FCH_MODES value; the text cursor
+;        on the stack (pop_exec takes it).
+oo_hdr_tail:
+                ld      a,e
+                call    fch_ctx_addr        ; HL = the channel's block
+                ld      a,DISKOP_SEL_FCH_HDR
+                call    fatprim_bounce
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 
 ; --- OPEN "CAS:name" FOR OUTPUT|INPUT AS #n --------------------------------

@@ -1,0 +1,19 @@
+== crt    8020     2/253/255          ours 255/255/255
+== lpt    8020     2/254/255          ours 255/255/255
+== casout 8020     2/255/0            ours 255/255/255
+== casin  8020     1/255/0            ours 255/255/255
+== dout   CF-3300  2/0/0 2/0/2        ours 255/255/0 255/255/2
+== din    CF-3300  1/0/0 1/0/2        ours 255/255/255 255/255/255
+== dapp   CF-3300  2/0/26             ours 255/255/26
+== drnd   CF-3300  4/0/0              ours 255/255/255
+DIVERGES crt: 2/253/255 vs ours 255/255/255
+DIVERGES lpt: 2/254/255 vs ours 255/255/255
+DIVERGES casout: 2/255/0 vs ours 255/255/255
+DIVERGES casin: 1/255/0 vs ours 255/255/255
+DIVERGES dout: 2/0/0 2/0/2 vs ours 255/255/0 255/255/2
+DIVERGES din: 1/0/0 1/0/2 vs ours 255/255/255 255/255/255
+DIVERGES dapp: 2/0/26 vs ours 255/255/26
+DIVERGES drnd: 4/0/0 vs ours 255/255/255
+
+FAIL: the FCB header's mode / device / position (0/8)
+refcache: 0 hit, 16 miss, 16 stored

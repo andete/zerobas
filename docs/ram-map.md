@@ -136,7 +136,7 @@ second one is the question a per-component map cannot answer.
 | `$E0D6` | 1 B | `basic` | `SCAN_SLOT` | candidate slot id for RDSLT/CALSLT (1) |  |
 | `$E0D7` | 2 B | `basic` | `SCAN_INIT` | candidate ROM's INIT entry address (2) |  |
 | `$E0D9` | 2 B | `basic` | `SCAN_IY` | CALSLT slot word: high byte = slot (IYh) (2) |  |
-| `$E0DB` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B; ignored) |  |
+| `$E0DB` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR) |  |
 | `$E0DC` | 11 B | `basic` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
 | `$E0DC` | 11 B | `disk` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
 | `$E0E7` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |

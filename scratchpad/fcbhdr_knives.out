@@ -1,0 +1,8 @@
+  ROM 0d7c25cc 3ff1ba4a 1b2cc7fa c34a9268  ->  8d153c05 3ff1ba4a 1b2cc7fa cb201822
+PASS  K-FH1: diverged ['casin', 'casout', 'crt', 'dapp', 'din', 'dina', 'dout', 'drnd', 'lpt'] (want exactly ['casin', 'casout', 'crt', 'dapp', 'din', 'dina', 'dout', 'drnd', 'lpt'])
+  ROM 8d153c05 3ff1ba4a 1b2cc7fa cb201822  ->  82ddeb33 ffa828c7 4a271019 3054f8d7
+PASS  K-FH2: diverged ['dapp', 'din', 'dout', 'drnd'] (want exactly ['dapp', 'din', 'dout', 'drnd'])
+  ROM 82ddeb33 ffa828c7 4a271019 3054f8d7  ->  0d7c25cc 775faa1b 1b2cc7fa c34a9268
+PASS  K-FH3: diverged ['dapp'] (want exactly ['dapp'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

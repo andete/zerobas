@@ -35,8 +35,10 @@ parse_disk_fcb:
                 ; "A:" / "B:" (case-insensitive). Default drive = A when absent.
                 ; Look at name[0] and name[1]: a letter followed by ':' is a
                 ; drive spec; anything else is a bare filename on drive A.
-                ld      a,1                 ; default drive code = A
-                ld      (DISK_FCB_DRV),a
+                xor     a                   ; D-FCBHDR: 0 = no drive typed (the default
+                ld      (DISK_FCB_DRV),a    ; drive) -- what the reference's FCB header
+                                            ; +4 reads; it was 1. Nothing else reads it:
+                                            ; the engines are single-drive.
                 ld      a,(hl)
                 call    bl_upcase
                 ld      c,a                 ; C = candidate drive letter (upper)

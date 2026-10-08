@@ -121,7 +121,8 @@ fp_table:
 ; SBH-3 (2026-10-03) made the sequential WRITE cursor's open/close rows 23/24;
 ; S10 increment 3 (D-ASAVEDOUT, 2026-10-08) retired both -- main's stubs over
 ; them were SAVE ,A's, and disk.rom writes that file now.
-                jp      fp_stash_ok             ; 23 retired (D-ASAVEDOUT)
+                jp      t_fch_hdr               ; 23 DISKOP_SEL_FCH_HDR (D-FCBHDR; was
+                                                ; FAT_IO_CREATE, retired by D-ASAVEDOUT)
                 jp      fp_stash_ok             ; 24 retired (D-ASAVEDOUT)
 
 ; --- uniform result-stash tails --------------------------------------------
@@ -284,6 +285,46 @@ tfl_dout:
 ; op reported success either way. It now says so directly. chan_gate discards
 ; the result on purpose (basic/files.asm) and its claimed path reads the VERB's
 ; status, set after the crossing, not this one.
+; t_fch_hdr -- D-FCBHDR (2026-10-08): the FCB header a program PEEKs through
+; VARPTR(#n), as the references write it at OPEN (probes/basic/
+; basic_probe_fcbhdr.py): +0 the MODE (1 INPUT, 2 OUTPUT -- APPEND too -- 4
+; RANDOM), +4 the DEVICE ($FD CRT:, $FE LPT:, $FF CAS:, else the drive as typed:
+; 0 none, 1 A:, 2 B:), +6 the position, 0 -- except a disk OUTPUT / APPEND
+; channel, whose +6 disk.rom keeps (an APPEND opens at the size). Bytes +1..+3,
+; +5, +7, +8 are a pointer into the reference's disk work area or leftover RAM
+; there: not written.
+;   in:  HL = the block (main's fch_ctx_addr), OO_DEVTYPE = the FCH_MODES value
+;        (1 INPUT, 3 DOUT, 4 RANDOM, 5 LPT, 6 CRT, 7 CAS OUT, 8 CAS IN).
+t_fch_hdr:
+                push    hl
+                ld      a,(OO_DEVTYPE)
+                dec     a
+                add     a,a
+                ld      e,a
+                ld      d,0
+                ld      hl,fhd_tab
+                add     hl,de
+                ld      c,(hl)              ; the mode code
+                inc     hl
+                ld      a,(hl)              ; the device code, 0 = the drive
+                pop     hl
+                ld      (hl),c              ; +0
+                or      a
+                jr      nz,fhd_dev
+                ld      a,(DISK_FCB_DRV)
+fhd_dev:
+                ld      de,4
+                add     hl,de
+                ld      (hl),a              ; +4
+                inc     hl
+                inc     hl                  ; +6
+                ld      a,(OO_DEVTYPE)
+                cp      DOUT_MODE
+                jp      z,fp_stash_ok       ; disk.rom's position stands
+                ld      (hl),0
+                jp      fp_stash_ok
+fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
+
 t_fch_save:
                 ; D-MODE2DEAD (2026-10-07): no flush first any more -- only a mode-2
                 ; channel could be dirty, and none is stored. Nothing here can fail;
