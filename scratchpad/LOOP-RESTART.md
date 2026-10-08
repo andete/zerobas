@@ -21,12 +21,26 @@ as X; LOAD/CLOAD now step over binaries) · two records: D-FDCDI measured on mai
 (both machines lose keys during disk writes: ours keeps ~42 %, the CF-3300 ~77 %)
 and the tape-write Ctrl-STOP sites (not readable with the @BREAK rig).
 
-**Walls (`make basic-reloc`, 2026-10-08 afternoon): main low 55 B, page 1 112 B;
-sub p0 17 B, sub p1 236 B; disk ~4465 B.** Recount before quoting.
+**Later the same day:** D-FCBHDR (OPEN writes the FCB header -- mode +0, device
++4, position +6 -- that `PEEK(VARPTR(#n))` reads; TIER 4) · D-BLKIOPERCALL step 1
+(BDOS WRBLK no longer mounts and finds per call: 32 KB write 8.8x -> 6.6x the
+CF-3300; TIER 5) and its step-2 MEASUREMENT (the CF-3300 writes each data sector
+once and defers directory/FAT: 72 FDC writes against our 384 -- step 2 is a
+write-cache layer, designed in the item).
+
+🙋 **OPEN QUESTIONS FOR JOOST, recorded in their items (do not re-ask, read them):**
+S10.C's tier (its input text rules live in the page-1 SEQIO tenant, which cannot
+CALLF the page-1 `$FE8A` -- the move means rebuilding them in disk.rom; no
+user-visible defect measured); FCB #0 (267 B of `FRE(0)` for `VARPTR(#0)`); and
+the older COPY TO / DIM ones.
+
+**Walls (`make basic-reloc`, 2026-10-08 evening): main low 55 B, page 1 101 B;
+sub p0 17 B, sub p1 177 B; disk ~4415 B.** Recount before quoting.
 
 ➡️ **NEXT, by tier (`python3 tools/tier_table.py --all`; recount):**
 - TIER 1: the three standing meta items only.
-- TIER 2: **S10.C, the INPUT side through `$FE8A`** -- the item's own note says
+- TIER 2: **S10.C -- 🙋 now a tier question (above); do not start it before the
+  answer.** Was: the INPUT side through `$FE8A` -- the item's own note says
   its LOAD tier tag is stale and what is left is the ownership move. Main's
   resident read engine still serves OPEN FOR INPUT (files.asm `fat_io_open`),
   the `ARL_GETBYTE` default, EOF (`fat_io_eof`) and cload's vector restore.

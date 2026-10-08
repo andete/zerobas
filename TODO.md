@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30520 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30543 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29326,6 +29326,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rewrites the entry per WRBLK or only at FCLOSE has to be MEASURED before
       deferring it -- through the FDC's I/O registers or the image between calls,
       not by stepping its ROM. The read side (3.1x) is unchanged.
+      📏 **MEASURED THE SAME NIGHT -- THE REFERENCE WRITES EACH SECTOR ONCE AND
+      DEFERS THE REST.** [`fdccount_probe.py`](scratchpad/fdccount_probe.py)
+      counts WD2793 sector COMMANDS (a write watchpoint on the command register,
+      `$7FB8` on both machines -- an I/O register, the permitted side) binned by
+      the exerciser's phase byte ([`fdccount_run.out`](scratchpad/fdccount_run.out)).
+      The 32 KB write (128 WRBLKs of 256 B = 64 data sectors, phase 7):
+      | | write commands | read commands |
+      |---|---|---|
+      | CF-3300 | **72** | 78 |
+      | ours | **384** | 483 |
+      So the CF-3300 writes every 512 B data sector ONCE and its directory / FAT
+      updates add ~8 more -- not per call. Ours does ~3 writes and ~4 reads a
+      CALL: the data sector's read-modify-write, the directory entry, the FAT.
+      🔴 An instrument fault of mine first: the counter watched Philips' FDC
+      address (`$7FF8`) and read ZERO commands on both; watching `$7F80..$7FFF`
+      found the National mapping (`$7FB8` command, `$7FBB` data).
+      ➡️ **STEP 2 IS A WRITE-CACHE LAYER, A DESIGNED SLICE:** keep a half-filled
+      data sector across calls (write it when full, at a seek away, or at
+      FCLOSE), and defer `fat_dir_update` and the FAT copies to FCLOSE, as the
+      reference's counts imply. ⚠️ That changes what is on the medium between
+      calls -- a program that never closes loses the size on the reference too,
+      which is the faithful face, but bdos-acceptance and the roundtrip probe
+      must be re-read for any mid-sequence image comparison before building.
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
