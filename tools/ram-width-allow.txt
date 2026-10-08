@@ -47,14 +47,11 @@ basic KEYARG/WIDIG disputed
 basic LST_HI/RN_LINE/SL_DELHI/SL_SIZE overruns
 basic LST_PTR/SL_DELPTR/SL_TOK overruns
 basic MATH_A/RND_STATE/SQRT_Y disputed
-basic MIDS_DEST undeclared
 basic MULPROD/RND_ACCLE overruns
 basic OO_DEVTYPE overruns
 basic SH_BASE/SH_OP disputed
 disk BDOS_RECIDX overruns
 disk F365_STUB undeclared
-disk FAT_B0 undeclared
-disk FAT_B1 undeclared
 disk FAT_WRTMP2 overruns
 disk FREAD_LEFT/RDBLK_REQ disputed
 disk INT_SP_SAVE/INT_STK_TOP disputed

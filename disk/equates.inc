@@ -290,8 +290,8 @@ DOS_DTAPTR      equ     $F23D   ; disk work-area current-DTA cache (word, LE; M1
 FAT_PARITY      equ     $E4B2   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
 FAT_BYTEIDX     equ     $E4B3   ; byte index within a FAT sector (word, 0..511)
 FAT_FATSEC      equ     $E4B5   ; FAT sector currently read (word)
-FAT_B0          equ     $E4B7   ; first FAT byte of a 12-bit entry
-FAT_B1          equ     $E4B8   ; second FAT byte of a 12-bit entry
+FAT_B0          equ     $E4B7   ; first FAT byte of a 12-bit entry (1 B)
+FAT_B1          equ     $E4B8   ; second FAT byte of a 12-bit entry (1 B)
 FAT_NAMEPTR     equ     $E4B9   ; -> 11-byte search name (word)
 FAT_DIRSEC      equ     $E4BB   ; current root-dir sector being scanned (word)
 FAT_DIRREM      equ     $E4BD   ; root-dir sectors remaining to scan (word)

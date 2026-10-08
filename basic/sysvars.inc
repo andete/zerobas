@@ -905,7 +905,7 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; top of the block; $E3E6, 378 B under the wall. (That anchor was TMISMATCH+1
 ; until D-PENDERR retired the TMISMATCH cell; STRENG_SPARE is the same address,
 ; deliberately left standing so MIDS_DEST does NOT move -- see its definition.)
-MIDS_DEST       equ     STRENG_SPARE + 1
+MIDS_DEST       equ     STRENG_SPARE + 1    ; MID$ statement: the target descriptor's address (2 B)
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte (2 B)
 ; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
 ; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no

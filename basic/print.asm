@@ -106,8 +106,13 @@ ex_print:
                 cp      CAS_OUT_MODE
                 jr      z,exp_dev_cas
                 cp      CAS_IN_MODE
-                jp      z,load_error        ; PRINT# to an INPUT tape channel -> error
-                                            ; (never fch_select it: no fat ctx exists)
+                ; 🔴 D-CASPRDIR (2026-10-08): 52, RAISED -- the VG-8020's answer
+                ; (probes/basic/basic_probe_casprdir.py `pin`: `52 in 30` under
+                ; ON ERROR). This was `jp z,load_error`, which prints and RETURNS:
+                ; untrappable, and the program ran on to its next line. The same
+                ; code the disk arm below gives an INPUT channel (D-CHDIR); and
+                ; INPUT# from a tape OUTPUT channel already said 52 on both.
+                jp      z,err_badfnum_raise ; (never fch_select it: no fat ctx exists)
                 ; --- disk file channel (unchanged) ---
                 push    hl                  ; guard text cursor (fch_select uses LDIR)
                 ld      a,e

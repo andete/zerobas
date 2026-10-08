@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **105** in the MSX standard work area at or above `$F380`.
-* **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (122 with a machine-readable width), plus **29** in the MSX standard work area at or above `$F380`.
+* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **105** in the MSX standard work area at or above `$F380`.
+* **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **29** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -270,7 +270,7 @@ second one is the question a per-component map cannot answer.
 | `$E3E1` | 2 B | `basic` | `ISRCH_A` | resolved A-operand body base (2 B) |  |
 | `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) |  |
 | `$E3E5` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
-| `$E3E6` |  | `basic` | `MIDS_DEST` |  |  |
+| `$E3E6` | 2 B | `basic` | `MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
 | `$E3E9` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) |  |
 | `$E3EA` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) |  |
 | `$E3EB` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) |  |
@@ -305,8 +305,8 @@ second one is the question a per-component map cannot answer.
 | `$E4B2` | 1 B | `disk` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
 | `$E4B3` | 2 B | `disk` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) |  |
 | `$E4B5` | 2 B | `disk` | `FAT_FATSEC` | FAT sector currently read (word) |  |
-| `$E4B7` |  | `disk` | `FAT_B0` | first FAT byte of a 12-bit entry |  |
-| `$E4B8` |  | `disk` | `FAT_B1` | second FAT byte of a 12-bit entry |  |
+| `$E4B7` | 1 B | `disk` | `FAT_B0` | first FAT byte of a 12-bit entry (1 B) |  |
+| `$E4B8` | 1 B | `disk` | `FAT_B1` | second FAT byte of a 12-bit entry (1 B) |  |
 | `$E4B9` | 2 B | `disk` | `FAT_NAMEPTR` | -> 11-byte search name (word) |  |
 | `$E4BB` | 2 B | `disk` | `FAT_DIRSEC` | current root-dir sector being scanned (word) |  |
 | `$E4BD` | 2 B | `disk` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) |  |

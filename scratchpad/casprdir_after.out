@@ -1,0 +1,6 @@
+== ctl    VG-8020 R HELLO        ours R HELLO
+== pin    VG-8020 E52 in 30      ours E52 in 30
+== outin  VG-8020 E52 in 30      ours E52 in 30
+
+PASS: a tape channel used against its direction (3/3)
+refcache: 0 hit, 6 miss, 6 stored

@@ -6310,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30283 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30308 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27248,7 +27248,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       excluded), 2026-10-07: ~~cload.asm ×4~~ (✅ D-LOADTAIL, the same day: all
       four were LOAD / RUN's option tail), ~~files.asm ×1 (`jp z` at ~2146)~~
       (✅ D-NODISKVERBS, 2026-10-07: MERGE's no-disk `load error`),
-      field.asm ×1, print.asm ×1 (PRINT# to a CAS-INPUT channel), save.asm ×5
+      field.asm ×1, ~~print.asm ×1 (PRINT# to a CAS-INPUT channel)~~ (✅ D-CASPRDIR,
+      2026-10-08 -- below), save.asm ×5
       (~~stray 4th token ×2~~ -- ✅ D-BSAVEVAR, 2026-10-07: it was not a stray
       token but the exec EXPRESSION; ~~`,S` VRAM-to-tape, trailing junk after
       the name~~ and the CSAVE speed's `jp c` -- ✅ D-TAPETAIL, the same day;
@@ -27259,6 +27260,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       record why `load error` is the reference's own face there. A knife per
       site, as D-CHDIR's.
       🤖 **AUTONOMOUS** — the references settle each site.
+      ✅ **D-CASPRDIR (2026-10-08): `PRINT#` TO A TAPE CHANNEL OPEN FOR INPUT IS 52,
+      RAISED, AS ON THE VG-8020.** The "needs a TAPE FIXTURE" blocker went with
+      the Vleermuis experiment's ASCII tape builder (`cas_encode.build_cas_ascii`):
+      [`basic_probe_casprdir.py`](probes/basic/basic_probe_casprdir.py), gate
+      `casprdir-acceptance`, the VG-8020 against the diskless build, under ON
+      ERROR -- `ctl` (LINE INPUT# reads `HELLO` on both), `pin` (VG-8020 `52 in
+      30`, ours **no error**: `load error` printed and the program ran on to its
+      next line), `outin` (INPUT# from an OUTPUT channel: `52 in 30` on both
+      already) ([`casprdir_before.out`](scratchpad/casprdir_before.out)). The
+      site now jumps to `err_badfnum_raise`, the disk arm's 52 (D-CHDIR) -- same
+      size. 3/3 after. 🔪 K-CP1 (back to `load_error`) moves exactly `pin`
+      ([`casprdir_knives.out`](scratchpad/casprdir_knives.out)); its ROM hashes
+      to the pre-fix build's. 🔮 Predicted 52 / no error / 52: all three HIT.
+      ➡️ **Left:** field.asm's GET disk error (`jp c,load_error` after
+      `fat_rand_get` -- `disk_error` would raise a pending DSKIO code, but no
+      row reaches a GET read failure yet), files.asm's tape OPEN header-write
+      I/O error and save.asm's tape header write (both need a failing TAPE
+      WRITE -- STOP mid-write is the candidate), files.asm's `disk_error`
+      fallback (by design: no code pending), str-engine.asm's sub-ROM-absent
+      arm, and cload.asm's `dpl_err` -- 🔴 NOT settled: castail's `cas-run-brk`
+      (a tape LOAD broken with Ctrl-STOP) counts ONE message on both, it does
+      not read the TEXT, and cload.asm's own note records the references'
+      text there as `Device I/O error` where ours prints `load error`. The
+      `@BREAK` rig exists; that is the next site to measure under ON ERROR.
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED

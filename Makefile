@@ -2242,6 +2242,13 @@ cas-ascii-acceptance: repack-machine
 eofcas-acceptance: repack-machine
 	python3 probes/basic/basic_probe_eofcas.py
 
+# --- casprdir-acceptance: a tape channel used against its direction (D-CASPRDIR) --
+# PRINT# to a CAS: channel open FOR INPUT, INPUT# from one open FOR OUTPUT, and
+# a LINE INPUT# control, under ON ERROR: the VG-8020 raises 52 in the line; ours
+# printed `load error` (untrappable) for the first. Tape built by cas_encode.
+casprdir-acceptance: repack-machine
+	python3 probes/basic/basic_probe_casprdir.py
+
 # --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
 # zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
 dosbasic-acceptance: repack-machine
