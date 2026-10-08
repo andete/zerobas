@@ -17,6 +17,7 @@ read.
           header search -- castail's cas2-opencase, once its normaliser
           stopped hiding our `load error`)
   pmerge  the same with MERGE"CAS:NOSUCH"
+  pbload  the same with BLOAD"CAS:NOSUCH" (D-CASBIN: the BLOAD tenant searches now)
 
 No tape is inserted, so the search never ends by itself. Read as `[E err
 erl]` (spelled so the typed source never matches) or the last message line.
@@ -46,6 +47,7 @@ CASES = {
     "prun": prog('RUN"CAS:NOSUCH"'),
     "popen": prog('OPEN"CAS:NOSUCH"FOR INPUT AS#1'),
     "pmerge": prog('MERGE"CAS:NOSUCH"'),
+    "pbload": prog('BLOAD"CAS:NOSUCH"'),
 }
 RX_E = re.compile(r"\[E\s+(-?\d+)\s+(-?\d+)\s*\]")
 

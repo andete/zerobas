@@ -1,0 +1,13 @@
+== bnn   VG-8020 PEEK 34                    ours PEEK 17
+== bty   VG-8020 PEEK 34                    ours PEEK 0 (load error)
+== bbare VG-8020 PEEK 34                    ours PEEK 0 (load error)
+== lbin  VG-8020 20 STOP                    ours Device I/O error
+== cbin  VG-8020 10 END                     ours Device I/O error
+DIVERGES bnn: VG-8020 PEEK 34 vs ours PEEK 17
+DIVERGES bty: VG-8020 PEEK 34 vs ours PEEK 0 (load error)
+DIVERGES bbare: VG-8020 PEEK 34 vs ours PEEK 0 (load error)
+DIVERGES lbin: VG-8020 20 STOP vs ours Device I/O error
+DIVERGES cbin: VG-8020 10 END vs ours Device I/O error
+
+FAIL: binary files in a tape search (0/5)
+refcache: 0 hit, 10 miss, 10 stored

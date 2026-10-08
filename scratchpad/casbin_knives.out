@@ -1,0 +1,8 @@
+  ROM dfba7872 3f091d0c caffbc45 b61e9315  ->  dfba7872 d379b8e6 caffbc45 b61e9315
+PASS  K-BN1: diverged ['bnn', 'bnodev', 'cbin', 'lbin'] (want exactly ['bnn', 'bnodev', 'cbin', 'lbin'])
+  ROM dfba7872 d379b8e6 caffbc45 b61e9315  ->  dfba7872 a8a4db46 caffbc45 b61e9315
+PASS  K-BN2: diverged ['bbare', 'bnn', 'bnodev', 'bty'] (want exactly ['bbare', 'bnn', 'bnodev', 'bty'])
+  ROM dfba7872 a8a4db46 caffbc45 b61e9315  ->  dfba7872 923d4942 caffbc45 b61e9315
+PASS  K-BN3: diverged ['bnodev'] (want exactly ['bnodev'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

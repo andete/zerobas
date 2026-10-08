@@ -3790,7 +3790,7 @@ FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_N
 ; The compare is BYTE-EXACT / case-sensitive — oracle-confirmed on the stock
 ; National_CF-3300 (spec §A.5): CLOAD"ABC" does NOT match a tape file "abc".
 CAS_WANT        equ     $F00A   ; requested 6-char tape name, space-padded (6)
-CAS_WANT_ON     equ     $F010   ; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3, else $EA (D-CASTYPE) (1)
+CAS_WANT_ON     equ     $F010   ; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1)
 CAS_HDRNAME     equ     $F011   ; 6-char name read from the current tape header (6)
 CAS_HDRID       equ     $F017   ; file-type id byte read from the current header (1)
 ; --- Tier-3 CLOAD? verify (Item B): compare a tokenised tape program against the

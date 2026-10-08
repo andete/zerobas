@@ -4,6 +4,7 @@
 == prun   VG-8020 E19 in 20          ours E19 in 20
 == popen  VG-8020 E19 in 20          ours E19 in 20
 == pmerge VG-8020 E19 in 20          ours E19 in 20
+== pbload VG-8020 E19 in 20          ours E19 in 20
 
-PASS: a tape search broken with Ctrl-STOP (6/6)
-refcache: 6 hit, 6 miss, 6 stored
+PASS: a tape search broken with Ctrl-STOP (7/7)
+refcache: 6 hit, 8 miss, 8 stored

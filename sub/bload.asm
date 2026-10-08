@@ -114,6 +114,18 @@ bl_load_error:
                 ld      (BL_STAT),a
                 ret
 
+; bl_tape_dio -- D-CASBIN (2026-10-08): the tape SEARCH failed (an I/O error or
+; Ctrl-STOP -- cas_open_match's CF): motor off, BL_STAT = 19, and the resident
+; stub RAISES it, as main's dpl_dio does for LOAD / CLOAD / RUN / OPEN / MERGE
+; (D-CASBRK: the VG-8020's `19 in 20`). Reached by `jp` at do_bload's depth.
+bl_tape_dio:
+                call    TAPIOF
+                ld      a,19                ; Device I/O error
+                ld      (BL_STAT),a
+                ret
+
+                include "basic/cascap-body.inc"     ; cas_capture_name (D-CASBIN)
+
 ; bl_notfound — the DISK not-found arm (D-BLNF). Same shape and same stack
 ; behaviour as bl_load_error above (reached by `jp`, returns into whoever called
 ; the tenant body), but it files BL_STAT = 2 instead of 1 and the resident stub

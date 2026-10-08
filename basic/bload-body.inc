@@ -80,24 +80,19 @@ is_tape:
                 ld      a,(VRAM_FLAG)
                 or      a
                 jp      nz,bl_load_error       ; ,S VRAM-from-tape not supported here
-                ; --- open the tape and skip the file-header block's tone ---
-                call    TAPION              ; sync block 1 (file header)
-                jp      c,bl_load_error
-
-                ; --- file-header block: 10x BINARY_ID + 6-char filename ---
-                ; spec-bload-r.md §1: header block is 16 bytes; byte 0 is the
-                ; binary-file id. We verify the id and discard the rest.
-                call    TAPIN
-                jp      c,bl_load_error
-                cp      BINARY_ID           ; must be a binary (BSAVE) file
-                jp      nz,bl_load_error
-                ld      b,15                ; remaining header bytes
-skip_hdr:
-                push    bc                  ; TAPIN trashes all regs
-                call    TAPIN
-                pop     bc
-                jp      c,bl_load_error
-                djnz    skip_hdr
+                ; 🔴 D-CASBIN (2026-10-08): THE TAPE IS SEARCHED, BY NAME AND TYPE, AS
+                ; EVERY OTHER TAPE VERB SEARCHES IT. This read the FIRST file's header,
+                ; never looked at the name, and refused a non-binary file with an
+                ; untrappable `load error` -- so `BLOAD"CAS:X"` on a tape holding a
+                ; binary Y first LOADED Y, silently (VG-8020: skips Y, loads X;
+                ; probes/basic/basic_probe_casbin.py `bnn`). Now: the name into
+                ; CAS_WANT (cascap-body.inc, shared with main), bit 6 = binary, and
+                ; the sub-local matcher -- which leaves the tape at the DATA block.
+                call    cas_capture_name    ; HL past "CAS:" (or the bare diskless name)
+                ld      hl,CAS_WANT_ON
+                set     6,(hl)              ; BLOAD wants $D0
+                call    cas_open_match      ; Found:/Skip : rows, as the reference
+                jp      c,bl_tape_dio       ; I/O error / Ctrl-STOP: 19, as D-CASBRK
 
                 ; --- data block: skip its tone, then read the 6-byte header --
                 call    TAPION              ; sync block 2 (data)
@@ -208,6 +203,9 @@ is_disk:
                 ld      (BL_STAT),a
                 ret
 isd_tape:
+                dec     hl                  ; D-CASBIN: back to the name's FIRST char --
+                                            ; is_tape now reads the name (the `cp ':'`
+                                            ; above stepped one past it)
                 push    hl                  ; is_tape drops the saved name start
                 jp      is_tape
 isd_disk:

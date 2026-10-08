@@ -109,7 +109,7 @@ loadtail-acceptance inputdn-acceptance bloadofs-acceptance
 nodiskopen-acceptance bsavevar-acceptance tapetail-acceptance
 nodiskverbs-acceptance readref-acceptance litref-acceptance
 asavedev-acceptance casprdir-acceptance casbrk-acceptance
-castype-acceptance""".split()
+castype-acceptance casbin-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

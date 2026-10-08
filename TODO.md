@@ -6310,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30382 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30415 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27355,9 +27355,42 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `build_cas_basic_csave`, 8/8. The VG-8020 read both tapes alike.
       ➡️ The verbs' own type checks after the match (do_tape_prog's 3-way
       dispatch, OPEN's `cp ASCII_ID`, MERGE's `jr nz,mc_ioerr`) are unreachable
-      now and left in place; a tape with a BINARY ($D0) file still makes
+      now and left in place; ~~a tape with a BINARY ($D0) file still makes
       `cas_skip_data` fail (`unknown id`) where the reference would step over
-      it -- unmeasured.
+      it -- unmeasured.~~ (✅ D-CASBIN, the same day -- below.)
+      ✅ **D-CASBIN (2026-10-08): BINARY FILES IN A TAPE SEARCH -- AND `BLOAD"CAS:X"`
+      LOADED THE WRONG FILE, SILENTLY.** 🎚️ The `bnn` half is TIER 1 (happy path:
+      a named BLOAD from a tape holding more than one file). BLOAD's tape arm
+      (bload-body.inc) read the FIRST file's header, never the name, and refused a
+      non-binary file with an untrappable `load error`; and `cas_skip_data` had no
+      `$D0` arm, so a binary file ahead stopped LOAD / CLOAD
+      ([`basic_probe_casbin.py`](probes/basic/basic_probe_casbin.py), gate
+      `casbin-acceptance`, [`casbin_before.out`](scratchpad/casbin_before.out)):
+      | row | tape | VG-8020 | ours before |
+      |---|---|---|---|
+      | `bnn` | binary Y, binary X; `BLOAD"CAS:X"` | PEEK 34 (X) | **PEEK 17 (Y)** |
+      | `bty` | ASCII X, binary X; `BLOAD"CAS:X"` | 34 | `load error` |
+      | `bbare` | ASCII X, binary X; `BLOAD"CAS:"` | 34 | `load error` |
+      | `lbin` | binary X, ASCII X; `LOAD"CAS:X"` | `20 STOP` | `Device I/O error` |
+      | `cbin` | binary X, tokenised X; `CLOAD"X"` | `10 END` | `Device I/O error` |
+      🔮 All ten readings predicted: HIT.
+      🔧 BLOAD's tape arm now searches like every other tape verb: the name into
+      `CAS_WANT` through `cas_capture_name` -- moved VERBATIM into
+      `basic/cascap-body.inc` and included by main (byte-identical, main's hash
+      unchanged) and by the sub BLOAD tenant, because main page 1 is switched out
+      there -- bit 6 of `CAS_WANT_ON` = binary, then the sub-local matcher, which
+      leaves the tape at the data block. A failed search is `bl_tape_dio`: BL_STAT
+      19, raised (casbrk's new `pbload`: `19 in 20` on both). `cas_skip_data`
+      gains `csd_bin` (start / end / exec, then end - start + 1 bytes). The
+      diskless `BLOAD"X"` (no device) enters through `isd_tape` one char into
+      the name -- it only ever needed the drive-colon test -- so it steps back
+      first (`bnodev`, 34 on both). Main page 1 was 112 B on 2026-10-08, unchanged;
+      sub page 1 338 -> 236 B the same day. 6/6 after, casbrk 7/7.
+      🔪 Knives ([`casbin_knives.out`](scratchpad/casbin_knives.out)): K-BN1 (no
+      binary skip) -> bnn/bnodev/lbin/cbin, K-BN2 (BLOAD not marked binary) ->
+      bnn/bty/bbare/bnodev, K-BN3 (no step back) -> bnodev -- each exactly.
+      ⚠️ BLOAD now prints the search's `Found:` / `Skip :` rows as the other verbs
+      do; no row reads BLOAD's screen against the reference yet.
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED

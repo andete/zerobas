@@ -69,18 +69,21 @@ com_hdr_next:
                 ; first NAME match and let the verb accept or reject the type: LOAD
                 ; "CAS:" loaded a tokenised file, CLOAD an ASCII one, and MERGE / OPEN
                 ; rejected one (a stale disk code, an untrappable `load error`) where
-                ; the reference searched on. Bit 7 of CAS_WANT_ON = CLOAD.
+                ; the reference searched on. Bit 7 of CAS_WANT_ON = CLOAD ($D3), bit 6
+                ; = BLOAD ($D0, D-CASBIN), neither = the ASCII verbs ($EA).
                 ld      a,(CAS_WANT_ON)
-                rlca                        ; CF = bit 7
-                ld      a,ASCII_ID
-                jr      nc,com_type
+                add     a,a                 ; CF = bit 7, S = bit 6
                 ld      a,BASIC_ID
+                jr      c,com_type
+                ld      a,BINARY_ID
+                jp      m,com_type
+                ld      a,ASCII_ID
 com_type:
                 ld      hl,CAS_HDRID
                 cp      (hl)
                 jr      nz,com_skip         ; wrong type: skip it, no row
                 ld      a,(CAS_WANT_ON)
-                and     1                   ; the name flag (bit 7 is the type)
+                and     1                   ; the name flag (bits 7/6 are the type)
                 jr      z,com_match         ; bare form -> this file matches
                 ld      hl,CAS_HDRNAME
                 ld      de,CAS_WANT
@@ -125,8 +128,48 @@ cas_skip_data:
                 jr      z,csd_tok
                 cp      ASCII_ID
                 jr      z,csd_ascii
+                cp      BINARY_ID
+                jr      z,csd_bin           ; D-CASBIN: a BSAVE file, stepped over
                 scf                         ; unknown id -> error
                 ret
+; csd_bin -- D-CASBIN (2026-10-08): skip a BINARY ($D0) file's data block:
+; start, end, exec (LE words), then end - start + 1 bytes. The VG-8020 steps over
+; one ahead of the file LOAD / CLOAD / BLOAD wants (probes/basic/
+; basic_probe_casbin.py); this used to be `unknown id -> error`. CLINK is scratch,
+; as csd_tok's; the count rides the STACK across TAPIN, which trashes registers.
+csd_bin:
+                call    TAPION              ; data block leader
+                ret     c
+                call    TAPIN               ; start low
+                ret     c
+                ld      (CLINK),a
+                call    TAPIN               ; start high
+                ret     c
+                ld      (CLINK+1),a
+                call    TAPIN               ; end low
+                ret     c
+                push    af
+                call    TAPIN               ; end high
+                pop     bc                  ; B = end low (flags kept)
+                ret     c
+                ld      h,a
+                ld      l,b                 ; HL = end
+                ld      de,(CLINK)
+                or      a
+                sbc     hl,de               ; end - start
+                inc     hl
+                inc     hl
+                inc     hl                  ; + 1, + the exec word's 2
+csdb_lp:
+                push    hl
+                call    TAPIN
+                pop     hl
+                ret     c
+                dec     hl
+                ld      a,h
+                or      l
+                jr      nz,csdb_lp
+                ret                         ; CF clear (`or l`)
 ; cal_refill (cal-refill-body.inc) fills "whichever buffer CAL_CURHI is NOT
 ; pointing at" for cload.asm's double-buffered read-ahead. This loop wants a
 ; SINGLE fixed target (CAL_BUF, scanned directly below) every call, which it

@@ -1,0 +1,9 @@
+== bnn   VG-8020 PEEK 34                    ours PEEK 34
+== bty   VG-8020 PEEK 34                    ours PEEK 34
+== bbare VG-8020 PEEK 34                    ours PEEK 34
+== bnodev VG-8020 PEEK 34                    ours PEEK 34
+== lbin  VG-8020 20 STOP                    ours 20 STOP
+== cbin  VG-8020 10 END                     ours 10 END
+
+PASS: binary files in a tape search (6/6)
+refcache: 0 hit, 12 miss, 12 stored
