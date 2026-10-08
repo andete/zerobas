@@ -18,6 +18,7 @@ never reads the name: a non-binary file there is an untrappable `load error`.
   bty    BLOAD"CAS:X" on A + X2          -> PEEK          (type: skip A)
   bbare  BLOAD"CAS:" on A + X2           -> PEEK          (bare: skip A?)
   bnodev BLOAD"X" (no device) on Y + X2 -> PEEK          (diskless: the tape)
+  bscr   BLOAD"CAS:X" on Y + X2          -> the search's Skip : / Found: rows
   lbin   LOAD"CAS:X" on X1 + A, LIST     -> 20 STOP       (LOAD skips a binary)
   cbin   CLOAD"X" on X1 + T, LIST        -> 10 END        (CLOAD likewise)
 
@@ -44,6 +45,7 @@ CASES = {
     "bty": (("A", "X2"), ["NEW", "POKE&H9000,0", 'BLOAD"CAS:X"'] + WAIT + PEEK, "peek"),
     "bbare": (("A", "X2"), ["NEW", "POKE&H9000,0", 'BLOAD"CAS:"'] + WAIT + PEEK, "peek"),
     "bnodev": (("Y", "X2"), ["NEW", "POKE&H9000,0", 'BLOAD"X"'] + WAIT + PEEK, "peek"),
+    "bscr": (("Y", "X2"), ["NEW", 'BLOAD"CAS:X"'] + WAIT + ['PRINT"[D]"'], "rows"),
     "lbin": (("X1", "A"), ["NEW", 'LOAD"CAS:X"'] + WAIT + ["LIST"], "list"),
     "cbin": (("X1", "T"), ["NEW", 'CLOAD"X"'] + WAIT + ["LIST"], "list"),
 }
@@ -64,6 +66,9 @@ def reading(machine, name):
     if how == "peek":
         m = re.findall(r"\[P\s*(\d+)\s*\]", flat)
         return f"PEEK {m[-1]}" + (f" ({errs[-1]})" if errs else "") if m else (errs[-1] if errs else None)
+    if how == "rows":
+        rows = re.findall(r"(Skip :\s?\S+|Found:\s?\S+)", flat)
+        return " | ".join(r.replace(" ", "") for r in rows) or (errs[-1] if errs else "no rows")
     tail = flat.split("LIST", 1)[1] if "LIST" in flat else ""
     got = re.findall(r"\b(10 END|20 STOP)\b", tail)
     return " + ".join(got) if got else (errs[-1] if errs else "nothing listed")

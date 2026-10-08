@@ -6310,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30415 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30417 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27389,8 +27389,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔪 Knives ([`casbin_knives.out`](scratchpad/casbin_knives.out)): K-BN1 (no
       binary skip) -> bnn/bnodev/lbin/cbin, K-BN2 (BLOAD not marked binary) ->
       bnn/bty/bbare/bnodev, K-BN3 (no step back) -> bnodev -- each exactly.
-      ⚠️ BLOAD now prints the search's `Found:` / `Skip :` rows as the other verbs
-      do; no row reads BLOAD's screen against the reference yet.
+      ✅ BLOAD now prints the search's `Found:` / `Skip :` rows as the other verbs
+      do, and they are the VG-8020's: casbin's `bscr` (binary Y then binary X,
+      `BLOAD"CAS:X"`) reads `Skip :Y | Found:X` on both
+      ([`casbin_bscr.out`](scratchpad/casbin_bscr.out)) -- predicted, HIT.
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED
