@@ -88,6 +88,17 @@ probe-sides-selftest""".split()
 # SCOPED plan (its CANARY), so a ROM change still gets the keyword net.
 SWEEPS = ("kwsweep", "kwtime", "kwram")
 SWEEP_PINS = ("build/kwsweep-verdicts.json", "build/kwtime.json", "build/kwram.json")
+# D-PINSTALE (2026-10-08): the ROM hashes the pins were MEASURED on. A run that
+# would leave the sweeps out re-measures them instead when the built ROM is not
+# that one -- D-STATICEMU's first ROM commit rendered the tier sheet from the
+# old ROM's pins and FULL's post-check went red (D-PUTDIR, 169/170).
+SWEEP_STAMP = "build/sweeps-rom.txt"
+
+
+def sweeps_needed(sweeps_excluded, stamp, current):
+    """-> True when a run that was going to SKIP the keyword sweeps must run
+    them: their pins were measured on another ROM, or on no recorded one."""
+    return bool(sweeps_excluded) and stamp != current
 
 EMULATOR = """kwsweep kwtime kwram
 banner-acceptance string-acceptance str-domain-acceptance strparen-acceptance
@@ -343,6 +354,14 @@ def selftest():
         unfingerprinted_scripts(lambda t: inside, seen) == set())
     arm("S-STATICEMU no emulator-booting sweep is a STATIC unit",
         not set(SWEEPS) & set(STATIC) and set(SWEEPS) <= set(EMULATOR))
+    arm("S-PINSTALE the same ROM keeps the skip",
+        not sweeps_needed(True, "a b c", "a b c"))
+    arm("S-PINSTALE a moved ROM runs the sweeps",
+        sweeps_needed(True, "a b c", "a b d"))
+    arm("S-PINSTALE no stamp on record runs the sweeps",
+        sweeps_needed(True, None, "a b c"))
+    arm("S-PINSTALE NEGATIVE: a run that schedules them anyway changes nothing",
+        not sweeps_needed(False, None, "a b c"))
     arm("S-STATICEMU NEGATIVE: STATIC is not empty (the arm above is not vacuous)",
         "basic-reloc" in STATIC and "tiers-md-check" not in STATIC)
     arm("S2 a scratchpad script in ONE recipe is caught",
@@ -671,7 +690,7 @@ def main():
     # D-STATICEMU: the sweeps' pins, kept across the wipe for a run that does
     # not re-measure them (read into memory: build/ is about to go).
     kept_pins = {}
-    for _p in SWEEP_PINS:
+    for _p in SWEEP_PINS + (SWEEP_STAMP,):
         try:
             kept_pins[_p] = open(_p, "rb").read()
         except OSError:
@@ -732,6 +751,13 @@ def main():
     # D-STATICEMU: a run that does not re-measure the sweeps checks the tier sheet
     # against the pins the LAST run wrote -- said out loud -- and, with none on
     # record at all, does not run the check rather than have it refuse.
+    rom_now = " ".join(hashes())
+    _stamp = kept_pins.get(SWEEP_STAMP, b"").decode().strip() or None
+    if sweeps_needed("kwsweep" in excl, _stamp, rom_now):
+        excl -= set(SWEEPS)
+        print("=== D-PINSTALE: the keyword pins were measured on "
+              + (f"ROM {_stamp}" if _stamp else "no recorded ROM")
+              + f", this build is {rom_now}: the three sweeps RUN ===", flush=True)
     if "kwsweep" in excl:
         for _p, _b in kept_pins.items():
             os.makedirs(os.path.dirname(_p), exist_ok=True)
@@ -845,6 +871,12 @@ def main():
         # blur the windows); it has to be PRINTED after the verdict, or a
         # "N/N green" line lands underneath a red finding and reads as the
         # answer [[an-unnamed-outcome-reads-as-no-outcome]].
+
+    # D-PINSTALE: the pins this pool just wrote belong to THIS ROM -- record it,
+    # but only when all three sweeps ran and passed (a red one's pin is suspect).
+    if all(results.get(g, (1,))[0] == 0 for g in SWEEPS):
+        with open(SWEEP_STAMP, "w") as fh:
+            fh.write(rom_now + "\n")
 
     # --- the post-pool serial phase (POSTCHECKS) ----------------------------
     post_results = []

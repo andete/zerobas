@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30621 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30631 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27296,7 +27296,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       measured the NEW ROM, so `make tiers-md` and FULL always agreed. ➡️ **LOOP
       RULE until D-PINSTALE lands: a ROM-changing commit runs `make kwsweep kwtime
       kwram` (with the knife pin) BEFORE `make tiers-md`;** a docs / probe commit
-      does not need to. That commit's sheet was re-rendered from FULL's fresh pins
+      does not need to. (~~LOOP RULE~~ RETIRED 2026-10-09: D-PINSTALE makes
+      gates-fast run them itself when the ROM moved.) That commit's sheet was re-rendered from FULL's fresh pins
       (same ROM) and `tiers-md-check` re-run green alone.
 - [ ] 🔧 **D-PINSTALE — gates-fast SHOULD RE-MEASURE THE KEYWORD SWEEPS WHEN THE ROM HAS MOVED SINCE THEIR PINS
       (filed 2026-10-08 by D-STATICEMU's first ROM commit)**
@@ -27310,6 +27311,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       built ROM's hashes differ -- docs commits stay at ~2 min, ROM commits pay
       the sweeps once, as before. A selftest arm for both branches.
       🤖 **AUTONOMOUS** — a tool change; the gate's own selftest settles it.
+      ✅ **FIXED 2026-10-09.** `tools/run_gates.py` writes `build/sweeps-rom.txt` --
+      the ROM hashes -- after a pool in which all three sweeps passed, keeps it
+      across the build wipe with the pins, and a run that would skip the sweeps
+      RUNS them when the built ROM differs or no stamp is on record
+      (`sweeps_needed`, four selftest arms incl. a NEGATIVE). 📏 Measured end to
+      end ([`pinstale_fast1.out`](scratchpad/pinstale_fast1.out),
+      [`pinstale_fast2.out`](scratchpad/pinstale_fast2.out)): the first gates-fast
+      found no stamp and ran the sweeps (1833 s, 48/48 green) and wrote it; the
+      second, same ROM, skipped them (129 s, 45/45). 🔮 Predicted both: HIT.
 
 - [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
       CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**
