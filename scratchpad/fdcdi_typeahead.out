@@ -1,0 +1,28 @@
+ours: delay 3.0s  arrived whole: False  | t=13.700
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  open"big.txt" for output as #1:poke &
+   |  hd000,1:for i=1 to 200:print#1,"abcde
+   |  fghijklmnopqrs":next:close#1:poke &hd
+   |  000,2
+   |  ZB
+   |  i"r7*6)
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+cf: delay 3.0s  arrived whole: False  | t=11.780
+   |  MSX BASIC version 1.0           Copyri
+   |ght 1983 by Microsoft     23430 Bytes fr
+   |ee                Disk BASIC version 1.0
+   |          Ok
+   |  open"big.txt" for output as #   1:poke
+   | &hd000,1:for i=1 to 20   0:print#1,"abc
+   |defghijklmnopqr   s":next:close#1:poke &
+   |hd000,2
+   |  Ok                              print"
+   |z"+"qr$(7*6)              zqr$(7*6)
+   |                  Ok
+   |                  color auto  goto  list
+   |  run

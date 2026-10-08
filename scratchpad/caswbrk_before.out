@@ -1,0 +1,8 @@
+== pcsave VG-8020 no error         ours no error
+== psave  VG-8020 None             ours None
+== pasave VG-8020 None             ours None
+== pbsave VG-8020 no error         ours no error
+== popen  VG-8020 no error         ours no error
+
+INSTRUMENT FAULT: the VG-8020 gave no reading -- no reference
+refcache: 0 hit, 10 miss, 10 stored
