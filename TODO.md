@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30543 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30562 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27232,6 +27232,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       tier-status.md changed, or refuse loudly when the pin is absent. A
       selftest arm: a docs-only plan must not schedule an emulator unit.
       🤖 **AUTONOMOUS** — a tool change, the gate's own selftest settles it.
+      ✅ **FIXED 2026-10-08 -- gates-fast 127 s, was ~55 min.** The cause was as
+      guessed: 2183bed9 put the sweeps in STATIC so the post-check
+      `tiers-md-check` always had a FRESH pin, because `run_gates.py`'s `main()`
+      wipes `build/`. Now:
+      - `kwsweep` / `kwtime` / `kwram` are EMULATOR units (`SWEEPS`);
+      - a run that leaves them out keeps the PREVIOUS run's pins across the wipe
+        (`SWEEP_PINS`, read into memory first) and SAYS so; with no pin on record
+        it does not run `tiers-md-check` and says that;
+      - `tools/pick_gates.py` puts the three in `CANARY`, so every ROM-changing
+        SCOPED plan still runs the keyword net (FULL runs everything anyway).
+      Selftest arms: no sweep in STATIC (+ a non-vacuity NEGATIVE), a
+      handler-local ROM change schedules all three, a docs-only plan schedules no
+      emulator unit, a probe-only change does not drag them in. 📏 `make
+      gates-fast`: **127 s wall, 45/45 green**, the pin note printed
+      ([`staticemu_fast.out`](scratchpad/staticemu_fast.out)); the day's runs before
+      it took 3300-3600 s. 🔮 Predicted 3-5 min: HIT.
+      ⚠️ The loop's `make tiers-md` after gates-fast now renders from the LAST
+      FULL's pin, not a fresh one; the next FULL re-checks the sheet against a
+      fresh pin, and a keyword verdict a ROM change moved shows up there.
 
 - [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO
       CLOSED ITEMS TWICE AND A STALE OPEN HEADER BESIDE ITS CLOSED ONE (found and FIXED 2026-10-07)**

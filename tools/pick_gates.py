@@ -48,7 +48,10 @@ ROM_TREES = ("basic/", "sub/", "disk/")
 # Broad, FAST suites that exercise the interpreter core -- the canary for a
 # handler-local ROM change (each measured well under a minute in the battery).
 CANARY = ("error-acceptance", "string-acceptance", "runline-acceptance",
-          "keystr-acceptance", "cursor-acceptance")
+          "keystr-acceptance", "cursor-acceptance",
+          # D-STATICEMU (2026-10-08): the keyword sweeps left the STATIC tier, so
+          # a ROM change gets them HERE -- they are the keyword-level net.
+          "kwsweep", "kwtime", "kwram")
 EXCLUDED5 = ("input-devices-acceptance", "lnblank-say-acceptance",
              "diskbasic-acceptance", "bdos-acceptance", "fat-error-acceptance")
 # 🔴 GENERATED FILES ARE NOT INPUTS. `disk/basic-resident-abi.inc` is regenerated
@@ -289,6 +292,18 @@ def selftest():
     arm("P7 NEGATIVE: the 5th commit since the last full green -> FULL", m == "FULL")
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, None, read=rd)
     arm("P8 NEGATIVE: no sha on record -> FULL, never 'assume recent'", m == "FULL")
+    sw = dict(files, kwsweep={"probes/basic/basic_probe_kwsweep.py"},
+              kwtime={"probes/basic/basic_probe_kwtime.py"},
+              kwram={"probes/basic/basic_probe_kwram.py"})
+    m, r, e, x = plan(["basic/screen.asm"], sw, h_width, 0, read=rd)
+    arm("P-STATICEMU a handler-local ROM change schedules the three sweeps",
+        m == "SCOPED" and {"kwsweep", "kwtime", "kwram"} <= set(e))
+    m, r, e, x = plan(["TODO.md", "docs/a.md"], sw, h_width, 0, read=rd)
+    arm("P-STATICEMU NEGATIVE: a docs-only plan schedules NO emulator unit, sweeps "
+        "included", m == "STATIC" and e == [])
+    m, r, e, x = plan(["probes/basic/basic_probe_math.py"], sw, h_width, 0, read=rd)
+    arm("P-STATICEMU a probe-only change does not drag the sweeps in",
+        m == "SCOPED" and e == ["math-acceptance"])
     m, r, e, x = plan(["TODO.md"], files, h_width, 0, handoff=True, read=rd)
     arm("P9 --handoff forces FULL even on docs", m == "FULL")
     arm("P10 the handler walk: a local label inside ex_width belongs to WIDTH",

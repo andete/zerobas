@@ -73,13 +73,24 @@ temp-root-check todo-citation-check todo-marker-check deferral-pin-check error-a
 filed-pin-check disk-mount-check
 shared-body-check probe-reach-check battery-membership-check fixture-integrity-check
 hook-equate-check
-preflight-check latch-check diskdep-check switch-build-check kwsweep kwtime kwram
+preflight-check latch-check diskdep-check switch-build-check
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check
 deffn-selftest
 probe-sides-selftest""".split()
 
-EMULATOR = """banner-acceptance string-acceptance str-domain-acceptance strparen-acceptance
+# 🔴 D-STATICEMU (2026-10-08): kwsweep / kwtime / kwram BOOT THE REFERENCES AND
+# OURS FOR EVERY ROW, and they sat in STATIC -- ~26 of its ~27 minutes, and
+# gates-fast's whole hour. They were put there (2183bed9) so the post-check
+# tiers-md-check always had a FRESH pin, because main() wipes build/. Now they
+# are EMULATOR units: a run that leaves them out keeps the PREVIOUS pins across
+# the wipe (SWEEP_PINS, below), and pick_gates puts them in every ROM-changing
+# SCOPED plan (its CANARY), so a ROM change still gets the keyword net.
+SWEEPS = ("kwsweep", "kwtime", "kwram")
+SWEEP_PINS = ("build/kwsweep-verdicts.json", "build/kwtime.json", "build/kwram.json")
+
+EMULATOR = """kwsweep kwtime kwram
+banner-acceptance string-acceptance str-domain-acceptance strparen-acceptance
 penderr-acceptance missing-acceptance error-acceptance error-trap-acceptance
 onerr0-acceptance math-acceptance float-acceptance intarg-acceptance
 logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
@@ -330,6 +341,10 @@ def selftest():
 
     arm("S1 a recipe wholly inside the fingerprint is clean",
         unfingerprinted_scripts(lambda t: inside, seen) == set())
+    arm("S-STATICEMU no emulator-booting sweep is a STATIC unit",
+        not set(SWEEPS) & set(STATIC) and set(SWEEPS) <= set(EMULATOR))
+    arm("S-STATICEMU NEGATIVE: STATIC is not empty (the arm above is not vacuous)",
+        "basic-reloc" in STATIC and "tiers-md-check" not in STATIC)
     arm("S2 a scratchpad script in ONE recipe is caught",
         unfingerprinted_scripts(
             lambda t, f=EMULATOR[0]: outside if t == f else inside, seen)
@@ -653,6 +668,14 @@ def main():
     solo = set(x for x in a.solo.split(",") if x)
     jobs = 1 if a.serial else a.jobs
 
+    # D-STATICEMU: the sweeps' pins, kept across the wipe for a run that does
+    # not re-measure them (read into memory: build/ is about to go).
+    kept_pins = {}
+    for _p in SWEEP_PINS:
+        try:
+            kept_pins[_p] = open(_p, "rb").read()
+        except OSError:
+            pass
     os.system(f"rm -rf {OUT} build")
     os.makedirs(OUT, exist_ok=True)
     print(f"=== warm-up (serial build of shared artifacts) ===", flush=True)
@@ -706,6 +729,20 @@ def main():
         excl |= set(EMULATOR)
         print(f"=== SKIPPING {len(EMULATOR)} emulator target(s): {skip_why} ===",
               flush=True)
+    # D-STATICEMU: a run that does not re-measure the sweeps checks the tier sheet
+    # against the pins the LAST run wrote -- said out loud -- and, with none on
+    # record at all, does not run the check rather than have it refuse.
+    if "kwsweep" in excl:
+        for _p, _b in kept_pins.items():
+            os.makedirs(os.path.dirname(_p), exist_ok=True)
+            open(_p, "wb").write(_b)
+        if SWEEP_PINS[0] in kept_pins:
+            print("=== the keyword sweeps are NOT in this run: tiers-md-check reads "
+                  "the PREVIOUS run's pins, kept across the build wipe ===", flush=True)
+        else:
+            excl.add("tiers-md-check")
+            print("=== the keyword sweeps are NOT in this run and no pin is on record: "
+                  "tiers-md-check NOT RUN ===", flush=True)
     else:
         print(f"=== emulator tier RUNS: "
               f"{inert_against_last_green()[1] if not a.full else 'forced by --full'} ===",
