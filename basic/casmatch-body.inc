@@ -61,8 +61,26 @@ com_hdr:
                 ld      (hl),c              ; store name[index]
 com_hdr_next:
                 djnz    com_hdr
+                ; 🔴 D-CASTYPE (2026-10-08): THE TYPE FIRST, AND SILENTLY. The VG-8020
+                ; skips a file of the wrong type -- CLOAD wants $D3, every other verb
+                ; $EA -- even under the wanted name, and prints NO row for it (`Found:X`
+                ; for the file it takes, nothing for the one it passed;
+                ; probes/basic/basic_probe_castype.py). This matcher used to take the
+                ; first NAME match and let the verb accept or reject the type: LOAD
+                ; "CAS:" loaded a tokenised file, CLOAD an ASCII one, and MERGE / OPEN
+                ; rejected one (a stale disk code, an untrappable `load error`) where
+                ; the reference searched on. Bit 7 of CAS_WANT_ON = CLOAD.
                 ld      a,(CAS_WANT_ON)
-                or      a
+                rlca                        ; CF = bit 7
+                ld      a,ASCII_ID
+                jr      nc,com_type
+                ld      a,BASIC_ID
+com_type:
+                ld      hl,CAS_HDRID
+                cp      (hl)
+                jr      nz,com_skip         ; wrong type: skip it, no row
+                ld      a,(CAS_WANT_ON)
+                and     1                   ; the name flag (bit 7 is the type)
                 jr      z,com_match         ; bare form -> this file matches
                 ld      hl,CAS_HDRNAME
                 ld      de,CAS_WANT
@@ -82,6 +100,7 @@ com_match:
 com_miss:
                 ld      hl,cm_s_skip        ; D-CASSEARCH: ...before the skip, as
                 call    cm_say              ; the reference orders its rows
+com_skip:
                 call    cas_skip_data       ; consume the non-matching file's data
                 ret     c                   ; tape error while skipping -> fail
                 jr      com_next            ; ...and try the next file

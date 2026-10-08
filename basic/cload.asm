@@ -83,6 +83,15 @@ dcl_noname:
                 xor     a
                 ld      (CAS_WANT_ON),a     ; no name -> load the next tape file
 dcl_load:
+                ; 🔴 D-CASTYPE (2026-10-08): CLOAD SEARCHES FOR A TOKENISED FILE, and
+                ; every other tape verb (LOAD / RUN / MERGE / OPEN "CAS:") for an ASCII
+                ; one -- the VG-8020 steps SILENTLY over a file of the other type, as it
+                ; steps over a wrong name, even under the same name
+                ; (probes/basic/basic_probe_castype.py). Bit 7 of CAS_WANT_ON carries
+                ; it: cas_capture_name / the bare form above write the whole byte (0/1),
+                ; so it is clear for every other verb, and only this one sets it.
+                ld      hl,CAS_WANT_ON
+                set     7,(hl)
                 call    do_tape_prog
                 ret     c                   ; failed: already reported (as before)
                 ; 🔴 D-CLOADPROG (2026-09-28): D-MERGERET'S BUG, IN THE SIBLING VERB.

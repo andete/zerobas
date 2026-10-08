@@ -81,6 +81,12 @@ capturing it. So every caller loads whatever file comes next.
    name) into a scratch `CAS_HDRNAME` (6 bytes) instead of blind-skipping them. Byte 0 (id)
    is read and kept as today for the $D3/$EA dispatch.
 3. **Match test.** After a full header is read:
+   - 🔴 **Superseded in part by D-CASTYPE (2026-10-08): the TYPE is tested FIRST.**
+     `CLOAD` wants `$D3`, every other verb (`LOAD` / `RUN` / `MERGE` / `OPEN "CAS:"`)
+     `$EA`; a file of the other type is skipped SILENTLY (no `Skip :` row), even
+     under the wanted name and in the bare form -- measured on the VG-8020
+     (`probes/basic/basic_probe_castype.py`). Bit 7 of `CAS_WANT_ON` = CLOAD; the
+     rest of this item describes the name test that follows it.
    - `CAS_WANT_ON = 0` → this file is the target; proceed to load (existing dispatch on the
      id: $D3 → tokenised, $EA → `cas_ascii_*`, else → `load_error`).
    - `CAS_WANT_ON = 1` → compare `CAS_HDRNAME` (6) vs `CAS_WANT` (6). Match → load. Mismatch

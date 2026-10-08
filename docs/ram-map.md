@@ -503,7 +503,7 @@ second one is the question a per-component map cannot answer.
 | `$F009` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F009` | 1 B | `disk` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F00A` | 6 B | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) |  |
-| `$F010` | 1 B | `basic` | `CAS_WANT_ON` | 1 = match CAS_WANT; 0 = load next file (bare form) (1) |  |
+| `$F010` | 1 B | `basic` | `CAS_WANT_ON` | bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3, else $EA (D-CASTYPE) (1) |  |
 | `$F011` | 6 B | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) |  |
 | `$F017` | 1 B | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) |  |
 | `$F018` | 1 B | `basic` | `CAS_VERIFY` | 1 = CLOAD? compare-mode (no store) (1) |  |

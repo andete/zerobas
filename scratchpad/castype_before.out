@@ -1,0 +1,19 @@
+== lta   VG-8020 20 STOP              skip 0   ours 10 END               skip 0
+== cat   VG-8020 10 END               skip 0   ours 20 STOP              skip 0
+== lbta  VG-8020 20 STOP              skip 0   ours 10 END               skip 0
+== cbat  VG-8020 10 END               skip 0   ours 20 STOP              skip 0
+== mta   VG-8020 20 STOP              skip 0   ours Unprintable error    skip 0
+== ota   VG-8020 read 20 STOP         skip 0   ours load error           skip 0
+== mt    VG-8020 E19 in 20            skip 0   ours E255 in 20           skip 0
+== ot    VG-8020 E19 in 20            skip 0   ours no error             skip 0
+DIVERGES lta: VG-8020 ('20 STOP', 0) vs ours ('10 END', 0)
+DIVERGES cat: VG-8020 ('10 END', 0) vs ours ('20 STOP', 0)
+DIVERGES lbta: VG-8020 ('20 STOP', 0) vs ours ('10 END', 0)
+DIVERGES cbat: VG-8020 ('10 END', 0) vs ours ('20 STOP', 0)
+DIVERGES mta: VG-8020 ('20 STOP', 0) vs ours ('Unprintable error', 0)
+DIVERGES ota: VG-8020 ('read 20 STOP', 0) vs ours ('load error', 0)
+DIVERGES mt: VG-8020 ('E19 in 20', 0) vs ours ('E255 in 20', 0)
+DIVERGES ot: VG-8020 ('E19 in 20', 0) vs ours ('no error', 0)
+
+FAIL: a tape search filters by file type (0/8)
+refcache: 0 hit, 16 miss, 16 stored

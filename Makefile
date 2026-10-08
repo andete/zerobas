@@ -2255,6 +2255,13 @@ casprdir-acceptance: repack-machine
 casbrk-acceptance: repack-machine
 	python3 probes/basic/basic_probe_casbrk.py
 
+# --- castype-acceptance: a tape search filters by file type (D-CASTYPE) ---------
+# Tapes holding X twice (tokenised + ASCII, both orders, CSAVE-faithful): LOAD /
+# RUN / MERGE / OPEN "CAS:" take the ASCII X, CLOAD the tokenised one, the other
+# type stepped over silently; MERGE / OPEN of a lone tokenised X search on (19).
+castype-acceptance: repack-machine
+	python3 probes/basic/basic_probe_castype.py
+
 # --- dosbasic-acceptance: A>BASIC reaches disk BASIC, the DOS date with it (D-DOSBASIC) ------
 # zerobas had its own banner at $4022, the standard BASENT entry MSX-DOS's BASIC calls.
 dosbasic-acceptance: repack-machine

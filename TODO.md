@@ -6310,7 +6310,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30345 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30382 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27319,8 +27319,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ **Left on this item:** field.asm's GET disk error, the tape OPEN / SAVE
       header WRITES (STOP mid-write), `disk_error`'s fallback (by design),
       str-engine.asm's sub-ROM-absent arm, the content-fault arms above -- and
-      🔴 `mc_ioerr`'s OTHER arm, MERGE of a non-ASCII tape file, which still goes
-      to `disk_error` and so would raise the same stale disk code (unmeasured).
+      ~~🔴 `mc_ioerr`'s OTHER arm, MERGE of a non-ASCII tape file, which still goes
+      to `disk_error` and so would raise the same stale disk code (unmeasured).~~
+      (✅ D-CASTYPE, the same day -- below: the arm is unreachable now.)
+      ✅ **D-CASTYPE (2026-10-08): A TAPE SEARCH FILTERS BY FILE TYPE -- CLOAD
+      TAKES ONLY A TOKENISED FILE, LOAD / RUN / MERGE / OPEN "CAS:" ONLY AN ASCII
+      ONE -- AND STEPS OVER THE OTHER TYPE SILENTLY, EVEN UNDER THE SAME NAME.**
+      Measuring that MERGE arm on the VG-8020 showed it never rejects: MERGE and
+      OPEN of a tokenised X searched on (`19 in 20` after the break), and the
+      control `LOAD"CAS:X"` gave no reading at all -- LOAD skipped it too, where
+      ours LOADED it. Two rules agree on a one-file tape (match by name, then
+      the verb takes or refuses the type -- ours; match by name AND type --
+      theirs); the separating tapes hold X twice, once per type, both orders
+      ([`basic_probe_castype.py`](probes/basic/basic_probe_castype.py), gate
+      `castype-acceptance`): LOAD"CAS:X" / LOAD"CAS:" / MERGE / OPEN on
+      tokenised-then-ASCII read the ASCII file there and the tokenised one (or
+      an error: `Unprintable error`, `load error`) here; CLOAD"X" / CLOAD on
+      ASCII-then-tokenised read the tokenised file there, the ASCII one here
+      ([`castype_before.out`](scratchpad/castype_before.out): 0/8). 🔴 The type
+      skip prints NO row -- `Found:X` for the file taken, nothing for the one
+      passed; I predicted a `Skip :` row: MISSED.
+      🔧 casmatch-body.inc (the sub-ROM match tenant) compares the TYPE first and
+      skips a wrong one silently; CLOAD sets bit 7 of `CAS_WANT_ON` (the capture
+      writes the byte whole, so it is clear for every other verb). Main page 1
+      117 -> 112 B, sub page 1 355 -> 338. 8/8 after
+      ([`castype_after.out`](scratchpad/castype_after.out)). 🔪 K-CT1 (no type
+      check) -> all 8, K-CT2 (CLOAD not marked) -> cat/cbat
+      ([`castype_knives.out`](scratchpad/castype_knives.out)) -- each exactly;
+      my first K-CT1 prediction left cat/cbat out and was corrected BEFORE the
+      run (under name-only matching the ASCII X comes first on that tape).
+      ⚠️ **AN INSTRUMENT FAULT OF MINE, THE SAME ONE AS D-CLOADSKIP (09-23):** the
+      first tapes used `build_cas_basic`, whose SIXTEEN-byte pad no machine
+      writes (CSAVE writes seven); every row that skips the tokenised file read
+      `Device I/O error` on ours and looked like a skip defect. With
+      `build_cas_basic_csave`, 8/8. The VG-8020 read both tapes alike.
+      ➡️ The verbs' own type checks after the match (do_tape_prog's 3-way
+      dispatch, OPEN's `cp ASCII_ID`, MERGE's `jr nz,mc_ioerr`) are unreachable
+      now and left in place; a tape with a BINARY ($D0) file still makes
+      `cas_skip_data` fail (`unknown id`) where the reference would step over
+      it -- unmeasured.
 
 - [x] ✅ **D-SAVETAIL — `SAVE "X",B` AND `SAVE "X",A,1` ABORTED WITH `load error`; THE REFERENCES
       RAISE A TRAPPABLE SYNTAX ERROR, ON DISK AND ON CASSETTE (split from D-DISKERRS and FIXED

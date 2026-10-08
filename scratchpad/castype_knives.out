@@ -1,0 +1,6 @@
+  ROM dfba7872 92d1deae caffbc45 b61e9315  ->  dfba7872 6a251c68 caffbc45 b61e9315
+PASS  K-CT1: diverged ['cat', 'cbat', 'lbta', 'lta', 'mt', 'mta', 'ot', 'ota'] (want exactly ['cat', 'cbat', 'lbta', 'lta', 'mt', 'mta', 'ot', 'ota'])
+  ROM dfba7872 6a251c68 caffbc45 b61e9315  ->  398e3bff 92d1deae caffbc45 b9478746
+PASS  K-CT2: diverged ['cat', 'cbat'] (want exactly ['cat', 'cbat'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
