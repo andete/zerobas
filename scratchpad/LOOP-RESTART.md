@@ -1,10 +1,60 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-08)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-09)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-08 AFTERNOON — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT); ITS QUEUE IS HISTORY.
+## 🟢 STATE AS OF 2026-10-09 EARLY MORNING (HAND-OFF) — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT).
+
+**Shipped since the 10-08 afternoon section (`git log --oneline fe97904c..`):**
+D-FCBHDR (OPEN writes the FCB header PEEK(VARPTR(#n)) reads, TIER 4) ·
+D-BLKIOPERCALL step 1 (WRBLK no mount/find per call, 8.8x -> 6.6x) and its step-2
+MEASUREMENT (CF-3300 72 FDC writes vs ours 384 on 32 KB) · D-PUTSLOW re-measured
+(every "PUT corrupts / DSKF dies" reading was a 2.5 s probe step; real gap 4.5x on
+20 PUTs) · D-PUTDIR (RANDOM directory stamped at CLOSE, as the reference: 4.5x ->
+3.3x) · **D-STATICEMU + D-PINSTALE: gates-fast is ~2 min again** (the keyword
+sweeps are EMULATOR units; gates-fast re-measures them itself only when the ROM
+moved since `build/sweeps-rom.txt`). One red on the way, recorded in D-PUTDIR's
+commit: the stale-pin tier sheet D-PINSTALE then fixed.
+
+**Walls (2026-10-09): main low 55 B, page 1 87 B; sub p1 178 B; disk ~4415 B.**
+Recount before quoting.
+
+➡️ **NEXT, by tier -- every open item is now either JOOST'S or a DESIGNED SLICE:**
+- 🙋 **Joost** (recorded in the items; do not re-ask): S10.C's tier (TIER 2; the
+  input rules live in the page-1 SEQIO tenant, which cannot CALLF `$FE8A`), FCB #0
+  (267 B of FRE(0)), COPY TO, DIM.
+- TIER 5, each a design session, cheapest-to-start first:
+  1. **The WRITE CACHE** that serves both D-BLKIOPERCALL (WRBLK, 6.6x) and PUT
+     (3.3x): the reference writes each data sector ONCE (when the next op needs
+     another sector, or at CLOSE). ⚠️ The RANDOM engine's sector RMW uses
+     FAT_MBUF/FWBUF, which frnd_locate's FAT walk ALSO uses -- a cached data
+     sector needs its own 512 B (a RAM-map decision first: `tools/ram_map.py`'s
+     unattributed runs are CANDIDATES, never free space).
+  2. **D-T5TWINREM** (apparatus that ranks all speed work): decide what a twin's
+     emptied-line filler costs, and why T5 jitters run to run -- before trusting
+     any T5 ranking. Each validation is a ~30 min kwtime run.
+  3. FOR/NEXT's integer fast path (NEXT 2.37x): NOT the 20 B the item sketches --
+     the 25 B frame has no spare bytes and int16 -> packed BCD each NEXT is the
+     costly path itself; it needs integer arithmetic ON packed BCD. The "42
+     unpacks per NEXT" are 3 operands x 14 digits, not redundancy (re-counted).
+  4. PAINT 2x, the interpreter's general 2.5-3.8x.
+- TIER 6: 24 contained error-face items, after TIER 5 by the rule.
+- APPARATUS: D-CHANFORREF, D-DEADSEED, the RAM-map overlay notion.
+
+🔴 **LESSONS OF THIS STRETCH:**
+- **A GATE SPEED-UP CAN SHIP A STALE-EVIDENCE PATH** -- D-STATICEMU kept the old
+  pins for docs commits and silently used them for a ROM commit too; its own ⚠️
+  line predicted it and nothing enforced it until D-PINSTALE. A cache needs a
+  VALIDITY KEY, not a note.
+- **AN ASYMMETRIC STEP IS A FINDING FACTORY** -- put3consume gave ours 2.5 s and the
+  reference 4.5 s; every "dies" reading was the step.
+- **TIME THE WHOLE TRANSACTION** -- a PUT stopwatch that stopped before CLOSE read
+  56x; with CLOSE inside, 1.14x (3 PUTs) / 4.5x (20).
+- **WATCH THE RIGHT REGISTER** -- the FDC counter read 0 on both machines at
+  Philips' `$7FF8`; the CF-3300 (National) and ours map it at `$7FB8`.
+
+## 🟢 STATE AS OF 2026-10-08 AFTERNOON — superseded above (its lessons still hold).
 
 **What shipped on 2026-10-08 (`git log --oneline 81625211..`), every one FULL
 green except the two record commits:** D-LITREF (program string literals point
