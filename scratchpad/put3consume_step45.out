@@ -1,0 +1,23 @@
+
+row                         cf3300                      zb
+------------------------------------------------------------
+d.free0                       706                     706 
+d.free1                       705                     705 
+d.free2                       705                     705 
+d.lof0                          0                       0 
+d.lof1                        128                     128 
+d.lof2                        128                     128 
+c.twice                       706                     706 
+c.get3            <Input past end>        <Input past end>
+s.put3                        705                     705 
+s.put3n                       705                     705 
+d.getafter                    705                     705 
+x.put3lof                     128                     128 
+x.put4lof                     128                     128 
+x.dskf0                       706                     706 
+x.getdskf         <Input past end>        <Input past end>
+x.get1lof         <Input past end>        <Input past end>
+
+read: d.free0/1/2 is the whole question -- a DROP on zb with the CF-3300
+      flat means every PUT allocates instead of reusing.
+refcache: 0 hit, 32 miss, 32 stored

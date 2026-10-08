@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30562 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30584 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6511,7 +6511,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24055 (T-529ABE)`: a
+      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24077 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12193,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24055 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -22341,6 +22341,28 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       🎚️ TIER 5 — on-par speed: `PUT` (its untrappable-hang half is TIER 3)
       🤖 AUTONOMOUS — the reference settles the behaviour and the bisect is done.
+      📏 **RE-MEASURED 2026-10-08 -- EVERY "DIES" READING WAS THE PROBE'S STEP,
+      AND THE SPEED GAP IS A WRITE CACHE.** `put3consume_probe.py` borrows
+      basic_probe_fldwidth's SIDES, which give ours a 2.5 s step and the CF-3300
+      4.5 s: at 2.5 s ours read `<UNREADABLE>` on `d.free1/2`, `d.lof2`, the
+      three-PUT rows and DSKF-after-PUT; at the reference's own 4.5 s **all 16
+      rows agree** ([`put3consume_step45.out`](scratchpad/put3consume_step45.out)).
+      No PUT corruption and no death inside `DSKF`: the claims above are
+      WITHDRAWN. 🔮 Predicted "readable and agreeing": HIT.
+      ⏱ [`putstopwatch.py`](scratchpad/putstopwatch.py), marker to marker, CLOSE
+      inside the timing ([`putstopwatch.out`](scratchpad/putstopwatch.out),
+      [`putstopwatch20.out`](scratchpad/putstopwatch20.out)):
+      | | ours | CF-3300 | |
+      |---|---|---|---|
+      | 3 PUTs + CLOSE | 2.26 s | 1.98 s | 1.14x |
+      | 20 PUTs + CLOSE | 15.24 s | 3.38 s | **4.5x** |
+      (A first cut ended the clock BEFORE CLOSE and read 2.26 s against 0.04 s:
+      the CF-3300 BUFFERS a PUT and pays at CLOSE; ours writes a sector,
+      ~0.75 s, at every PUT.) So the T5 gap grows with the PUT count, and it is
+      the same shape D-BLKIOPERCALL measured for WRBLK (the CF-3300 writes a
+      sector once, not per call): ➡️ **ONE WRITE-CACHE DESIGN SERVES BOTH** --
+      the record written into the channel's buffer, the sector written when
+      the next PUT / GET needs another one, or at CLOSE.
 
 - [x] 🟢 **D-RECLEN2 2026-08-30 — THE FACE SHIPPED, THE DOMAIN DID NOT**
       ([`docs/spec-basic-reclen2.md`](docs/spec-basic-reclen2.md)). An
