@@ -6345,7 +6345,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30492 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30520 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6511,7 +6511,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24045 (T-529ABE)`: a
+      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24055 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12193,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24045 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24055 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17604,6 +17604,16 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
         `INPUT$(1,1)`s and 25 after the 20-byte rest of the line -- the index of
         the last byte read; ours keeps no position in the block (the SEQIO
         tenant's read state is elsewhere), so it stays 0.
+        📏 **THE RULE, MEASURED 2026-10-08 on the CF-3300** (a 300-byte file read
+        one byte at a time): after k reads +6 is **(k − 1) mod 256** -- 253, 254,
+        255 at k = 254..256, then 0, 1, 2 at 257..259, 43 at 300 -- and a
+        following `EOF(1)` ADVANCES it (43 → 44): EOF reads one byte ahead. Ours
+        reads 0 throughout. Not built: a write on every byte in the SEQIO path
+        (plus EOF's look-ahead) for a value only `PEEK(VARPTR(#n)+6)` sees.
+        🙋 **FCB #0 IS A RAM-BUDGET QUESTION FOR JOOST, NOT A FIX:** reserving it
+        costs every program 267 B of `FRE(0)` (the references pay it too, inside
+        their baseline) and moves every FRE row's baseline here; `VARPTR(#0)`
+        is its only visible face. Build it, or record ERR 59 as the divergence?
       - **FCB #0** (the LOAD/SAVE channel): `VARPTR(#0)` is an address on both
         references and ERR 59 here, because this tree reserves no FCB #0.
       - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,
@@ -29298,6 +29308,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       WRBLK that skips it must reset FAT_ALLOCHINT itself.
       📏 The row exists: `wrblkalt-acceptance`'s `--wseek`/`--seek` ratios.
       🤖 **AUTONOMOUS** — the reference settles it.
+      🟡 **STEP 1 SHIPPED (2026-10-08): WRBLK NO LONGER MOUNTS OR FINDS PER CALL --
+      8.8x -> 6.6x.** `wrblk_body`'s mount + find + entry recovery (37 B of the
+      `$607B..$75A5` region, which has no room) became one call to
+      `wrblk_fcbstate` in the fill beside `hk_fmake`: the geometry mounted only
+      when never read (RDBLK's rule), M30's hint reset as fat_mount reset it,
+      FAT_FIRSTCLUS from FCB +26, FAT_FILESIZE from +16..19 (wrblk_fcb_keep keeps
+      both), the entry from +25 (close_read's arithmetic). 32 KB in 256 B blocks:
+      **271.9 -> 202.8 emulated s** against the CF-3300's 30.95; every FCB snapshot
+      still byte-identical, all six files as written
+      ([`blkio_before.out`](scratchpad/blkio_before.out),
+      [`blkio_after.out`](scratchpad/blkio_after.out)). 🔮 Predicted ~5x: PARTLY
+      MISSED. ⚠️ No knife: the gate asserts "within 10x" only, so the old code
+      passes it too -- the ratio reading is the witness, not a row that flips.
+      ➡️ **What is left per call:** the data sector's read-modify-write and
+      `fat_dir_update` (a directory read + write) EVERY call. Whether the CF-3300
+      rewrites the entry per WRBLK or only at FCLOSE has to be MEASURED before
+      deferring it -- through the FDC's I/O registers or the image between calls,
+      not by stepping its ROM. The read side (3.1x) is unchanged.
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE

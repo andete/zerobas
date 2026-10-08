@@ -73,7 +73,7 @@ def run():
     m = new_machine()
     disk = Disk("DATA.BIN", first_cluster=5, size=512, chain_links=[(5, EOC)])
     counts = install_counting(disk, m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=0)
+    setup_fcb(m, "DATA.BIN", rs=128, rr=0, disk=disk)
     patterns = [bytes([0xB0 + i] * 128) for i in range(4)]
     dta = 0xC000
     for i, pat in enumerate(patterns):
@@ -89,10 +89,11 @@ def run():
     cluster, size = disk.dirent()
     check(size == 512, f"  dirent size unchanged at {size} (within EOF)")
     # --- (b) I/O shape: all 4 records share ONE 512B sector. Fixed overhead
-    # unrelated to positioning: fat_mount's boot-sector read (1) + fat_find's
-    # root-dir read (1) + fat_dir_update's own re-read/rewrite of the dir
-    # sector at the end (1 read) = 3 reads, constant regardless of record
-    # count. The POSITIONING work itself must read the data sector at most
+    # unrelated to positioning: fat_mount's boot-sector read (1, and only on the
+    # FIRST call since D-BLKIOPERCALL -- the geometry stays mounted, and the
+    # file is no longer re-found: its location comes from the FCB) +
+    # fat_dir_update's own re-read/rewrite of the dir sector at the end (1
+    # read), constant regardless of record count. The POSITIONING work itself must read the data sector at most
     # ONCE for all 4 records (wpe_same elides the other 3 -- no re-walk-from-
     # head per record, which pre-M29 would have re-read it 4 times = 1+2+3+4
     # positioning reads instead of 1).
@@ -114,7 +115,7 @@ def run():
     counts = install_counting(disk, m)
     total_reads = 0
     for i in range(NREC):
-        setup_fcb(m, "DATA.BIN", rs=128, rr=i)
+        setup_fcb(m, "DATA.BIN", rs=128, rr=i, disk=disk)
         pat = bytes([0x40 + i] * 128)
         m.poke(0xC000, pat)
         cpu = m.call("wrblk_body", de=FCB, hl=1)
@@ -155,7 +156,7 @@ def run():
     m = new_machine()
     disk = Disk("DATA.BIN", first_cluster=0, size=0, chain_links=[])
     counts = install_counting(disk, m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=0)
+    setup_fcb(m, "DATA.BIN", rs=128, rr=0, disk=disk)
     for i in range(NREC2):
         m.poke(0xC000 + i * 128, bytes([0x80 + i] * 128))
     cpu = m.call("wrblk_body", de=FCB, hl=NREC2)

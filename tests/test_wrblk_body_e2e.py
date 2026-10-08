@@ -156,11 +156,22 @@ def new_machine():
     return Machine(ROM, SYM, rom_base=DISK_BASE)
 
 
-def setup_fcb(m, name, rs=128, rr=0):
+def setup_fcb(m, name, rs=128, rr=0, disk=None):
+    """An FCB as FOPEN leaves it. D-BLKIOPERCALL (2026-10-08): wrblk_body reads
+    the file's size (+16..19), first cluster (+26) and root-directory index
+    (+25) from the FCB instead of re-finding the file on every call -- so the
+    FCB must carry them, as FOPEN / FMAKE fill them and wrblk_fcb_keep keeps
+    them. With `disk`, they come from its single root entry (index 0); a test
+    that rebuilds the FCB between calls is then a re-FOPEN between calls."""
     m.poke(FCB, bytes(37))
     m.poke(FCB + 1, n83(name))
     m.poke_w(FCB + 14, rs)
     m.poke(FCB + 33, struct.pack("<I", rr)[:3])
+    if disk is not None:
+        cluster, size = disk.dirent()
+        m.poke(FCB + 16, struct.pack("<I", size))
+        m.poke(FCB + 25, bytes([0]))
+        m.poke_w(FCB + 26, cluster)
     m.poke_w(m.addr("DOS_DTAPTR"), 0xC000)   # arbitrary scratch DTA
 
 
@@ -177,7 +188,7 @@ def run():
     m = new_machine()
     disk = Disk("DATA.BIN", first_cluster=5, size=512, chain_links=[(5, EOC)])
     disk.install(m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=2)
+    setup_fcb(m, "DATA.BIN", rs=128, rr=2, disk=disk)
     pattern = bytes([0xC1] * 128)
     m.poke(0xC000, pattern)
     cpu = m.call("wrblk_body", de=FCB, hl=1)
@@ -198,7 +209,7 @@ def run():
     m = new_machine()
     disk = Disk("DATA.BIN", first_cluster=5, size=512, chain_links=[(5, EOC)])
     disk.install(m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=4)
+    setup_fcb(m, "DATA.BIN", rs=128, rr=4, disk=disk)
     pattern = bytes([0xC2] * 128)
     m.poke(0xC000, pattern)
     cpu = m.call("wrblk_body", de=FCB, hl=1)
@@ -221,7 +232,7 @@ def run():
     m = new_machine()
     disk = Disk("DATA.BIN", first_cluster=5, size=256, chain_links=[(5, EOC)])
     disk.install(m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=4)     # RR*RS = 512 > old size 256
+    setup_fcb(m, "DATA.BIN", rs=128, rr=4, disk=disk)     # RR*RS = 512 > old size 256
     cpu = m.call("wrblk_body", de=FCB, hl=0)
     check(cpu.a == 0, f"HL=0 beyond-EOF: A={cpu.a} (want 0)")
     check((cpu.hl & 0xFFFF) == 0, f"  HL={cpu.hl & 0xFFFF} (want 0, preserved)")
@@ -236,7 +247,7 @@ def run():
     disk = Disk("DATA.BIN", first_cluster=5, size=1536,
                 chain_links=[(5, 6), (6, 7), (7, EOC)])   # 3 clusters, 512B each
     disk.install(m)
-    setup_fcb(m, "DATA.BIN", rs=128, rr=2)     # RR*RS = 256 < old size 1536 -> shrink
+    setup_fcb(m, "DATA.BIN", rs=128, rr=2, disk=disk)     # RR*RS = 256 < old size 1536 -> shrink
     cpu = m.call("wrblk_body", de=FCB, hl=0)
     check(cpu.a == 0, f"HL=0 shrink: A={cpu.a} (want 0, SANE shrink succeeds)")
     cluster, size = disk.dirent()

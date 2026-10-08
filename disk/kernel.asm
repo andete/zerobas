@@ -1454,6 +1454,59 @@ hcc_done:
                 scf                         ; claimed; main frees the channel
                 ret
 
+; wrblk_fcbstate -- D-BLKIOPERCALL (2026-10-08): WRBLK's per-call state from the
+; FCB instead of a mount and a find. The geometry is mounted only when it has
+; never been read (RDBLK's own rule, k47b2_seek); M30's allocation hint gets the
+; per-operation reset fat_mount gave it; FAT_FIRSTCLUS from +26, FAT_FILESIZE
+; from +16..19 (wrblk_fcb_keep writes both after every call, FOPEN / FMAKE before
+; the first); and the directory entry for fat_dir_update from +25, the root
+; index FOPEN / FMAKE filled -- sector FIRSTROOT + index / 16, offset (index mod
+; 16) x 32, close_read's arithmetic.
+;   in: IX = the FCB copy; out: CF = the mount failed
+wrblk_fcbstate:
+                ld      a, (FAT_SECPERCLUS)
+                or      a
+                jr      nz, wfs_geom
+                call    fat_mount
+                ret     c
+wfs_geom:
+                ld      hl, 2
+                ld      (FAT_ALLOCHINT), hl ; M30: the per-operation reset
+                ld      l, (ix+26)
+                ld      h, (ix+27)
+                ld      (FAT_FIRSTCLUS), hl
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                ld      (FAT_FILESIZE), hl
+                ld      l, (ix+18)
+                ld      h, (ix+19)
+                ld      (FAT_FILESIZE + 2), hl
+                ld      a, (ix+25)          ; the entry's root index
+                push    af
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FIRSTROOT)
+                add     hl, de
+                ld      (BDOS_DIRSEC), hl
+                pop     af
+                and     $0F
+                ld      l, a
+                ld      h, 0
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl
+                add     hl, hl              ; (index mod 16) x 32
+                ld      (BDOS_DIROFF), hl
+                or      a                   ; CF clear
+                ret
+
+
 ; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B: its name is
 ; the FCB's +1..11, no sector to read. CF=1 a match.
 hoc_dout:
@@ -1984,24 +2037,15 @@ wrblk_body:
                                             ; below clobbers HL (fat_mount/fat_find/the multiply)
                 push    de
                 pop     ix                  ; IX = kernel FCB-copy pointer ($DA40)
-                push    ix
-                pop     de
-                call    fat_mount
+                ; 🔴 D-BLKIOPERCALL (2026-10-08): NO MOUNT AND NO FIND PER CALL. This
+                ; re-read the boot sector and walked the root directory on EVERY
+                ; WRBLK -- a 32 KB write in 256 B blocks took 8.8x the CF-3300's
+                ; (disk_probe_wrblk_alt.py --wseek). Everything they recovered is
+                ; in the FCB already (FOPEN / FMAKE fill it, wrblk_fcb_keep keeps
+                ; it): wrblk_fcbstate, in the fill beside hk_fmake (this region has
+                ; no room).
+                call    wrblk_fcbstate
                 jp      c, wrblk_ioerr
-                push    ix
-                pop     de
-                inc     de                  ; DE -> copy+1 (11-byte 8.3 name)
-                ex      de, hl              ; HL -> name (fat_find's contract)
-                call    fat_find            ; Cy=0 found -> FAT_FIRSTCLUS/FAT_FILESIZE set
-                jp      c, wrblk_ioerr
-                ; recover the dirent's own location for the eventual fat_dir_update
-                ; (fat_find leaves HL -> the matched entry inside SECTOR_BUF).
-                ld      de, SECTOR_BUF
-                or      a
-                sbc     hl, de
-                ld      (BDOS_DIROFF), hl
-                ld      hl, (FAT_DIRSEC)
-                ld      (BDOS_DIRSEC), hl
                 ; reseed our own DTA cell (M19 lesson: the kernel's real SETDTA only
                 ; ever touches DOS_DTAPTR, never BDOS_DTA).
                 ld      hl, (DOS_DTAPTR)
