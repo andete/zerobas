@@ -1081,6 +1081,29 @@ hfm_fail:
 ; ⚠️ NOT dout_open's 256 B record writer: that needs a channel row and a
 ; 265 B block, and SAVE ,A has neither -- the reference's #0 buffer would cost
 ; 267 B of FRE(0) here. The sequential writer needs no RAM of its own.
+; df_first -- D-FILESNL (2026-10-09), the second rule: the SCREEN listing
+; STARTS on a fresh row. After `PRINT "AB";` the CF-3300 puts the first name
+; under AB, not beside it; zerobas fitted it on the row
+; (probes/disk/disk_probe_filesnl.py `midline`). Only before the FIRST entry
+; (DISKOP_STATUS still 0): after each later one df_emit's own end-of-row test
+; has left the cursor at column 0 or with room. Sited here, in the fill, because
+; the FILES walk sits in a region pinned full (disk.rom assembled EMPTY inline).
+; Sets DISKOP_STATUS = 1 (at least one entry matched). HL (the entry) survives:
+; df_out preserves it.
+df_first:
+                ld      a,(DISKOP_STATUS)
+                or      a
+                ret     nz                  ; not the first entry
+                inc     a
+                ld      (DISKOP_STATUS),a   ; at least one entry matched
+                ld      a,(DISKOP_OP)
+                cp      DISKOP_SEL_LFILES
+                ret     z                   ; the printer keeps its own head rule
+                ld      a,(CSRX)
+                dec     a                   ; 0-based column
+                ret     z                   ; already at the start of a row
+                jp      df_crlf             ; mid-row -> a new line first
+
 hk_asav:
                 call    fat_io_create       ; mount, make or truncate, reset the cursor
                 jr      c, hfm_fail         ; status 1, the code pending
@@ -4813,8 +4836,7 @@ df_entloop:
                 pop     hl                  ; restore entry ptr (flags preserved)
                 jr      nz,df_nextent       ; no match -> skip
 df_do_emit:
-                ld      a,1
-                ld      (DISKOP_STATUS),a   ; at least one entry matched
+                call    df_first            ; D-FILESNL: the first entry starts a fresh row
                 call    df_emit
 df_nextent:
                 ld      a,(FILES_ENTIDX)
@@ -4921,7 +4943,22 @@ de_ext:
                 call    df_out
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_LFILES
-                ret     nz                  ; SCREEN: the reference ends here
+                jr      z,df_crlf           ; the printer: CR/LF after every entry
+                ; ✅ D-FILESNL (2026-10-09): THE SCREEN FORM ENDS A FULL ROW AT
+                ; ONCE. After a row with no room for another field (3 at WIDTH
+                ; 40, 2 at WIDTH 37) the CF-3300 starts a new line, so a PRINT
+                ; after FILES begins on its own row; zerobas wrapped only before
+                ; the NEXT field, so the cursor stayed at the end of a full last
+                ; row (scratchpad/filesnl_run.out). A partly filled row still
+                ; leaves the cursor on it, on both. The same `cp 13` as the
+                ; pre-check above: field + its trailing space.
+                ld      a,(CSRX)
+                dec     a                   ; 0-based column
+                ld      b,a
+                ld      a,(LINLEN)
+                sub     b                   ; columns left on this line
+                cp      13
+                ret     nc                  ; room for another field: stay here
                 ; fall through -> CR/LF
 
 ; df_crlf -- end the current line on the active sink. This is print_crlf's body;

@@ -295,9 +295,9 @@ errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
   the 10× "reasonable time" bar, but not on par yet.
 - **Everyday cases found on 2026-10-09** (TIER 1, the work in hand):
   `FILES " "` / `FILES "A:"`
-  are refused; and after `FILES` ends on a full row the cursor stays on that
-  row. (`READ` of a number like `1.5`, `GET #` / `PUT #` without a record
-  number, and `&B` binary numbers, found the same day, are fixed.) Each
+  are refused. (`READ` of a number like `1.5`, `GET #` / `PUT #` without a
+  record number, `&B` binary numbers and the cursor after `FILES`, found the
+  same day, are fixed.) Each
   keyword's page says so.
 - **RAM usage** is measured but not yet proven equal to the reference's.
 - **Rare error paths** — the long tail of unusual errors (TIER 6).

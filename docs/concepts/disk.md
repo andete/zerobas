@@ -7,9 +7,8 @@ SPDX-License-Identifier: 0BSD
 # Disk BASIC — files on a 720 KB floppy, one drive
 
 > **Status (2026-10-09):** the disk statements agree with the National CF-3300
-> in the forms measured, except open TIER 1 items in everyday use around
-> `FILES` (the cursor after a full last row, D-FILESNL; a blank or drive-only
-> pattern, D-FILESBARE). There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
+> in the forms measured, except one open TIER 1 item in everyday use: a blank
+> or drive-only `FILES` pattern (D-FILESBARE). There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
 > built); the SHIFT/CTRL boot keys are unmeasured (D-BOOTKEYS, TIER 4).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -169,8 +168,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **`FILES` and the cursor** (D-FILESNL, TIER 1, 2026-10-09): after a listing
-  whose last row is full, the CF-3300 starts a new line and zerobas does not.
 - **`FILES " "` and `FILES "A:"`** (D-FILESBARE, TIER 1) list the disk on the
   CF-3300 and are `Bad file name` here.
 - **No logical drive B:** (D-DSKIB, TIER 6): `DSKF(2)` answers drive A's

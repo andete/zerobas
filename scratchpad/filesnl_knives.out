@@ -1,0 +1,6 @@
+  ROM 2ef040d6 20719286 1d5fa5c5 4cbf2fd3  ->  2ef040d6 20719286 ecd44fb9 4cbf2fd3
+PASS  K-FN1: moved ['full', 'midline', 'w37'] (want exactly ['full', 'midline', 'w37'])
+  ROM 2ef040d6 20719286 ecd44fb9 4cbf2fd3  ->  2ef040d6 20719286 1266be95 4cbf2fd3
+PASS  K-FN2: moved ['midline'] (want exactly ['midline'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

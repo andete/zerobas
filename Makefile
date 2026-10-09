@@ -2292,6 +2292,12 @@ recauto-acceptance: repack-machine $(DISK_TEST_DSK)
 ampb-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ampb.py
 
+# --- filesnl-acceptance: the cursor after FILES (D-FILESNL) --------------------
+# The CF-3300 ends a FULL row of the listing at once, so a PRINT after FILES
+# starts on its own row; a partly filled row keeps the cursor on it, on both.
+filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_filesnl.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

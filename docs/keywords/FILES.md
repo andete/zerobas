@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `FILES` — list the files on the disk
 
-> **Status (2026-10-09):** level 0 — two happy-path differences, both open
-> TIER 1 items: where the cursor stands after the listing, and a blank or
-> drive-only pattern (below) · reasonable time ✓ · common errors ✓ · RAM usage not yet
-> proven · every error ✓. Until 2026-10-09 the tier sheet read level 3.
+> **Status (2026-10-09):** level 0 — one happy-path difference, an open TIER 1
+> item: a blank or drive-only pattern (below) · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. Where the cursor stands
+> after the listing matches the CF-3300 since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -88,14 +88,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Where the cursor stands after the listing.** When the last row of the
-listing is exactly full (three names at width 40, two at width 37), the
-CF-3300 moves to a new line and zerobas does not, so a `PRINT` straight after
-`FILES` continues that row here. With a partly filled last row both machines
-leave the cursor on it. Filed as D-FILESNL (2026-10-09,
-[`filesnl_run.out`](../../scratchpad/filesnl_run.out)); `FILES:PRINT`, as in
-the example above, looks the same on both.
-
 **A blank or drive-only pattern.** `FILES " "` and `FILES "A:"` list the
 whole disk on the CF-3300 and are `Bad file name` on zerobas (D-FILESBARE,
 open, TIER 1; first found 2026-09-05).
@@ -104,6 +96,12 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **The cursor after the listing was in the wrong place** (fixed 2026-10-09,
+  D-FILESNL). The CF-3300 ends a full row of names at once and starts the
+  listing on a fresh row, so `PRINT` after `FILES` begins on its own line;
+  zerobas left the cursor at the end of a full last row, and put the first
+  name beside text already on the line. Found by the `DSKO$` page's example
+  ([`filesnl_gate.out`](../../scratchpad/filesnl_gate.out)).
 - **A pattern that matched nothing printed nothing** (fixed 2026-08-06,
   D-LFILES). The CF-3300 says `File not found`. It was found by a test written
   for `LFILES`, which shares the directory walk with `FILES`.

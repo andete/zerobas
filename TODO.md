@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31076 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31094 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29789,7 +29789,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       65535), and zerobas gave NO READING within 60 s on that case — measure
       what it does. Add a gated row for each.
 
-- [ ] 🔴 **AFTER `FILES` ENDS ON A FULL ROW, THE CF-3300 STARTS A NEW LINE AND ZEROBAS
+- [x] ✅ **FIXED 2026-10-09 (D-FILESNL)** — 🔴 **AFTER `FILES` ENDS ON A FULL ROW, THE CF-3300 STARTS A NEW LINE AND ZEROBAS
       DOES NOT — A `PRINT` AFTER IT CONTINUES THE LAST ROW (D-FILESNL, found
       2026-10-09 by the `DSKO$` keyword page's example).**
       🎚️ TIER 1 — `FILES` output layout in everyday use (any directory whose file
@@ -29802,6 +29802,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       one) — both leave the cursor on the row (`H2      .TXT X`), agree. So the
       reference ends a row as soon as it is full; zerobas only before the next
       name. Check `LFILES` (the shared directory walk) with the same shapes.
+      ✅ **FIXED 2026-10-09 — TWO RULES, the second found by the gate.**
+      (1) disk/kernel.asm `df_emit`: after a SCREEN entry, if fewer than 13
+      columns remain, CR/LF at once (the same `cp 13` as the pre-check).
+      (2) the new row `midline` (`PRINT "AB";:FILES`) showed the CF-3300 also
+      STARTS the listing on a fresh row; zerobas fitted the first name beside AB.
+      `df_first`, called before the first entry only (DISKOP_STATUS still 0),
+      CR/LFs when the cursor is mid-row. Inline it overflowed the pinned FILES
+      region — disk.rom assembled EMPTY — so it sits in the fill beside
+      `hk_asav`. Gate `filesnl-acceptance`
+      ([`disk_probe_filesnl.py`](probes/disk/disk_probe_filesnl.py),
+      [`filesnl_gate.out`](scratchpad/filesnl_gate.out)): 4/4 — full, part, w37,
+      midline (the probe's prompt filter now strips the 2-column WIDTH-37
+      margin; `w37` read DIVERGES on `  Ok` vs `  ZB` alone before it).
+      Predicted 4/4 after rule 2: hit; `midline` before it: unmeasured, and it
+      was a second divergence. 🔪 [`filesnl_knives.out`](scratchpad/filesnl_knives.out):
+      K-FN1 (the end-of-row test) → full, w37, midline; K-FN2 (the fresh-row
+      CR/LF) → midline — each exactly. LFILES keeps its own head rule (both
+      changes are SCREEN-only); its shapes are still unmeasured.
 
 - [ ] 🔴 **A BAD `DATA` ITEM IS `Syntax error in <the DATA line>` ON THE VG-8020 AND `in <the
       READ line>` HERE (D-READERL, found 2026-10-09 by D-READFLT's rows).**

@@ -1,0 +1,7 @@
+ROW full CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] SAME
+ROW part CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X] SAME
+ROW w37 CF=[  10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS |   X] ZB=[  10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS |   X] SAME
+ROW midline CF=[AB | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] ZB=[AB | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] SAME
+
+PASS: the cursor after FILES (4/4)
+refcache: 0 hit, 8 miss, 8 stored
