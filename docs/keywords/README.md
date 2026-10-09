@@ -7,33 +7,14 @@ SPDX-License-Identifier: 0BSD
 
 ← [zerobas](../../README.md)
 
-One page per BASIC keyword, written for a person: what the keyword does, how
-zerobas behaves, an example, where it differs from the reference machine, and
-what we found out about it along the way. The rest of `docs/` is mostly the
-working record those findings came from; these pages are the distilled result.
+One page per BASIC keyword: what it does, an example, every error, and where
+zerobas still differs from a real MSX. Every example that can run unattended
+was run on zerobas and on an emulated real machine — a Philips VG-8020 for
+BASIC, a National CF-3300 for Disk BASIC — and printed the same on both. Each page opens with a status
+line saying which checks have passed: the everyday use, a reasonable time, the
+common errors, memory use, and every error.
 
-The reference is the Philips VG-8020 for BASIC and the National CF-3300 for
-Disk BASIC; each page says which it was compared with.
-
-## The rules for these pages
-
-- **A keyword gets a page once it reaches level 3**: the happy path, a
-  reasonable time and the common errors are all proven. Below that its
-  behaviour is still moving. When a page's own checking finds a happy-path
-  difference, the keyword drops below level 3 and its page stays, saying so
-  in its status line: `READ`, `DATA` and `FILES` on 2026-10-09.
-- **A page changes only when an error at a lower tier is found and fixed**, or
-  when a ruling changes what the keyword should do. It is not a log.
-- **No speed figures** until on-par speed is established for every keyword.
-- **Every example is run on zerobas and on the reference**, and the page shows
-  what both printed: [`scratchpad/kwdoc_examples.py`](../../scratchpad/kwdoc_examples.py)
-  reads each page's `<!-- example: … -->` line and its `## Example` block, types
-  the program on both machines and compares the screens. Six examples need
-  hardware the check cannot drive (a cassette, a printer, `AUTO`'s line entry);
-  those pages say so and name the gate that covers them instead.
-- **Each page has the same sections:** status, summary, syntax, details,
-  example, differences from the reference, what we found and how, where it
-  lives, and the tests that cover it.
+([How these pages are made and checked](about.md))
 
 ## The pages
 

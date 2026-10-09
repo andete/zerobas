@@ -18,7 +18,7 @@ disk/test720.dsk.
 
 Clean-room: typed BASIC in, the text screen out. No reference ROM byte is read.
 
-  python3 -u scratchpad/kwdoc_examples.py              # every page
+  python3 -u scratchpad/kwdoc_examples.py              # every page (not README.md / about.md)
   python3 -u scratchpad/kwdoc_examples.py 'MID$' COPY  # some pages
   python3 -u scratchpad/kwdoc_examples.py --dir DIR    # pages in another folder
   python3 -u scratchpad/kwdoc_examples.py --write ...  # when both machines agree
@@ -123,7 +123,7 @@ def main(argv):
         d = argv[i + 1]
         del argv[i:i + 2]
     pages = sorted(p for p in glob.glob(os.path.join(d, "*.md"))
-                   if os.path.basename(p) != "README.md")
+                   if os.path.basename(p) not in ("README.md", "about.md"))
     if argv:
         pages = [p for p in pages if os.path.basename(p)[:-3] in argv]
     tally = {}
