@@ -31,6 +31,10 @@ BSD-2 notice travels with the result. This is a legal firewall: a provenance
 challenge to zerobas can never contaminate the mature, uncontested BIOS it runs
 alongside.
 
+> 🚀 **Want to try it?** **[QUICKSTART.md](QUICKSTART.md)** gets zerobas running
+> in openMSX in a few steps — build, install the machines, pick *zerobas BASIC*
+> from openMSX's machine menu. No proprietary ROM is needed.
+
 > 📖 **What does each BASIC keyword do, and how does zerobas compare with a real
 > MSX?** Start with the **[keyword pages](docs/keywords/README.md)**: one readable
 > page per keyword — what it does, an example (run on zerobas and on the

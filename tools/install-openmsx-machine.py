@@ -47,7 +47,7 @@ zerobas-disk ROM behind a National-style memory-mapped WD2793 FDC (the CF-3300
 connection style), with slot 3-0 keeping the 64 KB RAM. C-BIOS's boot scan finds
 the disk ROM's "AB" header in slot 3-1 page 1 and calls its INIT, installing the
 disk hooks + BDOS vector. Attach a FAT12 image to drive A to exercise the stack:
-    openmsx -machine C-BIOS_MSX1_BASIC_DISK -diska disk/test720.dsk
+    openmsx -machine C-BIOS_MSX1_EU_BASIC_DISK -diska disk/test720.dsk
 
 It does NOT copy or modify any ROM. The generated config points at openMSX's own
 bundled ROMs by absolute path and lists the .ips files as load-time <patches>
@@ -123,6 +123,31 @@ def patch_config(text: str, share_machines: str, ips_list) -> str:
     if n != 1:
         raise RuntimeError(f"expected exactly one main-ROM filename, found {n}")
     return text
+
+
+def retitle(text: str, code: str, description: str) -> str:
+    """Give a written machine its OWN <info> identity. The configs are made from
+    the stock C-BIOS ones, and a verbatim copy of their <info> (manufacturer
+    "C-BIOS", code "MSX1 EU", the stock description) made zerobas's machines look
+    exactly like stock C-BIOS in openMSX's machine menu -- the way most people
+    start openMSX (QUICKSTART.md). openMSX does not run anything from <info>."""
+    def sub(tag, value, s):
+        s2, n = re.subn(rf"<{tag}>[^<]*</{tag}>", f"<{tag}>{value}</{tag}>", s, count=1)
+        if n != 1:
+            raise RuntimeError(f"expected a <{tag}> in the machine's <info>")
+        return s2
+    head, sep, rest = text.partition("</info>")
+    if not sep:
+        raise RuntimeError("expected an <info> block in the stock machine")
+    head = sub("manufacturer", "zerobas", head)
+    head = sub("code", code, head)
+    head = sub("description", description, head)
+    return head + sep + rest
+
+
+def stock_code(text: str) -> str:
+    m = re.search(r"<code>([^<]*)</code>", text)
+    return m.group(1) if m else "MSX1"
 
 
 def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "") -> str:
@@ -372,7 +397,10 @@ def main():
         # free -- the open-stack / round-trip tape regression runs on this. Region-
         # universal: it carries no BASIC, so the repack's EU-only-ness does not apply.
         tout = os.path.join(user_machines, f"{base}_TAPE.xml")
-        ttext = patch_config(stock_text, share_machines, [TAPE_IPS])
+        ttext = retitle(patch_config(stock_text, share_machines, [TAPE_IPS]),
+                        f"tape (C-BIOS {stock_code(stock_text)})",
+                        "Test rig: stock C-BIOS with only zerobas's cassette "
+                        "patch -- no BASIC.")
         if args.dry_run:
             print(f"would write {os.path.basename(tout)}")
         else:
@@ -384,8 +412,11 @@ def main():
         seen_region = True
         out = os.path.join(user_machines, f"{base}_BASIC.xml")
         # Slot 3 is expanded even with no disk, because the sub-ROM lives in 3-2.
-        out_text = expand_slot3(patch_config(stock_text, share_machines, ips_list),
-                                "", sub_rom)
+        out_text = retitle(expand_slot3(patch_config(stock_text, share_machines, ips_list),
+                                        "", sub_rom),
+                           f"BASIC (C-BIOS {stock_code(stock_text)})",
+                           "zerobas, the clean-room MSX1 BASIC, on C-BIOS: an "
+                           "MSX1 with no disk drive.")
         if args.dry_run:
             print(f"would write {os.path.basename(out)}")
         else:
@@ -393,8 +424,11 @@ def main():
             print(f"wrote {base}_BASIC   (-> machine \"{base}_BASIC\")")
         if disk_rom:
             dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
-            dtext = expand_slot3(patch_config(stock_text, share_machines, ips_list),
-                                 disk_rom, sub_rom)
+            dtext = retitle(expand_slot3(patch_config(stock_text, share_machines, ips_list),
+                                         disk_rom, sub_rom),
+                            f"Disk BASIC (C-BIOS {stock_code(stock_text)})",
+                            "zerobas, the clean-room MSX1 BASIC, on C-BIOS, with "
+                            "zerobas's Disk BASIC and one disk drive.")
             if args.dry_run:
                 print(f"would write {os.path.basename(dout)}")
             else:
@@ -457,7 +491,8 @@ def main():
                   f"real {base} BIOS + zerobas-disk in slot 3-1)")
 
     tail = " (attach a FAT12 image: -diska disk/test720.dsk)" if disk_rom else ""
-    print(f"\nDone. Launch openMSX and pick one of the *_BASIC machines.{tail}")
+    print(f"\nDone. Start openMSX and pick \"zerobas BASIC\" or \"zerobas Disk BASIC\" "
+          f"in its machine menu (or -machine {MAIN_REGION}_BASIC[_DISK]).{tail}")
 
 
 if __name__ == "__main__":
