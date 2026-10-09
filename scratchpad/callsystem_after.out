@@ -1,0 +1,211 @@
+== nosys CF
+   |Ok
+   |CALL SYSTEM
+   |Illegal function call
+   |Ok
+   |PRINT "[OK]"
+   |[OK]
+   |Ok
+   |color   auto    goto    list    run
+== nosys ZB
+   |ZB
+   |CALL SYSTEM
+   |Illegal function call
+   |ZB
+   |PRINT "[OK]"
+   |[OK]
+   |ZB
+   |color   auto    goto    list    run
+== nosyserr CF
+   |Ok
+   |10 ON ERROR GOTO 90
+   |20 CALL SYSTEM
+   |30 PRINT "[BACK]":END
+   |90 PRINT "ERR";ERR;"ERL";ERL:END
+   |RUN
+   |ERR 5 ERL 20
+   |Ok
+   |color   auto    goto    list    run
+== nosyserr ZB
+   |ZB
+   |10 ON ERROR GOTO 90
+   |20 CALL SYSTEM
+   |30 PRINT "[BACK]":END
+   |90 PRINT "ERR";ERR;"ERL";ERL:END
+   |RUN
+   |ERR 5 ERL 20
+   |ZB
+   |color   auto    goto    list    run
+== nosysund CF
+   |Ok
+   |_SYSTEM
+   |Illegal function call
+   |Ok
+   |PRINT "[OK]"
+   |[OK]
+   |Ok
+   |color   auto    goto    list    run
+== nosysund ZB
+   |ZB
+   |_SYSTEM
+   |Illegal function call
+   |ZB
+   |PRINT "[OK]"
+   |[OK]
+   |ZB
+   |color   auto    goto    list    run
+== dosarg CF
+   |Ok
+   |CALL SYSTEM("DIR")
+   |Syntax error
+   |Ok
+   |PRINT "[STILL BASIC]"
+   |[STILL BASIC]
+   |Ok
+   |color   auto    goto    list    run
+== dosarg ZB
+   |ZB
+   |CALL SYSTEM("DIR")
+   |Syntax error
+   |ZB
+   |PRINT "[STILL BASIC]"
+   |[STILL BASIC]
+   |ZB
+   |color   auto    goto    list    run
+== dos40 CF
+   |A>DIR
+   |MSXDOS   SYS    2432 84-01-01
+   |COMMAND  COM    6656 84-01-01
+   |DOSHLP   COM   36224 86-11-22 11:19a
+   |       3 files   681984 bytes free
+   |A>
+== dos40 ZB
+   |ZB
+   |PRINT "[IN BASIC]"
+   |[IN BASIC]
+   |ZB
+   |CALL SYSTEM
+   |A>
+   |  A>MODE 40
+   |A>DIR
+   |     MSXDOS   SYS    2432 84-01-01
+   |COMMAND  COM    6656 84-01-01
+   |DOSHLP   COM   36224 86-11-22 11:19a
+   |       3 files   681984 bytes free
+   |A>
+   |color   auto    goto    list    run
+== dosprog CF
+   |A>DIR
+   |MSXDOS   SYS    2432 84-01-01
+   |COMMAND  COM    6656 84-01-01
+   |DOSHLP   COM   36224 86-11-22 11:19a
+   |       3 files   681984 bytes free
+   |A>
+== dosprog ZB
+   |ZB
+   |10 CALL SYSTEM
+   |20 PRINT "[AFTER]"
+   |RUN
+   |A>
+   |  A>MODE 40
+   |A>DIR
+   |     MSXDOS   SYS    2432 84-01-01
+   |COMMAND  COM    6656 84-01-01
+   |DOSHLP   COM   36224 86-11-22 11:19a
+   |       3 files   681984 bytes free
+   |A>
+   |color   auto    goto    list    run
+== doskillsys CF
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+== doskillsys ZB
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  MODE 40
+   |  Syntax error
+   |  ZB
+   |  DIR
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+== doskillcom CF
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+== doskillcom ZB
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |color   auto    goto    list    run
+== dosfile CF
+   |A>TYPE X.TXT
+   |HELLO
+   |A>DIR X.TXT
+   |X        TXT       8 84-01-01
+   |       1 file   680960 bytes free
+   |A>
+== dosfile ZB
+   |ZB
+   |OPEN "X.TXT" FOR OUTPUT AS 1
+   |ZB
+   |PRINT #1,"HELLO"
+   |ZB
+   |CALL SYSTEM
+   |A>
+   |  A>MODE 40
+   |A>TYPE X.TXT
+   |            HELLO
+   |A>DIR X.TXT
+   |           X        TXT       8 84-01-01
+   |       1 file   680960 bytes free
+   |A>
+   |color   auto    goto    list    run
+refcache: 0 hit, 18 miss, 18 stored

@@ -1,0 +1,14 @@
+== late National_CF-3300
+   |(SCRMOD 1)
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  MODE 40
+   |  Syntax error
+   |  Ok
+   |  DIR
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run

@@ -1964,6 +1964,120 @@ hkfm_done:
                 ret
 fmt_menu_text:  db      "1=360k 2=720k? ",0
 
+; --- hk_system: CALL SYSTEM / _SYSTEM -- back to MSX-DOS (D-CALLSYSTEM; oracle: CF-3300) ---
+; Measured on the CF-3300 (scratchpad/callsystem_run.out, callsystem_dos2.out,
+; callsystem_swap.out, callsystem_warm.out, callsystem_peek.out):
+;   * booted from a data disk: Illegal function call (5);
+;   * booted into MSX-DOS, then BASIC: back at A> -- a WARM return (no banner, no
+;     date prompt, no AUTOEXEC.BAT; the screen and its mode kept), every open file
+;     CLOSED first, MSXDOS.SYS and COMMAND.COM read from the disk again (with
+;     MSXDOS.SYS deleted the disk's own boot code says Boot error; without
+;     COMMAND.COM, MSXDOS.SYS asks for the DOS disk);
+;   * a disk in the drive that does not boot: Syntax error; `SYSTEM("DIR")` or any
+;     tail: Syntax error; a program line behaves as a typed one.
+; So this runs INIT's own hand-off (init.asm boot_disk_go: steps 4-7) from BASIC,
+; with MSX-DOS's cold/warm seed $F340 set non-zero (WARM) and without
+; dos_handoff's screen clear. Without the seed DOS starts COLD here -- banner,
+; date prompt (scratchpad/callsystem_gate_noseed.out). 🔴 Knife K-CS4 first said the store
+; moved NOTHING: its probe run had died on that very date prompt, and the
+; harness scored the rows it never printed as unmoved (callsystem_knives_r1.out).
+; On the CF-3300 $F340 reads 243 after BOTH kinds of boot (callsystem_peek.out),
+; so the cell is DOS's warm flag, not a "booted DOS" mark.
+; BASIC's stack ($F380 down, sysvars.inc FN_STK_FLOOR) is already in the area
+; INIT's boot stack uses, clear of everything the boot loads, so it stays.
+; "Booted into MSX-DOS" is DOS_SIG in BASENT_REQ (dos_handoff, and the DOS ->
+; BASIC restart keeps it). 📍 In the fill above `ds $5FE5 - $`, beside hk_format.
+;   in   STRSCR+1 = main's cursor at the CALL name (basic/format.asm exc_name)
+;   out  never returns: MSX-DOS, or an error raised in main (DISKOP_ERR, disk_error)
+hk_system:
+                ld      hl,(STRSCR+1)
+                ld      de,hsy_name
+                ld      b,6
+hsy_lp:
+                ld      a,(de)
+                xor     (hl)
+                and     $DF                 ; the same letter, either case
+                jp      nz,hsy_syn          ; another name: Syntax error, as before
+                inc     hl
+                inc     de
+                djnz    hsy_lp
+hsy_end:
+                ld      a,(hl)              ; the name must END the statement
+                inc     hl
+                cp      ' '
+                jr      z,hsy_end
+                or      a
+                jr      z,hsy_ok
+                cp      ':'
+                jp      nz,hsy_syn
+hsy_ok:
+                ld      hl,(BASENT_REQ)
+                ld      de,DOS_SIG
+                or      a
+                sbc     hl,de
+                ld      a,5                 ; MSX-DOS never booted: Illegal function call
+                jp      nz,hsy_err
+                ld      ix,fch_close_all
+                call    calbak              ; close every file, as the CF-3300 does
+                ; The function-key row goes, BEFORE the disk is tried: at A> the
+                ; CF-3300 has CRTCNT 24 / CNSDFG 0 (ours had 23 / $FF and the row
+                ; still painted), and after a refused disk BASIC is back without it
+                ; (scratchpad/callsystem_cells.out, callsystem_swap.out `gone`).
+                ; The 5 above keeps it, as there. Documented work-area cells; the
+                ; row is blanked here because C-BIOS's ERAFNK is not ours to rely on.
+                xor     a
+                ld      ($F3DE),a           ; CNSDFG: the key row is hidden
+                ld      a,24
+                ld      ($F3B1),a           ; CRTCNT: the console gets all 24 rows
+                ld      a,($FCAF)           ; SCRMOD: only the two text modes have the row
+                ld      hl,($F3B3)          ; TXTNAM (SCREEN 0) + 23 rows of 40
+                ld      de,23*40
+                ld      bc,40
+                or      a
+                jr      z,hsy_row
+                dec     a
+                jr      nz,hsy_rd
+                ld      hl,($F3BD)          ; T32NAM (SCREEN 1) + 23 rows of 32
+                ld      de,23*32
+                ld      c,32
+hsy_row:
+                add     hl,de
+                ld      a,' '
+                call    $0056               ; FILVRM: the bottom row, blank
+hsy_rd:
+                xor     a                   ; Cy = 0: read drive A's sector 0 to $C000,
+                ld      b,1                 ; as INIT does
+                ld      c,a
+                ld      d,a
+                ld      e,a
+                ld      hl,BOOT_LOAD
+                call    dskio
+                jr      c,hsy_syn
+                ld      a,(BOOT_LOAD)
+                cp      $EB
+                jr      z,hsy_boot
+                cp      $E9
+                jr      nz,hsy_syn
+hsy_boot:
+                or      a                   ; Cy = 0: the step-5 call
+                call    BOOT_ENTRY
+                di
+                call    page0_ram_in
+                call    lay_page0_env
+                ld      ix,DRVA_DPB
+                ld      a,1
+                ld      ($F340),a           ; MSX-DOS's cold/warm seed: WARM
+                call    dos_handoff_keep    ; a DOS disk does not come back
+                call    page0_ram_out
+                ei
+hsy_syn:
+                ld      a,2                 ; Syntax error
+hsy_err:
+                ld      (DISKOP_ERR),a
+                ld      ix,disk_error
+                jp      calbak              ; raises; does not return
+hsy_name:       db      "SYSTEM"
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00
@@ -3819,6 +3933,7 @@ hook_tab:
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant
                                              ; dispatch live HERE (main keeps the gate)
+                dw      H_SYST, hk_system    ; D-CALLSYSTEM: CALL SYSTEM, back to MSX-DOS
                 dw      H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
                                              ; (and SAVE ,A's, increment 3: _e below)
                 dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise)

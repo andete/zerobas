@@ -2304,6 +2304,13 @@ filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 filesbare-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_filesbare.py
 
+# --- callsystem-acceptance: CALL SYSTEM, back to MSX-DOS (D-CALLSYSTEM) -------
+# Illegal function call after a data-disk boot; after a DOS boot a WARM return to
+# A> with the open files closed. Uses the BDOS gates' MSX-DOS disk (refuses
+# without it, like bdos-acceptance).
+callsystem-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_callsystem.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

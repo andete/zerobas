@@ -1,0 +1,11 @@
+ROW nosys CF=[CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] SAME
+ROW nosysprg CF=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 5 ERL 20 | color   auto    goto    list    run] ZB=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 5 ERL 20 | color   auto    goto    list    run] SAME
+ROW nosysund CF=[_SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[_SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] SAME
+ROW dosarg CF=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC] | color   auto    goto    list    run] ZB=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC] | color   auto    goto    list    run] SAME
+ROW dos CF=[CALL SYSTEM | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] ZB=[CALL SYSTEM | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] SAME
+ROW dosprog CF=[10 CALL SYSTEM | 20 PRINT "[AFTER]" | RUN | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] ZB=[10 CALL SYSTEM | 20 PRINT "[AFTER]" | RUN | A>DIR MSXDOS.SYS | MSXDOS   SYS    2432 02-10-16  8:01p |        1 file   375808 bytes free | A>] SAME
+ROW dosfile CF=[OPEN "X.TXT" FOR OUTPUT AS 1 | PRINT #1,"HELLO" | CALL SYSTEM | A>TYPE X.TXT | HELLO | A>] ZB=[OPEN "X.TXT" FOR OUTPUT AS 1 | PRINT #1,"HELLO" | CALL SYSTEM | A>TYPE X.TXT | HELLO | A>] SAME
+ROW doscom CF=[KILL "COMMAND.COM" | CALL SYSTEM | Insert DOS disk in default drive | and strike any key when ready] ZB=[KILL "COMMAND.COM" | CALL SYSTEM | Insert DOS disk in default drive | and strike any key when ready] SAME
+
+PASS: CALL SYSTEM (8/8)
+refcache: 0 hit, 16 miss, 16 stored

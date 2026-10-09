@@ -1,0 +1,10 @@
+== sysscreen National_CF-3300
+   |(SCRMOD 0)
+   |Ok
+   |CALL SYSTEM
+   |A>
+== sysauto National_CF-3300
+   |(SCRMOD 0)
+   |Ok
+   |CALL SYSTEM
+   |A>

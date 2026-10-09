@@ -47,8 +47,10 @@
 ; basic/format-body.inc (the c3fc2d8 printusing.asm pattern).
 
 ; --- ex_call / _<name> — extended-statement dispatch -----------------------
-; HL -> the CALL token (ex_call) or the '_' char (ex_call_us). Only CALL FORMAT is
-; supported; any other name errors.
+; HL -> the CALL token (ex_call) or the '_' char (ex_call_us). CALL FORMAT is
+; handled here; every other name is offered to H_SYST (D-CALLSYSTEM: disk.rom's
+; hk_system takes SYSTEM and raises for anything else), and unclaimed -- no disk
+; ROM -- that cell's RET keeps the Syntax error.
 ex_call:
                 inc     hl                  ; past the CALL token
                 jr      exc_name
@@ -56,7 +58,9 @@ ex_call_us:
                 inc     hl                  ; past '_'
 exc_name:
                 call    skip_spaces
+                ld      (STRSCR+1),hl       ; the name, for hk_system: CALSLT keeps no registers
                 call    fmt_match_format    ; CF set if (HL) == "FORMAT"
+                call    nc,H_SYST           ; not FORMAT: disk.rom's CALL SYSTEM, if present
                 jp      nc,stmt_error       ; unsupported CALL extension
                 ; 🔴 THE REFERENCE REJECTS EVERY TAIL — MEASURED, NOT ASSUMED
                 ; (D-FMTTAIL, docs/spec-basic-fmttail.md). On the National

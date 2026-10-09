@@ -1,0 +1,29 @@
+== gone C-BIOS_MSX1_EU_REPACK_DISK
+   |(SCRMOD 0)
+   |ZB
+   |CALL SYSTEM
+   |Syntax error
+   |ZB
+   |PRINT 12345
+   | 12345
+   |ZB
+   |color   auto    goto    list    run
+== late C-BIOS_MSX1_EU_REPACK_DISK
+   |(SCRMOD 0)
+   |ZB
+   |CALL SYSTEM
+   |Illegal function call
+   |ZB
+   |MODE 40
+   |Syntax error
+   |ZB
+   |DIR
+   |Syntax error
+   |ZB
+   |color   auto    goto    list    run
+== sysscreen C-BIOS_MSX1_EU_REPACK_DISK
+   |(SCRMOD 0)
+   |ZB
+   |CALL SYSTEM
+   |A>
+   |color   auto    goto    list    run

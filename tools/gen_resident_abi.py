@@ -320,6 +320,9 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # prompt itself is CHPUT'd from disk.rom: its text is there, and a
     # print_string call-back would read main page 1 at the text's address.
     "read_line",                # LINEBUF <- one edited line, echoed
+    # D-CALLSYSTEM: CALL SYSTEM closes every file before handing over to MSX-DOS,
+    # as the CF-3300 does (scratchpad/callsystem_peek.out `dosfile`).
+    "fch_close_all",
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

@@ -20,7 +20,10 @@ fails; 2 the control failed or a machine gave no reading.
 Clean-room: the keyboard matrix in; the VDP name table and documented
 work-area cells (SCRMOD, TXTNAM, T32NAM) out.
 """
-import os, shutil, signal, subprocess, sys, tempfile, time
+import os, shutil, signal, subprocess, sys, time
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
+import omsx_preflight                               # noqa: E402
+import probe_tmp                                    # noqa: E402
 
 LIMIT = 0.3
 ROWS = (("vg8020", "Philips_VG_8020"), ("nodisk", "C-BIOS_MSX1_EU_REPACK_NODISK"),
@@ -74,12 +77,14 @@ after time 0.5 __poll
 
 
 def run(machine):
-    d = tempfile.mkdtemp(prefix="bootkey_")
-    out = os.path.join(d, "out.txt")
-    tcl = os.path.join(d, "probe.tcl")
+    out = probe_tmp.tmp(f"bootkey_{machine}.txt")
+    tcl = probe_tmp.tmp(f"bootkey_{machine}.tcl")
+    if os.path.exists(out):
+        os.unlink(out)
     open(tcl, "w").write(TCL.replace("{OUT}", "{" + out + "}"))
-    proc = subprocess.Popen([OMSX, "-machine", machine, "-command",
-                             "set renderer none; set sound_driver null", "-script", tcl],
+    proc = subprocess.Popen(omsx_preflight.guarded(
+                                [OMSX, "-machine", machine, "-command",
+                                 "set renderer none; set sound_driver null", "-script", tcl]),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + 120

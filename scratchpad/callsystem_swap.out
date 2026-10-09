@@ -1,0 +1,32 @@
+== late National_CF-3300
+   |        ~B~B~B    T (D      4R      8T
+   | (| 8T     |    ~BB~BB~ @~H<(~
+   |        (D < $L ( \ l P | |D|D|  p
+   |~   "D   |(((N
+   |                         B$  $B  |  (D
+   |          TT  0                 PPP
+   |PP P PP  x p(       @   @ @   `   @
+   |  @@@   @     @   p p                  @
+   |   x         ``      @  p     p  `
+   |p   `   p  0  p  0P             0@    p
+   |        p  p  p p  x  `                @
+   | 0` `0           `0 0`  p       p  h  p
+   | P       HHpHH  0H   H0  PHHHP
+   |        p     p         p     p 8     `
+   |                                p     p
+   |        p     h         p  p  p
+   |      p     PP            P P      p
+   |    @   p@@@@@p  P p p  p     p  P
+   |        @         p x x           p   p
+   |  h   h   p   p  (        h  h p
+   |  `   p   0    `@@HP`PH `     p
+   |          p   p           h  h
+   |  x     @@ @@H0       h      P        P
+== gone National_CF-3300
+   |Ok
+   |CALL SYSTEM
+   |Syntax error
+   |Ok
+   |PRINT 12345
+   | 12345
+   |Ok

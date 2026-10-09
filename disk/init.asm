@@ -372,8 +372,8 @@ boot_disk:
                 ; request and fall through to BASIC as a non-system disk does.
                 call    basent_pending
                 jr      nz, boot_disk_go
-                ld      hl, 0
-                ld      (BASENT_REQ), hl
+                ld      hl, DOS_SIG         ; D-CALLSYSTEM: BASENT comes from MSX-DOS,
+                ld      (BASENT_REQ), hl    ; so the mark says it was booted (same size)
                 ret
 boot_disk_go:
                 xor     a               ; drive A

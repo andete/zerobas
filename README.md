@@ -300,7 +300,8 @@ errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
 - **Everyday cases found on 2026-10-09** — `READ` of a number like `1.5`,
   `GET #` / `PUT #` without a record number, `&B` binary numbers, the cursor
   after `FILES`, and `FILES " "` / `FILES "A:"` — are all fixed the same day.
-  (`CALL SYSTEM`, the way into MSX-DOS, is still to be measured.)
+  So is `CALL SYSTEM`, the way back into MSX-DOS, measured and built the same
+  day.
 - **RAM usage** is measured but not yet proven equal to the reference's.
 - **Rare error paths** — the long tail of unusual errors (TIER 6).
 - **MSX2 and later** are out of scope for now.

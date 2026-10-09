@@ -1,0 +1,14 @@
+  ROM acc2689a 20719286 e329588e 39614b0b  ->  acc2689a 20719286 c70dd64b 39614b0b
+PASS  K-CS1: moved ['nosys', 'nosysprg', 'nosysund'] (want exactly ['nosys', 'nosysprg', 'nosysund'])
+  ROM acc2689a 20719286 c70dd64b 39614b0b  ->  acc2689a 20719286 0c30aeb6 39614b0b
+PASS  K-CS2: moved ['dosfile'] (want exactly ['dosfile'])
+  ROM acc2689a 20719286 0c30aeb6 39614b0b  ->  acc2689a 20719286 49cf0cb2 39614b0b
+PASS  K-CS3: moved ['dos', 'doscom', 'dosfile', 'dosprog'] (want exactly ['dos', 'doscom', 'dosfile', 'dosprog'])
+  ROM acc2689a 20719286 49cf0cb2 39614b0b  ->  acc2689a 20719286 a9772473 39614b0b
+FAIL  K-CS4: moved [] (want exactly ['dos', 'doscom', 'dosfile', 'dosprog'])
+  ROM acc2689a 20719286 a9772473 39614b0b  ->  acc2689a 20719286 07467e6b 39614b0b
+PASS  K-CS5: moved ['dos', 'doscom', 'dosfile', 'dosprog', 'nosys', 'nosysprg', 'nosysund'] (want exactly ['dos', 'doscom', 'dosfile', 'dosprog', 'nosys', 'nosysprg', 'nosysund'])
+  ROM acc2689a 20719286 07467e6b 39614b0b  ->  acc2689a 20719286 5d85da5a 39614b0b
+PASS  K-CS6: moved ['dosarg'] (want exactly ['dosarg'])
+
+FAILED: K-CS4

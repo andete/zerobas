@@ -1,0 +1,11 @@
+== sysscreen National_CF-3300
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,0,40,4,3,40)
+   |Ok
+   |CALL SYSTEM
+   |A>
+== sysscreen C-BIOS_MSX1_EU_REPACK_DISK
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 23,255,40,4,3,40)
+   |ZB
+   |CALL SYSTEM
+   |A>
+   |color   auto    goto    list    run

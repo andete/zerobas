@@ -1,0 +1,94 @@
+== nosys CF
+   |Ok
+   |CALL SYSTEM
+   |Illegal function call
+   |Ok
+   |PRINT "[OK]"
+   |[OK]
+   |Ok
+   |color   auto    goto    list    run
+== nosys ZB
+   |ZB
+   |CALL SYSTEM
+   |Syntax error
+   |ZB
+   |PRINT "[OK]"
+   |[OK]
+   |ZB
+   |color   auto    goto    list    run
+== nosyserr CF
+   |Ok
+   |10 ON ERROR GOTO 90
+   |20 CALL SYSTEM
+   |30 PRINT "[BACK]":END
+   |90 PRINT "ERR";ERR;"ERL";ERL:END
+   |RUN
+   |ERR 5 ERL 20
+   |Ok
+   |color   auto    goto    list    run
+== nosyserr ZB
+   |ZB
+   |10 ON ERROR GOTO 90
+   |20 CALL SYSTEM
+   |30 PRINT "[BACK]":END
+   |90 PRINT "ERR";ERR;"ERL";ERL:END
+   |RUN
+   |ERR 2 ERL 20
+   |ZB
+   |color   auto    goto    list    run
+== nosysund CF
+   |Ok
+   |_SYSTEM
+   |Illegal function call
+   |Ok
+   |PRINT "[OK]"
+   |[OK]
+   |Ok
+   |color   auto    goto    list    run
+== nosysund ZB
+   |ZB
+   |_SYSTEM
+   |Syntax error
+   |ZB
+   |PRINT "[OK]"
+   |[OK]
+   |ZB
+   |color   auto    goto    list    run
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 9 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+== dos CF
+   |          >33>00  |ff|xl  x
+   |   36  f    oo l                    0
+   |  x  x
+   |                        0       f
+   |x               6       l
+   |                x
+   | 0000000
+   |                               @
+   |                00000000
+   |       c     PF
+🔴 omsx_repl: NOT CACHING C-BIOS_MSX1_EU_REPACK_DISK -- all 9 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+== dos ZB
+   |        <B    B<<~    ~<l  DD(   (D D(
+   | 88   8  8||  8                 <B    B<
+   |  ~~~~     p  p  p  p p  0((    8<$$
+   | D8 8D     8
+   |                         B$  $B       @
+   | @                              PP
+   | P P P   p p(p      X   ` `  `  @@
+   | @@@@              pP                @@
+   |             @      @   p    p   `   p
+   |p  p      0  p   0P       p  p  0@p  p
+   |        p p  p  p  x p    @  @    @  @@
+   |  ` `             0 0   p 0     p     @
+   |p               p    p   HHHH
+   |        p    p          p    p  8    p
+   |                                p    p
+   |        p    h          p p
+   |     x     PP            P P      p
+   |   @    p@@@@p    @     p    p  @
+   |                  x  h            x  x
+   |  x  x    p  x  0H@@ @@@  x  x p
+   |  `  p    0    `         @@@@p
+   |          p  p            x  x
+   |  x     @@ @H0       x      P
+refcache: 0 hit, 8 miss, 6 stored

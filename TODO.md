@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31112 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31228 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29731,15 +29731,109 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       list-all return) → blank, drv, drvlow, drvsp; K-FB2 (no drive recognised)
       → drv, drvlow, drvsp — each exactly. `"B:"` lists drive A here (D-DSKIB).
 
-- [ ] 🔴 **`CALL SYSTEM` IS `Syntax error` HERE; THE CF-3300's ANSWER IS UNMEASURED
+- [x] ✅ **FIXED 2026-10-09 (D-CALLSYSTEM)** — 🔴 **`CALL SYSTEM` IS `Syntax error` HERE; THE CF-3300's ANSWER IS UNMEASURED
       (D-CALLSYSTEM, found 2026-10-09 by the MSX-DOS concept page).**
-      🎚️ TIER 1 (latent) — `CALL SYSTEM` from Disk BASIC (going to MSX-DOS)
+      🎚️ TIER 1 — `CALL SYSTEM` from Disk BASIC (going to MSX-DOS)
       🤖 **AUTONOMOUS** — measure on the CF-3300 first (with and without a DOS
       system disk).
       `ex_call` accepts only `FORMAT`. On an MSX1 Disk BASIC with MSX-DOS 1,
       `CALL SYSTEM` is the documented way into DOS; whether the CF-3300's disk
       ROM offers it, and what it does without MSXDOS.SYS on the disk, is not
       measured. Re-tier once measured.
+      ✅ **MEASURED, then BUILT, 2026-10-09.** The CF-3300
+      ([`callsystem_probe.py`](scratchpad/callsystem_probe.py),
+      [`callsystem_run.out`](scratchpad/callsystem_run.out),
+      [`callsystem_dos2.out`](scratchpad/callsystem_dos2.out),
+      [`callsystem_peek.out`](scratchpad/callsystem_peek.out); disk swaps by
+      [`callsystem_swap.py`](scratchpad/callsystem_swap.py),
+      [`callsystem_swap.out`](scratchpad/callsystem_swap.out),
+      [`callsystem_warm.out`](scratchpad/callsystem_warm.out),
+      [`callsystem_cells.out`](scratchpad/callsystem_cells.out)): booted from a
+      data disk, `CALL SYSTEM` / `_SYSTEM` is Illegal function call (5; I had
+      predicted a silent return: MISSED); booted into MSX-DOS then `A>BASIC`, it
+      goes back to `A>` WARM — no banner, no date prompt, no `AUTOEXEC.BAT`, the
+      screen and SCREEN 0 kept, the key row gone (CRTCNT 24 / CNSDFG 0), every
+      open file closed first; MSXDOS.SYS and COMMAND.COM are read from the disk
+      again (I had predicted MSXDOS.SYS stays resident: MISSED). `SYSTEM("DIR")`
+      is Syntax error; a program line works as a typed one; a disk swapped in
+      that does not boot gives Syntax error. `&HF340` is 243 after BOTH boots,
+      so it is not the "booted DOS" mark (predicted otherwise: MISSED).
+      Built: main `ex_call` stores the name's address in STRSCR+1 and offers
+      every non-FORMAT name to a new hook cell `H_SYST` (`&HFDF4`, H.SETS — the
+      reference finds CALL handlers through the ROM header, so the cell is our
+      own choice, one the CF-3300 leaves unclaimed); +6 B main page 1.
+      disk.rom `hk_system` (in the fill above `ds $5FE5`): the name and the end
+      of the statement, then the mark, `fch_close_all` (new resident-ABI
+      call-back), the key row, and INIT's own steps 4-7 with MSX-DOS's
+      warm flag `&HF340` set (without it DOS starts cold — banner, date prompt,
+      [`callsystem_gate_noseed.out`](scratchpad/callsystem_gate_noseed.out)),
+      entering `dos_handoff` past its screen clear (`dos_handoff_keep`). The
+      mark is `DOS_SIG` in BASENT_REQ: `dos_handoff` sets it (and puts the old
+      value back if the disk returns), the DOS -> BASIC restart leaves it.
+      BASIC's stack is not moved: it is already in INIT's boot-stack area.
+      Gate `callsystem-acceptance`
+      ([`disk_probe_callsystem.py`](probes/disk/disk_probe_callsystem.py),
+      [`callsystem_gate.out`](scratchpad/callsystem_gate.out)): 8/8, predicted;
+      it uses the BDOS gates' MSX-DOS disk and refuses without one. 🔪
+      [`callsystem_knives.out`](scratchpad/callsystem_knives.out): K-CS1 (the
+      mark) → nosys, nosysprg, nosysund; K-CS2 (the close) → dosfile; K-CS3
+      (the key row) → dos, dosprog, dosfile, doscom; K-CS5 (the hook row) →
+      all but dosarg; K-CS6 (the end of statement) → dosarg; K-CS4 (the warm
+      flag) → the four DOS rows — each exactly. 🔴 K-CS4's FIRST run said it
+      moved NOTHING ([`callsystem_knives_r1.out`](scratchpad/callsystem_knives_r1.out))
+      and I removed the store as dead — WRONG: that run's probe had died on the
+      cold boot's date prompt (omsx_repl raises on a mangled delivery) and the
+      harness scored the four rows it never printed as unmoved. The gate now
+      reports such a failure as the row's reading, the harness refuses a run
+      with rows missing, and the store is back (D-KNIFEROWS below). Left open:
+      D-SYSBOOTERR, D-SYSLATE, D-DOSMODE40 (below).
+
+- [ ] 🔴 **`CALL SYSTEM` WITH MSXDOS.SYS DELETED: THE CF-3300 LOOPS ON `Boot error` /
+      `Press any key for retry`; ZEROBAS RESTARTS DISK BASIC WITH ITS BANNER
+      (D-SYSBOOTERR, found 2026-10-09 by D-CALLSYSTEM's `doskillsys` row).**
+      🎚️ TIER 6 — `CALL SYSTEM` after the system file is deleted
+      🤖 **AUTONOMOUS** — the reference settles it.
+      [`callsystem_after.out`](scratchpad/callsystem_after.out) `doskillsys`.
+      Both hand the same boot sector the same step-7 call; what the CF-3300
+      does when its loader finds no MSXDOS.SYS (the retry prompt) is not ours.
+      Measure first which documented entry the retry goes through (PC at the
+      disk ROM's published entries only — no stepping into the ROM).
+
+- [ ] 🔴 **DATA DISK AT POWER-ON, MSX-DOS DISK INSERTED LATER: `CALL SYSTEM` RESTARTS
+      DISK BASIC ON THE CF-3300 (banner, 23430 bytes free) AND IS `Illegal function
+      call` HERE (D-SYSLATE, found 2026-10-09 by D-CALLSYSTEM).**
+      🎚️ TIER 6 — `CALL SYSTEM` after a disk swap
+      🤖 **AUTONOMOUS** — the reference settles it.
+      [`callsystem_swap.out`](scratchpad/callsystem_swap.out) `late` (CF-3300),
+      [`callsystem_swap_zb.out`](scratchpad/callsystem_swap_zb.out) `late`
+      (zerobas). The CF-3300's mark is not `&HF340`
+      ([`callsystem_peek.out`](scratchpad/callsystem_peek.out)); find its rule
+      (work-area cells after each boot) before changing ours.
+
+- [ ] 🔴 **`MODE 40` IN MSX-DOS DOES NOT CLEAR THE SCREEN HERE, AND THE LINES AFTER IT
+      ARE INDENTED (D-DOSMODE40, found 2026-10-09 by D-CALLSYSTEM's probe).**
+      🎚️ TIER 1 (latent) — `MODE 40` at the `A>` prompt
+      🤖 **AUTONOMOUS** — measure first (the console cells after `MODE 40`).
+      On the CF-3300 `MODE 40` clears the screen; on zerobas the screen keeps its
+      text and the next lines start at odd columns
+      ([`callsystem_after.out`](scratchpad/callsystem_after.out) `dos40`,
+      `dosfile`). After a cold DOS boot (SCREEN 1) `MODE 40` left zerobas out of
+      the text mode the probe reads ([`callsystem_dos.out`](scratchpad/callsystem_dos.out)
+      `dosboot`). MSX-DOS-side, not CALL SYSTEM: the gate avoids `MODE`.
+
+- [ ] 🔴 **A KNIFE HARNESS SCORES THE ROWS A CRASHED PROBE NEVER PRINTED AS UNMOVED
+      (D-KNIFEROWS, found 2026-10-09 by D-CALLSYSTEM's K-CS4).**
+      🎚️ APPARATUS — knife harness completeness
+      🤖 **AUTONOMOUS** — mechanical.
+      The `*_knives.py` harnesses in `scratchpad/` share one template
+      (`readflt_knives.py` onward): they compare only the rows a cut run
+      printed with the baseline, so a probe that dies part-way reports its
+      missing rows as unmoved. K-CS4 said "moved nothing" that way and a
+      load-bearing store was removed on the strength of it
+      ([`callsystem_knives_r1.out`](scratchpad/callsystem_knives_r1.out)).
+      [`callsystem_knives.py`](scratchpad/callsystem_knives.py) now refuses an
+      incomplete run; give the other harnesses the same check (a FAIL can only
+      hide an over-move there, never fake a PASS, but that is still blindness).
 
 - [x] ✅ **FIXED 2026-10-09 (D-BOOTSCAN)** — 🔴 **KEYS TYPED IN THE FIRST ~5 s AFTER POWER-ON ARE LOST: `ZB` SHOWS 2.5 s
       BEFORE THE FIRST KEY IS TAKEN (D-BOOTSCAN, reported by Joost 2026-10-09:

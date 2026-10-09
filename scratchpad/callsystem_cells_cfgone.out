@@ -1,0 +1,9 @@
+== gone National_CF-3300
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,0,40,8,1,40)
+   |Ok
+   |CALL SYSTEM
+   |Syntax error
+   |Ok
+   |PRINT 12345
+   | 12345
+   |Ok

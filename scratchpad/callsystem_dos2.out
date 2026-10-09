@@ -1,0 +1,109 @@
+== doskillsys CF
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+   |Boot error
+   |Press any key for retry
+== doskillsys ZB
+   |ZB
+   |KILL "MSXDOS.SYS"
+   |ZB
+   |CALL SYSTEM
+   |Syntax error
+   |ZB
+   |MODE 40
+   |Syntax error
+   |ZB
+   |DIR
+   |Syntax error
+   |ZB
+   |color   auto    goto    list    run
+== doskillcom CF
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+   |Insert DOS disk in default drive
+   |and strike any key when ready
+== doskillcom ZB
+   |ZB
+   |KILL "COMMAND.COM"
+   |ZB
+   |CALL SYSTEM
+   |Syntax error
+   |ZB
+   |MODE 40
+   |Syntax error
+   |ZB
+   |DIR
+   |Syntax error
+   |ZB
+   |color   auto    goto    list    run
+== dosarg CF
+   |Ok
+   |CALL SYSTEM("DIR")
+   |Syntax error
+   |Ok
+   |PRINT "[STILL BASIC]"
+   |[STILL BASIC]
+   |Ok
+   |color   auto    goto    list    run
+== dosarg ZB
+   |ZB
+   |CALL SYSTEM("DIR")
+   |Syntax error
+   |ZB
+   |PRINT "[STILL BASIC]"
+   |[STILL BASIC]
+   |ZB
+   |color   auto    goto    list    run
+== dosprog CF
+   |A>DIR
+   |MSXDOS   SYS    2432 84-01-01
+   |COMMAND  COM    6656 84-01-01
+   |DOSHLP   COM   36224 86-11-22 11:19a
+   |       3 files   681984 bytes free
+   |A>
+== dosprog ZB
+   |ZB
+   |10 CALL SYSTEM
+   |20 PRINT "[AFTER]"
+   |RUN
+   |Syntax error in 10
+   |ZB
+   |MODE 40
+   |Syntax error
+   |ZB
+   |DIR
+   |Syntax error
+   |ZB
+   |color   auto    goto    list    run
+refcache: 0 hit, 8 miss, 8 stored

@@ -1,0 +1,8 @@
+ROW nosys CF=[CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] SAME
+ROW nosysprg CF=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 5 ERL 20 | color   auto    goto    list    run] ZB=[10 ON ERROR GOTO 90 | 20 CALL SYSTEM | 30 PRINT "[BACK]":END | 90 PRINT "ERR";ERR;"ERL";ERL:END | RUN | ERR 5 ERL 20 | color   auto    goto    list    run] SAME
+ROW nosysund CF=[_SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[_SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] SAME
+ROW dosarg CF=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC] | color   auto    goto    list    run] ZB=[CALL SYSTEM("DIR") | Syntax error | PRINT "[STILL BASIC]" | [STILL BASIC] | color   auto    goto    list    run] SAME
+omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; nothing was measured.
+  MIS-ECHOED case 0 on C-BIOS_MSX1_EU_REPACK_DISK (slot 6): typed 'DIR MSXDOS.SYS', machine echoed 'SYS' -- 11 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['', '', 'BASIC', 'SCREEN 0:WIDTH 40', 'CALL SYSTEM', 'DIR MSXDOS.SYS']
+            screen: ['ZB', 'CALL SYSTEM', 'MSX-DOS version 1.03', 'Copyright 1984 by Microsoft', 'COMMAND version 1.08', 'Current date is Sun 1984-01-01', 'Enter new date: DIR MSXDOS.S', 'Invalid date', 'Enter new date:']
+refcache: 0 hit, 9 miss, 9 stored

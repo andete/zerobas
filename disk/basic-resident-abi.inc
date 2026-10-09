@@ -80,3 +80,4 @@ lrset_finish equ 073DDH
 fch_ctx_addr equ 0700FH
 disk_error equ 06C3CH
 read_line equ 045C8H
+fch_close_all equ 0710FH

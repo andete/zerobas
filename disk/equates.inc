@@ -13,7 +13,8 @@ SYSTEM          equ     $F37D   ; SYSTEM sysvar: BDOS entry-point word
 ; page 0). MSX2 TH work area; the disk-ROM-INIT responsibility is confirmed by a
 ; black-box differential (provider-oracle-scope.md §8.8/§8.16). EXPTBL flags which
 ; primary slots are expanded. (EXPTBL also in basic/sysvars.inc — same address.)
-BASENT_REQ      equ     $F33D   ; D-DOSBASIC: 'B','A' while BASENT restarts BASIC -- disk INIT then keeps the DOS date and skips the DOS boot, and clears it (2 B; a signature, so power-on RAM cannot match)
+DOS_SIG         equ     'S'*256+'D' ; D-CALLSYSTEM: in BASENT_REQ, 'D','S' = MSX-DOS was booted (dos_handoff sets it, the DOS -> BASIC restart keeps it); CALL SYSTEM refuses (5) without it
+BASENT_REQ      equ     $F33D   ; D-DOSBASIC: 'B','A' while BASENT restarts BASIC -- disk INIT then keeps the DOS date and skips the DOS boot, and leaves DOS_SIG (above) in it (2 B; a signature, so power-on RAM cannot match)
 DATE_DAYS       equ     $F33B   ; the DOS date: a day count since 1980-01-01, where the CF-3300 keeps it (1461 = 1984-01-01 from boot; D-DOSDATE) (2 B)
 DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B)
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
@@ -125,6 +126,14 @@ H_FIELD         equ     $FE2B   ; FIELD
 H_FILE          equ     $FE7B
 H_FORM          equ     $FFAC   ; CALL FORMAT (D-FMTHOOK): H.FORM, MSX2 TH hook table;
                                 ; in the 35-cell census (docs/spec-basic-nodisk.md §5.2)
+; --- H_SYST: CALL SYSTEM (D-CALLSYSTEM, 2026-10-09) ---------------------------
+; main's ex_call calls it for every CALL name that is not FORMAT, the name's address
+; in STRSCR+1; unclaimed (diskless) its RET keeps main's Syntax error. The reference
+; finds CALL handlers through the ROM header, not a hook, so the cell is our own
+; choice: H.SETS (MSX2 TH hook table, Disk BASIC 2's SET), which an MSX1 BASIC never
+; calls and the CF-3300's disk ROM leaves unclaimed (docs/spec-basic-nodisk.md
+; §5.2.2). NOT $FEB7: the reference claims that one and fires it at every OPEN.
+H_SYST          equ     $FDF4
 ; --- H_FOPEN: the cell every file-OPENING verb arrives at (D-DPLMOVE) --------
 ; 🏗️ RULED BY JOOST 2026-09-19 (spec-diskcode-eviction.md §6.6m): "the reference
 ; is the better oracle then me, so go with FE5D + selector". "Every disk command

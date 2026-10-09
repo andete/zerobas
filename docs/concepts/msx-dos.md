@@ -9,9 +9,9 @@ SPDX-License-Identifier: 0BSD
 > **Status (2026-10-09):** zerobas's disk ROM boots MSX-DOS 1 from a system
 > disk and services the BDOS functions DOS 1 programs use, compared with the
 > CF-3300 by standing gates; `A>BASIC` returns to Disk BASIC (since
-> 2026-10-02). Not there: `CALL SYSTEM` (BASIC to DOS) is a `Syntax error`,
-> and BDOS calls made from BASIC through `&HF37D` are a small private subset
-> that nothing compares with the reference.
+> 2026-10-02), and `CALL SYSTEM` goes back to DOS (since 2026-10-09). Not
+> there: BDOS calls made from BASIC through `&HF37D` are a small private
+> subset that nothing compares with the reference.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -102,9 +102,16 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
 
 ### From BASIC to DOS and back
 
-- **`CALL SYSTEM`** leaves Disk BASIC for MSX-DOS on a real machine. zerobas
-  does not have it: `CALL` accepts only `FORMAT`, so `CALL SYSTEM` is a
-  `Syntax error`. The CF-3300's own `CALL SYSTEM` has not been measured here.
+- **`CALL SYSTEM`** (or `_SYSTEM`) leaves Disk BASIC for MSX-DOS, as on the
+  CF-3300 (since 2026-10-09, D-CALLSYSTEM). It works only when the machine
+  booted into MSX-DOS first; after a boot from a data disk it is `Illegal
+  function call`. It closes every open file, removes the function-key row,
+  and starts DOS again *warm*: straight to `A>`, with no banner, no date
+  question and no `AUTOEXEC.BAT`, and the screen as it was. `MSXDOS.SYS` and
+  `COMMAND.COM` are read from the disk again, so the system disk must be in
+  the drive; a disk that does not boot gives `Syntax error`, and without
+  `COMMAND.COM` DOS asks for the DOS disk. It takes nothing after the name:
+  `CALL SYSTEM("DIR")` is a `Syntax error`.
 - **`A>BASIC`** (COMMAND.COM's `BASIC` command) calls the disk ROM's standard
   entry at `&H4022`, "start BASIC". zerobas has it since 2026-10-02
   (D-DOSBASIC): Disk BASIC starts as at power-on, but without booting DOS
@@ -141,8 +148,14 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
 
 ## Differences from the reference
 
-- **`CALL SYSTEM`** is missing (above). It was scoped out when the disk
-  statements were first planned, and no open TODO item names it.
+- **`CALL SYSTEM` with `MSXDOS.SYS` deleted**: the CF-3300 repeats `Boot
+  error` / `Press any key for retry`; zerobas restarts Disk BASIC with its
+  banner (TODO.md D-SYSBOOTERR).
+- **`CALL SYSTEM` after a data-disk start with the DOS disk put in later**: the
+  CF-3300 restarts Disk BASIC; zerobas answers `Illegal function call`
+  (D-SYSLATE).
+- **`MODE 40` at `A>`** clears the screen on the CF-3300; on zerobas the text
+  stays and the following lines start at odd columns (D-DOSMODE40).
 - **BDOS from BASIC (`&HF37D`)** answers seven functions only and is not
   measured against the CF-3300. It also uses the sector buffers BASIC's open
   files use, without saving them: the buffer audit of 2026-09-24 (TODO.md)
@@ -174,6 +187,12 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
   (2026-07-07), and `&H09` printed nothing (D-STROUT, 2026-10-02). Such cells
   are now set before the check, and `make bdos-cbios-selfcheck` runs the
   exercisers on the C-BIOS machine.
+- **`CALL SYSTEM` was a `Syntax error`** (fixed 2026-10-09, D-CALLSYSTEM).
+  Measured first, with and without a system disk and with disks swapped
+  mid-session: the CF-3300 refuses with `Illegal function call` unless DOS
+  was booted, and returns warm. The cell DOS reads for warm or cold
+  (`&HF340`) turned out to hold the same value after both kinds of boot, so it
+  cannot be the mark; zerobas keeps its own.
 - **`A>BASIC` returned to `A>`** (fixed 2026-10-02, D-DOSBASIC): zerobas had
   put its own banner routine at `&H4022`, the standard "start BASIC" entry.
 - **Set-date did nothing** (fixed 2026-10-01, D-DOSDATE): `&H2B` ran into the
@@ -194,7 +213,9 @@ its start. The BDOS handlers sit at the fixed addresses `MSXDOS.SYS` calls,
 in [disk/kernel.asm](../../disk/kernel.asm),
 [disk/fat.asm](../../disk/fat.asm) and
 [disk/runtime.asm](../../disk/runtime.asm); `basent_body` is the
-`A>BASIC` entry. Because those addresses are fixed, the ROM's free space is in
+`A>BASIC` entry and `hk_system` in [disk/kernel.asm](../../disk/kernel.asm) is
+`CALL SYSTEM`, reached from `ex_call` in [basic/format.asm](../../basic/format.asm)
+through the hook cell `&HFDF4`. Because those addresses are fixed, the ROM's free space is in
 pads between them ([disk-rom-layout.md](../disk-rom-layout.md)). The
 `&HF37D` dispatcher is `bdos_entry` in [disk/driver.asm](../../disk/driver.asm).
 
@@ -224,6 +245,9 @@ evidence in [tier2-bdos-coverage.md](../../disk/docs/tier2-bdos-coverage.md).
 - `make bdos-cbios-selfcheck` — the same exercisers on zerobas's C-BIOS
   machine.
 - `make dosbasic-acceptance` — `A>BASIC`, then `SAVE`, with the DOS date.
+- `make callsystem-acceptance` — `CALL SYSTEM` after a data-disk boot and
+  after a DOS boot: the error, the warm return, a file left open, and a
+  missing `COMMAND.COM`.
 - `make dosdate-acceptance`, `make strout-acceptance` — dates and stamps;
   function `&H09`.
 - `make wrblkalt-acceptance` — block reads and writes with two files open.

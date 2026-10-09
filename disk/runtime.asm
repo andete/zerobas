@@ -555,8 +555,18 @@ int_h_hiram_end:
 ; fully re-aligns the call stream, "ALIGNED, NO DIVERGENCE in 90 shared calls")
 ; is sufficient -- COMMAND.COM's own save/restore keeps it at 0 across the
 ; whole session once seeded. Same DOS-only save/restore discipline as $F338.
+; D-CALLSYSTEM (2026-10-09): CALL SYSTEM (kernel.asm hk_system) enters at
+; dos_handoff_keep -- the CF-3300 returns to MSX-DOS without clearing the screen
+; (scratchpad/callsystem_warm.out). Both entries mark BASENT_REQ with DOS_SIG for
+; the duration: a DOS disk never returns, so the mark stays and says "MSX-DOS was
+; booted" to a later CALL SYSTEM; a disk that returns puts the old value back.
 dos_handoff:
                 call    dos_clear_screen    ; OI-3: blank BASIC banner + home cursor (below)
+dos_handoff_keep:
+                ld      hl, (BASENT_REQ)    ; D-CALLSYSTEM: the mark, saved ...
+                push    hl
+                ld      hl, DOS_SIG         ; ... and set: MSX-DOS is being booted
+                ld      (BASENT_REQ), hl
                 ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
                 push    af
                 ld      hl, ($F30D)         ; save host $F30D/$F30E (date-format config)
@@ -582,6 +592,8 @@ dos_handoff:
                 ld      ($F30D), hl
                 pop     af                  ; recover host $F338
                 ld      ($F338), a          ; restore the dual-purpose stub for BASIC
+                pop     hl                  ; D-CALLSYSTEM: the disk did not boot --
+                ld      (BASENT_REQ), hl    ; the mark as it was before
                 ret
 
 ; --- dos_clear_screen - OI-3: blank the SCREEN-1 name table + home the cursor -----

@@ -3437,6 +3437,7 @@ H_FILE          equ     $FE7B
 ; chan_gate_bare; disk/kernel.asm's hk_format runs the geometry menu and the
 ; sub-ROM dispatch that basic/format.asm used to keep resident.
 H_FORM          equ     $FFAC   ; CALL FORMAT handler (D-FMTHOOK)
+H_SYST          equ     $FDF4   ; CALL SYSTEM handler (D-CALLSYSTEM): see disk/equates.inc
 
 ; --- H_FOPEN / FOPEN_SEL: see disk/equates.inc for the full rationale --------
 ; 🏗️ Joost's ruling, 2026-09-19 (spec-diskcode-eviction.md §6.6m): the hook is

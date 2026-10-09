@@ -1,0 +1,55 @@
+== dospeek CF
+   |Ok
+   |PRINT PEEK(&HF340);PEEK(&HF338);PEEK(&HF
+   |33D)
+   | 243  0  0
+   |Ok
+   |color   auto    goto    list    run
+== dospeek ZB
+   |ZB
+   |PRINT PEEK(&HF340);PEEK(&HF338);PEEK(&HF
+   |33D)
+   | 0  0  0
+   |ZB
+   |color   auto    goto    list    run
+== nosyspeek CF
+   |Ok
+   |PRINT PEEK(&HF340);PEEK(&HF338);PEEK(&HF
+   |33D)
+   | 243  0  0
+   |Ok
+   |color   auto    goto    list    run
+== nosyspeek ZB
+   |ZB
+   |PRINT PEEK(&HF340);PEEK(&HF338);PEEK(&HF
+   |33D)
+   | 0  201  201
+   |ZB
+   |color   auto    goto    list    run
+== dosfile CF
+   |A>TYPE X.TXT
+   |HELLO
+   |A>DIR X.TXT
+   |X        TXT       8 84-01-01
+   |       1 file   680960 bytes free
+   |A>
+== dosfile ZB
+   |ZB
+   |OPEN "X.TXT" FOR OUTPUT AS 1
+   |ZB
+   |PRINT #1,"HELLO"
+   |ZB
+   |CALL SYSTEM
+   |Syntax error
+   |ZB
+   |MODE 40
+   |Syntax error
+   |ZB
+   |TYPE X.TXT
+   |Syntax error
+   |ZB
+   |DIR X.TXT
+   |Syntax error
+   |ZB
+   |color   auto    goto    list    run
+refcache: 0 hit, 6 miss, 6 stored
