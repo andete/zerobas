@@ -8,9 +8,9 @@ Ok
 60 READ X
 70 END
 80 PRINT "Error";ERR:END
-90 DATA 1,2,3,ZB,-5
+90 DATA 1,2.5,3,ZB,-5
 RUN
- 6 ZB-5
+ 6.5 ZB-5
 Error 4
 Ok
 color   auto    goto    list    run
@@ -24,9 +24,9 @@ ZB
 60 READ X
 70 END
 80 PRINT "Error";ERR:END
-90 DATA 1,2,3,ZB,-5
+90 DATA 1,2.5,3,ZB,-5
 RUN
- 6 ZB-5
+ 6.5 ZB-5
 Error 4
 ZB
 color   auto    goto    list    run

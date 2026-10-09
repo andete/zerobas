@@ -6,9 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `READ` — take the next values from `DATA`
 
-> **Status (2026-10-09):** level 0 since this page found that the **happy path
-> fails for numbers that are not whole numbers** (below) · reasonable time ✓ ·
-> common errors ✓ · RAM usage not yet proven · every error not yet proven.
+> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error not yet proven. One
+> recorded difference: which line a bad item's `Syntax error` names (below,
+> an open TIER 3 item). Numbers like `1.5` read correctly since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -67,9 +68,9 @@ The measured set of errors for `READ` on the VG-8020 is {2, 4, 6}.
 60 READ X
 70 END
 80 PRINT "Error";ERR:END
-90 DATA 1,2,3,ZB,-5
+90 DATA 1,2.5,3,ZB,-5
 RUN
- 6 ZB-5
+ 6.5 ZB-5
 Error 4
 ```
 
@@ -79,29 +80,25 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`READ` cannot read a number that is not a whole number** (D-READFLT,
-found 2026-10-09, open, a TIER 1 item — the happy path). On the VG-8020
-`DATA 1.5`, `DATA 2E3` and `DATA -.25` read into a numeric variable give 1.5,
-2000 and -.25; zerobas raises `Syntax error`. `DATA 40000` reads back as
--25536 here, because zerobas reads every numeric item as a 16-bit whole
-number ([`readflt_run.out`](../../scratchpad/readflt_run.out)). Whole numbers
-from -32768 to 32767, and every string item, read correctly.
+**Which line a bad item's `Syntax error` names** (D-READERL, found
+2026-10-09, open, TIER 3). For `20 DATA 12X` / `30 READ A`, the VG-8020 says
+`Syntax error in 20` — the `DATA` line, where the typo is — and zerobas says
+`in 30`, the `READ` line. Both resume at the `READ` after `RESUME NEXT`, and
+both leave the bad item unread, so the next `READ` refuses it again
+([`readflt_after.out`](../../scratchpad/readflt_after.out)).
 
-Two more open items, both TIER 6 (every error), are probably the same cause:
-
-- **`READ A` of `DATA 1E99` is `Syntax error` here and `Overflow` on the
-  VG-8020** (D-READOVF). 1E99 is a well-formed number too large for a
-  variable; the reference converts it and overflows, zerobas's item reader
-  rejects it as text ([readings](../../scratchpad/t6enum_b4.out)).
-- **`READ A%` of `DATA 99999` is `Overflow` on the VG-8020 and accepted here**
-  (D-READINTOVF, [readings](../../scratchpad/t6enum_b9.out)).
-
-Until both are fixed, **every error** is not proven for `READ`.
-
-The other rung not yet proven is **RAM usage**.
+The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Numbers that were not whole numbers could not be read** (fixed
+  2026-10-09, D-READFLT): `DATA 1.5`, `2E3` and `-.25` were `Syntax error`,
+  and `DATA 40000` came back as -25536, because zerobas read every numeric
+  item as a 16-bit whole number. The VG-8020 reads them all. Found while
+  writing these pages: every earlier test happened to use whole numbers. A
+  numeric item now goes through the same number reader as `INPUT` and `VAL`,
+  which also fixed `DATA 1E99` (now `Overflow`, was `Syntax error`) and
+  `99999` read into `A%` (now `Overflow`, was accepted).
 - **Only single-letter number variables could be read** (fixed 2026-08-07,
   D-READVAR). `READ AB`, `READ A%` and every string were `Syntax error`; 24
   cases were measured on both references first

@@ -293,11 +293,12 @@ errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
 
 - **Speed.** The interpreter is roughly 2.5–4× slower than the reference — inside
   the 10× "reasonable time" bar, but not on par yet.
-- **Everyday cases found on 2026-10-09** (TIER 1, the next work): `READ` cannot
-  read a number with a decimal point or an exponent (`DATA 1.5`); `GET #` /
-  `PUT #` without a record number use record 1 instead of the next record; and
-  after `FILES` ends on a full row the cursor stays on that row. Each keyword's
-  page says so.
+- **Everyday cases found on 2026-10-09** (TIER 1, the work in hand): `&B`
+  numbers in a program are `Syntax error`; `GET #` / `PUT #` without a record
+  number use record 1 instead of the next record; `FILES " "` / `FILES "A:"`
+  are refused; and after `FILES` ends on a full row the cursor stays on that
+  row. (`READ` of a number like `1.5`, found the same day, is fixed.) Each
+  keyword's page says so.
 - **RAM usage** is measured but not yet proven equal to the reference's.
 - **Rare error paths** — the long tail of unusual errors (TIER 6).
 - **MSX2 and later** are out of scope for now.

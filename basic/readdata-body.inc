@@ -17,10 +17,10 @@
 ; --- read_one_value: fetch the next DATA item -------------------------------
 ; in:  (RDV_MODE) 0 = NUMERIC (parse the item as an int16), 1 = STRING (capture
 ;      the item's raw ASCII span into STRSCR). D-READVAR, docs/spec-basic-readvar.md.
-; out: A = status -- 0 = out of data, 1 = an item was read (DE = the value in
-;      numeric mode, STRSCR = [len][bytes] in string mode; the DATA cursor is
-;      advanced to the following item), 2 = the item is NOT A NUMBER (numeric mode
-;      only; the cursor is NOT advanced, the caller raises ERR 2).
+; out: A = status -- 0 = out of data, 1 = an item was read: STRSCR = [len][bytes]
+;      in BOTH modes since D-READFLT (ex_read parses a numeric one), DE = its
+;      first byte in the program text, the DATA cursor advanced to the following
+;      item. (Status 2, "not a number", is now ex_read's to decide.)
 ; Clobbers A, BC, DE, HL.
 ;
 ; ⚠️ THE STATUS REPLACED A CARRY FLAG. It used to be (CF, DE), which is one bit and
@@ -66,35 +66,18 @@ rov_at:
                 ld      a,(RDV_MODE)
                 or      a
                 jr      nz,rov_str          ; string target -> capture the raw span
-                call    data_parse_int      ; DE = value, HL past the ASCII number
-                push    de                  ; guard the value
-                call    skip_spaces
-                cp      ','                 ; another item in this DATA statement?
-                jr      z,rov_comma
-                or      a                   ; end of line ends the item too
-                jr      z,rov_seek
-                ; 🔴 D-KWBARS: AND SO DOES A ':' -- THE PREMISE WAS RIGHT AND THE
-                ; CONCLUSION WAS BACKWARDS. This arm used to say "the tokeniser ends
-                ; a DATA body AT a ':' (tk_data_rest), so a stored body never
-                ; contains one and this needs no ':' arm". The first half is true and
-                ; is exactly WHY the arm is needed: the body ends at the ':', so the
-                ; byte the scan stops ON is that ':' -- which is neither ',' nor NUL,
-                ; so it fell into the TRAILING JUNK path below and
-                ; `DATA 42:READ A:PRINT A` answered `Syntax error in 10` where both
-                ; references read 42. D-DATACOLON fixed the tokeniser and the runtime
-                ; SKIP and left the CONSUMER; nothing had ever READ an item out of a
-                ; DATA statement with a statement after it
-                ; [[a-fix-falsifies-the-justification-beside-it]].
-                cp      COLON
-                jr      z,rov_seek          ; the DATA STATEMENT is over: seek the next
-                ; Anything else is TRAILING JUNK, i.e. the item was never a number
-                ; (`DATA HELLO` leaves data_parse_int sitting on the 'H'). Both
-                ; references answer Syntax error; report it and leave the cursor
-                ; alone. ⚠️ An EMPTY item is NOT junk -- `DATA ,X` parses zero
-                ; digits and lands ON the comma, so it still reads back as 0.
-                pop     de
-                ld      a,2
-                ret
+                ; ✅ D-READFLT (2026-10-09): a NUMERIC item is captured as TEXT
+                ; too, and ex_read parses it with VAL's parser (inp_num, the one
+                ; INPUT uses) -- this used to be data_parse_int, an int16 scanner, so
+                ; `DATA 1.5` / `2E3` / `-.25` were Syntax error and `DATA 40000`
+                ; read back as -25536 where the VG-8020 reads every one
+                ; (scratchpad/readflt_run.out). The unquoted loop only: a '"' is
+                ; content here, so `DATA "5"` reaches the parser with its quote and
+                ; is refused there, as on the reference.
+                call    skip_spaces         ; LEADING spaces are not part of the item
+                ld      de,STRSCR+1
+                ld      b,0
+                jr      rovs_unq
 rov_seek:
                 call    data_seek           ; seek the next DATA statement
                 jr      nc,rov_exhaust
@@ -234,96 +217,3 @@ ds_none:
                 or      a
                 ret
 
-; --- data_parse_int: parse an ASCII integer at (HL) -> DE -------------------
-; Leading spaces, an optional '-', then decimal digits or a "&H" hex constant.
-; HL stops at the first non-numeric byte. Clobbers A, BC, HL.
-data_parse_int:
-                call    skip_spaces
-                cp      '-'
-                jr      z,dp_neg
-                cp      '&'
-                jr      z,dp_hex
-                jp      dp_decimal
-dp_neg:
-                inc     hl
-                call    skip_spaces
-                cp      '&'
-                jr      z,dp_neghex
-                call    dp_decimal
-                jr      dp_negate
-dp_neghex:
-                call    dp_hex
-dp_negate:
-                push    hl                  ; preserve the cursor across the negate
-                ld      hl,0
-                or      a
-                sbc     hl,de
-                ex      de,hl               ; DE = -value
-                pop     hl
-                ret
-dp_decimal:
-                ld      de,0
-dp_dlp:
-                ld      a,(hl)
-                cp      '0'
-                ret     c
-                cp      '9'+1
-                ret     nc
-                sub     '0'
-                ld      c,a                 ; C = digit
-                push    hl
-                ld      h,d
-                ld      l,e                 ; HL = acc
-                add     hl,hl               ; 2*acc
-                add     hl,hl               ; 4*acc
-                add     hl,de               ; 5*acc
-                add     hl,hl               ; 10*acc
-                ld      b,0
-                add     hl,bc               ; + digit
-                ex      de,hl               ; DE = new acc
-                pop     hl
-                inc     hl
-                jr      dp_dlp
-dp_hex:
-                inc     hl                  ; past '&'
-                ld      a,(hl)
-                call    upcase
-                cp      'H'
-                jr      nz,dp_hbad          ; only &H is supported here
-                inc     hl                  ; past 'H'
-                ld      de,0
-dp_hlp:
-                ld      a,(hl)
-                call    upcase
-                cp      '0'
-                jr      c,dp_hdone
-                cp      '9'+1
-                jr      c,dp_hdig           ; '0'..'9'
-                cp      'A'
-                jr      c,dp_hdone
-                cp      'F'+1
-                jr      nc,dp_hdone
-                sub     'A'-10              ; 'A'..'F' -> 10..15
-                jr      dp_hacc
-dp_hdig:
-                sub     '0'
-dp_hacc:
-                ld      c,a                 ; nibble
-                push    hl
-                ld      h,d
-                ld      l,e
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl
-                add     hl,hl               ; 16*acc
-                ld      b,0
-                add     hl,bc               ; + nibble
-                ex      de,hl
-                pop     hl
-                inc     hl
-                jr      dp_hlp
-dp_hdone:
-                ret
-dp_hbad:
-                ld      de,0
-                ret

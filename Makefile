@@ -2274,6 +2274,12 @@ casbin-acceptance: repack-machine
 fcbhdr-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_fcbhdr.py
 
+# --- readflt-acceptance: READ of a numeric DATA item (D-READFLT) --------------
+# `DATA 1.5` / `2E3` / `40000` read as on the VG-8020 (they were Syntax error /
+# -25536); Overflow, Syntax error, &H/&B, blanks, a refused item stays unread.
+readflt-acceptance: repack-machine
+	python3 probes/basic/basic_probe_readflt.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

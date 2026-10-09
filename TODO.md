@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31011 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31044 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29600,7 +29600,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       design decision. VARPTR is the ONLY keyword left below level 2 that is not
       N/A (2026-09-28, after D-CASRELOCK/D-CLOADPROG took CLOAD to level 2).
 
-- [ ] 🔴 **`READ` CANNOT READ A NON-INTEGER NUMBER — `DATA 1.5` / `2E3` / `-.25` ARE
+- [x] ✅ **FIXED 2026-10-09 (D-READFLT)** — 🔴 **`READ` CANNOT READ A NON-INTEGER NUMBER — `DATA 1.5` / `2E3` / `-.25` ARE
       `Syntax error` HERE AND READ NORMALLY ON THE VG-8020, AND `DATA 40000` READS
       BACK AS −25536 (D-READFLT, found 2026-10-09 by the keyword-page rollout).**
       🎚️ TIER 1 — `READ` of a fractional, exponent or large `DATA` number
@@ -29624,6 +29624,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       T1 row with a non-integer item, and the `READ` / `DATA` keyword pages say so.
       ⚠️ The tenant is page 0, which may not call the float pack — price the
       route (main-side parse of the captured span, as INPUT does) before building.
+      ✅ **FIXED 2026-10-09 — exactly that route.** The tenant's numeric arm now
+      captures the item as TEXT (the unquoted loop of `rov_str`, so a `"` is
+      content and is refused) and `data_parse_int` is deleted; `ex_read`
+      (basic/program.asm) parses it with `inp_num` (VAL's parser, op 19 — only
+      blanks may follow) and stores it with `inp_store`, then joins the string
+      path's `check_expr_errors` for the target's Overflow. A refused item is put
+      back (`DATAPTR`/`DATASTATE`): the VG-8020 refuses it again on the next READ.
+      VAL's code 5 → Overflow (6), anything else → Syntax error. Main page 1
+      87 → 61 B; sub page 0 17 → 157 B (predicted +26 / ~+130: hit / close).
+      📏 Measured first, the rules a fix must keep
+      ([`readflt_run2.out`](scratchpad/readflt_run2.out)): `12X` and `"5"` are 2,
+      `1E99` and `99999`→`A%` are 6, `&H10`/`&B101` read 16/5, `-`/`.` read 0,
+      blanks around the item are ignored, an empty item is 0, a refused item is
+      re-read. After ([`readflt_after.out`](scratchpad/readflt_after.out)), gate
+      `readflt-acceptance` ([`basic_probe_readflt.py`](probes/basic/basic_probe_readflt.py)):
+      16/16, three of them KNOWN (the error LINE, D-READERL, below). 🔪 Knives
+      ([`readflt_knives.out`](scratchpad/readflt_knives.out)): K-RF1 (the tenant's
+      capture) → all 16, K-RF2 (overflow read as syntax) → e99, K-RF3 (the
+      rewind) → again — each exactly, as predicted. D-READOVF and D-READINTOVF
+      (below) close with it: they were this cause's two faces.
 
 - [ ] 🔴 **`&B` BINARY NUMBERS ARE `Syntax error` HERE — `PRINT &B101` IS 5 ON THE VG-8020
       (D-AMPB, found 2026-10-09 by the numbers concept page).**
@@ -29750,6 +29770,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       one) — both leave the cursor on the row (`H2      .TXT X`), agree. So the
       reference ends a row as soon as it is full; zerobas only before the next
       name. Check `LFILES` (the shared directory walk) with the same shapes.
+
+- [ ] 🔴 **A BAD `DATA` ITEM IS `Syntax error in <the DATA line>` ON THE VG-8020 AND `in <the
+      READ line>` HERE (D-READERL, found 2026-10-09 by D-READFLT's rows).**
+      🎚️ TIER 3 — `READ` of a `DATA` item that is not a number: which line the error names
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`readflt_after.out`](scratchpad/readflt_after.out) / gate
+      `readflt-acceptance` rows junk / quote / again (KNOWN there): `20 DATA 12X` /
+      `30 READ A` → VG-8020 `ERR 2 IN 20`, zerobas `ERR 2 IN 30`. And `RESUME NEXT`
+      on the reference still resumes after the READ (`again`: `PRINT A` runs, the
+      second READ re-reads the item and names line 20 again). So ERL = the DATA
+      line while the resume point stays the READ statement — the error's line and
+      its resume context come apart. Overflow from READ names the READ line on both
+      (`intovf`, `e99`). This is how an MSX user finds a typo in DATA.
 
 - [ ] 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
       PRINTS `Unprintable error` (D-NODISKERRTXT, found 2026-10-09).**
@@ -29959,7 +29992,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         `disk/disk.asm` / `disk/init.asm` headers (BASIC via `bdos_entry`).
         The OPEN keyword page vs TODO on the same-file-two-spellings item's owner.
 
-- [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
+- [x] ✅ **FIXED 2026-10-09 BY D-READFLT (row `intovf`)** — 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
       (D-READINTOVF, found 2026-09-28 by T6 batch 9).**
       🎚️ TIER 6 — READ into an integer variable out of its range.
       🤖 **AUTONOMOUS** — the reference settles it; likely the same site as D-READOVF.
@@ -29985,7 +30018,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       evaluates past where the reference demands `)` / a variable, and then
       type-checks. Blocks MID$'s T6 (substring-3arg code 2 has no agreeing case).
 
-- [ ] 🔴 **`READ A` OF `DATA 1E99` IS `Syntax error` HERE AND `Overflow` ON THE
+- [x] ✅ **FIXED 2026-10-09 BY D-READFLT (row `e99`)** — 🔴 **`READ A` OF `DATA 1E99` IS `Syntax error` HERE AND `Overflow` ON THE
       REFERENCE (D-READOVF, found 2026-09-27 by T6).**
       🎚️ TIER 6 — `READ` of an out-of-range numeric DATA item
       🤖 **AUTONOMOUS** — the reference settles it.

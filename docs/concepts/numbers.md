@@ -9,9 +9,9 @@ SPDX-License-Identifier: 0BSD
 > **Status (2026-10-09):** number types, literals, arithmetic, conversions and
 > printed output agree with the VG-8020 in every measured case, apart from
 > deliberate last-digit differences where zerobas is the more accurate side
-> (long divisors, `SQR` and the other maths functions). Open: `READ` cannot
-> read a `DATA` number with a fraction or exponent (D-READFLT, TIER 1), and two
-> `READ` overflow errors and `TAN(1E38)` (TIER 6).
+> (long divisors, `SQR` and the other maths functions). Open: an `&B` number in
+> a program is `Syntax error` here (D-AMPB, TIER 1), `RESUME NEXT` after an
+> `Overflow` (D-RESNEXTOVF, TIER 3, below) and `TAN(1E38)` (TIER 6).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -74,9 +74,11 @@ excluded, trailing zeros included):
 - **`&H` and `&O` are 16-bit patterns**: `&HFF` is 255; `&H8000` and above read
   as negative (`&HD000` is −12288).
 - **`&B` is not a token on MSX1**: `&B101` in a program line is stored as the
-  typed characters on both machines. zerobas does not evaluate it there; what
-  the VG-8020 does with it at run time has not been measured.
-  `VAL("&B101")` is 5 on both.
+  typed characters on both machines — but the VG-8020 reads it when the line
+  runs (`PRINT &B101` is 5, `&B1111111111111111` is −1) and zerobas says
+  `Syntax error` (D-AMPB, open, TIER 1;
+  [`ampb_run.out`](../../scratchpad/ampb_run.out)). `VAL("&B101")` is 5 on
+  both, and so is `&B101` read from `DATA`.
 - **Out of range**: `1E63` and `65535%` are `Overflow` (error 6) before
   anything on the typed line runs; `1E-65` silently becomes 0. A suffix after
   an exponent (`1E10#`) derails the line on both machines.
@@ -190,12 +192,11 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   with more digits, and [`ATN`](../keywords/ATN.md) differs by one unit either
   way. `EXP` of a large negative argument is 0 here where the VG-8020 says
   `Overflow` (between about −149.7 and −297, and `EXP(-1E30)`).
-- **Open, `READ` of a number** (D-READFLT, TIER 1): `DATA 1.5`, `2E3` and
-  `-.25` are `Syntax error` here and `DATA 40000` reads back as −25536,
-  because `READ` still parses integers only
-  ([readings](../../scratchpad/readflt_run.out)). `DATA 1E99` (D-READOVF) and
-  `DATA 99999` into `A%` (D-READINTOVF), both TIER 6, share the cause.
-  [`INPUT`](../keywords/INPUT.md) reads numbers correctly since 2026-09-29.
+- **`READ` of a number** (fixed 2026-10-09, D-READFLT): `DATA 1.5`, `2E3` and
+  `-.25` were `Syntax error` here and `DATA 40000` read back as −25536, because
+  `READ` parsed integers only. It now uses the same number reader as
+  [`INPUT`](../keywords/INPUT.md) and `VAL`
+  ([`readflt_after.out`](../../scratchpad/readflt_after.out)).
 - **Open, `TAN(1E38)`**: `Overflow` on the VG-8020, a number here (D-TANBIG, TIER 6).
 - **RAM usage** is not proven: same free memory used, different work-area
   cells written.

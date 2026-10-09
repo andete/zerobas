@@ -1,0 +1,19 @@
+ROW frac VG=[ 1.5] ZB=[ 1.5] SAME
+ROW big VG=[ 40000] ZB=[ 40000] SAME
+ROW exp VG=[ 2000] ZB=[ 2000] SAME
+ROW neg VG=[-.25] ZB=[-.25] SAME
+ROW dbl VG=[ 1.23456789012] ZB=[ 1.23456789012] SAME
+ROW int VG=[ 42] ZB=[ 42] SAME
+ROW intovf VG=[ERR 6 IN 30] ZB=[ERR 6 IN 30] SAME
+ROW e99 VG=[ERR 6 IN 30] ZB=[ERR 6 IN 30] SAME
+ROW junk VG=[ERR 2 IN 20] ZB=[ERR 2 IN 30] KNOWN (D-READERL)
+ROW quote VG=[ERR 2 IN 20] ZB=[ERR 2 IN 30] KNOWN (D-READERL)
+ROW empty VG=[ 0  7] ZB=[ 0  7] SAME
+ROW spaces VG=[ 1.5  2] ZB=[ 1.5  2] SAME
+ROW hex VG=[ 16  5] ZB=[ 16  5] SAME
+ROW sign VG=[ 0  0] ZB=[ 0  0] SAME
+ROW again VG=[ERR 2 IN 20 |  0 | ERR 2 IN 20 |  0] ZB=[ERR 2 IN 30 |  0 | ERR 2 IN 40 |  0] KNOWN (D-READERL)
+ROW dbltyp VG=[ 1.23457] ZB=[ 1.23457] SAME
+
+PASS: READ of a numeric DATA item (16/16; known: again, junk, quote)
+refcache: 32 hit, 0 miss

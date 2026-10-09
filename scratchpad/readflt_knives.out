@@ -1,0 +1,8 @@
+  ROM 7e73a455 f02cce78 3bb82f70 990b0ed1  ->  7e73a455 28e114fd 3bb82f70 990b0ed1
+PASS  K-RF1: moved ['again', 'big', 'dbl', 'dbltyp', 'e99', 'empty', 'exp', 'frac', 'hex', 'int', 'intovf', 'junk', 'neg', 'quote', 'sign', 'spaces'] (want exactly ['again', 'big', 'dbl', 'dbltyp', 'e99', 'empty', 'exp', 'frac', 'hex', 'int', 'intovf', 'junk', 'neg', 'quote', 'sign', 'spaces'])
+  ROM 7e73a455 28e114fd 3bb82f70 990b0ed1  ->  e9e34388 f02cce78 3bb82f70 4d5b0a3d
+PASS  K-RF2: moved ['e99'] (want exactly ['e99'])
+  ROM e9e34388 f02cce78 3bb82f70 4d5b0a3d  ->  ad43e867 f02cce78 3bb82f70 e0fbb78b
+PASS  K-RF3: moved ['again'] (want exactly ['again'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

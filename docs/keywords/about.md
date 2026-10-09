@@ -17,7 +17,8 @@ result. This page is for people who maintain them.
   reasonable time and the common errors are all proven. Below that its
   behaviour is still moving. When a page's own checking finds a happy-path
   difference, the keyword drops below level 3 and its page stays, saying so
-  in its status line: `READ`, `DATA` and `FILES` on 2026-10-09.
+  in its status line (`READ` and `DATA` on 2026-10-09, until D-READFLT
+  was fixed the same day; `FILES`).
 - **A page changes only when an error at a lower tier is found and fixed**, or
   when a ruling changes what the keyword should do. It is not a log.
 - **No speed figures** until on-par speed is established for every keyword.

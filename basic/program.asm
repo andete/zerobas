@@ -2301,23 +2301,27 @@ exr_lp:
                                             ; row would read as untouched, spec §5.3)
                 push    bc                  ; [stack: key]
                 push    hl                  ; [stack: key, exec cursor]
-                call    read_one_value      ; A = status; DE / STRSCR = the item
+                call    read_one_value      ; A = status; STRSCR = the item
                 dec     a
-                jr      nz,exr_bad          ; 0 -> out of data, 2 -> not a number
+                jr      nz,exr_bad          ; 0 -> out of data
                 pop     hl                  ; exec cursor
                 pop     bc                  ; key
                 push    hl                  ; guard the cursor across the store
                 ld      a,(RDV_MODE)
                 or      a
                 jr      nz,exr_str
-                call    tgt_store_num       ; D-ARYLV: var[key] := DE, or the resolved
-                                            ; ELEMENT := DE, coerced either way (vars.asm)
-                pop     hl
-                jr      exr_after
+                push    bc                  ; the key (inp_num clobbers BC)
+                call    inp_num             ; D-READFLT: VAL's parse of the item --
+                pop     bc                  ; `1.5`, `2E3`, `&H10`, `&B101`, 40000;
+                jr      c,exr_nan           ; only blanks may follow the number
+                call    inp_store           ; int16 or float -> the target, coerced
+                                            ; (D-ARYLV: a scalar or the resolved ELEMENT)
+                jr      exr_chk             ; `99999` into A% is Overflow: the check below
 exr_str:
                 call    tgt_store_ref       ; D-READREF: var$[key] -> the DATA text itself
                                             ; (was tgt_store_str -- D-ARYLV: var$[key] = the DATA item's bytes,
                                             ; or the resolved element (op=3 COPY_STR)
+exr_chk:
                 pop     hl
                 ; The same arrays slice-4c (§7.3) hazard ex_input guards: a
                 ; scalar-CHAIN OOM in str_set_key sets FPERR without aborting on
@@ -2327,6 +2331,7 @@ exr_str:
                 ; whether there is one (spec-basic-stmtpend.md §6.3).
                 ; Both guard words are already popped, so this is the SP-clean
                 ; site variant (TMISMATCH is always 0 -- READ never sets it).
+                ; D-READFLT: the numeric store joins here, for its Overflow.
                 call    check_expr_errors
 exr_after:
                 call    skip_comma          ; more variables to fill?
@@ -2335,13 +2340,19 @@ exr_after:
 exr_more:
                 inc     hl
                 jr      exr_lp
+exr_nan:                                    ; D-READFLT: the item is not a number.
+                ld      hl,(RDV_VAL)        ; Leave it UNREAD, as the VG-8020 does: a
+                ld      (DATAPTR),hl        ; second READ refuses it again (`again`
+                ld      a,1                 ; row). A refused item is never consumed,
+                ld      (DATASTATE),a       ; so DATALINE cannot be wrong for it.
+                ld      a,(SH_ERR)
+                cp      5                   ; VAL's code 5: `1E99` -> Overflow (6)
+                jp      nz,stmt_error       ; `12X`, `"5"`, `HELLO` -> ERR 2 on both
+                ld      a,6
+                jp      raise_error
 exr_bad:
                 pop     hl                  ; discard the exec cursor and the key
-                pop     hl                  ; (balance the stack; A/flags survive)
-                dec     a                   ; status 2 -> 0 here
-                jp      z,stmt_error        ; the item is not a NUMBER: `DATA HELLO` /
-                                            ; `READ A` is ERR 2 on both references,
-                                            ; where this tree used to store a silent 0
+                pop     hl                  ; (balance the stack)
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)
