@@ -1,0 +1,6 @@
+✗  big   CF-3300 [ 32768  32768]  zerobas [ERR 6 IN 50 |  0  0]
+✗  omit  CF-3300 [ 24  3]  zerobas [ 8  1]
+✗  gomit CF-3300 [ERR 55 IN 50 | TWO      2 | ERR 55 IN 60 | TWO      2]  zerobas [ONE      1 | ONE      1]
+✗  neg   CF-3300 [ 524280  65535]  zerobas []
+== frac  CF-3300 [ 16  2]  zerobas [ 16  2]
+refcache: 0 hit, 10 miss, 10 stored

@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30855 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30889 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29625,6 +29625,35 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ The tenant is page 0, which may not call the float pack — price the
       route (main-side parse of the captured span, as INPUT does) before building.
 
+- [ ] 🔴 **`GET #` / `PUT #` WITH NO RECORD NUMBER ALWAYS USE RECORD 1 HERE; THE CF-3300
+      TAKES THE NEXT RECORD (D-RECAUTO, found 2026-10-09 by the `GET`/`PUT` hub pages).**
+      🎚️ TIER 1 — `PUT #n` / `GET #n` without a record number (writing or reading
+      records in order)
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/getput_probe.py`](scratchpad/getput_probe.py) →
+      [`getput_run.out`](scratchpad/getput_run.out): three `PUT #1` at `LEN=8` →
+      CF-3300 `LOF` 24, `LOC` 3; zerobas 8 / 1 (record 1 three times). After
+      `PUT #1,1:PUT #1,2`, `GET #1` → CF-3300 record 3 = `Input past end` (55),
+      `LOC` stays 2; zerobas reads record 1 (`ONE`, `LOC` 1). So the reference
+      keeps a current record per channel: the last GET/PUT's record (LOC) + 1.
+      [`basic/field.asm`](basic/field.asm) uses record 1 when it is omitted and its
+      header says the current record "is not tracked". A program that writes
+      records with a bare `PUT #1` in a loop overwrites record 1 every time.
+
+- [ ] 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
+      REGRESSION: BOTH AGREED ON 2026-09-10 (D-RECBIG, found 2026-10-09).**
+      🎚️ TIER 6 — `GET #` / `PUT #` with a record number above 32767
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`getput_run.out`](scratchpad/getput_run.out) `big`: CF-3300 `LOF` 32768,
+      `LOC` 32768; zerobas `ERR 6 IN 50`. `scratchpad/putdomain_put2.out` (09-10)
+      had 32768 and 65535 agreeing at `LEN=1`; D-RECLENERR (2026-10-07,
+      69f13961) moved the record parse to `eval_int16_checked`
+      ([`basic/field.asm`](basic/field.asm)), and the putdomain probe is not a
+      gate, so nothing noticed. The record is an address-domain number on the
+      reference: `PUT #1,-1` is record 65535 there (`neg`: `LOF` 524280, `LOC`
+      65535), and zerobas gave NO READING within 60 s on that case — measure
+      what it does. Add a gated row for each.
+
 - [ ] 🔴 **AFTER `FILES` ENDS ON A FULL ROW, THE CF-3300 STARTS A NEW LINE AND ZEROBAS
       DOES NOT — A `PRINT` AFTER IT CONTINUES THE LAST ROW (D-FILESNL, found
       2026-10-09 by the `DSKO$` keyword page's example).**
@@ -29802,6 +29831,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         once; unmeasured); `DSKF(0)` on a fresh copy of `disk/test720.dsk` reads
         706 on both machines today (`kwdoc_dskf.out`) where kwsweep's `dskf` note
         and D-KWDISK / D-DSKFDRV say 707 — which image, or which count, differs?
+      - `basic/field.asm` header (~37-42, ~74-76): record lengths "power of two",
+        records "1..255" — both gone (D-RECLENFIX, D-PUTU32). And its GET
+        end-of-file test is skipped for a file over 64 KB on the strength of
+        that 1..255 cap (~843): a GET past the end of such a file may read
+        blanks instead of 55 — MEASURE (needs a > 64 KB random file).
 
 - [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
       (D-READINTOVF, found 2026-09-28 by T6 batch 9).**

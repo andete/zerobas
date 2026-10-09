@@ -35,6 +35,19 @@ Disk BASIC; each page says which it was compared with.
 
 ## The pages
 
+### Words that start other statements
+
+`ON`, `DEF`, `GET` and `PUT` never stand alone; each is the first word of
+one or more statements. Their pages list those statements and link to where
+each is described.
+
+| word | starts | page |
+|---|---|---|
+| [`ON`](ON.md) | `ON n GOTO`, `ON n GOSUB`, `ON ERROR GOTO`, `ON KEY` / `STRIG` / `SPRITE` / `STOP` / `INTERVAL GOSUB` | the list, and `ON INTERVAL GOSUB` in full |
+| [`DEF`](DEF.md) | `DEF FN`, `DEF USR` | the list |
+| [`GET`](GET.md) | `GET #` | `GET #` in full |
+| [`PUT`](PUT.md) | `PUT #`, `PUT SPRITE` | `PUT #` in full |
+
 ### Strings
 
 | keyword | what it does |
@@ -245,3 +258,20 @@ Disk BASIC; each page says which it was compared with.
 | [`IPL`](IPL.md) | a reserved word that is always refused |
 | [`CMD`](CMD.md) | a reserved word that is always refused |
 | [`SET`](SET.md) | a reserved word that is always refused |
+
+### Joining words
+
+These words only appear inside other statements; they are described on the
+page of the statement they belong to.
+
+| word | belongs to |
+|---|---|
+| `THEN`, `ELSE` | [`IF`](IF.md) |
+| `TO`, `STEP` | [`FOR`](FOR.md) |
+| `USING`, `SPC(`, `TAB(` | [`PRINT`](PRINT.md) |
+| `AS` | [`OPEN`](OPEN.md), [`FIELD`](FIELD.md), [`NAME`](NAME.md) |
+| `INTERVAL` | [`ON`](ON.md) |
+| `OFF` | [`KEY`](KEY.md), [`STRIG`](STRIG.md), [`SPRITE`](SPRITE.md), [`STOP`](STOP.md), [`ON`](ON.md) (`INTERVAL OFF`) |
+| `MAXFILES` | [`OPEN`](OPEN.md) |
+| `LINE INPUT`, `INPUT$` | [`INPUT`](INPUT.md); `LINE INPUT #` on [`OPEN`](OPEN.md) |
+| `SPRITE$` | [`SPRITE`](SPRITE.md) |

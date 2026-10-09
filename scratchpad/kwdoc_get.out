@@ -1,0 +1,37 @@
+--- GET: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 100
+20 OPEN "N.DAT" AS #1 LEN=16
+30 FIELD #1,10 AS N$,6 AS P$
+40 LSET N$="ALICE":RSET P$="12"
+50 PUT #1,1:CLOSE
+60 OPEN "N.DAT" AS #1 LEN=16
+70 FIELD #1,10 AS N$,6 AS P$
+80 GET #1,1:PRINT "[";N$;"][";P$;"]"
+90 GET #1,2
+95 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+[ALICE     ][    12]
+Error 55
+Ok
+color   auto    goto    list    run
+--- GET: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 100
+20 OPEN "N.DAT" AS #1 LEN=16
+30 FIELD #1,10 AS N$,6 AS P$
+40 LSET N$="ALICE":RSET P$="12"
+50 PUT #1,1:CLOSE
+60 OPEN "N.DAT" AS #1 LEN=16
+70 FIELD #1,10 AS N$,6 AS P$
+80 GET #1,1:PRINT "[";N$;"][";P$;"]"
+90 GET #1,2
+95 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+[ALICE     ][    12]
+Error 55
+ZB
+color   auto    goto    list    run
+=== GET: PASS
