@@ -1,0 +1,41 @@
+--- COPY: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 90
+20 COPY "HI.TXT" TO "HI2.TXT"
+30 COPY "HI.TXT" TO "X?.TXT"
+40 COPY "NONE.TXT" TO "N.TXT"
+50 COPY "HI.TXT" TO "HI.TXT"
+60 FILES
+70 END
+90 PRINT "Error";ERR;"in";ERL:RESUME NEX
+T
+RUN
+Error 53 in 40
+Error 5 in 50
+TEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+HI2     .TXT XI      .TXT
+Ok
+color   auto    goto    list    run
+--- COPY: zerobas   C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 90
+20 COPY "HI.TXT" TO "HI2.TXT"
+30 COPY "HI.TXT" TO "X?.TXT"
+40 COPY "NONE.TXT" TO "N.TXT"
+50 COPY "HI.TXT" TO "HI.TXT"
+60 FILES
+70 END
+90 PRINT "Error";ERR;"in";ERL:RESUME NEX
+T
+RUN
+Error 53 in 40
+Error 5 in 50
+TEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+HI2     .TXT XI      .TXT
+ZB
+color   auto    goto    list    run
+=== COPY: SAME
+
+refcache: 0 hit, 2 miss, 2 stored

@@ -1,5 +1,11 @@
 # `COPY "src" TO "dst"` — the last of the eight (D-COPY)
 
+> ⚠️ **Historical (2026-09-11).** For how `COPY` behaves today, read
+> [keywords/COPY.md](keywords/COPY.md). Since this page was written, wildcards
+> gained their single-match and no-match behaviour (D-COPYWILD), open files
+> are refused with 64, and the body moved from sub.rom's `tnt_copy` into
+> `disk.rom` (D-COPYLOCAL).
+
 Characterised 2026-09-07 (D-COPYVERB, `scratchpad/copyverb_probe.py`: works;
 `ERR 53` missing source; `ERR 5` self-copy; `ERR 5` no `TO`) and completed
 2026-09-11 on the CF-3300:
