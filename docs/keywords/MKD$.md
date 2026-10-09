@@ -109,6 +109,10 @@ cells while doing it.
 - Disk ROM: `hk_mkfloat` in [disk/kernel.asm](../../disk/kernel.asm), shared
   with `MKS$`.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make kwsweep` — the length row, the first-byte row for 1.5, the error

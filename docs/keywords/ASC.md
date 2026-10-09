@@ -107,6 +107,10 @@ string argument is read by `ev_str_arg` in the same file, which `LEN` and
 `VAL` share. The empty-string error is `ev_f_ifc` in
 [basic/expr.asm](../../basic/expr.asm).
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`ASC("A")`) and the error rows for

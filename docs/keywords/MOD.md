@@ -116,6 +116,10 @@ remainder is `signed_mod_de_bc` and the integer conversion
 `fac_to_int_strict_reset`, both in
 [basic/float-arith.asm](../../basic/float-arith.asm).
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make float-acceptance` — the signs, division by zero, fractional and

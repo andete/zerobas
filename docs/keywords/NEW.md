@@ -94,6 +94,11 @@ The one rung not yet proven is **RAM usage**.
 nothing follows, then calls `clear_vars`
 ([basic/vars.asm](../../basic/vars.asm)) and `new_prog`, and stops the run.
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make unit-test` — `tests/test_statements.py` runs `NEW` inside a program,

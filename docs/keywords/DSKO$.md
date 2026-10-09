@@ -117,6 +117,10 @@ The one rung not yet proven is **RAM usage**.
   [sub/dirverb.asm](../../sub/dirverb.asm).
 - Design and measurements: [spec-basic-dskio.md](../spec-basic-dskio.md).
 
+## Related concepts
+
+- [Disk BASIC](../concepts/disk.md) — files on a 720 KB floppy, one drive
+
 ## Tests that cover it
 
 - `make dskio-acceptance` — the write round trip, with `XEST    BIN` read

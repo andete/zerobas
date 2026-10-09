@@ -144,6 +144,10 @@ bytes of `FRE(0)` on the VG-8020 and 11 on zerobas, a string function 12 and 6
 - The shadow lookup sits in `scv_find` in [sub/arrays.asm](../../sub/arrays.asm),
   where every variable reference passes.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make deffn-acceptance` / `make deffn-strict` — the measured behaviour set,

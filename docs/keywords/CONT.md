@@ -126,6 +126,12 @@ stops records its resume point through `cont_record` (same file), called from
 `do_break` (`STOP`, Ctrl-STOP), `ex_end` and the error and end-of-program
 exits in [basic/interp.asm](../../basic/interp.asm).
 
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make abort-acceptance` — every stop `CONT` can continue from, the typed

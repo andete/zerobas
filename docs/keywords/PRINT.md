@@ -171,6 +171,11 @@ the set of documented work-area cells each machine writes is not the same.
   [sub/printusing.asm](../../sub/printusing.asm) and
   [sub/punum.asm](../../sub/punum.asm).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make cursor-acceptance` — `TAB(`, `SPC(` and the comma zones, read as the

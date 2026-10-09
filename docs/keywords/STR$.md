@@ -111,6 +111,10 @@ number is formatted by `pu_fmt_int` in
 `flt_fmt` in [basic/float.asm](../../basic/float.asm), the formatter `PRINT`
 uses.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make string-acceptance` — `STR$(42)`, `STR$(-3)` and `STR$` inside

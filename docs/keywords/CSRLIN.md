@@ -96,6 +96,10 @@ writes is not the same.
 `ev_f_csrlin` in [basic/expr.asm](../../basic/expr.asm). It reads the BIOS
 cursor row and subtracts 1, because the BIOS counts from 1.
 
+## Related concepts
+
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+
 ## Tests that cover it
 
 - `make cursor-acceptance` — the row after `CLS`, after one and two `PRINT`s,

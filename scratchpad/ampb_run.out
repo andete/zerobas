@@ -1,0 +1,4 @@
+✗  prog   VG-8020 [[ 5 ] |  255 |  2]  zerobas [[ | Syntax error in 10]
+✗  direct VG-8020 [[ 5 ]]  zerobas [[ | Syntax error]
+✗  big    VG-8020 [-1]  zerobas [Syntax error in 10]
+refcache: 0 hit, 6 miss, 6 stored

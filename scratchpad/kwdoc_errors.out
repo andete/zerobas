@@ -1,0 +1,45 @@
+--- errors: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 90
+20 A=1/0
+30 ERROR 200
+40 PRINT "ERR";ERR;"ERL";ERL
+50 ON ERROR GOTO 0:X=SQR(-1)
+90 PRINT "Error";ERR;"in";ERL
+100 RESUME NEXT
+RUN
+Error 11 in 20
+Error 200 in 30
+ERR 0 ERL 30
+Illegal function call in 50
+Ok
+PRINT 1/0
+Division by zero
+Ok
+PRINT ERR;ERL
+ 11  65535
+Ok
+color   auto    goto    list    run
+--- errors: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 90
+20 A=1/0
+30 ERROR 200
+40 PRINT "ERR";ERR;"ERL";ERL
+50 ON ERROR GOTO 0:X=SQR(-1)
+90 PRINT "Error";ERR;"in";ERL
+100 RESUME NEXT
+RUN
+Error 11 in 20
+Error 200 in 30
+ERR 0 ERL 30
+Illegal function call in 50
+ZB
+PRINT 1/0
+Division by zero
+ZB
+PRINT ERR;ERL
+ 11  65535
+ZB
+color   auto    goto    list    run
+=== errors: PASS

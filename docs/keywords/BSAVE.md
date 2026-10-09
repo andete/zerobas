@@ -124,6 +124,10 @@ rung requires. **RAM usage** is not yet proven either.
   and [basic/sv-bsvcas.inc](../../basic/sv-bsvcas.inc) (tape), assembled into
   [sub/save.asm](../../sub/save.asm).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+
 ## Tests that cover it
 
 - `make kwsweep` — a round trip through the disk (save, overwrite, load, read

@@ -128,6 +128,11 @@ not the same.
 mode, the no-op test against `LINLEN`, then the BIOS mode switch to apply the
 new width and `key_repaint` for the function-key line.
 
+## Related concepts
+
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make width-acceptance` — the range in every mode, the four error kinds,

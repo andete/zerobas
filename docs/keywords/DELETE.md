@@ -119,6 +119,10 @@ The one rung not yet proven is **RAM usage**.
   makes both checks and deletes.
 - The design notes are in [spec-basic-delete.md](../spec-basic-delete.md).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make lnblank-say-acceptance` — the `dlt-` rows: every range shape, the

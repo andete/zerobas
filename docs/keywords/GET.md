@@ -115,6 +115,10 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 the record engine is [basic/randio-body.inc](../../basic/randio-body.inc), run
 from the sub-ROM.
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`getkw`) and the error rows.

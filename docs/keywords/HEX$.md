@@ -107,6 +107,10 @@ entry into `str_fn_radix`, shared with `OCT$` and `BIN$`; it reads the
 argument and checks its range with `fac_to_int_addr`. The digits are built by
 `sh_hex_build` in [sub/strheap.asm](../../sub/strheap.asm), in the sub-ROM.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make string-acceptance` — `HEX$` of 0, 255, 65535 and −1 against the

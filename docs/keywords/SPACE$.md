@@ -110,6 +110,10 @@ the count and checks it with the shared `get_byte_arg` in
 `sh_fill` in [sub/strheap.asm](../../sub/strheap.asm), in the sub-ROM — the
 same fill `STRING$` and `CHR$` use.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make str-domain-acceptance` — the count's range, both error kinds and the

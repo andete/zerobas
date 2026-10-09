@@ -127,6 +127,11 @@ and loads a file when there is one. `run_prog` and `run_prog_at` in
 variables and start the run loop; `dl_bare` there decides which typed `RUN`
 lines take the quick path.
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make kwsweep` — the bare (restart), line and file rows, and `RUN 999`.

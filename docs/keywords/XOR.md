@@ -98,6 +98,10 @@ the [`AND`](AND.md#what-we-found-and-how) page. Two points are its own:
 `logtab` in [basic/islands.asm](../../basic/islands.asm); the leaf `lg_xor` does
 the work.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make logicops-acceptance` — results, precedence and the integer range.

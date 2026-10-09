@@ -1,0 +1,43 @@
+--- strings-and-string-space: reference Philips_VG_8020
+Ok
+10 CLEAR 1000:A$="HELLO"
+20 PRINT FRE("")
+30 B$=A$+"!":PRINT FRE("")
+40 C$=STRING$(200,"X"):PRINT FRE("")
+50 ON ERROR GOTO 100
+60 D$=C$+C$+C$
+70 D$=SPACE$(250):E$=D$:F$=D$:G$=D$
+80 PRINT FRE("");LEN(G$)
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1000
+ 994
+ 794
+Error 15
+Error 14
+ 44  0
+Ok
+color   auto    goto    list    run
+--- strings-and-string-space: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 CLEAR 1000:A$="HELLO"
+20 PRINT FRE("")
+30 B$=A$+"!":PRINT FRE("")
+40 C$=STRING$(200,"X"):PRINT FRE("")
+50 ON ERROR GOTO 100
+60 D$=C$+C$+C$
+70 D$=SPACE$(250):E$=D$:F$=D$:G$=D$
+80 PRINT FRE("");LEN(G$)
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1000
+ 994
+ 794
+Error 15
+Error 14
+ 44  0
+ZB
+color   auto    goto    list    run
+=== strings-and-string-space: PASS

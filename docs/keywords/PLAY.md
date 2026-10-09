@@ -171,6 +171,10 @@ the ten test programs also showed a different amount of free string space.
   [spec-basic-playfn.md](../spec-basic-playfn.md); where they disagree with
   this page, this page is current.
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make play-acceptance` — MML parsing and errors, and the `PLAY(n)` values,

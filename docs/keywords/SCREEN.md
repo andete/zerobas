@@ -127,6 +127,11 @@ the per-argument checks for the sprite size, key click and baud are
 `spr_extra_arg` in [basic/graphics.asm](../../basic/graphics.asm). The return
 to text is `txt_mode` in [basic/repl.asm](../../basic/repl.asm).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make screenerr-acceptance` — the mode domain, the argument list and the

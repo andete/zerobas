@@ -110,6 +110,10 @@ The one rung not yet proven is **RAM usage**.
 address with `get_vram_arg` (shared with `VPEEK`), reads the value with
 `vdp_comma_byte`, and writes through the BIOS.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make intarg-acceptance` — the address and value ranges.

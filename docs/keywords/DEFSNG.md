@@ -88,6 +88,10 @@ value.
 The same code as `DEFINT`: `ex_deftype` in [basic/usr.asm](../../basic/usr.asm)
 and `deftype_tenant` in [sub/deftype.asm](../../sub/deftype.asm).
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make float-acceptance` — `DEFSNG A:A=1/3` against the reference, among the

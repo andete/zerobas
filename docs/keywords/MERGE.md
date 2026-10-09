@@ -120,6 +120,11 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
   CF-3300, where `MERGE` and an ASCII `LOAD` are one mechanism.
 - `merge_cas`, in the same file, is the cassette arm.
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — `MERGE` of a file written with `PRINT #` ending the run,

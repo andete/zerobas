@@ -35,7 +35,9 @@ alongside.
 > MSX?** Start with the **[keyword pages](docs/keywords/README.md)**: one readable
 > page per keyword — what it does, an example (run on zerobas and on the
 > reference machine), every error, where zerobas still differs, and what was
-> found along the way.
+> found along the way. The **[concept pages](docs/concepts/README.md)** do the
+> same for what is not a single keyword: the screen editor, numbers, memory,
+> files, tape, disk and MSX-DOS.
 
 ## Two co-equal goals
 
@@ -276,7 +278,9 @@ the way there:
 
 **For a person, each keyword has its own page: [`docs/keywords/`](docs/keywords/README.md)**
 — summary, syntax, an example checked on both machines, the errors, the
-differences from the reference and the history of what was found.
+differences from the reference and the history of what was found. The wider
+concepts — the editor, numbers, memory, files, tape, disk, MSX-DOS — have
+theirs in [`docs/concepts/`](docs/concepts/README.md).
 
 **The live, per-keyword status is [`docs/tier-status.md`](docs/tier-status.md)**,
 generated from measurements (`make tiers-md`), never typed by hand. For every one of
@@ -344,6 +348,7 @@ zerobas/
 ├── tests/                  # emulator-free unit tests (`make unit-test`)
 ├── tools/                  # build, patching, gate and measurement tools
 ├── docs/                   # specs, characterisations, tier-status.md
-│   └── keywords/           # one readable page per BASIC keyword — start here
+│   ├── keywords/           # one readable page per BASIC keyword — start here
+│   └── concepts/           # the editor, numbers, memory, files, tape, disk, MSX-DOS
 └── scratchpad/             # working evidence: probe outputs, knives, experiments
 ```

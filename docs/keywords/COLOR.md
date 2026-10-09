@@ -119,6 +119,10 @@ the tree.
 [basic/main.asm](../../basic/main.asm). The colours reach the screen through
 the BIOS colour call.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make kwsweep` — one row per position (each reading two cells) and the

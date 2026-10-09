@@ -107,6 +107,10 @@ cells along the way that zerobas does not.
 [basic/interp.asm](../../basic/interp.asm). The value check is the shared
 `eval_byte_checked`.
 
+## Related concepts
+
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+
 ## Tests that cover it
 
 - `make intarg-acceptance` — the address and value ranges, each row reading the

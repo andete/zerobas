@@ -95,6 +95,10 @@ The one rung not yet proven is **RAM usage**.
 array engine's `aeng_erase` in [sub/arrays.asm](../../sub/arrays.asm) finds
 the array and closes the gap it leaves.
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make array-acceptance` — erasing, re-declaring, types and both kinds of

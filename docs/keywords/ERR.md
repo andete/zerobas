@@ -98,6 +98,10 @@ been able to rate `ERR`'s test programs.
 `raise_error` in [basic/interp.asm](../../basic/interp.asm) stored; `ex_resume`
 in the same file clears it.
 
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+
 ## Tests that cover it
 
 - `make error-trap-acceptance` — `ERR` inside handlers, and its reset on

@@ -147,6 +147,10 @@ and evaluates the string; the command language runs in the graphics tenant,
 `gfx_draw_op` in [sub/graphics.asm](../../sub/graphics.asm), with the moves in
 `gdrw_move_rel` / `gdrw_move_abs` and the scale in `gdrw_scale`.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — pixels against the VG-8020 for the commands,

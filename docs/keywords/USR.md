@@ -120,6 +120,11 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 `DEF FN` to [`FN`](FN.md)'s code), `usr_setslot` stores the address,
 `ev_usr` parses a call and `usr_call` / `usr_ret` perform it.
 
+## Related concepts
+
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+- [ROM layout](../concepts/rom-layout.md) — how zerobas is put together
+
 ## Tests that cover it
 
 - `make kwsweep` — `DEF USR` and `USR` for slot 0 and a numbered slot, each

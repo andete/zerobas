@@ -14,6 +14,9 @@ BASIC, a National CF-3300 for Disk BASIC — and printed the same on both. Each 
 line saying which checks have passed: the everyday use, a reasonable time, the
 common errors, memory use, and every error.
 
+For what is not a single keyword — the screen editor, numbers, memory, files,
+tape, disk, MSX-DOS — see the [concept pages](../concepts/README.md).
+
 ([How these pages are made and checked](about.md))
 
 ## The pages

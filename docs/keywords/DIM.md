@@ -135,6 +135,11 @@ usage** rung, which is not yet proven.
   [basic/expr.asm](../../basic/expr.asm).
 - The design notes are in [spec-basic-arrays.md](../spec-basic-arrays.md).
 
+## Related concepts
+
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make array-acceptance` — creating, using, re-declaring and erasing arrays.

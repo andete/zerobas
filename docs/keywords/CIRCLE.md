@@ -147,6 +147,10 @@ arguments are read by `circleparse_tenant` in
 `cpt_angle_from_arga`), and the drawing is `gfx_circle_op` in
 [sub/graphics.asm](../../sub/graphics.asm).
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — whole bitmaps against the VG-8020: circles,

@@ -117,6 +117,10 @@ tail with `ERL`; the assignment is `ex_time_assign` in
 [basic/time.asm](../../basic/time.asm), dispatched from
 [basic/interp.asm](../../basic/interp.asm) when a statement starts with `TIME`.
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make time-acceptance` — the token, the read, the write rule and the error

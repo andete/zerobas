@@ -125,6 +125,10 @@ from the token, checks the letters and fills the 26-entry type table. Each
 variable reference consults that table (`deftbl_lookup` in
 [basic/vars.asm](../../basic/vars.asm)).
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make float-acceptance` — the type rules: default double, ranges, lists,

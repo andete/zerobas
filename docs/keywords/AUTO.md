@@ -104,6 +104,11 @@ the `AUTO` session).
   the increment.
 - The design notes are in [spec-basic-editverb.md](../spec-basic-editverb.md).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+
 ## Tests that cover it
 
 - `make editverb-acceptance` — the `aut-` rows: defaults, start, increment,

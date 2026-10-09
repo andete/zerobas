@@ -124,6 +124,11 @@ The other rung not yet proven is **RAM usage**.
   [basic/readdata-body.inc](../../basic/readdata-body.inc), which runs from the
   sub ROM ([sub/readdata.asm](../../sub/readdata.asm)).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make kwsweep` — a number, a quoted string, unquoted text with a space, and

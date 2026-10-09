@@ -211,6 +211,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - The block layout: [spec-fcbshape.md](../spec-fcbshape.md); the channel
   number rule: [spec-basic-badfnum-channel-class.md](../spec-basic-badfnum-channel-class.md).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+
 ## Tests that cover it
 
 - `make kwsweep` — each of the four modes, a second channel with

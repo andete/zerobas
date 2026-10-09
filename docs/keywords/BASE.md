@@ -130,6 +130,10 @@ cells on each side.
 in the graphics tenant, [sub/graphics.asm](../../sub/graphics.asm). The table
 is the published work-area cells at `&HF3B3`, two bytes per slot.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — the table, the assignment rules and the

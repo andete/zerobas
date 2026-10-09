@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30889 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31011 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29625,6 +29625,89 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ⚠️ The tenant is page 0, which may not call the float pack — price the
       route (main-side parse of the captured span, as INPUT does) before building.
 
+- [ ] 🔴 **`&B` BINARY NUMBERS ARE `Syntax error` HERE — `PRINT &B101` IS 5 ON THE VG-8020
+      (D-AMPB, found 2026-10-09 by the numbers concept page).**
+      🎚️ TIER 1 — `&B` literals in a program or at the prompt
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/ampb_probe.py`](scratchpad/ampb_probe.py) →
+      [`ampb_run.out`](scratchpad/ampb_run.out): `PRINT "[";&B101;"]"` → VG-8020
+      `[ 5 ]`, zerobas `[` then `Syntax error`; `A=&B11111111` → 255;
+      `&B1+1` → 2; `&B1111111111111111` → -1 (16-bit, like `&H`), all `Syntax
+      error` here, in a program and at the prompt alike.
+      🔬 basic/PROVENANCE.md "Phase 1: `&O` / `&B`": the reference stores `&B…`
+      as plain text (no token), and zerobas correctly does not invent one — but
+      the reference then READS that text when the line runs, and zerobas's
+      evaluator does not. VAL already parses `&B` (D-VALBASE, `sh_val_parse`):
+      reuse it ("rule 3: no second parser") rather than a new scanner.
+
+- [ ] 🔴 **`RESUME NEXT` AFTER A TRAPPED `Overflow` SKIPS THE REST OF THE LINE (D-RESNEXTOVF,
+      found 2026-10-09 by the numbers concept page).**
+      🎚️ TIER 3 — `ON ERROR` + `RESUME NEXT` after an `Overflow` mid-line
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/resnext_probe.py`](scratchpad/resnext_probe.py) →
+      [`resnext_run.out`](scratchpad/resnext_run.out): `20 <stmt>:PRINT "A"` /
+      `30 PRINT "B"`, handler `PRINT "E";ERR:RESUME NEXT` — `PRINT 1E62*9`,
+      `X=1E62*9`, `PRINT CINT(40000)`: VG-8020 `E 6 | A | B`, zerobas `E 6 | B`.
+      Division by zero, `SQR(-1)`, `ERROR 6` and `GOTO 999` agree (A printed).
+      So it is the Overflow path specifically (FPERR → deferred raise?): the
+      statement pointer RESUME NEXT uses must be the failing statement's, not
+      the line's end. 3/7 differ.
+
+- [ ] 🔴 **A TRAP EVENT HELD BACK BY `INTERVAL STOP` FIRES SOONER HERE THAN ON THE
+      VG-8020 AFTER `INTERVAL ON` (D-TRAPLATCHWHEN, found 2026-10-09).**
+      🎚️ TIER 6 — when a held-back trap event is dispatched
+      🤖 **AUTONOMOUS** — measure the reference's moment first.
+      📏 [`scratchpad/traplatch_run.out`](scratchpad/traplatch_run.out) (the
+      interrupts concept page's first example): after `INTERVAL STOP` across two
+      50-frame periods, `60 INTERVAL ON` / `70 PRINT C` → zerobas 1, VG-8020 0
+      (both 1 later). zerobas re-raises TRAPPEND at `INTERVAL ON` (spec T5 §6.1)
+      so the next statement boundary dispatches; the reference apparently waits
+      (for the next interrupt?). Pin it with a frame-accurate row before changing.
+
+- [ ] 🔴 **`FILES " "` AND `FILES "A:"` LIST THE DISK ON THE CF-3300 AND ARE `Bad file name`
+      HERE (D-FILESBARE — found 2026-09-05 as `m.blank` / `m.drvbare`, recorded only
+      inside a closed item; re-filed 2026-10-09).**
+      🎚️ TIER 1 — `FILES` with a blank or drive-only filespec
+      🤖 **AUTONOMOUS** — the reference settles it; pinned as deferrals in
+      [`basic_probe_namspc.py`](probes/basic/basic_probe_namspc.py).
+      The fix belongs in `do_files` (a pre-check: skip spaces and an optional
+      `X:`; nothing left → list all), NOT in the shared name builder, whose
+      rejection `m.drvkill` / `m.drvload` / `m.drvsave` pin as correct. It was
+      deferred on 2026-09-05 for main-ROM bytes; `FILES` has since moved to
+      disk.rom's hooks — re-price before assuming a carve.
+
+- [ ] 🔴 **`CALL SYSTEM` IS `Syntax error` HERE; THE CF-3300's ANSWER IS UNMEASURED
+      (D-CALLSYSTEM, found 2026-10-09 by the MSX-DOS concept page).**
+      🎚️ TIER 1 (latent) — `CALL SYSTEM` from Disk BASIC (going to MSX-DOS)
+      🤖 **AUTONOMOUS** — measure on the CF-3300 first (with and without a DOS
+      system disk).
+      `ex_call` accepts only `FORMAT`. On an MSX1 Disk BASIC with MSX-DOS 1,
+      `CALL SYSTEM` is the documented way into DOS; whether the CF-3300's disk
+      ROM offers it, and what it does without MSXDOS.SYS on the disk, is not
+      measured. Re-tier once measured.
+
+- [ ] 🔴 **BDOS CALLS MADE FROM A BASIC PROGRAM (machine code through `$F37D`) ANSWER ONLY
+      SEVEN FUNCTIONS HERE, AND NOTHING COMPARES THEM WITH THE CF-3300 (D-BDOSBASIC,
+      found 2026-10-09 by the MSX-DOS concept page).**
+      🎚️ TIER 6 (latent) — BDOS from Disk BASIC
+      🤖 **AUTONOMOUS** — measure first.
+      `bdos_entry` answers `$0F $10 $14 $15 $16 $1A $27` and returns `$FF` for
+      the rest; the DOS-side BDOS (under MSX-DOS) is the gated one (tier2-*).
+      Measure which functions the CF-3300 answers from BASIC (a `USR` routine
+      calling `$F37D`), then decide.
+
+- [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
+      concept page).**
+      🎚️ TIER 6 (latent) — cassette edge cases
+      🤖 **AUTONOMOUS** — measure each on the VG-8020 first.
+      - End of tape with no file found and no Ctrl-STOP: zerobas's `TAPION`
+        gives up after a run of silence (`CAS_FLATMAX`); the reference may wait.
+      - `SCREEN ,,,2` (cassette baud): the reference copies the 2400-baud table
+        into the work area (tape/docs/spec-cassette.md); zerobas checks the
+        argument and ignores it — compare a following `CSAVE`'s recording.
+      - File names longer than six characters: zerobas truncates; the
+        references are unmeasured.
+
 - [ ] 🔴 **`GET #` / `PUT #` WITH NO RECORD NUMBER ALWAYS USE RECORD 1 HERE; THE CF-3300
       TAKES THE NEXT RECORD (D-RECAUTO, found 2026-10-09 by the `GET`/`PUT` hub pages).**
       🎚️ TIER 1 — `PUT #n` / `GET #n` without a record number (writing or reading
@@ -29836,6 +29919,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         end-of-file test is skipped for a file over 64 KB on the strength of
         that 1..255 cap (~843): a GET past the end of such a file may read
         blanks instead of 55 — MEASURE (needs a > 64 KB random file).
+      - Found by the CONCEPT pages (2026-10-09), each a reading to verify:
+        `docs/spec-basic-screditor.md` §6 (CHSNS poll vs CHGET in §3 /
+        `basic/repl.asm`; "ZB shares the typed row", changed by D-ZBCRLF);
+        `docs/echo-delivery-characterization.md` §1 (39 columns, ZB on the typed
+        row); `sub/detok.asm` header (512-B DETOKBUF, 96-char limit — now a 96-B
+        window and 254); `basic/detok.inc` `dt_oct` ("&O never produced");
+        `basic/tokenise.inc` ("NONE OF THE FOUR HAS A stmt_table ROW");
+        `basic/sysvars.inc` (the `$B700..$BFFF` buffer map; HIMEM "record-only";
+        FRETOP before "All 29"; `H_CHCLOSE ; FILES handler`);
+        `basic/keytrap.asm:37` ("TRAPS_T3 = 0 … never run" — it is 1);
+        `basic/traps.asm` header (`check_traps` "in a sub-ROM tenant" — resident);
+        `sub/errmsg.asm` header ("codes zerobas never RAISES");
+        `docs/chancost-cf3300-characterization.md` §10 / headline and
+        `docs/spec-basic-filechan-alloc.md:106` ("52 not trappable" — a confound;
+        "50 B a channel"); `spec-traps-t1-stop-reslice.md` §1 (INTERVAL "MSX2");
+        `sub/strheap.asm` header (heap/array collision before D-CLP, DETOKBUF sort
+        buffer before D-DETOKBUF S2, "GC only in heap_alloc / ary_alloc");
+        Makefile `txtceil-acceptance` comment ("12 + 50*MAXFILES");
+        `docs/spec-basic-addr29.md` §3/§5; `spec-basic-string-engine.md`
+        (STRMAX=64); `spec-basic-clearpool.md` (TEMPTOP); `basic/vars.asm`
+        header ("integer-only"); `sub/arrays.asm` header (element size, base,
+        column-major vs spec-basic-arrays §2.1 row-major); basic/PROVENANCE.md
+        `a=&o177777` → 65535 vs the negative-above-&H8000 rule;
+        `basic/main.asm` header (`$2812` vs BASIC_ORG `$2765`); `basic/screen.asm`
+        header ("owns no VDP programming", a missing
+        docs/msx1-basic-bios-coupling.md); `disk/docs/expansion-protocol.md` §2
+        (`$FDF9` HSETS vs H.NAME); `disk/kernel.asm` / `disk/init.asm` ("seven
+        conversion hooks", ~21 now); g7 §5 vs g8 (RG1SAV high bits);
+        `disk/docs/file-channel-protocol.md` §3 (FCB "carrying the 8.3 name");
+        `basic/cload.asm` `do_tape_prog` ("accept either format", false since
+        D-CASTYPE); `basic/casmatch-body.inc` (end of tape → `load_error`, now 19);
+        `tape/docs/spec-cassette.md` Maturity note; `disk/docs/spec-diskbasic-
+        verbs.md` + `diskbasic-verb-coverage.md` §1/F7 (LOC, DSKI$, DSKO$, NAME
+        guard, numeric INPUT# all shipped); `spec-diskrom-kernel.md` §6.2
+        (GDATE / SDATE before D-DOSDATE); `tier2-bdos-coverage.md` (WRSEQ, counts,
+        LSTOUT row vs text); `tier2-STATE.md` (last updated 07-04);
+        `autoexec-bas-spec.md` ("DRAFT"); TODO's 2-Tier2-a/b/c still "BLOCKED";
+        `disk/disk.asm` / `disk/init.asm` headers (BASIC via `bdos_entry`).
+        The OPEN keyword page vs TODO on the same-file-two-spellings item's owner.
 
 - [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
       (D-READINTOVF, found 2026-09-28 by T6 batch 9).**

@@ -115,6 +115,10 @@ The line number is read by the shared `req_lineno` (also used by `GOSUB`,
 `ON … GOTO` is `ex_on` and `eon_seek_nth` in
 [basic/program.asm](../../basic/program.asm).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — the jump row, the `ON 2 GOTO` row, and the error rows for

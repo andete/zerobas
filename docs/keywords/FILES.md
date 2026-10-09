@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `FILES` — list the files on the disk
 
-> **Status (2026-10-09):** level 0 since this page found a happy-path
-> difference — where the cursor stands after the listing (below), an open
-> TIER 1 item · reasonable time ✓ · common errors ✓ · RAM usage not yet
+> **Status (2026-10-09):** level 0 — two happy-path differences, both open
+> TIER 1 items: where the cursor stands after the listing, and a blank or
+> drive-only pattern (below) · reasonable time ✓ · common errors ✓ · RAM usage not yet
 > proven · every error ✓. Until 2026-10-09 the tier sheet read level 3.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -96,6 +96,10 @@ leave the cursor on it. Filed as D-FILESNL (2026-10-09,
 [`filesnl_run.out`](../../scratchpad/filesnl_run.out)); `FILES:PRINT`, as in
 the example above, looks the same on both.
 
+**A blank or drive-only pattern.** `FILES " "` and `FILES "A:"` list the
+whole disk on the CF-3300 and are `Bad file name` on zerobas (D-FILESBARE,
+open, TIER 1; first found 2026-09-05).
+
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
@@ -129,6 +133,11 @@ The one rung not yet proven is **RAM usage**.
 - Disk ROM, [disk/kernel.asm](../../disk/kernel.asm): `hk_files` and
   `hkf_body` walk the directory; `df_emit` prints an entry and `df_end` ends
   the walk, for both `FILES` and `LFILES`.
+
+## Related concepts
+
+- [MSX-DOS](../concepts/msx-dos.md) — booting DOS, the BDOS, and the way back to BASIC
+- [ROM layout](../concepts/rom-layout.md) — how zerobas is put together
 
 ## Tests that cover it
 

@@ -147,6 +147,11 @@ in [sub/graphics.asm](../../sub/graphics.asm):
   handler; the once-per-frame collision check is
   [basic/sprtrap-body.inc](../../basic/sprtrap-body.inc).
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — the pattern and attribute tables read back

@@ -148,6 +148,13 @@ of documented work-area cells each machine writes is not the same.
 key row reserved. The texts, `KEY LIST` and the drawing of the line are the
 key-string tenant in [sub/keystr.asm](../../sub/keystr.asm).
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+- [ROM layout](../concepts/rom-layout.md) — how zerobas is put together
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make keystr-acceptance` — the range of `n`, the empty text, and `KEY LIST`

@@ -115,6 +115,10 @@ The one rung not yet proven is **RAM usage**.
   `PUT` in the random-file engine,
   [basic/randio-body.inc](../../basic/randio-body.inc).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make loc-acceptance` — the sequential reading, `GET`s of records 3 and 7,

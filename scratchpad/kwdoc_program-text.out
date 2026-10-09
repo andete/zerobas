@@ -1,0 +1,37 @@
+--- program-text: reference Philips_VG_8020
+Ok
+30 ?"C";PEEK(&H8003);PEEK(&H8004)
+10 print "a";:rem lower
+20 PRINT "B"
+20 print "b":goto 3 0
+25 X=1
+25
+LIST
+10 PRINT "a";:REM lower
+20 PRINT "b":GOTO 30
+30 PRINT"C";PEEK(&H8003);PEEK(&H8004)
+Ok
+RUN
+ab
+C 10  0
+Ok
+color   auto    goto    list    run
+--- program-text: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+30 ?"C";PEEK(&H8003);PEEK(&H8004)
+10 print "a";:rem lower
+20 PRINT "B"
+20 print "b":goto 3 0
+25 X=1
+25
+LIST
+10 PRINT "a";:REM lower
+20 PRINT "b":GOTO 30
+30 PRINT"C";PEEK(&H8003);PEEK(&H8004)
+ZB
+RUN
+ab
+C 10  0
+ZB
+color   auto    goto    list    run
+=== program-text: PASS

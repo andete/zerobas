@@ -126,6 +126,11 @@ skipped by `skip_stmt_tail`, both in [basic/interp.asm](../../basic/interp.asm).
 How the reference lays out its frames, read from RAM only, is in
 [reference-stack-frames.md](../reference-stack-frames.md).
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (a subroutine that sets a variable the

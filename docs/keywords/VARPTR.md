@@ -142,6 +142,13 @@ The rung not yet proven is **RAM usage**.
 `ev_ff_varptrch` in the same file for `#n`, using the channel check the file
 functions share.
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make array-acceptance` — the element form, string descriptors, and the

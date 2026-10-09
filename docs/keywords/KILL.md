@@ -107,6 +107,10 @@ The one rung not yet proven is **RAM usage**.
 - Disk ROM: `hk_kill` in [disk/kernel.asm](../../disk/kernel.asm) checks the
   open files and runs the delete loop over every match.
 
+## Related concepts
+
+- [Disk BASIC](../concepts/disk.md) — files on a 720 KB floppy, one drive
+
 ## Tests that cover it
 
 - `make diskbasic-acceptance` — a plain and a wildcard `KILL`, each compared

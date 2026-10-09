@@ -125,6 +125,10 @@ the sub-ROM: `sh_val_parse` in [sub/strheap.asm](../../sub/strheap.asm)
 handles the `&` prefixes itself and hands everything else to `tk_float` in
 [sub/tkfloat.asm](../../sub/tkfloat.asm), the tokeniser's own number scanner.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make kwsweep` — one row per form: `VAL("-12")`, `VAL("1.5")`, `VAL("1E3")`,

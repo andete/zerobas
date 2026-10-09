@@ -1,0 +1,45 @@
+--- variables: reference Philips_VG_8020
+Ok
+10 A=1:A%=2:A!=3:A#=4
+20 PRINT A;A%;A!;A#
+30 ZQ9=5:PRINT ZQ7
+40 DEFINT N:N=7/2:N$="HI":PRINT N;N$
+50 B=2:B(10)=6:PRINT B;B(10)
+60 X=0:DIM C(3):X=VARPTR(C(0))
+70 Y=1:PRINT VARPTR(C(0))-X
+80 ON ERROR GOTO 110
+90 B(11)=1
+100 END
+110 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 4  2  3  4
+ 5
+ 3 HI
+ 2  6
+ 11
+Error 9
+Ok
+color   auto    goto    list    run
+--- variables: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=1:A%=2:A!=3:A#=4
+20 PRINT A;A%;A!;A#
+30 ZQ9=5:PRINT ZQ7
+40 DEFINT N:N=7/2:N$="HI":PRINT N;N$
+50 B=2:B(10)=6:PRINT B;B(10)
+60 X=0:DIM C(3):X=VARPTR(C(0))
+70 Y=1:PRINT VARPTR(C(0))-X
+80 ON ERROR GOTO 110
+90 B(11)=1
+100 END
+110 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 4  2  3  4
+ 5
+ 3 HI
+ 2  6
+ 11
+Error 9
+ZB
+color   auto    goto    list    run
+=== variables: PASS

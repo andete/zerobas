@@ -111,6 +111,10 @@ from `ex_pset` only in where the default colour comes from; the shared
 [sub/graphics.asm](../../sub/graphics.asm) (`gfx_plot`, `gfx_color_rmw`) do
 the rest.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — erase-after-set and `PRESET` with a colour,

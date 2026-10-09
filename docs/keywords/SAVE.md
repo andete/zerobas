@@ -137,6 +137,12 @@ against the disk driver, D-FDCDI.
   [disk/kernel.asm](../../disk/kernel.asm); since 2026-10-08 a disk text save
   is written by the disk ROM too.
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [MSX-DOS](../concepts/msx-dos.md) — booting DOS, the BDOS, and the way back to BASIC
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — a tokenised save read back with `LOF`, the text save ending

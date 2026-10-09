@@ -120,6 +120,10 @@ reaches the printer waits for it.
 - Measurements: [lptverb-msx1-characterization.md](../lptverb-msx1-characterization.md)
   §4, rules R-LF1 to R-LF7.
 
+## Related concepts
+
+- [Disk BASIC](../concepts/disk.md) — files on a 720 KB floppy, one drive
+
 ## Tests that cover it
 
 - `make lptverb-acceptance` — the printer log for a full listing, a pattern,

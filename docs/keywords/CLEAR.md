@@ -130,6 +130,13 @@ rung, which is not yet proven.
   and `clear_vars` in [basic/vars.asm](../../basic/vars.asm); the string space
   is set up by `heap_reset` in [basic/str-engine.asm](../../basic/str-engine.asm).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make clearpool-acceptance` — the string-space size, what a bare `CLEAR`,

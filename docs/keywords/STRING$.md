@@ -128,6 +128,10 @@ number. Both numbers are checked by the shared `get_byte_arg` in
 [basic/interp.asm](../../basic/interp.asm). The characters are written by
 `sh_fill` in [sub/strheap.asm](../../sub/strheap.asm), in the sub-ROM.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make str-domain-acceptance` — the count's and the code's ranges, both error

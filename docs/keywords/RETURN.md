@@ -117,6 +117,10 @@ is discussed on the [`GOSUB`](GOSUB.md) page.
 the line form jumps through `ex_goto_at` in
 [basic/interp.asm](../../basic/interp.asm), the same code `GOTO` uses.
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make kwsweep` — the bare and line rows, and the error rows for {2, 3, 8}.

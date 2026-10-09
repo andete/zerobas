@@ -103,6 +103,10 @@ The one rung not yet proven is **RAM usage**.
 the BIOS; the address check is `get_vram_arg` in
 [basic/interp.asm](../../basic/interp.asm), shared with `VPOKE`.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make intarg-acceptance` — the address range and its two errors.

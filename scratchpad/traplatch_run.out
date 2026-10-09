@@ -1,0 +1,43 @@
+--- interrupts-and-traps: reference Philips_VG_8020
+Ok
+10 ON INTERVAL=50 GOSUB 200
+20 INTERVAL ON
+30 INTERVAL STOP:T=TIME
+40 IF TIME-T<120 THEN 40
+50 PRINT "stopped";C
+60 INTERVAL ON
+70 PRINT "on again";C
+80 INTERVAL OFF:T=TIME
+90 IF TIME-T<120 THEN 90
+100 INTERVAL ON
+110 PRINT "after off";C
+120 END
+200 C=C+1:RETURN
+RUN
+stopped 0
+on again 0
+after off 1
+Ok
+color   auto    goto    list    run
+--- interrupts-and-traps: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON INTERVAL=50 GOSUB 200
+20 INTERVAL ON
+30 INTERVAL STOP:T=TIME
+40 IF TIME-T<120 THEN 40
+50 PRINT "stopped";C
+60 INTERVAL ON
+70 PRINT "on again";C
+80 INTERVAL OFF:T=TIME
+90 IF TIME-T<120 THEN 90
+100 INTERVAL ON
+110 PRINT "after off";C
+120 END
+200 C=C+1:RETURN
+RUN
+stopped 0
+on again 1
+after off 1
+ZB
+color   auto    goto    list    run
+=== interrupts-and-traps: DIFFER

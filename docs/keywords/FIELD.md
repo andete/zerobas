@@ -140,6 +140,10 @@ The one rung not yet proven is **RAM usage**.
   run and calls back into main for each item.
 - The width rules: [fldwidth-msx1-characterization.md](../fldwidth-msx1-characterization.md).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make diskbasic-acceptance` — `FIELD`, `LSET` and `RSET` records written and

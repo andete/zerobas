@@ -106,6 +106,10 @@ integer).
 `round_single_and_pack` in [basic/float-arith.asm](../../basic/float-arith.asm),
 the same routine a store into a single variable uses.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — rounding of doubles, integer arguments, and the

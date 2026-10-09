@@ -121,6 +121,11 @@ VG-8020 does not. Nothing a program can observe through `FRE` differs.
 `ex_let_arr` / `ex_let_arr_str` in [basic/arrays.asm](../../basic/arrays.asm).
 A line that starts with a variable name goes straight to `ex_let`.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`LET A=5`), the error rows for {2, 13}

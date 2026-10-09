@@ -110,6 +110,10 @@ selector `ev_ff_mathconv`; the work is `fp_trunc` in
 also uses. The design notes are in
 [spec-basic-math-pack.md](../spec-basic-math-pack.md) §9.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — values and result types against the VG-8020,

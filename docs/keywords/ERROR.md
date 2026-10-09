@@ -139,6 +139,10 @@ and either jumps to the handler or stops the program. The common messages are
 `err_msgtab` in [basic/islands.asm](../../basic/islands.asm); the rarer ones
 live in the sub-ROM, [sub/errmsg.asm](../../sub/errmsg.asm).
 
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+
 ## Tests that cover it
 
 - `make error-acceptance` and `make error-trap-acceptance` — the abort, the

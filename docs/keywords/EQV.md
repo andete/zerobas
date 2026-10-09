@@ -115,6 +115,10 @@ zerobas does not.
 `logtab` in [basic/islands.asm](../../basic/islands.asm); the leaf `lg_eqv`
 (`xor`, then complement) does the work.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make logicops-acceptance` — the truth table, every precedence pair, the

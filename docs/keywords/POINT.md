@@ -111,6 +111,10 @@ point and answers −1 off screen; `gfx_point` in
 [sub/graphics.asm](../../sub/graphics.asm) reads the pattern and colour bytes
 (`gfx_point_mc` in SCREEN 3).
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — `POINT` values, off-screen −1, `STEP`, and the

@@ -119,6 +119,10 @@ cells while doing it.
 - Disk ROM: `hk_mkfloat` in [disk/kernel.asm](../../disk/kernel.asm) rounds
   and packs the value, shared with `MKD$`.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make kwsweep` — the length row, the first-byte row for 1.5, and the error

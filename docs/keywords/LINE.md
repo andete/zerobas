@@ -145,6 +145,10 @@ colour and box suffix. The drawing is in [sub/graphics.asm](../../sub/graphics.a
 `gfx_line_op`, the stepper `gfx_bres_init` / `gfx_bres_next`, the end-point
 clamp `gfx_clamp_coords`, and `gfx_box_outline` / `gfx_box_fill`.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — whole bitmaps and colour tables against the

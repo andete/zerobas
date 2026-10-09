@@ -100,6 +100,10 @@ The other rung not yet proven is **RAM usage**.
 [basic/program.asm](../../basic/program.asm), clears the error-handler flag,
 and stops the run loop.
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row: an `END` that keeps the program from

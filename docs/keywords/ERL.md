@@ -101,6 +101,10 @@ returned as an unsigned number, so 65535 prints as 65535 rather than −1. The
 editor's case is `dl_ovf_report` in
 [basic/program.asm](../../basic/program.asm).
 
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+
 ## Tests that cover it
 
 - `make error-trap-acceptance` — `ERL` inside handlers, after `RESUME`, and

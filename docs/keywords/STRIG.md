@@ -111,6 +111,10 @@ because its rows need a key held or a button pressed.
   timer interrupt in [basic/traps.asm](../../basic/traps.asm).
 - Design notes: [spec-basic-input-devices.md](../spec-basic-input-devices.md).
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make input-devices-acceptance` — the grammar, error and truncation rows, the

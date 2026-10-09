@@ -131,6 +131,12 @@ The other rung not yet proven is **RAM usage**.
   [basic/readdata-body.inc](../../basic/readdata-body.inc), which runs from the
   sub ROM ([sub/readdata.asm](../../sub/readdata.asm)).
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make readvar-acceptance` — every kind of target and how items are cut into

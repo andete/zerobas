@@ -50,3 +50,7 @@ and are described on those pages: a `DEF FN` whose parameter is not a variable
 name (`DEF FNA(5)=1`) is accepted here, two parameters of one call can share
 a value ([`FN`](FN.md)), and `DEF USR` accepts an address past 65535
 ([`USR`](USR.md)).
+
+## Related concepts
+
+- [ROM layout](../concepts/rom-layout.md) — how zerobas is put together

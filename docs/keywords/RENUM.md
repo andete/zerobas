@@ -123,6 +123,10 @@ The one rung not yet proven is **RAM usage**.
   check the arguments and rewrite the line numbers and references in place.
 - The design notes are in [spec-basic-editverb.md](../spec-basic-editverb.md).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make editverb-acceptance` — the `rnm-` rows: every rule above, on both

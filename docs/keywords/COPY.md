@@ -137,6 +137,10 @@ The one rung not yet proven is **RAM usage**.
   [spec-basic-copy.md](../spec-basic-copy.md); where they disagree with this
   page, this page is current.
 
+## Related concepts
+
+- [ROM layout](../concepts/rom-layout.md) — how zerobas is put together
+
 ## Tests that cover it
 
 - `make copy-acceptance` — plain, overwrite, large, blanks, string-variable

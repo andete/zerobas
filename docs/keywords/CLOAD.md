@@ -121,6 +121,10 @@ None known.
   skipping a file's data is `cas_skip_data` there.
 - The tape signal itself: [tape/tape.asm](../../tape/tape.asm).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+
 ## Tests that cover it
 
 - `make kwsweep` — the named form (`Skip :ZQ` then `Found:ZR`), the bare form,

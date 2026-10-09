@@ -7,8 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `RESUME` — leave an error handler and carry on
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. No known
-> divergence.
+> errors ✓ · RAM usage not yet proven · every error not yet proven. One
+> recorded difference: `RESUME NEXT` after an `Overflow` (below, an open
+> TIER 3 item).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -100,7 +101,13 @@ skipped, and the third jumps over line 60.
 
 ## Differences from the reference
 
-None known.
+**`RESUME NEXT` after a trapped `Overflow` skips the rest of the line**
+(D-RESNEXTOVF, found 2026-10-09, open, TIER 3). With
+`20 PRINT 1E62*9:PRINT "A"`, the VG-8020 resumes at `PRINT "A"`; zerobas
+goes on at the next line. The same happens for `X=1E62*9` and
+`PRINT CINT(40000)`. Division by zero, `SQR(-1)`, `ERROR 6` and an undefined
+line resume at the right statement on both
+([`resnext_run.out`](../../scratchpad/resnext_run.out)).
 
 Two rungs are not yet proven. **Every error**: the set of errors `RESUME`
 itself can raise has not been measured, because the tool that enumerates error
@@ -146,6 +153,10 @@ been able to rate `RESUME`'s test programs.
   [basic/arrays.asm](../../basic/arrays.asm).
 - `ON ERROR GOTO` is `ex_on_error` (disarm: `oe_disable`) in
   [basic/program.asm](../../basic/program.asm).
+
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
 
 ## Tests that cover it
 

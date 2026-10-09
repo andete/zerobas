@@ -129,6 +129,10 @@ resolves each operand (creating the first if needed), `sw_absent` raises the
 missing-second-operand error, and `sw_types` checks the types and exchanges the
 bytes.
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make missing-acceptance` — every type, array elements, string descriptors,

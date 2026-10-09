@@ -145,6 +145,11 @@ saved binary to try it on).
   [basic/cascap-body.inc](../../basic/cascap-body.inc) and the matcher in
   [basic/casmatch-body.inc](../../basic/casmatch-body.inc).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+
 ## Tests that cover it
 
 - `make kwsweep` — the plain, `,R` and `,S` rows, the error rows, and

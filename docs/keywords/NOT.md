@@ -113,6 +113,10 @@ logical layer and the comparisons; the integer conversion is
 `fac_to_int_strict_reset` in
 [basic/float-arith.asm](../../basic/float-arith.asm).
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make logicops-acceptance` — results, precedence against the two-operand

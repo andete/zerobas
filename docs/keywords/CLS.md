@@ -96,6 +96,10 @@ one writes is not the same.
 clear, then `key_repaint` in the same file puts the function-key line back
 through the key-string tenant in [sub/keystr.asm](../../sub/keystr.asm).
 
+## Related concepts
+
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row: `CLS`, then `CSRLIN` must read 0.

@@ -123,6 +123,10 @@ is `fac_to_int_strict_reset` in
 [basic/float-arith.asm](../../basic/float-arith.asm), shared with `\`, `MOD`
 and the logical operators.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — truncation in both directions, the range edges,

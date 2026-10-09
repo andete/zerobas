@@ -130,6 +130,10 @@ type. The arithmetic is the evaluator's own (`combine_add`, `combine_cmp` in
 The design notes are in [spec-basic-forvar.md](../spec-basic-forvar.md) and
 [spec-basic-forfloat.md](../spec-basic-forfloat.md).
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make forvar-acceptance` — loop-variable names and types, and the ten

@@ -122,6 +122,10 @@ The one rung not yet proven is **RAM usage**.
   old file up, checks the open files and the new name, and rewrites the
   directory entry.
 
+## Related concepts
+
+- [Disk BASIC](../concepts/disk.md) — files on a 720 KB floppy, one drive
+
 ## Tests that cover it
 
 - `make diskbasic-acceptance` — a rename compared with the CF-3300 by the disk

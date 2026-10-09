@@ -1,0 +1,8 @@
+✗  mulovf  VG-8020 [E 6 | A | B]  zerobas [E 6 | B]
+✗  asgovf  VG-8020 [E 6 | A | B]  zerobas [E 6 | B]
+== divzero VG-8020 [E 11 | A | B]  zerobas [E 11 | A | B]
+== error6  VG-8020 [E 6 | A | B]  zerobas [E 6 | A | B]
+== sqrneg  VG-8020 [E 5 | A | B]  zerobas [E 5 | A | B]
+✗  strovf  VG-8020 [E 6 | A | B]  zerobas [E 6 | B]
+== undef   VG-8020 [E 8 | A | B]  zerobas [E 8 | A | B]
+refcache: 0 hit, 14 miss, 14 stored

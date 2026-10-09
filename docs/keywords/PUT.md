@@ -128,6 +128,10 @@ record engine is [basic/randio-body.inc](../../basic/randio-body.inc), run from
 the sub-ROM; the directory entry is written by `CLOSE`
 ([basic/files.asm](../../basic/files.asm)).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`puthash`) and the error rows.

@@ -113,6 +113,10 @@ scratch cells of its own for the calculation.
 - Sub-ROM: `fp_cos` in [sub/fp_sin.asm](../../sub/fp_sin.asm), which picks
   its answer from the shared `sincos_kernel`.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — about forty angles against the mathematically true

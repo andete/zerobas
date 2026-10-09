@@ -1,0 +1,13 @@
+--- screen-modes: reference Philips_VG_8020
+ 2  2  32  7  4
+ 128  244  15  4
+ 6144  8192  0
+Ok
+color   auto    goto    list    run
+--- screen-modes: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 2  2  32  7  4
+ 128  244  15  4
+ 6144  8192  0
+ZB
+color   auto    goto    list    run
+=== screen-modes: PASS

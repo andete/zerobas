@@ -133,6 +133,10 @@ and colour; `gfx_point_gate` (shared with `PRESET`, `LINE`, `CIRCLE` and
 written by the graphics tenant in [sub/graphics.asm](../../sub/graphics.asm):
 `gfx_plot` and `gfx_color_rmw` for SCREEN 2, `gfx_rmw_at_mc` for SCREEN 3.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — pixel and colour tables read back on both

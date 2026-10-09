@@ -151,6 +151,12 @@ keyboard form.
   its "integer fields" and "lower-case messages" no longer hold — this page is
   current).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make input-acceptance` — numbers, strings, several variables, `LINE INPUT`,

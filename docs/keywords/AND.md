@@ -143,6 +143,10 @@ conversion is `fac_to_int_strict_reset` in
 [basic/float-arith.asm](../../basic/float-arith.asm), shared with `\` and
 [`MOD`](MOD.md).
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make logicops-acceptance` — results, every precedence pair, grouping, the

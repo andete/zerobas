@@ -159,6 +159,10 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
   by `sh_mid_store` in [sub/strheap.asm](../../sub/strheap.asm), in the
   sub-ROM.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make str-domain-acceptance` — both forms' ranges, both error kinds, and the

@@ -97,6 +97,10 @@ and `deftype_tenant` in [sub/deftype.asm](../../sub/deftype.asm). The check
 that a string-typed name is not read as a number is `check_vartype_num` in
 [basic/arrays.asm](../../basic/arrays.asm).
 
+## Related concepts
+
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make float-acceptance` — `DEFSTR` naming, the `S`/`S$` identity and the

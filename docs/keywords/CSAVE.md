@@ -112,6 +112,10 @@ usable reading on either machine.
 - The tape signal: [tape/tape.asm](../../tape/tape.asm).
 - The format work: [cassave-msx1-characterization.md](../cassave-msx1-characterization.md).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+
 ## Tests that cover it
 
 - `make kwsweep` — `CSAVE` onto a blank tape, the recording decoded and

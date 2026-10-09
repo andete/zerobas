@@ -102,6 +102,10 @@ the shared `onoff_decode` in [basic/program.asm](../../basic/program.asm) and
 calls the BIOS entry `STMOTR`, which `stmotr` in
 [tape/tape.asm](../../tape/tape.asm) provides.
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+
 ## Tests that cover it
 
 - `make missing-acceptance` — the accepted forms, every `Syntax error` form,

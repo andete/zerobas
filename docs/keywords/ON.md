@@ -39,9 +39,13 @@ statements, which fall into two families:
 
 The five interrupt traps share one model: `ON … GOSUB` **arms** the trap, a
 separate statement (`KEY(n) ON`, `STRIG(n) ON`, `SPRITE ON`, `STOP ON`,
-`INTERVAL ON`) **enables** it; `… STOP` holds an event back until the trap is
-enabled again, `… OFF` forgets it; the handler ends with `RETURN`. An `ON …
-GOSUB` with no line number disarms the trap.
+`INTERVAL ON`) **enables** it, and `… OFF` disables it; the handler ends with
+`RETURN`. An `ON … GOSUB` with no line number disarms the trap. `… STOP`
+differs per trap, as measured on the VG-8020: for `INTERVAL` it holds one
+event back until `INTERVAL ON` (below), but for `KEY`, `STRIG` and `SPRITE`
+it behaves exactly like `OFF` — a key press, button or collision while
+stopped is never delivered later ([spec-traps-t2-strig.md](../spec-traps-t2-strig.md)
+§1, [spec-traps-t3-key.md](../spec-traps-t3-key.md), [`SPRITE`](SPRITE.md)).
 
 ## `ON INTERVAL=n GOSUB` — a timer
 
@@ -135,6 +139,11 @@ any, are on their pages.
 `ex_on_interval` in [basic/program.asm](../../basic/program.asm) arms the
 trap; the shared trap machinery (`trap_line_link`, the per-frame poll) serves
 all five interrupt traps.
+
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
 
 ## Tests that cover it
 

@@ -117,6 +117,10 @@ zerobas does not.
 `logtab` in [basic/islands.asm](../../basic/islands.asm), where `IMP` is the
 first (loosest) entry; the leaf `lg_imp` (complement, then `or`) does the work.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make logicops-acceptance` — the truth table, every precedence pair, the

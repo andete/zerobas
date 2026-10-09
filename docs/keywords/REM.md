@@ -90,6 +90,10 @@ copies the comment text verbatim; the statement skipper used by `IF`,
 to the end of the line; and `LIST` turns the stored form of `'` back into `'`
 ([basic/list.asm](../../basic/list.asm)).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`REM z` after a statement, no error).

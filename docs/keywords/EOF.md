@@ -122,6 +122,11 @@ one with an input tape in the recorder.
   [sub/bload.asm](../../sub/bload.asm): `seq_peek` for a disk file and
   `sq_deveof` for the cassette.
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make kwsweep` — `EOF` before and after a file is read, the Ctrl-Z and

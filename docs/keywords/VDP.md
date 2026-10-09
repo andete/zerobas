@@ -113,6 +113,10 @@ a register; `ex_vdp_assign` handles `VDP(n)=v`, reached from the statement
 dispatch because there is no separate statement token. The write itself is
 `gfx_vdp_wr` in [sub/graphics.asm](../../sub/graphics.asm).
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — reads, writes and the error surface against

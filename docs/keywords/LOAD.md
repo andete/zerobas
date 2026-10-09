@@ -142,6 +142,11 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   whole sector loop runs on the disk ROM's side.
 - The tape search: [basic/casmatch-body.inc](../../basic/casmatch-body.inc).
 
+## Related concepts
+
+- [The cassette](../concepts/cassette.md) — files on tape, and how BASIC finds them
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make kwsweep` — plain `LOAD` (read back with `LLIST`), `LOAD ...,R`, and

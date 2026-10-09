@@ -111,6 +111,10 @@ The one-argument function path `ev_ff_arg_in` in
 [basic/expr.asm](../../basic/expr.asm); the address check is `ev_ff_ckaddr`,
 shared with [`INP`](INP.md).
 
+## Related concepts
+
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+
 ## Tests that cover it
 
 - `make intarg-acceptance` — the address range and its errors.

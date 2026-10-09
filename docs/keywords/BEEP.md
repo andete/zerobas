@@ -109,6 +109,10 @@ other does not. Nothing a program can observe through `FRE` differs.
 [sub/beep.asm](../../sub/beep.asm), which lives in the sub-ROM. It moved there
 on 2026-07-23 to make room for `STICK` and `STRIG`.
 
+## Related concepts
+
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make beep-acceptance` — the register trace against the VG-8020, including

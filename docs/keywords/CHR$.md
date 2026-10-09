@@ -124,6 +124,10 @@ argument check is the shared `eval_byte_arg` in
 [basic/interp.asm](../../basic/interp.asm), which `LEFT$`, `RIGHT$`, `MID$`,
 `STRING$` and `SPACE$` use too.
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make str-domain-acceptance` — the range and truncation rules.

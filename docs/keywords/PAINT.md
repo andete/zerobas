@@ -133,6 +133,10 @@ arguments and checks the start point; the fill is `gfx_paint_op` and
 `gfx_paint_flood` in [sub/graphics.asm](../../sub/graphics.asm), with the
 border test in `gfx_paint_inside` / `gfx_paint_passable`.
 
+## Related concepts
+
+- [Screen modes](../concepts/screen-modes.md) — the four MSX1 displays
+
 ## Tests that cover it
 
 - `make graphics-acceptance` — fills in SCREEN 2 and SCREEN 3 read back

@@ -106,6 +106,10 @@ string argument is read by `ev_str_arg` in the same file, shared with `ASC`
 and `VAL`. The deferred type mismatch is `ev_f_tmm` in
 [basic/expr.asm](../../basic/expr.asm).
 
+## Related concepts
+
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (`LEN("ab")`) and the error rows for

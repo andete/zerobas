@@ -107,6 +107,11 @@ to `do_break`, which Ctrl-STOP uses too: it records the `CONT` point
 `Break` with `print_in_lineno`. `STOP ON`/`OFF`/`STOP` are handled in the
 same routine.
 
+## Related concepts
+
+- [Errors](../concepts/errors.md) — codes, messages and `ON ERROR`
+- [Interrupts and traps](../concepts/interrupts-and-traps.md) — what runs between statements
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (the `Break in 10` message is what it

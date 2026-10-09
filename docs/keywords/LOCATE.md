@@ -132,6 +132,10 @@ writes is not the same.
 `ex_locate`, `loc_next` (one argument) and `loc_apply_pos` (the clamp) in
 [basic/missing.asm](../../basic/missing.asm).
 
+## Related concepts
+
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+
 ## Tests that cover it
 
 - `make missing-acceptance` — position, omitted arguments, the clamp on both

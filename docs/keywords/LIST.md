@@ -122,6 +122,11 @@ The one rung not yet proven is **RAM usage**.
   deliberately does not resemble.
 - The design notes are in [spec-basic-listrange.md](../spec-basic-listrange.md).
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+- [The screen editor](../concepts/screen-editor.md) — typing, fixing and re-entering lines
+
 ## Tests that cover it
 
 - `make lnblank-say-acceptance` — the `lst-` and `lse-` rows: every range

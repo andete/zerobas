@@ -121,6 +121,10 @@ is filed as a TIER 3 item against the disk driver, D-FDCDI.
 - The flush of a disk output channel, the Ctrl-Z and the directory entry are
   the disk ROM's ([disk/kernel.asm](../../disk/kernel.asm)).
 
+## Related concepts
+
+- [Files and devices](../concepts/files-and-devices.md) — numbered channels to the disk, the tape, the screen and the printer
+
 ## Tests that cover it
 
 - `make kwsweep` — `CLOSE #1` and bare `CLOSE`, each read back by the file's

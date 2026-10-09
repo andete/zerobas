@@ -114,6 +114,12 @@ compared.
 argument's type (`ev_fre_num` for a number); the string-heap code in
 [sub/strheap.asm](../../sub/strheap.asm) answers the two pools' sizes.
 
+## Related concepts
+
+- [The memory map](../concepts/memory-map.md) — where BASIC keeps things in RAM
+- [Strings and string space](../concepts/strings-and-string-space.md) — where string values live
+- [Variables](../concepts/variables.md) — names, types, arrays, and where they live
+
 ## Tests that cover it
 
 - `make binfre-acceptance` — the two forms, the dummy argument, the allocation

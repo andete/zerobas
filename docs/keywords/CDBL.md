@@ -112,6 +112,10 @@ integer).
 and packed as a double by `round_and_finalize` in
 [basic/float-arith.asm](../../basic/float-arith.asm).
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — single, integer and double arguments, and the

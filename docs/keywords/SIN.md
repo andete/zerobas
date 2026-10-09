@@ -126,6 +126,10 @@ scratch cells of its own for the calculation.
 - The design notes are in
   [spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md) §14.
 
+## Related concepts
+
+- [Numbers](../concepts/numbers.md) — integers, single and double precision
+
 ## Tests that cover it
 
 - `make math-acceptance` — about forty angles against the mathematically true

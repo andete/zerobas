@@ -125,6 +125,10 @@ The one rung not yet proven is **RAM usage**.
   byte and the drive, then counts with `fat_count_free`
   ([basic/fat-prim-body.inc](../../basic/fat-prim-body.inc)).
 
+## Related concepts
+
+- [MSX-DOS](../concepts/msx-dos.md) — booting DOS, the BDOS, and the way back to BASIC
+
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (the free count on the test disk), `KILL`'s row that

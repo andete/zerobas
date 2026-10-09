@@ -102,6 +102,10 @@ parse (`le_lstrange` in [sub/lineedit.asm](../../sub/lineedit.asm)) and walk
 (`list_walk`), and only selects the printer as the destination, after the parse
 so that a refused `LLIST` never leaves the printer selected.
 
+## Related concepts
+
+- [Program text](../concepts/program-text.md) — how a typed line becomes a program line
+
 ## Tests that cover it
 
 - `make editverb-acceptance` — the `llt-` rows: the whole program, one line,
