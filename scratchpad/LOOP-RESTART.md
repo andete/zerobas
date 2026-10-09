@@ -45,8 +45,17 @@ T6-set gap D-KWERRSETGAP, a stale-docs list D-PAGEDEBT, and **🙋 D-CASTYPERULE
 D-CASTYPE reversed Joost's 09-27 "keep the feature" ruling without asking; put it
 to him, change nothing first.**
 
-➡️ **NEXT, by tier, once he restarts the loop:**
-- TIER 1 first: D-READFLT, then D-FILESNL.
+📚 **AND THE CONCEPT PAGES (docs/concepts/, 14 pages) and the HUB pages (ON, DEF,
+GET, PUT) shipped the same day**, linked both ways with the keyword pages (a
+"Related concepts" section on 119 keyword pages; the concepts commit's message
+says 105 — a miscount). Joost's rulings that day are in the table above.
+
+➡️ **NEXT, by tier, once he restarts the loop — he asked for the TIER 1 bugs next:**
+- TIER 1: D-READFLT (`READ` of `1.5`), D-RECAUTO (`GET #`/`PUT #` with no record
+  number), D-AMPB (`&B101` is Syntax error), D-FILESNL (cursor after `FILES`),
+  D-FILESBARE (`FILES " "` / `FILES "A:"`); D-CALLSYSTEM is TIER 1 latent
+  (measure first).
+- TIER 3: D-RESNEXTOVF (RESUME NEXT after Overflow skips the line's rest).
 - TIER 4, now autonomous: FCB #0 and the `eval` rewrite (both RAM usage, so before
   any TIER 5 item).
 - TIER 5, each a design session, cheapest-to-start first:
