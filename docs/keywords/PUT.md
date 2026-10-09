@@ -7,10 +7,10 @@ SPDX-License-Identifier: 0BSD
 # `PUT` — write a record to a random-access file (and `PUT SPRITE`)
 
 > **Status (2026-10-09):** `PUT` starts two statements: `PUT #`, documented
-> here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). Two recorded
-> differences for `PUT #`: **without a record number zerobas writes record 1,
-> where the CF-3300 writes the next record** (an open TIER 1 item), and record
-> numbers above 32767 (below).
+> here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). One recorded
+> difference for `PUT #`: record numbers above 32767 (below, an open TIER 6
+> item). A `PUT` without a record number writes the next record, as on the
+> CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -51,6 +51,9 @@ The `#` may be left out. The file must have been opened for random access:
 - **A fractional record number is truncated**: 2.7 is record 2.
 - **`LOC(1)` is the record number of the last `GET` or `PUT`**, and 0 straight
   after `OPEN`.
+- **Without a record number** `PUT` writes the record after the last one read
+  or written on that channel (`LOC` + 1), so `PUT #1` in a loop writes records
+  1, 2, 3, …
 
 ### Errors
 
@@ -94,11 +97,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
 
-- **A `PUT` without a record number** (D-RECAUTO, found 2026-10-09, open, a
-  TIER 1 item). The CF-3300 writes the record after the last one read or
-  written, so three bare `PUT #1` make records 1, 2 and 3 (`LOF` 24, `LOC` 3
-  at `LEN=8`). zerobas writes record 1 each time (`LOF` 8, `LOC` 1) — a
-  program that writes its records in order this way loses all but the last.
 - **Record numbers above 32767** (D-RECBIG, open, TIER 6). The CF-3300 takes
   the record number like an address, 0 to 65535: `PUT #1,32768` at `LEN=1`
   writes record 32768, and `PUT #1,-1` writes record 65535. zerobas says
@@ -108,6 +106,11 @@ All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
 
 ## What we found, and how
 
+- **A `PUT` without a record number always wrote record 1** (fixed
+  2026-10-09, D-RECAUTO), so a program writing its records in order kept only
+  the last; the CF-3300 writes the record after the last one read or written.
+  Found while writing these pages
+  ([`getput_run.out`](../../scratchpad/getput_run.out)).
 - **`PUT` on a channel that was not open was a `Syntax error`** (fixed
   2026-07-31, D-NOTOPEN2); it is now 59, 61 or 58 as on the CF-3300.
 - **With two random files open, `PUT` wrote one channel's record into the

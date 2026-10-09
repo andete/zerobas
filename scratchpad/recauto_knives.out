@@ -1,0 +1,6 @@
+  ROM f93506a2 f02cce78 3bb82f70 98e50f37  ->  5d8e61f5 f02cce78 3bb82f70 3e74f937
+PASS  K-RA1: moved ['gomit', 'mix', 'omit', 'openget'] (want exactly ['gomit', 'mix', 'omit', 'openget'])
+  ROM 5d8e61f5 f02cce78 3bb82f70 3e74f937  ->  2c644748 f02cce78 3bb82f70 76c5033d
+PASS  K-RA2: moved ['gomit', 'mix', 'omit', 'openget'] (want exactly ['gomit', 'mix', 'omit', 'openget'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

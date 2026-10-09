@@ -2280,6 +2280,12 @@ fcbhdr-acceptance: repack-machine $(DISK_TEST_DSK)
 readflt-acceptance: repack-machine
 	python3 probes/basic/basic_probe_readflt.py
 
+# --- recauto-acceptance: GET # / PUT # with no record number (D-RECAUTO) ------
+# A bare GET/PUT takes the NEXT record (LOC + 1) on the CF-3300; zerobas always
+# used record 1, so records written in order kept only the last.
+recauto-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_recauto.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

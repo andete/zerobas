@@ -7,9 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `GET` — read a record from a random-access file
 
 > **Status (2026-10-09):** `GET` has one statement, `GET #`, documented here.
-> One recorded difference, in everyday use: **without a record number zerobas
-> reads record 1, where the CF-3300 reads the next record** (below, an open
-> TIER 1 item).
+> One recorded difference: record numbers above 32767 (below, an open TIER 6
+> item). A `GET` without a record number reads the next record, as on the
+> CF-3300, since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -39,8 +39,9 @@ The `#` may be left out. The file must have been opened for random access:
 - **A fractional record number is truncated**: 2.7 is record 2.
 - **`LOC(1)` is the record number of the last `GET` or `PUT`** on the channel,
   and 0 straight after `OPEN`.
-- **Without a record number** the CF-3300 reads the record after the last one
-  read or written (`LOC` + 1); zerobas reads record 1 — see *Differences*.
+- **Without a record number** `GET` reads the record after the last one read
+  or written on that channel (`LOC` + 1): the first bare `GET` after `OPEN`
+  reads record 1. A `GET` refused past the end does not move it on.
 
 ### Errors
 
@@ -84,18 +85,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A `GET` without a record number** (D-RECAUTO, found 2026-10-09, open, a
-TIER 1 item). The CF-3300 keeps a current record per channel and reads the
-next one: after `PUT #1,1:PUT #1,2`, a bare `GET #1` asks for record 3 (here
-past the end, so error 55). zerobas always reads record 1
-([`getput_run.out`](../../scratchpad/getput_run.out)).
-
 **A record number above 32767** (D-RECBIG, open, TIER 6) is `Overflow` here;
 the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 [`PUT`](PUT.md).
 
 ## What we found, and how
 
+- **A `GET` without a record number always read record 1** (fixed
+  2026-10-09, D-RECAUTO): the CF-3300 reads the record after the last one read
+  or written. Found while writing these pages
+  ([`getput_run.out`](../../scratchpad/getput_run.out)).
 - **`GET` on a channel that was not open was a `Syntax error`** (fixed
   2026-07-31, D-NOTOPEN2); it is now 59, 61 or 58 as on the CF-3300.
 - **Record 0 only printed a message** (fixed 2026-09-09, D-GETREC); it is now

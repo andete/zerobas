@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31044 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31059 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29728,7 +29728,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       - File names longer than six characters: zerobas truncates; the
         references are unmeasured.
 
-- [ ] 🔴 **`GET #` / `PUT #` WITH NO RECORD NUMBER ALWAYS USE RECORD 1 HERE; THE CF-3300
+- [x] ✅ **FIXED 2026-10-09 (D-RECAUTO)** — 🔴 **`GET #` / `PUT #` WITH NO RECORD NUMBER ALWAYS USE RECORD 1 HERE; THE CF-3300
       TAKES THE NEXT RECORD (D-RECAUTO, found 2026-10-09 by the `GET`/`PUT` hub pages).**
       🎚️ TIER 1 — `PUT #n` / `GET #n` without a record number (writing or reading
       records in order)
@@ -29742,6 +29742,21 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`basic/field.asm`](basic/field.asm) uses record 1 when it is omitted and its
       header says the current record "is not tracked". A program that writes
       records with a bare `PUT #1` in a loop overwrites record 1 every time.
+      ✅ **FIXED 2026-10-09.** `gp_defrec` ([`basic/field.asm`](basic/field.asm))
+      loads FCH_RECNOS[chan] + 1 instead of 1 — the word LOC reads, 0 after OPEN,
+      written only by a GET/PUT that reached the record engine; the resident
+      GET-past-EOF refusal sits before that, so a refused GET leaves it, as the
+      reference leaves LOC (`gomit`). Resolved in MAIN because that refusal
+      reads the record number before the tenant runs. Main page 1 61 → 53 B
+      (predicted −8: hit). New gate `recauto-acceptance`
+      ([`disk_probe_recauto.py`](probes/disk/disk_probe_recauto.py),
+      [`recauto_gate.out`](scratchpad/recauto_gate.out)): 4/4 — `omit`, `gomit`,
+      and two rows measured first, `mix` (`PUT #1,5:PUT #1` → record 6) and
+      `openget` (reopen, two bare GETs → records 1, 2); predicted, hit.
+      🔪 [`recauto_knives.out`](scratchpad/recauto_knives.out): K-RA1 (the +1
+      cut) and K-RA2 (the old `ld de,1` back) → all four rows each, as predicted.
+      [`getput_after.out`](scratchpad/getput_after.out): `omit`/`gomit`/`frac`
+      agree; `big`/`neg` are D-RECBIG (below), unchanged.
 
 - [ ] 🔴 **`PUT #1,32768` IS `Overflow` HERE AND RECORD 32768 ON THE CF-3300 — A
       REGRESSION: BOTH AGREED ON 2026-09-10 (D-RECBIG, found 2026-10-09).**

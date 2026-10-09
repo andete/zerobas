@@ -7,8 +7,8 @@ SPDX-License-Identifier: 0BSD
 # Files and devices — numbered channels to the disk, the tape, the screen and the printer
 
 > **Status (2026-10-09):** every everyday channel operation agrees with the
-> references except one: `GET #` / `PUT #` without a record number always use
-> record 1 here (D-RECAUTO, TIER 1, open). Channel #0 is ruled to be built
+> references — `GET #` / `PUT #` without a record number take the next record
+> since 2026-10-09 (D-RECAUTO). Channel #0 is ruled to be built
 > (part of D-FCBSHAPE, TIER 4); the other recorded differences are TIER 6
 > edges. Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -154,11 +154,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **`GET #` / `PUT #` without a record number** (D-RECAUTO, found 2026-10-09,
-  open, TIER 1). The CF-3300 takes the record after the last one read or
-  written (`LOC` + 1): three bare `PUT #1` at `LEN=8` make a 24-byte file.
-  zerobas always uses record 1, so the same loop makes an 8-byte file holding
-  only the last record ([`getput_run.out`](../../scratchpad/getput_run.out)).
 - **Channel #0** (part of D-FCBSHAPE, TIER 4). `VARPTR(#0)` is an address on
   both references and `File not OPEN` (59) here: zerobas reserves no block
   for it. Joost ruled on 2026-10-09: *"build it"*, at 267 bytes of `FRE(0)`
@@ -185,6 +180,11 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **`GET #` / `PUT #` without a record number used record 1** (fixed
+  2026-10-09, D-RECAUTO): the CF-3300 takes the record after the last one
+  read or written (`LOC` + 1), so three bare `PUT #1` at `LEN=8` make a
+  24-byte file; zerobas made an 8-byte file holding only the last record
+  ([`getput_run.out`](../../scratchpad/getput_run.out)).
 - **The channel block was 306 bytes, then 265** (D-FCBSHAPE, 2026-09-30).
   `PEEK`ing around `VARPTR(#n)` on both references showed the 9-byte header
   and the pointer table; zerobas's 50 bytes of disk bookkeeping moved out of

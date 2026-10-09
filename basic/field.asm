@@ -71,9 +71,9 @@
 ;     FCH_RECLENS[ch] and NOT a constant 256 -- row r.mid FIELDs a width of 200
 ;     into a LEN=64 record and the CF-3300 refuses it, which no default-256 row
 ;     could ever separate (docs/spec-basic-fldwidth.md §6.5 addendum).
-;   * record numbers are 1..255 (file < 64 KB — the same 16-bit size ceiling the
-;     loader text path documents); bare GET/PUT (no record number) default to record
-;     1 — the auto-incrementing "current record" is not tracked.
+;   * record numbers: any int16 above 0 (D-PUTU32 lifted the old 1..255; numbers
+;     above 32767 are D-RECBIG, open); a bare GET/PUT (no record number) takes the
+;     NEXT record -- the channel's last one (LOC, FCH_RECNOS) + 1 (D-RECAUTO).
 ;   * sparse / out-of-order PUT (writing record M before some earlier record exists)
 ;     leaves the skipped records' bytes undefined; in-order writes are well-defined.
 
@@ -758,7 +758,7 @@ gp_nochan:
                                             ; previously stmt_error (ERR 2)
                 ld      a,e
                 ld      (GP_CHAN),a
-                ; optional ", recno" (else default record 1)
+                ; optional ", recno" (else the NEXT record: D-RECAUTO below)
                 call    skip_comma
                 jr      nz,gp_defrec
                 ; D-RECLENERR (2026-10-07): a string record number is Type
@@ -767,7 +767,25 @@ gp_nochan:
                 call    eval_int16_checked  ; DE = record number
                 jr      gp_haverec
 gp_defrec:
-                ld      de,1
+                ; ✅ D-RECAUTO (2026-10-09): NO RECORD NUMBER MEANS THE NEXT ONE.
+                ; The CF-3300 keeps a current record per channel: three bare
+                ; `PUT #1` write records 1, 2, 3 (LOF 24 at LEN=8), and after
+                ; `PUT #1,1:PUT #1,2` a bare `GET #1` asks for record 3
+                ; (scratchpad/getput_run.out). This read `ld de,1`, so a program
+                ; writing its records in order kept only the last. The number is
+                ; FCH_RECNOS[chan] + 1 -- the word LOC reads, 0 after OPEN, and
+                ; written only by a GET/PUT that reached the record engine, so a
+                ; GET refused past EOF (resident, below) leaves it as the
+                ; reference leaves LOC. D = 0 here: fch_check bounded the channel.
+                push    hl                  ; the text cursor
+                ld      hl,FCH_RECNOS
+                add     hl,de
+                add     hl,de               ; HL = &FCH_RECNOS[chan]
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)
+                inc     de                  ; the record after the last GET / PUT
+                pop     hl
 gp_haverec:
                 ld      (GP_RECNO),de
                 ; D-LOC: the per-channel copy of this number (FCH_RECNOS[GP_CHAN]) is

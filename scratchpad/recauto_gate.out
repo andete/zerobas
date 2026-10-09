@@ -1,0 +1,7 @@
+ROW omit CF=[ 24  3] ZB=[ 24  3] SAME
+ROW gomit CF=[ERR 55 IN 50 | TWO      2 | ERR 55 IN 60 | TWO      2] ZB=[ERR 55 IN 50 | TWO      2 | ERR 55 IN 60 | TWO      2] SAME
+ROW mix CF=[ 48  6] ZB=[ 48  6] SAME
+ROW openget CF=[ONE      1 | TWO      2] ZB=[ONE      1 | TWO      2] SAME
+
+PASS: GET # / PUT # without a record number (4/4)
+refcache: 0 hit, 8 miss, 8 stored
