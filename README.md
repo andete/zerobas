@@ -31,6 +31,12 @@ BSD-2 notice travels with the result. This is a legal firewall: a provenance
 challenge to zerobas can never contaminate the mature, uncontested BIOS it runs
 alongside.
 
+> 📖 **What does each BASIC keyword do, and how does zerobas compare with a real
+> MSX?** Start with the **[keyword pages](docs/keywords/README.md)**: one readable
+> page per keyword — what it does, an example (run on zerobas and on the
+> reference machine), every error, where zerobas still differs, and what was
+> found along the way.
+
 ## Two co-equal goals
 
 zerobas has **two deliverables, not one**: the clean-room **implementations**, and the
@@ -268,6 +274,10 @@ the way there:
   **diskless** one (checked against a Philips VG-8020), where the cassette is the
   default device as on a real cassette-only MSX.
 
+**For a person, each keyword has its own page: [`docs/keywords/`](docs/keywords/README.md)**
+— summary, syntax, an example checked on both machines, the errors, the
+differences from the reference and the history of what was found.
+
 **The live, per-keyword status is [`docs/tier-status.md`](docs/tier-status.md)**,
 generated from measurements (`make tiers-md`), never typed by hand. For every one of
 the 159 MSX1 reserved words it shows which rungs are proven: every form agrees with
@@ -279,9 +289,11 @@ errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
 
 - **Speed.** The interpreter is roughly 2.5–4× slower than the reference — inside
   the 10× "reasonable time" bar, but not on par yet.
-- **String space.** A string literal assigned in a program is still copied into
-  string space, where the reference points at the program text, so programs that
-  fill large string arrays from literals can run out of string space here only.
+- **Everyday cases found on 2026-10-09** (TIER 1, the next work): `READ` cannot
+  read a number with a decimal point or an exponent (`DATA 1.5`); `GET #` /
+  `PUT #` without a record number use record 1 instead of the next record; and
+  after `FILES` ends on a full row the cursor stays on that row. Each keyword's
+  page says so.
 - **RAM usage** is measured but not yet proven equal to the reference's.
 - **Rare error paths** — the long tail of unusual errors (TIER 6).
 - **MSX2 and later** are out of scope for now.
@@ -332,5 +344,6 @@ zerobas/
 ├── tests/                  # emulator-free unit tests (`make unit-test`)
 ├── tools/                  # build, patching, gate and measurement tools
 ├── docs/                   # specs, characterisations, tier-status.md
+│   └── keywords/           # one readable page per BASIC keyword — start here
 └── scratchpad/             # working evidence: probe outputs, knives, experiments
 ```

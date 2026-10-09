@@ -5,6 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Keyword pages
 
+← [zerobas](../../README.md)
+
 One page per BASIC keyword, written for a person: what the keyword does, how
 zerobas behaves, an example, where it differs from the reference machine, and
 what we found out about it along the way. The rest of `docs/` is mostly the
