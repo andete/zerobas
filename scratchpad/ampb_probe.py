@@ -16,6 +16,18 @@ CASES = {
     "prog": ["NEW", '10 PRINT "[";&B101;"]"', "20 A=&B11111111:PRINT A", "30 PRINT &B1+1", "RUN"],
     "direct": ['PRINT "[";&B101;"]"'],
     "big": ["NEW", '10 PRINT &B1111111111111111', "RUN"],
+    # round 2 (2026-10-09): the edges a fix must keep
+    "big17": ["NEW", "10 ON ERROR GOTO 90", '20 PRINT &B11111111111111111', "30 END",
+              '90 PRINT "ERR";ERR:END', "RUN"],
+    "nodig": ["NEW", "10 ON ERROR GOTO 90", '20 PRINT "[";&B;"]"', "30 END",
+              '90 PRINT "ERR";ERR:END', "RUN"],
+    "lower": ["NEW", '10 PRINT &b101', "RUN"],
+    "junk": ["NEW", "10 ON ERROR GOTO 90", '20 PRINT &B12', "30 END",
+             '90 PRINT "ERR";ERR:END', "RUN"],
+    "badx": ["NEW", "10 ON ERROR GOTO 90", '20 PRINT &X1', "30 END",
+             '90 PRINT "ERR";ERR:END', "RUN"],
+    "expr": ["NEW", '10 A=&B10*3:PRINT A;-&B101;&B1+&B1', "RUN"],
+    "list": ["NEW", '10 A=&B101', "LIST"],
 }
 
 

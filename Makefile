@@ -2286,6 +2286,12 @@ readflt-acceptance: repack-machine
 recauto-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_recauto.py
 
+# --- ampb-acceptance: `&B` binary numbers read when the line runs (D-AMPB) ----
+# `PRINT &B101` is 5 on the VG-8020 (the crunch keeps `&B…` as text there too);
+# it was Syntax error here. Value, bare `&B`, stop at a non-binary byte, Overflow.
+ampb-acceptance: repack-machine
+	python3 probes/basic/basic_probe_ampb.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

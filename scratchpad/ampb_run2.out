@@ -1,0 +1,11 @@
+✗  prog   VG-8020 [[ 5 ] |  255 |  2]  zerobas [[ | Syntax error in 10]
+✗  direct VG-8020 [[ 5 ]]  zerobas [[ | Syntax error]
+✗  big    VG-8020 [-1]  zerobas [Syntax error in 10]
+✗  big17  VG-8020 [ERR 6]  zerobas [ERR 2]
+✗  nodig  VG-8020 [[ 0 ]]  zerobas [[ERR 2]
+✗  lower  VG-8020 [ 5]  zerobas [Syntax error in 10]
+✗  junk   VG-8020 [ 1  2]  zerobas [ERR 2]
+== badx   VG-8020 [ERR 2]  zerobas [ERR 2]
+✗  expr   VG-8020 [ 6 -5  2]  zerobas [Syntax error in 10]
+== list   VG-8020 [10 A=&B101]  zerobas [10 A=&B101]
+refcache: 3 hit, 17 miss, 17 stored

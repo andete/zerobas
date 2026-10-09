@@ -1,0 +1,13 @@
+ROW prog VG=[[ 5 ] |  255 |  2] ZB=[[ 5 ] |  255 |  2] SAME
+ROW direct VG=[[ 5 ]] ZB=[[ 5 ]] SAME
+ROW big VG=[-1] ZB=[-1] SAME
+ROW big17 VG=[ERR 6] ZB=[ERR 6] SAME
+ROW nodig VG=[[ 0 ]] ZB=[[ 0 ]] SAME
+ROW lower VG=[ 5] ZB=[ 5] SAME
+ROW junk VG=[ 1  2] ZB=[ 1  2] SAME
+ROW badx VG=[ERR 2] ZB=[ERR 2] SAME
+ROW expr VG=[ 6 -5  2] ZB=[ 6 -5  2] SAME
+ROW list VG=[10 A=&B101] ZB=[10 A=&B101] SAME
+
+PASS: &B binary numbers (10/10)
+refcache: 10 hit, 10 miss, 10 stored

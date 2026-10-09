@@ -1,0 +1,6 @@
+  ROM 2ef040d6 20719286 cf21b2ce 4cbf2fd3  ->  39b60f7f 20719286 cf21b2ce 1ca717a4
+PASS  K-AB1: moved ['big17'] (want exactly ['big17'])
+  ROM 39b60f7f 20719286 cf21b2ce 1ca717a4  ->  12637a80 20719286 cf21b2ce 7efbd2ec
+PASS  K-AB2: moved ['big', 'big17', 'direct', 'expr', 'junk', 'lower', 'nodig', 'prog'] (want exactly ['big', 'big17', 'direct', 'expr', 'junk', 'lower', 'nodig', 'prog'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

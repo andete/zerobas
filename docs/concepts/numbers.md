@@ -9,8 +9,7 @@ SPDX-License-Identifier: 0BSD
 > **Status (2026-10-09):** number types, literals, arithmetic, conversions and
 > printed output agree with the VG-8020 in every measured case, apart from
 > deliberate last-digit differences where zerobas is the more accurate side
-> (long divisors, `SQR` and the other maths functions). Open: an `&B` number in
-> a program is `Syntax error` here (D-AMPB, TIER 1), `RESUME NEXT` after an
+> (long divisors, `SQR` and the other maths functions). Open: `RESUME NEXT` after an
 > `Overflow` (D-RESNEXTOVF, TIER 3, below) and `TAN(1E38)` (TIER 6).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -75,9 +74,11 @@ excluded, trailing zeros included):
   as negative (`&HD000` is −12288).
 - **`&B` is not a token on MSX1**: `&B101` in a program line is stored as the
   typed characters on both machines — but the VG-8020 reads it when the line
-  runs (`PRINT &B101` is 5, `&B1111111111111111` is −1) and zerobas says
-  `Syntax error` (D-AMPB, open, TIER 1;
-  [`ampb_run.out`](../../scratchpad/ampb_run.out)). `VAL("&B101")` is 5 on
+  runs, on both machines since 2026-10-09: `PRINT &B101` is 5,
+  `&B1111111111111111` is −1, a bare `&B` is 0, the number stops at the first
+  character that is not 0 or 1 (`PRINT &B12` prints 1 and 2), and a
+  seventeenth significant digit is `Overflow`
+  ([`ampb_after.out`](../../scratchpad/ampb_after.out)). `VAL("&B101")` is 5 on
   both, and so is `&B101` read from `DATA`.
 - **Out of range**: `1E63` and `65535%` are `Overflow` (error 6) before
   anything on the typed line runs; `1E-65` silently becomes 0. A suffix after
@@ -203,6 +204,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **`&B` binary numbers were `Syntax error`** (fixed 2026-10-09, D-AMPB).
+  Both machines keep `&B101` as the typed characters in a program line; the
+  VG-8020 reads them when the line runs, and zerobas never had. Found while
+  writing these pages.
 - **The default type is double, and single is only a storage format**
   (2026-07-11/12): `A=1/3` and even `2!/3!` print fourteen digits on the
   VG-8020 ([spec-basic-float-core.md](../spec-basic-float-core.md) §10.1, §11.1).

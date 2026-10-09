@@ -1,0 +1,11 @@
+== prog   VG-8020 [[ 5 ] |  255 |  2]  zerobas [[ 5 ] |  255 |  2]
+== direct VG-8020 [[ 5 ]]  zerobas [[ 5 ]]
+== big    VG-8020 [-1]  zerobas [-1]
+== big17  VG-8020 [ERR 6]  zerobas [ERR 6]
+== nodig  VG-8020 [[ 0 ]]  zerobas [[ 0 ]]
+== lower  VG-8020 [ 5]  zerobas [ 5]
+== junk   VG-8020 [ 1  2]  zerobas [ 1  2]
+== badx   VG-8020 [ERR 2]  zerobas [ERR 2]
+== expr   VG-8020 [ 6 -5  2]  zerobas [ 6 -5  2]
+== list   VG-8020 [10 A=&B101]  zerobas [10 A=&B101]
+refcache: 10 hit, 10 miss, 10 stored

@@ -1041,6 +1041,38 @@ ev_ff_asc:
                 ld      d,(hl)              ; DE = ptr (the body address)
                 ld      a,(de)              ; first byte of the body
                 jp      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
+; ✅ D-AMPB (2026-10-09): `&B` BINARY. Both references crunch `&B101` as the
+; typed characters (no token -- basic/PROVENANCE.md "&O / &B"), and the
+; VG-8020 then READS them when the line runs: `PRINT &B101` 5,
+; `&B1111111111111111` -1, `&b101` 5, a bare `&B` 0, and the number stops at the
+; first byte that is not 0/1 (`PRINT &B12` prints 1 and 2); a seventeenth
+; significant digit is Overflow (scratchpad/ampb_run2.out). zerobas called all
+; of it Syntax error. `&` + anything else keeps today's path (`&X1` is 2 on
+; both). Sited here, beside VAL, in the LOW region: main page 1 had
+; 53 B and this is 37 (the dispatch in ev_f_nonlet is 5).
+evnl_amp:
+                ld      a,(ix+1)
+                cp      'B'                 ; (the crunch uppercases `&b`: knife
+                                            ; K-AB3 showed a case fold here was dead)
+                jp      nz,evnl_miss        ; not &B: as before (expr.asm)
+                inc     ix                  ; on the B
+                ld      de,0
+evnl_blp:
+                inc     ix
+                ld      a,(ix+0)
+                sub     '0'
+                cp      2
+                ret     nc                  ; DE = the value, IX past the digits
+                ex      de,hl
+                add     hl,hl               ; a 1 shifted out of bit 15 ->
+                ex      de,hl
+                jr      c,evnl_bovf         ; Overflow, as on the VG-8020
+                or      e
+                ld      e,a
+                jr      evnl_blp
+evnl_bovf:
+                ld      e,1                 ; FPERR 1 -> ERR 6 (VAL's own idiom)
+                jp      ev_f_defer
 ev_ff_val:
                 call    ev_str_arg          ; STRPTR -> the string-arg descriptor;
                                             ; IX advanced past ')'

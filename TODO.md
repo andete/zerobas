@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31059 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31076 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29645,7 +29645,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rewind) → again — each exactly, as predicted. D-READOVF and D-READINTOVF
       (below) close with it: they were this cause's two faces.
 
-- [ ] 🔴 **`&B` BINARY NUMBERS ARE `Syntax error` HERE — `PRINT &B101` IS 5 ON THE VG-8020
+- [x] ✅ **FIXED 2026-10-09 (D-AMPB)** — 🔴 **`&B` BINARY NUMBERS ARE `Syntax error` HERE — `PRINT &B101` IS 5 ON THE VG-8020
       (D-AMPB, found 2026-10-09 by the numbers concept page).**
       🎚️ TIER 1 — `&B` literals in a program or at the prompt
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -29659,6 +29659,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the reference then READS that text when the line runs, and zerobas's
       evaluator does not. VAL already parses `&B` (D-VALBASE, `sh_val_parse`):
       reuse it ("rule 3: no second parser") rather than a new scanner.
+      ✅ **FIXED 2026-10-09 — NOT via VAL after all.** Measured first
+      ([`ampb_run2.out`](scratchpad/ampb_run2.out)): a bare `&B` is 0, the number
+      STOPS at the first byte that is not 0/1 (`PRINT &B12` prints 1 and 2 — the
+      2 is PRINT's next item), a 17th significant digit is Overflow, `&X1` stays
+      2, LIST is unchanged; I had predicted `&B12` = Syntax error: MISSED. VAL's
+      parser works on a string descriptor; the text is in the program, so a
+      12-instruction binary loop was smaller than building a descriptor:
+      `evnl_amp` ([`basic/str-engine.asm`](basic/str-engine.asm), beside VAL, in
+      the LOW region), reached from `ev_f_nonlet` (basic/expr.asm) on a `&`;
+      a 1 shifted out of bit 15 defers Overflow (FPERR 1, VAL's idiom). Placed
+      low because page 1 would have gone 53 → 11 B (predicted −35, was −42:
+      MISSED by 7); now low 55 → 16, page 1 53 → 48. Gate `ampb-acceptance`
+      ([`basic_probe_ampb.py`](probes/basic/basic_probe_ampb.py)): 10/10,
+      predicted. 🔪 [`ampb_knives.out`](scratchpad/ampb_knives.out): K-AB1 (the
+      Overflow check) → big17, K-AB2 (the `&` dispatch) → the eight value rows —
+      each exactly; K-AB3 (my lowercase fold) MOVED NOTHING: the crunch
+      uppercases `&b`, so the fold was dead code and is gone (−2 B).
 
 - [ ] 🔴 **`RESUME NEXT` AFTER A TRAPPED `Overflow` SKIPS THE REST OF THE LINE (D-RESNEXTOVF,
       found 2026-10-09 by the numbers concept page).**
