@@ -1,0 +1,10 @@
+ROW blank CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[ERR 56] DIVERGES
+ROW empty CF=[ERR 56] ZB=[ERR 56] SAME
+ROW drv CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[ERR 56] DIVERGES
+ROW drvlow CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[ERR 56] DIVERGES
+ROW drvsp CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[ERR 56] DIVERGES
+ROW baddrv CF=[ERR 62] ZB=[ERR 62] SAME
+ROW pat CF=[HI      .TXT | [OK]] ZB=[HI      .TXT | [OK]] SAME
+
+FAIL: FILES with a blank or drive-only pattern (3/7)
+refcache: 0 hit, 14 miss, 14 stored

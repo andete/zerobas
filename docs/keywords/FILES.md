@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `FILES` — list the files on the disk
 
-> **Status (2026-10-09):** level 0 — one happy-path difference, an open TIER 1
-> item: a blank or drive-only pattern (below) · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Where the cursor stands
-> after the listing matches the CF-3300 since 2026-10-09.
+> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence: the
+> two happy-path differences found on 2026-10-09 (the cursor after the listing,
+> a blank or drive-only pattern) were fixed the same day.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -88,14 +88,18 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A blank or drive-only pattern.** `FILES " "` and `FILES "A:"` list the
-whole disk on the CF-3300 and are `Bad file name` on zerobas (D-FILESBARE,
-open, TIER 1; first found 2026-09-05).
+None known.
 
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A blank or drive-only pattern was `Bad file name`** (fixed 2026-10-09,
+  D-FILESBARE). `FILES " "`, `FILES "A:"`, `"a:"` and `"A: "` list the whole
+  disk on the CF-3300; `FILES ""` is `Bad file name` there too, and
+  `FILES "Q:"` is `Bad drive name`. First seen on 2026-09-05 and set aside for
+  lack of ROM space at the time
+  ([`filesbare_after.out`](../../scratchpad/filesbare_after.out)).
 - **The cursor after the listing was in the wrong place** (fixed 2026-10-09,
   D-FILESNL). The CF-3300 ends a full row of names at once and starts the
   listing on a fresh row, so `PRINT` after `FILES` begins on its own line;

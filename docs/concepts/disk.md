@@ -7,8 +7,7 @@ SPDX-License-Identifier: 0BSD
 # Disk BASIC — files on a 720 KB floppy, one drive
 
 > **Status (2026-10-09):** the disk statements agree with the National CF-3300
-> in the forms measured, except one open TIER 1 item in everyday use: a blank
-> or drive-only `FILES` pattern (D-FILESBARE). There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
+> in the forms measured. There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
 > built); the SHIFT/CTRL boot keys are unmeasured (D-BOOTKEYS, TIER 4).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -168,8 +167,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **`FILES " "` and `FILES "A:"`** (D-FILESBARE, TIER 1) list the disk on the
-  CF-3300 and are `Bad file name` here.
 - **No logical drive B:** (D-DSKIB, TIER 6): `DSKF(2)` answers drive A's
   count, `DSKI$(2,0)` is `Bad drive name`, a `"B:"` name means `A:`. One
   physical drive stays (Joost, 2026-06-22); the prompt comes (ruled

@@ -1,0 +1,10 @@
+ROW blank CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] SAME
+ROW empty CF=[ERR 56] ZB=[ERR 56] SAME
+ROW drv CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] SAME
+ROW drvlow CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] SAME
+ROW drvsp CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | [OK]] SAME
+ROW baddrv CF=[ERR 62] ZB=[ERR 62] SAME
+ROW pat CF=[HI      .TXT | [OK]] ZB=[HI      .TXT | [OK]] SAME
+
+PASS: FILES with a blank or drive-only pattern (7/7)
+refcache: 0 hit, 14 miss, 14 stored

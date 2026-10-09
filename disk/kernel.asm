@@ -1081,6 +1081,51 @@ hfm_fail:
 ; ⚠️ NOT dout_open's 256 B record writer: that needs a channel row and a
 ; 265 B block, and SAVE ,A has neither -- the reference's #0 buffer would cost
 ; 267 B of FRE(0) here. The sequential writer needs no RAM of its own.
+; hkf_pat -- D-FILESBARE (2026-10-09): FILES's pattern, or NONE. A non-empty
+; pattern holding only blanks and an optional `A:` / `B:` lists the WHOLE disk on
+; the CF-3300 -- `FILES " "`, `FILES "A:"`, `"a:"`, `"A: "` -- where the shared
+; name builder (pdfcb) answered Bad file name; the empty string `FILES ""` IS 56
+; there, and `"Q:"` is 62 (probes/disk/disk_probe_filesbare.py). Found 2026-09-05
+; (namspc m.blank / m.drvbare) and deferred for MAIN bytes; FILES has lived in
+; this ROM since D-DISKVERB4, and the builder's own rejection stays right for
+; KILL / LOAD / SAVE (m.drvkill / m.drvload / m.drvsave). Sited in the fill: the
+; FILES region is pinned full. in: STRSCR+1 = the staged pattern, '"'-ended.
+; out: FILES_HASPAT 0 (list all) or 1 with DISK_FCB_NAME built.
+hkf_pat:
+                ld      hl,STRSCR+1
+                ld      a,(hl)
+                cp      '"'
+                jr      z,hkp_name          ; "" -> the builder's 56, as there
+                call    hkp_sp              ; leading blanks; A = (HL)
+                and     $DF                 ; upper-case a letter
+                cp      'A'
+                jr      z,hkp_drv
+                cp      'B'
+                jr      nz,hkp_end
+hkp_drv:
+                inc     hl
+                ld      a,(hl)
+                cp      ':'
+                jr      nz,hkp_name         ; `AB.TXT`: a name, not a drive
+                inc     hl
+                call    hkp_sp
+hkp_end:
+                ld      a,(hl)
+                cp      '"'
+                ret     z                   ; nothing left: list it all (HASPAT 0)
+hkp_name:
+                ld      ix,pdfcb_resume
+                call    calbak              ; -> DISK_FCB_NAME (8.3 wildcard)
+                ld      a,1
+                ld      (FILES_HASPAT),a
+                ret
+hkp_sp:                                     ; out: A = (HL), the first non-blank
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+                inc     hl
+                jr      hkp_sp
+
 ; df_first -- D-FILESNL (2026-10-09), the second rule: the SCREEN listing
 ; STARTS on a fresh row. After `PRINT "AB";` the CF-3300 puts the first name
 ; under AB, not beside it; zerobas fitted it on the row
@@ -1173,7 +1218,7 @@ hk_chclose_e:
 hk_fapp:
                 ei
                 call    dout_open
-                jr      c, hfm_fail
+                jp      c, hfm_fail         ; jp: D-FILESBARE's hkf_pat moved it
                 ld      hl, DISK_FCB_NAME
                 call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
                 jr      nc, hfa_found
@@ -4745,10 +4790,7 @@ hkf_chk:
                 jr      z,hkf_run           ; `FILES:...` -> ditto
                 ld      ix,fname_expr
                 call    calbak              ; an EXPRESSION; may RAISE (ERR 13)
-                ld      ix,pdfcb_resume
-                call    calbak              ; -> DISK_FCB_NAME (8.3 wildcard)
-                ld      a,1
-                ld      (FILES_HASPAT),a
+                call    hkf_pat             ; D-FILESBARE: the name, or none (the fill)
 hkf_run:
                 pop     af                  ; the selector, asserted only now
                 ld      (DISKOP_OP),a       ; op AND sink AND layout, all three

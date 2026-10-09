@@ -2298,6 +2298,12 @@ ampb-acceptance: repack-machine
 filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_filesnl.py
 
+# --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
+# `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
+# 56 and `"Q:"` 62 there too.
+filesbare-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_filesbare.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

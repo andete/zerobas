@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31094 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31112 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29701,7 +29701,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       so the next statement boundary dispatches; the reference apparently waits
       (for the next interrupt?). Pin it with a frame-accurate row before changing.
 
-- [ ] 🔴 **`FILES " "` AND `FILES "A:"` LIST THE DISK ON THE CF-3300 AND ARE `Bad file name`
+- [x] ✅ **FIXED 2026-10-09 (D-FILESBARE)** — 🔴 **`FILES " "` AND `FILES "A:"` LIST THE DISK ON THE CF-3300 AND ARE `Bad file name`
       HERE (D-FILESBARE — found 2026-09-05 as `m.blank` / `m.drvbare`, recorded only
       inside a closed item; re-filed 2026-10-09).**
       🎚️ TIER 1 — `FILES` with a blank or drive-only filespec
@@ -29712,6 +29712,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       rejection `m.drvkill` / `m.drvload` / `m.drvsave` pin as correct. It was
       deferred on 2026-09-05 for main-ROM bytes; `FILES` has since moved to
       disk.rom's hooks — re-price before assuming a carve.
+      ✅ **FIXED 2026-10-09 — no carve: FILES is disk.rom's (`hk_files`).**
+      Measured first ([`filesbare_before.out`](scratchpad/filesbare_before.out)):
+      `" "`, `"A:"`, `"a:"`, `"A: "` list the whole disk on the CF-3300; `""` is
+      56 there too (I had predicted a listing: MISSED); `"Q:"` 62; `"HI.*"`
+      agrees. `hkf_pat` (disk/kernel.asm, in the fill — the FILES region is
+      pinned full) takes the name builder's call out of `hk_files`: a non-empty
+      pattern of blanks and an optional `A:`/`B:` leaves FILES_HASPAT 0 (list
+      all), anything else goes to pdfcb as before. The shared builder is
+      untouched — namspc's m.drvkill / m.drvload / m.drvsave stayed green, and
+      its m.blank / m.drvbare deferrals GRADUATED (their pinned faces rotted,
+      as predicted; now scored rows,
+      [`filesbare_namspc2.out`](scratchpad/filesbare_namspc2.out)). hk_fapp's
+      `jr c,hfm_fail` became `jp` (out of range with hkf_pat in between). Gate
+      `filesbare-acceptance` ([`disk_probe_filesbare.py`](probes/disk/disk_probe_filesbare.py),
+      [`filesbare_after.out`](scratchpad/filesbare_after.out)): 7/7, predicted.
+      🔪 [`filesbare_knives.out`](scratchpad/filesbare_knives.out): K-FB1 (the
+      list-all return) → blank, drv, drvlow, drvsp; K-FB2 (no drive recognised)
+      → drv, drvlow, drvsp — each exactly. `"B:"` lists drive A here (D-DSKIB).
 
 - [ ] 🔴 **`CALL SYSTEM` IS `Syntax error` HERE; THE CF-3300's ANSWER IS UNMEASURED
       (D-CALLSYSTEM, found 2026-10-09 by the MSX-DOS concept page).**

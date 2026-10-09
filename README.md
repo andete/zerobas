@@ -293,12 +293,10 @@ errors match (T3), its RAM use (T4), its speed ratio (T5) and its full error set
 
 - **Speed.** The interpreter is roughly 2.5–4× slower than the reference — inside
   the 10× "reasonable time" bar, but not on par yet.
-- **Everyday cases found on 2026-10-09** (TIER 1, the work in hand):
-  `FILES " "` / `FILES "A:"`
-  are refused. (`READ` of a number like `1.5`, `GET #` / `PUT #` without a
-  record number, `&B` binary numbers and the cursor after `FILES`, found the
-  same day, are fixed.) Each
-  keyword's page says so.
+- **Everyday cases found on 2026-10-09** — `READ` of a number like `1.5`,
+  `GET #` / `PUT #` without a record number, `&B` binary numbers, the cursor
+  after `FILES`, and `FILES " "` / `FILES "A:"` — are all fixed the same day.
+  (`CALL SYSTEM`, the way into MSX-DOS, is still to be measured.)
 - **RAM usage** is measured but not yet proven equal to the reference's.
 - **Rare error paths** — the long tail of unusual errors (TIER 6).
 - **MSX2 and later** are out of scope for now.

@@ -1,0 +1,6 @@
+  ROM 2ef040d6 20719286 1b899281 4cbf2fd3  ->  2ef040d6 20719286 ad257a58 4cbf2fd3
+PASS  K-FB1: moved ['blank', 'drv', 'drvlow', 'drvsp'] (want exactly ['blank', 'drv', 'drvlow', 'drvsp'])
+  ROM 2ef040d6 20719286 ad257a58 4cbf2fd3  ->  2ef040d6 20719286 932968c2 4cbf2fd3
+PASS  K-FB2: moved ['drv', 'drvlow', 'drvsp'] (want exactly ['drv', 'drvlow', 'drvsp'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

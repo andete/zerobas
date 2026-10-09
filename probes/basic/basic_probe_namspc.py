@@ -944,14 +944,10 @@ DEFERRED: dict[str, "probe_report.Deferral"] = {
     # (m.drvkill/m.drvload/m.drvsave, scored). So the empty-name rejection is
     # right for every verb that has no bare form, and the fix must go in
     # `do_files` -- those three rows are what would catch it going anywhere else.
-    "m.blank": probe_report.Deferral(
-        "D-FSPEC: a BLANK filespec is `no filespec` there (lists all); a do_files question",
-        vg8020="<NO DISK ON THIS SIDE>", cf3300="6 entries + OK",
-        zb="0 entries + <Bad file name>"),
-    "m.drvbare": probe_report.Deferral(
-        "D-FSPECCHAR: a DRIVE-PREFIX-ONLY filespec is the same class as m.blank -- `no filespec` there (lists all); the other verbs are measured and AGREE (m.drvkill/load/save), so the fix is in do_files, NOT in bn_done's empty-name test",
-        vg8020="<NO DISK ON THIS SIDE>", cf3300="6 entries + OK",
-        zb="0 entries + <Bad file name>"),
+    # ✅ m.blank and m.drvbare GRADUATED 2026-10-09 (D-FILESBARE): FILES now
+    # lists the disk for a blank or drive-only pattern, in disk.rom's hk_files
+    # (hkf_pat) -- NOT in the shared builder, and m.drvkill / m.drvload /
+    # m.drvsave stayed green to show it. Both are scored rows now.
 }
 
 # ✅ ALL EIGHT D-FNARG2 ROWS GRADUATED 2026-08-21 (D-FNEXPR2) and are ORDINARY
