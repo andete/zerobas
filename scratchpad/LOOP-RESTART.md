@@ -20,10 +20,20 @@ commit: the stale-pin tier sheet D-PINSTALE then fixed.
 **Walls (2026-10-09): main low 55 B, page 1 87 B; sub p1 178 B; disk ~4415 B.**
 Recount before quoting.
 
-➡️ **NEXT, by tier -- every open item is now either JOOST'S or a DESIGNED SLICE:**
-- 🙋 **Joost** (recorded in the items; do not re-ask): S10.C's tier (TIER 2; the
-  input rules live in the page-1 SEQIO tenant, which cannot CALLF `$FE8A`), FCB #0
-  (267 B of FRE(0)), COPY TO, DIM.
+🏗️ **JOOST RULED ALL FOUR OPEN QUESTIONS (2026-10-09, after the hand-off). Recorded
+in each item; DO NOT RE-ASK. He also said: "don't start on anything yet" -- the loop
+stays paused until he restarts it.**
+
+| item | ruling |
+|---|---|
+| S10.C's tier (disk INPUT# into disk.rom) | **"defer to later"** -- out of the queue; done with the ownership work S10.D/E |
+| FCB #0 (`VARPTR(#0)`, 267 B of `FRE(0)`) | **"build it"** -- 🤖 under D-FCBSHAPE (TIER 4); re-pin every FRE baseline in the same commit |
+| D-COPYWILD multi-match COPY | **"stay error 5 for now"** -- parked, nothing autonomous left |
+| D-DIMRESERVE / `eval`'s precedence rewrite | **"yes, we need to match reference there"** -- 🤖 TIER 4: an expression at the DIM edge fits the reference's ~79 B stack; then lower the reserve. Shared code: FULL, price main first |
+
+➡️ **NEXT, by tier, once he restarts the loop:**
+- TIER 4, now autonomous: FCB #0 and the `eval` rewrite (both RAM usage, so before
+  any TIER 5 item).
 - TIER 5, each a design session, cheapest-to-start first:
   1. **The WRITE CACHE** that serves both D-BLKIOPERCALL (WRBLK, 6.6x) and PUT
      (3.3x): the reference writes each data sector ONCE (when the next op needs

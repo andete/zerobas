@@ -500,8 +500,11 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
       ⚠️ **THE TIER TAG IS STALE (2026-10-01):** `LOAD` is T2✓ on the sheet; what is
       left here, step 10, is the ownership move, not LOAD's speed.
-      🙋 **TIER QUESTION FOR JOOST (2026-10-08) -- and S10.C IS BIGGER THAN ITS
-      PLAN SAID.** Mapped before building: a disk channel's INPUT text rules (the
+      ✅ **RULED (Joost, 2026-10-09): "defer to later".** S10.C leaves the
+      autonomous queue: it is done with the ownership work (S10.D/E), not at
+      TIER 2 now. Do not re-ask; do not pick it up until that work starts.
+      ~~🙋 **TIER QUESTION FOR JOOST (2026-10-08)**~~ -- and S10.C IS BIGGER THAN ITS
+      PLAN SAID. Mapped before building: a disk channel's INPUT text rules (the
       Ctrl-Z end, the numeric item's PEEK, EOF) live in the sub-ROM SEQIO tenant
       (basic/input.asm `seq_call`, SUBROM_IDX_SEQIO). That tenant runs in PAGE 1,
       and `$FE8A` is a CALLF into disk.rom, ALSO page 1 -- a page-1 tenant cannot
@@ -6345,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30631 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30652 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6511,7 +6514,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11346 (T-6FE392)8 (T-529ABE)` from `TODO.md:24094 (T-529ABE)`: a
+      `TODO.md:11349 (T-6FE392)8 (T-529ABE)` from `TODO.md:24101 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12193,7 +12196,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24101 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17610,10 +17613,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
         following `EOF(1)` ADVANCES it (43 → 44): EOF reads one byte ahead. Ours
         reads 0 throughout. Not built: a write on every byte in the SEQIO path
         (plus EOF's look-ahead) for a value only `PEEK(VARPTR(#n)+6)` sees.
-        🙋 **FCB #0 IS A RAM-BUDGET QUESTION FOR JOOST, NOT A FIX:** reserving it
+        ~~🙋 **FCB #0 IS A RAM-BUDGET QUESTION FOR JOOST, NOT A FIX:**~~ reserving it
         costs every program 267 B of `FRE(0)` (the references pay it too, inside
         their baseline) and moves every FRE row's baseline here; `VARPTR(#0)`
-        is its only visible face. Build it, or record ERR 59 as the divergence?
+        is its only visible face. ~~Build it, or record ERR 59 as the divergence?~~
+        ✅ **RULED (Joost, 2026-10-09): "build it".** 🤖 AUTONOMOUS now: reserve
+        FCB #0 so `VARPTR(#0)` returns an address as on both references; re-pin
+        every FRE row's baseline in the same commit (the 267 B is expected, not
+        a regression). Do not re-ask.
       - **FCB #0** (the LOAD/SAVE channel): `VARPTR(#0)` is an address on both
         references and ERR 59 here, because this tree reserves no FCB #0.
       - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,
@@ -26534,8 +26541,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows).**
       🎚️ TIER 4 — RAM usage (VG-8020): economy at the memory edge
       ~~🤖 **AUTONOMOUS** — measure the reference's exact edge, then set the reserve
-      from zerobas's measured need (as D-PAINTSP did for PAINT).~~ Measured; now
-      🙋 at the end of this block (2026-09-29).
+      from zerobas's measured need (as D-PAINTSP did for PAINT).~~ Measured; ~~now
+      🙋 at the end of this block (2026-09-29)~~ — 🤖 **AUTONOMOUS since Joost's
+      ruling of 2026-10-09** (at the end of this block): match the reference.
       `CLEAR 200:X=INT((FRE(0)-K)/8):DIM A(X)` completes on the VG-8020 for K
       down to ~145 and raises `Out of memory in 10` on zerobas already at K=260:
       the pool keeps `CTL_STACK_MARGIN` (256) clear below SP for ANY statement.
@@ -26606,11 +26614,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       precedence only when it meets an operator (one frame per nesting level, not
       eighteen) would give back ~34 B per expression entry. That is also a
       stack-economy (goal (c)) and speed (TIER 5) lever for every keyword.
-      🙋 **NEEDS-JOOST — a rewrite of `eval`'s precedence levels in main** (the
-      most-shared code in the tree, main at 0 B). A table-driven climber may come
+      ~~🙋 **NEEDS-JOOST — a rewrite of `eval`'s precedence levels in main**~~ (the
+      most-shared code in the tree). A table-driven climber may come
       out SMALLER than twelve hand-written level loops, but that is a prediction,
       not a measurement. Under the RAM rung's own rule an adjustment it proposes
       comes back to him. The DIM reserve itself stays at 256 until then.
+      ✅ **RULED (Joost, 2026-10-09): "yes, we need to match reference there".**
+      🤖 **AUTONOMOUS** — rewrite `eval`'s precedence handling so an expression
+      after an edge DIM fits in the reference's stack (~79 B, not ours ~147 B),
+      then lower the DIM reserve to match the VG-8020's edge (~145 B free).
+      Shared code: FULL battery, and price it against main's combined wall
+      first (the "smaller" claim is a prediction). Do not re-ask.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
@@ -27644,8 +27658,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **`COPY "A*.TXT" TO "C*.TXT"` IS `Illegal function call` HERE (D-COPYWILD,
       found 2026-09-28).**
       🎚️ TIER 3 — a wildcard COPY is the ordinary way to copy a set of files.
-      🙋 **NEEDS-JOOST** — the autonomous half (one match, no match, the destination
-      fill) SHIPPED 2026-09-28; only the multi-match ruling (➡️ at the end) is left.
+      ~~🙋 **NEEDS-JOOST**~~ — the autonomous half (one match, no match, the destination
+      fill) SHIPPED 2026-09-28; ~~only the multi-match ruling (➡️ at the end) is left.~~
+      🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
+      multi-match case keeps raising 5; nothing autonomous is left. Re-opens only
+      when Joost revisits it.
       📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
         (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
@@ -27682,8 +27699,12 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       kernel.asm (disk ROM `6af04b37` → `d410d692`, restored) turns exactly those
       four RED — `c.fill`'s error FACE even reads OK under the knife, and only the
       byte check catches the literal `X???.BIN` ([`copywild_knife.out`](scratchpad/copywild_knife.out)).
-      🙋 **WHAT REMAINS IS ONLY THE RULING BELOW** — two or more matches (5 today).
-      ➡️ **FOR JOOST:** faithfulness would mean copying the reference's HANG for
+      ✅ **RULED (Joost, 2026-10-09): "stay error 5 for now".** Two or more
+      matches keep raising `Illegal function call` (5); not copying them all,
+      not matching the hang. "For now" -- a later ruling may revisit it; do not
+      re-ask meanwhile. The item stays open only as that recorded divergence.
+      ~~🙋 **WHAT REMAINS IS ONLY THE RULING BELOW** — two or more matches (5 today).~~
+      ➡️ **WAS FOR JOOST:** faithfulness would mean copying the reference's HANG for
       two or more matches. The autonomous part is the single-match copy (dest
       `?`/`*` filled from the source name) and the no-match 53; what to do for
       several matches — refuse (5, today), copy them all, or match the hang — is
