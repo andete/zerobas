@@ -25,6 +25,7 @@ DSPFNK          equ     $00CF   ; display the function-key line (KEY ON)
 CSRX            equ     $F3DD   ; cursor column (1-based); C-BIOS sysvars / PRINT comma zones
 CSRY            equ     $F3DC   ; cursor row (1-based); the CSRLIN pseudo-variable reads it
 CRTCNT          equ     $F3B1   ; number of text rows on the screen (MSX work area; D-SCREDIT)
+SCNCNT          equ     $F3F6   ; key-scan countdown: the interrupt scans the keyboard when it reaches 0 (MSX work area; D-BOOTSCAN)
 NAMBAS          equ     $F922   ; name-table base of the current text mode (MSX work area; D-SCREDIT)
 LINTTB          equ     $FBB2   ; per-row continuation table, one byte per row: 0 = the row
                                 ; continues onto the next (MSX work area; D-SCREDIT measured that

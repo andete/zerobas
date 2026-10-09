@@ -178,6 +178,13 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Keys typed in the first seconds after power-on were lost** (fixed
+  2026-10-09, D-BOOTSCAN, reported by Joost). The interrupt scans the keyboard
+  only when a countdown cell (`SCNCNT`, `&HF3F6`) reaches 0; the VG-8020's
+  start-up clears it, C-BIOS leaves it at its power-on `&HFF`, so zerobas
+  showed `ZB` about 2.5 seconds before it took the first key. zerobas now sets
+  it at start-up, and the first key is taken as soon as the prompt shows, as
+  on the reference.
 - **`INTERVAL` was first written off as an MSX2 feature** (2026-07-24) because
   it is not in the keyword table; running it showed it works on the VG-8020,
   built from `INT` and `VAL`. It shipped on 2026-07-26 with a 149-case gate.
@@ -254,6 +261,9 @@ the trap back on. `trap_init` empties the table at power-on, `RUN`, `NEW` and
 - `make stop-trap-acceptance`, `strig-trap-acceptance`, `key-trap-acceptance`,
   `sprite-trap-acceptance`, `interval-trap-acceptance` — each trap vs the VG-8020.
 - `make trapsvc-acceptance` — handlers left without `RETURN`.
+- `make bootkey-acceptance` — the first key after power-on is taken as soon
+  as the prompt shows, on zerobas with and without its disk ROM; the VG-8020
+  is the control.
 - `make time-acceptance`; `make play-acceptance`, `make play-trace-acceptance`
   and `make gicini-acceptance` — `TIME`, `PLAY`, `PLAY(n)`, what stops music.
 - `make direct-ctrl-acceptance` — Ctrl-STOP and `STOP` at the prompt.

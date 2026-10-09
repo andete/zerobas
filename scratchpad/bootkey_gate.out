@@ -1,0 +1,5 @@
+ROW vg8020 gap=0.04s PASS
+ROW nodisk gap=0.02s PASS
+ROW disk gap=0.04s PASS
+
+PASS: the first key is taken within 0.3s of the prompt

@@ -29741,6 +29741,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ROM offers it, and what it does without MSXDOS.SYS on the disk, is not
       measured. Re-tier once measured.
 
+- [x] ✅ **FIXED 2026-10-09 (D-BOOTSCAN)** — 🔴 **KEYS TYPED IN THE FIRST ~5 s AFTER POWER-ON ARE LOST: `ZB` SHOWS 2.5 s
+      BEFORE THE FIRST KEY IS TAKEN (D-BOOTSCAN, reported by Joost 2026-10-09:
+      "it takes a bit of time after the ZB prompt till I can actually start
+      typing").**
+      🎚️ TIER 1 — typing at the first prompt after power-on
+      🤖 **AUTONOMOUS** — the reference settles it.
+      Measured ([`bootkey_probe.py`](scratchpad/bootkey_probe.py),
+      [`bootkey_run.out`](scratchpad/bootkey_run.out)): prompt → first key echoed
+      2.54 s on zerobas, 0.04 s on the VG-8020. The key-scan countdown
+      `SCNCNT` (`&HF3F6`, work area) counts down from C-BIOS's power-on `&HFF`
+      one per frame and the interrupt scans only at 0; the VG-8020's start-up
+      clears it (`FF` at 0.5 s, `00` at 1.0 s)
+      ([`keycells.out`](scratchpad/keycells.out),
+      [`keycells_vg.out`](scratchpad/keycells_vg.out)). Fix: main INIT stores 1
+      (+3 B main page 1, beside FNKSWI's `ld a,1`). After: 0.02 s / 0.04 s
+      (no disk / disk, [`bootkey_after.out`](scratchpad/bootkey_after.out)). Gate
+      `bootkey-acceptance` ([`basic_probe_bootkey.py`](probes/basic/basic_probe_bootkey.py),
+      [`bootkey_gate.out`](scratchpad/bootkey_gate.out)): 3/3, the VG-8020 row
+      the control. 🔪 [`bootscan_knife.out`](scratchpad/bootscan_knife.out):
+      K-BS1 (the store cut) → nodisk 2.54 s, disk 2.46 s FAIL, the control
+      still PASS — exactly.
+
 - [ ] 🔴 **BDOS CALLS MADE FROM A BASIC PROGRAM (machine code through `$F37D`) ANSWER ONLY
       SEVEN FUNCTIONS HERE, AND NOTHING COMPARES THEM WITH THE CF-3300 (D-BDOSBASIC,
       found 2026-10-09 by the MSX-DOS concept page).**

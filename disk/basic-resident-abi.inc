@@ -66,17 +66,17 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E7CH
-pdfcb_resume equ 06E75H
-dirverb_op equ 06C17H
-main_fat_mount equ 0654EH   ; main's fat_mount
-main_fat_find equ 06552H   ; main's fat_find
-parse_disk_fcb equ 06604H
-field_prologue equ 072B6H
-field_item equ 072ECH
-lrset_tgt equ 073A1H
-lrset_rhs equ 073C3H
-lrset_finish equ 073DAH
-fch_ctx_addr equ 0700CH
-disk_error equ 06C39H
-read_line equ 045C5H
+fname_expr equ 06E7FH
+pdfcb_resume equ 06E78H
+dirverb_op equ 06C1AH
+main_fat_mount equ 06551H   ; main's fat_mount
+main_fat_find equ 06555H   ; main's fat_find
+parse_disk_fcb equ 06607H
+field_prologue equ 072B9H
+field_item equ 072EFH
+lrset_tgt equ 073A4H
+lrset_rhs equ 073C6H
+lrset_finish equ 073DDH
+fch_ctx_addr equ 0700FH
+disk_error equ 06C3CH
+read_line equ 045C8H

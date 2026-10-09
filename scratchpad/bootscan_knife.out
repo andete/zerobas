@@ -1,0 +1,8 @@
+  ROM a9edda66 20719286 c31298bc b38eb291  ->  d39c7fe9 20719286 c31298bc ddebe6ce
+ROW vg8020 gap=0.04s PASS
+ROW nodisk gap=2.54s FAIL
+ROW disk gap=2.46s FAIL
+
+FAIL: the first key is taken within 0.3s of the prompt
+
+PASS  K-BS1: failed ['disk', 'nodisk'] (want exactly ['disk', 'nodisk'])

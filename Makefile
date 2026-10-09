@@ -2304,6 +2304,12 @@ filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 filesbare-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_filesbare.py
 
+# --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
+# C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
+# 2.5 s after the prompt. The VG-8020 row is the control.
+bootkey-acceptance: repack-machine
+	python3 probes/basic/basic_probe_bootkey.py
+
 # --- putdir-acceptance: a RANDOM file's entry changes at CLOSE, not per PUT ----
 # PUT then no CLOSE leaves the on-disk entry at 0 on the CF-3300 (D-LOF §4c);
 # ours stamped it at every PUT (D-PUTDIR). Read from the image.

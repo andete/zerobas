@@ -209,6 +209,14 @@ bh_store:
                 ld      (FNKSWI),a          ; reference's steady 1 (F1..F5), scratchpad/
                                             ; nset_probe.py; its interrupt flips it
                                             ; while SHIFT is held, which zerobas does not
+                ; ⌨️ D-BOOTSCAN (2026-10-09): the keyboard answers from the prompt
+                ; on. C-BIOS leaves the key-scan countdown SCNCNT at its power-on
+                ; $FF, and the interrupt decrements it to 0 before it scans, so
+                ; every key typed in the first ~5 s after power-on was LOST: ZB
+                ; showed 2.5 s before a key was taken; the VG-8020 takes one at
+                ; once -- its init clears the cell (scratchpad/bootkey_run.out,
+                ; keycells.out). 1 = scan at the next interrupt.
+                ld      (SCNCNT),a
                 ld      a,KEYOP_FNKPAINT
                 ld      (KEYARG),a
                 call    sr_inl0             ; D-STUBINL: paint row 23 (absent: stays blank)
