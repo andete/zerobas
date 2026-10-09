@@ -9,8 +9,8 @@ SPDX-License-Identifier: 0BSD
 > **Status (2026-10-09):** number types, literals, arithmetic, conversions and
 > printed output agree with the VG-8020 in every measured case, apart from
 > deliberate last-digit differences where zerobas is the more accurate side
-> (long divisors, `SQR` and the other maths functions). Open: `RESUME NEXT` after an
-> `Overflow` (D-RESNEXTOVF, TIER 3, below) and `TAN(1E38)` (TIER 6).
+> (long divisors, `SQR` and the other maths functions). Open: `TAN(1E38)`
+> (TIER 6, below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -171,13 +171,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **`RESUME NEXT` after an `Overflow` skips the rest of the line** (D-RESNEXTOVF,
-  found 2026-10-09, open, TIER 3). After a trapped `Overflow` in the first
-  statement of `PRINT 1E62*9:PRINT "A"`, the VG-8020 resumes at `PRINT "A"`;
-  zerobas goes on at the next line. Division by zero, `SQR(-1)` and a direct
-  `ERROR 6` resume correctly on both
-  ([`resnext_run.out`](../../scratchpad/resnext_run.out)). This is why the
-  example keeps its `END` on a line of its own.
 - **Division by a long divisor: the last digit.** zerobas rounds correctly;
   the VG-8020 is a few units low in the 14th digit once the divisor has more
   than 10 significant digits (`2/1.4142135623731`: …731 here, …729 there).
@@ -204,6 +197,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A number's stored bytes broke `RESUME NEXT`** (fixed 2026-10-09,
+  D-RESNEXTOVF). A number in a program line is kept as a prefix byte and its
+  value bytes (`1E62` is `1D 7F 10 00 00`, `58` is `0F 3A`). The search for
+  the statement after a failing one read them as text, so a 0 byte ended the
+  line and `&H3A` (the code of `:`) ended the statement: after a trapped
+  `Overflow` in `PRINT 1E62*9:PRINT "A"` zerobas skipped `PRINT "A"`
+  ([`resnext_run.out`](../../scratchpad/resnext_run.out)). It now steps over
+  each number whole; `make resnext-acceptance` holds it.
 - **`&B` binary numbers were `Syntax error`** (fixed 2026-10-09, D-AMPB).
   Both machines keep `&B101` as the typed characters in a program line; the
   VG-8020 reads them when the line runs, and zerobas never had. Found while

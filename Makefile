@@ -2311,6 +2311,12 @@ filesbare-acceptance: repack-machine $(DISK_TEST_DSK)
 callsystem-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_callsystem.py
 
+# --- resnext-acceptance: RESUME NEXT past a statement holding numbers (D-RESNEXTOVF)
+# The next-statement scan read a constant's value bytes as text ($00 = end of
+# line, $3A = ':'); after `PRINT 1E62*9:PRINT "A"` it skipped A.
+resnext-acceptance: repack-machine
+	python3 probes/basic/basic_probe_resnext.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

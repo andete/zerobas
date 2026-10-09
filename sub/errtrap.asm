@@ -80,28 +80,23 @@ sse_lp:
                 jr      z,sse_eol
                 cp      COLON
                 jr      z,sse_colon
-                cp      $22                 ; string literal open
-                jr      z,sse_string
                 cp      REM_TOKEN
                 jr      z,sse_toeol
                 cp      DATA_TOKEN
                 jr      z,sse_toeol
                 cp      ELSE_TOKEN
                 jr      z,sse_toeol
-                inc     hl
-                jr      sse_lp
-sse_string:                                ; skip to the closing quote (or EOL if
-                inc     hl                  ; the literal is left unterminated)
-sse_str_lp:
-                ld      a,(hl)
-                or      a
-                jr      z,sse_eol
-                cp      $22
-                jr      z,sse_str_close
-                inc     hl
-                jr      sse_str_lp
-sse_str_close:
-                inc     hl                  ; past the closing quote
+                ; 🔴 D-RESNEXTOVF (2026-10-09): ONE TOKEN AT A TIME, VALUE BYTES
+                ; INCLUDED. This stepped one BYTE at a time, so a numeric
+                ; constant's value read as text: `1E62` is 1D 7F 10 00 00, and its
+                ; $00 ended the "line" -- RESUME NEXT after `PRINT 1E62*9:PRINT
+                ; "A"` went to the NEXT line, skipping A (VG-8020: E 6 | A | B);
+                ; 58 is 0F 3A, and that $3A resumed on the `*` (a second error).
+                ; le_tok_skip (sub/lineedit.asm) is the stride skip_to_eol already
+                ; walks with: every constant prefix's value bytes, $FF function
+                ; tokens, and string literals (to the closing quote or the EOL
+                ; $00, which the loop then reads). probes/basic/basic_probe_resnext.py.
+                call    le_tok_skip
                 jr      sse_lp
 sse_toeol:                                  ; REM/DATA/ELSE -- consume verbatim to EOL
                 ld      a,(hl)

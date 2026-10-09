@@ -1,0 +1,5 @@
+ROW colpay VG=[E 6 | A | B] ZB=[E 6 | E 2 | A | B] DIVERGES
+ROW hexpay VG=[E 6 | A | B] ZB=[E 6 | B] DIVERGES
+
+FAIL: RESUME NEXT after a fault (0/2)
+refcache: 0 hit, 4 miss, 4 stored

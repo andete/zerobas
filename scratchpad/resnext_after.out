@@ -1,0 +1,13 @@
+ROW mulovf VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW asgovf VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW strovf VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW colpay VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW hexpay VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW dblovf VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW divzero VG=[E 11 | A | B] ZB=[E 11 | A | B] SAME
+ROW error6 VG=[E 6 | A | B] ZB=[E 6 | A | B] SAME
+ROW sqrneg VG=[E 5 | A | B] ZB=[E 5 | A | B] SAME
+ROW undef VG=[E 8 | A | B] ZB=[E 8 | A | B] SAME
+
+PASS: RESUME NEXT after a fault (10/10)
+refcache: 10 hit, 10 miss, 10 stored

@@ -7,9 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `RESUME` — leave an error handler and carry on
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded difference: `RESUME NEXT` after an `Overflow` (below, an open
-> TIER 3 item).
+> errors ✓ · RAM usage not yet proven · every error not yet proven. No
+> known difference (`RESUME NEXT` past a numeric constant fixed 2026-10-09).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -101,13 +100,7 @@ skipped, and the third jumps over line 60.
 
 ## Differences from the reference
 
-**`RESUME NEXT` after a trapped `Overflow` skips the rest of the line**
-(D-RESNEXTOVF, found 2026-10-09, open, TIER 3). With
-`20 PRINT 1E62*9:PRINT "A"`, the VG-8020 resumes at `PRINT "A"`; zerobas
-goes on at the next line. The same happens for `X=1E62*9` and
-`PRINT CINT(40000)`. Division by zero, `SQR(-1)`, `ERROR 6` and an undefined
-line resume at the right statement on both
-([`resnext_run.out`](../../scratchpad/resnext_run.out)).
+No known difference in behaviour.
 
 Two rungs are not yet proven. **Every error**: the set of errors `RESUME`
 itself can raise has not been measured, because the tool that enumerates error
@@ -117,6 +110,16 @@ been able to rate `RESUME`'s test programs.
 
 ## What we found, and how
 
+- **`RESUME NEXT` skipped the rest of the line after some errors** (fixed
+  2026-10-09, D-RESNEXTOVF). With `20 PRINT 1E62*9:PRINT "A"` the VG-8020
+  resumes at `PRINT "A"`; zerobas went on at the next line
+  ([`resnext_run.out`](../../scratchpad/resnext_run.out)). It looked like an
+  `Overflow` problem — division by zero and `SQR(-1)` resumed correctly — but
+  the cause was the search for "the next statement": it read the stored line
+  byte by byte, and a number in the program is stored with its value bytes
+  (`1E62` is `1D 7F 10 00 00`), so a 0 byte ended the line early and a byte
+  `&H3A`, the code of `:`, ended the statement early (`58*…` resumed on the
+  `*`, a second error). It now steps over each number whole.
 - **Error trapping arrived on 2026-07-18 and 2026-07-19**, after the first
   measurement showed that an untrapped error did not even stop a zerobas
   program. `ERR` going back to 0 on `RESUME` while `ERL` stays was measured on
@@ -164,6 +167,8 @@ been able to rate `RESUME`'s test programs.
   error`, `No RESUME`, nested errors, and what disarms a handler.
 - `make onerr0-acceptance` — `ON ERROR GOTO 0` and its operand, on both
   references.
+- `make resnext-acceptance` — `RESUME NEXT` after a fault in a statement that
+  holds numbers stored with zero or `:`-like bytes, and four controls.
 - `make kwsweep` — one row per form (bare, `NEXT`, line), and `RESUME` typed
   with no error (22).
 - `make kwram` — the RAM-usage comparison.

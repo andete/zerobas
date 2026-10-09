@@ -1,0 +1,4 @@
+  ROM a9edda66 4e14d6db c31298bc b38eb291  ->  a9edda66 dbdecec5 c31298bc b38eb291
+PASS  K-RN1: moved ['asgovf', 'colpay', 'dblovf', 'hexpay', 'mulovf', 'strovf'] (want exactly ['asgovf', 'colpay', 'dblovf', 'hexpay', 'mulovf', 'strovf'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31228 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31249 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29677,7 +29677,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       each exactly; K-AB3 (my lowercase fold) MOVED NOTHING: the crunch
       uppercases `&b`, so the fold was dead code and is gone (−2 B).
 
-- [ ] 🔴 **`RESUME NEXT` AFTER A TRAPPED `Overflow` SKIPS THE REST OF THE LINE (D-RESNEXTOVF,
+- [x] ✅ **FIXED 2026-10-09 (D-RESNEXTOVF)** — 🔴 **`RESUME NEXT` AFTER A TRAPPED `Overflow` SKIPS THE REST OF THE LINE (D-RESNEXTOVF,
       found 2026-10-09 by the numbers concept page).**
       🎚️ TIER 3 — `ON ERROR` + `RESUME NEXT` after an `Overflow` mid-line
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -29689,6 +29689,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       So it is the Overflow path specifically (FPERR → deferred raise?): the
       statement pointer RESUME NEXT uses must be the failing statement's, not
       the line's end. 3/7 differ.
+      ✅ **FIXED 2026-10-09 — NOT the Overflow path, and NOT the pointer.** My
+      first fix (raise the pending FPERR fault before `exec_stmt` moves SAVTXT)
+      moved NOTHING — predicted 7/7, got 4/7: MISSED, reverted. A breakpoint on
+      zerobas's own `raise_error` showed the Overflow raised with SAVTXT on the
+      failing statement, correctly. The fault was the NEXT-statement scan
+      (`sub/errtrap.asm` `scan_stmt_end`): it stepped one BYTE at a time, so a
+      numeric constant's value bytes read as text — `1E62` is `1D 7F 10 00 00`,
+      its `$00` ended the "line"; `58` is `0F 3A`, its `$3A` ended the
+      statement (resumed on the `*`, a second error). Division by zero and
+      `SQR(-1)` agreed only because `1/0` and `-1` store no such byte. Fix: the
+      loop calls `le_tok_skip` (sub/lineedit.asm, the stride `skip_to_eol`
+      already uses), whose string case made the scan's own string skip dead
+      (sub page 1: +17 B free). Gate `resnext-acceptance`
+      ([`basic_probe_resnext.py`](probes/basic/basic_probe_resnext.py),
+      [`resnext_before.out`](scratchpad/resnext_before.out) /
+      [`resnext_before2.out`](scratchpad/resnext_before2.out) →
+      [`resnext_after.out`](scratchpad/resnext_after.out)): 10/10, predicted;
+      new rows `colpay` (`58*9.87654E62`), `hexpay` (`&H100*…`), `dblovf`
+      (`1D62*1D62`); my first `1E38*58` / `&H100*1E38` did not overflow and were
+      blind — replaced. 🔪 [`resnext_knives.out`](scratchpad/resnext_knives.out):
+      K-RN1 (back to the byte step) → the six constant rows, exactly.
 
 - [ ] 🔴 **A TRAP EVENT HELD BACK BY `INTERVAL STOP` FIRES SOONER HERE THAN ON THE
       VG-8020 AFTER `INTERVAL ON` (D-TRAPLATCHWHEN, found 2026-10-09).**
