@@ -1,0 +1,35 @@
+--- FOR: reference Philips_VG_8020
+Ok
+10 FOR I=1 TO 3:PRINT I;:NEXT:PRINT
+20 FOR A=1 TO 0 STEP -.5:PRINT A;:NEXT
+30 PRINT
+40 PRINT "After:";I;A
+50 ON ERROR GOTO 80
+60 FOR B$=1 TO 2
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2  3
+ 1  .5  0
+After: 4 -.5
+Error 13
+Ok
+color   auto    goto    list    run
+--- FOR: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 FOR I=1 TO 3:PRINT I;:NEXT:PRINT
+20 FOR A=1 TO 0 STEP -.5:PRINT A;:NEXT
+30 PRINT
+40 PRINT "After:";I;A
+50 ON ERROR GOTO 80
+60 FOR B$=1 TO 2
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2  3
+ 1  .5  0
+After: 4 -.5
+Error 13
+ZB
+color   auto    goto    list    run
+=== FOR: PASS

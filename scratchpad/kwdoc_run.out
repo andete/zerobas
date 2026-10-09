@@ -1,0 +1,23 @@
+--- RUN: reference Philips_VG_8020
+Ok
+10 V=VPEEK(4096)
+20 PRINT "Pass";V+1;"A=";A
+30 A=5:IF V=1 THEN END
+40 VPOKE 4096,1:RUN
+RUN
+Pass 1 A= 0
+Pass 2 A= 0
+Ok
+color   auto    goto    list    run
+--- RUN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 V=VPEEK(4096)
+20 PRINT "Pass";V+1;"A=";A
+30 A=5:IF V=1 THEN END
+40 VPOKE 4096,1:RUN
+RUN
+Pass 1 A= 0
+Pass 2 A= 0
+ZB
+color   auto    goto    list    run
+=== RUN: PASS

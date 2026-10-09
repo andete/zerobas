@@ -1,0 +1,35 @@
+--- CVS: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 80
+20 A$=MKS$(1.5)
+30 PRINT CVS(A$);CVS(MKS$(-1.5))
+40 PRINT CVS(MKS$(1.23456789#))
+50 PRINT CVS("ABCDEFGH")
+60 A=CVS("ABC")
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1.5 -1.5
+ 1.23457
+ 4.24344
+Error 5
+Ok
+color   auto    goto    list    run
+--- CVS: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 80
+20 A$=MKS$(1.5)
+30 PRINT CVS(A$);CVS(MKS$(-1.5))
+40 PRINT CVS(MKS$(1.23456789#))
+50 PRINT CVS("ABCDEFGH")
+60 A=CVS("ABC")
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1.5 -1.5
+ 1.23457
+ 4.24344
+Error 5
+ZB
+color   auto    goto    list    run
+=== CVS: PASS

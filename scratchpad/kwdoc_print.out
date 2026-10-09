@@ -1,0 +1,43 @@
+--- PRINT: reference Philips_VG_8020
+Ok
+10 PRINT "A";"B";1;-2
+20 PRINT "A","B","C"
+30 PRINT "X";TAB(8);"Y";SPC(3);"Z"
+40 PRINT USING "##.##";3.14159
+50 PRINT "Same";:PRINT " line"
+60 ON ERROR GOTO 90
+70 PRINT "A"+1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+AB 1 -2
+A             B
+C
+X       Y   Z
+ 3.14
+Same line
+Error 13
+Ok
+color   auto    goto    list    run
+--- PRINT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "A";"B";1;-2
+20 PRINT "A","B","C"
+30 PRINT "X";TAB(8);"Y";SPC(3);"Z"
+40 PRINT USING "##.##";3.14159
+50 PRINT "Same";:PRINT " line"
+60 ON ERROR GOTO 90
+70 PRINT "A"+1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+AB 1 -2
+A             B
+C
+X       Y   Z
+ 3.14
+Same line
+Error 13
+ZB
+color   auto    goto    list    run
+=== PRINT: PASS

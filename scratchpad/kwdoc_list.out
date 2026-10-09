@@ -1,0 +1,37 @@
+--- LIST: reference Philips_VG_8020
+Ok
+10 REM ALPHA
+20 PRINT "BETA"
+30 GOTO 10
+LIST
+10 REM ALPHA
+20 PRINT "BETA"
+30 GOTO 10
+Ok
+LIST 20-
+20 PRINT "BETA"
+30 GOTO 10
+Ok
+LIST 10,30
+Syntax error
+Ok
+color   auto    goto    list    run
+--- LIST: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 REM ALPHA
+20 PRINT "BETA"
+30 GOTO 10
+LIST
+10 REM ALPHA
+20 PRINT "BETA"
+30 GOTO 10
+ZB
+LIST 20-
+20 PRINT "BETA"
+30 GOTO 10
+ZB
+LIST 10,30
+Syntax error
+ZB
+color   auto    goto    list    run
+=== LIST: PASS

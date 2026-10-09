@@ -1,0 +1,35 @@
+--- RIGHT$: reference Philips_VG_8020
+Ok
+10 A$="ABCDE"
+20 PRINT RIGHT$(A$,2)
+30 PRINT RIGHT$(A$,9);LEN(RIGHT$(A$,0))
+40 ON ERROR GOTO 80
+50 PRINT RIGHT$(A$,-1)
+60 PRINT RIGHT$(5,1)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+DE
+ABCDE 0
+Error 5
+Error 13
+Ok
+color   auto    goto    list    run
+--- RIGHT$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A$="ABCDE"
+20 PRINT RIGHT$(A$,2)
+30 PRINT RIGHT$(A$,9);LEN(RIGHT$(A$,0))
+40 ON ERROR GOTO 80
+50 PRINT RIGHT$(A$,-1)
+60 PRINT RIGHT$(5,1)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+DE
+ABCDE 0
+Error 5
+Error 13
+ZB
+color   auto    goto    list    run
+=== RIGHT$: PASS

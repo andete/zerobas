@@ -1,0 +1,35 @@
+--- ERR: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 70
+20 A=1/0
+30 PRINT ERR;ERL
+40 A=ERR 1
+50 PRINT "done"
+60 END
+70 PRINT "Error";ERR;"in";ERL
+80 RESUME NEXT
+RUN
+Error 11 in 20
+ 0  20
+Error 2 in 40
+done
+Ok
+color   auto    goto    list    run
+--- ERR: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 70
+20 A=1/0
+30 PRINT ERR;ERL
+40 A=ERR 1
+50 PRINT "done"
+60 END
+70 PRINT "Error";ERR;"in";ERL
+80 RESUME NEXT
+RUN
+Error 11 in 20
+ 0  20
+Error 2 in 40
+done
+ZB
+color   auto    goto    list    run
+=== ERR: PASS

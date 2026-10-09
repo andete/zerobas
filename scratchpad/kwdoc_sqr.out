@@ -1,0 +1,29 @@
+--- SQR: reference Philips_VG_8020
+Ok
+10 PRINT SQR(9);SQR(16);SQR(0)
+20 PRINT SQR(.25);SQR(1E10)
+30 ON ERROR GOTO 60
+40 PRINT SQR(-1)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 3  4  0
+ .5  100000
+Error 5
+Ok
+color   auto    goto    list    run
+--- SQR: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT SQR(9);SQR(16);SQR(0)
+20 PRINT SQR(.25);SQR(1E10)
+30 ON ERROR GOTO 60
+40 PRINT SQR(-1)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 3  4  0
+ .5  100000
+Error 5
+ZB
+color   auto    goto    list    run
+=== SQR: PASS

@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30652 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30827 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29599,6 +29599,181 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and which this tree's rules forbid. Autonomously, (b) is out and (a) is a
       design decision. VARPTR is the ONLY keyword left below level 2 that is not
       N/A (2026-09-28, after D-CASRELOCK/D-CLOADPROG took CLOAD to level 2).
+
+- [ ] 🔴 **`READ` CANNOT READ A NON-INTEGER NUMBER — `DATA 1.5` / `2E3` / `-.25` ARE
+      `Syntax error` HERE AND READ NORMALLY ON THE VG-8020, AND `DATA 40000` READS
+      BACK AS −25536 (D-READFLT, found 2026-10-09 by the keyword-page rollout).**
+      🎚️ TIER 1 — `READ` of a fractional, exponent or large `DATA` number
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/readflt_probe.py`](scratchpad/readflt_probe.py) →
+      [`readflt_run.out`](scratchpad/readflt_run.out), VG-8020 vs zerobas NODISK:
+      `1.5` → ` 1.5` / `ERR 2`; `2E3` → ` 2000` / `ERR 2`; `-.25` → `-.25` /
+      `ERR 2`; `1.23456789012` into `A#` → ` 1.23456789012` / `ERR 2`; `40000` →
+      ` 40000` / `-25536`; `42` agrees. 1/6.
+      🔬 Why: the READ/DATA engine ([`basic/readdata-body.inc`](basic/readdata-body.inc),
+      run as the page-0 sub-ROM tenant [`sub/readdata.asm`](sub/readdata.asm), whose
+      header says "no eval, no float work") parses every numeric item with
+      `data_parse_int`, and `ex_read` stores a 16-bit value (`tgt_store_num`). So a
+      `.` or `E` is trailing junk (ERR 2) and a big integer wraps. INPUT had the
+      same flaw until D-INPNUM, which routed its field through VAL's parser
+      (`sh_val_scr`, "rule 3: no second parser") — the likely shape here too.
+      ⚠️ **A LEVEL-3 KEYWORD THAT FAILS ITS HAPPY PATH**: `READ`'s T1 row and every
+      kwsweep row use whole numbers, so the tier sheet reads level 3 for a READ
+      that cannot read `3.14`. D-READOVF (`DATA 1E99`) and D-READINTOVF (`DATA
+      99999` into `A%`), below, are two symptoms of this one cause. A fix needs a
+      T1 row with a non-integer item, and the `READ` / `DATA` keyword pages say so.
+      ⚠️ The tenant is page 0, which may not call the float pack — price the
+      route (main-side parse of the captured span, as INPUT does) before building.
+
+- [ ] 🔴 **AFTER `FILES` ENDS ON A FULL ROW, THE CF-3300 STARTS A NEW LINE AND ZEROBAS
+      DOES NOT — A `PRINT` AFTER IT CONTINUES THE LAST ROW (D-FILESNL, found
+      2026-10-09 by the `DSKO$` keyword page's example).**
+      🎚️ TIER 1 — `FILES` output layout in everyday use (any directory whose file
+      count is a multiple of the names per row)
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/filesnl_probe.py`](scratchpad/filesnl_probe.py) →
+      [`filesnl_run.out`](scratchpad/filesnl_run.out): 6 files at WIDTH 40 (two
+      full rows of three) then `PRINT "X"` — CF-3300 `X` on its own row, zerobas
+      `…PROG3   .BAS X`; the same at WIDTH 37 (rows of two); 7 files (a last row of
+      one) — both leave the cursor on the row (`H2      .TXT X`), agree. So the
+      reference ends a row as soon as it is full; zerobas only before the next
+      name. Check `LFILES` (the shared directory walk) with the same shapes.
+
+- [ ] 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
+      PRINTS `Unprintable error` (D-NODISKERRTXT, found 2026-10-09).**
+      🎚️ TIER 6 — `ERROR` with a disk error code on a diskless machine
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`scratchpad/errtext6064_probe.py`](scratchpad/errtext6064_probe.py) →
+      [`errtext6064_run.out`](scratchpad/errtext6064_run.out): `10 ERROR 60`..`64`
+      → VG-8020 `Unprintable error in 10` ×5; zerobas NODISK `Bad FAT`, `Bad file
+      mode`, `Bad drive name`, `Bad sector number`, `File still open` (the
+      CF-3300's texts, which the sub-ROM holds for both targets). A diskless
+      build should not have them; nodisk-acceptance has no `ERROR 60+` row.
+
+- [ ] 🙋 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
+      for drive B: and strike a key when ready` (D-DSKIB, found 2026-10-09).**
+      🎚️ TIER 6 — `DSKI$` / `DSKO$` on drive 2 (the phantom `B:`)
+      🙋 **NEEDS-JOOST** — the same phantom-drive model D-DSKFDRV recorded for
+      `DSKF(2)` (TODO.md:13166), under the 2026-06-22 single-drive decision ("if
+      drive B is ever wanted, build the logical A/B swap model"). Whether to build
+      the swap prompt is his.
+      📏 [`errtext6064_run.out`](scratchpad/errtext6064_run.out) (last row).
+      `DSKO$` drive 2 is unmeasured.
+
+- [ ] 🙋 **D-CASTYPE (2026-10-08) REVERSED JOOST'S 2026-09-27 RULING ON `LOAD"CAS:"` OF A
+      TOKENISED TAPE WITHOUT ASKING (D-CASTYPERULE, found 2026-10-09).**
+      🎚️ TIER 6 — `LOAD"CAS:"` on a tape that holds a tokenised program
+      🙋 **NEEDS-JOOST** — his ruling, recorded at TODO.md:30676: *"KEEP THE
+      FEATURE"* — zerobas loads a tokenised tape via `LOAD"CAS:"`, the reference's
+      hang is a stated divergence. D-CASTYPE then made every tape search filter by
+      type, as the VG-8020 does, so `LOAD"CAS:"` now steps over a tokenised file —
+      the reference's behaviour, which the ruling had declined. Neither entry
+      mentions the other. Measure first what a tape holding ONLY a tokenised
+      program does here now (searches to the end? an error?), then put both
+      options to him: restore the feature for the type-skip case, or re-rule.
+      Change nothing before he rules.
+
+- [ ] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
+      A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
+      2026-10-09 by the keyword-page rollout).**
+      🎚️ APPARATUS — the T6 rung's denominator
+      🤖 **AUTONOMOUS** — the measurements already exist; the set is the gap.
+      Reported by the page agents, each citing a measurement OUTSIDE the T6
+      enumeration (verify each before adding it):
+      - `SWAP`: set {2, 13}; the VG-8020 also raises 5 (`A=1:SWAP A,B`) and 9
+        (`DIM Q(2):SWAP A,Q(9)`) — docs/missing-vg8020-characterization.md §4.4/4.5.
+      - `SPACE$`, `STRING$` (repeat) and `MID$` (to-end, assign): no 6, but
+        `SPACE$(32768)`, `STRING$(99999,65)`, `MID$(A$,99999)="X"` are Overflow on
+        the reference (D-SPCLAMP, docs/spec-basic-str-domain.md).
+      - `INP`, `OUT`: no 6, but `INP(99999)`, `OUT 99999,0`, `OUT 0,99999` are 6 on
+        the VG-8020 (intarg-acceptance).
+      - `VARPTR` (variable form): no 5 (unset variable, D-VPTRDOM) and no 9.
+      The batches that built these sets never tried an argument past 32767, a
+      missing second operand, or a bad subscript for them. Add the codes (with
+      rows), re-render the tier sheet, and see which ✓ survives.
+
+- [ ] 📚 **CONCEPT PAGES — HUMAN-FRONTING DOCS FOR WHAT IS NOT A KEYWORD (D-CONCEPTDOCS,
+      Joost 2026-10-09).**
+      🎚️ OTHER — docs, after the keyword-page rollout (his words: "after the keyword
+      rollout is fine")
+      🤖 **AUTONOMOUS** — the docs/keywords/ shape, adapted.
+      Joost: *"the keywords pages are only part of the picture. There's also the
+      multi line editor, the bdos msx-dos interfacing and many other not really
+      keyword concepts. Those will also need human fronting docs."* Candidates for
+      `docs/concepts/`: the screen editor (multi-line editing, control keys, how a
+      line is read back); MSX-DOS (BDOS calls, `CALL SYSTEM` / `A>BASIC`, what
+      disk.rom provides); disk and tape formats (FAT12 and the directory; the
+      cassette header and file types); RAM (the memory map, the published
+      work-area variables, string space and its collection, how `FRE` counts);
+      error handling (`ON ERROR`, deferred errors, `ERL`/`ERR`); the ROM layout
+      (main, sub-ROM tenants, disk.rom, the hooks); interrupt-driven features
+      (`ON KEY` / `STRIG` / `INTERVAL`, PLAY's queue). Same page shape (summary,
+      behaviour, example where one fits, differences, what we found); no speed
+      figures. The trigger is not a tier level: write a concept page once it has
+      no open TIER 1–3 item.
+
+- [ ] 📝 **STALE COMMENTS AND DOCS THE KEYWORD-PAGE AGENTS FOUND (D-PAGEDEBT, 2026-10-09).**
+      🎚️ OTHER — docs: comments and prose that contradict a later measurement
+      🤖 **AUTONOMOUS** — each is a reading; verify against the cited fix first.
+      Comment-only changes leave the ROM hashes unchanged (check them).
+      - `basic/str-engine.asm`: `str_fn_mid` "p<1 clamped" (now 5);
+        `str_fn_space` / `str_fn_string` "clamped to STRMAX" (D-F2-2, D-SPCLAMP);
+        `str_fn_string` empty fill "function error" (Syntax error, D-STRINGEMPTY);
+        `ev_f_instr` p<1 "ev_f_err" (now `eval_pos_arg`).
+      - `basic/screen.asm` header + `ex_key`: KEY strings / KEY LIST "unsupported",
+        SCREEN click "no effect" (D-KEYSTR, D-SCRCLICK). `basic/print.asm` header:
+        strings not printable. `basic/printusing.asm`: `$$` "filed, unpriced"
+        (D-PUDOLLAR). `basic/graphics.asm` above `spr_extra_arg`: click / baud
+        "stay ignored"; `ex_sprite` (~1063): SPRITE ON/OFF/STOP "no-ops" (T4).
+      - `basic/sound.asm`: "No DI/EI guard" (ex_sound uses di/ei); BEEP's mixer
+        "restored" vs basic_probe_beep.py "reset to default" — MEASURE which.
+      - `basic/input.asm` header: lowercase redo wording (D-MSGEXACT).
+        `basic/cload.asm`: a `CAS:` name "accepted and ignored". `basic/files.asm`
+        channel Divergences block (50 B a channel, no numeric INPUT# / APPEND,
+        `load_error`) and `ex_merge` "Direct statement in file" (code: stmt_error).
+        `basic/deffn.asm`: the only DEF-time check (vs D-DEFFNPARAM).
+        `basic/poke.asm`: "writes the low byte" (D-RAWVAL). `basic/interp.asm`
+        above `ex_error`: disk codes "unprintable" (D-MSGSUB). `basic/expr.asm`
+        `ev_ff_loc`: "unmeasured for LOC" (t6enum_b8 measured it).
+        `disk/kernel.asm` `hk_dskf` header: the deleted `fat_count_free` stub.
+      - `tools/kwforms.py` notes: DEFSNG "single is the default" (it is double,
+        spec-basic-float-core §11.1 — also kwsweep.py ~2833); DATA "trimmed at the
+        edges" (trailing spaces are kept, readvar b.trailsp); USR "only the
+        default has a row"; VARPTR FCB header "unwritten" (D-FCBHDR); LOCATE
+        cursor "IGNORED" (D-LOCCSR); KEY display "NO ROW"; SCREEN click "no cell".
+        `probes/basic/basic_probe_kwsweep.py`: "WAIT has no row" (~1351), "SCREEN
+        and KEY are not here yet", the `close` row's reopen note (now 54).
+        `basic_probe_nodisk.py` docstring (pre-fix state); `basic_probe_str_fn.py`
+        STRMAX=64; `basic_probe_fldwidth.py` "File not open" (the reference prints
+        `File not OPEN`); `basic_probe_editverb.py` column 2 vs 1 (check).
+      - docs: `spec-basic-lvsites.md` "Nothing implemented" (D-LVFIX shipped);
+        `spec-basic-string-functions.md` §2 STRMAX clamp; `spec-basic-lrvar.md`
+        LSET on the VG-8020 "Syntax error" (it is 5); `spec-basic-input.md`
+        integer-only + lowercase; `spec-basic-audio-play.md` §2.2 + `spec-basic-
+        playop.md` §6 (X and PLAY(n) shipped); `spec-traps-t2-strig.md` and
+        `spec-basic-width-domain.md` "awaiting sign-off"; `spec-basic-malformed-
+        call-syntax-error.md` "Status: CONTRACT" and lowercase `syntax error`
+        (also `spec-basic-float-core.md` §10.2, `spec-basic-arrays-slice2-
+        erase.md`); `spec-basic-math-pack.md` §9.4 "half-up" (CINT truncates, §9.1);
+        `spec-basic-graphics-g3.md` §3.4/§4.4/§11.7 + g6 §5 "clip by masking"
+        (D-SPOKELINE / D-DRAWCLAMP clamp); g4 §3.4/§11.5 negative radius "hangs"
+        (D-CIRCNEGR: completes); g5 §3 "G5-align" (D-NTFLOOD); `editverb-msx1-
+        characterization.md` §1.2/§7 LPRINT/LPOS/LFILES "missing"; `spec-basic-
+        error-handling.md` ~437 "unprintable" (D-MSGSUB); `spec-basic-mksd.md`
+        "the day before" (both 2026-09-03).
+      - TODO.md: D-MKIREUSE "where CINT rounds" (CINT truncates); D-FCBSHAPE's tag
+        "306 B a channel" (267 since S1+S2); D-FORFLOAT "FOR A%=1.7 starts at 2"
+        vs `forfloat_after_run.out` `intinit` (1, 2, 3) — MEASURE; D-RUNLINE's
+        TODO-done heading "restarts from the top" (its case was Syntax error);
+        the Makefile's diskfull-acceptance comment (12 vs 24, now 12 both).
+      - Contradictions that need a MEASUREMENT, not an edit: `EXP(-1E30)` (ngram14
+        §5 says 6 on both; D-EXPBAND says 0 below 1E-129); `COS` beyond ~1.57E14
+        (VG-8020 0, zerobas 1 — a value difference with no item); CSAVE inside a
+        program (D-KWTAPE2 "ends it" vs tapetail `csaveok`); FN's `d.n4` error 7
+        (2026-09-09, before D-SPMERGE); `FOR I=1 TO 0` (kwforms says the body runs
+        once; unmeasured); `DSKF(0)` on a fresh copy of `disk/test720.dsk` reads
+        706 on both machines today (`kwdoc_dskf.out`) where kwsweep's `dskf` note
+        and D-KWDISK / D-DSKFDRV say 707 — which image, or which count, differs?
 
 - [ ] 🔴 **`READ A%` OF `DATA 99999` IS `Overflow` ON THE VG-8020 AND ACCEPTED HERE
       (D-READINTOVF, found 2026-09-28 by T6 batch 9).**

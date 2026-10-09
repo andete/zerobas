@@ -1,0 +1,29 @@
+--- LOG: reference Philips_VG_8020
+Ok
+10 PRINT LOG(1);INT(LOG(10)*1000)
+20 ON ERROR GOTO 60
+30 PRINT LOG(0)
+40 PRINT LOG(-1)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  2302
+Error 5
+Error 5
+Ok
+color   auto    goto    list    run
+--- LOG: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT LOG(1);INT(LOG(10)*1000)
+20 ON ERROR GOTO 60
+30 PRINT LOG(0)
+40 PRINT LOG(-1)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  2302
+Error 5
+Error 5
+ZB
+color   auto    goto    list    run
+=== LOG: PASS

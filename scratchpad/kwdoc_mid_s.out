@@ -1,0 +1,43 @@
+--- MID$: reference Philips_VG_8020
+Ok
+10 A$="ABCDEF"
+20 PRINT MID$(A$,2,3);" ";MID$(A$,4)
+30 PRINT LEN(MID$(A$,9))
+40 MID$(A$,2,3)="XYZ":PRINT A$
+50 MID$(A$,5)="12345":PRINT A$
+60 ON ERROR GOTO 90
+70 PRINT MID$(A$,0)
+75 MID$(A$,7)="X"
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+BCD DEF
+ 0
+AXYZEF
+AXYZ12
+Error 5
+Error 5
+Ok
+color   auto    goto    list    run
+--- MID$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A$="ABCDEF"
+20 PRINT MID$(A$,2,3);" ";MID$(A$,4)
+30 PRINT LEN(MID$(A$,9))
+40 MID$(A$,2,3)="XYZ":PRINT A$
+50 MID$(A$,5)="12345":PRINT A$
+60 ON ERROR GOTO 90
+70 PRINT MID$(A$,0)
+75 MID$(A$,7)="X"
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+BCD DEF
+ 0
+AXYZEF
+AXYZ12
+Error 5
+Error 5
+ZB
+color   auto    goto    list    run
+=== MID$: PASS

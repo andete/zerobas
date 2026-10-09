@@ -1,0 +1,39 @@
+--- RETURN: reference Philips_VG_8020
+Ok
+10 GOSUB 100:PRINT "Back"
+20 GOSUB 200
+30 PRINT "Skipped"
+40 PRINT "Line 40"
+50 ON ERROR GOTO 90
+60 RETURN
+70 END
+90 PRINT "Error";ERR:RESUME NEXT
+100 PRINT "Sub":RETURN
+200 RETURN 40
+RUN
+Sub
+Back
+Line 40
+Error 3
+Ok
+color   auto    goto    list    run
+--- RETURN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 GOSUB 100:PRINT "Back"
+20 GOSUB 200
+30 PRINT "Skipped"
+40 PRINT "Line 40"
+50 ON ERROR GOTO 90
+60 RETURN
+70 END
+90 PRINT "Error";ERR:RESUME NEXT
+100 PRINT "Sub":RETURN
+200 RETURN 40
+RUN
+Sub
+Back
+Line 40
+Error 3
+ZB
+color   auto    goto    list    run
+=== RETURN: PASS

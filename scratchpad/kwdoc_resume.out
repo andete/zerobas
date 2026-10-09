@@ -1,0 +1,45 @@
+--- RESUME: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 90
+20 B=-1
+30 A=SQR(B):PRINT "SQR";A
+40 ERROR 7:PRINT "after"
+50 ERROR 9
+60 PRINT "not run"
+70 PRINT "line 70":END
+90 PRINT "Error";ERR;"in";ERL
+100 IF ERR=5 THEN B=9:RESUME
+110 IF ERR=7 THEN RESUME NEXT
+120 RESUME 70
+RUN
+Error 5 in 30
+SQR 3
+Error 7 in 40
+after
+Error 9 in 50
+line 70
+Ok
+color   auto    goto    list    run
+--- RESUME: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 90
+20 B=-1
+30 A=SQR(B):PRINT "SQR";A
+40 ERROR 7:PRINT "after"
+50 ERROR 9
+60 PRINT "not run"
+70 PRINT "line 70":END
+90 PRINT "Error";ERR;"in";ERL
+100 IF ERR=5 THEN B=9:RESUME
+110 IF ERR=7 THEN RESUME NEXT
+120 RESUME 70
+RUN
+Error 5 in 30
+SQR 3
+Error 7 in 40
+after
+Error 9 in 50
+line 70
+ZB
+color   auto    goto    list    run
+=== RESUME: PASS

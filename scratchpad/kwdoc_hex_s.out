@@ -1,0 +1,37 @@
+--- HEX$: reference Philips_VG_8020
+Ok
+10 PRINT HEX$(255);" ";HEX$(0)
+20 PRINT HEX$(-1);" ";HEX$(65535)
+30 PRINT HEX$(4096);" ";HEX$(-5.7)
+40 PRINT "&H";HEX$(10)
+50 ON ERROR GOTO 80
+60 PRINT HEX$(70000)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+FF 0
+FFFF FFFF
+1000 FFFB
+&HA
+Error 6
+Ok
+color   auto    goto    list    run
+--- HEX$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT HEX$(255);" ";HEX$(0)
+20 PRINT HEX$(-1);" ";HEX$(65535)
+30 PRINT HEX$(4096);" ";HEX$(-5.7)
+40 PRINT "&H";HEX$(10)
+50 ON ERROR GOTO 80
+60 PRINT HEX$(70000)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+FF 0
+FFFF FFFF
+1000 FFFB
+&HA
+Error 6
+ZB
+color   auto    goto    list    run
+=== HEX$: PASS

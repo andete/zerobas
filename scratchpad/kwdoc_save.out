@@ -1,0 +1,41 @@
+--- SAVE: reference National_CF-3300
+Ok
+10 PRINT "SAVED"
+20 END
+SAVE "MY.BAS"
+Ok
+SAVE "MY.TXT",A
+Ok
+NEW
+Ok
+LOAD "MY.TXT"
+Ok
+LIST
+10 PRINT "SAVED"
+20 END
+Ok
+FILES "MY.*"
+MY      .BAS MY      .TXT
+Ok
+color   auto    goto    list    run
+--- SAVE: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 PRINT "SAVED"
+20 END
+SAVE "MY.BAS"
+ZB
+SAVE "MY.TXT",A
+ZB
+NEW
+ZB
+LOAD "MY.TXT"
+ZB
+LIST
+10 PRINT "SAVED"
+20 END
+ZB
+FILES "MY.*"
+MY      .BAS MY      .TXT
+ZB
+color   auto    goto    list    run
+=== SAVE: PASS

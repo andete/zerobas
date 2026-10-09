@@ -1,0 +1,29 @@
+--- EXP: reference Philips_VG_8020
+Ok
+10 PRINT EXP(0);INT(EXP(1)*1000)
+20 PRINT EXP(-1000)
+30 ON ERROR GOTO 60
+40 PRINT EXP(150)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2718
+ 0
+Error 6
+Ok
+color   auto    goto    list    run
+--- EXP: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT EXP(0);INT(EXP(1)*1000)
+20 PRINT EXP(-1000)
+30 ON ERROR GOTO 60
+40 PRINT EXP(150)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2718
+ 0
+Error 6
+ZB
+color   auto    goto    list    run
+=== EXP: PASS

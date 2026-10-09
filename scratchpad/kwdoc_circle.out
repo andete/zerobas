@@ -1,0 +1,9 @@
+--- CIRCLE: reference Philips_VG_8020
+ 15  4  7  4  13  4  5
+Ok
+color   auto    goto    list    run
+--- CIRCLE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 15  4  7  4  13  4  5
+ZB
+color   auto    goto    list    run
+=== CIRCLE: PASS

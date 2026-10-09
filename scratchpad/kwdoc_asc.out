@@ -1,0 +1,29 @@
+--- ASC: reference Philips_VG_8020
+Ok
+10 PRINT ASC("A");ASC("abc");ASC(" ")
+20 PRINT ASC(CHR$(200))
+30 ON ERROR GOTO 60
+40 PRINT ASC("")
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 65  97  32
+ 200
+Error 5
+Ok
+color   auto    goto    list    run
+--- ASC: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT ASC("A");ASC("abc");ASC(" ")
+20 PRINT ASC(CHR$(200))
+30 ON ERROR GOTO 60
+40 PRINT ASC("")
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 65  97  32
+ 200
+Error 5
+ZB
+color   auto    goto    list    run
+=== ASC: PASS

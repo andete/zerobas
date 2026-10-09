@@ -1,0 +1,27 @@
+--- PAD: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 60
+20 FOR I=0 TO 7:PRINT PAD(I);:NEXT
+30 PRINT
+40 PRINT PAD(8)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  0  0  0  0  0  0  0
+Error 5
+Ok
+color   auto    goto    list    run
+--- PAD: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 60
+20 FOR I=0 TO 7:PRINT PAD(I);:NEXT
+30 PRINT
+40 PRINT PAD(8)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  0  0  0  0  0  0  0
+Error 5
+ZB
+color   auto    goto    list    run
+=== PAD: PASS

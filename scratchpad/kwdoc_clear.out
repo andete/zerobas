@@ -1,0 +1,29 @@
+--- CLEAR: reference Philips_VG_8020
+Ok
+10 A=5:CLEAR 300
+20 PRINT A;FRE("")
+30 ON ERROR GOTO 60
+40 CLEAR -1
+50 PRINT FRE(""):END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  300
+Error 5
+ 300
+Ok
+color   auto    goto    list    run
+--- CLEAR: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=5:CLEAR 300
+20 PRINT A;FRE("")
+30 ON ERROR GOTO 60
+40 CLEAR -1
+50 PRINT FRE(""):END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  300
+Error 5
+ 300
+ZB
+color   auto    goto    list    run
+=== CLEAR: PASS

@@ -1,0 +1,37 @@
+--- POS: reference Philips_VG_8020
+Ok
+10 PRINT "ABC";:P=POS(0):PRINT
+20 PRINT "Column after ABC:";P
+30 PRINT TAB(10);:PRINT POS(0)
+40 PRINT POS(-1);POS(99)
+50 ON ERROR GOTO 80
+60 PRINT POS()
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ABC
+Column after ABC: 3
+           10
+ 0  3
+Error 2
+Ok
+color   auto    goto    list    run
+--- POS: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "ABC";:P=POS(0):PRINT
+20 PRINT "Column after ABC:";P
+30 PRINT TAB(10);:PRINT POS(0)
+40 PRINT POS(-1);POS(99)
+50 ON ERROR GOTO 80
+60 PRINT POS()
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ABC
+Column after ABC: 3
+           10
+ 0  3
+Error 2
+ZB
+color   auto    goto    list    run
+=== POS: PASS

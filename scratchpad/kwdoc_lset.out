@@ -1,0 +1,33 @@
+--- LSET: reference National_CF-3300
+Ok
+10 OPEN "R.DAT" AS #1 LEN=6
+20 FIELD #1,6 AS A$
+30 LSET A$="HI":PRINT "[";A$;"]"
+40 B$="AB":LSET B$="HELLO":PRINT B$
+50 ON ERROR GOTO 80
+60 LSET A=1
+70 CLOSE:END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+[HI    ]
+HE
+Error 13
+Ok
+color   auto    goto    list    run
+--- LSET: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 OPEN "R.DAT" AS #1 LEN=6
+20 FIELD #1,6 AS A$
+30 LSET A$="HI":PRINT "[";A$;"]"
+40 B$="AB":LSET B$="HELLO":PRINT B$
+50 ON ERROR GOTO 80
+60 LSET A=1
+70 CLOSE:END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+[HI    ]
+HE
+Error 13
+ZB
+color   auto    goto    list    run
+=== LSET: PASS

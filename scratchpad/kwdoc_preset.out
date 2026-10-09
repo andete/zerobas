@@ -1,0 +1,11 @@
+--- PRESET: reference Philips_VG_8020
+ 4  15  9
+Error 5
+Ok
+color   auto    goto    list    run
+--- PRESET: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 4  15  9
+Error 5
+ZB
+color   auto    goto    list    run
+=== PRESET: PASS

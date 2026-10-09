@@ -1,0 +1,33 @@
+--- BEEP: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 90
+20 SOUND 0,0
+30 BEEP
+40 T=TIME
+50 IF TIME=T THEN 50
+60 OUT &HA0,0:PRINT INP(&HA2)
+70 BEEP 1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 85
+Error 2
+Ok
+color   auto    goto    list    run
+--- BEEP: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 90
+20 SOUND 0,0
+30 BEEP
+40 T=TIME
+50 IF TIME=T THEN 50
+60 OUT &HA0,0:PRINT INP(&HA2)
+70 BEEP 1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 85
+Error 2
+ZB
+color   auto    goto    list    run
+=== BEEP: PASS

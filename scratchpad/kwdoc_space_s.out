@@ -1,0 +1,33 @@
+--- SPACE$: reference Philips_VG_8020
+Ok
+10 PRINT "[";SPACE$(3);"]"
+20 PRINT LEN(SPACE$(0));ASC(SPACE$(1))
+30 ON ERROR GOTO 70
+40 PRINT SPACE$(256)
+50 PRINT SPACE$(32768)
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+[   ]
+ 0  32
+Error 5
+Error 6
+Ok
+color   auto    goto    list    run
+--- SPACE$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "[";SPACE$(3);"]"
+20 PRINT LEN(SPACE$(0));ASC(SPACE$(1))
+30 ON ERROR GOTO 70
+40 PRINT SPACE$(256)
+50 PRINT SPACE$(32768)
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+[   ]
+ 0  32
+Error 5
+Error 6
+ZB
+color   auto    goto    list    run
+=== SPACE$: PASS

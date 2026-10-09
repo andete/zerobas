@@ -1,0 +1,35 @@
+--- CONT: reference Philips_VG_8020
+Ok
+10 PRINT "One"
+20 STOP
+30 PRINT "Two"
+40 END:PRINT "Three"
+RUN
+One
+Break in 20
+Ok
+CONT
+Two
+Ok
+CONT
+Three
+Ok
+color   auto    goto    list    run
+--- CONT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "One"
+20 STOP
+30 PRINT "Two"
+40 END:PRINT "Three"
+RUN
+One
+Break in 20
+ZB
+CONT
+Two
+ZB
+CONT
+Three
+ZB
+color   auto    goto    list    run
+=== CONT: PASS

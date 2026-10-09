@@ -1,0 +1,33 @@
+--- DELETE: reference Philips_VG_8020
+Ok
+10 REM A
+20 REM B
+30 REM C
+40 REM D
+DELETE 20-30
+Ok
+LIST
+10 REM A
+40 REM D
+Ok
+DELETE 25
+Illegal function call
+Ok
+color   auto    goto    list    run
+--- DELETE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 REM A
+20 REM B
+30 REM C
+40 REM D
+DELETE 20-30
+ZB
+LIST
+10 REM A
+40 REM D
+ZB
+DELETE 25
+Illegal function call
+ZB
+color   auto    goto    list    run
+=== DELETE: PASS

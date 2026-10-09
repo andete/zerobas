@@ -1,0 +1,41 @@
+--- INPUT: reference Philips_VG_8020
+Ok
+10 INPUT "Name";N$
+20 INPUT A
+30 INPUT X,Y
+40 INPUT B
+50 LINE INPUT L$
+60 PRINT N$;A;X+Y;B;L$
+RUN
+Name? JOOST
+? ABC
+?Redo from start
+? 42
+? 3,4
+? 5,9
+?Extra ignored
+A,B
+JOOST 42  7  5 A,B
+Ok
+color   auto    goto    list    run
+--- INPUT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 INPUT "Name";N$
+20 INPUT A
+30 INPUT X,Y
+40 INPUT B
+50 LINE INPUT L$
+60 PRINT N$;A;X+Y;B;L$
+RUN
+Name? JOOST
+? ABC
+?Redo from start
+? 42
+? 3,4
+? 5,9
+?Extra ignored
+A,B
+JOOST 42  7  5 A,B
+ZB
+color   auto    goto    list    run
+=== INPUT: PASS

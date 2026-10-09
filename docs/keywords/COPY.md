@@ -2,6 +2,7 @@
 Copyright (c) 2026 Joost Yervante Damad
 SPDX-License-Identifier: 0BSD
 -->
+<!-- example: reference=CF-3300 disk=yes -->
 
 # `COPY` — copy a file on the disk
 
@@ -74,10 +75,10 @@ and `PROG3.BAS`:
 50 COPY "HI.TXT" TO "HI.TXT"
 60 FILES
 70 END
-90 PRINT "Error";ERR;"in";ERL:RESUME NEXT
+90 PRINT "Err";ERR;"in";ERL:RESUME NEXT
 RUN
-Error 53 in 40
-Error 5 in 50
+Err 53 in 40
+Err 5 in 50
 TEST    .BIN HI      .TXT PROG    .BIN
 PROG    .BAS PROG2   .BAS PROG3   .BAS
 HI2     .TXT XI      .TXT

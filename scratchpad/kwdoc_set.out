@@ -1,0 +1,29 @@
+--- SET: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 60
+20 SET
+30 SET 1
+40 SET=1
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 5
+Error 5
+Error 5
+Ok
+color   auto    goto    list    run
+--- SET: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 60
+20 SET
+30 SET 1
+40 SET=1
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 5
+Error 5
+Error 5
+ZB
+color   auto    goto    list    run
+=== SET: PASS

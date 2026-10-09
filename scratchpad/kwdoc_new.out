@@ -1,0 +1,39 @@
+--- NEW: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 50
+20 A=5:NEW 1
+30 PRINT "Kept";A
+40 END
+50 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 2
+Kept 5
+Ok
+NEW
+Ok
+LIST
+Ok
+PRINT A
+ 0
+Ok
+color   auto    goto    list    run
+--- NEW: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 50
+20 A=5:NEW 1
+30 PRINT "Kept";A
+40 END
+50 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 2
+Kept 5
+ZB
+NEW
+ZB
+LIST
+ZB
+PRINT A
+ 0
+ZB
+color   auto    goto    list    run
+=== NEW: PASS

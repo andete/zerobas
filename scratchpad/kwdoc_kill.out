@@ -1,0 +1,29 @@
+--- KILL: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 70
+20 KILL "HI.TXT"
+30 KILL "*.BAS"
+40 KILL "HI.TXT"
+50 FILES
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 53
+TEST    .BIN PROG    .BIN
+Ok
+color   auto    goto    list    run
+--- KILL: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 70
+20 KILL "HI.TXT"
+30 KILL "*.BAS"
+40 KILL "HI.TXT"
+50 FILES
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+Error 53
+TEST    .BIN PROG    .BIN
+ZB
+color   auto    goto    list    run
+=== KILL: PASS

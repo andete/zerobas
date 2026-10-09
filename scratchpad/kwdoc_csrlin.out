@@ -1,0 +1,15 @@
+--- CSRLIN: reference Philips_VG_8020
+Top row is 0
+Next is 1
+Same row 2
+Error 2
+Ok
+color   auto    goto    list    run
+--- CSRLIN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+Top row is 0
+Next is 1
+Same row 2
+Error 2
+ZB
+color   auto    goto    list    run
+=== CSRLIN: PASS

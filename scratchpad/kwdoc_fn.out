@@ -1,0 +1,37 @@
+--- FN: reference Philips_VG_8020
+Ok
+10 Y=3:DEF FNA(X)=X*X+Y
+20 DEF FNB$(S$)=S$+"!"
+30 X=5:PRINT FNA(2);X
+40 PRINT FNB$("HI")
+50 ON ERROR GOTO 90
+60 PRINT FNA("A")
+70 PRINT FNZ(1)
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 7  5
+HI!
+Error 13
+Error 18
+Ok
+color   auto    goto    list    run
+--- FN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 Y=3:DEF FNA(X)=X*X+Y
+20 DEF FNB$(S$)=S$+"!"
+30 X=5:PRINT FNA(2);X
+40 PRINT FNB$("HI")
+50 ON ERROR GOTO 90
+60 PRINT FNA("A")
+70 PRINT FNZ(1)
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 7  5
+HI!
+Error 13
+Error 18
+ZB
+color   auto    goto    list    run
+=== FN: PASS

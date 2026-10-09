@@ -1,0 +1,9 @@
+--- CLS: reference Philips_VG_8020
+Cursor at 0  0
+Ok
+color   auto    goto    list    run
+--- CLS: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+Cursor at 0  0
+ZB
+color   auto    goto    list    run
+=== CLS: PASS

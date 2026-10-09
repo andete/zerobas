@@ -1,0 +1,11 @@
+--- LINE: reference Philips_VG_8020
+ 15  7  4  13  15
+Error 5
+Ok
+color   auto    goto    list    run
+--- LINE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 15  7  4  13  15
+Error 5
+ZB
+color   auto    goto    list    run
+=== LINE: PASS

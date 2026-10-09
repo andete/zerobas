@@ -1,0 +1,35 @@
+--- WIDTH: reference Philips_VG_8020
+Ok
+10 PRINT "Width";PEEK(&HF3B0)
+20 WIDTH 40
+30 PRINT "Screen kept"
+40 ON ERROR GOTO 80
+50 WIDTH 41
+60 WIDTH "A"
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+Width 40
+Screen kept
+Error 5
+Error 13
+Ok
+color   auto    goto    list    run
+--- WIDTH: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "Width";PEEK(&HF3B0)
+20 WIDTH 40
+30 PRINT "Screen kept"
+40 ON ERROR GOTO 80
+50 WIDTH 41
+60 WIDTH "A"
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+Width 40
+Screen kept
+Error 5
+Error 13
+ZB
+color   auto    goto    list    run
+=== WIDTH: PASS

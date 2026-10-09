@@ -1,0 +1,35 @@
+--- OUT: reference Philips_VG_8020
+Ok
+10 T=TIME
+20 IF TIME=T THEN 20
+30 OUT &HA0,0:OUT &HA1,77
+40 OUT &HA0,0:PRINT INP(&HA2)
+50 ON ERROR GOTO 90
+60 OUT &H2F,256
+70 OUT &H2F
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 77
+Error 5
+Error 2
+Ok
+color   auto    goto    list    run
+--- OUT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 T=TIME
+20 IF TIME=T THEN 20
+30 OUT &HA0,0:OUT &HA1,77
+40 OUT &HA0,0:PRINT INP(&HA2)
+50 ON ERROR GOTO 90
+60 OUT &H2F,256
+70 OUT &H2F
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 77
+Error 5
+Error 2
+ZB
+color   auto    goto    list    run
+=== OUT: PASS

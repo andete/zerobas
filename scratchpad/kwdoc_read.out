@@ -1,0 +1,33 @@
+--- READ: reference Philips_VG_8020
+Ok
+10 DIM A(2)
+20 FOR I=0 TO 2:READ A(I):NEXT
+30 READ N$,B%
+40 PRINT A(0)+A(1)+A(2);N$;B%
+50 ON ERROR GOTO 80
+60 READ X
+70 END
+80 PRINT "Error";ERR:END
+90 DATA 1,2,3,ZB,-5
+RUN
+ 6 ZB-5
+Error 4
+Ok
+color   auto    goto    list    run
+--- READ: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 DIM A(2)
+20 FOR I=0 TO 2:READ A(I):NEXT
+30 READ N$,B%
+40 PRINT A(0)+A(1)+A(2);N$;B%
+50 ON ERROR GOTO 80
+60 READ X
+70 END
+80 PRINT "Error";ERR:END
+90 DATA 1,2,3,ZB,-5
+RUN
+ 6 ZB-5
+Error 4
+ZB
+color   auto    goto    list    run
+=== READ: PASS

@@ -1,0 +1,39 @@
+--- FRE: reference Philips_VG_8020
+Ok
+10 CLEAR 300
+20 PRINT FRE("")
+30 A$=STRING$(50,"X")
+40 PRINT FRE("")
+50 A=0:B=0:A=FRE(0):DIM Z(9):B=FRE(0)
+60 PRINT A-B
+70 ON ERROR GOTO 100
+80 PRINT FRE()
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 300
+ 250
+ 88
+Error 2
+Ok
+color   auto    goto    list    run
+--- FRE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 CLEAR 300
+20 PRINT FRE("")
+30 A$=STRING$(50,"X")
+40 PRINT FRE("")
+50 A=0:B=0:A=FRE(0):DIM Z(9):B=FRE(0)
+60 PRINT A-B
+70 ON ERROR GOTO 100
+80 PRINT FRE()
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 300
+ 250
+ 88
+Error 2
+ZB
+color   auto    goto    list    run
+=== FRE: PASS

@@ -1,0 +1,37 @@
+--- WAIT: reference Philips_VG_8020
+Ok
+10 P=&HA8:V=INP(P)
+20 IF V=0 THEN PRINT "zero":END
+30 WAIT P,V:PRINT "two"
+40 WAIT P,255,V XOR 255:PRINT "three"
+50 ON ERROR GOTO 90
+60 WAIT P,256
+70 WAIT P,1,"A"
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+two
+three
+Error 5
+Error 13
+Ok
+color   auto    goto    list    run
+--- WAIT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 P=&HA8:V=INP(P)
+20 IF V=0 THEN PRINT "zero":END
+30 WAIT P,V:PRINT "two"
+40 WAIT P,255,V XOR 255:PRINT "three"
+50 ON ERROR GOTO 90
+60 WAIT P,256
+70 WAIT P,1,"A"
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+two
+three
+Error 5
+Error 13
+ZB
+color   auto    goto    list    run
+=== WAIT: PASS

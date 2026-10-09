@@ -1,0 +1,37 @@
+--- CVI: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 80
+20 PRINT CVI(MKI$(258));CVI(MKI$(-1))
+30 PRINT CVI("AB")
+40 PRINT CVI(MKS$(1.5))
+50 A=CVI("A")
+60 A=CVI(5)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 258 -1
+ 16961
+ 5441
+Error 5
+Error 13
+Ok
+color   auto    goto    list    run
+--- CVI: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 80
+20 PRINT CVI(MKI$(258));CVI(MKI$(-1))
+30 PRINT CVI("AB")
+40 PRINT CVI(MKS$(1.5))
+50 A=CVI("A")
+60 A=CVI(5)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 258 -1
+ 16961
+ 5441
+Error 5
+Error 13
+ZB
+color   auto    goto    list    run
+=== CVI: PASS

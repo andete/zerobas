@@ -1,0 +1,41 @@
+--- MERGE: reference National_CF-3300
+Ok
+10 OPEN "M.BAS" FOR OUTPUT AS #1
+20 PRINT #1,"50 PRINT 2"
+30 CLOSE #1:MERGE "M.BAS"
+40 PRINT "never"
+50 PRINT 1
+RUN
+Ok
+LIST
+10 OPEN "M.BAS" FOR OUTPUT AS #1
+20 PRINT #1,"50 PRINT 2"
+30 CLOSE #1:MERGE "M.BAS"
+40 PRINT "never"
+50 PRINT 2
+Ok
+MERGE "NONE.BAS"
+File not found
+Ok
+color   auto    goto    list    run
+--- MERGE: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 OPEN "M.BAS" FOR OUTPUT AS #1
+20 PRINT #1,"50 PRINT 2"
+30 CLOSE #1:MERGE "M.BAS"
+40 PRINT "never"
+50 PRINT 1
+RUN
+ZB
+LIST
+10 OPEN "M.BAS" FOR OUTPUT AS #1
+20 PRINT #1,"50 PRINT 2"
+30 CLOSE #1:MERGE "M.BAS"
+40 PRINT "never"
+50 PRINT 2
+ZB
+MERGE "NONE.BAS"
+File not found
+ZB
+color   auto    goto    list    run
+=== MERGE: PASS

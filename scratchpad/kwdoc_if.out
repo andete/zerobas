@@ -1,0 +1,45 @@
+--- IF: reference Philips_VG_8020
+Ok
+10 A=5:IF A>3 THEN PRINT "Big"
+20 IF A>9 THEN PRINT "Huge" ELSE 40
+30 PRINT "skipped"
+40 IF .5 THEN PRINT "Half is true"
+50 B=9
+60 IF 0 THEN IF 1 THEN B=1 ELSE B=2
+70 IF 2>1 GOTO 90
+80 B=0
+90 PRINT "B=";B
+100 ON ERROR GOTO 130
+110 IF "A" THEN 120
+120 END
+130 PRINT "Error";ERR:RESUME NEXT
+RUN
+Big
+Half is true
+B= 9
+Error 13
+Ok
+color   auto    goto    list    run
+--- IF: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=5:IF A>3 THEN PRINT "Big"
+20 IF A>9 THEN PRINT "Huge" ELSE 40
+30 PRINT "skipped"
+40 IF .5 THEN PRINT "Half is true"
+50 B=9
+60 IF 0 THEN IF 1 THEN B=1 ELSE B=2
+70 IF 2>1 GOTO 90
+80 B=0
+90 PRINT "B=";B
+100 ON ERROR GOTO 130
+110 IF "A" THEN 120
+120 END
+130 PRINT "Error";ERR:RESUME NEXT
+RUN
+Big
+Half is true
+B= 9
+Error 13
+ZB
+color   auto    goto    list    run
+=== IF: PASS

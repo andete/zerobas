@@ -1,0 +1,29 @@
+--- PDL: reference Philips_VG_8020
+Ok
+10 ON ERROR GOTO 60
+20 PRINT PDL(1);PDL(2);PDL(12)
+30 PRINT PDL(12.6)
+40 PRINT PDL(0)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 255  255  255
+ 255
+Error 5
+Ok
+color   auto    goto    list    run
+--- PDL: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 ON ERROR GOTO 60
+20 PRINT PDL(1);PDL(2);PDL(12)
+30 PRINT PDL(12.6)
+40 PRINT PDL(0)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 255  255  255
+ 255
+Error 5
+ZB
+color   auto    goto    list    run
+=== PDL: PASS

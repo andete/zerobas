@@ -1,0 +1,11 @@
+=== DATA: PASS
+=== DSKF: PASS
+=== DSKI$: PASS
+=== DSKO$: PASS
+=== ERROR: PASS
+=== FILES: PASS
+=== LOAD: PASS
+=== READ: PASS
+
+PASS 8
+refcache: 6 hit, 10 miss, 10 stored

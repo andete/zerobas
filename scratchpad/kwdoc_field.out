@@ -1,0 +1,33 @@
+--- FIELD: reference National_CF-3300
+Ok
+10 OPEN "F.DAT" AS #1 LEN=8
+20 FIELD #1,4 AS A$,4 AS B$
+30 LSET A$="AB":RSET B$="CD":PUT #1,1
+40 LSET A$="WXYZ":PUT #1,2
+50 GET #1,1:PRINT "[";A$;"][";B$;"]"
+60 ON ERROR GOTO 90
+70 FIELD #1,9 AS C$
+80 CLOSE:END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+[AB  ][  CD]
+Error 50
+Ok
+color   auto    goto    list    run
+--- FIELD: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 OPEN "F.DAT" AS #1 LEN=8
+20 FIELD #1,4 AS A$,4 AS B$
+30 LSET A$="AB":RSET B$="CD":PUT #1,1
+40 LSET A$="WXYZ":PUT #1,2
+50 GET #1,1:PRINT "[";A$;"][";B$;"]"
+60 ON ERROR GOTO 90
+70 FIELD #1,9 AS C$
+80 CLOSE:END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+[AB  ][  CD]
+Error 50
+ZB
+color   auto    goto    list    run
+=== FIELD: PASS

@@ -31,7 +31,19 @@ stays paused until he restarts it.**
 | D-COPYWILD multi-match COPY | **"stay error 5 for now"** -- parked, nothing autonomous left |
 | D-DIMRESERVE / `eval`'s precedence rewrite | **"yes, we need to match reference there"** -- 🤖 TIER 4: an expression at the DIM edge fits the reference's ~79 B stack; then lower the reserve. Shared code: FULL, price main first |
 
+📚 **LATER ON 2026-10-09: THE KEYWORD PAGES SHIPPED** — `docs/keywords/`, 146 pages
+(one per level-3 keyword), every example run on both machines by
+`scratchpad/kwdoc_examples.py` (136 PASS, 6 need hardware, 1 page corrected, 1
+difference found). Joost: no speed figures until on-par speed for every keyword;
+concept pages (editor, MSX-DOS, …) AFTER the rollout — filed as D-CONCEPTDOCS.
+Writing them found **two TIER 1 defects** (D-READFLT: `READ` cannot read `1.5`;
+D-FILESNL: the cursor after `FILES` ends on a full row), several TIER 6 ones, the
+T6-set gap D-KWERRSETGAP, a stale-docs list D-PAGEDEBT, and **🙋 D-CASTYPERULE —
+D-CASTYPE reversed Joost's 09-27 "keep the feature" ruling without asking; put it
+to him, change nothing first.**
+
 ➡️ **NEXT, by tier, once he restarts the loop:**
+- TIER 1 first: D-READFLT, then D-FILESNL.
 - TIER 4, now autonomous: FCB #0 and the `eval` rewrite (both RAM usage, so before
   any TIER 5 item).
 - TIER 5, each a design session, cheapest-to-start first:

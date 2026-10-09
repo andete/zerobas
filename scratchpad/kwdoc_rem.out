@@ -1,0 +1,27 @@
+--- REM: reference Philips_VG_8020
+Ok
+10 REM This line does nothing
+20 PRINT "A":REM PRINT "B"
+30 PRINT "C" 'a comment
+40 B=9:IF 0 THEN REM ELSE B=1
+50 PRINT B
+RUN
+A
+C
+ 9
+Ok
+color   auto    goto    list    run
+--- REM: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 REM This line does nothing
+20 PRINT "A":REM PRINT "B"
+30 PRINT "C" 'a comment
+40 B=9:IF 0 THEN REM ELSE B=1
+50 PRINT B
+RUN
+A
+C
+ 9
+ZB
+color   auto    goto    list    run
+=== REM: PASS

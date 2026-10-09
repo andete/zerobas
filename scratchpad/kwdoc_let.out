@@ -1,0 +1,37 @@
+--- LET: reference Philips_VG_8020
+Ok
+10 LET A=5
+20 B=A*2
+30 LET C$="LET"+"TER"
+40 LET D%=7.9:E!=1234567
+50 PRINT A;B;C$;D%;E!
+60 ON ERROR GOTO 90
+70 LET F="X"
+80 LET 5=1
+85 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 5  10 LETTER 7  1234570
+Error 13
+Error 2
+Ok
+color   auto    goto    list    run
+--- LET: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 LET A=5
+20 B=A*2
+30 LET C$="LET"+"TER"
+40 LET D%=7.9:E!=1234567
+50 PRINT A;B;C$;D%;E!
+60 ON ERROR GOTO 90
+70 LET F="X"
+80 LET 5=1
+85 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 5  10 LETTER 7  1234570
+Error 13
+Error 2
+ZB
+color   auto    goto    list    run
+=== LET: PASS

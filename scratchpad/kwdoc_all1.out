@@ -1,0 +1,156 @@
+=== ABS: PASS
+=== AND: PASS
+=== ASC: PASS
+=== ATN: PASS
+=== AUTO: SKIP (AUTO is an interactive line-entry mode that only CTRL+STOP ends)
+=== BASE: PASS
+=== BEEP: PASS
+=== BIN$: PASS
+=== BLOAD: PASS
+=== BSAVE: PASS
+=== CDBL: PASS
+=== CINT: PASS
+=== CIRCLE: PASS
+=== CLEAR: PASS
+=== CLOAD: SKIP (needs a cassette)
+=== CLOSE: PASS
+=== CLS: PASS
+=== CMD: PASS
+=== COLOR: PASS
+=== CONT: PASS
+=== COS: PASS
+=== CSAVE: SKIP (needs a cassette)
+=== CSNG: PASS
+=== CSRLIN: PASS
+=== CVD: PASS
+=== CVI: PASS
+=== CVS: PASS
+=== DATA: PASS
+=== DEFDBL: PASS
+=== DEFINT: PASS
+=== DEFSNG: PASS
+=== DEFSTR: PASS
+=== DELETE: PASS
+=== DIM: PASS
+=== DRAW: PASS
+=== DSKF: PAGE
+  page:       707  708 | Error 62 | Error 5
+  reference:  706  707 | Error 62 | Error 5
+  zerobas:    706  707 | Error 62 | Error 5
+  page rewritten from the measured screen
+=== DSKI$: PASS
+=== DSKO$: DIFFER
+  page:      XEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Error 62
+  reference: XEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Error 62
+  zerobas:   XEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS E | rror 62
+=== END: PASS
+=== EOF: PASS
+=== EQV: PASS
+=== ERASE: PASS
+=== ERL: PASS
+=== ERR: PASS
+=== ERROR: PASS
+=== EXP: PASS
+=== FIELD: PASS
+=== FILES: PASS
+=== FIX: PASS
+=== FN: PASS
+=== FOR: PASS
+=== FRE: PASS
+=== GOSUB: PASS
+=== GOTO: PASS
+=== HEX$: PASS
+=== IF: PASS
+=== IMP: PASS
+=== INKEY$: PASS
+=== INP: PASS
+=== INPUT: PASS
+=== INSTR: PASS
+=== INT: PASS
+=== IPL: PASS
+=== KEY: PASS
+=== KILL: PASS
+=== LEFT$: PASS
+=== LEN: PASS
+=== LET: PASS
+=== LFILES: SKIP (needs a printer)
+=== LINE: PASS
+=== LIST: PASS
+=== LLIST: SKIP (the listing goes to the printer, not the screen)
+=== LOAD: PASS
+=== LOC: PASS
+=== LOCATE: PASS
+=== LOF: PASS
+=== LOG: PASS
+=== LPOS: PASS
+=== LPRINT: SKIP (needs a printer)
+=== LSET: PASS
+=== MERGE: PASS
+=== MID$: PASS
+=== MKD$: PASS
+=== MKI$: PASS
+=== MKS$: PASS
+=== MOD: PASS
+=== MOTOR: PASS
+=== NAME: PASS
+=== NEW: PASS
+=== NEXT: PASS
+=== NOT: PASS
+=== OCT$: PASS
+=== OPEN: PASS
+=== OR: PASS
+=== OUT: PASS
+=== PAD: PASS
+=== PAINT: PASS
+=== PDL: PASS
+=== PEEK: PASS
+=== PLAY: PASS
+=== POINT: PASS
+=== POKE: PASS
+=== POS: PASS
+=== PRESET: PASS
+=== PRINT: PASS
+=== PSET: PASS
+=== READ: PASS
+=== REM: PASS
+=== RENUM: PASS
+=== RESTORE: PASS
+=== RESUME: PASS
+=== RETURN: PASS
+=== RIGHT$: PASS
+=== RND: PASS
+=== RSET: PASS
+=== RUN: PASS
+=== SAVE: PASS
+=== SCREEN: PASS
+=== SET: PASS
+=== SGN: PASS
+=== SIN: PASS
+=== SOUND: PASS
+=== SPACE$: PASS
+=== SPRITE: PASS
+=== SQR: PASS
+=== STICK: PASS
+=== STOP: PASS
+=== STR$: PASS
+=== STRIG: PASS
+=== STRING$: PASS
+=== SWAP: PASS
+=== TAN: PASS
+=== TIME: PASS
+=== TROFF: PASS
+=== TRON: PASS
+=== USR: PASS
+=== VAL: PASS
+=== VARPTR: PASS
+=== VDP: PASS
+=== VPEEK: PASS
+=== VPOKE: PASS
+=== WAIT: PASS
+=== WIDTH: PASS
+=== XOR: PASS
+
+DIFFER 1  PAGE 1  PASS 136  SKIP 6
+PAGE: DSKF
+DIFFER: DSKO$
+refcache: 0 hit, 276 miss, 276 stored

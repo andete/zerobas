@@ -1,0 +1,31 @@
+--- END: reference Philips_VG_8020
+Ok
+10 PRINT "Start"
+20 GOSUB 100
+30 PRINT "Back"
+40 END
+50 PRINT "Never"
+100 PRINT "In sub"
+110 RETURN
+RUN
+Start
+In sub
+Back
+Ok
+color   auto    goto    list    run
+--- END: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT "Start"
+20 GOSUB 100
+30 PRINT "Back"
+40 END
+50 PRINT "Never"
+100 PRINT "In sub"
+110 RETURN
+RUN
+Start
+In sub
+Back
+ZB
+color   auto    goto    list    run
+=== END: PASS

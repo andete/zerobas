@@ -1,0 +1,33 @@
+--- TRON: reference Philips_VG_8020
+Ok
+10 TRON
+20 PRINT "A":GOTO 40
+30 PRINT "skipped"
+40 FOR I=1 TO 2
+50 PRINT I;
+60 NEXT
+70 TROFF:PRINT
+80 PRINT "B"
+RUN
+[20]A
+[40][50] 1 [60][50] 2 [60][70]
+B
+Ok
+color   auto    goto    list    run
+--- TRON: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 TRON
+20 PRINT "A":GOTO 40
+30 PRINT "skipped"
+40 FOR I=1 TO 2
+50 PRINT I;
+60 NEXT
+70 TROFF:PRINT
+80 PRINT "B"
+RUN
+[20]A
+[40][50] 1 [60][50] 2 [60][70]
+B
+ZB
+color   auto    goto    list    run
+=== TRON: PASS

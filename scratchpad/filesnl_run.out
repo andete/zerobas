@@ -1,0 +1,10 @@
+✗  full
+   CF-3300 [TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X]
+   zerobas [TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS X]
+== part
+   CF-3300 [TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X]
+   zerobas [TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X]
+✗  w37 
+   CF-3300 [  Ok |   10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS |   X |   Ok]
+   zerobas [  ZB |   10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS X |   ZB]
+refcache: 0 hit, 6 miss, 6 stored

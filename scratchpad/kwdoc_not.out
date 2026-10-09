@@ -1,0 +1,35 @@
+--- NOT: reference Philips_VG_8020
+Ok
+10 PRINT NOT 0;NOT -1;NOT 5
+20 PRINT NOT 2.5;NOT NOT 7
+30 A=3
+40 IF NOT (A>5) THEN PRINT "small"
+50 ON ERROR GOTO 80
+60 PRINT NOT 70000
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+-1  0 -6
+-3  7
+small
+Error 6
+Ok
+color   auto    goto    list    run
+--- NOT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT NOT 0;NOT -1;NOT 5
+20 PRINT NOT 2.5;NOT NOT 7
+30 A=3
+40 IF NOT (A>5) THEN PRINT "small"
+50 ON ERROR GOTO 80
+60 PRINT NOT 70000
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+-1  0 -6
+-3  7
+small
+Error 6
+ZB
+color   auto    goto    list    run
+=== NOT: PASS

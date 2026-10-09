@@ -1,0 +1,41 @@
+--- GOTO: reference Philips_VG_8020
+Ok
+10 N=1
+20 PRINT N;
+30 N=N*2
+40 IF N>100 THEN 60
+50 GOTO 20
+60 PRINT:ON 2 GOTO 70,80
+70 PRINT "One"
+80 PRINT "Two"
+90 ON ERROR GOTO 120
+100 GOTO 999
+110 END
+120 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2  4  8  16  32  64
+Two
+Error 8
+Ok
+color   auto    goto    list    run
+--- GOTO: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 N=1
+20 PRINT N;
+30 N=N*2
+40 IF N>100 THEN 60
+50 GOTO 20
+60 PRINT:ON 2 GOTO 70,80
+70 PRINT "One"
+80 PRINT "Two"
+90 ON ERROR GOTO 120
+100 GOTO 999
+110 END
+120 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 1  2  4  8  16  32  64
+Two
+Error 8
+ZB
+color   auto    goto    list    run
+=== GOTO: PASS

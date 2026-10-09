@@ -1,0 +1,7 @@
+✗  ERROR 60  VG-8020 [Unprintable error in 10]  zerobas [Bad FAT in 10]
+✗  ERROR 61  VG-8020 [Unprintable error in 10]  zerobas [Bad file mode in 10]
+✗  ERROR 62  VG-8020 [Unprintable error in 10]  zerobas [Bad drive name in 10]
+✗  ERROR 63  VG-8020 [Unprintable error in 10]  zerobas [Bad sector number in 10]
+✗  ERROR 64  VG-8020 [Unprintable error in 10]  zerobas [File still open in 10]
+✗  DSKI$(2,0)  CF-3300 [Insert diskette for drive B: | and strike a key when ready]  zerobas [Bad drive name]
+refcache: 0 hit, 12 miss, 12 stored

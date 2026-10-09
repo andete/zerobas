@@ -1,0 +1,35 @@
+--- DSKO$: reference National_CF-3300
+Ok
+10 A$=DSKI$(0,7)
+20 B=PEEK(&HF351)+256*PEEK(&HF352)
+30 POKE B,ASC("X")
+40 DSKO$ 0,7
+50 FILES:PRINT
+60 ON ERROR GOTO 90
+70 DSKO$ 5,0
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+XEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+Error 62
+Ok
+color   auto    goto    list    run
+--- DSKO$: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 A$=DSKI$(0,7)
+20 B=PEEK(&HF351)+256*PEEK(&HF352)
+30 POKE B,ASC("X")
+40 DSKO$ 0,7
+50 FILES:PRINT
+60 ON ERROR GOTO 90
+70 DSKO$ 5,0
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+XEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+Error 62
+ZB
+color   auto    goto    list    run
+=== DSKO$: PASS

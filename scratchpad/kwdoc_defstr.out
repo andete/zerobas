@@ -1,0 +1,33 @@
+--- DEFSTR: reference Philips_VG_8020
+Ok
+10 DEFSTR S-T
+20 S="HI":T=S+"!"
+30 PRINT S;T
+40 ON ERROR GOTO 80
+50 S=5
+60 DEFSTR 5
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+HIHI!
+Error 13
+Error 2
+Ok
+color   auto    goto    list    run
+--- DEFSTR: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 DEFSTR S-T
+20 S="HI":T=S+"!"
+30 PRINT S;T
+40 ON ERROR GOTO 80
+50 S=5
+60 DEFSTR 5
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+HIHI!
+Error 13
+Error 2
+ZB
+color   auto    goto    list    run
+=== DEFSTR: PASS

@@ -1,0 +1,9 @@
+--- PAINT: reference Philips_VG_8020
+ 11  4  5
+Ok
+color   auto    goto    list    run
+--- PAINT: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 11  4  5
+ZB
+color   auto    goto    list    run
+=== PAINT: PASS

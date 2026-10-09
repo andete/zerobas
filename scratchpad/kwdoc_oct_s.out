@@ -1,0 +1,29 @@
+--- OCT$: reference Philips_VG_8020
+Ok
+10 PRINT OCT$(8);" ";OCT$(0)
+20 PRINT OCT$(511);" ";OCT$(-1)
+30 ON ERROR GOTO 60
+40 PRINT OCT$(70000)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+10 0
+777 177777
+Error 6
+Ok
+color   auto    goto    list    run
+--- OCT$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT OCT$(8);" ";OCT$(0)
+20 PRINT OCT$(511);" ";OCT$(-1)
+30 ON ERROR GOTO 60
+40 PRINT OCT$(70000)
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+10 0
+777 177777
+Error 6
+ZB
+color   auto    goto    list    run
+=== OCT$: PASS

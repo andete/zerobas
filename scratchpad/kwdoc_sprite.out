@@ -1,0 +1,9 @@
+--- SPRITE: reference Philips_VG_8020
+ 255  8  50  13  1
+Ok
+color   auto    goto    list    run
+--- SPRITE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ 255  8  50  13  1
+ZB
+color   auto    goto    list    run
+=== SPRITE: PASS

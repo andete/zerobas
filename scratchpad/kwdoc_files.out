@@ -1,0 +1,31 @@
+--- FILES: reference National_CF-3300
+Ok
+10 FILES:PRINT
+20 FILES "*.BAS":PRINT
+30 ON ERROR GOTO 60
+40 FILES "NONE.*"
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+TEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+Error 53
+Ok
+color   auto    goto    list    run
+--- FILES: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 FILES:PRINT
+20 FILES "*.BAS":PRINT
+30 ON ERROR GOTO 60
+40 FILES "NONE.*"
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+TEST    .BIN HI      .TXT PROG    .BIN
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+PROG    .BAS PROG2   .BAS PROG3   .BAS
+Error 53
+ZB
+color   auto    goto    list    run
+=== FILES: PASS

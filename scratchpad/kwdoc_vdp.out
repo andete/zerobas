@@ -1,0 +1,31 @@
+--- VDP: reference Philips_VG_8020
+Ok
+10 PRINT VDP(1)
+20 V=VDP(7):VDP(7)=5:A=VDP(7)
+30 VDP(7)=V:PRINT A
+40 ON ERROR GOTO 70
+50 VDP(8)=0
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 240
+ 5
+Error 5
+Ok
+color   auto    goto    list    run
+--- VDP: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT VDP(1)
+20 V=VDP(7):VDP(7)=5:A=VDP(7)
+30 VDP(7)=V:PRINT A
+40 ON ERROR GOTO 70
+50 VDP(8)=0
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 240
+ 5
+Error 5
+ZB
+color   auto    goto    list    run
+=== VDP: PASS

@@ -13,7 +13,7 @@ ABCDE
 Error 5
 Ok
 color   auto    goto    list    run
---- CHR$: zerobas   C-BIOS_MSX1_EU_REPACK_NODISK
+--- CHR$: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
 ZB
 10 FOR I=65 TO 69:A$=A$+CHR$(I):NEXT
 20 PRINT A$
@@ -28,6 +28,4 @@ ABCDE
 Error 5
 ZB
 color   auto    goto    list    run
-=== CHR$: SAME
-
-refcache: 0 hit, 2 miss, 2 stored
+=== CHR$: PASS

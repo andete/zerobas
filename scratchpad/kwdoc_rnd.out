@@ -1,0 +1,41 @@
+--- RND: reference Philips_VG_8020
+Ok
+10 A=RND(-1):B=RND(1):C=RND(1)
+20 D=RND(-1):E=RND(1):F=RND(1)
+30 PRINT A=D;B=E;C=F
+40 PRINT RND(0)=F
+50 PRINT INT(RND(-1)*10000)
+60 PRINT RND(1)<1
+70 ON ERROR GOTO 100
+80 PRINT RND("A")
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+-1 -1 -1
+-1
+ 438
+-1
+Error 13
+Ok
+color   auto    goto    list    run
+--- RND: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=RND(-1):B=RND(1):C=RND(1)
+20 D=RND(-1):E=RND(1):F=RND(1)
+30 PRINT A=D;B=E;C=F
+40 PRINT RND(0)=F
+50 PRINT INT(RND(-1)*10000)
+60 PRINT RND(1)<1
+70 ON ERROR GOTO 100
+80 PRINT RND("A")
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+-1 -1 -1
+-1
+ 438
+-1
+Error 13
+ZB
+color   auto    goto    list    run
+=== RND: PASS

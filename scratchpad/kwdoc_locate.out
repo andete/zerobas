@@ -1,0 +1,37 @@
+--- LOCATE: reference Philips_VG_8020
+Ok
+10 Y=CSRLIN:LOCATE 5,Y:PRINT "Hello"
+20 LOCATE 9,Y:LOCATE ,Y+1:A=POS(0)
+30 PRINT "Column kept:";A
+40 LOCATE 99:A=POS(0):LOCATE 0
+50 PRINT "Clamped to";A
+60 ON ERROR GOTO 90
+70 LOCATE 0,-1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+     Hello
+         Column kept: 9
+Clamped to 39
+Error 5
+Ok
+color   auto    goto    list    run
+--- LOCATE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 Y=CSRLIN:LOCATE 5,Y:PRINT "Hello"
+20 LOCATE 9,Y:LOCATE ,Y+1:A=POS(0)
+30 PRINT "Column kept:";A
+40 LOCATE 99:A=POS(0):LOCATE 0
+50 PRINT "Clamped to";A
+60 ON ERROR GOTO 90
+70 LOCATE 0,-1
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+     Hello
+         Column kept: 9
+Clamped to 39
+Error 5
+ZB
+color   auto    goto    list    run
+=== LOCATE: PASS

@@ -1,0 +1,37 @@
+--- EQV: reference Philips_VG_8020
+Ok
+10 PRINT 5 EQV 3;1 EQV 0
+20 PRINT 0 EQV 0;0 EQV -1
+30 PRINT NOT (5 XOR 3)
+40 PRINT (1>2) EQV (3>4)
+50 ON ERROR GOTO 80
+60 PRINT 1 EQV "A"
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+-7 -2
+-1  0
+-7
+-1
+Error 13
+Ok
+color   auto    goto    list    run
+--- EQV: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT 5 EQV 3;1 EQV 0
+20 PRINT 0 EQV 0;0 EQV -1
+30 PRINT NOT (5 XOR 3)
+40 PRINT (1>2) EQV (3>4)
+50 ON ERROR GOTO 80
+60 PRINT 1 EQV "A"
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+-7 -2
+-1  0
+-7
+-1
+Error 13
+ZB
+color   auto    goto    list    run
+=== EQV: PASS

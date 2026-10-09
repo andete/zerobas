@@ -1,0 +1,33 @@
+--- DSKF: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 80
+20 A=DSKF(0)
+30 KILL "PROG2.BAS"
+40 PRINT A;DSKF(0)
+50 PRINT DSKF(9)
+60 PRINT DSKF(-1)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 706  707
+Error 62
+Error 5
+Ok
+color   auto    goto    list    run
+--- DSKF: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 80
+20 A=DSKF(0)
+30 KILL "PROG2.BAS"
+40 PRINT A;DSKF(0)
+50 PRINT DSKF(9)
+60 PRINT DSKF(-1)
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 706  707
+Error 62
+Error 5
+ZB
+color   auto    goto    list    run
+=== DSKF: PASS

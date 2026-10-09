@@ -1,0 +1,41 @@
+--- GOSUB: reference Philips_VG_8020
+Ok
+10 FOR I=1 TO 3:GOSUB 100:NEXT
+20 ON 2 GOSUB 200,300
+30 ON ERROR GOTO 400
+40 GOSUB 999
+50 END
+100 PRINT "Square of";I;"is";I*I
+110 RETURN
+200 PRINT "One":RETURN
+300 PRINT "Two":RETURN
+400 PRINT "Error";ERR:RESUME NEXT
+RUN
+Square of 1 is 1
+Square of 2 is 4
+Square of 3 is 9
+Two
+Error 8
+Ok
+color   auto    goto    list    run
+--- GOSUB: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 FOR I=1 TO 3:GOSUB 100:NEXT
+20 ON 2 GOSUB 200,300
+30 ON ERROR GOTO 400
+40 GOSUB 999
+50 END
+100 PRINT "Square of";I;"is";I*I
+110 RETURN
+200 PRINT "One":RETURN
+300 PRINT "Two":RETURN
+400 PRINT "Error";ERR:RESUME NEXT
+RUN
+Square of 1 is 1
+Square of 2 is 4
+Square of 3 is 9
+Two
+Error 8
+ZB
+color   auto    goto    list    run
+=== GOSUB: PASS

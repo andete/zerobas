@@ -1,0 +1,41 @@
+--- SWAP: reference Philips_VG_8020
+Ok
+10 A=1:B=2:SWAP A,B:PRINT A;B
+20 A$="LEFT":B$="RIGHT"
+30 SWAP A$,B$:PRINT A$;" ";B$
+40 DIM Q(3):Q(0)=7:Q(1)=9
+50 SWAP Q(0),Q(1):PRINT Q(0);Q(1)
+60 ON ERROR GOTO 100
+70 SWAP A,B$
+80 SWAP A,Z
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 2  1
+RIGHT LEFT
+ 9  7
+Error 13
+Error 5
+Ok
+color   auto    goto    list    run
+--- SWAP: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=1:B=2:SWAP A,B:PRINT A;B
+20 A$="LEFT":B$="RIGHT"
+30 SWAP A$,B$:PRINT A$;" ";B$
+40 DIM Q(3):Q(0)=7:Q(1)=9
+50 SWAP Q(0),Q(1):PRINT Q(0);Q(1)
+60 ON ERROR GOTO 100
+70 SWAP A,B$
+80 SWAP A,Z
+90 END
+100 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 2  1
+RIGHT LEFT
+ 9  7
+Error 13
+Error 5
+ZB
+color   auto    goto    list    run
+=== SWAP: PASS

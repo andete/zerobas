@@ -1,0 +1,41 @@
+--- VAL: reference Philips_VG_8020
+Ok
+10 PRINT VAL("12");VAL("-1.5")
+20 PRINT VAL("1E3");VAL(".5")
+30 PRINT VAL("&HFF");VAL("&B101")
+40 PRINT VAL("12ABC");VAL("")
+50 PRINT VAL("1 2");VAL("40000")
+60 ON ERROR GOTO 90
+70 PRINT VAL("&")
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 12 -1.5
+ 1000  .5
+ 255  5
+ 12  0
+ 12  40000
+Error 2
+Ok
+color   auto    goto    list    run
+--- VAL: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT VAL("12");VAL("-1.5")
+20 PRINT VAL("1E3");VAL(".5")
+30 PRINT VAL("&HFF");VAL("&B101")
+40 PRINT VAL("12ABC");VAL("")
+50 PRINT VAL("1 2");VAL("40000")
+60 ON ERROR GOTO 90
+70 PRINT VAL("&")
+80 END
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 12 -1.5
+ 1000  .5
+ 255  5
+ 12  0
+ 12  40000
+Error 2
+ZB
+color   auto    goto    list    run
+=== VAL: PASS

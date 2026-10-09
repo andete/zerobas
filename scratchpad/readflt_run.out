@@ -1,0 +1,7 @@
+✗  frac  VG-8020 [ 1.5]  zerobas [ERR 2 IN 30]
+✗  big   VG-8020 [ 40000]  zerobas [-25536]
+✗  exp   VG-8020 [ 2000]  zerobas [ERR 2 IN 30]
+✗  neg   VG-8020 [-.25]  zerobas [ERR 2 IN 30]
+✗  dbl   VG-8020 [ 1.23456789012]  zerobas [ERR 2 IN 30]
+== int   VG-8020 [ 42]  zerobas [ 42]
+refcache: 0 hit, 12 miss, 12 stored

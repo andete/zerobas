@@ -1,0 +1,35 @@
+--- AND: reference Philips_VG_8020
+Ok
+10 A=5
+20 IF A>0 AND A<10 THEN PRINT "ok"
+30 PRINT 5 AND 3;12 AND 10;-1 AND 255
+40 PRINT 2.7 AND 3
+50 ON ERROR GOTO 80
+60 PRINT 70000 AND 1
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ok
+ 1  8  255
+ 2
+Error 6
+Ok
+color   auto    goto    list    run
+--- AND: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 A=5
+20 IF A>0 AND A<10 THEN PRINT "ok"
+30 PRINT 5 AND 3;12 AND 10;-1 AND 255
+40 PRINT 2.7 AND 3
+50 ON ERROR GOTO 80
+60 PRINT 70000 AND 1
+70 END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ok
+ 1  8  255
+ 2
+Error 6
+ZB
+color   auto    goto    list    run
+=== AND: PASS

@@ -1,0 +1,29 @@
+--- ATN: reference Philips_VG_8020
+Ok
+10 PRINT ATN(0);INT(ATN(1)*1000)
+20 PRINT INT(4*ATN(1)*1000)
+30 ON ERROR GOTO 60
+40 PRINT ATN("A")
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  785
+ 3141
+Error 13
+Ok
+color   auto    goto    list    run
+--- ATN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 PRINT ATN(0);INT(ATN(1)*1000)
+20 PRINT INT(4*ATN(1)*1000)
+30 ON ERROR GOTO 60
+40 PRINT ATN("A")
+50 END
+60 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0  785
+ 3141
+Error 13
+ZB
+color   auto    goto    list    run
+=== ATN: PASS

@@ -2,6 +2,7 @@
 Copyright (c) 2026 Joost Yervante Damad
 SPDX-License-Identifier: 0BSD
 -->
+<!-- example: reference=VG-8020 disk=no -->
 
 # `CHR$` — the character with a given code
 
@@ -75,7 +76,7 @@ Error 5
 ```
 
 Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
-([`kwdoc_chr.out`](../../scratchpad/kwdoc_chr.out), from
+([`kwdoc_chr_s.out`](../../scratchpad/kwdoc_chr_s.out), from
 [`kwdoc_examples.py`](../../scratchpad/kwdoc_examples.py)).
 
 ## Differences from the reference

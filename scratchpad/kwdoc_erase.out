@@ -1,0 +1,29 @@
+--- ERASE: reference Philips_VG_8020
+Ok
+10 DIM A(5):A(1)=7
+20 ERASE A
+30 DIM A(5):PRINT A(1)
+40 ON ERROR GOTO 70
+50 ERASE A,Z
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0
+Error 5
+Ok
+color   auto    goto    list    run
+--- ERASE: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 DIM A(5):A(1)=7
+20 ERASE A
+30 DIM A(5):PRINT A(1)
+40 ON ERROR GOTO 70
+50 ERASE A,Z
+60 END
+70 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 0
+Error 5
+ZB
+color   auto    goto    list    run
+=== ERASE: PASS

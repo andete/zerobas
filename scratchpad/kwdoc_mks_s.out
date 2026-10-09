@@ -1,0 +1,37 @@
+--- MKS$: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 90
+20 A$=MKS$(1.5):GOSUB 70
+30 A$=MKS$(-1.5):GOSUB 70
+40 A$=MKS$(0):GOSUB 70
+50 A$=MKS$("A")
+60 END
+70 FOR I=1 TO 4:B=ASC(MID$(A$,I,1))
+80 PRINT B;:NEXT:PRINT:RETURN
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 65  21  0  0
+ 193  21  0  0
+ 0  0  0  0
+Error 13
+Ok
+color   auto    goto    list    run
+--- MKS$: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 ON ERROR GOTO 90
+20 A$=MKS$(1.5):GOSUB 70
+30 A$=MKS$(-1.5):GOSUB 70
+40 A$=MKS$(0):GOSUB 70
+50 A$=MKS$("A")
+60 END
+70 FOR I=1 TO 4:B=ASC(MID$(A$,I,1))
+80 PRINT B;:NEXT:PRINT:RETURN
+90 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 65  21  0  0
+ 193  21  0  0
+ 0  0  0  0
+Error 13
+ZB
+color   auto    goto    list    run
+=== MKS$: PASS

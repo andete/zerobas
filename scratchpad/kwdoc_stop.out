@@ -1,0 +1,25 @@
+--- STOP: reference Philips_VG_8020
+Ok
+10 FOR I=1 TO 3
+20 PRINT I
+30 IF I=2 THEN STOP
+40 NEXT
+RUN
+ 1
+ 2
+Break in 30
+Ok
+color   auto    goto    list    run
+--- STOP: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 FOR I=1 TO 3
+20 PRINT I
+30 IF I=2 THEN STOP
+40 NEXT
+RUN
+ 1
+ 2
+Break in 30
+ZB
+color   auto    goto    list    run
+=== STOP: PASS

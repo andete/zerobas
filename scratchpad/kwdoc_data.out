@@ -1,0 +1,31 @@
+--- DATA: reference Philips_VG_8020
+Ok
+10 DATA 42,"A,B",  HI THERE,,7
+20 READ N,A$,B$,C$,D
+30 PRINT N;A$;"|";B$;"|";C$;"|";D
+40 ON ERROR GOTO 70
+50 READ X
+60 END
+70 PRINT "Error";ERR:END
+80 DATA ABC
+RUN
+ 42 A,B|HI THERE|| 7
+Error 2
+Ok
+color   auto    goto    list    run
+--- DATA: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 DATA 42,"A,B",  HI THERE,,7
+20 READ N,A$,B$,C$,D
+30 PRINT N;A$;"|";B$;"|";C$;"|";D
+40 ON ERROR GOTO 70
+50 READ X
+60 END
+70 PRINT "Error";ERR:END
+80 DATA ABC
+RUN
+ 42 A,B|HI THERE|| 7
+Error 2
+ZB
+color   auto    goto    list    run
+=== DATA: PASS

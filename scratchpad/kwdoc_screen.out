@@ -1,0 +1,13 @@
+--- SCREEN: reference Philips_VG_8020
+Mode was 2
+Click switch 0
+Error 5
+Ok
+color   auto    goto    list    run
+--- SCREEN: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+Mode was 2
+Click switch 0
+Error 5
+ZB
+color   auto    goto    list    run
+=== SCREEN: PASS

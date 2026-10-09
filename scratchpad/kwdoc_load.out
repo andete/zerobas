@@ -1,0 +1,33 @@
+--- LOAD: reference National_CF-3300
+Ok
+10 PRINT "OLD"
+20 END
+LOAD "PROG3.BAS"
+Ok
+LIST
+10 PRINT"[3h]"
+Ok
+LOAD "PROG3.BAS",R
+[3h]
+Ok
+LOAD "NONE.BAS"
+File not found
+Ok
+color   auto    goto    list    run
+--- LOAD: zerobas C-BIOS_MSX1_EU_REPACK_DISK
+ZB
+10 PRINT "OLD"
+20 END
+LOAD "PROG3.BAS"
+ZB
+LIST
+10 PRINT"[3h]"
+ZB
+LOAD "PROG3.BAS",R
+[3h]
+ZB
+LOAD "NONE.BAS"
+File not found
+ZB
+color   auto    goto    list    run
+=== LOAD: PASS

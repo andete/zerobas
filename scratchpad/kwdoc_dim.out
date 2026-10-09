@@ -1,0 +1,33 @@
+--- DIM: reference Philips_VG_8020
+Ok
+10 DIM A(3),B$(2,1)
+20 FOR I=0 TO 3:A(I)=I*I:NEXT
+30 B$(2,1)="HI"
+40 PRINT A(3);B$(2,1)
+50 ON ERROR GOTO 80
+60 A(4)=1
+70 DIM A(5):END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 9 HI
+Error 9
+Error 10
+Ok
+color   auto    goto    list    run
+--- DIM: zerobas C-BIOS_MSX1_EU_REPACK_NODISK
+ZB
+10 DIM A(3),B$(2,1)
+20 FOR I=0 TO 3:A(I)=I*I:NEXT
+30 B$(2,1)="HI"
+40 PRINT A(3);B$(2,1)
+50 ON ERROR GOTO 80
+60 A(4)=1
+70 DIM A(5):END
+80 PRINT "Error";ERR:RESUME NEXT
+RUN
+ 9 HI
+Error 9
+Error 10
+ZB
+color   auto    goto    list    run
+=== DIM: PASS
