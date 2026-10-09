@@ -2675,9 +2675,10 @@ svs_oom:
 
 ; --- sh_val_parse: op=13 handler (shape-C follow-up move of VAL's integer ---
 ; parser, basic/str-engine.asm's str_val_parse — pure-RAM parse of the string
-; at (STRPTR); page-1/low both byte-full). Parses an optional-sign leading
-; decimal integer from (STRPTR)'s body -> SH_PTR (0 if no digits; integer-
-; only, spec D-E; SH_ERR always 0). Clobbers A,B,C,D,E,H,L.
+; at (STRPTR); page-1/low both byte-full). Parses the leading number of
+; (STRPTR)'s body: an integer -> SH_PTR (0 if no digits), anything else through
+; tk_float (D-VALFLOAT), and `&H`/`&O`/`&B` literals (D-VALBASE), which can set
+; SH_ERR. Clobbers A,B,C,D,E,H,L.
 ; --- sh_val_scr: op=19 (D-INPNUM) -- the same parse over STRSCR's field ------
 ; INPUT's numeric targets (console and INPUT #) read the typed / file field into
 ; STRSCR = [len][bytes] and need VAL's reading of it: every form 1985 listings

@@ -878,10 +878,11 @@ sct_ae_set:
 ;
 ; Clean-room: original code. The verb SEMANTICS (1-based MID$, LEFT$/RIGHT$ head/
 ; tail clamps, ASC "" = error, VAL's leading-parse, STR$'s leading blank for
-; non-negatives) are from the public MSX-BASIC language reference. Divergences
-; (integer-only VAL per spec D-E; CHR$ takes the low byte of n; results transit
-; the heap-backed temp-descriptor stack, §6/§7) are zerobas's own design. No
-; disassembly.
+; non-negatives) are from the public MSX-BASIC language reference. CHR$'s 0..255
+; domain and VAL's float parse follow the reference as measured (D-MISS-2,
+; D-VALFLOAT) -- the old "CHR$ takes the low byte" and "integer-only VAL"
+; divergences are gone. Results transiting the heap-backed temp-descriptor
+; stack (§6/§7) is zerobas's own design. No disassembly.
 ; ===========================================================================
 
 ; --- helpers ---------------------------------------------------------------
@@ -1043,7 +1044,7 @@ ev_ff_asc:
 ev_ff_val:
                 call    ev_str_arg          ; STRPTR -> the string-arg descriptor;
                                             ; IX advanced past ')'
-                ; VAL's leading-signed-decimal parse (integer-only, spec D-E)
+                ; VAL's leading-number parse (floats via tk_float, D-VALFLOAT)
                 ; moved to the sub-ROM tenant (sub/strheap.asm sh_val_parse,
                 ; op=13) — pure-RAM parse of (STRPTR)'s body, page-1/low both
                 ; byte-full. Thin glue mirrors str_temp_alloc.
