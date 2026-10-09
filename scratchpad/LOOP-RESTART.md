@@ -30,6 +30,9 @@ stays paused until he restarts it.**
 | FCB #0 (`VARPTR(#0)`, 267 B of `FRE(0)`) | **"build it"** -- 🤖 under D-FCBSHAPE (TIER 4); re-pin every FRE baseline in the same commit |
 | D-COPYWILD multi-match COPY | **"stay error 5 for now"** -- parked, nothing autonomous left |
 | D-DIMRESERVE / `eval`'s precedence rewrite | **"yes, we need to match reference there"** -- 🤖 TIER 4: an expression at the DIM edge fits the reference's ~79 B stack; then lower the reserve. Shared code: FULL, price main first |
+| D-CASTYPERULE (`LOAD"CAS:"` of a tokenised tape) | **"if we're more compliant with reference now that is fine"** -- D-CASTYPE stands; the 09-27 "keep the feature" is superseded. Closed |
+| D-DSKIB (drive 2 / `B:` on a one-drive machine) | **"yeah, we need to have the prompt mechanism"** -- 🤖 build the logical A/B swap model + the CF-3300's prompt; measure its scope first |
+| (raised) SHIFT / CTRL at boot | filed as D-BOOTKEYS, 🤖 TIER 4: measure on the CF-3300 first |
 
 📚 **LATER ON 2026-10-09: THE KEYWORD PAGES SHIPPED** — `docs/keywords/`, 146 pages
 (one per level-3 keyword), every example run on both machines by

@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:30827 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:30855 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29650,20 +29650,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300's texts, which the sub-ROM holds for both targets). A diskless
       build should not have them; nodisk-acceptance has no `ERROR 60+` row.
 
-- [ ] 🙋 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
+- [ ] 🔴 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
       for drive B: and strike a key when ready` (D-DSKIB, found 2026-10-09).**
-      🎚️ TIER 6 — `DSKI$` / `DSKO$` on drive 2 (the phantom `B:`)
-      🙋 **NEEDS-JOOST** — the same phantom-drive model D-DSKFDRV recorded for
-      `DSKF(2)` (TODO.md:13166), under the 2026-06-22 single-drive decision ("if
-      drive B is ever wanted, build the logical A/B swap model"). Whether to build
-      the swap prompt is his.
+      🎚️ TIER 6 — `DSKI$` / `DSKO$` / `DSKF` on drive 2 (the phantom `B:`)
+      ✅ **RULED (Joost, 2026-10-09): "yeah, we need to have the prompt
+      mechanism".** Build the single-drive logical A/B swap model the 2026-06-22
+      decision described: one physical drive, two logical drives, and the
+      `Insert diskette for drive B: and strike a key when ready` prompt (then the
+      wait) whenever the other logical drive is addressed. Not two physical
+      drives. Do not re-ask.
+      🤖 **AUTONOMOUS** — the CF-3300 settles each face; measure the scope first:
+      `DSKF(2)` (here it answers at once with drive A's count, TODO.md:13166),
+      `DSKI$`/`DSKO$` drive 2, `B:` file names (`FILES"B:"`, `LOAD"B:X"`, `OPEN`,
+      `COPY "A:X" TO "B:X"`), what happens AFTER the key (which disk does the
+      machine then believe is in), and when it prompts again (alternating A/B).
+      Related: D-BOOTKEYS (CTRL at boot is how the reference turns drive B off).
       📏 [`errtext6064_run.out`](scratchpad/errtext6064_run.out) (last row).
       `DSKO$` drive 2 is unmeasured.
 
-- [ ] 🙋 **D-CASTYPE (2026-10-08) REVERSED JOOST'S 2026-09-27 RULING ON `LOAD"CAS:"` OF A
-      TOKENISED TAPE WITHOUT ASKING (D-CASTYPERULE, found 2026-10-09).**
+- [x] ✅ **D-CASTYPE (2026-10-08) REVERSED JOOST'S 2026-09-27 RULING ON `LOAD"CAS:"` OF A
+      TOKENISED TAPE WITHOUT ASKING (D-CASTYPERULE, found 2026-10-09, RULED THE SAME DAY).**
+      ✅ **RULED (Joost, 2026-10-09): "if we're more compliant with reference now
+      that is fine".** D-CASTYPE's reference behaviour stands (a tape search
+      filters by type, so `LOAD"CAS:"` steps over a tokenised file); the 09-27
+      "keep the feature" ruling is superseded. Closed; nothing to change.
       🎚️ TIER 6 — `LOAD"CAS:"` on a tape that holds a tokenised program
-      🙋 **NEEDS-JOOST** — his ruling, recorded at TODO.md:30676: *"KEEP THE
+      ~~🙋 **NEEDS-JOOST**~~ — his ruling, recorded at TODO.md:30676: *"KEEP THE
       FEATURE"* — zerobas loads a tokenised tape via `LOAD"CAS:"`, the reference's
       hang is a stated divergence. D-CASTYPE then made every tape search filter by
       type, as the VG-8020 does, so `LOAD"CAS:"` now steps over a tokenised file —
@@ -29672,6 +29684,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       program does here now (searches to the end? an error?), then put both
       options to him: restore the feature for the type-skip case, or re-rule.
       Change nothing before he rules.
+
+- [ ] 🔴 **SHIFT OR CTRL HELD AT BOOT — THE DISK ROM'S OWN BOOT OPTIONS FOR MORE FREE
+      RAM (D-BOOTKEYS, raised by Joost 2026-10-09).**
+      🎚️ TIER 4 — RAM usage (VG-8020 / CF-3300): the user-facing way to get RAM back
+      🤖 **AUTONOMOUS** — the CF-3300 settles it; measure before building.
+      Joost: *"I also remember booting with shift key or ctrl key pressed disabled
+      some parts of the disk stuff for more RAM available."* The MSX convention,
+      to be CONFIRMED on the CF-3300 rather than taken from memory: SHIFT held
+      at power-on skips the disk ROM's initialisation (no Disk BASIC, the disk
+      work area not reserved, so `FRE(0)` and HIMEM are those of a diskless
+      machine); CTRL held turns off the phantom second drive (drive B: and its
+      per-drive work area), which matters once D-DSKIB builds that drive.
+      Measure on the CF-3300 and on zerobas DISK: `FRE(0)`, HIMEM (`$FC4A`),
+      whether `FILES` / `DSKF(0)` exist, `DSKF(2)`'s answer — for a plain boot,
+      SHIFT held, and CTRL held (openMSX can hold a key from power-on). No
+      reference ROM byte is read: the keys and the screen / work area only.
 
 - [ ] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
@@ -30848,6 +30876,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       direction, which is why ties go to 🙋.
       🎚️ TIER 6 — `LOAD"CAS:"` accepts what the reference hangs on
       🙋 NEEDS-JOOST — bug-for-bug fidelity here costs a working feature; that trade is his call.
+      🔁 **SUPERSEDED 2026-10-09 (Joost: "if we're more compliant with reference now
+      that is fine")** — D-CASTYPE (2026-10-08) made the tape search skip a
+      tokenised file under `LOAD"CAS:"` as the VG-8020 does; see D-CASTYPERULE.
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): KEEP THE FEATURE.** zerobas keeps loading a tokenised tape via
       `LOAD"CAS:"`; the reference's hang is a STATED DIVERGENCE. Closed.
 

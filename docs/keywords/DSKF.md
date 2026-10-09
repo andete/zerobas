@@ -7,7 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `DSKF` — free space on the disk
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: drive 2 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -83,7 +84,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None known. One possible gap is filed without a reproduction: with a file
+**Drive 2.** The CF-3300 treats drive 2 as a second, logical drive B: on its
+one mechanism and asks for that disk; zerobas answers at once with drive A's
+count — a free-space figure for a disk that was never inserted. Joost ruled on
+2026-10-09 that zerobas gets the same prompt mechanism (D-DSKIB, open).
+
+One possible gap is filed without a reproduction: with a file
 open, an error the disk ROM reports for `DSKF` (such as `Disk offline`) could
 lose its error code and print as a plain `load error`. The same flaw was
 fixed for `KILL`, `NAME`, `COPY` and `SAVE` on 2026-09-28; for `DSKF` it has

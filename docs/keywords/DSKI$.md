@@ -98,8 +98,9 @@ difference is not yet known.
 second, logical drive on the same mechanism: `DSKI$(2,0)` prints `Insert
 diskette for drive B: and strike a key when ready` and waits. zerobas has
 no logical drive B and answers `Bad drive name`
-([`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)). Whether to
-build the drive-B prompt is Joost's call (D-DSKIB, open; `DSKF(2)` is the
+([`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)). Joost ruled
+on 2026-10-09: *"yeah, we need to have the prompt mechanism"* — zerobas will
+get the same logical drive B: and its prompt (D-DSKIB, open; `DSKF(2)` is the
 same case).
 
 The one rung not yet proven is **RAM usage**.

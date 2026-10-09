@@ -101,8 +101,9 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   VG-8020 skips it and searches on. Since D-CASTYPE (2026-10-08) zerobas's
   tape search filters by file type as the VG-8020 does, so `LOAD "CAS:"` now
   steps over a tokenised program too; a tape holding only a tokenised program
-  has not been re-measured since. That change went against the ruling without
-  asking; it is filed for Joost to decide (D-CASTYPERULE, 2026-10-09).
+  has not been re-measured since. Joost then ruled on 2026-10-09: *"if we're
+  more compliant with reference now that is fine"* — the reference's
+  behaviour stands, and the earlier ruling is superseded.
 
 **RAM usage** is not yet proven.
 
