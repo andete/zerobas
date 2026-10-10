@@ -5,8 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # Disk write path: fewer sector commands (D-BLKIOPERCALL step 2, D-FDCDI)
 
-Status: **W1 and W2 built 2026-10-10** (§3: 28 → 23 → 14 READs on the
-workload, gate `wcache-acceptance`); W3–W4 are design. TIER 5 (on-par speed),
+Status: **W1, W2 and W3a built 2026-10-10/11** (§3: READs 28 → 23 → 14,
+WRITEs 36 → 28 on the workload, gate `wcache-acceptance`); W3b and W4 are
+design. TIER 5 (on-par speed),
 and the lever of D-FDCDI (TIER 3: keys typed during long disk work are lost,
 because the driver masks interrupts inside each sector command).
 
@@ -97,7 +98,35 @@ plain entry.
   (`IF SUB_BUILD`, 62 B of sub page 1).
 - **Knife:** K-WC2 (the hot entry always reads) moves only `zb-reads`.
 
-**W3 — the FAT written at CLOSE, as the CF-3300 does.** Mark-used and link
+**W3a — one FAT write per chain extension. ✅ BUILT 2026-10-11.** The narrow
+first half of W3, with no state across calls. When `ffds_alloc` extends a chain,
+it sets `FAT_DEFER` = 1. The mark's `fwe_finish` then patches without writing,
+moving the flag to 2 (dirty). The link that follows writes that sector once,
+with both entries.
+- **The safety rule:** if the link's entry is in ANOTHER sector,
+  `fat_write_fat_entry_hot` writes the held sector out before loading the other.
+- **Who clears the flag:** `fat_write_buf_allfats`, `fat_mount` (which clears
+  power-on garbage before any FAT use) and every failure exit (`ffds_undefer`,
+  `ffds_full`).
+- **The flag's byte:** `FAT_DEFER` is `$E5AC` in both maps, MEASURED free
+  ([`ramfree_e5ac.out`](../scratchpad/ramfree_e5ac.out): a write watchpoint
+  across MSX-DOS, every BASIC disk verb and `CALL SYSTEM` saw only its own
+  control).
+- **Where the code went:** disk.rom's copies of `fat_write_buf_allfats`,
+  `fat_dir_start` and `fat_rootsecs` moved to the `$47C1` fill to make room in
+  the pinned region. Sub page 1 125 → 88 B.
+- **Measured:** 36 → 28 WRITEs (predicted exactly).
+- **The cross-sector witness:** a second disk whose clusters 9–339 are
+  pre-marked used gives a 3-cluster file clusters 340, 341 and 342, across FAT
+  sectors 0/1 (341's entry straddles them). It reads back whole (`content-x`),
+  and the chain read from the IMAGE is `340>341>342 EOC` on both machines
+  (`fat-x`).
+- **Knife K-WC4** (no flush before the other sector loads) turns the chain to
+  end FREE. Its first run moved nothing: a lost mark is overwritten by the next
+  link, and on the LAST cluster the file still reads back (readers stop at the
+  size). A readback cannot see this; only the FAT can.
+
+**W3b — the FAT written at CLOSE, as the CF-3300 does.** Mark-used and link
 only change `FAT_MBUF` (dirty flag). The dirty sector is written to both copies
 when another FAT sector is needed, at `CLOSE`, and before any operation that
 reads the FAT from disk. That saves 4 WRITEs per cluster. It changes the

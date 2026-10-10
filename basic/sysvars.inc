@@ -3049,6 +3049,15 @@ FWBUF           equ     $E7C0   ; FAT/dir metadata sector buffer ($E7C0..$E9BF)
 ; says FAT_DBUF / FAT_MBUF and each ROM binds them. Zero bytes (EQU).
 FAT_DBUF        equ     FSECTOR_BUF     ; the body's data/sector buffer
 FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
+; D-WCACHE W3a: the "defer this FAT write" flag (0 normal, 1 a deferral asked for,
+; 2 a deferred write pending) -- set only by ffds_alloc's chain extension, cleared
+; by fat_mount, fat_write_buf_allfats and every failure exit. One address in BOTH
+; maps: the shared FAT body reads it in disk.rom and in the sub-ROM. MEASURED free
+; (scratchpad/ramfree_e5ac.py -> ramfree_e5ac.out: a write watchpoint on
+; $E5AC..$E5BF across MSX-DOS, every BASIC disk verb, CALL SYSTEM and DOS again
+; saw only its own control POKE); disk.rom's cells end at MBUF_PTR $E5AB, and
+; BASIC's map keeps $E560..$E5BF for disk.rom.
+FAT_DEFER       equ     $E5AC   ; (1)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9 above the buffers).
 FAT_SECPERCLUS  equ     $E9C0   ; sectors per cluster (byte)

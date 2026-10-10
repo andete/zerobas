@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **107** in the MSX standard work area at or above `$F380`.
-* **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **30** in the MSX standard work area at or above `$F380`.
+* **basic** — 436 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **107** in the MSX standard work area at or above `$F380`.
+* **disk** — 137 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **30** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -390,6 +390,8 @@ second one is the question a per-component map cannot answer.
 | `$E5A6` | 2 B | `disk` | `BDOS_SEQREC` | records delivered so far by RDSEQ (K, word) |  |
 | `$E5A8` | 2 B | `disk` | `DBUF_PTR` | word -> the 512-byte DATA/sector buffer |  |
 | `$E5AA` | 2 B | `disk` | `MBUF_PTR` | word -> the 512-byte FAT/dir METADATA buffer |  |
+| `$E5AC` | 1 B | `basic` | `FAT_DEFER` | (1) |  |
+| `$E5AC` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
 | `$E5C0` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | file data / read sector buffer ($E5C0..$E7BF) |  |
 | `$E5C0` | 512 B | `disk` | `FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | 512-byte sector buffer ($E5C0-$E7BF) = main FSECTOR_BUF |  |
 | `$E600` | 256 B | `basic` | `CAL_BUF/CAS_WBUF` | cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF) | `disk` FAT_DBUF/FSECTOR_BUF/SECTOR_BUF |

@@ -7,7 +7,12 @@ build's.
 
   K-WC1  fat_total_clusters re-reads the boot sector per call (W1 undone)
          -> zb-reads; content and writes unmoved
-  K-WC2  disk.rom's hot FAT write always reads (W2 undone) -> zb-reads
+  K-WC2  disk.rom's hot FAT write always reads (W2 undone) -> zb-reads AND
+         zb-writes since W3a: the always-read path also flushes the held sector
+  K-WC3  the deferral never asked for (W3a undone)            -> zb-writes
+  K-WC4  a deferred FAT sector NOT flushed before another one loads -> fat-x
+         (the last cluster's mark is lost: the chain ends FREE; the content
+         still reads back -- readers stop at the file size)
 
 🔴 RESTORE ON EVERY EXIT: originals in memory, put back by try/finally AND
 atexit; knife_guard proves the cut reached the installed ROM. A run with rows
@@ -19,7 +24,7 @@ import knife_guard                  # D-KNIFEROM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
-ALL = {"content", "zb-reads", "zb-writes"}
+ALL = {"content", "content-x", "fat-x", "zb-reads", "zb-writes"}
 KNIVES = {
     "K-WC1": ("basic/fat-prim-body.inc",
               "                ld      de, (FAT_TOTCLUS)\n                or      a\n                ret\n",
@@ -31,7 +36,15 @@ KNIVES = {
     "K-WC2": ("disk/fat.asm",
               "                jp      z, fwe_have         ; already loaded: no read\n",
               "                nop                         ; K-WC2 CUT\n                nop\n                nop\n",
-              {"zb-reads"}),
+              {"zb-reads", "zb-writes"}),
+    "K-WC3": ("basic/fat-prim-body.inc",
+              "                ld      a, 1                ; D-WCACHE W3a: a chain EXTENSION -- the\n",
+              "                ld      a, 0                ; K-WC3 CUT\n",
+              {"zb-writes"}),
+    "K-WC4": ("disk/fat.asm",
+              "                call    z, fat_write_buf_allfats    ; out FIRST (it clears the flag)\n",
+              "                nop                         ; K-WC4 CUT\n                nop\n                nop\n",
+              {"fat-x"}),
 }
 TMP = "/tmp/zerobas"
 PROBE = "python3 -u probes/disk/disk_probe_wcache.py"

@@ -1,0 +1,12 @@
+ours: delay 8.0s  arrived whole: False  | t=11.680
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  open"big.txt" for output as #1:poke &
+   |  hd000,1:for i=1 to 200:print#1,"abcde
+   |  fghijklmnopqrs":next:close#1:poke &hd
+   |  000,2
+   |  ZB
+   |  prin"str$
+   |  color  auto   goto   list   run

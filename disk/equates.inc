@@ -434,6 +434,15 @@ FAT_WRTMP2      equ     $E558   ; second transient (free-cluster scan cached sec
 ; cells below $E560 and places its buffers from $E5C0) -- a buffer fill of our
 ; own would otherwise have overwritten our own state.
 WBUF            equ     $E7C0   ; write-back FAT/dir sector buffer ($E7C0..$E9BF) = main FWBUF
+; D-WCACHE W3a: the "defer this FAT write" flag (0 normal, 1 a deferral asked for,
+; 2 a deferred write pending) -- set only by ffds_alloc's chain extension, cleared
+; by fat_mount, fat_write_buf_allfats and every failure exit. One address in BOTH
+; maps: the shared FAT body reads it in disk.rom and in the sub-ROM. MEASURED free
+; (scratchpad/ramfree_e5ac.py -> ramfree_e5ac.out: a write watchpoint on
+; $E5AC..$E5BF across MSX-DOS, every BASIC disk verb, CALL SYSTEM and DOS again
+; saw only its own control POKE); disk.rom's cells end at MBUF_PTR $E5AB, and
+; BASIC's map keeps $E560..$E5BF for disk.rom.
+FAT_DEFER       equ     $E5AC   ; (1)
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).

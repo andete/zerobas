@@ -6478,7 +6478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31699 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31721 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29835,8 +29835,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       hot entry carries its own sector arithmetic in disk/fat.asm's `$47C1` fill;
       the sub-ROM's copy costs 62 B of sub page 1. 🔪 K-WC2 → exactly `zb-reads`
       ([`wcache_knives_w2.out`](scratchpad/wcache_knives_w2.out)).
-      ➡️ W3 next (the FAT written at CLOSE — changes the medium between calls:
-      re-read the mid-sequence image rows first).
+      ✅ **W3a SHIPPED 2026-10-11 — one FAT write per chain extension:** the mark
+      waits (`FAT_DEFER`, `$E5AC` in both maps, measured free —
+      [`ramfree_e5ac.out`](scratchpad/ramfree_e5ac.out)), and the link writes the
+      sector once with both entries; a link in ANOTHER sector writes the held one
+      out first. 36 → 28 WRITEs (predicted exactly,
+      [`fdcseq_w3a.out`](scratchpad/fdcseq_w3a.out)). New gate rows on a disk
+      whose clusters 9..339 are pre-marked used, so a 3-cluster file takes 340,
+      341, 342 across FAT sectors 0/1: `content-x` (read back) and `fat-x` (the
+      chain read from the IMAGE: `340>341>342 EOC` on both,
+      [`wcache_gate_w3a.out`](scratchpad/wcache_gate_w3a.out)). Knives
+      ([`wcache_knives_w3a.out`](scratchpad/wcache_knives_w3a.out)): K-WC3 (no
+      deferral) → `zb-writes`; K-WC4 (no flush before the other sector loads) →
+      `fat-x`; K-WC2 now moves `zb-writes` too (its always-read path also flushes
+      the held sector). 🔴 **K-WC4's FIRST RUN MOVED NOTHING, AND THAT WAS THE
+      ROW BEING BLIND:** a lost mark is overwritten by the next link, and a lost
+      mark on the LAST cluster reads back fine (readers stop at the size) — only
+      the FAT shows it, so the row now reads the chain from the image and the file
+      ends on the deferred cluster. Sub page 1 125 → 88 B. D-FDCDI's typed keys re-read after W2:
+      9–10 of 22 at 3/5/8 s, unchanged (predicted a small rise: MISSED — the
+      masked time is in the writes), and the workload's time now matches the
+      CF-3300's ([`fdcdi_typeahead_w2_d3.out`](scratchpad/fdcdi_typeahead_w2_d3.out)).
+      ➡️ W3b (the FAT at CLOSE) or W4 (the data half-sector) next — each changes
+      the medium between calls or needs a `FAT_DBUF` audit; re-read the
+      mid-sequence image rows first.
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE

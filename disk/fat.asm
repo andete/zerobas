@@ -138,15 +138,71 @@ fat_write_fat_entry_hot:
                 ld      d, 0
                 ld      hl, (FAT_FATSTART)
                 add     hl, de              ; HL = the entry's FAT sector
+                push    hl                  ; the entry's sector
                 ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
-                ld      (FAT_FATSEC), hl
                 or      a
                 sbc     hl, de
+                pop     hl
                 jp      z, fwe_have         ; already loaded: no read
-                ld      de, (FAT_FATSEC)
+                push    hl
+                ld      a, (FAT_DEFER)      ; D-WCACHE W3a: a deferred write of the
+                cp      2                   ; sector we are about to replace goes
+                call    z, fat_write_buf_allfats    ; out FIRST (it clears the flag)
+                pop     hl
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
                 ld      hl, FAT_MBUF
                 call    read_sector
                 jp      fwe_have
+
+; --- disk.rom's copies of three shared-body routines (basic/fat-prim-body.inc),
+; moved here by D-WCACHE W3a: the body's region, pinned at $75A5, had no room for
+; the deferral logic otherwise. Same code, same contracts.
+fat_write_buf_allfats:
+                xor     a
+                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the buffer is clean after this
+                ld      a, (FAT_NUMFATS)
+                ld      b, a                ; B = copies to write
+                ld      hl, (FAT_FATSEC)    ; copy-0 target sector
+fwba_loop:
+                push    bc
+                push    hl
+                ex      de, hl              ; DE = target sector
+                ld      hl, FAT_MBUF
+                call    fatprim_write_sector
+                pop     hl
+                pop     bc
+                ret     c                   ; write error
+                ; advance to the same sector in the next FAT copy.
+                ld      de, (FAT_SECPERFAT)
+                add     hl, de
+                djnz    fwba_loop
+                or      a                   ; Cy = 0 success
+                ret
+
+; fat_total_clusters — total cluster count of the volume (2 + data clusters).
+;   out: DE = total clusters; preserves HL
+; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FAT_MBUF (NOT FAT_DBUF,
+; which may hold in-flight write data).
+
+; fat_dir_start -- FAT_DIRSEC := the first root sector, FAT_DIRREM := how many
+; there are: the start of every root-directory scan. Clobbers DE, F.
+fat_dir_start:
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                call    fat_rootsecs
+                ld      (FAT_DIRREM), hl
+                ret
+
+; fat_rootsecs -- HL := root-directory sectors = FAT_FIRSTDATA - FAT_FIRSTROOT
+; (fat_mount's own sum, undone; the cell that held it holds FAT_TOTCLUS now).
+; Clobbers DE, F.
+fat_rootsecs:
+                ld      hl, (FAT_FIRSTDATA)
+                ld      de, (FAT_FIRSTROOT)
+                or      a
+                sbc     hl, de
+                ret
 
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
 ;   in:  HL = directory entry name, DE = search name

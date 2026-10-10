@@ -1,0 +1,10 @@
+  ROM 1cea3c92 4b60f1a8 eb349776 d96210e7  ->  1cea3c92 00652c5e bdaca90b d96210e7
+PASS  K-WC1: moved ['zb-reads'] (want exactly ['zb-reads'])
+  ROM 1cea3c92 00652c5e bdaca90b d96210e7  ->  1cea3c92 4b60f1a8 a0309791 d96210e7
+PASS  K-WC2: moved ['zb-reads', 'zb-writes'] (want exactly ['zb-reads', 'zb-writes'])
+  ROM 1cea3c92 4b60f1a8 a0309791 d96210e7  ->  1cea3c92 00f7bebe a873b42d d96210e7
+PASS  K-WC3: moved ['zb-writes'] (want exactly ['zb-writes'])
+  ROM 1cea3c92 00f7bebe a873b42d d96210e7  ->  1cea3c92 4b60f1a8 6b848903 d96210e7
+PASS  K-WC4: moved ['fat-x'] (want exactly ['fat-x'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

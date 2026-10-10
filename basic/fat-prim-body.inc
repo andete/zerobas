@@ -261,6 +261,8 @@ fm_divdone:
                 inc     de
                 inc     de                  ; + 2 (first data cluster is 2)
                 ld      (FAT_TOTCLUS), de
+                xor     a
+                ld      (FAT_DEFER), a      ; D-WCACHE W3a: no FAT write deferred
     IF DISK_BUILD
                 ; 🔴 M30's hint RESET, and it must live here once the swap lands.
                 ; It currently sits in fat_mount_tail (disk/kernel.asm) -- which a
@@ -867,12 +869,19 @@ fat_write_fat_entry_hot:
                 ld      d, 0
                 ld      hl, (FAT_FATSTART)
                 add     hl, de              ; HL = the entry's FAT sector
+                push    hl                  ; the entry's sector
                 ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
-                ld      (FAT_FATSEC), hl
                 or      a
                 sbc     hl, de
+                pop     hl
                 jr      z, fwe_have         ; already loaded: no read
-                ld      de, (FAT_FATSEC)
+                push    hl
+                ld      a, (FAT_DEFER)      ; D-WCACHE W3a: a deferred write of the
+                cp      2                   ; sector we are about to replace goes
+                call    z, fat_write_buf_allfats    ; out FIRST (it clears the flag)
+                pop     hl
+                ld      (FAT_FATSEC), hl
+                ex      de, hl
                 ld      hl, FAT_MBUF
                 call    read_sector
                 jr      fwe_have
@@ -1021,8 +1030,19 @@ fwe_same_odd:
                 ld      (hl), a
 fwe_finish:
                 pop     hl                  ; discard saved cluster
-                ; persist the (current) FAT sector to all FAT copies.
-                jp      fat_write_buf_allfats
+                ; persist the (current) FAT sector to all FAT copies -- unless the
+                ; caller ASKED for this write to wait (D-WCACHE W3a, FAT_DEFER = 1:
+                ; ffds_alloc, whose link to the previous cluster follows at once and
+                ; writes this sector with both entries). Then it is DIRTY (2), and
+                ; the next write of this buffer -- or fat_write_fat_entry_hot, before
+                ; it loads another sector -- takes it out.
+                ld      a, (FAT_DEFER)
+                dec     a
+                jp      nz, fat_write_buf_allfats   ; 0 or 2: write now (it clears)
+                ld      a, 2
+                ld      (FAT_DEFER), a
+                or      a                   ; Cy = 0
+                ret
 fwe_err:
                 pop     hl                  ; discard saved cluster (keep stack sane)
                 scf                         ; report the I/O error
@@ -1032,7 +1052,10 @@ fwe_err:
 ;   in:  FAT_MBUF holds the sector; FAT_FATSEC = its sector in FAT copy 0
 ;   out: Cy = 0 ok, Cy = 1 error
 ; (Microsoft FAT spec §3.1: NumFATs identical copies; §3.2: same packing.)
+    IF SUB_BUILD
 fat_write_buf_allfats:
+                xor     a
+                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the buffer is clean after this
                 ld      a, (FAT_NUMFATS)
                 ld      b, a                ; B = copies to write
                 ld      hl, (FAT_FATSEC)    ; copy-0 target sector
@@ -1056,6 +1079,9 @@ fwba_loop:
 ;   out: DE = total clusters; preserves HL
 ; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FAT_MBUF (NOT FAT_DBUF,
 ; which may hold in-flight write data).
+    ENDIF
+                ; (disk.rom: fat_write_buf_allfats is in disk/fat.asm's $47C1 fill)
+
 fat_total_clusters:
                 ; D-WCACHE W1: fat_mount computed it; no boot-sector read, so no
                 ; failure either (Cy = 0, which every caller's `ret c` expects).
@@ -1063,6 +1089,7 @@ fat_total_clusters:
                 or      a
                 ret
 
+    IF SUB_BUILD
 ; fat_dir_start -- FAT_DIRSEC := the first root sector, FAT_DIRREM := how many
 ; there are: the start of every root-directory scan. Clobbers DE, F.
 fat_dir_start:
@@ -1081,6 +1108,8 @@ fat_rootsecs:
                 or      a
                 sbc     hl, de
                 ret
+    ENDIF
+                ; (disk.rom: fat_dir_start / fat_rootsecs are in disk/fat.asm's $47C1 fill)
 
 ; fat_count_free — count free clusters (FAT entries == 0) over the data range
 ; [2, total). Mounts first. Used by DSKF.
@@ -1270,13 +1299,15 @@ ffds_nopad:
                 ld      hl, FAT_SECPERCLUS
                 cp      (hl)
                 jr      c, ffds_haveclus    ; room in the current cluster
+                ld      a, 1                ; D-WCACHE W3a: a chain EXTENSION -- the
+                ld      (FAT_DEFER), a      ; link below writes the mark's sector too
 ffds_alloc:
                 ; allocate a new cluster (first one, or chain extension).
                 call    fat_alloc_cluster
     IF SUB_BUILD
                 jr      c, ffds_full        ; disk full: D-ASAVEFULLSTAMP, below
     ELSE
-                ret     c                   ; disk full
+                jr      c, ffds_undefer     ; disk full / I/O: nothing may stay deferred
     ENDIF
                 ; HL = new cluster. Link it: if a previous cluster exists, point it
                 ; at HL; else record HL as the file's first cluster.
@@ -1341,6 +1372,8 @@ ffds_mul:
 ; this. 🏗️ SAVE ,A, which reached it through main's fatprim stub, is disk.rom's
 ; since S10 increment 3 (D-ASAVEDOUT) -- the same rule is in hco_asav there.
 ffds_full:
+                xor     a
+                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the request dies with the failure
                 ld      a, (FCH_ACTIVE)
                 or      a
                 jr      nz, ffds_full_x     ; a channel: not this rule
@@ -1361,6 +1394,13 @@ ffds_full:
                 ld      (DISKOP_ERR), a
 ffds_full_x:
                 scf                         ; still a failure
+                ret
+    ELSE
+ffds_undefer:
+                push    af                  ; the failure (Cy, A)
+                xor     a
+                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the request dies with it
+                pop     af
                 ret
     ENDIF
 
