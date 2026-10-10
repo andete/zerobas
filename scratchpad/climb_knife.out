@@ -1,0 +1,11 @@
+  ROM fece23ae 1b7bd08d 3a0e8089 d0433804  ->  e009d155 1b7bd08d 3a0e8089 2e2680fc
+uncut rc=0 lines=343   cut rc=2 lines=344
+8 differing line(s):
+  -PASS  assoc  0 IMP 0 IMP 0                      ref=       0  zb=       0
+  +FAIL  assoc  0 IMP 0 IMP 0                      ref=       0  zb=      -1
+  +--- calibration: 192/193 agree   <-- APPARATUS SUSPECT, do not trust the rest
+  -OK
+  -refcache: 2 hit, 0 miss
+  +ATTENTION: see FAIL/ANOMALY rows above
+  +refcache: 1 hit, 3 miss, 3 stored
+  +make: *** [logicops-acceptance] Error 1

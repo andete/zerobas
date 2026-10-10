@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31416 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31433 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26721,6 +26721,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and a following `PRINT` aborts. lnblank-say-acceptance pins it
       (`crf-oomctl` / `crf-oom` / `crf-oomlst`, KNOWN_DIVERGE); those pins rot
       loudly the day this item lands.
+      ✅ **S1 SHIPPED 2026-10-10 — THE LOGICAL LAYER IS A PRECEDENCE CLIMBER.**
+      `ev_logic` (basic/expr.asm) walked all five logtab levels on every
+      expression (`push hl` + a call each, 20 B whether or not an operator was
+      there); `evc_min` now parses the operand once and searches the table only
+      from the loosest level still allowed, recursing (with the next-TIGHTER entry
+      as the minimum) only when an operator is present — the same groupings,
+      left-assoc, in the table's own order. Main page 1 42 → 35 B (predicted
+      ~+6: MISSED by 1). [`stackhwref_probe.py`](scratchpad/stackhwref_probe.py) →
+      [`stackhwref_after_s1.out`](scratchpad/stackhwref_after_s1.out): `A=1` 147 →
+      **113** B (VG-8020 79), flat 145 → 113, `paren4` 196 → **116** (predicted
+      ~116: hit; idle predicted ~131 — MISSED on the good side: the deepest point
+      sat inside a nested eval entry, so the saving counted twice). The gap is
+      68 → 34 B. logicops-acceptance green (193 rows); 🔪
+      [`climb_knife.out`](scratchpad/climb_knife.out): K-CL1 (rhs at the SAME
+      level, i.e. right-assoc) → exactly `assoc 0 IMP 0 IMP 0` (0 vs −1), IMP
+      being the one non-associative level. ➡️ Next: the arithmetic levels (`ev_e`
+      … `ev_pw`, one call each), then the reserve.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

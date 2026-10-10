@@ -84,56 +84,69 @@ eval:
 ; The level is a POINTER into logtab, carried in HL and pushed across recursion,
 ; so no index arithmetic is needed: the next-tighter level is simply the next
 ; 3-byte entry, and the $00 terminator is what drops through to unary NOT.
+; 🔁 D-DIMRESERVE S1 (2026-10-10): A PRECEDENCE CLIMBER, NOT A DESCENT. This
+; walked every logtab level on every expression -- `push hl` + a call per level,
+; 20 B of stack whether or not any logical operator was there (the 36 B
+; precedence chain of scratchpad/stackattr_run.out; the reference runs the same
+; statement in 79 B to our 147). Now the operand is parsed once and the table is
+; searched only from the loosest level the caller still accepts (`evc_min`'s HL);
+; an operator found there parses its right operand with the next-TIGHTER entry
+; as the minimum, so it binds what binds tighter and stops at what does not --
+; the same groupings, left-associative, in the table's own order (so EQV stays
+; looser than XOR, as before; the two are unobservable against each other).
+; A plain operand costs 4 B here instead of 20.
 ev_logic:
-                ld      hl,logtab           ; loosest level (IMP)
-ev_lg:
-                ld      a,(hl)
-                or      a
-                jr      z,ev_not            ; past the tightest layer -> NOT / relational
-                push    hl
-                call    ev_lg_next          ; DE = lhs, from the tighter level
+                ld      hl,logtab           ; any level may join this operand
+evc_min:                                    ; in: HL = the loosest entry allowed
+                push    hl                  ; [min]
+                call    ev_not              ; DE / FAC = the operand (NOT / relational)
+evc_lp:                                     ; (sp) = min
+                call    ev_sp               ; A = the next token
                 pop     hl
-ev_lg_lp:
-                call    ev_sp
-                cp      (hl)                ; this level's operator token?
-                ret     nz
-                ; The level pointer must be SAVED BEFORE the conversion call:
+                push    hl                  ; HL = min, still on the stack
+evc_find:
+                ld      c,(hl)
+                inc     c
+                dec     c
+                jr      z,evc_done          ; past the tightest entry: no operator joins
+                cp      c
+                jr      z,evc_hit
+                inc     hl
+                inc     hl
+                inc     hl                  ; -> the next-tighter entry
+                jr      evc_find
+evc_done:
+                pop     hl                  ; drop [min]; DE / FAC untouched
+                ret
+evc_hit:                                    ; HL = this operator's entry
+                ; The entry must be SAVED BEFORE the conversion call:
                 ; fac_to_int_strict_reset clobbers HL ("clobbers as
-                ; fac_to_int_strict, +A", float-arith.asm). The hand-rolled
-                ; layers got away without this because their level was implicit
-                ; in the code position and HL was dead here -- carrying it in a
-                ; register is exactly what makes the table-driven form need the
-                ; guard. Missing it derails the interpreter into garbage on
-                ; EVERY float operand (`2.7 AND 0`), while every integer operand
-                ; keeps working: a green build that crashes the moment it runs.
-                push    hl                  ; [level] -- MUST outlive the call
-                ; spec §10.3 "strict int16 domain", exactly as the hand-rolled
-                ; layers did it: convert the operand NOW and reset FACTYP=2 so a
-                ; float does not leak into the rhs eval. No FAC save is needed --
-                ; the conversion happens before the rhs eval can clobber FAC.
+                ; fac_to_int_strict, +A", float-arith.asm). Missing it derails the
+                ; interpreter on EVERY float operand (`2.7 AND 0`) while every
+                ; integer operand keeps working -- found the first time this layer
+                ; carried its level in a register.
+                push    hl                  ; [entry]
+                ; spec §10.3 "strict int16 domain": convert the operand NOW and
+                ; reset FACTYP=2 so a float does not leak into the rhs eval.
                 call    fac_to_int_strict_reset
-                inc     ix
+                inc     ix                  ; past the operator token
+                pop     hl
+                push    hl                  ; [entry]
                 push    de                  ; [lhs]
-                call    ev_lg_next          ; DE = rhs
+                inc     hl
+                inc     hl
+                inc     hl                  ; the rhs takes only TIGHTER operators
+                call    evc_min             ; DE = rhs
                 call    fac_to_int_strict_reset
                 pop     hl                  ; HL = lhs
-                ex      (sp),hl             ; HL = level, (sp) = lhs
-                push    hl                  ; [level]
+                ex      (sp),hl             ; HL = entry, (sp) = lhs
                 inc     hl
                 ld      c,(hl)
                 inc     hl
                 ld      b,(hl)              ; BC = this level's apply leaf
-                pop     hl                  ; HL = level
-                ex      (sp),hl             ; (sp) = level, HL = lhs
+                pop     hl                  ; HL = lhs
                 call    lg_apply            ; DE = lhs OP rhs
-                pop     hl                  ; HL = level
-                jr      ev_lg_lp            ; left-assoc (MEASURED: IMP is the
-                                            ; only level where that is observable)
-ev_lg_next:
-                inc     hl
-                inc     hl
-                inc     hl                  ; -> the next-tighter entry
-                jr      ev_lg
+                jr      evc_lp              ; left-assoc: look again from min
 
 ; lg_apply: HL = lhs, DE = rhs, BC = apply leaf -> DE = result.
 ; The byte loop is shared; each leaf is the 2-3 byte ALU core that actually

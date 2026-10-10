@@ -92,12 +92,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 with about 137 bytes left; zerobas refuses once fewer than about 258 would be
 left, because it keeps a fixed 256-byte reserve for its own stack
 ([readings](../../scratchpad/dimedge_run.out)). Measuring why showed the real
-cost is the expression evaluator: the same statement needs 79 bytes of stack on
+cost is the expression evaluator: the same statement needed 79 bytes of stack on
 the VG-8020 and 147 here ([readings](../../scratchpad/stackhwref_run.out)), so
 right after such a `DIM` even a simple formula can be `Out of memory` here.
 Joost ruled on 2026-10-09: *"yes, we need to match reference there"* — the
 evaluator is to be reworked until a formula fits in the reference's stack, and
-then the reserve lowered to the VG-8020's edge.
+then the reserve lowered to the VG-8020's edge. The first step (2026-10-10)
+brought it to 113 bytes ([after](../../scratchpad/stackhwref_after_s1.out)); the
+reserve itself is unchanged until the rest is done.
 
 More generally, zerobas has less free memory than the VG-8020, so an array that
 only just fits there can be `Out of memory` here. That is part of the **RAM
