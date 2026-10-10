@@ -797,6 +797,23 @@ item — do **one item per session** to keep context lean.
       ~4 keys go in that window. Not shipped. Next idea: keep the retry
       interruptible too, bounded, and measure the lost-data rate on its own.
       🤖 **AUTONOMOUS** — the CF-3300 settles it.
+      📏 **RE-MEASURED 2026-10-10 — THE LEVER IS THE NUMBER OF SECTOR COMMANDS, NOT
+      THE MASK.** Interrupt sampling every 5 ms on zerobas during the type-ahead
+      workload ([`fdcdi_iff.out`](scratchpad/fdcdi_iff.out)): masked 62 % of the
+      time, and nearly ALL of it inside the FDC's DRQ waits (`fdc_wr_wait` /
+      `fdc_rd_wait`: the rotational wait + the transfer); the FAT and channel code
+      between commands runs with interrupts ON (predicted the opposite: MISSED —
+      the S10.B branch's "JIFFY 72 -> 74" does not hold on main). Counting the
+      WD2793 commands for the same workload
+      ([`fdcdi_count.py`](scratchpad/fdcdi_count.py) →
+      [`fdcdi_count.out`](scratchpad/fdcdi_count.out)): **CF-3300 16 READ + 16
+      WRITE + 3 seeks; zerobas 28 READ + 36 WRITE + 64 seek/restore** — twice the
+      data commands, each masking a rotational wait, and a seek before every one.
+      That accounts for 42 % kept against 77 % without any change to the DI window,
+      so the fix is FEWER COMMANDS: D-BLKIOPERCALL step 2's write cache (TIER 5)
+      serves this item too. One local piece: skip the seek when the head is
+      already on the track (64 → a handful). Interrupt windows inside the DRQ wait
+      stay the reverted idea above.
 
 - [x] 🟢 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL
       MAKE — CLOSED 2026-09-21, ALL FOUR SLICES SHIPPED**
@@ -6348,7 +6365,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31291 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31308 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6514,7 +6531,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11349 (T-6FE392)8 (T-529ABE)` from `TODO.md:24101 (T-529ABE)`: a
+      `TODO.md:11366 (T-6FE392)8 (T-529ABE)` from `TODO.md:24118 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12196,7 +12213,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24101 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24118 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

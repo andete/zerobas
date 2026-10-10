@@ -1,0 +1,34 @@
+# D-FDCDI 2026-10-10: IFF/PC every 5 ms of emulated time, zerobas DISK, during
+# OPEN + 200 x PRINT#1 (19 chars) + CLOSE; PC mapped with build/disk.sym or
+# build/basic-reloc.sym by page 1's primary slot. iff=0 masked, iff=7 enabled.
+samples 3501, IFF=0 in 2156 (62%)
+  iff=0   994 disk:fdc_wr_wait
+  iff=7   991 page0
+  iff=0   726 disk:fdc_rd_wait
+  iff=0   260 page0
+  iff=7    49 disk:dout_put
+  iff=0    49 disk:fdc_wr_byte
+  iff=0    34 disk:fdc_rd_byte
+  iff=0    25 ram
+  iff=7    25 main:pchar
+  iff=0    24 disk:fdc_st_loop
+  iff=7    24 ram
+  iff=0    22 disk:hk_chout_e
+  iff=7    22 disk:dout_pos
+  iff=7    18 disk:dout_live
+  iff=7    18 main:pch_done
+  iff=7    14 main:exp_str_lp
+  iff=7    14 disk:hk_chout
+  iff=7    13 main:pch_disk
+  iff=0    12 disk:fdc_wr_loop
+  iff=7     9 disk:ffds_padloop
+  iff=7     9 disk:ftc_div
+  iff=7     9 main:sld_fac
+  iff=7     8 main:slcq_lp
+  iff=7     8 main:exec_stmt
+  iff=7     7 main:exp_loop
+  iff=7     5 main:pch_file
+  iff=7     5 main:vsf_wb_copy
+  iff=7     5 main:ev_lg
+  iff=7     5 disk:dwr_copy
+  iff=7     5 disk:drw_lp
