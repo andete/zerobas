@@ -905,7 +905,8 @@ item — do **one item per session** to keep context lean.
       That accounts for 42 % kept against 77 % without any change to the DI window,
       so the fix is FEWER COMMANDS: D-BLKIOPERCALL step 2's write cache (TIER 5)
       serves this item too. Interrupt windows inside the DRQ wait stay the
-      reverted idea above.
+      reverted idea above. 📐 The slices are designed
+      ([`docs/spec-diskwcache.md`](docs/spec-diskwcache.md), 2026-10-10).
       🔬 **TRIED 2026-10-10 AND REVERTED: skipping the seek when the head is on the
       track** (the WD2793 track register; a force interrupt `$D0` in its place so
       the write path's NOT READY test still reads a type-I status). Seeks 64 → 10
@@ -6477,7 +6478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31663 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31677 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6643,7 +6644,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11505 (T-6FE392)8 (T-529ABE)` from `TODO.md:24299 (T-529ABE)`: a
+      `TODO.md:11506 (T-6FE392)8 (T-529ABE)` from `TODO.md:24300 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12352,7 +12353,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24299 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24300 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -29801,6 +29802,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       calls -- a program that never closes loses the size on the reference too,
       which is the faithful face, but bdos-acceptance and the roundtrip probe
       must be re-read for any mid-sequence image comparison before building.
+      📐 **DESIGNED 2026-10-10 — [`docs/spec-diskwcache.md`](docs/spec-diskwcache.md),
+      for BASIC's sequential writer first.** [`fdcseq_probe.py`](scratchpad/fdcseq_probe.py)
+      logs each WD2793 command with its track / sector registers (I/O, both
+      machines; [`fdcseq_run.out`](scratchpad/fdcseq_run.out)) on D-FDCDI's
+      PRINT# + CLOSE workload. The CF-3300 writes each data sector ONCE (+ a
+      verify read) and touches the FAT and directory only at CLOSE; ours, per
+      cluster, re-reads the BOOT sector (`fat_total_clusters`), reads the FAT
+      sector 3× and writes BOTH copies twice (mark, then link), and per data
+      sector writes / reads back / writes (`dout_write`'s two 256 B halves).
+      Four slices, safest first: **W1** the cluster count kept from the mount;
+      **W2** the FAT sector kept across calls (a tag every `FAT_MBUF` writer
+      clears); **W3** the FAT written at CLOSE; **W4** the data half-sector kept.
+      ➡️ W1 next.
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
