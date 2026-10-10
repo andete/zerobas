@@ -62,6 +62,11 @@ rov_unpos:
                 call    data_seek           ; -> DATAPTR at first item, or CF clear
                 jr      nc,rov_none
 rov_at:
+                ; D-READERL (2026-10-10): the item's OWN line, before the seek
+                ; for the next item below moves DATALINE on -- ex_read puts it
+                ; back when it refuses the item, and names it in the error.
+                ld      hl,(DATALINE)
+                ld      (RDV_LINE),hl
                 ld      hl,(DATAPTR)
                 ld      a,(RDV_MODE)
                 or      a

@@ -1,0 +1,10 @@
+  ROM 277fc13f 6b43f352 c31298bc a49a4fdb  ->  125e804a 6b43f352 c31298bc d2971059
+PASS  K-RE1: moved ['direct', 'directdot', 'listdot', 'trapped', 'untrap'] (want exactly ['direct', 'directdot', 'listdot', 'trapped', 'untrap'])
+  ROM 125e804a 6b43f352 c31298bc d2971059  ->  b40f2ae9 6b43f352 c31298bc e9d8e4bf
+PASS  K-RE2: moved ['after'] (want exactly ['after'])
+  ROM b40f2ae9 6b43f352 c31298bc e9d8e4bf  ->  f3c66299 6b43f352 c31298bc 625d5d66
+PASS  K-RE3: moved ['direct', 'directdot', 'listdot', 'reraise', 'untrap'] (want exactly ['direct', 'directdot', 'listdot', 'reraise', 'untrap'])
+  ROM f3c66299 6b43f352 c31298bc 625d5d66  ->  277fc13f 99b9aa4e c31298bc a49a4fdb
+PASS  K-RE4: moved ['after', 'direct', 'directdot', 'listdot', 'trapped', 'untrap'] (want exactly ['after', 'direct', 'directdot', 'listdot', 'trapped', 'untrap'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

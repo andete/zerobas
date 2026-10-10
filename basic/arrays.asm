@@ -188,11 +188,25 @@ fre_abort_low:
                 ; print_msg_stopcr IS the body alone -- the same two-way split, but
                 ; the stop condition is now the string's own terminator instead of a
                 ; sentinel CR that had to be scanned for.
-                ld      a,(DIRECTF)
-                or      a
-                jp      nz,print_msg        ; direct: message + the emitted CRLF
-                call    print_msg_stopcr    ; run: the body alone
-                jp      print_in_lineno     ; run: " in <line>" + CRLF (program.asm)
+                ; 🔴 D-READERL (2026-10-10): THE LINE NAMED IS ERRLIN, NOT THE
+                ; CURRENT ONE, AND ERRLIN ALSO DECIDES WHETHER ONE IS NAMED. The two
+                ; agree for every error but a bad DATA item, which the VG-8020
+                ; reports in the DATA line -- `Syntax error in 20` from line 30, and
+                ; from a `READ A` TYPED at the prompt too (scratchpad/readerl_run.out).
+                ; record_errline writes ERRLIN = 65535 for every other direct-mode
+                ; error, so that value is the "direct: no line" test the DIRECTF read
+                ; was. The re-raise (`ON ERROR GOTO 0`) keeps the original ERRLIN and
+                ; printed that line already (`reraise` row). HL is the message, so
+                ; ERRLIN rides in DE.
+                ld      de,(ERRLIN)
+                ld      a,d
+                and     e
+                inc     a                   ; Z iff ERRLIN = 65535
+                jp      z,print_msg         ; no line: message + the emitted CRLF
+                push    de
+                call    print_msg_stopcr    ; the body alone
+                pop     hl
+                jp      print_in_hl         ; " in <ERRLIN>" + CRLF (program.asm)
 
 ; --- e21_no_resume: ERR 21 "no resume" -- the run fell off the END of the ----
 ; program while still owing a RESUME. docs/spec-basic-err21-no-resume.md §3.2.

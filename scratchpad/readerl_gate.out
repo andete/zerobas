@@ -1,0 +1,10 @@
+ROW trapped VG=[10 ON ERROR GOTO 90 | 20 DATA 12X | 30 READ A | 40 END | 90 PRINT ERR;ERL:END | RUN |  2  20] ZB=[10 ON ERROR GOTO 90 | 20 DATA 12X | 30 READ A | 40 END | 90 PRINT ERR;ERL:END | RUN |  2  20] SAME
+ROW untrap VG=[20 DATA 12X | 30 READ A | RUN | Syntax error in 20] ZB=[20 DATA 12X | 30 READ A | RUN | Syntax error in 20] SAME
+ROW listdot VG=[20 DATA 12X | 30 READ A | RUN | Syntax error in 20 | LIST . | 20 DATA 12X] ZB=[20 DATA 12X | 30 READ A | RUN | Syntax error in 20 | LIST . | 20 DATA 12X] SAME
+ROW direct VG=[20 DATA 12X | READ A | Syntax error in 20 | PRINT ERL |  20] ZB=[20 DATA 12X | READ A | Syntax error in 20 | PRINT ERL |  20] SAME
+ROW directdot VG=[10 PRINT | 20 DATA 12X | LIST 10 | 10 PRINT | READ A | Syntax error in 20 | LIST . | 20 DATA 12X] ZB=[10 PRINT | 20 DATA 12X | LIST 10 | 10 PRINT | READ A | Syntax error in 20 | LIST . | 20 DATA 12X] SAME
+ROW after VG=[10 ON ERROR GOTO 90 | 20 DATA 12X | 25 DATA 5 | 30 READ A | 40 READ A$:READ B:PRINT A$;B:END | 90 RESUME NEXT | RUN | 12X 5] ZB=[10 ON ERROR GOTO 90 | 20 DATA 12X | 25 DATA 5 | 30 READ A | 40 READ A$:READ B:PRINT A$;B:END | 90 RESUME NEXT | RUN | 12X 5] SAME
+ROW reraise VG=[10 ON ERROR GOTO 100 | 20 ERROR 7 | 30 END | 100 ON ERROR GOTO 0 | RUN | Out of memory in 20] ZB=[10 ON ERROR GOTO 100 | 20 ERROR 7 | 30 END | 100 ON ERROR GOTO 0 | RUN | Out of memory in 20] SAME
+
+PASS: a refused DATA item names its own line (7/7)
+refcache: 14 hit, 0 miss

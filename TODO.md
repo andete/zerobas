@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31249 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31274 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29976,7 +29976,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CR/LF) → midline — each exactly. LFILES keeps its own head rule (both
       changes are SCREEN-only); its shapes are still unmeasured.
 
-- [ ] 🔴 **A BAD `DATA` ITEM IS `Syntax error in <the DATA line>` ON THE VG-8020 AND `in <the
+- [x] ✅ **FIXED 2026-10-10 (D-READERL)** — 🔴 **A BAD `DATA` ITEM IS `Syntax error in <the DATA line>` ON THE VG-8020 AND `in <the
       READ line>` HERE (D-READERL, found 2026-10-09 by D-READFLT's rows).**
       🎚️ TIER 3 — `READ` of a `DATA` item that is not a number: which line the error names
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -29988,6 +29988,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       line while the resume point stays the READ statement — the error's line and
       its resume context come apart. Overflow from READ names the READ line on both
       (`intovf`, `e99`). This is how an MSX user finds a typo in DATA.
+      ✅ **FIXED 2026-10-10.** Measured further first
+      ([`readerl_probe.py`](scratchpad/readerl_probe.py) →
+      [`readerl_run.out`](scratchpad/readerl_run.out)): untrapped `Syntax error
+      in 20`, `LIST .` → line 20, and a `READ A` TYPED at the prompt is `Syntax
+      error in 20` with ERL 20 (zerobas: bare `Syntax error`, ERL 65535) — all
+      predicted. Three changes: (1) `ex_read`'s `exr_syn` (basic/program.asm)
+      writes ERRLIN and `.` from the item's line and enters `rerr_msg`, past
+      `record_errline`, so the resume capture stays the READ; (2) the abort
+      (`fre_abort_low`, basic/arrays.asm) prints `in <ERRLIN>` and takes 65535 as
+      "no line", which is what the DIRECTF test meant for every other error
+      (`reraise` row: ON ERROR GOTO 0 still `in 20`); (3) the item's line: my
+      first cut read DATALINE and got ERL 0 — MISSED — because the tenant's seek
+      for the NEXT item had already moved DATALINE to the program's end
+      ([`readerl_trace.out`](scratchpad/readerl_trace.out)); `exr_nan`'s comment
+      "DATALINE cannot be wrong for it" was false. The tenant
+      (basic/readdata-body.inc `rov_at`) now keeps the item's line in RDV_LINE
+      (aliases DEFT_PTR: never in flight with a READ), and `exr_nan` puts it
+      back — which also fixes the next READ after a refused item following a dead
+      link (`after`: `READ A$` then the next DATA line's `READ B` → `12X 5` on
+      both). Main page 1 −31 B (39 → 8), low −5 B (18 → 13), sub p0 −6 B. Gate
+      `readerl-acceptance` ([`basic_probe_readerl.py`](probes/basic/basic_probe_readerl.py),
+      [`readerl_gate.out`](scratchpad/readerl_gate.out)): 7/7; readflt's junk /
+      quote / again GRADUATED from KNOWN
+      ([`readerl_readflt.out`](scratchpad/readerl_readflt.out)). 🔪
+      [`readerl_knives.out`](scratchpad/readerl_knives.out).
 
 - [ ] 🔴 **`ERROR 60`..`64` ON THE DISKLESS TARGET PRINT DISK MESSAGES — THE VG-8020
       PRINTS `Unprintable error` (D-NODISKERRTXT, found 2026-10-09).**

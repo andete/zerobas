@@ -2165,6 +2165,11 @@ RDV_ST          equ     RDV_VAL + 2     ; $E553: tenant -> main STATUS (1): (1 B
                                         ;   1 = an item was read (RDV_VAL / STRSCR)
                                         ;   2 = the item is not a NUMBER (ERR 2) --
                                         ;       D-READVAR's c.strnum, numeric mode only
+RDV_LINE        equ     DEFT_PTR        ; $E54F: D-READERL -- the link field of the line
+                                        ; holding the item just read (2). ALIASES
+                                        ; DEFT_PTR, by the window's own argument: a READ
+                                        ; and a DEF-type statement are never in flight
+                                        ; together, and READ never touches DEFT_PTR.
 RDV_MODE        equ     RDV_ST + 1      ; $E554: main -> tenant MODE (1 B), D-READVAR:
                                         ;   0 = numeric, data_parse_int -> RDV_VAL
                                         ;   1 = string, the item's RAW ASCII span ->

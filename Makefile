@@ -2317,6 +2317,12 @@ callsystem-acceptance: repack-machine $(DISK_TEST_DSK)
 resnext-acceptance: repack-machine
 	python3 probes/basic/basic_probe_resnext.py
 
+# --- readerl-acceptance: a refused DATA item's error names the DATA line (D-READERL)
+# ERL, `Syntax error in <line>` and LIST . all name it on the VG-8020, in a program
+# and from a READ typed at the prompt; RESUME NEXT still resumes after the READ.
+readerl-acceptance: repack-machine
+	python3 probes/basic/basic_probe_readerl.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

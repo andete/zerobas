@@ -945,9 +945,12 @@ print_in_lineno:
                 ld      a,(DIRECTF)
                 or      a
                 jp      nz,print_crlf
-                ld      hl,in_msg
-                call    print_string        ; " in "
                 call    cur_lineno          ; HL = line number
+print_in_hl:                                ; D-READERL: " in <HL>" + CRLF -- the
+                push    hl                  ; error abort names ERRLIN, which a bad
+                ld      hl,in_msg           ; DATA item sets to the DATA line
+                call    print_string        ; " in "
+                pop     hl
                 call    ln_div_entry
                 jp      print_crlf
 ; in_msg -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
@@ -2343,13 +2346,43 @@ exr_more:
 exr_nan:                                    ; D-READFLT: the item is not a number.
                 ld      hl,(RDV_VAL)        ; Leave it UNREAD, as the VG-8020 does: a
                 ld      (DATAPTR),hl        ; second READ refuses it again (`again`
-                ld      a,1                 ; row). A refused item is never consumed,
-                ld      (DATASTATE),a       ; so DATALINE cannot be wrong for it.
+                                            ; row).
+                ; 🔴 D-READERL: AND ITS LINE. This said "a refused item is never
+                ; consumed, so DATALINE cannot be wrong for it" -- false: the
+                ; tenant's seek for the NEXT item had already moved DATALINE on
+                ; (to the program's end, traced: scratchpad/readerl_trace.out), so
+                ; the next READ after this one followed a dead link. The tenant
+                ; keeps the item's own line in RDV_LINE.
+                ld      hl,(RDV_LINE)
+                ld      (DATALINE),hl       ; HL stays the item's line for exr_syn
+                ld      a,1
+                ld      (DATASTATE),a
                 ld      a,(SH_ERR)
                 cp      5                   ; VAL's code 5: `1E99` -> Overflow (6)
-                jp      nz,stmt_error       ; `12X`, `"5"`, `HELLO` -> ERR 2 on both
+                jr      nz,exr_syn          ; `12X`, `"5"`, `HELLO` -> ERR 2 on both
                 ld      a,6
                 jp      raise_error
+; exr_syn -- D-READERL (2026-10-10): a DATA item that is not a number is a Syntax
+; error IN THE DATA LINE on the VG-8020 -- ERL, `Syntax error in 20`, and `LIST .`
+; all name it, from a program and from the prompt alike (`READ A` typed: `Syntax
+; error in 20`, ERL 20) -- while RESUME NEXT still goes on after the READ
+; (scratchpad/readerl_run.out). So ERL and `.` come from the item's line (HL, from
+; RDV_LINE above) and NOT from record_errline, and the
+; raise enters at rerr_msg, past it -- the trap capture (CURLINE / SAVTXT, the
+; resume point) is untouched. A pending numeric fault still outranks it, as in
+; stmt_error; check_fperr_only returns only with FPERR already 0.
+exr_syn:
+                call    check_fperr_only    ; keeps HL: the DATA line's link field ...
+                inc     hl
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; ... DE = its line number
+                ld      (ERRLIN),de
+                ld      (DOT),de
+                ld      a,2                 ; Syntax error
+                ld      (ERRFLG),a
+                jp      rerr_msg
 exr_bad:
                 pop     hl                  ; discard the exec cursor and the key
                 pop     hl                  ; (balance the stack)

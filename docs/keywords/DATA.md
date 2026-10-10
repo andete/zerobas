@@ -7,9 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `DATA` — values stored in the program for `READ`
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded difference: which line a bad item's `Syntax error` names (below,
-> an open TIER 3 item). Numbers like `1.5` read correctly since 2026-10-09.
+> errors ✓ · RAM usage not yet proven · every error not yet proven. No
+> known difference (the line a bad item's error names, fixed 2026-10-10).
+> Numbers like `1.5` read correctly since 2026-10-09.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -74,17 +74,21 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Which line a bad item's `Syntax error` names** (D-READERL, found
-2026-10-09, open, TIER 3). For `20 DATA 12X` / `30 READ A`, the VG-8020 says
-`Syntax error in 20` — the `DATA` line, where the typo is — and zerobas says
-`in 30`, the `READ` line. Both resume at the `READ` after `RESUME NEXT`, and
-both leave the bad item unread, so the next `READ` refuses it again
-([`readflt_after.out`](../../scratchpad/readflt_after.out)).
+No known difference in behaviour.
 
 The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A bad item's error named the `READ` line** (fixed 2026-10-10, D-READERL).
+  For `20 DATA 12X` / `30 READ A` the VG-8020 says `Syntax error in 20`, the
+  `DATA` line where the typo is: `ERL` is 20 and `LIST .` lists line 20, even
+  when `READ A` is typed at the prompt; `RESUME NEXT` still goes on after the
+  `READ` ([`readerl_run.out`](../../scratchpad/readerl_run.out)). zerobas named
+  line 30. Fixing it showed a second fault: after a refused item zerobas's
+  pointer to the current `DATA` line had already run on to the end of the
+  program, so reading the item again as a string and then the next `DATA`
+  line gave `Out of DATA`. Both now match.
 - **Numbers that were not whole numbers could not be read** (fixed
   2026-10-09, D-READFLT): `DATA 1.5`, `2E3` and `-.25` were `Syntax error`,
   and `DATA 40000` came back as -25536, because zerobas read every numeric
@@ -136,4 +140,7 @@ The rung not yet proven is **RAM usage**.
 - `make readvar-acceptance` — how items are cut into strings, on both
   references.
 - `make readref-acceptance` — strings read from `DATA` use no string space.
+- `make readerl-acceptance` — the line a refused item's error names (`ERL`,
+  the message, `LIST .`, from a program and from the prompt), and reading on
+  past it.
 - `make kwram` — the RAM-usage comparison.

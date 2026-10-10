@@ -1,0 +1,13 @@
+✗  trapped
+    VG [10 ON ERROR GOTO 90 | 20 DATA 12X | 30 READ A | 40 END | 90 PRINT ERR;ERL:END | RUN |  2  20]
+    ZB [10 ON ERROR GOTO 90 | 20 DATA 12X | 30 READ A | 40 END | 90 PRINT ERR;ERL:END | RUN |  2  30]
+✗  untrap
+    VG [20 DATA 12X | 30 READ A | RUN | Syntax error in 20]
+    ZB [20 DATA 12X | 30 READ A | RUN | Syntax error in 30]
+✗  listdot
+    VG [20 DATA 12X | 30 READ A | RUN | Syntax error in 20 | LIST . | 20 DATA 12X]
+    ZB [20 DATA 12X | 30 READ A | RUN | Syntax error in 30 | LIST . | 30 READ A]
+✗  direct
+    VG [20 DATA 12X | READ A | Syntax error in 20 | PRINT ERL |  20]
+    ZB [20 DATA 12X | READ A | Syntax error | PRINT ERL |  65535]
+refcache: 0 hit, 8 miss, 8 stored

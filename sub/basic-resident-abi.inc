@@ -20,7 +20,7 @@ arga_pack_fac equ 03352H
 widen_fac_to equ 037B8H
 widen_uint_to equ 03AF2H
 flt_to_int16 equ 0320BH
-vars_reset equ 03D3FH
+vars_reset equ 03D44H
 penderr_set equ 02818H
 flt_fmt equ 030B1H
 rl_vpeek equ 03C1EH

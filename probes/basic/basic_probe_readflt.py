@@ -16,9 +16,9 @@ VG-8020 reads every one. Since D-READFLT the item goes through VAL's parser
   again                      a refused item is NOT consumed: READ refuses it again
   dbltyp                     the value is stored in the target's own type
 
-KNOWN (filed, not this slice): junk / quote / again -- the reference names the
-DATA line in `Syntax error in <line>` (ERL 20), zerobas the READ line
-(D-READERL). They are reported, and do not fail the gate.
+junk / quote / again were KNOWN until 2026-10-10 -- the reference names the
+DATA line in `Syntax error in <line>` (ERL 20), zerobas named the READ line --
+and GRADUATED with D-READERL's fix (probes/basic/basic_probe_readerl.py).
 
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>` (the knives read ZB).
 Exit 0 every unknown row agrees; 1 a divergence; 2 the VG-8020 gave no reading.
@@ -50,7 +50,7 @@ CASES = {
     "dbltyp": [H, "20 DATA 1.23456789012", "30 READ A!:PRINT A!"],
 }
 TAIL = ["40 END", '90 PRINT "ERR";ERR;"IN";ERL:END']
-KNOWN = {"junk": "D-READERL", "quote": "D-READERL", "again": "D-READERL"}
+KNOWN = {}                          # D-READERL's three graduated 2026-10-10
 
 
 def out(scr):

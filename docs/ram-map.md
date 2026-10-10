@@ -343,7 +343,7 @@ second one is the question a per-component map cannot answer.
 | `$E54C` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes currently buffered in SECTOR_BUF (word, 0..512) | `basic` GFX_DTMP |
 | `$E54D` | 2 B | `basic` | `GFX_DSP` | $E54D: tenant entry SP -- an error deep in the (2 B) | `disk` BDOS_WRBUFLEN/FWR_BUFLEN |
 | `$E54E` | 4 B | `disk` | `BDOS_WRBYTES/FWR_BYTES` | total bytes written so far = final file size (4-byte LE) | `basic` GFX_DSP |
-| `$E54F` | 2 B | `basic` | `DEFT_PTR` | $E54F: token cursor in AND out (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
+| `$E54F` | 2 B | `basic` | `DEFT_PTR/RDV_LINE` | $E54F: D-READERL -- the link field of the line | `disk` BDOS_WRBYTES/FWR_BYTES |
 | `$E551` | 2 B | `basic` | `RDV_VAL` | $E551: the value read (int16 LE) (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
 | `$E552` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) | `basic` RDV_VAL |
 | `$E553` | 1 B | `basic` | `RDV_ST` | $E553: tenant -> main STATUS (1): (1 B) | `disk` BDOS_DIRSEC/FWR_DIRSEC |
