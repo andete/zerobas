@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31370 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31416 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6537,7 +6537,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11399 (T-6FE392)8 (T-529ABE)` from `TODO.md:24151 (T-529ABE)`: a
+      `TODO.md:11399 (T-6FE392)8 (T-529ABE)` from `TODO.md:24190 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12246,7 +12246,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24151 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24190 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17675,6 +17675,45 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
         references and ERR 59 here, because this tree reserves no FCB #0.
       - the GEOMETRY: FILTAB's pointer table sits BELOW the reference's FCB array,
         so `VARPTR(#1)` shifts 265 per MAXFILES step there and 267 here.
+      ✅ **FCB #0 AND THE GEOMETRY BUILT 2026-10-10.** Measured first
+      ([`fcb0_probe.py`](scratchpad/fcb0_probe.py) → [`fcb0_run.out`](scratchpad/fcb0_run.out)):
+      both references answer `VARPTR(#0)` at EVERY MAXFILES, 0 included (VG-8020
+      −3465 at MAXFILES=0); the top block stays put as MAXFILES grows; #0 is the
+      lowest block — all predicted. Built: `strheap_chantab` reserves MAXFILES + 1
+      blocks always; `sh_chan_addr` lays them bottom-up as the reference does —
+      the 2 B-a-channel table, then #0 .. #MAXFILES (channel n = base +
+      2·(MAXF+1) + 265·n); main's store ceiling asks for channel 0 (`xor a`, −1 B)
+      and `VARPTR(#n)` lets #0 past the 52 range test (+3 B). Main page 1 44 → 42 B,
+      sub page 0 151 → 143 B. After: `FRE(0)` −267 at every MAXFILES on both
+      builds (nodisk now 4978 under the VG-8020, disk 343 under the CF-3300 —
+      [`fcb0_after.out`](scratchpad/fcb0_after.out), [`fcb0_disk.out`](scratchpad/fcb0_disk.out)).
+      txtceil-acceptance's fixture went red as RULED (stored=0: its 700 B under
+      the floor no longer held the channel area) and was re-pinned +267 to the
+      same geometry ([`fcb0_txtceil.out`](scratchpad/fcb0_txtceil.out)). Gate
+      `fcb0-acceptance` ([`basic_probe_fcb0.py`](probes/basic/basic_probe_fcb0.py),
+      [`fcb0_gate.out`](scratchpad/fcb0_gate.out)): v0 / stride / geom / fre, all
+      relations (bases differ by machine) — MAXFILES clears variables on BOTH
+      references, so the two-step rows print both readings. 🔪
+      [`fcb0_knives.out`](scratchpad/fcb0_knives.out): K-FC1 (#0 refused) → v0
+      stride; K-FC2 (no table offset) → geom; K-FC3 (no #0 reserved, the old
+      guard) → nothing here, BY DESIGN — the reservation is absolute free memory;
+      its first cut (`inc a` removed) left MAXFILES=0 to a 256-turn djnz
+      ([`fcb0_knives_r1.out`](scratchpad/fcb0_knives_r1.out)).
+      🔁 **THE FULL BATTERY'S RE-PINS (as ruled), each read before believed:**
+      array-acceptance's `scalar.str.chain.oom` / `scalar.input.chain.oom`
+      (zerobas-only edge fixtures: at `DIM Z(1813)` the DIM itself no longer fit,
+      so the chain never ran out — [`fcb0_full_arrays.out`](scratchpad/fcb0_full_arrays.out))
+      → `DIM Z(1780)`, 3 B LESS room than before, 146/146
+      ([`fcb0_arrays_after.out`](scratchpad/fcb0_arrays_after.out)) — these two
+      rows are K-FC3's absolute-memory witness. And lnblank-say-acceptance's
+      `crf-oom*` rows **changed sides**: at `CLEAR 300,A+1000` both references keep
+      ~148 B and store `99 REM Z`; zerobas, now counting #0 as they do, has room
+      for nothing (the line refused, the PRINT aborted —
+      [`fcb0_full_lnblank.out`](scratchpad/fcb0_full_lnblank.out)). Before, the
+      missing 267 B hid zerobas's extra reserve and it had MORE room than the
+      references. Pinned (`crf-oomctl`, `crf-oom`, `crf-oomlst`), `crf-oomsay`
+      retired (now agrees); 208/208 ([`fcb0_lnblank_after.out`](scratchpad/fcb0_lnblank_after.out)).
+      The reserve is D-DIMRESERVE's 256 B stack margin (noted there).
       ([`varptrch_run.out`](scratchpad/varptrch_run.out))
 
 - [x] 💰 **D-ONTRAPMERGE — ON KEY GOSUB RUNS ON STRIG's LOOP: MAIN PAGE 1 3 → 38 B**
@@ -26675,6 +26714,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       then lower the DIM reserve to match the VG-8020's edge (~145 B free).
       Shared code: FULL battery, and price it against main's combined wall
       first (the "smaller" claim is a prediction). Do not re-ask.
+      📏 **A SECOND, USER-VISIBLE WITNESS SINCE FCB #0 (2026-10-10):** with channel
+      #0's block reserved as on the references, zerobas's 256 B stack margin is
+      the whole difference at the HIMEM edge — after `CLEAR 300,A+1000` (A =
+      TXTTAB) both references keep ~148 B and store `99 REM Z`, zerobas refuses it
+      and a following `PRINT` aborts. lnblank-say-acceptance pins it
+      (`crf-oomctl` / `crf-oom` / `crf-oomlst`, KNOWN_DIVERGE); those pins rot
+      loudly the day this item lands.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

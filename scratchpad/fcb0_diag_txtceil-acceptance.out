@@ -1,0 +1,18 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_txtceil.py --gate 
+txtceil: 4 row(s) outside the pool floor
+DIFF c.fits     zb='<NO READING>'   🔴 the row never printed its sentinels — that is the probe, not the machine
+DIFF p.n25      zb='<NO READING>'   🔴 the row never printed its sentinels — that is the probe, not the machine
+DIFF p.n40      zb='<NO READING>'   🔴 the row never printed its sentinels — that is the probe, not the machine
+DIFF p.pool2    zb='stored=0 PRGEND=32769 floor=33569 head=800'   [the store must stop before the pool floor]
+ROWS: 4 printed, 4 scored — 0 within the pool floor, 4 not
+SIDE: zb only — `PRGEND <= HIMEM - POOLSIZE` is a claim about ZEROBAS's own map. The references reserve 293 + 267*MAXFILES below HIMEM against 12 + 50*MAXFILES here (D-HIMEMRES), so an FRE(0) comparison measures that architectural difference and not this rule.
+refcache: 0 hit, 4 miss, 4 stored
+make: *** [txtceil-acceptance] Error 1

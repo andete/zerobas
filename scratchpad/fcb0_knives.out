@@ -1,0 +1,8 @@
+  ROM 1b6fa83a 1b7bd08d a8717170 2f19ae41  ->  89116c43 1b7bd08d a8717170 f486a452
+PASS  K-FC1: moved ['stride', 'v0'] (want exactly ['stride', 'v0'])
+  ROM 89116c43 1b7bd08d a8717170 f486a452  ->  1b6fa83a a213fb83 a8717170 2f19ae41
+PASS  K-FC2: moved ['geom'] (want exactly ['geom'])
+  ROM 1b6fa83a a213fb83 a8717170 2f19ae41  ->  1b6fa83a 60a7ff83 a8717170 2f19ae41
+PASS  K-FC3: moved [] (want exactly [])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

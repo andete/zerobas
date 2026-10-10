@@ -8,9 +8,9 @@ SPDX-License-Identifier: 0BSD
 
 > **Status (2026-10-09):** every everyday channel operation agrees with the
 > references — `GET #` / `PUT #` without a record number take the next record
-> since 2026-10-09 (D-RECAUTO). Channel #0 is ruled to be built
-> (part of D-FCBSHAPE, TIER 4); the other recorded differences are TIER 6
-> edges. Speed is deliberately left out of these docs until on-par speed is
+> since 2026-10-09 (D-RECAUTO), and channel #0 has its block, the blocks in
+> the references' order, since 2026-10-10 (D-FCBSHAPE); the recorded
+> differences left are TIER 6 edges. Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
 ## Summary
@@ -154,14 +154,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **Channel #0** (part of D-FCBSHAPE, TIER 4). `VARPTR(#0)` is an address on
-  both references and `File not OPEN` (59) here: zerobas reserves no block
-  for it. Joost ruled on 2026-10-09: *"build it"*, at 267 bytes of `FRE(0)`
-  for every program, as the references pay.
-- **Where the blocks sit.** The references keep the pointer table below the
-  blocks, so `VARPTR(#1)` moves by 265 for each step of `MAXFILES`; here it is
-  above them, and it moves by 267
-  ([`varptrch_run.out`](../../scratchpad/varptrch_run.out)).
 - **The position byte of an input channel.** On the CF-3300, header +6 of a
   disk input channel counts the bytes read, modulo 256; here it stays 0. Not
   built: a write on every byte read, for a value only `PEEK` can see.
@@ -185,6 +177,14 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   read or written (`LOC` + 1), so three bare `PUT #1` at `LEN=8` make a
   24-byte file; zerobas made an 8-byte file holding only the last record
   ([`getput_run.out`](../../scratchpad/getput_run.out)).
+- **Channel 0 had no block, and the blocks sat the other way round** (fixed
+  2026-10-10, D-FCBSHAPE). Both references keep a block for channel 0 — the
+  one `LOAD` and `SAVE` use — at every `MAXFILES`, `0` included, and put the
+  2-byte pointer table *below* the blocks, so the top block stays put as
+  `MAXFILES` grows and `VARPTR(#1)` moves by 265
+  ([`fcb0_run.out`](../../scratchpad/fcb0_run.out)). zerobas now does both:
+  `VARPTR(#0)` is an address, and every program has 267 bytes less `FRE(0)`,
+  as on the references.
 - **The channel block was 306 bytes, then 265** (D-FCBSHAPE, 2026-09-30).
   `PEEK`ing around `VARPTR(#n)` on both references showed the 9-byte header
   and the pointer table; zerobas's 50 bytes of disk bookkeeping moved out of
@@ -241,6 +241,7 @@ that number plus one.
 - `make kwsweep` — every channel statement's everyday row and error rows.
 - `make chancost-characterize` — what `MAXFILES` costs, clears and accepts.
 - `make fcbhdr-acceptance` — the header bytes after `OPEN`, per device.
+- `make fcb0-acceptance` — channel 0's block and the blocks' order.
 - `make badfnum-acceptance`, `make nohash-acceptance` — channel numbers.
 - `make dout-acceptance`, `lof-acceptance`, `loc-acceptance`,
   `diskbasic-acceptance`, `putdir-acceptance` — disk files.

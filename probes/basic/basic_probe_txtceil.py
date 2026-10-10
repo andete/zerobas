@@ -54,16 +54,22 @@ LABEL_W = 9
 #   "fits"    the program must be stored IN FULL and stay inside the floor
 #   "bounded" the program asks for more than there is: the store must stop
 #             before the floor, wherever it stops
+# 🔁 RE-PINNED 2026-10-10 (D-FCBSHAPE FCB #0): every gap +267. The channel area
+# below the pool now holds FCB #0 as well (as both references do, at every
+# MAXFILES), so at gap 1000 the 700 B under the floor no longer held the channel
+# area + the 256 B stack margin + any program -- every row read stored=0
+# (scratchpad/fcb0_diag_txtceil-acceptance.out). +267 keeps each row's geometry
+# identical RELATIVE TO THE CHANNEL AREA, which is what the rows are about.
 CASES = [
-    ("c.fits",  3, 300, 1000, "fits"),
-    ("p.n25",  25, 300, 1000, "bounded"),
-    ("p.n40",  40, 300, 1000, "bounded"),
+    ("c.fits",  3, 300, 1267, "fits"),
+    ("p.n25",  25, 300, 1267, "bounded"),
+    ("p.n40",  40, 300, 1267, "bounded"),
     # A second geometry, so "bounded" is not one arithmetic coincidence: a
     # SMALLER pool puts the floor 100 B higher, and the store must follow it.
     # 🔴 The first cut used pool 500 / gap 900 and the CLEAR was REFUSED (900
     # minus 500 leaves too little), so the row read `NOT MEASURED` -- which is the
     # fixture control working, and is why it is checked before the subject.
-    ("p.pool2", 25, 200, 1000, "bounded"),
+    ("p.pool2", 25, 200, 1267, "bounded"),
 ]
 
 

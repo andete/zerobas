@@ -7,9 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `VARPTR` — the memory address of a variable or a file channel
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Three recorded
-> differences, all in the file-channel form: `VARPTR(#0)`, how far channel
-> blocks move when `MAXFILES` changes, and one header byte (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference, in the file-channel form: one header byte (below). `VARPTR(#0)`
+> and where the channel blocks sit match the references since 2026-10-10.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -95,16 +95,8 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-All three are in the file-channel form and are open RAM-usage (TIER 4) work
-under D-FCBSHAPE ([spec-fcbshape.md](../spec-fcbshape.md)):
+It is in the file-channel form (D-FCBSHAPE, [spec-fcbshape.md](../spec-fcbshape.md)):
 
-- **`VARPTR(#0)` is error 59 here and an address on both references.**
-  Channel 0 is the one `LOAD` and `SAVE` use, and zerobas reserves no block
-  for it. Joost ruled on 2026-10-09: *"build it"* — at the price of 267 bytes
-  of `FRE(0)` for every program, which the references also pay.
-- **The blocks sit differently.** Changing `MAXFILES` from 1 to 2 moves
-  `VARPTR(#1)` by 265 bytes on the references and by 267 here, because the
-  2-byte pointer table sits on the other side of the blocks.
 - **The position byte of a file being read does not move.** On the CF-3300,
   `PEEK(VARPTR(#n)+6)` counts along as a disk file is read (EOF even moves it
   one ahead); here it stays 0. Not built: it would cost a write on every byte
@@ -114,6 +106,14 @@ The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Channel 0 had no block, and the blocks sat the other way round** (fixed
+  2026-10-10, D-FCBSHAPE). Both references keep a block for channel 0 — the
+  one `LOAD` and `SAVE` use — at every `MAXFILES`, `0` included, and put the
+  2-byte pointer table *below* the blocks, so the top block stays put as
+  `MAXFILES` grows and `VARPTR(#1)` moves by 265
+  ([`fcb0_run.out`](../../scratchpad/fcb0_run.out)). zerobas now does both:
+  `VARPTR(#0)` is an address, and every program has 267 bytes less `FRE(0)`,
+  as on the references.
 - **Array elements and strings were added in July** (`VARPTR(A$)` fixed
   2026-07-17; array elements 2026-07-18). A missing flag in the element form
   was caught two days later: every test had used a literal subscript, which
@@ -155,6 +155,8 @@ functions share.
   auto-dimension and subscript errors.
 - `make lvfix-acceptance` — the unset-variable error.
 - `make fcbhdr-acceptance` — the channel header bytes after `OPEN`.
+- `make fcb0-acceptance` — `VARPTR(#0)`, the 265-byte stride, how far
+  `VARPTR(#1)` moves when `MAXFILES` grows, and what a channel costs.
 - `make kwsweep` — the element-stride row, the channel-stride row and the
   error rows for both forms.
 - `make kwram` — the RAM-usage comparison.

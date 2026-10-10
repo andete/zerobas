@@ -1470,7 +1470,9 @@ loc_rand:
 ; lof_nz lesson (every `PRINT LOF(1)` read Syntax error when a tenant call left
 ; IX pointing at the sub-ROM table).
 ev_ff_varptrch:
-                call    fch_check           ; 5 / 59 / 52; A = E = the channel
+                call    fch_check_d         ; 5; Z on #0 -- D-FCBSHAPE: FCB #0 is an
+                call    nz,fch_check_nz     ; address on both references (fcb0_run.out),
+                                            ; so only #1.. take the 52 range test
                 push    ix
                 call    fch_ctx_addr        ; HL = channel A's block
                 pop     ix

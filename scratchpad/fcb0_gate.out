@@ -1,0 +1,7 @@
+ROW v0 VG=[[OK]] ZB=[[OK]] SAME
+ROW stride VG=[[ 265  265 ]] ZB=[[ 265  265 ]] SAME
+ROW geom VG=[delta -265] ZB=[delta -265] SAME
+ROW fre VG=[delta -267] ZB=[delta -267] SAME
+
+PASS: FCB #0 and the channel geometry (4/4)
+refcache: 8 hit, 0 miss

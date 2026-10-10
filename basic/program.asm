@@ -165,8 +165,10 @@ dl_lnok:
                 ; 🔴 GUARDED, because `make switch-build-check` BUILDS CLEARPOOL=0
                 ; on every run and sh_chan_addr does not exist there.
                 push    hl                  ; tokenise's source cursor
-                ld      a,1
-                call    fch_ctx_addr        ; HL = strheap_varceil()
+                xor     a                   ; D-FCBSHAPE FCB #0: channel 0 is the LOWEST
+                call    fch_ctx_addr        ; block now, 2*(MAXF+1) B above the table
+                                            ; base; the 256 B margin below keeps the
+                                            ; text clear of the table as well
                 ; 🔴 AND THE STORE MUST LEAVE THE STACK ITS RESERVE (D-SPMERGE §9).
                 ; `strheap_varceil()` is ALSO the pool's top, and since cut 2 the
                 ; machine stack descends from there. Growing the program text pushes

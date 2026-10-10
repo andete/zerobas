@@ -646,8 +646,10 @@ svc_ctl:
 strheap_chantab:
                 call    strheap_floor       ; HL = the string pool's floor
                 ld      a,(MAXF)
-                or      a
-                ret     z                   ; MAXFILES=0 -> no table at all
+                inc     a                   ; D-FCBSHAPE FCB #0 (2026-10-10): MAXFILES
+                                            ; + 1 blocks -- the reference reserves #0
+                                            ; at EVERY MAXFILES, 0 included
+                                            ; (scratchpad/fcb0_run.out)
                 ld      b,a
                 ld      de,-FCH_CTXSZ       ; 267 a channel (D-FCBSHAPE S1)
 svc_sub_lp:
@@ -2138,9 +2140,20 @@ sh_chan_addr:
                 call    strheap_chantab     ; HL = the table base -- NOT varceil, whose
                                             ; CSP clamp moved it onto the control
                                             ; frames (D-CHANSWITCH)
-                ld      a,(SH_LEN)          ; A = channel number (1-based)
-                dec     a
-                jr      z,sca_have          ; channel 1 -> the first block
+                ; D-FCBSHAPE FCB #0 + geometry (2026-10-10): the reference's order,
+                ; bottom up -- FILTAB's pointer table (2 B a channel, #0 included),
+                ; then FCB #0, #1 .. #MAXFILES -- so VARPTR(#n) moves 265 (not 267)
+                ; a MAXFILES step and #0 is the lowest block (fcb0_run.out). The
+                ; table's bytes stay reserved: nothing here writes FILTAB.
+                ld      a,(MAXF)
+                inc     a
+                add     a,a                 ; the pointer table's size
+                ld      e,a
+                ld      d,0
+                add     hl,de               ; HL = FCB #0
+                ld      a,(SH_LEN)          ; A = channel number, 0..MAXFILES
+                or      a
+                jr      z,sca_have          ; channel 0 -> the first block
                 ld      b,a
                 ld      de,FCH_BLKSZ        ; D-FCBSHAPE S1: the 265 B stride; the
                                             ; 2 B a channel above the blocks are FILTAB's

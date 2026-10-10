@@ -1,0 +1,5 @@
+=== files-and-devices: PASS
+=== memory-map: PASS
+
+PASS 2
+refcache: 1 hit, 3 miss, 3 stored

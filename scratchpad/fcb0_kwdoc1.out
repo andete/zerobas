@@ -1,0 +1,4 @@
+=== VARPTR: PASS
+
+PASS 1
+refcache: 1 hit, 1 miss, 1 stored

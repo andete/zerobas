@@ -3136,8 +3136,21 @@ KNOWN_DIVERGE = {
     # zerobas's capture no longer ends in blank rows: its CLS now keeps the
     # function-key line, as the references' always did, so the tail of the
     # screen reads the labels where it read nothing.
-    "crf-oomsay":   "||||||||||||||||color  auto   goto   list   run",
-    "crf-oomlst":   "20 REM BBBBBBBBBBBBBBBBBBBBBBBBBB|99 REM Z",
+    # 🔁 RE-PINNED 2026-10-10 (D-FCBSHAPE FCB #0), AND THE DIVERGENCE CHANGED SIDES.
+    # Both references reserve channel #0's block too, so once zerobas did, its
+    # OWN extra reserve at the HIMEM edge showed: at `CLEAR 300,A+1000` the
+    # references keep ~148 free bytes and store `99 REM Z`; zerobas now has room
+    # for NOTHING -- the 12-byte line is refused and the PRINT that reads `.`
+    # aborts (scratchpad/fcb0_full_lnblank.out). Before, the missing 267 B hid that
+    # reserve and zerobas had MORE room than the references (stored line 20 too):
+    # these rows agreed or diverged for the wrong reason. The reserve is the 256 B
+    # stack margin a statement keeps below the pool (CTL_STACK_MARGIN) -- the same
+    # one D-DIMRESERVE is about, RULED to be brought to the reference's ~79 B by
+    # the `eval` rewrite (TIER 4). `crf-oomsay` RETIRED: it now agrees on all three
+    # sides (`Out of memory`), and deleting an entry is the stricter move.
+    "crf-oomctl":   "<none: aborted mid-PRINT>",
+    "crf-oom":      "<none: aborted mid-PRINT>",
+    "crf-oomlst":   "<nothing listed>",
     # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
     # rather than edited (the ninth cohort to go that way). They were pinned at
     # zerobas' ` 15  2 ` -- R-D6's trailing-junk rule answering a `$2E` the verb

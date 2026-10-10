@@ -8,9 +8,10 @@ SPDX-License-Identifier: 0BSD
 
 > **Status (2026-10-09):** program, variables and arrays sit at the Philips
 > VG-8020's addresses and cost the same bytes, but
-> zerobas's own workspace leaves a diskless machine 4711 bytes less `FRE(0)`
-> (the disk build is 76 short of the National CF-3300). Open, TIER 4: FCB #0,
-> D-DIMRESERVE, the `GOSUB` frame, D-BOOTKEYS.
+> zerobas's own workspace leaves a diskless machine 4978 bytes less `FRE(0)`
+> (the disk build is 343 short of the National CF-3300; both 267 more since
+> channel 0's block, 2026-10-10). Open, TIER 4: D-DIMRESERVE, the `GOSUB`
+> frame, D-BOOTKEYS' CTRL.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -163,14 +164,11 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **Less free memory on a diskless machine** (TIER 4): 4711 bytes, above.
+- **Less free memory on a diskless machine** (TIER 4): 4978 bytes, above
+  ([`fcb0_run.out`](../../scratchpad/fcb0_run.out),
+  [`fcb0_disk.out`](../../scratchpad/fcb0_disk.out)).
   A program that just fits on the VG-8020 does not fit here; `CLEAR 25000` is
   accepted there and `Out of memory` here.
-- **No file block for channel 0 yet** (TIER 4): `VARPTR(#0)` is error 59.
-  Joost ruled on 2026-10-09: *"build it"*, at 267 bytes of `FRE(0)`.
-- **The file blocks are laid out differently** (below the string space, their
-  pointer bytes above them), so `MAXFILES` 1 → 2 moves `VARPTR(#1)` by 267
-  bytes here and 265 there.
 - **`DIM` leaves more room unused** (D-DIMRESERVE, TIER 4): a `DIM` that
   leaves about 260 bytes free is `Out of memory` here and fits on the VG-8020
   down to about 140. Joost ruled on 2026-10-09 to match the reference, which
@@ -185,6 +183,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Channel 0 had no block, and the blocks sat the other way round** (fixed
+  2026-10-10, D-FCBSHAPE). Both references keep a block for channel 0 — the
+  one `LOAD` and `SAVE` use — at every `MAXFILES`, `0` included, and put the
+  2-byte pointer table *below* the blocks, so the top block stays put as
+  `MAXFILES` grows and `VARPTR(#1)` moves by 265
+  ([`fcb0_run.out`](../../scratchpad/fcb0_run.out)). zerobas now does both:
+  `VARPTR(#0)` is an address, and every program has 267 bytes less `FRE(0)`,
+  as on the references.
 - **8 KB was reserved for nothing** (fixed 2026-09-01, D-RECLAIM): MSX-DOS's
   area was kept free in BASIC too. Joost ruled *"BASIC and DOS never
   co-exist"*; `FRE(0)` rose by 8192 ([spec-reclaim.md](../spec-reclaim.md)).
@@ -247,5 +253,6 @@ arguments in [basic/clear.asm](../../basic/clear.asm).
   `make binfre-acceptance` — what `CLEAR` and `FRE` see.
 - `make chancost-characterize`, `make fcbhdr-acceptance` — a file channel's
   cost and block.
+- `make fcb0-acceptance` — channel 0's block, the stride and the blocks' order.
 - `make sysvarsweep`, `make kwram` — the documented work-area cells, and RAM
   usage per keyword, against the reference.

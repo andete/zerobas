@@ -540,8 +540,13 @@ CASES = [
     # ⚠️ AND THE FIGURES IN THE PARAGRAPH ABOVE HAVE ROTTED: it says "N=1840 leaves
     # 67 B, N=1846 leaves 19 B", but a clean tree on 2026-09-12 reads N=1845 -> 123 B
     # and N=1847 -> 107 B. Re-measure before trusting either.
+    # 🔁 RE-PINNED 2026-10-10 (D-FCBSHAPE FCB #0): DIM Z(1813) -> Z(1780). FCB #0
+    # is reserved at MAXFILES=0 too now (267 B, as on both references), so at
+    # 1813 the DIM itself no longer fit and the chain never ran out
+    # (scratchpad/fcb0_full_arrays.out); -33 doubles = -264 B keeps the chain at
+    # the edge with 3 B LESS room than before, so the OOM can only come earlier.
     ("scalar.str.chain.oom",   "direct",
-        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1813)']
+        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1780)']
         + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
@@ -999,8 +1004,9 @@ def _line_tokens(raw):
 # retired pre-4c STRTAB-full "silent drop" contract survived into the INPUT
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
+    # 🔁 RE-PINNED 2026-10-10 with scalar.str.chain.oom above: Z(1813) -> Z(1780).
     ("scalar.input.chain.oom",
-     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1813)'] +
+     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1780)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]

@@ -2334,6 +2334,12 @@ dosmode-acceptance: repack-machine
 bootkeys-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_bootkeys.py
 
+# --- fcb0-acceptance: channel 0's FCB and the blocks' order (D-FCBSHAPE) -----
+# VARPTR(#0) answers at every MAXFILES; the blocks sit table-#0-#1.. bottom-up,
+# 265 apart. Every row is a RELATION: the machines' bases differ.
+fcb0-acceptance: repack-machine
+	python3 probes/basic/basic_probe_fcb0.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.
