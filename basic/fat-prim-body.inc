@@ -226,12 +226,41 @@ fm_fatacc:
                 ld      a, h
                 srl     a                   ; HL >> 9  (== H >> 1, result < 256)
                 ld      l, a
-                ld      h, 0
-                ld      (FAT_ROOTSECS), hl
+                ld      h, 0                ; HL = root sectors (not kept: fat_rootsecs)
                 ; first data sector = firstRoot + rootSecs
                 ld      de, (FAT_FIRSTROOT)
                 add     hl, de
                 ld      (FAT_FIRSTDATA), hl
+                ; 🔴 D-WCACHE W1 (docs/spec-diskwcache.md): THE CLUSTER COUNT, ONCE, HERE.
+                ; fat_total_clusters used to re-read the boot sector for it on every
+                ; call -- one READ per cluster a sequential write allocates
+                ; (scratchpad/fdcseq_run.out: `R0/1` before every allocation). The boot
+                ; sector is in FAT_DBUF now, and only this routine writes the geometry,
+                ; so the count is as trustworthy across calls as FAT_FIRSTDATA. It
+                ; lives where FAT_ROOTSECS did: that one is FIRSTDATA - FIRSTROOT.
+                ex      de, hl              ; DE = first data sector
+                ld      hl, (FAT_DBUF + 19) ; total sectors 16-bit (BPB +19)
+                or      a
+                sbc     hl, de              ; HL = data sectors
+                ld      de, 0               ; DE accumulates dataSectors / secPerClus
+                ld      a, (FAT_SECPERCLUS)
+                ld      c, a
+fm_div:
+                ld      a, l
+                or      h
+                jr      z, fm_divdone
+                ld      a, l
+                sub     c
+                ld      l, a
+                jr      nc, fm_nob
+                dec     h
+fm_nob:
+                inc     de
+                jr      fm_div
+fm_divdone:
+                inc     de
+                inc     de                  ; + 2 (first data cluster is 2)
+                ld      (FAT_TOTCLUS), de
     IF DISK_BUILD
                 ; 🔴 M30's hint RESET, and it must live here once the swap lands.
                 ; It currently sits in fat_mount_tail (disk/kernel.asm) -- which a
@@ -260,10 +289,7 @@ fat_mount_bad:
 ; Compare is case-insensitive; FAT directories store upper-case 8.3 names.
 fat_find:
                 ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
+                call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 ff_secloop:
                 ld      hl, (FAT_DIRREM)
                 ld      a, h
@@ -985,36 +1011,29 @@ fwba_loop:
 ; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FAT_MBUF (NOT FAT_DBUF,
 ; which may hold in-flight write data).
 fat_total_clusters:
-                push    hl
-                ld      de, 0
-                ld      hl, FAT_MBUF
-                call    read_sector
-                jr      c, ftc_done         ; on error report 2 (no free clusters)
-                ld      hl, (FAT_MBUF + 19)    ; total sectors 16-bit (BPB +19)
-                ld      de, (FAT_FIRSTDATA)
+                ; D-WCACHE W1: fat_mount computed it; no boot-sector read, so no
+                ; failure either (Cy = 0, which every caller's `ret c` expects).
+                ld      de, (FAT_TOTCLUS)
                 or      a
-                sbc     hl, de              ; HL = data sectors
-                ; DE accumulates dataSectors / secPerClus.
-                ld      de, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      c, a
-ftc_div:
-                ld      a, l
-                or      h
-                jr      z, ftc_divdone
-                ld      a, l
-                sub     c
-                ld      l, a
-                jr      nc, ftc_nob
-                dec     h
-ftc_nob:
-                inc     de
-                jr      ftc_div
-ftc_divdone:
-                inc     de
-                inc     de                  ; + 2 (first data cluster is 2)
-ftc_done:
-                pop     hl
+                ret
+
+; fat_dir_start -- FAT_DIRSEC := the first root sector, FAT_DIRREM := how many
+; there are: the start of every root-directory scan. Clobbers DE, F.
+fat_dir_start:
+                ld      hl, (FAT_FIRSTROOT)
+                ld      (FAT_DIRSEC), hl
+                call    fat_rootsecs
+                ld      (FAT_DIRREM), hl
+                ret
+
+; fat_rootsecs -- HL := root-directory sectors = FAT_FIRSTDATA - FAT_FIRSTROOT
+; (fat_mount's own sum, undone; the cell that held it holds FAT_TOTCLUS now).
+; Clobbers DE, F.
+fat_rootsecs:
+                ld      hl, (FAT_FIRSTDATA)
+                ld      de, (FAT_FIRSTROOT)
+                or      a
+                sbc     hl, de
                 ret
 
 ; fat_count_free — count free clusters (FAT entries == 0) over the data range
@@ -1305,10 +1324,7 @@ ffds_full_x:
 ; (Microsoft FAT spec §3.4. Date 0821h, time 0: as the CF-3300, Joost 2026-10-01.)
 fat_dir_create:
                 ld      (FAT_NAMEPTR), hl
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                ld      hl, (FAT_ROOTSECS)
-                ld      (FAT_DIRREM), hl
+                call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 fdcr_secloop:
                 ld      hl, (FAT_DIRREM)
                 ld      a, h

@@ -3054,7 +3054,8 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 FAT_SECPERCLUS  equ     $E9C0   ; sectors per cluster (byte)
 FAT_FATSTART    equ     $E9C1   ; first FAT sector (= reserved sectors) (word)
 FAT_FIRSTROOT   equ     $E9C3   ; first root-directory sector (word)
-FAT_ROOTSECS    equ     $E9C5   ; number of root-directory sectors (word)
+FAT_TOTCLUS     equ     $E9C5   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+                                ; was FAT_ROOTSECS, now fat_rootsecs: FIRSTDATA - FIRSTROOT)
 FAT_FIRSTDATA   equ     $E9C7   ; first data sector (word)
 FAT_CURCLUS     equ     $E9C9   ; current cluster in the open file's chain (word)
 FAT_CLUSSEC     equ     $E9CB   ; sector index within current cluster (byte)

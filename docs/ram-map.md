@@ -296,7 +296,7 @@ second one is the question a per-component map cannot answer.
 | `$E4A0` | 1 B | `disk` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
 | `$E4A1` | 2 B | `disk` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
 | `$E4A3` | 2 B | `disk` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
-| `$E4A5` | 2 B | `disk` | `FAT_ROOTSECS` | number of root-directory sectors (word) |  |
+| `$E4A5` | 2 B | `disk` | `FAT_TOTCLUS` | total clusters + 2, from fat_mount (word; D-WCACHE W1 -- |  |
 | `$E4A7` | 2 B | `disk` | `FAT_FIRSTDATA` | first data sector (word) |  |
 | `$E4A9` | 2 B | `disk` | `FAT_CURCLUS` | current cluster in the open file's chain (word) |  |
 | `$E4AB` | 1 B | `disk` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
@@ -402,7 +402,7 @@ second one is the question a per-component map cannot answer.
 | `$E9C0` | 1 B | `basic` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
 | `$E9C1` | 2 B | `basic` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
 | `$E9C3` | 2 B | `basic` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
-| `$E9C5` | 2 B | `basic` | `FAT_ROOTSECS` | number of root-directory sectors (word) |  |
+| `$E9C5` | 2 B | `basic` | `FAT_TOTCLUS` | total clusters + 2, from fat_mount (word; D-WCACHE W1 -- |  |
 | `$E9C7` | 2 B | `basic` | `FAT_FIRSTDATA` | first data sector (word) |  |
 | `$E9C9` | 2 B | `basic` | `FAT_CURCLUS/FCH_STATE0` | current cluster in the open file's chain (word) |  |
 | `$E9CB` | 1 B | `basic` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |

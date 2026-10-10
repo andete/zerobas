@@ -2361,6 +2361,12 @@ dimedge-acceptance: repack-machine
 loaddi-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_loaddi.py
 
+# --- wcache-acceptance: the sequential write path's FDC command budget (D-WCACHE)
+# docs/spec-diskwcache.md: each slice lowers zerobas's READ / WRITE budget for
+# 200 x PRINT# + CLOSE; the file must read back whole on both machines.
+wcache-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_wcache.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

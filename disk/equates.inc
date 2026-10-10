@@ -261,7 +261,8 @@ SECTOR_BUF      equ     $E5C0   ; 512-byte sector buffer ($E5C0-$E7BF) = main FS
 FAT_SECPERCLUS  equ     $E4A0   ; sectors per cluster (byte)
 FAT_FATSTART    equ     $E4A1   ; first FAT sector (= reserved sectors) (word)
 FAT_FIRSTROOT   equ     $E4A3   ; first root-directory sector (word)
-FAT_ROOTSECS    equ     $E4A5   ; number of root-directory sectors (word)
+FAT_TOTCLUS     equ     $E4A5   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+                                ; was FAT_ROOTSECS, now fat_rootsecs: FIRSTDATA - FIRSTROOT)
 FAT_FIRSTDATA   equ     $E4A7   ; first data sector (word)
 FAT_CURCLUS     equ     $E4A9   ; current cluster in the open file's chain (word)
 FAT_CLUSSEC     equ     $E4AB   ; sector index within current cluster (byte)

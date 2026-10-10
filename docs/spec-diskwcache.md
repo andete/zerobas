@@ -5,7 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Disk write path: fewer sector commands (D-BLKIOPERCALL step 2, D-FDCDI)
 
-Status: **design, 2026-10-10. Nothing here is built yet.** TIER 5 (on-par speed),
+Status: **W1 built 2026-10-10** (§3: 28 → 23 READs on the workload, gate
+`wcache-acceptance`); W2–W4 are design. TIER 5 (on-par speed),
 and the lever of D-FDCDI (TIER 3: keys typed during long disk work are lost,
 because the driver masks interrupts inside each sector command).
 
@@ -61,14 +62,19 @@ Each slice must leave the bytes on the medium after `CLOSE` identical, so
 **W3 and W4 also change what is on the medium BETWEEN calls**; any row that
 compares a mid-sequence image must be re-read before they are built.
 
-**W1 — total clusters computed once, at mount.** `fat_mount` already parses
-the BPB; store the cluster count in a new 2-byte cell, and have
-`fat_total_clusters` return it. That saves one boot-sector READ per cluster. It
-needs a free 2-byte cell in **both** maps: disk.rom's (`disk/equates.inc`, the
-`$E4A0` block) and BASIC's (`basic/sysvars.inc`, the `$E9C0` block), because
-the body assembles against each. Find the cells with `tools/ram_map.py`, then
-ask the machine (`ramfree_probe.py`). The geometry is already trusted across
-calls (`FAT_FIRSTDATA` and its neighbours), so this adds no new staleness.
+**W1 — total clusters computed once, at mount. ✅ BUILT 2026-10-10.**
+`fat_mount` already parses the BPB; it now stores the cluster count, and
+`fat_total_clusters` returns it, with no read and so no failure. **No new RAM:**
+the count lives in the cell `FAT_ROOTSECS` held (`$E4A5` in disk.rom's map,
+`$E9C5` in BASIC's), because the root-sector count is `FAT_FIRSTDATA −
+FAT_FIRSTROOT`, two cells the mount already keeps. Its five readers call
+`fat_rootsecs` instead; four of them were one 12-byte root-scan setup, now
+`fat_dir_start`. That is −4 B in sub page 1 and −20 B in disk.rom. Only
+`fat_mount` writes the geometry, so the count is as trustworthy across calls
+as `FAT_FIRSTDATA`. Measured: 28 → 23 READs, 36 WRITEs unchanged, every
+`R0/1` gone (predicted exactly, [`fdcseq_w1.out`](../scratchpad/fdcseq_w1.out)).
+Knife K-WC1 (the boot read restored) moves only `zb-reads`
+([`wcache_knives.out`](../scratchpad/wcache_knives.out)).
 
 **W2 — the FAT sector kept across calls.** One tag cell holds the FAT sector
 that `FAT_MBUF` currently mirrors. A read that hits it skips the disk. **Every

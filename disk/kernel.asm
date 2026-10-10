@@ -756,10 +756,7 @@ hkc_nf:         xor     a                   ; 0 = source not found -> ERR 53
 hkc_resolve:
                 xor     a
                 ld      (COPY_LEFT),a       ; the match count
-                ld      hl,(FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_ROOTSECS)
-                ld      (FAT_DIRREM),hl
+                call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 hkr_sec:        ld      hl,(FAT_DIRREM)
                 ld      a,h
                 or      l
@@ -5038,10 +5035,7 @@ hkf_body:
                 ld      (DISKOP_STATUS),a
                 call    fat_mount           ; LOCAL primitive body
                 jp      c,hkf_io
-                ld      hl,(FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC),hl
-                ld      hl,(FAT_ROOTSECS)
-                ld      (FAT_DIRREM),hl
+                call    fat_dir_start       ; DIRSEC / DIRREM: the whole root
 df_secloop:
                 ld      hl,(FAT_DIRREM)
                 ld      a,h
@@ -5993,7 +5987,7 @@ ga_fail:
 sfirst_body:
                 inc     de                  ; DE -> the 11-byte 8.3 pattern (FCB+1)
                 ld      (FAT_NAMEPTR), de   ; dirscan_match compares against this
-                call    fat_mount           ; (re)parse BPB -> FAT_FIRSTROOT/FAT_ROOTSECS
+                call    fat_mount           ; (re)parse BPB -> FAT_FIRSTROOT/FAT_FIRSTDATA
                 jp      c, ds_none          ; disk error -> no entry
                 ld      hl, 0
                 ld      (BDOS_SRCHIDX), hl  ; scan cursor := entry 0
@@ -6034,7 +6028,9 @@ dsm_shr2:
                 rr      l
                 djnz    dsm_shr2            ; HL = idx >> 4 again (sector offset)
                 ex      de, hl              ; DE = sector offset
-                ld      hl, (FAT_ROOTSECS)
+                push    de
+                call    fat_rootsecs        ; HL = root sectors (D-WCACHE W1)
+                pop     de
                 or      a
                 sbc     hl, de
                 jp      z, ds_none          ; already past the last root sector

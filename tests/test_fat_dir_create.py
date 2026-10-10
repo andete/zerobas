@@ -94,7 +94,9 @@ def make_machine(entries):
     # updated and the cluster read back 0x000.
     m.trap("fatprim_write_sector", write_sector)
     m.poke_w(m.addr("FAT_FIRSTROOT"), FIRSTROOT)
-    m.poke_w(m.addr("FAT_ROOTSECS"), ROOTSECS)
+    # D-WCACHE W1: the root-sector count is FAT_FIRSTDATA - FAT_FIRSTROOT now
+    # (fat_rootsecs); FAT_ROOTSECS's cell holds the cluster count.
+    m.poke_w(m.addr("FAT_FIRSTDATA"), FIRSTROOT + ROOTSECS)
     return m, img
 
 

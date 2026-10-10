@@ -340,7 +340,7 @@ gdpb_popdone:
                 ; dataClusters(713) + 1 on this 720 KB image; fat_total_clusters
                 ; returns 715, minus 1 = 714.) Microsoft FAT spec §3.3 cluster count.
                 push    hl
-                call    fat_total_clusters  ; DE = dataClusters + 2 (reads boot sec into WBUF)
+                call    fat_total_clusters  ; DE = dataClusters + 2 (fat_mount's, D-WCACHE W1)
                 dec     de                  ; DE = dataClusters + 1 (the DPB encoding)
                 pop     hl
                 ld      (hl), e

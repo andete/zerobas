@@ -117,7 +117,9 @@ def run():
 
     def find(name):
         m.poke(m.addr("FAT_FIRSTROOT"), struct.pack("<H", FIRSTROOT))
-        m.poke(m.addr("FAT_ROOTSECS"), struct.pack("<H", ROOTSECS))
+        # D-WCACHE W1: the root-sector count is FAT_FIRSTDATA - FAT_FIRSTROOT now
+        # (fat_rootsecs); FAT_ROOTSECS's cell holds the cluster count.
+        m.poke(m.addr("FAT_FIRSTDATA"), struct.pack("<H", FIRSTROOT + ROOTSECS))
         m.poke(SEARCH, n83(name))
         return m.call("fat_find", hl=SEARCH)
 

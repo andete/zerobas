@@ -6478,7 +6478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31677 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31686 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29814,7 +29814,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Four slices, safest first: **W1** the cluster count kept from the mount;
       **W2** the FAT sector kept across calls (a tag every `FAT_MBUF` writer
       clears); **W3** the FAT written at CLOSE; **W4** the data half-sector kept.
-      ➡️ W1 next.
+      ✅ **W1 SHIPPED 2026-10-10:** the cluster count is `fat_mount`'s, kept in
+      `FAT_ROOTSECS`'s cell (root sectors = FIRSTDATA − FIRSTROOT, computed by
+      `fat_rootsecs`) — no new RAM, −4 B sub p1, −20 B disk.rom. 28 → 23 READs on
+      the workload, every per-cluster `R0/1` gone (predicted exactly,
+      [`fdcseq_w1.out`](scratchpad/fdcseq_w1.out)). Gate `wcache-acceptance`
+      ([`disk_probe_wcache.py`](probes/disk/disk_probe_wcache.py),
+      [`wcache_gate_w1.out`](scratchpad/wcache_gate_w1.out)): the file reads back
+      whole on both, zerobas within 23 READs / 36 WRITEs; 🔪 K-WC1 (the boot read
+      restored) → exactly `zb-reads` ([`wcache_knives.out`](scratchpad/wcache_knives.out)).
+      ➡️ W2 next (the FAT sector kept across calls: audit `FAT_MBUF`'s writers).
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
