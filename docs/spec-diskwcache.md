@@ -126,6 +126,16 @@ with both entries.
   link, and on the LAST cluster the file still reads back (readers stop at the
   size). A readback cannot see this; only the FAT can.
 
+⏸ **W3b and W4 PARKED 2026-10-11 — measured diminishing.** After W3a, the
+workload runs in 10.8–11.2 s here against the CF-3300's 11.8. Typed keys kept
+during it rose from 9–10 to 10–13 of 22, against the CF-3300's ~17
+(`fdcdi_typeahead_w3a_d3/5/8.out`). Zerobas now issues 42 data and FAT commands
+to its 32. What still separates the key rates is how long the driver keeps
+interrupts masked inside each command's DRQ wait, not how many commands there
+are. Each of W3b and W4 needs a cross-call cache and an audit of every user of
+a shared buffer (38 for `FAT_MBUF`, more for `FAT_DBUF`) to save 8–18 more.
+Pick them up if speed or D-FDCDI asks again.
+
 **W3b — the FAT written at CLOSE, as the CF-3300 does.** Mark-used and link
 only change `FAT_MBUF` (dirty flag). The dirty sector is written to both copies
 when another FAT sector is needed, at `CLOSE`, and before any operation that

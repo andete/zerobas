@@ -907,6 +907,12 @@ item — do **one item per session** to keep context lean.
       serves this item too. Interrupt windows inside the DRQ wait stay the
       reverted idea above. 📐 The slices are designed
       ([`docs/spec-diskwcache.md`](docs/spec-diskwcache.md), 2026-10-10).
+      📏 **AFTER W1–W3a (2026-10-11):** the workload's commands 128 → 84 (42
+      data/FAT, the CF-3300 32), its time 13.7 → ~11 s (the CF-3300 11.8), and
+      typed keys kept 7–12 → 10–13 of 22 (the CF-3300 15–18). The count is no
+      longer the lever: the masked DRQ wait inside each command is — this item's
+      reverted idea (interrupt windows in the wait, keeping the retry
+      interruptible and measuring the lost-data rate on its own) is what is left.
       🔬 **TRIED 2026-10-10 AND REVERTED: skipping the seek when the head is on the
       track** (the WD2793 track register; a force interrupt `$D0` in its place so
       the write path's NOT READY test still reads a type-I status). Seeks 64 → 10
@@ -6478,7 +6484,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31721 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31736 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6644,7 +6650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11506 (T-6FE392)8 (T-529ABE)` from `TODO.md:24300 (T-529ABE)`: a
+      `TODO.md:11512 (T-6FE392)8 (T-529ABE)` from `TODO.md:24306 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12353,7 +12359,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24300 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24306 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -29856,9 +29862,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       9–10 of 22 at 3/5/8 s, unchanged (predicted a small rise: MISSED — the
       masked time is in the writes), and the workload's time now matches the
       CF-3300's ([`fdcdi_typeahead_w2_d3.out`](scratchpad/fdcdi_typeahead_w2_d3.out)).
-      ➡️ W3b (the FAT at CLOSE) or W4 (the data half-sector) next — each changes
-      the medium between calls or needs a `FAT_DBUF` audit; re-read the
-      mid-sequence image rows first.
+      📏 **RE-READ AFTER W3a (2026-10-11):** the workload runs 10.8–11.2 s here
+      against the CF-3300's 11.8, and typed keys kept rose to 10 / 10 / 13 of 22
+      at 3 / 5 / 8 s (predicted 11–13: partly hit;
+      [`_d3`](scratchpad/fdcdi_typeahead_w3a_d3.out),
+      [`_d5`](scratchpad/fdcdi_typeahead_w3a_d5.out),
+      [`_d8`](scratchpad/fdcdi_typeahead_w3a_d8.out)). 42 data/FAT commands
+      against the CF-3300's 32: what still separates the key rates is the
+      driver's masked DRQ wait per command, not the count.
+      ⏸ **W3b / W4 PARKED** (spec §3: each needs a cross-call cache and a
+      shared-buffer audit for 8–18 more commands) — pick up if speed or D-FDCDI
+      asks again. D-FDCDI's own remaining lever is the DRQ-wait masking (the
+      reverted idea in its block).
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE
