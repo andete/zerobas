@@ -753,14 +753,17 @@ scv_ceil_try:
                 ; 🔴 D-SPMERGE step 6: AND RESERVE THE MACHINE STACK UNDER IT. Since
                 ; the merge `SP` lives BELOW `CSP`, and `strheap_varceil` clamps to
                 ; `CSP` itself -- so without this the array region grows straight
-                ; through the LIVE STACK. `ctl_alloc` keeps `CTL_STACK_MARGIN` clear
-                ; at the pool's floor; this is the same invariant from the other
-                ; side, which strheap_varceil's own note calls "only one side of it".
-                ; `dec h` is -256 in one byte and cannot wrap: the ceiling is a RAM
-                ; address >= $8000, and a zero CSP left the clamp standing down.
+                ; through the LIVE STACK. The stack's reserve below the pool top is
+                ; kept from this side, which strheap_varceil's own note calls
+                ; "only one side of it".
+                ; The subtraction cannot wrap: the ceiling is a RAM address
+                ; >= $8000, and a zero CSP left the clamp standing down.
                 ; MEASURED without it: `DIM Z(1857)` + 26 scalars read NO OUTPUT AT
                 ; ALL, where a clean tree raises `Out of memory` with 27 B spare.
-                dec     h                   ; keep CTL_STACK_MARGIN below the ceiling
+                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (116, measured -- see
+                ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
+                ld      de,-STK_EDGE_RESERVE
+                add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF
@@ -1197,14 +1200,17 @@ aal_ceil_try:
                 ; 🔴 D-SPMERGE step 6: AND RESERVE THE MACHINE STACK UNDER IT. Since
                 ; the merge `SP` lives BELOW `CSP`, and `strheap_varceil` clamps to
                 ; `CSP` itself -- so without this the array region grows straight
-                ; through the LIVE STACK. `ctl_alloc` keeps `CTL_STACK_MARGIN` clear
-                ; at the pool's floor; this is the same invariant from the other
-                ; side, which strheap_varceil's own note calls "only one side of it".
-                ; `dec h` is -256 in one byte and cannot wrap: the ceiling is a RAM
-                ; address >= $8000, and a zero CSP left the clamp standing down.
+                ; through the LIVE STACK. The stack's reserve below the pool top is
+                ; kept from this side, which strheap_varceil's own note calls
+                ; "only one side of it".
+                ; The subtraction cannot wrap: the ceiling is a RAM address
+                ; >= $8000, and a zero CSP left the clamp standing down.
                 ; MEASURED without it: `DIM Z(1857)` + 26 scalars read NO OUTPUT AT
                 ; ALL, where a clean tree raises `Out of memory` with 27 B spare.
-                dec     h                   ; keep CTL_STACK_MARGIN below the ceiling
+                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (116, measured -- see
+                ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
+                ld      de,-STK_EDGE_RESERVE
+                add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF

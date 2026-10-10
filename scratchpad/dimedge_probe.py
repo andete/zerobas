@@ -33,9 +33,14 @@ def val(raw):
 
 
 def main():
+    # `dimedge_probe.py K...` bisects at chosen K; DE_ONLY=REF|ZB runs one side
+    global KS
+    KS = [int(a) for a in sys.argv[1:]] or KS
+    only = os.environ.get("DE_ONLY")
+    sides = {"REF": (REF,), "ZB": (ZB,)}.get(only, (REF, ZB))
     res = {m: omsx_repl.run_cases(m, [("direct", prog(k)) for k in KS], batch=False,
                                   reset=("CLS",), boot=8.0, capture="screen")
-           for m in (REF, ZB)}
+           if m in sides else [None] * len(KS) for m in (REF, ZB)}
     print(f"{'K':>5} {'VG-8020 (ERR FRE)':>20} {'zerobas (ERR FRE)':>20}")
     for i, k in enumerate(KS):
         print(f"{k:>5} {str(val(res[REF][i])):>20} {str(val(res[ZB][i])):>20}")

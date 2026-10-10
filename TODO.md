@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31455 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31512 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26625,9 +26625,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and compare per pass. Inside T2's 10×; kwtime's negative arm had to
       re-price its delay pad (3000 → 2000 iterations) for the same reason.
 
-- [ ] 📏 **`DIM` KEEPS A 256 B STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
-      leaving ~260 B free is `Out of memory` here and fits on the VG-8020 down to
-      ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows).**
+- [ ] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
+      leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to
+      ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows; 256 B
+      until S3, 116 since — the residual is at the END of this block).**
       🎚️ TIER 4 — RAM usage (VG-8020): economy at the memory edge
       ~~🤖 **AUTONOMOUS** — measure the reference's exact edge, then set the reserve
       from zerobas's measured need (as D-PAINTSP did for PAINT).~~ Measured; ~~now
@@ -26760,6 +26761,62 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       K-CL4 (the "looser" stop) → the seven chains — each exactly, `mul3` named
       as unmoved in advance. ➡️ Next: what is left of the 22 B (the relational
       probe's `str_eval_ix`, the sub-ROM variable lookup), then the reserve.
+      ✅ **S3 SHIPPED 2026-10-10 — THE RESERVE: DIM'S EDGE 280 → 140 (THE VG-8020
+      110), AND THE LINE STORE ON THE REFERENCE'S EDGE TO THE BYTE.** The 256 B
+      `CTL_STACK_MARGIN` at the three edges (DIM and a new scalar in
+      `sub/arrays.asm`, the store's `SL_CEIL` in `basic/program.asm`) became two
+      measured constants (`basic/sysvars.inc`):
+      **`STK_EDGE_RESERVE` = 116** for DIM / a new scalar — the floor zerobas's
+      OWN stack sets. Expressions are covered by `stk_guard` (a factor either has
+      `STK_EVAL_RESERVE` under it or defers ERR 7), so the reserve only has to hold
+      what runs WITHOUT a passing guard. 📏
+      [`lowpoint_probe.py`](scratchpad/lowpoint_probe.py) (a write watchpoint on
+      our own stack band, PLAY running, both machines →
+      [`lowpoint_disk2.out`](scratchpad/lowpoint_disk2.out),
+      [`lowpoint_dm.out`](scratchpad/lowpoint_dm.out)): the deepest unguarded path
+      is the line editor in direct mode, **92 B**; KEY LIST 84, LIST / FILES 82;
+      the most below a passing guard 81 (`strcmp`), so `STK_EVAL_RESERVE` stays
+      128. 🔮 Predicted the flat guard depth 60–75 (MISS: 22–60,
+      [`flatguard_run.out`](scratchpad/flatguard_run.out)), below-guard ≤ 60 (MISS:
+      81), unguarded ≤ 40 (MISS: 84 once eval-free statements were added).
+      **The K edge cannot match safely**: zerobas's `FRE(0)` is fixed against the
+      pool top, the reference's moves with the live SP (scalar and array COSTS are
+      identical, [`varcost_run.out`](scratchpad/varcost_run.out)), and the
+      reference's K=110 would need ~87 here — below the editor's 92. With 116:
+      [`dimedge_s3.out`](scratchpad/dimedge_s3.out) fits at K=140, refuses ≤ 138
+      (predicted ~139: hit); the VG-8020 fits at 110, refuses 108
+      ([`dimedge_ref_fine.out`](scratchpad/dimedge_ref_fine.out)). Both now show
+      the same two steps — the DIM fits, then the next statement may be `Out of
+      memory` (the reference K 110–124, [`dimedge_ref_raw.out`](scratchpad/dimedge_ref_raw.out)).
+      **`STK_STORE_RESERVE` = 141** for the line store — the REFERENCE's edge,
+      safe because it is above 116: after lnblank's crf shrink the VG-8020 stores
+      `20 REM`+13 B and refuses +14, and so does zerobas
+      ([`storeedge_probe.py`](scratchpad/storeedge_probe.py) →
+      [`storeedge_s3.out`](scratchpad/storeedge_s3.out); 142 refused 13, a miss on
+      my own formula by one). At 116 zerobas STORED the 32 B line both references
+      refuse ([`edge_lnblank-say.out`](scratchpad/edge_lnblank-say.out)) — the old
+      256 had masked that the other way.
+      🛡️ **SAFETY, MEASURED AT THE EDGE:** [`edgesafe_probe.py`](scratchpad/edgesafe_probe.py)
+      → [`edgesafe_run.out`](scratchpad/edgesafe_run.out): 16 workloads × K
+      144–224, then direct mode, a watchpoint on our own RAM counting STACK writes
+      into the arrays — none; closest approach **44 B** (KEY LIST, a trap; predicted
+      ~30: MISS on the safe side). Its first cut read a new scalar's block move of
+      the arrays as a corruption (SP far away) — now only writes near SP count.
+      🔪 [`edgesafe_knife.out`](scratchpad/edgesafe_knife.out): K-ER1
+      (`STK_EDGE_RESERVE` 116 → 16, ROM hash moved and restored) → stack writes
+      INTO the arrays in every workload at K 64/80.
+      Gate **`dimedge-acceptance`** ([`basic_probe_dimedge.py`](probes/basic/basic_probe_dimedge.py)):
+      the store edge two-sided (`store-13` stored, `store-14` refused), the DIM
+      edge with `dim-120` / `dim-136` KNOWN_DIVERGE. Re-pins: array-acceptance's
+      two chain-OOM rows `Z(1780)` → `Z(1798)`; lnblank's `crf-oomlst` RETIRED (it
+      agrees) and `crf-oomsay` agrees, while `crf-oomctl` / `crf-oom` still abort
+      their `PRINT` — now at the expression guard, not the store.
+      ➡️ **Left in this item:** (a) **the expression guard's reserve** — just past
+      the edge a simple `PRINT` works on the VG-8020 from K≈126 and here from
+      K≈192, because a factor needs its guard depth + 128; the 81 B below a guard
+      (`strcmp`, string compares through the sub-ROM) is what keeps 128;
+      (b) the DIM edge's ~30 B, which is the deeper statement stack (S1/S2's 22 B
+      and the editor's 92).
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

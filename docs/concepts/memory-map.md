@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # The memory map — where BASIC keeps things in RAM
 
-> **Status (2026-10-09):** program, variables and arrays sit at the Philips
+> **Status (2026-10-10):** program, variables and arrays sit at the Philips
 > VG-8020's addresses and cost the same bytes, but
 > zerobas's own workspace leaves a diskless machine 4978 bytes less `FRE(0)`
 > (the disk build is 343 short of the National CF-3300; both 267 more since
@@ -169,10 +169,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   [`fcb0_disk.out`](../../scratchpad/fcb0_disk.out)).
   A program that just fits on the VG-8020 does not fit here; `CLEAR 25000` is
   accepted there and `Out of memory` here.
-- **`DIM` leaves more room unused** (D-DIMRESERVE, TIER 4): a `DIM` that
-  leaves about 260 bytes free is `Out of memory` here and fits on the VG-8020
-  down to about 140. Joost ruled on 2026-10-09 to match the reference, which
-  needs the expression evaluator to use less stack first.
+- **`DIM` leaves a little more room unused** (D-DIMRESERVE, TIER 4): sized to
+  leave `K` bytes of `FRE(0)`, a `DIM` fits on the VG-8020 down to `K` = 110 and
+  here down to 140 (it was 280 until 2026-10-10). zerobas keeps 116 bytes for its
+  own stack below the top of memory, the deepest it goes without its formula
+  check plus room to spare; the remaining 30 bytes are its deeper stack. A
+  program line is stored to exactly the VG-8020's edge
+  ([gate](../../probes/basic/basic_probe_dimedge.py)). Joost ruled on 2026-10-09
+  to match the reference ([`DIM`](../keywords/DIM.md)).
 - **Frame sizes** (table above). Joost ruled on 2026-09-27 that zerobas should
   never be worse; only `GOSUB` (8 against 7) is, and making it 7 turned out to
   be a redesign — that choice is back with him.

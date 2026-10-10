@@ -545,8 +545,14 @@ CASES = [
     # 1813 the DIM itself no longer fit and the chain never ran out
     # (scratchpad/fcb0_full_arrays.out); -33 doubles = -264 B keeps the chain at
     # the edge with 3 B LESS room than before, so the OOM can only come earlier.
+    # 🔁 RE-PINNED 2026-10-10 (D-DIMRESERVE S3): Z(1780) -> Z(1798). The reserve a
+    # new scalar and DIM keep below the pool top is STK_EDGE_RESERVE (116) now,
+    # not CTL_STACK_MARGIN (256): 140 B more room, and at 1780 the 26-scalar chain
+    # no longer ran out (scratchpad/edge_array.out). +18 doubles = 144 B leaves
+    # 4 B LESS room than before, so the OOM can only come earlier, and the DIM,
+    # which fitted with >= 256 B spare, still fits.
     ("scalar.str.chain.oom",   "direct",
-        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1780)']
+        ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1798)']
         + [f'{c}$="1"' for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
         "zberr"),
 
@@ -1004,9 +1010,10 @@ def _line_tokens(raw):
 # retired pre-4c STRTAB-full "silent drop" contract survived into the INPUT
 # path even after ex_let_str's own fix); post-fix it is '1|Out of memory'.
 INPUT_OOM = [
-    # 🔁 RE-PINNED 2026-10-10 with scalar.str.chain.oom above: Z(1813) -> Z(1780).
+    # 🔁 RE-PINNED 2026-10-10 with scalar.str.chain.oom above: Z(1813) -> Z(1780),
+    # then Z(1798) the same day (D-DIMRESERVE S3, STK_EDGE_RESERVE).
     ("scalar.input.chain.oom",
-     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1780)'] +
+     ['MAXFILES=0', 'CLEAR 200,47872', 'DIM Z(1798)'] +
      [ln for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for ln in (f'LINE INPUT {c}$', '1')],
      "LINE INPUT Z$", "1|Out of memory"),
 ]

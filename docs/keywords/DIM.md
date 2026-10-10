@@ -6,9 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `DIM` — declare an array
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: how close to the end of free memory an array may reach (below).
+> difference: how close to the end of free memory an array may reach (below),
+> now about 30 bytes where it was about 170.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -87,19 +88,28 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 ## Differences from the reference
 
 **An array that leaves very little memory free fits on the VG-8020 and is
-`Out of memory` here** (D-DIMRESERVE, open, a TIER 4 item). With
-`DIM A(X)` sized to leave `K` bytes of `FRE(0)`, the VG-8020 still accepts it
-with about 137 bytes left; zerobas refuses once fewer than about 258 would be
-left, because it keeps a fixed 256-byte reserve for its own stack
-([readings](../../scratchpad/dimedge_run.out)). Measuring why showed the real
-cost is the expression evaluator: the same statement needed 79 bytes of stack on
-the VG-8020 and 147 here ([readings](../../scratchpad/stackhwref_run.out)), so
-right after such a `DIM` even a simple formula can be `Out of memory` here.
-Joost ruled on 2026-10-09: *"yes, we need to match reference there"* — the
-evaluator is to be reworked until a formula fits in the reference's stack, and
-then the reserve lowered to the VG-8020's edge. Two steps on 2026-10-10 brought
-it to 101 bytes ([after](../../scratchpad/stackhwref_after_s2.out)); the reserve
-itself is unchanged until the rest is done.
+`Out of memory` here** (D-DIMRESERVE, open, a TIER 4 item). Size it with
+`X=INT((FRE(0)-K)/8):DIM A(X)`: the VG-8020 accepts the `DIM` down to `K` = 110,
+and zerobas down to `K` = 140 ([gate](../../probes/basic/basic_probe_dimedge.py)).
+Until 2026-10-10 zerobas refused below `K` = 280, because it kept a fixed
+256-byte reserve for its own stack ([readings](../../scratchpad/dimedge_run.out)).
+Joost ruled on 2026-10-09: *"yes, we need to match reference there"*. Three
+steps on 2026-10-10 did most of it. The expression evaluator was reworked, so a
+simple statement needs 101 bytes of stack instead of 147 (the VG-8020: 79,
+[after](../../scratchpad/stackhwref_after_s2.out)). Then the reserve was cut to
+116 bytes, the deepest stack zerobas reaches without its expression check (92
+bytes, in the line editor), plus room to spare
+([statements](../../scratchpad/lowpoint_disk2.out),
+[editor](../../scratchpad/lowpoint_dm.out)). The last 30 bytes are that
+deeper stack.
+
+Both machines behave alike just past the edge: the `DIM` fits, and the next
+statement may itself be `Out of memory`, because a formula needs a little stack
+too. The VG-8020 runs a simple `PRINT` again from about `K` = 126, zerobas from
+about 192: zerobas's formula check keeps more in hand
+([VG-8020](../../scratchpad/dimedge_ref_fine.out),
+[zerobas](../../scratchpad/edgesafe_run.out)). That check was also tested at
+this edge: no statement wrote into the array.
 
 More generally, zerobas has less free memory than the VG-8020, so an array that
 only just fits there can be `Out of memory` here. That is part of the **RAM
@@ -126,6 +136,13 @@ usage** rung, which is not yet proven.
   stopped a nested expression's stack from growing down into the arrays;
   the reference raises `Out of memory` instead. The evaluator now checks its
   stack as it goes.
+- **The reserve at the end of memory was cut from 256 bytes to 116**
+  (2026-10-10, D-DIMRESERVE). Two probes on zerobas's own stack measured how deep
+  each kind of statement goes and how close it gets to the arrays
+  ([`lowpoint_probe.py`](../../scratchpad/lowpoint_probe.py),
+  [`edgesafe_probe.py`](../../scratchpad/edgesafe_probe.py)). With the reserve cut
+  to 16 bytes, the second probe saw the stack write into the array, so it can
+  tell ([knife](../../scratchpad/edgesafe_knife.out)).
 
 ## Where it lives
 

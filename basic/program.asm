@@ -167,7 +167,7 @@ dl_lnok:
                 push    hl                  ; tokenise's source cursor
                 xor     a                   ; D-FCBSHAPE FCB #0: channel 0 is the LOWEST
                 call    fch_ctx_addr        ; block now, 2*(MAXF+1) B above the table
-                                            ; base; the 256 B margin below keeps the
+                                            ; base; the edge reserve below keeps the
                                             ; text clear of the table as well
                 ; 🔴 AND THE STORE MUST LEAVE THE STACK ITS RESERVE (D-SPMERGE §9).
                 ; `strheap_varceil()` is ALSO the pool's top, and since cut 2 the
@@ -179,8 +179,11 @@ dl_lnok:
                 ; SWALLOWING TYPED CHARACTERS as the text approached the ceiling --
                 ; the editor's own stack was being overwritten by the text it was
                 ; storing. The same reserve ctl_alloc keeps below the frontier.
-                ; CTL_STACK_MARGIN is one page, so this is one byte.
-                dec     h                   ; -= CTL_STACK_MARGIN (256)
+                ; D-DIMRESERVE S3: STK_STORE_RESERVE (141, the VG-8020's own store
+                ; edge, above the 116 B stack floor -- sysvars.inc), not the 256 B
+                ; page it was; DE is reloaded below.
+                ld      de,-STK_STORE_RESERVE
+                add     hl,de               ; -= STK_STORE_RESERVE
                 ld      (SL_CEIL),hl
                 pop     hl
     ENDIF

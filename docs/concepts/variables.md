@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # Variables — names, types, arrays, and where they live
 
-> **Status (2026-10-09):** names, type suffixes, the `DEF` type statements,
+> **Status (2026-10-10):** names, type suffixes, the `DEF` type statements,
 > arrays, what clears variables, and the published pointers `VARTAB`, `ARYTAB`
 > and `STREND` agree with the VG-8020 in every measured case. Open: an array
 > that leaves very little memory free is `Out of memory` here (D-DIMRESERVE,
@@ -166,11 +166,11 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **An array that leaves very little memory free** fits on the VG-8020 down to
-  about 137 bytes left and is `Out of memory` here below about 258 (D-DIMRESERVE,
-  open, TIER 4): zerobas keeps a fixed reserve for its evaluator's stack, which
-  needs more room than the reference's. Joost ruled on 2026-10-09: *"yes, we
-  need to match reference there"* ([`DIM`](../keywords/DIM.md)).
+- **An array that leaves very little memory free** fits on the VG-8020 a little
+  closer to the end of memory than here, by about 30 bytes, where it was about
+  170 until 2026-10-10 (D-DIMRESERVE, open, TIER 4). zerobas keeps a reserve for
+  its own stack, which goes deeper than the reference's. Joost ruled on
+  2026-10-09: *"yes, we need to match reference there"* ([`DIM`](../keywords/DIM.md)).
 - **Less free memory overall**, so a program that only just fits on the
   VG-8020 can run out here. That is the RAM-usage rung, not yet proven.
 - **The addresses `VARPTR` returns differ**, because the two machines place

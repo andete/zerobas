@@ -1,0 +1,22 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_dimedge.py
+ROW dim-100 VG=[REFUSED] ZB=[REFUSED] SAME
+ROW dim-108 VG=[REFUSED] ZB=[REFUSED] SAME
+ROW dim-120 VG=[FITTED] ZB=[REFUSED] KNOWN_DIVERGE
+ROW dim-136 VG=[FITTED] ZB=[REFUSED] KNOWN_DIVERGE
+ROW dim-144 VG=[FITTED] ZB=[FITTED] SAME
+ROW dim-200 VG=[FITTED] ZB=[FITTED] SAME
+ROW store-12 VG=[STORED] ZB=[STORED] SAME
+ROW store-13 VG=[STORED] ZB=[STORED] SAME
+ROW store-14 VG=[REFUSED] ZB=[REFUSED] SAME
+ROW store-26 VG=[REFUSED] ZB=[REFUSED] SAME
+
+PASS: DIM and line-store edges (10/10, 2 pinned)
+refcache: 0 hit, 2 miss, 2 stored

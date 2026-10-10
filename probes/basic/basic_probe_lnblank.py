@@ -3148,9 +3148,17 @@ KNOWN_DIVERGE = {
     # one D-DIMRESERVE is about, RULED to be brought to the reference's ~79 B by
     # the `eval` rewrite (TIER 4). `crf-oomsay` RETIRED: it now agrees on all three
     # sides (`Out of memory`), and deleting an entry is the stricter move.
+    # 🔁 RE-PINNED 2026-10-10 (D-DIMRESERVE S3) -- THE STORE NOW AGREES, AND WHAT IS
+    # LEFT IS THE PRINT. The line store keeps STK_STORE_RESERVE (141), the VG-8020's
+    # own store edge to the byte (scratchpad/storeedge_s3.out), so zerobas stores
+    # `99 REM Z` and refuses line 20 as both references do: `crf-oomlst` agrees and
+    # is RETIRED (at 116 it had listed both lines -- scratchpad/edge_lnblank-say.out,
+    # the divergence on the other side). The two rows below still abort, for a
+    # DIFFERENT reason: with ~139 B left, the `PRINT`'s first factor needs its guard
+    # depth + STK_EVAL_RESERVE (128) and refuses, where the references evaluate it.
+    # That reserve is D-DIMRESERVE's next lever.
     "crf-oomctl":   "<none: aborted mid-PRINT>",
     "crf-oom":      "<none: aborted mid-PRINT>",
-    "crf-oomlst":   "<nothing listed>",
     # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
     # rather than edited (the ninth cohort to go that way). They were pinned at
     # zerobas' ` 15  2 ` -- R-D6's trailing-junk rule answering a `$2E` the verb

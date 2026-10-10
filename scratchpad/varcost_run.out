@@ -1,0 +1,12 @@
+Philips_VG_8020: [28550, 28539, 28534, 28528, 28440, 28412, 28274]
+C-BIOS_MSX1_EU_REPACK_NODISK: [23576, 23565, 23560, 23554, 23466, 23438, 23300]
+
+  step    VG-8020  zerobas
+  boot      28550    23576
+  X            11       11
+  X%            5        5
+  A$            6        6
+  DIM1         88       88
+  DIM2         28       28
+  DIM3        138      138
+refcache: 0 hit, 2 miss, 2 stored

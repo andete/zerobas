@@ -1,0 +1,35 @@
+C-BIOS_MSX1_EU_REPACK_DISK: stk_guard @ $4E84; bytes; every workload x30 with PLAY in the background
+  case      deepest guard  below guard  unguarded  writes  TOTAL
+  assign               22           39         26   17578     69
+  add                  40           39         26   15040     76
+  var                  22           50         26    3304     72
+  if                   34           39         26   11212     70
+  print                26           44         26    2375     70
+  using                26           50         26   12663     76
+  strings              38           65         26    3488     74
+  strnum               30           42         26   16550     72
+  gosub                22           41         26     990     60
+  fn                   58           41         26   10026     92
+  array                50           41         26    1015     78
+  trans                60           39         26   21229     98
+  val                  22           44         26     649     66
+  vpoke                42           39         26   10687     80
+  sound                22           39         26   14453     60
+  strig                54           42         26   20098     96
+  instr                22           48         26    5512     70
+  graphics             49           46         30   31093     72
+  trap                 40           53         28    1932     60
+  chain                88           57         26   24012    126
+  gc                   30           48         26    4513     78
+  list      NO READING (done False, file ['20', '87', '26', '11195', '82'])
+  next                 45           65         26   10470     61
+  cls                  20           67         26    5325     62
+  keylist               0           -1         84    4026     84
+  errtrap              20           39         26     279     59
+  errmsg    NO READING (done False, file ['20', '42', '26', '995', '62'])
+  files     NO READING (done False, file ['20', '87', '26', '709', '82'])
+  strcmp               46           81         26   10900     84
+  space                36           50         26    1143     86
+
+MAX: deepest guard 88, below guard 81, unguarded 84, TOTAL 126   NO READING: list errmsg files
+refcache: 0 hit, 30 miss, 30 stored

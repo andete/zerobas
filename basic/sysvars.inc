@@ -2018,7 +2018,8 @@ GFX_PSP         equ     GFX_PSTK + 8    ; the span stack's top (lowest used byte
 GFX_PBASE       equ     GFX_PSTK + 10   ; its empty position = SP - GFX_PAINT_MARGIN (2)
 GFX_PFLOOR      equ     GFX_PSTK + 12   ; the lowest byte it may use = ARYEND + 2 (2)
 ; D-PAINTSP: how far below the SP at gfx_pstk_reset the entries start. NOT the
-; general CTL_STACK_MARGIN (256): that is the pool's reserve for ANY statement,
+; general CTL_STACK_MARGIN (256, then the pool's reserve for ANY statement; the
+; edges use STK_EDGE_RESERVE since D-DIMRESERVE S3),
 ; and with it a simple fill with ~266 B free raised ERR 7 where the VG-8020
 ; completes (scratchpad/paintsp_run.out, tight-300). MEASURED on zerobas with
 ; breakpoints on its own sub-ROM routines (scratchpad/paintsp_run.out notes):
@@ -3947,8 +3948,35 @@ CTL_FRAME_MARGIN equ   768
     ENDIF
 CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this size
                                ; and 1024 costs ~130 frames of GOSUB depth for
-                               ; nothing. One PAGE, so both users can subtract it
-                               ; with a single `dec h` / test it with `cp high`.
+                               ; nothing. Since D-DIMRESERVE S3 its one user is the
+                               ; GC's sort-buffer headroom (sub/strheap.asm); the
+                               ; three EDGES below use STK_EDGE_RESERVE.
+; --- STK_EDGE_RESERVE: what DIM, a new scalar and the line store leave ---------
+; D-DIMRESERVE S3 (2026-10-10). The variable region and the program text may
+; grow to within this many bytes of the pool's top; the machine stack lives in
+; what is left. It only has to hold what runs WITHOUT a passing stk_guard: an
+; expression's factors are covered by the guard (STK_EVAL_RESERVE under the
+; deepest passing one, or a deferred ERR 7), so at the edge a statement whose
+; guard sits deep refuses with Out of memory instead of writing into the arrays.
+; MEASURED on zerobas with a write watchpoint on its own stack band, PLAY running,
+; both machines (scratchpad/lowpoint_probe.py -> lowpoint_disk2.out, _dm.out):
+; the deepest path no guard covers is the line editor in direct mode, 92 B
+; below the pool top; KEY LIST 84, LIST and FILES 82, CLS 62, NEXT 61, a trap
+; dispatch 60. 116 keeps 24 B over the editor. It was 256 (CTL_STACK_MARGIN),
+; which put zerobas's DIM edge ~170 B above the VG-8020's (scratchpad/
+; dimedge_run.out); the ~29 B still left is zerobas's deeper statement stack
+; (the reference's FRE(0) is read against the live SP, ours against the top).
+STK_EDGE_RESERVE equ    116
+; --- STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRESERVE S3) ----------
+; Measured to the REFERENCE's own edge, which is safe because it is above
+; STK_EDGE_RESERVE: after lnblank's crf shrink (`CLEAR 300,TXTTAB+1000`, then
+; `99 REM Z`) the VG-8020 stores `20 REM` + 13 B and refuses + 14
+; (scratchpad/storeedge_probe.py -> storeedge_run.out, storeedge_ref_fine.out).
+; Here `20 REM` + n fits iff n <= 154 - this reserve (SL_CEIL is channel 0's
+; block, 4 B above CTLTOP, less it), so 141 is the reference's edge to the byte
+; (142 refused n=13 -- scratchpad/storeedge_after.out; storeedge_s3.out is 141).
+; With 116 zerobas stored the 32-byte line both references refuse.
+STK_STORE_RESERVE equ   141
 CTLTOP          equ     $E052   ; the pool's TOP = strheap_varceil(), cached (2)
 TSP             equ     $E054   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
 CTLLIM          equ     $E056   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)

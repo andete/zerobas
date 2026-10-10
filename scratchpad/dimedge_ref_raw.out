@@ -1,0 +1,27 @@
+K 120
+  |  Ok
+  |  NEW
+  |  Ok
+  |  10 CLEAR 200:ON ERROR GOTO 90:X=INT((
+  |  FRE(0)-120)/8):DIM A(X)
+  |  20 PRINT"[";0;FRE(0);"]":END
+  |  90 PRINT"[";ERR;FRE(0);"]":END
+  |  RUN
+  |  [ 0 [ 7
+  |  Out of memory in 90
+  |  Ok
+  |  color  auto   goto   list   run
+K 116
+  |  Ok
+  |  NEW
+  |  Ok
+  |  10 CLEAR 200:ON ERROR GOTO 90:X=INT((
+  |  FRE(0)-116)/8):DIM A(X)
+  |  20 PRINT"[";0;FRE(0);"]":END
+  |  90 PRINT"[";ERR;FRE(0);"]":END
+  |  RUN
+  |  [ 0 [ 7
+  |  Out of memory in 90
+  |  Ok
+  |  color  auto   goto   list   run
+refcache: 0 hit, 1 miss, 1 stored

@@ -1,0 +1,6 @@
+C-BIOS_MSX1_EU_REPACK_DISK: stk_guard @ $4E84; bytes; every workload x30 with PLAY in the background
+  case      deepest guard  below guard  unguarded  writes  TOTAL
+  dm_edit              32           70         62  172789     92
+
+MAX: deepest guard 32, below guard 70, unguarded 62, TOTAL 92
+refcache: 0 hit, 1 miss, 1 stored

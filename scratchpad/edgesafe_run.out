@@ -1,0 +1,20 @@
+C-BIOS_MSX1_EU_REPACK_NODISK: armed at exec_stmt $40F8, line >= 20; MARGIN = deepest stack write - CTLLIM (< 0: CORRUPT)
+  flat      K144:Out of memory in 20 m60  K160:Out of memory in 20 m76  K176:Out of memory in 30 m81  K192:DONE m97  K224:DONE m129
+  strcmp    K144:Out of memory in 20 m58  K160:Out of memory in 20 m74  K176:Out of memory in 20 m90  K192:Out of memory in 20 m99  K224:DONE m119
+  strings   K144:Out of memory in 20 m60  K160:Out of memory in 20 m76  K176:Out of memory in 20 m85  K192:DONE m101  K224:DONE m133
+  trans     K144:Out of memory in 20 m60  K160:Out of memory in 20 m76  K176:Out of memory in 20 m85  K192:Out of memory in 20 m101  K224:DONE m118
+  chain     K144:Out of memory in 20 m46  K160:Out of memory in 20 m62  K176:Out of memory in 20 m72  K192:Out of memory in 20 m82  K224:Out of memory in 20 m96
+  fn        K144:Out of memory in 20 m56  K160:Out of memory in 20 m72  K176:Out of memory in 20 m88  K192:Out of memory in 20 m95  K224:Out of memory in 20 m127
+  using     K144:Out of memory in 30 m57  K160:Out of memory in 30 m73  K176:Out of memory in 30 m89  K192:DONE m96  K224:DONE m128
+  keylist   K144:Out of memory in 30 m44  K160:Out of memory in 30 m60  K176:Out of memory in 30 m67  K192:DONE m83  K224:DONE m115
+  cls       K144:Out of memory in 30 m64  K160:Out of memory in 30 m80  K176:Out of memory in 30 m87  K192:DONE m103  K224:DONE m135
+  next      K144:Out of memory in 20 m59  K160:Out of memory in 20 m75  K176:Out of memory in 20 m80  K192:Out of memory in 20 m87  K224:Out of memory in 20 m119
+  gosub     K144:Out of memory in 20 m58  K160:Out of memory in 20 m74  K176:Out of memory in 20 m92  K192:Out of memory in 20 m99  K224:Out of memory in 20 m131
+  trap      K144:Out of memory in 20 m44  K160:Out of memory in 20 m60  K176:Out of memory in 20 m76  K192:Out of memory in 20 m76  K224:Out of memory in 20 m108
+  play      K144:Out of memory in 20 m59  K160:Out of memory in 20 m75  K176:Out of memory in 20 m60  K192:Out of memory in 20 m87  K224:Out of memory in 20 m108
+  error     K144:Illegal function call in 20 m60  K160:Illegal function call in 20 m76  K176:Illegal function call in 20 m83  K192:Illegal function call in 20 m99  K224:Illegal function call in 20 m131
+  graphics  K144:Out of memory in 20 m56  K160:Out of memory in 20 m72  K176:Out of memory in 20 m88  K192:DONE m101  K224:DONE m133
+  list      K144:?ZB|NEW|ZB m48  K160:?ZB|NEW|ZB m64  K176:?ZB|NEW|ZB m80  K192:?ZB|NEW|ZB m103  K224:?ZB|NEW|ZB m132
+
+CORRUPT: none
+refcache: 0 hit, 80 miss, 80 stored

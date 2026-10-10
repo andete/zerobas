@@ -1,0 +1,29 @@
+stk_guard @ $4E84; bytes below CSP at the lowest passing guard, lines 30-39
+  assign       24   A=1
+  add          42   B=A+1
+  if           36   IF A=0 THEN B=2
+  ifelse       36   IF A=1 THEN B=2 ELSE B=3
+  print        22   PRINT 1;"X";2.5
+  using        24   PRINT USING "##.#";1.5
+  strings      40   A$=MID$(LEFT$("ABCDEF",4),2,2)+CHR$(65)
+  locate       28   LOCATE 0,20
+  gosub        32   GOSUB 36
+  ongosub      32   ON 1 GOSUB 36
+  for          22   FOR I=1 TO 2:NEXT
+  fn           73   X=FNA(2)
+  array        52   Z(1)=Z(2)+1
+  vpoke        44   VPOKE 0,VPEEK(0)
+  sound        24   SOUND 8,0
+  play         24   PLAY "C":B=1
+  color        24   COLOR 15,4,4
+  graphics     28   SCREEN 2:PSET(1,1):LINE(0,0)-(9,9):CIRCLE(50,50),9:SCREEN 0
+  read      NO READING  (screen ok, bp none)
+  swap      NO READING  (screen none, bp none)
+  midasg       26   A$="ABC":MID$(A$,1,1)="Z"
+  instr        24   X=INSTR("ABC","C")
+  trap         78   ON INTERVAL=1 GOSUB 36:INTERVAL ON:FOR I=1 TO 30:NEXT:INTERVAL OFF
+  strig        56   X=STICK(0)+STRIG(0)
+  chain        90   B=((((1+1)+1)+1)+1)
+
+WORST: chain 90 B   NO READING: read swap
+refcache: 0 hit, 25 miss, 25 stored

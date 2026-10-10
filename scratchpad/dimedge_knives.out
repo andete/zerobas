@@ -1,0 +1,6 @@
+  ROM 1cea3c92 3d062315 ba8a1c6b d96210e7  ->  7ea1bb2f 3d062315 ba8a1c6b 9a56bfc7
+PASS  K-DE1: moved ['store-14'] (want exactly ['store-14'])
+  ROM 7ea1bb2f 3d062315 ba8a1c6b 9a56bfc7  ->  1cea3c92 f191be62 ba8a1c6b d96210e7
+PASS  K-DE2: moved ['dim-136'] (want exactly ['dim-136'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

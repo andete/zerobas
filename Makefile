@@ -2346,6 +2346,14 @@ fcb0-acceptance: repack-machine
 prec-acceptance: repack-machine
 	python3 probes/basic/basic_probe_prec.py
 
+# --- dimedge-acceptance: how close to the end of memory DIM and the line store
+# reach (D-DIMRESERVE S3). STK_STORE_RESERVE puts the store's edge on the
+# VG-8020's to the byte (store-13 stored, store-14 refused, both machines); the
+# DIM edge is STK_EDGE_RESERVE, the floor zerobas's own stack sets, and its ~30 B
+# residual against the reference is pinned (dim-120, dim-136 KNOWN_DIVERGE).
+dimedge-acceptance: repack-machine
+	python3 probes/basic/basic_probe_dimedge.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

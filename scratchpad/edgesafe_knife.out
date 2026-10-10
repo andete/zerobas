@@ -1,0 +1,13 @@
+clean: d956e43b28f3 d9777ce5501d 
+planted: 07edbf9ff1d1 bea09123673e  (K-ER1: STK_EDGE_RESERVE 116 -> 16)
+C-BIOS_MSX1_EU_REPACK_NODISK: armed at exec_stmt $40F8, line >= 20; MARGIN = deepest stack write - CTLLIM (< 0: CORRUPT)
+  flat      K48:UNARMED  K64:Out of memory in 20 m-12 CORRUPT  K80:Out of memory in 20 m-2 CORRUPT
+  keylist   K48:UNARMED  K64:Out of memory in 30 m-12 CORRUPT  K80:Out of memory in 30 m-12 CORRUPT
+  cls       K48:UNARMED  K64:Out of memory in 30 m-12 CORRUPT  K80:Out of memory in 30 m0
+  trap      K48:UNARMED  K64:Out of memory in 20 m-  K80:Out of memory in 20 m-12 CORRUPT
+  list      K48:?ZB|NEW|ZB m-12 CORRUPT  K64:?ZB|NEW|ZB m-12 CORRUPT  K80:?ZB|NEW|ZB m-6 CORRUPT
+
+CORRUPT: flat@64 (ln=20 a=DCEC pc=3BC9), flat@80 (ln=65535 a=DCE6 pc=3BCA), keylist@64 (ln=20 a=DCEC pc=18EB), keylist@80 (ln=20 a=DCDC pc=18F7), cls@64 (ln=20 a=DCEC pc=3BCA), trap@80 (ln=65535 a=DCE0 pc=18F4), list@48 (ln=20 a=DCFA pc=1515), list@64 (ln=20 a=DCEA pc=18F2), list@80 (ln=20 a=DCE0 pc=3BCA)
+UNARMED (no witness): flat@48, keylist@48, cls@48, trap@48
+refcache: 0 hit, 15 miss, 15 stored
+restored: d956e43b28f3 d9777ce5501d 
