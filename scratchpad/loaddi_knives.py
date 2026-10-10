@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-r"""D-LOADDI knife: the cut must move EXACTLY its predicted row of
+r"""D-LOADDI / D-HOOKDI knives: each cut must move EXACTLY its predicted row of
 probes/disk/disk_probe_loaddi.py, judged on the zerobas column against the
 uncut build's.
 
-  K-LD1  the `ei` on hk_dpload's load path removed (disk/kernel.asm) -> load
-         (ctl reads TIME with no LOAD in between: named, not missed)
+  K-LD1  the `ei` on hk_dpload's load path              -> load
+  K-HD1  the `ei` after calbak's CALSLT (KILL's path)   -> kill
+  K-HD2  the `ei` at hk_dpsave's entry                  -> save
+  K-HD3  the `ei` at hk_dskf's entry                    -> dskf
+         (ctl reads TIME with no command in between: named, not missed)
 
 🔴 RESTORE ON EVERY EXIT: originals in memory, put back by try/finally AND
 atexit; knife_guard proves the cut reached the installed ROM. A run with rows
@@ -18,12 +21,24 @@ import knife_guard                  # D-KNIFEROM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
-ALL = {"load", "ctl"}
+ALL = {"load", "save", "kill", "dskf", "ctl"}
 KNIVES = {
     "K-LD1": ("disk/kernel.asm",
               "                ei                          ; D-LOADDI: the hook arrives through\n",
               "                nop                         ; K-LD1 CUT\n",
               {"load"}),
+    "K-HD1": ("disk/kernel.asm",
+              "                call    CALSLT\n                ei\n",
+              "                call    CALSLT\n                nop                         ; K-HD1 CUT\n",
+              {"kill"}),
+    "K-HD2": ("disk/kernel.asm",
+              "                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT),\n",
+              "                nop                         ; K-HD2 CUT\n",
+              {"save"}),
+    "K-HD3": ("disk/kernel.asm",
+              "                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT);\n",
+              "                nop                         ; K-HD3 CUT\n",
+              {"dskf"}),
 }
 TMP = "/tmp/zerobas"
 PROBE = "python3 -u probes/disk/disk_probe_loaddi.py"

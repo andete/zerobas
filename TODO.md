@@ -247,18 +247,50 @@ item — do **one item per session** to keep context lean.
       → `nop`, disk.rom hash moved) → exactly `load`.
       ➡️ **The other hooks enter the same way** — D-HOOKDI, filed below.
 
-- [ ] ⌨️ **D-HOOKDI — EVERY DISK.ROM HOOK IS ENTERED MASKED (CALSLT RETURNS DI),
-      AND ONLY `OPEN` AND `LOAD` RE-ENABLE: MEASURE THE OTHER LONG VERBS (filed
-      2026-10-10 from D-LOADDI).**
+- [x] ✅ **FIXED 2026-10-10 (D-HOOKDI)** — ⌨️ **EVERY DISK.ROM HOOK WAS ENTERED
+      MASKED (CALSLT RETURNS DI), AND EVERY `calbak` BACK INTO MAIN MASKED AGAIN:
+      SAVE / KILL / COPY / NAME / DSKF / FILES RAN WITH THE CLOCK STOPPED (filed
+      and fixed 2026-10-10 from D-LOADDI).**
       🎚️ TIER 3 — common errors: type-ahead during a long disk command.
-      🤖 **AUTONOMOUS** — measure first, per verb, against the CF-3300.
-      The handlers with no `ei` include `hk_dpsave` (tokenised SAVE),
-      `hk_files`, `hk_copy`, `hk_kill`, `hk_name`, `hk_dskf`, `hk_format`
-      (disk/kernel.asm); `hk_fmake` / `hk_fapp` / `hk_chout` / `hk_chclose`
-      already do. ➡️ Time each long verb as D-LOADDI did (emulated time between
-      `CURLIN` writes against the `TIME` it printed) on both machines; a verb
-      whose `TIME` stands still here where the CF-3300's runs gets the same
-      one-byte `ei`, a row in `loaddi-acceptance`, and a knife.
+      📏 [`verbclock_probe.py`](scratchpad/verbclock_probe.py) (`1 TIME=0` / `2
+      <verb>` / `3 PRINT TIME`, emulated time between `CURLIN` := 2 and := 3):
+      the share of each command `TIME` kept, CF-3300 / zerobas — SAVE 29 / **0 %**,
+      KILL 39 / **0**, BSAVE 30 / **0**, BLOAD 48 / **0**, DSKF 76 / **2**, NAME
+      56 / **8**, FILES 71 / 30 ([`verbclock_run.out`](scratchpad/verbclock_run.out),
+      [`verbclock_run2.out`](scratchpad/verbclock_run2.out)). Its first run read
+      `NO READING` on every slow verb: the capture came 8 s after RUN — the
+      verbs were still working (25 s now; COPY needs 45, `VC_STEP`). The same
+      readings put zerobas at 2.6× (SAVE), 3.8× (KILL), 3.7× (COPY), 2.1× (BSAVE)
+      the CF-3300's time — D-FDCDI's command count, TIER 5.
+      🎯 **FIX (disk/kernel.asm, 6 B):** `calbak` is `call CALSLT / ei / ret`
+      (was `jp CALSLT`) — every one of its 29 sites is a BASIC-facing handler;
+      `hsy_ok` (CALL SYSTEM) masks again after its `calbak`, since the DOS boot
+      that follows has always run masked; and `hk_dpsave`, `hk_dskf`, `hk_files`
+      re-enable at entry (they reach the disk before any `calbak`).
+      **After** ([`verbclock_after.out`](scratchpad/verbclock_after.out),
+      [`verbclock_copy.out`](scratchpad/verbclock_copy.out)): SAVE 24 %, KILL 15,
+      COPY 16 (CF 37), NAME 14, DSKF 25, FILES 38. 🔮 Predicted ≥ 25 % for SAVE /
+      KILL / NAME / COPY and ≥ 30 for DSKF / FILES: FILES hit, SAVE a near miss
+      (24), KILL / NAME / COPY / DSKF MISSED — what is left masked is the FDC
+      driver's per-sector window, and zerobas issues more sector commands
+      (D-FDCDI), not the hook entry.
+      Gate `loaddi-acceptance` gains rows `save` / `kill` / `dskf`
+      ([`hookdi_gate.out`](scratchpad/hookdi_gate.out)): all RUNS on both. Its
+      first runs read SAVE and KILL blank on BOTH machines: the capture budget is
+      `run_gap`, not `cap_gap` (spacing after a capture). 🔪
+      [`hookdi_knives.out`](scratchpad/hookdi_knives.out): K-HD1 (calbak's `ei`)
+      → kill, K-HD2 (hk_dpsave's) → save, K-HD3 (hk_dskf's) → dskf, K-LD1 → load.
+
+- [ ] ⌨️ **D-BLDI — `BLOAD` / `BSAVE` TO DISK STILL RUN WITH THE CLOCK STOPPED
+      (filed 2026-10-10 by D-HOOKDI).**
+      🎚️ TIER 3 — common errors: type-ahead during a long disk command.
+      🤖 **AUTONOMOUS** — [`verbclock_run.out`](scratchpad/verbclock_run.out) /
+      [`verbclock_run2.out`](scratchpad/verbclock_run2.out): `TIME` keeps **0 %**
+      of an 8 KB BLOAD and of a BSAVE here, 48 % / 30 % on the CF-3300. They do
+      not come through disk.rom's hooks: BSAVE to disk runs the SUB-ROM tenant's
+      copy of the engine (step 9's note), entered through CALSLT, which returns
+      DI. ➡️ Find where the tenant's disk work starts and re-enable there, as
+      D-HOOKDI did; add `bload` / `bsave` rows to `loaddi-acceptance`.
 
 - [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
@@ -6430,7 +6462,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31571 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31603 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6596,7 +6628,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11458 (T-6FE392)8 (T-529ABE)` from `TODO.md:24249 (T-529ABE)`: a
+      `TODO.md:11490 (T-6FE392)8 (T-529ABE)` from `TODO.md:24281 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12305,7 +12337,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24281 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

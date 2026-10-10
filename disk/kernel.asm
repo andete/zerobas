@@ -2019,6 +2019,8 @@ hsy_ok:
                 jp      nz,hsy_err
                 ld      ix,fch_close_all
                 call    calbak              ; close every file, as the CF-3300 does
+                di                          ; D-HOOKDI: calbak returns EI now; the
+                                            ; DOS boot below has always run masked
                 ; The function-key row goes, BEFORE the disk is tried: at A> the
                 ; CF-3300 has CRTCNT 24 / CNSDFG 0 (ours had 23 / $FF and the row
                 ; still painted), and after a refused disk BASIC is back without it
@@ -3752,6 +3754,8 @@ hklr_rhs:
 ; the SUB ROM's fatprim tenant, so the walk is neither here nor in main. Moving
 ; the walk itself is part of the 2394 B question (TODO), not of this verb.
 hk_dskf:
+                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT);
+                                            ; the FAT walk below reads sectors
                 ; 🔴 D-DSKFSLOW (2026-09-28): NOTHING TO COUNT WHILE AN ERROR IS
                 ; PENDING. The evaluator DEFERS an argument error -- `DSKF()` is 0
                 ; with FPERR=Syntax error, `DSKF("A")` FPERR=Type mismatch -- and
@@ -4144,6 +4148,8 @@ fat_bufinit:
 ;   in   FOPEN_SEL = FOPEN_SEL_SAVE; DISK_FCB_NAME = the 8.3 name main parsed
 ;   out  CF = 1 claimed; DISKOP_STATUS = 0 written / 3 mount, disk-full or I-O
 hk_dpsave:
+                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT),
+                                            ; and the whole save follows
                 xor     a
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending
                 ld      (DISKOP_STATUS),a   ; assume written; sv_load_error flips it
@@ -4393,10 +4399,18 @@ install_hook:
 ; basic-resident-abi.inc, so a page-1 shift cannot leave us calling a stale one).
 ; A/HL/DE/BC pass through in both directions -- MEASURED, not assumed
 ; (D-XSLOTABI, scratchpad/xslot_abi.py); IY is ours and IX is consumed.
-; `jp CALSLT` rather than call+ret: CALSLT's own `ret` lands on OUR caller.
+; 🔴 D-HOOKDI: and it RETURNS WITH INTERRUPTS ON. CALSLT returns DI, and the FDC
+; driver keeps the caller's state per sector (fdc_di_save), so every disk verb
+; whose work followed a calbak ran masked to its end: TIME stood still for a
+; whole SAVE / KILL / COPY / NAME, keys typed meanwhile were lost
+; (scratchpad/verbclock_run.out, against the CF-3300's 30-75 %). Every caller is
+; a BASIC-facing hook handler; the one that hands over to MSX-DOS masks again
+; itself (hsy_ok). It was `jp CALSLT`, CALSLT's `ret` landing on our caller.
 calbak:
                 ld      iy,(EXPTBL-1)   ; IYh = main-ROM slot id (MSX2 TH idiom)
-                jp      CALSLT
+                call    CALSLT
+                ei
+                ret
 
 ; --- hk_kill: KILL's body, RUNNING IN THE DISK ROM --------------------------
 ; D-DISKVERB, spec-diskbasic-hook-rearchitecture.md phase 2. The first verb whose
@@ -4948,6 +4962,7 @@ hk_srcfind:
 ; evaluator hands the dirverb tenant a FAT-primitive selector. An abort inside
 ; the evaluator cannot leak the pushed word: raise_error resets SP from SAVSTK.
 hk_files:
+                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT)
                 ld      hl,(FN_RESUME)
                 dec     hl
                 ld      a,(hl)              ; the verb's own token

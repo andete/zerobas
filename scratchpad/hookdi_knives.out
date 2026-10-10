@@ -1,0 +1,10 @@
+  ROM 1cea3c92 3d062315 491832fd d96210e7  ->  1cea3c92 3d062315 82b36f2f d96210e7
+PASS  K-LD1: moved ['load'] (want exactly ['load'])
+  ROM 1cea3c92 3d062315 82b36f2f d96210e7  ->  1cea3c92 3d062315 b5627702 d96210e7
+PASS  K-HD1: moved ['kill'] (want exactly ['kill'])
+  ROM 1cea3c92 3d062315 b5627702 d96210e7  ->  1cea3c92 3d062315 ed0d6872 d96210e7
+PASS  K-HD2: moved ['save'] (want exactly ['save'])
+  ROM 1cea3c92 3d062315 ed0d6872 d96210e7  ->  1cea3c92 3d062315 87568536 d96210e7
+PASS  K-HD3: moved ['dskf'] (want exactly ['dskf'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

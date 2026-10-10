@@ -1,0 +1,10 @@
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  save        23.270    5.620    24%
+  copy   NO READING (clock ['183.04181034181718', '210.758411474084'], printed []) screen: ZB | NEW | ZB | 1 TIME=0 | 2 COPY"L.BAS"TO"C.BAS" | 3 PRINT"@K";TIME:END | RUN | color  auto   goto   list   run
+  kill         9.827    1.460    15%
+  name         1.017    0.140    14%
+  dskf         1.295    0.320    25%
+  files        0.264    0.100    38%
+refcache: 0 hit, 7 miss, 7 stored

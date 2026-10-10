@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `DSKF` — free space on the disk
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: drive 2 (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -98,6 +98,15 @@ not been reproduced (D-ERRKEEP2, TIER 3).
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
+
+- **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
+  `DSKF(0)` kept `TIME` running for 2 % of its count here, against 76 % on
+  the CF-3300; now 25 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
+  were lost too. The CF-3300 switches them off only while it moves each
+  sector, and zerobas still moves more sectors (D-FDCDI)
+  ([before](../../scratchpad/verbclock_run.out),
+  [after](../../scratchpad/verbclock_after.out)).
+  `make loaddi-acceptance` has a `dskf` row.
 
 - **An early test said `DSKF` was a stub, and it was the test** (2026-09-12,
   D-KWDISK). `DSKF(0)` read 0 because nothing was in the emulated drive; with

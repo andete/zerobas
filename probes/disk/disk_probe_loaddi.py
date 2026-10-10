@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""D-LOADDI (gate: loaddi-acceptance): the clock keeps running while a
-tokenised LOAD reads the disk, as on the National CF-3300.
+"""D-LOADDI + D-HOOKDI (gate: loaddi-acceptance): the clock keeps running while
+a disk command works, as on the National CF-3300.
 
 Measured 2026-10-10 (scratchpad/loadclock_probe.py -> loadclock_run.out, an
 emulated-time stamp outside the guest): a 14 KB `LOAD"x",R` took 6.9 s here and
@@ -12,11 +12,21 @@ the keyboard was not scanned. One `ei` on the load path (disk/kernel.asm,
 hk_dpload) -- after it TIME ran for 43 % of the load, the CF-3300's 50 %
 (scratchpad/loadclock_after.out).
 
-The row: a ~2 KB program whose first line prints TIME is SAVEd, then
-`TIME=0:LOAD"T.BAS",R`. `RUNS` when TIME advanced >= 8 jiffies during the load
-(the reference reads ~50, the masked load ~2), else `STOPPED`; `ctl` is the
-same read with no LOAD in between (a few jiffies on both: the program's own
-start, which the threshold sits above).
+D-HOOKDI (2026-10-10, scratchpad/verbclock_probe.py): every disk.rom hook is
+entered through CALSLT, and every `calbak` back into main returned through it,
+so SAVE / KILL / COPY / NAME / DSKF / FILES ran masked too -- TIME kept 0-8 %
+of a SAVE, KILL or DSKF here, 29-76 % on the CF-3300. `calbak` now returns
+with interrupts on, and SAVE / DSKF / FILES re-enable at entry
+(scratchpad/verbclock_after.out).
+
+The rows, each `RUNS` when TIME advanced >= 8 jiffies across the command (the
+masked builds read 0-2), else `STOPPED`:
+  load  a ~2 KB program whose first line prints TIME, `TIME=0:LOAD"T.BAS",R`
+  save  the same program, `TIME=0:SAVE"U.BAS":PRINT TIME`      (hk_dpsave's ei)
+  kill  `TIME=0:KILL"T.BAS":PRINT TIME`                        (calbak's ei)
+  dskf  `TIME=0:X=DSKF(0):PRINT TIME`                          (hk_dskf's ei)
+and `ctl`, the same read with no command in between (a few jiffies on both:
+the program's own start, which the threshold sits above).
 
 Prints `ROW <name> CF=[...] ZB=[...] <SAME|DIVERGES>`; exit 0 all agree, 1 a
 divergence, 2 the CF-3300 gave no reading.
@@ -49,15 +59,24 @@ def main():
     for side, machine, reset in SIDES:
         dsk = probe_tmp.tmp(f"loaddi_{side}.dsk")
         shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
+        rd = ':PRINT"@K";TIME'
         cases = [("direct", ["NEW"] + PROG + ['SAVE"T.BAS"', "NEW", 'TIME=0:LOAD"T.BAS",R']),
+                 ("direct", ["NEW"] + PROG + ['TIME=0:SAVE"U.BAS"' + rd]),
+                 ("direct", ["NEW"] + PROG + ['SAVE"T.BAS"', 'TIME=0:KILL"T.BAS"' + rd]),
+                 ("direct", ['TIME=0:X=DSKF(0)' + rd]),
                  ("direct", ["NEW"] + PROG[:1] + ["TIME=0:RUN"])]
         out = omsx_repl.run_cases(machine, cases, batch=False, reset=reset, boot=10.0,
-                                  step=3.0, diska=dsk, capture="screen")
+                                  step=3.0, run_gap=15.0, diska=dsk, capture="screen")
+        # run_gap: a SAVE / KILL of the 2 KB file is still writing 3 s after the
+        # typed line on both machines, and the first run captured both blank.
+        # (`cap_gap` was tried first; it is the spacing AFTER a capture and buys
+        # the case nothing -- omsx_repl's own comment says so.)
         got[side] = [reading(o) for o in out]
     bad, blind = [], []
-    for i, name in enumerate(("load", "ctl")):
+    names = ("load", "save", "kill", "dskf", "ctl")
+    for i, name in enumerate(names):
         cf, zb = got["CF"][i], got["ZB"][i]
-        if name == "load":
+        if name != "ctl":
             vcf, vzb = verdict(cf), verdict(zb)
         else:                                # the control: both well under the bar
             vcf = None if cf is None else ("UNDER" if cf < THRESHOLD else "OVER")
@@ -75,8 +94,8 @@ def main():
     if blind:
         print(f"\nINSTRUMENT FAULT: the CF-3300 gave no reading on {', '.join(blind)}")
         return 2
-    print(f"\n{'PASS' if not bad else 'FAIL'}: the clock runs during LOAD "
-          f"({2 - len(bad)}/2)")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: the clock runs during disk commands "
+          f"({len(names) - len(bad)}/{len(names)})")
     return 1 if bad else 0
 
 

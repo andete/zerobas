@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `SAVE` — write the program to a file
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -108,6 +108,15 @@ against the CF-3300's 77 % in one measurement). That is filed as a TIER 3 item
 against the disk driver, D-FDCDI.
 
 ## What we found, and how
+
+- **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
+  a long `SAVE` kept `TIME` running for none of its work here, against 29 %
+  on the CF-3300; now 24 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
+  were lost too. The CF-3300 switches them off only while it moves each
+  sector, and zerobas still moves more sectors (D-FDCDI)
+  ([before](../../scratchpad/verbclock_run2.out),
+  [after](../../scratchpad/verbclock_after.out)).
+  `make loaddi-acceptance` has a `save` row.
 
 - **`SAVE ,A` beside an open output file emptied that file** (fixed
   2026-10-03, D-ASAVECHAN), and a `SAVE ,A` after a `PRINT #` to `CRT:` listed

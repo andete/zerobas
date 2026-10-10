@@ -1,0 +1,17 @@
+
+=== cf3300 (National_CF-3300, 60 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  save         8.103    2.350    29%
+  asave  NO READING (clock ['258.0181064911881', '-1'], printed []) screen:  | LOAD"M.BAS" | Ok | 1 TIME=0 | 2 SAVE"A.BAS",A | 3 PRINT"@K";TIME:END | RUN | Ok | color   auto    goto    list    run
+  copy         8.003    2.833    35%
+  kill         2.595    1.000    39%
+  bsave        6.199    1.867    30%
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  save        20.928    0.020     0%
+  asave  NO READING (clock ['208.04118987189713', '-1'], printed []) screen: | ZB | LOAD"M.BAS" | ZB | 1 TIME=0 | 2 SAVE"A.BAS",A | 3 PRINT"@K";TIME:END | RUN | ZB | color  auto   goto   list   run
+  copy   NO READING (clock ['183.04181034181718', '209.1324685120595'], printed []) screen: ZB | NEW | ZB | 1 TIME=0 | 2 COPY"L.BAS"TO"C.BAS" | 3 PRINT"@K";TIME:END | RUN | color  auto   goto   list   run
+  kill         9.823    0.020     0%
+  bsave       12.882    0.020     0%
+refcache: 0 hit, 12 miss, 12 stored

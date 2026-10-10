@@ -95,8 +95,7 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 - **One open internal item is filed against `LOAD`**: moving the disk channels
   of `OPEN` into the disk ROM, as `LOAD` itself already was (2026-09-20). Joost
   ruled on 2026-10-09: *"defer to later"*. It was tagged TIER 2 (reasonable
-  time); a 14 KB load measured 2026-10-10 takes about three times the CF-3300's
-  time, inside the bar, so it is TIER 5 now
+  time); `LOAD` was measured inside that bar on 2026-10-10, so it is TIER 5 now
   ([readings](../../scratchpad/loadclock_after.out)).
 - **A tokenised program on tape.** On 2026-09-27 Joost ruled to *"keep the
   feature"* that let `LOAD "CAS:"` read a tokenised tape program, where the
