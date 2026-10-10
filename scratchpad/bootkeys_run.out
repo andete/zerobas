@@ -1,0 +1,7 @@
+plain  CF  [F 23320 HDE77D 2 | K 706]
+plain  ZB  [F 23244 HDD12D 2 | K 706]
+shift  CF  [F 28705 HF380D 255 | KE 5  30]
+shift  ZB  [F 23244 HDD12D 2 | K 706]
+ctrl   CF  [F 24878 HE48DD 1 | K 706]
+ctrl   ZB  [F 23244 HDD12D 2 | K 706]
+refcache: 0 hit, 6 miss, 6 stored

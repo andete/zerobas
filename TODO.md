@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31341 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31358 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -30142,6 +30142,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       whether `FILES` / `DSKF(0)` exist, `DSKF(2)`'s answer — for a plain boot,
       SHIFT held, and CTRL held (openMSX can hold a key from power-on). No
       reference ROM byte is read: the keys and the screen / work area only.
+      📏 **MEASURED 2026-10-10** ([`bootkeys_probe.py`](scratchpad/bootkeys_probe.py)
+      → [`bootkeys_run.out`](scratchpad/bootkeys_run.out); the key held in the Tcl
+      prologue from power-on, released at 6 s; DSKF(2) left out — it prompts and
+      waits):
+      | boot | CF-3300 FRE(0) · HIMEM · drives ($F347) · DSKF(0) | zerobas |
+      |---|---|---|
+      | plain | 23320 · $DE77 · 2 · 706 | 23244 · $DD12 · 2 · 706 |
+      | SHIFT | **28705 · $F380 · 255 (untouched) · ERR 5** | as plain |
+      | CTRL | **24878 · $E48D · 1** · 706 | as plain |
+      All predicted. SHIFT skips the disk ROM entirely (HIMEM is the diskless
+      $F380, +5385 B, DSKF refused with 5); CTRL keeps Disk BASIC with ONE drive
+      and +1558 B. zerobas ignores both keys. (Plain: zerobas is 76 B short of the
+      CF-3300's FRE(0) — the TIER 4 RAM gap, not this item.)
+      ➡️ Next: SHIFT is the bigger, simpler face — the disk ROM's INIT returns
+      before reserving anything; check first how main discovers the disk ROM
+      (DISKSLOT / the banner call / the hooks), or main still believes in it.
+      CTRL depends on D-DSKIB's drive-B model.
 
 - [ ] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
