@@ -4,7 +4,53 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-10 EARLY MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+## 🟢 STATE AS OF 2026-10-10 AFTERNOON — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+
+**Shipped since the morning section below (`git log --oneline 716984dd..`), every
+one FULL-green (+ the five excluded) before its commit:** D-FCBSHAPE FCB #0 ·
+**D-DIMRESERVE S1/S2/S3** — the evaluator's logical and arithmetic levels are
+precedence climbers (a plain statement 147 → 101 B of stack; VG-8020 79), and the
+256 B stack margin became two MEASURED reserves: `STK_EDGE_RESERVE` 116 (DIM / a
+new scalar; DIM's edge K 280 → 140, the VG-8020 110) and `STK_STORE_RESERVE` 141
+(the line store, on the reference's edge to the byte); gate `dimedge-acceptance`,
+safety witnessed by `scratchpad/edgesafe_probe.py` + knife ·
+**D-LOADDI / D-HOOKDI / D-BLDI** — every long disk verb ran with interrupts OFF
+from start to end (TIME frozen, typed keys lost): disk.rom hooks enter through
+CALSLT (returns DI), `calbak` re-masked, and the sub-ROM's cross-slot DSKIO
+re-masked after the first sector. Now each keeps 15–45 % on TIME, the CF-3300
+30–76 %; gate `loaddi-acceptance` (7 rows, 5 knives). LOAD's step-9 item
+re-tagged TIER 2 → 5 (reasonable time measured MET, 3.0×).
+
+**Walls (2026-10-10 afternoon, from the build): main low 13 B, page 1 64 B; sub p0
+137 B, sub p1 183 B; disk 4082 B.** Recount before quoting.
+
+**🔧 Apparatus lessons today (each a miss of mine, each caught):**
+- `omsx_repl`'s RUN→capture budget is `run_gap` (or `step`); `cap_gap` is spacing
+  AFTER a capture and buys a case nothing.
+- A "nearly unique" RAM stamp must be checked against the interrupt: the timer
+  reads AND writes the whole 16-bit JIFFY every tick. `CURLIN`'s low byte, written
+  at each line start, is a good stamp.
+- A watchpoint on the arrays' top reads a NEW SCALAR's block move as a corruption;
+  count only writes near SP.
+- Cited scratchpad paths must be staged BEFORE `make gates-fast` (its warm-up
+  refuses otherwise) — the loop's own rule, broken once today.
+- A new disk gate's Makefile target needs `$(DISK_TEST_DSK)` (diskdep-check).
+- TODO markers are exact: `🤖 **AUTONOMOUS** —`, not `**AUTONOMOUS.**`.
+- D-KWTIMESYMRACE hit `kwsweep` itself once (serial retry green) — TIER 6.
+
+➡️ **NEXT, by tier (recount with `python3 tools/tier_table.py --all`):**
+- TIER 1: the standing bar items only (D-KWPROVEN, T6's definition, keyword
+  completeness) — apparatus-scale or main-byte work.
+- TIER 2: the RAM-map apparatus item (gates steps 10–11).
+- TIER 3: D-LOADERRRET's left sites each need a FAILURE FIXTURE (a failing tape
+  write, a GET read failure, the Ctrl-STOP'd tape LOAD's TEXT); D-FDCDI rides on
+  the write cache (TIER 5); D-COPYWILD is RULED parked.
+- TIER 4: D-DIMRESERVE's residual — (a) the expression guard's 128 B reserve (a
+  simple PRINT works from K≈126 on the VG-8020, K≈192 here; 81 B below a guard is
+  `strcmp`'s string compare through the sub-ROM), (b) DIM's ~30 B (the deeper
+  statement stack); D-BOOTKEYS' CTRL (after D-DSKIB); VARPTR's MAXFILES charge.
+
+## 🟢 STATE AS OF 2026-10-10 EARLY MORNING — superseded above (its lessons still hold). JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
 
 **Shipped since the 10-09 restart (`git log --oneline 753c8afc..`), every one
 FULL-green before its commit unless its message says otherwise:**
