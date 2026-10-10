@@ -1,0 +1,56 @@
+D-NGRAM — exact repeated instruction sequences across basic/ + sub/ (22756 instructions)
+
+   B   n   x  each  shape
+--------------------------------------------------------------------------------------------
+   9   6   2    16  [sub] ld (ary_key),bc | ld a,1 | ld (ary_type),a | ld a,5 | ld (ary_op),a ...
+                     basic/vars.asm:399
+                     basic/vars.asm:1098
+   8   3   3     9  [sub] call cas_open_match | jp c,dpl_dio | ld a,(cas_hdrid)
+                     basic/cload.asm:445
+                     basic/files.asm:939
+                     basic/files.asm:2269
+   8   4  13     4  [sub] inc hl | ld e,(hl) | inc hl | ld d,(hl)
+                     basic/expr.asm:1393
+                     basic/interp.asm:1052
+                     basic/playsvc.asm:136
+                     basic/playsvc.asm:163
+   7   7   2    14  [sub] push hl | ld a,e | call fch_select | pop hl | ld a,(fch_mode) ...
+                     basic/files.asm:1285
+                     basic/print.asm:117
+   6   3   3     8  [sub] call tapin | jr c,ctp_err_pop | call cas_put
+                     basic/cload.asm:538
+                     basic/cload.asm:541
+                     basic/cload.asm:557
+   6   3   4     5  [TAIL] push de | or a | jp (hl)
+                     basic/expr.asm:1663
+                     basic/files.asm:163
+                     basic/files.asm:227
+                     basic/strvar.asm:401
+   6   3   3     8  [sub] call skip_spaces | cp using_token | jp z,ex_print_using
+                     basic/print.asm:51
+                     basic/print.asm:71
+                     basic/print.asm:158
+   6   3   3     8  [sub] ld (ary_type),a | ld a,5 | ld (ary_op),a
+                     basic/vars.asm:401
+                     basic/vars.asm:620
+                     basic/vars.asm:1100
+   6   5   2    13  [sub] call req_letter | call var_str_type | push af | call var_name_key | call skip_spaces
+                     basic/arrays.asm:645
+                     basic/arrays.asm:763
+   6   5   2    13  [sub] ld (arl_getbyte),hl | call ascii_read_lines | push af | ld hl,fat_io_getbyte | ld (arl_getbyte),hl
+                     basic/cload.asm:806
+                     basic/files.asm:2426
+   6   5   2    13  [sub] ld hl,divrem | ld de,divpad | ld b,15 | call dig15_cmp | cp 1
+                     basic/float-arith.asm:1008
+                     basic/float-arith.asm:1059
+   6   5   2    13  [sub] call read_line | xor a | ld (inp_cursor),a | ld de,linebuf_getbyte | ld (arl_getbyte),de
+                     basic/input.asm:87
+                     basic/input.asm:215
+   6   5   2    13  [sub] ld a,1 | ld (ary_type),a | ld a,5 | ld (ary_op),a | call ary_engine_call
+                     basic/vars.asm:400
+                     basic/vars.asm:1099
+   6   6   2    13  [sub] ld a,e | call fch_select | pop hl | ld a,(fch_mode) | cp 4 ...
+                     basic/files.asm:1286
+                     basic/print.asm:118
+
+187 positively-priced candidate(s) before dedup.

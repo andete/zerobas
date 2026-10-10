@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31321 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31341 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6537,7 +6537,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11379 (T-6FE392)8 (T-529ABE)` from `TODO.md:24131 (T-529ABE)`: a
+      `TODO.md:11399 (T-6FE392)8 (T-529ABE)` from `TODO.md:24151 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -6837,6 +6837,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       301 B free on 2026-09-02. At 12 B a slice, each costing a knife and a row
       set, the carve pressure that justified D-NGRAM2..19 is not there today.
       Re-read this when a slice is actually blocked on bytes.
+      ✂️ **2026-10-10 (loop): the top re-ranked candidate (9 B by the sweep,
+      [`carve_ngram.out`](scratchpad/carve_ngram.out)) WAS AN EXISTING ROUTINE,
+      worth 30 B.** `ld (ARY_KEY),bc / ld a,1 / ld (ARY_TYPE),a / ld a,5 / ld
+      (ARY_OP),a / call ary_engine_call` at `tgt_store_desc` and `str_set_key` is
+      `var_alloc_or_find`'s body with A = 1, and both sites then reloaded
+      `ARY_ADDR`, which that routine returns in HL — so each became `ld a,1 / call
+      var_alloc_or_find` with `ret nc` / `jr nc` (its CF contract): page 1 **14 →
+      44 B** (predicted 30: hit). No caller of either reads the flags (FPERR is the
+      signal: str-engine's `xor a`, ex_read's `check_expr_errors`, `fp_stmt_done`,
+      `fn_st_x`). 🔴 **THE FAILURE BRANCH HAS NO BEHAVIOURAL WITNESS:** knife K-NG1
+      (`jr nc,ssk_target_oom` cut) moved nothing in array-acceptance (its OOM
+      rows assign LITERALS, stored by reference —
+      [`carve2_knife_arrays.out`](scratchpad/carve2_knife_arrays.out)) nor in a
+      new string-scalar OOM probe ([`sskoom_probe.py`](scratchpad/sskoom_probe.py),
+      [`sskoom_run.out`](scratchpad/sskoom_run.out): zerobas `ERR 7 N 0` uncut and
+      cut, [`carve2_knife.out`](scratchpad/carve2_knife.out)) — FPERR raises the
+      error either way; the branch only keeps a descriptor from being written
+      through the entry pointer. The deferred-error class
+      ([[a-guard-witnessed-only-by-a-deferred-error]]). The probe's VG-8020 side
+      gave no capture (its DIM sizing differs) — not a comparison yet.
 
 - [ ] 📌 **ANY BATTERY OR KNIFE SCORE TAKEN 2026-08-30 EVENING .. 2026-08-31
       04:30 IS SUSPECT — THE HOST WAS ASLEEP UNDER IT.** Found 2026-08-31 by
@@ -12226,7 +12246,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24131 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24151 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

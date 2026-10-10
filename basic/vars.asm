@@ -396,14 +396,14 @@ tgt_store_desc:                             ; D-LITREF: RVDESC already filled
                 ld      a,d
                 or      e
                 jr      nz,tsr_put          ; an array element: DE = its descriptor
-                ld      (ARY_KEY),bc
+                ; D-NGRAM (2026-10-10): the scalar's slot through var_alloc_or_find
+                ; (type 1, the `$` unifier) instead of its open-coded twin -- 15 B.
+                ; Its contract is CF + HL = the entry / NC on OOM with FPERR set; no
+                ; caller of tgt_store_desc / _ref reads the flags (FPERR is the
+                ; signal: str-engine's `xor a`, ex_read's check_expr_errors).
                 ld      a,1
-                ld      (ARY_TYPE),a
-                ld      a,5                 ; op = SCALAR_ALLOC (find or insert)
-                ld      (ARY_OP),a
-                call    ary_engine_call     ; NZ: FPERR already set (OOM)
-                ret     nz
-                ld      hl,(ARY_ADDR)
+                call    var_alloc_or_find
+                ret     nc
                 ld      de,3
                 add     hl,de
                 ex      de,hl               ; DE -> the scalar's descriptor
@@ -1095,17 +1095,15 @@ str_set_key:
                                             ; untouched (no CPU-stack relay
                                             ; needed for it)
                 pop     bc                  ; [KEY] restored
-                ld      (ARY_KEY),bc
                 ld      a,1                 ; type=1 -- the `$` unifier
-                ld      (ARY_TYPE),a
-                ld      a,5                 ; op = SCALAR_ALLOC (find-or-
-                                            ; insert-and-shift)
-                ld      (ARY_OP),a
-                call    ary_engine_call     ; Z: ARY_ADDR=entry (found or
-                                            ; newly inserted) / NZ: FPERR
-                                            ; already mapped+set (OOM)
-                jr      nz,ssk_target_oom
-                ld      hl,(ARY_ADDR)
+                call    var_alloc_or_find   ; D-NGRAM (2026-10-10): CF + HL = the
+                                            ; entry (found or newly inserted) /
+                                            ; NC: FPERR already mapped+set (OOM).
+                                            ; Was the same 15 B open-coded; every
+                                            ; str_set_key caller reads FPERR, never
+                                            ; the flags (fp_stmt_done, fn_st_x, the
+                                            ; tgt_store_str callers' pop/check).
+                jr      nc,ssk_target_oom
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> dest descriptor (entry+3)
