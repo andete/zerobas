@@ -1,0 +1,65 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_intarg.py 
+--- ASSERTED (landed stages: A1 OUT + address-domain regression guards) ---
+PASS  out_port_ovf     OUT 99999,0      zb=ERR6    ref=ERR6    want=ERR6
+PASS  out_val_ovf      OUT 0,99999      zb=ERR6    ref=ERR6    want=ERR6
+PASS  out_addr_hi      OUT 40000,0      zb=cont    ref=cont    want=cont
+PASS  out_neg          OUT -1,0         zb=cont    ref=cont    want=cont
+PASS  out_ok           OUT 254,7        zb=cont    ref=cont    want=cont
+PASS  wait_port_ovf    WAIT 99999,1     zb=ERR6    ref=ERR6    want=ERR6
+PASS  wait_mask_ovf    WAIT 0,99999     zb=ERR6    ref=ERR6    want=ERR6
+PASS  wait_xor_ovf     WAIT 0,1,99999   zb=ERR6    ref=ERR6    want=ERR6
+PASS  wait_nocomma     WAIT 254         zb=ERR2    ref=ERR2    want=ERR2
+PASS  poke_val_hi      POKE &HD020,256  zb=ERR5    ref=ERR5    want=ERR5
+PASS  poke_val_neg     POKE &HD020,-1   zb=ERR5    ref=ERR5    want=ERR5
+PASS  poke_val_max     POKE &HD020,255  zb=cont    ref=cont    want=cont
+PASS  vpoke_val_hi     VPOKE 100,256    zb=ERR5    ref=ERR5    want=ERR5
+PASS  vpoke_val_neg    VPOKE 100,-1     zb=ERR5    ref=ERR5    want=ERR5
+PASS  out_val_hi       OUT 0,256        zb=ERR5    ref=ERR5    want=ERR5
+PASS  out_val_neg      OUT 0,-1         zb=ERR5    ref=ERR5    want=ERR5
+PASS  out_port_hi      OUT 256,0        zb=cont    ref=cont    want=cont
+PASS  out_port_40k     OUT 40000,0      zb=cont    ref=cont    want=cont
+PASS  out_val_40k      OUT 0,40000      zb=ERR6    ref=ERR6    want=ERR6
+PASS  poke_both_bad    POKE 99999,256   zb=ERR6    ref=ERR6    want=ERR6
+PASS  poke_addr_ovf    POKE 99999,0     zb=ERR6    ref=ERR6    want=ERR6
+PASS  poke_addr_hi     POKE 40000,0     zb=cont    ref=cont    want=cont
+PASS  poke_neg         POKE -1,0        zb=cont    ref=cont    want=cont
+PASS  poke_ok          POKE 32768,0     zb=cont    ref=cont    want=cont
+PASS  vpoke_ovf        VPOKE 99999,0    zb=ERR6    ref=ERR6    want=ERR6
+PASS  vpoke_ok         VPOKE 100,42     zb=cont    ref=cont    want=cont
+PASS  peek             A=PEEK(99999)    zb=ERR6    ref=ERR6    want=ERR6
+PASS  inp              A=INP(99999)     zb=ERR6    ref=ERR6    want=ERR6
+PASS  peek_for         FOR I=PEEK(99999) TO 1:NEXT zb=ERR6    ref=ERR6    want=ERR6
+PASS  peek_hi          A=PEEK(65535)    zb=cont    ref=cont    want=cont
+PASS  vpeek_ill        A=VPEEK(16384)   zb=ERR5    ref=ERR5    want=ERR5
+PASS  vpeek_ovf        A=VPEEK(40000)   zb=ERR6    ref=ERR6    want=ERR6
+PASS  vpeek_neg        A=VPEEK(-1)      zb=ERR5    ref=ERR5    want=ERR5
+PASS  vpeek_ok         A=VPEEK(16383)   zb=cont    ref=cont    want=cont
+PASS  vpoke_vram       VPOKE 40000,0    zb=ERR6    ref=ERR6    want=ERR6
+PASS  vpoke_ill        VPOKE 16384,0    zb=ERR5    ref=ERR5    want=ERR5
+PASS  vpoke_neg        VPOKE -1,0       zb=ERR5    ref=ERR5    want=ERR5
+PASS  vpoke_vmax       VPOKE 16383,0    zb=cont    ref=cont    want=cont
+PASS  string_n         A$=STRING$(99999,42) zb=ERR6    ref=ERR6    want=ERR6
+PASS  string_c         A$=STRING$(5,256) zb=ERR5    ref=ERR5    want=ERR5
+PASS  string_neg       A$=STRING$(-1,65) zb=ERR5    ref=ERR5    want=ERR5
+PASS  string_ok        A$=STRING$(3,255) zb=cont    ref=cont    want=cont
+PASS  space_n          A$=SPACE$(99999) zb=ERR6    ref=ERR6    want=ERR6
+PASS  space_neg        A$=SPACE$(-1)    zb=ERR5    ref=ERR5    want=ERR5
+PASS  space_ok         A$=SPACE$(100)   zb=cont    ref=cont    want=cont
+PASS  on_n             ON 99999 GOTO 30 zb=ERR6    ref=ERR6    want=ERR6
+PASS  on_ill           ON 256 GOTO 30   zb=ERR5    ref=ERR5    want=ERR5
+PASS  on_ok            ON 1 GOTO 30     zb=cont    ref=cont    want=cont
+PASS  width_n          WIDTH 256        zb=ERR5    ref=ERR5    want=ERR5
+PASS  width_ovf        WIDTH 99999      zb=ERR6    ref=ERR6    want=ERR6
+PASS  width_ok         WIDTH 32         zb=cont    ref=cont    want=cont
+
+--- PENDING (reported, not gated — later stages) ---
+
+ALL PASS

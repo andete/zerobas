@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31433 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31455 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -26738,6 +26738,28 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       level, i.e. right-assoc) → exactly `assoc 0 IMP 0 IMP 0` (0 vs −1), IMP
       being the one non-associative level. ➡️ Next: the arithmetic levels (`ev_e`
       … `ev_pw`, one call each), then the reserve.
+      ✅ **S2 SHIPPED 2026-10-10 — THE ARITHMETIC LEVELS TOO, AND IT GAVE BYTES
+      BACK.** Five hand-written levels (+ − / MOD / \ / * / / ^, a call each per
+      operand) became one loop over `arithtab` (token, LEVEL | int-style bit,
+      combine leaf): the operand once, an operator accepted at or above the
+      caller's level, its right operand parsed at level+1. A LEVEL NUMBER, not S1's
+      table position, because `+ −` and `* /` share levels (`A+B-C` must stay
+      (A+B)−C). The float-style entry pointer sits BELOW push_lhs_frame's
+      contiguous frame and is read back at SP+12; MOD and `\` keep their strict
+      int16 path. Entry points kept: `ev_e` (level 1), `ev_pw` (level 5, unary
+      minus's operand). **Main page 1 35 → 67 B** (predicted ~+30: hit).
+      [`stackhwref_after_s2.out`](scratchpad/stackhwref_after_s2.out): `A=1` 113 →
+      **101** (predicted ~101: hit), flat 99, `paren4` 116 → 103 (predicted ~86:
+      MISSED — part of the old per-level cost was the factor path). Gap to the
+      VG-8020's 79: **22 B** (68 this morning). New gate `prec-acceptance`
+      ([`basic_probe_prec.py`](probes/basic/basic_probe_prec.py),
+      [`prec_gate.out`](scratchpad/prec_gate.out)): 12/12 — same-level chains,
+      `2^3^2` 64, mixed levels; float / math / logicops / intarg gates green. 🔪
+      [`climb2_knives.out`](scratchpad/climb2_knives.out): K-CL2 (float rhs at
+      the same level) → sub3 mix div3 pow3; K-CL3 (int rhs) → idiv3 modchain;
+      K-CL4 (the "looser" stop) → the seven chains — each exactly, `mul3` named
+      as unmoved in advance. ➡️ Next: what is left of the 22 B (the relational
+      probe's `str_eval_ix`, the sub-ROM variable lookup), then the reserve.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

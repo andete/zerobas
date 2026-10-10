@@ -97,9 +97,9 @@ the VG-8020 and 147 here ([readings](../../scratchpad/stackhwref_run.out)), so
 right after such a `DIM` even a simple formula can be `Out of memory` here.
 Joost ruled on 2026-10-09: *"yes, we need to match reference there"* — the
 evaluator is to be reworked until a formula fits in the reference's stack, and
-then the reserve lowered to the VG-8020's edge. The first step (2026-10-10)
-brought it to 113 bytes ([after](../../scratchpad/stackhwref_after_s1.out)); the
-reserve itself is unchanged until the rest is done.
+then the reserve lowered to the VG-8020's edge. Two steps on 2026-10-10 brought
+it to 101 bytes ([after](../../scratchpad/stackhwref_after_s2.out)); the reserve
+itself is unchanged until the rest is done.
 
 More generally, zerobas has less free memory than the VG-8020, so an array that
 only just fits there can be `Out of memory` here. That is part of the **RAM

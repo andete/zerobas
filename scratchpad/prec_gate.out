@@ -1,0 +1,15 @@
+ROW sub3 VG=[[ 5 ]] ZB=[[ 5 ]] SAME
+ROW mix VG=[[ 11 ]] ZB=[[ 11 ]] SAME
+ROW div3 VG=[[ 5 ]] ZB=[[ 5 ]] SAME
+ROW pow3 VG=[[ 64 ]] ZB=[[ 64 ]] SAME
+ROW idiv3 VG=[[ 2 ]] ZB=[[ 2 ]] SAME
+ROW mul3 VG=[[ 1.5 ]] ZB=[[ 1.5 ]] SAME
+ROW addmul VG=[[ 7 ]] ZB=[[ 7 ]] SAME
+ROW mulpow VG=[[ 18 ]] ZB=[[ 18 ]] SAME
+ROW negpow VG=[[-4 ]] ZB=[[-4 ]] SAME
+ROW modmul VG=[[ 7 ]] ZB=[[ 7 ]] SAME
+ROW idivmod VG=[[ 2 ]] ZB=[[ 2 ]] SAME
+ROW modchain VG=[[ 2 ]] ZB=[[ 2 ]] SAME
+
+PASS: arithmetic precedence (12/12)
+refcache: 0 hit, 2 miss, 2 stored

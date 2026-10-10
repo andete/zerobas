@@ -346,132 +346,121 @@ ev_sp:
                 inc     ix
                 jr      ev_sp
 
-; --- ev_e: expr := mod-term { (+|-) mod-term } -----------------------------
-; Operators are tokens: '+' = PLUS_TOKEN ($F1), '-' = MINUS_TOKEN ($F2). The
-; operands are MOD-expressions (MSX precedence: + - is below MOD, \, * /).
-ev_e:
-                call    ev_mod              ; DE = first term
-ev_e_lp:
-                call    ev_sp
-                cp      PLUS_TOKEN
-                jr      z,ev_e_add
-                cp      MINUS_TOKEN
-                jr      z,ev_e_sub
-                ret
-ev_e_add:
-                inc     ix
-                push    de                  ; lhs
-                ; spec §1 bullet 4: save the lhs's FACTYP+FAC on the machine
-                ; stack (fixed-size frame) before the rhs eval clobbers FAC,
-                ; reset FACTYP=2 for the rhs eval. combine_add decides int-
-                ; fast-path (with signed-overflow-promotion) vs BCD add.
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                call    ev_mod              ; DE = rhs
-                call    combine_add         ; pops the frame; DE = result
-                jr      ev_e_lp
-ev_e_sub:
-                inc     ix
-                push    de                  ; lhs
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                call    ev_mod              ; DE = rhs
-                call    combine_sub
-                jr      ev_e_lp
-
-; --- ev_mod: { MOD } over '\'-expressions (MSX precedence level 5) ----------
-ev_mod:
-                call    ev_idiv             ; DE = lhs
-ev_mod_lp:
-                call    ev_sp
-                cp      MOD_TOKEN
-                ret     nz
-                ; spec §10.3: \ / MOD operands convert via the STRICT int16
-                ; domain (not the address domain) -- immediately, no FAC save
-                ; needed since the plain int value is captured before the
-                ; rhs eval can clobber FAC.
-                call    fac_to_int_strict_reset
-                inc     ix
-                push    de                  ; lhs (dividend)
-                call    ev_idiv             ; DE = rhs (divisor)
-                call    fac_to_int_strict_reset
-                ld      b,d
-                ld      c,e                 ; BC = divisor
-                pop     de                  ; DE = dividend
-                call    signed_mod_de_bc    ; D-C: MSX-signed MOD (spec §10.4)
-                jr      ev_mod_lp
-
-; --- ev_idiv: { '\' } over terms (integer division, level 4) ---------------
-ev_idiv:
-                call    ev_t                ; DE = lhs
-ev_idiv_lp:
-                call    ev_sp
-                cp      IDIV_TOKEN          ; '\'
-                ret     nz
-                call    fac_to_int_strict_reset
-                inc     ix
-                push    de                  ; lhs (dividend)
-                call    ev_t                ; DE = rhs (divisor)
-                call    fac_to_int_strict_reset
-                ld      b,d
-                ld      c,e                 ; BC = divisor
-                pop     de                  ; DE = dividend
-                call    signed_div_de_bc    ; D-C: MSX-signed \ (spec §10.4)
-                jr      ev_idiv_lp
-
-; --- ev_t: term := factor { ('*' | '/') factor } ---------------------------
-; '/' is real division on MSX, and always float here (spec §10.1).
-ev_t:
-                call    ev_pw               ; `^` binds above * / (§13.3)
-ev_t_lp:
-                call    ev_sp
-                cp      STAR_TOKEN          ; '*'
-                jr      z,ev_t_mul
-                cp      DIV_TOKEN           ; '/'
-                jr      z,ev_t_div
-                ret
-ev_t_mul:
-                inc     ix
-                push    de                  ; lhs
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                call    ev_pw               ; DE = rhs
-                call    combine_mul
-                jr      ev_t_lp
-ev_t_div:
-                inc     ix
-                push    de                  ; lhs
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                call    ev_pw               ; DE = rhs
-                call    combine_div_float   ; ALWAYS float (spec §10.1)
-                jr      ev_t_lp
-
-; --- ev_pw: `^` layer (power operator, math pack slice 2c, repack-only -----
-; docs/spec-basic-mathpack-slice2.md §13.3). Sits between ev_t and ev_f:
-; binds ABOVE `*`/`/` (ev_t's three operand sites above call ev_pw instead of
-; ev_f) and ABOVE unary minus (ev_f_neg's operand call below becomes ev_pw
-; too) -- this single change yields BOTH `-2^2`=-4 (ev_f_neg negates the
-; WHOLE pow-chain, never just the base) AND `2^-3^2`=2^-(3^2) (the exponent's
-; own unary minus recurses into ev_pw, giving the pinned right-nesting for
-; free -- no special case needed). LEFT-associative loop (`2^3^2`=64,
-; `2^2^3`=64): each `^` pops the running lhs and combines immediately, same
-; shape as ev_t_mul/ev_t_div above.
+; --- ev_e / ev_pw: the arithmetic levels, a PRECEDENCE CLIMBER --------------
+; 🔁 D-DIMRESERVE S2 (2026-10-10), after S1 did the logical layer. MSX precedence,
+; loosest first: + - (1), MOD (2), \ (3), * / (4), ^ (5) -- all left-assoc (§13.3).
+; This was five hand-written levels, each calling the next on every operand
+; (5 calls deep whether or not an operator was there); now ONE loop parses the
+; operand and looks the next token up in arithtab, accepting it only at or above
+; the caller's level C, and parses its right operand with C = level+1 -- so it
+; binds what binds tighter and stops at its own level and looser: the same
+; groupings, left-associative. A LEVEL NUMBER, not S1's table position, because
+; two levels hold two operators each (`A+B-C` must stay (A+B)-C: A+(B-C) can
+; differ in the last digit).
+; Two operator shapes, as before:
+;   * + - * / ^ keep the typed-operand FRAME: `push de / call push_lhs_frame` is
+;     contiguous (the combine_* pop it as ONE frame -- push_lhs_frame's header),
+;     so the entry pointer goes BELOW it and is read back at SP+12 (frame 10 +
+;     lhs 2) after the right operand;
+;   * MOD and \ are strict int16 (§10.4): both sides converted, the leaf takes
+;     DE = dividend, BC = divisor.
+; Entry points: ev_e (every level; ev_rel and str-engine), ev_pw (`^` only --
+; unary minus's operand, so -2^2 = -4 and 2^-3^2 = 2^-(3^2) still fall out).
 ev_pw:
-                call    ev_f
-ev_pw_lp:
-                call    ev_sp
-                cp      POW_TOKEN
-                ret     nz
-                inc     ix
-                push    de                  ; lhs
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                call    ev_f                ; rhs (ev_f's own unary-minus ->
-                                            ; ev_pw call below gives the
-                                            ; pinned right-nesting for free)
-                call    combine_pow
-                jr      ev_pw_lp            ; loop = left-assoc
+                ld      c,5                 ; only `^` may join
+                jr      evk_min
+ev_e:
+                ld      c,1                 ; every arithmetic level
+evk_min:                                    ; C = the loosest level allowed
+                push    bc                  ; [min]
+                call    ev_f                ; DE / FAC = the operand
+evk_lp:
+                call    ev_sp               ; A = the next token
+                ld      hl,arithtab
+evk_find:
+                ld      b,(hl)
+                inc     b
+                dec     b
+                jr      z,evk_done          ; no arithmetic operator follows
+                cp      b
+                jr      z,evk_tok
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
+                jr      evk_find
+evk_tok:
+                inc     hl                  ; HL -> level | int-style bit
+                pop     bc
+                push    bc                  ; C = min
+                ld      a,(hl)
+                and     $7F                 ; A = this operator's level
+                cp      c
+                jr      c,evk_done          ; looser than allowed: the caller's to take
+                inc     ix                  ; past the operator
+                inc     a
+                ld      c,a                 ; C = the rhs's minimum: TIGHTER only
+                bit     7,(hl)
+                jr      nz,evk_int
+                push    hl                  ; [entry] -- BELOW the frame
+                push    de                  ; lhs ...
+                call    push_lhs_frame      ; ... and its frame, contiguous
+                call    evk_min             ; DE = rhs
+                ld      hl,12               ; past the frame (10) and the lhs (2)
+                add     hl,sp
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a                 ; HL = [entry]
+                call    evk_call            ; combine_*: frame on top, as a direct call
+                pop     hl                  ; drop [entry]
+                jr      evk_lp
+evk_int:
+                push    hl                  ; [entry]
+                call    fac_to_int_strict_reset ; lhs -> int16 (clobbers HL and C)
+                pop     hl
+                push    hl                  ; [entry]
+                push    de                  ; [lhs = the dividend]
+                ld      a,(hl)
+                and     $7F
+                inc     a
+                ld      c,a                 ; C = the rhs's minimum (again)
+                call    evk_min             ; DE = rhs (the divisor)
+                call    fac_to_int_strict_reset
+                ld      b,d
+                ld      c,e                 ; BC = divisor
+                pop     de                  ; DE = dividend
+                pop     hl                  ; HL = [entry]
+                push    hl
+                call    evk_call            ; signed_mod_de_bc / signed_div_de_bc
+                pop     hl
+                jr      evk_lp
+evk_done:
+                pop     bc                  ; drop [min]; DE / FAC untouched
+                ret
+evk_call:                                   ; HL = an entry's level byte -> its leaf
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                jp      (hl)                ; the leaf's ret returns to our caller
+arithtab:                                   ; token, level | $80 = int style, leaf
+                db      PLUS_TOKEN, 1
+                dw      combine_add
+                db      MINUS_TOKEN, 1
+                dw      combine_sub
+                db      MOD_TOKEN, $82
+                dw      signed_mod_de_bc
+                db      IDIV_TOKEN, $83
+                dw      signed_div_de_bc
+                db      STAR_TOKEN, 4
+                dw      combine_mul
+                db      DIV_TOKEN, 4
+                dw      combine_div_float   ; ALWAYS float (spec §10.1)
+                db      POW_TOKEN, 5
+                dw      combine_pow
+                db      0
 
 ; --- ev_f: factor ----------------------------------------------------------
 ; Decodes the crunched tokens (spec §3): constant tokens carry their binary

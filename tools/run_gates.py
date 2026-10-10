@@ -137,7 +137,7 @@ recauto-acceptance ampb-acceptance filesnl-acceptance
 filesbare-acceptance callsystem-acceptance bootkey-acceptance
 resnext-acceptance readerl-acceptance
 dosmode-acceptance bootkeys-acceptance
-fcb0-acceptance""".split()
+fcb0-acceptance prec-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

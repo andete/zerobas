@@ -2340,6 +2340,12 @@ bootkeys-acceptance: repack-machine $(DISK_TEST_DSK)
 fcb0-acceptance: repack-machine
 	python3 probes/basic/basic_probe_fcb0.py
 
+# --- prec-acceptance: arithmetic precedence and associativity (D-DIMRESERVE S2)
+# The arithmetic levels are a precedence climber since 2026-10-10; same-level
+# chains, ^ chains and mixed levels against the VG-8020.
+prec-acceptance: repack-machine
+	python3 probes/basic/basic_probe_prec.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

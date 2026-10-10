@@ -1,0 +1,8 @@
+  ROM c99e7178 1b7bd08d ba8a1c6b 96947daa  ->  26a0b11a 1b7bd08d ba8a1c6b 03afbfa4
+PASS  K-CL2: moved ['div3', 'mix', 'pow3', 'sub3'] (want exactly ['div3', 'mix', 'pow3', 'sub3'])
+  ROM 26a0b11a 1b7bd08d ba8a1c6b 03afbfa4  ->  54010bd3 1b7bd08d ba8a1c6b 4d022268
+PASS  K-CL3: moved ['idiv3', 'modchain'] (want exactly ['idiv3', 'modchain'])
+  ROM 54010bd3 1b7bd08d ba8a1c6b 4d022268  ->  93fb9770 1b7bd08d ba8a1c6b c6cdd0ff
+PASS  K-CL4: moved ['div3', 'idiv3', 'idivmod', 'mix', 'modchain', 'pow3', 'sub3'] (want exactly ['div3', 'idiv3', 'idivmod', 'mix', 'modchain', 'pow3', 'sub3'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
