@@ -1,0 +1,9 @@
+convertible ROM sites: 6
+  proposals (unique source match): 6  [page1 6, low 0]
+  skipped no-match: 0   skipped ambiguous: 0
+    $6B50 jp    -> sv_tenant            basic/save.asm:647
+    $6D69 jp    -> oo_hdr_tail          basic/files.asm:716
+    $6D84 jp    -> oo_fail_e            basic/files.asm:737
+    $6DF3 jp nz -> oo_fail_syn          basic/files.asm:893
+    $6DF6 jp    -> oo_fail_bfname       basic/files.asm:894
+    $6DFC jp    -> oo_fail_bfname       basic/files.asm:900

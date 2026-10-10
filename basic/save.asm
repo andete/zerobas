@@ -644,7 +644,7 @@ csav_noname:
                 jp      loc_missing         ; ERR 24
 tape_save_basic:
                 ld      a,SV_OP_SAV_CAS
-                jp      sv_tenant           ; CSAVE -> tape, tokenised (D-CASSAVE:
+                jr      sv_tenant           ; CSAVE -> tape, tokenised (D-CASSAVE:
                                             ; SAVE"CAS:" no longer arrives here)
 
 ; ===========================================================================

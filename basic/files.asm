@@ -713,7 +713,7 @@ oo_storemode:
                 ld      a,(FCH_MODE)        ; 1 INPUT, 3 OUTPUT/APPEND, 4 RANDOM
                 ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
                 ld      (OO_DEVTYPE),a      ; D-FCBHDR: what the header stamp reads
-                jp      oo_hdr_tail
+                jr      oo_hdr_tail
 oo_fail:
                 ; post-claim failure (DE = channel): release the slot we claimed and
                 ; mark the channel closed in the table (its globals are stale garbage).
@@ -734,7 +734,7 @@ oo_fail_syn:
                 jp      stmt_error
 oo_fail_bfname:                             ; the cassette arm's RANDOM / APPEND
                 ld      e,56                ; refusal (D-NODISKOPEN): Bad file name
-                jp      oo_fail_e
+                jr      oo_fail_e
 
 ; --- oo_fail_ifc: OPEN's ILLEGAL FUNCTION CALL reject (D-RECLEN2, ERR 5) -----
 ; Same channel-state cleanup as oo_fail_syn, different face. Measured: the
@@ -890,14 +890,14 @@ oo_dev_cas:
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
                 jr      z,oocas_out
                 call    oo_is_app           ; D-NODISKOPEN: APPEND is 56 on the
-                jp      nz,oo_fail_syn      ; VG-8020 and CF-3300 alike; other
-                jp      oo_fail_bfname      ; junk after FOR stays 2 (casfoo)
+                jr      nz,oo_fail_syn      ; VG-8020 and CF-3300 alike; other
+                jr      oo_fail_bfname      ; junk after FOR stays 2 (casfoo)
 oocas_nofor:
                 ; RANDOM (`AS #n`, no FOR) is 56 on both references; other junk
                 ; is 2 (casjunk). The AS clause is parsed first, so a bad channel
                 ; there answers before the 56 -- that order is unmeasured.
                 call    oo_parse_as_chan    ; 2 unless `AS [#]n`
-                jp      oo_fail_bfname
+                jr      oo_fail_bfname
 oocas_in:
                 inc     hl
                 ld      a,CAS_IN_MODE
