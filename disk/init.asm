@@ -14,7 +14,7 @@
 ; reserved bytes. INIT is a *word* at $4002 (the BIOS CALLs through it); the
 ; header is exactly 16 bytes, so the disk entry-point table begins at $4010.
                 db      "AB"            ; ROM signature              ($4000)
-                dw      init            ; INIT entry point           ($4002)
+                dw      init_gate       ; INIT entry point ($4002): SHIFT first (D-BOOTKEYS)
                 dw      0               ; STATEMENT expansion (none) ($4004)
                 dw      0               ; DEVICE expansion (none)    ($4006)
                 dw      0               ; TEXT / BASIC program (none)($4008)

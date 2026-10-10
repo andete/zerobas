@@ -74,8 +74,12 @@ try_init_slot:
                 ; limitation, PROVENANCE.md §disk-ROM slot capture).
                 ld      a,(SCAN_SLOT)
                 ld      (DISKSLOT),a
-                ld      a,1
-                ld      (DISKSLOT_OK),a
+                ; D-BOOTKEYS (2026-10-10): `inc`, not `ld 1` -- the scan zeroed the
+                ; cell, so a normal INIT makes it 1; a disk ROM that SHIFT told to
+                ; stay out (as the CF-3300's does: no Disk BASIC, HIMEM $F380 --
+                ; scratchpad/bootkeys_run.out) left $FF, which wraps to 0: no disk.
+                ld      hl,DISKSLOT_OK
+                inc     (hl)
                 ret
 
 

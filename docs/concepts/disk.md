@@ -8,7 +8,8 @@ SPDX-License-Identifier: 0BSD
 
 > **Status (2026-10-09):** the disk statements agree with the National CF-3300
 > in the forms measured. There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
-> built); the SHIFT/CTRL boot keys are unmeasured (D-BOOTKEYS, TIER 4).
+> built). SHIFT held at power-on keeps Disk BASIC out, as on the CF-3300
+> (since 2026-10-10); CTRL's one-drive boot waits on drive B: (D-BOOTKEYS).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -130,6 +131,15 @@ with 23354 bytes free, 76 fewer than the CF-3300
 ([`engrow0_run.out`](../../scratchpad/engrow0_run.out)). Each extra `MAXFILES`
 channel costs 267 bytes on both.
 
+Two keys held at power-on give memory back on the CF-3300
+([`bootkeys_run.out`](../../scratchpad/bootkeys_run.out)): **SHIFT** leaves the
+disk system out altogether — no Disk BASIC (`DSKF` is `Illegal function
+call`), `HIMEM` `&HF380`, 5385 bytes more free — and **CTRL** keeps Disk BASIC
+with one drive instead of two, 1558 bytes more free. zerobas honours SHIFT
+since 2026-10-10: its disk ROM then installs nothing and BASIC starts as on the
+diskless machine (`HIMEM` `&HE000`, zerobas's own layout —
+[memory map](memory-map.md)).
+
 ## Example
 
 Read the boot sector and the FAT, write a file, read its directory entry
@@ -171,11 +181,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   count, `DSKI$(2,0)` is `Bad drive name`, a `"B:"` name means `A:`. One
   physical drive stays (Joost, 2026-06-22); the prompt comes (ruled
   2026-10-09: *"yeah, we need to have the prompt mechanism"*).
-- **Boot keys** (D-BOOTKEYS, TIER 4): Joost recalls SHIFT or CTRL held at
-  power-on freeing RAM (by MSX convention SHIFT skips the disk ROM, CTRL drops
-  drive B:). Neither is measured on the CF-3300 or built here.
-- **`FILES " "` and `FILES "A:"`** list the disk on the CF-3300 and are
-  `Bad file name` here, a pinned deferral in `namspc-acceptance` (D-FSPEC).
+- **CTRL held at power-on** gives one drive and 1558 more bytes on the CF-3300;
+  zerobas ignores it, as it has no logical drive B: to drop yet (D-BOOTKEYS,
+  after D-DSKIB).
 - **A wildcard `COPY` with two or more matches** is error 5 here (D-COPYWILD;
   Joost, 2026-10-09: *"stay error 5 for now"*).
 - **Keys typed during long disk work** (D-FDCDI, TIER 3): both lose some,
@@ -187,6 +195,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **SHIFT at power-on did nothing here** (fixed 2026-10-10, D-BOOTKEYS, raised by
+  Joost). Measured first on the CF-3300 — SHIFT: no Disk BASIC, `HIMEM`
+  `&HF380`; CTRL: one drive. zerobas's disk ROM now reads the key before
+  anything else and stays out, and BASIC treats the machine as diskless.
 - **Every write error was swallowed** (fixed 2026-09-28, D-WPROTECT): one
   instruction in our driver cleared the carry on every failed write, so a
   protected disk "saved" silently — found with a read-only test disk.
@@ -235,6 +247,8 @@ The keyword pages in the table above; [MSX-DOS](msx-dos.md),
 
 ## Tests that cover it
 
+- `make bootkeys-acceptance` — a plain boot, SHIFT held and CTRL held from
+  power-on: whether Disk BASIC is there, against the CF-3300.
 - `make diskbasic-acceptance` — the statements against the CF-3300, by screen
   and by the disk image they leave; `make kwsweep` — every disk keyword's rows.
 - `make copy-acceptance`, `dskio-acceptance`, `savedate-acceptance`,

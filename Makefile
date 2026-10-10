@@ -2329,6 +2329,11 @@ readerl-acceptance: repack-machine
 dosmode-acceptance: repack-machine
 	python3 probes/disk/disk_probe_dosmode.py
 
+# --- bootkeys-acceptance: SHIFT held at power-on keeps Disk BASIC out (D-BOOTKEYS)
+# The key is pressed from power-on in a Tcl prologue; DSKF(0) answers or is ERR 5.
+bootkeys-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_bootkeys.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

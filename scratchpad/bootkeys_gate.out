@@ -1,0 +1,6 @@
+ROW plain CF=[K 706] ZB=[K 706] SAME
+ROW shift CF=[KE 5  20] ZB=[KE 5  20] SAME
+ROW ctrl CF=[K 706] ZB=[K 706] SAME
+
+PASS: keys held at power-on (3/3)
+refcache: 0 hit, 6 miss, 6 stored

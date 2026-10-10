@@ -2078,6 +2078,28 @@ hsy_err:
                 jp      calbak              ; raises; does not return
 hsy_name:       db      "SYSTEM"
 
+; --- init_gate: SHIFT held at power-on keeps the disk ROM out (D-BOOTKEYS; oracle: CF-3300) ---
+; On the CF-3300 SHIFT held from power-on leaves Disk BASIC out entirely: HIMEM
+; stays $F380, FRE(0) +5385 B, DSKF is Illegal function call (scratchpad/
+; bootkeys_run.out). The ROM header's INIT word points here: SHIFT (keyboard row
+; 6 bit 0, low when held -- SNSMAT $0141, MSX2 TH) held -> touch nothing (no
+; hooks, no work area, no DOS boot) and leave $FF in main's DISKSLOT_OK, which
+; main's scan then `inc`s to 0 (basic/islands.asm): a diskless machine. Else the
+; normal INIT, with A (this ROM's slot byte, which init reads) intact.
+init_gate:
+                push    af
+                ld      a, 6
+                call    $0141               ; SNSMAT: A = row 6, a 0 bit = held
+                rrca                        ; SHIFT -> Cy
+                jr      c, ig_init          ; not held: the normal INIT
+                pop     af
+                ld      a, $FF
+                ld      (DISKSLOT_OK), a    ; -> 0 after main's inc: no disk ROM
+                ret
+ig_init:
+                pop     af
+                jp      init
+
 ; --- calslt_body: CALSLT ($001C) while MSX-DOS runs (D-DOSMODE40; oracle: CF-3300) ---
 ; A target in pages 1-3 is called where it is, as before -- the boot's targets
 ; (this ROM in page 1, the page-3 work area) are mapped. A PAGE-0 target is the

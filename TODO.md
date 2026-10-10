@@ -6371,7 +6371,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31358 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31370 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -30159,6 +30159,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       before reserving anything; check first how main discovers the disk ROM
       (DISKSLOT / the banner call / the hooks), or main still believes in it.
       CTRL depends on D-DSKIB's drive-B model.
+      ✅ **SHIFT SHIPPED 2026-10-10.** The disk ROM header's INIT word now points
+      at `init_gate` (disk/kernel.asm, the fill above `ds $5FE5`): SNSMAT row 6
+      bit 0 held -> install nothing and leave $FF in main's DISKSLOT_OK; main's
+      scan (`basic/islands.asm`) now `inc`s that cell instead of storing 1 (−1 B),
+      so it wraps to 0 and BASIC is diskless — no `zerobas Disk BASIC` line,
+      `DSKF(0)` ERR 5 as on the CF-3300; HIMEM is zerobas's own diskless `$E000`
+      (its workspace, the TIER 4 RAM layout — not compared). Gate
+      `bootkeys-acceptance` ([`disk_probe_bootkeys.py`](probes/disk/disk_probe_bootkeys.py),
+      [`bootkeys_gate.out`](scratchpad/bootkeys_gate.out)): plain / shift / ctrl
+      3/3 on the DSKF face; 🔪 [`bootkeys_knives.out`](scratchpad/bootkeys_knives.out):
+      K-BK1 (init_gate always inits) -> shift, exactly. **CTRL stays open**: one
+      drive and +1558 B on the CF-3300, after D-DSKIB.
 
 - [ ] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
