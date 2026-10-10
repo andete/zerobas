@@ -1,0 +1,3 @@
+CF-3300  commands=47 {'restore/seek': 3, 'WRITE': 16, 'READ': 16, 'force-int': 12} finished=True
+zerobas  commands=128 {'force-int': 54, 'READ': 28, 'WRITE': 36, 'restore/seek': 10} finished=True
+refcache: 0 hit, 2 miss, 2 stored
