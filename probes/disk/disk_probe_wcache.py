@@ -19,6 +19,8 @@ The budgets are the slice's measured figures. A slice that saves commands
 lowers them; a change that adds commands back turns them red.
   W1 (2026-10-10): 28 -> 23 reads (the boot sector is no longer re-read per
   cluster -- the cluster count is fat_mount's). Writes 36.
+  W2 (2026-10-10): 23 -> 14 reads (marking a cluster and linking the previous
+  one no longer re-read the FAT sector the allocation just loaded).
 
 Prints `ROW <name> CF=[...] ZB=[...] <verdict>`; exit 0 all pass, 1 a failure,
 2 no reading. CF-3300 vs zerobas DISK.
@@ -29,7 +31,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                    # noqa: E402
 import probe_tmp                                    # noqa: E402
 
-READ_BUDGET, WRITE_BUDGET = 23, 36
+READ_BUDGET, WRITE_BUDGET = 14, 36
 LINES = ['OPEN "X" FOR OUTPUT AS 1',
          'POKE &HD000,1:FOR I=1 TO 200:PRINT#1,"ABCDEFGHIJKLMNOPQRS":NEXT:CLOSE#1:POKE &HD000,2',
          'OPEN "X" FOR INPUT AS 1:N=0',

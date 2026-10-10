@@ -1,0 +1,5 @@
+CF-3300  commands=47 {'restore/seek': 3, 'WRITE': 16, 'READ': 16, 'force-int': 12} finished=True
+  s W1/2/7F R1/2/7F W1/3/7F R1/3/7F W1/4/7F R1/4/7F W1/5/7F R1/5/7F W1/6/7F R1/6/7F W1/7/7F R1/7/7F W1/8/7F R1/8/7F W1/9/7F R1/9/7F s W2/1/7F R2/1/7F s W0/8/7F R0/8/7F W0/2/7F W0/3/7F W0/4/7F R0/2/7F R0/3/7F R0/4/7F W0/5/7F W0/6/7F W0/7/7F R0/5/7F R0/6/7F R0/7/7F
+zerobas  commands=100 {'restore/seek': 50, 'READ': 14, 'WRITE': 36} finished=True
+  s R0/2/7F s W0/2/7F s W0/5/7F s W1/2/7F s R1/2/7F s W1/2/7F s W1/3/7F s R1/3/7F s W1/3/7F s R0/2/7F s W0/2/7F s W0/5/7F s W0/2/7F s W0/5/7F s W1/4/7F s R1/4/7F s W1/4/7F s W1/5/7F s R1/5/7F s W1/5/7F s R0/2/7F s W0/2/7F s W0/5/7F s W0/2/7F s W0/5/7F s W1/6/7F s R1/6/7F s W1/6/7F s W1/7/7F s R1/7/7F s W1/7/7F s R0/2/7F s W0/2/7F s W0/5/7F s W0/2/7F s W0/5/7F s W1/8/7F s R1/8/7F s W1/8/7F s W1/9/7F s R1/9/7F s W1/9/7F s R0/2/7F s W0/2/7F s W0/5/7F s W0/2/7F s W0/5/7F s W2/1/7F s R0/8/7F s W0/8/7F
+refcache: 0 hit, 2 miss, 2 stored

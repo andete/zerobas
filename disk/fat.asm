@@ -113,6 +113,41 @@ k_4793:         jp      wrrnd_body          ; $4793: BDOS $22 WRRND canonical en
                 ds      $47BE - $, $00      ; pad the vacated 5 bytes ($47B9-$47BD)
 k_47BE:         jp      wrblk_body          ; $47BE: BDOS $26 WRBLK canonical entry (M28)
 
+; fat_write_fat_entry_hot -- disk.rom's copy of the shared body's routine
+; (basic/fat-prim-body.inc, D-WCACHE W2, which says when a caller may use it). It
+; lives in this fill ($47C1.., free up to the $4919 anchor) because the body's region, pinned at $75A5, had no room.
+fat_write_fat_entry_hot:
+                ld      (FAT_WRTMP), de     ; save the value
+                push    hl                  ; save cluster
+                ld      a, l                ; fat_read_fat_sector's arithmetic, copied
+                and     1                   ; so that routine stays byte-identical
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                   ; DE = cluster >> 1
+                add     hl, de              ; HL = fatofs = cluster * 3/2
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                   ; fatofs >> 9 = FAT sector offset
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = the entry's FAT sector
+                ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
+                ld      (FAT_FATSEC), hl
+                or      a
+                sbc     hl, de
+                jp      z, fwe_have         ; already loaded: no read
+                ld      de, (FAT_FATSEC)
+                ld      hl, FAT_MBUF
+                call    read_sector
+                jp      fwe_have
+
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
 ;   in:  HL = directory entry name, DE = search name
 ;   out: Z set if equal; trashes A, BC, DE, HL

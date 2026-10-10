@@ -5,8 +5,8 @@ SPDX-License-Identifier: 0BSD
 
 # Disk write path: fewer sector commands (D-BLKIOPERCALL step 2, D-FDCDI)
 
-Status: **W1 built 2026-10-10** (§3: 28 → 23 READs on the workload, gate
-`wcache-acceptance`); W2–W4 are design. TIER 5 (on-par speed),
+Status: **W1 and W2 built 2026-10-10** (§3: 28 → 23 → 14 READs on the
+workload, gate `wcache-acceptance`); W3–W4 are design. TIER 5 (on-par speed),
 and the lever of D-FDCDI (TIER 3: keys typed during long disk work are lost,
 because the driver masks interrupts inside each sector command).
 
@@ -76,12 +76,26 @@ as `FAT_FIRSTDATA`. Measured: 28 → 23 READs, 36 WRITEs unchanged, every
 Knife K-WC1 (the boot read restored) moves only `zb-reads`
 ([`wcache_knives.out`](../scratchpad/wcache_knives.out)).
 
-**W2 — the FAT sector kept across calls.** One tag cell holds the FAT sector
-that `FAT_MBUF` currently mirrors. A read that hits it skips the disk. **Every
-other writer of `FAT_MBUF` clears the tag**: it has 38 users across
-basic/*.inc and disk/kernel.asm, the directory scans and the boot-sector read
-among them, and all of them must be audited. Mount clears it too (a new disk).
-That saves 2 READs per cluster.
+**W2 — the FAT sector kept WITHIN an allocation. ✅ BUILT 2026-10-10, narrower
+than first designed.** A tag kept *across* calls needs all 38 `FAT_MBUF` users
+audited. But the two re-reads happen within one allocation: the scan loads
+the sector, the mark re-reads it, and the link re-reads it. Nothing else
+touches `FAT_MBUF` in between. Every FAT routine keeps `(FAT_FATSEC)` naming
+the sector `FAT_MBUF` holds: the scan, both straddle paths, and
+`fat_write_buf_allfats`, which leaves both as they were. So
+`fat_write_fat_entry_hot` skips the read when the entry's sector is that one.
+It is used at exactly two sites: `fac_found` (right after its scan) and
+`ffds_alloc`'s link (right after the allocation). Every other caller keeps the
+plain entry.
+- **Measured:** 23 → 14 READs (predicted 13: MISSED by one — the first
+  cluster has no link to save), writes unchanged, the file whole on both
+  ([`fdcseq_w2.out`](../scratchpad/fdcseq_w2.out)).
+- **Where it lives:** the body's region in disk.rom (pinned at `$75A5`) had no
+  room, even for a 4-byte split of `fat_read_fat_sector`; the build assembled
+  EMPTY twice. So the hot entry carries its own copy of the sector arithmetic,
+  in disk/fat.asm's `$47C1` fill for disk.rom, and in the body for the sub-ROM
+  (`IF SUB_BUILD`, 62 B of sub page 1).
+- **Knife:** K-WC2 (the hot entry always reads) moves only `zb-reads`.
 
 **W3 — the FAT written at CLOSE, as the CF-3300 does.** Mark-used and link
 only change `FAT_MBUF` (dirty flag). The dirty sector is written to both copies

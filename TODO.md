@@ -6478,7 +6478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31686 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31699 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29823,7 +29823,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       [`wcache_gate_w1.out`](scratchpad/wcache_gate_w1.out)): the file reads back
       whole on both, zerobas within 23 READs / 36 WRITEs; 🔪 K-WC1 (the boot read
       restored) → exactly `zb-reads` ([`wcache_knives.out`](scratchpad/wcache_knives.out)).
-      ➡️ W2 next (the FAT sector kept across calls: audit `FAT_MBUF`'s writers).
+      ✅ **W2 SHIPPED 2026-10-10, narrower than designed — no audit needed:** the
+      two re-reads are WITHIN one allocation (scan → mark → link), where nothing
+      else touches `FAT_MBUF` and every FAT routine keeps `(FAT_FATSEC)` naming
+      what it holds. `fat_write_fat_entry_hot` skips the read when the entry's
+      sector is that one; used by `fac_found` and `ffds_alloc`'s link only. 23 →
+      14 READs (predicted 13: MISSED by one, the first cluster has no link),
+      [`fdcseq_w2.out`](scratchpad/fdcseq_w2.out), [`wcache_gate_w2.out`](scratchpad/wcache_gate_w2.out)
+      — fewer READs than the CF-3300's 16 (its verify reads). disk.rom's
+      body region (pinned at `$75A5`) had no room even for a 4-byte split, so the
+      hot entry carries its own sector arithmetic in disk/fat.asm's `$47C1` fill;
+      the sub-ROM's copy costs 62 B of sub page 1. 🔪 K-WC2 → exactly `zb-reads`
+      ([`wcache_knives_w2.out`](scratchpad/wcache_knives_w2.out)).
+      ➡️ W3 next (the FAT written at CLOSE — changes the medium between calls:
+      re-read the mid-sequence image rows first).
 
 
 - [x] ✅ **D-RDRNDMULTI — BDOS `$21`/`$22` RDRND/WRRND POSITIONED IN THE LAST-FOUND FILE, NOT THE

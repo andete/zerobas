@@ -1,0 +1,6 @@
+  ROM 1cea3c92 3608b8f3 fe3246f5 d96210e7  ->  1cea3c92 8f59ca1c ef71535f d96210e7
+PASS  K-WC1: moved ['zb-reads'] (want exactly ['zb-reads'])
+  ROM 1cea3c92 8f59ca1c ef71535f d96210e7  ->  1cea3c92 3608b8f3 3e93d6c5 d96210e7
+PASS  K-WC2: moved ['zb-reads'] (want exactly ['zb-reads'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

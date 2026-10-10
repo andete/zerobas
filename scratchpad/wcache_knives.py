@@ -6,7 +6,8 @@ probes/disk/disk_probe_wcache.py, judged on the zerobas column against the uncut
 build's.
 
   K-WC1  fat_total_clusters re-reads the boot sector per call (W1 undone)
-         -> zb-reads (28 > 23); content and writes unmoved
+         -> zb-reads; content and writes unmoved
+  K-WC2  disk.rom's hot FAT write always reads (W2 undone) -> zb-reads
 
 🔴 RESTORE ON EVERY EXIT: originals in memory, put back by try/finally AND
 atexit; knife_guard proves the cut reached the installed ROM. A run with rows
@@ -26,6 +27,10 @@ KNIVES = {
               "                ld      de, 0\n                ld      hl, FAT_MBUF\n"
               "                call    read_sector\n                pop     hl\n"
               "                ld      de, (FAT_TOTCLUS)\n                or      a\n                ret\n",
+              {"zb-reads"}),
+    "K-WC2": ("disk/fat.asm",
+              "                jp      z, fwe_have         ; already loaded: no read\n",
+              "                nop                         ; K-WC2 CUT\n                nop\n                nop\n",
               {"zb-reads"}),
 }
 TMP = "/tmp/zerobas"

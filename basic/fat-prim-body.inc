@@ -746,7 +746,8 @@ fac_found:
                 ; claim it: write EOC into every FAT copy, return the cluster.
                 push    hl
                 ld      de, EOC
-                call    fat_write_fat_entry ; HL = cluster, DE = value
+                call    fat_write_fat_entry_hot ; HL = cluster, DE = value (W2: the
+                                            ; scan just loaded its sector)
                 pop     hl
                 ret     c                   ; write error propagates (Cy set)
     IF DISK_BUILD
@@ -834,10 +835,55 @@ fac_e_odd:
 ;   in:  HL = cluster, DE = 12-bit value to store
 ;   out: Cy = 0 ok, Cy = 1 error
 ; (Microsoft FAT spec §3.2 packing; multi-FAT sync per BPB_NUMFATS.)
+; 🔴 D-WCACHE W2 (docs/spec-diskwcache.md): fat_write_fat_entry_hot -- the same,
+; for a caller whose LAST FAT operation loaded FAT_MBUF, so (FAT_FATSEC) names what
+; it holds: the read is skipped when the entry lives in that sector. Every FAT
+; routine keeps that pair together (fac's scan and straddle, this routine's own
+; straddle, fat_write_buf_allfats leaves both as they were); a caller with ANY
+; other FAT_MBUF user since -- a directory scan, a mount, another channel --
+; must take the plain entry. Two such callers: fac_found (straight after its
+; scan) and ffds_alloc's link (straight after the allocation). It was 3 reads of
+; one FAT sector per allocated cluster (scratchpad/fdcseq_w1.out).
+    IF SUB_BUILD
+fat_write_fat_entry_hot:
+                ld      (FAT_WRTMP), de     ; save the value
+                push    hl                  ; save cluster
+                ld      a, l                ; fat_read_fat_sector's arithmetic, copied
+                and     1                   ; so that routine stays byte-identical
+                ld      (FAT_PARITY), a
+                ld      e, l
+                ld      d, h
+                srl     d
+                rr      e                   ; DE = cluster >> 1
+                add     hl, de              ; HL = fatofs = cluster * 3/2
+                ld      a, l
+                ld      (FAT_BYTEIDX), a
+                ld      a, h
+                and     1
+                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
+                ld      a, h
+                srl     a                   ; fatofs >> 9 = FAT sector offset
+                ld      e, a
+                ld      d, 0
+                ld      hl, (FAT_FATSTART)
+                add     hl, de              ; HL = the entry's FAT sector
+                ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
+                ld      (FAT_FATSEC), hl
+                or      a
+                sbc     hl, de
+                jr      z, fwe_have         ; already loaded: no read
+                ld      de, (FAT_FATSEC)
+                ld      hl, FAT_MBUF
+                call    read_sector
+                jr      fwe_have
+    ENDIF
+                ; (disk.rom's copy sits in disk/fat.asm's $47C1 fill: this region,
+                ; pinned at $75A5, had no room for it -- the first build assembled EMPTY.)
 fat_write_fat_entry:
                 ld      (FAT_WRTMP), de     ; save the value
                 push    hl                  ; save cluster
                 call    fat_read_fat_sector ; FAT_MBUF = FAT sector 0; BYTEIDX/PARITY set
+fwe_have:
                 ; --- pack the low byte / shared nibble into FAT_MBUF[byteidx]
                 ld      hl, (FAT_BYTEIDX)
                 ld      de, FAT_MBUF
@@ -1242,7 +1288,8 @@ ffds_alloc:
                 ex      de, hl              ; HL = previous cluster
                 pop     de                  ; DE = new cluster (value to link)
                 push    de
-                call    fat_write_fat_entry ; previous -> new (12-bit link)
+                call    fat_write_fat_entry_hot ; previous -> new (12-bit link; W2:
+                                            ; the allocation just left FAT_MBUF/FATSEC)
                 pop     hl                  ; HL = new cluster
                 ret     c
                 jr      ffds_setclus
