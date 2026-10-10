@@ -1,0 +1,13 @@
+
+=== cf3300 (National_CF-3300, 60 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  case   bytes  emulated s  jiffies printed     = s
+  S       1055       1.357               51   0.850
+  M       7208       2.190               64   1.067
+  L      14369       2.743               83   1.383
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  case   bytes  emulated s  jiffies printed     = s
+  S       1055       0.715                2   0.040
+  M       7208       3.778                3   0.060
+  L      14369       6.929                3   0.060
+refcache: 0 hit, 8 miss, 8 stored

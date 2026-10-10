@@ -1,0 +1,7 @@
+=== disk: PASS
+=== interrupts-and-traps: PASS
+=== memory-map: PASS
+=== variables: PASS
+
+PASS 4
+refcache: 3 hit, 5 miss, 5 stored

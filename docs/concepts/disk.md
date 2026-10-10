@@ -195,6 +195,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **The clock stood still for a whole disk `LOAD`** (fixed 2026-10-10,
+  D-LOADDI): interrupts were off from the start of the load to its end, so
+  `TIME` did not advance and keys typed meanwhile were lost. The CF-3300
+  switches them off only while it moves each sector. The other disk commands
+  enter the disk ROM the same way and are being measured one by one
+  ([`LOAD`](../keywords/LOAD.md)).
 - **SHIFT at power-on did nothing here** (fixed 2026-10-10, D-BOOTKEYS, raised by
   Joost). Measured first on the CF-3300 — SHIFT: no Disk BASIC, `HIMEM`
   `&HF380`; CTRL: one drive. zerobas's disk ROM now reads the key before

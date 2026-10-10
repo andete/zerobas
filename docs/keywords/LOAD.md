@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LOAD` — replace the program with one from a file
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known user-visible
 > divergence; one open internal item (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -92,10 +92,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 No user-visible difference is known on disk. Two items concern `LOAD`:
 
-- **One open item is filed against `LOAD` at TIER 2** (reasonable time), and
-  its own text says the tier tag is stale: what is left in it is moving the
-  disk channels of `OPEN` into the disk ROM, as `LOAD` itself already was
-  (2026-09-20). Joost ruled on 2026-10-09: *"defer to later"*.
+- **One open internal item is filed against `LOAD`**: moving the disk channels
+  of `OPEN` into the disk ROM, as `LOAD` itself already was (2026-09-20). Joost
+  ruled on 2026-10-09: *"defer to later"*. It was tagged TIER 2 (reasonable
+  time); a 14 KB load measured 2026-10-10 takes about three times the CF-3300's
+  time, inside the bar, so it is TIER 5 now
+  ([readings](../../scratchpad/loadclock_after.out)).
 - **A tokenised program on tape.** On 2026-09-27 Joost ruled to *"keep the
   feature"* that let `LOAD "CAS:"` read a tokenised tape program, where the
   VG-8020 skips it and searches on. Since D-CASTYPE (2026-10-08) zerobas's
@@ -109,6 +111,15 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## What we found, and how
 
+- **The clock stood still while a program loaded** (fixed 2026-10-10,
+  D-LOADDI). Timed from outside the machine, a 14 KB `LOAD "x",R` advanced
+  `TIME` by 3 ticks here and by 83 on the CF-3300. The keyboard was not read
+  during the load either, so keys typed meanwhile were lost. The disk ROM's
+  `LOAD` code ran with interrupts off from start to end; the CF-3300 turns them
+  off only while it moves each sector. Now `TIME` runs for about 43 % of a
+  load here and 50 % there
+  ([before](../../scratchpad/loadclock_run.out),
+  [after](../../scratchpad/loadclock_after.out)).
 - **The tape search did not filter by file type** (fixed 2026-10-08,
   D-CASTYPE, and D-CASBIN for binary files): on a tape holding a tokenised
   `X` and then an ASCII `X`, the VG-8020 loads the ASCII one and zerobas
@@ -152,6 +163,8 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 - `make kwsweep` — plain `LOAD` (read back with `LLIST`), `LOAD ...,R`, and
   the error rows.
 - `make loadtail-acceptance` — the option errors, on disk and on cassette.
+- `make loaddi-acceptance` — the clock keeps running during a disk `LOAD`,
+  against the CF-3300.
 - `make diskascii-acceptance` — `LOAD` of an ASCII file, against the CF-3300.
 - `make dskmsg-acceptance` — `File not found` and the other disk messages.
 - `make castail-acceptance`, `make cas-ascii-acceptance`,

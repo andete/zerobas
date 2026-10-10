@@ -1,0 +1,4 @@
+  ROM 1cea3c92 3d062315 a19fb2fa d96210e7  ->  1cea3c92 3d062315 2a10235f d96210e7
+PASS  K-LD1: moved ['load'] (want exactly ['load'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

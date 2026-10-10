@@ -1,0 +1,5 @@
+ROW load CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 53, ZB 31)
+ROW ctl CF=[UNDER] ZB=[UNDER] SAME   (jiffies: CF 0, ZB 1)
+
+PASS: the clock runs during LOAD (2/2)
+refcache: 0 hit, 2 miss, 2 stored

@@ -217,10 +217,61 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [x] ✅ **FIXED 2026-10-10 (D-LOADDI)** — ⌨️ **THE WHOLE DISK `LOAD` RAN WITH
+      INTERRUPTS OFF: `TIME` STOOD STILL AND THE KEYBOARD WAS NOT SCANNED (found
+      2026-10-10 re-measuring step 9's LOAD time).**
+      🎚️ TIER 3 — common errors: keys typed during a LOAD were lost (D-FDCDI's
+      class, a different cause).
+      📏 `loadrun_probe.py` refused on zerobas: `TIME` read 3 jiffies for a 1 KB
+      AND a 14 KB load. Timed outside the guest
+      ([`loadclock_probe.py`](scratchpad/loadclock_probe.py), a watchpoint on the
+      published `CURLIN` low byte stamping emulated time; its first cut watched
+      `JIFFY`'s high byte as a "nearly unique" stamp and read 0.000 s on both
+      machines — the interrupt reads and writes the 16-bit cell every tick):
+      the load took **6.9 s** and `TIME` advanced 0.06 s; the CF-3300 2.7 s and
+      1.38 s ([`loadclock_run.out`](scratchpad/loadclock_run.out)).
+      🎯 **CAUSE:** disk.rom's hooks are installed as `RST 30h` straight to their
+      handler, so every one is entered through CALSLT, which returns DI;
+      `hk_dpopen` already re-enables after its `calbak` for this reason, and
+      `fdc_di_save` keeps the CALLER's state per sector — `hk_dpload` never
+      re-enabled, so the whole load ran masked. **FIX: one `ei` on the load path**
+      (after the selector chain; the other selectors leave first).
+      🔮 Predicted TIME would run 40–70 % of the load: **43 %** (hit; the
+      CF-3300 50 %, [`loadclock_after.out`](scratchpad/loadclock_after.out)). The
+      load got slower, 6.9 → 8.3 s (the interrupt is now served), still 3.0× the
+      reference.
+      Gate **`loaddi-acceptance`** ([`disk_probe_loaddi.py`](probes/disk/disk_probe_loaddi.py),
+      [`loaddi_gate.out`](scratchpad/loaddi_gate.out)): a ~2 KB `LOAD,R`, TIME
+      RUNS (CF 53, ZB 31 jiffies) and a no-LOAD control UNDER the bar, on both.
+      🔪 [`loaddi_knives.out`](scratchpad/loaddi_knives.out): K-LD1 (the `ei`
+      → `nop`, disk.rom hash moved) → exactly `load`.
+      ➡️ **The other hooks enter the same way** — D-HOOKDI, filed below.
+
+- [ ] ⌨️ **D-HOOKDI — EVERY DISK.ROM HOOK IS ENTERED MASKED (CALSLT RETURNS DI),
+      AND ONLY `OPEN` AND `LOAD` RE-ENABLE: MEASURE THE OTHER LONG VERBS (filed
+      2026-10-10 from D-LOADDI).**
+      🎚️ TIER 3 — common errors: type-ahead during a long disk command.
+      🤖 **AUTONOMOUS** — measure first, per verb, against the CF-3300.
+      The handlers with no `ei` include `hk_dpsave` (tokenised SAVE),
+      `hk_files`, `hk_copy`, `hk_kill`, `hk_name`, `hk_dskf`, `hk_format`
+      (disk/kernel.asm); `hk_fmake` / `hk_fapp` / `hk_chout` / `hk_chclose`
+      already do. ➡️ Time each long verb as D-LOADDI did (emulated time between
+      `CURLIN` writes against the `TIME` it printed) on both machines; a verb
+      whose `TIME` stands still here where the CF-3300's runs gets the same
+      one-byte `ei`, a row in `loaddi-acceptance`, and a knife.
+
 - [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
       WRONG SHAPE.**
-      🎚️ TIER 2 — reasonable time, on `LOAD`.
+      🎚️ TIER 5 — on-par speed, on `LOAD`. ⏱ **RE-TAGGED 2026-10-10 FROM TIER 2:
+      REASONABLE TIME ON `LOAD` IS MEASURED MET.** A 14 KB `LOAD"x",R`, timed
+      OUTSIDE the guest (emulated time between two `CURLIN` writes,
+      [`loadclock_probe.py`](scratchpad/loadclock_probe.py)): **8.3 s here
+      against the CF-3300's 2.7 s, 3.0×** after D-LOADDI (6.9 s, 2.5× before it,
+      [`loadclock_run.out`](scratchpad/loadclock_run.out) /
+      [`loadclock_after.out`](scratchpad/loadclock_after.out)) — inside T2's 10×.
+      What is left here is S10.C (OPEN's channels into disk.rom), ruled *"defer
+      to later"* on 2026-10-09, and the speed.
       ~~🙋 **NEEDS-JOOST**~~ — a far better-posed question than before.
       MEASURED 2026-09-19 (D-HOOKCOUNT, `scratchpad/hookcount_probe.py`,
       §6.6r): two independent runs, every figure identical, three controls green.
@@ -4165,6 +4216,14 @@ item — do **one item per session** to keep context lean.
       Measured 2026-09-18 by
       `scratchpad/loadrun_probe.py` (D-LOADRUN), three program sizes per machine,
       linearity checked: **zerobas 0.2178 ms/byte, CF-3300 0.0376**
+      ⚠️ **BOTH FIGURES WERE READ FROM `TIME`, AND BOTH CLOCKS LOSE TIME DURING A
+      LOAD (2026-10-10):** the CF-3300's runs ~50 % of a load, zerobas's did not
+      run at all (D-LOADDI). Timed outside the guest
+      ([`loadclock_after.out`](scratchpad/loadclock_after.out)): **0.104 ms/byte
+      there, 0.55 here (S→L slope), 8.3 s against 2.7 for 14 KB** — the old
+      ratio's direction holds, its numbers do not. `loadrun_probe.py`'s own
+      control now refuses on zerobas before the fix ("the large load did not
+      exceed the small one"), which is how it was found.
       (`disk/docs/spec-diskcode-eviction.md` §6.2c). A 16 KB program is **3.57 s
       here against 0.62 s there**.
       🔴 **THE USUAL EXCUSE DOES NOT COVER IT.** The same probe's own delay
@@ -6371,7 +6430,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31512 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31571 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6537,7 +6596,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11399 (T-6FE392)8 (T-529ABE)` from `TODO.md:24190 (T-529ABE)`: a
+      `TODO.md:11458 (T-6FE392)8 (T-529ABE)` from `TODO.md:24249 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12246,7 +12305,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24190 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24249 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

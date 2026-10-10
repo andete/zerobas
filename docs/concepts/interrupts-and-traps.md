@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # Interrupts and traps — what runs between statements
 
-> **Status (2026-10-09):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
+> **Status (2026-10-10):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
 > background `PLAY` match the VG-8020 in every case measured. Open: keys typed
 > during long disk work are lost more often than on the CF-3300 (D-FDCDI,
 > TIER 3); traps are not dispatched at the prompt, where the reference has not
@@ -114,7 +114,9 @@ Typed at the prompt, `STOP` prints a bare `Break`.
 
 - **`TIME`** is the documented `JIFFY` cell (`&HFC9E`), counted up by the frame
   interrupt; it stops if a program switches that interrupt off in video
-  register 1. See [`TIME`](../keywords/TIME.md).
+  register 1. It also pauses while the disk moves a sector, on both machines;
+  until 2026-10-10 it stopped for the whole of a disk `LOAD` here (D-LOADDI,
+  [`LOAD`](../keywords/LOAD.md)). See [`TIME`](../keywords/TIME.md).
 - **`PLAY`** puts the notes in queues and returns; the interrupt plays them.
   `PLAY(0)` is −1 while any voice is playing, `PLAY(1)`–`PLAY(3)` ask about one
   voice. The music outlives `END`, `NEW` and a trapped error; an untrapped

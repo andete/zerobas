@@ -2354,6 +2354,13 @@ prec-acceptance: repack-machine
 dimedge-acceptance: repack-machine
 	python3 probes/basic/basic_probe_dimedge.py
 
+# --- loaddi-acceptance: the clock runs while LOAD reads the disk (D-LOADDI)
+# disk.rom's LOAD hook arrives through CALSLT (which returns DI) and the FDC
+# driver keeps the caller's state per sector, so the whole load ran masked:
+# TIME stood still and the keyboard was not scanned. The CF-3300 keeps ~50 %.
+loaddi-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_loaddi.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

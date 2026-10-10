@@ -4228,6 +4228,14 @@ hk_dpload:
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.
+                ei                          ; D-LOADDI: the hook arrives through
+                                            ; CALSLT, which returns DI (as at
+                                            ; hk_dpopen's calbak), and the driver
+                                            ; keeps the CALLER's state per sector
+                                            ; (fdc_di_save) -- so the WHOLE load ran
+                                            ; masked: TIME stood still for 6.9 s,
+                                            ; where the CF-3300's runs between
+                                            ; sectors (scratchpad/loadclock_run.out)
                 ; mount and find SEPARATELY: their two carries are what tells
                 ; `file not found` from a mount/I-O fault, which is the whole
                 ; reason fatio-body.inc carries the zero-byte `fat_io_find`
