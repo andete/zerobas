@@ -1,0 +1,24 @@
+statement: B=A
+deepest below the last passing guard: 39 B (guard SP $DD0E, SP $DCE7), PC $1341 main:cbios_chput_ttypos+370 | sub:strheap_ceiling+7
+words from SP up to the guard (offset below the guard, value, candidate):
+  - 39  $E000  -
+  - 37  $1296  main:cbios_chput_ttypos+199 | sub:strheap_floor+3
+  - 35  $12C3  main:cbios_chput_ttypos+244 | sub:strheap_chantab+3
+  - 33  $12B1  main:cbios_chput_ttypos+226 | sub:svc_ctl+0
+  - 31  $0D2C  main:err_msgtab+99 | sub:scv_ceil_try+3
+  - 29  $4B00  main:mkf_sel+9 | sub:fat_r2_done+40
+  - 27  $0B08  main:fperr_to_err+303 | sub:ary_engine+20
+  - 25  $805F  main:err_notopen_raise+164 | sub:ct_off+296
+  - 23  $8087  main:err_notopen_raise+204 | sub:ct_off+336
+  - 21  $8092  main:err_notopen_raise+215 | sub:ct_off+347
+  - 19  $8094  main:err_notopen_raise+217 | sub:ct_off+349
+  - 17  $A500  -
+  - 15  $CA12  -
+  - 13  $D80C  -
+  - 11  $630C  main:spr_tenant+15 | sub:pt_cmd_rest+12
+  -  9  $920C  -
+  -  7  $40F3  main:req_operand+8 | sub:fsq_one_chk+9
+  -  5  $67F0  main:ctp_line+13 | sub:le_delrange+28
+  -  3  $0024  main:ev_ff_argtab_len+23
+  -  1  $9C8B  -
+refcache: 0 hit, 1 miss, 1 stored

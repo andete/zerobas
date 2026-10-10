@@ -1,0 +1,37 @@
+statement: IF "AB"+A$<"AC"+LEFT$(A$,1) THEN B=1
+deepest below the last passing guard: 65 B (guard SP $DD0E, SP $DCCD), PC $1341 main:cbios_chput_ttypos+370 | sub:strheap_ceiling+7
+words from SP up to the guard (offset below the guard, value, candidate):
+  - 65  $E000  -
+  - 63  $1296  main:cbios_chput_ttypos+199 | sub:strheap_floor+3
+  - 61  $12F1  main:cbios_chput_ttypos+290 | sub:ha_real+20
+  - 59  $1202  main:cbios_chput_ttypos+51 | sub:ss_inner+7
+  - 57  $00FE  main:ev_ff_argtab_len+241 | sub:tkf_classify+26
+  - 55  $174D  sub:sh_temp_push_alloc+41
+  - 53  $0200  main:rn_undefined+63 | sub:tkf_inrange+5
+  - 51  $F67D  -
+  - 49  $11B4  sub:she_snapshot+8
+  - 47  $E26A  -
+  - 45  $F392  -
+  - 43  $F040  -
+  - 41  $2467  sub:gfx_abs16+2
+  - 39  $8B00  -
+  - 37  $3B9C  main:subrom_call+21 | sub:widen_uint_to+170
+  - 35  $3BC6  main:sc_call+3 | sub:widen_uint_to+212
+  - 33  $2942  main:sst_op+12 | sub:gfx_circ_keep+4
+  - 31  $2974  main:sct_go+5 | sub:gck_pair+2
+  - 29  $803D  main:err_notopen_raise+130 | sub:ct_off+262
+  - 27  $2E80  main:ers_rhs+6 | sub:gss_lp+11
+  - 25  $0101  main:ev_ff_argtab_len+244 | sub:tkf_classify+29
+  - 23  $8039  main:err_notopen_raise+126 | sub:ct_off+258
+  - 21  $F67A  -
+  - 19  $4BFE  main:evc_lp+0 | sub:fexp_bounds+34
+  - 17  $0184  main:logtab+0 | sub:tkf_go_int+5
+  - 15  $4BF1  main:eval+11 | sub:fexp_bounds+21
+  - 13  $DD14  -
+  - 11  $443F  main:ex_if+4 | sub:widen_to_arga+184
+  -  9  $765C  main:rp_run+3 | sub:bsv_cas_id+33
+  -  7  $45B9  main:repl_read+11
+  -  5  $4B00  main:mkf_sel+9 | sub:fat_r2_done+40
+  -  3  $0808  sub:print_string+7
+  -  1  $3042  main:inm_lp+8 | sub:gdrw_getc+3
+refcache: 0 hit, 1 miss, 1 stored

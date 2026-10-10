@@ -1,0 +1,40 @@
+statement: IF "AB"+A$<"AC"+LEFT$(A$,1) THEN B=1
+deepest below the last passing guard: 71 B (guard SP $DD0E, SP $DCC7), PC $5D33 main:psv_loop+4 | sub:fat_delete+0
+words from SP up to the guard (offset below the guard, value, candidate):
+  - 71  $5D36  main:psv_loop+7 | sub:fat_delete+3
+  - 69  $DCD7  -
+  - 67  $004F  main:ev_ff_argtab_len+66 | sub:sub_p0_table+15
+  - 65  $FCC8  -
+  - 63  $8B00  -
+  - 61  $0003  -
+  - 59  $9F8C  -
+  - 57  $1906  sub:sh_ctl_reset+17
+  - 55  $004F  main:ev_ff_argtab_len+66 | sub:sub_p0_table+15
+  - 53  $DCD7  -
+  - 51  $032C  main:rn_undefined+363 | sub:tiv_lp+10
+  - 49  $0003  -
+  - 47  $8B00  -
+  - 45  $FCC8  -
+  - 43  $0044  main:ev_ff_argtab_len+55 | sub:sub_p0_table+4
+  - 41  $4100  main:exec_stmt+8 | sub:fsq_norm_lp+6
+  - 39  $0006  -
+  - 37  $EE9A  -
+  - 35  $7234  main:fldf_lp+2 | sub:seqio_tenant+4
+  - 33  $73C3  main:fld_lookup+3 | sub:load_loop+3
+  - 31  $4A82  main:str_eval_one+73 | sub:fat_r1_done+6
+  - 29  $8061  main:err_notopen_raise+166 | sub:ct_off+298
+  - 27  $2979  main:sct_loop+4 | sub:gck_pair+7
+  - 25  $F67A  -
+  - 23  $4C6B  main:ev_rel+5 | sub:fexp_n8_nosign+71
+  - 21  $805A  main:err_notopen_raise+159 | sub:ct_off+291
+  - 19  $4BFE  main:evc_lp+0 | sub:fexp_bounds+34
+  - 17  $0184  main:logtab+0 | sub:tkf_go_int+5
+  - 15  $4BF1  main:eval+11 | sub:fexp_bounds+21
+  - 13  $FB66  -
+  - 11  $443F  main:ex_if+4 | sub:widen_to_arga+184
+  -  9  $765C  main:rp_run+3 | sub:bsv_cas_id+33
+  -  7  $45B9  main:repl_read+11
+  -  5  $4B00  main:mkf_sel+9 | sub:fat_r2_done+40
+  -  3  $0808  sub:print_string+7
+  -  1  $3042  main:inm_lp+8 | sub:gdrw_getc+3
+refcache: 0 hit, 1 miss, 1 stored

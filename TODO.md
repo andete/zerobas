@@ -2923,7 +2923,12 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 🧮 **THERE IS NO SINGLE RAM MAP, AND THAT IS WHAT MAKES EVERY RAM QUESTION
       EXPENSIVE** — Joost, 2026-09-21: *"Don't you have a single RAM map?"*
-      🎚️ TIER 2 — reasonable time; it is apparatus, and it gates steps 10-11.
+      🎚️ TIER 5 — re-tagged 2026-10-10 from TIER 2 (*"reasonable time; it is
+      apparatus, and it gates steps 10-11"*): the map shipped with a gate
+      (D-RAMGATE, `make ram-map-check`), step 11 is done, and step 10's last
+      part is S10.C, ruled *"defer to later"* (2026-10-09). What is left below is
+      step 9's internals, which ride with step 9's own item (TIER 5 since the
+      same day: reasonable time on LOAD measured met).
       ~~🙋 **NEEDS-JOOST**~~ — only on WHEN. He raised it while step 11's port was
       the queued work and said which to spend next is his call; the work itself
       needs no ruling.
@@ -6472,7 +6477,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31618 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31663 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6638,7 +6643,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11500 (T-6FE392)8 (T-529ABE)` from `TODO.md:24291 (T-529ABE)`: a
+      `TODO.md:11505 (T-6FE392)8 (T-529ABE)` from `TODO.md:24299 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12347,7 +12352,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24291 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24299 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -17585,9 +17590,12 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       was a GUESS and was cut to fit — D-INSBOTTOM.
 
 - [ ] 📁 **D-FCBSHAPE — ADOPT THE MSX FCB LAYOUT FOR FILE CHANNELS (39 B A CHANNEL OVER THE REFERENCE; UNLOCKS `VARPTR(#n)`)**
-      🎚️ TIER 4 — RAM usage (VG-8020): `MAXFILES` charges 306 B a channel where
-      the reference charges 267, and `VARPTR`'s file-channel form falls out of
-      the rebuild.
+      🎚️ TIER 6 — re-tagged 2026-10-10 from TIER 4: the RAM half is DONE. A
+      channel costs 267 B on both references and here (S1+S2, 2026-09-30; FCB #0
+      2026-10-10), and `VARPTR(#n)` shipped (D-VARPTRCH). What is left is the
+      INPUT / tape channel's MOVING position byte (+6), which only
+      `PEEK(VARPTR(#n)+6)` can see — the long tail, not RAM. (The headline's
+      "39 B a channel" and "306" are the 2026-09-16 readings.)
       🏗️ **RULED BY JOOST:** 2026-09-16 *"I think this means we need to change to
       the MSX's FCB shape"*; 2026-09-17 *"just note it, you don't need to do
       anything now"*; 2026-09-26 *"file it as a tier 4 item"* — so it is filed,
@@ -26918,6 +26926,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`strcmp`, string compares through the sub-ROM) is what keeps 128;
       (b) the DIM edge's ~30 B, which is the deeper statement stack (S1/S2's 22 B
       and the editor's 92).
+      📏 **(a) ATTRIBUTED 2026-10-10 — THE 128 IS HELD UP BY THE STRING OPERATOR,
+      NOT BY ANY FACTOR.** [`guardattr_probe.py`](scratchpad/guardattr_probe.py)
+      (a breakpoint on our `stk_guard` keeps the LAST passing guard's SP, a write
+      watchpoint names every word below it at the deepest write): `IF
+      "AB"+A$<"AC"+LEFT$(A$,1)` goes **65 B** below its last guard, 71 with PLAY
+      running ([`guardattr_strcmp.out`](scratchpad/guardattr_strcmp.out),
+      [`_play`](scratchpad/guardattr_strcmp_play.out)) — and the chain is
+      `sst_op` → `sct_go` → `sc_call` → `subrom_call` → the sub-ROM heap
+      (`sh_temp_push_alloc`, `she_snapshot`, `ss_inner`): the OPERATOR applied
+      after both operands passed their guards, where no guard runs. Four nested
+      parentheses go 58 (an interrupt at the bottom,
+      [`guardattr_chain.out`](scratchpad/guardattr_chain.out)), a variable read
+      39 ([`guardattr_var.out`](scratchpad/guardattr_var.out)). 🔮 Predicted
+      55–60 without PLAY: MISSED (65), and the cause was not the one I guessed
+      (CALSLT frames inside a factor).
+      ➡️ **SO LOWERING `STK_EVAL_RESERVE` NEEDS A GUARD AT THE STRING OPERATOR**
+      (`sst_op`'s entry, or `sct_go`) that fails as a factor does — defer
+      `FPERR_OOM`, leave the string stack consistent, skip the sub-ROM call. Not
+      at `sc_call`: variable lookup shares it, and its callers cannot take a
+      skipped call. With that guard the evaluator's own need is ~58 (64 would
+      do), and a simple `PRINT` would work at the DIM edge itself (K≈140 here,
+      the VG-8020 from K≈126). Main-page-1 bytes and a new failure path in the
+      string stack — price it from a clean tree before building.
+      💰 **PRICED THE SAME DAY — IT IS AN AUDIT, NOT A SLICE.** The one gateway,
+      `call_strheap` (basic/str-engine.asm, ~6 call sites plus the wrappers'
+      shared `jp`), fronts ~20 heap ops (sub/strheap.asm's dispatch: snapshot,
+      keep, slice, fill, the HEX$/OCT$/BIN$ builders, var store, FRE, the channel
+      and control-pool ops…). A guard there must fail so that EVERY op's caller
+      is left holding a VALID descriptor: a skipped SLICE leaves the old one
+      (safe); a skipped snapshot would publish a STALE `SH_PTR`; a skipped temp
+      allocation would hand its caller a stale descriptor to write a body through
+      — heap corruption. So: per op, the failure value (the SOURCE descriptor,
+      never `SH_PTR`), the non-expression ops (channel, control pool, GC)
+      exempted, then re-measure every below-guard depth and lower
+      `STK_EVAL_RESERVE`, with edgesafe and a knife per op class. ➡️ The loop
+      took the TIER 5 queue next (2026-10-10) because what is left here is that
+      design pass; it is still 🤖 and still the TIER 4 item.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

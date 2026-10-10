@@ -1,0 +1,33 @@
+statement: B=((((1+1)+1)+1)+1)
+deepest below the last passing guard: 58 B (guard SP $DCF3, SP $DCB9), PC $3BCA main:htimi_guard+1 | sub:widen_uint_to+216
+words from SP up to the guard (offset below the guard, value, candidate):
+  - 58  $FCC8  -
+  - 56  $9F8C  -
+  - 54  $1906  sub:sh_ctl_reset+17
+  - 52  $8032  main:err_notopen_raise+119 | sub:ct_off+251
+  - 50  $8B00  -
+  - 48  $032C  main:rn_undefined+363 | sub:tiv_lp+10
+  - 46  $0003  -
+  - 44  $8B00  -
+  - 42  $FCC8  -
+  - 40  $123B  main:cbios_chput_ttypos+108 | sub:she_slice_new+37
+  - 38  $4201  main:ex_data+2 | sub:fsqn_trunc1+35
+  - 36  $F67A  -
+  - 34  $8035  main:err_notopen_raise+122 | sub:ct_off+254
+  - 32  $4A4C  main:str_eval_one+19 | sub:fat_nonzero+16
+  - 30  $4A35  main:str_eval+3 | sub:fp_atan+6
+  - 28  $4A92  main:str_eval_paren+5 | sub:fat_r1_done+22
+  - 26  $8034  main:err_notopen_raise+121 | sub:ct_off+253
+  - 24  $4A35  main:str_eval+3 | sub:fp_atan+6
+  - 22  $4A92  main:str_eval_paren+5 | sub:fat_r1_done+22
+  - 20  $8033  main:err_notopen_raise+120 | sub:ct_off+252
+  - 18  $4A35  main:str_eval+3 | sub:fp_atan+6
+  - 16  $4A92  main:str_eval_paren+5 | sub:fat_r1_done+22
+  - 14  $8032  main:err_notopen_raise+119 | sub:ct_off+251
+  - 12  $4A35  main:str_eval+3 | sub:fp_atan+6
+  - 10  $4C6B  main:ev_rel+5 | sub:fexp_n8_nosign+71
+  -  8  $8032  main:err_notopen_raise+119 | sub:ct_off+251
+  -  6  $4BFE  main:evc_lp+0 | sub:fexp_bounds+34
+  -  4  $0184  main:logtab+0 | sub:tkf_go_int+5
+  -  2  $4EF2  main:ev_f_paren+5 | sub:fpw_no_mul+31
+refcache: 0 hit, 1 miss, 1 stored
