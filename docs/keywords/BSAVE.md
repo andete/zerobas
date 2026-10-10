@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BSAVE` — save a block of memory to a file
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -99,6 +99,14 @@ keyword sweep does not yet carry a row for each code of each form, which the
 rung requires. **RAM usage** is not yet proven either.
 
 ## What we found, and how
+
+- **The clock stopped while the disk worked** (fixed 2026-10-10, D-BLDI):
+  a long `BSAVE` to disk kept `TIME` running for none of its work here,
+  against 30 % on the CF-3300; now 27 %. After the first sector every disk transfer came back with
+  interrupts off, so keys typed meanwhile were lost too; now each one gives
+  back the state it found ([before](../../scratchpad/verbclock_run.out),
+  [after](../../scratchpad/verbclock_bldi.out)). `make loaddi-acceptance`
+  has a `bsave` row.
 
 - **A variable exec address was refused** (fixed 2026-10-07, D-BSAVEVAR).
   `BSAVE "F",&HC000,&HC00F,Q` printed `load error` and saved nothing; both

@@ -1,0 +1,6 @@
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  bsave       13.109    3.520    27%
+  bload        4.391    1.960    45%
+refcache: 0 hit, 3 miss, 3 stored

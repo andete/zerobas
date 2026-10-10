@@ -80,14 +80,27 @@ dskio_calslt:
                                             ; inter-slot call disappears with it
                 jr      dc_result
     ELSE
+; 🔴 D-BLDI: CALSLT RETURNS DI, AND THE DRIVER KEEPS THE CALLER'S STATE PER SECTOR
+; (fdc_di_save), so after the FIRST sector a caller that runs with interrupts on --
+; bload_tenant / save_tenant enable them for the whole verb -- ran the rest masked:
+; `TIME` kept 0 % of an 8 KB BLOAD or BSAVE here, 48 / 30 % on the CF-3300
+; (scratchpad/verbclock_run.out). The caller's state is read first and given back;
+; a masked caller stays masked.
 dskio_calslt:
                 push    af                  ; preserve the direction CY across IY setup
-                ld      a,(DISKSLOT)
+                ld      a,i                 ; P/V = IFF2: were interrupts on?
+                ld      a,(DISKSLOT)        ; (no LD below touches the flags)
                 ld      (SCAN_IY+1),a       ; IYh = disk ROM slot id
                 ld      iy,(SCAN_IY)
                 ld      ix,DSKIO_ENTRY      ; standard DSKIO entry ($4010)
+                jp      po,dc_masked        ; they were off: leave them off
                 pop     af                  ; restore A=drive and the direction CY
                 call    CALSLT              ; cross-slot DSKIO; returns DSKIO's CY/A/B
+                ei                          ; ...under DI: give the caller its EI back
+                jr      dc_result
+dc_masked:
+                pop     af
+                call    CALSLT
     ENDIF
 dc_result:
                 ; D-DISKERR (docs/spec-basic-diskerr.md): DSKIO's error byte (published:

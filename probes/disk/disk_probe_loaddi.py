@@ -17,7 +17,9 @@ entered through CALSLT, and every `calbak` back into main returned through it,
 so SAVE / KILL / COPY / NAME / DSKF / FILES ran masked too -- TIME kept 0-8 %
 of a SAVE, KILL or DSKF here, 29-76 % on the CF-3300. `calbak` now returns
 with interrupts on, and SAVE / DSKF / FILES re-enable at entry
-(scratchpad/verbclock_after.out).
+(scratchpad/verbclock_after.out). D-BLDI: BLOAD / BSAVE run the sub-ROM's FAT
+engine, whose cross-slot DSKIO call returned DI after the first sector; it gives
+the caller its interrupt state back now (scratchpad/verbclock_bldi.out).
 
 The rows, each `RUNS` when TIME advanced >= 8 jiffies across the command (the
 masked builds read 0-2), else `STOPPED`:
@@ -25,6 +27,8 @@ masked builds read 0-2), else `STOPPED`:
   save  the same program, `TIME=0:SAVE"U.BAS":PRINT TIME`      (hk_dpsave's ei)
   kill  `TIME=0:KILL"T.BAS":PRINT TIME`                        (calbak's ei)
   dskf  `TIME=0:X=DSKF(0):PRINT TIME`                          (hk_dskf's ei)
+  bsave `TIME=0:BSAVE"B.BIN",&H9000,&H97FF:PRINT TIME`   (dskio_calslt's ei,
+  bload `TIME=0:BLOAD"B.BIN":PRINT TIME` (4 KB)            the sub-ROM tenants)
 and `ctl`, the same read with no command in between (a few jiffies on both:
 the program's own start, which the threshold sits above).
 
@@ -64,6 +68,12 @@ def main():
                  ("direct", ["NEW"] + PROG + ['TIME=0:SAVE"U.BAS"' + rd]),
                  ("direct", ["NEW"] + PROG + ['SAVE"T.BAS"', 'TIME=0:KILL"T.BAS"' + rd]),
                  ("direct", ['TIME=0:X=DSKF(0)' + rd]),
+                 ("direct", ['TIME=0:BSAVE"B.BIN",&H9000,&H97FF' + rd]),
+                 # bload reads 4 KB: at 2 KB the CF-3300 read 11 jiffies, 3 over
+                 # the bar. The untimed BSAVE takes ~7 s here; the REMs space
+                 # the typed lines past it (typing lands in the key buffer).
+                 ("direct", ['BSAVE"B.BIN",&H9000,&H9FFF', "REM", "REM", "REM",
+                             'TIME=0:BLOAD"B.BIN"' + rd]),
                  ("direct", ["NEW"] + PROG[:1] + ["TIME=0:RUN"])]
         out = omsx_repl.run_cases(machine, cases, batch=False, reset=reset, boot=10.0,
                                   step=3.0, run_gap=15.0, diska=dsk, capture="screen")
@@ -73,7 +83,7 @@ def main():
         # the case nothing -- omsx_repl's own comment says so.)
         got[side] = [reading(o) for o in out]
     bad, blind = [], []
-    names = ("load", "save", "kill", "dskf", "ctl")
+    names = ("load", "save", "kill", "dskf", "bsave", "bload", "ctl")
     for i, name in enumerate(names):
         cf, zb = got["CF"][i], got["ZB"][i]
         if name != "ctl":

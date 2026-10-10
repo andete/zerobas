@@ -281,16 +281,26 @@ item — do **one item per session** to keep context lean.
       [`hookdi_knives.out`](scratchpad/hookdi_knives.out): K-HD1 (calbak's `ei`)
       → kill, K-HD2 (hk_dpsave's) → save, K-HD3 (hk_dskf's) → dskf, K-LD1 → load.
 
-- [ ] ⌨️ **D-BLDI — `BLOAD` / `BSAVE` TO DISK STILL RUN WITH THE CLOCK STOPPED
-      (filed 2026-10-10 by D-HOOKDI).**
+- [x] ✅ **FIXED 2026-10-10 (D-BLDI)** — ⌨️ **`BLOAD` / `BSAVE` TO DISK RAN WITH
+      THE CLOCK STOPPED (filed and fixed 2026-10-10 by D-HOOKDI).**
       🎚️ TIER 3 — common errors: type-ahead during a long disk command.
-      🤖 **AUTONOMOUS** — [`verbclock_run.out`](scratchpad/verbclock_run.out) /
-      [`verbclock_run2.out`](scratchpad/verbclock_run2.out): `TIME` keeps **0 %**
+      📏 [`verbclock_run.out`](scratchpad/verbclock_run.out) /
+      [`verbclock_run2.out`](scratchpad/verbclock_run2.out): `TIME` kept **0 %**
       of an 8 KB BLOAD and of a BSAVE here, 48 % / 30 % on the CF-3300. They do
-      not come through disk.rom's hooks: BSAVE to disk runs the SUB-ROM tenant's
-      copy of the engine (step 9's note), entered through CALSLT, which returns
-      DI. ➡️ Find where the tenant's disk work starts and re-enable there, as
-      D-HOOKDI did; add `bload` / `bsave` rows to `loaddi-acceptance`.
+      not come through disk.rom's hooks: the sub-ROM tenants run the FAT engine,
+      and `bload_tenant` / `save_tenant` already `ei` for the whole verb — but
+      the engine's cross-slot `dskio_calslt` (basic/fat-prim-body.inc, the
+      sub-ROM's arm only; disk.rom's is local) returned DI from CALSLT, so from
+      the second sector on the transfer ran masked.
+      🎯 **FIX (sub page 1, 12 B):** `dskio_calslt` reads IFF2 (`ld a,i`) before
+      the call and gives the caller its `ei` back after it; a masked caller stays
+      masked. 🔮 Predicted 25–45 % kept: **BSAVE 27 %, BLOAD 45 %** (hit; the
+      CF-3300 30 / 48, [`verbclock_bldi.out`](scratchpad/verbclock_bldi.out)).
+      Gate `loaddi-acceptance` gains `bsave` (2 KB) and `bload` (4 KB — at 2 KB the
+      CF-3300 read 11 jiffies, 3 over the bar) rows
+      ([`bldi_gate.out`](scratchpad/bldi_gate.out)); 🔪
+      [`bldi_knives.out`](scratchpad/bldi_knives.out): K-BL1 (that `ei`) → bsave
+      bload, with the four earlier knives re-run.
 
 - [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
@@ -6462,7 +6472,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31603 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31618 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6628,7 +6638,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11490 (T-6FE392)8 (T-529ABE)` from `TODO.md:24281 (T-529ABE)`: a
+      `TODO.md:11500 (T-6FE392)8 (T-529ABE)` from `TODO.md:24291 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12337,7 +12347,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24281 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24291 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -28460,6 +28470,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ➡️ Build `TAPE_PROGRAM` lazily (on first use, not at import), or have
       kwtime read a snapshot of the .sym taken at the warm-up. Then put kwtime
       back in the pool without the retry hiding it.
+      🔁 **A THIRD TIME, 2026-10-10, AND IN `kwsweep` ITSELF** (D-HOOKDI's FULL
+      battery; that run's kwsweep log, overwritten since): its own
+      module-level `TAPE_PROGRAM2` died at import the same way, and the serial
+      retry turned it green. Not only kwtime's import of it — any unit that
+      builds a program at import time can lose this race.
       🤖 **AUTONOMOUS** — apparatus.
 
 - [x] ✅ **D-ASAVECHAN — `SAVE ,A` OR `BSAVE` TO DISK BESIDE AN OPEN OUTPUT CHANNEL SILENTLY

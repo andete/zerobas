@@ -115,9 +115,8 @@ Typed at the prompt, `STOP` prints a bare `Break`.
 - **`TIME`** is the documented `JIFFY` cell (`&HFC9E`), counted up by the frame
   interrupt; it stops if a program switches that interrupt off in video
   register 1. It also pauses while the disk moves a sector, on both machines;
-  until 2026-10-10 it stopped for the whole of most disk commands here
-  (D-LOADDI, D-HOOKDI, [disk](disk.md)), and it still does for `BLOAD` and
-  `BSAVE` (D-BLDI). See [`TIME`](../keywords/TIME.md).
+  until 2026-10-10 it stopped for the whole of every long disk command here
+  (D-LOADDI, D-HOOKDI, D-BLDI, [disk](disk.md)). See [`TIME`](../keywords/TIME.md).
 - **`PLAY`** puts the notes in queues and returns; the interrupt plays them.
   `PLAY(0)` is −1 while any voice is playing, `PLAY(1)`–`PLAY(3)` ask about one
   voice. The music outlives `END`, `NEW` and a trapped error; an untrapped

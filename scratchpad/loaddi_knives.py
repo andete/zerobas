@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-r"""D-LOADDI / D-HOOKDI knives: each cut must move EXACTLY its predicted row of
+r"""D-LOADDI / D-HOOKDI / D-BLDI knives: each cut must move EXACTLY its predicted row of
 probes/disk/disk_probe_loaddi.py, judged on the zerobas column against the
 uncut build's.
 
@@ -9,6 +9,7 @@ uncut build's.
   K-HD1  the `ei` after calbak's CALSLT (KILL's path)   -> kill
   K-HD2  the `ei` at hk_dpsave's entry                  -> save
   K-HD3  the `ei` at hk_dskf's entry                    -> dskf
+  K-BL1  the `ei` after dskio_calslt's CALSLT (sub-ROM) -> bsave bload
          (ctl reads TIME with no command in between: named, not missed)
 
 🔴 RESTORE ON EVERY EXIT: originals in memory, put back by try/finally AND
@@ -21,7 +22,7 @@ import knife_guard                  # D-KNIFEROM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
-ALL = {"load", "save", "kill", "dskf", "ctl"}
+ALL = {"load", "save", "kill", "dskf", "bsave", "bload", "ctl"}
 KNIVES = {
     "K-LD1": ("disk/kernel.asm",
               "                ei                          ; D-LOADDI: the hook arrives through\n",
@@ -39,6 +40,10 @@ KNIVES = {
               "                ei                          ; D-HOOKDI: the hook arrives DI (CALSLT);\n",
               "                nop                         ; K-HD3 CUT\n",
               {"dskf"}),
+    "K-BL1": ("basic/fat-prim-body.inc",
+              "                ei                          ; ...under DI: give the caller its EI back\n",
+              "                nop                         ; K-BL1 CUT\n",
+              {"bsave", "bload"}),
 }
 TMP = "/tmp/zerobas"
 PROBE = "python3 -u probes/disk/disk_probe_loaddi.py"

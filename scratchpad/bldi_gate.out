@@ -1,0 +1,10 @@
+ROW load CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 53, ZB 31)
+ROW save CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 85, ZB 55)
+ROW kill CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 16, ZB 23)
+ROW dskf CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 45, ZB 15)
+ROW bsave CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 77, ZB 58)
+ROW bload CF=[RUNS] ZB=[RUNS] SAME   (jiffies: CF 55, ZB 50)
+ROW ctl CF=[UNDER] ZB=[UNDER] SAME   (jiffies: CF 0, ZB 1)
+
+PASS: the clock runs during disk commands (7/7)
+refcache: 0 hit, 2 miss, 2 stored

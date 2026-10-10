@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BLOAD` — load a binary file into memory
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -111,6 +111,14 @@ applies it through the same code as the disk load, but no tape here holds a
 saved binary to try it on).
 
 ## What we found, and how
+
+- **The clock stopped while the disk worked** (fixed 2026-10-10, D-BLDI):
+  a long `BLOAD` from disk kept `TIME` running for none of its work here,
+  against 48 % on the CF-3300; now 45 %. After the first sector every disk transfer came back with
+  interrupts off, so keys typed meanwhile were lost too; now each one gives
+  back the state it found ([before](../../scratchpad/verbclock_run.out),
+  [after](../../scratchpad/verbclock_bldi.out)). `make loaddi-acceptance`
+  has a `bload` row.
 
 - **A named tape `BLOAD` loaded the wrong file, silently** (fixed 2026-10-08,
   D-CASBIN). It never looked at the name: with two binaries on the tape,
