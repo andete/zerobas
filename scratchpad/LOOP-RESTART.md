@@ -1,10 +1,42 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-09)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-10)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-09 EARLY MORNING (HAND-OFF) — THE CURRENT ONE. THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT).
+## 🟢 STATE AS OF 2026-10-10 EARLY MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+
+**Shipped since the 10-09 restart (`git log --oneline 753c8afc..`), every one
+FULL-green before its commit unless its message says otherwise:**
+D-READFLT · D-RECAUTO · D-AMPB · D-FILESNL · D-FILESBARE · **QUICKSTART.md** (+ the
+installed machines named *zerobas BASIC / Disk BASIC* in openMSX's menu; pushed
+on Joost's request with NO gate run, a tester waiting) · **D-BOOTSCAN** (keys were
+lost for ~5 s after power-on: C-BIOS leaves SCNCNT at $FF; reported by Joost;
+pushed from a worktree with no FULL battery, then covered by the next one) ·
+D-CALLSYSTEM · D-RESNEXTOVF (the next-statement scan read constants' value bytes
+as text) · D-READERL (the error names the DATA line; DATALINE was stale after a
+refused item) · D-DOSMODE40 (page-0 CALSLT under DOS jumped into RAM).
+🔪 Lesson filed as D-KNIFEROWS: a knife harness scored the rows a CRASHED probe
+never printed as unmoved, and I removed a load-bearing store on its word.
+
+**Walls (2026-10-10, from clean): main low 13 B, page 1 8 B; sub p0 151 B, sub p1
+195 B; disk 4109 B in 31 runs (largest hole 1128 B at $47C1).** Recount before
+quoting. 🔴 **MAIN PAGE 1 IS NEARLY EXHAUSTED: the next main-ROM item starts with
+a carve (BUDGET items; [[carve-routes-measured-shut]]).** Disk-ROM and sub-ROM
+work still has room.
+
+➡️ **NEXT, by tier (recount with `python3 tools/tier_table.py --all`):**
+- TIER 1 left: the standing bar items (D-KWPROVEN's T4 strict check — the D-ADDR29
+  work list, every slice a main-ROM write; the T6 row type; keyword completeness).
+  All need main bytes or are apparatus-scale.
+- TIER 2: LOAD's per-sector loop (D-HOOKCOUNT, line ~220); the step-10/11 apparatus.
+- TIER 3: **D-FDCDI** (keys lost during long disk work: our FDC driver holds DI
+  through each sector op — DISK ROM, has room: a good next item); D-LOADERRRET
+  (main bytes); D-COPYWILD is RULED parked.
+- TIER 4: FCB #0, the `eval` rewrite, D-BOOTKEYS, D-DIMRESERVE (main bytes).
+- Filed today, TIER 6: D-SYSBOOTERR, D-SYSLATE; APPARATUS: D-KNIFEROWS.
+
+## STATE AS OF 2026-10-09 EARLY MORNING (HAND-OFF). THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT).
 
 **Shipped since the 10-08 afternoon section (`git log --oneline fe97904c..`):**
 D-FCBHDR (OPEN writes the FCB header PEEK(VARPTR(#n)) reads, TIER 4) ·
