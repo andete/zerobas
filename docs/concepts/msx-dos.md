@@ -154,8 +154,6 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
 - **`CALL SYSTEM` after a data-disk start with the DOS disk put in later**: the
   CF-3300 restarts Disk BASIC; zerobas answers `Illegal function call`
   (D-SYSLATE).
-- **`MODE 40` at `A>`** clears the screen on the CF-3300; on zerobas the text
-  stays and the following lines start at odd columns (D-DOSMODE40).
 - **BDOS from BASIC (`&HF37D`)** answers seven functions only and is not
   measured against the CF-3300. It also uses the sector buffers BASIC's open
   files use, without saving them: the buffer audit of 2026-09-24 (TODO.md)
@@ -187,6 +185,14 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
   (2026-07-07), and `&H09` printed nothing (D-STROUT, 2026-10-02). Such cells
   are now set before the check, and `make bdos-cbios-selfcheck` runs the
   exercisers on the C-BIOS machine.
+- **`MODE 40` and `MODE 32` at `A>` did not change the screen** (fixed
+  2026-10-10, D-DOSMODE40). `COMMAND.COM` stores the new width and then asks
+  the BIOS to set the screen up again (`INITXT` / `INIT32`) through the
+  standard inter-slot call. While DOS runs, page 0 is RAM, and zerobas's
+  inter-slot call jumped to the BIOS address in that RAM instead of switching
+  the BIOS in, so only the width cell changed and the following lines came out
+  at odd columns. It now pages the BIOS in for the call; the console cells and
+  the screen after `MODE 40`, `DIR` and `MODE 32` match the CF-3300.
 - **`CALL SYSTEM` was a `Syntax error`** (fixed 2026-10-09, D-CALLSYSTEM).
   Measured first, with and without a system disk and with disks swapped
   mid-session: the CF-3300 refuses with `Illegal function call` unless DOS
@@ -245,6 +251,8 @@ evidence in [tier2-bdos-coverage.md](../../disk/docs/tier2-bdos-coverage.md).
 - `make bdos-cbios-selfcheck` — the same exercisers on zerobas's C-BIOS
   machine.
 - `make dosbasic-acceptance` — `A>BASIC`, then `SAVE`, with the DOS date.
+- `make dosmode-acceptance` — `MODE 40`, `DIR`, `MODE 32` at `A>`: the
+  console cells and the screen after each, against the CF-3300.
 - `make callsystem-acceptance` — `CALL SYSTEM` after a data-disk boot and
   after a DOS boot: the error, the warm return, a file left open, and a
   missing `COMMAND.COM`.

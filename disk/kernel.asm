@@ -2078,6 +2078,44 @@ hsy_err:
                 jp      calbak              ; raises; does not return
 hsy_name:       db      "SYSTEM"
 
+; --- calslt_body: CALSLT ($001C) while MSX-DOS runs (D-DOSMODE40; oracle: CF-3300) ---
+; A target in pages 1-3 is called where it is, as before -- the boot's targets
+; (this ROM in page 1, the page-3 work area) are mapped. A PAGE-0 target is the
+; main BIOS (COMMAND.COM's MODE: INITXT $006C / INIT32 $006F), and page 0 is DOS's
+; RAM: page the BIOS in for the call and back out after it, with conout_body's
+; pg0_mainrom_in/out (MSX2 TH: CALSLT passes AF, BC, DE, HL to the callee, so they
+; are kept across the slot switch, which clobbers A..L). Measured on the CF-3300:
+; `MODE 40` -> SCREEN 0, LINLEN 40, the screen cleared; `MODE 32` -> SCREEN 1,
+; LINLEN 32 (scratchpad/dosmode_run.out). The slot in IYh is taken to be the main
+; BIOS's -- the only page-0 code there is (a documented simplification).
+calslt_body:
+                ld      (CALSLT_HL), hl     ; the caller's HL passes through
+                push    af                  ; ... and its AF (the page test needs A)
+                push    ix
+                pop     hl
+                ld      a, h
+                cp      $40
+                jr      c, csb_p0
+                pop     af
+                ld      hl, (CALSLT_HL)
+                jp      (ix)                ; mapped: its RET returns to the caller
+csb_p0:
+                push    de
+                push    bc
+                call    pg0_mainrom_in      ; the BIOS in page 0 (clobbers A..L)
+                pop     bc
+                pop     de
+                pop     af
+                ld      hl, csb_p0_back
+                push    hl
+                ld      hl, (CALSLT_HL)
+                jp      (ix)
+csb_p0_back:
+                push    af
+                call    pg0_mainrom_out     ; DOS's RAM back in page 0
+                pop     af
+                ret
+
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
                 ds      $607B - $, $00

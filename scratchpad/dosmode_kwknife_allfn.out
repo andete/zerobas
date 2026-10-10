@@ -1,0 +1,52 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+knife: statement handlers -> stmt_error $42D1; a row still SUPPORTED is BLIND
+
+  EOF      row eof        knifed -> MISSING      LOAD-BEARING
+  LOF      row lof        knifed -> MISSING      LOAD-BEARING
+  DSKF     row dskf       knifed -> DIVERGENT    LOAD-BEARING
+  MKI$     row mki        knifed -> MISSING      LOAD-BEARING
+  CVI      row cvi        knifed -> MISSING      LOAD-BEARING
+  MKS$     row mks        knifed -> MISSING      LOAD-BEARING
+  MKD$     row mkd        knifed -> MISSING      LOAD-BEARING
+  CVS      row cvs        knifed -> MISSING      LOAD-BEARING
+  CVD      row cvd        knifed -> MISSING      LOAD-BEARING
+  PEEK     row peek       knifed -> MISSING      LOAD-BEARING
+  ELSE     row elsekw     knifed -> SUPPORTED    🔴 BLIND
+  VPEEK    row vpeek      knifed -> MISSING      LOAD-BEARING
+  INP      row inpkw      knifed -> MISSING      LOAD-BEARING
+  POS      row pos        knifed -> MISSING      LOAD-BEARING
+  LPOS     row lposkw     knifed -> MISSING      LOAD-BEARING
+  LEN      row len        knifed -> MISSING      LOAD-BEARING
+  LEFT$    row left       knifed -> MISSING      LOAD-BEARING
+  RIGHT$   row right      knifed -> MISSING      LOAD-BEARING
+  MID$     row mid        knifed -> MISSING      LOAD-BEARING
+  STR$     row str        knifed -> MISSING      LOAD-BEARING
+  VAL      row valkw      knifed -> MISSING      LOAD-BEARING
+  ASC      row asc        knifed -> MISSING      LOAD-BEARING
+  CHR$     row chr        knifed -> MISSING      LOAD-BEARING
+  HEX$     row hex        knifed -> MISSING      LOAD-BEARING
+  OCT$     row oct        knifed -> MISSING      LOAD-BEARING
+  BIN$     row bin        knifed -> MISSING      LOAD-BEARING
+  FRE      row fre        knifed -> MISSING      LOAD-BEARING
+  SPACE$   row space      knifed -> MISSING      LOAD-BEARING
+  ABS      row abs        knifed -> MISSING      LOAD-BEARING
+  SGN      row sgn        knifed -> MISSING      LOAD-BEARING
+  INT      row int        knifed -> MISSING      LOAD-BEARING
+  FIX      row fix        knifed -> MISSING      LOAD-BEARING
+  CINT     row cint       knifed -> MISSING      LOAD-BEARING
+  CSNG     row csng       knifed -> MISSING      LOAD-BEARING
+  CDBL     row cdbl       knifed -> MISSING      LOAD-BEARING
+  SQR      row sqr        knifed -> MISSING      LOAD-BEARING
+  ATN      row atn        knifed -> MISSING      LOAD-BEARING
+  EXP      row exp        knifed -> MISSING      LOAD-BEARING
+  LOG      row log        knifed -> MISSING      LOAD-BEARING
+  SIN      row sin        knifed -> MISSING      LOAD-BEARING
+  COS      row cos        knifed -> MISSING      LOAD-BEARING
+  TAN      row tan        knifed -> MISSING      LOAD-BEARING
+  RND      row rnd        knifed -> MISSING      LOAD-BEARING
+  STICK    row stick      knifed -> MISSING      LOAD-BEARING
+  STRIG    row strig_hold knifed -> MISSING      LOAD-BEARING
+  PDL      row pdlkw      knifed -> DIVERGENT    LOAD-BEARING
+  PAD      row padkw      knifed -> SUPPORTED    🔴 BLIND
+  LOC      row loc        knifed -> DIVERGENT    LOAD-BEARING
+  INPUT$   row inputdol_b knifed -> MISSING      LOAD-BEARING

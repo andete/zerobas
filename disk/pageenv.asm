@@ -94,14 +94,15 @@ wrslt_h:
 ; ROM / page-3 work area), so this calls IX directly while passing A,BC,DE,HL
 ; through untouched. Stashes HL only to build the return address, then reloads it
 ; before the jump so the callee sees the caller's HL. (Deepened in a3 if needed.)
+; 🔴 D-DOSMODE40 (2026-10-10): A PAGE-0 TARGET IS NOT MAPPED -- page 0 is DOS's RAM.
+; COMMAND.COM's `MODE 40` calls INITXT ($006C, slot 0) through here, and the bare
+; `jp (ix)` this was ran DOS's RAM at $006C instead: LINL40 changed, the screen did
+; not (scratchpad/dosmode_run.out, dosmode_trace.out). The body moved to the fill
+; above `ds $5FE5` (calslt_body, kernel.asm); this slot keeps its 13 bytes so dskio
+; stays at its canonical offset.
 calslt_h:
-                ld      (CALSLT_HL), hl ; stash HL to free a pair for the return push
-                ld      hl, calslt_back
-                push    hl              ; return address for the simulated call
-                ld      hl, (CALSLT_HL) ; restore caller HL (pass-through intact)
-                jp      (ix)            ; "call" IX; its RET lands on calslt_back
-calslt_back:
-                ret
+                jp      calslt_body
+                ds      10, $00         ; net-zero: the old body's 13 bytes
 
 ; enaslt_h ($0024 ENASLT) — enable slot (A = slot id Fx00SSPP) in the page of HL.
 ; Real primary-slot switch: derive the page from HL bits 15-14 and write the

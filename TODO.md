@@ -6348,7 +6348,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31274 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31291 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -29831,7 +29831,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`callsystem_peek.out`](scratchpad/callsystem_peek.out)); find its rule
       (work-area cells after each boot) before changing ours.
 
-- [ ] 🔴 **`MODE 40` IN MSX-DOS DOES NOT CLEAR THE SCREEN HERE, AND THE LINES AFTER IT
+- [x] ✅ **FIXED 2026-10-10 (D-DOSMODE40)** — 🔴 **`MODE 40` IN MSX-DOS DOES NOT CLEAR THE SCREEN HERE, AND THE LINES AFTER IT
       ARE INDENTED (D-DOSMODE40, found 2026-10-09 by D-CALLSYSTEM's probe).**
       🎚️ TIER 1 (latent) — `MODE 40` at the `A>` prompt
       🤖 **AUTONOMOUS** — measure first (the console cells after `MODE 40`).
@@ -29841,6 +29841,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `dosfile`). After a cold DOS boot (SCREEN 1) `MODE 40` left zerobas out of
       the text mode the probe reads ([`callsystem_dos.out`](scratchpad/callsystem_dos.out)
       `dosboot`). MSX-DOS-side, not CALL SYSTEM: the gate avoids `MODE`.
+      ✅ **FIXED 2026-10-10.** Measured ([`dosmode_probe.py`](scratchpad/dosmode_probe.py)
+      → [`dosmode_run.out`](scratchpad/dosmode_run.out)): the CF-3300 boots DOS in
+      SCREEN 1 (LINLEN 29); `MODE 40` → SCREEN 0, LINLEN 40, the screen cleared;
+      `MODE 32` → SCREEN 1, LINLEN 32 — zerobas changed only LINL40 / LINL32 (both
+      predicted). A breakpoint at the documented CALSLT entry ($001C, registers
+      only) showed `MODE 40` making one CALSLT to INITXT ($006C, slot 0), reaching
+      our own `calslt_h` — which ignored the slot and `jp (ix)`'d into DOS's RAM
+      at $006C ("Deepened in a3 if needed"). Fix: `calslt_h` is now a jump (its
+      13 bytes kept: dskio's canonical offset) to `calslt_body` in the fill above
+      `ds $5FE5`: a page-0 target is called with the BIOS paged in
+      (pg0_mainrom_in/out, AF/BC/DE/HL kept across the switch); others as before.
+      After: every cell and the whole screen at all six snapshots identical to the
+      CF-3300 ([`dosmode_after.out`](scratchpad/dosmode_after.out)). Gate
+      `dosmode-acceptance` ([`disk_probe_dosmode.py`](probes/disk/disk_probe_dosmode.py),
+      [`dosmode_gate.out`](scratchpad/dosmode_gate.out)): 6/6. 🔪
+      [`dosmode_knives.out`](scratchpad/dosmode_knives.out): K-DM1 (the page-0
+      branch) → mode40, dir, mode32, dir32 — exactly.
 
 - [ ] 🔴 **A KNIFE HARNESS SCORES THE ROWS A CRASHED PROBE NEVER PRINTED AS UNMOVED
       (D-KNIFEROWS, found 2026-10-09 by D-CALLSYSTEM's K-CS4).**

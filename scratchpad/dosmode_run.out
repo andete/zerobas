@@ -1,0 +1,93 @@
+===== National_CF-3300
+  [boot] SCRMOD=1 LINL40=39 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=8 CSRX=17 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+  [date] SCRMOD=1 LINL40=39 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=10 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>
+  [mode40] SCRMOD=0 LINL40=40 LINL32=29 LINLEN=40 CRTCNT=24 CSRY=2 CSRX=3 CNSDFG=0 W=40
+      |A>
+  [dir] SCRMOD=0 LINL40=40 LINL32=29 LINLEN=40 CRTCNT=24 CSRY=5 CSRX=3 CNSDFG=0 W=40
+      |A>DIR MSXDOS.SYS
+      |MSXDOS   SYS    2432 02-10-16  8:01p
+      |       1 file   375808 bytes free
+      |A>
+  [mode32] SCRMOD=1 LINL40=40 LINL32=32 LINLEN=32 CRTCNT=24 CSRY=2 CSRX=3 CNSDFG=0 W=32
+      |A>
+  [dir32] SCRMOD=1 LINL40=40 LINL32=32 LINLEN=32 CRTCNT=24 CSRY=6 CSRX=3 CNSDFG=0 W=32
+      |A>DIR MSXDOS.SYS
+      |MSXDOS   SYS    2432 02-10-16
+      |       1 file
+      |  375808 bytes free
+      |A>
+===== C-BIOS_MSX1_EU_REPACK_DISK
+  [boot] SCRMOD=1 LINL40=39 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=8 CSRX=17 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+  [date] SCRMOD=1 LINL40=39 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=10 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>
+  [mode40] SCRMOD=1 LINL40=40 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=12 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>MODE 40
+      |  A>
+  [dir] SCRMOD=1 LINL40=40 LINL32=29 LINLEN=29 CRTCNT=24 CSRY=16 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>MODE 40
+      |  A>DIR MSXDOS.SYS
+      |  MSXDOS   SYS    2432 02-10-16
+      |         1 file
+      |    375808 bytes free
+      |  A>
+  [mode32] SCRMOD=1 LINL40=40 LINL32=32 LINLEN=29 CRTCNT=24 CSRY=18 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>MODE 40
+      |  A>DIR MSXDOS.SYS
+      |  MSXDOS   SYS    2432 02-10-16
+      |         1 file
+      |    375808 bytes free
+      |  A>MODE 32
+      |  A>
+  [dir32] SCRMOD=1 LINL40=40 LINL32=32 LINLEN=29 CRTCNT=24 CSRY=22 CSRX=3 CNSDFG=0 W=32
+      |  MSX-DOS version 1.03
+      |  Copyright 1984 by Microsoft
+      |  COMMAND version 1.08
+      |  Current date is Sun 84-01-01
+      |  Enter new date:
+      |  A>MODE 40
+      |  A>DIR MSXDOS.SYS
+      |  MSXDOS   SYS    2432 02-10-16
+      |         1 file
+      |    375808 bytes free
+      |  A>MODE 32
+      |  A>DIR MSXDOS.SYS
+      |  MSXDOS   SYS    2432 02-10-16
+      |         1 file
+      |    375808 bytes free
+      |  A>

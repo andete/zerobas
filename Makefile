@@ -2323,6 +2323,12 @@ resnext-acceptance: repack-machine
 readerl-acceptance: repack-machine
 	python3 probes/basic/basic_probe_readerl.py
 
+# --- dosmode-acceptance: MODE 40 / MODE 32 at MSX-DOS's A> (D-DOSMODE40) ----
+# COMMAND.COM calls INITXT/INIT32 through CALSLT; page 0 is DOS's RAM, so the
+# call must page the BIOS in. Uses the BDOS gates' MSX-DOS disk.
+dosmode-acceptance: repack-machine
+	python3 probes/disk/disk_probe_dosmode.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

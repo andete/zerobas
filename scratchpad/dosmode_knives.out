@@ -1,0 +1,4 @@
+  ROM 277fc13f 6b43f352 166455f2 a49a4fdb  ->  277fc13f 6b43f352 84c36492 a49a4fdb
+PASS  K-DM1: moved ['dir', 'dir32', 'mode32', 'mode40'] (want exactly ['dir', 'dir32', 'mode32', 'mode40'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
