@@ -19,21 +19,26 @@ refused item) · D-DOSMODE40 (page-0 CALSLT under DOS jumped into RAM).
 🔪 Lesson filed as D-KNIFEROWS: a knife harness scored the rows a CRASHED probe
 never printed as unmoved, and I removed a load-bearing store on its word.
 
-**Walls (2026-10-10, from clean): main low 13 B, page 1 8 B; sub p0 151 B, sub p1
-195 B; disk 4109 B in 31 runs (largest hole 1128 B at $47C1).** Recount before
-quoting. 🔴 **MAIN PAGE 1 IS NEARLY EXHAUSTED: the next main-ROM item starts with
-a carve (BUDGET items; [[carve-routes-measured-shut]]).** Disk-ROM and sub-ROM
-work still has room.
+**Later the same day (10-10 morning):** D-FDCDI re-measured (the lever is the
+SECTOR-COMMAND COUNT — 64 vs the CF-3300's 32 — i.e. the write cache, TIER 5; a
+same-track-seek skip moved nothing and was reverted) · two CARVES: six `jp`→`jr`
+(+6 B) and two open-coded `var_alloc_or_find` bodies (+30 B) · **D-BOOTKEYS:
+measured, and SHIFT shipped** (disk ROM stays out; CTRL waits on D-DSKIB).
+
+**Walls (2026-10-10 ~09:00, from clean): main low 13 B, page 1 44 B; sub p0 151 B,
+sub p1 195 B; disk 4089 B.** Recount before quoting. The jp/jr route is spent until
+code moves; `ngram_sweep.py --main`'s next candidates are 8 B and below.
 
 ➡️ **NEXT, by tier (recount with `python3 tools/tier_table.py --all`):**
 - TIER 1 left: the standing bar items (D-KWPROVEN's T4 strict check — the D-ADDR29
   work list, every slice a main-ROM write; the T6 row type; keyword completeness).
   All need main bytes or are apparatus-scale.
 - TIER 2: LOAD's per-sector loop (D-HOOKCOUNT, line ~220); the step-10/11 apparatus.
-- TIER 3: **D-FDCDI** (keys lost during long disk work: our FDC driver holds DI
-  through each sector op — DISK ROM, has room: a good next item); D-LOADERRRET
-  (main bytes); D-COPYWILD is RULED parked.
-- TIER 4: FCB #0, the `eval` rewrite, D-BOOTKEYS, D-DIMRESERVE (main bytes).
+- TIER 3: D-FDCDI now rides on the write cache (TIER 5); D-LOADERRRET (main
+  bytes); D-COPYWILD is RULED parked.
+- TIER 4: **FCB #0** (ruled "build it"; D-FCBSHAPE's spec §6–7; re-pins every FRE
+  baseline — the next slice), the `eval` rewrite / D-DIMRESERVE (most-shared
+  code), D-BOOTKEYS' CTRL (after D-DSKIB).
 - Filed today, TIER 6: D-SYSBOOTERR, D-SYSLATE; APPARATUS: D-KNIFEROWS.
 
 ## STATE AS OF 2026-10-09 EARLY MORNING (HAND-OFF). THE 2026-09-24 SECTION BELOW STILL HOLDS JOOST'S RULINGS TABLE (READ IT).
