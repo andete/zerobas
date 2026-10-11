@@ -42,7 +42,7 @@ PREREQUISITES.
     default ~/Documents/msx/msx/disks/test.dsk (see msxdos-oracle-disk).
 
     python3 probes/disk/disk_probe_lstout_cbios.py
-    python3 probes/disk/disk_probe_lstout_cbios.py --machine C-BIOS_MSX1_JP_BASIC_DISK
+    python3 probes/disk/disk_probe_lstout_cbios.py --machine C-BIOS_MSX1_EU_BASIC_DISK
 """
 from __future__ import annotations
 

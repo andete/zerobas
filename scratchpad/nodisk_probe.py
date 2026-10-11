@@ -12,7 +12,8 @@ tokenises the verb and then raises `Illegal function call`. zerobas implements
 every disk verb BASIC-side, so a diskless zerobas should ANSWER where the
 reference refuses.
 
-This probe boots `ZB_REPACK_NODISK` -- the shipped repack machine with the
+This probe boots `C-BIOS_MSX1_EU_REPACK_NODISK` (2026-10-11; it was the
+retired `ZB_REPACK_NODISK`) -- the shipped repack machine with the
 disk.rom slot removed and nothing else changed -- and asks. The VG-8020 is the
 oracle: it is exactly the configuration under test (an MSX1 with no disk ROM).
 
@@ -28,7 +29,7 @@ import omsx_repl                                                  # noqa: E402
 SIDES = {
     "vg8020":   ("Philips_VG_8020", 8.0, ("NEW",)),           # the ORACLE
     "zb-disk":  ("C-BIOS_MSX1_EU_REPACK_DISK", 8.0, ("NEW",)),
-    "zb-nodisk": ("ZB_REPACK_NODISK", 8.0, ("NEW",)),
+    "zb-nodisk": ("C-BIOS_MSX1_EU_REPACK_NODISK", 8.0, ("NEW",)),
 }
 
 CASES = [

@@ -1,4 +1,4 @@
-/private/tmp/claude-501/-Users-joost-projects-zerobas/7a73d35b-d2cc-4d27-94b6-763e774091f8/scratchpad/orig.py:18: FutureWarning: Possible nested set at position 1
+<session scratchpad>/orig.py:18: FutureWarning: Possible nested set at position 1
   print(f"{tag:22} fences={re.findall(r'[[]([^]]*)[]]', cap)}")
 cap_gap-only           fences=[]
 run_gap-60             fences=['alpha', 'DONE']

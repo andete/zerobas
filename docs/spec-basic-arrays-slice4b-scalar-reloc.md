@@ -65,7 +65,8 @@ simpler"** slice — but **not** a low-value one.
 
 **Charter note (2026-07-17):** zerobas's BASIC is now on the **faithful full MSX1
 BASIC** charter, no longer game-loader-scoped
-([`charter-faithful-full-msx1-basic`](../../.claude/projects/-Users-joost-projects-zerobas/memory/charter-faithful-full-msx1-basic.md)).
+(the maintainer's working note `charter-faithful-full-msx1-basic`, not in the repo;
+[MISSION.md](../MISSION.md) states the charter).
 Under that charter the real MSX contiguous variable model *is the deliverable*, so the
 earlier "the loader never exhausts the pool, so maybe skip it" framing is **retired**.
 Scalar relocation is in scope; the only open decisions are staging and mechanism, not

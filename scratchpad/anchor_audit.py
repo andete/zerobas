@@ -1,4 +1,4 @@
-import re, subprocess, json, sys
+import os, re, subprocess, json, sys
 
 TARGETS = ['basic/interp.asm','basic/kwtable.inc','basic/sysvars.inc',
            'basic/usr.asm','sub/deftype.asm']
@@ -80,4 +80,4 @@ print("  content deleted since the citation was written                        :
 print("  undecidable (blank/ambiguous/absent)                                  : %d" % UNDECIDABLE)
 print("  cited line unchanged since the citing commit (false positive earlier)  : %d"
       % sum(1 for r in rows if r[4]=='STILL-OK'))
-json.dump(rows, open('/tmp/claude-501/-Users-joost-projects-zerobas/caf279e5-e405-446f-b919-bce8acf752f8/scratchpad/anchor_rows.json','w'))
+json.dump(rows, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'anchor_rows.json'), 'w'))  # was a session temp path (session-path-check)

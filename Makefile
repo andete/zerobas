@@ -1071,6 +1071,12 @@ battery-membership-check:
 # --- hostkill-check: no battery unit kills what it did not start (D-PKILLGATE) --
 # 🔴 2026-09-30: a gate built from a scratchpad rig ran `pkill -9 openmsx` and
 # killed the pool's other emulators; kwtime read 32-51 rows HANG two units away.
+# --- session-path-check: no tracked file points into an assistant session's
+# private space -- zerobas is PUBLIC; four such paths were found 2026-10-11.
+session-path-check:
+	python3 tools/check_session_paths.py --selftest
+	python3 tools/check_session_paths.py
+
 hostkill-check:
 	python3 tools/check_no_hostkill.py --selftest
 	python3 tools/check_no_hostkill.py

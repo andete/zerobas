@@ -431,7 +431,7 @@ reaches it — which is why 52 comes from the `ERROR n` map rather than from `ER
   flush-and-re-read is a change to `basic/files.asm` of unknown size, against a
   low region with **9 B free** and page 1 with **6 B free**. Any estimate here
   would be a risk assessment written from reading code — a hypothesis, not a
-  measurement ([`arrdim-c-slice`](../../.claude/projects/-Users-joost-projects-zerobas/memory/arrdim-c-slice.md)).
+  measurement (the maintainer's working note `arrdim-c-slice`, not in the repo).
   It must be built to be known.
 * ⚠️ Freeing page-3 RAM does **not** by itself return program space. `TXTMAX`
   rises only if a page-2 buffer *moves* into the freed page-3 window:
