@@ -109,9 +109,9 @@ ary_engine:
                 or      a
                 jr      z,aeng_resolve
                 cp      1
-                jp      z,aeng_dim
+                jr      z,aeng_dim
                 cp      2
-                jp      z,aeng_erase
+                jr      z,aeng_erase
                 cp      3
                 jp      z,aeng_copy_str
                 cp      4
@@ -1221,7 +1221,7 @@ aal_ceil_try:
                 sbc     hl,de               ; HL = candidate_end - ceiling
                 jr      c,aal_ceil_fits     ; candidate_end < ceiling -> fits
     IF CLEARPOOL
-                jp      aal_oom_pop1
+                jr      aal_oom_pop1
     ELSE
                 ld      a,(iy+9)
                 or      a
@@ -1485,7 +1485,7 @@ aryr_lp:
                                             ; math below is untouched
                 ld      a,d
                 and     $80
-                jp      nz,aryr_neg         ; no outstanding push here
+                jr      nz,aryr_neg         ; no outstanding push here
                 ld      c,(hl)              ; bound_k low
                 inc     hl
                 ld      b,(hl)              ; bound_k high
@@ -1498,10 +1498,10 @@ aryr_lp:
                 jr      c,aryr_inrange
                 ld      a,e
                 cp      c
-                jp      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
+                jr      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
                 ld      a,d
                 cp      b
-                jp      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
+                jr      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
 aryr_inrange:
                 inc     bc                  ; BC = bound_k+1
                 push    bc                  ; [BND1] bound_k+1 (stack: BND1,BND)

@@ -123,7 +123,10 @@ been measured.
 
 `LIST` walks the lines in order and prints each one's number, a blank, and its
 text: tokens become their keywords (in upper case), constants are printed in
-decimal (`&H` and `&O` ones in their own base), `:` + `REM` + `$E6` comes back
+decimal (`&H` and `&O` ones in their own base; a `$1D` / `$1F` one the way
+`PRINT` shows it, without the leading blank, then `#` for a double and `!` for
+a single that would otherwise read back as an integer, and no mark in `E`
+form), `:` + `REM` + `$E6` comes back
 as `'` and `:` + `$A1` as `ELSE`. Everything stored as text — names, strings,
 comments, the blanks you typed — comes back as stored. `LLIST` and an ASCII
 `SAVE "…",A` produce the same text. A line read from an ASCII file by `LOAD`
@@ -190,6 +193,10 @@ nothing and reports nothing), and the `$0D` form above.
   Walking all 162 reserved words on both references found fourteen that store
   a `$0E` reference, not the six zerobas had. One was a live defect:
   `IF 0 THEN 20 ELSE 30` was `Syntax error` here.
+- **Fractional and large constants listed as garbage** (fixed 2026-10-11,
+  D-LISTFLT; reported by Vampier): the listing had no rule for the `$1D` /
+  `$1F` constants and printed their stored bytes, so an ASCII save of such a
+  program was garbage too. The spelling rule was measured on the VG-8020.
 - **zerobas printed its prompt after every stored line**, so typing a program
   scrolled the screen twice as fast. The reference prompts only after a command
   or an error (D-OKSTORE, 2026-09-24).
@@ -244,6 +251,8 @@ the token specs [spec-tokenise.md](../../basic/docs/spec-tokenise.md) and
   reserved words; on the VG-8020, the CF-3300 and zerobas.
 - `make lnblank-say-acceptance` — the effect on `LIST`, `.` and the error code.
 - `make linemax-acceptance` — the 254-character and 314-byte limits.
+- `make listflt-acceptance` — how `$1D` / `$1F` constants are listed and
+  survive an ASCII save.
 - `make editverb-acceptance` — `RENUM`, `AUTO` and `LLIST`.
 - `make txtceil-acceptance` — a program never outgrows its memory.
 - `make kwsweep` — the crunched bytes of the keyword rows it carries.

@@ -95,7 +95,7 @@ tk_namedig:
                 ld      (de),a
                 inc     de
                 inc     hl
-                jp      tk_loop
+                jr      tk_loop
 tk_nondigit:
                 cp      '.'
                 jr      nz,tk_nondot
@@ -140,7 +140,7 @@ tk_nondigit:
                 ; digit run behind it is its OWN line-number reference.
                 ld      a,(TKLNUM)
                 or      a
-                jp      nz,tk_copy
+                jr      nz,tk_copy
                 jp      tk_float            ; R-D2: no digit required (sub/tkfloat.asm)
 tk_nondot:
                 cp      '&'                 ; "&H" hex constant
@@ -174,7 +174,7 @@ tk_nondot:
                 jp      z,tk_call_name      ; (oracle: `call format` keeps "FORMAT", not
                                             ;  FOR+MAT — the extended name is not crunched)
                 call    branch_lineno       ; GOTO/GOSUB/THEN/… <n> -> $0E,<n LE>
-                jp      tk_loop
+                jr      tk_loop
 tk_notkw:
                 ld      a,(hl)              ; not a keyword
                 cp      '='
@@ -200,7 +200,7 @@ tk_notkw:
                 cp      '?'                 ; '?' abbreviates PRINT
                 jp      z,tk_print_q
                 cp      '_'                 ; '_' abbreviates CALL: the name is verbatim
-                jp      z,tk_underscore
+                jr      z,tk_underscore
                 call    is_letter           ; a letter starts / continues a name
                 jr      c,tk_copy_up
 tk_copy:
@@ -251,7 +251,7 @@ tk_copy_up:
 tk_blank:                                   ; a blank: the name survives it (R-N1),
                 ld      a,b                 ; and the blank itself is still copied
                 ld      (TKNAME),a          ; verbatim -- `20 A= 1` keeps its blank
-                jp      tk_copy             ; AND still crunches the 1 (nam-eqnum)
+                jr      tk_copy             ; AND still crunches the 1 (nam-eqnum)
 tk_string:
                 ld      a,(hl)              ; opening quote
                 ld      (de),a
@@ -299,7 +299,7 @@ tk_data_rest:                               ; DATA body verbatim up to ':' or EO
 tkd_lp:
                 ld      a,(hl)              ; (oracle: items stored as ASCII text)
                 or      a
-                jp      z,tk_end
+                jr      z,tk_end
                 cp      '"'
                 jr      nz,tkd_nq
                 ld      a,c                 ; toggle quote mode; the quote itself

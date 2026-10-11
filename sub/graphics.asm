@@ -343,7 +343,7 @@ gfx_rmw_at_mc:
                 and     c                   ; ...keep only ours
                 or      b                   ; ...merge with the preserved half
                 ld      c,a
-                jp      gfx_wr_raw          ; tail: HL = addr, C = the new byte
+                jr      gfx_wr_raw          ; tail: HL = addr, C = the new byte
 
 ; ===========================================================================
 ; gfx_point_mc -- read one MC cell's colour. in: D=y, E=x. out: A = 0..15.
@@ -440,7 +440,7 @@ gfx_plot:
                 ld      e,a
                 ld      a,(GYPOS)
                 ld      d,a
-                jp      gfx_rmw_at_mc       ; tail: publishes CLOC/CMASK itself
+                jr      gfx_rmw_at_mc       ; tail: publishes CLOC/CMASK itself
 gp_g2:
                 ld      a,(GXPOS)           ; x (low byte; 0..255 guaranteed in-range)
                 ld      e,a
@@ -2969,7 +2969,7 @@ gfx_draw_op:
                 ei                          ; interrupts LIVE for the whole draw (arc D1)
                 ld      a,(GFX_DRESUME)
                 or      a
-                jp      nz,gdo_resume
+                jr      nz,gdo_resume
                 ; --- fresh entry: frame 0 = a COPY of the DRAW string ---
                 xor     a
                 ld      (GFX_RES),a         ; 0 = ok until something raises
@@ -2979,7 +2979,7 @@ gfx_draw_op:
                 ld      hl,GFX_DBUF
                 ld      (GFX_DFREE),hl
                 call    gdrw_pushframe      ; (GFX_DVAL,GFX_DVLEN) -> a new frame
-                jp      gdo_loop
+                jr      gdo_loop
 
                 ; --- re-entry after the resident resolved one substitution ---
                 ; The cursor was rewound to this command's start, so banking the
@@ -3003,7 +3003,7 @@ gdo_resume:
                 ld      a,(GFX_DSUBN)
                 inc     a
                 ld      (GFX_DSUBN),a
-                jp      gdo_loop_cmd        ; cursor is already at the command start
+                jr      gdo_loop_cmd        ; cursor is already at the command start
 
 gdo_loop:
                 xor     a
@@ -3136,7 +3136,7 @@ gdo_dir:
 ; of consuming at most one here and letting the next dispatch reject the rest.
 gdo_next:
                 call    gdrw_peek     
-                jp      c,gdo_frame_end
+                jr      c,gdo_frame_end
                 call    gdrw_peek
                 cp      ';'
                 jp      nz,gdo_loop
@@ -3199,7 +3199,7 @@ gdo_x_have:
                 ld      a,(GFX_DSUBLEN)
                 ld      (GFX_DVLEN),a
                 or      a
-                jp      z,gdo_next          ; empty string -> nothing to execute
+                jr      z,gdo_next          ; empty string -> nothing to execute
                 call    gdrw_pushframe
                 jp      gdo_loop
 
@@ -3280,7 +3280,7 @@ gss_lp:
                 inc     de
                 call    gdrw_bump
                 djnz    gss_lp
-                jp      gdrw_err5           ; longer than the expression scratch
+                jr      gdrw_err5           ; longer than the expression scratch
 gss_end:
                 call    gdrw_bump           ; consume the ';'
                 xor     a
@@ -3325,7 +3325,7 @@ gdo_m:
                 ld      (GFX_DTY),hl
                 pop     af
                 or      a
-                jp      z,gdo_m_abs         ; no sign on operand 1 -> absolute move
+                jr      z,gdo_m_abs         ; no sign on operand 1 -> absolute move
                 ; --- relative: both operands are scaled AND rotated ---
                 ld      hl,(GFX_DTX)
                 ld      (GFX_DARG),hl
@@ -3379,7 +3379,7 @@ gdrw_axis:
                 ld      hl,(GFX_DARG)
                 inc     a
                 ret     nz                  ; sign was +1 (A was $FF+1=0 only for -1)
-                jp      gdrw_negate_hl      ; sign -1 -> HL = -distance
+                jr      gdrw_negate_hl      ; sign -1 -> HL = -distance
 
 ; ---------------------------------------------------------------------------
 ; gdrw_rotate -- apply the persistent angle to (GFX_DDX,GFX_DDY). One 90-degree
@@ -3894,7 +3894,7 @@ gsw_put:
                 pop     bc                  ; [entry size]
                 pop     hl                  ; [entry address]
                 ld      de,GFX_VBUF
-                jp      gvw_body            ; B = the entry size
+                jr      gvw_body            ; B = the entry size
 
 ; --- gfx_spr_rpat: GFX_OP = 8, A$ = SPRITE$(n) -----------------------------
 ; Always hands back EXACTLY the entry size (8 or 32) -- never the length that was
@@ -3905,7 +3905,7 @@ gfx_spr_rpat:
                 ld      a,b
                 ld      (GFX_VLEN),a
                 ld      de,GFX_VBUF
-                jp      gvr_body
+                jr      gvr_body
 
 ; --- gfx_spr_attr: GFX_OP = 9, PUT SPRITE ----------------------------------
 ; A read-modify-write of the 4-byte entry [y][x][pattern][colour], because every
@@ -4086,7 +4086,7 @@ gfx_vdp_wr:
                 jr      nz,g8_err5          ; value outside 0..255 -> ERR 5
                 ld      c,l                 ; C = register number
                 ld      a,e                 ; A = value
-                jp      g8_wrvdp
+                jr      g8_wrvdp
 
 g8_err5:
                 ld      a,5                 ; Illegal function call

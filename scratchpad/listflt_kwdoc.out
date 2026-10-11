@@ -1,0 +1,9 @@
+=== LIST: PASS
+=== SAVE: PASS
+
+PASS 2
+refcache: 0 hit, 4 miss, 4 stored
+=== program-text: PASS
+
+PASS 1
+refcache: 0 hit, 2 miss, 2 stored

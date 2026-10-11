@@ -1,0 +1,75 @@
+baseline sub page 0 free: 137 B; 20 sub-only page-0 files
+converted 273 candidate(s)
+kept 71, reverted 202 out of range; sub page 0 free 137 -> 206 B (+69)
+  basic/detok.inc:41  jp      z,dt_colon
+  basic/detok.inc:45  jp      z,dt_rem
+  basic/pu-render.inc:53  jp      z,ptf_num
+  basic/pu-render.inc:67  jp      z,ptf_num
+  basic/tokenise.inc:98  jp      tk_loop
+  basic/tokenise.inc:143  jp      nz,tk_copy
+  basic/tokenise.inc:177  jp      tk_loop
+  basic/tokenise.inc:203  jp      z,tk_underscore
+  basic/tokenise.inc:254  jp      tk_copy             ; AND still crunches the 1 (nam-eqnum)
+  basic/tokenise.inc:302  jp      z,tk_end
+  sub/arrays.asm:112  jp      z,aeng_dim
+  sub/arrays.asm:114  jp      z,aeng_erase
+  sub/arrays.asm:781  jp      nz,scv_oom          ; already retried once -> genuine OOM
+  sub/arrays.asm:1224  jp      aal_oom_pop1
+  sub/arrays.asm:1228  jp      nz,aal_oom_pop1     ; already retried once -> genuine OOM
+  sub/arrays.asm:1488  jp      nz,aryr_neg         ; no outstanding push here
+  sub/arrays.asm:1501  jp      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
+  sub/arrays.asm:1504  jp      nz,aryr_oob         ; [BND] outstanding — aryr_oob pops it
+  sub/deffn.asm:74  jp      z,dfn_start         ; nothing asked yet: a fresh call
+  sub/deffn.asm:80  jp      dfn_actual
+  sub/deffn.asm:158  jp      dfn_req
+  sub/deffn.asm:260  jp      nz,dfn_err2
+  sub/deffn.asm:269  jp      nz,dfn_err2
+  sub/deffn.asm:291  jp      dfn_req
+  sub/deffn.asm:303  jp      nz,dfn_err13        ; `DEF FNA(X)=A$` -- a string body in a
+  sub/deffn.asm:323  jp      dfn_req
+  sub/deffn.asm:326  jp      nz,dfn_err13        ; a `$` function whose body is not a
+  sub/deffn.asm:342  jp      dfn_raise
+  sub/deffn.asm:345  jp      dfn_raise
+  sub/deffn.asm:348  jp      dfn_raise
+  sub/deftype.asm:110  jp      edt_fail
+  sub/deftype.asm:168  jp      z,edt_ok
+  sub/deftype.asm:170  jp      z,edt_ok
+  sub/deftype.asm:171  jp      edt_fail            ; junk glued to the item -> ERR 2
+  sub/detok.asm:99  jp      dtk_end             ; line is the next window's
+  sub/graphics.asm:346  jp      gfx_wr_raw          ; tail: HL = addr, C = the new byte
+  sub/graphics.asm:443  jp      gfx_rmw_at_mc       ; tail: publishes CLOC/CMASK itself
+  sub/graphics.asm:2972  jp      nz,gdo_resume
+  sub/graphics.asm:2982  jp      gdo_loop
+  sub/graphics.asm:3006  jp      gdo_loop_cmd        ; cursor is already at the command start
+  sub/graphics.asm:3139  jp      c,gdo_frame_end
+  sub/graphics.asm:3202  jp      z,gdo_next          ; empty string -> nothing to execute
+  sub/graphics.asm:3283  jp      gdrw_err5           ; longer than the expression scratch
+  sub/graphics.asm:3328  jp      z,gdo_m_abs         ; no sign on operand 1 -> absolute move
+  sub/graphics.asm:3382  jp      gdrw_negate_hl      ; sign -1 -> HL = -distance
+  sub/graphics.asm:3897  jp      gvw_body            ; B = the entry size
+  sub/graphics.asm:3908  jp      gvr_body
+  sub/graphics.asm:4089  jp      g8_wrvdp
+  sub/strheap.asm:272  jp      nc,she_snapshot     ; not a temp -> the real snapshot
+  sub/strheap.asm:886  jp      c,gc_nobuf
+  sub/strheap.asm:892  jp      c,gc_nobuf          ; SP below end+margin -> no room
+  sub/strheap.asm:936  jp      nc,sg_sweep         ; P >= BASE -> more elements
+  sub/tkfloat.asm:84  jp      nz,tkf_check_percent
+  sub/tkfloat.asm:86  jp      nz,tkf_double
+  sub/tkfloat.asm:88  jp      nz,tkf_double
+  sub/tkfloat.asm:90  jp      nz,tkf_single
+  sub/tkfloat.asm:92  jp      nz,tkf_bydcount
+  sub/tkfloat.asm:94  jp      nz,tkf_bydcount
+  sub/tkfloat.asm:98  jp      c,tkf_go_int        ; D<=4 -> always int
+  sub/tkfloat.asm:99  jp      nz,tkf_bydcount     ; D>5 -> not int-eligible
+  sub/tkfloat.asm:101  jp      c,tkf_go_int
+  sub/tkfloat.asm:102  jp      tkf_bydcount
+  sub/tkfloat.asm:137  jp      c,tkf_go_int
+  sub/tkfloat.asm:138  jp      nz,tkf_overflow
+  sub/tkfloat.asm:140  jp      c,tkf_go_int
+  sub/tkfloat.asm:141  jp      tkf_overflow
+  sub/tkfloat.asm:145  jp      nc,tkf_double
+  sub/tkfloat.asm:763  jp      z,tcr_ovf           ; dec_exp > 63
+  sub/tkfloat.asm:782  jp      z,tcr_ovf           ; dec_exp <= -65 -> Overflow
+  sub/tkfloat.asm:819  jp      c,trm_pad
+  sub/tkfloat.asm:820  jp      z,trm_pad
+dry run: sources restored

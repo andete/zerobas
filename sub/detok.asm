@@ -96,7 +96,7 @@ pc_full:
                 ld      a,1
                 ld      (DB_MORE),a
                 ld      sp,(DB_SP)          ; ABORT the render: the rest of the
-                jp      dtk_end             ; line is the next window's
+                jr      dtk_end             ; line is the next window's
 pc_more:
                 ld      a,1
                 ld      (DB_MORE),a

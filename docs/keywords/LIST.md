@@ -52,6 +52,14 @@ number: it means the line the editor last touched.
   (unlike `DELETE`, `NEW` or typing a line).
 - **`.` after a `LIST` is the last line it printed**; a `LIST` that printed
   nothing leaves `.` alone.
+- **A number with a fraction or an exponent is listed in the machine's own
+  spelling**, not as typed: the way `PRINT` shows it, without the leading
+  blank, and then a type mark where the text alone would read back as a
+  different type. `0.5` lists as `.5`, `1.5D3` as `1500#`, `0.123456789` as
+  `.123456789#` (more than 6 digits is double precision), `40000` as
+  `40000!` and `2E-5` as `2E-05`. A number of 10^14 or more, or below .01,
+  lists in `E` form, and a double then loses its `#`: `1.5D20` lists as
+  `1.5E+20`.
 
 | you type | you get |
 |---|---|
@@ -93,6 +101,13 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A number with a fraction or an exponent came out as garbage** (fixed
+  2026-10-11, D-LISTFLT; reported by Vampier): `321 i=0.123456789` listed as
+  `321 I=@14VxSTOP`, the stored value printed byte by byte, and an ASCII
+  `SAVE` wrote the same garbage. The spelling above was measured on the
+  VG-8020 first, 24 numbers in two rounds; three of the second round's
+  predictions missed, which is why `1.5D20` and `.05` are in the list
+  ([`listflt_probe2.out`](../../scratchpad/listflt_probe2.out)).
 - **The line numbers used to be ignored** (fixed 2026-08-02, D-LSTRNG): every
   `LIST` printed the whole program. Twenty shapes were measured on both
   reference machines first, and the surprise was that `DELETE`'s range rules,
@@ -133,4 +148,6 @@ The one rung not yet proven is **RAM usage**.
   shape, `ERR` after each, the `:` tail, `LIST` inside a program, and `.`.
 - `make kwsweep` — the bare, single-line and range rows, and the error row
   for {2}.
+- `make listflt-acceptance` — how a fractional or large number is listed,
+  24 shapes against the VG-8020.
 - `make kwram` — the RAM-usage comparison.

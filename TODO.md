@@ -2081,8 +2081,9 @@ item — do **one item per session** to keep context lean.
       gate; Makefile accepts 0.5.3; QUICKSTART / README back to `apt-get install
       pasmo`.
 
-- [ ] 🧾 **D-LISTFLT — LIST (AND ASCII SAVE) GARBLE EVERY FLOAT LITERAL: `detok` HAS NO
-      ARM FOR `$1D` / `$1F` (reported by Vampier, 2026-10-11; measured the same day)**
+- [x] ✅ **D-LISTFLT — LIST (AND ASCII SAVE) GARBLE EVERY FLOAT LITERAL: `detok` HAS NO
+      ARM FOR `$1D` / `$1F` (reported by Vampier, 2026-10-11; measured and FIXED the
+      same day -- at the end)**
       🎚️ TIER 1 — happy path, and worse than cosmetic: `list_walk` is also
       ASCII SAVE's writer, so `SAVE "X",A` of a program with a float literal
       writes garbage to tape or disk.
@@ -2110,6 +2111,45 @@ item — do **one item per session** to keep context lean.
       suffix. Price it: where PRINT's formatter lives relative to the tenant.
       ✅ Proof: the probe's rows identical on both builds, LIST and an ASCII
       SAVE / LOAD round trip (the program must RUN the same after it).
+      ✅ **FIXED 2026-10-11 -- 24/24 LIST ROWS AND THE ROUND TRIP AS ON THE
+      REFERENCES.** 📏 Round 2 before building
+      ([`listflt_probe2.out`](scratchpad/listflt_probe2.out), 12 more
+      literals): predicted E-form single no suffix, `1234567#`, `-1.5` --
+      HIT; predicted an E-form double keeps `#` and `0.05` lists `5E-02` --
+      both MISSED: `1.5D20` lists `1.5E+20`, `.05` is fixed. The rule that
+      fits all 24: PRINT's text (x = exponent byte - 64; FIXED iff
+      -1 <= x <= 14) without the sign space, `#` on a double in fixed form,
+      `!` on a single in fixed form with no '.', nothing in E form.
+      🔧 PRINT's formatter (`flt_fmt`) lives in main's low region, which a
+      sub page-0 tenant cannot reach; but the literal is BCD already rounded
+      at crunch time, so `dt_float` (basic/detok.inc) lays out the digits
+      with no arithmetic: unpack into TKDIG, trim, one emit loop for both
+      forms (`dtf_run`, a '.' after P digits). First cut 209 B, then 184 B;
+      sub page 0 had 137 B (2026-10-11).
+      💰 **THE CARVE: `jp` -> `jr` in the SUB-ONLY page-0 sources, never
+      swept** (main's D-JRSLICE passes touched sub only through shared
+      files). [`subjr_carve.py`](scratchpad/subjr_carve.py) converts every
+      `jp label` / `jp z|nz|c|nc,label` in page-0 files that neither main nor
+      the disk ROM includes (sub.asm's 3-byte tenant tables excluded) and
+      lets pasmo revert each out-of-range one: 273 tried, 71 kept, sub
+      page 0 137 -> 206 B (+69) ([`subjr_carve.out`](scratchpad/subjr_carve.out)).
+      🔴 It built only the DEFAULT configuration: `switch-build-check` went red
+      with CLEARPOOL=0, where two `arrays.asm` sites (781, 1228) fall out of
+      range -- reverted (both sit in the CLEARPOOL=0 arm, so the default image
+      keeps its +69 B). A future sub carve must assemble every switch build
+      too. After the renderer: sub page 0 13 B (clean build, 2026-10-11) --
+      predicted ~13, HIT. Main
+      untouched (its hash is unchanged). ⏱ A taken `jr` is 2 T slower than a
+      `jp` (tokeniser, DRAW, string GC loops) -- TIER 5, not measured.
+      📏 [`listflt_after.out`](scratchpad/listflt_after.out) /
+      [`listflt_after2.out`](scratchpad/listflt_after2.out): 24/24 SAME;
+      [`listflt_rt.out`](scratchpad/listflt_rt.out): the disk round trip
+      (SAVE ,A / NEW / LOAD / LIST / RUN) SAME as the CF-3300 -- which also
+      loses `1.5D20`'s double type through its E-form text. 🔮 HIT.
+      🔪 [`listflt_knives.out`](scratchpad/listflt_knives.out): K-LF1 (no
+      dispatch) -> all 24; K-LF2 (no `!`) -> exactly the five `!` rows;
+      K-LF3 (the x = -1 arm's lead digit) -> `.05` alone. Predicted, each.
+      🛡️ Gate `listflt-acceptance` (probes/basic/basic_probe_listflt.py).
 
 - [x] ✅ **D-AUTORUN — openMSX's TAPE AUTORUN NEVER FIRES: zerobas CALLS NEITHER H.READ
       ($FF07) NOR H.MAIN ($FF0C) (Joost, 2026-10-11; measured and FIXED the same day
@@ -6842,7 +6882,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32314 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32354 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7008,7 +7048,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11870 (T-6FE392)8 (T-529ABE)` from `TODO.md:24664 (T-529ABE)`: a
+      `TODO.md:11910 (T-6FE392)8 (T-529ABE)` from `TODO.md:24704 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12717,7 +12757,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24664 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24704 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

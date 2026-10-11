@@ -81,25 +81,25 @@ tkf_classify:
                                              ; scratch (see sysvars.inc TKSRCSAVE)
                 ld      a,(TKFLAGS)
                 bit     5,a                 ; percent?
-                jp      nz,tkf_check_percent
+                jr      nz,tkf_check_percent
                 bit     4,a                 ; hash?
-                jp      nz,tkf_double
+                jr      nz,tkf_double
                 bit     2,a                 ; expD?
-                jp      nz,tkf_double
+                jr      nz,tkf_double
                 bit     3,a                 ; bang?
-                jp      nz,tkf_single
+                jr      nz,tkf_single
                 bit     0,a                 ; dot?
-                jp      nz,tkf_bydcount
+                jr      nz,tkf_bydcount
                 bit     1,a                 ; exponent (E, non-D)?
-                jp      nz,tkf_bydcount
+                jr      nz,tkf_bydcount
                 ; plain literal, no forcing suffix/dot/exponent: maybe int
                 ld      a,(TKDCOUNT)
                 cp      5
-                jp      c,tkf_go_int        ; D<=4 -> always int
-                jp      nz,tkf_bydcount     ; D>5 -> not int-eligible
+                jr      c,tkf_go_int        ; D<=4 -> always int
+                jr      nz,tkf_bydcount     ; D>5 -> not int-eligible
                 call    tkf_cmp32767        ; D==5: CF set iff TKDIG[0..4] <= 32767
-                jp      c,tkf_go_int
-                jp      tkf_bydcount
+                jr      c,tkf_go_int
+                jr      tkf_bydcount
 tkf_check_percent:
                 ; --- D-PCTTRUNC: `%` TRUNCATES, and this arm CONCATENATED ------
                 ; `1.7%` printed 17, `2.5%` printed 25, `.5%` printed 5 and
@@ -134,15 +134,15 @@ tkcp_pos:
 tkcp_set:
                 ld      (TKDCOUNT),a
                 cp      5
-                jp      c,tkf_go_int
-                jp      nz,tkf_overflow
+                jr      c,tkf_go_int
+                jr      nz,tkf_overflow
                 call    tkf_cmp32767
-                jp      c,tkf_go_int
-                jp      tkf_overflow
+                jr      c,tkf_go_int
+                jr      tkf_overflow
 tkf_bydcount:
                 ld      a,(TKDCOUNT)
                 cp      7
-                jp      nc,tkf_double
+                jr      nc,tkf_double
                 ; falls through: D<=6 -> single
 tkf_single:
                 ld      a,SGL_DIGITS
@@ -760,7 +760,7 @@ tcr_go:
                 call    cmp16_bits          ; A=1/2/4 (lt/eq/gt); HL clobbered inside
                 pop     hl
                 cp      4
-                jp      z,tcr_ovf           ; dec_exp > 63
+                jr      z,tcr_ovf           ; dec_exp > 63
                 push    hl
                 ld      de,$FFC0            ; -64
                 call    cmp16_bits
@@ -779,7 +779,7 @@ tcr_go:
                 ; would not have done, and it cost 5 bytes to say so. Everything
                 ; BELOW -64 is the reject.
                 cp      1
-                jp      z,tcr_ovf           ; dec_exp <= -65 -> Overflow
+                jr      z,tcr_ovf           ; dec_exp <= -65 -> Overflow
 tcr_leadok:
                 ld      de,64
                 add     hl,de
@@ -816,8 +816,8 @@ tkf_round_mantissa:
                 ld      b,a
                 ld      a,(TKDCOUNT)
                 cp      b
-                jp      c,trm_pad
-                jp      z,trm_pad
+                jr      c,trm_pad
+                jr      z,trm_pad
                 ; D > PC: round using TKDIG[PC]
                 ld      hl,TKDIG
                 ld      c,b

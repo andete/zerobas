@@ -107,7 +107,7 @@ edt_codes:
                 db      EDT_CODES_STRADDLES_A_PAGE__ADD_A_L_INDEX_IS_8_BIT
     ENDIF
 edt_bad:
-                jp      edt_fail
+                jr      edt_fail
 ; --- range-list parser: C = type code (preserved by skip_spaces/is_letter/upcase)
 edt_list:
 edt_item:
@@ -165,10 +165,10 @@ edt_fill_lp:
                 ; harmless and observable. An item may end only at ',', ':' or
                 ; EOL; anything else rejects the STATEMENT, not the next one.
                 or      a                   ; end of line -> done
-                jp      z,edt_ok
+                jr      z,edt_ok
                 cp      COLON               ; ':' -> the next statement runs
-                jp      z,edt_ok
-                jp      edt_fail            ; junk glued to the item -> ERR 2
+                jr      z,edt_ok
+                jr      edt_fail            ; junk glued to the item -> ERR 2
 edt_comma:
                 inc     hl                  ; past ','
                 jr      edt_item

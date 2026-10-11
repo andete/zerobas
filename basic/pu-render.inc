@@ -50,7 +50,7 @@ ptf_scan:
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
-                jp      z,ptf_num
+                jr      z,ptf_num
                 ; --- D-PULEAD: `.##` -- a field with NO integer column ----------
                 ; Only when a `#` follows, so a bare `.` stays literal. ptf_num
                 ; already copes with a zero-length `#` run: it falls straight to
@@ -64,7 +64,7 @@ ptf_scan:
                 inc     hl
                 ld      a,(hl)
                 cp      '#'
-                jp      z,ptf_num
+                jr      z,ptf_num
 ptf_notdot2:
                 ld      a,'.'
 ptf_notdot:

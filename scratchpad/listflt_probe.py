@@ -23,6 +23,13 @@ REF = "Philips_VG_8020"
 OURS = os.environ.get("ZEROBAS_NODISK_MACHINE", "C-BIOS_MSX1_EU_REPACK_NODISK")
 LITS = ["0.123456789", "1.5", "0.5", "1E10", "1.5#", "1.5!", "123456789",
         "3.14159265358979", "1.5D3", "2E-5", "12345678", "40000"]
+# Round 2 (2026-10-11, before building): the rules round 1 could not separate --
+# E form for each precision, small values, a 7-digit integer, zero, a negative
+# literal, more digits than a single holds. Run with `2` as the argument.
+LITS2 = ["1.5D20", "1E20", "1.5E-10", "0.05", "1234567", "123456", "0.0",
+         "-1.5", "1.23456789012345678", "1D-20", "100000", "0.1"]
+if sys.argv[1:] == ["2"]:
+    LITS = LITS2
 LINES = ["NEW"] + [f"{100 + i} A={v}" for i, v in enumerate(LITS)] + ["LIST"]
 
 

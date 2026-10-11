@@ -109,6 +109,11 @@ sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
+- **A text save wrote garbage for any number with a fraction or an exponent**
+  (fixed 2026-10-11, D-LISTFLT; reported by Vampier). `SAVE "…",A` writes
+  what `LIST` prints, and `LIST` printed such a number's stored bytes; the
+  file then loaded as a different program. A save, `NEW`, `LOAD`, `LIST` and
+  `RUN` round trip now reads the same as on the CF-3300.
 - **Ctrl-STOP could not break a tape write** (fixed 2026-10-11, D-CASWBRK).
   On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
   data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
@@ -174,6 +179,8 @@ sector with interrupts on (D-FDCDI).
   `make wprotect-acceptance`, `make asavechan-acceptance` — the date stamp,
   a full disk, a protected disk, an open channel.
 - `make cassave-acceptance` — what a cassette `SAVE` writes.
+- `make listflt-acceptance` — a text save, `LOAD`, `LIST` and `RUN` of a
+  program with fractional and large numbers, against the CF-3300.
 - `make caswbrk-acceptance` — a tape `SAVE` broken with Ctrl-STOP.
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make kwram` — the RAM-usage comparison.

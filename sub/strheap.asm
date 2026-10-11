@@ -269,7 +269,7 @@ sit_no:
 ; a temp body (below) takes it to 100, which is the reference's own figure.
 she_snap_keep:
                 call    sh_src_is_temp
-                jp      nc,she_snapshot     ; not a temp -> the real snapshot
+                jr      nc,she_snapshot     ; not a temp -> the real snapshot
 she_snap_asis:
                 ld      hl,(SH_SRC)
                 ld      (SH_PTR),hl         ; the source IS the owned temp
@@ -883,13 +883,13 @@ strheap_gc:
                 jp      c,gc_nobuf
                 ld      de,CTL_STACK_MARGIN
                 add     hl,de               ; ...plus the stack's headroom
-                jp      c,gc_nobuf
+                jr      c,gc_nobuf
                 ex      de,hl               ; DE = end + margin
                 ld      hl,0
                 add     hl,sp               ; HL = SP (one word low: conservative)
                 or      a
                 sbc     hl,de
-                jp      c,gc_nobuf          ; SP below end+margin -> no room
+                jr      c,gc_nobuf          ; SP below end+margin -> no room
                 pop     hl                  ; HL = base   [ ]
                 ld      (ix+6),l
                 ld      (ix+7),h            ; BASE = the free area's bottom
@@ -933,7 +933,7 @@ sg_sweep:
                 or      a
                 sbc     hl,de               ; P - BASE
                 pop     hl
-                jp      nc,sg_sweep         ; P >= BASE -> more elements
+                jr      nc,sg_sweep         ; P >= BASE -> more elements
                 ; --- Phase G: publish new FRETOP, free the frame ---
                 ; (the sort buffer is DETOKBUF, not on the stack -- nothing to
                 ; free but the 22-B IX frame.)

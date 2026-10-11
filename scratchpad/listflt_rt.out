@@ -1,0 +1,7 @@
+== National_CF-3300
+   LOAD"T.BAS" Ok LIST 10 A=.123456789#:B=1.5E-10 20 C=40000!:D=1.5E+20:E=.05 30 PRINT A;B;C;D;E Ok RUN .123456789 1.5E-10 40000 1.5E+20 .05 Ok color auto goto list run 
+== C-BIOS_MSX1_EU_REPACK_DISK
+   LOAD"T.BAS" ZB LIST 10 A=.123456789#:B=1.5E-10 20 C=40000!:D=1.5E+20:E=.05 30 PRINT A;B;C;D;E ZB RUN .123456789 1.5E-10 40000 1.5E+20 .05 ZB color auto goto list run 
+
+SAME (the prompt word aside)
+refcache: 0 hit, 2 miss, 2 stored

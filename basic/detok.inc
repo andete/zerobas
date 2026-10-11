@@ -38,11 +38,11 @@ dt_lp:
                 or      a
                 ret     z                   ; end of line
                 cp      COLON               ; ':' may fold into ' or ELSE (below)
-                jp      z,dt_colon
+                jr      z,dt_colon
                 cp      '"'                 ; string literal -> verbatim
                 jp      z,dt_string
                 cp      REM_TOKEN           ; REM (and its verbatim tail)
-                jp      z,dt_rem
+                jr      z,dt_rem
                 cp      DATA_TOKEN          ; DATA (and its verbatim ASCII body)
                 jp      z,dt_data
                 cp      PEEK_PREFIX         ; $FF -> 2-byte function token (PEEK)
@@ -64,6 +64,10 @@ dt_notdigit:
                 jp      z,dt_hex
                 cp      OCT_TOKEN           ; $0B,<word LE> -> &Oxxxx (not emitted, but
                 jp      z,dt_oct            ;  rendered for completeness)
+                or      2                   ; D-LISTFLT: $1D|2 = $1F|2 = $1F, and no
+                cp      DBL_TOKEN           ; other byte ORs to it -> one test for
+                ld      a,(hl)              ; both float literals (A reloaded for
+                jp      z,dt_float          ; detok_op below)
                 call    detok_op            ; operator token ($EF $F1.. ) -> its char
                 jr      c,dt_step1          ; CF set -> char already printed, step 1
                 call    detok_kw            ; keyword token -> its text from kwtable
@@ -97,7 +101,8 @@ dt_else:
                 ld      c,ELSE_TOKEN        ; via the tlen==2 kwtable lookup -> "ELSE"
                 call    detok_kw2
                 inc     hl                  ; step past $A1
-                jr      dt_lp
+                jp      dt_lp               ; (jp: D-LISTFLT's dispatch put the
+                                            ; loop head out of jr range)
 dt_apos_try:
                 inc     hl
                 ld      a,(hl)
@@ -229,6 +234,157 @@ dt_oct:
                 call    detok_oct16
                 pop     hl
                 jp      dt_lp
+
+; --- dt_float: $1D,<4> / $1F,<8> float literal -> the reference's LIST text --
+; D-LISTFLT (reported by Vampier, 2026-10-11). There was no arm: LIST and ASCII
+; SAVE printed the value bytes as themselves (`0.123456789` -> `@14VxSTOP`).
+; The value is an excess-64 decimal exponent byte (0 = the value zero) and
+; packed BCD, 6 digits (single) / 14 (double), already rounded when the line
+; was crunched -- so this is digit layout, no arithmetic, and needs nothing
+; outside sub page 0. The rules are the VG-8020's, measured
+; (scratchpad/listflt_probe.out, listflt_probe2.out): PRINT's text without
+; the sign space (x = exponent-64 = integer-digit count; FIXED iff
+; -1 <= x <= 14: `.5` `.05` `1500` `10000000000`; else `d.dddE+xx`:
+; `1.5E-10` `1E+20`), then a type suffix -- `#` on a double in FIXED form,
+; `!` on a single in fixed form with no '.', none in E form (`1.5D20` lists
+; `1.5E+20`). Pure over the token (re-runnable for DETOKBUF's windows);
+; digits unpacked into TKDIG (the tokeniser/formatter's, idle during LIST).
+dt_float:
+                inc     hl
+                ld      c,(hl)              ; C = exponent byte
+                inc     hl                  ; HL -> packed BCD
+                cp      DBL_TOKEN
+                push    af                  ; Z = a double, for the suffix
+                ld      b,3                 ; single: 3 bytes
+                jr      nz,dtf_unp
+                ld      b,7                 ; double: 7 bytes
+dtf_unp:
+                ld      de,TKDIG
+                xor     a
+                ld      (de),a              ; TKDIG[0] = 0: the lead zero of `.05`
+dtf_ul:                                     ; digits -> TKDIG[1..]
+                inc     de
+                ld      a,(hl)
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
+                ld      (de),a
+                inc     de
+                ld      a,(hl)
+                and     $0F
+                ld      (de),a
+                inc     hl
+                djnz    dtf_ul
+                ex      (sp),hl             ; the resume point under the token
+                push    hl
+dtf_tz:                                     ; trim trailing zero digits; the
+                ld      a,(de)              ; value zero keeps one (TKDIG[1])
+                or      a
+                jr      nz,dtf_k
+                dec     de
+                ld      a,e
+                cp      low TKDIG
+                jr      nz,dtf_tz
+                inc     de
+dtf_k:
+                ld      a,e
+                sub     low TKDIG
+                ld      b,a                 ; B = significant digits
+                ld      a,c
+                or      a
+                jr      nz,dtf_x
+                ld      a,65                ; zero: one integer digit
+dtf_x:
+                sub     64
+                ld      c,a                 ; C = x
+                ld      d,0                 ; D = 0: no '.' yet
+                ld      hl,TKDIG+1
+                inc     a
+                jr      z,dtf_m1            ; x = -1: from TKDIG[0], point first
+                cp      16
+                jr      nc,dtf_e            ; x outside -1..14: E form
+                ld      e,c                 ; the point after x digits
+                jr      dtf_fx
+dtf_m1:
+                dec     hl
+                inc     b
+                ld      e,a                 ; A = 0: the point first
+dtf_fx:
+                call    dtf_run
+                pop     af                  ; the token's Z
+                ld      a,'#'
+                jr      z,dtf_sfx           ; a double: #
+                ld      a,d
+                or      a
+                jr      nz,dtf_end          ; a single with a '.': none
+                ld      a,'!'
+dtf_sfx:
+                call    pchar
+dtf_end:
+                pop     hl                  ; past the literal
+                jp      dt_lp
+dtf_e:                                      ; d[.ddd]E+xx, no suffix
+                ld      e,1
+                call    dtf_run
+                ld      a,'E'
+                call    pchar
+                ld      a,c
+                dec     a                   ; the d.ddd exponent is x-1
+                ld      e,'+'
+                jp      p,dtf_ep
+                neg
+                ld      e,'-'
+dtf_ep:
+                ld      c,a
+                ld      a,e
+                call    pchar
+                ld      a,c
+                ld      e,'0'-1
+dtf_e10:
+                inc     e
+                sub     10
+                jr      nc,dtf_e10
+                ld      c,a
+                ld      a,e
+                call    pchar               ; tens
+                ld      a,c
+                add     a,10+'0'
+                call    pchar               ; units
+                pop     af
+                jr      dtf_end
+; dtf_run: emit B digits from (HL), a '.' once E reaches 0 while digits
+; remain (D = 1 then), '0' for any position before the point past the last
+; digit. E counts down to the point.
+dtf_run:
+                ld      a,e
+                or      a
+                jr      nz,dtf_r1
+                ld      a,b
+                or      a
+                ret     z                   ; at the point, nothing left
+                ld      a,'.'
+                call    pchar
+                inc     d
+dtf_r1:
+                ld      a,b
+                or      a
+                ld      a,'0'
+                jr      z,dtf_r2            ; before the point, digits spent: pad
+                ld      a,(hl)
+                inc     hl
+                add     a,'0'
+                dec     b
+dtf_r2:
+                call    pchar
+                dec     e
+                ld      a,b
+                or      a
+                jr      nz,dtf_run
+                bit     7,e
+                jr      z,dtf_run           ; still before the point
+                ret
 
 ; --- detok_dec: print DE as unsigned decimal (no sign, no spaces) -----------
 ; Reuses list_num's formatter, which prints HL. Preserves HL? No — it clobbers

@@ -2444,6 +2444,12 @@ subsig-acceptance: repack-machine
 casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_casdirect.py
 
+# --- listflt-acceptance: LIST / ASCII SAVE spell a float literal as the references
+# do (D-LISTFLT, reported by Vampier). 24 literals against the VG-8020, and a
+# SAVE ,A / LOAD / LIST / RUN round trip on disk against the CF-3300.
+listflt-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_listflt.py
+
 # --- autorun-acceptance: openMSX's tape autorun runs every tape type (D-AUTORUN)
 # It waits on H.READ then H.MAIN; zerobas called neither. ASCII, binary and
 # tokenised tapes, the VG-8020 as the control, both builds.

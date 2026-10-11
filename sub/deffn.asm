@@ -71,13 +71,13 @@ deffn_tenant:
                 cp      FNF_UNWIND
                 jp      z,fnf_unwind
                 or      a
-                jp      z,dfn_start         ; nothing asked yet: a fresh call
+                jr      z,dfn_start         ; nothing asked yet: a fresh call
                 cp      $83
                 jr      z,dfn_stored
                 ld      b,a                 ; B = $81 numeric / $82 string
                 call    dfn_is_result
                 jp      z,dfn_bodydone
-                jp      dfn_actual
+                jr      dfn_actual
 dfn_stored:
                 call    dfn_is_result
                 jp      z,dfn_load          ; the RESULT slot -> load it and leave
@@ -155,7 +155,7 @@ dfn_formal:
                 ld      (FN_TYP),a
                 ld      (FN_KEY),bc
                 ld      a,1                 ; evaluate the actual at FN_PTR
-                jp      dfn_req
+                jr      dfn_req
 
 ; --- dfn_actual: the actual came back -- type-check it, open its slot -------
 ; 🎯 ONE `evaluate` REQUEST SERVES BOTH THE ACTUALS AND THE BODY, and BOTH
@@ -257,7 +257,7 @@ dfn_delim:
                 ld      hl,(FN_PTR)
                 call    skip_spaces
                 cp      c
-                jp      nz,dfn_err2
+                jr      nz,dfn_err2
                 inc     hl
                 ld      (FN_PTR),hl
                 ld      hl,(FN_DPTR)
@@ -266,7 +266,7 @@ dfn_delim:
                 cp      ','
                 jp      z,dfn_formal
                 cp      ')'
-                jp      nz,dfn_err2
+                jr      nz,dfn_err2
 
 ; --- dfn_body: the list closed -- fix the frame and ask for the body -------
 dfn_body:
@@ -288,7 +288,7 @@ dfn_b_noeq:
                 ld      hl,$FFFF
                 ld      (FN_KEY),hl         ; ...and this is the phase mark
                 ld      a,1
-                jp      dfn_req
+                jr      dfn_req
 
 ; --- dfn_bodydone: the body's value came back ------------------------------
 dfn_bodydone:                               ; B = $81/$82
@@ -300,7 +300,7 @@ dfn_bodydone:                               ; B = $81/$82
                 ld      a,b
                 jr      z,dfn_bd_str
                 cp      $81
-                jp      nz,dfn_err13        ; `DEF FNA(X)=A$` -- a string body in a
+                jr      nz,dfn_err13        ; `DEF FNA(X)=A$` -- a string body in a
                                             ; numeric function
                 ; 🎯 THE RESULT COERCION RIDES THE VARIABLE STORE RATHER THAN
                 ; DUPLICATING THE CODEC. By now the formals have been read and
@@ -320,10 +320,10 @@ dfn_bodydone:                               ; B = $81/$82
                 ld      a,low FN_PAREA + FN_SLOTSZ
                 ld      (FN_FEND),a
                 ld      a,2                 ; store the result into the $FFFF slot
-                jp      dfn_req
+                jr      dfn_req
 dfn_bd_str:
                 cp      $82
-                jp      nz,dfn_err13        ; a `$` function whose body is not a
+                jr      nz,dfn_err13        ; a `$` function whose body is not a
                                             ; string is ERR 13 (o.strbody)
                 ld      a,3                 ; snapshot it off the frame, then leave
                 jp      dfn_req
@@ -339,13 +339,13 @@ dfn_load:
 ; CALSLT may move.
 dfn_err2:
                 ld      a,2                 ; Syntax error
-                jp      dfn_raise
+                jr      dfn_raise
 dfn_err5:
                 ld      a,5                 ; Illegal function call
-                jp      dfn_raise
+                jr      dfn_raise
 dfn_err13:
                 ld      a,13                ; Type mismatch
-                jp      dfn_raise
+                jr      dfn_raise
 dfn_err18:
                 ld      a,18                ; Undefined user function
 dfn_raise:
