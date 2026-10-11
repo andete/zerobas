@@ -2081,6 +2081,84 @@ item — do **one item per session** to keep context lean.
       gate; Makefile accepts 0.5.3; QUICKSTART / README back to `apt-get install
       pasmo`.
 
+- [ ] 📼 **D-AUTORUN — openMSX's TAPE AUTORUN NEVER FIRES: zerobas CALLS NEITHER H.READ
+      ($FF07) NOR H.MAIN ($FF0C) (Joost, 2026-10-11; measured the same day)**
+      🎚️ TIER 1 — happy path: inserting a tape with openMSX's autorun on is how
+      most people load one.
+      🤖 **AUTONOMOUS** — the VG-8020 settles the order.
+      openMSX's autorun (its own Tcl, in the binary's strings) sets a breakpoint
+      at H.READ and, when it fires, types `RUN"CAS:"` (ASCII), `BLOAD"CAS:",R`
+      (binary) or `CLOAD` (tokenised); for CLOAD it then waits on the NEXT
+      H.MAIN to type `RUN` ("H_READ isn't called after CLOAD, but H_MAIN is").
+      zerobas's source names neither hook, so the breakpoint never fires.
+      📏 [`autorun_hook_probe.py`](scratchpad/autorun_hook_probe.py) →
+      [`.out`](scratchpad/autorun_hook_probe.out): RAM counters behind both
+      hooks read **2 2 on the VG-8020, 0 0 on zerobas**. 🔮 Predicted: HIT.
+      📏 [`autorun_order_probe.py`](scratchpad/autorun_order_probe.py) →
+      [`.out`](scratchpad/autorun_order_probe.out), a tag log with markers:
+      VG-8020 `RM1RMRM2RMM` -- every return to the prompt (program END, a typed
+      line, an error) calls **H.READ, then H.MAIN**; after **CLOAD, H.MAIN
+      only**. ⚠️ Its zerobas row is void: the log sits at `$E030`, inside
+      zerobas's own workspace above `$DB00` (D-HIMEMLIE's ruled divergence), so
+      the run hung; a zerobas-side order probe must log below `$DB00`.
+      🔧 The fix: `call H_READ` then `call H_MAIN` where the ready prompt is
+      printed, `call H_MAIN` alone on CLOAD's return; ~6-9 B of main (page 1
+      10 B, low 19 B on 2026-10-11). Check first whether the CF-3300's disk ROM
+      claims either cell (scratchpad/hookscan_probe.py) -- a claimed hook is
+      the disk BASIC's business at the prompt and the disk build must match it.
+      ✅ Proof is end-to-end: openMSX with `autoruncassettes on` and each of the
+      three tape types, on the VG-8020 and both builds -- the program runs.
+
+- [ ] 🖥️ **D-KEYSHIFT — AT THE PROMPT, HOLDING SHIFT SHOWS THE F6..F10 LABELS; zerobas
+      KEEPS F1..F5 (Joost, 2026-10-11; measured the same day)**
+      🎚️ TIER 1 — happy path: the key line is on screen in every session.
+      🤖 **AUTONOMOUS** — the VG-8020 settles it.
+      📏 [`keyidle_probe.py`](scratchpad/keyidle_probe.py) →
+      [`.out`](scratchpad/keyidle_probe.out) (openMSX driven directly, read
+      WHILE the key is held -- omsx_repl releases it before its capture, which
+      is why 2026-09-26 could not see this): VG-8020 at rest `color auto goto
+      list run`, FNKSWI 1; **SHIFT held `color cload" cont list. run`, FNKSWI
+      0**; released, back. CTRL (control): nothing. zerobas: nothing in any
+      row. 🔮 Predicted: HIT. With 2026-09-26's reading (a busy program with
+      SHIFT held does NOT switch, `scratchpad/keyshift_run.out`) the switch
+      lives in the key-WAIT path, not the timer interrupt.
+      ➡️ Measure before building: INPUT / LINE INPUT / INPUT$ / INKEY$ in a
+      running program with SHIFT held (which wait switches), KEY OFF (nothing
+      drawn -- does FNKSWI still flip?), SCREEN 1. Then: in the wait loop,
+      compare SHIFT (row 6 bit 0) with FNKSWI and redraw the labels on a
+      change. ⚠️ A page-1 tenant must not wait: the poll belongs in main's
+      wait loop or on the C-BIOS side.
+
+- [ ] 🔁 **D-RESETBOOT — AFTER A RESET THE MACHINE DOES NOT BOOT BACK INTO BASIC
+      (Joost, 2026-10-11; NOT YET MEASURED)**
+      🎚️ TIER 1 — happy path: a reset is ordinary use.
+      🤖 **AUTONOMOUS** — measure first.
+      Joost: *"when resetting the msx machine it doesn't boot back to basic"*.
+      ➡️ Measure: openMSX `reset` on the VG-8020 and both builds -- at the
+      prompt, with a program in memory, during a run -- and read what is on
+      screen and where PC settles (registers are readable). Hypotheses to TEST,
+      not believe: a RAM cell that survives the reset steers the boot (a
+      warm-boot flag, the H.TIMI seam or another hook left installed, the
+      sub-ROM scan's state), or the repack boot path assumes cold RAM.
+
+- [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
+      NOT YET MEASURED)**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🙋 **NEEDS-JOOST** — the failing tapes themselves: which titles / files
+      (they stay OUTSIDE the repo; zerobas is public). Everything after that is
+      autonomous.
+      Joost: *"many .cas and .wav tapes are not loading"*.
+      ➡️ Measure first, per tape, on the VG-8020 and both builds: WHERE it
+      stops -- no `Found:` (the leader / header / baud detection: TAPION,
+      `cas_baud`), a `Device I/O error` mid-file (TAPIN's edge timing against
+      a real recording's drift and noise -- `.wav` exercises this, a `.cas`
+      does not), or a load that completes and then crashes (a loader that
+      calls the BASIC ROM's own entry points, or reads reference RAM state
+      zerobas does not keep -- a compatibility question, not a tape one).
+      Classify first; the three classes have different fixes and different
+      tiers. Synthetic rows (cas_encode, 1200 / 2400 baud, short / long
+      leaders, multi-file tapes) can start before the corpus arrives.
+
 - [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
       REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
       🎚️ TIER 6 — a documented form (BLOAD's `,offset`) colliding with the
@@ -2458,6 +2536,8 @@ item — do **one item per session** to keep context lean.
       stays 1 — the same as with CTRL held (the control). The prompt-idle case
       cannot be read here: the harness releases the key before the capture.
       The same probe found D-KEYCLS (below).
+      📏 **THE IDLE PROMPT, MEASURED 2026-10-11: IT *DOES* SWITCH** -- SHIFT held at the
+      prompt shows F6..F10 and FNKSWI 0 on the VG-8020; filed as D-KEYSHIFT.
       ~~➡️ **NEXT (ruled order):** `RNDX` (7 vs 8 B, spec §4), `TEMPST` → 10,
       `DAC` full; S2b's temporary policy.~~
       🟢 **`RNDX` SHIPPED (2026-09-25), 0 ROM bytes — the "7 vs 8 B" was one
@@ -6649,7 +6729,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32121 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32201 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6815,7 +6895,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11677 (T-6FE392)8 (T-529ABE)` from `TODO.md:24471 (T-529ABE)`: a
+      `TODO.md:11757 (T-6FE392)8 (T-529ABE)` from `TODO.md:24551 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12524,7 +12604,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24551 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
