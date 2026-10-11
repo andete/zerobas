@@ -559,7 +559,7 @@ frg_pass:
                 xor     a
                 ld      (GP_FLAGS),a        ; read only (do not extend)
                 call    frnd_locate
-                jr      c,frg_eoffill       ; beyond EOF -> spaces
+                jr      c,frg_eofchk        ; beyond EOF -- or a FAILED READ, below
                 ld      de,(GP_PHYS)
                 ld      hl,FAT_MBUF
                 call    read_sector
@@ -592,6 +592,21 @@ frg_ok:
 ; error here), and it is a DECISION, not an oversight -- what the reference does
 ; with a record half past EOF is unmeasured, and no row here can carry it while
 ; `oo_parse_reclen` still refuses a straddling length.
+; 🔴 D-GETEJECT (D-LOADERRRET's GET site, 2026-10-11): frnd_locate's carry is
+; BOTH "beyond EOF" and a chain-walk READ that failed, and the read failure was
+; filled with spaces as an empty record: with the disk ejected between OPEN and
+; GET 1,20, the CF-3300 raises 70 `Disk offline` in the GET line and we
+; answered the record as blank -- no error, wrong data
+; (scratchpad/geteject_run.out; the walk's FAT read failed NOT READY, twice,
+; scratchpad/geteject_zbtrace.out). A failed DSKIO leaves its code in
+; DISKOP_ERR and every successful one clears it, so a pending code is the
+; failure: back up with Cy, and the caller (basic/field.asm gp_fin) raises it.
+frg_eofchk:
+                ld      a,(DISKOP_ERR)
+                or      a
+                jr      z,frg_eoffill       ; a clean EOF: the record is spaces
+                scf
+                ret                         ; a read failure
 frg_eoffill:
                 ld      hl,FAT_DBUF
                 ld      de,FAT_DBUF+1

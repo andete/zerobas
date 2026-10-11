@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `GET` — read a record from a random-access file
 
-> **Status (2026-10-09):** `GET` has one statement, `GET #`, documented here.
+> **Status (2026-10-11):** `GET` has one statement, `GET #`, documented here.
 > One recorded difference: record numbers above 32767 (below, an open TIER 6
 > item). A `GET` without a record number reads the next record, as on the
 > CF-3300, since 2026-10-09.
@@ -90,6 +90,14 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 [`PUT`](PUT.md).
 
 ## What we found, and how
+
+- **A `GET` whose disk had gone answered a blank record** (fixed 2026-10-11,
+  D-GETEJECT). With the disk taken out between `OPEN` and `GET`, the CF-3300
+  raises `Disk offline` (70) in the `GET` line, so `ON ERROR` sees it. zerobas
+  raised nothing and filled the record with spaces: the failed read was taken
+  for the end of the file
+  ([`geteject_run.out`](../../scratchpad/geteject_run.out)). Now it raises 70
+  too. `make geteject-acceptance` covers it.
 
 - **A `GET` without a record number always read record 1** (fixed
   2026-10-09, D-RECAUTO): the CF-3300 reads the record after the last one read

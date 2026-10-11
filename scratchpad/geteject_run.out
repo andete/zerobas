@@ -1,0 +1,14 @@
+cf: ejected=True reading=ERR 70 60
+   |90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93)
+   |:END
+   |RUN
+   |[ERR 70  60 ]
+   |Ok
+   |color   auto    goto    list    run
+zb: ejected=True reading=RAN 0
+   |90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93)
+   |:END
+   |RUN
+   |[RAN 0 ]
+   |ZB
+   |color   auto    goto    list    run

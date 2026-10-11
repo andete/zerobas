@@ -881,7 +881,9 @@ gp_get_go:
                 call    fat_rand_get
 gp_fin:
                 pop     hl
-                jp      c,load_error        ; disk error
+                jp      c,disk_error        ; D-GETEJECT: raise the pending DSKIO code
+                                            ; (70 Disk offline with the disk out), as
+                                            ; the CF-3300 does; none -> `load error`
                 jp      exec_stmt
 gp_dev:
                 ld      a,58                ; sequential i/o only (LPT:/CRT:)

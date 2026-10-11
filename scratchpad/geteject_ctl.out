@@ -1,0 +1,14 @@
+cf: ejected=False reading=RAN 20
+   |90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93)
+   |:END
+   |RUN
+   |[RAN 20 ]
+   |Ok
+   |color   auto    goto    list    run
+zb: ejected=False reading=RAN 20
+   |90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93)
+   |:END
+   |RUN
+   |[RAN 20 ]
+   |ZB
+   |color   auto    goto    list    run

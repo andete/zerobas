@@ -1,0 +1,6 @@
+  ROM c9d2281f a2c1a4cc 53f8931c 17f9723b  ->  c9d2281f 24adaf85 53f8931c 17f9723b
+PASS  K-GE1: moved ['get'] (want exactly ['get'])
+  ROM c9d2281f 24adaf85 53f8931c 17f9723b  ->  1cea3c92 a2c1a4cc 53f8931c d96210e7
+PASS  K-GE2: moved ['get'] (want exactly ['get'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

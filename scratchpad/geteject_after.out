@@ -1,0 +1,12 @@
+   zb FDC 1C trk=0 sec=8 st=E4 t=89.99735497109269
+   zb FDC 80 trk=0 sec=2 st=80 t=89.99840482519426
+   zb FDC 0C trk=0 sec=2 st=E4 t=89.99851964425646
+   zb FDC 1C trk=0 sec=2 st=E4 t=89.9995633523255
+   zb FDC 80 trk=0 sec=2 st=80 t=90.00061320642708
+zb: ejected=True reading=ERR 70 60
+   |90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93)
+   |:END
+   |RUN
+   |[ERR 70  60 ]
+   |ZB
+   |color   auto    goto    list    run

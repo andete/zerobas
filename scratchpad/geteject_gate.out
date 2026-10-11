@@ -1,0 +1,4 @@
+ROW ctl CF=[RAN 20] ZB=[RAN 20] SAME
+ROW get CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+
+PASS: GET with the disk gone (2/2)

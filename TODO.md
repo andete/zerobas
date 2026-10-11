@@ -6526,7 +6526,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31778 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31798 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27883,7 +27883,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔪 Knives ([`casbrk_knives.out`](scratchpad/casbrk_knives.out)): K-CB1
       (do_tape_prog's search back to `dpl_err`) -> dload/pload/pcload/prun,
       K-CB2 (OPEN's) -> popen, K-CB3 (MERGE's) -> pmerge -- each exactly.
-      ➡️ **Left on this item:** field.asm's GET disk error, the tape OPEN / SAVE
+      ✅ **THE GET SITE, 2026-10-11 (D-GETEJECT):** the missing fixture was a disk
+      EJECTED between OPEN and GET (`diska eject`, a Tcl poll on a RAM mark).
+      The CF-3300 raises **70 in the GET line**, trapped; zerobas answered the
+      record BLANK, no error at all (`RAN 0`,
+      [`geteject_run.out`](scratchpad/geteject_run.out)) -- worse than the
+      `load error` filed: frnd_locate's carry meant both "beyond EOF" and a failed
+      chain-walk READ (the FAT read failed NOT READY twice,
+      [`geteject_zbtrace.out`](scratchpad/geteject_zbtrace.out)), and the read
+      failure was filled as an empty record. `frg_eofchk` (sub/randio's
+      `fat_rand_get`) tells them apart by the pending DSKIO code, and `gp_fin`
+      raises it through `disk_error`. 🔮 Predicted the CF-3300 70 in 60: HIT;
+      ours `load error` and ran on: MISSED -- it was silent wrong data. Gate
+      `geteject-acceptance` ([`disk_probe_geteject.py`](probes/disk/disk_probe_geteject.py),
+      [`geteject_gate.out`](scratchpad/geteject_gate.out)): ctl `RAN 20`, get
+      `ERR 70 60`, both machines; 🔪 [`geteject_knives.out`](scratchpad/geteject_knives.out):
+      K-GE1 (a failed read filled as EOF) and K-GE2 (back to `load_error`) ->
+      exactly `get`. Sub page 1 88 -> 80 B. Two apparatus misses of mine on the
+      way: a typed `[` and a typed `STR$(I)` are Tcl substitutions -- the first
+      two runs typed NOTHING on either machine; every Tcl-special character is
+      escaped now.
+      ➡️ **Left on this item:** the tape OPEN / SAVE
       header WRITES (STOP mid-write -- 🔬 TRIED 2026-10-08 and NOT READABLE with
       this rig: [`caswbrk_probe.py`](scratchpad/caswbrk_probe.py) broke CSAVE /
       BSAVE / OPEN FOR OUTPUT one second in and BOTH machines ran on (`no error`

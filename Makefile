@@ -2374,6 +2374,12 @@ wcache-acceptance: repack-machine $(DISK_TEST_DSK)
 fdcdi-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_fdcdi.py
 
+# --- geteject-acceptance: GET with the disk gone raises 70, as on the CF-3300
+# (D-GETEJECT, D-LOADERRRET's GET site): the chain walk's failed read used to
+# be taken for end-of-file and the record answered blank.
+geteject-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_geteject.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.
