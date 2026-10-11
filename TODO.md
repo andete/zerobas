@@ -842,7 +842,7 @@ item — do **one item per session** to keep context lean.
       keeps one dead routine alive keeps others.
       🤖 **AUTONOMOUS** — the sweep's own data settles it.
 
-- [ ] ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO KEYS
+- [x] ✅ **FIXED 2026-10-11 (D-FDCDI)** — ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO KEYS
       TYPED DURING LONG DISK WORK ARE LOST; THE CF-3300 KEEPS SCANNING (filed 2026-10-06
       from S10.B; NOT YET A FAILING ROW ON main)**
       🎚️ TIER 3 — common errors: type-ahead during a long SAVE / PRINT# / CLOSE.
@@ -913,6 +913,48 @@ item — do **one item per session** to keep context lean.
       longer the lever: the masked DRQ wait inside each command is — this item's
       reverted idea (interrupt windows in the wait, keeping the retry
       interruptible and measuring the lost-data rate on its own) is what is left.
+      ✅ **FIXED 2026-10-11 — THE WAIT FOR A SECTOR'S FIRST BYTE OPENS INTERRUPT
+      WINDOWS, AND A FIRST BYTE LOST TO ONE IS READ AGAIN.** When the CALLER had
+      interrupts on (`FDC_IFF` ≠ 0), the poll for the first DRQ runs an `ei /
+      nop / di` window between status reads; LOST DATA after such a window
+      re-issues the command (`fdc_lostwin`), still windowed, up to `FDC_WINMAX`
+      (3) times, and the attempt after them waits masked, as all did. A masked
+      caller (the MSX-DOS boot) never opens one, and NEITHER DOES MSX-DOS
+      itself (page 0 not the BIOS): the first FULL battery read
+      `wrblkalt-acceptance` RED — under COMMAND.COM, with windows open, its
+      32 KB WSEEK write (already 6.2× the CF-3300) outran the harness window and
+      BIGW.BIN came back 29184 B ([`fdcdi_full.out`](scratchpad/fdcdi_full.out));
+      with the page-0 test it is 32768 B again and 192.8 s
+      ([`fdcdi_wrblkalt.out`](scratchpad/fdcdi_wrblkalt.out)). The subject is
+      BASIC's typing. `FDC_IFF` counts the windowed
+      retries in its upper bits (`fdc_io_done` only tests it for non-zero). The
+      write side's transfer moved to disk/fat.asm's fill (`fdc_fdrq` before it);
+      the read side's poll is INLINE in `fdc_read_data_body`.
+      🔴 **THE FIRST CUT LOST THE FIRST BYTE ON ~1 READ IN 3 WITH NO INTERRUPT
+      AT ALL:** waiting in `fdc_fdrq` and returning put the call / ret and the
+      loop setup between the DRQ and the read, past a 2DD byte's 32 us. A
+      diagnostic build with the window removed read 42 READs, not fewer
+      ([`fdcseq_win_diag.out`](scratchpad/fdcseq_win_diag.out)); the inline,
+      two-reads-per-window poll brought it to 16 READs / 29 WRITEs — 3 retries in
+      ~42 transfers ([`fdcseq_win2.out`](scratchpad/fdcseq_win2.out)). 🔮
+      Predicted 7.5 % retries, then (first cut) MISSED at ~40 %, then ~7 %: hit.
+      📏 Typed keys: **22 of 22 at 3 / 5 / 8 s** — the line arrives whole and
+      runs (`zq 42`) — where the CF-3300 keeps 15–18 and we kept 10–13; the
+      workload 11.8–12.0 s, the CF-3300's 11.8
+      ([`_win2_d3`](scratchpad/fdcdi_typeahead_win2_d3.out),
+      [`_d5`](scratchpad/fdcdi_typeahead_win2_d5.out),
+      [`_d8`](scratchpad/fdcdi_typeahead_win2_d8.out)). 🔮 Predicted 15–18:
+      MISSED on the good side. Now BETTER than the reference, which loses keys —
+      stated on the pages as a divergence in the user's favour.
+      Gate **`fdcdi-acceptance`** ([`disk_probe_fdcdi.py`](probes/disk/disk_probe_fdcdi.py),
+      [`fdcdi_gate.out`](scratchpad/fdcdi_gate.out)): d3 / d5 / d8 WHOLE; 🔪
+      [`fdcdi_knives.out`](scratchpad/fdcdi_knives.out): K-FD1 (`FDC_WINMAX` 0)
+      → exactly d3 d5 d8. The retries are timing-dependent (raw counts 15–32
+      seen), so `wcache-acceptance` now counts FIRST ATTEMPTS — a retry is the
+      same command on the same track / sector immediately repeated, which the
+      write path's own patterns never do — and its budgets stay exact (14 / 28),
+      raw counts printed beside them. Its first cut gave the budgets 2 of slack,
+      and the next run read 32 writes against 31.
       🔬 **TRIED 2026-10-10 AND REVERTED: skipping the seek when the head is on the
       track** (the WD2793 track register; a force interrupt `$D0` in its place so
       the write path's NOT READY test still reads a type-I status). Seeks 64 → 10
@@ -6484,7 +6526,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31736 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31778 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6650,7 +6692,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11512 (T-6FE392)8 (T-529ABE)` from `TODO.md:24306 (T-529ABE)`: a
+      `TODO.md:11554 (T-6FE392)8 (T-529ABE)` from `TODO.md:24348 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12359,7 +12401,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24306 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24348 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

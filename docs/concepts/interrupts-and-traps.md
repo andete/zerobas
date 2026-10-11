@@ -6,12 +6,12 @@ SPDX-License-Identifier: 0BSD
 
 # Interrupts and traps — what runs between statements
 
-> **Status (2026-10-10):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
-> background `PLAY` match the VG-8020 in every case measured. Open: keys typed
-> during long disk work are lost more often than on the CF-3300 (D-FDCDI,
-> TIER 3); traps are not dispatched at the prompt, where the reference has not
-> been measured (D-DIR-3); `PLAY(n)` on the statement right after a `PLAY`
-> (declined by ruling).
+> **Status (2026-10-11):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
+> background `PLAY` match the VG-8020 in every case measured. Open: traps are
+> not dispatched at the prompt, where the reference has not been measured
+> (D-DIR-3); `PLAY(n)` on the statement right after a `PLAY` (declined by
+> ruling). Keys typed during long disk work are kept here, where the CF-3300
+> loses some (D-FDCDI, 2026-10-11).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -121,8 +121,8 @@ Typed at the prompt, `STOP` prints a bare `Break`.
   `PLAY(0)` is −1 while any voice is playing, `PLAY(1)`–`PLAY(3)` ask about one
   voice. The music outlives `END`, `NEW` and a trapped error; an untrapped
   error, `STOP` and `BEEP` silence it. See [`PLAY`](../keywords/PLAY.md).
-- **During long disk work** typed keys can be lost, on the CF-3300 too;
-  zerobas loses more of them (D-FDCDI, below; [disk.md](disk.md)).
+- **During long disk work** the CF-3300 loses some typed keys; zerobas keeps
+  them (D-FDCDI, below; [disk.md](disk.md)).
 
 ## Example
 
@@ -166,10 +166,11 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   handler ([`traplatch_run.out`](../../scratchpad/traplatch_run.out)). zerobas
   raises the event at
   the next statement boundary; when the reference does is not yet pinned.
-- **Keys typed during long disk work** are lost more often than on the
-  CF-3300 (D-FDCDI, TIER 3): zerobas's disk driver keeps the interrupt off for
-  each whole sector operation, seek included. The CF-3300 loses some too, so
-  the target is a rate, not zero.
+- **Keys typed during long disk work** are all kept here, and the CF-3300 loses
+  some (D-FDCDI). Until 2026-10-11, zerobas's disk driver kept the interrupt off
+  for each whole sector operation, and fewer keys arrived than on the
+  CF-3300. Now it waits for each sector with the interrupt on, and turns it
+  off only while the sector's bytes move.
 - **Traps at the prompt** (D-DIR-3). After a program with an enabled trap
   stops, zerobas runs no handler for commands typed at the prompt. What the
   reference does there has not been measured.

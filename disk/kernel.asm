@@ -6329,6 +6329,35 @@ wrseq_body_write:
 ; `jp` thunk to here, freeing $4392 for the real `jp fren_body` veneer.
 fdc_read_data_body:
                 ld      e, 2            ; two 256-byte halves
+                ld      b, 0            ; djnz 0 -> 256 iterations
+                ; D-FDCDI: the wait for the FIRST byte opens interrupt windows (see
+                ; fdc_fdrq in disk/fat.asm for when). INLINE, and two status reads per
+                ; window, because a 2DD byte must be taken within 32 us of its DRQ:
+                ; a first cut that waited in fdc_fdrq and returned here lost the
+                ; first byte on ~1 read in 3 with NO interrupt at all
+                ; (scratchpad/fdcseq_win_diag.out) -- the call / ret and the loop setup
+                ; between the DRQ and the read were the whole budget.
+                ld      a, (FDC_IFF)
+                or      a
+                jr      z, fdc_rd_wait  ; a masked caller: as before
+                cp      1 + 2 * FDC_WINMAX
+                jr      nc, fdc_rd_wait ; windows spent: the last try is masked
+                in      a, ($A8)        ; page 0 not the BIOS -- MSX-DOS: masked,
+                and     3               ; as fdc_fdrq (disk/fat.asm) says why
+                jr      nz, fdc_rd_wait
+frdw_poll:
+                ld      a, (FDC_STATUS)
+                bit     1, a
+                jr      nz, fdc_rd_byte ; the first DRQ: take the byte at once
+                bit     0, a
+                jr      z, fdc_rd_status    ; ended without a DRQ
+                ld      a, (FDC_STATUS)
+                bit     1, a
+                jr      nz, fdc_rd_byte
+                ei
+                nop                     ; a pending interrupt is taken here
+                di
+                jr      frdw_poll
 fdc_rd_blk:
                 ld      b, 0            ; djnz 0 -> 256 iterations
 fdc_rd_wait:
@@ -6354,6 +6383,13 @@ fdc_rd_status:
                 and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
                 jr      z, fdc_rd_ok
                 ld      b, a            ; keep the error bits
+                call    fdc_lostwin     ; D-FDCDI: lost data under a window? try again
+                jr      nz, fdc_rd_nowin
+                ld      a, CMD_READ
+                ld      (FDC_STATUS), a
+                jp      fdc_read_data_body
+fdc_rd_nowin:
+                ld      a, b
                 and     ST_NOTRDY
                 jr      z, fdc_rd_n1
                 ld      a, 2            ; not ready

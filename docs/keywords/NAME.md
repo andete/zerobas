@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `NAME` — rename a file on the disk
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -95,7 +95,7 @@ The one rung not yet proven is **RAM usage**.
   `NAME` kept `TIME` running for 8 % of its work here, against 56 % on the
   CF-3300; now 14 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
   were lost too. The CF-3300 switches them off only while it moves each
-  sector, and zerobas still moves more sectors (D-FDCDI)
+  sector, and since 2026-10-11 so does zerobas (D-FDCDI)
   ([before](../../scratchpad/verbclock_run.out),
   [after](../../scratchpad/verbclock_after.out)).
 

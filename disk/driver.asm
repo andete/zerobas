@@ -280,67 +280,9 @@ fdc_wp_fail:
 ; write-protect -> DSKIO write-protected (code 0); RNF/CRC/LOST/NOTRDY map exactly
 ; as the read path does.  (WD2793 DS: Write Sector, status register Type II.)
 fdc_write_data:
-                ld      e, 2            ; two 256-byte halves
-fdc_wr_blk:
-                ld      b, 0            ; djnz 0 -> 256 iterations
-fdc_wr_wait:
-                ld      a, (FDC_STATUS)
-                bit     1, a            ; DRQ?
-                jr      nz, fdc_wr_byte
-                bit     0, a            ; BUSY?
-                jr      nz, fdc_wr_wait
-                jr      fdc_wr_status   ; finished with no DRQ -> short/error
-fdc_wr_byte:
-                ld      a, (hl)
-                ld      (FDC_DATA), a
-                inc     hl
-                djnz    fdc_wr_wait
-                dec     e
-                jr      nz, fdc_wr_blk
-fdc_wr_drain:
-                ld      a, (FDC_STATUS) ; all 512 written; wait for command end
-                bit     0, a
-                jr      nz, fdc_wr_drain
-fdc_wr_status:
-                ld      a, (FDC_STATUS)
-                ; write-protect / write-fault (bit 6, $40) -> DSKIO code 0 first,
-                ; so a protected disk reports write-protected rather than retrying.
-                and     ST_WP
-                jr      z, fdc_wr_chk
-                xor     a               ; A = 0 = write protected
-                scf
-                ret
-fdc_wr_chk:
-                ld      a, (FDC_STATUS)
-                and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
-                jr      z, fdc_wr_ok
-                ld      b, a            ; keep the error bits
-                and     ST_NOTRDY
-                jr      z, fdc_wr_n1
-                ld      a, 2            ; not ready
-                scf
-                ret
-fdc_wr_n1:
-                ld      a, b
-                and     ST_RNF
-                jr      z, fdc_wr_n2
-                ld      a, 8            ; record not found
-                scf
-                ret
-fdc_wr_n2:
-                ld      a, b
-                and     ST_CRC
-                jr      z, fdc_wr_n3
-                ld      a, 4            ; CRC / data error
-                scf
-                ret
-fdc_wr_n3:
-                ld      a, 12           ; lost data / other
-                scf
-                ret
-fdc_wr_ok:
-                or      a               ; A = 0, Cy = 0
-                ret
+                jp      fdc_write_data_body ; D-FDCDI: moved to disk/fat.asm's fill, where
+                                            ; it waits for its first DRQ with interrupt
+                                            ; windows (fdc_fdrq)
 
 ; fdc_restore — recalibrate the head to track 0 (Type I restore).
 fdc_restore:

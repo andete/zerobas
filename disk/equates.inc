@@ -547,6 +547,10 @@ CTRL_MOTOR      equ     $08     ; motor on
 ; are polled with literal `bit 0,a` / `bit 1,a` in the transfer loops (a `bit`
 ; index cannot take a mask), so only the error-mask bits below need symbols.
 ST_LOST         equ     $04     ; lost data (Type II)
+; D-FDCDI: Type II attempts that may wait for their FIRST DRQ with interrupt
+; windows (when the caller had interrupts on); the attempt after them waits masked,
+; as every attempt used to. FDC_IFF counts them: 1 + 2 x windowed retries used.
+FDC_WINMAX      equ     3
 ST_CRC          equ     $08     ; CRC error
 ST_RNF          equ     $10     ; record not found (Type II)
 ST_WP           equ     $40     ; write protect / write fault

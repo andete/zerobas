@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `FILES` — list the files on the disk
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence: the
 > two happy-path differences found on 2026-10-09 (the cursor after the listing,
 > a blank or drive-only pattern) were fixed the same day.
@@ -98,7 +98,7 @@ The one rung not yet proven is **RAM usage**.
   `FILES` kept `TIME` running for 30 % of its work here, against 71 % on the
   CF-3300; now 38 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
   were lost too. The CF-3300 switches them off only while it moves each
-  sector, and zerobas still moves more sectors (D-FDCDI)
+  sector, and since 2026-10-11 so does zerobas (D-FDCDI)
   ([before](../../scratchpad/verbclock_run.out),
   [after](../../scratchpad/verbclock_after.out)).
 

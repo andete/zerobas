@@ -23,7 +23,7 @@ Rows:
             first cut of this row read content alone and K-WC4 moved nothing.
   zb-reads  zerobas's READ commands  <= READ_BUDGET   (zb only: a budget, not a
   zb-writes zerobas's WRITE commands <= WRITE_BUDGET   comparison; the CF-3300
-                                                       is printed beside it)
+            -- FIRST ATTEMPTS (see D-FDCDI below)       is printed beside it)
 The budgets are the slice's measured figures. A slice that saves commands
 lowers them; a change that adds commands back turns them red.
   W1 (2026-10-10): 28 -> 23 reads (the boot sector is no longer re-read per
@@ -32,6 +32,15 @@ lowers them; a change that adds commands back turns them red.
   one no longer re-read the FAT sector the allocation just loaded).
   W3a (2026-10-11): 36 -> 28 writes (a chain extension's mark waits for the link,
   which writes that FAT sector once with both entries).
+  D-FDCDI (2026-10-11): the first-byte wait opens interrupt windows, and a byte
+  lost to an interrupt makes the driver RE-ISSUE that command -- a timing-
+  dependent number of retries (16-32 raw counts seen). A retry is the same
+  command on the same track and sector, immediately repeated; the design's own
+  patterns never repeat a command back to back (its read-modify-write
+  alternates kinds, its two FAT copies are different sectors). So the budget
+  rows count FIRST ATTEMPTS -- immediate repeats dropped -- and print the raw
+  count and the retries beside them. A first cut budgeted raw counts with
+  slack; the next battery read 32 writes against 31.
 
 Prints `ROW <name> CF=[...] ZB=[...] <verdict>`; exit 0 all pass, 1 a failure,
 2 no reading. CF-3300 vs zerobas DISK.
@@ -114,7 +123,8 @@ def main():
         shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
         pro = (f"set __cf [open {{{log}}} w]",
                "proc __fdc {} { if {[debug read memory 0xD000] == 1} "
-               "{ puts $::__cf [format %02X $::wp_last_value]; flush $::__cf } }",
+               "{ puts $::__cf [format {%02X:%d:%d} $::wp_last_value "
+               "[debug read memory 0x7FB9] [debug read memory 0x7FBA]]; flush $::__cf } }",
                "debug set_watchpoint write_mem 0x7FB8 {} { __fdc }")
         scr = omsx_repl.run_cases(m, [("direct", LINES)], batch=False, diska=dsk, boot=14.0,
                                   reset=reset, step=14.0, run_gap=40.0, prologue=pro)[0] or ""
@@ -122,7 +132,14 @@ def main():
         # the next typed line was lost on the CF-3300 at 4 (keys typed during disk
         # work -- D-FDCDI's own subject; the harness refused the mangled echo)
         v = open(log).read().split() if os.path.exists(log) else []
-        c = collections.Counter(kind(int(x, 16)) for x in v)
+        cmds = [(kind(int(x.split(":")[0], 16)), x) for x in v]
+        c = collections.Counter(k for k, _x in cmds)          # raw
+        first, prev = collections.Counter(), None
+        for k, x in cmds:
+            if k in ("READ", "WRITE") and x == prev:
+                continue                                      # a retry
+            first[k] += 1
+            prev = x if k in ("READ", "WRITE") else None
         m2 = re.findall(r"\[([^\]\"]*)\]", scr.replace("\n", ""))
         # the cross-sector run: a second boot, its own image, no counting
         dsx = probe_tmp.tmp(f"wcache_x_{side}.dsk")
@@ -131,8 +148,9 @@ def main():
         scx = omsx_repl.run_cases(m, [("direct", LINES_X)], batch=False, diska=dsx, boot=14.0,
                                   reset=reset, step=14.0, run_gap=40.0)[0] or ""
         mx = re.findall(r"\[([^\]\"]*)\]", scx.replace("\n", ""))
-        got[side] = (c["READ"], c["WRITE"], " ".join(m2[-1].split()) if m2 else None,
-                     " ".join(mx[-1].split()) if mx else None, chain(dsx))
+        got[side] = (first["READ"], first["WRITE"], " ".join(m2[-1].split()) if m2 else None,
+                     " ".join(mx[-1].split()) if mx else None, chain(dsx),
+                     f"raw {c['READ']} R / {c['WRITE']} W")
     bad, blind = [], []
     cf, zb = got["CF"], got["ZB"]
     rows = [("content", cf[2], zb[2], None),
@@ -150,7 +168,8 @@ def main():
             v = f"WITHIN {budget}" if z <= budget else f"OVER {budget}"
         if v.startswith(("DIVERGES", "OVER")):
             bad.append(name)
-        print(f"ROW {name} CF=[{c}] ZB=[{z}] {v}", flush=True)
+        extra = f"   ({cf[5]} on the CF-3300, {zb[5]} here)" if budget is not None else ""
+        print(f"ROW {name} CF=[{c}] ZB=[{z}] {v}{extra}", flush=True)
     if blind:
         print(f"\nINSTRUMENT FAULT: no reading on {', '.join(blind)}")
         return 2

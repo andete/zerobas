@@ -207,6 +207,141 @@ fat_rootsecs:
 ; name_cmp — compare two 11-byte 8.3 name fields, case-insensitive.
 ;   in:  HL = directory entry name, DE = search name
 ;   out: Z set if equal; trashes A, BC, DE, HL
+
+; --- D-FDCDI: Type II transfers wait for their FIRST DRQ with interrupt windows ---
+; (WD2793 DS: Type II commands -- DRQ per byte, the Lost Data status bit when a
+; byte is not taken in time; disk/PROVENANCE.md §FDC. The windowing is our own.)
+; The rotational wait before a sector's first byte is most of a disk command's
+; time, and the driver used to spend it masked: keys typed during long disk work
+; were lost (scratchpad/fdcdi_iff.out: masked 62 % of a PRINT# + CLOSE, nearly
+; all inside these waits). Now, when the CALLER had interrupts on (FDC_IFF != 0)
+; and windowed tries remain, the wait opens a one-instruction interrupt window
+; per poll. An interrupt that lands as the first DRQ arrives can cost a byte --
+; LOST DATA -- and that attempt is simply re-issued (fdc_lostwin), still windowed,
+; up to FDC_WINMAX times; the attempt after them waits masked, as every one did.
+; A masked caller (the MSX-DOS boot) never opens a window, and NEITHER DOES
+; MSX-DOS itself (page 0 is RAM there, not the BIOS): its COMMAND.COM runs with
+; interrupts on, and with windows open wrblkalt-acceptance's 32 KB WSEEK write --
+; already the slowest phase here -- outran its window and BIGW.BIN came back
+; 29184 B (scratchpad/fdcdi_full.out). The subject is BASIC's typing.
+; 2026-10-06's try at this, reverted, retried a lost first byte MASKED for a
+; whole rotation.
+
+; fdc_fdrq -- after a Type II command: wait for its first DRQ (or its end), with
+; windows when allowed. Returns masked; A = status. Keeps BC, DE, HL.
+fdc_fdrq:
+                ld      a, (FDC_IFF)
+                or      a
+                ret     z               ; a masked caller: the loop waits masked
+                cp      1 + 2 * FDC_WINMAX
+                ret     nc              ; windows spent: the last try waits masked
+                in      a, ($A8)        ; primary slot register: page 0 in bits 1-0
+                and     3
+                ret     nz              ; page 0 not the BIOS -- MSX-DOS: masked (below)
+fdq_win:
+                ei
+                nop                     ; a pending interrupt is taken here
+                di
+                ld      a, (FDC_STATUS)
+                bit     1, a
+                ret     nz              ; DRQ: the transfer runs masked
+                bit     0, a
+                jr      nz, fdq_win
+                ret                     ; ended without a DRQ: the status decides
+
+; fdc_lostwin -- B = a failed transfer's error bits. Z (and one windowed try
+; spent, HL = the buffer again) iff it was LOST DATA under a window; NZ otherwise.
+fdc_lostwin:
+                ld      a, b
+                and     ST_LOST
+                jr      z, flw_no
+                ld      a, (FDC_IFF)
+                or      a
+                jr      z, flw_no
+                cp      1 + 2 * FDC_WINMAX
+                jr      nc, flw_no
+                add     a, 2
+                ld      (FDC_IFF), a
+                ld      hl, (FDC_DEST)
+                xor     a               ; Z: re-issue
+                ret
+flw_no:
+                or      1               ; NZ: decode the error as before
+                ret
+
+; fdc_write_data_body -- fdc_write_data's body (disk/driver.asm), moved here
+fdc_write_data_body:
+                call    fdc_fdrq        ; D-FDCDI: the rotational wait with interrupt windows
+                ld      e, 2            ; two 256-byte halves
+fwd_blk:
+                ld      b, 0            ; djnz 0 -> 256 iterations
+fwd_wait:
+                ld      a, (FDC_STATUS)
+                bit     1, a            ; DRQ?
+                jr      nz, fwd_byte
+                bit     0, a            ; BUSY?
+                jr      nz, fwd_wait
+                jr      fwd_status   ; finished with no DRQ -> short/error
+fwd_byte:
+                ld      a, (hl)
+                ld      (FDC_DATA), a
+                inc     hl
+                djnz    fwd_wait
+                dec     e
+                jr      nz, fwd_blk
+fwd_drain:
+                ld      a, (FDC_STATUS) ; all 512 written; wait for command end
+                bit     0, a
+                jr      nz, fwd_drain
+fwd_status:
+                ld      a, (FDC_STATUS)
+                ; write-protect / write-fault (bit 6, $40) -> DSKIO code 0 first,
+                ; so a protected disk reports write-protected rather than retrying.
+                and     ST_WP
+                jr      z, fwd_chk
+                xor     a               ; A = 0 = write protected
+                scf
+                ret
+fwd_chk:
+                ld      a, (FDC_STATUS)
+                and     ST_NOTRDY + ST_RNF + ST_CRC + ST_LOST
+                jr      z, fwd_ok
+                ld      b, a            ; keep the error bits
+                call    fdc_lostwin     ; D-FDCDI: lost data under a window? try again
+                jr      nz, fwd_nowin
+                ld      a, CMD_WRITE
+                ld      (FDC_STATUS), a
+                jp      fdc_write_data_body
+fwd_nowin:
+                ld      a, b
+                and     ST_NOTRDY
+                jr      z, fwd_n1
+                ld      a, 2            ; not ready
+                scf
+                ret
+fwd_n1:
+                ld      a, b
+                and     ST_RNF
+                jr      z, fwd_n2
+                ld      a, 8            ; record not found
+                scf
+                ret
+fwd_n2:
+                ld      a, b
+                and     ST_CRC
+                jr      z, fwd_n3
+                ld      a, 4            ; CRC / data error
+                scf
+                ret
+fwd_n3:
+                ld      a, 12           ; lost data / other
+                scf
+                ret
+fwd_ok:
+                or      a               ; A = 0, Cy = 0
+                ret
+
+
                 ds      $4919 - $, $00      ; anchor canonical address
                 ds      $4935 - $, $00      ; anchor canonical address
                 ds      $4941 - $, $00      ; net-zero: absorbs the relocated write_sector

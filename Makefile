@@ -2367,6 +2367,13 @@ loaddi-acceptance: repack-machine $(DISK_TEST_DSK)
 wcache-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_wcache.py
 
+# --- fdcdi-acceptance: keys typed during long disk work are kept (D-FDCDI)
+# The wait for a sector's first byte opens interrupt windows (disk/fat.asm
+# fdc_fdrq, disk/kernel.asm fdc_read_data_body); a line typed 3 / 5 / 8 s into a
+# 4200 B PRINT# + CLOSE must arrive whole.
+fdcdi-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_fdcdi.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

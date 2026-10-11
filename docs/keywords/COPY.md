@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `COPY` — copy a file on the disk
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: a wildcard that matches several files (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -106,7 +106,7 @@ The one rung not yet proven is **RAM usage**.
   `TIME` stopped during a `COPY` here; now it runs for 16 % of it, against
   37 % on the CF-3300. The disk ROM's code ran with interrupts off, so keys typed meanwhile
   were lost too. The CF-3300 switches them off only while it moves each
-  sector, and zerobas still moves more sectors (D-FDCDI)
+  sector, and since 2026-10-11 so does zerobas (D-FDCDI)
   ([readings](../../scratchpad/verbclock_copy.out)).
 
 - **`COPY` arrived on 2026-09-11** (D-COPY), after its behaviour on the

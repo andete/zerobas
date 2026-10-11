@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CLOSE` — close one channel, several, or all
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -90,9 +90,9 @@ None known.
 The one rung not yet proven is **RAM usage**.
 
 Related, and not about `CLOSE` alone: keys typed while a long disk write runs
-are partly lost on both machines, more of them on zerobas (about 42 % kept
-against the CF-3300's 77 % in one measurement of `PRINT #` plus `CLOSE`). That
-is filed as a TIER 3 item against the disk driver, D-FDCDI.
+are all kept here and partly lost on the CF-3300 (about 77 % kept there). Until
+2026-10-11 zerobas kept fewer, about 42 %; the disk driver now waits for each
+sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 

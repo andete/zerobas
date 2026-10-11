@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `SAVE` — write the program to a file
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -103,9 +103,9 @@ keyword sweep does not yet carry a row for every code of every form.
 **RAM usage** is not yet proven either.
 
 Related, and not about `SAVE` alone: keys typed while a long disk write runs
-are partly lost on both machines, more of them on zerobas (about 42 % kept
-against the CF-3300's 77 % in one measurement). That is filed as a TIER 3 item
-against the disk driver, D-FDCDI.
+are all kept here and partly lost on the CF-3300 (about 77 % kept there). Until
+2026-10-11 zerobas kept fewer, about 42 %; the disk driver now waits for each
+sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
@@ -113,7 +113,7 @@ against the disk driver, D-FDCDI.
   a long `SAVE` kept `TIME` running for none of its work here, against 29 %
   on the CF-3300; now 24 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
   were lost too. The CF-3300 switches them off only while it moves each
-  sector, and zerobas still moves more sectors (D-FDCDI)
+  sector, and since 2026-10-11 so does zerobas (D-FDCDI)
   ([before](../../scratchpad/verbclock_run2.out),
   [after](../../scratchpad/verbclock_after.out)).
   `make loaddi-acceptance` has a `save` row.
