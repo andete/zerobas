@@ -960,7 +960,8 @@ oocas_argsok:
                 cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
                 jr      nz,oocas_ioerr
                 call    cas_ascii_setup     ; prime data block 1
-                jr      c,oocas_ioerr
+                jp      c,dpl_dio           ; D-CASPRIME: a failed read is 19, raised
+                                            ; (ours: `load error`, and the run went on)
                 jr      oocas_mark
 oocas_do_out:
                 ; --- FOR OUTPUT: write the $EA header block; arm the data buffer ---
@@ -2291,7 +2292,7 @@ merge_cas:
                 cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
                 jr      nz,mc_ioerr         ; tokenised / other -> cannot merge
                 call    cas_ascii_setup     ; prime data block 1
-                jr      c,mc_ioerr
+                jr      c,mc_found_dio      ; D-CASPRIME: 19 in 65535, trapped
                 ; NB: NO new_prog — MERGE inserts into the current program.
                 call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
                 jr      mrg_fin             ; D-MERGERET: the tape arm of the same
@@ -2302,6 +2303,16 @@ merge_cas:
 mc_ioerr:
                 pop     hl
                 jp      disk_error          ; D-DISKERR
+; mc_found_dio -- D-CASPRIME (2026-10-11): the first data block failed to read
+; (Ctrl-STOP / an I/O error) after `Found:`. The VG-8020 raises 19 TRAPPED with
+; ERL 65535 -- the MERGE has left the run there (basic_probe_casrbrk's mb2); its
+; search failing BEFORE `Found:` is `19 in <line>` (D-CASBRK's pmerge), and a
+; later block untrapped (mb8). Ours raised the STALE disk code, 255 on the
+; diskless machine, through mc_ioerr -> disk_error. DIRECTF is 0 here.
+mc_found_dio:
+                ld      hl,DIRECTF
+                inc     (hl)                ; 0 -> 1: ERL 65535
+                jp      dpl_dio             ; motor off, 19, raised
 
 ; --- ascii_read_lines — read a line-numbered ASCII (SAVE",A") program from the
 ; ALREADY-OPEN fat_io sequential stream, tokenising + storing each line via

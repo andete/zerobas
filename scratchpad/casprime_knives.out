@@ -1,0 +1,11 @@
+base: {'mb2': 'E19 in 65535', 'ob2': 'E19 in 15', 'mb8': 'Device I/O error', 'ib8': 'E19 in 15', 'inb': 'no error', 'bb8': 'E19 in 15'}
+  ROM 367f1529 2ec98c2b 40d65a2f 66433995  ->  24135844 2ec98c2b 7c9371f2 a49b83f1
+PASS  K-CP1: moved ['ob2'] (want exactly ['ob2'])  {'mb2': 'E19 in 65535', 'ob2': 'no error (+load error)', 'mb8': 'Device I/O error', 'ib8': 'E19 in 15', 'inb': 'no error', 'bb8': 'E19 in 15'}
+  ROM 24135844 2ec98c2b 7c9371f2 a49b83f1  ->  e8ede653 2ec98c2b 40d65a2f 71275b51
+PASS  K-CP2: moved ['mb2'] (want exactly ['mb2'])  {'mb2': 'E255 in 15', 'ob2': 'E19 in 15', 'mb8': 'Device I/O error', 'ib8': 'E19 in 15', 'inb': 'no error', 'bb8': 'E19 in 15'}
+  ROM e8ede653 2ec98c2b 40d65a2f 71275b51  ->  8d3ff861 2ec98c2b 40d65a2f 532c91ab
+PASS  K-CP3: moved ['mb2'] (want exactly ['mb2'])  {'mb2': 'E19 in 15', 'ob2': 'E19 in 15', 'mb8': 'Device I/O error', 'ib8': 'E19 in 15', 'inb': 'no error', 'bb8': 'E19 in 15'}
+restored ROM hashes 367f1529 2ec98c2b 40d65a2f 66433995 (baseline 367f1529 2ec98c2b 40d65a2f 66433995)
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
+rc=0

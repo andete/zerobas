@@ -168,6 +168,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A tape `OPEN` broken while it read the file's first block said `load error`**
+  (fixed 2026-10-11, D-CASPRIME) and the program ran on; the VG-8020 raises
+  `Device I/O error` (19) in the line
+  ([`casprime_after.out`](../../scratchpad/casprime_after.out)).
 - **`PRINT #` to a tape channel could not be broken with Ctrl-STOP** (fixed
   2026-10-11, D-CASWBRK). The VG-8020 raises `Device I/O error` (19) in the
   line when the key lands in a block's data; zerobas wrote every block. See

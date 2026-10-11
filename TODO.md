@@ -2081,6 +2081,23 @@ item — do **one item per session** to keep context lean.
       gate; Makefile accepts 0.5.3; QUICKSTART / README back to `apt-get install
       pasmo`.
 
+- [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
+      REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
+      🎚️ TIER 6 — a documented form (BLOAD's `,offset`) colliding with the
+      disk-only `,S` flag: only a variable literally named S hits it.
+      🤖 **AUTONOMOUS** — but priced against the binding wall: do not spend main's
+      last bytes on it ahead of the tiers above.
+      📏 [`blds_diag.py`](scratchpad/blds_diag.py) →
+      [`blds_diag.out`](scratchpad/blds_diag.out), a 4 KB binary at &HC000: the
+      VG-8020 loads `BLOAD"CAS:X",S` with S=0 at its own address and with S=16
+      sixteen bytes higher -- `,S` is the offset VARIABLE there, as BSAVE's is on
+      tape (D-TAPETAIL). Ours: `load error`, nothing loaded. 🔮 Predicted: HIT.
+      🔧 Why it is not a two-line fix: main's `pcr_bload` (basic/bload.asm, page
+      1) parses the tail BEFORE the tenant knows the device and sets VRAM_FLAG
+      for `S`; the tape arm (bload-body.inc) then refuses. A device test there --
+      `CAS:` on the staged name, plus the diskless bare name, which is tape too --
+      is ~16-20 B of main (page 1 10 B, low 19 B on 2026-10-11).
+
 - [ ] 🏗️ **D-SUB2 — A SECOND PLAIN 32 KB SUB ROM IN SLOT 3-3, WHEN THE FIRST
       SUB-BLOCKED ITEM REACHES THE QUEUE (ruled 2026-10-11)**
       🎚️ BUDGET — supply: it unblocks the items the SUB walls hold, not main's.
@@ -6632,7 +6649,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32076 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32121 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6798,7 +6815,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11660 (T-6FE392)8 (T-529ABE)` from `TODO.md:24454 (T-529ABE)`: a
+      `TODO.md:11677 (T-6FE392)8 (T-529ABE)` from `TODO.md:24471 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12507,7 +12524,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24454 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -27907,8 +27924,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       cassette RANDOM open (ours parses `AS #n` first, so 52/5 before the 56),
       and other device names (`GRP:`, `COM:`) on either target.
 
-- [ ] 🔴 **D-LOADERRRET — `load_error` PRINTS AND RETURNS; ~15 SITES STILL `jp` TO IT WHERE THE
-      REFERENCE RAISES A TRAPPABLE CODE (filed 2026-10-07 from D-CHDIR / D-SAVETAIL)**
+- [x] ✅ **D-LOADERRRET — `load_error` PRINTS AND RETURNS; ~15 SITES STILL `jp` TO IT WHERE THE
+      REFERENCE RAISES A TRAPPABLE CODE (filed 2026-10-07 from D-CHDIR / D-SAVETAIL;
+      CLOSED 2026-10-11 -- the last live arms are D-CASPRIME at the end of this block,
+      the one measured residual is its own item, D-BLDS)**
       🎚️ TIER 3 — common errors: each site is an ordinary mistake (a bad
       device option, a stray argument, a wrong channel) that the reference
       lets an ON ERROR handler see.
@@ -28205,6 +28224,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       pmerge kload kmerge kpload kpmerge kbinload, 9/9. 🔪 K-DS1 (tape LOAD arm)
       → dload pload, K-DS2 (disk LOAD arm) → kload kpload kbinload, K-DS3
       (MERGE's tail) → all four MERGE rows, tape AND disk -- each exactly.
+      ✅ **D-CASPRIME (2026-10-11): THE LAST LIVE TAPE ARMS -- A READ THAT FAILS WHILE
+      OPEN / MERGE PRIME THE FIRST DATA BLOCK IS 19.** Two `cas_ascii_setup` CF
+      arms were left: OPEN "CAS:" FOR INPUT's went to `oocas_ioerr` (`load error`,
+      and the run went ON) and MERGE's to `mc_ioerr` -> `disk_error`, which
+      raised the STALE disk code -- **255 on the diskless machine**, in the line.
+      📏 basic_probe_casrbrk's new rows (Ctrl-STOP 2 s in,
+      [`casprime_before.out`](scratchpad/casprime_before.out)): `ob2` VG-8020
+      `19 in 15`, ours `load error` + ran on; `mb2` VG-8020 **`19 in 65535`,
+      TRAPPED** (the MERGE has left the run at `Found:`, as the tape SAVE does --
+      D-CASWBRK; its search failing earlier is `19 in 20`, D-CASBRK, and a later
+      block untrapped, mb8), ours `255 in 15`. 🔧 OPEN's arm -> `dpl_dio`;
+      MERGE's -> `mc_found_dio` (DIRECTF 0 -> 1, then `dpl_dio`). Main page 1
+      18 -> 10 B (clean build, 2026-10-11). After: 4/4 with mb8 / ib8 unchanged
+      ([`casprime_after.out`](scratchpad/casprime_after.out)). 🔪
+      [`casprime_knives.out`](scratchpad/casprime_knives.out): K-CP1 -> ob2,
+      K-CP2 -> mb2 (255 again), K-CP3 (no DIRECTF bump) -> mb2 (`19 in 15`) --
+      each exactly, predicted.
+      📋 **CLOSING INVENTORY** (`grep` of every jump to the load_error family,
+      2026-10-11): the disk arms (bload-body, sv-diskwr, sv-bsvdisk) reach
+      `disk_error` through the tenants' status and RAISE the pending DSKIO code
+      (D-DISKERR) -- `load error` only with no code pending, by design;
+      `str-engine`'s sub-ROM-absent arm, by design; cload.asm 451 / 455 and
+      files.asm's two `cp ASCII_ID` tests, UNREACHABLE since D-CASTYPE filters the
+      search by type; cload.asm's disk "file vanished between opens" race, not
+      reproducible. One arm was measured and is NOT fixed: `BLOAD"CAS:X",S` --
+      D-BLDS, below.
 
 - [x] ✅ **D-CASRBRK — A TAPE *READ* BROKEN WITH Ctrl-STOP IN ITS DATA (filed
       2026-10-11 from D-CASWBRK, the write twin; FIXED THE SAME DAY -- at the end)**

@@ -16,8 +16,9 @@ CSAVE writes them. Ctrl-STOP lands `@WAIT` seconds after the verb starts.
   bhold       bb8 with a handler that then loops: the press is consumed
   anb / ab2 / ab8 / ab15   LOAD (it replaces the program: no handler, no line)
   cnb / cb8   CLOAD typed
-  mb8         MERGE under ON ERROR (the program and its handler stay)
-  inb / ib8   LINE INPUT # from a tape channel, in a loop, under ON ERROR
+  mb2 / mb8   MERGE under ON ERROR, broken in the first block's priming / later
+  inb / ob2 / ib8   LINE INPUT # from a tape channel, in a loop, under ON ERROR
+              (ob2: broken while OPEN primes the first block)
 
 Read as `[E err erl]` (+ ` X` when the handler's loop finished), the last
 message, or `no error` / `no message`.
@@ -77,8 +78,10 @@ CASES = {
     "ab15": ("asc", prog('LOAD"CAS:X"', brk(15))),
     "cnb": ("tok", ["NEW", 'CLOAD"X"', "@WAIT40"]),
     "cb8": ("tok", ["NEW", 'CLOAD"X"'] + brk(8)),
+    "mb2": ("asc", prog('MERGE"CAS:X"', brk(2))),
     "mb8": ("asc", prog('MERGE"CAS:X"', brk(8))),
     "inb": ("asc", prog(INP, ["@WAIT60"])),
+    "ob2": ("asc", prog(INP, brk(2))),
     "ib8": ("asc", prog(INP, brk(8))),
 }
 RX_E = re.compile(r"\[E\s+(-?\d+)\s+(-?\d+)\s*\]")

@@ -1,0 +1,7 @@
+== s0   VG-8020  BLOAD"CAS:X",S Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] Ok color auto goto list run 
+== s0   OURS     BLOAD"CAS:X",S load error ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 99 99 ] ZB color auto goto list run 
+== s16  VG-8020  BLOAD"CAS:X",S Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 99 5 ] Ok color auto goto list run 
+== s16  OURS     BLOAD"CAS:X",S load error ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 99 99 ] ZB color auto goto list run 
+== ctl  VG-8020  BLOAD"CAS:X" Found:X Ok PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] Ok color auto goto list run 
+== ctl  OURS     BLOAD"CAS:X" Found:X ZB PRINT"[P";PEEK(&HC005);PEEK(&HC015);" ]" [P 5 21 ] ZB color auto goto list run 
+refcache: 0 hit, 6 miss, 6 stored
