@@ -1,0 +1,5 @@
+National_CF-3300                 H.READ H.MAIN first bytes: ('201', '201')
+Philips_VG_8020                  H.READ H.MAIN first bytes: ('201', '201')
+C-BIOS_MSX1_EU_REPACK_DISK       H.READ H.MAIN first bytes: ('201', '201')
+C-BIOS_MSX1_EU_REPACK_NODISK     H.READ H.MAIN first bytes: ('201', '201')
+refcache: 0 hit, 4 miss, 4 stored

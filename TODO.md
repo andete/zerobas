@@ -2081,8 +2081,39 @@ item — do **one item per session** to keep context lean.
       gate; Makefile accepts 0.5.3; QUICKSTART / README back to `apt-get install
       pasmo`.
 
-- [ ] 📼 **D-AUTORUN — openMSX's TAPE AUTORUN NEVER FIRES: zerobas CALLS NEITHER H.READ
-      ($FF07) NOR H.MAIN ($FF0C) (Joost, 2026-10-11; measured the same day)**
+- [ ] 🧾 **D-LISTFLT — LIST (AND ASCII SAVE) GARBLE EVERY FLOAT LITERAL: `detok` HAS NO
+      ARM FOR `$1D` / `$1F` (reported by Vampier, 2026-10-11; measured the same day)**
+      🎚️ TIER 1 — happy path, and worse than cosmetic: `list_walk` is also
+      ASCII SAVE's writer, so `SAVE "X",A` of a program with a float literal
+      writes garbage to tape or disk.
+      🤖 **AUTONOMOUS** — the VG-8020 settles the spelling.
+      Vampier's screen: `321 i=0.123456789` LISTs as `321 I=@14VxSTOP` -- the
+      double literal's value bytes printed as themselves ($40 `@`, $12 the
+      digit-1 token, ..., $90 the STOP token). The tokeniser (sub/tkfloat.asm)
+      emits SNG_TOKEN $1D + 4 and DBL_TOKEN $1F + 8 bytes; the evaluator and
+      tok_skip read them; basic/detok.inc never does.
+      📏 [`listflt_probe.py`](scratchpad/listflt_probe.py) →
+      [`.out`](scratchpad/listflt_probe.out), 12 literals: zerobas garbles
+      ALL of them, singles too (`101 AA4`). 🔮 Predicted: HIT. The VG-8020's
+      spelling, which is the spec: `0.123456789` → `.123456789#`; `1.5` →
+      `1.5`; `0.5` → `.5`; `1E10` → `10000000000!`; `1.5#` → `1.5#`;
+      `1.5!` → `1.5`; `123456789` → `123456789#`; `3.14159265358979` →
+      `3.1415926535898#` (14 digits); `1.5D3` → `1500#`; `2E-5` → `2E-05`;
+      `12345678` → `12345678#`; `40000` → `40000!`. Read: PRINT's number
+      text without the sign space, plus `#` on every double, and `!` on a
+      single whose text has no `.` and no `E` (it would re-read as an
+      integer). Check that rule against more rows before building (a double
+      with an exponent, a negative literal -- `-` is an operator token --, a
+      single that prints with `E`).
+      🔧 detok lives in the sub ROM (sub/detok.asm includes the shared body);
+      the arm loads the value, calls the number formatter and appends the
+      suffix. Price it: where PRINT's formatter lives relative to the tenant.
+      ✅ Proof: the probe's rows identical on both builds, LIST and an ASCII
+      SAVE / LOAD round trip (the program must RUN the same after it).
+
+- [x] ✅ **D-AUTORUN — openMSX's TAPE AUTORUN NEVER FIRES: zerobas CALLS NEITHER H.READ
+      ($FF07) NOR H.MAIN ($FF0C) (Joost, 2026-10-11; measured and FIXED the same day
+      -- at the end)**
       🎚️ TIER 1 — happy path: inserting a tape with openMSX's autorun on is how
       most people load one.
       🤖 **AUTONOMOUS** — the VG-8020 settles the order.
@@ -2108,6 +2139,66 @@ item — do **one item per session** to keep context lean.
       the disk BASIC's business at the prompt and the disk build must match it.
       ✅ Proof is end-to-end: openMSX with `autoruncassettes on` and each of the
       three tape types, on the VG-8020 and both builds -- the program runs.
+      ✅ **FIXED 2026-10-11 -- EVERY TAPE TYPE AUTORUNS ON BOTH BUILDS.**
+      📏 Two more facts first: a typed NUMBERED line calls H.MAIN alone, and
+      after CLOAD the VG-8020 prints `Ok` yet calls H.MAIN alone
+      ([`autorun_seq_probe.out`](scratchpad/autorun_seq_probe.out), log
+      `RM1RMM2RMM`; the zerobas row valid this time, `12` -- no hooks); no
+      machine claims either cell -- 201 201 on the CF-3300, the VG-8020 and
+      both builds ([`autorun_cell_probe.out`](scratchpad/autorun_cell_probe.out)),
+      so the disk build has no contract to match. 🔮 Predicted both: HIT.
+      🔧 basic/repl.asm: `call H_READ` after the prompt, `call H_MAIN` at
+      `repl_read` (which a stored line returns to); equates in sysvars.inc.
+      Main page 1 10 -> 4 B (clean build, 2026-10-11).
+      📏 [`autorun_e2e_after.out`](scratchpad/autorun_e2e_after.out): 9/9 RAN
+      (VG-8020 control, both builds × ASCII / binary / tokenised). 🔮 HIT.
+      🔪 [`autorun_knives.out`](scratchpad/autorun_knives.out): K-AR1 (no
+      H.READ) -> all three NOT-RUN, predicted. K-AR2 (no H.MAIN) -> all
+      three; I predicted the tokenised row ALONE and **MISSED**
+      ([`autorun_knives_run1.out`](scratchpad/autorun_knives_run1.out)): the
+      installed openMSX's H.READ callback types NOTHING -- it only arms a
+      breakpoint on H.MAIN, where the command is typed (my model was an
+      older openMSX's, from memory; the binary's own Tcl settles it). Both
+      hooks are load-bearing for every type.
+      🔴 **THE FIX MADE THE HARNESS'S OWN AUTORUN LIVE.** The first FULL battery
+      went red on 7 cassette suites + lnblank-say: every tape launch mounts with
+      `-cassetteplayer`, autorun is openMSX's default, and now that zerobas
+      calls the hooks openMSX typed `RUN"CAS:"` at boot under the probe's
+      lines (it was always possible on the VG-8020, which always called them).
+      📏 [`noautorun_diag.out`](scratchpad/noautorun_diag.out): `set
+      autoruncassettes off` as a `-command` -- msgexact's documented rule --
+      does NOT stop it here (B AUTORAN); removing openMSX's armed breakpoint
+      does (C, D quiet). 🔮 Predicted all four: HIT. But lnblank-say still
+      autoran: it, and ~40 other sites, insert the tape from TCL after
+      startup. 📏 [`noautorun_diag2.out`](scratchpad/noautorun_diag2.out): an
+      execution trace on `cassetteplayer` plus one direct un-arm, as a
+      startup `-command`, silences both kinds (G, H); predicted 5/6 HIT --
+      I MISSED: `-script` runs BEFORE the `-command`s, so a launch that wants
+      autorun inserts from an `after` (J). 🔧 `omsx_preflight.guarded()`
+      (every launch) now adds that hook to EVERY launch, and
+      `set save_settings_on_exit false` to every launch --
+      because the first diagnosis run PERSISTED `autoruncassettes false` into
+      Joost's own openMSX settings (openMSX saves on exit; `sound_driver null`
+      is there from earlier runs too). Joost removed that line himself (an
+      edit of his settings file was refused, rightly). Then, with autorun ON:
+      autorun-acceptance 9/9 and the eight cassette suites green, his file
+      hashed unchanged around the run (`noautorun_after_*.out`); knives
+      re-run on the changed probe, both PASS.
+      `omsx_preflight.py` joined the refcache harness fingerprint.
+      🛡️ Gate `autorun-acceptance` (probes/basic/basic_probe_autorun.py).
+      📋 One measured residual, NOT fixed: after CLOAD zerobas prompts
+      through `repl` and so calls H.READ too -- D-CLOADREAD, below.
+
+- [ ] 🔍 **D-CLOADREAD — AFTER CLOAD zerobas CALLS H.READ; THE VG-8020 PRINTS `Ok` AND
+      CALLS H.MAIN ALONE (measured 2026-10-11, from D-AUTORUN)**
+      🎚️ TIER 6 — invisible to openMSX's autorun (D-AUTORUN's 9/9) and to
+      BASIC; only a program that hooks H.READ itself can tell.
+      🤖 **AUTONOMOUS** — but priced against the binding wall: main page 1
+      has 4 B (2026-10-11), and the fix is a path flag CLOAD sets and
+      `repl` tests before `call H_READ`.
+      📏 [`autorun_seq_probe.out`](scratchpad/autorun_seq_probe.out): the
+      VG-8020's log ends `2RMM` -- the prompt after the marker line, then
+      CLOAD's lone M. Unmeasured: LOAD (no `,R`), MERGE and BLOAD's returns.
 
 - [ ] 🖥️ **D-KEYSHIFT — AT THE PROMPT, HOLDING SHIFT SHOWS THE F6..F10 LABELS; zerobas
       KEEPS F1..F5 (Joost, 2026-10-11; measured the same day)**
@@ -6751,7 +6842,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32223 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32314 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6917,7 +7008,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11779 (T-6FE392)8 (T-529ABE)` from `TODO.md:24573 (T-529ABE)`: a
+      `TODO.md:11870 (T-6FE392)8 (T-529ABE)` from `TODO.md:24664 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12626,7 +12717,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24573 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24664 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

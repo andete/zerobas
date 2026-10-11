@@ -209,6 +209,12 @@ No measured difference is open. Not compared, or not measured:
   a second in, inside the long leader that opens a file, where the VG-8020
   does not look at the keyboard — both machines ran on, which looked like
   agreement ([`caswbrk_diag4.out`](../../scratchpad/caswbrk_diag4.out)).
+- **openMSX's tape autorun did nothing** (fixed 2026-10-11, D-AUTORUN). With
+  `autoruncassettes` on, openMSX waits for the BASIC prompt hooks H.READ and
+  H.MAIN and types the load command there; zerobas called neither, so a
+  tape inserted at start-up just sat in the player. The VG-8020 calls H.READ
+  then H.MAIN at every prompt and H.MAIN alone after a stored line
+  ([`autorun_seq_probe.out`](../../scratchpad/autorun_seq_probe.out)).
 - **The reader lost the second block of real recordings**: restarting the
   motor between blocks makes a burst of noise that the leader lock averaged
   in. Real game-tape captures, not synthetic ones, showed it.
@@ -256,6 +262,8 @@ openMSX:
   named and bare forms, `OPEN "CAS:"`, and what follows a tape `RUN`.
 - `make cassave-acceptance` — the type byte, name and content each save
   verb records, decoded off the recording, on all three machines.
+- `make autorun-acceptance` — openMSX's tape autorun with an ASCII, a binary
+  and a tokenised tape.
 - `make castype-acceptance`, `make casbin-acceptance` — the type filter and
   binary files.
 - `make casbrk-acceptance` — Ctrl-STOP during the search, under `ON ERROR`.

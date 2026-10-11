@@ -1,0 +1,33 @@
+== Philips_VG_8020
+     100 A=.123456789#
+     101 A=1.5
+     102 A=.5
+     103 A=10000000000!
+     104 A=1.5#
+     105 A=1.5
+     106 A=123456789#
+     107 A=3.1415926535898#
+     108 A=1500#
+     109 A=2E-05
+     110 A=12345678#
+     111 A=40000!
+     Ok
+     color  auto   goto   list   run
+== C-BIOS_MSX1_EU_REPACK_NODISK
+     100 A=
+           @14VxSTOP
+     101 AA4
+     102 A@P
+     103 AK
+     104 A=
+           A4
+     105 AA4
+     106 A=I14VxSTOP
+     107 A=A1AY&SXPOKE
+     108 A=D4
+     109 A<
+     110 A=H14Vx
+     111 AE@
+     ZB
+     color  auto   goto   list   run
+refcache: 2 hit, 0 miss

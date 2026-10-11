@@ -2444,6 +2444,12 @@ subsig-acceptance: repack-machine
 casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_casdirect.py
 
+# --- autorun-acceptance: openMSX's tape autorun runs every tape type (D-AUTORUN)
+# It waits on H.READ then H.MAIN; zerobas called neither. ASCII, binary and
+# tokenised tapes, the VG-8020 as the control, both builds.
+autorun-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_autorun.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

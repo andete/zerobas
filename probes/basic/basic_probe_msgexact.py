@@ -686,6 +686,9 @@ def measure_verify(*, machine: str = VERIFY_MACHINE, omsx: str | None = None,
     # readout returned a boot banner. Everything is pushed past the real boot.
     typed = [(12.0, f"10 POKE&H{WITNESS:04X},&H98"), (15.0, "\r"),
              (18.0, "CLOAD?"), (20.0, "\r")]
+    # 🔴 2026-10-11 (D-AUTORUN): the `-command` below no longer stops autorun in
+    # today's openMSX; omsx_preflight.guarded() removes the armed breakpoint for
+    # every tape launch instead (scratchpad/noautorun_diag.out). Kept: harmless.
     # ⚠️ `autoruncassettes` MUST BE OFF. openMSX types CLOAD+RUN by itself when a
     # cassette is mounted; the first run here captured `CLOAD Found:V Ok RUN Ok`
     # as boot output, which means the tape had ALREADY BEEN CONSUMED before the

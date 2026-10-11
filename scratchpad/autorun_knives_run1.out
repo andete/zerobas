@@ -1,0 +1,8 @@
+base: {'ascii': 'RAN', 'binary': 'RAN', 'tokenised': 'RAN'}
+  ROM 23217f28 2ec98c2b fb5e1972 2775494b  ->  a878ae9d 2ec98c2b 68714d3b c60a71d4
+PASS  K-AR1: moved ['ascii', 'binary', 'tokenised'] (want exactly ['ascii', 'binary', 'tokenised'])  {'ascii': 'NOT-RUN', 'binary': 'NOT-RUN', 'tokenised': 'NOT-RUN'}
+  ROM a878ae9d 2ec98c2b 68714d3b c60a71d4  ->  1e639b71 2ec98c2b 68714d3b 18f4068d
+FAIL  K-AR2: moved ['ascii', 'binary', 'tokenised'] (want exactly ['tokenised'])  {'ascii': 'NOT-RUN', 'binary': 'NOT-RUN', 'tokenised': 'NOT-RUN'}
+restored ROM hashes 23217f28 2ec98c2b fb5e1972 2775494b (baseline 23217f28 2ec98c2b fb5e1972 2775494b)
+
+FAILED: K-AR2

@@ -32,7 +32,8 @@ the worst one this project has:
 3. EVERY PARAMETER THAT CHANGES DELIVERY OR CAPTURE -- batch, reset, capture,
    holds, hold_secs, prologue, boot, step, cap_gap, timeout, cart, diska,
    verify_delivery, run_gap, sentinel, sentinel_capture.
-4. A HARNESS FINGERPRINT: the bytes of omsx_repl.py and omsx_run.py. If HOW a
+4. A HARNESS FINGERPRINT: the bytes of omsx_repl.py, omsx_run.py and
+   omsx_preflight.py (whose guarded() edits every spawned argv). If HOW a
    line is delivered or a screen is read changes, every stored reading was taken
    by a different instrument and must be discarded. [[apparatus-is-part-of-the-measurement]]
 
@@ -239,7 +240,10 @@ def harness_fingerprint() -> str:
                             for k in ("ZEROBAS_RUN_GAP",))
         _HARNESS = _sha(b"".join(
             open(os.path.join(here, n), "rb").read()
-            for n in sorted(("omsx_repl.py", "omsx_run.py"))
+            # omsx_preflight.py since D-AUTORUN (2026-10-11): its guarded() now
+            # ADDS to every spawned argv (no settings save; autorun un-armed on a
+            # tape mount), so it is part of HOW a reading is taken
+            for n in sorted(("omsx_repl.py", "omsx_run.py", "omsx_preflight.py"))
             if os.path.exists(os.path.join(here, n))) + switches.encode())
     return _HARNESS
 

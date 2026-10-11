@@ -94,7 +94,12 @@ repl:
                                             ; reference shows (body: str-engine.asm)
                 ld      hl,prompt_text
                 call    print_string
+                call    H_READ              ; D-AUTORUN: the prompt is up (the
+                                            ; reference: every prompt, R then M)
 repl_read:
+                call    H_MAIN              ; D-AUTORUN: a line is about to be
+                                            ; read -- also after a STORED line,
+                                            ; which has no prompt (M alone)
                 call    read_line           ; LINEBUF <- typed line (ASCII, 0-term)
                 jr      c,repl              ; CF set = ABORTED (Ctrl-C, D-CTRLC):
                                             ; discarded unexecuted, and prompted

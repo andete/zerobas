@@ -3423,6 +3423,13 @@ VCX_FRAMES      equ     20      ; frames remaining for this voice's current note
 ; JP; the hook is C9-free on our target so no chain). It is our entry into C-BIOS's
 ; $0038 ISR; play_service is main-ROM page-1 resident (reached by a near JP, mapped
 ; whenever the ISR fires -- page-1 tenants run DI, §4a) and does the MUSICF==0 fast-out.
+; D-AUTORUN: the two prompt hooks, as the VG-8020 calls them (measured,
+; scratchpad/autorun_order_probe.out / autorun_seq_probe.out): H.READ once
+; the prompt is printed, H.MAIN before every line is read. openMSX's tape
+; autorun waits on both. Unclaimed (a bare RET) on all four machines,
+; scratchpad/autorun_cell_probe.out.
+H_READ          equ     $FF07   ; prompt printed ("Ok" / ZB)
+H_MAIN          equ     $FF0C   ; about to read a line at command level
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
 ; --- BASIC-extension hooks the DISK ROM claims (D-MKHOOK) -------------------
 ; docs/spec-basic-nodisk.md. On real MSX the MAIN ROM owns the disk keywords'

@@ -147,6 +147,13 @@ Two rig facts the first two runs got wrong, kept because they are reusable:
   boot and the probe's own `CLOAD?` met a tape at its end. Setting it inside the
   `-script` is **too late** — openMSX processes command-line options in sequence,
   so it has to be a `-command` ahead of the insertion.
+  🔴 **Not so in today's openMSX (measured 2026-10-11, D-AUTORUN,
+  `scratchpad/noautorun_diag.out`):** with the setting off as a `-command` ahead
+  of `-cassetteplayer`, autorun still fired; the `-command`s run after the
+  insertion has armed openMSX's breakpoint. What stops it is removing that
+  breakpoint (`::openmsx::auto_run_bp`), which every launch now gets from
+  `omsx_preflight.guarded()` -- and a `set` from a test run also no longer
+  persists into the user's openMSX settings (that run had written it there).
 
 The `?Redo from start` reading carries trailing screen junk (INPUT's re-prompt
 `?` and the function-key row) — the message is the head of the row, and the

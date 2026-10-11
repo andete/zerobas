@@ -1,0 +1,19 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_casbin.py
+== bnn   VG-8020 PEEK 34                    ours PEEK 34
+== bty   VG-8020 PEEK 34                    ours PEEK 34
+== bbare VG-8020 PEEK 34                    ours PEEK 34
+== bnodev VG-8020 PEEK 34                    ours PEEK 34
+== bscr  VG-8020 Skip:Y | Found:X           ours Skip:Y | Found:X
+== lbin  VG-8020 20 STOP                    ours 20 STOP
+== cbin  VG-8020 10 END                     ours 10 END
+
+PASS: binary files in a tape search (7/7)
+refcache: 0 hit, 14 miss, 14 stored

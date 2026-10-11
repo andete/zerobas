@@ -313,9 +313,90 @@ def guarded(cmd):
     a variable the spawn no longer uses -- a guard filtered away from its own
     subject, which is the failure mode this whole module is built against
     ([[echo-guard-never-saw-say-rows]]). Wrapping makes that unexpressible, and it
-    is what tools/check_probe_preflight.py looks for."""
+    is what tools/check_probe_preflight.py looks for.
+
+    🔴 D-AUTORUN (2026-10-11): IT ALSO KEEPS openMSX FROM ACTING ON ITS OWN
+    (`isolate`), two ways, both measured (scratchpad/noautorun_diag.out):
+      * every launch gets `set save_settings_on_exit false`. openMSX SAVES ITS
+        SETTINGS ON EXIT, so any `set` a probe made landed in the user's own
+        ~/.openMSX/share/settings.xml -- a diagnosis wrote `autoruncassettes
+        false` there on 2026-10-11, and `sound_driver null` is there from
+        earlier runs. A test run must not reconfigure the user's emulator.
+      * every launch gets the AUTORUN BREAKPOINT removed (UNARM_HOOK). openMSX
+        types the load command by itself (H.READ arms a breakpoint on H.MAIN,
+        which types it) whenever `autoruncassettes` is on -- its default.
+        zerobas called neither hook until D-AUTORUN, so it was inert there; the
+        fix made it live and eight cassette suites went red with `RUN"CAS:"`
+        typed at boot. `set autoruncassettes off` as a `-command` does NOT stop
+        it in this openMSX, before `-cassetteplayer` or not (variant B; the
+        msgexact doc's rule): the commands run after the insertion has armed
+        the breakpoint. Removing `::openmsx::auto_run_bp` does (variants C, D),
+        and changes no setting. ~40 sites insert a tape from TCL, after
+        startup (lnblank-say's prologue autoran with only an argv un-arm), so
+        the hook is an execution TRACE on `cassetteplayer` plus one direct
+        un-arm -- `-script` runs BEFORE the `-command`s, so an early scripted
+        insertion is cleared by the direct call and a later one by the trace
+        (scratchpad/noautorun_diag2.out, variants G H I J). A launch that WANTS
+        autorun (the autorun gate) removes the trace and inserts from an
+        `after`, as variant J does."""
+    cmd = isolate(cmd)
     guard_cmd(cmd)
     return cmd
+
+
+NO_SAVE = "set save_settings_on_exit false"
+UNARM_HOOK = ("proc ::__zb_unarm {args} { if {[info exists ::openmsx::auto_run_bp]} "
+              "{ debug remove_bp $::openmsx::auto_run_bp; unset ::openmsx::auto_run_bp } }; "
+              "catch {trace add execution cassetteplayer leave ::__zb_unarm}; ::__zb_unarm")
+
+
+def isolate(cmd):
+    """`cmd` with NO_SAVE and UNARM_HOOK added to every openMSX launch (one naming
+    -machine), as `-command`s ahead of `-machine`. A list stays a list (a new
+    one), a shell string a string; anything else is returned untouched."""
+    if isinstance(cmd, str):
+        if "-machine" not in cmd:
+            return cmd
+        add = f"-command '{NO_SAVE}' -command '{UNARM_HOOK}' "
+        return cmd.replace("-machine", add + "-machine", 1)
+    argv = list(cmd)
+    s = [str(a) for a in argv]
+    if "-machine" not in s:
+        return cmd
+    add = ["-command", NO_SAVE, "-command", UNARM_HOOK]
+    i = s.index("-machine")
+    return argv[:i] + add + argv[i:]
+
+
+def _selftest() -> int:
+    arms = (
+        ("a tape launch gets save-off and the un-arm hook",
+         ["om", "-machine", "M", "-cassetteplayer", "t.cas", "-script", "x"],
+         ["om", "-command", NO_SAVE, "-command", UNARM_HOOK, "-machine", "M",
+          "-cassetteplayer", "t.cas", "-script", "x"]),
+        ("no argv tape: the same (a script may insert one later)",
+         ["om", "-machine", "M", "-script", "x"],
+         ["om", "-command", NO_SAVE, "-command", UNARM_HOOK, "-machine", "M",
+          "-script", "x"]),
+        ("a caller's own autorun setting does not exempt it (it does not work)",
+         ["om", "-machine", "M", "-command", "set autoruncassettes off",
+          "-cassetteplayer", "t"],
+         ["om", "-command", NO_SAVE, "-command", UNARM_HOOK, "-machine", "M",
+          "-command", "set autoruncassettes off", "-cassetteplayer", "t"]),
+        ("not an openMSX launch (no -machine): untouched",
+         ["python3", "x.py"], ["python3", "x.py"]),
+        ("a shell string is handled as text",
+         "om -machine M -cassetteplayer t.cas",
+         f"om -command '{NO_SAVE}' -command '{UNARM_HOOK}' -machine M -cassetteplayer t.cas"),
+    )
+    bad = 0
+    for label, given, want in arms:
+        got = isolate(given)
+        ok = got == want
+        bad += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'}  {label}" + ("" if ok else f"  got {got}"))
+    print(f"{len(arms) - bad}/{len(arms)} selftest arms pass")
+    return 1 if bad else 0
 
 
 def guard_cmd(cmd) -> None:
@@ -344,6 +425,8 @@ def guard_cmd(cmd) -> None:
 # --- CLI --------------------------------------------------------------------
 
 def main() -> int:
+    if "--selftest" in sys.argv[1:]:
+        return _selftest()
     import argparse
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
