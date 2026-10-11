@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BSAVE` — save a block of memory to a file
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -100,6 +100,14 @@ rung requires. **RAM usage** is not yet proven either.
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape write** (fixed 2026-10-11, D-CASWBRK).
+  On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
+  data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
+  zerobas wrote on to the end. The first try at measuring it broke each save
+  a second in, inside the long leader that opens a file, where the VG-8020
+  does not look at the keyboard — both machines ran on, which looked like
+  agreement ([`caswbrk_diag4.out`](../../scratchpad/caswbrk_diag4.out)).
+
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-BLDI):
   a long `BSAVE` to disk kept `TIME` running for none of its work here,
   against 30 % on the CF-3300; now 27 %. After the first sector every disk transfer came back with
@@ -143,6 +151,7 @@ rung requires. **RAM usage** is not yet proven either.
   `,S` with `BLOAD`, the error row for a missing end address, and `BSAVE`
   followed by more statements.
 - `make bsavevar-acceptance` — a variable as the exec address, and `,SX`.
+- `make caswbrk-acceptance` — a tape `BSAVE` broken with Ctrl-STOP.
 - `make tapetail-acceptance` — the cassette tails and the exec typed as an
   address, on both references.
 - `make asavechan-acceptance` — `BSAVE` beside an open output channel.

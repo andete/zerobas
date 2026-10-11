@@ -1,0 +1,8 @@
+zb  (41273 half-periods)
+   short HI  n=20396  mode=748    748 x20396
+   short LO  n=20394  mode=750    750 x20060 728 x129 720 x74 743 x51 740 x29 889 x13 693 x12 789 x9 776 x6 832 x5 905 x1 869 x1
+   long  HI  n=241    mode=1504   1504 x241
+   long  LO  n=242    mode=1498   1498 x132 1495 x47 1448 x25 1597 x21 1594 x16 1928 x1
+   short duty skew LO-HI = +2 T   (full cycle 1498 T)
+   long  duty skew LO-HI = -6 T   (full cycle 3002 T)
+refcache: 0 hit, 1 miss, 1 stored

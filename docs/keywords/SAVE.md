@@ -109,6 +109,17 @@ sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape write** (fixed 2026-10-11, D-CASWBRK).
+  On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
+  data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
+  zerobas wrote on to the end. The first try at measuring it broke each save
+  a second in, inside the long leader that opens a file, where the VG-8020
+  does not look at the keyboard — both machines ran on, which looked like
+  agreement ([`caswbrk_diag4.out`](../../scratchpad/caswbrk_diag4.out)).
+  A tape `SAVE` in a program reports it in line 65535 on the VG-8020, the
+  direct-mode line, because the save leaves the run before it writes; its
+  handler is still taken. zerobas does the same now.
+
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   a long `SAVE` kept `TIME` running for none of its work here, against 29 %
   on the CF-3300; now 24 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
@@ -163,5 +174,6 @@ sector with interrupts on (D-FDCDI).
   `make wprotect-acceptance`, `make asavechan-acceptance` — the date stamp,
   a full disk, a protected disk, an open channel.
 - `make cassave-acceptance` — what a cassette `SAVE` writes.
+- `make caswbrk-acceptance` — a tape `SAVE` broken with Ctrl-STOP.
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make kwram` — the RAM-usage comparison.

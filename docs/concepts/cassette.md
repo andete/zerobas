@@ -6,12 +6,12 @@ SPDX-License-Identifier: 0BSD
 
 # The cassette — files on tape, and how BASIC finds them
 
-> **Status (2026-10-09):** every measured tape behaviour agrees with the
+> **Status (2026-10-11):** every measured tape behaviour agrees with the
 > VG-8020, and with the CF-3300 where a row was run there too: the recorded
-> bytes, the search and its messages, the type filter, Ctrl-STOP. Open: a
-> failing tape write and a damaged ASCII program still print `load error`
-> instead of raising a code (part of D-LOADERRRET, TIER 3; the references'
-> answer there is not measured). Speed is deliberately left out of these docs
+> bytes, the search and its messages, the type filter, Ctrl-STOP while
+> reading and while writing. Open: a damaged ASCII program still prints `load
+> error` instead of raising a code (part of D-LOADERRRET, TIER 3; the
+> references' answer there is not measured). Speed is deliberately left out of these docs
 > until on-par speed is established for every keyword.
 
 ## Summary
@@ -104,6 +104,12 @@ from the screen and is not claimed. Every verb that reads prints these rows,
 `ON ERROR` handler can trap, for `LOAD`, `CLOAD`, `RUN`, `MERGE`, `BLOAD` and
 `OPEN` alike.
 
+**Ctrl-STOP during a write** is 19 too, for `CSAVE`, `BSAVE`, `SAVE` and
+`PRINT #`, when it lands in the data. In the long leader that opens a file
+nothing happens and the save completes, and STOP without CTRL never breaks a
+write. A tape `SAVE` in a program reports the error in line 65535, because it
+leaves the run before writing; the handler is still taken.
+
 ### The verbs
 
 | verb | does | notes |
@@ -145,10 +151,12 @@ zerobas by `make castail-acceptance`
 
 No measured difference is open. Not compared, or not measured:
 
-- **A failing tape write, and an ASCII program with a line that has no
-  number**, print `load error` here and do not raise a code (part of
-  D-LOADERRRET, TIER 3). Ctrl-STOP during a write gave no usable reading on
-  either machine with the present rig.
+- **An ASCII program with a line that has no number** prints `load error`
+  here and does not raise a code (part of D-LOADERRRET, TIER 3).
+- **Ctrl-STOP still held after it broke a write.** The VG-8020 runs the
+  `ON ERROR` handler at once and breaks it if the key is still down about
+  0.7 s later; zerobas waits for the key to come up, then runs the handler,
+  which that key no longer breaks. A short press reads the same on both.
 - **The end of the tape without Ctrl-STOP.** The references wait on silence.
   zerobas's `TAPION` gives up after a fixed run of silence, so a dead tape
   ends the search; no row compares the two.
@@ -186,6 +194,13 @@ No measured difference is open. Not compared, or not measured:
   of a `Skip :` row for a wrong-type file missed: there is none.
 - **Ctrl-STOP printed `load error` and the program ran on** (fixed
   2026-10-08, D-CASBRK); the VG-8020 raises 19.
+- **Ctrl-STOP could not break a tape write either** (fixed 2026-10-11, D-CASWBRK).
+  On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
+  data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
+  zerobas wrote on to the end. The first try at measuring it broke each save
+  a second in, inside the long leader that opens a file, where the VG-8020
+  does not look at the keyboard — both machines ran on, which looked like
+  agreement ([`caswbrk_diag4.out`](../../scratchpad/caswbrk_diag4.out)).
 - **The reader lost the second block of real recordings**: restarting the
   motor between blocks makes a burst of noise that the leader lock averaged
   in. Real game-tape captures, not synthetic ones, showed it.
@@ -196,7 +211,9 @@ The open C-BIOS stubs the cassette read and write entries; zerobas provides
 all seven in [tape/tape.asm](../../tape/tape.asm). `tapion` waits for a real
 edge, skips the motor's spin-up noise, measures 16 leader half-periods and
 sets the 0/1 threshold (`LOWLIM`, `&HFCA4`) at 1.75 times the short one;
-`tapout` frames each byte with two stop bits; `stmotr` drives the relay.
+`tapout` frames each byte with two stop bits and, before each byte, asks
+`BREAKX` whether Ctrl-STOP is down — if it is, it waits for the key to come
+up and returns with carry set; `stmotr` drives the relay.
 
 The BASIC side shares one search. `cas_capture_name`
 ([basic/cascap-body.inc](../../basic/cascap-body.inc)) puts the wanted name
@@ -233,6 +250,8 @@ openMSX:
 - `make castype-acceptance`, `make casbin-acceptance` — the type filter and
   binary files.
 - `make casbrk-acceptance` — Ctrl-STOP during the search, under `ON ERROR`.
+- `make caswbrk-acceptance` — Ctrl-STOP during a write: in the data, in the
+  leader, and held after it broke the write.
 - `make cas-ascii-acceptance`, `make eofcas-acceptance`,
   `make casprdir-acceptance` — ASCII files and the tape channel.
 - `make tapetail-acceptance`, `make loadtail-acceptance`,

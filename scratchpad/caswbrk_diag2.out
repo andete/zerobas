@@ -1,0 +1,19 @@
+== csave_w0.5 VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w0.5 OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w1.5 VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w1.5 OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w3  VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w3  OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w6  VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== csave_w6  OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== save_w12  VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:SAVE"CAS:X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN Ok color auto goto list run 
+== save_w12  OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:SAVE"CAS:X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN ZB color auto goto list run 
+== save_w40  VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:SAVE"CAS:X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN Ok color auto goto list run 
+== save_w40  OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:SAVE"CAS:X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN ZB color auto goto list run 
+== open_w0.5 VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== open_w0.5 OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== open_w1.5 VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== open_w1.5 OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== open_w3   VG-8020  ... Ok NEW Ok 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== open_w3   OURS     ... ZB NEW ZB 10 ON ERROR GOTO 90 15 TIME=0:OPEN"CAS:X"FOR OUTPUT AS#1 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+refcache: 0 hit, 18 miss, 18 stored

@@ -168,6 +168,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **`PRINT #` to a tape channel could not be broken with Ctrl-STOP** (fixed
+  2026-10-11, D-CASWBRK). The VG-8020 raises `Device I/O error` (19) in the
+  line when the key lands in a block's data; zerobas wrote every block. See
+  [`CSAVE`](CSAVE.md) for the measurement.
 - **`INPUT #` / `LINE INPUT #` from a disk that had gone said `Input past end`**
   (fixed 2026-10-11, D-LINEJECT). With the disk taken out partway through a
   file, the CF-3300 raises `Disk offline` (70) in the reading line; zerobas took
@@ -239,4 +243,5 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - `make clearclose-acceptance` — `CLEAR` closing open files.
 - `make castail-acceptance`, `make casprdir-acceptance`,
   `make nodiskopen-acceptance` — the cassette and the diskless machine.
+- `make caswbrk-acceptance` — `PRINT #` to tape broken with Ctrl-STOP.
 - `make kwram` — the RAM-usage comparison.

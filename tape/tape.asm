@@ -35,6 +35,8 @@
 PSG_REGS:       equ     $A0             ; PSG register-select write port
 PSG_WRITE:      equ     $A1             ; PSG value write port (R15 = general-output port B)
 PSG_STAT:       equ     $A2             ; PSG value read port (CAS-in on R14 bit 7)
+BREAKX:         equ     $00B7           ; published BIOS entry: CF = Ctrl-STOP held,
+                                        ; read from the matrix (interrupts may be off)
 PPI_REGS:       equ     $AB             ; i8255 PPI control (BSR) register
 PPI_PORTC:      equ     $AA             ; i8255 PPI Port C (motor bit 4, CASW bit 5)
 ; Active cassette-write timing table. When the baud is selected, the system
@@ -149,6 +151,11 @@ CAS_SHORTLEN:   equ     4000            ; short header (between blocks)
 CAS_DUTY:       equ     5               ; every low half: ret + the caller's call
 CAS_BITCOMP:    equ     13              ; '1' bit and the stop-bit/byte boundary
 CAS_BITCOMP0:   equ     14              ; '0' bit: its own tail, its own figure
+; D-CASWBRK: the byte boundary also carries TAPOUT's `call BREAKX` / `jr c` with
+; STOP up: call 18 + jp 11 + in/and/or/out/in/and 64 + ret nz 12 + jr 8 = 113 T
+; with the M1 waits = eight 14 T iterations. Its own figure, so the '1' bit's last
+; cycle keeps CAS_BITCOMP; 21 < CAS_HHALF24 = 24.
+CAS_BYTECOMP:   equ     CAS_BITCOMP + 8
 CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAPOOF
 
 ; TAPION lock: skip CAS_SKIP edges to clear the motor-restart spin-up, then
@@ -275,40 +282,25 @@ cas_seed:
 ; whatever the system selected -- no private flag. When a baud is chosen (e.g.
 ; SCREEN ,,,baud), the system copies its reference table CS120 ($F3FC, 1200) or
 ; CS240 ($F401, 2400) into the active LOW slot ($F406). We compare the active
-; LOW word against CS120 first, then CS240: a CS240 match means 2400, anything
-; else -- a CS120 match or any unrecognised value -- defaults to the MSX-standard
-; 1200. TAPOON's cas_seed guarantees CS120/CS240 hold their real reference words
-; before we get here, so an unselected baud (active still 0) simply matches
-; neither table and falls to the 1200 default via the catch-all no-match path.
+; LOW word against CS240: a match means 2400, anything else -- a CS120 match or
+; any unrecognised value -- defaults to the MSX-standard 1200. TAPOON's cas_seed
+; guarantees CS120/CS240 hold their real reference words before we get here, so
+; an unselected baud (active still 0) simply matches neither table and falls to
+; the 1200 default. (D-CASWBRK: it used to test CS120 first, but a CS120 match
+; and no match both gave 1200, so that test decided nothing -- 26 B, spent on
+; TAPOUT's Ctrl-STOP test.) Runs before the motor is on: its time is free.
 ; Pure comparison against the live tables: no copied timing constants.
-; Out:     Z set => 1200 baud, Z clear (NZ) => 2400 baud.   Changes: AF, HL
+; Out:     Z set => 1200 (A = 0), Z clear (NZ) => 2400 (A = $FF).
+; Changes: AF, DE, HL
 cas_baud:
-                push    hl
-                ; 1200 (and the safe default): active LOW == CS120 LOW word.
-                ld      hl,CS120_LOW
-                ld      a,(ACT_LOW)
-                cp      (hl)
-                jr      nz,cas_baud_chk24
-                inc     hl
-                ld      a,(ACT_LOW+1)
-                cp      (hl)
-                jr      z,cas_baud_1200
-cas_baud_chk24:
-                ; 2400: active LOW == CS240 LOW word.
-                ld      hl,CS240_LOW
-                ld      a,(ACT_LOW)
-                cp      (hl)
-                jr      nz,cas_baud_1200
-                inc     hl
-                ld      a,(ACT_LOW+1)
-                cp      (hl)
-                jr      nz,cas_baud_1200
-                pop     hl              ; matched CS240 -> 2400 baud
-                or      $FF             ; A nonzero -> Z clear (NZ)
-                ret
-cas_baud_1200:
-                pop     hl
-                xor     a               ; A = 0 -> Z set
+                ld      hl,(ACT_LOW)
+                ld      de,(CS240_LOW)
+                or      a
+                sbc     hl,de           ; HL = 0 <=> 2400
+                ld      a,h
+                or      l
+                sub     1               ; CF <=> HL was 0
+                sbc     a,a             ; $FF + NZ (2400), or 0 + Z (1200)
                 ret
 
 ;--------------------------------
@@ -654,12 +646,19 @@ tapoon_emit:
 ; $00ED TAPOUT
 ; Writes data to the tape.
 ; Input:   A  = data to write
-; Output:  CF = set if failed
+; Output:  CF = set if failed: Ctrl-STOP held (that byte not written)
 ; Changes: all
 ; Frames A as: start bit (0), 8 data bits LSB-first, 2 stop bits (1).
+; 🔴 D-CASWBRK (2026-10-11): THE VG-8020 BREAKS A TAPE WRITE ON Ctrl-STOP -- a 2 KB
+; BSAVE / a 1.6 KB CSAVE broken in the data raise `19 in 15` there, trapped, and
+; ran to the end here (scratchpad/caswbrk_diag4.out); STOP ALONE does not break it
+; (an 8 KB BSAVE under a STOP press every 4 s completes, caswbrk_diag5.out), which
+; is BREAKX's own test. Once per byte, at the byte boundary (CAS_BYTECOMP).
 tapout:
                 di
                 push    af              ; save the data byte across cycle calls
+                call    BREAKX          ; CF = Ctrl-STOP held
+                jr      c,tapout_brk
                 call    cas_long        ; start bit = '0' = one low-freq cycle
                 call    cas_cycle
                 pop     af
@@ -691,9 +690,20 @@ tapout_next:
                 ; and the NEXT tapout's `di` / `push af` / `call cas_long` before
                 ; any line change. Compensating only the bit boundaries left the
                 ; reference DECODING but garbling the name; this is the other site.
-                ld      e,CAS_BITCOMP
+                ld      e,CAS_BYTECOMP  ; D-CASWBRK: + the BREAKX test
                 call    cas_cycle_last
                 or      a               ; CF = 0: success
+                ret
+; The press that breaks the write is CONSUMED: the VG-8020 runs the ON ERROR
+; handler at once and breaks it only if the key is still down ~0.7 s later
+; (its key repeat; scratchpad/caswbrk_hold_tap.out, INTFLG). zerobas's run loop
+; polls the key's LEVEL, so a handler entered with the key down broke at its
+; first statement -- hence wait here for the release (a tap: same screen).
+tapout_brk:
+                call    BREAKX
+                jr      c,tapout_brk    ; Ctrl-STOP still down
+                pop     de              ; drop the byte
+                scf                     ; CF = failed
                 ret
 
 ;--------------------------------

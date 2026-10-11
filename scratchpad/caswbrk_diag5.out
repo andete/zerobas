@@ -1,0 +1,5 @@
+== bsave8_stop VG-8020  ...Ok 10 ON ERROR GOTO 90 15 TIME=0:BSAVE"CAS:X",&H8000,&H9FFF 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 59 ] Ok color auto goto list run 
+== bsave8_stop OURS     ... ZB 10 ON ERROR GOTO 90 15 TIME=0:BSAVE"CAS:X",&H8000,&H9FFF 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 2 ] ZB color auto goto list run 
+== bsave8_ctrlstop VG-8020  ... color auto goto list run 
+== bsave8_ctrlstop OURS     ... ZB 10 ON ERROR GOTO 90 15 TIME=0:BSAVE"CAS:X",&H8000,&H9FFF 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 2 ] ZB color auto goto list run 
+refcache: 0 hit, 4 miss, 4 stored

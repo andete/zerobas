@@ -101,13 +101,20 @@ svt_go:
 ; sv_load_error — sub-local reporter. See the ERROR PATH note in the header: it
 ; ABORTS to save_tenant (D-DISKFULLRETRY), whatever depth it is reached from.
 sv_load_error:
+                ld      a,1
+sv_fail:                                    ; A = the SV_STAT code
+                ld      (SV_STAT),a
                 call    TAPIOF
                 ld      a,$EE
                 ld      (ERRMARK),a
-                ld      a,1
-                ld      (SV_STAT),a
                 ld      sp,(SVT_SP)         ; D-DISKFULLRETRY: ABORT, from any depth
                 ret                         ; -> save_tenant, after `call svt_go`
+; sv_tape_err -- a TAPE engine's TAPOON/TAPOUT failed (D-CASWBRK: Ctrl-STOP in
+; the write). SV_STAT 19 and sv_tenant RAISES it -- `Device I/O error`, as the
+; VG-8020 does. Not through DISKOP_ERR: a stale 19 there would outlive this.
+sv_tape_err:
+                ld      a,19
+                jr      sv_fail
 
 ; --- sub-local COPIES of the resident helpers the engines call --------------
 ; Each of these keeps a resident caller too (header, "WHAT STAYS RESIDENT"), so

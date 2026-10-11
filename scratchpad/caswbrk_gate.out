@@ -1,0 +1,13 @@
+== dcsave  VG-8020 Device I/O error   ours Device I/O error
+== pcsave  VG-8020 E19 in 15          ours E19 in 15
+== pbsave  VG-8020 E19 in 15          ours E19 in 15
+== psave   VG-8020 E19 in 65535       ours E19 in 15
+== pprint  VG-8020 E19 in 15          ours E19 in 15
+== pleader VG-8020 no error           ours no error
+== pctl    VG-8020 no error           ours no error
+== phold   VG-8020 E19 in 15 X        ours E19 in 15 X
+DIVERGES psave: VG-8020 E19 in 65535 vs ours E19 in 15
+
+FAIL: a tape write broken with Ctrl-STOP (7/8)
+refcache: 0 hit, 16 miss, 16 stored
+rc=1

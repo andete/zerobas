@@ -1,0 +1,9 @@
+== bsave_big VG-8020  ... 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [E 19 15 60 ] Ok color auto goto list run 
+== bsave_big OURS     ... ZB 10 ON ERROR GOTO 90 15 TIME=0:BSAVE"CAS:X",&H8000,&H87FF 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 2 ] ZB color auto goto list run 
+== csave_big VG-8020  ... RUN [E 19 15 60 ] Ok color auto goto list run 
+== csave_big OURS     ...XXXXXXXXXXXXXXXXXXXXX 10 ON ERROR GOTO 90 15 TIME=0:CSAVE"X" 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 3 ] ZB color auto goto list run 
+== print_long VG-8020  ...S:X"FOR OUTPUT AS#1: FOR J=1 TO 40:PRINT#1,STRING$(200,65) :NEXT:CLOSE 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+== print_long OURS     ...UT AS#1: FOR J=1 TO 40:PRINT#1,STRING$(200,65) :NEXT:CLOSE 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN [N 109 ] ZB color auto goto list run 
+== print_late VG-8020  ...AS#1: FOR J=1 TO 40:PRINT#1,STRING$(200,65) :NEXT:CLOSE 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN Break in 15 Ok color auto goto list run 
+== print_late OURS     ...S:X"FOR OUTPUT AS#1: FOR J=1 TO 40:PRINT#1,STRING$(200,65) :NEXT:CLOSE 30 PRINT"[N";TIME;"]":END 90 PRINT"[E";ERR;ERL;TIME;"]":END RUN color auto goto list run 
+refcache: 0 hit, 8 miss, 8 stored

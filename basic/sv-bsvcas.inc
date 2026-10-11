@@ -27,44 +27,44 @@ bsv_cas_open:
                 ; --- tape header block: TAPOON(long) + 10x$D0 + 6-char name + TAPOOF ---
                 ld      a,$FF               ; non-zero -> long header
                 call    TAPOON
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; emit 10x BINARY_ID ($D0)
                 ld      a,10
                 ld      (TSV_CNT),a
 bsv_cas_id:
                 ld      a,BINARY_ID         ; $D0
                 call    TAPOUT
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ld      a,(TSV_CNT)
                 dec     a
                 ld      (TSV_CNT),a
                 jr      nz,bsv_cas_id
                 ; emit 6-char name from TSV_NAME
                 call    tape_name_emit
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 call    TAPOOF              ; end of header block
                 ; --- tape data block: TAPOON(short) + start/end/exec + data + TAPOOF ---
                 xor     a                   ; zero -> short header
                 call    TAPOON
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; start (LE): low byte then high byte, each from CURPTR
                 ld      hl,CURPTR
                 call    tape_putword        ; emits (HL) then (HL+1)
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; end (LE)
                 ld      hl,TSV_END
                 call    tape_putword
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; exec (LE)
                 ld      hl,EXECPTR
                 call    tape_putword
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; data bytes RAM[start..end] inclusive; CURPTR = start
 bsv_cas_data:
                 ld      hl,(CURPTR)
                 ld      a,(hl)
                 call    TAPOUT
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ld      hl,(CURPTR)
                 ld      de,(TSV_END)
                 ld      a,h

@@ -2393,6 +2393,14 @@ fdcdi-acceptance: repack-machine $(DISK_TEST_DSK)
 geteject-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_geteject.py
 
+# --- caswbrk-acceptance: a tape WRITE broken with Ctrl-STOP is 19 (D-CASWBRK) ----
+# CSAVE typed (the message), and CSAVE / BSAVE / SAVE / PRINT # "CAS:" broken in
+# their data under ON ERROR (19 in 15 on the VG-8020; ours wrote on to the end);
+# a break in the header leader is no error on both; the key that broke the write
+# does not also break the handler.
+caswbrk-acceptance: repack-machine
+	python3 probes/basic/basic_probe_caswbrk.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

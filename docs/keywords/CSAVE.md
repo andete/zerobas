@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CSAVE` — save the program to cassette
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -78,12 +78,22 @@ and comparing the decoded recordings byte for byte.
 
 None known.
 
-The one rung not yet proven is **RAM usage**. Not measured: what happens if
-the recording is broken with Ctrl-STOP — a try with the current rig gave no
-usable reading on either machine.
+The one rung not yet proven is **RAM usage**.
+
+**Ctrl-STOP held after it broke the save.** The VG-8020 runs the `ON ERROR`
+handler at once and breaks it if the key is still down about 0.7 s later;
+zerobas waits for the key to come up and then runs the handler, so a key held
+that long does not break it here. A short press gives the same screen on both.
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape write** (fixed 2026-10-11, D-CASWBRK).
+  On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
+  data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
+  zerobas wrote on to the end. The first try at measuring it broke each save
+  a second in, inside the long leader that opens a file, where the VG-8020
+  does not look at the keyboard — both machines ran on, which looked like
+  agreement ([`caswbrk_diag4.out`](../../scratchpad/caswbrk_diag4.out)).
 - **A tape zerobas wrote could not be loaded on a real MSX** (fixed
   2026-09-13, D-CASTAIL2). The VG-8020 hung searching it. Four slices went
   into the recording's timing before the bytes were compared: the program
@@ -123,6 +133,8 @@ usable reading on either machine.
 - `make cassave-acceptance` — what each cassette save writes (`CSAVE`
   tokenised, `SAVE "CAS:"` ASCII), on the VG-8020, the CF-3300 and zerobas.
 - `make tapetail-acceptance` — the speed and tail errors.
+- `make caswbrk-acceptance` — Ctrl-STOP during the save, typed and under
+  `ON ERROR`.
 - `make castail-acceptance` — a tape written the way `CSAVE` writes it, loaded
   back with `CLOAD`.
 - `make kwram` — the RAM-usage comparison.

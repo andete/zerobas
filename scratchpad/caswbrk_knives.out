@@ -1,0 +1,15 @@
+base: {'dcsave': 'Device I/O error', 'pcsave': 'E19 in 15', 'pbsave': 'E19 in 15', 'psave': 'E19 in 65535', 'pprint': 'E19 in 15', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'E19 in 15 X'}
+  ROM 6e08f329 b1722be9 eff6fa41 c7e3585c  ->  176ef53b b1722be9 eff6fa41 c7e3585c
+PASS  K-CW1: moved ['dcsave', 'pbsave', 'pcsave', 'phold', 'pprint', 'psave'] (want exactly ['dcsave', 'pbsave', 'pcsave', 'phold', 'pprint', 'psave'])  {'dcsave': 'None', 'pcsave': 'no error', 'pbsave': 'no error', 'psave': 'None', 'pprint': 'Break in 15', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'no error'}
+  ROM 176ef53b b1722be9 eff6fa41 c7e3585c  ->  e7954376 b1722be9 eff6fa41 c7e3585c
+PASS  K-CW2: moved ['pbsave', 'pcsave', 'phold', 'pprint', 'psave'] (want exactly ['pbsave', 'pcsave', 'phold', 'pprint', 'psave'])  {'dcsave': 'Device I/O error', 'pcsave': 'Break in 90', 'pbsave': 'Break in 90', 'psave': 'None', 'pprint': 'None', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'Break in 90'}
+  ROM e7954376 b1722be9 eff6fa41 c7e3585c  ->  b09dcabb b1722be9 bdf04db2 fdc9ed29
+PASS  K-CW3: moved ['psave'] (want exactly ['psave'])  {'dcsave': 'Device I/O error', 'pcsave': 'E19 in 15', 'pbsave': 'E19 in 15', 'psave': 'E19 in 15', 'pprint': 'E19 in 15', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'E19 in 15 X'}
+  ROM b09dcabb b1722be9 bdf04db2 fdc9ed29  ->  0c8e8257 b1722be9 bdf04db2 cb72a7a9
+PASS  K-CW4: moved ['dcsave', 'pbsave', 'pcsave', 'phold'] (want exactly ['dcsave', 'pbsave', 'pcsave', 'phold'])  {'dcsave': 'load error', 'pcsave': 'no error', 'pbsave': 'no error', 'psave': 'E19 in 65535', 'pprint': 'E19 in 15', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'no error'}
+  ROM 0c8e8257 b1722be9 bdf04db2 cb72a7a9  ->  e3877c8d b1722be9 cd3cfad1 c6f04236
+PASS  K-CW5: moved ['pprint', 'psave'] (want exactly ['pprint', 'psave'])  {'dcsave': 'Device I/O error', 'pcsave': 'E19 in 15', 'pbsave': 'E19 in 15', 'psave': 'None', 'pprint': 'None', 'pleader': 'no error', 'pctl': 'no error', 'phold': 'E19 in 15 X'}
+restored ROM hashes 6e08f329 b1722be9 eff6fa41 c7e3585c (baseline 6e08f329 b1722be9 eff6fa41 c7e3585c)
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
+rc=0

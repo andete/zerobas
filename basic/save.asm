@@ -405,8 +405,17 @@ sav_cas_flag:
 ; public ASCII listing format + our own detokeniser + MSX2 TH cassette block
 ; framing; no reference-ROM read. See basic/docs/spec-cas-ascii-saveload.md §5.
 cas_ascii_save:
+                ; D-CASWBRK: a tape SAVE in a program leaves the run BEFORE it
+                ; writes on the VG-8020 -- a write broken with Ctrl-STOP is `19
+                ; in 65535` there, into the armed handler (basic_probe_caswbrk's
+                ; psave). DIRECTF is what record_errline reads for ERL 65535
+                ; (CURLINE := dir_line, the first cut, read ERL 0); the trap
+                ; decision reads ONELIN, and the handler's own line re-derives
+                ; DIRECTF at rp_exec, so the handler is still taken and runs.
+                ld      a,1
+                ld      (DIRECTF),a
                 call    cas_write_ea_header ; $EA header block (name in TSV_NAME); CAS_WCNT=0
-                jp      c,load_error
+                jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
                 ld      a,1
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to a sink
                 ld      a,3
@@ -508,7 +517,8 @@ cas_fb_lp:
                 ld      l,a
                 ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + pos
                 ld      a,(hl)
-                call    TAPOUT              ; emit the byte (CF ignored: best-effort)
+                call    TAPOUT              ; emit the byte
+                jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
                 ld      hl,CAS_WCNT
                 inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
                 jr      nz,cas_fb_lp
@@ -779,6 +789,8 @@ sv_tenant:
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE)
                 ld      a,(SV_STAT)         ; D-DISKERR: a DSKIO failure raises its code below
+                cp      19                  ; D-CASWBRK: a tape write broken with
+                jp      z,raise_error       ; Ctrl-STOP -- Device I/O error (motor off)
                 or      a
                 jr      nz,disk_error       ; the tenant hit sv_load_error: report ONCE --
                                             ; ERR 70 on an empty drive (D-DISKERR), else `load error`

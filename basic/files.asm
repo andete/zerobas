@@ -978,7 +978,7 @@ oocas_do_out:
                 ld      bc,6
                 ldir
                 call    cas_write_ea_header ; TAPOON long + $EA*10 + TSV_NAME + TAPOOF
-                jr      c,oocas_ioerr       ; CAS_WCNT reset to 0 on success
+                jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
 oocas_mark:
                 pop     hl                  ; text cursor
                 pop     de                  ; channel

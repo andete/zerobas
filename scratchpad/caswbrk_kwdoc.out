@@ -1,0 +1,7 @@
+=== BSAVE: PASS
+=== CSAVE: SKIP (needs a cassette)
+=== OPEN: PASS
+=== SAVE: PASS
+
+PASS 3  SKIP 1
+refcache: 0 hit, 6 miss, 6 stored

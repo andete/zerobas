@@ -1,0 +1,3 @@
+== VG-8020  t_abort=43.00878715032218 vdp_after_abort=0.003s  screen: RUN [E 19 15 ] [X 23 ] Ok color auto goto list run   INTFLG writes (s from abort): []
+== OURS     t_abort=43.00462852122267 vdp_after_abort=0.499s  screen: RUN [E 19 15 ] [X 103 ] ZB color auto goto list run   INTFLG writes (s from abort): []
+refcache: 0 hit, 2 miss, 2 stored

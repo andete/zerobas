@@ -21,26 +21,26 @@ tape_save_basic:
                 ; --- header block: TAPOON(long) + 10x$D3 + 6-char name + TAPOOF ---
                 ld      a,$FF               ; non-zero -> long leader
                 call    TAPOON
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; emit 10x BASIC_ID ($D3)
                 ld      a,10
                 ld      (TSV_CNT),a
 tsb_id:
                 ld      a,BASIC_ID          ; $D3
                 call    TAPOUT
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ld      a,(TSV_CNT)
                 dec     a
                 ld      (TSV_CNT),a
                 jr      nz,tsb_id
                 ; emit 6-char name
                 call    tape_name_emit
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 call    TAPOOF              ; end of header block
                 ; --- data block: TAPOON(short) + program image + TAPOOF ------
                 xor     a                   ; zero -> short leader
                 call    TAPOON
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ; Set up the image walk: TSV_PTR = TXTBASE, TSV_END = PRGEND+1
                 ld      hl,TXTBASE
                 ld      (TSV_PTR),hl
@@ -51,7 +51,7 @@ tsb_data:
                 ld      hl,(TSV_PTR)
                 ld      a,(hl)
                 call    TAPOUT
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ld      hl,(TSV_PTR)
                 ld      de,(TSV_END)
                 ld      a,h
@@ -80,7 +80,7 @@ tsb_fin:
 tsb_tail:
                 xor     a
                 call    TAPOUT
-                jp      c,sv_load_error
+                jp      c,sv_tape_err
                 ld      hl,TSV_CNT
                 dec     (hl)                ; TAPOUT clobbers all; reload each pass
                 jr      nz,tsb_tail
