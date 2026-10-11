@@ -1,0 +1,6 @@
+== ab2    VG-8020 Device I/O error       ours E19 in 15
+== bb2    VG-8020 E19 in 15              ours E19 in 15
+DIVERGES ab2: VG-8020 Device I/O error vs ours E19 in 15
+
+FAIL: a tape read broken with Ctrl-STOP (1/2)
+refcache: 0 hit, 4 miss, 4 stored

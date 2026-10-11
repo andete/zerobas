@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BLOAD` — load a binary file into memory
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -112,6 +112,14 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape read once the file was found** (fixed
+  2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
+  error` (19); zerobas read on to the end, because its cassette routines
+  never looked at the keyboard after the search
+  ([`casrbrk_diag.out`](../../scratchpad/casrbrk_diag.out)).
+  Broken in the six bytes that give the load addresses, `BLOAD` read
+  garbage for them and loaded the tape over the wrong memory — the screen
+  came back as noise. Under `ON ERROR` the VG-8020 raises 19 in the line.
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-BLDI):
   a long `BLOAD` from disk kept `TIME` running for none of its work here,
   against 48 % on the CF-3300; now 45 %. After the first sector every disk transfer came back with
@@ -169,4 +177,6 @@ saved binary to try it on).
 - `make casbrk-acceptance` — Ctrl-STOP during the tape search.
 - `make dskmsg-acceptance` — the missing-file and wrong-kind-of-file errors.
 - `make nodiskverbs-acceptance` — the diskless machine.
+- `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
+  header leader and in the data.
 - `make kwram` — the RAM-usage comparison.

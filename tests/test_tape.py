@@ -65,7 +65,17 @@ def build():
 
 
 def machine():
-    return Machine(ROM, SYM, rom_base=ROM_BASE)
+    m = Machine(ROM, SYM, rom_base=ROM_BASE)
+    # D-CASRBRK: TAPOUT / TAPION / TAPIN call BREAKX ($00B7), a published BIOS
+    # entry this standalone image does not carry -- stub it as "no Ctrl-STOP"
+    # (`or a` / `ret`: CF = 0, and no IN, so a Samples stream stays aligned).
+    # The break itself is the emulator gate's (caswbrk-acceptance).
+    m.poke(s_breakx(m), bytes([0xB7, 0xC9]))
+    return m
+
+
+def s_breakx(m):
+    return m.sym["BREAKX"]
 
 
 # ---------------------------------------------------------------------------
@@ -244,15 +254,19 @@ def test_stmotr(m, fails):
     return fails
 
 
-def test_cas_latch(m, fails):
-    """cas_latch: select PSG R14 so IN (PSG_STAT) returns CAS-in."""
+def test_cas_level(m, fails):
+    """cas_level: select PSG R14 so IN (PSG_STAT) returns CAS-in, and read it:
+    D = bit 7 of the sample (D-CASRBRK folded cas_latch + the inline read)."""
     s = m.sym
-    out = m.record_out()
-    m.call("cas_latch")
-    want = [(s["PSG_REGS"], s["CASIN_R14"])]
-    ok = out == want
-    fails += not ok
-    print(f"{'PASS' if ok else 'FAIL'}  cas_latch -> OUT {out} (want {want})")
+    for sample, want_d in ((0xFF, 0x80), (0x7F, 0x00)):
+        out = m.record_out()
+        m.cpu.io_in = Samples([sample])
+        cpu = m.call("cas_level")
+        want = [(s["PSG_REGS"], s["CASIN_R14"])]
+        ok = out == want and cpu.d == want_d
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  cas_level({sample:#04x}) -> OUT {out} "
+              f"(want {want}), D={cpu.d:#04x} (want {want_d:#04x})")
     return fails
 
 
@@ -605,7 +619,7 @@ def run():
         ("Tier 1: cas_short/cas_long", test_cas_short_long),
         ("Tier 1: cas_islong",        test_cas_islong),
         ("Tier 2: stmotr",            test_stmotr),
-        ("Tier 2: cas_latch",         test_cas_latch),
+        ("Tier 2: cas_level",         test_cas_level),
         ("Tier 2: cas_cycle",         test_cas_cycle),
         ("Tier 2: tapiof",            test_tapiof),
         ("Tier 2: tapout tone frame", test_tapout_tone_sequence),

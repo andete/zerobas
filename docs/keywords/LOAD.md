@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LOAD` — replace the program with one from a file
 
-> **Status (2026-10-10):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known user-visible
 > divergence; one open internal item (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -110,6 +110,14 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape read once the file was found** (fixed
+  2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
+  error` (19); zerobas read on to the end, because its cassette routines
+  never looked at the keyboard after the search
+  ([`casrbrk_diag.out`](../../scratchpad/casrbrk_diag.out)).
+  A `LOAD "CAS:"` broken that way also kept the lines read so far,
+  silently. The program is gone from `Found:` on, as on the VG-8020, so the
+  error has no handler left and no line number.
 - **The clock stood still while a program loaded** (fixed 2026-10-10,
   D-LOADDI). Timed from outside the machine, a 14 KB `LOAD "x",R` advanced
   `TIME` by 3 ticks here and by 83 on the CF-3300. The keyboard was not read
@@ -170,4 +178,6 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
   `make castype-acceptance`, `make casbin-acceptance` and
   `make casbrk-acceptance` — the tape forms.
 - `make nodiskverbs-acceptance` — the diskless machine.
+- `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
+  header leader and in the data.
 - `make kwram` — the RAM-usage comparison.

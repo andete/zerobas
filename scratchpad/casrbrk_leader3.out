@@ -1,0 +1,4 @@
+== ab2    VG-8020 Device I/O error       ours Device I/O error
+
+PASS: a tape read broken with Ctrl-STOP (1/1)
+refcache: 0 hit, 2 miss, 2 stored

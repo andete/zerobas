@@ -1,0 +1,9 @@
+== bin_nb  VG-8020  no error
+== bin_nb  OURS     no error
+== bin_b8  VG-8020  E19 in 15
+== bin_b8  OURS     no error
+== bin_b15 VG-8020  no error
+== bin_b15 OURS     no error
+== bin_b25 VG-8020  no error
+== bin_b25 OURS     no error
+refcache: 0 hit, 8 miss, 8 stored

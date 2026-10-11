@@ -1,0 +1,17 @@
+== bnb    VG-8020 no error               ours no error
+== bb2    VG-8020 E19 in 15              ours E19 in 15
+== bb8    VG-8020 E19 in 15              ours E19 in 15
+== bhold  VG-8020 E19 in 15 X            ours E19 in 15 X
+== anb    VG-8020 no message             ours no message
+== ab2    VG-8020 Device I/O error       ours Device I/O error
+== ab8    VG-8020 Device I/O error       ours Device I/O error
+== ab15   VG-8020 Device I/O error       ours Device I/O error
+== cnb    VG-8020 no message             ours no message
+== cb8    VG-8020 Device I/O error       ours Device I/O error
+== mb8    VG-8020 Device I/O error       ours Device I/O error
+== inb    VG-8020 no error               ours no error
+== ib8    VG-8020 E19 in 15              ours E19 in 15
+
+PASS: a tape read broken with Ctrl-STOP (13/13)
+refcache: 0 hit, 26 miss, 26 stored
+rc=0

@@ -96,22 +96,25 @@ is_tape:
 
                 ; --- data block: skip its tone, then read the 6-byte header --
                 call    TAPION              ; sync block 2 (data)
-                jp      c,bl_load_error
+                jp      c,bl_tape_dio       ; D-CASRBRK: Ctrl-STOP / I/O -> 19, raised
 
-                ; spec-bload-r.md §1: start(LE), end(LE), exec(LE).
-                ; TAPIN trashes every register, so store each byte immediately.
+                ; spec-bload-r.md §1: start(LE), end(LE), exec(LE) -- into
+                ; CURPTR, ENDPTR, EXECPTR, six contiguous bytes (sysvars.inc).
+                ; 🔴 D-CASRBRK: THESE SIX READS IGNORED CF. A Ctrl-STOP in them
+                ; returned garbage, BLOAD loaded the tape to a garbage range and
+                ; the screen came back as noise (basic_probe_casrbrk's bb2; the
+                ; VG-8020: `19 in 15`). A loop that tests it is 18 B smaller.
+                ld      hl,CURPTR
+blh_lp:
+                push    hl                  ; TAPIN trashes every register
                 call    TAPIN
-                ld      (CURPTR),a          ; start low
-                call    TAPIN
-                ld      (CURPTR+1),a        ; start high
-                call    TAPIN
-                ld      (ENDPTR),a          ; end low
-                call    TAPIN
-                ld      (ENDPTR+1),a        ; end high
-                call    TAPIN
-                ld      (EXECPTR),a         ; exec low
-                call    TAPIN
-                ld      (EXECPTR+1),a       ; exec high
+                pop     hl
+                jp      c,bl_tape_dio       ; Ctrl-STOP / I/O -> 19, raised
+                ld      (hl),a
+                inc     hl
+                ld      a,l
+                cp      low (EXECPTR + 2)
+                jr      nz,blh_lp
                 call    bl_apply_ofs        ; D-BLOADOFS: + BLOAD's ,offset
 
                 ; --- load loop: bytes start..end inclusive, verbatim --------
@@ -119,7 +122,7 @@ is_tape:
                 ; all registers on every call.
 load_loop:
                 call    TAPIN
-                jp      c,bl_load_error
+                jp      c,bl_tape_dio       ; D-CASRBRK: Ctrl-STOP in the data -> 19
                 ld      hl,(CURPTR)
                 ld      (hl),a              ; store the byte
                 ld      de,(ENDPTR)

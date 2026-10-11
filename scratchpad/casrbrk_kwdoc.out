@@ -1,0 +1,8 @@
+=== BLOAD: PASS
+=== CLOAD: SKIP (needs a cassette)
+=== INPUT: PASS
+=== LOAD: PASS
+=== MERGE: PASS
+
+PASS 4  SKIP 1
+refcache: 1 hit, 7 miss, 7 stored

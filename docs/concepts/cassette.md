@@ -102,7 +102,10 @@ from the screen and is not claimed. Every verb that reads prints these rows,
 
 **Ctrl-STOP during the search** is `Device I/O error` (19), which an
 `ON ERROR` handler can trap, for `LOAD`, `CLOAD`, `RUN`, `MERGE`, `BLOAD` and
-`OPEN` alike.
+`OPEN` alike. **Once the file is found** it is still 19: `BLOAD` and
+`LINE INPUT #` raise it in their line, under `ON ERROR` too; `LOAD`, `CLOAD`
+and `MERGE` have already let go of the running program at `Found:`, so the
+message is printed with no line and no handler sees it.
 
 **Ctrl-STOP during a write** is 19 too, for `CSAVE`, `BSAVE`, `SAVE` and
 `PRINT #`, when it lands in the data. In the long leader that opens a file
@@ -194,6 +197,11 @@ No measured difference is open. Not compared, or not measured:
   of a `Skip :` row for a wrong-type file missed: there is none.
 - **Ctrl-STOP printed `load error` and the program ran on** (fixed
   2026-10-08, D-CASBRK); the VG-8020 raises 19.
+- **Ctrl-STOP could not break a tape read once the file was found** (fixed
+  2026-10-11, D-CASRBRK). Every read verb ran to the end of the data; a
+  `LOAD` or `MERGE` kept the lines read so far without a word, and a `BLOAD`
+  broken in its address bytes loaded the tape over the wrong memory
+  ([`casrbrk_gate.out`](../../scratchpad/casrbrk_gate.out)).
 - **Ctrl-STOP could not break a tape write either** (fixed 2026-10-11, D-CASWBRK).
   On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
   data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;
@@ -211,9 +219,10 @@ The open C-BIOS stubs the cassette read and write entries; zerobas provides
 all seven in [tape/tape.asm](../../tape/tape.asm). `tapion` waits for a real
 edge, skips the motor's spin-up noise, measures 16 leader half-periods and
 sets the 0/1 threshold (`LOWLIM`, `&HFCA4`) at 1.75 times the short one;
-`tapout` frames each byte with two stop bits and, before each byte, asks
-`BREAKX` whether Ctrl-STOP is down — if it is, it waits for the key to come
-up and returns with carry set; `stmotr` drives the relay.
+`tapout` frames each byte with two stop bits; `stmotr` drives the relay.
+`tapout` and `tapin` before each byte, and `tapion` on each attempt to lock
+on, ask `BREAKX` whether Ctrl-STOP is down; if it is, they wait for the key to
+come up and return with carry set (`cas_stop`).
 
 The BASIC side shares one search. `cas_capture_name`
 ([basic/cascap-body.inc](../../basic/cascap-body.inc)) puts the wanted name
@@ -252,6 +261,8 @@ openMSX:
 - `make casbrk-acceptance` — Ctrl-STOP during the search, under `ON ERROR`.
 - `make caswbrk-acceptance` — Ctrl-STOP during a write: in the data, in the
   leader, and held after it broke the write.
+- `make casrbrk-acceptance` — Ctrl-STOP during a read, in the leader and in
+  the data, for every read verb.
 - `make cas-ascii-acceptance`, `make eofcas-acceptance`,
   `make casprdir-acceptance` — ASCII files and the tape channel.
 - `make tapetail-acceptance`, `make loadtail-acceptance`,

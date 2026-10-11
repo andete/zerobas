@@ -381,11 +381,30 @@ cas_cyl_l:      djnz    cas_cyl_l
 ;================================
 
 ;--------------------------------
-; cas_latch: select PSG R14 so IN (PSG_STAT) returns the CAS-in byte.
-; Changes: AF
-cas_latch:
+; cas_level: select PSG R14 (so IN (PSG_STAT) returns the CAS-in byte) and read
+; the current CAS-in level. (D-CASRBRK: was cas_latch, with the read inlined at
+; its two callers -- folded, -5 B, to pay for cas_stop.)
+; Out:     D = level (bit 7: $00 or $80).   Changes: AF, D
+cas_level:
                 ld      a,CASIN_R14
                 out     (PSG_REGS),a
+                in      a,(PSG_STAT)
+                and     $80
+                ld      d,a
+                ret
+
+;--------------------------------
+; cas_stop: CF = Ctrl-STOP is down -- and then it returns only once the key is
+; up again (cas_stop_w), so the press is CONSUMED, as on the VG-8020: it runs
+; the ON ERROR handler at once and breaks it only if the key is still down
+; ~0.7 s later (D-CASWBRK, scratchpad/caswbrk_hold_tap.out). Changes: AF
+cas_stop:
+                call    BREAKX
+                ret     nc
+cas_stop_w:
+                call    BREAKX
+                jr      c,cas_stop_w    ; Ctrl-STOP still down
+                scf                     ; CF = broken
                 ret
 
 ;--------------------------------
@@ -479,10 +498,7 @@ tapion:
                 ld      a,1
                 call    stmotr          ; motor on -> inserted tape plays
                 di
-                call    cas_latch
-                in      a,(PSG_STAT)
-                and     $80
-                ld      d,a             ; current CAS-in level
+                call    cas_level       ; D = current CAS-in level
                 ; Lock onto a SUSTAINED leader carrier, tolerating silence and
                 ; transients wherever they fall. openMSX prepends ~2 s of silence
                 ; before a .cas leader (CasImage.cc LONG_SILENCE) and ~1 s between
@@ -503,6 +519,9 @@ tapion:
                 ; stay lean so their per-half overhead matches TAPIN's (a heavier
                 ; loop biases the counts, and thus LOWLIM).
 tapion_relock:
+                ; D-CASRBRK: NO Ctrl-STOP test here. One was tried (once per lock
+                ; attempt) and its knife moved no row: TAPIN's per-byte test
+                ; catches every break first (scratchpad/casrbrk_knives.out, K-CR2).
                 ld      bc,CAS_FLATMAX  ; 16-bit flat-timeout budget for this attempt
 tapion_wait:
                 push    bc
@@ -568,10 +587,13 @@ tapion_avg:
 ; Output:  A = byte read; CF = set on error/timeout
 ; Changes: all
 tapin:
-                call    cas_latch
-                in      a,(PSG_STAT)
-                and     $80
-                ld      d,a             ; current level
+                ; D-CASRBRK: Ctrl-STOP between bytes breaks the read, as on the
+                ; VG-8020 (a BLOAD broken in its data: `19 in 15` there, read on
+                ; to the end here, scratchpad/casrbrk_diag2.out). Before the
+                ; hunt, which only looks for a LONG half: the stop bits' slack.
+                call    cas_stop
+                ret     c
+                call    cas_level       ; D = current level
                 ld      hl,0            ; 16-bit start-bit hunt timeout
 tapin_hunt:                             ; (must outlast a full ~2 s leader)
                 call    cas_half
@@ -700,10 +722,8 @@ tapout_next:
 ; polls the key's LEVEL, so a handler entered with the key down broke at its
 ; first statement -- hence wait here for the release (a tap: same screen).
 tapout_brk:
-                call    BREAKX
-                jr      c,tapout_brk    ; Ctrl-STOP still down
-                pop     de              ; drop the byte
-                scf                     ; CF = failed
+                call    cas_stop_w      ; until the key is up; CF = failed
+                pop     de              ; drop the byte (CF kept)
                 ret
 
 ;--------------------------------

@@ -1,0 +1,17 @@
+base: {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM 7d35dac8 840194c1 5f715d9b 72114855  ->  8811daa4 840194c1 5f715d9b 72114855
+FAIL  K-CR1: moved ['ab15', 'ab2', 'bb2', 'bb8', 'bhold', 'cb8', 'ib8'] (want exactly ['ab15', 'ab8', 'bb2', 'bb8', 'bhold', 'cb8', 'ib8', 'mb8'])  {'bnb': 'no error', 'bb2': 'no error', 'bb8': 'no error', 'bhold': 'no error', 'anb': 'no message', 'ab2': 'no message', 'ab8': 'Device I/O error', 'ab15': 'no message', 'cnb': 'no message', 'cb8': 'no message', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'Break in 15'}
+  ROM 8811daa4 840194c1 5f715d9b 72114855  ->  76144ef1 840194c1 5f715d9b 72114855
+FAIL  K-CR2: moved [] (want exactly ['ab2'])  {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM 76144ef1 840194c1 5f715d9b 72114855  ->  7d35dac8 7d112397 5f715d9b 72114855
+PASS  K-CR3: moved ['bb2'] (want exactly ['bb2'])  {'bnb': 'no error', 'bb2': 'None', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM 7d35dac8 7d112397 5f715d9b 72114855  ->  7d35dac8 ea365bb4 5f715d9b 72114855
+PASS  K-CR4: moved ['bb8', 'bhold'] (want exactly ['bb8', 'bhold'])  {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'no error (+load error)', 'bhold': 'no error (+load error)', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM 7d35dac8 ea365bb4 5f715d9b 72114855  ->  c4af5e09 840194c1 feba7b3f 0cc756df
+PASS  K-CR5: moved ['ab15', 'ab8', 'mb8'] (want exactly ['ab15', 'ab8', 'mb8'])  {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'no message', 'ab15': 'no message', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'no message', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM c4af5e09 840194c1 feba7b3f 0cc756df  ->  a04320ae 840194c1 cfbc12cf 89619d5a
+PASS  K-CR6: moved ['ib8'] (want exactly ['ib8'])  {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E55 in 15'}
+restored ROM hashes 7d35dac8 840194c1 5f715d9b 72114855 (baseline 7d35dac8 840194c1 5f715d9b 72114855)
+
+FAILED: K-CR1, K-CR2
+rc=1

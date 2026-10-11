@@ -1,0 +1,7 @@
+== asc_nb  VG-8020  (None, ' 15 LOAD"CAS:X" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Ok color auto goto list run ')
+== asc_nb  OURS     (None, ' 15 LOAD"CAS:X" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN ZB color auto goto list run ')
+== asc_b8  VG-8020  ('Device I/O error', '0 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Device I/O error Ok color auto goto list run ')
+== asc_b8  OURS     ('Device I/O error', '0 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Device I/O error ZB color auto goto list run ')
+== bin_b8  VG-8020  E19 in 15
+== bin_b8  OURS     E19 in 15
+refcache: 0 hit, 6 miss, 6 stored

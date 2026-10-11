@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `MERGE` — add the lines of a text file to the program
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -95,6 +95,12 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape read once the file was found** (fixed
+  2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
+  error` (19); zerobas read on to the end, because its cassette routines
+  never looked at the keyboard after the search
+  ([`casrbrk_diag.out`](../../scratchpad/casrbrk_diag.out)).
+  The lines read before the break were merged and nothing was said.
 - **On cassette, MERGE stopped at a tokenised file of the right name** (fixed
   2026-10-08, D-CASTYPE): the VG-8020 steps over it and searches on.
 - **Ctrl-STOP during a tape MERGE raised error 255** (fixed 2026-10-08,
@@ -135,4 +141,6 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 - `make castype-acceptance` and `make casbrk-acceptance` — the tape type
   filter and Ctrl-STOP.
 - `make nodiskverbs-acceptance` — the diskless machine.
+- `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
+  header leader and in the data.
 - `make kwram` — the RAM-usage comparison.

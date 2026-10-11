@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CLOAD` — load a BASIC program from cassette
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -87,6 +87,11 @@ None known.
 
 ## What we found, and how
 
+- **Ctrl-STOP could not break a tape read once the file was found** (fixed
+  2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
+  error` (19); zerobas read on to the end, because its cassette routines
+  never looked at the keyboard after the search
+  ([`casrbrk_diag.out`](../../scratchpad/casrbrk_diag.out)).
 - **The tape search did not filter by file type** (fixed 2026-10-08,
   D-CASTYPE). On a tape holding an ASCII `X` and then a tokenised `X`,
   `CLOAD "X"` read the ASCII one here and the tokenised one on the VG-8020,
@@ -134,4 +139,6 @@ None known.
 - `make castype-acceptance` and `make casbin-acceptance` — the search by file
   type.
 - `make casbrk-acceptance` — Ctrl-STOP during the search.
+- `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
+  header leader and in the data.
 - `make kwram` — the RAM-usage comparison.

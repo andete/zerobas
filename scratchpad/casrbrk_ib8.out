@@ -1,0 +1,5 @@
+== inb    VG-8020 no error               ours no error
+== ib8    VG-8020 E19 in 15              ours E19 in 15
+
+PASS: a tape read broken with Ctrl-STOP (2/2)
+refcache: 0 hit, 4 miss, 4 stored

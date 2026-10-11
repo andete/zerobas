@@ -1,0 +1,7 @@
+base: {'bnb': 'no error', 'bb2': 'E19 in 15', 'bb8': 'E19 in 15', 'bhold': 'E19 in 15 X', 'anb': 'no message', 'ab2': 'Device I/O error', 'ab8': 'Device I/O error', 'ab15': 'Device I/O error', 'cnb': 'no message', 'cb8': 'Device I/O error', 'mb8': 'Device I/O error', 'inb': 'no error', 'ib8': 'E19 in 15'}
+  ROM 76144ef1 840194c1 5f715d9b 72114855  ->  fdf78724 840194c1 5f715d9b 72114855
+PASS  K-CR1: moved ['ab15', 'ab2', 'ab8', 'bb2', 'bb8', 'bhold', 'cb8', 'ib8', 'mb8'] (want exactly ['ab15', 'ab2', 'ab8', 'bb2', 'bb8', 'bhold', 'cb8', 'ib8', 'mb8'])  {'bnb': 'no error', 'bb2': 'no error', 'bb8': 'no error', 'bhold': 'no error', 'anb': 'no message', 'ab2': 'no message', 'ab8': 'no message', 'ab15': 'no message', 'cnb': 'no message', 'cb8': 'no message', 'mb8': 'no message', 'inb': 'no error', 'ib8': 'Break in 15'}
+restored ROM hashes 76144ef1 840194c1 5f715d9b 72114855 (baseline 76144ef1 840194c1 5f715d9b 72114855)
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
+rc=0

@@ -2401,6 +2401,13 @@ geteject-acceptance: repack-machine $(DISK_TEST_DSK)
 caswbrk-acceptance: repack-machine
 	python3 probes/basic/basic_probe_caswbrk.py
 
+# --- casrbrk-acceptance: a tape READ broken with Ctrl-STOP is 19 (D-CASRBRK) -----
+# BLOAD / LOAD / CLOAD / MERGE / LINE INPUT # "CAS:" broken in the header leader
+# and in the data: 19 on the VG-8020 (LOAD / CLOAD / MERGE untrapped -- the
+# program is gone); ours read on, or (BLOAD in its header) loaded to garbage.
+casrbrk-acceptance: repack-machine
+	python3 probes/basic/basic_probe_casrbrk.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

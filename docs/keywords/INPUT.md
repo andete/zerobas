@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `INPUT` — read a typed line into variables
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. One
 > recorded difference: text typed after a closing quote (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -116,6 +116,10 @@ keyboard form.
 
 ## What we found, and how
 
+- **`INPUT #` / `LINE INPUT #` from a tape channel broken with Ctrl-STOP said
+  `Input past end`** (fixed 2026-10-11, D-CASRBRK). The VG-8020 raises
+  `Device I/O error` (19) in the line; zerobas took the cut read for the end
+  of the file.
 - **Numbers were 16-bit integers only** (fixed 2026-09-29, D-INPNUM). `1.5`
   was `?Redo from start`, and `40000` was silently stored as −25536 — a wrong
   answer with no error. `INPUT` now uses `VAL`'s number reader, with the
@@ -159,6 +163,7 @@ keyboard form.
 
 ## Tests that cover it
 
+- `make casrbrk-acceptance` — `LINE INPUT #` from tape broken with Ctrl-STOP.
 - `make input-acceptance` — numbers, strings, several variables, `LINE INPUT`,
   the prompt, `?Redo from start` and `?Extra ignored`, typed into both
   machines.

@@ -762,11 +762,19 @@ err_verify:     db      "Verify error",0
 ; well-formed tape. `,R`/RUN is unchanged — the caller (do_load's LOAD"CAS:",R /
 ; do_cload) applies RUNFLAG exactly as the tokenised path's `ret`.
 cas_ascii_load:
+                ; D-CASRBRK: the program goes at `Found:`, BEFORE the data blocks
+                ; are read -- on the VG-8020 a Ctrl-STOP after it is an untrapped
+                ; `Device I/O error` (no handler left, no line), before it (the
+                ; search, D-CASBRK) a trapped `19 in 20`. Ours replaced it only
+                ; after priming two blocks, so a break there was still trapped
+                ; (basic_probe_casrbrk's ab2).
+                call    new_prog            ; LOAD replaces the current program
+                ld      a,1                 ; ... so an error from here on is a
+                ld      (DIRECTF),a         ; direct-mode one (ours said `in 22`)
                 call    cas_ascii_setup     ; skip the rest of the header + prime block 1
                 jr      c,dpl_dio           ; header / block-1 unreadable -> 19 (D-CASBRK)
                                             ; (D-SAVECOLON carve: jp -> jr, in range
                                             ; since D-CARVECAS moved the reader out)
-                call    new_prog            ; LOAD replaces the current program
                 call    cas_ascii_drive     ; read+tokenise+store via the tape source
                 jr      c,dpl_err           ; non-numbered line -> abort (jp -> jr)
                 ret                         ; caller handles ,R / returns to the REPL.
@@ -810,6 +818,25 @@ cas_ascii_drive:
                 ld      (ARL_GETBYTE),hl
                 call    TAPIOF              ; motor off (file fully read), as ctp_done
                 pop     af
+                ret     c
+                ; 🔴 D-CASRBRK (2026-10-11): THE SOURCE RAN DRY BEFORE THE CTRL-Z.
+                ; A tape ASCII file always ends in $1A (SAVE pads its last block),
+                ; so cal_getbyte's mark 3 means the read was cut -- Ctrl-STOP in
+                ; the data (TAPION / TAPIN return CF). The VG-8020 says `Device
+                ; I/O error`; this loaded the lines read so far and said nothing
+                ; (scratchpad/casrbrk_diag.out). Raised HERE, after the hook is
+                ; back on fat_io_getbyte, never from inside the reader.
+                ld      a,(CAL_NEEDFILL)
+                cp      3                   ; CF <=> not marked
+                ccf                         ; (the first cut returned THAT carry:
+                ret     nc                  ; every clean LOAD read `load error`)
+                jp      dpl_dio
+; cal_gb_past -- cal_getbyte asked at the latched terminal EOF: answered here, no
+; crossing, and MARKED (2 -> 3+): a reader that asks PAST the end never met the
+; file's Ctrl-Z (cas_in_getbyte stops at it too), so the data stopped early.
+cal_gb_past:
+                inc     (hl)
+                scf
                 ret
 
 ; --- cal_getbyte: cassette ASCII-load byte source (D2 indirection target) ----
@@ -824,10 +851,10 @@ cas_ascii_drive:
 ; The drained byte is parked in CAL_SAVE across that refill (requirement 1).
 ;   out: A = byte, CF clear; or CF set = no more data at all.
 cal_getbyte:
-                ld      a,(CAL_NEEDFILL)
+                ld      hl,CAL_NEEDFILL
+                ld      a,(hl)
                 cp      2
-                scf                         ; terminal EOF, latched by a prior drain:
-                ret     z                   ; answered here, no crossing
+                jr      nc,cal_gb_past      ; terminal EOF, latched by a prior drain
                 ; 💰 D-CARVECAS: serving the byte -- and the buffer swap + the
                 ; read-ahead refill on the byte that drains one -- is the casget
                 ; tenant's op 0 (sub/casmatch.asm). A crosses back as the byte, and
@@ -851,7 +878,13 @@ casget_call:
 ;   out: A = byte, CF clear; or CF set = end of file.
 cas_in_getbyte:
                 call    cal_getbyte
-                ret     c                   ; source EOF (refill failed)
+                ; D-CASRBRK: cal_getbyte's CF is the MARKED past-the-end (its serve
+                ; path never sets it) -- the data stopped before the file's Ctrl-Z
+                ; (cig_eof, below): a read cut by Ctrl-STOP. The VG-8020 raises 19
+                ; in the LINE INPUT # line; this read it as the end, 55
+                ; (basic_probe_casrbrk's ib8). arl_set_src re-installs this hook
+                ; at every INPUT #, so raising from here strands nothing.
+                jp      c,dpl_dio
                 cp      $1A
                 jr      z,cig_eof           ; Ctrl-Z -> end of file
                 or      a                   ; CF clear = valid byte (A = the byte)
