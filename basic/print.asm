@@ -722,7 +722,7 @@ exp_pos_arg:
                 ret
 ; B4: an ALIAS, not a second copy -- byte-identical to play.asm's pl_syntax
 ; (`ld a,2 / jp raise_error`), the family's canonical tail.
-exp_pos_syn     equ     pl_syntax           ; ERR 2 syntax error
+; (exp_pos_syn = pl_syntax: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- print_comma_zone: pad with spaces to the next 14-column tab zone -------
 ; MSX PRINT comma zones are 14 characters (public language reference). Reads the

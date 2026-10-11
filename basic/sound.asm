@@ -101,7 +101,7 @@ snd_write:                                  ; A = the register (D-SNDVAR: no lon
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-snd_illegal     equ     gb_illegal  ; ERR 5 (register out of 0..13)
+; (snd_illegal = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- BEEP -------------------------------------------------------------------
 ; BEEP  (no arguments) -- one short fixed tone on PSG channel A, synchronous.

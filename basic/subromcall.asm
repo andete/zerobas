@@ -86,7 +86,7 @@ subrom_absent_error:
                 ld      hl,err_subrom_absent
                 jp      print_msg           ; D-MSGENC: err_subrom_absent aliases
                                             ; err_illegal_fn, which is now encoded
-err_subrom_absent equ   err_illegal_fn      ; share interp.asm's identical "illegal
+; (err_subrom_absent = err_illegal_fn: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
                                             ; function call" string (both repack-only) —
                                             ; reclaims 24 B in this LOW region to fund
                                             ; D-2's run-mode " in <line>" suffix in

@@ -65,30 +65,12 @@ jobs:
         with:
           python-version: "3.x"
 
-      # pasmo 0.5.5 from source: Ubuntu packages 0.5.3, which cannot assemble
-      # zerobas (IFNDEF / --equ; the Makefile refuses it). Cached like the
-      # Windows job's build.
-      - name: Cache built pasmo
-        id: pasmo-cache
-        uses: actions/cache@v4
-        with:
-          path: pasmo-bin
-          key: pasmo-linux-0.5.5-v1
-
-      - name: Build pasmo from source (cache miss only)
-        if: steps.pasmo-cache.outputs.cache-hit != 'true'
-        run: |
-          set -eux
-          curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
-          tar xf pasmo.tar.gz
-          cd pasmo-0.5.5
-          ./configure
-          make
-          mkdir -p "$GITHUB_WORKSPACE/pasmo-bin"
-          cp pasmo "$GITHUB_WORKSPACE/pasmo-bin/pasmo"
-
-      - name: Install pasmo on PATH
-        run: sudo cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo" /usr/local/bin/pasmo
+      # The DISTRIBUTION's pasmo (0.5.3) on purpose (D-PASMO053): it is what
+      # testers get from apt, so this job is the standing check that the sources
+      # still assemble with it. The Windows job builds 0.5.5. The silent half --
+      # 0.5.3 assembling an operand as 0 -- is `make alias-order-check`, run below.
+      - name: Install pasmo (distribution 0.5.3)
+        run: sudo apt-get update && sudo apt-get install -y pasmo
 
       - name: Show toolchain
         run: |
@@ -109,6 +91,9 @@ jobs:
 
       - name: Run the emulator-free unit tests
         run: make unit-test
+
+      - name: No equ pasmo 0.5.3 resolves as 0 (D-PASMO053)
+        run: make alias-order-check
 
   windows:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'both' || inputs.target == 'windows' }}

@@ -193,7 +193,7 @@ Prerequisites:
 
 | OS | Install |
 |----|---------|
-| **Linux** (Debian/Ubuntu) | `sudo apt-get install python3 make g++`, then pasmo **0.5.5** from [source](https://pasmo.speccy.org/) — the packaged 0.5.3 is too old (see [QUICKSTART.md](QUICKSTART.md)) |
+| **Linux** (Debian/Ubuntu) | `sudo apt-get install pasmo python3 make` (pasmo 0.5.3 or newer; the packaged 0.5.3 and 0.5.5 build identical images) |
 | **macOS** | `python3` + `make` from the Xcode CLI tools; install pasmo from [source](https://pasmo.speccy.org/) |
 | **Windows** | `python3` from python.org, plus `pasmo` + `make` (via [MSYS2](https://www.msys2.org/), Git Bash, or WSL — the build needs a Unix-style `make`) |
 

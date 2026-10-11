@@ -399,7 +399,7 @@ flt_neg:
 ; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
 ; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
 ; `equ` (it resolves addresses from the sym, not from the source form).
-flt_int_result  equ     evsgn_settype
+; (flt_int_result = evsgn_settype: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; flt_guard (F1's sticky-FACTYP combine guard, interim divergence D-F1-3) is
 ; REMOVED — F2 replaces every one of its 12 call sites in expr.asm with real

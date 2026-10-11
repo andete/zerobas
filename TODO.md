@@ -2051,6 +2051,36 @@ item — do **one item per session** to keep context lean.
       predicted p1 p0 only, MISSED ([run 1](scratchpad/subsig_knives_run1.out)):
       with no sub ROM nothing typed runs at all, the tokeniser being a tenant.
 
+- [x] ✅ **D-PASMO053 — ZEROBAS ASSEMBLES WITH PASMO 0.5.3, THE VERSION DEBIAN / UBUNTU
+      SHIP, BYTE-IDENTICAL TO 0.5.5 (Joost, 2026-10-11: *"go ahead, make it work with
+      pasmo 0.5.3"*)**
+      🎚️ APPARATUS — the build, not a keyword: a tester's `apt-get install pasmo`.
+      Commit 0be87cff had REQUIRED 0.5.5 after a tester's build stopped in
+      basic/sysvars.inc; Joost asked what supporting 0.5.3 would cost, then ruled.
+      🔧 Three things 0.5.3 does not do: (1) `IFNDEF` -- the sub-ROM ABI guard in
+      sysvars.inc is gone and the SUBROM_* bases / indices are defined ONCE there
+      (the 25 duplicates in sub/equates.inc removed; nothing had checked the two
+      copies agreed); (2) `--equ` -- the GFX_UNGUARDED teeth build puts an edited
+      equates.inc in a directory searched before sub/ and refuses if the image
+      equals the shipped one; (3) 🔴 **SILENT**: an `equ` alias of a label defined
+      LATER, used above its own line, assembles as $0000 under 0.5.3 (two passes)
+      -- 13 jump / pointer operands of main differed, the build reported nothing.
+      21 aliases moved to basic/aliases-early.inc (included right after
+      sysvars.inc); the first move missed six, found by the same image diff.
+      📏 [`pasmo053_evidence.out`](scratchpad/pasmo053_evidence.out): clean builds
+      with Debian's 0.5.3 (built locally -- upstream no longer serves the tarball)
+      and with 0.5.5 give ALL FOUR images identical to the pre-change baseline;
+      under 0.5.3 unit-test 65/65, switch-build-check 7/7, graphics-floor-teeth
+      PASS. Main page 1 / low: 0 B.
+      🛡️ New static gate **`alias-order-check`** (tools/check_alias_order.py,
+      gates-fast and CI): simulates pass 1 per build and refuses a use of an equ
+      whose value is not known yet, above its line -- 5 self-test vectors; its
+      first cut flagged 30 constants (`$F348` read as a name) and was fixed;
+      knife: one alias put back -> exactly the two operands the diff showed.
+      CI's Linux job installs the distribution's pasmo 0.5.3 again and runs the
+      gate; Makefile accepts 0.5.3; QUICKSTART / README back to `apt-get install
+      pasmo`.
+
 - [ ] 🏗️ **D-SUB2 — A SECOND PLAIN 32 KB SUB ROM IN SLOT 3-3, WHEN THE FIRST
       SUB-BLOCKED ITEM REACHES THE QUEUE (ruled 2026-10-11)**
       🎚️ BUDGET — supply: it unblocks the items the SUB walls hold, not main's.
@@ -6602,7 +6632,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32020 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32050 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -6768,7 +6798,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11630 (T-6FE392)8 (T-529ABE)` from `TODO.md:24424 (T-529ABE)`: a
+      `TODO.md:11660 (T-6FE392)8 (T-529ABE)` from `TODO.md:24454 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12477,7 +12507,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24424 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24454 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

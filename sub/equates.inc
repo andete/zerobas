@@ -11,6 +11,9 @@
 ; Shared constants for the built-in MSX2-style sub-ROM (docs/spec-basic-subrom.md).
 ; ===========================================================================
 
+; 🔁 D-PASMO053 (2026-10-11): the SUBROM_* bases and indices are DEFINED ONCE, in
+; basic/sysvars.inc, which this build includes too. The notes below stay beside
+; where each used to be defined; SUBROM_IDX_PING alone is still defined here.
 ; --- Entry-table bases (the $4010-style fixed dispatch contract, §3c/D-5) -----
 ; One append-only `jp` table per page; a tenant is addressed by
 ; IX = base + 3*index. Page 0 tenants see main BASIC (slot-0 page 1) but not the
@@ -22,8 +25,8 @@
 ; free. Keep this in sync with basic/sysvars.inc's IFNDEF mirror BY HAND;
 ; nothing cross-checks them, and a one-sided edit ships a main ROM dispatching
 ; into pad (docs/spec-rom-region-p0base.md §5.1).
-SUBROM_ENTRY_BASE_P0    equ     $0040   ; page-0 table (above the $0038 vector)
-SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk DSKIO)
+; (SUBROM_ENTRY_BASE_P0: defined in basic/sysvars.inc -- D-PASMO053)
+; (SUBROM_ENTRY_BASE_P1: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- Page-0 tenant indices (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
 ; index 0 = the S2a round-trip PING (kept as a standing discovery self-check).
@@ -42,8 +45,8 @@ SUBROM_ENTRY_BASE_P1    equ     $4010   ; page-1 table (mirrors the $4010 disk D
 ; sub kwtable (shared with the wave-2 tokeniser -> the resident copy is now dropped,
 ; spec §2). docs/spec-basic-subrom-wave3-detok.md.
 SUBROM_IDX_PING         equ     0
-SUBROM_IDX_TOKENISE     equ     1
-SUBROM_IDX_DETOK        equ     2
+; (SUBROM_IDX_TOKENISE: defined in basic/sysvars.inc -- D-PASMO053)
+; (SUBROM_IDX_DETOK: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 3 = the INTERRUPT SELF-TEST tenant (trampoline slice, sub/sub.asm
 ; sub_int_selftest): a standing self-check that a page-0 tenant can run EI and
 ; have interrupts serviced through the sub-ROM's own $0038 trampoline. It reads
@@ -51,14 +54,14 @@ SUBROM_IDX_DETOK        equ     2
 ; SUB_INT_DELTA; the subrom-inttest gate CALSLTs it and asserts delta >= 1 (which
 ; reads 0 if the trampoline is absent or the tenant left interrupts off).
 ; docs/spec-basic-subrom-trampoline.md.
-SUBROM_IDX_INTTEST      equ     3
+; (SUBROM_IDX_INTTEST: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 4 = the ARRAY ENGINE tenant (arrays slice-1 SPLIT design, sub/
 ; arrays.asm ary_engine): docs/spec-basic-arrays.md §10. A pure-RAM leaf --
 ; ary_find/ary_alloc/ary_resolve (the descriptor walk, offset arithmetic,
 ; bound/negative/wrong-ndim checks, DIM allocation) -- reading the ARY_OP..
 ; ARY_ERR param block (basic/sysvars.inc §10.2). Its main-ROM stub is
 ; basic/arrays.asm `ary_engine_call` (ex_dim / ex_let_arr / ev_f_arr).
-SUBROM_IDX_ARY          equ     4
+; (SUBROM_IDX_ARY: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 5 = the STRING HEAP tenant (arrays slice-4a, sub/strheap.asm
 ; strheap_engine): docs/spec-basic-arrays-slice4a-string-heap.md §9. A
 ; pure-RAM leaf -- heap_alloc (bump allocator on the downward frontier
@@ -70,7 +73,7 @@ SUBROM_IDX_ARY          equ     4
 ; aeng_copy_str (string array element store) and ary_alloc's own GC-before-
 ; OOM retry (§5.4), since both are co-resident in the same sub-ROM page-0
 ; image.
-SUBROM_IDX_STRHEAP      equ     5
+; (SUBROM_IDX_STRHEAP: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 6/7 = the PRINT USING FORMAT SCANNERS (eviction, sub/printusing.asm):
 ; pu_to_field (emit leading literals + identify the next field) and pu_emit_tail
 ; (emit trailing literals). Pure leaves over PU_* RAM + pchar -- the fragile value-
@@ -79,8 +82,8 @@ SUBROM_IDX_STRHEAP      equ     5
 ; stubs (basic/printusing.asm) drain DETOKBUF via print_string
 ; (honouring PRDEST, so the file form PRINT# USING is untouched). TOFIELD returns
 ; the no-field flag in A (0=field found, 1=none). docs/spec-evict-printusing.md.
-SUBROM_IDX_PU_TOFIELD   equ     6
-SUBROM_IDX_PU_TAIL      equ     7
+; (SUBROM_IDX_PU_TOFIELD: defined in basic/sysvars.inc -- D-PASMO053)
+; (SUBROM_IDX_PU_TAIL: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- Page-1 tenant index kept in sync with basic/sysvars.inc (spec sync note) --
 ; SUBROM_IDX_FORMAT = 10 (basic/sysvars.inc SUBROM_ENTRY_BASE_P1 list, after
@@ -90,19 +93,19 @@ SUBROM_IDX_PU_TAIL      equ     7
 ; `jp format_tenant`), not by this index -- only the main-ROM stub computes
 ; `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FORMAT`. Defined here anyway so the
 ; two files never drift on the numeric value (spec §6 sync requirement).
-SUBROM_IDX_FORMAT       equ     10
+; (SUBROM_IDX_FORMAT: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 11 = scan_stmt_end (error-handling S2b RESUME NEXT's statement-advance
 ; helper, sub/errtrap.asm), a pure-leaf tenant (docs/subrom-tenant-playbook.md
 ; §3A: walks only tokenised program RAM text, calls nothing in main). Args/
 ; result marshalled through RAM (SSE_IN/SSE_OUT/SSE_EOL, basic/sysvars.inc).
-SUBROM_IDX_SCANSTMT     equ     11
+; (SUBROM_IDX_SCANSTMT: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 12 = fatprim_tenant (sub/fatprim.asm): the FAT12 primitive/sector
 ; layer (docs/spec-evict-diskfile-cluster.md §11, Phase 1 of the disk/file
 ; cluster eviction) -- ONE selector-dispatched entry covering all 15
 ; marshalled primitives (DISKOP_OP, basic/sysvars.inc, picks the routine;
 ; only the main-ROM stubs compute `IX = SUBROM_ENTRY_BASE_P1 +
 ; 3*SUBROM_IDX_FATPRIM`, same sync-note pattern as SUBROM_IDX_FORMAT above).
-SUBROM_IDX_FATPRIM      equ     12
+; (SUBROM_IDX_FATPRIM: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 13 = dirverb_tenant (sub/dirverb.asm): the directory-verb I/O bodies
 ; (docs/spec-evict-diskfile-cluster.md §12, Phase 2 of the disk/file cluster
 ; eviction) -- ONE selector-dispatched entry covering KILL's delete loop and
@@ -110,17 +113,17 @@ SUBROM_IDX_FATPRIM      equ     12
 ; bodies call the Phase-1 fatprim primitives (fat_delete / read_sector /
 ; fatprim_write_sector) SUB-LOCALLY, no marshalling. Only the main-ROM heads
 ; compute `IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB`.
-SUBROM_IDX_DIRVERB      equ     13
+; (SUBROM_IDX_DIRVERB: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 14 = play_parse_tenant (sub/playparse.asm): the audio Slice-2a MML parser
 ; (docs/spec-basic-audio-play-slice2a.md). A pure RAM leaf -- reads the per-voice
 ; MML (ptr,len) from the VCBs + AUDIO_VMASK, parses each string into its VOICxQ
 ; ring buffer (own-design PLAY_OP_* packets), sets MUSICF last. Reached sub-side by
 ; label (sub_p1_table `jp play_parse_tenant`); only ex_play (basic/play.asm)
 ; computes IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE.
-SUBROM_IDX_PLAY_PARSE   equ     14
+; (SUBROM_IDX_PLAY_PARSE: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 15 = lineedit_tenant (sub/lineedit.asm) -- see basic/sysvars.inc for
 ; the full comment (kept in sync there, spec sync note pattern).
-SUBROM_IDX_LINEEDIT     equ     15
+; (SUBROM_IDX_LINEEDIT: defined in basic/sysvars.inc -- D-PASMO053)
 ; index 16 = casmatch_tenant (sub/casmatch.asm): the cassette Tier-3 name-
 ; match / data-skip engine (docs/spec-eviction-g5-space.md) -- cas_open_match
 ; + cas_skip_data (basic/cload.asm), evicted whole to free page-1 tail space
@@ -131,14 +134,14 @@ SUBROM_IDX_LINEEDIT     equ     15
 ; `cas_open_match`. NOTE: 16 is the actual next-free index (15/LINEEDIT was
 ; the last taken at the time this spec was written -- the index-drift lesson
 ; from commit 136aee8, heeded here).
-SUBROM_IDX_CASMATCH     equ     16
+; (SUBROM_IDX_CASMATCH: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; show_title + banner_text (basic/title.asm), evicted to PAGE 1 to fund the
 ; input-devices I2 slice's measured 55 B page-1 deficit (docs/spec-basic-input-
 ; devices.md §9.5). Page 1 because its only edges are INITXT/CHPUT (page-0 BIOS,
 ; invisible to a page-0 tenant). No marshalling of any kind. Its main-ROM stub is
 ; basic/title.asm `show_title`. 17 is the next-free index (16/CASMATCH was last).
-SUBROM_IDX_TITLE        equ     17
+; (SUBROM_IDX_TITLE: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; build_83_name (basic/bload.asm), evicted to PAGE 1 to fund interrupt-traps T1
 ; (docs/spec-basic-interrupt-traps.md §10.4, D-T-8c/D-T-8d). Page 1 because the
@@ -148,7 +151,7 @@ SUBROM_IDX_TITLE        equ     17
 ; branch). 18 is the next-free index (17/TITLE was last). Reached sub-side by
 ; label (sub_p1_table `jp fcbname_tenant`); only the stub computes
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FCBNAME.
-SUBROM_IDX_FCBNAME      equ     18
+; (SUBROM_IDX_FCBNAME: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; errmsg_tenant (sub/errmsg.asm), D-MSGSUB: the fourteen ERR codes zerobas never
 ; RAISES but must still be able to PRINT -- 12/15/18/19 (dense holes) and
@@ -162,7 +165,7 @@ SUBROM_IDX_FCBNAME      equ     18
 ; the page-0 table is full to the $0038 vector). Reached sub-side by label
 ; (sub_p1_table `jp errmsg_tenant`); only basic/program.asm `pm_sub` computes
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_ERRMSG.
-SUBROM_IDX_ERRMSG       equ     22
+; (SUBROM_IDX_ERRMSG: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- D-EVLNO (docs/spec-rom-region-evict-lineno.md) ---------------------------
 ; index 23 = parseln_tenant (sub/lineno.asm): the ASCII line-number scanner
@@ -180,7 +183,7 @@ SUBROM_IDX_ERRMSG       equ     22
 ; Reached sub-side by label (sub_p1_table `jp parseln_tenant`); only
 ; basic/program.asm `parse_lineno` computes
 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN.
-SUBROM_IDX_PARSELN      equ     23
+; (SUBROM_IDX_PARSELN: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- S2a boot-gate scratch (page-3 RAM, visible from either sub-ROM page) ------
 ; The skeleton PING tenants write a page-tag byte here so the boot-gate probe can
@@ -200,7 +203,7 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; long draw keeps interrupts live -- music keeps playing (arc D1). Reached by
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*8 = $0058; G1 ships only the floor (VDP port I/O
 ; primitives + the interrupt-under-draw self-test), no statement/token yet.
-SUBROM_IDX_GRAPHICS     equ     8
+; (SUBROM_IDX_GRAPHICS: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- G7 eviction (page-0 tenants; docs/spec-eviction-g7-space.md) ------------
 ; index 9 = deftype_tenant (the G6 carve; full comment in basic/sysvars.inc).
@@ -211,14 +214,14 @@ SUBROM_IDX_GRAPHICS     equ     8
 ; (RDV_MODE): the item's RAW ASCII span is copied into STRSCR, which is page-3 RAM
 ; and therefore still page-0 clean -- the descriptor WRAP stays main-side because
 ; strscr_desc is in the main low region (docs/spec-basic-readvar.md §4.1).
-SUBROM_IDX_READVAL      equ     10
+; (SUBROM_IDX_READVAL: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- I1 funding carve (page-0 tenant; docs/spec-basic-input-devices.md §7) ---
 ; index 11 = beep_tenant (sub/beep.asm): the BEEP body (direct PSG blip + the
 ; busy-wait), carved out of the resident to fund the STICK/STRIG slice. Page-0
 ; CLEAN: port I/O and a counted delay only -- no BIOS, no low region. Its `ei`
 ; across the delay relies on the sub-ROM's own page-0 $0038 trampoline.
-SUBROM_IDX_BEEP         equ     11
+; (SUBROM_IDX_BEEP: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- D-CLP funding carve (page-0 tenant; docs/decision-clearpool-funding.md) --
 ; index 12 = fld_lookup_tenant (sub/fldlook.asm): the FIELDed-variable READ
@@ -234,7 +237,7 @@ SUBROM_IDX_BEEP         equ     11
 ; (docs/spec-rom-region-p0base.md) relocated the base to $0040, above the
 ; vector. INDEX 13 IS FREE and the table has no cap -- appending a row is now
 ; just another line, on either island.
-SUBROM_IDX_FLDLOOK      equ     12
+; (SUBROM_IDX_FLDLOOK: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- D-FLDARY funding carve (page-0 tenant; docs/spec-basic-fldary.md §6.4) ---
 ; index 13 = lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET record-field
@@ -248,13 +251,13 @@ SUBROM_IDX_FLDLOOK      equ     12
 ; sub-side in 5 B. ⚠️ THE FIRST INDEX PAST THE OLD $0038 CEILING to be used:
 ; D-P0BASE moved the table base to $0040 and the note on index 12 says "INDEX 13
 ; IS FREE and the table has no cap" -- this is that note being cashed.
-SUBROM_IDX_LRSETST      equ     13
+; (SUBROM_IDX_LRSETST: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; GFX_UNGUARDED: the G1 "teeth check" toggle (spec §4). Default 0 = the DI guard
 ; around the 2-byte VDP address latch is present (shipped). Building the sub-ROM
-; with `pasmo --equ GFX_UNGUARDED=1` strips the guard, so the floor gate can
-; confirm it then FAILs (latch race observed) -- proving the guarded pass is a
-; real result, not a test that cannot fail. NEVER shipped =1.
-    IFNDEF GFX_UNGUARDED
+; with GFX_UNGUARDED = 1 strips the guard, so the floor gate can confirm it then
+; FAILs (latch race observed) -- proving the guarded pass is a real result, not
+; a test that cannot fail. NEVER shipped =1. (D-PASMO053: the teeth build edits
+; THIS line in a copy of sub/ -- it was `pasmo --equ` over an IFNDEF, neither of
+; which pasmo 0.5.3 has. The Makefile refuses if the edit did not land.)
 GFX_UNGUARDED           equ     0
-    ENDIF

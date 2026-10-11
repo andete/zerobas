@@ -129,7 +129,7 @@ pl_typeerr:
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-pl_absent       equ     gb_illegal  ; defensive: merged ROM always ships the tenant
+; (pl_absent = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- ev_f_play: the PLAY(n) FUNCTION (D-PLAYFN) -----------------------------
 ; `PLAY(n)` reports the BACKGROUND-QUEUE state, and is a different surface from

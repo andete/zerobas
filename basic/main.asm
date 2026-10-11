@@ -52,6 +52,7 @@ SUB_BUILD       equ     0
 ; side" (sub/sub.asm:54).
 DISK_BUILD      equ     0
                 include "basic/sysvars.inc"
+                include "basic/aliases-early.inc"   ; D-PASMO053: before any use
 
                 org     BASIC_ORG
 
@@ -100,7 +101,9 @@ DISK_BUILD      equ     0
 ; vars.asm/expr.asm/float-arith.asm/float.asm/interp.asm labels defined
 ; LATER in this same assembly (var_name_key, eval, stmt_error, ...) —
 ; forward references across `include`s are fine for a whole-file multi-pass
-; assembler like pasmo; only ORG-based layout needs include order.
+; assembler like pasmo; only ORG-based layout needs include order. (Forward
+; references to LABELS. An `equ` ALIAS of a later label used above its own
+; line is $0000 under pasmo 0.5.3 -- basic/aliases-early.inc, D-PASMO053.)
                 include "basic/arrays.asm"
 
 ; --- D-DEFFN's PROMOTION: two page-1 leaves brought DOWN into the low region --

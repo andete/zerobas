@@ -663,7 +663,7 @@ var_load_fac:
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
-vlf_unset_int   equ     vptr_none
+; (vlf_unset_int = vptr_none: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 vlf_found:
                 pop     af                  ; A = type (== the entry's own stored type)
                 ld      (FACTYP),a

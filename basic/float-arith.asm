@@ -527,7 +527,7 @@ fac_typ_int16:                              ; D-TAILIX2 (2026-10-03): FACTYP := 
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
-raf_zero_ok     equ     cpow_x0_pos
+; (raf_zero_ok = cpow_x0_pos: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; =============================================================================
 ; F3 S3a store coercion — single-precision (6 sig digit) round + pack

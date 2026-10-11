@@ -1436,7 +1436,7 @@ exr_done:
 ; err_undefined's text in any form the decoder could share.
 ; rn_undefined -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
 ; read only by absolute `ld` from main; now in the font island.
-rn_in          equ     in_msg              ; D-ISLDATA2: both were " in ",0 -- one copy (5 B)
+; (rn_in = in_msg: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- ex_auto: AUTO [<start>][,<inc>] (D-EDITVERB) ----------------------------
 ; docs/spec-basic-editverb.md §3.3, measured in
@@ -3100,7 +3100,7 @@ ex_on_interval:
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-eoi_err5        equ     gb_illegal  ; ERR 5 (ON INTERVAL=0)
+; (eoi_err5 = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
     ENDIF
 
 ; --- ex_ff_stmt: the `$FF <selector>` STATEMENT fork -------------------------
@@ -3244,7 +3244,7 @@ strig_done:
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1..10)
+; (strig_illegal = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
     IF TRAPS_T3
 ; ===========================================================================

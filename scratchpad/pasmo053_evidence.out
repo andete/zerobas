@@ -1,0 +1,46 @@
+# D-PASMO053 evidence, 2026-10-11. pasmo 0.5.3 = Debian's 0.5.3 (orig tarball + its one
+# patch, a gcc build fix), built locally; 0.5.5 = the host's. Image hashes, clean builds:
+== baseline (0.5.5, before any change)
+b8f05f98ca5b5770f07c2ff12ca52409803a4e22  build/basic-reloc.rom
+b2f0afbc58559ea7a839311e355b62b538dfddb5  build/sub.rom
+fe75a13de59926d698264a9ea9d93fc51bb41dd1  build/disk.rom
+61892783f6d2d2a7edf64edfff2089f8757f8787  build/zerobas-main-eu.rom
+== 0.5.3 after the IFNDEF / --equ removal only: main differs (sub, disk equal)
+7706cf728319ba10e2121806b778d4acd5e7991c  build/basic-reloc.rom
+b2f0afbc58559ea7a839311e355b62b538dfddb5  build/sub.rom
+fe75a13de59926d698264a9ea9d93fc51bb41dd1  build/disk.rom
+c5e47561893beff67d24fcac6c3ae1dc64e71a86  build/zerobas-main-eu.rom
+== 0.5.3 after the alias move (all 21): ALL FOUR IDENTICAL to baseline
+b8f05f98ca5b5770f07c2ff12ca52409803a4e22  build/basic-reloc.rom
+b2f0afbc58559ea7a839311e355b62b538dfddb5  build/sub.rom
+fe75a13de59926d698264a9ea9d93fc51bb41dd1  build/disk.rom
+61892783f6d2d2a7edf64edfff2089f8757f8787  build/zerobas-main-eu.rom
+== 0.5.5 after the alias move: ALL FOUR IDENTICAL to baseline
+b8f05f98ca5b5770f07c2ff12ca52409803a4e22  build/basic-reloc.rom
+b2f0afbc58559ea7a839311e355b62b538dfddb5  build/sub.rom
+fe75a13de59926d698264a9ea9d93fc51bb41dd1  build/disk.rom
+61892783f6d2d2a7edf64edfff2089f8757f8787  build/zerobas-main-eu.rom
+
+# The 13 operands 0.5.3 assembled as $0000 (basic/main.asm, before the alias move;
+# offset in the --bin image, the 0.5.5 value, the names at that value):
+0x2def 0x5246 evsgn_settype / flt_int_result
+0x2e8a 0x5246 evsgn_settype / flt_int_result
+0x2f3f 0x4276 ex_let_err / inpc_synpop
+0x336b 0x39e8 cpow_x0_pos / raf_zero_ok
+0x3b8e 0x3ca3 err_illegal_fn / err_illegal_fn_arr / err_subrom_absent
+0x3f5e 0x4536 gb_illegal + 10 aliases (the one the first move MISSED)
+0x41d1 0x4536 gb_illegal + aliases
+0x41d7 0x4536 gb_illegal + aliases
+0x41db 0x4536 gb_illegal + aliases
+0x48d2 0x534c vptr_none / vlf_unset_int
+0x56a2 0x5cba pl_syntax + aliases
+0x5916 0x5cba pl_syntax + aliases
+0x783b 0x1bad in_msg / rn_in
+# After moving 15 aliases one operand (0x3f5e) still differed: six more aliases of
+# gb_illegal (gfx_err5, gfx_absent, pl_absent, pu_ifc, snd_illegal, strig_illegal).
+# After moving those, basic/main.asm assembled by 0.5.3 and 0.5.5: cmp IDENTICAL.
+# Under 0.5.3 also: make unit-test 65/65, make switch-build-check 7/7,
+# make graphics-floor-teeth PASS (the unguarded build corrupts, as it must).
+# tools/check_alias_order.py: CLEAN on main / sub / disk; knife (flt_int_result put
+# back in basic/float.asm) -> 2 findings, str-engine.asm:2150 and :2428 -- the two
+# operands above at 0x2def / 0x2e8a. Predicted 1: MISSED (two uses).

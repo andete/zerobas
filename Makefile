@@ -51,17 +51,19 @@
 BUILD := build
 
 PASMO ?= pasmo
-# pasmo 0.5.5 or newer is REQUIRED: the sources use IFNDEF guards (basic/sysvars.inc,
-# sub/equates.inc) and `--equ` overrides that the 0.5.3 every Linux distribution
-# packages rejects ("Macro name expected" -- a tester's build, 2026-10-11; CI's
-# apt pasmo is 0.5.3-7 too). Checked here, at parse time, so the failure says what
-# to do instead of pointing into sysvars.inc. Silent when pasmo is absent or its
-# banner does not parse: then the first assembler call fails on its own.
-PASMO_MIN := 0.5.5
+# pasmo 0.5.3 or newer: the version every Linux distribution packages (Debian /
+# Ubuntu 0.5.3-7). D-PASMO053 (2026-10-11): the sources had grown IFNDEF guards and
+# a `--equ` override that 0.5.3 rejects ("Macro name expected" -- a tester's build);
+# they are gone, and the images assemble BYTE-IDENTICAL under 0.5.3 and 0.5.5.
+# Keep it that way: no IFDEF / IFNDEF, no `--equ` -- CI's Linux job assembles with
+# the distribution's 0.5.3. Checked here, at parse time, so a too-old pasmo gets a
+# sentence, not a line number. Silent when pasmo is absent or its banner does not
+# parse: then the first assembler call fails on its own.
+PASMO_MIN := 0.5.3
 PASMO_VERSION := $(shell $(PASMO) 2>&1 | sed -n 's/^Pasmo v\. *\([0-9][0-9.]*\).*/\1/p' | head -n1)
 ifneq ($(PASMO_VERSION),)
 ifneq ($(PASMO_MIN),$(firstword $(sort $(PASMO_MIN) $(PASMO_VERSION))))
-$(error pasmo $(PASMO_VERSION) is too old: zerobas needs pasmo $(PASMO_MIN) or newer. Distribution packages ship 0.5.3 -- build 0.5.5 from source, see QUICKSTART.md)
+$(error pasmo $(PASMO_VERSION) is too old: zerobas needs pasmo $(PASMO_MIN) or newer -- see QUICKSTART.md)
 endif
 endif
 SRC   := basic/main.asm
@@ -103,7 +105,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/deffn.asm basic/keytrap.asm basic/playsvc.asm basic/subrom-boot.asm \
          basic/pdfcb-body.inc basic/title-body.inc basic/sprtrap-body.inc \
          basic/fiawalked-body.inc basic/kwtable.inc \
-         basic/sysvars.inc
+         basic/sysvars.inc basic/aliases-early.inc
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
 # in internal slot 3-1; built with the same pasmo + pad_rom flow as the BASIC image.
@@ -426,6 +428,14 @@ deadcode: $(RELOC_SYM) $(SUB_ROM) $(DISK_ROM)
 dead-alias-check:
 	python3 tools/check_dead_aliases.py --selftest
 	python3 tools/check_dead_aliases.py
+
+# --- D-PASMO053: pasmo 0.5.3 (what Debian / Ubuntu ship) assembles a use of an
+# `equ` whose value is not known in pass 1 -- an alias of a LATER label -- as 0,
+# silently, when the use stands above the equ line (0.5.5 gets it right). This
+# walks each build in assembly order and refuses such a use. Source-only.
+alias-order-check:
+	python3 tools/check_alias_order.py --selftest
+	python3 tools/check_alias_order.py
 
 # --- Layout invariant (D-LAYOUTINV) -------------------------------------------
 # The property a LAYOUT PASS is allowed to preserve: every routine keeps its
@@ -1005,7 +1015,7 @@ subrom-inttest: repack-machine
 # reads it all back, and reports the JIFFY delta + mismatch count. Asserts delta>=1
 # (interrupts serviced mid-draw) AND mismatch=0 (the address-latch race is closed).
 # The teeth check `make graphics-floor-teeth` rebuilds the sub-ROM with the guard
-# stripped (pasmo --equ GFX_UNGUARDED=1) and asserts the gate then FAILs.
+# stripped (GFX_UNGUARDED = 1, an edited equates.inc -- D-PASMO053) and asserts the gate then FAILs.
 graphics-floor-acceptance: repack-machine
 	python3 probes/basic/basic_probe_graphics_floor.py
 
@@ -1135,8 +1145,16 @@ omsx-diag-teeth: repack-machine
 	python3 probes/lib/omsx_missing_teeth.py
 
 graphics-floor-teeth: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
-	$(PASMO) -I sub --equ GFX_UNGUARDED=1 --bin $(SUB_SRC) $(BUILD)/sub-unguarded.rom
+	@# D-PASMO053: no `--equ` (pasmo 0.5.3 has none) -- an edited equates.inc in a
+	@# directory searched BEFORE sub/, and the build refuses if the edit did not
+	@# land or the image came out identical to the shipped sub.rom.
+	rm -rf $(BUILD)/unguarded-inc && mkdir -p $(BUILD)/unguarded-inc
+	sed -e 's/^GFX_UNGUARDED\(  *\)equ\(  *\)0$$/GFX_UNGUARDED\1equ\21/' sub/equates.inc \
+	  > $(BUILD)/unguarded-inc/equates.inc
+	grep -q '^GFX_UNGUARDED  *equ  *1$$' $(BUILD)/unguarded-inc/equates.inc
+	$(PASMO) -I $(BUILD)/unguarded-inc -I sub --bin $(SUB_SRC) $(BUILD)/sub-unguarded.rom
 	python3 tools/pad_rom.py $(BUILD)/sub-unguarded.rom 32768
+	! cmp -s $(BUILD)/sub-unguarded.rom $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
 	  --sub-rom $(BUILD)/sub-unguarded.rom
 	python3 probes/basic/basic_probe_graphics_floor.py --expect-fail; st=$$?; \

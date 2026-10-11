@@ -208,7 +208,7 @@ pu_skipnl:
 ; and price out at 5 B same-region -- every larger pair dies on "a relative jump
 ; leaves the span" or "runs off its end", exactly as the item predicted for LOOP
 ; BODIES. The NAME and its call site survive; only the second copy goes.
-pu_ifc          equ     gb_illegal
+; (pu_ifc = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; pu_has_field — CF set iff PU_FMT[0..PU_FMTLEN) contains a field char (#/!/&/\).
 ; Clobbers A, B, DE, HL.

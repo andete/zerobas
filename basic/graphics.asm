@@ -308,7 +308,7 @@ elg_draw:
 ; pl_syntax, which is the family's canonical tail because its four callers
 ; are the only ones close enough to reach it with `jr`. The NAME and every
 ; call site survive; un-alias here for a distinct face and nothing moves.
-elg_syntax      equ     pl_syntax   ; ERR 2 (bad LINE form)
+; (elg_syntax = pl_syntax: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- is_box_kw: is HL at a "B"/"BF" box suffix? (does NOT advance HL) ----------
 ; ZF=1 iff HL points at 'B' or 'BF' terminating the statement (next char after it is
@@ -414,7 +414,7 @@ gir_off:
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-gfx_err5        equ     gb_illegal  ; ERR 5 (PSET/PRESET in SCREEN 0/1)
+; (gfx_err5 = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; 🎯 gfx_absent IS NOW AN ALIAS, NOT A SECOND COPY (D-PAINTBORD carve, 5 B of
 ; main page 1 -- the bytes that fund the border-domain check below). The
 ; defensive "subrom_call reported the tenant missing" tail, which cannot fire on
@@ -423,7 +423,7 @@ gfx_err5        equ     gb_illegal  ; ERR 5 (PSET/PRESET in SCREEN 0/1)
 ; interp.asm makes for err_illegal_fn. The NAME survives because the two are
 ; different CLAIMS: if a later slice wants a distinct face for an absent tenant,
 ; un-alias it here and no call site moves.
-gfx_absent      equ     gfx_err5
+; (gfx_absent = gfx_err5: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to pl_typeerr,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
@@ -881,7 +881,7 @@ ep_overflow:
 ; pl_syntax, which is the family's canonical tail because its four callers
 ; are the only ones close enough to reach it with `jr`. The NAME and every
 ; call site survive; un-alias here for a distinct face and nothing moves.
-ep_syntax       equ     pl_syntax   ; ERR 2 (a 4th PAINT argument)
+; (ep_syntax = pl_syntax: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
     IF G6_RESIDENT
 ; ===========================================================================
@@ -1047,7 +1047,7 @@ gdw_hand_string:
 ; pl_syntax, which is the family's canonical tail because its four callers
 ; are the only ones close enough to reach it with `jr`. The NAME and every
 ; call site survive; un-alias here for a distinct face and nothing moves.
-gfx_syntax      equ     pl_syntax   ; ERR 2 (malformed SPRITE statement)
+; (gfx_syntax = pl_syntax: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; 🔴 AND IT LIVES OUTSIDE `IF G7_RESIDENT`, WHICH IS NOT COSMETIC. It is used
 ; from the G8 block too (basic/interp.asm's ex_letkw refuses `LET VDP(0)=` /
 ; `LET BASE(0)=` with it), so defining it inside G7's block made `G7_RESIDENT

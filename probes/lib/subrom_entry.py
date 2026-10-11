@@ -29,6 +29,11 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 EQUATES = os.path.join(REPO, "sub", "equates.inc")
+# D-PASMO053 (2026-10-11): the SUBROM_* base and indices are DEFINED in
+# basic/sysvars.inc (both builds include it); sub/equates.inc keeps each name's
+# PAGE section with a marker line `; (NAME: defined in basic/sysvars.inc ...)`.
+# So: the page comes from equates.inc's sections, the value from sysvars.inc.
+SYSVARS = os.path.join(REPO, "basic", "sysvars.inc")
 
 _EQU = re.compile(r"^([A-Za-z_][A-Za-z_0-9]*)\s+equ\s+\$?([0-9A-Fa-f]+)\s*(?:;.*)?$",
                   re.M)
@@ -53,24 +58,40 @@ def page0_entry(idx_name: str, text: str | None = None) -> int:
     space (FORMAT is 10 in one and READVAL is 10 in the other), so a name that is
     only a page-1 tenant is refused here rather than silently pointed at the wrong
     table."""
+    own_text = text is None
     if text is None:
         if not os.path.exists(EQUATES):
             raise EquatesError(f"{EQUATES} is not there -- nothing to derive from")
         text = open(EQUATES, encoding="utf-8").read()
-    syms = _symbols(text)
+    # sysvars.inc only for the REAL tree: a caller that passes `text` (the
+    # selftest's synthetic files) gets exactly that text and nothing else
+    sysvars = (open(SYSVARS, encoding="utf-8").read()
+               if own_text and os.path.exists(SYSVARS) else "")
+    # only the SUBROM_* lines of sysvars.inc: the rest of that file holds equ
+    # forms (`$00B7` beside a decimal-looking name) _symbols was never meant for
+    syms = {n: (int(v[1:], 16) if v.startswith("$") else int(v))
+            for n, v in re.findall(r"^(SUBROM_[A-Z0-9_]+)\s+equ\s+(\$[0-9A-Fa-f]+|\d+)",
+                                   sysvars, re.M)}
+    syms.update(_symbols(text))
     base = syms.get("SUBROM_ENTRY_BASE_P0")
     if base is None:
-        raise EquatesError("SUBROM_ENTRY_BASE_P0 is not defined in sub/equates.inc")
+        raise EquatesError("SUBROM_ENTRY_BASE_P0 is not defined in basic/sysvars.inc "
+                           "or sub/equates.inc")
     key = f"SUBROM_IDX_{idx_name}"
     # the page-0 index block runs from the P0 header to the P1 header; an index
-    # defined only below that line belongs to the other table
+    # listed only below that line belongs to the other table
     p0 = text.find("Page-0 tenant indices")
     p1 = text.find("Page-1 tenant indices")
     block = text[p0:p1] if (p0 >= 0 and p1 > p0) else text
     m = re.search(rf"^{re.escape(key)}\s+equ\s+(\d+)", block, re.M)
-    if not m:
-        raise EquatesError(f"{key} is not a PAGE-0 index in sub/equates.inc")
-    return base + 3 * int(m.group(1))
+    if m:
+        return base + 3 * int(m.group(1))
+    # D-PASMO053: listed in the page-0 section by its marker, valued in sysvars
+    if re.search(rf"^; \({re.escape(key)}: defined in basic/sysvars\.inc", block, re.M):
+        m = re.search(rf"^{re.escape(key)}\s+equ\s+(\d+)", sysvars, re.M)
+        if m:
+            return base + 3 * int(m.group(1))
+    raise EquatesError(f"{key} is not a PAGE-0 index in sub/equates.inc")
 
 
 def le16(addr: int) -> tuple[int, int]:

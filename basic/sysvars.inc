@@ -4824,10 +4824,10 @@ FNF_RESTORE     equ $F1     ; L: copy the newest frame back, pop the chain, rest
 FNF_UNWIND      equ $F2     ; L: an abort left frames standing -- reclaim them all
 
 ; IX = SUBROM_ENTRY_BASE_P0 + 3*index selects a tenant; never renumber an index.
-; IFNDEF-guarded: sub.asm includes BOTH this and sub/equates.inc (which defines
-; these first), so the guard lets the sub build reuse those and the main build
-; (no equates.inc) define its own — one ABI, no double-definition.
-    IFNDEF SUBROM_ENTRY_BASE_P0
+; THE ONE DEFINITION (D-PASMO053, 2026-10-11): both builds include this file,
+; so the sub-ROM ABI lives here alone. It used to be IFNDEF-guarded against a
+; second copy in sub/equates.inc -- pasmo 0.5.3 (what Debian / Ubuntu ship)
+; rejects IFNDEF, and the two copies had nothing checking they agreed.
 SUBROM_ENTRY_BASE_P0 equ $0040  ; sub-ROM page-0 jp-table base (ABOVE the fixed
                                 ; $0038 IM1 vector -- D-P0BASE, docs/spec-rom-
                                 ; region-p0base.md. Mirrors sub/equates.inc;
@@ -5159,7 +5159,6 @@ SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
                                 ; apply. Marshals BC/HL back through PLN_NUM/
                                 ; PLN_PTR; HL rides IN through subrom_call.
                                 ; Sole caller basic/program.asm `parse_lineno`.
-    ENDIF
 ; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
 ; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
 ; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave

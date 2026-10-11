@@ -1851,7 +1851,7 @@ fch_check_d:
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
 ; distinct face and nothing else moves.
-fchk_ifc        equ     gb_illegal  ; ERR 5 (err_msgtab[5])
+; (fchk_ifc = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; fch_check — the whole rule, for the seven verbs with no channel-0 exception.
 fch_check:
                 call    fch_check_d

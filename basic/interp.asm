@@ -1186,7 +1186,7 @@ fp_runtime_error:
 ; ⚠️ subromcall.asm's err_subrom_absent aliases THIS name, deliberately -- the
 ; "sub-ROM is missing" message must stay MAIN-resident (spec-basic-msgenc-carve.md
 ; §4.4 Q4), and err_illegal_fn_arr is in the low region, which satisfies that.
-err_illegal_fn  equ     err_illegal_fn_arr
+; (err_illegal_fn = err_illegal_fn_arr: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; D-MSGMIGRATE: err_resume_noerr's TEXT is sub-ROM-hosted (em_resume_noerr,
 ; ERRFLG = 22). ⚠️ IT HAD TWO READERS, NOT ONE -- err_msgtab entry 22 AND
 ; raise_error_forced's own `ld hl` below -- and BOTH are keyed on 22, because
@@ -2162,11 +2162,11 @@ gba_byte:
 ; `ex_donothing` serves every one of `gb_illegal`'s callers too. A future
 ; SET/IPL/CMD-specific behaviour needs its own body, not an edit here
 ; [[a-shared-tail-is-not-a-decision]].
-ex_donothing    equ     gb_illegal
+; (ex_donothing = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 ; ev_f_attr — the FUNCTION face of the same thing (D-ATTRFN). A second 0-byte
 ; alias rather than a reuse of `ex_donothing`, because that name says "statement"
 ; and `ATTR$` is reached from `ev_f`. Both are labels, not decisions.
-ev_f_attr       equ     gb_illegal
+; (ev_f_attr = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 gb_illegal:                                 ; C4 shared tail (2026-10-03): files.asm's
                 ld      a,5                 ; cg_unclaimed and str-engine's MID$ bound
                 jp      raise_error         ; ERR 5 illegal function call  -- jump here

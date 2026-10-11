@@ -195,7 +195,7 @@ inpc_redo3:
 ; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
 ; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
 ; `equ` (it resolves addresses from the sym, not from the source form).
-inpc_synpop     equ     ex_let_err
+; (inpc_synpop = ex_let_err: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
 ; --- LINE INPUT: the whole typed line into one string variable -------------
 inpc_line:
