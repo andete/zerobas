@@ -5160,9 +5160,11 @@ SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
                                 ; PLN_PTR; HL rides IN through subrom_call.
                                 ; Sole caller basic/program.asm `parse_lineno`.
     ENDIF
-; EXBRSA ($FAF8): published MSX2 work area for the sub-ROM slot id (D-6) — written
-; for convention-compat with a future real SUBROM/EXTROM; our private dispatch
-; reads SUBSLOT, not EXBRSA (R4). Source: MSX2 Technical Handbook work-area map.
+; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
+; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
+; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave
+; it 0 (scratchpad/subsig_probe.out). Our dispatch reads SUBSLOT (R4). Kept as a
+; documented address. Source: MSX2 Technical Handbook work-area map.
 EXBRSA          equ     $FAF8
 
 ; --- D-MSGENC: error-message phrase escapes -- RETIRED BY DT-6 ----------------

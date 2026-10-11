@@ -40,24 +40,26 @@
 ; in subromcall.asm. Sources are recorded there and in basic/PROVENANCE.md.
 
 
-; try_sub_slot: if the slot just scanned by try_init_slot (SCAN_SLOT) carries the
-; MSX2 sub-ROM signature "CD" at $0000 (page 0), record it. Called right after
+; try_sub_slot: if the slot just scanned by try_init_slot (SCAN_SLOT) carries
+; zerobas's own sub-ROM marker "ZB" at $0000 (page 0), record it. (D-SUBSIG,
+; 2026-10-11: it was the MSX2 SUB-ROM's "CD", and the slot also went to EXBRSA
+; $FAF8 -- which nothing read, and which both MSX1 references leave 0:
+; scratchpad/subsig_probe.out.) Called right after
 ; try_init_slot in ier_sloop, so SCAN_SLOT already holds this subslot's id and
 ; RDSLT can reuse it via rdslt_scan. Unlike the disk case there is NO INIT CALSLT
 ; — the sub-ROM is a passive callee (D-7); recording the slot is the whole job.
 try_sub_slot:
                 ld      hl,$0000
                 call    rdslt_scan
-                cp      'C'
+                cp      'Z'
                 ret     nz
                 ld      hl,$0001
                 call    rdslt_scan
-                cp      'D'
+                cp      'B'
                 ret     nz
-                ; found: record the slot in the private path AND the MSX2 work area
+                ; found: record the slot (the private path; EXBRSA stays the MSX1 0)
                 ld      a,(SCAN_SLOT)
                 ld      (SUBSLOT),a
-                ld      (EXBRSA),a          ; convention-compat (D-6); dispatch uses SUBSLOT
                 ld      a,1
                 ld      (SUBSLOT_OK),a
                 ret

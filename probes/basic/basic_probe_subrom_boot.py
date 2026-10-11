@@ -28,7 +28,7 @@ BIOS-visible island) and runs the page-1 ping. The two pings write distinct tags
 ($C0 / $C1), so a correct round-trip proves BOTH pages are present and dispatch
 page-selectively — i.e. the container is correctly placed in 3-2 and the
 opposite-island two-page ABI works. This is a STRONGER proof than reading the
-CD/S1 marker bytes (it proves executability, not just presence).
+ZB/S1 marker bytes (it proves executability, not just presence).
 
 Needs build/sub.rom (make sub) and openMSX's bundled C-BIOS MSX1 ROMs. Installs a
 throwaway machine into the openMSX user dir.

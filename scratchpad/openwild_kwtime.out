@@ -1,0 +1,1478 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwtime.py --negative --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+  ok   abs    padded zb/ref  146.1x  -> SLOW
+  ok   mid    padded zb/ref  175.5x  -> SLOW
+  ok   sgn    padded zb/ref  145.9x  -> SLOW
+  ok   lof    padded zb/ref   10.9x  -> SLOW
+kwtime --negative: GREEN -- a slowed side is caught
+refcache: 1 hit, 3 miss, 3 stored, 1 replayed provenance
+python3 probes/basic/basic_probe_kwtime.py --zb-machine C-BIOS_MSX1_EU_REPACK_DISK
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+row                 ref ms     zb ms  zb/ref  alone  status
+kwtime: [plain] ref CURLIN bias -- fall-off 2.478 ms (spread -20.276..3.948) · END path 2.877 ms
+kwtime: [plain] zb CURLIN bias -- fall-off 0.263 ms (spread -38.127..3.858) · END path 0.332 ms
+abs                  9.391     8.719    0.93   0.77  OK
+int                  8.720    10.890    1.25   1.15  OK
+len                  9.238     8.321    0.90   0.74  OK
+chr                  6.520     7.523    1.15   0.98  OK
+mid                  7.824     9.591    1.23   1.10  OK
+mid_b                8.180     9.593    1.17   1.05  OK
+mid_c               12.405    17.277    1.39   1.42  OK
+instr               10.057    10.364    1.03   0.91  OK
+instr_b             10.681    14.872    1.39   1.34  OK
+hex                  7.534     7.830    1.04   0.86  OK
+sqr                 39.834   327.641    8.23   8.49  OK
+peek                 9.965     9.671    0.97   0.83  OK
+peek_b              11.472    15.468    1.35   1.23  OK
+varptr_b            22.357    48.072    2.15   2.75  OK
+varptr_ch           23.963    40.981    1.71   2.55  OK
+erase_b             17.030    32.028    1.88      ~  OK
+asc                  9.791    12.389    1.27   1.18  OK
+cint                 9.243    13.073    1.41   1.35  OK
+cdbl                22.569    44.383    1.97   1.98  OK
+csng                 9.500    15.020    1.58   1.55  OK
+fix                  9.149    11.072    1.21   1.11  OK
+sgn                  9.407     8.961    0.95   0.80  OK
+sin_b               92.882   497.736    5.36   5.42  OK
+cos                 42.324   221.144    5.23   5.36  OK
+tan_b              187.148   531.154    2.84   2.85  OK
+atn                121.978   436.314    3.58   3.60  OK
+exp                 98.908   362.788    3.67   3.70  OK
+log                 32.461   115.954    3.57   3.66  OK
+mod                  9.826    12.126    1.23   1.14  OK
+notop                8.909    11.249    1.26   1.17  OK
+andop                9.182    11.914    1.30   1.21  OK
+orop                 9.243     8.612    0.93   0.77  OK
+xorop                9.243     8.661    0.94   0.78  OK
+oct                  7.483     8.323    1.11   0.95  OK
+valkw               10.561    10.673    1.01   0.89  OK
+valkw_b             11.065    12.068    1.09   0.99  OK
+valkw_c             11.431    16.096    1.41   1.36  OK
+valkw_d             10.705    13.974    1.31   1.24  OK
+valkw_e             10.402    14.055    1.35   1.29  OK
+left                 7.666     9.076    1.18   1.05  OK
+right                7.678     9.044    1.18   1.04  OK
+str                  8.909     8.279    0.93   0.76  OK
+stringf              8.099     8.620    1.06   0.91  OK
+space_b             21.628    31.419    1.45      ~  OK
+csrlind             12.354    16.804    1.36   1.35  OK
+let                 10.489    14.596    1.39   0.78  OK
+rem                  8.838     7.709    0.87      ~  OK
+rnd_b               23.002    52.575    2.29   2.52  OK
+using                9.783     8.031    0.82   0.65  OK
+using_b             12.982    12.855    0.99   0.88  OK
+using_c             13.113    11.133    0.85   0.72  OK
+using_d              7.600     7.693    1.01   0.81  OK
+using_e             15.110    19.480    1.29   1.24  OK
+ifkw                 5.759     7.161    1.24   1.07  OK
+ifkw_b               6.029     7.246    1.20   1.02  OK
+ifkw_c              12.326    19.613    1.59      ~  OK
+forkw               25.686    71.941    2.80      ~  OK
+forkw_b             27.725    70.298    2.54      ~  OK
+forkw_c             36.885    84.224    2.28      ~  OK
+nextkw              15.010    34.397    2.29   4.49  OK
+nextkw_b            15.667    35.549    2.27   4.95  OK
+nextkw_c            33.581    88.159    2.63   3.90  OK
+clearkw              6.814    12.403    1.82   3.07  OK
+clear_b             15.354    27.295    1.78   2.89  OK
+clear_c             41.923    74.767    1.78   1.96  OK
+dimkw               13.613    26.551    1.95      ~  OK
+dimkw_b             22.987    42.357    1.84      ~  OK
+sound_b             31.577    50.632    1.60   2.33  OK
+beep                45.942    48.489    1.06   1.05  OK
+beep_c              74.358    93.604    1.26   0.98  OK
+sound                5.645     7.338    1.30   1.92  OK
+playkw             356.872  1487.801    4.17      ~  OK
+playkw_b           356.383  1486.828    4.17      ~  OK
+playkw_c           366.324  1466.107    4.00      ~  OK
+playkw_d           356.098  1486.828    4.18      ~  OK
+playkw_x           374.027  1565.277    4.18      ~  OK
+playkw_e           356.325  1486.835    4.17      ~  OK
+playkw_f           374.390  1474.561    3.94   1.32  OK
+playkw_g           138.357   612.223    4.42   1.54  OK
+playkw_h          1654.963  1665.290    1.01   0.50  OK
+playkw_i          1652.949  1668.844    1.01   0.82  OK
+vpeek               10.425    11.044    1.06   0.80  OK
+vpoke               10.447    14.395    1.38   1.82  OK
+vdpkw                9.960    13.077    1.31   1.24  OK
+vdp_b                9.994    13.642    1.36   1.30  OK
+vdp_c               21.327    36.942    1.73   2.26  OK
+vdp_d              212.556  1170.404    5.51      ~  OK
+inpkw                9.957    12.975    1.30   1.23  OK
+inp_b               39.749    51.227    1.29   0.81  OK
+outkw                5.607     7.043    1.26   1.74  OK
+out_b               32.337    51.238    1.58   3.48  OK
+pokekw              10.960    11.420    1.04      ~  OK
+widthkw             99.741    79.177    0.79   0.79  OK
+widthkw_b          634.088   109.943    0.17      ~  OK
+widthkw_c          799.504  2389.903    2.99      ~  OK
+circlekw           626.265   224.984    0.36   0.67  OK
+circlekw_b         619.517   274.694    0.44   1.59  OK
+circlekw_c         638.208   242.023    0.38   0.67  OK
+circlekw_d         691.436   294.485    0.43   0.79  OK
+circlekw_e         636.680   239.133    0.38   0.59  OK
+drawkw             573.064   196.995    0.34   1.34  OK
+drawkw_b           573.739   200.183    0.35   1.22  OK
+drawkw_c           595.176   216.535    0.36   1.04  OK
+drawkw_d           581.585   205.204    0.35   1.15  OK
+drawkw_e           584.302   216.312    0.37   1.44  OK
+drawkw_f           586.304   214.206    0.37   1.28  OK
+drawkw_g           573.190   199.532    0.35   1.23  OK
+drawkw_h           574.668   197.022    0.34   1.31  OK
+drawkw_i           582.982   209.971    0.36   1.28  OK
+drawkw_j           576.576   208.275    0.36   1.56  OK
+drawkw_k           577.833   209.772    0.36   2.15  OK
+spritekw           567.595   191.526    0.34   1.85  OK
+sprite_on          613.037   331.534    0.54      ~  OK
+sprite_off        1177.013   805.746    0.68      ~  OK
+sprite_stop            nan       nan       -      ~  UNTIMEABLE
+basekw              10.615    10.971    1.03   0.92  OK
+basekw_b            21.152    37.770    1.79   2.19  OK
+attrkw                 nan       nan       -      ~  UNTIMEABLE
+stopkw                 nan       nan       -      ~  UNTIMEABLE
+contkw              77.587    51.812    0.67      ~  OK
+onkw                15.051    16.601    1.10      ~  OK
+onkw_b                 nan       nan       -      ~  UNTIMEABLE
+ongoto               6.257     5.373    0.86   0.78  OK
+ongosub             14.485    19.738    1.36   1.58  OK
+oninterval         209.969   217.439    1.04      ~  OK
+oninterval_b       810.364   854.014    1.05      ~  OK
+onsprite           596.603   232.927    0.39      ~  OK
+onsprite_b        1192.883   851.206    0.71      ~  OK
+errorkw             15.051    13.250    0.88   0.87  OK
+errorkw_b           14.295    13.935    0.97   0.96  OK
+errkw               13.828    13.250    0.96   0.92  OK
+erlkw               13.828    13.250    0.96   0.92  OK
+resumekw             8.957    13.358    1.49   1.56  OK
+resumekw_b          53.333   354.985    6.66   7.79  OK
+resumekw_c          15.013    23.065    1.54   0.87  OK
+defintkw            10.625    16.983    1.60      ~  OK
+defint_b            10.720    17.065    1.59      ~  OK
+listkw                 nan       nan       -      ~  UNTIMEABLE
+listkw_b               nan       nan       -      ~  UNTIMEABLE
+listkw_c               nan       nan       -      ~  UNTIMEABLE
+newkw                  nan       nan       -      ~  UNTIMEABLE
+gosubkw             12.941    20.401    1.58   2.01  OK
+returnkw            12.941    20.401    1.58   1.42  OK
+endkw               12.941    20.401    1.58      ~  OK
+datakw              13.674    22.164    1.62      ~  OK
+datakw_b            10.729    16.085    1.50      ~  OK
+datakw_c            15.434    24.764    1.60      ~  OK
+datakw_d            23.990    39.278    1.64      ~  OK
+readkw              21.080    33.039    1.57   1.46  OK
+restorekw           21.080    33.039    1.57      ~  OK
+restorekw_b         25.714    30.608    1.19   1.60  OK
+returnkw_b          13.610    21.251    1.56   0.87  OK
+psetkw             567.463   187.899    0.33      ~  OK
+psetkw_b           567.018   187.126    0.33      ~  OK
+psetkw_c           365.120    97.814    0.27      ~  OK
+psetkw_d           567.420   189.837    0.33      ~  OK
+psetkw_e           568.847   191.983    0.34      ~  OK
+presetkw           568.984   190.154    0.33      ~  OK
+presetkw_b         565.821   190.473    0.34      ~  OK
+presetkw_c         578.563   210.717    0.36      ~  OK
+presetkw_d         378.252   117.044    0.31      ~  OK
+paintkw            636.295   302.735    0.48   1.89  OK
+paintkw_b          644.118   315.821    0.49   1.96  OK
+paintkw_c          440.198   240.196    0.55   1.49  OK
+putsprite          570.935   194.781    0.34      ~  OK
+putsprite_b        578.054   209.586    0.36   1.35  OK
+pointkw            566.240   191.173    0.34      ~  OK
+pointkw_b          574.350   200.703    0.35   1.97  OK
+linekw             570.670   192.241    0.34   1.46  OK
+linekw_b           585.774   208.099    0.36   1.10  OK
+linekw_c           584.054   240.229    0.41   3.14  OK
+linekw_d           581.684   209.610    0.36   0.94  OK
+linekw_e           581.294   212.782    0.37   1.28  OK
+linekw_f           579.816   210.173    0.36      ~  OK
+colorkw             10.701    10.745    1.00      ~  OK
+colorkw_b           23.163    33.161    1.43   0.56  OK
+colorkw_c           21.956    36.535    1.66   2.68  OK
+clskw               30.367    23.649    0.78   0.68  OK
+locate               6.502     6.469    0.99   0.74  OK
+locate_b            34.497    23.140    0.67   0.50  OK
+locate_c            45.514    46.082    1.01   1.44  OK
+locate_d            54.524    55.887    1.02      ~  OK
+pos                 11.755    11.039    0.94   0.82  OK
+tab                  7.464     8.189    1.10   0.93  OK
+spc                  7.810     8.604    1.10   0.95  OK
+printkw_b           41.817    40.220    0.96   1.03  OK
+printkw_c           36.879    34.740    0.94   1.12  OK
+printkw_d           33.535    30.862    0.92   1.61  OK
+swap                17.792    30.447    1.71   2.20  OK
+fre_b               22.894    39.325    1.72   2.09  OK
+fre_c               23.564    36.957    1.57   1.69  OK
+tron                 5.171     6.021    1.16      ~  OK
+troff                4.986     5.560    1.12      ~  OK
+tron_b              19.024    17.688    0.93   0.70  OK
+troff_b             18.420    23.784    1.29      ~  OK
+defsng              10.896    19.446    1.78      ~  OK
+defsng_b            11.445    17.253    1.51      ~  OK
+defdbl              11.170    19.760    1.77      ~  OK
+defdbl_b            24.091    48.016    1.99      ~  OK
+defstr               7.609    15.194    2.00      ~  OK
+defstr_b             7.704    11.925    1.55      ~  OK
+deffn               17.297    26.170    1.51      ~  OK
+fnkw                17.879    32.821    1.84      ~  OK
+fnkw_b              12.509    18.632    1.49      ~  OK
+deffn_b             12.524    18.632    1.49      ~  OK
+eqv                  9.377     8.726    0.93   0.77  OK
+imp                  9.359     8.775    0.94   0.78  OK
+motor               13.202    18.356    1.39      ~  OK
+motor_b             11.693    16.163    1.38      ~  OK
+motor_c             11.883    16.481    1.39      ~  OK
+timetick           214.818  1176.662    5.48   4.98  OK
+time_c              25.590    57.116    2.23   2.79  OK
+usrkw                  nan       nan       -      ~  UNTIMEABLE
+defusr                 nan       nan       -      ~  UNTIMEABLE
+defusr_b               nan       nan       -      ~  UNTIMEABLE
+usrkw_b                nan       nan       -      ~  UNTIMEABLE
+screenkw           562.198   181.375    0.32   0.30  OK
+screenkw_c         908.380   326.153    0.36   0.33  OK
+screenkw_d          25.468    39.730    1.56      ~  OK
+keykw               91.395    50.498    0.55   0.53  OK
+keykw_on            39.711    38.426    0.97   1.75  OK
+keykw_off           33.998    33.189    0.98      ~  OK
+waitkw               6.167    11.101    1.80   4.21  OK
+waitkw_b             6.754    12.045    1.78   3.43  OK
+maxfiles            16.325    25.487    1.56      ~  OK
+inkey               20.042    27.248    1.36   0.61  OK
+t6abs2                 nan       nan       -      ~  UNTIMEABLE
+t6abs13                nan       nan       -      ~  UNTIMEABLE
+t6sgn2                 nan       nan       -      ~  UNTIMEABLE
+t6sgn13                nan       nan       -      ~  UNTIMEABLE
+t6int2                 nan       nan       -      ~  UNTIMEABLE
+t6int13                nan       nan       -      ~  UNTIMEABLE
+t6sqr2                 nan       nan       -      ~  UNTIMEABLE
+t6sqr5                 nan       nan       -      ~  UNTIMEABLE
+t6sqr13                nan       nan       -      ~  UNTIMEABLE
+t6log2                 nan       nan       -      ~  UNTIMEABLE
+t6log5                 nan       nan       -      ~  UNTIMEABLE
+t6log13                nan       nan       -      ~  UNTIMEABLE
+t6exp2                 nan       nan       -      ~  UNTIMEABLE
+t6exp6                 nan       nan       -      ~  UNTIMEABLE
+t6exp13                nan       nan       -      ~  UNTIMEABLE
+t6asc2                 nan       nan       -      ~  UNTIMEABLE
+t6asc5                 nan       nan       -      ~  UNTIMEABLE
+t6asc13                nan       nan       -      ~  UNTIMEABLE
+t6chr2                 nan       nan       -      ~  UNTIMEABLE
+t6chr5                 nan       nan       -      ~  UNTIMEABLE
+t6chr6                 nan       nan       -      ~  UNTIMEABLE
+t6chr13                nan       nan       -      ~  UNTIMEABLE
+t6len2                 nan       nan       -      ~  UNTIMEABLE
+t6len13                nan       nan       -      ~  UNTIMEABLE
+t6peek2                nan       nan       -      ~  UNTIMEABLE
+t6peek6                nan       nan       -      ~  UNTIMEABLE
+t6peek13               nan       nan       -      ~  UNTIMEABLE
+t6left2                nan       nan       -      ~  UNTIMEABLE
+t6left5                nan       nan       -      ~  UNTIMEABLE
+t6left6                nan       nan       -      ~  UNTIMEABLE
+t6left13               nan       nan       -      ~  UNTIMEABLE
+t6right2               nan       nan       -      ~  UNTIMEABLE
+t6right5               nan       nan       -      ~  UNTIMEABLE
+t6right6               nan       nan       -      ~  UNTIMEABLE
+t6right13              nan       nan       -      ~  UNTIMEABLE
+t6string2              nan       nan       -      ~  UNTIMEABLE
+t6string5              nan       nan       -      ~  UNTIMEABLE
+t6string13             nan       nan       -      ~  UNTIMEABLE
+t6hex2                 nan       nan       -      ~  UNTIMEABLE
+t6hex6                 nan       nan       -      ~  UNTIMEABLE
+t6hex13                nan       nan       -      ~  UNTIMEABLE
+t6oct2                 nan       nan       -      ~  UNTIMEABLE
+t6oct6                 nan       nan       -      ~  UNTIMEABLE
+t6oct13                nan       nan       -      ~  UNTIMEABLE
+t6bin2                 nan       nan       -      ~  UNTIMEABLE
+t6bin6                 nan       nan       -      ~  UNTIMEABLE
+t6bin13                nan       nan       -      ~  UNTIMEABLE
+t6space2               nan       nan       -      ~  UNTIMEABLE
+t6space5               nan       nan       -      ~  UNTIMEABLE
+t6space13              nan       nan       -      ~  UNTIMEABLE
+t6str2                 nan       nan       -      ~  UNTIMEABLE
+t6str13                nan       nan       -      ~  UNTIMEABLE
+t6cint2                nan       nan       -      ~  UNTIMEABLE
+t6cint6                nan       nan       -      ~  UNTIMEABLE
+t6cint13               nan       nan       -      ~  UNTIMEABLE
+t6fix2                 nan       nan       -      ~  UNTIMEABLE
+t6fix13                nan       nan       -      ~  UNTIMEABLE
+t6csng2                nan       nan       -      ~  UNTIMEABLE
+t6csng13               nan       nan       -      ~  UNTIMEABLE
+t6cdbl2                nan       nan       -      ~  UNTIMEABLE
+t6cdbl13               nan       nan       -      ~  UNTIMEABLE
+t6sin2                 nan       nan       -      ~  UNTIMEABLE
+t6sin13                nan       nan       -      ~  UNTIMEABLE
+t6cos2                 nan       nan       -      ~  UNTIMEABLE
+t6cos13                nan       nan       -      ~  UNTIMEABLE
+t6tan2                 nan       nan       -      ~  UNTIMEABLE
+t6tan13                nan       nan       -      ~  UNTIMEABLE
+t6atn2                 nan       nan       -      ~  UNTIMEABLE
+t6atn13                nan       nan       -      ~  UNTIMEABLE
+t6vpeek2               nan       nan       -      ~  UNTIMEABLE
+t6vpeek5               nan       nan       -      ~  UNTIMEABLE
+t6vpeek6               nan       nan       -      ~  UNTIMEABLE
+t6vpeek13              nan       nan       -      ~  UNTIMEABLE
+t6poke2                nan       nan       -      ~  UNTIMEABLE
+t6poke5                nan       nan       -      ~  UNTIMEABLE
+t6poke6                nan       nan       -      ~  UNTIMEABLE
+t6poke13               nan       nan       -      ~  UNTIMEABLE
+t6poke24               nan       nan       -      ~  UNTIMEABLE
+t6vpoke2               nan       nan       -      ~  UNTIMEABLE
+t6vpoke5               nan       nan       -      ~  UNTIMEABLE
+t6vpoke6               nan       nan       -      ~  UNTIMEABLE
+t6vpoke13              nan       nan       -      ~  UNTIMEABLE
+t6vpoke24              nan       nan       -      ~  UNTIMEABLE
+t6sound2               nan       nan       -      ~  UNTIMEABLE
+t6sound5               nan       nan       -      ~  UNTIMEABLE
+t6sound13              nan       nan       -      ~  UNTIMEABLE
+t6sound24              nan       nan       -      ~  UNTIMEABLE
+t6instrs2              nan       nan       -      ~  UNTIMEABLE
+t6instrs13             nan       nan       -      ~  UNTIMEABLE
+t6instrsf2             nan       nan       -      ~  UNTIMEABLE
+t6instrsf5             nan       nan       -      ~  UNTIMEABLE
+t6instrsf6             nan       nan       -      ~  UNTIMEABLE
+t6instrsf13            nan       nan       -      ~  UNTIMEABLE
+t6mids35               nan       nan       -      ~  UNTIMEABLE
+t6mids36               nan       nan       -      ~  UNTIMEABLE
+t6mids313              nan       nan       -      ~  UNTIMEABLE
+t6midste2              nan       nan       -      ~  UNTIMEABLE
+t6midste5              nan       nan       -      ~  UNTIMEABLE
+t6midste13             nan       nan       -      ~  UNTIMEABLE
+t6mida2                nan       nan       -      ~  UNTIMEABLE
+t6mida5                nan       nan       -      ~  UNTIMEABLE
+t6mida13               nan       nan       -      ~  UNTIMEABLE
+t6nextb1               nan       nan       -      ~  UNTIMEABLE
+t6nextn1               nan       nan       -      ~  UNTIMEABLE
+t6nextn2               nan       nan       -      ~  UNTIMEABLE
+t6nextcl1              nan       nan       -      ~  UNTIMEABLE
+t6returnb3             nan       nan       -      ~  UNTIMEABLE
+t6returnl2             nan       nan       -      ~  UNTIMEABLE
+t6returnl3             nan       nan       -      ~  UNTIMEABLE
+t6returnl8             nan       nan       -      ~  UNTIMEABLE
+t6restoreb8            nan       nan       -      ~  UNTIMEABLE
+t6restorel8            nan       nan       -      ~  UNTIMEABLE
+t6gotoj2               nan       nan       -      ~  UNTIMEABLE
+t6gotoj8               nan       nan       -      ~  UNTIMEABLE
+t6readrd2              nan       nan       -      ~  UNTIMEABLE
+t6readrd4              nan       nan       -      ~  UNTIMEABLE
+t6swape2               nan       nan       -      ~  UNTIMEABLE
+t6swape13              nan       nan       -      ~  UNTIMEABLE
+t6erasefa2             nan       nan       -      ~  UNTIMEABLE
+t6erasefa5             nan       nan       -      ~  UNTIMEABLE
+t6dimod2               nan       nan       -      ~  UNTIMEABLE
+t6dimod5               nan       nan       -      ~  UNTIMEABLE
+t6dimod6               nan       nan       -      ~  UNTIMEABLE
+t6dimod9               nan       nan       -      ~  UNTIMEABLE
+t6dimod10              nan       nan       -      ~  UNTIMEABLE
+t6dimod13              nan       nan       -      ~  UNTIMEABLE
+t6dimmd5               nan       nan       -      ~  UNTIMEABLE
+t6dimmd9               nan       nan       -      ~  UNTIMEABLE
+t6dimmd10              nan       nan       -      ~  UNTIMEABLE
+t6dimmd13              nan       nan       -      ~  UNTIMEABLE
+t6andba6               nan       nan       -      ~  UNTIMEABLE
+t6andba13              nan       nan       -      ~  UNTIMEABLE
+t6andba24              nan       nan       -      ~  UNTIMEABLE
+t6orbo6                nan       nan       -      ~  UNTIMEABLE
+t6orbo13               nan       nan       -      ~  UNTIMEABLE
+t6orbo24               nan       nan       -      ~  UNTIMEABLE
+t6xorbx6               nan       nan       -      ~  UNTIMEABLE
+t6xorbx13              nan       nan       -      ~  UNTIMEABLE
+t6xorbx24              nan       nan       -      ~  UNTIMEABLE
+t6eqve6                nan       nan       -      ~  UNTIMEABLE
+t6eqve13               nan       nan       -      ~  UNTIMEABLE
+t6eqve24               nan       nan       -      ~  UNTIMEABLE
+t6impi6                nan       nan       -      ~  UNTIMEABLE
+t6impi13               nan       nan       -      ~  UNTIMEABLE
+t6impi24               nan       nan       -      ~  UNTIMEABLE
+t6notbn6               nan       nan       -      ~  UNTIMEABLE
+t6notbn13              nan       nan       -      ~  UNTIMEABLE
+t6notbn24              nan       nan       -      ~  UNTIMEABLE
+t6modm6                nan       nan       -      ~  UNTIMEABLE
+t6modm11               nan       nan       -      ~  UNTIMEABLE
+t6modm13               nan       nan       -      ~  UNTIMEABLE
+t6modm24               nan       nan       -      ~  UNTIMEABLE
+t6beepna2              nan       nan       -      ~  UNTIMEABLE
+t6tront2               nan       nan       -      ~  UNTIMEABLE
+t6trofft2              nan       nan       -      ~  UNTIMEABLE
+t6csrlinrr2            nan       nan       -      ~  UNTIMEABLE
+t6erlel2               nan       nan       -      ~  UNTIMEABLE
+t6errec2               nan       nan       -      ~  UNTIMEABLE
+t6errorr5              nan       nan       -      ~  UNTIMEABLE
+t6gosubc2              nan       nan       -      ~  UNTIMEABLE
+t6gosubc8              nan       nan       -      ~  UNTIMEABLE
+t6inkeypk13            nan       nan       -      ~  UNTIMEABLE
+t6inppr2               nan       nan       -      ~  UNTIMEABLE
+t6inppr13              nan       nan       -      ~  UNTIMEABLE
+t6leta2                nan       nan       -      ~  UNTIMEABLE
+t6leta13               nan       nan       -      ~  UNTIMEABLE
+t6letnum2              nan       nan       -      ~  UNTIMEABLE
+t6outpv2               nan       nan       -      ~  UNTIMEABLE
+t6outpv5               nan       nan       -      ~  UNTIMEABLE
+t6outpv13              nan       nan       -      ~  UNTIMEABLE
+t6outpv24              nan       nan       -      ~  UNTIMEABLE
+t6pointpr2             nan       nan       -      ~  UNTIMEABLE
+t6pointpr13            nan       nan       -      ~  UNTIMEABLE
+t6poscr2               nan       nan       -      ~  UNTIMEABLE
+t6lposcr2              nan       nan       -      ~  UNTIMEABLE
+t6rndrd2               nan       nan       -      ~  UNTIMEABLE
+t6rndrd13              nan       nan       -      ~  UNTIMEABLE
+t6fora2                nan       nan       -      ~  UNTIMEABLE
+t6fora13               nan       nan       -      ~  UNTIMEABLE
+t6fora24               nan       nan       -      ~  UNTIMEABLE
+t6fors2                nan       nan       -      ~  UNTIMEABLE
+t6fors13               nan       nan       -      ~  UNTIMEABLE
+t6fors24               nan       nan       -      ~  UNTIMEABLE
+t6forns13              nan       nan       -      ~  UNTIMEABLE
+t6forns24              nan       nan       -      ~  UNTIMEABLE
+t6ift2                 nan       nan       -      ~  UNTIMEABLE
+t6ift8                 nan       nan       -      ~  UNTIMEABLE
+t6ift13                nan       nan       -      ~  UNTIMEABLE
+t6ife8                 nan       nan       -      ~  UNTIMEABLE
+t6ife13                nan       nan       -      ~  UNTIMEABLE
+t6ifg2                 nan       nan       -      ~  UNTIMEABLE
+t6ifg8                 nan       nan       -      ~  UNTIMEABLE
+t6ifg13                nan       nan       -      ~  UNTIMEABLE
+t6clearb2              nan       nan       -      ~  UNTIMEABLE
+t6clearss5             nan       nan       -      ~  UNTIMEABLE
+t6clearss6             nan       nan       -      ~  UNTIMEABLE
+t6clearss7             nan       nan       -      ~  UNTIMEABLE
+t6clearss13            nan       nan       -      ~  UNTIMEABLE
+t6clearh5              nan       nan       -      ~  UNTIMEABLE
+t6clearh13             nan       nan       -      ~  UNTIMEABLE
+t6clearh24             nan       nan       -      ~  UNTIMEABLE
+t6colorf5              nan       nan       -      ~  UNTIMEABLE
+t6colorf13             nan       nan       -      ~  UNTIMEABLE
+t6colorbg5             nan       nan       -      ~  UNTIMEABLE
+t6colorbg13            nan       nan       -      ~  UNTIMEABLE
+t6colorbd2             nan       nan       -      ~  UNTIMEABLE
+t6colorbd5             nan       nan       -      ~  UNTIMEABLE
+t6colorbd13            nan       nan       -      ~  UNTIMEABLE
+t6screenm5             nan       nan       -      ~  UNTIMEABLE
+t6screenm13            nan       nan       -      ~  UNTIMEABLE
+t6screenss5            nan       nan       -      ~  UNTIMEABLE
+t6screenss13           nan       nan       -      ~  UNTIMEABLE
+t6screenkc2            nan       nan       -      ~  UNTIMEABLE
+t6screenkc5            nan       nan       -      ~  UNTIMEABLE
+t6screenkc13           nan       nan       -      ~  UNTIMEABLE
+t6locatec5             nan       nan       -      ~  UNTIMEABLE
+t6locatec13            nan       nan       -      ~  UNTIMEABLE
+t6locater5             nan       nan       -      ~  UNTIMEABLE
+t6locater13            nan       nan       -      ~  UNTIMEABLE
+t6locateoc13           nan       nan       -      ~  UNTIMEABLE
+t6locatecs13           nan       nan       -      ~  UNTIMEABLE
+t6timer13              nan       nan       -      ~  UNTIMEABLE
+t6timew6               nan       nan       -      ~  UNTIMEABLE
+t6timew13              nan       nan       -      ~  UNTIMEABLE
+t6timew24              nan       nan       -      ~  UNTIMEABLE
+t6defintsl2            nan       nan       -      ~  UNTIMEABLE
+t6defintlr2            nan       nan       -      ~  UNTIMEABLE
+t6defsngsl2            nan       nan       -      ~  UNTIMEABLE
+t6defsnglr2            nan       nan       -      ~  UNTIMEABLE
+t6defdblsl2            nan       nan       -      ~  UNTIMEABLE
+t6defdbllr2            nan       nan       -      ~  UNTIMEABLE
+t6defstrsl2            nan       nan       -      ~  UNTIMEABLE
+t6defstrlr2            nan       nan       -      ~  UNTIMEABLE
+t7psetcolourexplicit2       nan       nan       -      ~  UNTIMEABLE
+t7psetcolourexplicit5       nan       nan       -      ~  UNTIMEABLE
+t7psetcolourexplicit13       nan       nan       -      ~  UNTIMEABLE
+t7psetcolourdefault2       nan       nan       -      ~  UNTIMEABLE
+t7psetcolourdefault24       nan       nan       -      ~  UNTIMEABLE
+t7psetsteprelative2       nan       nan       -      ~  UNTIMEABLE
+t7psetsteprelative5       nan       nan       -      ~  UNTIMEABLE
+t7psetsteprelative13       nan       nan       -      ~  UNTIMEABLE
+t7psetmodescreen35       nan       nan       -      ~  UNTIMEABLE
+t7psetmodescreen36       nan       nan       -      ~  UNTIMEABLE
+t7psetmodescreen313       nan       nan       -      ~  UNTIMEABLE
+t7presetcolourdefault2       nan       nan       -      ~  UNTIMEABLE
+t7presetcolourdefault5       nan       nan       -      ~  UNTIMEABLE
+t7presetcolourdefault13       nan       nan       -      ~  UNTIMEABLE
+t7presetcolourexplicit5       nan       nan       -      ~  UNTIMEABLE
+t7presetcolourexplicit13       nan       nan       -      ~  UNTIMEABLE
+t7presetsteprelative2       nan       nan       -      ~  UNTIMEABLE
+t7presetsteprelative13       nan       nan       -      ~  UNTIMEABLE
+t7presetmodescreen35       nan       nan       -      ~  UNTIMEABLE
+t7presetmodescreen313       nan       nan       -      ~  UNTIMEABLE
+t7linesegment2         nan       nan       -      ~  UNTIMEABLE
+t7linesegment5         nan       nan       -      ~  UNTIMEABLE
+t7linesegment13        nan       nan       -      ~  UNTIMEABLE
+t7linebox2             nan       nan       -      ~  UNTIMEABLE
+t7linebox5             nan       nan       -      ~  UNTIMEABLE
+t7linefilledbox2       nan       nan       -      ~  UNTIMEABLE
+t7linefilledbox5       nan       nan       -      ~  UNTIMEABLE
+t7linesteprelative2       nan       nan       -      ~  UNTIMEABLE
+t7linesteprelative13       nan       nan       -      ~  UNTIMEABLE
+t7lineomittedstart2       nan       nan       -      ~  UNTIMEABLE
+t7lineomittedstart13       nan       nan       -      ~  UNTIMEABLE
+t7linecolourdefault2       nan       nan       -      ~  UNTIMEABLE
+t7linecolourdefault13       nan       nan       -      ~  UNTIMEABLE
+t7linecolourdefault24       nan       nan       -      ~  UNTIMEABLE
+t7drawmovement5        nan       nan       -      ~  UNTIMEABLE
+t7drawmovement13       nan       nan       -      ~  UNTIMEABLE
+t7drawmoveabsolute5       nan       nan       -      ~  UNTIMEABLE
+t7drawmoverelative5       nan       nan       -      ~  UNTIMEABLE
+t7drawblankprefix5       nan       nan       -      ~  UNTIMEABLE
+t7drawnoupdateprefix5       nan       nan       -      ~  UNTIMEABLE
+t7drawcolour5          nan       nan       -      ~  UNTIMEABLE
+t7drawscale5           nan       nan       -      ~  UNTIMEABLE
+t7drawangle5           nan       nan       -      ~  UNTIMEABLE
+t7drawsubstringexec5       nan       nan       -      ~  UNTIMEABLE
+t7drawsubstringexec13       nan       nan       -      ~  UNTIMEABLE
+t7drawvariablesubstitution5       nan       nan       -      ~  UNTIMEABLE
+t7drawvariablesubstitution13       nan       nan       -      ~  UNTIMEABLE
+t7baseread2            nan       nan       -      ~  UNTIMEABLE
+t7baseread5            nan       nan       -      ~  UNTIMEABLE
+t7baseread13           nan       nan       -      ~  UNTIMEABLE
+t7basewrite5           nan       nan       -      ~  UNTIMEABLE
+t7basewrite6           nan       nan       -      ~  UNTIMEABLE
+t7basewrite13          nan       nan       -      ~  UNTIMEABLE
+t7basewrite24          nan       nan       -      ~  UNTIMEABLE
+t7vdpread2             nan       nan       -      ~  UNTIMEABLE
+t7vdpread5             nan       nan       -      ~  UNTIMEABLE
+t7vdpread13            nan       nan       -      ~  UNTIMEABLE
+t7vdpwrite5            nan       nan       -      ~  UNTIMEABLE
+t7vdpwrite13           nan       nan       -      ~  UNTIMEABLE
+t7vdpwrite24           nan       nan       -      ~  UNTIMEABLE
+t7spritepatternwrite5       nan       nan       -      ~  UNTIMEABLE
+t7spriteenable2        nan       nan       -      ~  UNTIMEABLE
+t7spritedisable2       nan       nan       -      ~  UNTIMEABLE
+t7ongotoindexgoto2       nan       nan       -      ~  UNTIMEABLE
+t7ongotoindexgoto5       nan       nan       -      ~  UNTIMEABLE
+t7ongotoindexgoto8       nan       nan       -      ~  UNTIMEABLE
+t7ongotoindexgoto13       nan       nan       -      ~  UNTIMEABLE
+t7ongosubindexgosub2       nan       nan       -      ~  UNTIMEABLE
+t7ongosubindexgosub5       nan       nan       -      ~  UNTIMEABLE
+t7ongosubindexgosub8       nan       nan       -      ~  UNTIMEABLE
+t7ongosubindexgosub13       nan       nan       -      ~  UNTIMEABLE
+t7keyassign2           nan       nan       -      ~  UNTIMEABLE
+t7keyassign5           nan       nan       -      ~  UNTIMEABLE
+t7keyassign13          nan       nan       -      ~  UNTIMEABLE
+t7keylist2             nan       nan       -      ~  UNTIMEABLE
+t7keydisplayon2        nan       nan       -      ~  UNTIMEABLE
+t7keydisplayoff2       nan       nan       -      ~  UNTIMEABLE
+t7stickcursorkeys2       nan       nan       -      ~  UNTIMEABLE
+t7stickcursorkeys5       nan       nan       -      ~  UNTIMEABLE
+t7stickcursorkeys13       nan       nan       -      ~  UNTIMEABLE
+t7stickjoystickport2       nan       nan       -      ~  UNTIMEABLE
+t7stickjoystickport5       nan       nan       -      ~  UNTIMEABLE
+t7strigspacebar2       nan       nan       -      ~  UNTIMEABLE
+t7strigspacebar5       nan       nan       -      ~  UNTIMEABLE
+t7strigspacebar13       nan       nan       -      ~  UNTIMEABLE
+t7strigjoysticktrigger2       nan       nan       -      ~  UNTIMEABLE
+t7strigjoysticktrigger5       nan       nan       -      ~  UNTIMEABLE
+t7pdlread2             nan       nan       -      ~  UNTIMEABLE
+t7pdlread5             nan       nan       -      ~  UNTIMEABLE
+t7pdlread13            nan       nan       -      ~  UNTIMEABLE
+t7padtouchstatus2       nan       nan       -      ~  UNTIMEABLE
+t7padtouchstatus5       nan       nan       -      ~  UNTIMEABLE
+t7padtouchstatus13       nan       nan       -      ~  UNTIMEABLE
+t7padcoordinate2       nan       nan       -      ~  UNTIMEABLE
+t7padcoordinate5       nan       nan       -      ~  UNTIMEABLE
+t7padswitch2           nan       nan       -      ~  UNTIMEABLE
+t7padswitch5           nan       nan       -      ~  UNTIMEABLE
+t7defusrdefault2       nan       nan       -      ~  UNTIMEABLE
+t7defusrdefault6       nan     4.722       -      ~  REF-ONLY-MISSING
+t7defusrdefault13       nan       nan       -      ~  UNTIMEABLE
+t7defusrnumbered2       nan       nan       -      ~  UNTIMEABLE
+t7defusrnumbered6       nan     4.479       -      ~  REF-ONLY-MISSING
+t7defusrnumbered13       nan       nan       -      ~  UNTIMEABLE
+t7deffnnumeric2        nan     8.242       -      ~  REF-ONLY-MISSING
+t7deffnstringvalued2       nan     8.166       -      ~  REF-ONLY-MISSING
+t7fnnumeric2           nan       nan       -      ~  UNTIMEABLE
+t7fnnumeric13          nan       nan       -      ~  UNTIMEABLE
+t7fnnumeric18          nan       nan       -      ~  UNTIMEABLE
+t7fnstringvalued13       nan       nan       -      ~  UNTIMEABLE
+t7fnstringvalued18       nan       nan       -      ~  UNTIMEABLE
+t7stopbreak2           nan       nan       -      ~  UNTIMEABLE
+t7playnotes5           nan       nan       -      ~  UNTIMEABLE
+t7playnotes13          nan       nan       -      ~  UNTIMEABLE
+t7playnotenumber5       nan       nan       -      ~  UNTIMEABLE
+t7playrest5            nan       nan       -      ~  UNTIMEABLE
+t7playoctave5          nan       nan       -      ~  UNTIMEABLE
+t7playdefaultlength5       nan       nan       -      ~  UNTIMEABLE
+t7playtempo5           nan       nan       -      ~  UNTIMEABLE
+t7playvolume5          nan       nan       -      ~  UNTIMEABLE
+t7playenvelope5        nan       nan       -      ~  UNTIMEABLE
+t7playmultivoice2       nan       nan       -      ~  UNTIMEABLE
+t7playmultivoice13       nan       nan       -      ~  UNTIMEABLE
+t7playsubstringexec5       nan       nan       -      ~  UNTIMEABLE
+t7playsubstringexec13       nan       nan       -      ~  UNTIMEABLE
+t7setrefuse5           nan       nan       -      ~  UNTIMEABLE
+t7circlecentreradius2       nan       nan       -      ~  UNTIMEABLE
+t7circlecentreradius5       nan       nan       -      ~  UNTIMEABLE
+t7circlecentreradius13       nan       nan       -      ~  UNTIMEABLE
+t7circlearc5           nan       nan       -      ~  UNTIMEABLE
+t7circlearc13          nan       nan       -      ~  UNTIMEABLE
+t7circlesteprelative2       nan       nan       -      ~  UNTIMEABLE
+t7circlesteprelative13       nan       nan       -      ~  UNTIMEABLE
+t7circleaspect2        nan       nan       -      ~  UNTIMEABLE
+t7circleaspect5        nan       nan       -      ~  UNTIMEABLE
+t7circleaspect13       nan       nan       -      ~  UNTIMEABLE
+t7circlecolourdefault24       nan       nan       -      ~  UNTIMEABLE
+t7paintflood2          nan       nan       -      ~  UNTIMEABLE
+t7paintflood5          nan       nan       -      ~  UNTIMEABLE
+t7paintflood13         nan       nan       -      ~  UNTIMEABLE
+t7paintfillcolour5       nan       nan       -      ~  UNTIMEABLE
+t7paintfillcolour13       nan       nan       -      ~  UNTIMEABLE
+t7paintbordercolour2       nan       nan       -      ~  UNTIMEABLE
+t7paintbordercolour13       nan       nan       -      ~  UNTIMEABLE
+t9frefreeram2          nan       nan       -      ~  UNTIMEABLE
+t9frefreestringspace2       nan       nan       -      ~  UNTIMEABLE
+t9valinteger13         nan       nan       -      ~  UNTIMEABLE
+t9valinteger2          nan       nan       -      ~  UNTIMEABLE
+t9valexponent6         nan       nan       -      ~  UNTIMEABLE
+t9valradixprefix6       nan       nan       -      ~  UNTIMEABLE
+t9valfraction2         nan       nan       -      ~  UNTIMEABLE
+t9valpartialparse2       nan       nan       -      ~  UNTIMEABLE
+t9usrdefault2          nan       nan       -      ~  UNTIMEABLE
+t9usrnumbered2         nan       nan       -      ~  UNTIMEABLE
+t9varptrvariable2       nan       nan       -      ~  UNTIMEABLE
+t9varptrchan52         nan       nan       -      ~  UNTIMEABLE
+t9varptrchan13         nan       nan       -      ~  UNTIMEABLE
+t9varptrchan5          nan       nan       -      ~  UNTIMEABLE
+t9varptrchan2          nan       nan       -      ~  UNTIMEABLE
+t9waitportmask5        nan       nan       -      ~  UNTIMEABLE
+t9waitportmaskxor5       nan       nan       -      ~  UNTIMEABLE
+t9waitportmask24       nan       nan       -      ~  UNTIMEABLE
+t9waitportmask2        nan       nan       -      ~  UNTIMEABLE
+t9waitportmask13       nan       nan       -      ~  UNTIMEABLE
+t9waitportmask6        nan       nan       -      ~  UNTIMEABLE
+t9waitportmaskxor13       nan       nan       -      ~  UNTIMEABLE
+t9widthtextwidth5       nan       nan       -      ~  UNTIMEABLE
+t9widthtextwidth13       nan       nan       -      ~  UNTIMEABLE
+t9widthtextwidth24       nan       nan       -      ~  UNTIMEABLE
+t9printtabitem13       nan       nan       -      ~  UNTIMEABLE
+t9printtabitem5        nan       nan       -      ~  UNTIMEABLE
+t9printtabitem2        nan       nan       -      ~  UNTIMEABLE
+t9printspcitem13       nan       nan       -      ~  UNTIMEABLE
+t9printspcitem5        nan       nan       -      ~  UNTIMEABLE
+t9printspcitem2        nan       nan       -      ~  UNTIMEABLE
+t9dataunquotedstring2       nan       nan       -      ~  UNTIMEABLE
+t9dataquotedstring2       nan       nan       -      ~  UNTIMEABLE
+t9dataemptyitem4       nan       nan       -      ~  UNTIMEABLE
+t10motortoggle2        nan       nan       -      ~  UNTIMEABLE
+t10motoron2            nan       nan       -      ~  UNTIMEABLE
+t10motoroff2           nan       nan       -      ~  UNTIMEABLE
+t10cmdrefuse5          nan       nan       -      ~  UNTIMEABLE
+t10iplrefuse5          nan       nan       -      ~  UNTIMEABLE
+t10renumrenumberall2       nan       nan       -      ~  UNTIMEABLE
+t10renumrenumberfrom2       nan       nan       -      ~  UNTIMEABLE
+t10renumrenumberpartial5       nan       nan       -      ~  UNTIMEABLE
+t10renumrenumberincrement5       nan       nan       -      ~  UNTIMEABLE
+t10renumrenumberincrement2       nan       nan       -      ~  UNTIMEABLE
+t10deletedeleteline5       nan       nan       -      ~  UNTIMEABLE
+t10deletedeleteline2       nan       nan       -      ~  UNTIMEABLE
+t10deletedeleterange5       nan       nan       -      ~  UNTIMEABLE
+t10deletedeletetoline5       nan       nan       -      ~  UNTIMEABLE
+t10listbarelist2       nan       nan       -      ~  UNTIMEABLE
+t10listsingleline2       nan       nan       -      ~  UNTIMEABLE
+t10listrange2          nan       nan       -      ~  UNTIMEABLE
+t10newerasepgm2        nan       nan       -      ~  UNTIMEABLE
+t10csavesavetotape13       nan       nan       -      ~  UNTIMEABLE
+t10csavesavetotape24       nan       nan       -      ~  UNTIMEABLE
+gotokw              11.084    14.297    1.29      ~  OK
+vpoke_b             10.562    11.214    1.06   0.86  OK
+vpoke_b2            11.462    12.627    1.10   1.77  OK
+input_flt           49.813    77.836    1.56   1.60  OK
+inputdol_b           9.326    12.718    1.36   1.72  OK
+inputcon            25.639    40.030    1.56   1.68  OK
+inputcon_b          25.040    35.058    1.40   1.51  OK
+inputcon_c          30.509    47.248    1.55   1.71  OK
+lineinput           25.307    43.131    1.70   1.87  OK
+lineinput_b         23.511    36.550    1.55   1.68  OK
+callkw_b               nan       nan       -      ~  UNTIMEABLE
+runkw               23.305    29.188    1.25   1.35  OK
+runkw_b                nan       nan       -      ~  UNTIMEABLE
+bin                  7.892     8.675    1.10   0.95  OK
+sprite_stop       1201.081   876.445    0.73      ~  OK  [type-ahead end]
+attrkw              91.304    97.306    1.07      ~  OK  [type-ahead end]
+stopkw              82.240    91.206    1.11      ~  OK  [type-ahead end]
+onkw_b              89.254    93.757    1.05      ~  OK  [type-ahead end]
+listkw             154.311   299.376    1.94      ~  OK  [type-ahead end]
+listkw_b            62.386   136.840    2.19      ~  OK  [type-ahead end]
+listkw_c            87.321   177.852    2.04      ~  OK  [type-ahead end]
+newkw               33.139    82.231    2.48      ~  OK  [type-ahead end]
+usrkw                  nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+defusr                 nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+defusr_b               nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+usrkw_b                nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+t6abs2              84.809    89.635    1.06      ~  OK  [type-ahead end]
+t6abs13             93.516    93.885    1.00      ~  OK  [type-ahead end]
+t6sgn2              83.582    92.957    1.11      ~  OK  [type-ahead end]
+t6sgn13             93.516    93.928    1.00      ~  OK  [type-ahead end]
+t6int2              83.587    93.077    1.11      ~  OK  [type-ahead end]
+t6int13             93.524    93.899    1.00      ~  OK  [type-ahead end]
+t6sqr2              83.582    93.116    1.11      ~  OK  [type-ahead end]
+t6sqr5              91.608    94.302    1.03      ~  OK  [type-ahead end]
+t6sqr13             94.653    90.541    0.96      ~  OK  [type-ahead end]
+t6log2              84.805    93.034    1.10      ~  OK  [type-ahead end]
+t6log5              90.053    97.428    1.08      ~  OK  [type-ahead end]
+t6log13             93.528    93.821    1.00      ~  OK  [type-ahead end]
+t6exp2              83.582    93.023    1.11      ~  OK  [type-ahead end]
+t6exp6             174.403   480.170    2.75      ~  OK  [type-ahead end]
+t6exp13             95.002    93.861    0.99      ~  OK  [type-ahead end]
+t6asc2              84.809    92.472    1.09      ~  OK  [type-ahead end]
+t6asc5              90.948    96.493    1.06      ~  OK  [type-ahead end]
+t6asc13             94.373    93.652    0.99      ~  OK  [type-ahead end]
+t6chr2              83.582    88.803    1.06      ~  OK  [type-ahead end]
+t6chr5              90.064    92.550    1.03      ~  OK  [type-ahead end]
+t6chr6              85.934    88.445    1.03      ~  OK  [type-ahead end]
+t6chr13             93.641    92.905    0.99      ~  OK  [type-ahead end]
+t6len2              83.582    92.371    1.11      ~  OK  [type-ahead end]
+t6len13             93.489    93.633    1.00      ~  OK  [type-ahead end]
+t6peek2             84.809    92.610    1.09      ~  OK  [type-ahead end]
+t6peek6             86.965    92.581    1.06      ~  OK  [type-ahead end]
+t6peek13            94.484    93.541    0.99      ~  OK  [type-ahead end]
+t6left2             83.730    91.846    1.10      ~  OK  [type-ahead end]
+t6left5             90.614    93.920    1.04      ~  OK  [type-ahead end]
+t6left6             86.267    92.883    1.08      ~  OK  [type-ahead end]
+t6left13            94.945    93.183    0.98      ~  OK  [type-ahead end]
+t6right2            83.734    95.208    1.14      ~  OK  [type-ahead end]
+t6right5            91.488    97.302    1.06      ~  OK  [type-ahead end]
+t6right6            87.495    93.124    1.06      ~  OK  [type-ahead end]
+t6right13           94.601    93.279    0.99      ~  OK  [type-ahead end]
+t6string2           83.867    90.104    1.07      ~  OK  [type-ahead end]
+t6string5           90.145    92.818    1.03      ~  OK  [type-ahead end]
+t6string13          93.757    89.523    0.95      ~  OK  [type-ahead end]
+t6hex2              83.582    93.004    1.11      ~  OK  [type-ahead end]
+t6hex6              85.747    92.722    1.08      ~  OK  [type-ahead end]
+t6hex13             93.620    93.987    1.00      ~  OK  [type-ahead end]
+t6oct2              84.805    93.305    1.10      ~  OK  [type-ahead end]
+t6oct6              86.969    93.049    1.07      ~  OK  [type-ahead end]
+t6oct13             94.749    93.966    0.99      ~  OK  [type-ahead end]
+t6bin2              83.587    89.681    1.07      ~  OK  [type-ahead end]
+t6bin6              85.746    89.334    1.04      ~  OK  [type-ahead end]
+t6bin13             95.089    93.951    0.99      ~  OK  [type-ahead end]
+t6space2            83.587    92.087    1.10      ~  OK  [type-ahead end]
+t6space5            90.183    96.140    1.07      ~  OK  [type-ahead end]
+t6space13           94.673    93.097    0.98      ~  OK  [type-ahead end]
+t6str2              84.805    93.300    1.10      ~  OK  [type-ahead end]
+t6str13             94.685    94.052    0.99      ~  OK  [type-ahead end]
+t6cint2             83.587    89.566    1.07      ~  OK  [type-ahead end]
+t6cint6             85.868    89.480    1.04      ~  OK  [type-ahead end]
+t6cint13            93.776    93.923    1.00      ~  OK  [type-ahead end]
+t6fix2              83.582    93.001    1.11      ~  OK  [type-ahead end]
+t6fix13             93.591    93.968    1.00      ~  OK  [type-ahead end]
+t6csng2             84.809    93.032    1.10      ~  OK  [type-ahead end]
+t6csng13            94.653    93.784    0.99      ~  OK  [type-ahead end]
+t6cdbl2             84.805    93.002    1.10      ~  OK  [type-ahead end]
+t6cdbl13            93.772    93.694    1.00      ~  OK  [type-ahead end]
+t6sin2              83.587    89.607    1.07      ~  OK  [type-ahead end]
+t6sin13             93.532    90.518    0.97      ~  OK  [type-ahead end]
+t6cos2              83.582    93.012    1.11      ~  OK  [type-ahead end]
+t6cos13             93.528    93.902    1.00      ~  OK  [type-ahead end]
+t6tan2              83.582    93.045    1.11      ~  OK  [type-ahead end]
+t6tan13             94.658    93.866    0.99      ~  OK  [type-ahead end]
+t6atn2              84.809    93.038    1.10      ~  OK  [type-ahead end]
+t6atn13             94.406    93.867    0.99      ~  OK  [type-ahead end]
+t6vpeek2            83.582    89.228    1.07      ~  OK  [type-ahead end]
+t6vpeek5            89.982    93.125    1.03      ~  OK  [type-ahead end]
+t6vpeek6            85.833    92.353    1.08      ~  OK  [type-ahead end]
+t6vpeek13           93.540    93.538    1.00      ~  OK  [type-ahead end]
+t6poke2             83.428    91.977    1.10      ~  OK  [type-ahead end]
+t6poke5             90.933    96.696    1.06      ~  OK  [type-ahead end]
+t6poke6             86.507    92.703    1.07      ~  OK  [type-ahead end]
+t6poke13            94.030    93.650    1.00      ~  OK  [type-ahead end]
+t6poke24           103.456    89.759    0.87      ~  OK  [type-ahead end]
+t6vpoke2            83.390    88.776    1.06      ~  OK  [type-ahead end]
+t6vpoke5            89.515    92.351    1.03      ~  OK  [type-ahead end]
+t6vpoke6            85.366    91.574    1.07      ~  OK  [type-ahead end]
+t6vpoke13           93.077    89.091    0.96      ~  OK  [type-ahead end]
+t6vpoke24          104.670    93.005    0.89      ~  OK  [type-ahead end]
+t6sound2            84.655    92.073    1.09      ~  OK  [type-ahead end]
+t6sound5            90.411    95.826    1.06      ~  OK  [type-ahead end]
+t6sound13           93.965    92.793    0.99      ~  OK  [type-ahead end]
+t6sound24          103.456    89.688    0.87      ~  OK  [type-ahead end]
+t6instrs2           83.842    89.709    1.07      ~  OK  [type-ahead end]
+t6instrs13          94.053    94.226    1.00      ~  OK  [type-ahead end]
+t6instrsf2          84.939    95.055    1.12      ~  OK  [type-ahead end]
+t6instrsf5          89.974    96.718    1.07      ~  OK  [type-ahead end]
+t6instrsf6          87.047    92.432    1.06      ~  OK  [type-ahead end]
+t6instrsf13         94.903    94.360    0.99      ~  OK  [type-ahead end]
+t6mids35            91.358    97.205    1.06      ~  OK  [type-ahead end]
+t6mids36            86.267    89.548    1.04      ~  OK  [type-ahead end]
+t6mids313           93.722    89.908    0.96      ~  OK  [type-ahead end]
+t6midste2           83.734    91.995    1.10      ~  OK  [type-ahead end]
+t6midste5           90.475    97.218    1.07      ~  OK  [type-ahead end]
+t6midste13          93.475    93.201    1.00      ~  OK  [type-ahead end]
+t6mida2             86.290    97.351    1.13      ~  OK  [type-ahead end]
+t6mida5             92.603   100.298    1.08      ~  OK  [type-ahead end]
+t6mida13            96.979    97.501    1.01      ~  OK  [type-ahead end]
+t6nextb1            85.038    92.281    1.09      ~  OK  [type-ahead end]
+t6nextn1            84.643    89.364    1.06      ~  OK  [type-ahead end]
+t6nextn2            86.933    96.182    1.11      ~  OK  [type-ahead end]
+t6nextcl1           97.297   121.581    1.25      ~  OK  [type-ahead end]
+t6returnb3          87.021    93.683    1.08      ~  OK  [type-ahead end]
+t6returnl2        2553.749  3252.198    1.27      ~  OK  [type-ahead end]
+t6returnl3          87.122    93.683    1.08      ~  OK  [type-ahead end]
+t6returnl8        2553.905  3251.903    1.27      ~  OK  [type-ahead end]
+t6restoreb8         91.464    94.197    1.03      ~  OK  [type-ahead end]
+t6restorel8         92.720    94.277    1.02      ~  OK  [type-ahead end]
+t6gotoj2            84.245    91.152    1.08      ~  OK  [type-ahead end]
+t6gotoj8            92.900    94.290    1.01      ~  OK  [type-ahead end]
+t6readrd2           86.576    90.750    1.05      ~  OK  [type-ahead end]
+t6readrd4           87.704    90.609    1.03      ~  OK  [type-ahead end]
+t6swape2            83.908    89.591    1.07      ~  OK  [type-ahead end]
+t6swape13           94.319    93.983    1.00      ~  OK  [type-ahead end]
+t6erasefa2          82.935    91.098    1.10      ~  OK  [type-ahead end]
+t6erasefa5          89.290    95.782    1.07      ~  OK  [type-ahead end]
+t6dimod2            84.239    91.171    1.08      ~  OK  [type-ahead end]
+t6dimod5            90.843    97.055    1.07      ~  OK  [type-ahead end]
+t6dimod6            86.847    92.331    1.06      ~  OK  [type-ahead end]
+t6dimod9            94.105    95.172    1.01      ~  OK  [type-ahead end]
+t6dimod10           95.962    96.920    1.01      ~  OK  [type-ahead end]
+t6dimod13           93.335    93.455    1.00      ~  OK  [type-ahead end]
+t6dimmd5            89.965    97.943    1.09      ~  OK  [type-ahead end]
+t6dimmd9            96.432    99.896    1.04      ~  OK  [type-ahead end]
+t6dimmd10           99.492   101.682    1.02      ~  OK  [type-ahead end]
+t6dimmd13           94.974    94.327    0.99      ~  OK  [type-ahead end]
+t6andba6            86.750    92.667    1.07      ~  OK  [type-ahead end]
+t6andba13           93.933    90.285    0.96      ~  OK  [type-ahead end]
+t6andba24          104.072    90.504    0.87      ~  OK  [type-ahead end]
+t6orbo6             85.527    89.171    1.04      ~  OK  [type-ahead end]
+t6orbo13            93.682    93.619    1.00      ~  OK  [type-ahead end]
+t6orbo24           105.291    93.963    0.89      ~  OK  [type-ahead end]
+t6xorbx6            85.532    92.603    1.08      ~  OK  [type-ahead end]
+t6xorbx13           94.808    93.796    0.99      ~  OK  [type-ahead end]
+t6xorbx24          104.947    94.070    0.90      ~  OK  [type-ahead end]
+t6eqve6             86.750    92.582    1.07      ~  OK  [type-ahead end]
+t6eqve13            93.686    90.434    0.97      ~  OK  [type-ahead end]
+t6eqve24           104.072    90.721    0.87      ~  OK  [type-ahead end]
+t6impi6             85.527    92.519    1.08      ~  OK  [type-ahead end]
+t6impi13            95.152    93.961    0.99      ~  OK  [type-ahead end]
+t6impi24           105.295    94.167    0.89      ~  OK  [type-ahead end]
+t6notbn6            86.820    91.883    1.06      ~  OK  [type-ahead end]
+t6notbn13           94.192    93.065    0.99      ~  OK  [type-ahead end]
+t6notbn24          104.583    93.275    0.89      ~  OK  [type-ahead end]
+t6modm6             85.534    89.348    1.04      ~  OK  [type-ahead end]
+t6modm11            93.633    90.518    0.97      ~  OK  [type-ahead end]
+t6modm13            93.940    89.483    0.95      ~  OK  [type-ahead end]
+t6modm24           105.297    93.804    0.89      ~  OK  [type-ahead end]
+t6beepna2          125.328   129.293    1.03      ~  OK  [type-ahead end]
+t6tront2            83.064    91.336    1.10      ~  OK  [type-ahead end]
+t6trofft2           84.286    91.268    1.08      ~  OK  [type-ahead end]
+t6csrlinrr2         85.760    94.225    1.10      ~  OK  [type-ahead end]
+t6erlel2            84.762    95.377    1.13      ~  OK  [type-ahead end]
+t6errec2            84.837    91.761    1.08      ~  OK  [type-ahead end]
+t6errorr5           89.509    92.423    1.03      ~  OK  [type-ahead end]
+t6gosubc2           83.111    91.096    1.10      ~  OK  [type-ahead end]
+t6gosubc8           92.110    94.560    1.03      ~  OK  [type-ahead end]
+t6inkeypk13            nan       nan       -      ~  UNTIMEABLE  [type-ahead end]
+t6inppr2            84.809    92.714    1.09      ~  OK  [type-ahead end]
+t6inppr13           94.730    93.463    0.99      ~  OK  [type-ahead end]
+t6leta2             84.157    91.231    1.08      ~  OK  [type-ahead end]
+t6leta13            94.193    89.902    0.95      ~  OK  [type-ahead end]
+t6letnum2           83.014    87.756    1.06      ~  OK  [type-ahead end]
+t6outpv2            83.434    92.023    1.10      ~  OK  [type-ahead end]
+t6outpv5            90.054    96.776    1.07      ~  OK  [type-ahead end]
+t6outpv13           93.152    93.645    1.01      ~  OK  [type-ahead end]
+t6outpv24          104.336    93.115    0.89      ~  OK  [type-ahead end]
+t6pointpr2          85.054    92.792    1.09      ~  OK  [type-ahead end]
+t6pointpr13         94.406    93.382    0.99      ~  OK  [type-ahead end]
+t6poscr2            83.582    89.618    1.07      ~  OK  [type-ahead end]
+t6lposcr2           83.582    89.722    1.07      ~  OK  [type-ahead end]
+t6rndrd2            83.582    89.644    1.07      ~  OK  [type-ahead end]
+t6rndrd13           95.002    93.953    0.99      ~  OK  [type-ahead end]
+t6fora2             85.027    94.998    1.12      ~  OK  [type-ahead end]
+t6fora13            95.426    97.736    1.02      ~  OK  [type-ahead end]
+t6fora24           106.572    99.325    0.93      ~  OK  [type-ahead end]
+t6fors2             89.073   100.125    1.12      ~  OK  [type-ahead end]
+t6fors13            98.038    99.928    1.02      ~  OK  [type-ahead end]
+t6fors24           107.093    97.049    0.91      ~  OK  [type-ahead end]
+t6forns13           97.355    96.362    0.99      ~  OK  [type-ahead end]
+t6forns24          107.342   100.482    0.94      ~  OK  [type-ahead end]
+t6ift2              83.209    92.040    1.11      ~  OK  [type-ahead end]
+t6ift8              92.624    95.222    1.03      ~  OK  [type-ahead end]
+t6ift13             94.373    92.754    0.98      ~  OK  [type-ahead end]
+t6ife8              93.869    95.531    1.02      ~  OK  [type-ahead end]
+t6ife13             94.126    92.764    0.99      ~  OK  [type-ahead end]
+t6ifg2              83.511    88.799    1.06      ~  OK  [type-ahead end]
+t6ifg8              92.551    91.887    0.99      ~  OK  [type-ahead end]
+t6ifg13             93.089    89.333    0.96      ~  OK  [type-ahead end]
+t6clearb2           83.231    91.800    1.10      ~  OK  [type-ahead end]
+t6clearss5          89.713    96.014    1.07      ~  OK  [type-ahead end]
+t6clearss6          85.368    91.642    1.07      ~  OK  [type-ahead end]
+t6clearss7          90.650    92.645    1.02      ~  OK  [type-ahead end]
+t6clearss13         93.957    92.781    0.99      ~  OK  [type-ahead end]
+t6clearh5           91.025    96.930    1.06      ~  OK  [type-ahead end]
+t6clearh13          93.728    90.470    0.97      ~  OK  [type-ahead end]
+t6clearh24         104.056    90.679    0.87      ~  OK  [type-ahead end]
+t6colorf5           89.540    95.793    1.07      ~  OK  [type-ahead end]
+t6colorf13          94.566    92.735    0.98      ~  OK  [type-ahead end]
+t6colorbg5          89.615    95.792    1.07      ~  OK  [type-ahead end]
+t6colorbg13         94.050    92.816    0.99      ~  OK  [type-ahead end]
+t6colorbd2          86.075    94.227    1.09      ~  OK  [type-ahead end]
+t6colorbd5          90.566    95.879    1.06      ~  OK  [type-ahead end]
+t6colorbd13         93.244    89.511    0.96      ~  OK  [type-ahead end]
+t6screenm5          89.526    92.431    1.03      ~  OK  [type-ahead end]
+t6screenm13         93.335    89.310    0.96      ~  OK  [type-ahead end]
+t6screenss5         89.594    95.903    1.07      ~  OK  [type-ahead end]
+t6screenss13        93.161    92.697    1.00      ~  OK  [type-ahead end]
+t6screenkc2         83.541    91.488    1.10      ~  OK  [type-ahead end]
+t6screenkc5         90.540    95.992    1.06      ~  OK  [type-ahead end]
+t6screenkc13        94.364    92.900    0.98      ~  OK  [type-ahead end]
+t6locatec5          89.725    96.007    1.07      ~  OK  [type-ahead end]
+t6locatec13         93.090    89.378    0.96      ~  OK  [type-ahead end]
+t6locater5          90.333    93.722    1.04      ~  OK  [type-ahead end]
+t6locater13         93.702    93.762    1.00      ~  OK  [type-ahead end]
+t6locateoc13        93.163    92.698    1.00      ~  OK  [type-ahead end]
+t6locatecs13        95.785    94.783    0.99      ~  OK  [type-ahead end]
+t6timer13           95.500    95.113    1.00      ~  OK  [type-ahead end]
+t6timew6            86.520    91.864    1.06      ~  OK  [type-ahead end]
+t6timew13           94.296    91.369    0.97      ~  OK  [type-ahead end]
+t6timew24          103.503    88.479    0.85      ~  OK  [type-ahead end]
+t6defintsl2         83.008    87.878    1.06      ~  OK  [type-ahead end]
+t6defintlr2         83.030    87.967    1.06      ~  OK  [type-ahead end]
+t6defsngsl2         83.005    87.882    1.06      ~  OK  [type-ahead end]
+t6defsnglr2         83.026    87.970    1.06      ~  OK  [type-ahead end]
+t6defdblsl2         84.225    91.557    1.09      ~  OK  [type-ahead end]
+t6defdbllr2         84.246    91.640    1.09      ~  OK  [type-ahead end]
+t6defstrsl2         84.239    91.555    1.09      ~  OK  [type-ahead end]
+t6defstrlr2         83.037    91.580    1.10      ~  OK  [type-ahead end]
+t7psetcolourexplicit2   630.108   244.761    0.39      ~  OK  [type-ahead end]
+t7psetcolourexplicit5   637.721   250.972    0.39      ~  OK  [type-ahead end]
+t7psetcolourexplicit13   642.486   245.772    0.38      ~  OK  [type-ahead end]
+t7psetcolourdefault2   630.603   244.014    0.39      ~  OK  [type-ahead end]
+t7psetcolourdefault24   652.545   246.189    0.38      ~  OK  [type-ahead end]
+t7psetsteprelative2   630.603   242.140    0.38      ~  OK  [type-ahead end]
+t7psetsteprelative5   638.628   252.717    0.40      ~  OK  [type-ahead end]
+t7psetsteprelative13   640.964   244.001    0.38      ~  OK  [type-ahead end]
+t7psetmodescreen35   437.767   159.208    0.36      ~  OK  [type-ahead end]
+t7psetmodescreen36   432.127   153.123    0.35      ~  OK  [type-ahead end]
+t7psetmodescreen313   441.304   159.462    0.36      ~  OK  [type-ahead end]
+t7presetcolourdefault2   630.611   244.010    0.39      ~  OK  [type-ahead end]
+t7presetcolourdefault5    90.200    96.807    1.07      ~  OK  [type-ahead end]
+t7presetcolourdefault13   640.931   243.968    0.38      ~  OK  [type-ahead end]
+t7presetcolourexplicit5   638.603   252.588    0.40      ~  OK  [type-ahead end]
+t7presetcolourexplicit13   642.150   245.842    0.38      ~  OK  [type-ahead end]
+t7presetsteprelative2   629.728   243.819    0.39      ~  OK  [type-ahead end]
+t7presetsteprelative13   640.094   245.517    0.38      ~  OK  [type-ahead end]
+t7presetmodescreen35   437.766   159.234    0.36      ~  OK  [type-ahead end]
+t7presetmodescreen313   441.313   159.522    0.36      ~  OK  [type-ahead end]
+t7linesegment2     630.811   244.197    0.39      ~  OK  [type-ahead end]
+t7linesegment5     640.143   251.303    0.39      ~  OK  [type-ahead end]
+t7linesegment13    642.136   245.956    0.38      ~  OK  [type-ahead end]
+t7linebox2         633.829   250.901    0.40      ~  OK  [type-ahead end]
+t7linebox5         639.811   254.631    0.40      ~  OK  [type-ahead end]
+t7linefilledbox2   633.005   263.296    0.42      ~  OK  [type-ahead end]
+t7linefilledbox5   638.933   253.120    0.40      ~  OK  [type-ahead end]
+t7linesteprelative2   630.869   244.332    0.39      ~  OK  [type-ahead end]
+t7linesteprelative13   641.329   243.911    0.38      ~  OK  [type-ahead end]
+t7lineomittedstart2   630.259   243.153    0.39      ~  OK  [type-ahead end]
+t7lineomittedstart13   641.081   243.975    0.38      ~  OK  [type-ahead end]
+t7linecolourdefault2   633.351   246.446    0.39      ~  OK  [type-ahead end]
+t7linecolourdefault13   643.346   251.621    0.39      ~  OK  [type-ahead end]
+t7linecolourdefault24   654.084   249.353    0.38      ~  OK  [type-ahead end]
+t7drawmovement5    636.941   249.309    0.39      ~  OK  [type-ahead end]
+t7drawmovement13   639.958   244.976    0.38      ~  OK  [type-ahead end]
+t7drawmoveabsolute5   638.018   247.538    0.39      ~  OK  [type-ahead end]
+t7drawmoverelative5   638.476   248.306    0.39      ~  OK  [type-ahead end]
+t7drawblankprefix5   638.491   251.068    0.39      ~  OK  [type-ahead end]
+t7drawnoupdateprefix5   638.175   247.444    0.39      ~  OK  [type-ahead end]
+t7drawcolour5      638.325   251.732    0.39      ~  OK  [type-ahead end]
+t7drawscale5       637.655   252.071    0.40      ~  OK  [type-ahead end]
+t7drawangle5       637.161   249.739    0.39      ~  OK  [type-ahead end]
+t7drawsubstringexec5   636.954   249.145    0.39      ~  OK  [type-ahead end]
+t7drawsubstringexec13   642.415   244.227    0.38      ~  OK  [type-ahead end]
+t7drawvariablesubstitution5   638.041   247.631    0.39      ~  OK  [type-ahead end]
+t7drawvariablesubstitution13   642.312   246.825    0.38      ~  OK  [type-ahead end]
+t7baseread2         85.182    91.945    1.08      ~  OK  [type-ahead end]
+t7baseread5         91.494    96.857    1.06      ~  OK  [type-ahead end]
+t7baseread13        95.289    92.325    0.97      ~  OK  [type-ahead end]
+t7basewrite5        89.590    94.225    1.05      ~  OK  [type-ahead end]
+t7basewrite6        86.044    89.443    1.04      ~  OK  [type-ahead end]
+t7basewrite13       94.003    92.381    0.98      ~  OK  [type-ahead end]
+t7basewrite24      105.371    93.103    0.88      ~  OK  [type-ahead end]
+t7vdpread2          83.958    91.901    1.09      ~  OK  [type-ahead end]
+t7vdpread5          91.667    96.989    1.06      ~  OK  [type-ahead end]
+t7vdpread13         95.284    92.350    0.97      ~  OK  [type-ahead end]
+t7vdpwrite5         90.461    97.497    1.08      ~  OK  [type-ahead end]
+t7vdpwrite13        93.995    92.406    0.98      ~  OK  [type-ahead end]
+t7vdpwrite24       104.147    89.828    0.86      ~  OK  [type-ahead end]
+t7spritepatternwrite5    89.027    91.475    1.03      ~  OK  [type-ahead end]
+t7spriteenable2     83.111    92.024    1.11      ~  OK  [type-ahead end]
+t7spritedisable2    83.107    91.221    1.10      ~  OK  [type-ahead end]
+t7ongotoindexgoto2    83.722    92.106    1.10      ~  OK  [type-ahead end]
+t7ongotoindexgoto5    90.645    95.940    1.06      ~  OK  [type-ahead end]
+t7ongotoindexgoto8    93.616    95.248    1.02      ~  OK  [type-ahead end]
+t7ongotoindexgoto13    94.019    92.846    0.99      ~  OK  [type-ahead end]
+t7ongosubindexgosub2    83.758    88.816    1.06      ~  OK  [type-ahead end]
+t7ongosubindexgosub5    89.766    92.595    1.03      ~  OK  [type-ahead end]
+t7ongosubindexgosub8    92.753    95.685    1.03      ~  OK  [type-ahead end]
+t7ongosubindexgosub13    93.136    92.724    1.00      ~  OK  [type-ahead end]
+t7keyassign2        83.480    92.065    1.10      ~  OK  [type-ahead end]
+t7keyassign5        90.433    95.828    1.06      ~  OK  [type-ahead end]
+t7keyassign13       94.752    93.317    0.98      ~  OK  [type-ahead end]
+t7keylist2         168.599   141.809    0.84      ~  OK  [type-ahead end]
+t7keydisplayon2     86.398    91.626    1.06      ~  OK  [type-ahead end]
+t7keydisplayoff2    83.935    90.033    1.07      ~  OK  [type-ahead end]
+t7stickcursorkeys2    83.915    89.049    1.06      ~  OK  [type-ahead end]
+t7stickcursorkeys5    90.661    96.809    1.07      ~  OK  [type-ahead end]
+t7stickcursorkeys13    95.704    93.662    0.98      ~  OK  [type-ahead end]
+t7stickjoystickport2    84.352    93.136    1.10      ~  OK  [type-ahead end]
+t7stickjoystickport5    92.895    97.741    1.05      ~  OK  [type-ahead end]
+t7strigspacebar2    85.138    92.331    1.08      ~  OK  [type-ahead end]
+t7strigspacebar5    91.536    96.820    1.06      ~  OK  [type-ahead end]
+t7strigspacebar13    94.234    90.396    0.96      ~  OK  [type-ahead end]
+t7strigjoysticktrigger2    84.352    89.883    1.07      ~  OK  [type-ahead end]
+t7strigjoysticktrigger5    91.791    98.460    1.07      ~  OK  [type-ahead end]
+t7pdlread2          83.920    92.349    1.10      ~  OK  [type-ahead end]
+t7pdlread5          90.674    96.882    1.07      ~  OK  [type-ahead end]
+t7pdlread13         94.234    93.684    0.99      ~  OK  [type-ahead end]
+t7padtouchstatus2    85.138    92.355    1.08      ~  OK  [type-ahead end]
+t7padtouchstatus5    91.539    96.842    1.06      ~  OK  [type-ahead end]
+t7padtouchstatus13    95.360    90.280    0.95      ~  OK  [type-ahead end]
+t7padcoordinate2    84.352    89.865    1.07      ~  OK  [type-ahead end]
+t7padcoordinate5    91.747    95.054    1.04      ~  OK  [type-ahead end]
+t7padswitch2        84.357    93.168    1.10      ~  OK  [type-ahead end]
+t7padswitch5        91.831    98.542    1.07      ~  OK  [type-ahead end]
+t7defusrdefault2    83.012    91.052    1.10      ~  OK  [type-ahead end]
+t7defusrdefault13    94.134    92.807    0.99      ~  OK  [type-ahead end]
+t7defusrnumbered2    84.382    91.071    1.08      ~  OK  [type-ahead end]
+t7defusrnumbered13    94.532    92.898    0.98      ~  OK  [type-ahead end]
+t7fnnumeric2        88.388    97.518    1.10      ~  OK  [type-ahead end]
+t7fnnumeric13       97.517    94.239    0.97      ~  OK  [type-ahead end]
+t7fnnumeric18      103.607    98.399    0.95      ~  OK  [type-ahead end]
+t7fnstringvalued13    98.658    96.671    0.98      ~  OK  [type-ahead end]
+t7fnstringvalued18   104.574    97.409    0.93      ~  OK  [type-ahead end]
+t7stopbreak2        84.237    87.911    1.04      ~  OK  [type-ahead end]
+t7playnotes5        91.813    96.011    1.05      ~  OK  [type-ahead end]
+t7playnotes13       94.188    91.255    0.97      ~  OK  [type-ahead end]
+t7playnotenumber5    91.360    92.782    1.02      ~  OK  [type-ahead end]
+t7playrest5         91.195    92.828    1.02      ~  OK  [type-ahead end]
+t7playoctave5       91.177    96.020    1.05      ~  OK  [type-ahead end]
+t7playdefaultlength5    91.283    96.020    1.05      ~  OK  [type-ahead end]
+t7playtempo5        91.418    96.159    1.05      ~  OK  [type-ahead end]
+t7playvolume5       91.319    96.164    1.05      ~  OK  [type-ahead end]
+t7playenvelope5     92.209    96.169    1.04      ~  OK  [type-ahead end]
+t7playmultivoice2    86.548    91.806    1.06      ~  OK  [type-ahead end]
+t7playmultivoice13    94.976    91.652    0.97      ~  OK  [type-ahead end]
+t7playsubstringexec5    90.987    92.556    1.02      ~  OK  [type-ahead end]
+t7playsubstringexec13    95.476    88.973    0.93      ~  OK  [type-ahead end]
+t7setrefuse5        89.107    94.826    1.06      ~  OK  [type-ahead end]
+t7circlecentreradius2   627.481   241.573    0.38      ~  OK  [type-ahead end]
+t7circlecentreradius5   640.945   248.671    0.39      ~  OK  [type-ahead end]
+t7circlecentreradius13   638.800   246.903    0.39      ~  OK  [type-ahead end]
+t7circlearc5       645.881   254.513    0.39      ~  OK  [type-ahead end]
+t7circlearc13      644.817   267.335    0.41      ~  OK  [type-ahead end]
+t7circlesteprelative2   626.475   240.835    0.38      ~  OK  [type-ahead end]
+t7circlesteprelative13   636.831   242.892    0.38      ~  OK  [type-ahead end]
+t7circleaspect2    670.181   276.882    0.41      ~  OK  [type-ahead end]
+t7circleaspect5    642.580   250.992    0.39      ~  OK  [type-ahead end]
+t7circleaspect13   645.448   273.546    0.42      ~  OK  [type-ahead end]
+t7circlecolourdefault24   654.545   247.668    0.38      ~  OK  [type-ahead end]
+t7paintflood2      627.725   239.704    0.38      ~  OK  [type-ahead end]
+t7paintflood5       91.078    96.835    1.06      ~  OK  [type-ahead end]
+t7paintflood13     637.673   241.872    0.38      ~  OK  [type-ahead end]
+t7paintfillcolour5   634.460   247.559    0.39      ~  OK  [type-ahead end]
+t7paintfillcolour13   638.007   242.581    0.38      ~  OK  [type-ahead end]
+t7paintbordercolour2   629.374   243.725    0.39      ~  OK  [type-ahead end]
+t7paintbordercolour13   639.898   243.551    0.38      ~  OK  [type-ahead end]
+t9frefreeram2       84.273    93.725    1.11      ~  OK  [type-ahead end]
+t9frefreestringspace2    85.614    92.481    1.08      ~  OK  [type-ahead end]
+t9valinteger13      95.057    94.314    0.99      ~  OK  [type-ahead end]
+t9valinteger2       85.491    93.072    1.09      ~  OK  [type-ahead end]
+t9valexponent6      87.619    89.711    1.02      ~  OK  [type-ahead end]
+t9valradixprefix6    86.958    88.884    1.02      ~  OK  [type-ahead end]
+t9valfraction2      84.427    94.984    1.13      ~  OK  [type-ahead end]
+t9valpartialparse2    84.445    94.444    1.12      ~  OK  [type-ahead end]
+t9usrdefault2       84.368    92.995    1.10      ~  OK  [type-ahead end]
+t9usrnumbered2      84.604    95.072    1.12      ~  OK  [type-ahead end]
+t9varptrvariable2    85.339    92.258    1.08      ~  OK  [type-ahead end]
+t9varptrchan52     109.256    93.838    0.86      ~  OK  [type-ahead end]
+t9varptrchan13      95.351    90.263    0.95      ~  OK  [type-ahead end]
+t9varptrchan5       90.856    93.549    1.03      ~  OK  [type-ahead end]
+t9varptrchan2       84.380    89.395    1.06      ~  OK  [type-ahead end]
+t9waitportmask5     90.034    96.673    1.07      ~  OK  [type-ahead end]
+t9waitportmaskxor5    90.648    97.886    1.08      ~  OK  [type-ahead end]
+t9waitportmask24   104.680    92.909    0.89      ~  OK  [type-ahead end]
+t9waitportmask2     84.636    91.980    1.09      ~  OK  [type-ahead end]
+t9waitportmask13    94.278    93.567    0.99      ~  OK  [type-ahead end]
+t9waitportmask6     91.475   101.357    1.11      ~  OK  [type-ahead end]
+t9waitportmaskxor13    94.476    91.201    0.97      ~  OK  [type-ahead end]
+t9widthtextwidth5    89.538    92.546    1.03      ~  OK  [type-ahead end]
+t9widthtextwidth13    93.323    92.576    0.99      ~  OK  [type-ahead end]
+t9widthtextwidth24   104.675    91.953    0.88      ~  OK  [type-ahead end]
+t9printtabitem13    93.172    92.649    0.99      ~  OK  [type-ahead end]
+t9printtabitem5     90.473    95.782    1.06      ~  OK  [type-ahead end]
+t9printtabitem2     84.558    91.811    1.09      ~  OK  [type-ahead end]
+t9printspcitem13    94.307    92.710    0.98      ~  OK  [type-ahead end]
+t9printspcitem5     89.600    92.546    1.03      ~  OK  [type-ahead end]
+t9printspcitem2     83.336    88.498    1.06      ~  OK  [type-ahead end]
+t9dataunquotedstring2    86.576    93.988    1.09      ~  OK  [type-ahead end]
+t9dataquotedstring2    86.628    94.014    1.09      ~  OK  [type-ahead end]
+t9dataemptyitem4    91.382   100.335    1.10      ~  OK  [type-ahead end]
+t10motortoggle2     83.018    90.951    1.10      ~  OK  [type-ahead end]
+t10motoron2         84.390    91.124    1.08      ~  OK  [type-ahead end]
+t10motoroff2        84.365    91.126    1.08      ~  OK  [type-ahead end]
+t10cmdrefuse5       89.896    94.906    1.06      ~  OK  [type-ahead end]
+t10iplrefuse5       89.018    91.465    1.03      ~  OK  [type-ahead end]
+t10renumrenumberall2    83.115    88.139    1.06      ~  OK  [type-ahead end]
+t10renumrenumberfrom2    83.599    91.529    1.09      ~  OK  [type-ahead end]
+t10renumrenumberpartial5    90.353    95.667    1.06      ~  OK  [type-ahead end]
+t10renumrenumberincrement5    89.557    95.496    1.07      ~  OK  [type-ahead end]
+t10renumrenumberincrement2    84.984    91.610    1.08      ~  OK  [type-ahead end]
+t10deletedeleteline5    93.417    95.656    1.02      ~  OK  [type-ahead end]
+t10deletedeleteline2    84.333    91.449    1.08      ~  OK  [type-ahead end]
+t10deletedeleterange5    93.064    92.025    0.99      ~  OK  [type-ahead end]
+t10deletedeletetoline5    92.740    92.297    1.00      ~  OK  [type-ahead end]
+t10listbarelist2    83.126    91.414    1.10      ~  OK  [type-ahead end]
+t10listsingleline2    83.297    91.440    1.10      ~  OK  [type-ahead end]
+t10listrange2       83.293    91.517    1.10      ~  OK  [type-ahead end]
+t10newerasepgm2     83.058    90.969    1.10      ~  OK  [type-ahead end]
+t10csavesavetotape13    94.154    92.052    0.98      ~  OK  [type-ahead end]
+t10csavesavetotape24   104.331    91.910    0.88      ~  OK  [type-ahead end]
+callkw_b            85.049    87.714    1.03      ~  OK  [type-ahead end]
+runkw_b             77.296   154.476    2.00      ~  OK  [type-ahead end]
+kwtime: [disk] ref CURLIN bias -- fall-off 2.478 ms (spread 2.478..4.686) · END path 2.877 ms
+kwtime: [disk] zb CURLIN bias -- fall-off 0.263 ms (spread 0.263..0.263) · END path 0.332 ms
+cvi                 12.597    13.125    1.04   0.95  OK  [disk: National_CF-3300]
+mki_c               21.058    26.252    1.25      ~  OK  [disk: National_CF-3300]
+mks                 12.255    10.932    0.89   0.77  OK  [disk: National_CF-3300]
+mks_b               12.438    15.289    1.23   1.16  OK  [disk: National_CF-3300]
+mkd                 12.385    11.090    0.90   0.78  OK  [disk: National_CF-3300]
+mkd_b               13.746    12.096    0.88   0.77  OK  [disk: National_CF-3300]
+cvs                 12.559    15.358    1.22   1.15  OK  [disk: National_CF-3300]
+cvd                 13.874    12.286    0.89   0.78  OK  [disk: National_CF-3300]
+mki_b               10.868     9.627    0.89   0.75  OK  [disk: National_CF-3300]
+dskf              1019.877   892.217    0.87   0.87  OK  [disk: National_CF-3300]
+files             1105.595   302.750    0.27   0.27  OK  [disk: National_CF-3300]
+files_b           1073.628   245.360    0.23   0.22  OK  [disk: National_CF-3300]
+lof               1085.012   431.243    0.40      ~  OK  [disk: National_CF-3300]
+openkw_b          1238.241   494.018    0.40      ~  OK  [disk: National_CF-3300]
+eof               1273.317   661.849    0.52      ~  OK  [disk: National_CF-3300]
+bload             1298.673   478.310    0.37   0.36  OK  [disk: National_CF-3300]
+t6mki2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mkix                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mksx                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mkdx                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mki13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mki6                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mkiedge           13.155    15.971    1.21   1.15  OK  [disk: National_CF-3300]
+t6cvi2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvi5                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvi13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mks2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mks13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvs2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvs5                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvs13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mkd2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mkd13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvd2                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvd5                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6cvd13                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6dskf2                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6dskf13               nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6dskf62               nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6dskf5                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6dskf5b               nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openinput2           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openinput13          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openinput52          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openinput56          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openinput53          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openoutput13         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openoutput56         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openappend2          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openappend53         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openrandom5          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openrandom13         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openrandom2          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8closeall13           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8closeall24           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8closechannel5        nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8closechannel13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8closechannel52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8killdeletefile13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8killdeletefile24       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8killdeletefile53       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8namerename13         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8namerename53         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8filesbare2           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8filesbare13          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8filespattern53       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8fieldbindbuffer2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8fieldbindbuffer13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8fieldbindbuffer50       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8fieldbindbuffer52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8fieldbindbuffer59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8lsetleftjustify2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8lsetleftjustify13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8rsetrightjustify2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8rsetrightjustify13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8eofatend13           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8eofatend52           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8eofatend59           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8eofatend61           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8locposition13        nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8locposition52        nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8locposition59        nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loflength13          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loflength52          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loflength59          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8mergemergefile13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8mergemergefile24       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8mergemergefile53       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loadplain13          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loadplain24          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loadplain53          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8loadrun53            nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8savetokenised13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8savetokenised24       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bloadplain13         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bloadplain24         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bloadplain53         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bloadrun53           nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bloadvram53          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8bsaverange2          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8copyfiletofile13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8copyfiletofile53       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskireadsector2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskireadsector13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskireadsector62       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskowritesector2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskowritesector13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8dskowritesector62       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8getfieldedrecord5       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8getfieldedrecord52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8getfieldedrecord59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8getfieldedrecord13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8putfieldedrecord5       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8putfieldedrecord52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8putfieldedrecord59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8putfieldedrecord13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputstringread52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputstringread59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8printchannelwrite52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8printchannelwrite59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8maxfilesset2         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8maxfilesset5         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8maxfilesset13        nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputconsole13       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputchannel52       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputchannel59       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8callrefuse2          nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8filespattern62       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8killdeletefile62       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8namerename65         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8savetokenised2       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8savecolon       3814.393  1886.902    0.49   0.49  OK  [disk: National_CF-3300]
+t8bsavecolon      3828.757  1865.292    0.49   0.49  OK  [disk: National_CF-3300]
+t8bloadcolon      4900.173  2150.312    0.44   0.31  OK  [disk: National_CF-3300]
+t8namerename64         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8copyfiletofile64       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputstringread55       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8inputdolchannel55       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+seqeof_eofcr      4441.119  2745.158    0.62      ~  OK  [disk: National_CF-3300]
+seqeof_ctrlz      4439.008  2536.073    0.57   1.03  OK  [disk: National_CF-3300]
+t8killdeletefile64       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8namerenameopen       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8namenoasmiss         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8copynotomiss         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openoutput62         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openoutput54         nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t8openreuse       5059.565  2481.958    0.49   0.49  OK  [disk: National_CF-3300]
+t8opensame54      4035.469  1889.393    0.47   0.47  OK  [disk: National_CF-3300]
+t8savetokenised62       nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+close             4886.803  2294.105    0.47      ~  OK  [disk: National_CF-3300]
+close_b           5074.167  2530.246    0.50      ~  OK  [disk: National_CF-3300]
+bsave             4673.266  2803.006    0.60      ~  OK  [disk: National_CF-3300]
+save              4844.141  2611.337    0.54      ~  OK  [disk: National_CF-3300]
+kill              2825.912  3633.515    1.29   1.02  OK  [disk: National_CF-3300]
+merge                  nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+lset              2317.074   922.973    0.40   0.30  OK  [disk: National_CF-3300]
+rset              1643.246   647.678    0.39      ~  OK  [disk: National_CF-3300]
+inputkw           1068.156   652.105    0.61   0.60  OK  [disk: National_CF-3300]
+input_b           1266.846   652.786    0.52   0.51  OK  [disk: National_CF-3300]
+inputnum          4678.486  3140.103    0.67   1.15  OK  [disk: National_CF-3300]
+inputnum2         3804.181  2361.109    0.62      ~  OK  [disk: National_CF-3300]
+chanfor           9049.299  6693.522    0.74      ~  OK  [disk: National_CF-3300]
+inputstr          4999.853  2955.902    0.59   0.90  OK  [disk: National_CF-3300]
+inputquote        4662.688  3175.307    0.68   1.56  OK  [disk: National_CF-3300]
+inputdol_c        4841.916  2950.393    0.61   1.73  OK  [disk: National_CF-3300]
+getkw             3550.487  1948.235    0.55      ~  OK  [disk: National_CF-3300]
+puthash           3828.484  2967.593    0.78      ~  OK  [disk: National_CF-3300]
+printhash         5123.520  2950.629    0.58      ~  OK  [disk: National_CF-3300]
+dski              1186.744   195.589    0.16   0.13  OK  [disk: National_CF-3300]
+dsko              2032.694   676.614    0.33   0.46  OK  [disk: National_CF-3300]
+copy              5096.591  3345.918    0.66      ~  OK  [disk: National_CF-3300]
+set                    nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+ipl                    nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+cmd                    nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+loc               1053.919   648.315    0.62      ~  OK  [disk: National_CF-3300]
+openkw            5039.418  2908.850    0.58      ~  OK  [disk: National_CF-3300]
+namekw            6248.023  4134.667    0.66      ~  OK  [disk: National_CF-3300]
+open_c            5432.678  3727.161    0.69      ~  OK  [disk: National_CF-3300]
+open_d            4142.792  2511.066    0.61      ~  OK  [disk: National_CF-3300]
+fieldkw           4420.444  2527.770    0.57      ~  OK  [disk: National_CF-3300]
+bsave_b           5746.338  2973.144    0.52      ~  OK  [disk: National_CF-3300]
+bload_b           6075.320  2567.360    0.42   0.13  OK  [disk: National_CF-3300]
+bload_c           6070.039  2764.030    0.46   0.23  OK  [disk: National_CF-3300]
+save_b                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+runkw_c                nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+loadkw                 nan       nan       -      ~  UNTIMEABLE  [disk: National_CF-3300]
+t6mki2              87.956    92.610    1.05      ~  OK  [type-ahead end]
+t6mkix              89.259    88.486    0.99      ~  OK  [type-ahead end]
+t6mksx              88.036    92.042    1.05      ~  OK  [type-ahead end]
+t6mkdx              88.919    92.214    1.04      ~  OK  [type-ahead end]
+t6mki13            100.426    93.321    0.93      ~  OK  [type-ahead end]
+t6mki6              91.792    92.174    1.00      ~  OK  [type-ahead end]
+t6cvi2              89.179    93.115    1.04      ~  OK  [type-ahead end]
+t6cvi5              97.408    96.200    0.99      ~  OK  [type-ahead end]
+t6cvi13            100.341    93.370    0.93      ~  OK  [type-ahead end]
+t6mks2              87.952    93.120    1.06      ~  OK  [type-ahead end]
+t6mks13            100.426    93.940    0.94      ~  OK  [type-ahead end]
+t6cvs2              89.175    93.087    1.04      ~  OK  [type-ahead end]
+t6cvs5              97.060    96.237    0.99      ~  OK  [type-ahead end]
+t6cvs13            100.342    93.454    0.93      ~  OK  [type-ahead end]
+t6mkd2              87.956    93.207    1.06      ~  OK  [type-ahead end]
+t6mkd13            100.415    93.835    0.93      ~  OK  [type-ahead end]
+t6cvd2              87.952    93.016    1.06      ~  OK  [type-ahead end]
+t6cvd5              97.062    96.178    0.99      ~  OK  [type-ahead end]
+t6cvd13            100.683    93.199    0.93      ~  OK  [type-ahead end]
+t6dskf2             88.831    93.483    1.05      ~  OK  [type-ahead end]
+t6dskf13           100.395    94.239    0.94      ~  OK  [type-ahead end]
+t6dskf62            89.733    93.983    1.05      ~  OK  [type-ahead end]
+t6dskf5             97.025    97.135    1.00      ~  OK  [type-ahead end]
+t6dskf5b            97.162    97.056    1.00      ~  OK  [type-ahead end]
+t8openinput2        90.217    92.507    1.03      ~  OK  [type-ahead end]
+t8openinput13       99.603    92.209    0.93      ~  OK  [type-ahead end]
+t8openinput52      116.182    94.321    0.81      ~  OK  [type-ahead end]
+t8openinput56      120.489    90.015    0.75      ~  OK  [type-ahead end]
+t8openinput53     1133.233   498.789    0.44      ~  OK  [type-ahead end]
+t8openoutput13     102.240    94.835    0.93      ~  OK  [type-ahead end]
+t8openoutput56     115.542    89.168    0.77      ~  OK  [type-ahead end]
+t8openappend2       91.439    94.343    1.03      ~  OK  [type-ahead end]
+t8openappend53    1115.495   504.678    0.45      ~  OK  [type-ahead end]
+t8openrandom5      100.776    95.612    0.95      ~  OK  [type-ahead end]
+t8openrandom13     104.224    95.625    0.92      ~  OK  [type-ahead end]
+t8openrandom2       92.014    94.170    1.02      ~  OK  [type-ahead end]
+t8closeall13        99.327    89.381    0.90      ~  OK  [type-ahead end]
+t8closeall24       111.113    94.090    0.85      ~  OK  [type-ahead end]
+t8closechannel5     95.988    95.955    1.00      ~  OK  [type-ahead end]
+t8closechannel13    99.702    89.382    0.90      ~  OK  [type-ahead end]
+t8closechannel52   115.484    93.067    0.81      ~  OK  [type-ahead end]
+t8killdeletefile13    99.880    92.693    0.93      ~  OK  [type-ahead end]
+t8killdeletefile24   110.066    90.258    0.82      ~  OK  [type-ahead end]
+t8killdeletefile53  1124.231   496.875    0.44      ~  OK  [type-ahead end]
+t8namerename13      99.888    92.579    0.93      ~  OK  [type-ahead end]
+t8namerename53    1135.019   497.408    0.44      ~  OK  [type-ahead end]
+t8filesbare2        89.107    92.409    1.04      ~  OK  [type-ahead end]
+t8filesbare13       99.880    89.322    0.89      ~  OK  [type-ahead end]
+t8filespattern53  1109.295   296.232    0.27      ~  OK  [type-ahead end]
+t8fieldbindbuffer2  1504.672   908.569    0.60      ~  OK  [type-ahead end]
+t8fieldbindbuffer13  1516.488   909.424    0.60      ~  OK  [type-ahead end]
+t8fieldbindbuffer50  1542.679   911.408    0.59      ~  OK  [type-ahead end]
+t8fieldbindbuffer52   116.397    90.095    0.77      ~  OK  [type-ahead end]
+t8fieldbindbuffer59   119.521    92.851    0.78      ~  OK  [type-ahead end]
+t8lsetleftjustify2    89.814    93.143    1.04      ~  OK  [type-ahead end]
+t8lsetleftjustify13   100.922    88.309    0.88      ~  OK  [type-ahead end]
+t8rsetrightjustify2    89.815    93.062    1.04      ~  OK  [type-ahead end]
+t8rsetrightjustify13   100.578    91.971    0.91      ~  OK  [type-ahead end]
+t8eofatend13       100.817    90.437    0.90      ~  OK  [type-ahead end]
+t8eofatend52       115.330    94.043    0.82      ~  OK  [type-ahead end]
+t8eofatend59       119.866    93.484    0.78      ~  OK  [type-ahead end]
+t8eofatend61      1513.797   705.219    0.47      ~  OK  [type-ahead end]
+t8locposition13    100.813    93.715    0.93      ~  OK  [type-ahead end]
+t8locposition52    115.326    94.036    0.82      ~  OK  [type-ahead end]
+t8locposition59    119.874    90.240    0.75      ~  OK  [type-ahead end]
+t8loflength13      100.473    93.735    0.93      ~  OK  [type-ahead end]
+t8loflength52      114.697    94.041    0.82      ~  OK  [type-ahead end]
+t8loflength59      119.869    90.211    0.75      ~  OK  [type-ahead end]
+t8mergemergefile13    99.245    92.228    0.93      ~  OK  [type-ahead end]
+t8mergemergefile24   109.431    92.092    0.84      ~  OK  [type-ahead end]
+t8mergemergefile53  1153.839   294.723    0.26      ~  OK  [type-ahead end]
+t8loadplain13       99.250    92.148    0.93      ~  OK  [type-ahead end]
+t8loadplain24      109.436    93.153    0.85      ~  OK  [type-ahead end]
+t8loadplain53     1114.487   296.593    0.27      ~  OK  [type-ahead end]
+t8loadrun53       1124.591   296.749    0.26      ~  OK  [type-ahead end]
+t8savetokenised13    99.589    92.339    0.93      ~  OK  [type-ahead end]
+t8savetokenised24   109.431    89.711    0.82      ~  OK  [type-ahead end]
+t8bloadplain13      99.589    92.179    0.93      ~  OK  [type-ahead end]
+t8bloadplain24     109.426    93.114    0.85      ~  OK  [type-ahead end]
+t8bloadplain53    1118.737   296.666    0.27      ~  OK  [type-ahead end]
+t8bloadrun53      1115.966   296.778    0.27      ~  OK  [type-ahead end]
+t8bloadvram53     1129.466   295.124    0.26      ~  OK  [type-ahead end]
+t8bsaverange2       92.225    90.329    0.98      ~  OK  [type-ahead end]
+t8copyfiletofile13    99.888    92.632    0.93      ~  OK  [type-ahead end]
+t8copyfiletofile53  1130.949   500.532    0.44      ~  OK  [type-ahead end]
+t8dskireadsector2    91.107    92.799    1.02      ~  OK  [type-ahead end]
+t8dskireadsector13   101.401    93.543    0.92      ~  OK  [type-ahead end]
+t8dskireadsector62    93.151    90.418    0.97      ~  OK  [type-ahead end]
+t8dskowritesector2    89.966    92.432    1.03      ~  OK  [type-ahead end]
+t8dskowritesector13   100.282    93.152    0.93      ~  OK  [type-ahead end]
+t8dskowritesector62    91.436    89.938    0.98      ~  OK  [type-ahead end]
+t8getfieldedrecord5  1511.528   909.118    0.60      ~  OK  [type-ahead end]
+t8getfieldedrecord52   114.289    93.031    0.81      ~  OK  [type-ahead end]
+t8getfieldedrecord59   118.493    90.186    0.76      ~  OK  [type-ahead end]
+t8getfieldedrecord13  1529.967   906.207    0.59      ~  OK  [type-ahead end]
+t8putfieldedrecord5  1522.126   913.036    0.60      ~  OK  [type-ahead end]
+t8putfieldedrecord52   115.511    89.804    0.78      ~  OK  [type-ahead end]
+t8putfieldedrecord59   118.844    93.530    0.79      ~  OK  [type-ahead end]
+t8putfieldedrecord13  1520.717   910.116    0.60      ~  OK  [type-ahead end]
+t8inputstringread52   114.306    89.726    0.78      ~  OK  [type-ahead end]
+t8inputstringread59   118.506    92.469    0.78      ~  OK  [type-ahead end]
+t8printchannelwrite52   115.539    93.123    0.81      ~  OK  [type-ahead end]
+t8printchannelwrite59   118.512    89.223    0.75      ~  OK  [type-ahead end]
+t8maxfilesset2      88.222    91.106    1.03      ~  OK  [type-ahead end]
+t8maxfilesset5      93.973    95.804    1.02      ~  OK  [type-ahead end]
+t8maxfilesset13     99.382    89.343    0.90      ~  OK  [type-ahead end]
+t8inputconsole13   100.395    93.228    0.93      ~  OK  [type-ahead end]
+t8inputchannel52   115.283    94.220    0.82      ~  OK  [type-ahead end]
+t8inputchannel59   120.456    90.389    0.75      ~  OK  [type-ahead end]
+t8callrefuse2       91.148    91.131    1.00      ~  OK  [type-ahead end]
+t8filespattern62    90.057    92.947    1.03      ~  OK  [type-ahead end]
+t8killdeletefile62    91.316    89.567    0.98      ~  OK  [type-ahead end]
+t8namerename65    5106.885  4200.655    0.82      ~  OK  [type-ahead end]
+t8savetokenised2    90.948    93.017    1.02      ~  OK  [type-ahead end]
+t8namerename64    2152.091   762.649    0.35      ~  OK  [type-ahead end]
+t8copyfiletofile64  2153.231   742.504    0.34      ~  OK  [type-ahead end]
+t8inputstringread55  4589.419  2428.605    0.53      ~  OK  [type-ahead end]
+t8inputdolchannel55  4513.917  2398.606    0.53      ~  OK  [type-ahead end]
+t8killdeletefile64  2093.493   831.346    0.40      ~  OK  [type-ahead end]
+t8namerenameopen  2335.770  1305.305    0.56      ~  OK  [type-ahead end]
+t8namenoasmiss    1366.155   297.837    0.22      ~  OK  [type-ahead end]
+t8copynotomiss    1328.207   296.470    0.22      ~  OK  [type-ahead end]
+t8openoutput62      89.476    89.102    1.00      ~  OK  [type-ahead end]
+t8openoutput54    2134.139   912.608    0.43      ~  OK  [type-ahead end]
+t8savetokenised62    90.680    92.470    1.02      ~  OK  [type-ahead end]
+merge             4730.720  2258.942    0.48      ~  OK  [type-ahead end]
+set                 93.400    94.793    1.01      ~  OK  [type-ahead end]
+ipl                 94.610    94.772    1.00      ~  OK  [type-ahead end]
+cmd                 95.589    91.413    0.96      ~  OK  [type-ahead end]
+save_b            3613.885  1845.563    0.51      ~  OK  [type-ahead end]
+runkw_c           1300.231   496.328    0.38      ~  OK  [type-ahead end]
+loadkw            1263.245   496.513    0.39      ~  OK  [type-ahead end]
+kwtime: [printer] ref CURLIN bias -- fall-off 2.955 ms (spread 2.708..2.955) · END path 2.877 ms
+kwtime: [printer] zb CURLIN bias -- fall-off 0.361 ms (spread 0.361..0.361) · END path 0.332 ms
+llist                  nan       nan       -      ~  UNTIMEABLE  [printer: Philips_VG_8020]
+lposkw              11.182    10.247    0.92   0.84  OK  [printer: Philips_VG_8020]
+lprintkw            11.182    10.247    0.92   0.33  OK  [printer: Philips_VG_8020]
+llist              133.259   261.458    1.96      ~  OK  [type-ahead end]
+kwtime: [tapew] ref CURLIN bias -- fall-off 2.478 ms (spread 2.478..2.478) · END path 2.877 ms
+kwtime: [tapew] zb CURLIN bias -- fall-off 0.263 ms (spread 0.263..0.263) · END path 0.576 ms
+csave            11141.095  9283.046    0.83   0.83  OK  [tapew: Philips_VG_8020]
+kwtime: [diskprinter] ref CURLIN bias -- fall-off 2.478 ms (spread 2.478..2.478) · END path 2.877 ms
+kwtime: [diskprinter] zb CURLIN bias -- fall-off 0.263 ms (spread 0.263..0.263) · END path 0.332 ms
+lfiles            1065.433   224.671    0.21   0.20  OK  [diskprinter: National_CF-3300]
+kwtime: [tape] ref CURLIN bias -- fall-off none · END path 2.877 ms
+kwtime: [tape] zb CURLIN bias -- fall-off none · END path 0.576 ms
+cload                  nan       nan       -      ~  UNTIMEABLE  [tape: Philips_VG_8020]
+cload_b                nan       nan       -      ~  UNTIMEABLE  [tape: Philips_VG_8020]
+cload            11590.713 11620.670    1.00      ~  OK  [type-ahead end]
+cload_b           5810.426  5840.676    1.01      ~  OK  [type-ahead end]
+kwtime: [boot] ref CURLIN bias -- fall-off -33.421 ms (spread -58.900..-32.971) · END path 2.877 ms
+kwtime: [boot] zb CURLIN bias -- fall-off -80.720 ms (spread -80.723..-77.801) · END path 0.332 ms
+auto                33.968    87.970    2.59   2.63  OK  [boot: Philips_VG_8020]
+auto_bare           33.253    87.183    2.62   2.67  OK  [boot: Philips_VG_8020]
+auto_step           59.748   122.874    2.06   2.07  OK  [boot: Philips_VG_8020]
+
+kwtime: OK=857 · REF-ONLY-MISSING=4 · UNTIMEABLE=5  (866 rows, bar 10x; keyword-alone reading on 195; 24 timed via CURLIN, 570 via a type-ahead end)
+pin: 866 timed row(s) -> /Users/joost/projects/zerobas/build/kwtime.json
+refcache: 5 hit, 45 miss, 41 stored, 4 refused (non-reading), 5 replayed provenance

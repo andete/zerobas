@@ -2408,6 +2408,12 @@ caswbrk-acceptance: repack-machine
 casrbrk-acceptance: repack-machine
 	python3 probes/basic/basic_probe_casrbrk.py
 
+# --- subsig-acceptance: our sub ROM's own "ZB" marker; EXBRSA left 0 (D-SUBSIG) --
+# PEEK(&HFAF8) after boot against both MSX1 references (0; ours wrote 139), with a
+# page-0 and a page-1 tenant as the controls a scan that finds nothing would fail.
+subsig-acceptance: repack-machine
+	python3 probes/basic/basic_probe_subsig.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

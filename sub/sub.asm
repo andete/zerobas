@@ -61,10 +61,14 @@ DISK_BUILD      equ     0   ; D-FATENG: 1 only in disk.rom, where DSKIO is LOCAL
 ; ===========================================================================
                 org     $0000
 
-; --- Sub-ROM signature (MSX2 sub-ROM ID; §3c/D-3) --------------------------
-; `CD` at $0000 marks a sub-ROM (vs `AB` for a cartridge). init_ext_roms
-; (S2b) RDSLT-checks $0000/$0001 for 'C'/'D' to discover and record our slot.
-                db      "CD"                    ; $0000: sub-ROM signature
+; --- Sub-ROM signature: zerobas's OWN marker (D-SUBSIG) ---------------------
+; `ZB` at $0000. It used to be `CD`, the MSX2 SUB-ROM's published ID -- but this
+; ROM is zerobas's own invention, and on an MSX2 C-BIOS scans every subslot for
+; `CD` and takes the FIRST: ours in a lower subslot would capture EXBRSA and
+; break EXTROM (scratchpad/subrom_arch_report.md). Joost, 2026-10-11: own ID,
+; `ZB`. Not `AB` either (the BIOS would run it as a cartridge). init_ext_roms
+; RDSLT-checks $0000/$0001 for 'Z'/'B' to discover and record our slot.
+                db      "ZB"                    ; $0000: zerobas sub-ROM marker
                 dw      0                        ; $0002: INIT entry — none (passive
                                                  ;        callee, no boot CALSLT, D-7)
                 dw      0                        ; $0004: reserved

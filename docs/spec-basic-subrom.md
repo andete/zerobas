@@ -9,6 +9,14 @@ SPDX-License-Identifier: 0BSD
 > *how-to* (decision tree + ABI recipe + gates) is
 > [subrom-tenant-playbook.md](subrom-tenant-playbook.md). Start there.
 
+> 🔁 **AMENDED 2026-10-11 (D-SUBSIG, Joost's ruling):** the sub-ROM's marker at
+> `$0000` is zerobas's own **`ZB`**, not the MSX2 SUB-ROM's `CD`, and boot no
+> longer writes `EXBRSA` (`$FAF8`; both MSX1 references leave it 0). Every `CD`
+> / EXBRSA below is this spec's 2026-07 design, kept as written. Why, and the
+> options for more sub-ROM space (a second ROM in slot 3-3, ruled for later):
+> [`subrom_arch_report.md`](../scratchpad/subrom_arch_report.md),
+> [`subrom_demand_report.md`](../scratchpad/subrom_demand_report.md).
+
 Status: **SIGNED OFF 2026-07-11** — the §9 open questions are answered
 (name = `zerobas-sub`; size = **32 KB, both pages up front**; absence error
 reuses *"Illegal function call"*; D-1…D-11 otherwise as proposed).

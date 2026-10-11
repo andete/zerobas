@@ -1,0 +1,5 @@
+== VG-8020    FAF8 FAF9 = ('0', '0')
+== CF-3300    FAF8 FAF9 = ('0', '0')
+== ZB-NODISK  FAF8 FAF9 = ('139', '0')
+== ZB-DISK    FAF8 FAF9 = ('139', '0')
+refcache: 0 hit, 4 miss, 4 stored

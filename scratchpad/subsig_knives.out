@@ -1,0 +1,9 @@
+base: {'VG-8020:faf8': '0 0', 'VG-8020:p1': '4', 'VG-8020:p0': '7', 'CF-3300:faf8': '0 0', 'CF-3300:p1': '4', 'CF-3300:p0': '7'}
+  ROM 0f144f37 2ec98c2b 0e4e84ab 10cb340b  ->  c9b68aca 2ec98c2b 0e4e84ab debabf41
+PASS  K-SG1: moved ['CF-3300:faf8', 'CF-3300:p0', 'CF-3300:p1', 'VG-8020:faf8', 'VG-8020:p0', 'VG-8020:p1'] (want exactly ['CF-3300:faf8', 'CF-3300:p0', 'CF-3300:p1', 'VG-8020:faf8', 'VG-8020:p0', 'VG-8020:p1'])  {'VG-8020:faf8': 'None', 'VG-8020:p1': 'None', 'VG-8020:p0': 'None', 'CF-3300:faf8': 'None', 'CF-3300:p1': 'None', 'CF-3300:p0': 'None'}
+  ROM c9b68aca 2ec98c2b 0e4e84ab debabf41  ->  d928eb2d 2ec98c2b 5f715d9b dcdc61ed
+PASS  K-SG2: moved ['CF-3300:faf8', 'VG-8020:faf8'] (want exactly ['CF-3300:faf8', 'VG-8020:faf8'])  {'VG-8020:faf8': '139 0', 'VG-8020:p1': '4', 'VG-8020:p0': '7', 'CF-3300:faf8': '139 0', 'CF-3300:p1': '4', 'CF-3300:p0': '7'}
+restored ROM hashes 0f144f37 2ec98c2b 0e4e84ab 10cb340b (baseline 0f144f37 2ec98c2b 0e4e84ab 10cb340b)
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS
+rc=0

@@ -40,7 +40,7 @@ size, labels present and in range, and every byte after each label is $FF --
 because every byte is. The readout then prints the CORRECT free figures for a ROM
 with no ROM in it. A gate whose answer is "nothing is there" cannot tell a correct
 answer from a dead subject, so the run needs one thing that must be PRESENT: the
-"CD" sub-ROM signature at $0000 and the deliberately-not-"AB" "S1" marker at
+"ZB" sub-ROM marker at $0000 (D-SUBSIG; was "CD") and the deliberately-not-"AB" "S1" marker at
 $4000, both of which sub/sub.asm states in prose and both of which die on an
 all-$FF, an all-$00 and a truncated image alike. It is check_reloc.py's own
 "AB"-at-$4000 pin, one ROM over.
@@ -62,9 +62,10 @@ ROM_SIZE = 0x8000
 PAD = 0xFF
 
 # The two structural anchors. Not free space, not derived: sub/sub.asm pins both
-# by address and says why in its header ("CD" = MSX2 sub-ROM signature; "S1" =
+# by address and says why in its header ("ZB" = zerobas's own sub-ROM marker,
+# NOT the MSX2 SUB-ROM's "CD" -- D-SUBSIG; "S1" =
 # page-1 marker chosen NOT to be "AB" so the cartridge scan skips it).
-ANCHORS = ((P0_BASE, b"CD"), (P1_BASE, b"S1"))
+ANCHORS = ((P0_BASE, b"ZB"), (P1_BASE, b"S1"))   # D-SUBSIG: was b"CD" (the MSX2 SUB-ROM's)
 
 PAGES = (
     ("sub page 0", "__MEAS_SUB_P0_END", P0_BASE, P0_TOP,
@@ -161,7 +162,7 @@ def main(argv) -> int:
             print("FAIL:", e, file=sys.stderr)
         return 2
 
-    print(f"OK: sub ROM {len(image)} B, 'CD' @ $0000, 'S1' @ $4000, both wall "
+    print(f"OK: sub ROM {len(image)} B, 'ZB' @ $0000, 'S1' @ $4000, both wall "
           f"labels inside their page and both pads verified")
     for title, label, end, free, scan, where in rows:
         print(f"    measure: {title} free       = {free} B "

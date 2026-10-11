@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # ROM layout — how zerobas is put together
 
-> **Status (2026-10-09):** the parts a program can see — the published BIOS
+> **Status (2026-10-11):** the parts a program can see — the published BIOS
 > entry points, the slot conventions, the hooks and their addresses — follow
 > the published MSX interfaces; where the code sits inside the ROMs is
 > zerobas's own and differs from a real MSX by design. Open: `RST 8` (SYNCHR)
@@ -71,9 +71,10 @@ C-BIOS's boot scan finds the `"AB"` header at `$4000` and calls zerobas's
 INIT, which never returns: it ends at the BASIC prompt. So zerobas finishes the
 boot scan itself, calling the INIT of every `"AB"` ROM in the remaining slots
 — that is how the disk ROM installs its hooks
-([basic/initext.asm](../../basic/initext.asm)). The sub-ROM is found by its
-`"CD"` signature, and its slot is written to `EXBRSA` (`&HFAF8`), the
-published MSX2 cell for it.
+([basic/initext.asm](../../basic/initext.asm)). The sub-ROM is found by its own
+`"ZB"` marker at `&H0000`. It carried the MSX2 SUB-ROM's `"CD"` until
+2026-10-11 and wrote its slot to `EXBRSA` (`&HFAF8`); both now belong to a real
+MSX2 SUB-ROM only, and `EXBRSA` reads 0, as on both MSX1 references (D-SUBSIG).
 
 ### The published BIOS entry points
 
@@ -174,9 +175,11 @@ never for the code it points at. The allowed sources are listed in the
 
 ## Differences from the reference
 
-- **There is a sub-ROM.** An MSX1 has none; the MSX2 convention (a `"CD"` ROM,
-  its slot in `EXBRSA`) holds the code that did not fit. Whether an MSX1
-  program can tell, for example by reading `EXBRSA`, has not been measured.
+- **There is a sub-ROM.** An MSX1 has none; zerobas's own sub-ROM (marker
+  `"ZB"`, slot 3-2) holds the code that did not fit. A program could tell by
+  reading `EXBRSA` (`&HFAF8`) until 2026-10-11: both references leave it 0 and
+  zerobas wrote its sub-ROM's slot, 139. It no longer writes it
+  ([`subsig_probe.out`](../../scratchpad/subsig_probe.out)).
 - **`H_ZKEY` (`&HFFCF`) is a hook zerobas added to C-BIOS.** The `KEY` trap
   must see a function key as the keyboard scan stores it; `H.KEYI` and
   `H.TIMI` both run before that scan, on C-BIOS and on the VG-8020 (D-T3-3),
@@ -191,6 +194,11 @@ never for the code it points at. The allowed sources are listed in the
 
 ## What we found, and how
 
+- **The sub-ROM wore the MSX2 SUB-ROM's identity** (changed 2026-10-11,
+  D-SUBSIG, Joost's ruling). It carried `"CD"` and wrote `EXBRSA`; on an
+  MSX2, C-BIOS takes the first `"CD"` ROM it finds as the SUB-ROM, so ours
+  would have captured `EXTROM`. Found while weighing more sub-ROM space
+  ([`subrom_arch_report.md`](../../scratchpad/subrom_arch_report.md)).
 - **On the CF-3300, Disk BASIC lives behind hooks** (D-CFARCH, 2026-09-15): 35
   claimed cells, all slot 3-1, and the disk ROM calls back into main BASIC to
   evaluate its arguments. Joost the same day: *"now update our disk basic to

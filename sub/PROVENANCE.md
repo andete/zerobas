@@ -14,9 +14,10 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
 
 ## Design decisions (see [`../docs/spec-basic-subrom.md`](../docs/spec-basic-subrom.md))
 
-- **`CD` signature at $0000** — sub-ROM identification convention (cartridges use
-  `AB`, sub-ROMs use `CD`). *Source:* MSX2 TH sub-ROM section. Our discovery scan
-  (`init_ext_roms`, S2b) RDSLT-checks $0000/$0001 for `'C'`/`'D'`.
+- **`ZB` marker at $0000** — *own design* (D-SUBSIG, Joost 2026-10-11; it was
+  the MSX2 SUB-ROM's `CD` -- MSX2 TH sub-ROM section -- which belongs to a real
+  MSX2 SUB-ROM; not `AB` either, a cartridge). Our discovery scan
+  (`init_ext_roms`, S2b) RDSLT-checks $0000/$0001 for `'Z'`/`'B'`.
 - **`S1` marker at $4000 (NOT `AB`)** — *own design.* Any non-`AB` value works; the
   point is that `try_init_slot`'s cartridge scan (which checks $4000 for `'A'`/`'B'`
   on every expanded secondary, including 3-2) must **not** pick the passive sub-ROM
@@ -37,8 +38,8 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
 - **`SUBSLOT`/`SUBSLOT_OK` = $F106/$F107, `EXBRSA` = $FAF8 (S2b).** `SUBSLOT`/
   `SUBSLOT_OK` are *own-choice free-RAM* cells (same repack-only window) for the
   private dispatch path; `EXBRSA` $FAF8 is the published MSX2 sub-ROM-slot work
-  area (*source:* MSX2 TH work-area map), written for convention-compat but not
-  read at dispatch (spec D-6/R4).
+  area (*source:* MSX2 TH work-area map); NOT written since D-SUBSIG (both MSX1
+  references leave it 0), and never read at dispatch (spec D-6/R4).
 - **`sub/tkfloat.asm` — the float literal CRUNCH (WAVE 1 tenant, now a co-located
   callee of the WAVE 2 whole-tokeniser eviction).** *Own design*, copied verbatim
   from our own `../basic/float.asm` (`tk_float`); the classification/format rules

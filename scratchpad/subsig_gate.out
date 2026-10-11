@@ -1,0 +1,9 @@
+ROW faf8  VG-8020 [0 0] zerobas[0 0] SAME
+ROW p1    VG-8020 [4] zerobas[4] SAME
+ROW p0    VG-8020 [7] zerobas[7] SAME
+ROW faf8  CF-3300 [0 0] zerobas[0 0] SAME
+ROW p1    CF-3300 [4] zerobas[4] SAME
+ROW p0    CF-3300 [7] zerobas[7] SAME
+
+PASS: the sub-ROM marker and EXBRSA (6/6)
+refcache: 0 hit, 4 miss, 4 stored
