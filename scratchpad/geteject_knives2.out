@@ -1,0 +1,8 @@
+  ROM a7331d0d ec0649e9 28df8016 fcedbf6f  ->  a7331d0d 6c0042ee 28df8016 fcedbf6f
+PASS  K-GE1: moved ['get'] (want exactly ['get'])
+  ROM a7331d0d 6c0042ee 28df8016 fcedbf6f  ->  cc02b8b5 ec0649e9 28df8016 ee1eddd2
+FAIL  K-GE2: moved ['get', 'put'] (want exactly ['get'])
+  ROM cc02b8b5 ec0649e9 28df8016 ee1eddd2  ->  2302a420 ec0649e9 28df8016 82204b05
+PASS  K-GE3: moved ['linput'] (want exactly ['linput'])
+
+FAILED: K-GE2

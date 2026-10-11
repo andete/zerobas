@@ -6526,7 +6526,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:31798 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:31819 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27903,6 +27903,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       way: a typed `[` and a typed `STR$(I)` are Tcl substitutions -- the first
       two runs typed NOTHING on either machine; every Tcl-special character is
       escaped now.
+      🔍 **AND ITS SIBLINGS, SWEPT THE SAME DAY (D-LINEJECT):** the eject fixture over
+      every disk verb under ON ERROR ([`ejectsweep_probe.py`](scratchpad/ejectsweep_probe.py)
+      → [`ejectsweep_run.out`](scratchpad/ejectsweep_run.out)): PUT, LOAD, BLOAD,
+      FILES and OPEN FOR INPUT raise `70 in 60` on both -- PUT only since
+      D-GETEJECT: `gp_fin` is GET's AND PUT's shared tail, so the one jump fixed
+      both, and a PUT with the disk gone had printed `load error` too (K-GE2
+      moves `get` AND `put`; predicted `get` alone: MISSED --
+      [[a-shared-tail-is-not-a-decision]], again). **LINE INPUT #
+      raised 55 `Input past end`** -- GET's twin: `read_into_strscr`'s "the end"
+      was also a failed read. `seq_end` (basic/files.asm, shared with
+      input.asm's numeric INPUT #) now raises a pending DSKIO code first, then 55
+      if nothing was read, else keeps the item's bytes. Low region 13 -> 19 B,
+      page 1 64 -> 55 B. 🔮 Predicted 70 60: HIT. Two REFERENCE faces measured
+      and NOT copied: the CF-3300 WAITS on `PRINT #` + `CLOSE` with the disk gone
+      (no output, no FDC command for over a minute; ours raises 70, pinned
+      zerobas-only), and after a failed PUT an `END` in the handler re-raises 70
+      there FOREVER (the CLOSE cannot flush; the gate's first run read `ERR 70 90`
+      with the verb's own error scrolled off -- the handler ends in STOP now).
+      `geteject-acceptance` carries all nine rows; 🔪 K-GE3 (seq_end's raise cut)
+      → exactly `linput`, K-GE1 → `get`, K-GE2 → `get` `put`
+      ([`geteject_knives2.out`](scratchpad/geteject_knives2.out)).
       ➡️ **Left on this item:** the tape OPEN / SAVE
       header WRITES (STOP mid-write -- 🔬 TRIED 2026-10-08 and NOT READABLE with
       this rig: [`caswbrk_probe.py`](scratchpad/caswbrk_probe.py) broke CSAVE /

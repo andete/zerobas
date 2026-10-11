@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `PUT` — write a record to a random-access file (and `PUT SPRITE`)
 
-> **Status (2026-10-09):** `PUT` starts two statements: `PUT #`, documented
+> **Status (2026-10-11):** `PUT` starts two statements: `PUT #`, documented
 > here, and `PUT SPRITE`, documented on [`SPRITE`](SPRITE.md). One recorded
 > difference for `PUT #`: record numbers above 32767 (below, an open TIER 6
 > item). A `PUT` without a record number writes the next record, as on the
@@ -105,6 +105,11 @@ All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
   zerobas gave no reading within a minute; that case is still to be measured.
 
 ## What we found, and how
+
+- **A `PUT #` whose disk had gone printed `load error` and went on** (fixed
+  2026-10-11, with D-GETEJECT). The CF-3300 raises `Disk offline` (70) in the
+  `PUT` line, so `ON ERROR` sees it; `GET #` and `PUT #` share their error exit
+  here, and one change fixed both. `make geteject-acceptance` covers it.
 
 - **A `PUT` without a record number always wrote record 1** (fixed
   2026-10-09, D-RECAUTO), so a program writing its records in order kept only

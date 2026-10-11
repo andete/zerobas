@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `OPEN` — open a file or device on a numbered channel
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. Recorded differences,
 > all in the channel table: one file opened twice under names that differ only
 > in case, `VARPTR(#0)`, and two details of the channel header (below).
@@ -167,6 +167,14 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 **RAM usage** is not yet proven.
 
 ## What we found, and how
+
+- **`INPUT #` / `LINE INPUT #` from a disk that had gone said `Input past end`**
+  (fixed 2026-10-11, D-LINEJECT). With the disk taken out partway through a
+  file, the CF-3300 raises `Disk offline` (70) in the reading line; zerobas took
+  the failed read for the end of the file and raised 55. A `GET` did worse and
+  answered a blank record (D-GETEJECT, [`GET`](GET.md)). Both now raise 70;
+  `make geteject-acceptance` takes every disk command through a missing disk
+  ([readings](../../scratchpad/ejectsweep_run.out)).
 
 - **A program could not use two disk files at once.** A second disk `OPEN`
   raised a spurious `Syntax error` (fixed 2026-09-02, D-OPEN2FIX), and

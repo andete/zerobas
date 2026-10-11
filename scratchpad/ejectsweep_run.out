@@ -1,0 +1,64 @@
+   cf FDC 11 trk=1 sec=6 st=C1 t=50.78217035964068
+   cf FDC 8A trk=1 sec=6 st=80 t=50.794288100861976
+   cf FDC D0 trk=1 sec=6 st=C0 t=51.63989082411312
+   cf FDC 11 trk=0 sec=8 st=C5 t=51.663592719186376
+   cf FDC A2 trk=0 sec=8 st=80 t=51.67570040326354
+   zb FDC 1C trk=0 sec=8 st=E4 t=90.27997189586944
+   zb FDC 80 trk=0 sec=2 st=80 t=90.28102174997102
+   zb FDC 0C trk=0 sec=2 st=E4 t=90.28113656903321
+   zb FDC 1C trk=0 sec=2 st=E4 t=90.28218027710226
+   zb FDC 80 trk=0 sec=2 st=80 t=90.28323013120382
+ROW put CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   cf FDC 8A trk=1 sec=3 st=80 t=55.26619835761249
+   cf FDC D0 trk=1 sec=3 st=C0 t=56.11180108086363
+   zb FDC 1C trk=1 sec=8 st=E1 t=69.60474250218952
+   zb FDC 80 trk=1 sec=2 st=80 t=69.61077455374915
+   zb FDC 0C trk=254 sec=2 st=E5 t=69.61088937281134
+   zb FDC 1C trk=1 sec=2 st=E1 t=69.61691527833844
+   zb FDC 80 trk=1 sec=2 st=80 t=69.62294732989807
+ROW linput CF=[ERR 70 60] ZB=[ERR 55 60] DIVERGES
+   cf FDC 11 trk=1 sec=2 st=C1 t=40.536192169675196
+   cf FDC AA trk=1 sec=2 st=80 t=40.54830683788023
+   zb FDC 1C trk=0 sec=8 st=E4 t=53.485799452165004
+   zb FDC 80 trk=0 sec=2 st=80 t=53.48684930626658
+   zb FDC 0C trk=0 sec=2 st=E4 t=53.48697278564734
+   zb FDC 1C trk=0 sec=2 st=E4 t=53.48801649371638
+   zb FDC 80 trk=0 sec=2 st=80 t=53.489066347817946
+ROW printc CF=[None] ZB=[ERR 70 60] DIVERGES
+   cf FDC 82 trk=0 sec=2 st=80 t=37.18698298247403
+   cf FDC D0 trk=0 sec=2 st=C4 t=38.03234014378922
+   zb FDC 1C trk=0 sec=8 st=E4 t=50.95663024211178
+   zb FDC 80 trk=0 sec=1 st=80 t=50.957680096213345
+   zb FDC 0C trk=0 sec=1 st=E4 t=50.957803575594106
+   zb FDC 1C trk=0 sec=1 st=E4 t=50.95884728366315
+   zb FDC 80 trk=0 sec=1 st=80 t=50.95989713776471
+ROW load CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   cf FDC 82 trk=0 sec=2 st=80 t=39.43867865887983
+   cf FDC D0 trk=0 sec=2 st=C4 t=40.28305860102331
+   zb FDC 1C trk=0 sec=8 st=E4 t=53.36353977949711
+   zb FDC 80 trk=0 sec=1 st=80 t=53.36458963359868
+   zb FDC 0C trk=0 sec=1 st=E4 t=53.36470445266088
+   zb FDC 1C trk=0 sec=1 st=E4 t=53.36574816072992
+   zb FDC 80 trk=0 sec=1 st=80 t=53.366798014831495
+ROW bload CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   cf FDC 82 trk=0 sec=2 st=80 t=32.626473197012466
+   cf FDC D0 trk=0 sec=2 st=C4 t=33.472075920263606
+   zb FDC 1C trk=0 sec=8 st=E4 t=47.53417319799024
+   zb FDC 80 trk=0 sec=1 st=80 t=47.535223052091816
+   zb FDC 0C trk=0 sec=1 st=E4 t=47.53534653147258
+   zb FDC 1C trk=0 sec=1 st=E4 t=47.53639023954162
+   zb FDC 80 trk=0 sec=1 st=80 t=47.537440093643184
+ROW files CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   cf FDC 82 trk=0 sec=2 st=80 t=40.3945275167654
+   cf FDC D0 trk=0 sec=2 st=C4 t=41.23890745890888
+   zb FDC 1C trk=0 sec=8 st=E4 t=53.91911932941198
+   zb FDC 80 trk=0 sec=1 st=80 t=53.92016918351354
+   zb FDC 0C trk=0 sec=1 st=E4 t=53.92028400257574
+   zb FDC 1C trk=0 sec=1 st=E4 t=53.92132771064479
+   zb FDC 80 trk=0 sec=1 st=80 t=53.922377564746355
+   zb FDC 1C trk=0 sec=1 st=E4 t=53.92458762216985
+   zb FDC 80 trk=0 sec=1 st=80 t=53.925637476271426
+   zb FDC 0C trk=0 sec=1 st=E4 t=53.92575229533362
+   zb FDC 1C trk=0 sec=1 st=E4 t=53.926796003402664
+   zb FDC 80 trk=0 sec=1 st=80 t=53.92784585750423
+ROW openin CF=[ERR 70 60] ZB=[ERR 70 60] SAME

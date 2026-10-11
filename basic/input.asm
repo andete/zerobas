@@ -392,10 +392,7 @@ inp_numitem:
                 push    hl                  ; the text cursor
                 push    bc                  ; the key
                 call    inp_numread         ; STRSCR <- the item; CF = the end
-                jr      nc,inu_got
-                ld      a,(STRSCR)
-                or      a
-                jp      z,gp_past_eof       ; the end, and not one byte read -> 55
+                call    c,seq_end           ; a failed read / nothing read / the item
 inu_got:
                 call    inp_val             ; lenient: SH_ERR is not a refusal here
                 pop     bc

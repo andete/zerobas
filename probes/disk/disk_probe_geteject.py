@@ -11,8 +11,13 @@ record 20 -- data the drive must read -- under ON ERROR, and prints ERR / ERL /
 a sentinel that says whether the line after the GET ran. Clean room: typed BASIC
 and the text screen, a RAM mark, a media command; no ROM byte read.
 
-Rows (CF-3300 vs zerobas DISK): `ctl` the disk stays in, GET reads 20; `get`
-the disk is ejected, `ERR 70 60` (Disk offline, in the GET line, trapped).
+Rows (CF-3300 vs zerobas DISK): `ctl` the disk stays in, GET reads 20; then,
+with the disk ejected before line 60: `get`, `put`, `linput` (LINE INPUT #
+through a 300-line file), `load`, `bload`, `files`, `openin` -- each `ERR 70 60`
+(Disk offline, in the verb's line, trapped) on both. `printc` (PRINT # + CLOSE)
+is zerobas-only: the CF-3300 waits there, and our 70 is pinned.
+D-LINEJECT (2026-10-11): LINE INPUT # answered 55 `Input past end`, the same
+read-failure-as-EOF shape (basic/files.asm seq_end).
 Before 2026-10-11 zerobas answered `get` with RAN 0: the chain walk's failed
 FAT read was taken for end-of-file and the record filled with spaces
 (basic/randio-body.inc frg_eofchk). Exit 0 all same, 1 a divergence, 2 no
@@ -25,24 +30,51 @@ import omsx_preflight, probe_tmp
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 SIDES = {"cf": "National_CF-3300", "zb": "C-BIOS_MSX1_EU_REPACK_DISK"}
-PROG = [
-    "10 ON ERROR GOTO 90",
-    '20 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$',
-    '30 FOR I=1 TO 40:LSET F$=STR$(I):PUT 1,I:NEXT:CLOSE 1',
-    '40 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$',
-    "50 POKE &HD000,1:FOR W=1 TO 3000:NEXT",
-    "60 GET 1,20",
-    '70 PRINT CHR$(91);"RAN";VAL(F$);CHR$(93):END',
-    '90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93):END',  # CHR$(91): a typed `[` is Tcl
-                                                    # command substitution -- the first
-                                                    # run typed NOTHING on either side
-]
+# (name, prep lines 20-49, the verb on line 60) -- the eject happens at line 50
+CASES = {
+    "get":    (['20 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$',
+                '30 FOR I=1 TO 40:LSET F$=STR$(I):PUT 1,I:NEXT:CLOSE 1',
+                '40 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$'],
+               "60 GET 1,20"),
+    "put":    (['20 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$',
+                '30 FOR I=1 TO 40:LSET F$=STR$(I):PUT 1,I:NEXT:CLOSE 1',
+                '40 OPEN "R.DAT" AS 1 LEN=128:FIELD 1,128 AS F$:LSET F$="Z"'],
+               "60 PUT 1,20"),
+    "linput": (['20 OPEN "S.TXT" FOR OUTPUT AS 1:FOR I=1 TO 300:PRINT#1,"LINE";I:NEXT:CLOSE 1',
+                '40 OPEN "S.TXT" FOR INPUT AS 1'],
+               "60 FOR I=1 TO 300:LINE INPUT#1,A$:NEXT"),
+    "printc": (['20 OPEN "W.TXT" FOR OUTPUT AS 1'],
+               '60 FOR I=1 TO 300:PRINT#1,"LINE";I:NEXT:CLOSE 1'),
+    "load":   (['20 SAVE "P.BAS"'], '60 LOAD "P.BAS"'),
+    "bload":  (['20 BSAVE "B.BIN",&H9000,&H97FF'], '60 BLOAD "B.BIN"'),
+    "files":  ([], "60 FILES"),
+    "openin": (['20 OPEN "S.TXT" FOR OUTPUT AS 1:PRINT#1,"X":CLOSE 1'],
+               '60 OPEN "S.TXT" FOR INPUT AS 1'),
+}
+
+# printc: the CF-3300 WAITS -- no output, no prompt, no FDC command for over a
+# minute after its write saw NOT READY (scratchpad/ejectsweep_run.out). A hang is
+# not a face to copy; zerobas's trappable 70 is pinned, zerobas only.
+ZB_ONLY = {"printc": "ERR 70 60"}
 
 
-def run(tag, machine, eject=True):
-    dsk = probe_tmp.tmp(f"geteject_{tag}.dsk")
+def prog(case):
+    prep, verb = CASES["get" if case == "ctl" else case]   # ctl: GET's program, disk kept
+    return (["10 ON ERROR GOTO 90"] + prep +
+            ["50 POKE &HD000,1:FOR W=1 TO 3000:NEXT", verb,
+             '70 PRINT CHR$(91);"RAN";VAL(F$);CHR$(93):END' if case in ("ctl", "get") else
+             '70 PRINT CHR$(91);"RAN";CHR$(93):END',
+             # STOP, not END: END closes the files, and on the CF-3300 a PUT
+             # channel that cannot be flushed raises 70 AGAIN in this line,
+             # trapped back into this handler forever -- the first gate run read
+             # `ERR 70 90` with the verb's own error scrolled away
+             '90 PRINT CHR$(91);"ERR";ERR;ERL;CHR$(93):STOP'])
+
+
+def run(tag, machine, eject=True, case="get"):
+    dsk = probe_tmp.tmp(f"geteject_{tag}_{case}.dsk")
     shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
-    out = probe_tmp.tmp(f"geteject_{tag}.txt")
+    out = probe_tmp.tmp(f"geteject_{tag}_{case}.txt")
     if os.path.exists(out):
         os.remove(out)
     def tcl_quote(s):   # every character a Tcl "..." string interprets
@@ -50,7 +82,7 @@ def run(tag, machine, eject=True):
             s = s.replace(a, b)
         return s
     # the second run typed nothing either: STR$(I) is Tcl's array variable $(I)
-    typed = "".join(tcl_quote(l) + "\\r" for l in ["NEW"] + PROG + ["RUN"])
+    typed = "".join(tcl_quote(l) + "\\r" for l in ["NEW"] + prog(case) + ["RUN"])
     tcl = f'''set throttle off
 set f [open {{{out}}} w]
 set ::ej 0
@@ -64,7 +96,7 @@ after time 14 {{ debug write memory 0xD000 0; type "SCREEN 0:WIDTH 40\\r" }}
 after time 16 {{ type "{typed}"; poll }}
 after time 120 {{ puts $f "scr=[scr]"; close $f; exit }}
 '''
-    tf = probe_tmp.tmp(f"geteject_{tag}.tcl")
+    tf = probe_tmp.tmp(f"geteject_{tag}_{case}.tcl")
     open(tf, "w").write(tcl)
     subprocess.run(omsx_preflight.guarded(
         [OMSX, "-machine", machine, "-diska", dsk, "-command",
@@ -79,15 +111,22 @@ after time 120 {{ puts $f "scr=[scr]"; close $f; exit }}
 
 
 def main():
-    got = {}
-    for tag in ("cf", "zb"):
-        for name, eject in (("ctl", False), ("get", True)):
-            ej, reading, _tail = run(tag, SIDES[tag], eject)
-            got[(tag, name)] = reading if ej == eject else f"EJECT={ej}?"
+    rows = ["ctl"] + list(CASES)
     bad, blind = [], []
-    for name in ("ctl", "get"):
-        cf, zb = got[("cf", name)], got[("zb", name)]
-        if cf is None or (cf or "").startswith("EJECT"):
+    for name in rows:
+        eject = name != "ctl"
+        zej, zb, _t = run("zb", SIDES["zb"], eject, name)
+        if not zej == eject:
+            zb = f"EJECT={zej}?"
+        if name in ZB_ONLY:
+            want = ZB_ONLY[name]
+            v = "PINNED" if zb == want else f"PIN-ROTTED (want {want})"
+            if zb != want:
+                bad.append(name)
+            print(f"ROW {name} CF=[-] ZB=[{zb}] {v}", flush=True)
+            continue
+        cej, cf, _t = run("cf", SIDES["cf"], eject, name)
+        if cf is None or cej != eject:
             v = "NO-REFERENCE"
             blind.append(name)
         elif cf == zb:
@@ -99,7 +138,8 @@ def main():
     if blind:
         print(f"\nINSTRUMENT FAULT: no CF-3300 reading on {', '.join(blind)}")
         return 2
-    print(f"\n{'PASS' if not bad else 'FAIL'}: GET with the disk gone ({2 - len(bad)}/2)")
+    print(f"\n{'PASS' if not bad else 'FAIL'}: disk verbs with the disk gone "
+          f"({len(rows) - len(bad)}/{len(rows)})")
     return 1 if bad else 0
 
 

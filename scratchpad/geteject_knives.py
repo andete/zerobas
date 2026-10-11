@@ -5,7 +5,9 @@ r"""D-GETEJECT knives: each cut must move EXACTLY its predicted rows of
 probes/disk/disk_probe_geteject.py, judged on the zerobas column.
 
   K-GE1  frg_eofchk always fills (a failed read taken for EOF again) -> get
-  K-GE2  gp_fin back to `jp c,load_error` (printed, not raised)       -> get
+  K-GE2  gp_fin back to `jp c,load_error` (printed, not raised)       -> get put
+         (gp_fin is GET's AND PUT's shared tail)
+  K-GE3  seq_end's pending-code raise cut (D-LINEJECT undone)         -> linput
          (ctl reads with the disk in: named, not missed)
 
 🔴 RESTORE ON EVERY EXIT: originals in memory, put back by try/finally AND
@@ -18,7 +20,7 @@ import knife_guard                  # D-KNIFEROM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
-ALL = {"ctl", "get"}
+ALL = {"ctl", "get", "put", "linput", "load", "bload", "files", "openin", "printc"}
 KNIVES = {
     "K-GE1": ("basic/randio-body.inc",
               "                jr      z,frg_eoffill       ; a clean EOF: the record is spaces\n",
@@ -27,7 +29,12 @@ KNIVES = {
     "K-GE2": ("basic/field.asm",
               "                jp      c,disk_error        ; D-GETEJECT: raise the pending DSKIO code\n",
               "                jp      c,load_error        ; K-GE2 CUT\n",
-              {"get"}),
+              {"get", "put"}),   # gp_fin is GET's AND PUT's tail: predicted {get}
+                                 # first and MISSED put (geteject_knives2.out)
+    "K-GE3": ("basic/files.asm",
+              "                jp      nz,raise_error      ; a failed read: its own code\n",
+              "                nop                         ; K-GE3 CUT\n                nop\n                nop\n",
+              {"linput"}),
 }
 TMP = "/tmp/zerobas"
 PROBE = "python3 -u probes/disk/disk_probe_geteject.py"

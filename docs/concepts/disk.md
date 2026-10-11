@@ -198,6 +198,17 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A disk taken out during file work** (2026-10-11, D-GETEJECT, D-LINEJECT):
+  `GET`, `PUT`, `LINE INPUT #`, `LOAD`, `BLOAD`, `FILES` and `OPEN` all raise
+  `Disk offline` (70) in their own line on both machines, so `ON ERROR` sees
+  it. Before, a `GET` answered a blank record and `LINE INPUT #` said
+  `Input past end`. Two reference faces are not copied. The CF-3300 waits,
+  with no message, on a `PRINT #` whose disk has gone, where zerobas raises 70.
+  And when a handler ends with `END` after a failed `PUT`, the CF-3300's `END`
+  tries to close the file, fails again inside the handler and loops; zerobas's
+  `END` closes it ([readings](../../scratchpad/ejectsweep_run.out),
+  [gate](../../probes/disk/disk_probe_geteject.py)).
+
 - **The clock stood still while disk commands worked** (fixed 2026-10-10,
   D-LOADDI, D-HOOKDI and D-BLDI): `LOAD`, `SAVE`, `KILL`, `COPY`, `NAME`,
   `DSKF`, `FILES`, `BLOAD` and `BSAVE` ran with interrupts off from start to

@@ -309,6 +309,23 @@ ex_copy:
                 jp      z,gb_illegal        ; 3: refused, or no `TO` -> ERR 5
                 jp      kill_status         ; 0 / 1 / 2 exactly as KILL decodes them
 
+; --- seq_end: INPUT # / LINE INPUT # reached "the end" (Cy from the read) ------
+; 🔴 D-LINEJECT (2026-10-11): THE END WAS ALSO A FAILED READ. With the disk ejected
+; mid-file, LINE INPUT # raised 55 `Input past end` here where the CF-3300 raises
+; 70 `Disk offline` -- the read failure came back as end-of-file
+; (scratchpad/ejectsweep_run.out), GET's D-GETEJECT twin. A failed DSKIO leaves
+; its code in DISKOP_ERR (the tenant clears it on entry), so a pending code is
+; RAISED; else nothing read is 55, as before; else the item's bytes stand.
+; raise_error resets SP, so the callers' pushes need no unwinding.
+seq_end:
+                ld      a,(DISKOP_ERR)
+                or      a
+                jp      nz,raise_error      ; a failed read: its own code
+                ld      a,(STRSCR)
+                or      a
+                jp      z,gp_past_eof       ; the end, and not one byte read -> 55
+                ret
+
 ; --- disk_error: raise the last DSKIO failure's code, else the old face --------
 ; D-DISKERR (docs/spec-basic-diskerr.md). Every post-tenant DSKIO-failure exit of
 ; the disk verbs comes here instead of load_error: with a code pending (the disk
@@ -1325,10 +1342,8 @@ inp_str:
                 push    hl                  ; guard the BASIC text cursor
                 push    bc                  ; guard the variable key across the read
                 call    read_into_strscr    ; fill STRSCR [len][bytes] from the file
-                jr      nc,inp_got          ; stopped on a delimiter
-                ld      a,(STRSCR)
-                or      a                   ; D-SEQEOF R3: the end, and not one byte
-                jp      z,gp_past_eof       ; read -> 55 (raise_error resets SP)
+                call    c,seq_end           ; the end: a failed read raises its code,
+                                            ; nothing read raises 55 (D-SEQEOF R3)
 inp_got:
                 pop     bc
                 call    tgt_store_str       ; scalar key OR element address
