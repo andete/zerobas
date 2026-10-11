@@ -4,7 +4,51 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-10 AFTERNOON — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+## 🟢 STATE AS OF 2026-10-11 MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+
+**Shipped since the 10-10 afternoon section (`git log --oneline 13477674..`), every
+code commit FULL-green (+ the five excluded):**
+- **D-DIMRESERVE (a) priced** -- the 128 B evaluator reserve is held up by the STRING
+  OPERATOR's heap call (`sst_op` -> `sct_go` -> `sc_call`), not by any factor; a guard
+  there is a ~20-op audit (the TODO block has the price). Left 🤖, TIER 4.
+- **D-WCACHE (docs/spec-diskwcache.md)** -- the sequential write path's FDC commands
+  named; **W1** cluster count from the mount (`FAT_ROOTSECS`'s cell, no new RAM),
+  **W2** the FAT sector kept within an allocation (`fat_write_fat_entry_hot`), **W3a**
+  one FAT write per chain extension (`FAT_DEFER` at `$E5AC`, measured free in both
+  maps): 128 -> 84 commands; **W3b / W4 PARKED** (audits for 8-18 more). Gate
+  `wcache-acceptance` counts FIRST ATTEMPTS (retries are timing-dependent).
+- **D-FDCDI FIXED** -- the wait for a sector's first byte opens interrupt windows
+  (BASIC only: page 0 must be the BIOS; MSX-DOS stays masked -- the first battery
+  caught wrblkalt's 32 KB WSEEK outrunning its window); typed keys 22/22 (the CF-3300
+  15-18), the workload in the CF-3300's time. Gate `fdcdi-acceptance`.
+- **D-GETEJECT / D-LINEJECT** -- a disk EJECTED mid-program (`diska eject` from a Tcl
+  poll) is the fixture D-LOADERRRET lacked: GET answered a blank record, LINE INPUT #
+  said 55, PUT printed `load error`; all raise 70 now. Gate `geteject-acceptance`
+  (nine rows). The CF-3300 WAITS on PRINT # with the disk gone, and loops on END after
+  a failed PUT -- measured, not copied.
+
+**Walls (2026-10-11, from the build): main low 19 B, page 1 55 B; sub p0 137 B, sub p1
+80 B; disk 3868 B.** Recount before quoting.
+
+**🔧 Apparatus lessons (each a miss of mine, each caught):**
+- Text typed through Tcl `type "..."`: escape `\ " $ [ ]` -- `STR$(I)` is Tcl's
+  `$(I)` and `[` is command substitution; both made a run type NOTHING.
+- A disk image holding MSXDOS.SYS boots into MSX-DOS (date prompt first).
+- A knife can be blind because the ROW is: a lost FAT mark reads back fine (readers
+  stop at the size) -- read the chain from the IMAGE.
+- `pasmo` writes an EMPTY file on a negative `ds`; a zero run in disk.rom can span a
+  CHAIN of anchors -- put code before the FIRST.
+- A 2DD byte must be taken within 32 us of its DRQ: no call / ret between the first
+  DRQ and the read.
+- Timing-dependent retries make raw counts jitter: gate what is deterministic.
+
+➡️ **NEXT, by tier (recount):** TIER 3: D-LOADERRRET's tape-write sites (the `@BREAK`
+rig does not land during a tape write); D-COPYWILD RULED parked. TIER 4: D-DIMRESERVE's
+string-operator guard audit + the DIM edge's 30 B; D-BOOTKEYS CTRL (after D-DSKIB,
+TIER 6). TIER 5: the interpreter speed items, PAINT, PUT, LOAD's step 9 / S10.C (ruled
+"defer"), D-WCACHE W3b/W4 (parked).
+
+## 🟢 STATE AS OF 2026-10-10 AFTERNOON — superseded above (its lessons still hold).
 
 **Shipped since the morning section below (`git log --oneline 716984dd..`), every
 one FULL-green (+ the five excluded) before its commit:** D-FCBSHAPE FCB #0 ·
