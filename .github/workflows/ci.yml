@@ -65,8 +65,30 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install pasmo
-        run: sudo apt-get update && sudo apt-get install -y pasmo
+      # pasmo 0.5.5 from source: Ubuntu packages 0.5.3, which cannot assemble
+      # zerobas (IFNDEF / --equ; the Makefile refuses it). Cached like the
+      # Windows job's build.
+      - name: Cache built pasmo
+        id: pasmo-cache
+        uses: actions/cache@v4
+        with:
+          path: pasmo-bin
+          key: pasmo-linux-0.5.5-v1
+
+      - name: Build pasmo from source (cache miss only)
+        if: steps.pasmo-cache.outputs.cache-hit != 'true'
+        run: |
+          set -eux
+          curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
+          tar xf pasmo.tar.gz
+          cd pasmo-0.5.5
+          ./configure
+          make
+          mkdir -p "$GITHUB_WORKSPACE/pasmo-bin"
+          cp pasmo "$GITHUB_WORKSPACE/pasmo-bin/pasmo"
+
+      - name: Install pasmo on PATH
+        run: sudo cp "$GITHUB_WORKSPACE/pasmo-bin/pasmo" /usr/local/bin/pasmo
 
       - name: Show toolchain
         run: |
@@ -74,7 +96,7 @@ jobs:
           python3 --version
 
       - name: Build the ROMs
-        run: make build/basic.rom disk
+        run: make basic-reloc   # build/basic.rom was retired 2026-07-29
 
       - name: Smoke-import host tooling
         run: |
@@ -150,7 +172,7 @@ jobs:
           make --version | head -1
 
       - name: Build the ROMs
-        run: make build/basic.rom disk
+        run: make basic-reloc   # build/basic.rom was retired 2026-07-29
 
       - name: Smoke-import host tooling
         run: |

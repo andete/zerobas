@@ -51,6 +51,19 @@
 BUILD := build
 
 PASMO ?= pasmo
+# pasmo 0.5.5 or newer is REQUIRED: the sources use IFNDEF guards (basic/sysvars.inc,
+# sub/equates.inc) and `--equ` overrides that the 0.5.3 every Linux distribution
+# packages rejects ("Macro name expected" -- a tester's build, 2026-10-11; CI's
+# apt pasmo is 0.5.3-7 too). Checked here, at parse time, so the failure says what
+# to do instead of pointing into sysvars.inc. Silent when pasmo is absent or its
+# banner does not parse: then the first assembler call fails on its own.
+PASMO_MIN := 0.5.5
+PASMO_VERSION := $(shell $(PASMO) 2>&1 | sed -n 's/^Pasmo v\. *\([0-9][0-9.]*\).*/\1/p' | head -n1)
+ifneq ($(PASMO_VERSION),)
+ifneq ($(PASMO_MIN),$(firstword $(sort $(PASMO_MIN) $(PASMO_VERSION))))
+$(error pasmo $(PASMO_VERSION) is too old: zerobas needs pasmo $(PASMO_MIN) or newer. Distribution packages ship 0.5.3 -- build 0.5.5 from source, see QUICKSTART.md)
+endif
+endif
 SRC   := basic/main.asm
 # basic/tokenise.inc + basic/detok.inc: include'd by interp.asm/list.asm (and
 # by sub/sub.asm/sub/detok.asm for the sub-ROM's own copies, SUB_PARTS below)

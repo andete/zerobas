@@ -16,9 +16,21 @@ and openMSX.
 
 | OS | |
 |----|---|
-| **Debian / Ubuntu** | `sudo apt-get install make python3 pasmo openmsx` |
+| **Debian / Ubuntu** | `sudo apt-get install make python3 g++ curl openmsx`, then pasmo built from source (below) |
 | **macOS** | `make` and `python3` come with the Xcode command-line tools; the openMSX app from [openmsx.org](https://openmsx.org/); pasmo built from [source](https://pasmo.speccy.org/) |
 | **Windows** | `python3` from python.org; `make` and `pasmo` through [MSYS2](https://www.msys2.org/), Git Bash or WSL; openMSX from [openmsx.org](https://openmsx.org/) |
+
+**pasmo must be 0.5.5 or newer.** Linux distributions package 0.5.3, which cannot
+assemble zerobas (it stops with `Macro name expected` in `basic/sysvars.inc`), and
+`make` refuses it with a message saying so. Build 0.5.5 from source:
+
+```bash
+curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz | tar xz
+```
+
+```bash
+cd pasmo-0.5.5 && ./configure && make && sudo make install
+```
 
 **Start openMSX once** (and close it). That creates its user folder
 (`~/.openMSX` on Linux and macOS), which step 3 writes into.
