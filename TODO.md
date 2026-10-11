@@ -6632,7 +6632,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32050 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32076 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -28040,7 +28040,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       completion. The `@BREAK` matrix press does not land during a tape write on
       the VG-8020 either, so these sites need another way in), `disk_error`'s
       fallback (by design),
-      str-engine.asm's sub-ROM-absent arm, the content-fault arms above -- and
+      str-engine.asm's sub-ROM-absent arm, the content-fault arms above (✅ the
+      non-numbered line: D-CASDIRECT, 2026-10-11 -- at the end of this block) -- and
       ~~🔴 `mc_ioerr`'s OTHER arm, MERGE of a non-ASCII tape file, which still goes
       to `disk_error` and so would raise the same stale disk code (unmeasured).~~
       (✅ D-CASTYPE, the same day -- below: the arm is unreachable now.)
@@ -28179,6 +28180,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       do, and they are the VG-8020's: casbin's `bscr` (binary Y then binary X,
       `BLOAD"CAS:X"`) reads `Skip :Y | Found:X` on both
       ([`casbin_bscr.out`](scratchpad/casbin_bscr.out)) -- predicted, HIT.
+      ✅ **D-CASDIRECT (2026-10-11): A LINE WITH NO LINE NUMBER IN AN ASCII PROGRAM IS
+      57 `Direct statement in file`, UNTRAPPED, NO LINE -- LOAD AND MERGE, TAPE AND
+      DISK, ON BOTH REFERENCES.** The content arm named above: cas_ascii_load sent
+      it to `dpl_err` (`load error`, returned -- inside a program the run went ON,
+      `[N 1]`), the disk `ascii_load` the same, and MERGE's shared tail `mrg_fin`
+      to `stmt_error` -- 2 `Syntax error`, `in 21313` inside a program -- under a
+      comment saying it gave "Direct statement in file".
+      📏 [`casdirect_diag.py`](scratchpad/casdirect_diag.py): the VG-8020 (tape,
+      [`casdirect_diag.out`](scratchpad/casdirect_diag.out)) and the CF-3300 (disk,
+      [`casdirect_disk.out`](scratchpad/casdirect_disk.out)) both print it with no
+      line and run no handler, keeping the lines before it; a BSAVE binary LOADed
+      as a program says the same on the CF-3300
+      ([`casdirect_bin.out`](scratchpad/casdirect_bin.out)) -- it trips the same
+      reader guard. 🔮 Predicted 57 (recalled, not looked up): HIT; the disk
+      faces: HIT.
+      🔧 `dpl_direct` (`ld a,57` / `jp raise_error`) at all three sites; main
+      page 1 23 → 18 B (clean build, 2026-10-11). A first cut also set DIRECTF
+      and took `raise_error_forced`; their knives moved NOTHING (the verb has
+      already left the run) and both went
+      ([`casdirect_knives_run1.out`](scratchpad/casdirect_knives_run1.out)).
+      Gate **`casdirect-acceptance`** ([`basic_probe_casdirect.py`](probes/basic/basic_probe_casdirect.py),
+      [`casdirect_gate.out`](scratchpad/casdirect_gate.out)): dload dmerge pload
+      pmerge kload kmerge kpload kpmerge kbinload, 9/9. 🔪 K-DS1 (tape LOAD arm)
+      → dload pload, K-DS2 (disk LOAD arm) → kload kpload kbinload, K-DS3
+      (MERGE's tail) → all four MERGE rows, tape AND disk -- each exactly.
 
 - [x] ✅ **D-CASRBRK — A TAPE *READ* BROKEN WITH Ctrl-STOP IN ITS DATA (filed
       2026-10-11 from D-CASWBRK, the write twin; FIXED THE SAME DAY -- at the end)**

@@ -2432,6 +2432,12 @@ casrbrk-acceptance: repack-machine
 subsig-acceptance: repack-machine
 	python3 probes/basic/basic_probe_subsig.py
 
+# --- casdirect-acceptance: a numberless line in an ASCII program is 57 (D-CASDIRECT)
+# LOAD / MERGE from tape (VG-8020) and disk (CF-3300), typed and under ON ERROR,
+# and a BSAVE binary LOADed: `Direct statement in file`, no line, no handler.
+casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/basic/basic_probe_casdirect.py
+
 # --- bootkey-acceptance: the first key after power-on is taken at once (D-BOOTSCAN)
 # C-BIOS leaves the key-scan countdown SCNCNT at $FF; zerobas took its first key
 # 2.5 s after the prompt. The VG-8020 row is the control.

@@ -1,0 +1,19 @@
+== dload  VG-8020  LOAD"CAS:X" Found:X Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== dload  OURS     LOAD"CAS:X" Found:X Direct statement in file ZB LIST 10 PRINT"A" ZB color auto goto list run 
+== dmerge VG-8020  MERGE"CAS:X" Found:X Direct statement in file Ok LIST 5 REM 10 PRINT"A" Ok color auto goto list run 
+== dmerge OURS     MERGE"CAS:X" Found:X Direct statement in file ZB LIST 5 REM 10 PRINT"A" ZB color auto goto list run 
+== pload  VG-8020  LOAD"CAS:X" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== pload  OURS     LOAD"CAS:X" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file ZB LIST 10 PRINT"A" ZB color auto goto list run 
+== pmerge VG-8020  MERGE"CAS:X" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" 15 MERGE"CAS:X" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END Ok color auto goto list run 
+== pmerge OURS     MERGE"CAS:X" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file ZB LIST 10 PRINT"A" 15 MERGE"CAS:X" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END ZB color auto goto list run 
+== kmerge CF-3300  DIR.BAS" Direct statement in file Ok LIST 5 REM 10 PRINT"A" Ok color auto goto list run 
+== kmerge OURS-D   DIR.BAS" Direct statement in file ZB LIST 5 REM 10 PRINT"A" ZB color auto goto list run 
+== kload  CF-3300  DIR.BAS" Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== kload  OURS-D   DIR.BAS" Direct statement in file ZB LIST 10 PRINT"A" ZB color auto goto list run 
+== kpmerge CF-3300  DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" 15 MERGE"DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END Ok color auto goto list run 
+== kpmerge OURS-D   DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file ZB LIST 10 PRINT"A" 15 MERGE"DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END ZB color auto goto list run 
+== kpload CF-3300  DIR.BAS" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== kpload OURS-D   DIR.BAS" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file ZB LIST 10 PRINT"A" ZB color auto goto list run 
+== kbinload CF-3300   Ok NEW Ok 5 REM LOAD"BIN.BIN" Direct statement in file Ok LIST Ok color auto goto list run 
+== kbinload OURS-D    ZB NEW ZB 5 REM LOAD"BIN.BIN" Direct statement in file ZB LIST ZB color auto goto list run 
+refcache: 0 hit, 18 miss, 18 stored

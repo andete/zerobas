@@ -110,6 +110,12 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## What we found, and how
 
+- **A line with no line number in an ASCII program printed `load error`, and a
+  program went on running** (fixed 2026-10-11, D-CASDIRECT). Both references
+  print `Direct statement in file` (57) with no line number, from tape and
+  from disk, and no `ON ERROR` handler sees it: the program is already gone.
+  A BSAVE binary loaded as a program gets the same message on the CF-3300
+  ([`casdirect_after.out`](../../scratchpad/casdirect_after.out)).
 - **Ctrl-STOP could not break a tape read once the file was found** (fixed
   2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
   error` (19); zerobas read on to the end, because its cassette routines
@@ -180,4 +186,6 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
   header leader and in the data.
+- `make casdirect-acceptance` — a line with no number in the program file,
+  tape and disk, typed and under `ON ERROR`.
 - `make kwram` — the RAM-usage comparison.

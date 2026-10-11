@@ -2235,7 +2235,9 @@ ex_merge:
                                             ; the crossing; CF set = bad line
 mrg_fin:                                    ; C4 shared tail (2026-10-03): the tape arm
                 pop     hl                  ; restore the text cursor      joins here
-                jp      c,stmt_error        ; non-numbered line -> "Direct statement in file"
+                jp      c,dpl_direct        ; non-numbered line -> 57 "Direct statement in
+                                            ; file", untrapped (D-CASDIRECT; this said so
+                                            ; and raised stmt_error's Syntax error)
                 ; 🔴 D-MERGERET (2026-09-12): MERGE RETURNS TO COMMAND LEVEL, and
                 ; `jp exec_stmt` carried on instead -- in BOTH modes. In a program,
                 ; `20 MERGE"N.BAS" / 30 POKE&HD002,55` left 55 here and 0 on the

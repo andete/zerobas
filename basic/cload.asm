@@ -776,7 +776,7 @@ cas_ascii_load:
                                             ; (D-SAVECOLON carve: jp -> jr, in range
                                             ; since D-CARVECAS moved the reader out)
                 call    cas_ascii_drive     ; read+tokenise+store via the tape source
-                jr      c,dpl_err           ; non-numbered line -> abort (jp -> jr)
+                jr      c,dpl_direct        ; non-numbered line -> 57 (D-CASDIRECT)
                 ret                         ; caller handles ,R / returns to the REPL.
                                             ; D-CASTAIL: CF is ALREADY CLEAR here (the
                                             ; `jp c` above did not take), so the ASCII
@@ -1035,6 +1035,20 @@ dpl_err:
                 call    load_error
                 scf
                 ret
+; dpl_direct -- D-CASDIRECT (2026-10-11): an ASCII program with a line that has
+; NO line number. Both references print `Direct statement in file` (57) with no
+; line and run NO handler, for LOAD and MERGE, from tape and from disk -- and for
+; a BSAVE binary LOADed as a program, which trips the same reader guard
+; (scratchpad/casdirect_diag.out, _disk.out, _bin.out). The verb has already left
+; the run when its reader fails (LOAD at `Found:`, MERGE at command level), so a
+; plain raise is direct-mode and untrapped by itself: a first cut also set
+; DIRECTF and took raise_error_forced, and neither knife moved a row
+; (scratchpad/casdirect_knives_run1.out) -- both dropped, 5 B.
+; Ours printed `load error` and RAN ON (LOAD) or raised `Syntax error` with a
+; garbage line (MERGE, via stmt_error).
+dpl_direct:
+                ld      a,57                ; Direct statement in file
+                jp      raise_error
 ; dpl_dio -- D-CASBRK (2026-10-08): a TAPE BIOS failure (TAPION / TAPIN / the
 ; header search returning CF: an I/O error or Ctrl-STOP) RAISES 19, `Device I/O
 ; error`, as the VG-8020 does (probes/basic/basic_probe_casbrk.py): typed, it
@@ -1081,7 +1095,8 @@ ascii_load:
                 call    dsk_aopen           ; mount + find + prime, on the disk side
                 jr      c,dpl_err           ; file vanished between opens -> error
                 call    dsk_ascii_drive     ; tokenise + store; CF set = bad line
-                jr      c,dpl_err           ; non-numbered line / not an ASCII program
+                jr      c,dpl_direct        ; non-numbered line / not an ASCII program
+                                            ; -> 57, as on the CF-3300 (D-CASDIRECT)
                 ret                         ; caller handles ,R / returns to the REPL
                                             ; (D-RUNTAIL: CF is clear here -- the `jp c`
                                             ; two lines up did not fire)

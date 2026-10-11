@@ -95,6 +95,11 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 
 ## What we found, and how
 
+- **A line with no line number in the merged file raised `Syntax error`**
+  (fixed 2026-10-11, D-CASDIRECT), inside a program with a garbage line
+  number. Both references print `Direct statement in file` (57) with no line
+  number, from tape and from disk, and no handler sees it; the lines before
+  it stay merged ([`casdirect_after.out`](../../scratchpad/casdirect_after.out)).
 - **Ctrl-STOP could not break a tape read once the file was found** (fixed
   2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
   error` (19); zerobas read on to the end, because its cassette routines
@@ -143,4 +148,6 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
   header leader and in the data.
+- `make casdirect-acceptance` — a line with no number in the program file,
+  tape and disk, typed and under `ON ERROR`.
 - `make kwram` — the RAM-usage comparison.

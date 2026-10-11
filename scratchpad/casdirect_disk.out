@@ -1,0 +1,9 @@
+== kmerge CF-3300  DIR.BAS" Direct statement in file Ok LIST 5 REM 10 PRINT"A" Ok color auto goto list run 
+== kmerge OURS-D   DIR.BAS" Syntax error ZB LIST 5 REM 10 PRINT"A" ZB color auto goto list run 
+== kload  CF-3300  DIR.BAS" Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== kload  OURS-D   DIR.BAS" load error ZB LIST 10 PRINT"A" ZB color auto goto list run 
+== kpmerge CF-3300  DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" 15 MERGE"DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END Ok color auto goto list run 
+== kpmerge OURS-D   DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Syntax error in 21065 ZB LIST 10 PRINT"A" 15 MERGE"DIR.BAS" 20 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END ZB color auto goto list run 
+== kpload CF-3300  DIR.BAS" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN Direct statement in file Ok LIST 10 PRINT"A" Ok color auto goto list run 
+== kpload OURS-D   DIR.BAS" 30 PRINT"[N";1;"]":END 90 PRINT"[E";ERR;ERL;"]":END RUN load error [N 1 ] ZB LIST 10 PRINT"A" ZB color auto goto list run 
+refcache: 0 hit, 8 miss, 8 stored

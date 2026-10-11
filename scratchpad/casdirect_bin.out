@@ -1,0 +1,3 @@
+== kbinload CF-3300   Ok NEW Ok 5 REM LOAD"BIN.BIN" Direct statement in file Ok LIST Ok color auto goto list run 
+== kbinload OURS-D    ZB NEW ZB 5 REM LOAD"BIN.BIN" load error ZB LIST ZB color auto goto list run 
+refcache: 0 hit, 2 miss, 2 stored
