@@ -1,0 +1,14 @@
+== C-BIOS_MSX1_EU_REPACK_NODISK idle
+before: zerobas version 0.1 | clean-room MSX1 BASIC | ZB | . | color  auto   goto   list   run
+after 1s: pc=108B mode=1 rows: ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ..................V0.29. | ........................
+after 3s: pc=13CF mode=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 6s: pc=13CF mode=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 12s: pc=13D5 screen0=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 16s: pc=0ECB
+== C-BIOS_MSX1_EU_REPACK_NODISK prog
+before: zerobas version 0.1 | clean-room MSX1 BASIC | ZB | 10 PRINT 1 | . | color  auto   goto   list   run
+after 1s: pc=108B mode=1 rows: ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ........................ | ..................V0.29. | ........................
+after 3s: pc=13CF mode=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 6s: pc=13CF mode=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 12s: pc=13D5 screen0=1 rows: C-BIOS 0.29      cbios.sf.net | Character set: US | Interrupt frequency: 50Hz | Keyboard type: US | Init ROM in slot: 0
+after 16s: pc=0ECB

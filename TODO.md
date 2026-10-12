@@ -2260,8 +2260,8 @@ item — do **one item per session** to keep context lean.
       change. ⚠️ A page-1 tenant must not wait: the poll belongs in main's
       wait loop or on the C-BIOS side.
 
-- [ ] 🔁 **D-RESETBOOT — AFTER A RESET THE MACHINE DOES NOT BOOT BACK INTO BASIC
-      (Joost, 2026-10-11; NOT YET MEASURED)**
+- [x] ✅ **D-RESETBOOT — AFTER A RESET THE MACHINE DOES NOT BOOT BACK INTO BASIC
+      (Joost, 2026-10-11; measured and FIXED 2026-10-12 -- at the end)**
       🎚️ TIER 1 — happy path: a reset is ordinary use.
       🤖 **AUTONOMOUS** — measure first.
       Joost: *"when resetting the msx machine it doesn't boot back to basic"*.
@@ -2271,6 +2271,34 @@ item — do **one item per session** to keep context lean.
       not believe: a RAM cell that survives the reset steers the boot (a
       warm-boot flag, the H.TIMI seam or another hook left installed, the
       sub-ROM scan's state), or the repack boot path assumes cold RAM.
+      ✅ **FIXED 2026-10-12 -- THE FIRST HYPOTHESIS, AND A NAMED CELL.**
+      📏 [`resetboot_probe.out`](scratchpad/resetboot_probe.out): the VG-8020
+      comes back to `Ok` with the program gone; both builds sit on C-BIOS's
+      info screen ("Init ROM in slot: 0", SCREEN 1), the PC circling
+      C-BIOS's `chput_esc_m` and `search_roms_init` (our own repacked C-BIOS,
+      mapped from a rebuilt listing). 🔮 Predicted: HIT.
+      📏 [`resetboot_trace.out`](scratchpad/resetboot_trace.out) /
+      [`_trace2`](scratchpad/resetboot_trace2.out): breakpoints on our INIT
+      milestones -- cold boot runs all of them in < 0.06 s; after the reset
+      `init` -> `clear_vars` -> `ctl_reset`, and never `trap_init`.
+      🔧 `ctl_reset` calls the sub ROM when SUBSLOT_OK = 1. Its `cp 1` guard
+      was built for power-on garbage ($FF, D-VALTYP); after a reset the cell
+      holds a TRUE 1 from the session before, so the sub ROM was called a
+      hundred lines before init_ext_roms scans for it. init now clears
+      SUBSLOT_OK before clear_vars (4 B; main page 1 4 -> 0 B, clean build
+      2026-10-12). 🔮 Predicted both builds back to `ZB`: HIT
+      ([`resetboot_after.out`](scratchpad/resetboot_after.out)).
+      🛡️ Gate `resetboot-acceptance` (probes/basic/basic_probe_resetboot.py):
+      reset idle / with a program, then LIST (empty) and a line through the
+      string heap and the float formatter -- 6/6, the VG-8020 the control.
+      Its first two cuts were instrument faults: openMSX `type` held SHIFT
+      for `"` `<` `$` and the screen came back cleared with the F6..F10 labels
+      up (keys now go through the KEYBUF injector), and the VG-8020's stale
+      `Ok` satisfied the wait before its 8 s boot (now: the old prompt must
+      go first). 🔪 [`resetboot_knives.out`](scratchpad/resetboot_knives.out):
+      K-RB1 (the clear removed) -> exactly the four zerobas rows.
+      ⚠️ Main page 1 is now 0 B: D-KEYSHIFT and D-OPENGRP need a main carve
+      first (low region 19 B).
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       NOT YET MEASURED)**
@@ -6882,7 +6910,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32354 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32382 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7048,7 +7076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11910 (T-6FE392)8 (T-529ABE)` from `TODO.md:24704 (T-529ABE)`: a
+      `TODO.md:11938 (T-6FE392)8 (T-529ABE)` from `TODO.md:24732 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12757,7 +12785,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24704 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

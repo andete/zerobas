@@ -1,0 +1,8 @@
+ROW Philips_VG_8020                idle: EMPTY << 2 AB 1.5 >> PASS
+ROW Philips_VG_8020                prog: EMPTY << 2 AB 1.5 >> PASS
+ROW C-BIOS_MSX1_EU_REPACK_NODISK   idle: EMPTY << 2 AB 1.5 >> PASS
+ROW C-BIOS_MSX1_EU_REPACK_NODISK   prog: EMPTY << 2 AB 1.5 >> PASS
+ROW C-BIOS_MSX1_EU_REPACK_DISK     idle: EMPTY << 2 AB 1.5 >> PASS
+ROW C-BIOS_MSX1_EU_REPACK_DISK     prog: EMPTY << 2 AB 1.5 >> PASS
+
+PASS: after a reset the machine boots into BASIC and BASIC works

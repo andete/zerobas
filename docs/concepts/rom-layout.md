@@ -68,7 +68,9 @@ stay separate trees ([README](../../README.md), *How it runs*). The patch:
   C-BIOS kept one higher than the VG-8020 does).
 
 C-BIOS's boot scan finds the `"AB"` header at `$4000` and calls zerobas's
-INIT, which never returns: it ends at the BASIC prompt. So zerobas finishes the
+INIT, which never returns: it ends at the BASIC prompt. A reset runs the same
+path with the RAM of the session before still in place, so INIT starts by
+forgetting anything that says the sub-ROM is already set up. So zerobas finishes the
 boot scan itself, calling the INIT of every `"AB"` ROM in the remaining slots
 — that is how the disk ROM installs its hooks
 ([basic/initext.asm](../../basic/initext.asm)). The sub-ROM is found by its own
@@ -194,6 +196,14 @@ never for the code it points at. The allowed sources are listed in the
 
 ## What we found, and how
 
+- **A reset left the machine on C-BIOS's boot screen** (fixed 2026-10-11,
+  D-RESETBOOT; reported by Joost). RAM survives a reset, and a cell left over
+  from the session before told INIT the sub-ROM was already set up; INIT
+  called it before scanning for it, and control fell back into the boot
+  scan. A guard written for the random contents of RAM at power-on did not
+  cover a true leftover value. The VG-8020 comes back to `Ok` with the
+  program gone; zerobas now does the same
+  ([`resetboot_trace.out`](../../scratchpad/resetboot_trace.out)).
 - **The sub-ROM wore the MSX2 SUB-ROM's identity** (changed 2026-10-11,
   D-SUBSIG, Joost's ruling). It carried `"CD"` and wrote `EXBRSA`; on an
   MSX2, C-BIOS takes the first `"CD"` ROM it finds as the SUB-ROM, so ours
@@ -252,6 +262,8 @@ that needs BASIC's evaluator calls back into slot 0 through `calbak`
 
 - `make basic-reloc` — the five walls, the `"AB"` header, tenant closures.
 - `make repack-boot` — a cold boot of the merged machine.
+- `make resetboot-acceptance` — a reset, idle and with a program stored,
+  then a line through the sub-ROM; the VG-8020 as the control.
 - `make patch-freshness-check` — the shipped patch matches the sources.
 - `make hook-equate-check` — BASIC and the disk ROM agree on hook addresses.
 - `make subrom-acceptance`, `make subrom-inttest` — both sub-ROM pages; interrupts under a page-0 tenant.

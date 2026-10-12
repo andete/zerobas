@@ -25,6 +25,16 @@ init:
                 ld      hl,200
                 ld      (POOLSIZE),hl
     ENDIF
+                ; D-RESETBOOT (Joost, 2026-10-11): a RESET keeps RAM, and with it
+                ; SUBSLOT_OK = 1 from the session before. ctl_reset (clear_vars,
+                ; just below) takes 1 to mean "the sub ROM is set up" and calls it
+                ; -- a hundred lines before init_ext_roms has scanned for it -- and
+                ; the machine never left C-BIOS's boot screen (scratchpad/
+                ; resetboot_trace.out: init -> ctl_reset, never trap_init). Its `cp 1`
+                ; guard was built for power-on garbage ($FF), not for a true stale 1.
+                ; Cold-start semantics here, as the VG-8020 has on reset.
+                xor     a
+                ld      (SUBSLOT_OK),a
                 call    clear_vars          ; deterministic variable table
                 ; Error-handling S2a: ERR/ERL are zeroed at COLD BOOT ONLY (this is
                 ; the sole cold-only hook; clear_vars also runs on NEW/CLEAR/RUN, which

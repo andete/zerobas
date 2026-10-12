@@ -1,0 +1,24 @@
+== Philips_VG_8020 idle
+before: MSX BASIC version 1.0 | Copyright 1983 by Microsoft | 28815 Bytes free | Ok | . | color  auto   goto   list   run
+after 12s: pc=0D69 screen0=0 rows: MSX BASIC version 1.0 | Copyright 1983 by Microsoft | 28815 Bytes free | Ok | . | color  auto   goto   list   run
+after 16s: pc=0B9F
+== Philips_VG_8020 prog
+before: MSX BASIC version 1.0 | Copyright 1983 by Microsoft | 28815 Bytes free | Ok | 10 PRINT 1 | . | color  auto   goto   list   run
+after 12s: pc=0D69 screen0=0 rows: MSX BASIC version 1.0 | Copyright 1983 by Microsoft | 28815 Bytes free | Ok | . | color  auto   goto   list   run
+after 16s: pc=0B9F
+== C-BIOS_MSX1_EU_REPACK_NODISK idle
+before: zerobas version 0.1 | clean-room MSX1 BASIC | ZB | . | color  auto   goto   list   run
+after 12s: pc=13D5 screen0=1 rows: 
+after 16s: pc=0ECB
+== C-BIOS_MSX1_EU_REPACK_NODISK prog
+before: zerobas version 0.1 | clean-room MSX1 BASIC | ZB | 10 PRINT 1 | . | color  auto   goto   list   run
+after 12s: pc=13D5 screen0=1 rows: 
+after 16s: pc=0ECB
+== C-BIOS_MSX1_EU_REPACK_DISK idle
+before: zerobas version 0.1 | clean-room MSX1 BASIC | zerobas Disk BASIC | ZB | . | color  auto   goto   list   run
+after 12s: pc=13D5 screen0=1 rows: 
+after 16s: pc=0ECB
+== C-BIOS_MSX1_EU_REPACK_DISK prog
+before: zerobas version 0.1 | clean-room MSX1 BASIC | zerobas Disk BASIC | ZB | 10 PRINT 1 | . | color  auto   goto   list   run
+after 12s: pc=13D5 screen0=1 rows: 
+after 16s: pc=0ECB
