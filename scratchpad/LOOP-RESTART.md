@@ -4,7 +4,64 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-11 MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+## 🟢 STATE AS OF 2026-10-12 AFTERNOON — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+
+**Shipped since the 10-11 morning section (`git log --oneline 7da8a092..`), every
+code commit FULL-green (+ the five excluded):**
+- **TIER 3, D-LOADERRRET closed:** D-CASWBRK / D-CASRBRK (Ctrl-STOP breaks tape
+  writes and reads: 19), D-CASDIRECT (57 for a numberless ASCII line), D-CASPRIME.
+- **TIER 4, D-SUBSIG:** the sub ROM carries its own `"ZB"` marker, EXBRSA untouched.
+- **Joost's five reports of 10-11, all TIER 1:** D-AUTORUN (H.READ / H.MAIN at the
+  prompt), D-KEYSHIFT (F6..F10 while SHIFT is held), D-RESETBOOT (a reset boots
+  back into BASIC), D-LISTFLT (LIST spells float literals; **reported by Vampier**,
+  `Reported-by:`), D-OPENGRP (`OPEN "GRP:"`, six VG-8020 measurement rounds).
+  D-TAPELOAD stays 🙋: it needs Joost's list of failing tapes (kept outside the repo).
+- **BUDGET, to fund D-OPENGRP:** D-SUBJRP1 (sub p1 +77 B, jp -> jr), C5-LOW (four
+  error strings into the sub ROM, main +90 B), **D-SUB2 DONE (a-d): a second plain
+  32 KB sub ROM in slot 3-3** (`sub2/`, markers `"Z2"`/`"S2"`, `subrom2_call`,
+  `SUBSLOT2` $F14B; the trampoline restores the LIVE slot), gates `sub2-acceptance`
+  and `opengrp-acceptance`.
+- **D-INSTR128 (TIER 1, found by the GRP gate):** INSTR read 0 on any haystack of
+  128+ characters (a sign test on an unsigned byte). Gate `instr128-acceptance`.
+
+**Walls (2026-10-12, clean build): main low 3 B, page 1 6 B; sub p0 6 B, sub p1 67
+B; sub2 p0 16311 B, sub2 p1 16166 B; disk 3868 B.** Recount before quoting.
+🔴 **MAIN IS FULL AGAIN.** Every TIER 4 item (D-DIMRESERVE's string-operator guard,
+D-BOOTKEYS) and most others need main bytes.
+
+➡️ **NEXT, by tier (recounted 2026-10-12 with `tools/tier_table.py --all`):** TIER 1
+open = the rung definitions (D-KWPROVEN, T6's bound, the kwsweep remainder) and
+D-TAPELOAD (🙋); TIER 3 = D-COPYWILD (🙋, ruled parked). So the autonomous queue is
+TIER 4 -- blocked on main space -- which makes **a MAIN CARVE INTO SUB2 the next
+work**: cold main code whose callees are all main-LOW (a sub page-1 tenant sees main
+low + the BIOS, never main page 1) moves to sub2 page 1 behind `subrom2_call`
+(docs/subrom-tenant-playbook.md; plan-main-rom-space-2026-10.md's phase C waited on
+exactly this capacity). Pick by `tools/check_tenant_closure.py`'s model, price from
+a clean build, one leaf per commit, gate + knife each. Then TIER 4, then TIER 5.
+Also filed today: D-SUB2EI (the first sub2 PAGE-0 tenant brings an EI gate),
+D-GRPTAB (TIER 6).
+
+**🔧 Lessons (each a miss of mine, each caught):**
+- **A knife's RESTORE built in the same second as its cut is skipped by make**
+  (equal mtimes): the restore measured the cut again and read red. Restores build
+  CLEAN (`knife_guard.build(..., clean=True)`); sub2a/sub2b/opengrp/instr128 do.
+- **Two rules coincide on every row you have** (again): the GRP comma zone "from
+  column 0" vs "from CSRX" agree while CSRX is 1 -- which the VG-8020 measurement
+  had too. The knife went green; `POKE &HF3DD,11` separated them.
+- **Cross-machine pixel compares of glyphs compare FONTS**: zerobas draws C-BIOS's.
+  Compare font-free quantities across machines, and the drawing RULE per machine.
+- **A wrong answer can be right by layout**: INSTR's wrap guard knife stayed green
+  (the needle's snapshot sits below the haystack, so start 0 "matches" at 0).
+- **`str.replace` replaces ALL occurrences** -- an edit put a `jp` after both
+  `ld a,GRP_MODE` lines and the build ASSEMBLED; assembling proves nothing.
+- **"ZB" after RUN is zerobas's prompt, by design** (basic/repl.asm) -- not a regression.
+- **`cap_gap` is not the run budget; `run_gap` is** (omsx_repl).
+- **zsh expands `=word`**: an `echo =====` separator fails the command.
+- A sub2 tenant that plots calls CALSLT itself (BIOS is page 0 for a page-1
+  tenant): routing through main's `sr_inl0` pulled its whole call graph into the
+  resident closure, and the closure gate refused it.
+
+## 🟢 STATE AS OF 2026-10-11 MORNING — superseded above (its lessons still hold). JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
 
 **Shipped since the 10-10 afternoon section (`git log --oneline 13477674..`), every
 code commit FULL-green (+ the five excluded):**
