@@ -4494,8 +4494,9 @@ DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; (RDPRIM/WRPRIM/CLPRIM $F380+ and the C-BIOS stack), so there is no collision.
 SUB_INT_RAM     equ     $F10A   ; the copied trampoline stub (<= 64 B; executes from RAM)
 INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
-INT_SUB_PRIM    equ     $F14B   ; page-0 primary field of the sub-ROM slot (=3, slot 3) (1 B)
-INT_SUB_SUBSL   equ     $F14C   ; page-0 subslot  field of the sub-ROM slot (=2, i.e. 3-2) (1 B)
+; $F14B-$F14C: FREE since D-SUB2 stage 2a (2026-10-12) -- they were INT_SUB_PRIM /
+; INT_SUB_SUBSL, the boot-time sub-ROM slot fields the trampoline restored page 0
+; to; it now restores the live entry state (basic/subromcall.asm).
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
@@ -4506,14 +4507,15 @@ SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed 
 ; DRVA_DPB ($F195) is exhausted (SQRT_POW10 took the last free byte, see the
 ; F3 S3a block's own header below). Placement: the TAIL SLACK of the
 ; SUB_INT_RAM trampoline reservation above. The copied stub
-; (sub_int_template, basic/subromcall.asm) is currently 47 bytes, but its
+; (sub_int_template, basic/subromcall.asm) was 47 bytes (36 since D-SUB2
+; stage 2a, 2026-10-12), but its
 ; reservation runs a conservative 64 B ($F10A..$F149) so future trampoline
 ; growth has headroom. RND_SEED USED TO claim 7 bytes of that unused tail
 ; ($F142..$F148); since D-ADDR29 RNDX (2026-09-25, below) it lives at the
 ; published RNDX+1 and the tail is the trampoline's again. subromcall.asm's
 ; build-time ASSERT is now bounded by INT_MAIN_PRIM ($F14A), the next claimed
 ; cell (`sub_int_template_end - sub_int_template <= INT_MAIN_PRIM -
-; SUB_INT_RAM`, currently 47<=64), so any growth that would collide FAILS THE
+; SUB_INT_RAM`, 47<=64 when written), so any growth that would collide FAILS THE
 ; BUILD loudly instead of silently overlapping. Reset to packed(S0) by clear_vars
 ; (basic/vars.asm), the same single hook DEFTBL's own reset uses (covers
 ; NEW/CLEAR/RUN + cold boot, §15.1/§15.3).

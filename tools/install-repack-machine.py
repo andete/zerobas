@@ -94,6 +94,25 @@ def sub_secondary(sub_rom_abs: str) -> str:
     )
 
 
+def sub2_secondary(sub2_rom_abs: str) -> str:
+    """The slot-3-3 secondary block holding zerobas-sub2 (D-SUB2, ruled by Joost
+    2026-10-11): a SECOND plain 32 KB sub ROM, the same linear $0000-$7FFF shape
+    as zerobas-sub in 3-2, reached by the same CALSLT with slot $8F. An empty 3-3
+    when none is supplied (the shape before D-SUB2)."""
+    if not sub2_rom_abs:
+        return '      <secondary slot="3"/>'
+    return (
+        '      <secondary slot="3">\n'
+        '        <ROM id="zerobas-sub2 ROM">\n'
+        '          <rom>\n'
+        f'            <filename>{sub2_rom_abs}</filename>\n'
+        '          </rom>\n'
+        '          <mem base="0x0000" size="0x8000"/>\n'
+        '        </ROM>\n'
+        '      </secondary>'
+    )
+
+
 def disk_secondary(disk_rom_abs: str) -> str:
     """The slot-3-1 secondary block holding zerobas-disk behind a National-style
     WD2793. Empty string when no disk ROM is supplied, which is the DISKLESS
@@ -115,7 +134,8 @@ def disk_secondary(disk_rom_abs: str) -> str:
     )
 
 
-def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str = "") -> str:
+def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str = "",
+           sub2_rom_abs: str = "") -> str:
     # ⚠️ NO `--` ANYWHERE INSIDE AN XML COMMENT BELOW. A double hyphen is illegal
     # there, and every machine this tool has ever written carried one (in the PSG
     # note), which makes the WHOLE file unparseable by a conforming reader --
@@ -126,11 +146,13 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
     # artifact it vouches for fails open.
     """Slot 0 = merged repack main ROM (0x0000-0x7FFF) + C-BIOS logo (0x8000-0xBFFF);
     slot 3 expanded: 3-0 = 64 KB RAM, 3-1 = zerobas-disk behind a National WD2793,
-    3-2 = zerobas-sub (the built-in sub-ROM, when --sub-rom is given). Hardware
+    3-2 = zerobas-sub (the built-in sub-ROM, when --sub-rom is given), 3-3 =
+    zerobas-sub2 (D-SUB2, when --sub2-rom is given). Hardware
     (PPI/VDP/PSG/Printer/Cassette) mirrors the stock C-BIOS MSX1 EU machine and
     the repack-boot probe machine so the only difference from the lean disk machine is the
     baked-in relocated BASIC (plus the sub-ROM in the previously-empty 3-2)."""
     sub_block = sub_secondary(sub_rom_abs)
+    sub2_block = sub2_secondary(sub2_rom_abs)
     disk_block = disk_secondary(disk_rom_abs)
     return f"""<?xml version="1.0" ?>
 <!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>
@@ -163,7 +185,7 @@ def config(merged_abs: str, logo_abs: str, disk_rom_abs: str, sub_rom_abs: str =
 
 {sub_block}
 
-      <secondary slot="3"/>
+{sub2_block}
 
     </primary>
 
@@ -204,6 +226,9 @@ def main() -> int:
                     default=None, metavar="ROM",
                     help="also place zerobas-sub (the built-in sub-ROM) in slot 3-2 "
                          "(default ROM: build/sub.rom). Omit to leave 3-2 empty.")
+    ap.add_argument("--sub2-rom", default=None, metavar="ROM",
+                    help="also place zerobas-sub2 (D-SUB2, the second sub ROM) in "
+                         "slot 3-3. Omit to leave 3-3 empty.")
     ap.add_argument("--no-disk", dest="no_disk", action="store_true",
                     help=f"write the DISKLESS sibling {MACHINE_NODISK} instead: "
                          "slot 3-1 left empty, everything else identical. This is "
@@ -229,7 +254,13 @@ def main() -> int:
         if not os.path.isfile(sub):
             sys.exit(f"missing sub ROM (build it: make sub): {sub}")
 
-    cfg = config(merged, find_logo(), disk, sub)
+    sub2 = ""
+    if args.sub2_rom is not None:
+        sub2 = os.path.abspath(args.sub2_rom)
+        if not os.path.isfile(sub2):
+            sys.exit(f"missing sub2 ROM (build it: make sub2): {sub2}")
+
+    cfg = config(merged, find_logo(), disk, sub, sub2)
     if args.dry_run:
         print(cfg)
         return 0
@@ -245,7 +276,8 @@ def main() -> int:
     # same shape, and a sixth would have been written the same way again.
     # See openmsx_paths.publish and docs/spec-probe-machxml.md.
     openmsx_paths.publish(out, cfg)
-    subtail = ", zerobas-sub in slot 3-2" if sub else ""
+    subtail = (", zerobas-sub in slot 3-2" if sub else "") + \
+              (", zerobas-sub2 in slot 3-3" if sub2 else "")
     disktail = "slot 3-1 EMPTY (diskless target)" if args.no_disk \
         else "zerobas-disk in slot 3-1"
     print(f"wrote {name}  (-> machine \"{name}\": merged repack ROM in slot 0, "

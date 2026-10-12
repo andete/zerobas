@@ -109,7 +109,7 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   `page0_ram_in`. No C-BIOS code is read or relocated. The stub lives in RAM (page
   3, always mapped) so the page-0 slot write never pages out its own next
   instruction. `SUB_INT_RAM` +
-  `INT_MAIN_PRIM`/`INT_SUB_PRIM`/`INT_SUB_SUBSL` + `SUB_INT_DELTA` are *own-choice
+  `INT_MAIN_PRIM` (and, until D-SUB2 stage 2a, `INT_SUB_PRIM`/`INT_SUB_SUBSL`) + `SUB_INT_DELTA` are *own-choice
   free-RAM* cells in the same repack-only window (`$F10A..$F14D`, below `DRVA_DPB`
   $F195). **Host assumption:** the main page-0 slot is unexpanded (slot 0 on the
   merged machine), so only its `$A8` primary field is toggled — the same
@@ -168,3 +168,12 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   ours is reconstructed from the MSX2 TH Ch.5 mechanism + our own `page0_ram_in`,
   with no stock code read. Faithful in *mechanism*; the RAM-stub placement + the
   unexpanded-main-slot simplification are documented own-design choices.
+- **(d) zerobas-sub2, the second sub-ROM in slot 3-3 (D-SUB2, 2026-10-12).**
+  `sub2/sub2.asm` is the same own-design two-island shape as this ROM (markers
+  at `$0000` / `$4000`, a `$0038` jump to the same RAM trampoline, jp tables at
+  `$0040` / `$4010`), with its own markers `"Z2"` / `"S2"`. Every byte is own
+  design; it reuses this directory's equates and `basic/sysvars.inc` only.
+  The trampoline it relies on restores the interrupted tenant's live slot since
+  D-SUB2 stage 2a, which is what makes a page-0 island outside 3-2 safe under EI.
+  *Source:* own design (the slot mechanism is the published MSX expanded-slot
+  architecture, as for this ROM).

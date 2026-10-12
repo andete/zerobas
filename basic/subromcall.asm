@@ -291,37 +291,44 @@ htg_skip:
 ; sub_int_template: the RAM trampoline, copied verbatim to SUB_INT_RAM. Entered
 ; from the sub-ROM $0038 with IFF already cleared by the CPU. POSITION-INDEPENDENT
 ; — every memory reference is absolute ($A8/$FFFF/$0038 and the fixed INT_* cells),
-; no internal branch — so the flat copy runs correctly at its RAM address. Only A
-; and C are touched before the ISR call (the real ISR saves/restores the rest, as
-; any transparent maskable handler must), so preserving AF/BC is sufficient.
+; no internal branch — so the flat copy runs correctly at its RAM address. A, B,
+; C, H and L are touched around the ISR call; the real ISR saves/restores every
+; register, as any transparent maskable handler must, so B and C CARRY the
+; entry slot state across it and AF/BC/HL are preserved for the tenant.
+; 🔁 D-SUB2 stage 2a (2026-10-12): THE SWITCH-BACK RESTORES THE LIVE ENTRY STATE,
+; NOT A BOOT-TIME CONSTANT. It used to rebuild page 0 from INT_SUB_PRIM /
+; INT_SUB_SUBSL, captured once from SUBSLOT -- so a page-0 tenant in ANY other
+; subslot (a second sub ROM in 3-3) would have come back from every interrupt
+; running 3-2's bytes. Now $A8 and the slot-3 secondary register are read on
+; entry (the interrupted tenant's own slot, whatever it is) and written back
+; verbatim; the two cells and their boot-time setup are gone (-2 B RAM, and
+; sub_int_install shrinks). One assumption stays and is the host's: page 3 is
+; slot 3 (the secondary register at $FFFF is the sub ROM's) -- true on both
+; machines, where 3-0 is the RAM.
 sub_int_template:
                 push    af
                 push    bc
+                push    hl
+                ld      a,($FFFF)           ; slot-3 secondary reg (reads inverted)
+                cpl
+                ld      b,a                 ; B = the live secondary state
+                in      a,(PSLTREG)
+                ld      c,a                 ; C = the live primary state
                 ; --- page 0: sub-ROM -> MAIN (BIOS); primary field only (main
                 ;     slot is unexpanded, so no page-0 subslot to set) ---
-                in      a,(PSLTREG)
                 and     %11111100
-                ld      c,a
-                ld      a,(INT_MAIN_PRIM)
-                or      c
+                ld      hl,INT_MAIN_PRIM
+                or      (hl)
                 out     (PSLTREG),a
                 ; page 0 now = BIOS; $0038 reads the real `JP int_h`.
                 call    $0038               ; VDP ack, JIFFY++, H.TIMI/H.KEYI hooks
                 di                          ; the ISR EI'd on the way out; guard the switch-back
-                ; --- page 0: MAIN -> sub-ROM (primary, then subslot) ---
-                in      a,(PSLTREG)
-                and     %11111100
-                ld      c,a
-                ld      a,(INT_SUB_PRIM)
-                or      c
+                ; --- page 0: MAIN -> the interrupted sub-ROM (primary, then subslot) ---
+                ld      a,c
                 out     (PSLTREG),a
-                ld      a,($FFFF)           ; slot-3 secondary reg (reads inverted)
-                cpl                         ; -> live value
-                and     %11111100
-                ld      c,a
-                ld      a,(INT_SUB_SUBSL)
-                or      c
+                ld      a,b
                 ld      ($FFFF),a
+                pop     hl
                 pop     bc
                 pop     af
                 ei
@@ -337,7 +344,7 @@ sub_int_template_end:
 ; bounding it by RND_SEED would have let the stub grow ~1.8 KB unchecked, the
 ; exact "derived constant falsified from another file" shape. The assert still
 ; makes any growth that would collide FAIL THE BUILD loudly (an undefined
-; symbol, pasmo's own diagnostic). Currently 47 <= 64.
+; symbol, pasmo's own diagnostic). 36 <= 64 since D-SUB2 stage 2a (2026-10-12).
     IF (sub_int_template_end - sub_int_template) > (INT_MAIN_PRIM - SUB_INT_RAM)
                 db      INT_TRAMPOLINE_GREW_INTO_INT_MAIN_PRIM__SHRINK_OR_MOVE
     ENDIF

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 436 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **109** in the MSX standard work area at or above `$F380`.
+* **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **109** in the MSX standard work area at or above `$F380`.
 * **disk** — 137 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **30** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -579,8 +579,6 @@ second one is the question a per-component map cannot answer.
 | `$F108` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
 | `$F10A` | 64 B | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 64 B; executes from RAM) |  |
 | `$F14A` | 1 B | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) (1 B) |  |
-| `$F14B` | 1 B | `basic` | `INT_SUB_PRIM` | page-0 primary field of the sub-ROM slot (=3, slot 3) (1 B) |  |
-| `$F14C` | 1 B | `basic` | `INT_SUB_SUBSL` | page-0 subslot field of the sub-ROM slot (=2, i.e. 3-2) (1 B) |  |
 | `$F14D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
 | `$F14E` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F14F` | 1 B | `basic` | `VS_TARGET_TYPE` | var_store_fac/var_alloc_or_find (vars.asm): |  |

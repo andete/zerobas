@@ -49,7 +49,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GUARD_ATTRS = {"hashes", "build", "moved"}
 # A module-local def that reads the built images.
 LOCAL_HASH_DEF = "hashes"
-IMAGE_HINTS = ("basic-reloc.rom", "sub.rom", "zerobas-main-eu.rom", "disk.rom")
+IMAGE_HINTS = ("basic-reloc.rom", "sub.rom", "zerobas-main-eu.rom", "disk.rom",
+               "sub2.rom")   # D-SUB2
 
 
 def _call_is_romhash(node, local_hash_names):

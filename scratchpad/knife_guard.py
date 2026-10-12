@@ -40,7 +40,7 @@ import subprocess
 # the machine config names FOUR ROMs and the battery's own list omitted it until
 # 2026-08-28 (docs/spec-gateskip.md §4).
 IMAGES = ("build/zerobas-main-eu.rom", "build/sub.rom", "build/disk.rom",
-          "build/basic-reloc.rom")
+          "build/basic-reloc.rom", "build/sub2.rom")   # D-SUB2: 3-3
 
 
 def hashes(images=IMAGES) -> str:

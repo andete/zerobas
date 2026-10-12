@@ -64,8 +64,8 @@ try_sub_slot:
                 ld      (SUBSLOT_OK),a
                 ret
 
-; sub_int_install: copy the trampoline template into RAM and record the two slot
-; configs. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
+; sub_int_install: copy the trampoline template into RAM and record the main
+; page-0 primary. Called from init_ext_roms (basic/initext.asm) after the CD scan, under
 ; the boot DI, only when a sub-ROM was found. Clobbers AF/BC/DE/HL.
 ; The `ldir` source (sub_int_template) stays in the low region — a plain in-slot
 ; read under the fully-mapped boot configuration, the same as any page-1 routine
@@ -82,17 +82,9 @@ sub_int_install:
                 in      a,(PSLTREG)
                 and     %00000011
                 ld      (INT_MAIN_PRIM),a
-                ; SUB page-0 primary + subslot fields, from the recorded slot id
-                ; (bit7 exp | %ss bits3-2 | %pp bits1-0).
-                ld      a,(SUBSLOT)
-                ld      c,a
-                and     %00000011           ; sub primary  -> page-0 primary field (3)
-                ld      (INT_SUB_PRIM),a
-                ld      a,c
-                rrca
-                rrca
-                and     %00000011           ; sub secondary -> page-0 subslot field (2)
-                ld      (INT_SUB_SUBSL),a
+                ; D-SUB2 stage 2a (2026-10-12): the sub ROM's page-0 primary and
+                ; subslot fields are no longer recorded here -- the trampoline
+                ; reads the interrupted tenant's live slot state on entry.
                 ret
 
     IF TRAPS_T3

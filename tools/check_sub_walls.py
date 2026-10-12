@@ -5,6 +5,7 @@
 """The sub-ROM wall readout, gated (docs/spec-subwall-readout.md).
 
     python3 tools/check_sub_walls.py build/sub.rom build/sub.sym
+    python3 tools/check_sub_walls.py --sub2 build/sub2.rom build/sub2.sym   (D-SUB2)
 
 check_reloc.py prints the two MAIN walls on every build from __MEAS_LOW_END /
 __MEAS_PAGE1_END, and its docstring says why its .sym argument is REQUIRED: an
@@ -66,6 +67,11 @@ PAD = 0xFF
 # NOT the MSX2 SUB-ROM's "CD" -- D-SUBSIG; "S1" =
 # page-1 marker chosen NOT to be "AB" so the cartridge scan skips it).
 ANCHORS = ((P0_BASE, b"ZB"), (P1_BASE, b"S1"))   # D-SUBSIG: was b"CD" (the MSX2 SUB-ROM's)
+# D-SUB2 (2026-10-12): `--sub2` reads zerobas-sub2 (slot 3-3, sub2/sub2.asm) --
+# the same two-island layout, its own markers and its own wall labels. The
+# positive control matters MORE there: a sub2.rom of all $FF passes every
+# other check and would report two empty 16 KB islands.
+ANCHORS2 = ((P0_BASE, b"Z2"), (P1_BASE, b"S2"))
 
 PAGES = (
     ("sub page 0", "__MEAS_SUB_P0_END", P0_BASE, P0_TOP,
@@ -96,6 +102,13 @@ def tail_run(image, base, top):
 
 
 def main(argv) -> int:
+    global ANCHORS, PAGES
+    if len(argv) == 4 and argv[1] == "--sub2":
+        argv = argv[:1] + argv[2:]
+        ANCHORS = ANCHORS2
+        PAGES = tuple((t.replace("sub page", "sub2 page"),
+                       n.replace("__MEAS_SUB_", "__MEAS_SUB2_"), b, e, w)
+                      for t, n, b, e, w in PAGES)
     if len(argv) != 3:
         sys.exit(__doc__)
     image = open(argv[1], "rb").read()
@@ -162,7 +175,8 @@ def main(argv) -> int:
             print("FAIL:", e, file=sys.stderr)
         return 2
 
-    print(f"OK: sub ROM {len(image)} B, 'ZB' @ $0000, 'S1' @ $4000, both wall "
+    print(f"OK: sub ROM {len(image)} B, {ANCHORS[0][1].decode()!r} @ $0000, "
+          f"{ANCHORS[1][1].decode()!r} @ $4000, both wall "
           f"labels inside their page and both pads verified")
     for title, label, end, free, scan, where in rows:
         print(f"    measure: {title} free       = {free} B "

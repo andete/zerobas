@@ -162,6 +162,23 @@ windows outside `di` land with page 0 = **main** (the real ISR is reentrant
 there) or back in the tenant with page 0 = **sub** (which re-enters this
 trampoline correctly). No window executes a stray `$0038`.
 
+> 🔁 **Amended 2026-10-12 (D-SUB2 stage 2a): the switch-back restores the LIVE
+> entry state, not a boot-time constant.** The shipped stub rebuilt page 0 from
+> two cells captured once at boot from `SUBSLOT` (`INT_SUB_PRIM` /
+> `INT_SUB_SUBSL`, the `SUB_A8`/`SUB_SEC` of the sketch above). That is right
+> only while there is ONE sub ROM: a page-0 tenant in a second sub ROM (slot
+> 3-3, D-SUB2) would come back from every interrupt running 3-2's bytes. The
+> stub now reads `$A8` into C and the slot-3 secondary register (`$FFFF`, cpl)
+> into B on entry -- the interrupted tenant's own slot, whichever ROM it is --
+> carries them across the ISR (which preserves every register) and writes them
+> back verbatim. It also pushes HL (it uses `or (hl)` to merge
+> `INT_MAIN_PRIM`). 47 B -> 36 B; the two cells are free and
+> `sub_int_install` no longer derives them (§2.1 step 3 is gone). Gate:
+> `make subrom-inttest`; knife [`sub2a_knife.py`](../scratchpad/sub2a_knife.py)
+> → [`.out`](../scratchpad/sub2a_knife.out) forces the restored page-0 subslot
+> to 3 (the empty 3-3) and the gate goes red, so the restore is load-bearing.
+> The real two-ROM case is gated when the second ROM exists (stage 2b/2d).
+
 ### 2.1 Boot-time install (repack-only, `IF ROM_BASE < $4000`)
 
 A new routine `sub_int_install`, called from `init_ext_roms`

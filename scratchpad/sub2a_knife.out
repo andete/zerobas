@@ -1,0 +1,6 @@
+K-2A (restore page 0 to 3-3): subrom-inttest rc=2  RED (predicted)
+     ^ TOO LARGE: the tenant's spin is fixed-length (~28 ticks). A delta this big means the CALSLT did NOT reach it — check the page-0 entry address against sub/equates.inc SUBROM_ENTRY_BASE_P0.
+   -------------------
+   subrom interrupt-trampoline gate: FAIL
+   make: *** [subrom-inttest] Error 1
+restored: build rc=0; subrom-inttest rc=0  GREEN (predicted)

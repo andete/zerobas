@@ -255,7 +255,7 @@ TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 # Default goal: everything buildable with pasmo + python3 + openMSX's bundled ROMs.
 # The BASIC image itself is $(RELOC_ROM) (a proof/staging target) and $(MAIN_ROM)
 # (the shipped merge, needs a C-BIOS checkout), so neither is here.
-all: $(DISK_ROM) $(SUB_ROM) $(TAPE_PATCHES)
+all: $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM) $(TAPE_PATCHES)
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -279,6 +279,21 @@ $(SUB_ROM): $(SUB_SRC) $(SUB_PARTS) | $(BUILD)
 	python3 tools/pad_rom.py $(SUB_ROM) 32768
 
 sub: $(SUB_ROM)
+
+# zerobas-sub2 (D-SUB2, ruled 2026-10-11): the SECOND plain 32 KB sub ROM, in
+# slot 3-3, the same two-island shape as sub.rom (sub2/sub2.asm). `-I sub` so it
+# shares sub/'s equates; it includes no tenant body yet, so it has no PARTS list
+# beyond the two shared .inc files -- add one with the first tenant (step d),
+# or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
+SUB2_SRC  := sub2/sub2.asm
+SUB2_PARTS := sub/equates.inc basic/sysvars.inc
+SUB2_ROM  := $(BUILD)/sub2.rom
+SUB2_SYM  := $(BUILD)/sub2.sym
+$(SUB2_ROM): $(SUB2_SRC) $(SUB2_PARTS) | $(BUILD)
+	$(PASMO) -I sub --bin $(SUB2_SRC) $(SUB2_ROM) $(SUB2_SYM)
+	python3 tools/pad_rom.py $(SUB2_ROM) 32768
+
+sub2: $(SUB2_ROM)
 
 # --- Relocated BASIC proof (cbios-repack arc, WS-2 / S3) -----------------------
 # $(RELOC_SYM)/$(RELOC_ROM) get their OWN file rule here (depending ONLY on the
@@ -386,9 +401,10 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 # (a frozen-baseline pin, the ONLY reader of that argument). S2 deleted the check;
 # S3 deleted the build. Checks 1-3 read only $(RELOC_ROM), the wall readout only
 # $(RELOC_SYM).
-basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
+basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(SUB2_ROM) $(DISK_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(RELOC_SYM)
 	python3 tools/check_sub_walls.py $(SUB_ROM) $(SUB_SYM)
+	python3 tools/check_sub_walls.py --sub2 $(SUB2_ROM) $(SUB2_SYM)
 	python3 tools/check_disk_walls.py $(DISK_ROM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
@@ -893,11 +909,11 @@ bdos-acceptance: $(DISK_ROM)
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
 # disk ROM, so BDOS behaviour was identical across the lean and repack BASIC builds.
 REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
-repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
+repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
-	  --sub-rom $(SUB_ROM)
+	  --sub-rom $(SUB_ROM) --sub2-rom $(SUB2_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --sub-rom $(SUB_ROM) \
-	  --no-disk
+	  --sub2-rom $(SUB2_ROM) --no-disk
 
 # --- the DISKLESS target (Joost, 2026-09-03) --------------------------------
 # "it should also be possible to ship zerobas without a disk ROM ... any disk
@@ -2449,6 +2465,12 @@ casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 # INPUT$, INKEY$; not a busy loop; nothing under KEY OFF -- against the VG-8020.
 keyshift-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_keyshift.py
+
+# --- sub2-acceptance: both sub ROMs present, placed and page-selective (D-SUB2 b)
+# Four CALSLTs by injection -- 3-2 and 3-3, page 0 and page 1 -- on BOTH repack
+# machines, four distinct ping tags, and discovery still on ROM 1 (SUBSLOT $8B).
+sub2-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_sub2_ping.py
 
 # --- resetboot-acceptance: after a RESET the machine boots into BASIC and BASIC
 # works (D-RESETBOOT, Joost's report). RAM survives a reset; a stale SUBSLOT_OK

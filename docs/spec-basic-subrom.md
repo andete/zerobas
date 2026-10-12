@@ -441,6 +441,18 @@ entry-table version byte for forward-compat, but S1 does not require one.)
   MSX2 Technical Handbook / MSX Assembly Page (allowed, already cited in
   `initext.asm`'s SOURCES block; EXBRSA + `CD` are the only new citations).
 
+> 🔁 **Amended 2026-10-12 (D-SUB2, ruled by Joost 2026-10-11): a SECOND sub
+> ROM in slot 3-3.** zerobas-sub2 (`sub2/sub2.asm`, `build/sub2.rom`, slot byte
+> `$8F`) has this ROM's exact two-island layout -- page-0 table at
+> `SUBROM_ENTRY_BASE_P0`, page-1 table at `SUBROM_ENTRY_BASE_P1`, `$0038` into
+> the RAM trampoline -- with its own markers `"Z2"` / `"S2"`. The ROM is chosen
+> by the slot a caller CALSLTs, never by the address. ⚠️ Not `"ZB"`: the §3g
+> boot scan keeps the LAST subslot carrying `"ZB"`, so a second one would be
+> recorded as `SUBSLOT` (knife K-2B2, `scratchpad/sub2b_knife.out`). Gate:
+> `make sub2-acceptance` pings all four islands on both repack machines and
+> checks `SUBSLOT` stays `$8B`. Walls: `tools/check_sub_walls.py --sub2`, a
+> step of `make basic-reloc`. Main does not call it yet (stage 2c).
+
 ## 4. Decisions to ratify (S1 sign-off)
 
 | # | Decision | Proposed | Basis |
