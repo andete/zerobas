@@ -3428,6 +3428,16 @@ item — do **one item per session** to keep context lean.
       | (2) **a NODISK-only layout** — pack the 942 B disk share out of the diskless workspace and raise its `TXTMAX` | up to ~942 B + verified holes | diskless only | the workspace interleaves basic and disk cells; only the LOW end can be ceded (text grows up), so it is a re-layout, not a switch |
       | (3) **shrink `basic` tenants** — `TEMPPOOL` → 30 (ruled), the 256 B buffers, verified holes | tens to hundreds of B | yes | per tenant; each needs its ceiling proved |
       | (4) **accept** the diskless gap as a stated divergence | 0 | — | a doc line |
+      🏗️ **RULED BY JOOST, 2026-10-12 — DO NOT RE-ASK:** *"We should not use more
+      than the reference?"* -- asked which lever next, he restated the rung's own
+      goal (a), ruled 2026-09-24: a program that fits on the reference must fit
+      here. **So lever (4) is OUT: the diskless gap is CLOSED, not accepted.** The
+      disk build already meets it (+635 B against the CF-3300); the NODISK build
+      is −4750 B against the VG-8020 (`fremem_s3.out`, 2026-09-26). Levers (2)
+      and (3) are the path, both likely needed. ➡️ **NEXT (TIER 4, ahead of the
+      TIER 5 queue):** re-measure the gap on today's build, then lever (2) -- a
+      NODISK-only layout that cedes the 942 B disk share -- then (3) per tenant,
+      each with its ceiling proved.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7210,7 +7220,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32713 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32737 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7376,7 +7386,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12238 (T-6FE392)8 (T-529ABE)` from `TODO.md:25032 (T-529ABE)`: a
+      `TODO.md:12248 (T-6FE392)8 (T-529ABE)` from `TODO.md:25042 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13085,7 +13095,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25032 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25042 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -27727,6 +27737,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       through PROMOTION (`scratchpad/promote_scout.py`: a low leaf nothing
       page-0 needs moves to page 1, 1:1). Order: promote ~40-60 B, then the
       guards.
+      ✅ **LOW ROOM MADE, 2026-10-12:** basic/grpdev.asm (D-OPENGRP's two
+      leaves, sited low only while page 1 was full) moved to page 1: **low 3 ->
+      50 B, page 1 290 -> 243 B** (clean build; predicted exactly).
+      🔴 **AND THE ONE-GUARD-AT-THE-GATEWAY SHORTCUT IS UNSAFE** (found the same
+      day, by reading, not built): a guard inside `call_strheap` that skips the
+      call and sets `SH_ERR` / defers `FPERR_OOM` leaves the deferred error to
+      abort the statement -- but BEFORE that boundary the stack unwinds, and a
+      SHALLOWER heap call passes its own room test and can WRITE through a
+      descriptor the failed deep call left stale (a skipped snapshot publishes
+      the old `SH_PTR`; an APPEND then grows "R", which is someone else's
+      string). So every failing site must publish a SAFE value (`STR_EMPTY`,
+      as `sst_overflow` does), never a stale one -- the per-op audit the item
+      priced, with a spec. ➡️ The loop took the TIER 5 queue next (2026-10-12),
+      as on 2026-10-10: what is left is that spec.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**

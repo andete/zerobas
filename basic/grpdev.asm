@@ -2,13 +2,15 @@
 ; SPDX-License-Identifier: 0BSD
 
 ; grpdev.asm -- D-OPENGRP's main-side leaves: OPEN "GRP:"'s arm and pchar's
-; GRP: sink (oodv_notout, its FOR-INPUT reject, is in files.asm). SITED IN THE LOW REGION, included from basic/main.asm's
-; low block: they are self-contained and reached only by `jp` (pchar's PRDEV
-; dispatch, do_open's device dispatch), and page 1 --
-; where files.asm and print.asm live -- had 49 B against the ~79 B the whole
-; device costs (2026-10-12). Inside files.asm they also sat between oo_fail_*
-; and the many `jr`s the device and cassette arms aim at them, and pushed
-; those out of range one after another.
+; GRP: sink (oodv_notout, its FOR-INPUT reject, is in files.asm). A FILE OF
+; ITS OWN, included right after files.asm: inside files.asm the arms sat
+; between oo_fail_* and the many `jr`s the device and cassette arms aim at
+; them, and pushed those out of range one after another. They are reached
+; only by `jp` (pchar's PRDEV dispatch, do_open's device dispatch).
+; 🔁 It was included in the LOW region at first (2026-10-12), only because page
+; 1 had 49 B against the ~79 B the device costs; D-EDCARVE gave page 1 284 B
+; back the same day, and D-DIMRESERVE needed the low bytes, so it moved here.
+; Nothing page-0-side calls it, so its region is free to choose.
 ; The drawing itself is zerobas-sub2's grpprt_tenant (sub2/grpprt.asm).
 ; Clean-room: own design; every behaviour here is a black-box measurement of
 ; the VG-8020 (TODO.md D-OPENGRP, scratchpad/opengrp*_probe.out). No disassembly,

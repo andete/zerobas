@@ -222,8 +222,6 @@ clr_commit:
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
                 ret
 
-                include "basic/grpdev.asm"   ; D-OPENGRP: OPEN "GRP:" + its pchar sink
-
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean
@@ -370,6 +368,10 @@ __MEAS_LOW_END:
 ; the FILES walk itself was evicted to a sub-ROM tenant by 0cbf495, and the
 ; callerless main-side read_sector shim went with the last of the carve.)
                 include "basic/files.asm"
+                include "basic/grpdev.asm"   ; D-OPENGRP: OPEN "GRP:" + its pchar sink
+                                            ; (page 1 since D-DIMRESERVE's promotion,
+                                            ; 2026-10-12: it sat low only while page 1
+                                            ; was full)
 
 ; Random-access record verbs (Phase 2c): FIELD / LSET / RSET. Builds on the
 ; file-channel manager (fch_select/fch_check) in files.asm and the string layer,
