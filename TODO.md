@@ -3696,6 +3696,20 @@ item — do **one item per session** to keep context lean.
       LOWEST 832 B of cells ($E000..$E33F) up into it as one block, TXTMAX ->
       $E340: the first FRE gain, +832. A tool rewrites each `equ` in the block by
       the same delta and `tools/ram_map.py` must show exactly that set moved.
+      ✅ **(1) DONE 2026-10-12 (D-RAMBUF): LINEBUF = BUF $F55E.** files.asm's cap
+      test `jr nc` -> `jr z`; console INPUT's cursor a 16-bit pointer
+      (INP_CURSOR, 2 B of NUMBUF); main low region 47 -> 49 B (clean build).
+      🔴 One DERIVED constant moved with it and the build's own assert caught it:
+      DEF FN's parameter area ran "up to LINEBUF" (FN_AREA), so it would have
+      grown into the freed page -- pinned to FN_PAREA_CEIL = $EB00, FN_MAXP stays
+      9. Suites: input / linemax / inputdn / inputary / screditor / diskascii /
+      cas-ascii all green. Knives ([`rambuf_knife.out`](scratchpad/rambuf_knife.out)):
+      K-R1 (the cap back to `jr nc`) -> exactly diskascii + cas-ascii RED; K-R2
+      (a cursor that never advances) -> exactly input RED; restored green. 🔮 Both
+      HIT. No FRE change, by design: $EB00..$EBFF is a hole mid-workspace.
+      ⚠️ For (2): corrupt-ovf's witness ($EF00) leaves the overrun's path once
+      TOKBUF is KBUF -- re-site it (an unbounded overrun from KBUF would reach
+      TXTTAB at $F676: LIST of a stored line is the witness).
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7478,7 +7492,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32995 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33009 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7644,7 +7658,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12506 (T-6FE392)8 (T-529ABE)` from `TODO.md:25300 (T-529ABE)`: a
+      `TODO.md:12520 (T-6FE392)8 (T-529ABE)` from `TODO.md:25314 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13353,7 +13367,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25300 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25314 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

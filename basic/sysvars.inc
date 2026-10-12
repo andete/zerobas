@@ -910,10 +910,12 @@ NUMBUF          equ     $E0C0   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; deliberately left standing so MIDS_DEST does NOT move -- see its definition.)
 MIDS_DEST       equ     STRENG_SPARE + 1    ; MID$ statement: the target descriptor's address (2 B)
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte (2 B)
-; (basic/input.asm). LINEBUF is one PAGE (page-aligned, <= 256 B), so a single low
-; byte suffices. Aliases NUMBUF like MIDS_DEST — dead during INPUT, which formats no
-; numbers; the MID$ statement and console INPUT never execute simultaneously.
-INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, aliases NUMBUF)
+; (basic/input.asm). A 16-bit POINTER since D-RAMBUF (2026-10-12): LINEBUF is the
+; reference's BUF ($F55E), which crosses $F600, so the old single low byte under
+; `ld h,high LINEBUF` no longer reaches it. Aliases NUMBUF like MIDS_DEST — dead
+; during INPUT, which formats no numbers; the MID$ statement and console INPUT
+; never execute simultaneously.
+INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read pointer (2 B, aliases NUMBUF)
 ; --- The line buffers (D-LINEMAX, docs/spec-basic-linemax.md) ---------------
 ; MEASURED (docs/linemax-vg8020-characterization.md §1): the reference's last intact
 ; input line is 254 characters; both machines then DROP the tail, keep and store the
@@ -921,10 +923,10 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ; So LINEMAX is one constant, and in the repack build it is the reference's.
 ;
 ; The single-low-byte idiom in BOTH readers (repl.asm read_line, files.asm
-; ascii_read_lines) and in console INPUT (input.asm `ld h,high LINEBUF`) needs a
-; PAGE-ALIGNED base and <= 256 bytes — NOT <= 96. $EB00+254 = $EBFE is one page, so
-; no reader logic changes and the item's feared "one-page trick blocks this" does not
-; hold.
+; ascii_read_lines) and in console INPUT (input.asm `ld h,high LINEBUF`) needed a
+; PAGE-ALIGNED base and <= 256 bytes — NOT <= 96. $EB00+254 = $EBFE was one page, so
+; no reader logic changed and the item's feared "one-page trick blocks this" did not
+; hold. 🔁 D-RAMBUF (2026-10-12) RETIRED THE PAGE ALIGNMENT: see LINEBUF below.
 ;
 ; ⚠️ D-FCH §3.3: MOVED $BA00 -> $EB00 (page 2 -> page 3). It sat in page 2 only
 ; because D-LINEMAX had to put it somewhere, and it cost 1792 B of TXTMAX to do
@@ -933,7 +935,15 @@ INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read cursor (1 B, alias
 ; Page 3 is always-mapped RAM and is NOT paged out by a sub-ROM CALSLT (the
 ; tokenise tenant takes page 0, the fatprim/detok tenants page 1), so both
 ; buffers stay addressable from the tenants that fill them.
-LINEBUF         equ     $EB00   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
+; 🧮 D-RAMBUF (TIER 4, 2026-10-12): LINEBUF IS THE REFERENCE'S OWN BUF ($F55E,
+; 258 B), the buffer the VG-8020 itself types a line into (measured:
+; scratchpad/refwork_probe.out) and one zerobas never wrote. It frees $EB00..$EBFF
+; of zerobas's private workspace -- the first of the RAM-gap moves (TODO.md, the
+; RAM-usage item). BUF crosses $F600, so the page-aligned idioms went: the two cap
+; tests compare the cap's LOW byte for EQUALITY (unique within 255 B; files.asm's
+; was an ORDER test, `jr nc`) and console INPUT's cursor is a 16-bit pointer.
+; 254 characters + the 0 end at $F65C, inside BUF ($F55E..$F65F).
+LINEBUF         equ     $F55E   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
 ; The largest STORABLE line number. Anything past this is refused outright with
 ; `Syntax error` (ERR 2) at line entry -- MEASURED on both the VG-8020 and the
@@ -4177,7 +4187,11 @@ FN_RTYPE        equ     FN_BASE + 9     ; 1 B: the FN's own resolved type (its r
 FN_CELLS        equ     10              ; ...the ten above, saved WITH the live prefix
 FN_PAREA        equ     FN_BASE + FN_CELLS  ; the shadow-parameter slots themselves
 FN_SLOTSZ       equ     11              ; [name0][name1][type][value:8] -- a scalar entry
-FN_AREA         equ     ((LINEBUF - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ
+; D-RAMBUF (2026-10-12): the area ran "up to LINEBUF" while LINEBUF sat at $EB00;
+; LINEBUF is the reference's BUF now, so the old boundary is its OWN constant and
+; FN_MAXP stays 9 (the page assert below caught the derived ceiling moving).
+FN_PAREA_CEIL   equ     $EB00           ; NOT-A-CELL: the parameter area's fixed top
+FN_AREA         equ     ((FN_PAREA_CEIL - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ
 FN_MAXP         equ     FN_AREA/FN_SLOTSZ   ; the ceiling IS this division (9)
 FN_PAREA_END    equ     FN_PAREA + FN_AREA
 FN_BLK          equ     FN_CELLS + FN_AREA  ; the whole frame, cells first
@@ -4204,8 +4218,8 @@ FN_STK_FLOOR    equ     $F200
 ; this verb hit was a BUILD ERROR rather than a probe reading garbage out of the
 ; PLAY parser's stack only because the draft carried its own page-crossing
 ; assert (docs/deffn-design-2026-08-22.md §7(2)). Both survive here.
-    IF FN_BASE + FN_BLK > LINEBUF
-                db      FN_PARAM_AREA_OVERRAN_LINEBUF
+    IF FN_BASE + FN_BLK > FN_PAREA_CEIL
+                db      FN_PARAM_AREA_OVERRAN_ITS_CEILING
     ENDIF
     IF (high FN_BASE) != (high (FN_BASE + FN_BLK - 1))
                 db      FN_PAREA_CROSSES_A_PAGE__8BIT_SLOT_WALK_WOULD_CARRY

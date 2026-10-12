@@ -2364,8 +2364,11 @@ arl_charloop:
                 ld      c,a                 ; C = the data char (survives the bounds math)
                 ld      hl,(MRG_PTR)
                 ld      a,l                 ; bounds: keep the last LINEBUF byte for the 0
-                cp      (LINEBUF+LINEMAX-1) & $FF  ; (LINEBUF is one page -> low byte suffices)
-                jr      nc,arl_charloop     ; line full -> drop extra chars
+                cp      (LINEBUF+LINEMAX-1) & $FF  ; the cap's LOW byte: unique in LINEBUF's
+                jr      z,arl_charloop      ;  255 B, so EQUALITY is exact; line full ->
+                                            ;  drop extra chars. (`jr nc`, an ORDER test,
+                                            ;  needed a page-aligned LINEBUF; it is BUF
+                                            ;  $F55E now, crossing $F600 -- D-RAMBUF.)
                 ld      (hl),c
                 inc     hl
                 ld      (MRG_PTR),hl

@@ -78,6 +78,11 @@ def run():
         print(f"{'PASS' if ok else 'FAIL'}  {label:36} -> {got!r}"
               + ("" if ok else f"   want {want!r}"))
 
+    def cursor():
+        # D-RAMBUF: INP_CURSOR is a 16-bit POINTER into LINEBUF (the reference's
+        # BUF, which crosses a page); read back as the index it used to be
+        return (m.mem[INP_CURSOR] | m.mem[INP_CURSOR + 1] << 8) - LINEBUF
+
     def s16(v):
         return v - 0x10000 if v >= 0x8000 else v
 
@@ -89,24 +94,24 @@ def run():
         """Drive linebuf_getbyte from cursor 0 to EOF; return the bytes it yields
         and the final cursor value."""
         m.poke(LINEBUF, line + b"\x00")
-        m.poke(INP_CURSOR, 0)
+        m.poke_w(INP_CURSOR, LINEBUF)
         out = []
         for _ in range(len(line) + 2):
             cpu = m.call("linebuf_getbyte")
             if carry(cpu):
                 break
             out.append(cpu.a & 0xFF)
-        return bytes(out), m.mem[INP_CURSOR]
+        return bytes(out), cursor()
 
     seq, cur = lgb_sequence(b"12,AB")
     report("lgb yields '12,AB'", seq, b"12,AB")
     report("lgb cursor at terminator", cur, 5)     # left ON the 0 (index 5)
     # EOF is idempotent + does not advance
     m.poke(LINEBUF, b"\x00")
-    m.poke(INP_CURSOR, 0)
+    m.poke_w(INP_CURSOR, LINEBUF)
     cpu = m.call("linebuf_getbyte")
     report("lgb empty line -> CF", carry(cpu), True)
-    report("lgb empty line cursor unmoved", m.mem[INP_CURSOR], 0)
+    report("lgb empty line cursor unmoved", cursor(), 0)
 
     # -----------------------------------------------------------------------
     # Field split: read_into_strscr driven through linebuf_getbyte (FCH_RDMODE=0
@@ -119,7 +124,7 @@ def run():
 
     def setup_line(line):
         m.poke(LINEBUF, line + b"\x00")
-        m.poke(INP_CURSOR, 0)
+        m.poke_w(INP_CURSOR, LINEBUF)
         m.poke_w(ARL_GETBYTE, s["linebuf_getbyte"])
 
     def read_field(mode):
@@ -143,7 +148,7 @@ def run():
 
     # an empty line: cursor never advanced -> no more input (guards the too-few path)
     m.poke(LINEBUF, b"\x00")
-    m.poke(INP_CURSOR, 0)
+    m.poke_w(INP_CURSOR, LINEBUF)
     report("more_input empty line -> ZF", zero(m.call("inpc_more_input")), False)
 
     # line mode (1): commas are DATA, whole line is one field (LINE INPUT)

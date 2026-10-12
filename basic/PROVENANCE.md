@@ -72,7 +72,7 @@ No quarantined items.
 | Line editor + read/eval loop algorithm | — | **own code** (original); not derived from any disassembly | sourced |
 | Prompt text "zb>" | — | **own content**, deliberately unlike MSX-BASIC's "Ok" | sourced |
 | Error message text (all of it) | — | **black-box measurement** of a running reference machine's screen — see the note below | sourced |
-| `LINEBUF`, `LINEMAX` | — | own choice (free page-3 RAM) | sourced |
+| `LINEBUF`, `LINEMAX` | — | `LINEBUF` = `BUF` `$F55E`, the published MSX work-area address of the input-line buffer (MSX2 Technical Handbook), and the buffer the VG-8020 was MEASURED writing a typed line into (black-box write watch on work-area addresses only, `scratchpad/refwork_probe.out`; D-RAMBUF, 2026-10-12; it was own-choice free page-3 RAM before). `LINEMAX` = the measured reference ceiling | sourced |
 
 No quarantined items.
 

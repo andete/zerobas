@@ -10,11 +10,11 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 0385CH
-round_single_and_pack equ 0339CH
-round_and_finalize equ 03348H
+widen_rhs_operand equ 0385AH
+round_single_and_pack equ 0339AH
+round_and_finalize equ 03346H
 pu_deref_body equ 0284BH
-subrom_call equ 03B52H
+subrom_call equ 03B50H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
 FN_RESUME equ 0E227H   ; D-FNEXPR: cursor past a filename expr (2 B)
@@ -62,7 +62,7 @@ main_FAT_FILESIZE equ 0E9CEH   ; main's FAT_FILESIZE -- file size in bytes (4-by
 main_FWR_BYTES equ 0E9F3H   ; main's FWR_BYTES -- total bytes written so far = final file size (4-byte LE)
 FMT_GEOMSEL equ 0E0F5H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0E0F6H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
-LINEBUF equ 0EB00H   ; repack: ASCII input line from the keyboard (LINEMAX B) (1 B)
+LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
 SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 

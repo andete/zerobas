@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 437 declared addresses in this project's own workspace `$E000..$F37F` (408 with a machine-readable width), plus **110** in the MSX standard work area at or above `$F380`.
-* **disk** — 137 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **31** in the MSX standard work area at or above `$F380`.
+* **basic** — 436 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **111** in the MSX standard work area at or above `$F380`.
+* **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -121,7 +121,7 @@ second one is the question a per-component map cannot answer.
 | `$E0B9` | 2 B | `basic` | `DATAPTR` | next unread DATA item (ASCII) in the program (2) |  |
 | `$E0BB` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
 | `$E0BD` | 2 B | `basic` | `RESTORE_LINE` | link-field a READ seeks DATA from when unpositioned (2) |  |
-| `$E0C0` |  | `basic` | `INP_CURSOR/NUMBUF` | console INPUT LINEBUF read cursor (1 B, aliases NUMBUF) |  |
+| `$E0C0` |  | `basic` | `INP_CURSOR/NUMBUF` | console INPUT LINEBUF read pointer (2 B, aliases NUMBUF) |  |
 | `$E0C8` | 1 B | `basic` | `VALTYP` | 0 = numeric result, 1 = string result (1 byte) |  |
 | `$E0C9` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$E0C9` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
@@ -473,8 +473,6 @@ second one is the question a per-component map cannot answer.
 | `$EAED` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) |  |
 | `$EAEE` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
 | `$EAFF` |  | `basic` | `FN_PAREA_END` |  |  |
-| `$EB00` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
-| `$EB00` | 1 B | `disk` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
 | `$EC00` | 576 B | `basic` | `BROM_TEXT/TOKBUF` | 2 B: the cartridge's TEXT word (high 0 = none) |  |
 | `$EC02` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
@@ -661,6 +659,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
+| `$F55E` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
+| `$F55E` | 1 B | `disk` | `LINEBUF` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F663` | 1 B | `basic` | `VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |

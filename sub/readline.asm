@@ -219,7 +219,8 @@ rl_chars:
                 call    rl_vpeek            ; A = the character at row B, column C
                 ld      (de),a
                 ld      a,e                 ; cap: the last byte of LINEBUF stays free for
-                cp      (LINEBUF+LINEMAX-1) & $FF   ; the terminator (LINEBUF is one page)
+                cp      (LINEBUF+LINEMAX-1) & $FF   ; the terminator (an EQUALITY on the low
+                                                    ; byte: unique in LINEBUF's 255 B)
                 jr      z,rl_full
                 inc     de
 rl_full:

@@ -85,8 +85,8 @@ inpc_dispatch:
                 push    hl                  ; [stack: varstart] — survives every ?redo
 inpc_reread:
                 call    read_line           ; LINEBUF <- typed line (clobbers HL,A,B)
-                xor     a
-                ld      (INP_CURSOR),a      ; reset the LINEBUF read cursor
+                ld      hl,LINEBUF
+                ld      (INP_CURSOR),hl     ; reset the LINEBUF read cursor (16-bit)
                 ld      de,linebuf_getbyte
                 ld      (ARL_GETBYTE),de    ; field splitter reads from LINEBUF
                 pop     hl                  ; HL = varstart
@@ -213,8 +213,8 @@ inpc_line:
                 push    hl                  ; guard the text cursor across the read
                 push    bc                  ; save the key
                 call    read_line           ; LINEBUF <- typed line
-                xor     a
-                ld      (INP_CURSOR),a
+                ld      hl,LINEBUF
+                ld      (INP_CURSOR),hl
                 ld      de,linebuf_getbyte
                 ld      (ARL_GETBYTE),de
                 call    read_into_strscr    ; STRSCR <- the whole line (mode 1)
@@ -244,15 +244,17 @@ inpc_print_q:
 ; no CR). `linebuf_getbyte` consumes a ',' and advances the cursor past it, but
 ; leaves the cursor ON the 0 at end-of-line. So a field was comma-terminated (=>
 ; more input follows) iff the byte just before the cursor is a ',' — and nothing
-; was consumed at all (cursor == 0) means an empty line.
+; was consumed at all (cursor == LINEBUF) means an empty line.
 ; out: ZF = 1 iff more input remains (the last field ended on a ','). Clobbers A,HL.
+; D-RAMBUF: the cursor is a 16-bit POINTER since LINEBUF became the reference's
+; BUF ($F55E), which crosses $F600; "at the start" is its low byte equal to
+; LINEBUF's (unique within the buffer's 255 B).
 inpc_more_input:
-                ld      a,(INP_CURSOR)
-                or      a
-                jr      z,inpc_nomore       ; cursor 0 -> nothing consumed -> no more
-                ld      l,a
-                dec     l
-                ld      h,high LINEBUF      ; LINEBUF is one page ($E1xx)
+                ld      hl,(INP_CURSOR)
+                ld      a,l
+                cp      low LINEBUF
+                jr      z,inpc_nomore       ; at the start -> nothing consumed -> no more
+                dec     hl
                 ld      a,(hl)
                 cp      ','                 ; ZF = 1 iff the last delimiter was ','
                 ret
@@ -310,21 +312,17 @@ seq_call:
 ; The byte-source vector read_into_strscr calls (via arl_getbyte) while parsing a
 ; console INPUT line. Returns the next LINEBUF byte and advances INP_CURSOR; the 0
 ; terminator reports EOF (CF set) WITHOUT advancing, the same end contract
-; fat_io_getbyte / cas_in_getbyte present for the file sources. LINEBUF is one page,
-; so the cursor is a single low byte.
+; fat_io_getbyte / cas_in_getbyte present for the file sources. The cursor is a
+; 16-bit pointer (D-RAMBUF: LINEBUF is the reference's BUF, which crosses a page).
 ; out: A = byte, CF clear on success; CF set at end-of-line. Clobbers A (HL preserved).
 linebuf_getbyte:
                 push    hl
-                ld      a,(INP_CURSOR)
-                ld      l,a
-                ld      h,high LINEBUF
+                ld      hl,(INP_CURSOR)
                 ld      a,(hl)
                 or      a
                 jr      z,lgb_eof           ; 0 terminator -> EOF, leave the cursor on it
-                ld      a,l
-                inc     a
-                ld      (INP_CURSOR),a      ; advance the cursor past this byte
-                ld      a,(hl)              ; the data byte
+                inc     hl
+                ld      (INP_CURSOR),hl     ; advance the cursor past this byte
                 pop     hl
                 or      a                   ; CF clear -> success
                 ret
