@@ -2378,6 +2378,24 @@ item — do **one item per session** to keep context lean.
       (sub ROM); main needs a fourth device name in the dispatch and the
       channel's output arm -- against main page 1 10 B, low 19 B
       (2026-10-11), so a carve may come first.
+      📏 **MEASURED 2026-10-12** ([`opengrp_probe.py`](scratchpad/opengrp_probe.py)
+      → [`.out`](scratchpad/opengrp_probe.out), VG-8020; zerobas gave no reading
+      in any row -- predicted): in SCREEN 2, `PSET(8,8)` then `PRINT #1,"A";`
+      draws the font glyph in the foreground colour (rows `20 50 88 88 F8 88 88
+      00`) and the graphic cursor (GRPACX / GRPACY) advances 8 pixels: 16, 8.
+      A CR/LF puts it at the start of the next 8-pixel line: 0, 16. `OPEN
+      "GRP:"` in SCREEN 0 is ACCEPTED -- the error is at `PRINT #1`: 5 in the
+      line (half-predicted: I expected it at OPEN); the same after SCREEN 2 ->
+      SCREEN 0. `FOR INPUT`: 56 at the OPEN. Unmeasured: whether a glyph's 0
+      bits erase to the background, the right and bottom edges, other control
+      codes, SCREEN 3.
+      ⛔ **BLOCKED ON SPACE BOTH SIDES (2026-10-12): main page 1 0 B and the low
+      region 0 B; sub page 0 4 B** (after D-KEYSHIFT). The device needs main
+      bytes (a fourth name in `do_open`'s dispatch, the channel's output arm,
+      the SCREEN 0 refusal) AND drawing code beside the graphics tenant (sub
+      page 0). Order: a MAIN carve first (its own work, per D-SUB2's note),
+      then D-SUB2 -- which this item now triggers (the first sub-blocked item
+      in the queue) -- then the device.
 
 - [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
       REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
@@ -6949,7 +6967,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32421 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32439 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7115,7 +7133,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11977 (T-6FE392)8 (T-529ABE)` from `TODO.md:24771 (T-529ABE)`: a
+      `TODO.md:11995 (T-6FE392)8 (T-529ABE)` from `TODO.md:24789 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12824,7 +12842,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24771 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24789 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

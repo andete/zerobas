@@ -1,0 +1,11 @@
+glyph  Philips_VG_8020                <20508888F8888800 16 8 >
+glyph  C-BIOS_MSX1_EU_REPACK_NODISK   NONE:  
+crlf   Philips_VG_8020                < 0 16 >
+crlf   C-BIOS_MSX1_EU_REPACK_NODISK   NONE:  
+scr0   Philips_VG_8020                <E 5 40 >
+scr0   C-BIOS_MSX1_EU_REPACK_NODISK   NONE: color auto goto list run 
+back0  Philips_VG_8020                <E 5 40 >
+back0  C-BIOS_MSX1_EU_REPACK_NODISK   NONE:  
+input  Philips_VG_8020                <E 56 30 >
+input  C-BIOS_MSX1_EU_REPACK_NODISK   NONE:  
+refcache: 0 hit, 10 miss, 6 stored, 4 refused (non-reading)
