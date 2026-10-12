@@ -1,0 +1,53 @@
+Philips_VG_8 control    2560 addresses
+Philips_VG_8 longline   2560 addresses
+Philips_VG_8 input      2560 addresses
+Philips_VG_8 linput     2560 addresses
+Philips_VG_8 deffn      2560 addresses
+Philips_VG_8 deffns     2560 addresses
+Philips_VG_8 traps      2560 addresses
+Philips_VG_8 using      2560 addresses
+Philips_VG_8 numfmt     2560 addresses
+Philips_VG_8 strings    2560 addresses
+Philips_VG_8 val        2560 addresses
+Philips_VG_8 list       2560 addresses
+C-BIOS_MSX1_ control    2560 addresses
+C-BIOS_MSX1_ longline   2560 addresses
+C-BIOS_MSX1_ input      2560 addresses
+C-BIOS_MSX1_ linput     2560 addresses
+C-BIOS_MSX1_ deffn      2560 addresses
+C-BIOS_MSX1_ deffns     2560 addresses
+C-BIOS_MSX1_ traps      2560 addresses
+C-BIOS_MSX1_ using      2560 addresses
+C-BIOS_MSX1_ numfmt     2560 addresses
+C-BIOS_MSX1_ strings    2560 addresses
+C-BIOS_MSX1_ val        2560 addresses
+C-BIOS_MSX1_ list       2560 addresses
+
+=== Philips_VG_8020: written beyond the control (address ranges, by published name)
+  longline     0 B: --
+  input        0 B: --
+  linput       0 B: --
+  deffn        0 B: --
+  deffns       0 B: --
+  traps        0 B: --
+  using        0 B: --
+  numfmt       0 B: --
+  strings      0 B: --
+  val          0 B: --
+  list         0 B: --
+  control   2560 B: $F39A
+
+=== C-BIOS_MSX1_EU_REPACK_NODISK: written beyond the control (address ranges, by published name)
+  longline     0 B: --
+  input        0 B: --
+  linput       0 B: --
+  deffn        0 B: --
+  deffns       0 B: --
+  traps        0 B: --
+  using        0 B: --
+  numfmt       0 B: --
+  strings      0 B: --
+  val          0 B: --
+  list         0 B: --
+  control   2560 B: $F39A
+

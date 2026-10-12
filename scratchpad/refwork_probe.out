@@ -1,0 +1,53 @@
+Philips_VG_8 control     388 addresses
+Philips_VG_8 longline    585 addresses
+Philips_VG_8 input       412 addresses
+Philips_VG_8 linput      412 addresses
+Philips_VG_8 deffn       563 addresses
+Philips_VG_8 deffns      505 addresses
+Philips_VG_8 traps       486 addresses
+Philips_VG_8 using       451 addresses
+Philips_VG_8 numfmt      476 addresses
+Philips_VG_8 strings     631 addresses
+Philips_VG_8 val         449 addresses
+Philips_VG_8 list        429 addresses
+C-BIOS_MSX1_ control     156 addresses
+C-BIOS_MSX1_ longline    179 addresses
+C-BIOS_MSX1_ input       174 addresses
+C-BIOS_MSX1_ linput      174 addresses
+C-BIOS_MSX1_ deffn       179 addresses
+C-BIOS_MSX1_ deffns      177 addresses
+C-BIOS_MSX1_ traps       179 addresses
+C-BIOS_MSX1_ using       185 addresses
+C-BIOS_MSX1_ numfmt      197 addresses
+C-BIOS_MSX1_ strings     178 addresses
+C-BIOS_MSX1_ val         179 addresses
+C-BIOS_MSX1_ list        170 addresses
+
+=== Philips_VG_8020: written beyond the control (address ranges, by published name)
+  longline   197 B: $F662 $F662; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; BUF $F583-$F5CC; DAC $F7F6-$F7F7,$F7FA-$F7FE; KBUF $F425-$F485
+  input       24 B: $F662 $F662; $F6A6 $F6A6; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; BUFMIN $F55D; KBUF $F425-$F427
+  linput      24 B: $F662 $F662; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; KBUF $F425-$F429
+  deffn      175 B: $F662 $F662; $F7B4 $F7B4-$F7B6; $F7F5 $F7F5-$F7F7; $FC09 $FC09-$FC17; ARG $F847-$F84F; DAC $F7FA-$F845; KBUF $F425-$F43C; PARM1 $F6E8-$F6FD; PARM2 $F750-$F765
+  deffns     117 B: $F662 $F662; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; BUF $F583-$F5A7; DAC $F7FA; KBUF $F425-$F445; PARM1 $F6E8-$F6F3; PARM2 $F750-$F75B; TEMPST $F67D-$F67F
+  traps       98 B: $F662 $F662; $F6A1 $F6A1-$F6A2; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; $FCA0 $FCA0-$FCA1; ARG $F847-$F84F; BUF $F583-$F5A7; DAC $F7F6-$F7F7,$F7FA-$F7FE; KBUF $F425-$F43A
+  using       63 B: $F66C $F66C-$F66D; $F6A6 $F6A6; $FC09 $FC09-$FC17; DAC $F7F6-$F7F7,$F7FA-$F7FE; FBUFFR $F7C6-$F7D7; KBUF $F425-$F435; TEMPST $F67D-$F67F
+  numfmt      88 B: $F66C $F66C-$F671; $F7F0 $F7F0-$F7F7; $F83E $F83E-$F845; $FC09 $FC09-$FC17; ARG $F847-$F84E; DAC $F7FA-$F7FE; FBUFFR $F7C6-$F7D6; KBUF $F425-$F439
+  strings    243 B: $F414 $F414; $F662 $F662; $F6B3 $F6B3-$F6B4; $F6B7 $F6B7-$F6B8; $F7B4 $F7B4-$F7B6; $F7B8 $F7B8-$F7B9; $F959 $F959-$F96A; $FB3F $FB3F-$FBAF; $FC09 $FC09-$FC17; BUF $F583-$F5A7; FBUFFR $F7C6-$F7CC; KBUF $F425-$F44B; TEMPST $F67D-$F67F
+  val         61 B: $F419 $F419-$F41B; $F662 $F662; $F7B4 $F7B4-$F7B6; $FC09 $FC09-$FC17; ARG $F847-$F84F; DAC $F7F6-$F7F7,$F7FA-$F7FE; KBUF $F425-$F43B
+  list        43 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7F7,$F7FA-$F7FE; FBUFFR $F7C6-$F7D6; KBUF $F425-$F428
+  control    388 B: $F3B0; $F3B2; $F3DC; $F3F6; $F416; $F41C; $F661; $F663; $F678; $F698; $F6A5; $F6A7; $F6AF; $F6B5; $F6B9; $F74E; $F7B7; $F7BA; $F7C4; $F857; $F864; $F87C; $F922; $FBB2; $FC18; $FC9B; $FC9E; $FCA2; $FCA6; $FCAA; $FCAF; BUF; DAC; KBUF; TRPTBL
+
+=== C-BIOS_MSX1_EU_REPACK_NODISK: written beyond the control (address ranges, by published name)
+  longline    23 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7FD
+  input       18 B: $FC09 $FC09-$FC17; TEMPST $F67A-$F67C
+  linput      18 B: $FC09 $FC09-$FC17; TEMPST $F67A-$F67C
+  deffn       23 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7FD
+  deffns      21 B: $FC09 $FC09-$FC17; TEMPST $F67A-$F67F
+  traps       23 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7FD
+  using       29 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7F9; FBUFFR $F7C6-$F7CF
+  numfmt      41 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7FD; FBUFFR $F7C6-$F7D7
+  strings     22 B: $F414 $F414; $F6B3 $F6B3-$F6B4; $FB3F $FB3F; $FC09 $FC09-$FC17; TEMPST $F67A-$F67C
+  val         23 B: $FC09 $FC09-$FC17; DAC $F7F6-$F7FD
+  list        15 B: $FC09 $FC09-$FC17
+  control    156 B: $F3B0; $F3DC; $F3F6; $F41C; $F661; $F676; $F6B5; $F6B9; $F6C2; $F6CA; $F858; $F922; $FBB2; $FBCD; $FBD9; $FC9E; $FCA6; $FCA8; $FCAF; $FCC8; RG0SAV..
+

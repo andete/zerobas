@@ -3438,6 +3438,37 @@ item — do **one item per session** to keep context lean.
       TIER 5 queue):** re-measure the gap on today's build, then lever (2) -- a
       NODISK-only layout that cedes the 942 B disk share -- then (3) per tenant,
       each with its ceiling proved.
+      📏 **LEVER (3) MEASURED AGAINST THE REFERENCE, 2026-10-12 (Joost: *"our own
+      buffers, test what buffers the reference uses, and see if we can meet the
+      same"*).** [`refwork_probe.py`](scratchpad/refwork_probe.py) ->
+      [`refwork_probe.out`](scratchpad/refwork_probe.out): a write watchpoint over
+      the work area's DATA span ($F39A..$FD99 -- the RAM-resident code below and
+      the hooks above are excluded, and only ADDRESSES are recorded), armed
+      after boot, each case minus a control. Its first run armed at power-on and
+      saw the BIOS clear all 2560 addresses in every case
+      ([`refwork_probe_firstrun.out`](scratchpad/refwork_probe_firstrun.out)); it
+      now refuses such a control.
+      | job | VG-8020 (measured) | zerobas | its size |
+      |---|---|---|---|
+      | the typed line | **BUF** $F55E (258 B; BUFMIN $F55D for INPUT) | LINEBUF $EB00 | 256 B |
+      | the crunched line | **KBUF** $F41F (318 B) | TOKBUF $EC00 | 576 B |
+      | the trap table | **TRPTBL** $FC4C (78 B; RUN writes all of it) | ZTRAP $E1D1 | 55 B |
+      | DEF FN parameters | **PARM1 / PARM2** (100 B each) | (its own scheme; no workspace buffer -- confirm) | -- |
+      | number formatting | FBUFFR | FBUFFR (already shared) | -- |
+      **zerobas writes NONE of KBUF / BUF / PARM1 / PARM2 / TRPTBL in any case**
+      -- the reference's own buffers sit unused while zerobas pays for copies.
+      Meeting the same: ~887 B of workspace (LINEBUF + TOKBUF are contiguous,
+      $EB00..$EE3F, 832 B; ZTRAP 55), each then at the reference's ADDRESS too
+      (goal b). Costs: (i) TOKBUF is 576, not 318, ON PURPOSE -- it absorbs one
+      unbounded inner copy pass (tk_str_loop / tk_rem_rest / tk_data_rest) and
+      adjudicates once at tk_end; KBUF's 318 means bounding those loops, in the
+      tokenise tenant (sub page 0, 6 B on 2026-10-12 -- may have to move to sub2);
+      (ii) LINEBUF is PAGE-ALIGNED on purpose (the single-low-byte idiom in
+      read_line, ascii_read_lines and console INPUT); BUF crosses a page;
+      (iii) a hole mid-workspace raises nothing: TXTMAX ($E000) climbs only when
+      what sits below the hole moves up into it.
+      ➡️ Next: confirm DEF FN's footprint; price (i)-(iii); then the moves, one
+      buffer per commit, each with `fremem_probe.py` and ram-map-check.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7220,7 +7251,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32737 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32768 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7386,7 +7417,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12248 (T-6FE392)8 (T-529ABE)` from `TODO.md:25042 (T-529ABE)`: a
+      `TODO.md:12279 (T-6FE392)8 (T-529ABE)` from `TODO.md:25073 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13095,7 +13126,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25042 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25073 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
