@@ -1,0 +1,10 @@
+base: 7 rows
+  ROM c10a5fb0 b6684376 dfcf2ff7 11969cfd  ->  c10a5fb0 d6ae7d9e dfcf2ff7 11969cfd
+PASS  K-KS1: moved ['inkey', 'input', 'inputs', 'lineinput', 'prompt'] (want exactly ['inkey', 'input', 'inputs', 'lineinput', 'prompt'])
+  ROM c10a5fb0 d6ae7d9e dfcf2ff7 11969cfd  ->  979c66f6 b6684376 dfcf2ff7 11969cfd
+PASS  K-KS2: moved ['inkey', 'input', 'inputs', 'lineinput', 'prompt'] (want exactly ['inkey', 'input', 'inputs', 'lineinput', 'prompt'])
+  ROM 979c66f6 b6684376 dfcf2ff7 11969cfd  ->  63c882da b6684376 dfcf2ff7 11969cfd
+PASS  K-KS3: moved ['keyoff'] (want exactly ['keyoff'])
+restored ROM hashes c10a5fb0 b6684376 dfcf2ff7 11969cfd (baseline c10a5fb0 b6684376 dfcf2ff7 11969cfd)
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

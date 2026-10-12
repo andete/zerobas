@@ -309,6 +309,43 @@ prompt_text:
 ; `ld` readers only, exactly as in its D-ISLDATA2 home.
 rn_undefined:   db      "Undefined line ",0
 
+; --- D-KEYSHIFT (Joost, 2026-10-11): the key line follows SHIFT ---------------
+; Measured on the VG-8020 (scratchpad/keyidle_probe.out, keyshift_wait.out):
+; while SHIFT is held the bottom row shows F6..F10 and FNKSWI reads 0, back on
+; release -- at the prompt and in INPUT, LINE INPUT, INPUT$ AND an INKEY$
+; loop, but NOT in a loop that never asks the keyboard; with KEY OFF nothing is
+; drawn and FNKSWI stays 1. So it rides the BIOS key calls: zerobas's own call
+; sites reach CHSNS / CHGET through these two wrappers (C-BIOS's own chget
+; waits on a HALT and is left untouched). The paint is the keystr tenant's,
+; which picks the set from FNKSWI; its register saves run in zks_paint (here)
+; and zks_p2 (the low region, basic/subromcall.asm) -- CALSLT clobbers all.
+zb_chget:
+                call    zb_chsns
+                jp      nz,CHGET            ; a key is waiting: CHGET takes it
+                halt                        ; (CHSNS enabled interrupts)
+                jr      zb_chget
+zb_chsns:
+                ld      a,(CNSDFG)
+                inc     a                   ; $FF (shown) -> 0
+                jr      nz,zks_go
+                ld      a,(SCRMOD)
+                cp      2
+                jr      nc,zks_go           ; no key line in a graphics mode
+                ld      a,(NEWKEY+6)
+                and     1                   ; SHIFT, active low: 0 = held
+                ld      hl,FNKSWI           ; ... = the FNKSWI value for it. HL is
+                cp      (hl)                ; NOT preserved: all four call sites
+                ld      (hl),a              ; guard it (read_line has none live)
+                call    nz,zks_paint        ; it changed: repaint
+zks_go:
+                jp      CHSNS
+zks_paint:
+                push    bc
+                push    de
+                push    hl
+                push    ix
+                jp      zks_p2
+
     IF $ > $0200
                 db      ISLAND_BEFORE_JUMPTABLE_OVERRAN_0200__IT_WOULD_OVERWRITE_CBIOS
     ENDIF

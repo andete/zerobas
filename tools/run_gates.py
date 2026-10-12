@@ -140,7 +140,7 @@ dosmode-acceptance bootkeys-acceptance
 fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
-resetboot-acceptance""".split()
+resetboot-acceptance keyshift-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --

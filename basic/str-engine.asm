@@ -1924,7 +1924,7 @@ str_fn_space:
 str_fn_inkey:
                 inc     hl                  ; past the INKEY_TOKEN; no args to parse
                 push    hl                  ; guard cursor                            [CURSOR]
-                call    CHSNS               ; Z = keyboard buffer empty
+                call    zb_chsns            ; Z = keyboard buffer empty (D-KEYSHIFT)
                 jr      z,sfi_empty
                 call    CHGET               ; A = the waiting key
                 push    af                  ; guard key byte                            [CURSOR][KEY]

@@ -58,6 +58,11 @@ statement: they control the function-key interrupt used by `ON KEY GOSUB`
   bottom row. It is on at power-on. While it is on, that row is not part of
   the text screen: scrolling stops at row 22 and `LOCATE 0,23` lands on row 22.
   After `KEY OFF` the row is free again and both reach row 23.
+- **Holding SHIFT shows F6 to F10 instead**, whenever BASIC is waiting for a
+  key or checking for one: at the prompt, in `INPUT`, `LINE INPUT` and
+  `INPUT$`, and in an `INKEY$` loop. A program busy with something else does
+  not switch it; letting go of SHIFT switches back. Under `KEY OFF` nothing
+  is drawn. `PEEK(&HFBCD)` reads 0 while F6 to F10 are shown, 1 otherwise.
 - **The line stays put** across [`CLS`](CLS.md), `SCREEN 0` and a
   [`WIDTH`](WIDTH.md) change, appears in `SCREEN 1` too, and follows the width:
   at `WIDTH 40` each label is 7 characters on an 8-column pitch, and narrower
@@ -117,6 +122,14 @@ of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
 
+- **SHIFT did not switch the line to F6 to F10** (fixed 2026-10-12,
+  D-KEYSHIFT; reported by Joost). An earlier measurement (2026-09-26) had
+  called the switch refuted: it held SHIFT during a busy loop, where the
+  VG-8020 indeed does not switch, and the test tool could not read the screen
+  while the key was down. Reading it with the key held showed the switch at
+  the prompt, and in every wait for a key -- including an `INKEY$` loop,
+  which was predicted not to switch
+  ([`keyshift_wait.out`](../../scratchpad/keyshift_wait.out)).
 - **`KEY n,text` and `KEY LIST` were missing** (shipped 2026-09-10, D-KEYSTR).
   Measuring them showed a bigger gap than the statement: zerobas had no
   function-key texts at all, where the references hold ten defaults at power-on.
@@ -163,4 +176,7 @@ key-string tenant in [sub/keystr.asm](../../sub/keystr.asm).
   `KEY 1,...` (the text it types comes back through `INKEY$`), `KEY ON` and
   `KEY OFF` read through where `LOCATE 0,23` lands, and the error rows for
   {2, 5, 13}.
+- `make keyshift-acceptance` — SHIFT held at the prompt, in `INPUT`,
+  `LINE INPUT`, `INPUT$`, an `INKEY$` loop, a busy loop and under `KEY OFF`,
+  read while held and after release, against the VG-8020.
 - `make kwram` — the RAM-usage comparison.

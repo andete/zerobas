@@ -1,0 +1,12 @@
+== vg8020 (Philips_VG_8020)
+rest FNKSWI=1 <  color  auto   goto   list   run       >
+shift_held FNKSWI=0 <  color  cload" cont   list.   run      >
+shift_up FNKSWI=1 <  color  auto   goto   list   run       >
+ctrl_held FNKSWI=1 <  color  auto   goto   list   run       >
+ctrl_up FNKSWI=1 <  color  auto   goto   list   run       >
+== nodisk (C-BIOS_MSX1_EU_REPACK_NODISK)
+rest FNKSWI=1 <  color  auto   goto   list   run       >
+shift_held FNKSWI=0 <  color  cload" cont   list.   run      >
+shift_up FNKSWI=1 <  color  auto   goto   list   run       >
+ctrl_held FNKSWI=1 <  color  auto   goto   list   run       >
+ctrl_up FNKSWI=1 <  color  auto   goto   list   run       >

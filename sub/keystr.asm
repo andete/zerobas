@@ -87,8 +87,14 @@ ksp_div:
                 dec     c                   ; pitch - 1 = the characters shown
                 ret     z                   ; pitch 1: nothing (WIDTH 5)
                 ret     m                   ; pitch 0: nothing (WIDTH 1..3)
+                ; D-KEYSHIFT: FNKSWI 1 shows slots 1..5, 0 shows 6..10 (SHIFT held)
+                ld      a,(FNKSWI)
+                dec     a                   ; 1 -> 0, 0 -> $FF
+                and     5*KEYSTRIDE
+                add     a,low FNKSTR        ; FNKSTR+80 stays in its page
+                ld      e,a
+                ld      d,high FNKSTR       ; DE -> slot 1 or slot 6
                 ld      a,c                 ; A = field width
-                ld      de,FNKSTR           ; DE -> slot 1
                 ld      b,FNK_FIELDS
 ksp_field:
                 push    bc                  ; C is the data byte below
@@ -159,7 +165,7 @@ keystr_tenant:
                 cp      255
                 jr      z,ks_list
                 cp      KEYOP_FNKPAINT
-                jr      z,ks_paint
+                jp      z,ks_paint   ; (jp: D-KEYSHIFT's 8 B put ks_paint out of jr range)
                 cp      KEYOP_FNKBLANK
                 jr      z,ks_blank
                 ; --- KEY n,"str": slot address = FNKSTR + 16*(n-1) --------------

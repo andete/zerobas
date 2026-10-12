@@ -28,6 +28,17 @@ fires exactly when the race does. Removing the fault without replacing that
 control is how a guard goes green while measuring nothing
 ([[gate-can-be-green-while-measuring-nothing]]).
 
+🔴 D-KEYSHIFT (2026-10-12) MOVED THE REPL'S WAIT. zerobas's own call sites now
+wait in `zb_chget` (basic/islands.asm): CHSNS in a loop, then CHGET only once a
+key is already waiting. So the REPL no longer sits in `chget_wait` while a line
+is injected; the same latch pair (ld hl,(GETPNT) / ld de,(PUTPNT)) is now the
+one inside C-BIOS `chsns` ($009C), and there it is HARMLESS for either
+injector: CHSNS only reports "a key", and the CHGET that follows re-reads both
+pointers. Rows A-C therefore force CHSNS's trigger and must DELIVER -- with the
+breakpoint proven to have fired (`hl=` recorded), so they cannot pass by
+missing it. The positive control is row D's (the chget_char window), which the
+new wait leaves exactly where it was. Before D-KEYSHIFT:
+
 So this gate does not wait for the race: it FORCES it, with a CPU breakpoint at
 the trigger address, and scores both injectors on the same boundary:
 
@@ -71,6 +82,9 @@ import omsx_repl as R                                # noqa: E402
 
 MACHINE = "C-BIOS_MSX1_EU_REPACK_DISK"
 CHGET_ENTRY = 0x009F                 # published MSX BIOS jump table
+CHSNS_ENTRY = 0x009C                 # D-KEYSHIFT: where the REPL now waits
+# chsns = ei (1) + push hl (1) + push de (1) -> the same latch pair (SIG)
+SNS_OFF = 3
 # chget = call H_CHGE (3) + push hl (1) + push de (1) -> chget_wait
 WAIT_OFF = 5
 # ld hl,(GETPNT) = 2A FA F3 ; ld de,(PUTPNT) = ED 5B F8 F3
@@ -179,7 +193,8 @@ after time 15.0 {
 """
 
 
-def _run(key_body: str, addr: str | None, pred: str) -> dict:
+def _run(key_body: str, addr: str | None, pred: str,
+         entry: int = CHGET_ENTRY, wait_off: int = WAIT_OFF) -> dict:
     """One boot. `addr` None = no breakpoint armed at all -- the locate-only run,
     which must not inject a stray target line just to read three sysvars."""
     out = tempfile.NamedTemporaryFile(suffix=".txt", prefix="latch_",
@@ -190,9 +205,9 @@ def _run(key_body: str, addr: str | None, pred: str) -> dict:
            f"set bpid [debug set_bp {addr} {{}} {{ fire }}] }}")
     with open(tcl, "w") as f:
         f.write(_PROBE % dict(OUT=out, KEY=key_body, TARGET=TARGET, PRED=pred,
-                              ARM=arm, ENTRY=CHGET_ENTRY,
-                              ENTRY1=CHGET_ENTRY + 1, ENTRY2=CHGET_ENTRY + 2,
-                              WAIT=WAIT_OFF, TXTTAB=R.TXTTAB))
+                              ARM=arm, ENTRY=entry,
+                              ENTRY1=entry + 1, ENTRY2=entry + 2,
+                              WAIT=wait_off, TXTTAB=R.TXTTAB))
     if os.path.exists(out):
         os.unlink(out)
     cmd = [find_omsx(None), "-machine", MACHINE,
@@ -336,16 +351,17 @@ def address2(base: int) -> int:
     return base + CHAR_OFF
 
 
-def address() -> tuple[int, str]:
-    """Locate `chget_wait` and vouch for it, or raise SystemExit."""
-    got = _run(R.key_proc(), None, "CLS")         # locate only: no breakpoint
+def address(entry: int = CHGET_ENTRY, wait_off: int = WAIT_OFF) -> tuple[int, str]:
+    """Locate the latch pair behind a BIOS entry (`chget_wait` by default, or
+    `chsns`'s) and vouch for it, or raise SystemExit."""
+    got = _run(R.key_proc(), None, "CLS", entry, wait_off)  # locate only
     if not got:
         raise SystemExit("latch-check: CANNOT JUDGE -- no output from openMSX "
                          f"(machine {MACHINE} missing? run `make repack-machine`)")
     if got.get("entry") != "195":                 # $C3 = jp
-        raise SystemExit(f"latch-check: CANNOT JUDGE -- {CHGET_ENTRY:#06x} holds "
+        raise SystemExit(f"latch-check: CANNOT JUDGE -- {entry:#06x} holds "
                          f"opcode {got.get('entry')}, not a `jp`")
-    wait = int(got["chget"]) + WAIT_OFF
+    wait = int(got["chget"]) + wait_off
     if got.get("sig") != SIG:
         raise SystemExit(
             f"latch-check: CANNOT JUDGE -- chget_wait ({wait:#06x}) reads "
@@ -356,33 +372,36 @@ def address() -> tuple[int, str]:
 
 
 def main() -> int:
-    wait, base = address()
-    fatal, safe = wait + 3, [wait, wait + 7, wait + 12]
-    print(f"latch-check: chget ${int(base):04X}  chget_wait ${wait:04X}  "
-          f"trigger ${fatal:04X}")
+    wait, base = address(CHSNS_ENTRY, SNS_OFF)
+    fatal, safe = wait + 3, [wait, wait + 7, wait + 8]
+    print(f"latch-check: chsns ${int(base):04X}  latch pair ${wait:04X}  "
+          f"trigger ${fatal:04X} (the REPL's wait since D-KEYSHIFT)")
     rows: list[tuple[str, bool]] = []
 
-    # Row A -- the positive control. The frozen pre-D-LATCH injector, forced
-    # onto the trigger, must still lose the head of the line.
+    # Row A -- the frozen pre-D-LATCH injector, forced onto CHSNS's trigger
+    # while the REPL waits. Before D-KEYSHIFT this was chget_wait's trigger and
+    # the row had to MANGLE; at CHSNS a stale HL only decides "a key is
+    # waiting", and the CHGET that follows re-reads both pointers -- so the
+    # line must arrive. `hl` present = the breakpoint fired (not vacuous).
     for pred, swallow in [("CLS", 4), ("CLS:CLS", 8), ("CLS:REM123456", 14)]:
-        got = _run(OLD_KEY, hex(fatal), pred)
-        bad = got.get("chain") == "10"
-        want = R.KEYBUF + swallow
-        rows.append((f"A  old injector, forced, predecessor {swallow:2d} B  "
-                     f"-> MANGLED (HL ${want:04X})", not bad
-                     and got.get("hl") == f"{want:04X}"))
+        got = _run(OLD_KEY, hex(fatal), pred, CHSNS_ENTRY, SNS_OFF)
+        rows.append((f"A  old injector, forced at CHSNS, predecessor {swallow:2d} B  "
+                     f"-> DELIVERED (fired)", "hl" in got and got.get("chain") == "10"))
 
-    # Row B -- the fix, same boundary, same predecessors.
+    # Row B -- the shipped injector, same boundary, same predecessors.
     for pred, swallow in [("CLS", 4), ("CLS:CLS", 8), ("CLS:REM123456", 14)]:
-        got = _run(R.key_proc(), hex(fatal), pred)
-        rows.append((f"B  key_proc,     forced, predecessor {swallow:2d} B  "
-                     f"-> DELIVERED", got.get("chain") == "10"))
+        got = _run(R.key_proc(), hex(fatal), pred, CHSNS_ENTRY, SNS_OFF)
+        rows.append((f"B  key_proc,     forced at CHSNS, predecessor {swallow:2d} B  "
+                     f"-> DELIVERED (fired)", "hl" in got and got.get("chain") == "10"))
 
-    # Row C -- the fix on the neighbouring boundaries, which were never fatal.
-    for addr, what in zip(safe, ["ld hl,(GETPNT)", "rst $20", "jr chget_wait"]):
-        got = _run(R.key_proc(), hex(addr), "CLS:REM123456")
+    # Row C -- the shipped injector on CHSNS's neighbouring boundaries.
+    for addr, what in zip(safe, ["ld hl,(GETPNT)", "rst $20", "ld a,$ff"]):
+        got = _run(R.key_proc(), hex(addr), "CLS:REM123456", CHSNS_ENTRY, SNS_OFF)
         rows.append((f"C  key_proc,     forced at ${addr:04X} ({what})"
-                     f"{'':<3}-> DELIVERED", got.get("chain") == "10"))
+                     f"{'':<3}-> DELIVERED (fired)", "hl" in got and got.get("chain") == "10"))
+
+    # chget's own base, for rows D/E/F (unchanged by D-KEYSHIFT).
+    _, base = address()
 
     # --- D-LATCH2: the SECOND window ---------------------------------------
     # Rows D/E/F force a window that exists ONLY while the machine is consuming

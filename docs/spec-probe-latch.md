@@ -1,5 +1,14 @@
 # D-LATCH — the trigger is one instruction wide
 
+> 🔴 **Amendment 2026-10-12 (D-KEYSHIFT).** zerobas's REPL no longer waits in
+> C-BIOS `chget_wait`: its call sites wait in `zb_chget` (CHSNS in a loop, CHGET
+> only once a key is waiting), so the latch pair this spec scores is now the one
+> in `chsns`, where a stale HL only answers "a key is waiting" and the CHGET that
+> follows re-reads both pointers. `latch-check` rows A–C were re-aimed at CHSNS's
+> trigger and now require DELIVERY from both injectors, with the breakpoint proven
+> to have fired; the positive control is row D (`chget_char`, D-LATCH2),
+> unchanged. Below is the analysis as it stood, still true of `chget_wait`.
+
 Apparatus slice. **Touches no `basic/`, no `sub/`, no `disk/`, no `tape/` source**
 — `probes/lib/omsx_repl.py` and its host unit test only, so no sign-off gate
 applies. Written up as a slice anyway, with predicted RED/GREEN sets fixed before

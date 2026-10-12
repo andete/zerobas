@@ -1,0 +1,16 @@
+ROW prompt     VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>] SAME
+ROW inputs     VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>] SAME
+ROW input      VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>] SAME
+ROW lineinput  VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>] SAME
+ROW inkey      VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=0 <color cload" cont list. run> | up FNKSWI=1 <color auto goto list run>] SAME
+ROW keyoff     VG-8020 [rest FNKSWI=1 <> | held FNKSWI=1 <> | up FNKSWI=1 <>]
+               zerobas [rest FNKSWI=1 <> | held FNKSWI=1 <> | up FNKSWI=1 <>] SAME
+ROW busy       VG-8020 [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=1 <color auto goto list run> | up FNKSWI=1 <color auto goto list run>]
+               zerobas [rest FNKSWI=1 <color auto goto list run> | held FNKSWI=1 <color auto goto list run> | up FNKSWI=1 <color auto goto list run>] SAME
+
+PASS: the key line follows SHIFT as on the VG-8020

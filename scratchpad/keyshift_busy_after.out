@@ -1,0 +1,5 @@
+shift  ref: color auto goto list run | FNKSWI=1
+       zb : ";A$;" | FNKSWI=";F
+ctrl   ref: color auto goto list run | FNKSWI=1
+       zb : ";A$;" | FNKSWI=";F
+refcache: 0 hit, 2 miss, 2 stored

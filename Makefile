@@ -2444,6 +2444,12 @@ subsig-acceptance: repack-machine
 casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_casdirect.py
 
+# --- keyshift-acceptance: the key line shows F6..F10 while SHIFT is held, whenever
+# BASIC asks the keyboard (D-KEYSHIFT, Joost's report): prompt, INPUT, LINE INPUT,
+# INPUT$, INKEY$; not a busy loop; nothing under KEY OFF -- against the VG-8020.
+keyshift-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_keyshift.py
+
 # --- resetboot-acceptance: after a RESET the machine boots into BASIC and BASIC
 # works (D-RESETBOOT, Joost's report). RAM survives a reset; a stale SUBSLOT_OK
 # hung INIT. The VG-8020 is the control; both builds, idle and with a program.

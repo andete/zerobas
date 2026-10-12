@@ -189,10 +189,12 @@ rl_wait:
 rl_poll:                                    ; R-AU8: an AUTO session may NOT block
                 call    BREAKX              ; CF set = Ctrl-STOP is down
                 jr      c,rl_break
-                call    CHSNS               ; ZF set = nothing waiting yet
+                call    zb_chsns            ; ZF set = nothing waiting yet (D-KEYSHIFT:
+                                            ; CHSNS, the key line following SHIFT)
                 jr      z,rl_poll
 rl_get:
-                call    CHGET               ; the WAIT is here, in main, inside CHGET:
+                call    zb_chget            ; the WAIT is here, in main, inside CHGET
+                                            ; (D-KEYSHIFT: zb_chget, islands.asm):
                 push    af
                 ld      e,0
                 call    rl_cursor           ; cursor down before the tenant edits

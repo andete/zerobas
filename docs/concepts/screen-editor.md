@@ -103,7 +103,8 @@ The details that make these keys work as a unit:
   `? ` stays.
 - **The function keys type their text** as if it had been typed: F1 types
   `color `, F5 types `run` and RETURN, and SHIFT+F1 to SHIFT+F5 give F6 to
-  F10. The texts, `KEY n,text` and the function-key line are on
+  F10, and while SHIFT is held at the prompt the bottom row shows F6 to F10
+  too. The texts, `KEY n,text` and the function-key line are on
   [`KEY`](../keywords/KEY.md).
 - **The cursor is a block**: the character under it, drawn inverted.
 
@@ -243,6 +244,7 @@ disagree with this page, this page is current.
 - `make ctrlkeys-acceptance` — the code every CTRL key gives, against the
   VG-8020.
 - `make linemax-acceptance` — the 254-character limit.
+- `make keyshift-acceptance` — the function-key line while SHIFT is held.
 - Insert mode, DEL, BS, HOME and the cursor have no `make` target; the probes
   that measured them are [`insmode_probe.py`](../../scratchpad/insmode_probe.py),
   [`insbottom_probe.py`](../../scratchpad/insbottom_probe.py),

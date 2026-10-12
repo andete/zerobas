@@ -2477,7 +2477,7 @@ dsk_ascii_drive:
 ; out: A = the key, CF clear. HL preserved (the other sources promise it).
 chget_getbyte:
                 push    hl
-                call    CHGET
+                call    zb_chget            ; D-KEYSHIFT
                 pop     hl
                 or      a                   ; CF=0: never EOF
                 ret

@@ -2240,8 +2240,9 @@ item — do **one item per session** to keep context lean.
       VG-8020's log ends `2RMM` -- the prompt after the marker line, then
       CLOAD's lone M. Unmeasured: LOAD (no `,R`), MERGE and BLOAD's returns.
 
-- [ ] 🖥️ **D-KEYSHIFT — AT THE PROMPT, HOLDING SHIFT SHOWS THE F6..F10 LABELS; zerobas
-      KEEPS F1..F5 (Joost, 2026-10-11; measured the same day)**
+- [x] ✅ **D-KEYSHIFT — AT THE PROMPT, HOLDING SHIFT SHOWS THE F6..F10 LABELS; zerobas
+      KEEPS F1..F5 (Joost, 2026-10-11; measured the same day; FIXED 2026-10-12 -- at
+      the end)**
       🎚️ TIER 1 — happy path: the key line is on screen in every session.
       🤖 **AUTONOMOUS** — the VG-8020 settles it.
       📏 [`keyidle_probe.py`](scratchpad/keyidle_probe.py) →
@@ -2259,6 +2260,44 @@ item — do **one item per session** to keep context lean.
       compare SHIFT (row 6 bit 0) with FNKSWI and redraw the labels on a
       change. ⚠️ A page-1 tenant must not wait: the poll belongs in main's
       wait loop or on the C-BIOS side.
+      ✅ **FIXED 2026-10-12 -- 7/7 ROWS AS ON THE VG-8020.** 📏 Measured
+      first ([`keyshift_wait.out`](scratchpad/keyshift_wait.out)): INPUT$(1),
+      INPUT, LINE INPUT switch; KEY OFF draws nothing and FNKSWI stays 1 --
+      HIT; the INKEY$ loop was predicted NOT to switch and DOES -- MISSED: the
+      switch rides CHSNS (a key CHECK), not only the wait; a FOR loop that
+      never asks the keyboard does not. SCREEN 1 not measured.
+      🔧 C-BIOS's own chget waits on a HALT, not through CHSNS, so the rule
+      lives in zerobas's call sites, not in a C-BIOS patch: four calls
+      (read_line's poll and wait, INKEY$'s CHSNS, INPUT$'s chget_getbyte) go
+      through `zb_chsns` / `zb_chget` (basic/islands.asm, island 2): with the
+      key line shown and a text mode, SHIFT (row 6 bit 0) is compared with
+      FNKSWI and, on a change, stored and repainted through the keystr
+      tenant, whose painter now picks slots 6..10 when FNKSWI = 0
+      (sub/keystr.asm). Machine code calling the BIOS directly does not
+      switch. Bytes: island 2 47 -> 1 B, the low region 19 -> 0 B (the
+      repaint's register saves, `zks_p2`), sub page 0 13 -> 4 B; main page 1
+      untouched (0 B) -- clean build 2026-10-12. MAIN IS NOW FULL in both
+      regions: D-OPENGRP needs a carve first.
+      📏 [`keyshift_wait_after.out`](scratchpad/keyshift_wait_after.out),
+      [`keyidle_after.out`](scratchpad/keyidle_after.out): every row SAME,
+      the busy loop included. 🔮 HIT. 🛡️ Gate `keyshift-acceptance`
+      (probes/basic/basic_probe_keyshift.py), read at rest / held / 1.5 s
+      after release (0.6 s was too soon: both machines still showed F6..F10,
+      so the release reading could not discriminate). 🔪
+      [`keyshift_knives.out`](scratchpad/keyshift_knives.out): K-KS1 (the
+      painter's slot choice) and K-KS2 (no check) -> the five switching rows;
+      K-KS3 (the KEY OFF guard) -> keyoff alone. Predicted, each.
+      🔴 latch-check went red: rows A-C forced C-BIOS chget_wait's trigger, but
+      the REPL now waits in zb_chget (CHSNS in a loop; CHGET only once a key
+      waits). Re-aimed at CHSNS's latch pair, where even the OLD injector
+      delivers (CHGET re-reads both pointers) -- rows now require DELIVERY and
+      a recorded breakpoint hit; row D stays the positive control. 16/16
+      ([`keyshift_latch.out`](scratchpad/keyshift_latch.out));
+      docs/spec-probe-latch.md carries the amendment.
+      ⚠️ Found on the way, NOT this item: 2026-09-26's keyshift_probe.py no
+      longer gets a zerobas reading -- the harness captures before its busy
+      program prints; identical on the ROM before this change, so not caused
+      by it. Unexplained; a scratch probe, no gate depends on it.
 
 - [x] ✅ **D-RESETBOOT — AFTER A RESET THE MACHINE DOES NOT BOOT BACK INTO BASIC
       (Joost, 2026-10-11; measured and FIXED 2026-10-12 -- at the end)**
@@ -6910,7 +6949,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32382 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32421 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7076,7 +7115,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11938 (T-6FE392)8 (T-529ABE)` from `TODO.md:24732 (T-529ABE)`: a
+      `TODO.md:11977 (T-6FE392)8 (T-529ABE)` from `TODO.md:24771 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12785,7 +12824,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24732 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24771 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

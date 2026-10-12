@@ -130,6 +130,22 @@ STUBINL_P1H     equ     high SUBROM_ENTRY_BASE_P1
                 IF STUBINL_P0H
                 db      STUBINL_P0_HIGH_BYTE_NOT_ZERO__sc_inl0_HARDCODES_IT
                 ENDIF
+
+; zks_p2 -- the low-region tail of the D-KEYSHIFT repaint (basic/islands.asm
+; zks_paint pushed BC DE HL IX): IY, the keystr tenant's paint, then restore.
+zks_p2:
+                push    iy
+                ld      a,KEYOP_FNKPAINT
+                ld      (KEYARG),a
+                call    sr_inl0
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
+                pop     iy
+                pop     ix
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+
 sr_inl1:
                 ld      a,$80 | STUBINL_P1H/2   ; raw call, page-1 table
                 jr      inl_go

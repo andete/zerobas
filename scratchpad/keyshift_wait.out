@@ -1,0 +1,10 @@
+inputs     Philips_VG_8020                rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=0 <color cload" cont list. run>
+inputs     C-BIOS_MSX1_EU_REPACK_NODISK   rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=1 <color auto goto list run>
+input      Philips_VG_8020                rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=0 <color cload" cont list. run>
+input      C-BIOS_MSX1_EU_REPACK_NODISK   rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=1 <color auto goto list run>
+lineinput  Philips_VG_8020                rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=0 <color cload" cont list. run>
+lineinput  C-BIOS_MSX1_EU_REPACK_NODISK   rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=1 <color auto goto list run>
+inkey      Philips_VG_8020                rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=0 <color cload" cont list. run>
+inkey      C-BIOS_MSX1_EU_REPACK_NODISK   rest FNKSWI=1 <color auto goto list run> | shift FNKSWI=1 <color auto goto list run>
+keyoff     Philips_VG_8020                rest FNKSWI=1 <> | shift FNKSWI=1 <>
+keyoff     C-BIOS_MSX1_EU_REPACK_NODISK   rest FNKSWI=1 <> | shift FNKSWI=1 <>
