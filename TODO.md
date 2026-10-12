@@ -2339,6 +2339,33 @@ item — do **one item per session** to keep context lean.
       ⚠️ Main page 1 is now 0 B: D-KEYSHIFT and D-OPENGRP need a main carve
       first (low region 19 B).
 
+- [ ] 🎮 **D-BASICROM — A BASIC-PROGRAM CARTRIDGE DOES NOT RUN: zerobas IGNORES THE
+      HEADER'S TEXT FIELD (reported by Vampier via Joost, 2026-10-12)**
+      🎚️ TIER 1 — happy path: running existing software. Vampier tried "3D Golf
+      Simulation - High-speed" (T&ESOFT, 1984) and it did not start; Joost's
+      list of BASIC-cartridge titles (kept outside the repo) is the same kind.
+      🤖 **AUTONOMOUS** — 🏗️ Joost, 2026-10-12: *"running that rom is no issue, we
+      just cannot decompile it or have it be used in a permanent test"* -- the
+      gate uses OUR OWN synthetic cartridge, built to the published header
+      format, never the third-party image.
+      The format is published: `AB` at $8000, INIT / STATEMENT / DEVICE words,
+      and TEXT at +8; a non-zero TEXT is a tokenised BASIC program in the ROM,
+      which BASIC runs at boot. This cartridge's header: INIT, STATEMENT and
+      DEVICE 0, TEXT $8010 -- a pure BASIC program.
+      📏 **MEASURED 2026-10-12** ([`basicrom_probe.py`](scratchpad/basicrom_probe.py)
+      -> [`basicrom_golf.out`](scratchpad/basicrom_golf.out), the cartridge in
+      slot 1, published work-area cells only): the VG-8020 maps the cartridge
+      into PAGE 2 for good ($A8 = $D0), sets **TXTTAB = $8011** (TEXT + 1),
+      puts the variables at **VARTAB = $C000**, and RUNs it (CURLIN 90). zerobas
+      ignores the field: TXTTAB $8001, CURLIN $FFFF, page 2 RAM -- the prompt.
+      🔮 Predicted: HIT (TXTTAB said $8010; it is TEXT + 1).
+      ➡️ Next: measure the edges on the VG-8020 with our own synthetic
+      cartridge (the TEXT program's first line, Ctrl-STOP then LIST, a TEXT
+      cartridge in page 1, two TEXT cartridges, what CLEAR / FRE see), then
+      build it at boot: find a page-2 `AB` with TEXT via RDSLT, ENASLT page 2,
+      TXTTAB / VARTAB as measured, RUN. Then check that nothing in zerobas
+      writes into program text at run time (a ROM ignores the write).
+
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       NOT YET MEASURED)**
       🎚️ TIER 1 — happy path: loading existing software from tape.
@@ -7296,7 +7323,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32813 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32840 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7462,7 +7489,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12324 (T-6FE392)8 (T-529ABE)` from `TODO.md:25118 (T-529ABE)`: a
+      `TODO.md:12351 (T-6FE392)8 (T-529ABE)` from `TODO.md:25145 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13171,7 +13198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25118 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
