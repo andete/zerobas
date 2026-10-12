@@ -955,6 +955,23 @@ item — do **one item per session** to keep context lean.
       write path's own patterns never do — and its budgets stay exact (14 / 28),
       raw counts printed beside them. Its first cut gave the budgets 2 of slack,
       and the next run read 32 writes against 31.
+      🔴 **"d3 / d5 / d8 WHOLE" WAS THREE PHASES, NOT A PROPERTY (2026-10-12,
+      D-TOKOVF):** a change of ~2 T-states per crunched character in the
+      tokeniser, nowhere near the disk code, lost the shifted `*` at d8
+      (`str$(76)`; [`tokovf_ab.out`](scratchpad/tokovf_ab.out): green with the
+      bound cut, red live). During this workload zerobas never loses a frame
+      now: its longest wait for the frame interrupt is 16 ms, in the sector
+      loops (`fwd_wait` / `fdc_rd_wait`: one 512-byte sector at 32 us a byte,
+      which cannot be interrupted without losing data); the CF-3300 waits up to
+      212 ms and loses 25 frames ([`irqlat_fdcdi.out`](scratchpad/irqlat_fdcdi.out)).
+      So the gate's bound became the reference's BEST: each row keeps at least
+      18 of the 22 characters (the CF-3300 kept 15-18; zerobas before the windows
+      7-13). After: 22 / 22 / 21 ([`fdcdi_rebound.out`](scratchpad/fdcdi_rebound.out));
+      K-FD1 still turns exactly d3 d5 d8 red
+      ([`fdcdi_knives_rebound.out`](scratchpad/fdcdi_knives_rebound.out)). The
+      pages that said "all kept" say "nearly all" (CLOSE, SAVE, disk.md,
+      interrupts-and-traps.md). ⚠️ How a key is lost with NO frame lost is not
+      attributed (a key event shorter than a sector transfer is the guess).
       🔬 **TRIED 2026-10-10 AND REVERTED: skipping the seek when the head is on the
       track** (the WD2793 track register; a force interrupt `$D0` in its place so
       the write path's NOT READY test still reads a type-I status). Seeks 64 → 10
@@ -2409,7 +2426,80 @@ item — do **one item per session** to keep context lean.
       address; the reference prints the number at addr + 3. ~13 B in the detok
       tenant, sub page 0 (6 B on 2026-10-12): needs room there first (a carve, or
       moving the detok tenant to sub2). Measure LIST of our `lptr` cartridge on
-      the VG-8020 first.
+      the VG-8020 first. 🟢 **Room exists since D-TOKOVF the same day** (BEEP
+      moved to sub2: sub page 0 read 71 B free after, clean build) -- re-read
+      the wall before spending it.
+
+- [x] 🧨 **D-TOKOVF — THE CRUNCH STILL OVERRAN TOKBUF: A 253-CHARACTER `0#` LINE
+      WROTE ~253 B OF zerobas's WORKSPACE BEFORE BEING REFUSED** — ✅ **FIXED
+      2026-10-12** (found by the RAM-usage work, pricing TOKBUF -> KBUF)
+      🎚️ TIER 3 — an over-long line is a common error, and its refusal left
+      memory damage behind it (the next typed line came out garbled).
+      📏 [`tokovf_probe.py`](scratchpad/tokovf_probe.py) ->
+      [`tokovf_probe.out`](scratchpad/tokovf_probe.out): `10 A=0#+0#+...` (253
+      characters, ~829 crunched bytes; `0#` is 2 characters, 9 bytes) -- both
+      machines print `Line buffer overflow`, but zerobas's PEEK-sum over
+      $EE40..$EF3F (the workspace above TOKBUF) went 61185 -> 34121; the
+      VG-8020's (free RAM there) stayed 32640. tk_end was the crunch's ONLY
+      bound; TOKBUF's 576 B were sized for "314 + one step", which assumed the
+      main loop stopped at 314 -- nothing stopped it.
+      ✅ basic/tokenise.inc: `tk_loop`'s head stops the crunch once the body is
+      past TOKMAX_BODY (9 B); tk_end still refuses it (ERR 25). The inner copy
+      loops stay unbounded by design: 1:1 to the source's 0, so the overshoot is
+      at most 570 + the terminator, inside TOKBUFSZ. FUNDED by moving BEEP's
+      tenant (74 B, pure PSG I/O) from zerobas-sub page 0 to zerobas-sub2 page 0
+      (index 1, SUB2_IDX_BEEP; sub page 0 6 -> 71 B, main low 50 -> 47 B for the
+      open-coded `subrom2_call`; clean build 2026-10-12). After: the sum stays
+      61185 ([`tokovf_after.out`](scratchpad/tokovf_after.out)).
+      🔒 Gate: two `corrupt` rows in `make linemax-acceptance` (corrupt-ovf POKEs
+      $EF00 -- inside the old overrun, free RAM on the VG-8020 -- across the
+      refused line; corrupt-ovfctl a line that fits). The battery's existing
+      rows had stopped reaching the buffer's end when TOKBUF grew to 576 B.
+      Knife K-T1 (the head test decides nothing): corrupt-ovf RED, nothing else;
+      restored green ([`tokovf_knife.out`](scratchpad/tokovf_knife.out)).
+      🔮 Predicted the overflow message on both (HIT), the sum changing on
+      zerobas only (HIT); the garbled next line was NOT predicted -- and it was
+      not the overrun alone (D-TOKLAG below). Wall predictions: sub page 0 68 B
+      -- MISS by 3 (BEEP's body is 74 B, not the 71 its comment said).
+      🔴 **ITS FIRST FULL BATTERY READ 200/202** ([`tokovf_full.out`](scratchpad/tokovf_full.out)):
+      `geteject` (`put`: zerobas typed `NNEW` and `0 PUT 1,20` -- a key doubled,
+      line 60's `6` lost) and `fdcdi` d8 (the `*` lost), both REAL on retry.
+      Attributed by A/B, not assumed: [`tokovf_ab.out`](scratchpad/tokovf_ab.out)
+      (bound cut, same cycles: fdcdi green, geteject red),
+      [`tokovf_ab2.out`](scratchpad/tokovf_ab2.out) (no bound: both green),
+      [`tokovf_ab4.out`](scratchpad/tokovf_ab4.out) (no bound + 9 B of
+      never-executed pad, the live layout: both green) -- so TIMING, not
+      layout. 🔮 Predicted "red in both arms" (MISS on fdcdi), V2 red (MISS),
+      V4 green (HIT). Then measured WHERE: [`irqlat_probe.out`](scratchpad/irqlat_probe.out)
+      -- while geteject's program is typed, the references take every frame
+      interrupt within 7 us; zerobas held it off up to 9.2 ms, in the line-store
+      tenant's walks (`pfd_lp`, `le_tok_skip`, `skip_to_eol`), which ran under
+      the DI subrom_call enters every tenant with. ✅ sub/lineedit.asm now runs
+      with interrupts on (`ei` / `call le_dispatch` / `di`, 6 B sub page 1, 67
+      -> 61 B, clean build 2026-10-12): max 604 us / 340 us
+      ([`irqlat_after.out`](scratchpad/irqlat_after.out)); geteject green
+      ([`toklag_geteject.out`](scratchpad/toklag_geteject.out)). fdcdi d8 stayed
+      red -- a different path, the disk write's sector loops: see D-FDCDI's
+      re-bound (its gate now asks for the CF-3300's best, 18 of 22).
+
+- [ ] ⏱️ **D-TOKLAG — AFTER A REFUSED 253-CHARACTER LINE, zerobas LOSES THE NEXT TYPED
+      LINE AT A 6 s GAP; THE VG-8020 DOES NOT (filed 2026-10-12, from D-TOKOVF)**
+      🎚️ TIER 2 — reasonable time, if it is zerobas being slow; apparatus if it
+      is the typing rate. NOT YET ATTRIBUTED.
+      🤖 **AUTONOMOUS** — measure first. With the overrun fixed,
+      [`tokovf_after.out`](scratchpad/tokovf_after.out) still shows `PRINT
+      "ALIVE";1+1` missing on zerobas at `run_gap` 6 s; at 12 s it arrives
+      (a session-scratchpad rerun, same day). Time the refused line on both
+      machines (JIFFY before and after, or a watchpoint on the prompt) before
+      deciding which.
+      ➡️ 2026-10-12, same day: the LINE STORE's masked windows (up to 9 ms) were
+      found and fixed under D-TOKOVF (the lineedit tenant runs with interrupts
+      on) -- and the ALIVE line is STILL lost at 6 s
+      ([`toklag_tokovf.out`](scratchpad/toklag_tokovf.out)). So it was not that.
+      No frame interrupt waits long during line entry any more
+      ([`irqlat_after.out`](scratchpad/irqlat_after.out)), which points at time
+      spent (zerobas still busy when the next line is typed) rather than keys
+      missed -- measure the refused line's duration next.
 
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
@@ -3587,6 +3677,25 @@ item — do **one item per session** to keep context lean.
       reference leaves unused, into the sub ROMs' reach where a tenant can own
       it, or not at all (the 942 B disk share, on NODISK). Each B moved raises
       TXTMAX / HIMEM 1:1 only once the space below it is packed.
+      💰 **TOKBUF -> KBUF PRICED, 2026-10-12, and the price was a bug: D-TOKOVF.**
+      Pricing it found the crunch UNBOUNDED (tk_end its only test; a 253-
+      character `0#` line wrote ~253 B past TOKBUF) -- fixed first, with the
+      bound at tk_loop's head. With it the crunch writes at most 571 B (a body
+      of 314 + one step + the terminator), and the reference's own buffers are
+      CONTIGUOUS: KBUF $F41F (318) + BUFMIN $F55D (1) + BUF $F55E (258) = 577 B.
+      So TOKBUF at KBUF needs NO second bound: past 318 the overshoot runs into
+      BUF only, and only behind the source cursor once LINEBUF is BUF too
+      (write minus read stays below 319: 317 at most at an inner loop's entry,
+      and the 9 B main-loop step needs ~69 characters read to reach it).
+      ➡️ **ORDER, one commit each, FRE measured each time:** (1) LINEBUF -> BUF
+      (the `ld h,high LINEBUF` idiom in input.asm goes: BUF crosses $F600; the
+      low-byte terminator compares survive: a 255-byte span has distinct low
+      bytes -- but `ascii_read_lines`'s cap is `jr nc`, an ORDER test, and must
+      become `jr z`);
+      (2) TOKBUF -> KBUF -- $EB00..$EE3F (832 B) is then a hole; (3) shift the
+      LOWEST 832 B of cells ($E000..$E33F) up into it as one block, TXTMAX ->
+      $E340: the first FRE gain, +832. A tool rewrites each `equ` in the block by
+      the same delta and `tools/ram_map.py` must show exactly that set moved.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7369,7 +7478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32886 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32995 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7535,7 +7644,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12397 (T-6FE392)8 (T-529ABE)` from `TODO.md:25191 (T-529ABE)`: a
+      `TODO.md:12506 (T-6FE392)8 (T-529ABE)` from `TODO.md:25300 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13244,7 +13353,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25300 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

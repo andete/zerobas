@@ -45,6 +45,25 @@ tokenise:
                                             ; garbage at cold boot cannot fake one
                 ld      (TKOVF),a           ; ...and no crunch-time reject yet (F1,
 tk_loop:
+                ; 🔴 D-TOKOVF (2026-10-12): THE BOUND AT EVERY STEP. tk_end's test
+                ; below was the ONLY one, and nothing stopped the main loop before
+                ; it: `0#` is two characters and nine bytes, so a 253-character
+                ; `10 A=0#+0#+...` crunched ~829 B into this 576 B buffer and wrote
+                ; ~253 B over the workspace above it -- refused with `Line buffer
+                ; overflow` as it should be, and the next typed line came out
+                ; garbled (scratchpad/tokovf_probe.out). So: once the body is past
+                ; TOKMAX_BODY, stop crunching; tk_end refuses it (DE stays past
+                ; the ceiling, so its own test fires). One step from a body of at
+                ; most 314 writes at most 3 + a 253-byte verbatim tail (tk_apos;
+                ; the inner copy loops run 1:1 to the source's 0, never past
+                ; LINEMAX) -- 570 + the terminator, inside TOKBUFSZ. That is the
+                ; arithmetic sysvars.inc's 576 always assumed; this is the test
+                ; that makes it true.
+                push    hl
+                ld      hl,-(TOKBUF+TOKMAX_BODY+1)
+                add     hl,de               ; CF <=> DE >= TOKBUF+315: body > 314
+                pop     hl
+                jp      c,tk_end
                 ld      a,(TKNAME)
                 ld      b,a                 ; B = were we inside a name? (digit rule)
                 xor     a
@@ -395,12 +414,14 @@ tk_end:
                 ; 2026-08-02: the 2 was never right, and the 1 was the defect
                 ; D-MSGMIGRATE measured -- see sub/tkfloat.asm tkf_overflow.)
                 ;
-                ; ONE site, at the true end of the crunch, and that is deliberate: the
-                ; verbatim inner loops (tk_str_loop / tk_rem_rest / tk_data_rest) never
-                ; re-enter tk_loop, so a per-character test at the loop head would MISS
-                ; them. They are 1:1 and LINEMAX-bounded, so TOKBUF absorbs the overshoot
-                ; (sysvars.inc) and the adjudication happens here, where the body length
-                ; is final and the bound is provable rather than audited.
+                ; The ADJUDICATION is here, at the true end of the crunch: the verbatim
+                ; inner loops (tk_str_loop / tk_rem_rest / tk_data_rest / the CALL
+                ; name) never re-enter tk_loop, they are 1:1 and LINEMAX-bounded, and
+                ; TOKBUF absorbs their overshoot (sysvars.inc). 🔴 But "one site" was
+                ; only half the design and was shipped as the whole of it until
+                ; D-TOKOVF: the MAIN loop expands (`0#` -> 9 B) and had no bound at
+                ; all, so the overshoot was unbounded. tk_loop's head now stops the
+                ; crunch once the body is past the ceiling; this test still decides.
                 push    hl                  ; HL = source cursor; callers don't read it,
                                             ; but tokenise's contract doesn't promise it
                 ld      hl,-(TOKBUF+TOKMAX_BODY+1)

@@ -106,8 +106,10 @@ other does not. Nothing a program can observe through `FRE` differs.
 
 `ex_beep` in [basic/sound.asm](../../basic/sound.asm) stops any music
 (`psg_silence`, same file) and then calls the body, `beep_tenant` in
-[sub/beep.asm](../../sub/beep.asm), which lives in the sub-ROM. It moved there
-on 2026-07-23 to make room for `STICK` and `STRIG`.
+[sub/beep.asm](../../sub/beep.asm). It moved from the main ROM to the first
+sub-ROM on 2026-07-23 to make room for `STICK` and `STRIG`, and from there to
+the second sub-ROM ([sub2/sub2.asm](../../sub2/sub2.asm)) on 2026-10-12 to make
+room for the line-length check in the crunch (D-TOKOVF).
 
 ## Related concepts
 

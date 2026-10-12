@@ -1,0 +1,15 @@
+V4 disk_probe_geteject.py rc=0
+   ROW ctl CF=[RAN 20] ZB=[RAN 20] SAME
+   ROW get CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW put CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW linput CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW printc CF=[-] ZB=[ERR 70 60] PINNED
+   ROW load CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW bload CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW files CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+   ROW openin CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+V4 disk_probe_fdcdi.py rc=0
+   ROW d3 ZB=[WHOLE] KEPT
+   ROW d5 ZB=[WHOLE] KEPT
+   ROW d8 ZB=[WHOLE] KEPT
+restored: clean build rc=0 reached-ROM=True

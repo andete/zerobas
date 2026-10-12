@@ -1,0 +1,13 @@
+=== BEEP: PASS
+=== CLOSE: PASS
+=== SAVE: PASS
+
+PASS 3
+refcache: 1 hit, 5 miss, 5 stored
+=== disk: PASS
+=== interrupts-and-traps: PASS
+=== program-text: PASS
+
+PASS 3
+refcache: 1 hit, 5 miss, 5 stored
+kwdoc_rc=0

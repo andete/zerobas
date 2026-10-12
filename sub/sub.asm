@@ -183,11 +183,11 @@ sub_p0_table:
                                                 ;   third RDV_ST value, 2 = not a number.
                                                 ;   docs/spec-eviction-g7-space.md,
                                                 ;   docs/spec-basic-readvar.md.
-                jp      beep_tenant             ; index 11 (SUBROM_IDX_BEEP): the BEEP
-                                                ;   body (sub/beep.asm) -- carved out to
-                                                ;   fund input-devices slice I1. No args,
-                                                ;   no result, cannot fail.
-                                                ;   docs/spec-basic-input-devices.md §7.
+                ret                             ; index 11: RETIRED. It was BEEP's body
+                nop                             ;   (sub/beep.asm), which moved to
+                nop                             ;   zerobas-sub2 page 0 (SUB2_IDX_BEEP)
+                                                ;   to fund D-TOKOVF's crunch bound. The
+                                                ;   row keeps its 3 B so 12.. stay put.
                 jp      fld_lookup_tenant       ; index 12 (SUBROM_IDX_FLDLOOK): the
                                                 ;   FIELDed-variable READ hook's pure-RAM
                                                 ;   half (sub/fldlook.asm) -- carved out
@@ -359,10 +359,8 @@ tokenise_ei:
 ; shared basic/readdata-body.inc, and it brings page 0 its own tok_skip copy
 ; (basic/tokskip-body.inc).
                 include "readdata.asm"
-; --- BEEP body (I1 funding carve, docs/spec-basic-input-devices.md §7) -------
-; Direct PSG blip + busy-wait; no shared .inc, since BEEP has no resident copy to
-; stay in step with.
-                include "beep.asm"
+; --- (BEEP's body, sub/beep.asm, lived here until D-TOKOVF moved it to
+; zerobas-sub2 page 0 -- sub2/sub2.asm. Its 71 B fund the crunch bound.)
 ; --- FIELDed-variable READ hook (D-CLP funding carve, docs/decision-clearpool-
 ; funding.md). A pure RAM leaf: the resident stub (basic/field.asm) has already
 ; located the field-table entry and selected its channel, so this side only

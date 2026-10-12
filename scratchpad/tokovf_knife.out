@@ -1,0 +1,5 @@
+1/2 rows agree with the reference
+make: *** [linemax-acceptance] Error 1
+K-T1: gate RED, red ['corrupt-ovf']; predicted ['corrupt-ovf']: HIT
+2/2 rows agree with the reference
+restored: build rc=0; gate GREEN

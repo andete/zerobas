@@ -6,12 +6,12 @@ SPDX-License-Identifier: 0BSD
 
 # Interrupts and traps — what runs between statements
 
-> **Status (2026-10-11):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
+> **Status (2026-10-12):** the five `ON … GOSUB` traps, Ctrl-STOP, `TIME` and
 > background `PLAY` match the VG-8020 in every case measured. Open: traps are
 > not dispatched at the prompt, where the reference has not been measured
 > (D-DIR-3); `PLAY(n)` on the statement right after a `PLAY` (declined by
-> ruling). Keys typed during long disk work are kept here, where the CF-3300
-> loses some (D-FDCDI, 2026-10-11).
+> ruling). Keys typed during long disk work are nearly all kept here, where the
+> CF-3300 loses some (D-FDCDI, 2026-10-11; D-TOKOVF, 2026-10-12).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -166,8 +166,11 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   handler ([`traplatch_run.out`](../../scratchpad/traplatch_run.out)). zerobas
   raises the event at
   the next statement boundary; when the reference does is not yet pinned.
-- **Keys typed during long disk work** are all kept here, and the CF-3300 loses
-  some (D-FDCDI). Until 2026-10-11, zerobas's disk driver kept the interrupt off
+- **Keys typed during long disk work** are nearly all kept here, and the
+  CF-3300 loses some (D-FDCDI). Not every one: a key that lands while a
+  sector's bytes move can still go, as on the reference -- one in 22 at one of
+  three timings measured on 2026-10-12, when an unrelated change shifted the
+  timing ([what the interrupt waits for](../../scratchpad/irqlat_fdcdi.out)). Until 2026-10-11, zerobas's disk driver kept the interrupt off
   for each whole sector operation, and fewer keys arrived than on the
   CF-3300. Now it waits for each sector with the interrupt on, and turns it
   off only while the sector's bytes move.
@@ -181,6 +184,15 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Storing a typed program line held the interrupt off** (fixed 2026-10-12,
+  D-TOKLAG). Each stored line walked the program with interrupts off, for
+  about half a frame at worst; the VG-8020 and the CF-3300 take the frame
+  interrupt almost at once while lines are typed. A test that types a whole
+  program quickly started losing and doubling keys when an unrelated change
+  moved the timing slightly. The line store now runs with interrupts on, and
+  no frame interrupt waits long while a program is typed
+  ([before](../../scratchpad/irqlat_probe.out),
+  [after](../../scratchpad/irqlat_after.out)).
 - **Keys typed in the first seconds after power-on were lost** (fixed
   2026-10-09, D-BOOTSCAN, reported by Joost). The interrupt scans the keyboard
   only when a countdown cell (`SCNCNT`, `&HF3F6`) reaches 0; the VG-8020's

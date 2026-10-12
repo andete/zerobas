@@ -1,0 +1,33 @@
+=== Philips_VG_8020
+     S=0:FOR I=&HEE40 TO &HEF3F:S=S+PEEK(I
+     ):NEXT:PRINT "SUM";S
+     SUM 32640
+     Ok
+     Line buffer overflow
+     Ok
+     S=0:FOR I=&HEE40 TO &HEF3F:S=S+PEEK(I
+     ):NEXT:PRINT "SUM";S
+     SUM 32640
+     Ok
+     PRINT "ALIVE";1+1
+     ALIVE 2
+     Ok
+     LIST
+     Ok
+     color  auto   goto   list   run
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+     clean-room MSX1 BASIC
+     ZB
+     S=0:FOR I=&HEE40 TO &HEF3F:S=S+PEEK(I
+     ):NEXT:PRINT "SUM";S
+     SUM 61185
+     ZB
+     Line buffer overflow
+     ZB
+     S=0:FOR I=&HEE40 TO &HEF3F:S=S+PEEK(I
+     ):NEXT:PRINT "SUM";S
+     SUM 61185
+     ZB
+     LIST
+     ZB
+     color  auto   goto   list   run

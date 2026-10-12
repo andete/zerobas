@@ -179,9 +179,12 @@ ex_beep:
                 ; BEEP takes no argument, returns no result, and cannot fail.
                 ; HL (the statement cursor) is guarded across the CALSLT.
                 inc     hl                  ; past the BEEP token
+                ; D-TOKOVF: the body lives in zerobas-sub2 page 0 now (its 71 B
+                ; funded the crunch bound in zerobas-sub); there is no inline
+                ; stub for ROM 2, so this is the open-coded form (+3 B here).
                 push    hl
-                call    sr_inl0             ; D-STUBINL
-                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP)
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUB2_IDX_BEEP
+                call    subrom2_call
                 pop     hl
                 jp      c,subrom_absent_error
                 jp      exec_stmt           ; chain the next statement (HL preserved)

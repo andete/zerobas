@@ -68,6 +68,9 @@ SUB2_PING_P1    equ     $C3 ; written to SUB_PING by the page-1 ping (ROM 1 writ
 ; --- Page-0 entry table (append-only; IX = SUBROM_ENTRY_BASE_P0 + 3*index) --
 sub2_p0_table:
                 jp      sub2_p0_ping            ; index 0: round-trip ping
+                jp      beep_tenant             ; index 1 (SUB2_IDX_BEEP): the BEEP
+                                                ;   body (sub/beep.asm), moved from
+                                                ;   zerobas-sub page 0 by D-TOKOVF
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -76,6 +79,11 @@ sub2_p0_ping:
                 ld      a,SUB2_PING_P0
                 ld      (SUB_PING),a
                 ret
+
+; --- BEEP (D-TOKOVF, 2026-10-12): direct PSG port I/O and a busy-wait, no BIOS
+; and no sub-local helper, so it runs here unchanged. Its `ei` lands on this
+; ROM's own $0038 -> SUB_INT_RAM, which returns to 3-3 (step (a) above).
+                include "beep.asm"
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END
 ; (tools/check_sub_walls.py --sub2, a step of `make basic-reloc`).

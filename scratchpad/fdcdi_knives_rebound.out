@@ -1,0 +1,4 @@
+  ROM 2a0be34b b172dfbb 5ca6d7bd 358ebf77 5fd45621  ->  2a0be34b b172dfbb 0abe0786 358ebf77 5fd45621
+PASS  K-FD1: moved ['d3', 'd5', 'd8'] (want exactly ['d3', 'd5', 'd8'])
+
+ALL KNIVES BITE, EACH ON ITS OWN ROWS

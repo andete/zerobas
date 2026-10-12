@@ -274,6 +274,22 @@ CASES += [
     # the two-sided control: the SAME shape at a length that does NOT overrun
     # (5 literals = 47 bytes), so a red corrupt-num/-str is the overrun and not
     # the direct line, the `A=` payload, or the readout.
+    # 🔴 D-TOKOVF (2026-10-12): THE ROWS ABOVE STOPPED REACHING THE BUFFER'S END.
+    # They were written for a 96 B TOKBUF at $E160; it is 576 B at $EC00 now, and
+    # 45 literals crunch to ~407 B -- inside it. Yet the crunch was STILL unbounded
+    # (tk_end was its only test): 83 `0#` literals in a 253-character line crunch
+    # to ~829 B and wrote ~253 B past $EE3F (scratchpad/tokovf_probe.out). $EF00
+    # is inside that write, zerobas's workspace (FLD_DESC) and free RAM on the
+    # VG-8020, so the row POKEs it and reads it back across the refused line:
+    # the overrun writes only $1F / $00 / $F1 there, never the 7.
+    ("corrupt-ovf", "corrupt",
+     ["CLS", "POKE&HEF00,7", "10 A=" + "0#+" * 82 + "0#",
+      'PRINT"[";PEEK(&HEF00);"]"']),
+    ("corrupt-ovfctl", "corrupt",
+     ["CLS", "POKE&HEF00,7", "10 A=" + "0#+" * 5 + "0#",
+      'PRINT"[";PEEK(&HEF00);"]"']),
+    # control: a line that fits, so a red corrupt-ovf is the overrun and not the
+    # POKE, the PEEK or the stored line.
 ]
 
 # Every `tok`/`tokx` row is a SUSPECTED WEDGER on zerobas: the overrun lands on

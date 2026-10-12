@@ -186,8 +186,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   after D-DSKIB).
 - **A wildcard `COPY` with two or more matches** is error 5 here (D-COPYWILD;
   Joost, 2026-10-09: *"stay error 5 for now"*).
-- **Keys typed during long disk work** are all kept here; the CF-3300 loses
-  some of them (D-FDCDI). zerobas's driver keeps interrupts on while it waits
+- **Keys typed during long disk work** are nearly all kept here; the CF-3300
+  loses some of them (D-FDCDI). A key that lands while a sector's bytes move
+  can still go (one in 22 at one of three timings, 2026-10-12). zerobas's driver keeps interrupts on while it waits
   for a sector to come round, and off only while the sector's bytes move.
   Until 2026-10-11 it kept them off for the whole sector operation and lost
   more keys than the CF-3300 ([gate](../../probes/disk/disk_probe_fdcdi.py)).

@@ -241,7 +241,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              basic/fatiocreate-body.inc basic/fatiow-body.inc \
              sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm sub/cursor.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
-             sub/beep.asm sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
+             sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \
              sub/playparse.asm sub/graphics.asm \
              sub/math-coeffs.inc basic/sysvars.inc basic/kwtable.inc \
              basic/tokenise.inc basic/detok.inc \
@@ -287,7 +287,7 @@ sub: $(SUB_ROM)
 # beyond the two shared .inc files -- add one with the first tenant (step d),
 # or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
 SUB2_SRC  := sub2/sub2.asm
-SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm \
+SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm sub/beep.asm \
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym

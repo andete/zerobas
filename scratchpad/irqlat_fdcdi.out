@@ -1,0 +1,15 @@
+=== National_CF-3300: 465 accepted in ~589 frames; max 211986 us; <1ms 424  1-5ms 9  5-20ms 7  >=20ms 25
+=== C-BIOS_MSX1_EU_REPACK_DISK: 588 accepted in ~586 frames; max 16093 us; <1ms 544  1-5ms 17  5-20ms 27  >=20ms 0
+        3x  max  16093 us  PC at the rise: disk:fdc_rd_wait+0
+        5x  max  16019 us  PC at the rise: disk:fwd_wait+0
+        2x  max  15700 us  PC at the rise: disk:fwd_wait+3
+        5x  max  15074 us  PC at the rise: disk:fwd_byte+0
+        2x  max  13937 us  PC at the rise: disk:fdc_rd_wait+5
+        1x  max  13684 us  PC at the rise: disk:fdc_rd_byte+0
+        1x  max  13104 us  PC at the rise: disk:fdc_settle+1
+        1x  max  11945 us  PC at the rise: disk:fwd_wait+5
+        2x  max  10264 us  PC at the rise: disk:fwd_wait+9
+        2x  max   9947 us  PC at the rise: disk:fdc_wr_loop+0
+        1x  max   8932 us  PC at the rise: disk:fwd_byte+1
+        1x  max   7012 us  PC at the rise: disk:fdc_rd_wait+7
+        1x  max   6203 us  PC at the rise: disk:fdc_st_loop+0

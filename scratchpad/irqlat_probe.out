@@ -1,0 +1,9 @@
+=== National_CF-3300: 2637 accepted in ~2200 frames; max 3 us; <1ms 2637  1-5ms 0  5-20ms 0  >=20ms 0
+=== C-BIOS_MSX1_EU_REPACK_DISK: 2207 accepted in ~2200 frames; max 9216 us; <1ms 2202  1-5ms 2  5-20ms 3  >=20ms 0
+        1x  max   9216 us  PC at the rise: sub:pfd_lp+19
+        1x  max   9113 us  PC at the rise: sub:le_tok_skip+4
+        1x  max   5469 us  PC at the rise: sub:le_tok_skip+8
+=== Philips_VG_8020: 2207 accepted in ~2200 frames; max 7 us; <1ms 2207  1-5ms 0  5-20ms 0  >=20ms 0
+=== C-BIOS_MSX1_EU_REPACK_NODISK: 2207 accepted in ~2200 frames; max 9073 us; <1ms 2202  1-5ms 3  5-20ms 2  >=20ms 0
+        1x  max   9073 us  PC at the rise: sub:pfd_lp+5
+        1x  max   8457 us  PC at the rise: sub:skip_to_eol+7

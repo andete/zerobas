@@ -1,0 +1,11 @@
+ROW ctl CF=[RAN 20] ZB=[RAN 20] SAME
+ROW get CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW put CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW linput CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW printc CF=[-] ZB=[ERR 70 60] PINNED
+ROW load CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW bload CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW files CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+ROW openin CF=[ERR 70 60] ZB=[ERR 70 60] SAME
+
+PASS: disk verbs with the disk gone (9/9)

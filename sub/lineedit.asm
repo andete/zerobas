@@ -84,6 +84,23 @@
 ; whichever verb happens to sit last. Six bytes of sub page 1 to convert a
 ; silent mis-route into a loud one.
 lineedit_tenant:
+                ; ⏱ D-TOKLAG (2026-10-12): RUN WITH INTERRUPTS ON, as the tokeniser
+                ; does (sub/sub.asm tokenise_ei). subrom_call enters every tenant
+                ; under DI, and this one's program walks (pfd_lp, le_tok_skip,
+                ; skip_to_eol) held the frame interrupt off for up to ~9 ms per
+                ; stored line, where the VG-8020 and the CF-3300 never held it past
+                ; 7 us (scratchpad/irqlat_probe.out). Typed keys landed in those
+                ; windows: a few T-states more per line (D-TOKOVF's bound) turned
+                ; `NNEW` / `0 PUT 1,20` up in geteject-acceptance. A page-1 tenant
+                ; may take interrupts: page 0 is main's, so $0038 is the BIOS, and
+                ; htimi_guard skips the hook work while page 1 is not main. It
+                ; returns under DI like every tenant (the CALSLT restore after it
+                ; must stay atomic); nothing in this file plays with SP.
+                ei
+                call    le_dispatch
+                di
+                ret
+le_dispatch:
                 ld      a,(LE_OP)
                 or      a
                 jr      z,le_store              ; LE_OP_STORE = 0

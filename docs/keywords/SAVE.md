@@ -103,7 +103,9 @@ keyword sweep does not yet carry a row for every code of every form.
 **RAM usage** is not yet proven either.
 
 Related, and not about `SAVE` alone: keys typed while a long disk write runs
-are all kept here and partly lost on the CF-3300 (about 77 % kept there). Until
+are nearly all kept here (at most one in 22 lost in the timings measured, a
+key that lands while a sector's bytes move) and partly lost on the CF-3300
+(about 77 % kept there). Until
 2026-10-11 zerobas kept fewer, about 42 %; the disk driver now waits for each
 sector with interrupts on (D-FDCDI).
 

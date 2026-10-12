@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # Program text — how a typed line becomes a program line
 
-> **Status (2026-10-09):** a typed line is crunched to the same bytes as on the
+> **Status (2026-10-12):** a typed line is crunched to the same bytes as on the
 > VG-8020 and the CF-3300, stored in the same format at the same address, and
 > listed back the same way, in every case measured. No TIER 1–3 item is open.
 > How much program fits in memory is a RAM-usage question (TIER 4), covered on
@@ -189,6 +189,13 @@ nothing and reports nothing), and the `$0D` form above.
   after a longer one zerobas could no longer run `B=7`. The reference refuses
   such a line with `Line buffer overflow`; zerobas now does the same, and the
   typed limit went from 95 characters to the reference's 254.
+- **…and it still could, on a longer line** (D-TOKOVF, 2026-10-12). The 2026-07
+  fix checked the length only once the whole line was crunched. A 253-character
+  `10 A=0#+0#+…` crunches to about 829 bytes, and wrote about 253 of them past
+  the buffer into zerobas's own working memory before being refused. The refusal
+  was right; the damage behind it was not. The crunch now stops as soon as the
+  line is too long. Found while measuring which buffers can be shared with the
+  reference's own (the RAM-usage work).
 - **Line references were missing after eight words** (D-LNREF, 2026-08-01).
   Walking all 162 reserved words on both references found fourteen that store
   a `$0E` reference, not the six zerobas had. One was a live defect:

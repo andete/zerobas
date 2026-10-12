@@ -43,7 +43,9 @@ SYM = tp("zb_beep_sub.sym")
 
 
 def build():
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", ROM, SYM],
+    # zerobas-sub2 since D-TOKOVF (2026-10-12): BEEP's tenant moved from
+    # zerobas-sub page 0 to zerobas-sub2 page 0 to fund the crunch bound.
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub2/sub2.asm", ROM, SYM],
                    cwd=ROOT, check=True, capture_output=True)
 
 

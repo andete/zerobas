@@ -971,6 +971,11 @@ LINENO_ACC_STOP equ     (LINENO_CEIL/10)+1
 ; adjudicate: 314 (accepted body) + 258 (the widest one-character step — tk_apos's 3
 ; bytes plus a 253-byte verbatim tail) + 1 (terminator) = 573, rounded to 576. The
 ; bound is then PROVABLE from LINEMAX rather than audited emit site by emit site.
+; 🔴 D-TOKOVF (2026-10-12): "314 (accepted body) + one step" ASSUMED the main loop
+; stops at 314, and nothing stopped it -- tk_end's was the ONLY test, so `0#`
+; (2 chars, 9 B) repeated over a 253-character line wrote ~829 B here, ~253 past
+; the end. tk_loop's head now stops the crunch once the body passes the ceiling,
+; which is what makes this arithmetic true (scratchpad/tokovf_probe.out).
 ; ⚠️ D-FCH §3.3: MOVED $B700 -> $EC00, into the window S-FCH-1 freed. This is the
 ; buffer that BLOCKED TXTMAX: it sat immediately above the text ceiling, so
 ; nothing above it could be reclaimed until it moved. See LINEBUF above.
@@ -4515,6 +4520,9 @@ GRP_HDR         equ     $F14C   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
 SUB2_IDX_GRPPRT equ     1       ; zerobas-sub2 page-1 index: grpprt_tenant (D-OPENGRP)
 SUB2_IDX_EDCTRL equ     2       ; zerobas-sub2 page-1 index: edctrl_tenant (D-EDCARVE)
+SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
+                                ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
+                                ; no result, cannot fail, so nothing marshals.
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
@@ -5033,12 +5041,8 @@ SUBROM_IDX_READVAL   equ 10     ; readdata_tenant (sub/readdata.asm): the READ/D
                                 ; (index 10 in the page-0 table -- the page-1 table's
                                 ; own index 10 is FORMAT; the two spaces are separate).
                                 ; Result rides back in RDV_ST/RDV_VAL.
-SUBROM_IDX_BEEP      equ 11     ; beep_tenant (sub/beep.asm): the BEEP body (direct
-                                ; PSG blip + busy-wait), carved out of basic/sound.asm
-                                ; to fund input-devices slice I1 (docs/spec-basic-
-                                ; input-devices.md §7). PAGE-0 table index 11 -- IX =
-                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_BEEP. No args,
-                                ; no result, cannot fail, so nothing marshals.
+                                ; (page-0 index 11 is RETIRED: BEEP's body moved to
+                                ; zerobas-sub2 page 0, SUB2_IDX_BEEP -- D-TOKOVF.)
 SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELDed-
                                 ; variable READ hook's pure-RAM half (record-slice
                                 ; copy out of FSECTOR_BUF into FLD_DESC + the RVDESC
