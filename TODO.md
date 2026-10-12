@@ -2389,7 +2389,42 @@ item — do **one item per session** to keep context lean.
       SCREEN 0. `FOR INPUT`: 56 at the OPEN. Unmeasured: whether a glyph's 0
       bits erase to the background, the right and bottom edges, other control
       codes, SCREEN 3.
-      ⛔ **BLOCKED ON SPACE BOTH SIDES (2026-10-12): main page 1 0 B and the low
+      📏 **ROUNDS 2-4, 2026-10-12, the rule is now complete** (VG-8020 only;
+      [`opengrp2_probe.out`](scratchpad/opengrp2_probe.out),
+      [`opengrp3_probe.out`](scratchpad/opengrp3_probe.out),
+      [`opengrp3_sweep.out`](scratchpad/opengrp3_sweep.out),
+      [`opengrp3_header.out`](scratchpad/opengrp3_header.out),
+      [`opengrp4_probe.out`](scratchpad/opengrp4_probe.out)):
+      **a glyph is "PSET each 1 bit in FORCLR"** -- round 4 drew the same glyph
+      both ways at an unaligned x over clashing 8x1 colour cells and read every
+      pixel: identical, and zerobas's PSET already matches the reference's, so
+      the build is a loop over our own plot (the graphics tenant's op 1). 0 bits
+      are transparent. CHR$(32..255) each draw and advance 8 (SCREEN 3: 4x4
+      blocks, advance 32); CHR$(0..31) are IGNORED -- LF too -- except CR (x=0,
+      y + 8 / 32) and CHR$(1), which makes the next code draw glyph code-64
+      (`CHR$(1);"A"` = the smiley). x wraps to 0 and down a line only when it
+      reaches 256 (244 -> 252 stays; 248 and 252 wrap, the glyph clipped at the
+      edge); y wraps to 0 when it reaches 192 (180 + CR -> 188, 184 + CR -> 0).
+      CHR$(12) does not clear. 🔮 Scored: transparency HIT, x wrap HIT, SCREEN 3
+      HIT, PSET model HIT; control codes MISS (I predicted they draw), CHR$(1)
+      MISS (predicted ignored), y wrap at 180 MISS. Instrument faults on the way,
+      all fixed in the probes: a variable clobbered by the readout subroutine,
+      `cap_gap` taken for the run budget (it is `run_gap`), a 255-character
+      string overflow, a PSET in one arm only.
+      🔧 **C-BIOS's own GRPPRT (BIOS $008D) is NOT the build**: SCREEN 2 only, no
+      wrap, no CHR$(1), its own colour rule, and at x=252 its right half spills
+      into the next character row.
+      💰 **PRICED 2026-10-12, after C5-LOW (main low 47 B, page 1 43 B, sub page
+      1 69 B, sub page 0 4 B):** main ~35 B (a `GRP:` name and arm in `do_open`,
+      FOR INPUT -> 56, the PRINT # sink value, `pchar`'s arm with the SCREEN 0/1
+      -> 5 test) fits. The character logic + glyph loop (header flag, CR,
+      control filter, glyph address from CGPNT, scale 1/4, 8x8 plot calls through
+      `sr_inl0` with the range clip, advance and both wraps) is ~110-125 B
+      (estimate, not assembled) -- over sub page 1's 69 B (2026-10-12), and sub page 0 is out.
+      So D-SUB2 goes first, as filed.
+      ⛔ (History: the main half of this block was lifted by C5-LOW the same
+      day -- the 💰 line above is current.) **BLOCKED ON SPACE BOTH SIDES
+      (2026-10-12): main page 1 0 B and the low
       region 0 B; sub page 0 4 B** (after D-KEYSHIFT). The device needs main
       bytes (a fourth name in `do_open`'s dispatch, the channel's output arm,
       the SCREEN 0 refusal) AND drawing code beside the graphics tenant (sub
@@ -7006,7 +7041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32478 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32513 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7172,7 +7207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12034 (T-6FE392)8 (T-529ABE)` from `TODO.md:24828 (T-529ABE)`: a
+      `TODO.md:12069 (T-6FE392)8 (T-529ABE)` from `TODO.md:24863 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12881,7 +12916,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24828 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24863 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
