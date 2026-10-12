@@ -257,7 +257,7 @@ e21_no_resume:
                 ; so the walk cannot miss. BC trails HL by one line and is
                 ; pre-seeded, so an empty program (unreachable: RUN clears ONEFLG)
                 ; still writes a defined value instead of running away.
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      b,h
                 ld      c,l
 e21_walk:

@@ -369,6 +369,7 @@ __MEAS_LOW_END:
 ; callerless main-side read_sector shim went with the last of the carve.)
                 include "basic/files.asm"
                 include "basic/grpdev.asm"   ; D-OPENGRP: OPEN "GRP:" + its pchar sink
+                include "basic/basicrom.asm" ; D-BASICROM: a BASIC-program cartridge at boot
                                             ; (page 1 since D-DIMRESERVE's promotion,
                                             ; 2026-10-12: it sat low only while page 1
                                             ; was full)

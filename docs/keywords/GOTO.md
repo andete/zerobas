@@ -92,6 +92,15 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A jump stored as a line POINTER was a Syntax error** (fixed 2026-10-12,
+  D-BASICROM). After a jump runs, the reference rewrites its operand from a line
+  number into the address of the line, in the program text itself; a program
+  stored after it ran -- a BASIC cartridge, a file saved from a real MSX --
+  carries that form, and zerobas refused it: Vampier's 3D Golf Simulation
+  cartridge stopped at its first GOSUB. zerobas now follows it (it never writes
+  it). `RESTORE` is not one of them: the reference answers a pointer there
+  with `Undefined line number`, and so does zerobas
+  ([`basicrom_gate.out`](../../scratchpad/basicrom_gate.out)).
 - **Big line numbers wrapped** (fixed 2026-08-01, D-LNREF). `GOTO 99999` was
   stored as a jump to line 34463. The reference neither wraps nor refuses: it
   splits the digits at 65529, the same ceiling as a program line's own number

@@ -45,7 +45,7 @@ sav_disk_write:
                 ; --- program image: TXTBASE .. PRGEND+1 inclusive ----------
                 ; PRGEND points at the $0000 end-of-program marker (program.asm),
                 ; so the last image byte is PRGEND+1. Walk inclusive.
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (DSV_PTR),hl
                 ld      hl,(PRGEND)
                 inc     hl                  ; last image byte = PRGEND+1

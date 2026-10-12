@@ -208,6 +208,16 @@ never for the code it points at. The allowed sources are listed in the
 
 ## What we found, and how
 
+- **A BASIC-program cartridge did not run** (fixed 2026-10-12, D-BASICROM,
+  reported by Vampier). A cartridge whose header's TEXT field points at a BASIC
+  program in its page 2 is run at boot by the reference: the cartridge stays
+  mapped at `&H8000`, `TXTTAB` is TEXT + 1, the variables start at `&HC000`,
+  and it runs in `SCREEN 1` at width 29, with no header first; after `END` it
+  can be LISTed. zerobas booted to its prompt. It now does the same
+  ([`basicrom_gate.out`](../../scratchpad/basicrom_gate.out), our own test
+  cartridges). Vampier's game now starts, and then stops: its machine code
+  keeps data in RAM that is free on the reference and is zerobas's own
+  workspace here -- the RAM-usage gap, which is being closed.
 - **A reset left the machine on C-BIOS's boot screen** (fixed 2026-10-11,
   D-RESETBOOT; reported by Joost). RAM survives a reset, and a cell left over
   from the session before told INIT the sub-ROM was already set up; INIT

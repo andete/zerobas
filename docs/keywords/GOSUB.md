@@ -98,6 +98,15 @@ free memory than the VG-8020 overall, so a runaway recursion reaches
 
 ## What we found, and how
 
+- **A jump stored as a line POINTER was a Syntax error** (fixed 2026-10-12,
+  D-BASICROM). After a jump runs, the reference rewrites its operand from a line
+  number into the address of the line, in the program text itself; a program
+  stored after it ran -- a BASIC cartridge, a file saved from a real MSX --
+  carries that form, and zerobas refused it: Vampier's 3D Golf Simulation
+  cartridge stopped at its first GOSUB. zerobas now follows it (it never writes
+  it). `RESTORE` is not one of them: the reference answers a pointer there
+  with `Undefined line number`, and so does zerobas
+  ([`basicrom_gate.out`](../../scratchpad/basicrom_gate.out)).
 - **`GOSUB` could only nest 8 deep** (fixed 2026-09-04, D-CTLPOOL). zerobas
   kept subroutine calls in a fixed table of eight; the VG-8020 measured about
   4000 at power-on and the CF-3300 about 3300. Calls now live in one pool

@@ -40,6 +40,7 @@
 ; the CALSLT into the cartridge's page-1 INIT runs from page 0, which the switch
 ; never touches.
 try_init_slot:
+                call    try_text_slot       ; D-BASICROM: a page-2 TEXT cartridge? (keeps A)
                 ld      (SCAN_SLOT),a
                 ld      hl,$4000
                 call    rdslt_scan

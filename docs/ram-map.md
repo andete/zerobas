@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 436 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **110** in the MSX standard work area at or above `$F380`.
-* **disk** — 137 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **30** in the MSX standard work area at or above `$F380`.
+* **basic** — 437 declared addresses in this project's own workspace `$E000..$F37F` (408 with a machine-readable width), plus **110** in the MSX standard work area at or above `$F380`.
+* **disk** — 137 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **31** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -475,7 +475,8 @@ second one is the question a per-component map cannot answer.
 | `$EAFF` |  | `basic` | `FN_PAREA_END` |  |  |
 | `$EB00` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
 | `$EB00` | 1 B | `disk` | `LINEBUF` | repack: ASCII input line from the keyboard (LINEMAX B) (1 B) |  |
-| `$EC00` | 576 B | `basic` | `TOKBUF` | repack: crunch buffer, 576 B ($EC00..$EE3F) |  |
+| `$EC00` | 576 B | `basic` | `BROM_TEXT/TOKBUF` | 2 B: the cartridge's TEXT word (high 0 = none) |  |
+| `$EC02` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
@@ -663,6 +664,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F663` | 1 B | `basic` | `VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
+| `$F676` |  | `disk` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
 | `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
 | `$F698` |  | `basic` | `TEMPBASE` | $F698: high boundary = the empty- |  |

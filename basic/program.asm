@@ -430,7 +430,7 @@ new_prog:
 ; TXTBASE here, so run_prog_at below is entered with the invariant already true
 ; and there is no flag and no second code path.
 run_prog:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (GOTOTGT),hl        ; bare RUN: start at the top
 run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                 ; 🔴 D-RUNCLOSE (2026-09-27): RUN CLOSES EVERY OPEN FILE FIRST, and
@@ -492,7 +492,7 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                                             ; Net zero bytes.
                 xor     a                   ; DATA pointer unpositioned (read seeks
                 ld      (DATASTATE),a       ;  from the program start on first READ)
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (RESTORE_LINE),hl   ; ⚠️ DATA restores from the PROGRAM TOP even
                                             ; for RUN <lineno> -- RUN resets the DATA
                                             ; cursor, and the start line does not move it
@@ -1236,7 +1236,7 @@ ex_cont_no:
 ; in: BC = line number. out: CF set + HL = the line's link-field address if
 ; found; CF clear otherwise. Clobbers A, DE, HL.
 find_line_bc:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 flb_lp:
                 ld      e,(hl)              ; DE = link
                 inc     hl
@@ -2407,7 +2407,9 @@ exr_bad:
 ; line arrives as the $0E line-number reference (branch_lineno tokenises it).
 ex_restore:
                 rst    $10                ; past the RESTORE token
-                cp      LINENO_TOKEN        ; $0E,<lineno LE> -> restore to a line
+                cp      LINENO_TOKEN        ; $0E,<lineno LE> -> restore to a line. NOT $0D:
+                                            ; the VG-8020 raises 8 for a RESTORE pointer
+                                            ; (D-BASICROM gate, case lptr's first run)
                 jr      z,ers_line
                 ; D-DATACOLON: this arm used to be an unconditional `ret` under
                 ; "nothing else on a bare RESTORE word" -- and the dispatcher
@@ -2427,7 +2429,7 @@ ex_restore:
                 jr      ers_find            ; references)
 ers_bare:
                 push    hl                  ; keep the exec cursor -- the old code
-                ld      hl,TXTBASE          ; clobbered HL because it never came back
+                ld      hl,(TXTTAB)          ; clobbered HL because it never came back
                 ; 🎯 D-CARVE3: canonical RESTORE tail -- pin the line, clear the
                 ; DATA state, resume. Both RESTORE arms end this way.
 restore_done:
@@ -2436,11 +2438,7 @@ restore_done:
                 ld      (DATASTATE),a
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 ers_line:
-                inc     hl
-                ld      c,(hl)              ; target line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl                  ; HL past the $0E operand (exec cursor)
+                call    lref_bc             ; BC = the target line ($0E only reaches here)
                 push    hl
 ers_find:
                 call    find_line_bc        ; CF set + HL = line link-field
@@ -2600,16 +2598,12 @@ eon_seek_nth:
 ; Phase 1: count down to the Nth entry.
 esn_p1:
                 call    skip_spaces
-                cp      LINENO_TOKEN        ; $0E expected
+                call    is_lref             ; $0E / $0D expected (D-BASICROM)
                 jr      nz,esn_notlineno    ; D-ONLIST: NOT simply "list shorter
                                             ; than N" -- that comment was true for
                                             ; one of this jump's two entry
                                             ; conditions and false for the other
-                inc     hl
-                ld      c,(hl)              ; lineno lo
-                inc     hl
-                ld      b,(hl)              ; lineno hi -> BC = this entry's line number
-                inc     hl                  ; HL past this $0E,lo,hi
+                call    lref_bc             ; BC = this entry's line number, HL past it
                 dec     de
                 ld      a,d
                 or      e
@@ -2626,7 +2620,7 @@ esn_p2:
                 call    skip_comma
                 jr      nz,esn_ok           ; no more commas -> HL past the list
                 rst    $10                ; past comma
-                cp      LINENO_TOKEN
+                call    is_lref
                 jr      nz,esn_ok           ; malformed: stop here
                 inc     hl
                 inc     hl
@@ -2639,7 +2633,7 @@ esn_ok:
 ; N=0: scan past the entire list and return CF clear.
 esn_scan:
                 call    skip_spaces
-                cp      LINENO_TOKEN
+                call    is_lref
                 jr      nz,esn_nocf         ; no entries at all
                 inc     hl
                 inc     hl
@@ -2648,7 +2642,7 @@ esn_scan_lp:
                 call    skip_comma
                 jr      nz,esn_nocf         ; no more commas -> done
                 rst    $10                ; past comma
-                cp      LINENO_TOKEN
+                call    is_lref
                 jr      nz,esn_nocf
                 inc     hl
                 inc     hl
@@ -2738,7 +2732,7 @@ ex_on_error:
                 jr      z,oe_disable        ; `ON ERROR GOTO` <eol>  == GOTO 0
                 cp      COLON
                 jr      z,oe_disable        ; `ON ERROR GOTO :`      == GOTO 0
-                cp      LINENO_TOKEN
+                call    is_lref
                 jr      nz,oe_badop         ; present, not a line number (D-SCRBAUD
                                             ; carve: jr range, per jr_mapper.py)
                 call    req_lineno          ; D-NGRAM10: $0E,lo,hi expected (GOTO's
@@ -2960,16 +2954,12 @@ onoff_decode:
 ; (ERR 8, VG-8020-measured case S5), exactly as GOTO does. Clobbers A, BC.
 trap_line_link:
                 ld      a,(hl)
-                cp      LINENO_TOKEN        ; $0E,lo,hi
+                call    is_lref             ; $0E / $0D (D-BASICROM)
                 jr      z,tll_have
                 or      a                   ; not a line ref -> CF = 0
                 ret
 tll_have:
-                inc     hl
-                ld      c,(hl)              ; handler line number, LE
-                inc     hl
-                ld      b,(hl)
-                inc     hl                  ; HL -> cursor past the $0E operand
+                call    lref_bc             ; BC = the handler line, HL past it
                 push    hl                  ; guard cursor across find_line_bc
                 call    find_line_bc        ; CF set + HL = link addr if found
                 jp     nc,tll_undef

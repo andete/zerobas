@@ -141,6 +141,10 @@ init:
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
                 call    new_prog            ; empty stored program (Step B)
+                xor     a
+                ld      (BROM_TEXT+1),a     ; D-BASICROM: no TEXT cartridge yet (the scan
+                                            ; sets it; RAM survives a reset). Here, not in
+                                            ; init_ext_roms: island 1 has no room for it
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
                 ; D-KEYSTR (2026-09-10): the ten function-key defaults, COLD BOOT
                 ; ONLY -- the references keep a KEY n,"str" across NEW/RUN/CLEAR.
@@ -198,7 +202,9 @@ bh_store:
                 ; 39. show_title's INITXT below takes LINLEN from LINL40.
                 ld      a,37
                 ld      (LINL40),a
-                call    show_title          ; startup header lines
+                call    brom_screen         ; D-BASICROM: a TEXT cartridge boots in
+                                            ; SCREEN 1 / WIDTH 29 with NO header (NZ)
+                call    z,show_title        ; startup header lines
                 ; 🖥️ D-KEYBOOT (2026-09-25): BOOT WITH THE FUNCTION-KEY LINE SHOWN,
                 ; as the VG-8020 does (`color  auto   goto   list   run` on row 23,
                 ; CNSDFG 255, the scroll bound at row 22 -- scratchpad/
@@ -260,6 +266,7 @@ bh_store:
                 call    CALSLT
                 ei
 init_no_diskbanner:
+                call    brom_run            ; D-BASICROM: RUN a cartridge's BASIC program
                 call    autoexec_run        ; auto-run AUTOEXEC.BAS if present (cload.asm)
                 jp      repl                ; read/eval loop (never returns)
 
@@ -400,13 +407,47 @@ str_eval_next:
 ; is no `ret` whose depth could change. Checked at the source, not assumed.
 ; [[a-shared-tail-is-not-a-decision]]
 req_lineno:
-                cp      LINENO_TOKEN
+                call    is_lref             ; D-BASICROM: $0E OR $0D (below)
                 jp      nz,stmt_error
+                ; falls into lref_bc
+; --- lref_bc: the line NUMBER a line reference names (D-BASICROM) -----------
+; in: HL -> a $0E or $0D token (is_lref said so). out: BC = the line number, HL
+; past the 3-byte reference, A = the token.
+; 🔴 $0D IS THE REFERENCE'S OWN POST-RUN FORM, AND zerobas REFUSED IT. The
+; VG-8020 rewrites `$0E <number>` into `$0D <pointer>` in place the first time a
+; jump runs (measured: GOTO 10's operand reads 14 / 10 before RUN, 13 / $8000
+; after -- the pointer is the byte BEFORE the target line). A program stored
+; after it ran -- a BASIC ROM cartridge, a file SAVEd from a real MSX -- carries
+; them, and req_lineno's `cp $0E` made every one a Syntax error: Vampier's 3D
+; Golf cartridge stopped at its first GOSUB. zerobas never WRITES the $0D form
+; (it re-resolves each time); it now reads both. The line number sits at
+; pointer + 3 (the target's link is pointer + 1, its number + 3).
+lref_bc:
+                ld      a,(hl)
                 inc     hl
-                ld      c,(hl)              ; target line number, LE
+                ld      c,(hl)
                 inc     hl
                 ld      b,(hl)
                 inc     hl
+                cp      LINEADDR_TOKEN
+                ret     nz                  ; $0E: BC is the number
+                push    hl
+                ld      h,b
+                ld      l,c
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = pointer + 3: the target's number
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)
+                pop     hl
+                ret
+; --- is_lref: Z iff A is a line reference token, $0E (a number) or $0D (a
+; pointer); A preserved. D-BASICROM.
+is_lref:
+                cp      LINENO_TOKEN
+                ret     z
+                cp      LINEADDR_TOKEN
                 ret
 
 ; --- str_target_parse: a STRING VARIABLE TARGET, type-checked and parsed -----
@@ -1917,8 +1958,8 @@ if_then:
                 jr      z,if_false
                 ld      a,(hl)              ; true: line number -> GOTO, else run
 if_lineno:                                  ; C4 shared tail (2026-10-03): the ELSE
-                cp      LINENO_TOKEN        ; arm jumps here with A = (HL)
-                jr      z,ex_goto_at        ; HL on $0E -> conditional GOTO
+                call    is_lref             ; arm jumps here with A = (HL)
+                jr      z,ex_goto_at        ; HL on $0E / $0D -> conditional GOTO
                 jp      exec_stmt
 if_false:
                 call    if_skip_to_else     ; scan to ELSE token or end of line

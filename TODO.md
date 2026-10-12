@@ -2365,6 +2365,52 @@ item — do **one item per session** to keep context lean.
       build it at boot: find a page-2 `AB` with TEXT via RDSLT, ENASLT page 2,
       TXTTAB / VARTAB as measured, RUN. Then check that nothing in zerobas
       writes into program text at run time (a ROM ignores the write).
+      ✅ **TWO FIXES SHIPPED 2026-10-12; THE GAME NOW STARTS AND STOPS ON A THIRD.**
+      (1) **The boot:** basic/basicrom.asm -- `try_text_slot` (called first by
+      try_init_slot, so every slot is asked) records the first page-2 `AB` with a
+      TEXT; `brom_screen` skips the header for SCREEN 1 / WIDTH 29; `brom_run`
+      ENASLTs page 2, sets TXTTAB = TEXT + 1 and PRGEND = $BFFE (VARTAB $C000),
+      RUNs. The 17 program-START reads of the constant `TXTBASE` now read
+      `(TXTTAB)` (same size; LOAD and NEW keep the RAM base) -- a program that
+      POKEs TXTTAB now behaves as on the reference too. Main page 1 243 -> 111 B
+      with (2) (clean build, 2026-10-12).
+      (2) **`$0D` LINE POINTERS:** with our cartridge running, the golf game raised
+      `Syntax error in 80`. LISTing that one line (Joost allowed it, privately)
+      showed `GOSUB37271` -- and 37271 = $9197, an address in the cartridge. The
+      reference REWRITES a jump's `$0E <number>` into `$0D <pointer>` in place
+      when it runs (measured: GOTO 10's operand 14 / 10 before RUN, 13 / $8000
+      after; the pointer is the byte BEFORE the target line); a program stored
+      after it ran carries them, and zerobas's `req_lineno` took `$0E` only.
+      `is_lref` / `lref_bc` (basic/interp.asm) now take both at GOTO / GOSUB /
+      IF..THEN / ON..GOTO|GOSUB / ON ERROR GOTO / the trap handler lines. NOT
+      RESTORE: the VG-8020 answers a RESTORE pointer with 8 (the gate's first run,
+      [`basicrom_gate_firstrun.out`](scratchpad/basicrom_gate_firstrun.out)).
+      🎯 Gate `make basicrom-acceptance` ([`basicrom_gate.out`](scratchpad/basicrom_gate.out)):
+      OUR OWN cartridges built per run -- `boot` and `lptr` SAME on both builds.
+      Knives ([`basicrom_knife.out`](scratchpad/basicrom_knife.out)): no run ->
+      both red; $0E-only -> `lptr` red; HIT both.
+      🔴 **(3) STILL OPEN -- THE RAM LAYOUT.** The game then hangs in a USR call
+      (line 2000, `AD=USR2(AD)`). Black-box (PC values and a write watchpoint, no
+      byte of the game decoded): its machine code writes 534 B from $E05E up --
+      FREE RAM on the VG-8020 (MEMSIZ $DDE7: the game CLEARs to reserve it), but
+      zerobas's WORKSPACE here -- and zerobas dies after the routine returns (SP
+      found at $000E). This is the RAM-usage item's −4978 B gap seen as a crash;
+      its fix is that item's (Joost, 2026-10-12: *"I think the fact that we use so
+      much more RAM is of high prio"*). The routine also calls into C-BIOS's own
+      range ($18E9, not a published entry) -- possibly a second problem once the
+      RAM is free; re-test then.
+      ➡️ Filed: D-LISTLPTR (LIST prints a `$0D` pointer as the ADDRESS).
+
+- [ ] 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
+      NUMBER (filed 2026-10-12, from D-BASICROM)**
+      🎚️ TIER 3 — breaking a cartridge program and LISTing it is ordinary; the
+      numbers shown are wrong (the golf game's `GOSUB 2000` lists as `GOSUB37271`).
+      🤖 **AUTONOMOUS** — basic/detok.inc `dt_lineno` renders `$0D <addr>` as the
+      address; the reference prints the number at addr + 3. ~13 B in the detok
+      tenant, sub page 0 (6 B on 2026-10-12): needs room there first (a carve, or
+      moving the detok tenant to sub2). Measure LIST of our `lptr` cartridge on
+      the VG-8020 first.
+
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       NOT YET MEASURED)**
@@ -7323,7 +7369,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32840 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32886 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7489,7 +7535,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12351 (T-6FE392)8 (T-529ABE)` from `TODO.md:25145 (T-529ABE)`: a
+      `TODO.md:12397 (T-6FE392)8 (T-529ABE)` from `TODO.md:25191 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13198,7 +13244,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25191 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

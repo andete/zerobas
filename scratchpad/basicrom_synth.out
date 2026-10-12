@@ -1,0 +1,30 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+=== Philips_VG_8020
+     ZBROM 1  29
+      32785  49152
+      5 X
+     Ok
+     LIST
+     5 M=PEEK(&HFCAF):W=PEEK(&HF3B0):SCREE
+     N 0
+     10 PRINT "ZBROM";M;W
+     20 PRINT PEEK(&HF676)+256*PEEK(&HF677
+     );PEEK(&HF6C2)+256*PEEK(&HF6C3)
+     30 A=5:B$="X":PRINT A;B$
+     40 END
+     Ok
+     PRINT FRE(0);PEEK(&HF676)+256*PEEK(&H
+     F677)
+      12395  32785
+     Ok
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+     zerobas version 0.1
+     clean-room MSX1 BASIC
+     ZB
+     LIST
+     ZB
+     PRINT FRE(0);PEEK(&HF676)+256*PEEK(&H
+     F677)
+      23837  32769
+     ZB
+     color  auto   goto   list   run

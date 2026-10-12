@@ -42,7 +42,7 @@ tsb_id:
                 call    TAPOON
                 jp      c,sv_tape_err
                 ; Set up the image walk: TSV_PTR = TXTBASE, TSV_END = PRGEND+1
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (TSV_PTR),hl
                 ld      hl,(PRGEND)
                 inc     hl

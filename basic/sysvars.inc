@@ -13,6 +13,8 @@ CHGMOD          equ     $005F   ; switch screen mode; A = mode 0..3 (SCREEN n)
 WRTVDP          equ     $0047   ; write VDP register C with value B (and update RGnSAV)
 CHGCLR          equ     $0062   ; apply FORCLR/BAKCLR/BDRCLR; A = screen mode (COLOR)
 INITXT          equ     $006C   ; init SCREEN 0 (TEXT1) and enable the display
+INIT32          equ     $006F   ; init SCREEN 1 (TEXT2), LINLEN := LINL32 (published BIOS)
+ENASLT          equ     $0024   ; map slot A into the page of address H (published BIOS)
 TOTEXT          equ     $00D2   ; to the last text mode (OLDSCR) if SCRMOD >= 2, else nothing
 CHSNS           equ     $009C   ; test the keyboard buffer -> Z if empty, NZ if a key waits
 CHGET           equ     $009F   ; wait for a character from the keyboard -> A
@@ -974,6 +976,11 @@ LINENO_ACC_STOP equ     (LINENO_CEIL/10)+1
 ; nothing above it could be reclaimed until it moved. See LINEBUF above.
 TOKBUF          equ     $EC00   ; repack: crunch buffer, 576 B ($EC00..$EE3F)
 TOKBUFSZ        equ     576     ; physical size (absorbs one over-long pass, above)
+; D-BASICROM: BOOT-ONLY scratch in TOKBUF, idle until the first typed line -- the
+; slot and TEXT word of a BASIC-program cartridge, found by the slot scan and used
+; once by brom_run (basic/basicrom.asm), before anything is ever crunched.
+BROM_TEXT       equ     TOKBUF          ; 2 B: the cartridge's TEXT word (high 0 = none)
+BROM_SLOT       equ     TOKBUF+2        ; 1 B: its slot id
 TOKMAX_BODY     equ     314     ; logical ceiling: a longer body is REFUSED (ERR 25)
 ; (The retired lean 16 KB cart kept the OLD, UNBOUNDED crunch and the old 96-byte
 ; TOKBUF — a known defect deliberately carried forward rather than fixed, since the

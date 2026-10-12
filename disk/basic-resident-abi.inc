@@ -35,6 +35,7 @@ DISKOP_ERR equ 0E098H   ; tenant -> main: ERR code of the last DSKIO failure, 0 
 CLPTR equ 0E02BH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0E02DH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
+TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
 TXTMAX equ 0E000H   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 PRGEND equ 0E026H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0E0EDH   ; SAVE: current source byte pointer (2)
@@ -66,18 +67,18 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06D8DH
-pdfcb_resume equ 06D86H
-dirverb_op equ 06B02H
-main_fat_mount equ 06413H   ; main's fat_mount
-main_fat_find equ 06417H   ; main's fat_find
-parse_disk_fcb equ 064C9H
-field_prologue equ 071F7H
-field_item equ 0722DH
-lrset_tgt equ 072E2H
-lrset_rhs equ 07304H
-lrset_finish equ 0731BH
-fch_ctx_addr equ 06F17H
-disk_error equ 06B33H
-read_line equ 045C9H
-fch_close_all equ 07017H
+fname_expr equ 06DADH
+pdfcb_resume equ 06DA6H
+dirverb_op equ 06B22H
+main_fat_mount equ 06433H   ; main's fat_mount
+main_fat_find equ 06437H   ; main's fat_find
+parse_disk_fcb equ 064E9H
+field_prologue equ 0727BH
+field_item equ 072B1H
+lrset_tgt equ 07366H
+lrset_rhs equ 07388H
+lrset_finish equ 0739FH
+fch_ctx_addr equ 06F37H
+disk_error equ 06B53H
+read_line equ 045E9H
+fch_close_all equ 07037H

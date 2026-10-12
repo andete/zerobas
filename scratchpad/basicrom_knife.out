@@ -1,0 +1,3 @@
+K-B1: gate RED, red ['boot', 'lptr']; predicted ['boot', 'lptr']: HIT
+K-B2: gate RED, red ['lptr']; predicted ['lptr']: HIT
+restored: build rc=0; gate GREEN

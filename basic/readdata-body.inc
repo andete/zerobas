@@ -44,7 +44,7 @@ read_one_value:
                 jr      nz,rov_at           ; already positioned
                 jr      rov_unpos
 rov_top:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (RESTORE_LINE),hl
 rov_unpos:
                 ; unpositioned: seek the first DATA item from RESTORE_LINE

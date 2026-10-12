@@ -307,7 +307,7 @@ ldr_walk:
                 ; would follow a dangling pointer on the second iteration.
                 ; ldr_find above may use the chain precisely because it runs
                 ; before any of this.
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 ldr_lp:
                 ld      a,(PRGEND)              ; HL == PRGEND -> the end marker
                 cp      l
@@ -497,7 +497,7 @@ ldrn_yes:
 ; is legal here and only here: R-D2 runs before anything is deleted, so every
 ; link is still valid. Clobbers A, DE, HL; BC is the input and survives.
 ldr_find:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 ldrf_lp:
                 ld      e,(hl)                  ; DE = link
                 inc     hl
@@ -531,7 +531,7 @@ ldrf_next:
 ; exists, it is removed first so the caller can insert in its place.
 ; Clobbers A, BC, DE, HL. Verbatim from basic/program.asm.
 prog_find_del:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 pfd_lp:
                 ld      e,(hl)                  ; DE = link
                 inc     hl
@@ -651,7 +651,7 @@ og_end:
 ; IS the loop that shim's LE_OP_RELINK reaches, and le_store's own tail
 ; above reaches it directly (sub-local, no double subrom_call).
 relink_body:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 rlb_lp:
                 ; Reached the end marker? (A fresh line's link is a placeholder
                 ; 0000, so we cannot stop on link==0.)
@@ -867,7 +867,7 @@ lrn_start:
                 ; Pass 2 begins at the FIRST stored line, not at RN_OLD -- R-RN7:
                 ; a reference in a line that is NOT itself renumbered is rewritten
                 ; too (`RENUM 100,3` turns `1 GOTO 3` into `1 GOTO 100`).
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 lrn_line:
                 ; HL = a line's link field. Step with PRGEND like ldr_walk, not
                 ; with the link chain: nothing here moves a byte, so either would
@@ -941,7 +941,7 @@ lrn_undef:
                 ret
 lrn_pass3:
                 ; Pass 3 -- the headers, now that every reference is resolved.
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      de,(RN_NEW)
 lrn_p3lp:
                 ld      a,(PRGEND)
@@ -1007,7 +1007,7 @@ lrn_map:
                                                 ; so lrn_undef needs no store of
                                                 ; its own and BC is free to become
                                                 ; the walk's own line number
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      de,(RN_NEW)             ; the next number to be assigned
 lrnm_lp:
                 ld      a,(PRGEND)
@@ -1067,7 +1067,7 @@ lrnm_hit:
 ; literal ceiling in ldr_num does NOT cover -- `RENUM 65530` is a Syntax error
 ; from the tokeniser instead (R-RN14). Two rules, two messages, one verb.
 lrn_order:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      de,(RN_NEW)
 lrno_lp:
                 ld      a,(PRGEND)

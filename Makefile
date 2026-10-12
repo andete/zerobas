@@ -86,7 +86,7 @@ SRC   := basic/main.asm
 # shipped stale; `make deps-check` now proves the list instead of trusting it.
 # Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
 DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm \
-         basic/grpdev.asm \
+         basic/grpdev.asm basic/basicrom.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
@@ -2467,6 +2467,12 @@ casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 # INPUT$, INKEY$; not a busy loop; nothing under KEY OFF -- against the VG-8020.
 keyshift-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_keyshift.py
+
+# --- basicrom-acceptance: a BASIC-program cartridge runs at boot; $0D line pointers
+# are followed (D-BASICROM, reported by Vampier). OUR OWN cartridges, built per run
+# to the published header format -- never a third-party image (Joost, 2026-10-12).
+basicrom-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_basicrom.py
 
 # --- instr128-acceptance: INSTR over strings of 128+ characters (D-INSTR128)
 # max_start was sign-tested, so every haystack of 128+ read 0; 11 rows against

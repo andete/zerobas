@@ -1,0 +1,36 @@
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+=== Philips_VG_8020
+           <B    B<<~    f<l   |8   8| |8
+    8T T 8  8|   8    00           8D   D8
+     }}}      y   p8DDD8 | 0($$(   <$<$$
+    T8 8T     |
+                            B$  $B       @
+    @                              PPP
+   PP P PP  x p(       @   @ @   `   @
+     @@@   @     @   p p                  @
+      x         ``      @  p     p  `
+   p   `   p  0  p  0P             0@    p
+           p  p  p p  x  `                @
+    0` `0           `0 0`  p       p  h  p
+    P       HHpHH  0H   H0  PHHHP
+           p     p         p     p 8     `
+                                   p     p
+           p     h         p  p  p
+         p     PP            P P      p
+       @   p@@@@@p    @    p     p  P
+           @         p x x           p   p
+     h   h   p   p  (        h  h p
+     `   p   0    `@@HP`PH `     p
+             p   p           h  h
+     x     @@ @@H0       h      P        P
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+     zerobas version 0.1
+     clean-room MSX1 BASIC
+     ZB
+     LIST
+     ZB
+     PRINT FRE(0);PEEK(&HF676)+256*PEEK(&H
+     F677)
+      23837  32769
+     ZB
+     color  auto   goto   list   run

@@ -157,7 +157,7 @@ list_all:
 ; $0000 end-of-program link. Clean-room: our own detokeniser; the ASCII listing
 ; format is the public MSX-BASIC language reference.
 list_walk:
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 lst_lp:
                 ld      e,(hl)              ; DE = link to next line
                 inc     hl
