@@ -103,6 +103,8 @@ ex_print:
                 jr      z,exp_dev_lpt
                 cp      CRT_MODE
                 jr      z,exp_dev_crt
+                cp      GRP_MODE
+                jr      z,exp_dev_grp       ; D-OPENGRP
                 cp      CAS_OUT_MODE
                 jr      z,exp_dev_cas
                 cp      CAS_IN_MODE
@@ -136,6 +138,9 @@ exp_dev_lpt:
                 jr      exp_dev_set
 exp_dev_crt:
                 ld      a,2                 ; 2 = CRT: screen sink
+                jr      exp_dev_set
+exp_dev_grp:
+                ld      a,4                 ; 4 = GRP: graphics-screen sink (D-OPENGRP)
                 jr      exp_dev_set
 exp_dev_cas:
                 ld      a,3                 ; 3 = cassette sink (cas_wbyte, buffered)
@@ -619,6 +624,8 @@ pch_file:
                 jr      z,pch_lpt           ; 1 -> LPT: printer
                 dec     a
                 jr      z,pch_crt           ; 2 -> CRT: screen
+                dec     a
+                jp      nz,pch_grp          ; 4 -> GRP: graphics screen (D-OPENGRP, low)
                 ld      a,c                 ; 3 -> cassette ASCII data block
                 call    cas_wbyte
                 jr      pch_done
@@ -750,7 +757,12 @@ print_comma_zone:
                 or      a
                 jr      z,pcz_screen        ; screen sink -> CSRX
                 ld      a,(PRDEV)
-                dec     a                   ; PRDEV 1 = LPT:
+                ; D-OPENGRP: on a GRP: channel the column NEVER advances -- `PRINT
+                ; #1,"AB","C";` moves the cursor 17 glyphs on the VG-8020 (round 5:
+                ; 14 spaces after any item), so the zone is counted from column 0.
+                sub     4                   ; PRDEV 4 = GRP: -> A = 0 = the column
+                jr      z,pcz_col
+                add     a,3                 ; back to PRDEV - 1
                 jr      nz,pcz_screen       ; a FILE/CRT/tape channel keeps CSRX,
                                             ; which is what it did before this slice
                 ld      a,(LPTPOS)          ; already 0-based

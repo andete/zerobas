@@ -86,6 +86,7 @@ SRC   := basic/main.asm
 # shipped stale; `make deps-check` now proves the list instead of trusting it.
 # Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
 DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm basic/edctrl.asm \
+         basic/grpdev.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
          basic/fat.asm basic/bload.asm basic/cload.asm basic/save.asm basic/files.asm \
@@ -286,7 +287,7 @@ sub: $(SUB_ROM)
 # beyond the two shared .inc files -- add one with the first tenant (step d),
 # or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
 SUB2_SRC  := sub2/sub2.asm
-SUB2_PARTS := sub/equates.inc basic/sysvars.inc
+SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym
 $(SUB2_ROM): $(SUB2_SRC) $(SUB2_PARTS) | $(BUILD)
@@ -2465,6 +2466,14 @@ casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 # INPUT$, INKEY$; not a busy loop; nothing under KEY OFF -- against the VG-8020.
 keyshift-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_keyshift.py
+
+# --- opengrp-acceptance: OPEN "GRP:" -- text on the graphics screen (D-OPENGRP,
+# Joost's report). Against the VG-8020 on both machines: the cursor walk, the
+# edges, codes 0..255, the CHR$(1) header, SCREEN 3, the comma zone, the
+# channel's errors and header, and the dot-by-dot PSET comparison. The font is
+# never compared across machines (zerobas draws C-BIOS's).
+opengrp-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_opengrp.py
 
 # --- sub2-acceptance: both sub ROMs present, placed and page-selective (D-SUB2 b)
 # Four CALSLTs by injection -- 3-2 and 3-3, page 0 and page 1 -- on BOTH repack

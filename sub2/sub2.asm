@@ -93,11 +93,16 @@ __MEAS_SUB2_P0_END:
     ENDIF
 sub2_p1_table:
                 jp      sub2_p1_ping            ; index 0: round-trip ping
+                jp      grpprt_tenant           ; index 1 (SUB2_IDX_GRPPRT): one byte
+                                                ;   of PRINT # to OPEN "GRP:"
+                                                ;   (D-OPENGRP; sub2/grpprt.asm)
 
 sub2_p1_ping:
                 ld      a,SUB2_PING_P1
                 ld      (SUB_PING),a
                 ret
+
+                include "sub2/grpprt.asm"
 
 ; __MEAS_SUB2_P1_END: page-1 free space is $8000 - __MEAS_SUB2_P1_END.
 __MEAS_SUB2_P1_END:

@@ -497,6 +497,9 @@ do_open:
                 ld      de,dev_crt
                 call    dev_cmp
                 jp      z,oo_dev_crt
+                ld      de,dev_grp          ; D-OPENGRP: the graphics screen
+                call    dev_cmp
+                jp      z,oo_dev_grp
                 ld      de,dev_cas
                 call    dev_cmp
                 jp      z,oo_dev_cas
@@ -822,7 +825,7 @@ oodv_fn:
                 jr      nz,oodv_as          ; no FOR clause -> OUTPUT (measured)
                 rst    $10     
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
-                jr      nz,oo_fail_syn      ; INPUT from LPT:/CRT: is invalid
+                jp      nz,oodv_notout      ; INPUT: Syntax error on LPT:/CRT:, 56 on GRP:
                 inc     hl
                 ld      a,(hl)
                 cp      PUT_TOKEN
@@ -1017,8 +1020,21 @@ dcmp_miss:
                 or      a                   ; NZ
                 ret
 
+; oodv_notout -- a device OPEN whose FOR clause is not OUTPUT. LPT: / CRT: stay
+; Syntax error (oo_dev_open's own note says why); GRP: is `Bad file name`, 56,
+; at the OPEN -- MEASURED on the VG-8020 (D-OPENGRP round 1, `OPEN"GRP:"FOR
+; INPUT AS #1` -> 56 in the OPEN's line). Sited past the `ret` above, not beside
+; oo_dev_open: there it sat between oo_fail_* and the `jr`s the device and
+; cassette arms aim at them, and pushed them out of range one after another.
+oodv_notout:
+                ld      a,(OO_DEVTYPE)
+                cp      GRP_MODE
+                jp      z,pdf_badname
+                jp      oo_fail_syn
+
 dev_lpt:        db      "LPT:",0
 dev_crt:        db      "CRT:",0
+dev_grp:        db      "GRP:",0
 
 ; --- fname_expr: a filename ARGUMENT is a string EXPRESSION ------------------
 ; D-FNEXPR (docs/spec-basic-fnexpr.md). Wherever the reference accepts a

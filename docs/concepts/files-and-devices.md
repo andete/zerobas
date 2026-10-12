@@ -53,6 +53,7 @@ CF-3300 it agreed.
 | `"CAS:name"` | the cassette | `INPUT`, `OUTPUT` |
 | `"CRT:"` | the screen | output only |
 | `"LPT:"` | the printer | output only |
+| `"GRP:"` | text on the graphics screen | output only, one channel at a time |
 
 - **With no `FOR` clause** a disk file is opened for random access, and a
   `CRT:` or `LPT:` channel for output.
@@ -61,9 +62,21 @@ CF-3300 it agreed.
 - **`"Q:X"`** is `Bad drive name` (62). The single-drive CF-3300 prompts for
   a disk swap when drive B is addressed (measured with `DSKI$`), which is ruled
   to be built (D-DSKIB, TIER 6, 2026-10-09); `OPEN "B:X"` is not measured.
-- **`GRP:`** and other device names are not measured on either machine;
-  zerobas does not treat `GRP:` as a device. The cassette is
-  [cassette.md](cassette.md).
+- **`"GRP:"`** is the graphics screen, for output (since 2026-10-12).
+  `PRINT #` draws each character's font glyph at the graphic cursor -- where
+  the last `PSET`, `LINE`, `DRAW` or `PRINT #` left it -- in the foreground
+  colour, setting each lit dot exactly as `PSET` would and leaving the
+  others alone, then moves the cursor 8 dots right. In `SCREEN 3` each dot
+  is a 4x4 block and the cursor moves 32. Reaching x 256 starts a new line
+  8 dots down (32 in `SCREEN 3`); reaching y 192 goes back to the top. A
+  carriage return starts a new line; every other code below 32, line feed
+  included, is ignored; `CHR$(1)` followed by a code from 64 to 95 draws
+  graphic character 0 to 31 (`CHR$(1);"A"` is the smiley). A comma in
+  `PRINT #` always pads 14 spaces. Only one `GRP:` channel may be open.
+  `PRINT #` in `SCREEN 0` or `1` is `Illegal function call` (5); the
+  `OPEN` is accepted there. Details: [`OPEN`](../keywords/OPEN.md).
+- **Other device names** are not measured on either machine. The cassette
+  is [cassette.md](cassette.md).
 
 ### Sequential and random access
 
@@ -103,7 +116,8 @@ CF-3300.
 | `OPEN` with `APPEND` or random | — | `LEN=` is `Syntax error` (2); `FOR APPEND` not measured | 56 `Bad file name` |
 
 A channel not open is 59 for all of these; past `MAXFILES`, 52; below 0 or
-above 255, 5.
+above 255, 5. A `GRP:` channel: `INPUT #` and `LINE INPUT #` 52,
+`INPUT$` 55, `EOF`, `LOC` and `LOF` 5, as on the VG-8020.
 
 ### The channel block, through `VARPTR(#n)`
 
@@ -113,7 +127,7 @@ header, then the 256-byte record buffer, 265 bytes in all.
 | offset | holds | values written by `OPEN` |
 |---|---|---|
 | +0 | the mode | 1 input, 2 output or append, 4 random |
-| +4 | the device | 0 a disk file named without a drive, 1 `A:`, &HFD `CRT:`, &HFE `LPT:`, &HFF `CAS:` |
+| +4 | the device | 0 a disk file named without a drive, 1 `A:`, &HFC `GRP:`, &HFD `CRT:`, &HFE `LPT:`, &HFF `CAS:` |
 | +6 | the position | the write position of a disk output or append channel; 0 for a disk input or random channel |
 | +9 | the record buffer | 256 bytes |
 
@@ -172,6 +186,8 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **`OPEN "GRP:"` did not exist** (fixed 2026-10-12, D-OPENGRP): the name
+  was taken for a disk file. See [`OPEN`](../keywords/OPEN.md).
 - **`GET #` / `PUT #` without a record number used record 1** (fixed
   2026-10-09, D-RECAUTO): the CF-3300 takes the record after the last one
   read or written (`LOC` + 1), so three bare `PUT #1` at `LEN=8` make a
@@ -206,7 +222,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 [basic/files.asm](../../basic/files.asm), with one channel-number rule,
 `fch_check` (5, 59 or 52), for every channel statement. `do_open` tells the
 devices apart by name (`dev_cmp`); `PRINT #` to `LPT:` or `CRT:` goes to the
-printer or the screen, `CAS:` to the tape, anything else is a disk name.
+printer or the screen, `CAS:` to the tape, `GRP:` to the second sub-ROM's
+`grpprt_tenant` ([sub2/grpprt.asm](../../sub2/grpprt.asm)), anything else is
+a disk name.
 
 Channel blocks are carved out of free memory when `MAXFILES` is set, 265 bytes
 each plus 2 bytes of table; `fch_ctx_addr` finds one, and `VARPTR(#n)`
@@ -241,6 +259,7 @@ that number plus one.
 - `make kwsweep` — every channel statement's everyday row and error rows.
 - `make chancost-characterize` — what `MAXFILES` costs, clears and accepts.
 - `make fcbhdr-acceptance` — the header bytes after `OPEN`, per device.
+- `make opengrp-acceptance` — the `GRP:` device against the VG-8020.
 - `make fcb0-acceptance` — channel 0's block and the blocks' order.
 - `make badfnum-acceptance`, `make nohash-acceptance` — channel numbers.
 - `make dout-acceptance`, `lof-acceptance`, `loc-acceptance`,

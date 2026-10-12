@@ -222,6 +222,8 @@ clr_commit:
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
                 ret
 
+                include "basic/grpdev.asm"   ; D-OPENGRP: OPEN "GRP:" + its pchar sink
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

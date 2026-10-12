@@ -1,0 +1,14 @@
+hdr     < 2 252 >
+bare    <ok 16 8 >
+input   <E 52 40 >
+linput  <E 52 40 >
+inputd  <E 55 40 >
+eof     <E 5 40 >
+loc     <E 5 40 >
+lof     <E 5 40 >
+close   <E 59 40 >
+two     <E 52 35 >
+num     < 56 8 >
+comma   < 128 8 >
+scr1    <E 5 40 >
+refcache: 0 hit, 13 miss, 13 stored

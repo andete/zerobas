@@ -2357,8 +2357,8 @@ item — do **one item per session** to keep context lean.
       tiers. Synthetic rows (cas_encode, 1200 / 2400 baud, short / long
       leaders, multi-file tapes) can start before the corpus arrives.
 
-- [ ] 🎨 **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
-      (Joost, 2026-10-11; NOT YET MEASURED)**
+- [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
+      (Joost, 2026-10-11; FIXED 2026-10-12)**
       🎚️ TIER 1 — happy path: `OPEN "GRP:" FOR OUTPUT AS #1` then `PRINT #1`
       is how a BASIC program puts text on SCREEN 2.
       🤖 **AUTONOMOUS** — the VG-8020 settles it.
@@ -2431,6 +2431,85 @@ item — do **one item per session** to keep context lean.
       page 0). Order: a MAIN carve first (its own work, per D-SUB2's note),
       then D-SUB2 -- which this item now triggers (the first sub-blocked item
       in the queue) -- then the device.
+      📏 **ROUND 5-6 (2026-10-12), the channel and the header**
+      ([`opengrp5_probe.out`](scratchpad/opengrp5_probe.out),
+      [`opengrp5_comma.out`](scratchpad/opengrp5_comma.out),
+      [`opengrp6_probe.out`](scratchpad/opengrp6_probe.out)): VARPTR(#1) +0 2,
+      +4 252; a bare `OPEN"GRP:"AS #1` works; INPUT# / LINE INPUT# 52, INPUT$
+      55, EOF / LOC / LOF 5, PRINT # after CLOSE 59; a SECOND GRP: channel is
+      52 at its OPEN; `12;-3` is 7 glyphs; a comma always pads 14 (column 0 --
+      also with the text cursor moved to column 11, the row that separates it
+      from "zone from CSRX"); CHR$(1) then 64..95 draws glyph byte-64, then a
+      control acts as itself (CR a new line), then 32..63 / 96..255 draws the
+      byte itself. 🔮 Misses: EOF/LOC/LOF (predicted values, read 5), CLOSE
+      (predicted 52, read 59), two channels (predicted both work), the comma
+      sum (a slip, 31 not 32), and the header range (predicted byte-64 for
+      every byte).
+      ✅ **FIXED 2026-10-12 -- the first tenant of zerobas-sub2 (D-SUB2 d).**
+      Main: `do_open`'s `GRP:` name; `oo_dev_grp` (one channel at a time, 52;
+      clears the header cell) and `pch_grp` (SCREEN 0/1 -> 5; the byte to
+      `subrom2_call`, IX guarded) in the LOW region (basic/grpdev.asm -- page 1
+      had 49 B against the ~79 B the device costs, and inside files.asm the
+      arms pushed the cassette arm's `jr`s out of range one after another);
+      `oodv_notout` (FOR INPUT -> 56) after files.asm's device strings; PRINT
+      #'s `GRP_MODE` (9) arm and PRDEV 4; the comma zone counts from column 0
+      on GRP:; `fhd_tab`'s `2,$FC` row (sub/fatprim.asm, +2 B sub page 1).
+      sub2: `grpprt_tenant` (sub2/grpprt.asm, 172 B of page 1): each lit bit
+      is ONE call of ROM 1's graphics tenant op 1 (PSET's plot) by a nested
+      CALSLT straight from the tenant -- not through main's `sr_inl0`, whose
+      static call graph the closure gate rightly refused. Walls (clean build,
+      2026-10-12): main low 50 -> 3 B, page 1 49 -> 6 B; sub page 1 69 -> 67
+      B; sub2 page 1 16359 -> 16166 B.
+      🎯 Gate `make opengrp-acceptance`
+      ([`opengrp_gate.out`](scratchpad/opengrp_gate.out)): 9 cases against the
+      VG-8020 on both machines plus a font check on zerobas -- all SAME / PASS.
+      THE FONT IS NOT COMPARED ACROSS MACHINES: zerobas draws C-BIOS's `A`
+      (70 88 88 F8 88 88 00 00), the VG-8020 its own; the `model` rows compare
+      PRINT # with PSET-each-bit on each machine (font-free), and `font`
+      checks zerobas's drawn bits are its own font's. Knives
+      ([`opengrp_knife.out`](scratchpad/opengrp_knife.out),
+      [`opengrp_knife2.out`](scratchpad/opengrp_knife2.out)): the header range,
+      the SCREEN 0/1 refusal and the y wrap each turn their case red (HIT);
+      the comma rule's knife went GREEN first -- "zone from CSRX" and "zone from
+      column 0" coincide while CSRX is 1, which is where the VG-8020 measurement
+      had left it too; measured with CSRX at 11, the VG-8020 pads 14, the row
+      went into the gate and the knife reddened it (MISS, then HIT).
+      Bugs on the way, caught before a commit: a `str.replace` that put a
+      `jp` after BOTH `ld a,GRP_MODE` lines (the channel check skipped -- it
+      had ASSEMBLED, so assembling proved nothing); "ZB" after RUN taken for a
+      regression for a minute (it is zerobas's prompt, by design, repl.asm).
+      Docs: keywords/OPEN.md, concepts/files-and-devices.md.
+      ➡️ Filed: D-INSTR128 (found by this gate's first `model` row), D-GRPTAB.
+
+- [ ] 🔍 **D-INSTR128 — `INSTR` FINDS NOTHING IN A STRING OF 128 CHARACTERS OR MORE
+      (found 2026-10-12 by D-OPENGRP's gate)**
+      🎚️ TIER 1 — happy path: a wrong answer on an ordinary string; the
+      reference has no such limit.
+      🤖 **AUTONOMOUS** — measured on the VG-8020 and the NODISK build
+      (2026-10-12, by typed program, in this session's diagnosis -- re-measure
+      into a committed probe first): `S$=STRING$(2,"6")+"F"+STRING$(125,"6")`,
+      `INSTR(S$,"F")` is 3 on the VG-8020 and 0 here; at 100 characters both
+      say 3; a 128-character string built by concatenation is 0 here too.
+      Smells like a signed length test (128 = $80). Find the boundary (127 /
+      128), the haystack AND the needle side, and `INSTR(n,...)`'s start.
+
+- [ ] 🏗️ **D-SUB2EI — THE FIRST ROM-2 PAGE-0 TENANT MUST LAND WITH AN EI GATE
+      (filed 2026-10-12, from D-SUB2's close)**
+      🎚️ BUDGET — latent: nothing runs in zerobas-sub2's page 0 yet.
+      🤖 **AUTONOMOUS** — when the first page-0 tenant goes into sub2/sub2.asm.
+      D-SUB2 (a) made the interrupt trampoline restore the LIVE slot, which is
+      what lets a page-0 tenant in 3-3 run EI; it is gated today only in 3-2
+      (`make subrom-inttest`) and knifed by forcing 3-3 there. With a real 3-3
+      page-0 tenant, add the inttest twin in ROM 2 (spin EI, JIFFY moved AND the
+      tenant returned), and a knife that restores page 0 to 3-2 must turn it red.
+
+- [ ] 🔍 **D-GRPTAB — `TAB(` AND `SPC(` IN A `PRINT #` TO `GRP:` ARE UNMEASURED
+      (filed 2026-10-12, from D-OPENGRP's close)**
+      🎚️ TIER 6 — an edge of a device almost nobody aligns with TAB.
+      🤖 **AUTONOMOUS** — zerobas's `exp_tab` reads the text cursor CSRX for any
+      channel; GRP:'s comma zone turned out to count from column 0 instead
+      (D-OPENGRP round 5), so TAB may well differ. Measure on the VG-8020 with
+      CSRX moved (`POKE &HF3DD,11`), as the comma row had to be.
 
 - [ ] 🔍 **D-BLDS — ON TAPE, `BLOAD "CAS:X",S` TAKES `S` AS THE OFFSET EXPRESSION; OURS
       REFUSES IT WITH `load error` (measured 2026-10-11, from D-LOADERRRET's close)**
@@ -2488,8 +2567,8 @@ item — do **one item per session** to keep context lean.
       ⏱ The math pack's loops are among these files: a taken `jr` is 2 T
       slower than a `jp` -- TIER 5, not measured.
 
-- [ ] 🏗️ **D-SUB2 — A SECOND PLAIN 32 KB SUB ROM IN SLOT 3-3, WHEN THE FIRST
-      SUB-BLOCKED ITEM REACHES THE QUEUE (ruled 2026-10-11)**
+- [x] ✅ **D-SUB2 — A SECOND PLAIN 32 KB SUB ROM IN SLOT 3-3, WHEN THE FIRST
+      SUB-BLOCKED ITEM REACHES THE QUEUE (ruled 2026-10-11; DONE 2026-10-12)**
       🎚️ BUDGET — supply: it unblocks the items the SUB walls hold, not main's.
       🏗️ **RULED BY JOOST, 2026-10-11** (asked with the two analyses above):
       *"Stage 1 now, plain 3-3 later"* -- a second plain sub ROM in the empty
@@ -2553,8 +2632,18 @@ item — do **one item per session** to keep context lean.
       through main's own `subrom2_call` reaches ROM 2's page-1 ping -- 14/14.
       Knife K-2C ([`sub2c_knife.out`](scratchpad/sub2c_knife.out)): the store
       dropped -> those two rows $00, red; restored green. HIT.
-      ➡️ Next: (d), the first tenant -- D-OPENGRP's glyph drawer, with the
-      nested-call gate (ROM-2 tenant -> main low -> ROM-1 graphics tenant).
+      ✅ **(d) DONE 2026-10-12:** the first tenant is D-OPENGRP's
+      `grpprt_tenant` (sub2/grpprt.asm, page-1 index 1). The nested call is
+      ROM 2 page 1 -> BIOS CALSLT -> ROM 1 page 0 (the graphics tenant's plot),
+      straight from the tenant: routing it through main's low `sr_inl0`, as
+      planned, pulled that stub's whole static call graph (the absent-ROM
+      print path) into the resident closure, and the closure gate refused it.
+      Its gate is `make opengrp-acceptance`, which exercises the nested call
+      on every lit pixel; `subrom2_call` lost its dead-code allowlist line.
+      No ROM-2 PAGE-0 tenant exists yet, so the EI gate in ROM 2's page 0
+      (stage (a)'s real two-ROM case) waits for the first one.
+      🏁 **D-SUB2 IS DONE** (stages a-d). Supply: sub2 page 0 16311 B, page 1
+      16166 B (2026-10-12).
 
 - [ ] 🏗️ **D-PAGE2ISLAND — TENANTS MAPPED INTO PAGE 2 ($8000-$BFFF), FOR AUDITED
       TENANTS ONLY (ruled open 2026-10-11)**
@@ -7082,7 +7171,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32554 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32643 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7248,7 +7337,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12110 (T-6FE392)8 (T-529ABE)` from `TODO.md:24904 (T-529ABE)`: a
+      `TODO.md:12199 (T-6FE392)8 (T-529ABE)` from `TODO.md:24993 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12957,7 +13046,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24904 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

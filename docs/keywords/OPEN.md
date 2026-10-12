@@ -6,10 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # `OPEN` — open a file or device on a numbered channel
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Recorded differences,
-> all in the channel table: one file opened twice under names that differ only
-> in case, `VARPTR(#0)`, and two details of the channel header (below).
+> **Status (2026-10-12):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. `OPEN "GRP:"`, text on
+> the graphics screen, works since 2026-10-12. Recorded differences, all in
+> the channel table: one file opened twice under names that differ only in
+> case, `VARPTR(#0)`, and two details of the channel header (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -65,6 +66,17 @@ the channel number may be left out.
   `Bad file name` (56) on both machines.
 - **On a diskless machine** a name with no device is the cassette, and a
   drive name (`"A:X"`) is 56.
+- **`"GRP:"`** is the graphics screen, for output (D-OPENGRP, 2026-10-12).
+  `PRINT #` draws each character's font glyph at the graphic cursor -- where
+  the last `PSET`, `LINE`, `DRAW` or `PRINT #` left it -- in the foreground
+  colour, setting each lit dot exactly as `PSET` would and leaving the
+  others alone, then moves the cursor 8 dots right. In `SCREEN 3` each dot
+  is a 4x4 block and the cursor moves 32. Reaching x 256 starts a new line
+  8 dots down (32 in `SCREEN 3`); reaching y 192 goes back to the top. A
+  carriage return starts a new line; every other code below 32, line feed
+  included, is ignored; `CHR$(1)` followed by a code from 64 to 95 draws
+  graphic character 0 to 31 (`CHR$(1);"A"` is the smiley). A comma in
+  `PRINT #` always pads 14 spaces. Only one `GRP:` channel may be open.
 
 ### Writing and reading
 
@@ -92,8 +104,8 @@ the channel number may be left out.
 [`VARPTR(#n)`](VARPTR.md) gives the address of channel `n`'s file control
 block: a 9-byte header, then the 256-byte record buffer. After `OPEN`,
 `PEEK` reads the mode at +0 (1 input, 2 output or append, 4 random) and the
-device at +4 (0 for a disk file named without a drive, 1 for `A:`, &HFD
-`CRT:`, &HFE `LPT:`, &HFF `CAS:`); +6 is the write position of a disk output
+device at +4 (0 for a disk file named without a drive, 1 for `A:`, &HFC
+`GRP:`, &HFD `CRT:`, &HFE `LPT:`, &HFF `CAS:`); +6 is the write position of a disk output
 or append channel.
 
 ### Errors
@@ -108,6 +120,9 @@ or append channel.
 | a number as the name, a string as the channel or length | 13 `Type mismatch` |
 | the channel is in use, or the file is open on another channel | 54 `File already open` |
 | an empty name, a wildcard (`"A*.TXT"`), `CAS:` with APPEND or random | 56 `Bad file name` |
+| `GRP:` `FOR INPUT` | 56 `Bad file name` |
+| a second `GRP:` channel while one is open | 52 `Bad file number` |
+| `PRINT #` to `GRP:` in `SCREEN 0` or `1` (the `OPEN` itself is accepted) | 5 `Illegal function call` |
 | a drive that does not exist (`"Q:X.TXT"`) | 62 `Bad drive name` |
 | `MAXFILES=16`, `MAXFILES=-1` | 5 `Illegal function call` |
 | `MAXFILES=65536` | 6 `Overflow` |
@@ -164,10 +179,25 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   closing quote, and a quote that is never closed, are read differently. After
   `"AB"CD` the CF-3300 hands `CD` to the next read; here it is dropped.
 
+- **`GRP:` draws zerobas's font, not the VG-8020's** -- the same
+  difference as on the text screen, since both use the font of the
+  machine's BIOS (C-BIOS here). Where each dot goes and how it is coloured
+  match. Not measured: `TAB(` and `SPC(` in a `PRINT #` to `GRP:`.
+
 **RAM usage** is not yet proven.
 
 ## What we found, and how
 
+- **`OPEN "GRP:"` did not exist** (fixed 2026-10-12, D-OPENGRP, Joost's
+  report): the name was taken for a disk file. Six rounds of measurement on
+  the VG-8020 pinned the rule above; the one that decided how to build it
+  drew a character both ways -- `PRINT #` and `PSET` dot by dot -- over
+  clashing colour cells and read every dot back: identical. So zerobas
+  draws each lit dot with its own `PSET`, and the colour rule is `PSET`'s
+  by construction ([`opengrp4_probe.out`](../../scratchpad/opengrp4_probe.out)).
+  The code lives in a second sub-ROM, made for it ([ROM layout](../concepts/rom-layout.md)).
+  Building the gate turned up an unrelated fault: `INSTR` finds nothing in a
+  string of 128 characters or more (D-INSTR128, [`INSTR`](INSTR.md)).
 - **A tape `OPEN` broken while it read the file's first block said `load error`**
   (fixed 2026-10-11, D-CASPRIME) and the program ran on; the VG-8020 raises
   `Device I/O error` (19) in the line
@@ -220,6 +250,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   which calls `t_fch_hdr` in [sub/fatprim.asm](../../sub/fatprim.asm)).
   `ex_maxfiles` is in the same file, and so is `INPUT #` (`inp_readvar`).
 - `PRINT #` is `ex_print` in [basic/print.asm](../../basic/print.asm).
+- `GRP:`: the `OPEN` arm and `pchar`'s sink are in
+  [basic/grpdev.asm](../../basic/grpdev.asm); the drawing is `grpprt_tenant` in
+  [sub2/grpprt.asm](../../sub2/grpprt.asm), in the second sub-ROM.
 - Reading a disk text file — the Ctrl-Z end, the line feed, a numeric item —
   is the SEQIO tenant in [sub/bload.asm](../../sub/bload.asm) (`seq_peek`).
 - A disk file open for output, and the "is this file already open" check
@@ -238,6 +271,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - `make kwsweep` — each of the four modes, a second channel with
   `MAXFILES=2`, `MAXFILES` clearing the variables, numeric and string
   `INPUT #`, the end-of-file rules, and every error row of `OPEN`.
+- `make opengrp-acceptance` — `GRP:` against the VG-8020 on both machines:
+  the cursor walk, the edges, every code from 0 to 255, the `CHR$(1)`
+  header, `SCREEN 3`, the comma zone, the channel's errors and header, and
+  the dot-by-dot `PSET` comparison.
 - `make dout-acceptance` — output files: lengths across records, two output
   channels in turn, output beside append and input, directions.
 - `make badfnum-acceptance` and `make nohash-acceptance` — channel numbers,

@@ -1,0 +1,5 @@
+=== files-and-devices: PASS
+=== rom-layout: SKIP (no example)
+
+PASS 1  SKIP 1
+refcache: 0 hit, 2 miss, 2 stored

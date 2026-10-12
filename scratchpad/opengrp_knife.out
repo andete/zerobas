@@ -1,0 +1,5 @@
+K-G1 (sub2/grpprt.asm): gate RED, red cases ['header', 'sweepLo']; predicted ['header', 'sweepLo']: HIT
+K-G2 (basic/print.asm): gate GREEN, red cases []; predicted ['zones']: MISS
+K-G3 (basic/grpdev.asm): gate RED, red cases ['errors']; predicted ['errors']: HIT
+K-G4 (sub2/grpprt.asm): gate RED, red cases ['core', 'errors']; predicted ['core']: HIT
+restored: build rc=0; gate GREEN

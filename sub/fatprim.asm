@@ -294,7 +294,7 @@ tfl_dout:
 ; +5, +7, +8 are a pointer into the reference's disk work area or leftover RAM
 ; there: not written.
 ;   in:  HL = the block (main's fch_ctx_addr), OO_DEVTYPE = the FCH_MODES value
-;        (1 INPUT, 3 DOUT, 4 RANDOM, 5 LPT, 6 CRT, 7 CAS OUT, 8 CAS IN).
+;        (1 INPUT, 3 DOUT, 4 RANDOM, 5 LPT, 6 CRT, 7 CAS OUT, 8 CAS IN, 9 GRP).
 t_fch_hdr:
                 push    hl
                 ld      a,(OO_DEVTYPE)
@@ -324,6 +324,8 @@ fhd_dev:
                 ld      (hl),0
                 jp      fp_stash_ok
 fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
+                db      2,$FC               ; 9 GRP: (D-OPENGRP: VARPTR(#1)+0 = 2,
+                                            ; +4 = 252 on the VG-8020, round 5)
 
 t_fch_save:
                 ; D-MODE2DEAD (2026-10-07): no flush first any more -- only a mode-2

@@ -1684,6 +1684,8 @@ CRT_MODE        equ     6       ; FCH_MODES value: channel open to the CRT: scre
 ; ">= LPT_MODE = device channel" tests still hold.
 CAS_OUT_MODE    equ     7       ; FCH_MODES value: OPEN"CAS:" FOR OUTPUT (PRINT# -> tape sink)
 CAS_IN_MODE     equ     8       ; FCH_MODES value: OPEN"CAS:" FOR INPUT (INPUT# <- tape source)
+GRP_MODE        equ     9       ; FCH_MODES value: OPEN"GRP:" (PRINT# -> the graphics
+                                ; screen, D-OPENGRP; > CRT_MODE like the tape modes)
 ; Scratch descriptor for a string literal lifted out of the token stream
 ; ([len:1][bytes:STRMAX]); LET copies from here into the variable's slot. Placed
 ; in page $E3 above the string table (NOT in page $E0, which the C-BIOS keyboard
@@ -4496,10 +4498,15 @@ SUB_INT_RAM     equ     $F10A   ; the copied trampoline stub (<= 64 B; executes 
 INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
-; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c; $F14C is free.
+; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.
 SUBSLOT2        equ     $F14B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
                                 ; Cleared by init_ext_roms before the scan (RAM survives
                                 ; a reset, D-RESETBOOT), set by try_sub_slot. (1 B)
+GRP_HDR         equ     $F14C   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the
+                                ; GRP: channel (the next byte draws glyph byte-64).
+                                ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
+CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
+SUB2_IDX_GRPPRT equ     1       ; zerobas-sub2 page-1 index: grpprt_tenant (D-OPENGRP)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
