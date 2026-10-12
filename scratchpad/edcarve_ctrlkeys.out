@@ -1,0 +1,22 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_ctrlkeys.py
+ok   code   CTRL-A   VG-8020    1   zb 1
+ok   code   CTRL-B   VG-8020    2   zb 2
+ok   code   CTRL-E   VG-8020    5   zb 5
+ok   code   CTRL-F   VG-8020    6   zb 6
+ok   code   TAB      VG-8020    9   zb 9
+ok   code   CTRL-N   VG-8020   14   zb 14
+ok   code   CTRL-U   VG-8020   21   zb 21
+ok   code   CTRL-Z   VG-8020   26   zb 26
+ok   code   ESC      VG-8020   27   zb 27
+ok   code   plain e  VG-8020  101   zb 101
+ok   matrix CTRL x 48 keys: VG-8020 30 codes, zb 30
+
+PASS: CTRL keys read as on the VG-8020 (0 divergence(s))

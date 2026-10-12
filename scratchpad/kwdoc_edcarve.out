@@ -1,0 +1,5 @@
+=== rom-layout: SKIP (no example)
+=== screen-editor: PASS
+
+PASS 1  SKIP 1
+refcache: 1 hit, 1 miss, 1 stored

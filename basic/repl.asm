@@ -202,8 +202,16 @@ rl_get:
                 ld      (RL_KEY),a          ; interrupts live (PLAY, the traps), and the
                                             ; harness's injector latch (latch-check) sees
                                             ; the same wait it always modelled
-                call    ek_ctrl             ; D-EDCTRL: CTRL-B/E/F/N/U are main's
-                jr      z,rl_wait           ; (basic/edctrl.asm); Z = handled
+                ; D-EDCTRL: CTRL-B/E/F/N/U, zerobas-sub2's edctrl_tenant since
+                ; D-EDCARVE (2026-10-12; sub2/edctrl.asm). All five are below 22,
+                ; so every other key -- every printable one -- skips the crossing.
+                cp      22
+                jr      nc,rl_tenant
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUB2_IDX_EDCTRL
+                call    subrom2_call        ; A = 0: handled (its `or a` sets Z)
+                jr      c,rl_tenant         ; no sub2: the key is not handled here
+                jr      z,rl_wait           ; Z = handled
+rl_tenant:
                 ld      a,(RL_KEY)
                 call    sr_inl1             ; D-STUBINL: one key
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_READLINE)

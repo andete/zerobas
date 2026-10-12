@@ -4507,6 +4507,7 @@ GRP_HDR         equ     $F14C   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending
                                 ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
 SUB2_IDX_GRPPRT equ     1       ; zerobas-sub2 page-1 index: grpprt_tenant (D-OPENGRP)
+SUB2_IDX_EDCTRL equ     2       ; zerobas-sub2 page-1 index: edctrl_tenant (D-EDCARVE)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG

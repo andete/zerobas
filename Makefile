@@ -85,7 +85,7 @@ SRC   := basic/main.asm
 # the committed sources reproduces the committed patch bytes exactly, so nothing
 # shipped stale; `make deps-check` now proves the list instead of trusting it.
 # Same class as the sub-ROM's SUB_PARTS, third occurrence [[makefile-subparts-stale-tenant]].
-DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm basic/edctrl.asm \
+DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm basic/repl.asm \
          basic/grpdev.asm \
          basic/vars.asm basic/strvar.asm basic/str-engine.asm basic/expr.asm basic/poke.asm basic/vdpio.asm \
          basic/clear.asm basic/usr.asm basic/time.asm basic/print.asm basic/screen.asm basic/list.asm \
@@ -287,7 +287,8 @@ sub: $(SUB_ROM)
 # beyond the two shared .inc files -- add one with the first tenant (step d),
 # or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
 SUB2_SRC  := sub2/sub2.asm
-SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm
+SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm \
+              sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym
 $(SUB2_ROM): $(SUB2_SRC) $(SUB2_PARTS) | $(BUILD)

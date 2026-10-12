@@ -2508,6 +2508,30 @@ item — do **one item per session** to keep context lean.
       itself and "matches" at 0. The guard stays (2 B); the gate cannot see it.
       The sign test's own knife is the before run. Docs: keywords/INSTR.md.
 
+- [x] ✅ **D-EDCARVE — MAIN PAGE 1 +284 B: THE EDITOR'S CTRL KEYS MOVE INTO ZEROBAS-SUB2
+      (2026-10-12)**
+      🎚️ BUDGET — supply: main was full again after D-OPENGRP (low 3 B, page 1
+      6 B), which blocked the TIER 4 queue (D-DIMRESERVE's guard, D-BOOTKEYS).
+      The first main carve INTO sub2: `scratchpad/evict_scout.py` re-run on the
+      day's build ranked `ek_ctrl` (basic/edctrl.asm, D-EDCTRL's CTRL-B/E/F/N/U)
+      the best COLD closure -- 294 B, one outside entry; everything above it is
+      hot, ISR-side or waits for a key. Its callees are main-LOW only (rl_vpeek /
+      rl_vpoke / rl_lastrow, already the readline tenant's resident ABI) and
+      work-area cells, so the file moved WHOLE: sub2/edctrl.asm, page-1 index 2
+      behind `edctrl_tenant` (key from RL_KEY; A = 0 handled -> Z through
+      subrom_call's `or a`). rl_get calls it through `subrom2_call` only for keys
+      below 22 -- printable keys never pay the crossing. **Main page 1 6 -> 290
+      B; sub2 page 1 16166 -> 15858 B** (clean build, 2026-10-12). 🔮 Predicted
+      ~+280: HIT. `make screditor-acceptance` (its e.ctrl* rows) and
+      `ctrlkeys-acceptance` green. Knife K-E1
+      ([`edcarve_knife.out`](scratchpad/edcarve_knife.out)): the tenant answering
+      "not ours" without editing -> e.ctrle/u/b/f red, restored green (HIT). Its
+      FIRST cut ([`edcarve_knife_firstcut.out`](scratchpad/edcarve_knife_firstcut.out))
+      only forced the verdict after the edit was made and stayed green -- the
+      knife's fault, and a finding: the "handled" flag is not load-bearing for
+      these five keys (the readline tenant ignores them), the edit is.
+      Docs: concepts/screen-editor.md, concepts/rom-layout.md.
+
 - [ ] 🏗️ **D-SUB2EI — THE FIRST ROM-2 PAGE-0 TENANT MUST LAND WITH AN EI GATE
       (filed 2026-10-12, from D-SUB2's close)**
       🎚️ BUDGET — latent: nothing runs in zerobas-sub2's page 0 yet.
@@ -7186,7 +7210,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32658 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32682 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7352,7 +7376,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12214 (T-6FE392)8 (T-529ABE)` from `TODO.md:25008 (T-529ABE)`: a
+      `TODO.md:12238 (T-6FE392)8 (T-529ABE)` from `TODO.md:25032 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13061,7 +13085,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25008 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25032 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

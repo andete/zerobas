@@ -52,9 +52,11 @@ Slot bytes: `$83` RAM, `$87` disk ROM, `$8B` sub-ROM (the 2026-07-11 slot
 map, [spec-basic-subrom.md](../spec-basic-subrom.md)), `$8F` second sub-ROM.
 
 The second sub-ROM (marker `"Z2"`) exists because the first one filled up:
-the first feature that needs it is `OPEN "GRP:"`. It is called exactly as
-the first is, by slot. Nothing in BASIC calls it yet; for now it only answers
-a test ping on each page ([`sub2b_ping.out`](../../scratchpad/sub2b_ping.out)).
+the first feature that needed it is `OPEN "GRP:"`, whose drawing lives there.
+It is called exactly as the first is, by slot. It also takes code moved out of
+the main ROM to make room there -- the first was the screen editor's CTRL
+keys, on 2026-10-12. Each page also answers a test ping
+([`sub2c_ping.out`](../../scratchpad/sub2c_ping.out)).
 Its marker cannot be the first one's `"ZB"`: the boot scan keeps the last
 subslot that carries `"ZB"`, so a second one would be taken for the first
 ([`sub2b_knife.out`](../../scratchpad/sub2b_knife.out)).

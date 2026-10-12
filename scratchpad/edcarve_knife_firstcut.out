@@ -1,0 +1,2 @@
+K-E1 (tenant never handles): gate GREEN, red []; predicted ['e.ctrlb', 'e.ctrle', 'e.ctrlf', 'e.ctrlu']: MISS
+restored: build rc=0; gate GREEN
