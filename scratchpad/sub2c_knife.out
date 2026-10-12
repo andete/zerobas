@@ -1,0 +1,7 @@
+K-2C (SUBSLOT2 never stored): gate RED (predicted RED: HIT)
+   C-BIOS_MSX1_EU_REPACK_DISK     discovery: SUBSLOT2 $00 (expect $8F, ROM 2 in 3-3): FAIL
+   C-BIOS_MSX1_EU_REPACK_DISK     main's subrom2_call ix=$4010 -> SUB_PING $00 (expect $C3): FAIL
+   C-BIOS_MSX1_EU_REPACK_NODISK   discovery: SUBSLOT2 $00 (expect $8F, ROM 2 in 3-3): FAIL
+   C-BIOS_MSX1_EU_REPACK_NODISK   main's subrom2_call ix=$4010 -> SUB_PING $00 (expect $C3): FAIL
+   sub2 ping gate: FAIL
+restored: build rc=0; gate GREEN

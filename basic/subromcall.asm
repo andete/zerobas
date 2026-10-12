@@ -63,8 +63,9 @@ subrom_call:
                 or      a
                 scf
                 ret     z                   ; absent -> CF=1, no call (caller errors)
-                push    de                  ; a tenant may take DE as an arg (crunch: dest)
                 ld      a,(SUBSLOT)
+sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
+                push    de                  ; a tenant may take DE as an arg (crunch: dest)
                 ld      d,a
                 ld      e,0
                 push    de
@@ -75,6 +76,21 @@ subrom_call:
                 ei
                 or      a                   ; CF=0: call completed (A = tenant's result)
                 ret
+
+; subrom2_call (D-SUB2 c, 2026-10-12): subrom_call into the SECOND sub ROM,
+; zerobas-sub2 in slot 3-3 (sub2/sub2.asm). Same contract -- IX = the entry
+; (the SAME table bases, SUBROM_ENTRY_BASE_P0 / _P1: the ROM is chosen by the
+; slot, never by the address), HL/DE pass through, CALSLT clobbers the rest,
+; CF=1 without calling when the ROM is absent (SUBSLOT2 = 0). It joins
+; subrom_call AFTER that one's slot load, so ROM 1's path is unchanged by a
+; single T-state. 8 B, low: a sub page-1 tenant may call it too (the low
+; region is visible from every context that runs main code).
+subrom2_call:
+                ld      a,(SUBSLOT2)
+                or      a
+                scf
+                ret     z                   ; absent -> CF=1, no call
+                jr      sr_slot
 
 ; subrom_absent_error: defensive statement abort for a sub-ROM-backed statement in
 ; a build without the sub-ROM (never reached on the merged machine, which always

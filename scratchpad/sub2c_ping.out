@@ -1,0 +1,16 @@
+C-BIOS_MSX1_EU_REPACK_DISK     3-2 page 0 (zerobas-sub)  CALSLT $8B:$0040 -> SUB_PING $C0 (expect $C0): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     3-2 page 1 (zerobas-sub)  CALSLT $8B:$4010 -> SUB_PING $C1 (expect $C1): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     3-3 page 0 (zerobas-sub2) CALSLT $8F:$0040 -> SUB_PING $C2 (expect $C2): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     3-3 page 1 (zerobas-sub2) CALSLT $8F:$4010 -> SUB_PING $C3 (expect $C3): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     discovery: SUBSLOT $8B (expect $8B, ROM 1 in 3-2): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     discovery: SUBSLOT2 $8F (expect $8F, ROM 2 in 3-3): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     main's subrom2_call ix=$4010 -> SUB_PING $C3 (expect $C3): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   3-2 page 0 (zerobas-sub)  CALSLT $8B:$0040 -> SUB_PING $C0 (expect $C0): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   3-2 page 1 (zerobas-sub)  CALSLT $8B:$4010 -> SUB_PING $C1 (expect $C1): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   3-3 page 0 (zerobas-sub2) CALSLT $8F:$0040 -> SUB_PING $C2 (expect $C2): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   3-3 page 1 (zerobas-sub2) CALSLT $8F:$4010 -> SUB_PING $C3 (expect $C3): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   discovery: SUBSLOT $8B (expect $8B, ROM 1 in 3-2): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   discovery: SUBSLOT2 $8F (expect $8F, ROM 2 in 3-3): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   main's subrom2_call ix=$4010 -> SUB_PING $C3 (expect $C3): PASS
+-------------------
+sub2 ping gate: PASS

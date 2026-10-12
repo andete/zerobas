@@ -451,7 +451,11 @@ entry-table version byte for forward-compat, but S1 does not require one.)
 > recorded as `SUBSLOT` (knife K-2B2, `scratchpad/sub2b_knife.out`). Gate:
 > `make sub2-acceptance` pings all four islands on both repack machines and
 > checks `SUBSLOT` stays `$8B`. Walls: `tools/check_sub_walls.py --sub2`, a
-> step of `make basic-reloc`. Main does not call it yet (stage 2c).
+> step of `make basic-reloc`. **Stage 2c (2026-10-12):** main reaches it through
+> `subrom2_call` (basic/subromcall.asm; IX = entry, CF=1 when absent), and
+> `try_sub_slot` records the `"Z2"` slot in `SUBSLOT2` ($F14B, cleared by
+> `init_ext_roms` before the scan). The gate's fifth call goes through it;
+> knife K-2C (`scratchpad/sub2c_knife.out`) drops the store and turns it red.
 
 ## 4. Decisions to ratify (S1 sign-off)
 

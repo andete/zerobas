@@ -4494,9 +4494,12 @@ DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; (RDPRIM/WRPRIM/CLPRIM $F380+ and the C-BIOS stack), so there is no collision.
 SUB_INT_RAM     equ     $F10A   ; the copied trampoline stub (<= 64 B; executes from RAM)
 INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
-; $F14B-$F14C: FREE since D-SUB2 stage 2a (2026-10-12) -- they were INT_SUB_PRIM /
-; INT_SUB_SUBSL, the boot-time sub-ROM slot fields the trampoline restored page 0
-; to; it now restores the live entry state (basic/subromcall.asm).
+; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
+; (2026-10-12): the trampoline now restores the live entry state
+; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c; $F14C is free.
+SUBSLOT2        equ     $F14B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
+                                ; Cleared by init_ext_roms before the scan (RAM survives
+                                ; a reset, D-RESETBOOT), set by try_sub_slot. (1 B)
 SUB_INT_DELTA   equ     $F14D   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG

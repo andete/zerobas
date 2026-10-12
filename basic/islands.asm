@@ -90,6 +90,7 @@ init_ext_roms:
                 xor     a
                 ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
                 ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
+                ld      (SUBSLOT2),a        ; nor zerobas-sub2 (D-SUB2 c): 0 = absent
                 di                          ; slot switching must be uninterrupted
                 in      a,(PSLTREG)         ; primary slot select register
                 rrca

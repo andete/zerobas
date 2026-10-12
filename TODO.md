@@ -2540,7 +2540,21 @@ item — do **one item per session** to keep context lean.
       red: it rebuilt in the same second as the cut, make kept the cut ROM;
       the restore now builds clean. Image hash lists (run_gates, knife_guard,
       check_knife_rom_guard) name sub2.rom. Zero main bytes.
-      ➡️ Next: (c), main's dispatch to 3-3 -- or the gateway variant.
+      ✅ **(c) DONE 2026-10-12 (native, not the gateway):** `subrom2_call`
+      (basic/subromcall.asm, low, 8 B: absent test, then joins `subrom_call`
+      after its slot load, so ROM 1's path is unchanged), `try_sub_slot`
+      records `"Z2"` in `SUBSLOT2` ($F14B, one of the two cells (a) freed; 11 B
+      page 1), `init_ext_roms` clears it before the scan (island 1, 3 B).
+      Main low 58 -> 50 B, page 1 60 -> 49 B (clean build, 2026-10-12;
+      predicted exactly). `subrom2_call` is allowlisted in
+      tools/deadcode-allow.txt until its first caller (the canary will force
+      the line out). Gate rows added
+      ([`sub2c_ping.out`](scratchpad/sub2c_ping.out)): SUBSLOT2 $8F, and a call
+      through main's own `subrom2_call` reaches ROM 2's page-1 ping -- 14/14.
+      Knife K-2C ([`sub2c_knife.out`](scratchpad/sub2c_knife.out)): the store
+      dropped -> those two rows $00, red; restored green. HIT.
+      ➡️ Next: (d), the first tenant -- D-OPENGRP's glyph drawer, with the
+      nested-call gate (ROM-2 tenant -> main low -> ROM-1 graphics tenant).
 
 - [ ] 🏗️ **D-PAGE2ISLAND — TENANTS MAPPED INTO PAGE 2 ($8000-$BFFF), FOR AUDITED
       TENANTS ONLY (ruled open 2026-10-11)**
@@ -7068,7 +7082,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32540 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32554 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7234,7 +7248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12096 (T-6FE392)8 (T-529ABE)` from `TODO.md:24890 (T-529ABE)`: a
+      `TODO.md:12110 (T-6FE392)8 (T-529ABE)` from `TODO.md:24904 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12943,7 +12957,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24890 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24904 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

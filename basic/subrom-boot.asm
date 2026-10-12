@@ -55,6 +55,12 @@ try_sub_slot:
                 ret     nz
                 ld      hl,$0001
                 call    rdslt_scan
+                ; D-SUB2 (c): "Z2" is the SECOND sub ROM (3-3, sub2/sub2.asm). Its own
+                ; cell, never SUBSLOT: the scan keeps the LAST match, so a shared
+                ; marker would have let ROM 2 capture ROM 1's (scratchpad/
+                ; sub2b_knife.out, K-2B2).
+                cp      '2'
+                jr      z,tss_rom2
                 cp      'B'
                 ret     nz
                 ; found: record the slot (the private path; EXBRSA stays the MSX1 0)
@@ -62,6 +68,10 @@ try_sub_slot:
                 ld      (SUBSLOT),a
                 ld      a,1
                 ld      (SUBSLOT_OK),a
+                ret
+tss_rom2:
+                ld      a,(SCAN_SLOT)
+                ld      (SUBSLOT2),a        ; a slot id is never 0, so 0 stays "absent"
                 ret
 
 ; sub_int_install: copy the trampoline template into RAM and record the main
