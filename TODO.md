@@ -7210,7 +7210,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32682 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32713 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -27696,6 +27696,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `STK_EVAL_RESERVE`, with edgesafe and a knife per op class. ➡️ The loop
       took the TIER 5 queue next (2026-10-10) because what is left here is that
       design pass; it is still 🤖 and still the TIER 4 item.
+      💰 **MAIN ROOM EXISTS NOW (2026-10-12, after D-EDCARVE: page 1 290 B).**
+      📋 **THE SITE AUDIT, 2026-10-12** (the twelve calls into the heap tenant,
+      `call_strheap` / `sh_call_op`; "checks" = the caller reads `SH_ERR` within
+      six lines after the call, so a guard that fails by SETTING `SH_ERR` would
+      already be handled there):
+      | site | op | checks SH_ERR? | expression-time? |
+      |---|---|---|---|
+      | str-engine `sst_op` (696) | 4 SNAPSHOT / 16 KEEP / 21 SLICE-SRC | yes (OOM -> pending err, publishes; overflow -> `STR_EMPTY`) | yes |
+      | str-engine 609 | 3 TEMP_ALLOC | yes | yes |
+      | str-engine `sct_go` 781 | 2 APPEND | yes (`sct_append_err`) | yes -- the concat spine |
+      | str-engine 923 | 5 SLICE (a tail `jp`) | its callers decide | yes |
+      | str-engine 1086 | 13 VAL_PARSE | yes | yes |
+      | str-engine 1673 | 9 MID_STORE | yes | statement (MID$ =) |
+      | str-engine 1712, 1859 | (wrappers) | yes | -- |
+      | str-engine 2147 | 11 INSTR_SEARCH | **no** (reads `SH_PTR`) | yes |
+      | str-engine 2257 | 10 CMP | **no** (reads the verdict) | **yes -- the measured 81 B path** |
+      | expr 1772 | 15 FREE_GAP | no | FRE() |
+      | input 377, files 1627 | 19 / 18 | no | not expressions |
+      ➡️ So the build is: a NON-dropping room test (`stk_guard`'s arithmetic,
+      without its `pop` -- NOT a `call` added to `stk_guard` itself, which runs
+      on every factor: TIER 5), placed at the expression-time sites only;
+      at the six that check `SH_ERR`, fail by setting it (their OOM arms run);
+      at CMP and INSTR, fail as a factor does (defer `FPERR_OOM`, a fixed
+      verdict / 0). Then re-measure every below-guard depth with
+      `guardattr_probe.py`, lower `STK_EVAL_RESERVE`, and run the edge rows
+      (edgesafe, stackcorrupt) plus a knife per site class.
+      ⚠️ **THE SITES ARE IN THE LOW REGION** (basic/str-engine.asm), which
+      had 3 B on 2026-10-12, page 1 290 B. Low and page 1 share one budget
+      through PROMOTION (`scratchpad/promote_scout.py`: a low leaf nothing
+      page-0 needs moves to page 1, 1:1). Order: promote ~40-60 B, then the
+      guards.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
