@@ -6,8 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `INSTR` — find one string inside another
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
+> **Status (2026-10-12):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence;
+> strings of 128 characters and more are found since 2026-10-12.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -92,6 +93,13 @@ program can observe through `FRE` differs. No keyword has this rung yet.
 
 ## What we found, and how
 
+- **`INSTR` found nothing in a string of 128 characters or more** (fixed
+  2026-10-12, D-INSTR128): `INSTR(S$,"F")` with an `F` at position 3 of a
+  128-character `S$` read 0, where the VG-8020 reads 3. The search compared the
+  last place a match could start with a sign test, and every value from 128
+  up looked negative. Found by the `OPEN "GRP:"` gate, whose check of 128
+  screen dots used `INSTR` ([before](../../scratchpad/instr128_before.out),
+  [after](../../scratchpad/instr128_after.out): 7 of 11 rows wrong, then none).
 - **`INSTR` arrived on 2026-07-10**, with its edge cases (not found, empty
   string to find, a start in the middle and past the end) captured on the
   VG-8020: [spec-basic-string-functions.md](../spec-basic-string-functions.md).
@@ -126,3 +134,6 @@ in the sub-ROM.
 - `make kwsweep` — both forms (`INSTR(2,"ABA","A")` must read 3), and the error
   rows for both sets.
 - `make kwram` — the RAM-usage comparison.
+- `make instr128-acceptance` — strings of 127, 128, 200 and 255 characters, a
+  late match, a start past 127, long needles, and a 255-long search that finds
+  nothing, against the VG-8020 on both machines.

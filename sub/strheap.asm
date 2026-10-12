@@ -2564,12 +2564,17 @@ sis_empty_result:
                 ld      (SH_PTR),hl
                 ret
 sis_nonempty:
+                ; 🔴 D-INSTR128 (2026-10-12): max_start is an UNSIGNED byte. This
+                ; read `inc a / jp m,sis_zero` -- a SIGN test -- so every
+                ; max_start from 128 up was "negative": INSTR answered 0 on any
+                ; haystack of 128+ characters (scratchpad/instr128_before.out:
+                ; 7 of 11 rows, the VG-8020 finds them all). "b$ longer than a$"
+                ; is the CARRY of the subtraction; with len_b >= 1, len_a - len_b
+                ; + 1 is then 1..255 and cannot wrap to 0.
                 ld      a,(ix+0)            ; len_a
                 sub     (iy+0)              ; A = len_a - len_b
-                inc     a                   ; A = max_start
-                jp      m,sis_zero          ; negative -> no room
-                or      a
-                jr      z,sis_zero          ; zero -> no room
+                jr      c,sis_zero          ; b$ longer than a$ -> no room
+                inc     a                   ; A = max_start, 1..255
                 ld      d,a                 ; D = max_start
                 ld      a,b
                 or      a
@@ -2603,6 +2608,15 @@ sis_cmp:
 sis_next:
                 ld      a,c                 ; A = start
                 inc     a                   ; start++
+                jr      z,sis_zero          ; D-INSTR128: past 255 -- the last start
+                                            ; (max_start 255: a 255-long a$, a
+                                            ; 1-long b$) failed. Without this the
+                                            ; start wraps to 0 and compares the
+                                            ; byte BEFORE a$'s body; knife K-I2
+                                            ; (scratchpad/instr128_knife.py) found
+                                            ; the answer still 0, very likely by
+                                            ; the snapshots' layout -- kept so the
+                                            ; answer does not rest on that
                 push    af
                 ld      a,(ix+0)
                 sub     (iy+0)

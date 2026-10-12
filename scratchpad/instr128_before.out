@@ -1,0 +1,14 @@
+a127     VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+a128     VG < 3 >    nodisk < 0 >    disk < 0 >    DIVERGES
+a200     VG < 3 >    nodisk < 0 >    disk < 0 >    DIVERGES
+a255     VG < 3 >    nodisk < 0 >    disk < 0 >    DIVERGES
+late     VG < 250 >  nodisk < 0 >    disk < 0 >    DIVERGES
+start    VG < 140 >  nodisk < 0 >    disk < 0 >    DIVERGES
+start2   VG < 254 >  nodisk < 0 >    disk < 0 >    DIVERGES
+none255  VG < 0 >    nodisk < 0 >    disk < 0 >    SAME
+needle   VG < 50 >   nodisk < 0 >    disk < 0 >    DIVERGES
+needle2  VG < 2 >    nodisk < 2 >    disk < 2 >    SAME
+short    VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+
+FAIL: 4/11
+refcache: 0 hit, 33 miss, 33 stored

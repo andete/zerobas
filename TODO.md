@@ -2481,8 +2481,8 @@ item — do **one item per session** to keep context lean.
       Docs: keywords/OPEN.md, concepts/files-and-devices.md.
       ➡️ Filed: D-INSTR128 (found by this gate's first `model` row), D-GRPTAB.
 
-- [ ] 🔍 **D-INSTR128 — `INSTR` FINDS NOTHING IN A STRING OF 128 CHARACTERS OR MORE
-      (found 2026-10-12 by D-OPENGRP's gate)**
+- [x] ✅ **D-INSTR128 — `INSTR` FINDS NOTHING IN A STRING OF 128 CHARACTERS OR MORE
+      (found 2026-10-12 by D-OPENGRP's gate; FIXED 2026-10-12)**
       🎚️ TIER 1 — happy path: a wrong answer on an ordinary string; the
       reference has no such limit.
       🤖 **AUTONOMOUS** — measured on the VG-8020 and the NODISK build
@@ -2492,6 +2492,21 @@ item — do **one item per session** to keep context lean.
       say 3; a 128-character string built by concatenation is 0 here too.
       Smells like a signed length test (128 = $80). Find the boundary (127 /
       128), the haystack AND the needle side, and `INSTR(n,...)`'s start.
+      ✅ **FIXED 2026-10-12.** sub/strheap.asm `sh_instr_search` tested
+      `max_start = len_a - len_b + 1` with `inc a / jp m` -- a SIGN test on an
+      unsigned byte -- so every max_start from 128 up was "no room". Now the
+      subtraction's carry decides (b$ longer than a$), and `sis_next` stops when
+      start wraps past 255. Sub page 0 4 -> 6 B (clean build, 2026-10-12).
+      [`instr128_before.out`](scratchpad/instr128_before.out) 7/11 wrong ->
+      [`instr128_after.out`](scratchpad/instr128_after.out) 11/11 SAME, VG-8020
+      against both builds. 🔮 Predicted exactly which 7 rows: HIT. Gate `make
+      instr128-acceptance` (probes/basic/basic_probe_instr128.py). Knife K-I2
+      ([`instr128_knife.out`](scratchpad/instr128_knife.out)) on the wrap guard:
+      GREEN, a MISS -- reproduced by hand, the wrapped search still answers 0
+      in 2 ticks; the inference (not measured) is that the needle's snapshot
+      sits just below the haystack's body, so start 0 compares the needle with
+      itself and "matches" at 0. The guard stays (2 B); the gate cannot see it.
+      The sign test's own knife is the before run. Docs: keywords/INSTR.md.
 
 - [ ] 🏗️ **D-SUB2EI — THE FIRST ROM-2 PAGE-0 TENANT MUST LAND WITH AN EI GATE
       (filed 2026-10-12, from D-SUB2's close)**
@@ -7171,7 +7186,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32643 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32658 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7337,7 +7352,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12199 (T-6FE392)8 (T-529ABE)` from `TODO.md:24993 (T-529ABE)`: a
+      `TODO.md:12214 (T-6FE392)8 (T-529ABE)` from `TODO.md:25008 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13046,7 +13061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24993 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25008 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

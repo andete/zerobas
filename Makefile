@@ -2467,6 +2467,12 @@ casdirect-acceptance: repack-machine $(DISK_TEST_DSK)
 keyshift-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_keyshift.py
 
+# --- instr128-acceptance: INSTR over strings of 128+ characters (D-INSTR128)
+# max_start was sign-tested, so every haystack of 128+ read 0; 11 rows against
+# the VG-8020 on both machines, incl. a 255-long no-match that must END.
+instr128-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_instr128.py
+
 # --- opengrp-acceptance: OPEN "GRP:" -- text on the graphics screen (D-OPENGRP,
 # Joost's report). Against the VG-8020 on both machines: the cursor walk, the
 # edges, codes 0..255, the CHR$(1) header, SCREEN 3, the comma zone, the

@@ -1,0 +1,14 @@
+a127     VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+a128     VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+a200     VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+a255     VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+late     VG < 250 >  nodisk < 250 >  disk < 250 >  SAME
+start    VG < 140 >  nodisk < 140 >  disk < 140 >  SAME
+start2   VG < 254 >  nodisk < 254 >  disk < 254 >  SAME
+none255  VG < 0 >    nodisk < 0 >    disk < 0 >    SAME
+needle   VG < 50 >   nodisk < 50 >   disk < 50 >   SAME
+needle2  VG < 2 >    nodisk < 2 >    disk < 2 >    SAME
+short    VG < 3 >    nodisk < 3 >    disk < 3 >    SAME
+
+PASS: 11/11
+refcache: 11 hit, 22 miss, 22 stored
