@@ -1070,8 +1070,10 @@ print_msg:      call    print_msg_stopcr    ; direct mode: body + CRLF
 ; note said exactly that when it homed them low for the mirror-image reason.
 ; Wording is reference-VERBATIM capitalised text (spec-basic-arrays.md §9.5),
 ; unchanged; tests/test_msgenc.py pins it out of the ROM image.
-err_subscript:  db      "Subscript out of range",0
-err_redim:      db      "Redimensioned array",0
+; C5-LOW (2026-10-12): err_subscript and err_redim are GONE from main -- ERR
+; 9 / 10's text is sub-hosted (sub/errmsg.asm em_subscript / em_redim) and
+; err_msgtab's rows 9 / 10 point at err_subhosted; the table was their only
+; reader.
 
 ; --- ex_stop: STOP statement — break and record a CONT resume point ----------
 ; STOP halts the program and records where to continue, so a following CONT

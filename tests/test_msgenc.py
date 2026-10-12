@@ -58,12 +58,11 @@ EXPECT = {
     "err_io":               "load error",
     "err_verify":           "Verify error",
     "err_mem":              "Out of memory",
-    "err_too_complex":      "String formula too complex",
-    "err_out_of_str":       "Out of string space",
+    # C5-LOW (2026-10-12): err_too_complex / err_out_of_str / err_subscript /
+    # err_redim MOVED to tests/test_msgsub.py's EXPECT (codes 16/14/9/10) in the
+    # same edit that deleted their strings from main.
     "msg_redo":             "?Redo from start",
     "msg_extra":            "?Extra ignored",
-    "err_subscript":        "Subscript out of range",
-    "err_redim":            "Redimensioned array",
     "err_illegal_fn_arr":   "Illegal function call",
     "err_mem_arr":          "Out of memory",
     "err_syntax":           "Syntax error",

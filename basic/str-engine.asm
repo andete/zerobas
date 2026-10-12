@@ -325,8 +325,9 @@ str_heap_oom_error:
 ; stack fills, §6/§11) — homed here (low region), not interp.asm's page 1
 ; (no slack there), same placement discipline as err_subscript et al
 ; (basic/arrays.asm).
-err_too_complex:                            ; D-MSGENC: no phrase hit here (the corpus
-                db      "String formula too complex",0  ; has one "String"); 29 B -> 27 B
+; C5-LOW (2026-10-12): err_too_complex is GONE from main -- ERR 16's text is
+; sub-hosted (sub/errmsg.asm em_too_complex); err_msgtab's row 16 points at
+; err_subhosted, its only reader.
 
 ; --- err_out_of_str: the ERR 14 message (D-CLP) -----------------------------
 ; err_msgtab listed 14 as a HOLE pointing at "unprintable error", exactly as it
@@ -334,10 +335,9 @@ err_too_complex:                            ; D-MSGENC: no phrase hit here (the 
 ; table for the same reason err_too_complex and LOCATE's err_missing_operand are:
 ; bytes inserted next to err_msgtab push page 1's dense forward `jr`s out of
 ; reach (basic/missing.asm:70).
-    IF CLEARPOOL
-err_out_of_str:
-                db      "Out of string space",0
-    ENDIF
+; C5-LOW (2026-10-12): err_out_of_str is GONE too -- ERR 14 is sub-hosted
+; (em_out_of_str) on BOTH switch settings, so CLEARPOOL=0's old
+; `Unprintable error` hole for ERR 14 closes with it.
 
 ; ===========================================================================
 ; Shared low-region helpers (arrays slice-4a). Homed HERE (the reclaimed low

@@ -95,6 +95,14 @@ EXPECT = {
     58: "Sequential I/O only",
     59: "File not OPEN",
     61: "Bad file mode",
+    # --- C5-LOW (2026-10-12): four from main's LOW region ------------------
+    # Each was deleted from tests/test_msgenc.py's EXPECT in the edit that
+    # deleted its string from main. Typed from the reference's text
+    # (scratchpad/c5low_probe.out, the VG-8020 column), not from sub/errmsg.asm.
+    9:  "Subscript out of range",
+    10: "Redimensioned array",
+    14: "Out of string space",
+    16: "String formula too complex",
 }
 
 # What a code the tenant does NOT know must print. Main routes EVERY out-of-dense

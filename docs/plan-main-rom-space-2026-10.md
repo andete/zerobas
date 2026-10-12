@@ -174,6 +174,10 @@ After phase B: about **740 B**, before overlaps.
   difference, ~3 B sub; fix `fiawalked-body.inc:10`, `fatprim.asm:74`,
   `spec-eviction-g7-space.md` §4, `spec-basic-append-missing-refuse.md` F1,
   TODO.md:5028).
+- ✅ **C-3 C5-LOW DONE 2026-10-12** -- +90 B main (low region 0 -> 47 B, page 1
+  0 -> 43 B), -102 B sub page 1 as costed, after D-SUBJRP1 made the room; C-2
+  SBH-1 is MOOT (APPEND left main for disk.rom on 2026-10-06, S10.B). The plan
+  text below is as it stood.
 - C-3 **C5-LOW** (80 B; run `msgexact-gate`, which `make gates` does not
   collect).
 These belong with S10/step 13 of `disk/docs/spec-diskcode-eviction.md`, not

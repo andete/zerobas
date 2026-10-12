@@ -2414,7 +2414,25 @@ item — do **one item per session** to keep context lean.
       `CAS:` on the staged name, plus the diskless bare name, which is tape too --
       is ~16-20 B of main (page 1 10 B, low 19 B on 2026-10-11).
 
-- [x] ✅ **D-SUBJRP1 — SUB PAGE 1 +89 B: `jp` -> `jr` IN ITS SUB-ONLY SOURCES (2026-10-12)**
+- [x] ✅ **C5-LOW — ERR 9, 10, 14 AND 16'S TEXTS INTO THE SUB ROM: MAIN +90 B (2026-10-12)**
+      🎚️ BUDGET — supply for D-OPENGRP (main was 0 B in both regions).
+      docs/plan-main-rom-space-2026-10.md phase C-3, ported by hand from its
+      2026-10-03 worktree: `Subscript out of range`, `Redimensioned array`,
+      `Out of string space`, `String formula too complex` leave main
+      (program.asm, str-engine.asm); err_msgtab's rows 9 / 10 / 14 / 16 point
+      at err_subhosted and sub/errmsg.asm's em_table holds them (EM_ROWS 35).
+      ERR 14 is now sub-hosted on both CLEARPOOL settings, so CLEARPOOL=0's
+      `Unprintable error` hole for it closes too. **Main low region 0 -> 47 B,
+      page 1 0 -> 43 B; sub page 1 171 -> 69 B** (clean build, 2026-10-12).
+      📏 [`c5low_probe.out`](scratchpad/c5low_probe.out): each text by `ERROR
+      n` and by a real raise, VG-8020 against both builds -- 7/7 SAME. Its
+      first cut read None on all three machines and called that agreement;
+      it now refuses a reference with no reading. msgexact-gate (not in
+      `make gates`): 55 rows verbatim, 0 holes. tests/test_msgenc.py's four
+      pins moved to test_msgsub.py. Switch builds 7/7. SBH-1, the plan's other
+      phase-C row, is moot: APPEND left main on 2026-10-06.
+
+- [x] ✅ **D-SUBJRP1 — SUB PAGE 1 +77 B: `jp` -> `jr` IN ITS SUB-ONLY SOURCES (2026-10-12)**
       🎚️ BUDGET — supply: the room C5-LOW ("4 low-region error strings into
       the errmsg tenant", docs/plan-main-rom-space-2026-10.md: +80 B main,
       -102 B sub page 1) needs, on the way to D-OPENGRP (main 0 B).
@@ -6988,7 +7006,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32460 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32478 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7154,7 +7172,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12016 (T-6FE392)8 (T-529ABE)` from `TODO.md:24810 (T-529ABE)`: a
+      `TODO.md:12034 (T-6FE392)8 (T-529ABE)` from `TODO.md:24828 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12863,7 +12881,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24810 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24828 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

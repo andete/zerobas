@@ -472,10 +472,10 @@ err_msgtab:
                 dw      err_subhosted       ; 8: undefined line number (zerobas's own
                                             ; "undefined line" wording, spec-basic-error-
                                             ; handling.md §4)
-                dw      err_subscript       ; 9: subscript out of range (arrays' own
-                                            ; capitalised string; §9.5 keep)
-                dw      err_redim           ; 10: redimensioned array (arrays' own
-                                            ; capitalised string; §9.5 keep)
+                dw      err_subhosted       ; 9: Subscript out of range (C5-LOW:
+                                            ; sub-hosted, em_subscript)
+                dw      err_subhosted       ; 10: Redimensioned array (C5-LOW:
+                                            ; sub-hosted, em_redim)
                 dw      err_subhosted       ; 11: division by zero
                 dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
                                             ; lives in the sub-ROM tenant, keyed on
@@ -483,15 +483,13 @@ err_msgtab:
                                             ; site -- `ERROR 12` is the only way here --
                                             ; but it no longer prints the wrong thing.
                 dw      err_subhosted       ; 13: type mismatch
-    IF CLEARPOOL
-                dw      err_out_of_str      ; 14: out of string space (D-CLP; was a
-    ELSE                                    ; hole until the pool could raise it)
-                dw      err_unprintable     ; 14: out of string space (hole)
-    ENDIF
-                                            ; hole until the pool could raise it)
+                dw      err_subhosted       ; 14: Out of string space (C5-LOW:
+                                            ; sub-hosted, em_out_of_str, on both
+                                            ; CLEARPOOL settings)
                 dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
                                             ; not raised by any zerobas site)
-                dw      err_too_complex     ; 16: string formula too complex
+                dw      err_subhosted       ; 16: String formula too complex (C5-LOW:
+                                            ; sub-hosted, em_too_complex)
                 dw      err_subhosted       ; 17: can't continue
                 dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
                                             ; sub-hosted; not raised -- DEF FN's own

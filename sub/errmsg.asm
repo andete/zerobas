@@ -117,14 +117,22 @@ em_table:
                 dw      em_overflow
                 db      8
                 dw      em_line
+                db      9                   ; C5-LOW (2026-10-12): 9, 10, 14, 16
+                dw      em_subscript        ; moved here from main's low region
+                db      10
+                dw      em_redim
                 db      11
                 dw      em_fp_divzero
                 db      12
                 dw      em_ill_direct
                 db      13
                 dw      em_type_mismatch
+                db      14
+                dw      em_out_of_str
                 db      15
                 dw      em_str_too_long
+                db      16
+                dw      em_too_complex
                 db      17
                 dw      em_cont
                 db      18
@@ -172,7 +180,7 @@ em_table:
                                             ; existing file. Without this row it
                                             ; printed `Unprintable error in 40`
                                             ; where the CF-3300 prints the text below
-EM_ROWS         equ     31
+EM_ROWS         equ     35
 
 ; The dense-range four (main's err_msgtab entries 12/15/18/19 point at
 ; err_subhosted for these). Both references agree on all four.
@@ -242,6 +250,10 @@ em_overflow:        db  "Overflow",0                    ; ERR 6 -- ⚠️ CAPITA
                                                         ; it arithmetically impossible.
                                                         ; Do not re-attempt it here.
 em_line:            db  "Undefined line number",0       ; ERR 8
+em_subscript:       db  "Subscript out of range",0      ; ERR 9  (C5-LOW)
+em_redim:           db  "Redimensioned array",0         ; ERR 10 (C5-LOW)
+em_out_of_str:      db  "Out of string space",0         ; ERR 14 (C5-LOW)
+em_too_complex:     db  "String formula too complex",0  ; ERR 16 (C5-LOW)
 em_fp_divzero:      db  "Division by zero",0            ; ERR 11
 em_type_mismatch:   db  "Type mismatch",0               ; ERR 13
 em_cont:            db  "Can't CONTINUE",0              ; ERR 17 -- ⚠️ capital

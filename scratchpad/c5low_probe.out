@@ -1,0 +1,10 @@
+e9   ERROR 9                        VG [Subscript out of range]  nodisk [Subscript out of range]  disk [Subscript out of range]  SAME
+e10  ERROR 10                       VG [Redimensioned array]  nodisk [Redimensioned array]  disk [Redimensioned array]  SAME
+e14  ERROR 14                       VG [Out of string space]  nodisk [Out of string space]  disk [Out of string space]  SAME
+e16  ERROR 16                       VG [String formula too complex]  nodisk [String formula too complex]  disk [String formula too complex]  SAME
+r9   DIM A(5):A(9)=1                VG [Subscript out of range]  nodisk [Subscript out of range]  disk [Subscript out of range]  SAME
+r10  DIM B(2):DIM B(3)              VG [Redimensioned array]  nodisk [Redimensioned array]  disk [Redimensioned array]  SAME
+r14  CLEAR 10:A$=STRING$(50,"x")    VG [Out of string space]  nodisk [Out of string space]  disk [Out of string space]  SAME
+
+PASS: 7/7
+refcache: 21 hit, 0 miss
