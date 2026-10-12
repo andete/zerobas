@@ -3469,6 +3469,33 @@ item — do **one item per session** to keep context lean.
       what sits below the hole moves up into it.
       ➡️ Next: confirm DEF FN's footprint; price (i)-(iii); then the moves, one
       buffer per commit, each with `fremem_probe.py` and ram-map-check.
+      📏 **TRPTBL'S LAYOUT, MEASURED 2026-10-12** ([`trptbl_probe.py`](scratchpad/trptbl_probe.py)
+      -> [`trptbl_probe.out`](scratchpad/trptbl_probe.out), VG-8020, the 78
+      data bytes PEEKed): 3-byte entries **KEY 1-10, STOP, SPRITE, STRIG 0-4,
+      INTERVAL** ($FC7F), 24 B reserved, all zeroed by RUN; byte 0 = `01` ON /
+      `02` STOP / `00` OFF (OFF KEEPS the pointer); bytes 1-2 = the handler
+      LINE's address (its link field). After `INTERVAL STOP` and a wait the
+      entry still reads `02`: no latch bit is visible in it. 🔮 Order, shape and
+      pointer HIT; the latch bit (predicted bit 2) MISS.
+      🔴 **SO ZTRAP -> TRPTBL IS NOT THE CHEAP FIRST MOVE I took it for.**
+      ZTRAP's ORDER IS ITS PRIORITY: `ct_find` (basic/traps.asm) fires the
+      first pending entry scanning up, and the order is measured (INTERVAL,
+      STOP, SPRITE, STRIG 0-4, KEY 10..1 -- keytrap.asm `key_entry_index`). The
+      reference's table order is not its priority, so its layout means a
+      custom priority walk in `ct_find`; ZTRAP's state byte also carries
+      PENDING (bit 7) and the edge SHADOW (bit 6), which TRPTBL does not show.
+      And its 54 B raise FRE(0) only after the workspace is packed (iii).
+      ➡️ The move that pays is LINEBUF + TOKBUF (832 B, contiguous at $EB00)
+      into BUF + KBUF, then the packing; price those first.
+      📏 **THE GAP, RE-MEASURED 2026-10-12** ([`fremem_1012.out`](scratchpad/fremem_1012.out),
+      NODISK vs the VG-8020): **−4978 B in all eight states** (28815 vs 23837
+      at boot); every economy delta still matches to the byte. 🔮 Predicted
+      the 09-26 figure, −4750: **MISS by 228 B -- zerobas's fixed RAM GREW
+      since 09-26.** Not yet attributed. A suspect, unconfirmed: channel #0's
+      267 B block (D-FCBSHAPE, 2026-10-10), ruled to be built because the
+      reference has one too -- in which case the reference's FRE already pays
+      for it and it should not widen the gap. ➡️ Attribute it first (`git log`
+      of TXTMAX / the pool / HIMEM-side claims since 09-26, `ramlayout_probe.py`).
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7251,7 +7278,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32768 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32795 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7417,7 +7444,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12279 (T-6FE392)8 (T-529ABE)` from `TODO.md:25073 (T-529ABE)`: a
+      `TODO.md:12306 (T-6FE392)8 (T-529ABE)` from `TODO.md:25100 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13126,7 +13153,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25073 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25100 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
