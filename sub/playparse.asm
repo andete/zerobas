@@ -155,11 +155,11 @@ pt_ch_loop:
                 dec     b
                 call    pt_upcase
                 cp      ' '
-                jp      z,pt_ch_loop        ; skip spaces
+                jr      z,pt_ch_loop        ; skip spaces
                 cp      'A'
                 jr      c,pt_nn
                 cp      'G'+1
-                jp      c,pt_note_letter    ; A..G -> a note
+                jr      c,pt_note_letter    ; A..G -> a note
 pt_nn:
                 cp      'N'
                 jp      z,pt_cmd_n
@@ -364,7 +364,7 @@ pt_cmd_n:
                 cp      97
                 jp      nc,pt_illegal       ; > 96
                 or      a
-                jp      z,pt_cmd_rest       ; N0 = rest
+                jr      z,pt_cmd_rest       ; N0 = rest
                 ; 🔴 NO `dec a` HERE: `N n` INDEXES pt_period AT n, NOT n-1.
                 ; Measured on both references (D-KWPLAY 2026-09-15, scratchpad/
                 ; playnote_probe.py): N1 sounds 3228 = pt_period[1] and N96 sounds 13
@@ -437,7 +437,7 @@ pt_cmd_env_shape:
                 jp      nc,pt_illegal
                 or      $80                 ; set envelope-mode bit
                 ld      (ix+VCX_ENVSH),a
-                jp      pt_emit_env
+                jr      pt_emit_env
 pt_cmd_env_per:
                 call    pt_number
                 jp      nc,pt_illegal
@@ -452,7 +452,7 @@ pt_cmd_env_per:
                 jp      z,pt_illegal        ; M0 -> ERR 5 on both refs (m.zero)
                 ld      (ix+VCX_ENVPER),l
                 ld      (ix+VCX_ENVPER+1),h
-                jp      pt_emit_env
+                jr      pt_emit_env
 
 ; --- pt_emit_env: OP_ENV = [op, shape, per_lo, per_hi] ---------------------
 pt_emit_env:
@@ -510,7 +510,7 @@ pl_dots:
                 jr      pl_dots
 pl_calc:
                 ld      d,(ix+VCX_TEMPO)    ; D = tempo, E = length, C = dots
-                jp      pt_getframes
+                jr      pt_getframes
 pl_bad:
                 ld      a,5
                 ld      (AUDIO_STATUS),a

@@ -113,7 +113,7 @@
 fp_pow:
                 ld      a,(MATH_J)
                 bit     7,a
-                jp      nz,fp_pow_frac
+                jr      nz,fp_pow_frac
 
 ; --- int path: LSB-first square-and-multiply (§13.1 rule 3, sim-proven) ----
                 call    cpy_arga_x    ; s := x

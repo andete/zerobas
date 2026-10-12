@@ -2414,6 +2414,27 @@ item — do **one item per session** to keep context lean.
       `CAS:` on the staged name, plus the diskless bare name, which is tape too --
       is ~16-20 B of main (page 1 10 B, low 19 B on 2026-10-11).
 
+- [x] ✅ **D-SUBJRP1 — SUB PAGE 1 +89 B: `jp` -> `jr` IN ITS SUB-ONLY SOURCES (2026-10-12)**
+      🎚️ BUDGET — supply: the room C5-LOW ("4 low-region error strings into
+      the errmsg tenant", docs/plan-main-rom-space-2026-10.md: +80 B main,
+      -102 B sub page 1) needs, on the way to D-OPENGRP (main 0 B).
+      [`subjr_carve.py`](scratchpad/subjr_carve.py) `--page 1`, the D-LISTFLT
+      tool aimed at the page-1 sources: 41 sub-only files (neither main nor the
+      disk ROM includes them), **77 kept, sub page 1 94 -> 171 B** (clean
+      build, 2026-10-12; [`subjr_p1_carve.out`](scratchpad/subjr_p1_carve.out)).
+      Every switch build assembled BEFORE the gates this time (D-LISTFLT's
+      pass had missed CLEARPOOL=0): 7/7.
+      🔴 **THE FIRST PASS CONVERTED A JUMP TABLE.** It kept 89 and the gates
+      went red on every disk row (kwtime's LOF hung; kwsweep's OPEN / FIELD /
+      PUT / BSAVE cases mangled): twelve rows of sub/fatprim.asm's `fp_table`,
+      indexed in 3-byte strides, had become 2-byte `jr`s. The tool only spared
+      sub.asm's tables. It now leaves any unconditional `jp label` whose
+      neighbouring code line (no label between) is another one -- 25 rows
+      this time -- and the shipped page-0 carve was re-checked against that
+      rule: 0 of its 67 in-place conversions is a table row. Not committed red.
+      ⏱ The math pack's loops are among these files: a taken `jr` is 2 T
+      slower than a `jp` -- TIER 5, not measured.
+
 - [ ] 🏗️ **D-SUB2 — A SECOND PLAIN 32 KB SUB ROM IN SLOT 3-3, WHEN THE FIRST
       SUB-BLOCKED ITEM REACHES THE QUEUE (ruled 2026-10-11)**
       🎚️ BUDGET — supply: it unblocks the items the SUB walls hold, not main's.
@@ -6967,7 +6988,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:32439 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:32460 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7133,7 +7154,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11995 (T-6FE392)8 (T-529ABE)` from `TODO.md:24789 (T-529ABE)`: a
+      `TODO.md:12016 (T-6FE392)8 (T-529ABE)` from `TODO.md:24810 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -12842,7 +12863,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:24789 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:24810 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

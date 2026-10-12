@@ -42,12 +42,12 @@ fia_walked:
                 jr      z,fia_part_ctrlz
                 ld      hl,(FAT_WRTMP2)     ; no Ctrl-Z: BUFLEN = rem, bytes = size
                 ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_size
+                jr      fia_bytes_size
 fia_part_ctrlz:
                 ld      hl,(FAT_WRTMP2)     ; Ctrl-Z: overwrite it. BUFLEN = rem-1,
                 dec     hl                  ; bytes = size-1
                 ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_m1
+                jr      fia_bytes_m1
 fia_full:
                 ; last sector full: check its final byte ([511]) for the Ctrl-Z.
                 ld      a,(FAT_DBUF+511)
@@ -59,7 +59,7 @@ fia_full:
                 ld      (FWR_SECIDX),a
                 ld      hl,0
                 ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_size
+                jr      fia_bytes_size
 fia_full_ctrlz:
                 ; overwrite the Ctrl-Z at offset 511 by rewriting the full last
                 ; sector: SECIDX = CLUSSEC-1, BUFLEN = 511, bytes = size-1.
@@ -68,7 +68,7 @@ fia_full_ctrlz:
                 ld      (FWR_SECIDX),a
                 ld      hl,511
                 ld      (FWR_BUFLEN),hl
-                jp      fia_bytes_m1
+                jr      fia_bytes_m1
 fia_bytes_size:
                 ld      hl,FAT_FILESIZE     ; FWR_BYTES = size (4-byte LE)
                 ld      de,FWR_BYTES

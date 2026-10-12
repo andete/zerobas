@@ -504,7 +504,7 @@ fsqn_trunc3:
                 ; untouched, which IS r1-0).
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
-                jp      z,fsqn_e2           ; corr==0 -- SQRT_R stays r1
+                jr      z,fsqn_e2           ; corr==0 -- SQRT_R stays r1
                 call    cpy_r_arga  ; ARGA := r1 (retained)
                 call    fp_sub              ; FAC/ARGA := r1-corr
                 call    widen_to_arga
@@ -532,7 +532,7 @@ fsqn_trunc4:
                 ; normalize workaround as the corr subtraction above.
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
-                jp      z,fsqn_r2_done      ; e2==0 -- SQRT_R already r2
+                jr      z,fsqn_r2_done      ; e2==0 -- SQRT_R already r2
                 call    cpy_r_arga  ; ARGA := (r1-corr)
                 call    fp_sub              ; FAC/ARGA := r2=(r1-corr)-e2
                 call    widen_to_arga
@@ -546,7 +546,7 @@ fsqn_r2_done:
                 jp      z,fsqn_done         ; r2==0 -- y is exact already
                 ld      a,(SQRT_R+FPNUM_SIGN)
                 or      a
-                jp      nz,fsqn_down_check  ; r2<0 -- y may be too HIGH
+                jr      nz,fsqn_down_check  ; r2<0 -- y may be too HIGH
 
 fsqn_up_check:
                 ; threshold := y*ulp (ulp = dig[0]=1, dexp=dexp_y-13, i.e.
@@ -580,7 +580,7 @@ fsqn_up_check:
                 call    fp_add              ; FAC/ARGA := y+ulp
                 call    widen_to_arga
                 call    cpy_to_y    ; SQRT_Y := y+ulp
-                jp      fsqn_next
+                jr      fsqn_next
 
 fsqn_down_check:
                 ; ulp_down: normally 10^(dexp_y-14) (same as the up-side
@@ -597,19 +597,19 @@ fsqn_down_check:
                 ld      hl,SQRT_Y+FPNUM_DIG
                 ld      a,(hl)
                 cp      1
-                jp      nz,fsqn_down_go     ; leading digit != 1 -> not pow10
+                jr      nz,fsqn_down_go     ; leading digit != 1 -> not pow10
                 inc     hl
                 ld      b,13
 fsqn_pow10_chk:
                 ld      a,(hl)
                 or      a
-                jp      nz,fsqn_down_go     ; a nonzero trailing digit -> not pow10
+                jr      nz,fsqn_down_go     ; a nonzero trailing digit -> not pow10
                 inc     hl
                 djnz    fsqn_pow10_chk
                 ; SQRT_Y IS an exact power of 10 -- use the finer ulp
                 ld      a,1
                 ld      (SQRT_POW10),a
-                jp      fsqn_down_go2
+                jr      fsqn_down_go2
 fsqn_down_go:
                 xor     a
                 ld      (SQRT_POW10),a
@@ -618,7 +618,7 @@ fsqn_down_go2:
                 ld      de,13
                 ld      a,(SQRT_POW10)
                 or      a
-                jp      z,fsqn_down_dexp_ok
+                jr      z,fsqn_down_dexp_ok
                 inc     de                  ; pow10 -- one decade finer
 fsqn_down_dexp_ok:
                 or      a
@@ -637,7 +637,7 @@ fsqn_down_dexp_ok:
                 call    cpy_r_arga  ; ARGA := r2 (negative)
                 call    fp_cmp              ; A=cmp(r2,-threshold)
                 cp      4
-                jp      z,fsqn_done         ; r2>-threshold strictly -> stay
+                jr      z,fsqn_done         ; r2>-threshold strictly -> stay
                 ; r2<=-threshold (incl. tie) -> step DOWN -------------------
                 ; INCLUSIVE on tie (own finding, not the textbook ROUND-HALF-
                 ; UP-favours-the-larger-candidate rule the up-side keeps): an
@@ -656,7 +656,7 @@ fsqn_down_dexp_ok:
                 ld      de,13
                 ld      a,(SQRT_POW10)
                 or      a
-                jp      z,fsqn_down_dexp_ok2
+                jr      z,fsqn_down_dexp_ok2
                 inc     de
 fsqn_down_dexp_ok2:
                 or      a
@@ -675,7 +675,7 @@ fsqn_next:
                 inc     a
                 ld      (SQRT_ITER),a
                 cp      DECIDE_MAX_ITER+1
-                jp      nc,fsqn_done        ; safety cap -- current SQRT_Y
+                jr      nc,fsqn_done        ; safety cap -- current SQRT_Y
                                             ; stands (never expected to fire)
                 jp      fsqn_loop
 fsqn_done:

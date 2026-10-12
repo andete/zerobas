@@ -52,9 +52,9 @@ cpt_resume:
                 cp      P_CENTER
                 jr      z,cpt_after_center
                 cp      P_R
-                jp      z,cpt_after_r
+                jr      z,cpt_after_r
                 cp      P_C
-                jp      z,cpt_after_c
+                jr      z,cpt_after_c
                 cp      P_START
                 jp      z,cpt_after_start
                 cp      P_END
@@ -123,7 +123,7 @@ cpt_after_r:
 cpt_at_c:
                 call    cpt_skipsp
                 cp      ','
-                jp      z,cpt_start_intro   ; c omitted; this comma also intros start
+                jr      z,cpt_start_intro   ; c omitted; this comma also intros start
                 or      a
                 jp      z,cpt_err24         ; a comma was CONSUMED: end of
                 cp      COLON               ; statement here is a DANGLING
@@ -154,7 +154,7 @@ cpt_start_intro:
 cpt_at_start:
                 call    cpt_skipsp
                 cp      ','
-                jp      z,cpt_start_empty   ; start empty; comma intros end
+                jr      z,cpt_start_empty   ; start empty; comma intros end
                 or      a
                 jp      z,cpt_err24         ; a comma was CONSUMED: end of
                 cp      COLON               ; statement here is a DANGLING
@@ -177,7 +177,7 @@ cpt_after_start:
 cpt_at_end:
                 call    cpt_skipsp
                 cp      ','
-                jp      z,cpt_end_empty     ; end empty; comma intros aspect
+                jr      z,cpt_end_empty     ; end empty; comma intros aspect
                 or      a
                 jp      z,cpt_err24         ; a comma was CONSUMED: end of
                 cp      COLON               ; statement here is a DANGLING
@@ -203,11 +203,11 @@ cpt_after_end:
 cpt_at_aspect:
                 call    cpt_skipsp
                 cp      ','
-                jp      z,cpt_err2          ; too many args -> Syntax error
+                jr      z,cpt_err2          ; too many args -> Syntax error
                 or      a
-                jp      z,cpt_err24         ; a comma was CONSUMED: end of
+                jr      z,cpt_err24         ; a comma was CONSUMED: end of
                 cp      COLON               ; statement here is a DANGLING
-                jp      z,cpt_err24         ; comma -> Missing operand
+                jr      z,cpt_err24         ; comma -> Missing operand
                 ld      a,P_ASPECT
                 ld      (GFX_CPHASE),a
                 ld      a,3
@@ -221,14 +221,14 @@ cpt_end_empty:
 cpt_after_aspect:
                 ld      a,(ARGA+FPNUM_SIGN) ; ARGA = canonical(aspect) (resident widened)
                 or      a
-                jp      nz,cpt_err5         ; aspect < 0 -> ERR 5
+                jr      nz,cpt_err5         ; aspect < 0 -> ERR 5
                 ld      hl,(ARGA+FPNUM_DEXP)
                 ld      a,h
                 or      a
                 jp      m,cpt_asp_le1       ; dexp<0 -> aspect<1
                 ld      a,l
                 or      a
-                jp      z,cpt_asp_le1       ; dexp==0 -> aspect<1
+                jr      z,cpt_asp_le1       ; dexp==0 -> aspect<1
                 ; aspect>=1 (dexp>=1): y-major; minor_ratio = 1/aspect
                 ld      a,1
                 ld      (GFX_ASPMAJ),a
@@ -263,7 +263,7 @@ cpt_asp_done:
                 ; restructure the seam classifier assumed (docs/spec-basic-circle-
                 ; restructure.md). Non-comma trailing junk ALREADY fell to
                 ; cpt_finish here; the comma now joins it.
-                jp      cpt_finish
+                jr      cpt_finish
 
 ; ===========================================================================
 ; helpers
@@ -364,7 +364,7 @@ cpt_angle_from_arga:
                 dec     a
                 jr      z,cpt_ang_ok        ; |angle| < 6.283245
                 pop     hl                  ; drop our caller's return: the refusal
-                jp      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
+                jr      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
 cpt_ang_ok:
                 call    cpt_boundary_prep   ; reads GFX_CS_AY for the dest base
                 ld      a,1

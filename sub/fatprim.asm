@@ -146,52 +146,52 @@ fp_stash_err:
 ; --- per-primitive wrappers: call the shared body, marshal the result ------
 t_read_sector:
                 call    read_sector
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 ; t_write_sector — the shared body names its copy `fatprim_write_sector`, not
 ; `write_sector` (sub/format.asm already owns that name for its OWN private
 ; write path in this same sub.rom assembly; see fat-prim-body.inc's header).
 t_write_sector:
                 call    fatprim_write_sector
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_mount:
                 call    fat_mount
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_find:
                 call    fat_find
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 ; t_name_cmp — Z, not Cy: STATUS doubles as the Z surrogate (0 = match/Z,
 ; nonzero = no-match/NZ), same polarity as the Cy convention elsewhere.
 t_name_cmp:
                 call    name_cmp
-                jp      z,fp_stash_ok
-                jp      fp_stash_err
+                jr      z,fp_stash_ok
+                jr      fp_stash_err
 t_fat_open:
                 call    fat_open
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_read_fat_sector:
                 call    fat_read_fat_sector
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_read_file_sector:
                 call    fat_read_file_sector
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 ; t_fat_alloc_cluster — HL is fat_alloc_cluster's real output (the allocated
 ; cluster number, read by field.asm:576/599 via the resident shim); covered
 ; by the uniform fp_stash_ok/err reload, no bespoke tail needed.
 t_fat_alloc_cluster:
                 call    fat_alloc_cluster
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_write_fat_entry:
                 call    fat_write_fat_entry
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 ; t_fat_count_free — DE, not Cy/HL: mirror DE into FAT_WRTMP2 (fat_count_
 ; free's OWN scratch, already RAM-visible from the resident side) on EVERY
 ; exit path, so the resident shim can just `ld de,(FAT_WRTMP2)`. Harmless on
@@ -206,16 +206,16 @@ t_fat_count_free:
                 ret
 t_fat_dir_create:
                 call    fat_dir_create
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_dir_update:
                 call    fat_dir_update
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 t_fat_delete:
                 call    fat_delete
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+                jr      c,fp_stash_err
+                jr      fp_stash_ok
 
 ; t_fch_restage (D-FCH S-FCH-1): re-read the live channel's staged sector back
 ; into the shared FSECTOR_BUF. Takes no register inputs -- fat_restage_channel
@@ -223,7 +223,7 @@ t_fat_delete:
 ; resident shim marshals nothing.
 t_fch_restage:
                 call    fat_restage_channel
-                jp      c,fp_stash_err
+                jr      c,fp_stash_err
                 jp      fp_stash_ok
 
 ; t_fch_load (D-FCBSHAPE S0): channel context block -> the engine globals, then

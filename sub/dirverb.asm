@@ -58,9 +58,9 @@ dirverb_tenant:
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
                 cp      DISKOP_SEL_DSKO
-                jp      z,tnt_dsko              ; 4 -> DSKO$ (D-DSKIO)
+                jr      z,tnt_dsko              ; 4 -> DSKO$ (D-DSKIO)
                 cp      DISKOP_SEL_DSKI
-                jp      z,tnt_dski              ; 5 -> DSKI$
+                jr      z,tnt_dski              ; 5 -> DSKI$
                 ; 🔴 SIX OF THE EIGHT OPS ARE NO LONGER SERVED HERE, AND THE
                 ; BARE FALL-THROUGH WENT WITH THE FIRST OF THEM. Selector 1
                 ; (NAME_STAMP) D-NAMESTAMP §6.6aw · selector 0 (KILL) D-KILLLOCAL
@@ -74,7 +74,7 @@ dirverb_tenant:
                 ; 🎯 TWO ARE LEFT, DSKO$ AND DSKI$, and they are not going
                 ; anywhere: both are called from MAIN rather than from a disk-ROM
                 ; hook, so there is no round trip to delete.
-                jp      dv_err
+                jr      dv_err
 
 ; --- dv_err: the unrecognised-op tail ---------------------------------------
 ; ⚠️ THE HEADER THAT STOOD HERE DESCRIBED NAME'S DIR STAMP, whose body

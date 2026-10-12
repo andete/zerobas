@@ -307,7 +307,7 @@ sck_trunc_zero:
                 inc     hl
                 djnz    sck_trunc_zero
                 call    cpy_arga_x    ; MATH_T := nf (persistent)
-                jp      sck_reduce
+                jr      sck_reduce
 sck_dexp_le0:
                 ; q' in [0.5,1), n=0 -- skip the reduction entirely (n*C1=
                 ; n*C2=0 exactly; see this file's header for why skipping,
@@ -315,7 +315,7 @@ sck_dexp_le0:
                 xor     a
                 ld      (MATH_J),a          ; quad := 0
                 call    cpy_y_arga  ; ARGA := a (r = a directly)
-                jp      sck_have_r
+                jr      sck_have_r
 sck_floor:
                 ; dexp'>=15: |x|>=~1.57E14, x meaningless -- FLOOR
                 ld      hl,MATH_A

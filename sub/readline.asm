@@ -76,9 +76,9 @@ rl_key:
                 cp      13                  ; Enter -> read the logical line back
                 jp      z,rl_enter
                 cp      8                   ; Backspace -> erase left, pull the line in
-                jp      z,rl_bs
+                jr      z,rl_bs
                 cp      $7F                 ; DEL -> delete under the cursor
-                jp      z,rl_del
+                jr      z,rl_del
                 cp      18                  ; INS -> toggle insert mode
                 jr      z,rl_ins
                 cp      $20
@@ -91,7 +91,7 @@ rl_key:
                 jr      z,rl_ctl
                 cp      9                   ; TAB (D-EDCTRL)
                 jr      z,rl_tab
-                jp      rl_more             ; other control bytes: dropped, as before
+                jr      rl_more             ; other control bytes: dropped, as before
 ; 🔤 TAB (D-EDCTRL, 2026-10-05): it TYPES SPACES to the next 8-column stop --
 ; the VG-8020 read, scratchpad/edctrl_probe.py: `AB`+TAB puts the cursor on
 ; column 9 (blanks 3..8), and over existing text it OVERWRITES (`ABCDEFGHIJ`,
@@ -107,7 +107,7 @@ rl_tab:
                 dec     a
                 and     7
                 jr      nz,rl_tab
-                jp      rl_more
+                jr      rl_more
 rl_ins:
                 ld      a,(INSFLG)
                 cpl
@@ -119,10 +119,10 @@ rl_ctl:
                 ld      (INSFLG),a          ; a cursor key / HOME / CLS ends insert mode
                 ld      a,c
                 call    rl_echo
-                jp      rl_more
+                jr      rl_more
 rl_char:
                 call    rl_char1
-                jp      rl_more
+                jr      rl_more
 ; rl_char1: A = a printable byte, typed at the cursor -- insert-aware echo that
 ; RETURNS (TAB loops over it). rl_echo is its overwrite half, also returning.
 rl_char1:

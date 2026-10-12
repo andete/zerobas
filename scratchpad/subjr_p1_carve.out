@@ -1,0 +1,80 @@
+baseline sub page 1 free: 94 B; 41 sub-only page-1 files
+converted 237 candidate(s); 25 jump-table row(s) left alone
+kept 77, reverted 160 out of range; sub page 1 free 94 -> 171 B (+77)
+  basic/bload-body.inc:70  jp      nz,is_disk          ; prefix mismatch -> disk path (out of jr range)
+  basic/bload-body.inc:219  jp      do_disk_bload
+  basic/fiawalked-body.inc:45  jp      fia_bytes_size
+  basic/fiawalked-body.inc:50  jp      fia_bytes_m1
+  basic/fiawalked-body.inc:62  jp      fia_bytes_size
+  basic/fiawalked-body.inc:71  jp      fia_bytes_m1
+  sub/circleparse.asm:55  jp      z,cpt_after_r
+  sub/circleparse.asm:57  jp      z,cpt_after_c
+  sub/circleparse.asm:126  jp      z,cpt_start_intro   ; c omitted; this comma also intros start
+  sub/circleparse.asm:157  jp      z,cpt_start_empty   ; start empty; comma intros end
+  sub/circleparse.asm:180  jp      z,cpt_end_empty     ; end empty; comma intros aspect
+  sub/circleparse.asm:206  jp      z,cpt_err2          ; too many args -> Syntax error
+  sub/circleparse.asm:208  jp      z,cpt_err24         ; a comma was CONSUMED: end of
+  sub/circleparse.asm:210  jp      z,cpt_err24         ; comma -> Missing operand
+  sub/circleparse.asm:224  jp      nz,cpt_err5         ; aspect < 0 -> ERR 5
+  sub/circleparse.asm:231  jp      z,cpt_asp_le1       ; dexp==0 -> aspect<1
+  sub/circleparse.asm:266  jp      cpt_finish
+  sub/circleparse.asm:367  jp      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
+  sub/dirverb.asm:61  jp      z,tnt_dsko              ; 4 -> DSKO$ (D-DSKIO)
+  sub/dirverb.asm:63  jp      z,tnt_dski              ; 5 -> DSKI$
+  sub/dirverb.asm:77  jp      dv_err
+  sub/fatprim.asm:149  jp      c,fp_stash_err
+  sub/fatprim.asm:150  jp      fp_stash_ok
+  sub/fatprim.asm:156  jp      c,fp_stash_err
+  sub/fatprim.asm:157  jp      fp_stash_ok
+  sub/fatprim.asm:160  jp      c,fp_stash_err
+  sub/fatprim.asm:161  jp      fp_stash_ok
+  sub/fatprim.asm:164  jp      c,fp_stash_err
+  sub/fatprim.asm:165  jp      fp_stash_ok
+  sub/fatprim.asm:170  jp      z,fp_stash_ok
+  sub/fatprim.asm:171  jp      fp_stash_err
+  sub/fatprim.asm:174  jp      c,fp_stash_err
+  sub/fatprim.asm:175  jp      fp_stash_ok
+  sub/fatprim.asm:178  jp      c,fp_stash_err
+  sub/fatprim.asm:179  jp      fp_stash_ok
+  sub/fatprim.asm:182  jp      c,fp_stash_err
+  sub/fatprim.asm:183  jp      fp_stash_ok
+  sub/fatprim.asm:189  jp      c,fp_stash_err
+  sub/fatprim.asm:190  jp      fp_stash_ok
+  sub/fatprim.asm:193  jp      c,fp_stash_err
+  sub/fatprim.asm:194  jp      fp_stash_ok
+  sub/fatprim.asm:209  jp      c,fp_stash_err
+  sub/fatprim.asm:210  jp      fp_stash_ok
+  sub/fatprim.asm:213  jp      c,fp_stash_err
+  sub/fatprim.asm:214  jp      fp_stash_ok
+  sub/fatprim.asm:217  jp      c,fp_stash_err
+  sub/fatprim.asm:218  jp      fp_stash_ok
+  sub/fatprim.asm:226  jp      c,fp_stash_err
+  sub/fp_pow.asm:116  jp      nz,fp_pow_frac
+  sub/fp_sin.asm:310  jp      sck_reduce
+  sub/fp_sin.asm:318  jp      sck_have_r
+  sub/fp_sqrt.asm:507  jp      z,fsqn_e2           ; corr==0 -- SQRT_R stays r1
+  sub/fp_sqrt.asm:535  jp      z,fsqn_r2_done      ; e2==0 -- SQRT_R already r2
+  sub/fp_sqrt.asm:549  jp      nz,fsqn_down_check  ; r2<0 -- y may be too HIGH
+  sub/fp_sqrt.asm:583  jp      fsqn_next
+  sub/fp_sqrt.asm:600  jp      nz,fsqn_down_go     ; leading digit != 1 -> not pow10
+  sub/fp_sqrt.asm:606  jp      nz,fsqn_down_go     ; a nonzero trailing digit -> not pow10
+  sub/fp_sqrt.asm:612  jp      fsqn_down_go2
+  sub/fp_sqrt.asm:621  jp      z,fsqn_down_dexp_ok
+  sub/fp_sqrt.asm:640  jp      z,fsqn_done         ; r2>-threshold strictly -> stay
+  sub/fp_sqrt.asm:659  jp      z,fsqn_down_dexp_ok2
+  sub/fp_sqrt.asm:678  jp      nc,fsqn_done        ; safety cap -- current SQRT_Y
+  sub/lineedit.asm:89  jp      z,le_store              ; LE_OP_STORE = 0
+  sub/playparse.asm:158  jp      z,pt_ch_loop        ; skip spaces
+  sub/playparse.asm:162  jp      c,pt_note_letter    ; A..G -> a note
+  sub/playparse.asm:367  jp      z,pt_cmd_rest       ; N0 = rest
+  sub/playparse.asm:440  jp      pt_emit_env
+  sub/playparse.asm:455  jp      pt_emit_env
+  sub/playparse.asm:513  jp      pt_getframes
+  sub/punum.asm:200  jp      z,pnt_point
+  sub/punum.asm:212  jp      z,pnt_point         ; 3 digits or fewer: no comma at all
+  sub/readline.asm:79  jp      z,rl_bs
+  sub/readline.asm:81  jp      z,rl_del
+  sub/readline.asm:94  jp      rl_more             ; other control bytes: dropped, as before
+  sub/readline.asm:110  jp      rl_more
+  sub/readline.asm:122  jp      rl_more
+  sub/readline.asm:125  jp      rl_more

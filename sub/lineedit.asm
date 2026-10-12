@@ -86,7 +86,7 @@
 lineedit_tenant:
                 ld      a,(LE_OP)
                 or      a
-                jp      z,le_store              ; LE_OP_STORE = 0
+                jr      z,le_store              ; LE_OP_STORE = 0
                 dec     a
                 jp      z,relink_body           ; LE_OP_RELINK = 1 (cload.asm's own
                                                 ; call sites); tail: vars_reset; ret

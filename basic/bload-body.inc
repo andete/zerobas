@@ -67,7 +67,7 @@ parse_dev:
                 ld      a,(hl)              ; typed char
                 call    bl_upcase              ; case-insensitive (typed may be lower)
                 cp      c
-                jp      nz,is_disk          ; prefix mismatch -> disk path (out of jr range)
+                jr      nz,is_disk          ; prefix mismatch -> disk path (out of jr range)
                 inc     hl
                 inc     de
                 jr      parse_dev
@@ -216,7 +216,7 @@ isd_disk:
                 ; (the tail was parsed by main's pcr_bload -- D-BLOADOFS)
                 ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
                 ; is set. Hand off to the disk loader.
-                jp      do_disk_bload
+                jr      do_disk_bload
 
                 include "basic/pdfcb-body.inc"
 

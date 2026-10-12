@@ -197,7 +197,7 @@ pnt_nine:
 pnt_comma:
                 ld      a,(PU_FLAGS)
                 bit     7,a
-                jp      z,pnt_point
+                jr      z,pnt_point
                 ld      a,c                 ; K = (integer digits - 1) / 3
                 dec     a
                 ld      b,0
@@ -209,7 +209,7 @@ pnt_ck:
 pnt_ckd:
                 ld      a,b
                 or      a
-                jp      z,pnt_point         ; 3 digits or fewer: no comma at all
+                jr      z,pnt_point         ; 3 digits or fewer: no comma at all
                 ld      (PU_COMMAS),a
                 ld      h,d                 ; HL = the NEW end = old end + K
                 ld      l,e
