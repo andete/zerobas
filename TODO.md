@@ -2418,29 +2418,24 @@ item — do **one item per session** to keep context lean.
       RAM is free; re-test then.
       ➡️ Filed: D-LISTLPTR (LIST prints a `$0D` pointer as the ADDRESS).
 
-- [ ] 🧩 **D-SLOTMAP — zerobas's RAM SITS IN SLOT 3-0; THE VG-8020's IN 3-2 (filed
-      2026-10-13, Joost asked whether the sub ROMs belong in slot 0)**
-      🎚️ TIER 3 — a program that looks at where RAM is sees a different slot ID
-      ($8C here, $8E on the reference); no failure measured yet.
-      📏 Read from the machine configs (not ROM): the VG-8020 has slot 0 NOT
-      expanded (BIOS + BASIC) and slot 3 expanded with RAM in 3-2, 3-0 / 3-1 /
-      3-3 empty. zerobas's repack machines: slot 0 not expanded (main ROM + the
-      C-BIOS logo ROM at $8000), slot 3: RAM 3-0, disk 3-1, sub 3-2, sub2 3-3.
-      🏗️ Joost, 2026-10-13: the disk ROM STAYS in 3-1 ("it has a well known
-      expected location"); the sub ROMs are our own invention and "should
-      probably sit somewhere more atypical". Slot 0 expansions were considered
-      and NOT recommended: slot 0 is the one slot matching the reference today,
-      and expanding it changes EXPTBL's slot-0 bit ($FCC1 reads $80 not $00)
-      for every program, and complicates the interrupt trampoline (a slot-0
-      subslot switch maps slot 0 into page 3, taking the stack away).
-      🤖 **AUTONOMOUS** — measure first: on both machines, what a program sees
-      (EXPTBL / SLTTBL, where a RAM search lands, the slot the BIOS reports).
-      Then RAM -> 3-2 (a machine-config change: zerobas finds its sub ROMs by
-      their "ZB" / "Z2" markers and records the slot, and C-BIOS searches for
-      RAM). The sub ROMs then take the empty subslots: (a) 3-0 and 3-3 as
-      today's two ROMs, or (b) both in 3-3 as one bank-switched 64 KB ROM, so
-      3-0 stays empty as on the VG-8020 -- price (b)'s per-call bank switch
-      before choosing; Joost leans to the more atypical placement.
+- [x] 🧩 **D-SLOTMAP — WHERE THE RAM AND OUR SUB ROMs SIT: A QUESTION, ANSWERED;
+      NO CHANGE** (2026-10-13)
+      🎚️ TIER 6 — recorded for reference only; nothing is planned.
+      Joost asked whether our sub ROMs might belong in expansions of slot 0, and
+      where MSX1 machines (and C-BIOS) put their RAM. He did NOT ask for a
+      change ("it was more a question only"); the only statement was that the
+      disk ROM stays in 3-1, its well-known location.
+      📏 Facts, read from openMSX machine configs (not ROM): the VG-8020 has
+      slot 0 not expanded and RAM in 3-2; zerobas's repack machines have slot 0
+      not expanded and RAM in 3-0 (disk 3-1, sub 3-2, sub2 3-3); every stock
+      C-BIOS MSX1 config has RAM in slot 3, not expanded. Across openMSX's
+      MSX1 machines RAM sits in slot 0 on 40, 3 on 27, 2 on 18, 1 on 16, 3-2 on
+      12, 3-0 on 9 -- so software must search for RAM, and 3-0 is an ordinary
+      real-world placement, not a defect.
+      Considerations if it is ever revisited: expanding slot 0 changes EXPTBL's
+      slot-0 bit ($FCC1 $80, not $00) for every program and complicates the
+      interrupt trampoline; our sub ROMs carry "ZB" / "Z2", never "AB", so
+      no BIOS scan runs them and a RAM search simply fails its test on them.
 
 - [ ] 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
       NUMBER (filed 2026-10-12, from D-BASICROM)**
@@ -3928,6 +3923,30 @@ item — do **one item per session** to keep context lean.
       match, and FLD_TAB is empty without a disk).
       ➡️ NEXT in (b): the FAT buffers need the cassette pair out of them first
       (step c); the remaining disk-only cells are small and mostly overlays.
+      📏 **THE WORKSPACE'S UNATTRIBUTED RUNS, CHECKED ON BOTH BUILDS, 2026-10-13**
+      ([`holecheck_probe.py`](scratchpad/holecheck_probe.py) ->
+      [`holecheck_probe.out`](scratchpad/holecheck_probe.out)): 14 runs of >= 16 B
+      that neither map covers (747 B, the disk interrupt stack and $F200..$F37F
+      excluded), watched from power-on with the writer's PC over the 20 cases.
+      446 B never written, identical on both builds. 🔮 "most never written"
+      HIT; "the disk build writes one more" MISS. 🔴 **THREE ARE LIVE TENANTS
+      THE MAP DOES NOT KNOW**, written by our own code through offsets:
+      $ECD4..$ED06 (trap_init / eos_store / eostr_idx / ss_write / rp_exec --
+      the trap block is wider than its declarations), $E400..$E411 (sub
+      gsxs_lp, graphics scratch past a cell's declared width), $F03D..$F049
+      (sub tksd_dsat / trm_pad_lp, a digit / pad buffer beside TKDIG, which
+      declares 1 B). ➡️ (1) give those three their real widths (the map
+      becomes truthful); (2) the 446 B stay CANDIDATES -- dynamic absence is a
+      lower bound -- so each needs a static offset check against its
+      neighbours before any packing.
+      📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
+      live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
+      input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
+      print.asm), so they cannot sit in diskless program RAM. Freeing the FAT
+      buffers needs two new page-aligned 256 B homes, or the reference's way
+      (tape I/O through the channel's own FCB buffer) -- which retires the
+      read-ahead double buffer that exists because the tokeniser could not
+      keep up with the tape between blocks: a tape-timing risk to measure.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7710,7 +7729,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33227 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33258 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7876,7 +7895,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12738 (T-6FE392)8 (T-529ABE)` from `TODO.md:25532 (T-529ABE)`: a
+      `TODO.md:12769 (T-6FE392)8 (T-529ABE)` from `TODO.md:25551 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13585,7 +13604,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25551 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

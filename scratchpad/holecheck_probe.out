@@ -1,0 +1,45 @@
+candidate holes (>= 16 B, in neither map, not known-live): 14, 747 B
+   $E36A..$E380   23 B
+   $E400..$E411   18 B
+   $E41E..$E49F  130 B
+   $E4C2..$E4F1   48 B
+   $E5AD..$E5BF   19 B
+   $EA80..$EA91   18 B
+   $EAEF..$EAFE   16 B
+   $EC5A..$ECC1  104 B
+   $ECD4..$ED06   51 B
+   $ED3E..$ED67   42 B
+   $ED6F..$EE3F  209 B
+   $F028..$F03B   20 B
+   $F03D..$F053   23 B
+   $F153..$F16C   26 B
+
+=== C-BIOS_MSX1_EU_REPACK_NODISK: 12 writer(s) into the candidates
+   C-BIOS?:0D42                          3 B  $E400..$E400, $ED00..$ED00, $EE00..$EE00
+   C-BIOS?:0D47                          3 B  $E400..$E400, $ED00..$ED00, $EE00..$EE00
+   main:eos_store+2                      1 B  $ECD5..$ECD5
+   main:eos_store+5                      1 B  $ECD6..$ECD6
+   main:eostr_idx+7                      1 B  $ED05..$ED05
+   main:eostr_idx+9                      1 B  $ED06..$ED06
+   main:rp_exec+15                       1 B  $ECD4..$ECD4
+   main:ss_write+8                       2 B  $ECD4..$ECD4, $ED04..$ED04
+   main:trap_init+12                    51 B  $ECD4..$ED06
+   sub:gsxs_lp+3                        18 B  $E400..$E411
+   sub:tksd_dsat+8                       7 B  $F03D..$F043
+   sub:trm_pad_lp+0                     13 B  $F03D..$F049
+   never written on this build: 10 run(s), 446 B
+
+=== C-BIOS_MSX1_EU_REPACK_DISK: 12 writer(s) into the candidates
+   C-BIOS?:0D42                          3 B  $E400..$E400, $ED00..$ED00, $EE00..$EE00
+   C-BIOS?:0D47                          3 B  $E400..$E400, $ED00..$ED00, $EE00..$EE00
+   main:eos_store+2                      1 B  $ECD5..$ECD5
+   main:eos_store+5                      1 B  $ECD6..$ECD6
+   main:eostr_idx+7                      1 B  $ED05..$ED05
+   main:eostr_idx+9                      1 B  $ED06..$ED06
+   main:rp_exec+15                       1 B  $ECD4..$ECD4
+   main:ss_write+8                       2 B  $ECD4..$ECD4, $ED04..$ED04
+   main:trap_init+12                    51 B  $ECD4..$ED06
+   sub:gsxs_lp+3                        18 B  $E400..$E411
+   sub:tksd_dsat+8                       7 B  $F03D..$F043
+   sub:trm_pad_lp+0                     13 B  $F03D..$F049
+   never written on this build: 10 run(s), 446 B
