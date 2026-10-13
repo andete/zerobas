@@ -1,0 +1,65 @@
+control     290 addresses
+longline    342 addresses
+input       358 addresses
+linput      320 addresses
+deffn       446 addresses
+traps       407 addresses
+using       389 addresses
+numfmt      419 addresses
+strings     308 addresses
+val         393 addresses
+arrays      353 addresses
+flow        405 addresses
+errors      357 addresses
+math        486 addresses
+graphics    405 addresses
+sound       415 addresses
+edit        310 addresses
+keys        369 addresses
+clear       355 addresses
+misc        302 addresses
+
+written by the diskless build over 20 cases: 846 of 4374 B
+NEVER written: 3528 B. Runs of 8 B or more, with the static names in them
+(b: = basic map, d: = disk map; a run with NO name is an unattributed span):
+  $E27A..$E380   263 B  b:STRSCR, d:STRSCR, d:FDC_IFF, d:FDC_CNT, d:FDC_LSEC, d:FDC_DEST, d:FDC_TRY
+  $E3D3..$E3E8    22 B  b:DB_WIN, b:ISRCH_A, b:ISRCH_B, b:GFX_BAD/STRENG_SPARE, b:MIDS_DEST
+  $E41E..$E4F1   212 B  d:FAT_SECPERCLUS, d:FAT_FATSTART, d:FAT_FIRSTROOT, d:FAT_TOTCLUS, d:FAT_FIRSTDATA, d:FAT_CURCLUS, d:FAT_CLUSSEC, d:FAT_FIRSTCLUS, d:FAT_FILESIZE, d:FA
+  $E4F9..$E518    32 B  b:GFX_DFSTK
+  $E527..$E53E    24 B  b:GFX_DEXP
+  $E55D..$E9FA  1182 B  b:GFX_G8N/GFX_PPITCH, b:GFX_G8V, b:FAT_DEFER, b:FAT_DBUF/FSECTOR_BUF, b:CAL_BUF/CAS_WBUF, b:FAT_MBUF/FWBUF, b:CAL_BUF2, b:FAT_SECPERCLUS, b:FAT_FATSTA  ⚠️ CASSETTE: a known diskless user no case drives
+  $E9FE..$EA2F    50 B  b:BN_PTR/DISKOP_HL, b:FCH_MODES, b:FCH_RECLENS, d:FCH_MODES
+  $EA39..$EA5F    39 B  b:LPTPOS, b:GP_SRC, b:GP_LEFT, b:CLR_SAVE, b:FCH_RECNOS, d:LPTPOS
+  $EA6A..$EA91    40 B  b:PU_NUM
+  $EAB2..$EB0F    94 B  b:FN_PAREA_END, d:CONOUT_CHAR, d:PG_SV_A8, d:INT_SP_SAVE/INT_STK_TOP, d:CONIN_BUF, d:CONIN_MAX, d:CONIN_COUNT
+  $EB14..$EB25    18 B  b:INDLR_N, b:MRG_PTR, b:FLD_CUROFF, b:FLD_CHAN, b:LRSET_JUST, b:LRSET_W, b:LRSET_DEST, b:CURPTR, b:ENDPTR, b:EXECPTR, d:FLD_CHAN, d:LRSET_W, d:LRSET_D
+  $EB45..$EB4F    11 B  b:SEQ_EOF
+  $EB5E..$EB79    28 B  b:PU_DIG
+  $EB7E..$EB90    19 B  b:COPY_SRC, b:COPY_CLUS, b:COPY_LEFT, d:COPY_SRC, d:COPY_CLUS, d:COPY_LEFT
+  $EBD5..$EBF0    28 B  b:SCAN_PRIM, b:SCAN_SLOT, b:SCAN_INIT, b:SCAN_IY, b:DISK_FCB/DISK_FCB_DRV, b:DISK_FCB_NAME, b:DISKSLOT, b:DISKSLOT_OK, b:CAL_CURHI/VRAM_FLAG, b:CAL_CN
+  $EBF3..$EBFB     9 B  b:TSV_END, b:FMT_GEOMSEL/TSV_CNT, b:FMT_RESULT/TSV_NAME, d:FMT_GEOMSEL, d:FMT_RESULT
+  $EC30..$EC38     9 B  b:GFX_SVX, b:GFX_SVY, b:GFX_EVX, b:GFX_EVY, b:GFX_FULLW
+  $EC43..$EC53    17 B  b:GFX_CS_AX, b:GFX_CS_AY, b:GFX_M, b:GFX_WS_P, b:GFX_WS_O, b:GFX_SOCT, b:GFX_SU14, b:GFX_EOCT, b:GFX_EU14
+  $EC58..$ECC1   106 B  b:GFX_PTX/GFX_WE_O, b:GFX_PTY/GFX_WRAPF
+  $ED29..$ED31     9 B  b:LOC_COL, b:LOC_ROW, b:BL_OFS/SVT_SP/SW_ADDR, b:SW_TYPE, b:SW_ADDR1, b:SW_TYPE1, b:SW_MODE
+  $ED3E..$ED67    42 B  (no name)
+  $ED6A..$EE63   250 B  b:TXTCEIL, d:P1_BLIT
+  $EEBF..$EED5    23 B  b:FLD_TAB, b:FLD_TABEND/GP_RECNO, b:GP_SEC, b:GP_WITHIN, b:GP_CLUS, b:GP_CLIDX, b:GP_SECINCL, b:GP_PHYS, b:GP_OLDNSEC, b:GP_FLAGS, b:GP_MODE, b:GP_CHA
+  $EEDF..$EEF5    23 B  b:PU_FMT
+  $EEFD..$F019   285 B  b:FMT_SEC, b:FMT_DESC, b:FLD_DESC, b:GP_RECLEN, b:OO_RECLEN_CHAN, b:FILES_HASPAT, b:CAS_WANT, b:CAS_WANT_ON, b:CAS_HDRNAME, b:CAS_HDRID, b:CAS_VERIFY,
+  $F028..$F03B    20 B  (no name)
+  $F04A..$F053    10 B  (no name)
+  $F0F3..$F0FA     8 B  b:MULCAND, b:MULTPLR, b:MUL32
+  $F10A..$F14D    68 B  b:SUB_INT_RAM, b:INT_MAIN_PRIM, b:SUBSLOT2, b:GRP_HDR, b:SUB_INT_DELTA
+  $F153..$F16D    27 B  b:MC_TYPE
+  $F195..$F2A7   275 B  b:FN_STK_FLOOR, d:DRVA_DPB, d:W50A9_RET_DE, d:RES_PRINT, d:DOS_DTAPTR, d:W50A9_WRKB, d:CURDRV_CELL, d:RES_STUBS
+  $F2EC..$F37F   148 B  b:DSKBUF_PTR, d:DATE_DAYS, d:BASENT_REQ, d:DOS_F340, d:RAMAD0, d:DRVCNT, d:DRVTBL, d:DSKBUF_PTR, d:W50A9_RET_HL, d:F365_STUB, d:WA_JMPTAB, d:SYSTEM
+  total in runs >= 8 B: 3391 B
+
+COUNTER-EVIDENCE -- static disk-only cells the diskless build WROTE: 6
+  basic:FLD_TAB $EE64 (16 of 96 B written)
+  disk:BDOS_BYTESLEFT $E542 (4 of 4 B written)
+  disk:BDOS_WRMODE $E546 (1 of 1 B written)
+  disk:WA_SEG/WA_SEG_ROM $EA9C (1 of 1 B written)
+  disk:WA_SEG_RAM $EAA2 (1 of 1 B written)
+  disk:RES_STUBS_END $F2B8 (1 of 1 B written)

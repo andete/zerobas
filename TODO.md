@@ -3816,6 +3816,39 @@ item — do **one item per session** to keep context lean.
       ⚠️ For (b): a SHIFT boot leaves a disk ROM RECORDED (DISKSLOT_OK) but
       uninstalled, and HIMEM unlowered -> the diskless ceiling. Before the two
       differ, check that no disk verb can reach the disk-only buffers then.
+      ✅ CHECKED 2026-10-13 (read, basic/islands.asm): the SHIFT path leaves
+      DISKSLOT_OK = 0 (`inc` of the $FF the disk ROM leaves), and every disk
+      verb gates through `diskslot_test` (program.asm, ~25 sites) -- "disk
+      active" is ONE fact, and the HIMEM test boot uses agrees with it (the
+      disk ROM lowers HIMEM exactly when it installs). (b) should ASSERT the
+      two agree, or test DISKSLOT_OK directly.
+      📏 **(b) MEASURED FIRST, 2026-10-13: WHAT DOES THE DISKLESS BUILD WRITE?**
+      [`nodiskuse_probe.py`](scratchpad/nodiskuse_probe.py) -- a write watch over
+      $E26A..$F37F on NODISK, armed after boot, 20 cases (line entry, INPUT,
+      DEF FN, traps, USING, strings, arrays, FOR/GOSUB, ON ERROR, math, SCREEN 2
+      graphics, PLAY, RENUM/DELETE, KEY, CLEAR/MAXFILES ...). 🔮 Predicted
+      ~1.4 KB never written: MISS, 3528 B
+      ([`nodiskuse_firstrun.out`](scratchpad/nodiskuse_firstrun.out)) -- "never
+      written by these cases" is a LOWER BOUND ON USE, not free space: a
+      buffer's tail stays unwritten unless a case fills it (STRSCR 13 of 256),
+      and boot-only cells (the trampoline copy, the slot scan) are written
+      before the watch arms and only read after. Its use is COUNTER-EVIDENCE
+      ([`nodiskuse_probe.out`](scratchpad/nodiskuse_probe.out)): 6 statically
+      disk-only cells the diskless build DID write. Four are cross-ROM overlays
+      (a disk cell parked in a basic cell's bytes -- WA_SEG = FN_PAREA, the BDOS
+      pair at $E542, RES_STUBS_END in the stack's reach): they move WITH their
+      basic owner. 🔴 **The fifth is the finding: FLD_TAB, 16 of 96 B --
+      `fld_init` (basic/field.asm) clears every slot's first byte on NEW / RUN,
+      ungated, and `fld_clear_chan` on CLOSE.** On the diskless build the bytes
+      just under the new ceiling are where the CHANNEL BLOCKS and the STRING
+      SPACE live, so once a disk-only cell sits there, ANY ungated main-ROM
+      write to it corrupts a running program. So (b) needs, BEFORE the move:
+      (b1) a census of main-ROM writers to disk-only cells -- this probe saw
+      only fld_init, but it cannot see the boot or anything no case drives --
+      each gated on DISKSLOT_OK (diskslot_test, +4 B a site); (b2) the boot
+      order checked (a write after init_filechan builds the channel blocks is
+      as bad); (b3) a permanent stress row: strings and channel blocks pushed
+      up to the diskless ceiling, against the VG-8020; then (b4) the move.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7598,7 +7631,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33115 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33148 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7764,7 +7797,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12626 (T-6FE392)8 (T-529ABE)` from `TODO.md:25420 (T-529ABE)`: a
+      `TODO.md:12659 (T-6FE392)8 (T-529ABE)` from `TODO.md:25453 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13473,7 +13506,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25420 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25453 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
