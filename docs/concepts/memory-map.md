@@ -189,6 +189,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **zerobas kept its own copies of some published cells** (2026-10-13, Joost:
+  every memory location zerobas invented is checked against how the
+  reference does the job). The VG-8020 keeps `MAXFILES` in `MAXFIL`
+  (`&HF85F`) and the `TRON` switch in `TRCFLG` (`&HF7C4`); zerobas kept both
+  in its own workspace and left the published cells at 0. Both now use the
+  published cells. `DATPTR` (the `READ` position) is next; it needs a change
+  in how an unpositioned `DATA` pointer is written
+  ([`officialcell_probe.out`](../../scratchpad/officialcell_probe.out)).
 - **zerobas kept its own copies of buffers the reference already has**
   (2026-10-12, Joost: *"our own buffers, test what buffers the reference uses,
   and see if we can meet the same"*). A watch on the VG-8020's work area showed

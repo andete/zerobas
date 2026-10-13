@@ -2480,6 +2480,12 @@ basicrom-acceptance: repack-machine
 ceiling-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_ceiling.py
 
+# --- officialcell-acceptance: jobs kept in the OFFICIAL work-area cell (D-OFFICIAL)
+# Joost's rule (2026-10-13): an invented RAM cell gives way to the official one
+# for the same job. TRCFLG / MAXFIL against the VG-8020; DATPTR reported.
+officialcell-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_officialcell.py
+
 # --- instr128-acceptance: INSTR over strings of 128+ characters (D-INSTR128)
 # max_start was sign-tested, so every haystack of 128+ read 0; 11 rows against
 # the VG-8020 on both machines, incl. a 255-long no-match that must END.

@@ -627,7 +627,7 @@ els_tc_common:
 ; and `TROFF 1` are Syntax errors (measured), which falls out for free: the
 ; cursor is left ON the argument and exec_stmt's no-entry path rejects it.
 ex_tron:
-                ld      a,1
+                ld      a,175               ; TRCFLG's TRON value, measured on the VG-8020
                 jr      tr_set
 ex_troff:
                 xor     a

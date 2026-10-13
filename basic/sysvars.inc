@@ -843,7 +843,11 @@ ERRMARK         equ     $EB10   ; error landmark marker byte (1 B)
 ; ceiling is RAM-bounded (each ctx = 50-byte state save + a 512-byte data buffer);
 ; real MSX MAXFILES is RAM-bounded too, just to a larger value — documented
 ; divergence. See basic/files.asm §channel manager + PROVENANCE.md §MAXFILES.
-MAXF            equ     $EB11   ; current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
+; 🏛️ D-OFFICIAL (2026-10-13, Joost's rule: an invented cell gives way to the
+; official one for the same job): MAXF IS MAXFIL, the published work-area cell.
+; Measured (scratchpad/officialcell_probe.out): the VG-8020 keeps MAXFILES there
+; (1 at boot, 3 after MAXFILES=3); zerobas kept it at $EB11 and left $F85F 0.
+MAXF            equ     $F85F   ; = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
 FCH_ACTIVE      equ     $EB12   ; channel live in the engine globals, 0 = none (1)
 ; FCH_MODES — per-channel mode array [0..FCH_CEIL]; [0] unused, [ch] = 0 closed /
 ; 1 INPUT / 2 OUTPUT / 5-6 LPT-CRT / 7-8 CAS (FCH_CEIL+1 bytes).
@@ -1457,7 +1461,10 @@ SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic
 ; RUN does NOT reset it, END does not clear it, a line carrying TROFF is itself
 ; traced, and a TRON typed at the prompt DOES trace a subsequent RUN. Only NEW
 ; clears it -- so new_prog is the single writer besides the two statements.
-TRACEFLAG       equ     $ED26   ; 1 B: TRON state (0 = TROFF)
+; 🏛️ D-OFFICIAL (2026-10-13): TRACEFLAG IS TRCFLG, the published cell, with its
+; value: the VG-8020 stores 175 under TRON (in every context measured: direct,
+; program, TRON twice) and 0 under TROFF; zerobas stored 1 at $ED26.
+TRACEFLAG       equ     $F7C4   ; = TRCFLG: TRON state, 175 = TRON / 0 = TROFF (1 B)
 ; --- CON_LASTROW: the console's last usable text row (LOCATE's row clamp) ----
 ; S-MC-2. A NAMED constant rather than a bare 23, because the thing it names is
 ; not obvious and was measured the hard way (missing-vg8020-characterization

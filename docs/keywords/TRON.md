@@ -81,6 +81,11 @@ the documented work area while doing it.
 
 ## What we found, and how
 
+- **The trace switch lived in zerobas's own memory** (fixed 2026-10-13). The
+  VG-8020 keeps it in the published cell `TRCFLG` (`&HF7C4`): 175 under
+  `TRON`, 0 under `TROFF`, in every context measured. zerobas kept its own
+  copy elsewhere, so `PEEK(&HF7C4)` read 0. It uses `TRCFLG` now, with the
+  same values ([`officialcell_probe.out`](../../scratchpad/officialcell_probe.out)).
 - **`TRON` and `TROFF` arrived on 2026-07-27.** Until then they were an honest
   `Syntax error`. The VG-8020 was measured first, and the rules above — per
   line, not per statement; jump targets traced, returns into a line not;

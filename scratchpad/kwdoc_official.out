@@ -1,0 +1,9 @@
+=== TRON: PASS
+
+PASS 1
+refcache: 0 hit, 2 miss, 2 stored
+=== memory-map: PASS
+
+PASS 1
+refcache: 1 hit, 1 miss, 1 stored
+kwdoc_rc=0

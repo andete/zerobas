@@ -3984,6 +3984,29 @@ item — do **one item per session** to keep context lean.
       DATAPTR (DATPTR), PRDEV (PRTFLG? -- check), ARGA / ARGB (DAC / ARG: a
       different number FORMAT, so priced, not assumed). Small in bytes; each
       also makes a PEEK of the official cell answer as on the reference.
+      ✅ **(2), FIRST GROUP, 2026-10-13 (D-OFFICIAL): TRCFLG AND MAXFIL.**
+      [`officialcell_probe.py`](scratchpad/officialcell_probe.py) ->
+      [`officialcell_before.out`](scratchpad/officialcell_before.out): the
+      VG-8020 keeps TRON in TRCFLG $F7C4 (175 under TRON in every context
+      measured -- direct, program, TRON twice -- 0 under TROFF), MAXFILES in
+      MAXFIL $F85F (1 at boot, 3 after MAXFILES=3), the READ position in
+      DATPTR $F6C8 ($8000 at boot, $802B after one READ); zerobas read 0 in
+      every row. 🔮 Predicted exactly that: HIT. TRACEFLAG and MAXF now ARE
+      those cells (equates; TRON stores 175 -- same size as `ld a,1`; the
+      trace test only asks nonzero), both rows SAME after
+      ([`officialcell_probe.out`](scratchpad/officialcell_probe.out)). The
+      CF-3300's own disk ROM READS MAXFIL during LOAD / SAVE
+      (disk/docs/spec-diskcode-eviction.md) -- the official cell is where a
+      disk ROM looks. 🔒 New gate `make officialcell-acceptance`
+      ([`basic_probe_officialcell.py`](probes/basic/basic_probe_officialcell.py)):
+      the four rows gated, DATPTR reported; knives K-O1 (TRACEFLAG back) ->
+      exactly trcflg red, K-O2 (MAXF back) -> exactly maxfil + maxfil-ctl
+      red, restored green ([`official_knife.out`](scratchpad/official_knife.out)).
+      ➡️ NEXT: DATPTR -- zerobas's DATAPTR + DATASTATE (0 = unpositioned)
+      against the reference's single pointer ($8000 = TXTTAB-1 when
+      unpositioned): measure where the reference's pointer points after a
+      READ, a RESTORE n and an exhausted DATA list first. Then LPTPOS /
+      PRTFLG (LPRINT needs a printer plugged in the probe).
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7774,7 +7797,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33291 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33314 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7940,7 +7963,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12802 (T-6FE392)8 (T-529ABE)` from `TODO.md:25596 (T-529ABE)`: a
+      `TODO.md:12825 (T-6FE392)8 (T-529ABE)` from `TODO.md:25619 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13649,7 +13672,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25596 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25619 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
