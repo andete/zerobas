@@ -114,6 +114,13 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Long sub-strings ran out of room** (fixed 2026-10-13, D-DRAWINPLACE).
+  zerobas copied every `DRAW` string, and each `X` sub-string, into a 256-byte
+  buffer, so two 132-character sub-strings were `Illegal function call`
+  where the VG-8020 draws them. The VG-8020 keeps no such buffer: it reads the
+  strings where they are. zerobas now does the same, which also gives that
+  memory back ([`drawinplace_before.out`](../../scratchpad/drawinplace_before.out),
+  [`drawinplace_after.out`](../../scratchpad/drawinplace_after.out)).
 - **After `=` and `X`, a number, a parenthesis or a string literal was
   accepted** (fixed 2026-10-13, D-DRAWSUBVAR). Both machines take a variable
   name there, with subscripts for an array element — `DRAW"R=A+1;"` draws

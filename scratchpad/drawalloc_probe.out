@@ -1,0 +1,128 @@
+subst     608 distinct writes by 252 writer(s)
+literal   306 distinct writes by 128 writer(s)
+
+WRITERS IN `subst` ONLY: 124
+  main:htimi_guard+1                    2 B  $E454..$E455
+  main:event_poll+0                     2 B  $E454..$E455
+  main:htimi_guard+0                    2 B  $E456..$E457
+  main:htimi_service+0                  2 B  $E456..$E457
+  main:play_service+0                   2 B  $E456..$E457
+  C-BIOS?:18F7                          2 B  $E458..$E459
+  C-BIOS?:1903                          2 B  $E458..$E459
+  sub:scv_find+0                        2 B  $E45A..$E45B
+  sub:scvf_go+4                         2 B  $E45A..$E45B
+  sub:scvf_skip+0                       2 B  $E45A..$E45B
+  sub:scvf_skip+5                       2 B  $E45A..$E45B
+  C-BIOS?:18F6                          2 B  $E45A..$E45B
+  sub:aeng_scalar_find+7                4 B  $E45C..$E45D, $E46C..$E46D
+  C-BIOS?:18F4                          2 B  $E45C..$E45D
+  sub:ct_off+29696                      2 B  $E45E..$E45F
+  C-BIOS?:18F2                          2 B  $E45E..$E45F
+  C-BIOS?:2460                          2 B  $E460..$E461
+  C-BIOS?:18F1                          2 B  $E460..$E461
+  C-BIOS?:244A                          2 B  $E462..$E463
+  C-BIOS?:245D                          2 B  $E462..$E463
+  C-BIOS?:18F0                          2 B  $E462..$E463
+  main:sr_slot+4                        2 B  $E464..$E465
+  C-BIOS?:2438                          2 B  $E464..$E465
+  C-BIOS?:243B                          2 B  $E464..$E465
+  C-BIOS?:243F                          2 B  $E464..$E465
+  C-BIOS?:2442                          2 B  $E464..$E465
+  C-BIOS?:246D                          2 B  $E464..$E465
+  C-BIOS?:18EF                          2 B  $E464..$E465
+  main:sr_slot+0                        2 B  $E466..$E467
+  main:sr_slot+9                        2 B  $E466..$E467
+  C-BIOS?:18EC                          2 B  $E466..$E467
+  main:is_letter+1                      8 B  $E468..$E46B, $E476..$E479
+  main:sc_call+0                        2 B  $E468..$E469
+  C-BIOS?:18EB                          2 B  $E468..$E469
+  main:is_letter+0                      8 B  $E46A..$E46D, $E478..$E47B
+  main:deftbl_lookup+1                  4 B  $E46A..$E46D
+  main:ary_engine_call+4                2 B  $E46A..$E46B
+  C-BIOS?:18EA                          2 B  $E46A..$E46B
+  main:is_ident_cont+0                  8 B  $E46C..$E46F, $E47A..$E47D
+  main:is_ident_cont+3                  8 B  $E46C..$E46F, $E47A..$E47D
+  main:deftbl_lookup+0                  4 B  $E46C..$E46F
+  main:var_find_typed+14                2 B  $E46C..$E46D
+  C-BIOS?:18E9                          2 B  $E46C..$E46D
+  sub:gss_lp+0                          4 B  $E46E..$E46F, $E474..$E475
+  sub:gss_lp+12                         4 B  $E46E..$E46F, $E474..$E475
+  sub:gss_end+0                         4 B  $E46E..$E46F, $E474..$E475
+  main:vst_walk+0                       4 B  $E46E..$E46F, $E47C..$E47D
+  main:vst_suffix+17                    2 B  $E46E..$E46F
+  main:vst_suffix+22                    2 B  $E46E..$E46F
+  main:var_find_typed+13                2 B  $E46E..$E46F
+  sub:ct_off+29070                      2 B  $E46E..$E46F
+  main:var_str_type+1                   4 B  $E470..$E471, $E47E..$E47F
+  main:var_str_type+5                   4 B  $E470..$E471, $E47E..$E47F
+  main:var_name_key+1                   4 B  $E470..$E471, $E47E..$E47F
+  main:var_name_key+8                   4 B  $E470..$E471, $E47E..$E47F
+  sub:gdrw_at_sub+0                     2 B  $E470..$E471
+  sub:gdrw_at_sub+3                     2 B  $E470..$E471
+  main:vnk_suffix+17                    2 B  $E470..$E471
+  main:var_load_fac+1                   2 B  $E470..$E471
+  main:wsrc_go+4                        4 B  $E470..$E471, $E47A..$E47B
+  main:wsrc_unpack+15                   4 B  $E470..$E471, $E47A..$E47B
+  main:dig15_iszero+0                   4 B  $E470..$E471, $E47A..$E47B
+  main:dtw_lp+2                         4 B  $E470..$E471, $E47A..$E47B
+  sub:ct_off+29053                      2 B  $E470..$E471
+  main:str_eval_one+54                  4 B  $E472..$E473, $E480..$E481
+  main:ev_f_var+3                       2 B  $E472..$E473
+  main:ev_f_var+9                       2 B  $E472..$E473
+  main:ev_f_var+11                      2 B  $E472..$E473
+  main:ev_f_var+14                      2 B  $E472..$E473
+  main:ev_f_var+23                      2 B  $E472..$E473
+  main:var_load_fac+0                   2 B  $E472..$E473
+  main:vlf_found+11                     2 B  $E472..$E473
+  main:domain_convert_core+3            4 B  $E472..$E473, $E47C..$E47D
+  main:domain_convert_core+9            4 B  $E472..$E473, $E47C..$E47D
+  main:domain_convert_core+38           4 B  $E472..$E473, $E47C..$E47D
+  sub:ct_off+29052                      2 B  $E472..$E473
+  sub:ct_off+29051                      2 B  $E474..$E475
+  sub:gdo_x+0                           2 B  $E476..$E477
+  sub:gdo_x_have+12                     2 B  $E476..$E477
+  sub:gfx_draw_op+8                     2 B  $E476..$E477
+  main:fld_lookup+0                     2 B  $E47C..$E47D
+  main:str_get_key+14                   2 B  $E47C..$E47D
+  main:str_eval_one+70                  2 B  $E47E..$E47F
+  main:str_eval_one+75                  2 B  $E47E..$E47F
+  main:fac_to_int_go+7                  2 B  $E47E..$E47F
+  main:str_eval_one+49                  2 B  $E480..$E481
+  main:str_eval_one+60                  2 B  $E480..$E481
+  main:str_eval_one+69                  2 B  $E480..$E481
+  main:gfx_eval_int16+0                 2 B  $E482..$E483
+  main:gdw_call+17                      2 B  $E484..$E485
+  main:gdw_call+23                      2 B  $E484..$E485
+  main:gdw_want_int+3                   2 B  $E484..$E485
+  sub:gdo_want+6                        2 B  $E8F2..$E8F3
+  sub:gdo_frame_end+23                  2 B  $E8F2..$E8F3
+  sub:gdo_frame_end+31                  2 B  $E8F4..$E8F5
+  sub:gdo_frame_end+6                   1 B  $E8F8..$E8F8
+  sub:gdrw_pushframe+25                 1 B  $E8F9..$E8F9
+  sub:gdrw_pushframe+27                 1 B  $E8FA..$E8FA
+  sub:gdrw_pushframe+33                 1 B  $E8FB..$E8FB
+  sub:gdrw_pushframe+35                 1 B  $E8FC..$E8FC
+  sub:gdo_resume+32                     1 B  $E91B..$E91B
+  sub:gss_end+36                        1 B  $E91C..$E91C
+  sub:gdo_resume+19                     1 B  $E91D..$E91D
+  sub:gdo_resume+21                     1 B  $E91E..$E91E
+  sub:gdo_resume+25                     1 B  $E921..$E921
+  sub:gdo_want+0                        1 B  $E922..$E922
+  sub:gdo_resume+1                      1 B  $E922..$E922
+  main:gdw_resume+2                     1 B  $E923..$E923
+  sub:gdo_x_have+0                      2 B  $E924..$E925
+  main:gdw_want_int+7                   2 B  $E924..$E925
+  sub:gdo_x_have+6                      1 B  $E926..$E926
+  sub:gss_lp+10                         2 B  $E927..$E928
+  sub:gss_end+4                         2 B  $E928..$E929
+  sub:gdrw_at_sub_have+0                2 B  $E941..$E942
+  main:str_get_key+11                   1 B  $EB28..$EB28
+  main:var_find_typed+9                 1 B  $EB28..$EB28
+  main:str_get_key+1                    2 B  $EB29..$EB2A
+  main:var_find_typed+1                 2 B  $EB29..$EB2A
+  main:str_get_key+6                    1 B  $EB2B..$EB2B
+  main:var_find_typed+4                 1 B  $EB2B..$EB2B
+  sub:asf_found+0                       2 B  $EB35..$EB36
+  sub:asf_found+4                       1 B  $EB37..$EB37
+  main:str_eval_one+78                  2 B  $EBC9..$EBCA
+  main:vlf_found+1                      1 B  $F01A..$F01A

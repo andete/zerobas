@@ -224,7 +224,9 @@ The tenant then parses a self-contained buffer and never touches a variable. Thi
 keeps the whole page-0/page-1/float hazard out of the tenant, at the cost of
 resident bytes (§8) and a buffer. Buffer home: the LINEBUF scratch region already
 used by G3/G5 (dead during any graphics statement, below the `PLAY` ISR), 256 B.
-A splice that overruns the buffer is an own-design cap — D-G6-4.
+A splice that overruns the buffer is an own-design cap — D-G6-4. ⚠️ **Retired
+2026-10-13 (D-DRAWINPLACE):** the frames are the strings' own bodies, read in
+place as on the VG-8020; there is no buffer to overrun. The nesting cap (8) stays.
 
 ## 8. Space — G6 hits the same wall as G4/G5 (now MEASURED)
 

@@ -4333,6 +4333,28 @@ item — do **one item per session** to keep context lean.
       found D-ARYCUR on the way. If a lookup allocates nothing, the copy's reason
       is gone and GFX_DBUF can go entirely instead of moving below SP: measure
       that first, then do D-DRAWSUBVAR and this together.
+      ✅ **(2a) DONE 2026-10-13 (D-DRAWINPLACE): DRAW reads its strings IN PLACE.**
+      📏 First the claim: [`drawalloc_probe.py`](scratchpad/drawalloc_probe.py) ->
+      [`drawalloc_probe.out`](scratchpad/drawalloc_probe.out) -- a write watch
+      bracketed by marks, `DRAW"XA$;R=A;XB$;"` against the same figure with no
+      substitution, writers named by PC (our ROM): the substitution-only writers
+      touch the ARY parameter block, str_eval's cursor and vlf_found -- NOTHING
+      in the string space. A lookup allocates nothing, so no body moves during a
+      DRAW. 🔮 HIT. Then `gdrw_pushframe` makes the frame the body itself (DPTR =
+      DVAL, DEND = DVAL + len); the copy loop, GFX_DFREE's use and the buffer's
+      own ERR 5 are gone; the nesting cap (8) stays. **Sub page 0 43 -> 76 B**
+      (the copy was code too). 📏 The buffer's limit was a real divergence:
+      two 132-character splices (272 B) drew on the VG-8020 and raised ERR 5 here
+      ([`drawinplace_before.out`](scratchpad/drawinplace_before.out)), and now
+      draw ([`drawinplace_after.out`](scratchpad/drawinplace_after.out)). 🔮 Both
+      HIT. Row `draw_long_splice` in graphics-acceptance phase B; knife K-DI1
+      ([`drawinplace_knife.out`](scratchpad/drawinplace_knife.out)): the copying
+      tenant put back -> exactly that row fails; restored 13/13. HIT. The whole
+      graphics-acceptance green (403 rows).
+      ➡️ **(2b) NEXT: the layout.** GFX_DBUF's 256 B are still declared (the DRAW
+      parse state sits at GFX_DBUF + 256); compact the union and move the freed
+      span to the program-RAM floor, as D-FATFLOOR did -- ws_shift, a RAM-address
+      move, so FULL.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -8123,7 +8145,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33640 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33662 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8289,7 +8311,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13151 (T-6FE392)8 (T-529ABE)` from `TODO.md:25945 (T-529ABE)`: a
+      `TODO.md:13173 (T-6FE392)8 (T-529ABE)` from `TODO.md:25967 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13998,7 +14020,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25945 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25967 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

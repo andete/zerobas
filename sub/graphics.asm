@@ -2946,7 +2946,8 @@ gpsr_ret:
 ; docs/spec-basic-graphics-g6.md. The LAST drawing statement before sprites.
 ;
 ; The tenant interprets a command string that the resident has already
-; PRE-PASSED (spec §7): the buffer at GFX_DBUF holds the source bytes verbatim
+; PRE-PASSED (spec §7) [⚠️ HISTORY: GFX_DBUF is gone since D-DRAWINPLACE -- the
+; frames are the strings' own bodies, see gdrw_pushframe]: the buffer at GFX_DBUF held the source bytes verbatim
 ; except that `=var;` has become a 3-byte binary literal escape (GFX_DESC + int16
 ; LE) and `X strvar;` has been spliced inline. So the tenant never touches a BASIC
 ; variable -- which it could not do safely anyway: a page-0 tenant has the float
@@ -2970,14 +2971,12 @@ gfx_draw_op:
                 ld      a,(GFX_DRESUME)
                 or      a
                 jr      nz,gdo_resume
-                ; --- fresh entry: frame 0 = a COPY of the DRAW string ---
+                ; --- fresh entry: frame 0 = the DRAW string, read in place ---
                 xor     a
                 ld      (GFX_RES),a         ; 0 = ok until something raises
                 ld      (GFX_DREQ),a
                 ld      (GFX_DFTOP),a
                 ld      (GFX_DSUBN),a
-                ld      hl,GFX_DBUF
-                ld      (GFX_DFREE),hl
                 call    gdrw_pushframe      ; (GFX_DVAL,GFX_DVLEN) -> a new frame
                 jr      gdo_loop
 
@@ -3204,11 +3203,17 @@ gdo_x_have:
                 jp      gdo_loop
 
 ; ---------------------------------------------------------------------------
-; gdrw_pushframe -- copy the string at (GFX_DVAL, GFX_DVLEN bytes) onto the end
-; of GFX_DBUF and make it the current frame, saving the outer frame's cursor.
-; Copying is what makes the co-routine safe: the resident's eval between round
-; trips can reuse the temp-string pool a DRAW argument may live in, so reading a
-; body in place across a round trip would be a use-after-free.
+; gdrw_pushframe -- make the string at (GFX_DVAL, GFX_DVLEN bytes) the current
+; frame, saving the outer frame's cursor. 🏗️ D-DRAWINPLACE (2026-10-13, RAM
+; order step 2): the frame IS the string's own body, read in place, as the
+; VG-8020 reads it (scratchpad/drawbuf_probe.out: no buffer there). It used to be
+; COPIED onto the end of a 256 B GFX_DBUF, because "the resident's eval between
+; round trips can reuse the temp-string pool". Measured, that cannot happen: a
+; substitution is a variable REFERENCE (D-DRAWSUBVAR) and resolving one writes
+; nothing in the string space (scratchpad/drawalloc_probe.out) -- no allocation,
+; so no body moves during a DRAW. The buffer's own limit went with it: two
+; 132-character splices raised ERR 5 here and draw on the VG-8020
+; (scratchpad/drawinplace_before.out).
 ; ---------------------------------------------------------------------------
 gdrw_pushframe:
                 ld      a,(GFX_DFTOP)
@@ -3236,29 +3241,13 @@ gpf_no_save:
                 ld      a,(GFX_DFTOP)
                 inc     a
                 ld      (GFX_DFTOP),a
-                ; --- append the body at GFX_DFREE ---
-                ld      de,(GFX_DFREE)
-                ld      (GFX_DPTR),de       ; the new frame starts here
                 ld      hl,(GFX_DVAL)
+                ld      (GFX_DPTR),hl       ; the frame starts at the body itself
                 ld      a,(GFX_DVLEN)
-                or      a
-                jr      z,gpf_empty
-                ld      b,a
-gpf_copy:
-                ld      a,(hl)
-                ld      (de),a
-                inc     hl
-                inc     de
-                push    hl
-                ld      hl,GFX_DBUF + GFX_DBUF_CAP
-                or      a
-                sbc     hl,de
-                pop     hl
-                jp      c,gdrw_err5         ; the frames outgrew the buffer (D-G6-4)
-                djnz    gpf_copy
-gpf_empty:
-                ld      (GFX_DEND),de
-                ld      (GFX_DFREE),de
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ld      (GFX_DEND),hl       ; ...and ends after its last byte
                 ret
 
 ; ---------------------------------------------------------------------------

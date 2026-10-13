@@ -1,0 +1,4 @@
+K-DI1: phase B 1 of 13 FAIL: ['draw_long_splice']
+K-DI1: predicted FAIL = draw_long_splice
+restored: build rc=0; phase B 0 of 13 FAIL
+refcache: 1 hit, 3 miss, 3 stored

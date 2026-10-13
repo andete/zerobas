@@ -1014,9 +1014,10 @@ gdw_absent:
                 jp      gfx_absent
 
 ; --- gdw_hand_string: the just-evaluated string (STRPTR) -> GFX_DVAL/GFX_DVLEN.
-; The tenant COPIES that body into its own frame buffer immediately, which is what
-; makes the round trip safe: a later eval here may reuse the temp-string pool the
-; body lives in.
+; The tenant reads that body IN PLACE (D-DRAWINPLACE, 2026-10-13): a later eval
+; here only looks a variable up (D-DRAWSUBVAR) and allocates nothing
+; (scratchpad/drawalloc_probe.out), so the body cannot move under it. It used to
+; be copied into a 256 B buffer for fear of exactly that.
 gdw_hand_string:
                 ld      hl,(STRPTR)         ; the [len][ptr] descriptor
                 ld      a,(hl)

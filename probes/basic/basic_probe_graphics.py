@@ -160,6 +160,14 @@ BEHAV_CASES = [
                         'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
     ("draw_sub_neg",   ["ON ERROR GOTO 40", 'A=5:SCREEN2:DRAW"BM50,50R=-A;"',
                         'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    # D-DRAWINPLACE (2026-10-13): DRAW reads its strings IN PLACE, as the VG-8020
+    # does; it copied them into a 256 B buffer whose overflow was an own-design
+    # ERR 5. Two splices of a 132-character string (272 B) draw on the VG-8020
+    # and raised ERR 5 here (scratchpad/drawinplace_before.out). CLEAR first: the
+    # string is built by concatenation and the default space refuses it (ERR 14).
+    ("draw_long_splice", ["CLEAR 1000:ON ERROR GOTO 40",
+                          'A$="":FOR I=1 TO 66:A$=A$+"R0":NEXT:SCREEN2:DRAW"BM50,50XA$;XA$;"',
+                          'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "OK"),
 ]
 
 

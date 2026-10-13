@@ -1,0 +1,16 @@
+Philips_VG_8020 E: None  OK: OK
+C-BIOS_MSX1_EU_REPACK_DISK E: None  OK: OK
+=== PHASE B: behavioural differential (clip / errors / POINT / STEP) ===
+  PASS pset_scr0_err    ref='E 5' zb='E 5'
+  PASS pset_ovf_err     ref='E 6' zb='E 6'
+  PASS pset_offscr_ok   ref='OK' zb='OK'
+  PASS point_vals       ref='P 9 4 -1' zb='P 9 4 -1'
+  PASS point_step       ref='S 9' zb='S 9'
+  PASS draw_arr_sub     ref='D 15 4' zb='D 15 4'
+  PASS draw_xarr_sub    ref='X 15 4' zb='X 15 4'
+  PASS vdp_arr_idx      ref='V 5' zb='V 5'
+  PASS draw_sub_const   ref='E 5' zb='E 5'
+  PASS draw_sub_xlit    ref='E 5' zb='E 5'
+  PASS draw_sub_empty   ref='E 5' zb='E 5'
+  PASS draw_sub_neg     ref='E 5' zb='E 5'
+phase B fails: 0
