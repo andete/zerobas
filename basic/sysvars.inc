@@ -2414,6 +2414,11 @@ TXTMAX          equ     $E26A   ; NOT-A-CELL: the text ceiling (= the workspace 
 ; now -- step (b) packs the disk-only tenants at the floor and raises _NODISK.
 TXTMAX_NODISK   equ     $E36A  ; NOT-A-CELL: the diskless build's text ceiling
 TXTCEIL         equ     $ED6A   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
+; 🏛️ D-CASFCB (2026-10-13): the cassette buffer is the CHANNEL's own record
+; buffer (block + FCH_HDRSZ), as on the VG-8020 (scratchpad/casbuf_probe.out):
+; #0's for SAVE / LOAD / MERGE / the file search, #n's for OPEN "CAS:" AS #n.
+; Set by cas_bufp_set (basic/cload.asm) when a tape transfer starts.
+CAS_BUFP        equ     $ED6F   ; base of the tape buffer in use (2 B)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
 ; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,
@@ -2922,7 +2927,8 @@ VRAM_FLAG       equ     $EBE9   ; 1 = ",S" VRAM save/load (1)
 ; it gets that by setting CAL_CURHI to CAL_BUF2's high byte ONCE before its
 ; loop and never touching it again, so every cal_refill call in that loop keeps
 ; targeting CAL_BUF, unchanged from before this fix.
-CAL_CURHI       equ     $EBE9   ; cassette ASCII load: served buffer high (1 B)
+; D-CASFCB (2026-10-13): CAL_CURHI ($EBE9, the served buffer's high byte) RETIRED
+; with the double buffer; CAS_BUFP is the one buffer's base.
                                 ; i.e. CAL_BUF ($E6) or CAL_BUF2 ($E8), the
                                 ; CURRENTLY SERVED one
 ; Cassette ASCII load (cload.asm cal_getbyte) read position within the current
@@ -3920,25 +3926,25 @@ CAS_VMIS        equ     $F019   ; sticky: 1 = a verify mismatch was seen (1)
 ; file loaded as an EMPTY program. $E600 is far below any stack descent and clear
 ; of the tokenise/dispatch path (page $E0..$E3), LINEBUF ($E100), and program
 ; text ($8001+).
-CAL_BUF         equ     $E600   ; cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF)
+; (D-CASFCB 2026-10-13: CAL_BUF RETIRED -- tape I/O goes through the channel's own buffer, CAS_BUFP)
 ; CAL_BUF2: the double buffer's SECOND 256-byte block buffer (see CAL_CURHI above).
 ; Page-aligned at $E800, entirely inside the idle FWBUF ($E7C0..$E9BF, FAT/dir
 ; metadata scratch) -- a cassette ASCII load does no disk I/O, so FWBUF is as dead
 ; for it as FSECTOR_BUF (CAL_BUF's home) is. CAL_XORHI is the constant that recovers
 ; "the other buffer" from CAL_CURHI without extra RAM: CAL_BUF>>8 XOR CAL_BUF2>>8 --
 ; XORing either buffer's own high byte into it yields the other one.
-CAL_BUF2        equ     $E800   ; cassette ASCII load: 256-byte read-ahead buffer (in idle FWBUF)
+; (D-CASFCB 2026-10-13: CAL_BUF2 RETIRED -- tape I/O goes through the channel's own buffer, CAS_BUFP)
 ; pasmo has no XOR operator in EQU expressions, so this is the literal result of
 ; ($E6 XOR $E8): CAL_BUF>>8 is $E6 (1110_0110), CAL_BUF2>>8 is $E8 (1110_1000);
 ; XORed, the shared high bits cancel and $0E (0000_1110) is what's left.
-CAL_XORHI       equ     $0E     ; = (CAL_BUF>>8) XOR (CAL_BUF2>>8)
+; (D-CASFCB 2026-10-13: CAL_XORHI RETIRED -- tape I/O goes through the channel's own buffer, CAS_BUFP)
 ; Cassette ASCII SAVE (save.asm cas_wbyte / cas_flush_block) uses the SAME 256-byte
 ; buffer for the WRITE mirror: list_walk fills it a byte at a time (no tape I/O), and
 ; a full block is flushed in one tight TAPOUT*256 loop so the inter-byte gaps stay
 ; uniform. Overlays CAL_BUF at $E600 — a SAVE and a LOAD never run at the same time,
 ; and both sit in the idle FSECTOR_BUF (no disk I/O during either), below any stack
 ; descent. Same rationale as CAL_BUF above.
-CAS_WBUF        equ     $E600   ; cassette ASCII save: 256-byte tape block buffer (overlays CAL_BUF)
+; (D-CASFCB 2026-10-13: CAS_WBUF RETIRED -- tape I/O goes through the channel's own buffer, CAS_BUFP)
 ; Control stacks. Both grow upward; the pointer addresses the next free slot,
 ; and the stack is empty when it equals its base. GOSUB frame =
 ; [curline:2][resume:2] (4 bytes). FOR frame =

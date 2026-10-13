@@ -962,6 +962,12 @@ oocas_argsok:
                 ld      a,(CAS_HDRID)
                 cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
                 jr      nz,oocas_ioerr
+                pop     hl                  ; D-CASFCB: the file's own channel buffer,
+                pop     de                  ;  #n (the search used #0's): stack
+                push    de                  ;  [cursor][channel], read and kept
+                push    hl
+                ld      a,e
+                call    cas_bufp_set
                 call    cas_ascii_setup     ; prime data block 1
                 jp      c,dpl_dio           ; D-CASPRIME: a failed read is 19, raised
                                             ; (ours: `load error`, and the run went on)
@@ -981,6 +987,12 @@ oocas_do_out:
                 ld      de,TSV_NAME
                 ld      bc,6
                 ldir
+                pop     hl                  ; D-CASFCB: write through channel #n's
+                pop     de                  ;  own buffer, as the VG-8020 does
+                push    de
+                push    hl
+                ld      a,e
+                call    cas_bufp_set
                 call    cas_write_ea_header ; TAPOON long + $EA*10 + TSV_NAME + TAPOOF
                 jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
 oocas_mark:

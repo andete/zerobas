@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # The cassette — files on tape, and how BASIC finds them
 
-> **Status (2026-10-11):** every measured tape behaviour agrees with the
+> **Status (2026-10-13):** every measured tape behaviour agrees with the
 > VG-8020, and with the CF-3300 where a row was run there too: the recorded
 > bytes, the search and its messages, the type filter, Ctrl-STOP while
 > reading and while writing. Open: a damaged ASCII program still prints `load
@@ -176,6 +176,16 @@ No measured difference is open. Not compared, or not measured:
 
 ## What we found, and how
 
+- **zerobas kept its own tape buffers** (changed 2026-10-13, D-CASFCB). A
+  write watch on the VG-8020 showed every tape transfer going through the
+  channel's own buffer — channel 0's for `SAVE` and `LOAD`, the opened
+  channel's for `OPEN`
+  ([`casbuf_probe.out`](../../scratchpad/casbuf_probe.out)). zerobas used a
+  separate 512-byte double buffer; the second half was a read-ahead that
+  stopping the motor between blocks had already made unnecessary (both
+  machines stop it: [`casmotor_probe.out`](../../scratchpad/casmotor_probe.out)).
+  It now uses the channel's buffer, which frees memory for a machine
+  without a disk.
 - **zerobas printed no `Found:` / `Skip :` rows, and `OPEN "CAS:name"`
   ignored the name** (both fixed 2026-08-07, D-CASSEARCH and D-CASOPEN). Both
   were found by building a cassette instrument for another question
@@ -246,6 +256,11 @@ which stops the motor and raises 19. Writes go through
 output is collected into 256-byte blocks and each block is sent in one go
 (`cas_flush_block`), because the tape cannot wait between bytes
 ([spec-cas-ascii-saveload.md](../../basic/docs/spec-cas-ascii-saveload.md)).
+Since 2026-10-13 that block is the channel's own 256-byte buffer, as on the
+VG-8020: channel 0's for `SAVE`, `LOAD`, `MERGE` and the search, the opened
+channel's for `OPEN "CAS:"` (`cas_bufp_set`, [basic/cload.asm](../../basic/cload.asm)).
+Reading refills that one buffer when it runs dry; the motor stops after
+every block, so the tape waits while a block's lines are crunched.
 
 ## Related pages
 

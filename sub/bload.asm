@@ -265,10 +265,11 @@ sq_deveof:
                 ld      a,(CAL_NEEDFILL)
                 cp      2
                 jr      z,sq_end            ; the tape's last byte was served
-                ld      a,(CAL_CURHI)
-                ld      h,a
+                ld      hl,(CAS_BUFP)       ; D-CASFCB: the channel's own buffer
                 ld      a,(CAL_CNT)
-                ld      l,a
+                ld      e,a
+                ld      d,0
+                add     hl,de
                 ld      a,(hl)              ; the next byte, not consumed
                 ; 🔴 LOOK PAST ONE LF. The reference's INPUT# swallows the LF after
                 ; its CR; our line reader (read_into_strscr) ignores an LF only when
@@ -278,14 +279,20 @@ sq_deveof:
                 ; first -- or nothing, when no block follows (CAL_NEEDFILL != 0).
                 cp      $0A
                 jr      nz,sq_dev1a
-                inc     l
+                inc     hl
+                inc     e
                 jr      nz,sq_devnext       ; still inside this buffer
-                ld      a,(CAL_NEEDFILL)
-                or      a
-                jr      nz,sq_end           ; the LF was the tape's last byte
-                ld      a,h
-                xor     CAL_XORHI
-                ld      h,a                 ; the read-ahead buffer, offset 0
+                ; D-CASFCB: the LF is the buffer's LAST byte, and with one buffer the
+                ; byte after it is not read yet. Consume the LF (the line reader
+                ; ignores it anyway) and read the next block: none -> the end.
+                call    cal_refill          ; CAL_CNT 0 after; CF = no further block
+                ld      a,2
+                jr      c,sq_devlast
+                xor     a
+sq_devlast:
+                ld      (CAL_NEEDFILL),a
+                jr      c,sq_end
+                ld      hl,(CAS_BUFP)       ; the new block, offset 0
 sq_devnext:
                 ld      a,(hl)
 sq_dev1a:

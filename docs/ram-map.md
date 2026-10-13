@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 433 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
+* **basic** — 432 declared addresses in this project's own workspace `$E000..$F37F` (404 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
 * **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -169,10 +169,8 @@ second one is the question a per-component map cannot answer.
 | `$E5AC` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
 | `$E5C0` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | file data / read sector buffer ($E5C0..$E7BF) |  |
 | `$E5C0` | 512 B | `disk` | `FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | 512-byte sector buffer ($E5C0-$E7BF) = main FSECTOR_BUF |  |
-| `$E600` | 256 B | `basic` | `CAL_BUF/CAS_WBUF` | cassette ASCII load: 256-byte tape block buffer (in idle FSECTOR_BUF) | `disk` FAT_DBUF/FSECTOR_BUF/SECTOR_BUF |
 | `$E7C0` | 512 B | `basic` | `FAT_MBUF/FWBUF` | FAT/dir metadata sector buffer ($E7C0..$E9BF) |  |
 | `$E7C0` | 512 B | `disk` | `FAT_MBUF/FWBUF/WBUF` | write-back FAT/dir sector buffer ($E7C0..$E9BF) = main FWBUF |  |
-| `$E800` | 256 B | `basic` | `CAL_BUF2` | cassette ASCII load: 256-byte read-ahead buffer (in idle FWBUF) | `disk` FAT_MBUF/FWBUF/WBUF |
 | `$E9B4` | 4 B | `disk` | `WRBLK_MULACC` | 32-bit product accumulator (LE) | `basic` FAT_MBUF/FWBUF |
 | `$E9B8` | 4 B | `disk` | `WRBLK_MULOP` | 32-bit shifted-RS operand (LE), doubled each iteration | `basic` FAT_MBUF/FWBUF |
 | `$E9BC` | 3 B | `disk` | `WRBLK_MULN` | 24-bit shifting copy of RR_start (bit tested each iteration) | `basic` FAT_MBUF/FWBUF |
@@ -349,7 +347,7 @@ second one is the question a per-component map cannot answer.
 | `$EBE7` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
 | `$EBE8` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$EBE8` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
-| `$EBE9` | 1 B | `basic` | `CAL_CURHI/VRAM_FLAG` | cassette ASCII load: served buffer high (1 B) |  |
+| `$EBE9` | 1 B | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) |  |
 | `$EBEA` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
 | `$EBEB` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
 | `$EBEC` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
@@ -466,6 +464,7 @@ second one is the question a per-component map cannot answer.
 | `$ED68` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$ED6A` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
 | `$ED6C` | 3 B | `basic` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
+| `$ED6F` | 2 B | `basic` | `CAS_BUFP` | base of the tape buffer in use (2 B) |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |

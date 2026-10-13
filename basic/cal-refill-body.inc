@@ -41,11 +41,11 @@ cal_fill_lp:
                 call    TAPIN               ; clobbers all; position is in CAL_CNT (RAM)
                 jr      c,cal_fill_fail     ; short block / read fail -> EOF
                 ld      c,a                 ; C = the byte
-                ld      a,(CAL_CURHI)
-                xor     CAL_XORHI           ; A = the OTHER buffer's high byte
-                ld      h,a
                 ld      a,(CAL_CNT)
-                ld      l,a                 ; HL = (not-CAL_CURHI) + pos
+                ld      e,a
+                ld      d,0
+                ld      hl,(CAS_BUFP)       ; D-CASFCB: the channel's buffer
+                add     hl,de               ; HL = buffer + pos
                 ld      (hl),c
                 inc     a
                 ld      (CAL_CNT),a         ; pos++ (255 -> 0 ends the 256-byte block)

@@ -177,11 +177,9 @@ csdb_lp:
 ; csd_ascii never touches CAL_CURHI again, so every cal_refill call keeps
 ; targeting CAL_BUF, unchanged from before cload.asm grew a second buffer.
 csd_ascii:
-                ld      a,CAL_BUF2 >> 8
-                ld      (CAL_CURHI),a
-                call    cal_refill          ; TAPION + slurp 256 into CAL_BUF; CF = EOF/err
-                ret     c
-                ld      hl,CAL_BUF
+                call    cal_refill          ; TAPION + slurp 256 into CAS_BUFP; CF = EOF/err
+                ret     c                   ; (D-CASFCB: channel #0's buffer, set by
+                ld      hl,(CAS_BUFP)       ;  cas_open_match's resident stub)
                 ld      b,0                 ; 256-byte scan (djnz with b=0 -> 256)
 csd_asc_scan:
                 ld      a,(hl)

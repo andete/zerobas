@@ -414,6 +414,8 @@ cas_ascii_save:
                 ; DIRECTF at rp_exec, so the handler is still taken and runs.
                 ld      a,1
                 ld      (DIRECTF),a
+                xor     a                   ; D-CASFCB: SAVE"CAS:" writes through
+                call    cas_bufp_set        ;  channel #0's buffer, as the VG-8020 does
                 call    cas_write_ea_header ; $EA header block (name in TSV_NAME); CAS_WCNT=0
                 jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
                 ld      a,1
@@ -491,8 +493,10 @@ caf_pad:
 cas_wbyte:
                 ld      c,a                 ; C = byte (survives the counter load)
                 ld      a,(CAS_WCNT)
-                ld      l,a
-                ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + CAS_WCNT (page-aligned)
+                ld      e,a
+                ld      d,0
+                ld      hl,(CAS_BUFP)       ; D-CASFCB: the channel's buffer
+                add     hl,de               ; HL = buffer + CAS_WCNT
                 ld      (hl),c              ; buffer the byte (no tape I/O)
                 inc     a
                 ld      (CAS_WCNT),a        ; pos++ ; 255 -> 0 wraps (8-bit)
@@ -514,9 +518,11 @@ cas_flush_block:
                 ld      (CAS_WCNT),a        ; flush from position 0 (already 0; explicit)
 cas_fb_lp:
                 ld      a,(CAS_WCNT)
-                ld      l,a
-                ld      h,CAS_WBUF >> 8     ; HL = CAS_WBUF + pos
-                ld      a,(hl)
+                ld      e,a
+                ld      d,0
+                ld      hl,(CAS_BUFP)       ; D-CASFCB: the channel's buffer; the same
+                add     hl,de               ;  instructions every byte, so the gaps
+                ld      a,(hl)              ;  between TAPOUTs stay uniform
                 call    TAPOUT              ; emit the byte
                 jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
                 ld      hl,CAS_WCNT

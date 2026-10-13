@@ -1,0 +1,3 @@
+K-F1: predicted casbin: bty, bbare; got casbin RED ['bty', 'bbare']; cas-ascii green []
+K-F2: predicted casbin: lbin (+ cas-ascii); got casbin RED ['lbin']; cas-ascii RED []
+restored: build rc=0; casbin green; cas-ascii green

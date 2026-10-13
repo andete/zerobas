@@ -4066,6 +4066,24 @@ item — do **one item per session** to keep context lean.
       (`ld h,CAL_CURHI`, `ld h,CAS_WBUF >> 8`) become 16-bit base + index,
       in the casmatch / casget tenant (sub page 1) and the SAVE / PRINT#
       path (main). Tape-timing code: the cassette suites are the gate.
+      ✅ **(1a) DONE 2026-10-13 (D-CASFCB): tape I/O through the channel's own
+      buffer.** CAS_BUFP ($ED6F) = channel block + FCH_HDRSZ, set by
+      cas_bufp_set (basic/cload.asm): #0 in cas_open_match's stub (the search
+      SKIPS files through it), SAVE "CAS:" and BLOAD's stub; #n in OPEN "CAS:"
+      AS #n. One buffer, refilled when it drains (cal_serve); the EOF peek's
+      LF-at-block-end case consumes the LF and reads the next block. CAL_BUF /
+      CAL_BUF2 / CAS_WBUF / CAL_CURHI / CAL_XORHI retired. Walls: main page 1
+      87 -> 44 B, sub page 1 61 -> 95 B (clean build). 🔴 The first cassette
+      run read 13/14: casbin bty / bbare (PEEK 0) -- BLOAD's tenant calls the
+      SUB-side cas_open_match, never main's stub, so its skip read through an
+      unset pointer; BLOAD's resident stub sets it now (+4 B). All 14 green
+      after. Knives ([`casfcb_knife.out`](scratchpad/casfcb_knife.out)): K-F1
+      (BLOAD's set) -> exactly casbin bty + bbare red; K-F2 (the search stub's
+      set) -> casbin lbin + cas-ascii red; restored green. 🔮 Both HIT.
+      tools/ram_map.py's selftest arms A13 / A14 used the cassette buffers as
+      their overlay examples; retargeted to main's FWBUF hosting the disk
+      ROM's WRBLK cells (61/61). ➡️ (1b): the FAT sector buffers are now
+      wholly disk-only -> the diskless floor (~1 KB).
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7856,7 +7874,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33373 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33391 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8022,7 +8040,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12884 (T-6FE392)8 (T-529ABE)` from `TODO.md:25678 (T-529ABE)`: a
+      `TODO.md:12902 (T-6FE392)8 (T-529ABE)` from `TODO.md:25696 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13731,7 +13749,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25678 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25696 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

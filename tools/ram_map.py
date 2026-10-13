@@ -1254,8 +1254,12 @@ def selftest(lo, hi) -> int:
     ok["A13 disk's SECTOR_BUF is reported as hosting main's cells -- the "
        "overlay §6.6aq is about"] = \
         any(c == "disk" and "SECTOR_BUF" in n for c, n in owners13)
-    ok["A13 ...and it names more than one guest"] = \
-        any(c == "disk" and "SECTOR_BUF" in n and len(g) > 1
+    # D-CASFCB (2026-10-13): this was "disk's SECTOR_BUF names more than one
+    # guest", true while main's cassette buffers (CAL_BUF / CAS_WBUF) were parked
+    # in it; tape I/O moved to the channel's own buffer, and the several-guest
+    # overlay that remains is main's FWBUF hosting the disk ROM's WRBLK cells.
+    ok["A13 ...and an overlay names more than one guest (main's FWBUF)"] = \
+        any(c == "basic" and "FWBUF" in n and len(g) > 1
             for c, n, _a, _b, g in ov13)
     ok["A13 NEGATIVE: a component never reports ITSELF as a guest"] = \
         all(all(gc != c for gc, _ga, _gn in g)
@@ -1276,11 +1280,14 @@ def selftest(lo, hi) -> int:
     # of TEMPPOOL's body has no row to carry the annotation. The first cut asked
     # about SECTOR_BUF+$100 and read an empty default as a failure.
     # D-BUFMERGE (2026-09-24): disk's SECTOR_BUF IS main's FSECTOR_BUF now, so
-    # GFX_PTOP (under the old $E2A0 buffer) is outside it; CAL_BUF, the cassette
-    # block buffer main parks in the idle data buffer, is the declared cell inside.
-    ok["A14 a basic cell INSIDE disk's SECTOR_BUF names that buffer"] = \
-        any("SECTOR_BUF" in n for _c, n, _o
-            in byaddr14[b_all.vals["CAL_BUF"]][1])
+    # GFX_PTOP (under the old $E2A0 buffer) is outside it. CAL_BUF, the cassette
+    # block buffer main parked in the idle data buffer, was the declared cell
+    # inside until D-CASFCB (2026-10-13) moved tape I/O into the channel's own
+    # buffer; the overlay now probed is the other direction: the disk ROM's
+    # WRBLK_MULACC, parked inside main's FWBUF.
+    ok["A14 a disk cell INSIDE basic's FWBUF names that buffer"] = \
+        any("FWBUF" in n for _c, n, _o
+            in byaddr14[d_all.vals["WRBLK_MULACC"]][1])
     ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
         byaddr14[b_all.vals["TKLNUM"]][1] == []
     # SH_SRC's width lives on its continuation line ("address (2 B)"), which is

@@ -60,6 +60,12 @@ do_bload:
                                             ; engine globals, and an open INPUT file lost
                                             ; its place, an OUTPUT one its bytes
                                             ; (scratchpad/chanside_probe.py)
+                xor     a                   ; D-CASFCB: a tape BLOAD's search skips
+                call    cas_bufp_set        ;  other files through channel #0's buffer
+                                            ;  -- the tenant calls the SUB-side
+                                            ;  cas_open_match, never main's stub, so
+                                            ;  it is set here (casbin bty / bbare
+                                            ;  read PEEK 0 without it)
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD)
                 ; D-BLNF: BL_STAT is now THREE-VALUED, and the third value is why

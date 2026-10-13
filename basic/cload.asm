@@ -405,12 +405,33 @@ run_prog_top:
 ; set = not found or tape error) -- all 3 call sites (do_tape_prog below,
 ; files.asm merge_cas/oo_dev_cas) are unchanged, they already just test CF.
 cas_open_match:
+                ; D-CASFCB: the search SKIPS non-matching files by reading their
+                ; blocks into the tape buffer, so the buffer is set first -- channel
+                ; #0's, which always exists; OPEN for input re-points it at its own
+                ; channel once the file is found (files.asm oocas).
+                xor     a
+                call    cas_bufp_set
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CASMATCH)
                 ld      a,(CM_STATUS)
                 or      a
                 ret     z                   ; matched -> CF clear
                 scf
+                ret
+
+; --- cas_bufp_set: point the cassette buffer at channel A's record buffer -----
+; 🏛️ D-CASFCB (2026-10-13, Joost's RAM rule; measured: scratchpad/casbuf_probe.out):
+; the VG-8020 does ALL tape I/O through the CHANNEL's own 256-byte buffer -- SAVE /
+; LOAD "CAS:" through #0's, OPEN "CAS:" ... AS #n through #n's. zerobas kept a
+; separate page-aligned double buffer (512 B) for it; it uses the channel's record
+; buffer now (block + FCH_HDRSZ: D-FCBSHAPE's block is the reference's 9 + 256). The
+; channel blocks only move on MAXFILES / CLEAR, which close every file first.
+;   in: A = channel 0..MAXF. Clobbers A, BC, DE, HL, IX (fch_ctx_addr).
+cas_bufp_set:
+                call    fch_ctx_addr        ; HL = the channel's block
+                ld      de,FCH_HDRSZ
+                add     hl,de
+                ld      (CAS_BUFP),hl
                 ret
 
 ; --- do_tape_prog: the shared cassette BASIC-program load path ----------------

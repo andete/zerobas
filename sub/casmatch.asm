@@ -71,43 +71,31 @@ casget_tenant:
 ; --- cal_serve: cal_getbyte's body, verbatim from basic/cload.asm ------------
 ; (its header, the double-buffer argument, stays with the resident stub).
 cal_serve:
-                ld      a,(CAL_CURHI)
-                ld      h,a
+                ; 🏛️ D-CASFCB (2026-10-13): ONE buffer -- the channel's own (CAS_BUFP),
+                ; as on the VG-8020 (scratchpad/casbuf_probe.out). The read-ahead second
+                ; buffer is gone: the motor stops after every block (D-CAS4BLK), so the
+                ; tape WAITS while a block's lines are crunched and nothing is lost by
+                ; refilling when the buffer drains (scratchpad/casmotor_probe.out: the
+                ; reference does exactly that, motor off between blocks).
+                ld      hl,(CAS_BUFP)
                 ld      a,(CAL_CNT)
-                ld      l,a                 ; HL = CAL_CURHI's buffer + CAL_CNT
+                ld      e,a
+                ld      d,0
+                add     hl,de               ; HL = buffer + CAL_CNT
                 ld      a,(hl)              ; A = the byte to return
-                ld      b,a                 ; hold it across the bump (and any swap/refill)
-                ld      a,l
+                ld      b,a                 ; hold it across the bump (and any refill)
+                ld      a,e
                 inc     a                   ; advance position; 255 -> 0 wraps (8-bit)
                 ld      (CAL_CNT),a
                 jr      nz,cal_srv_ret      ; still within the buffer -> done
-                ; This buffer just drained on the byte in B. Is the OTHER one
-                ; (the read-ahead target) actually holding a block?
-                ld      a,(CAL_NEEDFILL)
-                or      a
-                jr      z,cal_gb_swap
-                ; No -- this was genuinely the last byte on the tape. Return it
-                ; (already read fine) but latch a TERMINAL eof so the very next
-                ; call reports CF without touching either buffer again.
-                ld      a,2
-                ld      (CAL_NEEDFILL),a
-                jr      cal_srv_ret
-cal_gb_swap:
-                ld      a,(CAL_CURHI)
-                xor     CAL_XORHI           ; A = the OTHER (pre-fetched) buffer's high byte
-                ld      (CAL_CURHI),a       ; swap -- CAL_CNT is already 0, correct for it
-                ; Now read AHEAD again: refill the buffer we just swapped OUT of
-                ; (now free) with the block after next. cal_refill targets
-                ; "whichever buffer CAL_CURHI is NOT pointing at", which after the
-                ; swap above is exactly the just-freed one.
+                ; This byte drained the buffer: refill it with the next block now
+                ; (the byte must survive TAPIN, which clobbers every register).
                 ld      a,b
-                ld      (CAL_SAVE),a        ; the drained byte must survive TAPIN
-                call    cal_refill
-                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
-                                            ; the test below; xor clears carry
-                                            ; (D-PEEPHOLE).
-                jr      nc,cal_gb_flag
-                ld      a,1                 ; no block after next -> fine, EOF stops first
+                ld      (CAL_SAVE),a
+                call    cal_refill          ; CF = no further block
+                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is the
+                jr      nc,cal_gb_flag      ;  test here (D-PEEPHOLE)
+                ld      a,2                 ; none: a TERMINAL eof for the next call
 cal_gb_flag:
                 ld      (CAL_NEEDFILL),a
                 ld      a,(CAL_SAVE)
@@ -119,32 +107,14 @@ cal_srv_ret:
 
 ; --- cas_ascii_setup, verbatim from basic/cload.asm (the header stays there) --
 cas_ascii_setup:
-                ; cal_refill fills "whichever buffer CAL_CURHI is NOT pointing
-                ; at" (cal-refill-body.inc), so set CAL_CURHI to CAL_BUF2's high
-                ; byte FIRST -- that makes this call fill CAL_BUF (block 1),
-                ; TAPION + fill back-to-back so it stays in do_tape_prog's regime.
-                ld      a,CAL_BUF2 >> 8
-                ld      (CAL_CURHI),a
+                ; D-CASFCB: prime data block 1 into the channel's buffer (CAS_BUFP,
+                ; set by the resident caller) -- ONE block, the reference's way.
                 call    cal_refill          ; data block 1 leader + slurp 256 bytes
                 ret     c                   ; block 1 unreadable -> CF
-                ; Block 1 is ready. NOW point CAL_CURHI at CAL_BUF (it IS what
-                ; gets served first) and refill AGAIN -- cal_refill will target
-                ; the buffer CAL_CURHI is NOT pointing at, i.e. CAL_BUF2, priming
-                ; block 2 immediately, before ascii_read_lines has tokenised a
-                ; single byte of block 1.
-                ld      a,CAL_BUF >> 8
-                ld      (CAL_CURHI),a
-                call    cal_refill          ; data block 2 leader + slurp 256 bytes
-                ld      a,0                 ; 🔴 NOT `xor a`: cal_refill's CF is
-                                            ; the test on the very next line and
-                                            ; xor would CLEAR it (D-PEEPHOLE).
-                jr      nc,cas_1blk
-                ld      a,1                 ; no block 2 -> a genuine 1-block file
-cas_1blk:
-                ld      (CAL_NEEDFILL),a
-                xor     a
-                ld      (CAL_CNT),a         ; serve CAL_BUF (block 1) from position 0
-                ret                         ; CF clear: block 1 primed OK (own contract)
+                xor     a                   ; CF clear: block 1 primed OK
+                ld      (CAL_NEEDFILL),a    ; more blocks may follow (learned on drain)
+                ld      (CAL_CNT),a         ; serve from position 0 (cal_refill left 0)
+                ret
 
                 include "basic/casmatch-body.inc"    ; cas_open_match..cas_skip_data
                 include "basic/cal-refill-body.inc"  ; cal_refill (sub-local duplicate)
