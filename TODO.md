@@ -3710,6 +3710,28 @@ item — do **one item per session** to keep context lean.
       ⚠️ For (2): corrupt-ovf's witness ($EF00) leaves the overrun's path once
       TOKBUF is KBUF -- re-site it (an unbounded overrun from KBUF would reach
       TXTTAB at $F676: LIST of a stored line is the witness).
+      ✅ **(2) DONE 2026-10-12 (D-RAMKBUF): TOKBUF = KBUF $F41F.** No second bound
+      (the proof above); two asserts beside TOKBUF pin its premises (LINEBUF is
+      TOKBUF + 319; one pass ends inside BUF). Every main-loop step is <= 9 B --
+      checked, not assumed: `bl_num` emits ONE reference per call and returns to
+      tk_loop. $EB00..$EE3F is now one 832 B hole. corrupt-ovf re-sited to
+      TXTTAB's high byte and the first line number (`128 10` on both).
+      🔴 **TWO INSTRUMENT FINDINGS ON THE WAY:** (a) the re-sited row's first
+      anchor was 55 characters, its echo wrapped, BOTH sides read `<none>` -- and
+      SCORED PASS, knife included: the `corrupt` reader turned a missing span
+      into the STRING "<none>", which agrees with itself. It is None now (refused
+      by compare()); the whole linemax gate is still 62/62
+      ([`ramkbuf_linemax.out`](scratchpad/ramkbuf_linemax.out)). (b) With a real
+      readout the knife K-T1 (bound cut) STILL read green
+      ([`ramkbuf_knife.out`](scratchpad/ramkbuf_knife.out)): in this layout the
+      unbounded crunch overruns into BUF -- its own source -- AHEAD of the read
+      cursor, and the `0#` literals' $00 bytes end the line early, so nothing
+      past BUF is touched. The bound's absence is invisible on the machine for
+      this input; its witness moved to the HOST: tests/test_tokenise.py crunches
+      into TOKBUF from a source elsewhere over a sentinel and reads the reach --
+      321 live, 831 with the bound cut ([`ramkbuf_hostknife.out`](scratchpad/ramkbuf_hostknife.out)).
+      🔮 Predicted the rows `32769 10` (MISS: the wrapped anchor), the knife red
+      (MISS twice), the host reach ~829 cut (HIT, 831).
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7492,7 +7514,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33009 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33031 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7658,7 +7680,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12520 (T-6FE392)8 (T-529ABE)` from `TODO.md:25314 (T-529ABE)`: a
+      `TODO.md:12542 (T-6FE392)8 (T-529ABE)` from `TODO.md:25336 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13367,7 +13389,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25314 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25336 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,9 @@
+K-T1h (bound cut), host test rc 1
+PASS  'CALL FORMAT' -> ca 20 46 4f 52 4d 41 54 00
+FAIL  crunch reach <= TOKBUFSZ-1   -> False (reach 831)   want True
+PASS  crunch refuses it (TKOVF)    -> 25 (reach 831)
+1 CASE(S) FAILED
+restored, host test rc 0
+PASS  crunch reach <= TOKBUFSZ-1   -> True (reach 321)
+PASS  crunch refuses it (TKOVF)    -> 25 (reach 321)
+ALL PASS — crunch matches the oracle-validated token format

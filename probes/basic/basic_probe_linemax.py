@@ -275,21 +275,28 @@ CASES += [
     # (5 literals = 47 bytes), so a red corrupt-num/-str is the overrun and not
     # the direct line, the `A=` payload, or the readout.
     # 🔴 D-TOKOVF (2026-10-12): THE ROWS ABOVE STOPPED REACHING THE BUFFER'S END.
-    # They were written for a 96 B TOKBUF at $E160; it is 576 B at $EC00 now, and
-    # 45 literals crunch to ~407 B -- inside it. Yet the crunch was STILL unbounded
+    # They were written for a 96 B TOKBUF at $E160; it grew to 576 B, and 45
+    # literals crunch to ~407 B -- inside it. Yet the crunch was STILL unbounded
     # (tk_end was its only test): 83 `0#` literals in a 253-character line crunch
-    # to ~829 B and wrote ~253 B past $EE3F (scratchpad/tokovf_probe.out). $EF00
-    # is inside that write, zerobas's workspace (FLD_DESC) and free RAM on the
-    # VG-8020, so the row POKEs it and reads it back across the refused line:
-    # the overrun writes only $1F / $00 / $F1 there, never the 7.
+    # to ~829 B and wrote ~253 B past the buffer (scratchpad/tokovf_probe.out).
+    # 🧮 D-RAMKBUF (2026-10-12): TOKBUF is the reference's KBUF ($F41F) now, so an
+    # unbounded crunch would run past BUF into the BASIC pointers -- TXTTAB at
+    # $F676 is ~600 B in. The witness is therefore TXTTAB's high byte ($F677) and
+    # the first stored line's number, read across the refused line: 128 and 10 on
+    # both machines when nothing past BUF was touched. (Before, it POKEd $EF00,
+    # inside the old overrun; that address is no longer in the crunch's path.)
+    # ⚠️ THE ANCHOR MUST FIT ONE 40-COLUMN ROW: its first cut was 55 characters,
+    # the echo wrapped, both sides read `<none>` -- and SCORED PASS, knife
+    # included (scratchpad/ramkbuf_knife.out). See reader(): a missing span is
+    # now None, which never agrees.
     ("corrupt-ovf", "corrupt",
-     ["CLS", "POKE&HEF00,7", "10 A=" + "0#+" * 82 + "0#",
-      'PRINT"[";PEEK(&HEF00);"]"']),
+     ["CLS", "10 B=7", "20 A=" + "0#+" * 82 + "0#",
+      '?"[";PEEK(&HF677);PEEK(&H8003);"]"']),
     ("corrupt-ovfctl", "corrupt",
-     ["CLS", "POKE&HEF00,7", "10 A=" + "0#+" * 5 + "0#",
-      'PRINT"[";PEEK(&HEF00);"]"']),
+     ["CLS", "10 B=7", "20 A=" + "0#+" * 5 + "0#",
+      '?"[";PEEK(&HF677);PEEK(&H8003);"]"']),
     # control: a line that fits, so a red corrupt-ovf is the overrun and not the
-    # POKE, the PEEK or the stored line.
+    # stored line, the PEEKs or the readout.
 ]
 
 # Every `tok`/`tokx` row is a SUSPECTED WEDGER on zerobas: the overrun lands on
@@ -457,9 +464,12 @@ def reader(case):
     if battery not in ("corrupt", "list"):
         return lambda raw: say(raw, lines)
     anchor = lines[-1]
+    # 🔴 D-RAMKBUF (2026-10-12): a missing span was the STRING "<none>", so a
+    # readout that failed on BOTH sides compared equal and scored PASS -- a
+    # wrapped anchor echo turned corrupt-ovf and its knife green while measuring
+    # nothing. It is None now: compare() refuses it, and the report prints it.
     return lambda raw: (None if raw is None else
-                        (omsx_repl.result_span_after_echo(raw, anchor)
-                         or "<none>"))
+                        omsx_repl.result_span_after_echo(raw, anchor))
 
 
 def main():

@@ -192,8 +192,8 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   and see if we can meet the same"*). A watch on the VG-8020's work area showed
   which buffer it uses for each job ([`refwork_probe.out`](../../scratchpad/refwork_probe.out)):
   the typed line goes to `BUF` (`&HF55E`), the crunched line to `KBUF`
-  (`&HF41F`), and zerobas wrote neither. The typed line now uses `BUF` too
-  (D-RAMBUF); the crunched line is next. The bytes freed this way sit in the
+  (`&HF41F`), and zerobas wrote neither. Both now use the reference's buffers
+  (D-RAMBUF, D-RAMKBUF). The bytes freed this way sit in the
   middle of zerobas's workspace, so `FRE(0)` grows only once what lies below
   them moves up — the step after.
 - **Channel 0 had no block, and the blocks sat the other way round** (fixed

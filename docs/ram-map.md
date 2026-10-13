@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 436 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **111** in the MSX standard work area at or above `$F380`.
+* **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **113** in the MSX standard work area at or above `$F380`.
 * **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -473,8 +473,6 @@ second one is the question a per-component map cannot answer.
 | `$EAED` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) |  |
 | `$EAEE` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
 | `$EAFF` |  | `basic` | `FN_PAREA_END` |  |  |
-| `$EC00` | 576 B | `basic` | `BROM_TEXT/TOKBUF` | 2 B: the cartridge's TEXT word (high 0 = none) |  |
-| `$EC02` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
@@ -659,6 +657,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
+| `$F41F` |  | `basic` | `BROM_TEXT/TOKBUF` | repack: crunch buffer = the reference's KBUF (318 B) |  |
+| `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` | 1 B | `basic` | `LINEBUF` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` | 1 B | `disk` | `LINEBUF` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |

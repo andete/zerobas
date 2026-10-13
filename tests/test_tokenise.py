@@ -105,6 +105,28 @@ def run():
               f"{' '.join(f'{b:02x}' for b in got)}"
               + ("" if ok else f"   want {' '.join(f'{b:02x}' for b in want)}"))
 
+    # --- D-TOKOVF / D-RAMKBUF: the crunch's REACH, measured, not reasoned.
+    # tk_loop's head bound is what lets TOKBUF be the reference's 318-byte KBUF:
+    # one over-long pass may run into BUFMIN/BUF and no further (TOKBUFSZ, and
+    # the asserts beside TOKBUF in sysvars.inc). On the machine that is invisible
+    # -- the overshoot lands in the source line itself, and with the bound cut a
+    # `0#` line's own $00 bytes end the crunch early (scratchpad/ramkbuf_knife.out)
+    # -- so the witness is here: crunch INTO TOKBUF from a source elsewhere, over a
+    # sentinel, and read the highest byte written. 83 `0#` literals (~829 B
+    # unbounded) must reach at most TOKBUFSZ - 1 past TOKBUF, and refuse (25).
+    tb, mark = s["TOKBUF"], 0xA5
+    m.mem[tb:tb + 900] = bytes([mark]) * 900
+    line = "A=" + "0#+" * 82 + "0#"
+    m.poke(SRC, line.encode("ascii") + b"\x00")
+    m.call("tokenise", hl=SRC, de=tb)
+    reach = max(i for i in range(900) if m.mem[tb + i] != mark)
+    for label, got, want in (("crunch reach <= TOKBUFSZ-1", reach <= s["TOKBUFSZ"] - 1, True),
+                             ("crunch refuses it (TKOVF)", m.mem[s["TKOVF"]], 25)):
+        ok = got == want
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  {label:28} -> {got!r} (reach {reach})"
+              + ("" if ok else f"   want {want!r}"))
+
     print()
     print("ALL PASS — crunch matches the oracle-validated token format"
           if not fails else f"{fails} CASE(S) FAILED")

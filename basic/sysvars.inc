@@ -986,11 +986,34 @@ LINENO_ACC_STOP equ     (LINENO_CEIL/10)+1
 ; (2 chars, 9 B) repeated over a 253-character line wrote ~829 B here, ~253 past
 ; the end. tk_loop's head now stops the crunch once the body passes the ceiling,
 ; which is what makes this arithmetic true (scratchpad/tokovf_probe.out).
-; ⚠️ D-FCH §3.3: MOVED $B700 -> $EC00, into the window S-FCH-1 freed. This is the
+; ⚠️ D-FCH §3.3: MOVED $B700 -> $EC00, into the window S-FCH-1 freed. This was the
 ; buffer that BLOCKED TXTMAX: it sat immediately above the text ceiling, so
 ; nothing above it could be reclaimed until it moved. See LINEBUF above.
-TOKBUF          equ     $EC00   ; repack: crunch buffer, 576 B ($EC00..$EE3F)
-TOKBUFSZ        equ     576     ; physical size (absorbs one over-long pass, above)
+; 🧮 D-RAMKBUF (TIER 4, 2026-10-12): TOKBUF IS THE REFERENCE'S OWN KBUF ($F41F,
+; 318 B), where the VG-8020 itself crunches a typed line (measured:
+; scratchpad/refwork_probe.out) and which zerobas never wrote. It frees
+; $EC00..$EE3F of the private workspace (RAM step 2; with step 1's LINEBUF move,
+; $EB00..$EE3F is one 832 B hole). 318 B is less than one over-long pass needs,
+; and NO SECOND BOUND IS ADDED, because of the layout below it asserts:
+;   * KBUF (318) + BUFMIN (1) + BUF (258) are CONTIGUOUS, 577 B in all, and the
+;     crunch writes at most 314 + one step + the terminator = 572 B (tk_loop's
+;     head bound, D-TOKOVF): an overshoot past KBUF runs into BUF and stops
+;     inside it;
+;   * BUF IS LINEBUF, the crunch's SOURCE, 319 B above TOKBUF. A write at
+;     TOKBUF+d lands on LINEBUF+(d-319); the read cursor is LINEBUF+s. Write minus
+;     read stays BELOW 319 -- at most 317 at an inner copy loop's entry (a body of
+;     <= 314, then tk_apos's 3), which then copies 1:1 -- and a main-loop step
+;     (<= 9 B) reaches past 318 only with ~69 characters already read. So the
+;     overshoot only ever overwrites source ALREADY READ, of a line that is
+;     refused anyway (ERR 25, nothing stored, nothing executed).
+TOKBUF          equ     $F41F   ; repack: crunch buffer = the reference's KBUF (318 B)
+TOKBUFSZ        equ     576     ; the reach of one over-long pass (into BUFMIN/BUF, above)
+    IF LINEBUF - TOKBUF != 319
+                db      TOKBUF_LINEBUF_GAP_NOT_319__THE_NO_SECOND_BOUND_PROOF_IS_VOID
+    ENDIF
+    IF TOKBUF + TOKBUFSZ > LINEBUF + 258
+                db      TOKBUF_OVERSHOOT_PASSES_THE_END_OF_BUF
+    ENDIF
 ; D-BASICROM: BOOT-ONLY scratch in TOKBUF, idle until the first typed line -- the
 ; slot and TEXT word of a BASIC-program cartridge, found by the slot scan and used
 ; once by brom_run (basic/basicrom.asm), before anything is ever crunched.

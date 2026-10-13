@@ -6,7 +6,13 @@
 K-T1  basic/tokenise.inc: the bound at tk_loop's head is cut (its `jp c,tk_end`
       becomes three `nop`s, so the test runs and decides nothing): predicted
       corrupt-ovf RED (zerobas reads back an overrun byte, not 7), corrupt-ovfctl
-      green.
+      green. HIT while TOKBUF was $EC00 (scratchpad/tokovf_knife.out).
+      🔴 INERT SINCE D-RAMKBUF (TOKBUF = KBUF, 2026-10-12): the unbounded crunch
+      now overruns into BUF, its own source, ahead of the read cursor, and the
+      `0#` literals' $00 bytes end the line early -- nothing past BUF is touched
+      (scratchpad/ramkbuf_knife.out: green with the cut). The bound's witness
+      moved to the host: tests/test_tokenise.py measures the crunch's reach
+      (321 live, 831 cut: scratchpad/ramkbuf_hostknife.out).
 Built through knife_guard; restored on a CLEAN build and re-run green.
 """
 import os, subprocess, sys, tempfile

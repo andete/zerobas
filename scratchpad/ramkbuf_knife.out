@@ -1,0 +1,4 @@
+2/2 rows agree with the reference
+K-T1: gate GREEN, red []; predicted ['corrupt-ovf']: MISS
+2/2 rows agree with the reference
+restored: build rc=0; gate GREEN
