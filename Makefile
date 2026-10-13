@@ -792,8 +792,24 @@ tape-patches: $(TAPE_PATCHES)
 # The gates' freshness is covered separately, by $(MAIN_ROM)'s real file rule via
 # `repack-machine` ([[ips-rebuild-after-basic-change]]) -- `machines` is the
 # RELEASE-INSTALL path, not a gate path.
-machines: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM)
-	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM)
+machines: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM)
+	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM) \
+	  --sub2-rom $(SUB2_ROM)
+
+# --- the openMSX download (Joost, 2026-10-13) -----------------------------------
+# "the primary use is with openMSX": a ready-to-unzip package with the
+# READY-MADE main ROM ("using the ready made Rom makes more sense") and the GATED
+# machine definition (tools/install-repack-machine.py), ROMs by relative path.
+# `dist` writes build/dist/ and build/zerobas-openmsx.zip (CI publishes the zip
+# on the rolling `nightly` release); `install-openmsx` also copies it into
+# openMSX's user folder -- QUICKSTART.md's build-it-yourself path. Without a
+# C-BIOS checkout the main ROM is the tracked patch applied to openMSX's own
+# C-BIOS, checked against the .bps's CRCs (tools/make_dist.py).
+dist: all $(DISK_TEST_DSK)
+	python3 tools/make_dist.py $(if $(LOGO),--logo $(LOGO),)
+
+install-openmsx: all $(DISK_TEST_DSK)
+	python3 tools/make_dist.py --install $(if $(LOGO),--logo $(LOGO),)
 
 # Test-only: also write the Tier-1 provider-oracle machine (real CF-3300 BIOS +
 # zerobas-disk swapped into slot 3-1). Not a user-facing release config.
@@ -4088,7 +4104,7 @@ banner-acceptance: repack-machine
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all disk sub patches tape-patches machines machines-oracle install tiers \
+.PHONY: all disk sub patches tape-patches machines machines-oracle install dist install-openmsx tiers \
         test-dsk unit-test coverage probe bdos-acceptance diskbasic-acceptance \
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \

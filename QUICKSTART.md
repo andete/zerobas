@@ -6,67 +6,72 @@ SPDX-License-Identifier: 0BSD
 # Quickstart — run zerobas in openMSX
 
 zerobas is a clean-room MSX1 BASIC. It runs in the [openMSX](https://openmsx.org/)
-emulator, next to the free [C-BIOS](https://cbios.sourceforge.net/) that ships
-with openMSX — **no proprietary ROM is needed to try it.**
+emulator, next to the free [C-BIOS](https://cbios.sourceforge.net/) — **no
+proprietary ROM is needed to try it.**
 
-## 1. Install the tools
+## 1. Get openMSX
+
+Install openMSX from [openmsx.org](https://openmsx.org/) (on Debian / Ubuntu:
+`sudo apt-get install openmsx`). **Start it once** and close it: that creates
+its user folder — `~/.openMSX` on Linux and macOS, `Documents\openMSX` on
+Windows.
+
+## 2. Get zerobas — download it
+
+Download **`zerobas-openmsx.zip`** from the
+[nightly release](https://github.com/andete/zerobas/releases/tag/nightly) and
+unpack it. It holds one folder, `share`. Copy that folder into openMSX's user
+folder, merging it with the `share` folder already there.
+
+That adds two machines and their ROMs, and changes nothing else.
+
+The nightly is rebuilt from every change to zerobas. It is checked by the unit
+tests on GitHub; the full comparison with real MSX machines runs on the
+developers' computers, because it needs their system ROMs.
+
+<details>
+<summary>Or build it yourself</summary>
 
 You need `make`, `python3`, the [pasmo](https://pasmo.speccy.org/) Z80 assembler
-and openMSX.
+(0.5.3 or newer) and openMSX.
 
 | OS | |
 |----|---|
 | **Debian / Ubuntu** | `sudo apt-get install make python3 pasmo openmsx` |
-| **macOS** | `make` and `python3` come with the Xcode command-line tools; the openMSX app from [openmsx.org](https://openmsx.org/); pasmo built from [source](https://pasmo.speccy.org/) |
-| **Windows** | `python3` from python.org; `make` and `pasmo` through [MSYS2](https://www.msys2.org/), Git Bash or WSL; openMSX from [openmsx.org](https://openmsx.org/) |
-
-**pasmo 0.5.3 or newer.** The 0.5.3 Linux distributions package works, and so
-does 0.5.5: both assemble the same ROM images, byte for byte.
-
-**Start openMSX once** (and close it). That creates its user folder
-(`~/.openMSX` on Linux and macOS), which step 3 writes into.
-
-## 2. Build
+| **macOS** | `make` and `python3` come with the Xcode command-line tools; pasmo built from [source](https://pasmo.speccy.org/) |
+| **Windows** | `python3` from python.org; `make` and `pasmo` through [MSYS2](https://www.msys2.org/), Git Bash or WSL |
 
 ```sh
 git clone https://github.com/andete/zerobas.git
 cd zerobas
 make
+make install-openmsx
 ```
 
-The ROMs land in `build/`.
+`make install-openmsx` builds the same folder as the download (in
+`build/dist/`, and `build/zerobas-openmsx.zip`) and copies it into openMSX's
+user folder. If openMSX keeps that folder somewhere else:
+`python3 tools/make_dist.py --install --user <folder>`.
 
-## 3. Install the machines
+</details>
 
-```sh
-make machines
-```
+## 3. Run it
 
-This writes two machine definitions into openMSX's user folder:
-`C-BIOS_MSX1_EU_BASIC` (BASIC only) and `C-BIOS_MSX1_EU_BASIC_DISK` (with Disk
-BASIC). They copy no ROM: they point at openMSX's own C-BIOS and at the files in
-this checkout. So:
+Start openMSX and choose a zerobas machine in its **Machine** menu:
 
-- **moved the checkout, or ran `make clean`?** Run `make` and `make machines`
-  again.
-- **openMSX keeps its user folder somewhere else?** Run
-  `python3 tools/install-openmsx-machine.py --user <folder> --disk-rom build/disk.rom --sub-rom build/sub.rom`.
-
-## 4. Run it
-
-Start openMSX the way you usually do and choose the zerobas machine in its
-**Machine** menu: *zerobas BASIC* (BASIC only) or *zerobas Disk BASIC* (with a
-disk drive; insert [`disk/test720.dsk`](disk/test720.dsk) as disk A from the
-**Media** menu to have something on it).
+- **zerobas_MSX1** — BASIC
+- **zerobas_MSX1_disk** — BASIC with a disk drive; insert a disk image as
+  drive A from the **Media** menu (`test720.dsk`, in the download and in
+  `disk/` after a build, has a few files on it)
 
 From a terminal the same is:
 
 ```sh
-openmsx -machine C-BIOS_MSX1_EU_BASIC
+openmsx -machine zerobas_MSX1
 ```
 
 ```sh
-openmsx -machine C-BIOS_MSX1_EU_BASIC_DISK -diska disk/test720.dsk
+openmsx -machine zerobas_MSX1_disk -diska test720.dsk
 ```
 
 The prompt is `ZB` where a real MSX says `Ok`. Try:
@@ -80,7 +85,7 @@ RUN
 
 and, on the disk machine, `FILES` to list the disk.
 
-## 5. What to expect, and where to report
+## 4. What to expect, and where to report
 
 zerobas aims to behave exactly like a real MSX1 (a Philips VG-8020 for BASIC, a
 National CF-3300 for Disk BASIC). What already works, keyword by keyword, is in

@@ -32,8 +32,10 @@ challenge to zerobas can never contaminate the mature, uncontested BIOS it runs
 alongside.
 
 > 🚀 **Want to try it?** **[QUICKSTART.md](QUICKSTART.md)** gets zerobas running
-> in openMSX in a few steps — build, install the machines, pick *zerobas BASIC*
-> from openMSX's machine menu. No proprietary ROM is needed.
+> in openMSX in a few steps — download `zerobas-openmsx.zip` from the
+> [nightly release](https://github.com/andete/zerobas/releases/tag/nightly), unzip
+> it into openMSX's user folder, pick *zerobas_MSX1* from the machine menu. No
+> proprietary ROM is needed.
 
 > 📖 **What does each BASIC keyword do, and how does zerobas compare with a real
 > MSX?** Start with the **[keyword pages](docs/keywords/README.md)**: one readable
@@ -202,7 +204,9 @@ make            # everything needing no C-BIOS checkout: build/disk.rom,
                 #   build/sub.rom, tape/zerobas-tape-msx1.ips/.bps
 make release    # + regenerate the shipped BASIC patch (needs CBIOS=<checkout>)
 make unit-test  # emulator-free Z80 unit tests (no openMSX, no reference ROMs)
-make machines   # install the openMSX machine configs (see below)
+make install-openmsx  # build the openMSX package and copy it into openMSX (see below)
+make dist       # just the package: build/dist/ + build/zerobas-openmsx.zip
+make machines   # the older load-time-patch machine configs (see below)
 make install    # make + make machines
 ```
 
@@ -235,10 +239,18 @@ byte-identical to openMSX's own bundled `cbios_main_msx1_eu.rom`.
 ⚠️ **EU only.** The repack rewrites C-BIOS's page-0 layout, so the shipped patch
 targets the EU C-BIOS ROM.
 
-To run it in openMSX without touching any ROM, `make machines` installs ready
-machine configs into your openMSX user dir — a `C-BIOS_MSX1_EU_BASIC` (no disk) and
-a `C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
-slot 3-2, plus a `*_TAPE` machine per C-BIOS region:
+**The openMSX package** (2026-10-13) is what users get: `make install-openmsx`
+(or the `zerobas-openmsx.zip` the CI publishes on the
+[nightly release](https://github.com/andete/zerobas/releases/tag/nightly)) puts two
+machines, `zerobas_MSX1` and `zerobas_MSX1_disk`, and their ROMs into openMSX's
+user folder. It ships the ready-made main ROM (C-BIOS's BSD-2 notice beside it), and
+the machines are the ones the test battery runs on, with ROMs by relative path, so
+nothing points back into this checkout. See [QUICKSTART.md](QUICKSTART.md).
+
+`make machines` installs the older configs, which point at openMSX's own C-BIOS
+and apply the patch at load time — a `C-BIOS_MSX1_EU_BASIC` (no disk) and a
+`C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
+slot 3-2 and zerobas-sub2 in 3-3, plus a `*_TAPE` machine per C-BIOS region:
 
 ```sh
 make machines                                        # -> C-BIOS_MSX1_EU_BASIC[_DISK]

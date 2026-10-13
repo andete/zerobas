@@ -29,9 +29,10 @@
 
 name: ci
 
-# Manual-trigger only while the repo is PRIVATE: Actions minutes are metered on
-# private repos (and the Windows runner bills at 2x), so CI runs only when you
-# deliberately dispatch it to verify a target -- never automatically on push/PR.
+# 🌐 ON EVERY PUSH TO main AND EVERY PULL REQUEST since 2026-10-13: the repo is
+# public, so standard runners are free (the block below said to switch this on
+# then). It was manual-trigger only while the repo was PRIVATE, when Actions
+# minutes were metered (and the Windows runner billed at 2x).
 #
 # Run it from the Actions tab ("Run workflow"), picking the target, or:
 #     gh workflow run ci.yml -f target=windows
@@ -48,9 +49,9 @@ on:
         type: choice
         default: both
         options: [both, linux, windows]
-  # push:
-  #   branches: [main]
-  # pull_request:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
   linux:
@@ -94,6 +95,9 @@ jobs:
 
       - name: No equ pasmo 0.5.3 resolves as 0 (D-PASMO053)
         run: make alias-order-check
+
+      - name: The openMSX package tool's selftest (IPS / BPS handling)
+        run: python3 tools/make_dist.py --selftest
 
   windows:
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'both' || inputs.target == 'windows' }}
@@ -170,3 +174,61 @@ jobs:
 
       - name: Run the emulator-free unit tests
         run: make unit-test
+
+  # 📦 THE openMSX DOWNLOAD (Joost, 2026-10-13: "the primary use is with openMSX",
+  # shipping "the ready made Rom"). Every push to main that passes the Linux job
+  # rebuilds build/zerobas-openmsx.zip (tools/make_dist.py: the gated machine
+  # definition, ROMs by relative path) and replaces it on the rolling `nightly`
+  # pre-release. The main ROM needs C-BIOS at the PINNED revision
+  # (tools/build_repacked_cbios.py PINNED_TAG); its logo ROM comes from the same
+  # build, as there is no openMSX here. ⚠️ What "nightly" vouches for is what
+  # this workflow runs -- the build and the unit tests. The differential battery
+  # against the reference machines needs proprietary ROMs and runs locally.
+  nightly:
+    needs: linux
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: nightly
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pasmo
+        run: sudo apt-get update && sudo apt-get install -y pasmo
+
+      - name: C-BIOS at the pinned revision
+        run: |
+          git clone -q https://github.com/cbios/cbios.git ../cbios
+          rev=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import build_repacked_cbios as b; print(b.PINNED_TAG)")
+          git -C ../cbios checkout -q "$rev"
+          make -C ../cbios derived/bin/cbios_logo_msx1.rom
+
+      - name: Build the ROMs and the openMSX package
+        run: |
+          make all disk/test720.dsk
+          make build/zerobas-main-eu.rom CBIOS=../cbios
+          python3 tools/make_dist.py --logo ../cbios/derived/bin/cbios_logo_msx1.rom
+
+      - name: The shipped patch matches this build
+        run: git diff --exit-code -- zerobas-main-eu.ips zerobas-main-eu.bps
+
+      - name: Publish to the nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag -f nightly "$GITHUB_SHA"
+          git push -f origin refs/tags/nightly
+          notes="Built from ${GITHUB_SHA::8} on $(date -u +%Y-%m-%d). Unzip zerobas-openmsx.zip into openMSX's user folder and pick the zerobas_MSX1 machine -- see QUICKSTART.md. This build passed the unit tests on GitHub; the comparison with real MSX machines runs on the developers' computers."
+          if gh release view nightly > /dev/null 2>&1; then
+            gh release edit nightly --prerelease --title "Nightly build" --notes "$notes"
+          else
+            gh release create nightly --prerelease --title "Nightly build" --notes "$notes"
+          fi
+          gh release upload nightly build/zerobas-openmsx.zip --clobber

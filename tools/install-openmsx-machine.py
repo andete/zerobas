@@ -91,6 +91,7 @@ MAIN_IPS = os.path.join(REPO, "zerobas-main-eu.ips")
 TAPE_IPS = os.path.join(REPO, "tape", "zerobas-tape-msx1.ips")
 DISK_ROM = os.path.join(REPO, "build", "disk.rom")
 SUB_ROM = os.path.join(REPO, "build", "sub.rom")
+SUB2_ROM = os.path.join(REPO, "build", "sub2.rom")
 # The repack is EU-only by construction: tools/build_repacked_cbios.py applies
 # cbios-repack/eu-drop-statements.patch and reads derived/bin/cbios_main_msx1_eu.rom.
 # The retired lean splice was region-universal; regionalising the repack is its own
@@ -150,13 +151,17 @@ def stock_code(text: str) -> str:
     return m.group(1) if m else "MSX1"
 
 
-def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "") -> str:
+def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "",
+                 sub2_rom_abs: str = "") -> str:
     """Expand the (unexpanded) slot-3 RAM block of a stock C-BIOS MSX1 machine
     into subslots: 3-0 keeps the 64 KB RAM, 3-1 holds the zerobas-disk ROM behind
     a National-style memory-mapped WD2793 (CF-3300 connection style; the register
     map our driver targets at $7FB8), 3-2 holds zerobas-sub (the built-in MSX2-style
-    sub-ROM, a plain 32 KB ROM mapped linearly across BOTH pages). Slot 3-3 is left
-    empty. Either ROM may be omitted, leaving its subslot empty.
+    sub-ROM, a plain 32 KB ROM mapped linearly across BOTH pages), 3-3 holds
+    zerobas-sub2. Any ROM may be omitted, leaving its subslot empty.
+    🔴 3-3 WAS ALWAYS LEFT EMPTY HERE until 2026-10-13, while the gated machines
+    (tools/install-repack-machine.py) have carried sub2 since D-SUB2 -- so these
+    user-facing machines lacked every tenant that moved to sub2 (BEEP among them).
 
     ⚠️ The SUB-ROM is not optional for a working repack BASIC. It hosts the page-0
     and page-1 tenants (fp_sqrt..fp_rnd, format_tenant, detok/arrays/strheap/
@@ -201,6 +206,19 @@ def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "") -> st
         )
     else:
         sub_block = '      <secondary slot="2"/>\n\n'
+    if sub2_rom_abs:
+        sub2_block = (
+            '      <secondary slot="3">\n'
+            '        <ROM id="zerobas-sub2 ROM">\n'
+            '          <rom>\n'
+            f'            <filename>{sub2_rom_abs}</filename>\n'
+            '          </rom>\n'
+            '          <mem base="0x0000" size="0x8000"/>\n'
+            '        </ROM>\n'
+            '      </secondary>\n\n'
+        )
+    else:
+        sub2_block = '      <secondary slot="3"/>\n\n'
     block = (
         '    <primary slot="3">\n\n'
         '      <secondary slot="0">\n'
@@ -209,8 +227,8 @@ def expand_slot3(text: str, disk_rom_abs: str = "", sub_rom_abs: str = "") -> st
         '        </RAM>\n'
         '      </secondary>\n\n'
         + disk_block
-        + sub_block +
-        '      <secondary slot="3"/>\n\n'
+        + sub_block
+        + sub2_block +
         '    </primary>\n\n'
     )
     text, n = pat.subn(block, text)
@@ -331,6 +349,8 @@ def main():
                     help=f"zerobas-sub ROM for slot 3-2 (default: {SUB_ROM}). The "
                          "relocated BASIC calls its tenants during startup; a machine "
                          "without it does not reach a prompt.")
+    ap.add_argument("--sub2-rom", default=SUB2_ROM, metavar="ROM",
+                    help=f"zerobas-sub2 ROM for slot 3-3 (default: {SUB2_ROM}).")
     ap.add_argument("--dry-run", action="store_true", help="print, don't write")
     args = ap.parse_args()
 
@@ -346,6 +366,9 @@ def main():
     ips_list = [MAIN_IPS]
 
     sub_rom = os.path.abspath(args.sub_rom)
+    sub2_rom = os.path.abspath(args.sub2_rom)
+    if not os.path.isfile(sub2_rom):
+        sys.exit(f"error: sub2 ROM not found: {sub2_rom} (run `make` first)")
     if not os.path.isfile(sub_rom):
         sys.exit(f"error: sub ROM not found: {sub_rom} (run `make sub` first)\n"
                  f"       it is not optional -- the relocated BASIC calls its slot-3-2 "
@@ -413,7 +436,7 @@ def main():
         out = os.path.join(user_machines, f"{base}_BASIC.xml")
         # Slot 3 is expanded even with no disk, because the sub-ROM lives in 3-2.
         out_text = retitle(expand_slot3(patch_config(stock_text, share_machines, ips_list),
-                                        "", sub_rom),
+                                        "", sub_rom, sub2_rom),
                            f"BASIC (C-BIOS {stock_code(stock_text)})",
                            "zerobas, the clean-room MSX1 BASIC, on C-BIOS: an "
                            "MSX1 with no disk drive.")
@@ -425,7 +448,7 @@ def main():
         if disk_rom:
             dout = os.path.join(user_machines, f"{base}_BASIC_DISK.xml")
             dtext = retitle(expand_slot3(patch_config(stock_text, share_machines, ips_list),
-                                         disk_rom, sub_rom),
+                                         disk_rom, sub_rom, sub2_rom),
                             f"Disk BASIC (C-BIOS {stock_code(stock_text)})",
                             "zerobas, the clean-room MSX1 BASIC, on C-BIOS, with "
                             "zerobas's Disk BASIC and one disk drive.")
