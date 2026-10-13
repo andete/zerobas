@@ -80,6 +80,13 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
     IF SECTOR_BUF + 512 - WBUF
                 db      DISK_SHARED_BUFFERS_ARE_NOT_ADJACENT
     ENDIF
+                ; step 2b (2026-10-13): the cell block lives on the diskless FLOOR,
+                ; under main's TXTMAX_NODISK -- program RAM on a diskless machine,
+                ; where no disk ROM runs -- and so under EVERY basic-core cell. It
+                ; overlapped the persistent DRAW cells until then (D-DSCALEDISK).
+    IF FAT_DEFER + 1 > TXTMAX_NODISK
+                db      DISK_CELL_BLOCK_ABOVE_THE_DISKLESS_CEILING
+    ENDIF
                 include "init.asm"
                 include "pageenv.asm"
                 include "driver.asm"

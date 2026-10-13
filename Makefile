@@ -2505,6 +2505,14 @@ basicrom-acceptance: repack-machine
 ceiling-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_ceiling.py
 
+# --- diskalias-acceptance: BASIC's cells survive a disk access (D-DSCALEDISK) ---
+# disk.rom's cell block overlapped the persistent DRAW scale / angle and G8's
+# index (which sat on HOOK_SLOT) on the disk build until RAM order step 2b put it
+# on the diskless floor, under every basic cell (2026-10-13). CF-3300 vs the disk
+# build; `scale0` is the no-disk control.
+diskalias-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_diskalias.py
+
 # --- officialcell-acceptance: jobs kept in the OFFICIAL work-area cell (D-OFFICIAL)
 # Joost's rule (2026-10-13): an invented RAM cell gives way to the official one
 # for the same job. TRCFLG / MAXFIL against the VG-8020; DATPTR reported.

@@ -156,6 +156,7 @@ REQUIRED_DISK_RAM = [
     "TXTTAB",                   # D-BASICROM: the program START a SAVE walks from
                                 # (sv-savdisk.inc; a cartridge program is not at TXTBASE)
     "TXTMAX",                   # text ceiling: the loop's out-of-memory bound
+    "TXTMAX_NODISK",            # the diskless ceiling: disk.asm asserts its cell block under it
     # D-SAVEPORT (spec-diskcode-eviction.md §6.6ao), step 12: the tokenised SAVE
     # write engine runs in disk.rom now. basic/sv-savdisk.inc is shared BYTE-
     # IDENTICALLY by main, sub and disk, so every name it spells must resolve in

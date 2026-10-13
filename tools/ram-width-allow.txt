@@ -36,7 +36,6 @@ basic FN_STK_FLOOR undeclared
 basic FOSIGCOUNT/TKVALEND disputed
 basic GFX_B/GFX_WE_P disputed
 basic GFX_CPHASE overruns
-basic GFX_DANGLE overruns
 basic GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM disputed
 basic GFX_RES/SL_SLOT disputed
 basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed

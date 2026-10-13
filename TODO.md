@@ -302,6 +302,70 @@ item — do **one item per session** to keep context lean.
       [`bldi_knives.out`](scratchpad/bldi_knives.out): K-BL1 (that `ei`) → bsave
       bload, with the four earlier knives re-run.
 
+- [x] ✅ **FIXED 2026-10-13 (D-FLOORREC)** — 💾 **ON A DISKLESS MACHINE EVERY CHANNEL
+      SWITCH WROTE 256 B OF PROGRAM RAM: A REGRESSION D-FATFLOOR SHIPPED (THE SAME
+      MORNING), FOUND BY THE NEXT FULL BATTERY.**
+      🎚️ TIER 1 — happy path: strings and channel blocks of a running program
+      overwritten by `PRINT #` / `INPUT #` on any device channel (GRP:, CAS:, …).
+      🔬 **FOUND** by RAM order step 2b's FULL battery: opengrp-acceptance's
+      `errors` row read the GRP channel's FCB header as `255 255` on the
+      diskless build only, deterministic (retry and standalone,
+      [`floorrec_prefix_opengrp.out`](scratchpad/floorrec_prefix_opengrp.out)).
+      A write census of the floor during that program, writers named by PC
+      ([`drawcompact_census2.out`](scratchpad/drawcompact_census2.out)):
+      `sub:tfl_rec` wrote $E36A..$E469 -- t_fch_load copied EVERY channel's
+      record into FSECTOR_BUF, device channels included, and t_fch_save copied
+      it back. D-FATFLOOR made FSECTOR_BUF program RAM on a diskless machine and
+      tagged it DISK-ONLY -- a claim about WRITERS that nothing checked (I had
+      excluded the floor from the census); its battery passed because no tested
+      string sat in that span until step 2b's +288 B moved the channel blocks up.
+      On the DISK build the same copies were latent: a tape channel's live data
+      has been its block's record since D-CASFCB.
+      ✅ **FIX:** a device channel (fch_engrow CF=1) skips both copies -- FIELD's
+      record is a disk file's (sub/fatprim.asm; sub p1 95 -> 91 B). opengrp,
+      casbin, cas-ascii, recauto, geteject, putdir, asavechan all green
+      ([`floorrec_opengrp-acceptance.out`](scratchpad/floorrec_opengrp-acceptance.out)).
+      Knife K-FR1 ([`floorrec_knife.out`](scratchpad/floorrec_knife.out)): both
+      copies restored -> exactly opengrp's diskless `errors` row diverges;
+      restored green. HIT. 🔴 Its first TWO runs cut the WRONG FILE (the runner
+      was derived from another knife and its SRC/OLD/NEW substitution silently
+      missed, so it cut basic/detok.inc) and read green; a "save side alone"
+      theory built on them is VOID -- which copy alone bites is not established.
+      ➡️ Follow-up: D-FLOORCENSUS (below).
+
+- [ ] 🧪 **D-FLOORCENSUS — A STANDING WRITE CENSUS OF THE DISKLESS FLOOR (filed 2026-10-13)**
+      🎚️ APPARATUS — the DISK-ONLY tag is checked as a DECLARATION (ram-map-check)
+      but never as a claim about WRITERS; D-FLOORREC shipped through that gap.
+      🤖 **AUTONOMOUS** — a gate that runs a corpus on the DISKLESS build (channel
+      I/O on GRP: / CAS: / CRT:, FIELD-free random use, strings, PAINT, DRAW,
+      PLAY, sprites) with a write watch on [TXTMAX, TXTMAX_NODISK), names every
+      writer by PC, and fails on any writer outside an allowlist of the
+      program-RAM managers (string heap, GC, channel blocks, stack). Its
+      negative control is D-FLOORREC's own cut (K-FR1).
+
+- [x] ✅ **FIXED 2026-10-13 (D-DSCALEDISK)** — 🎨 **ON THE DISK BUILD, ANY DISK ACCESS
+      OVERWROTE DRAW'S PERSISTENT SCALE: BASIC'S GFX_DSCALE / GFX_DANGLE / GFX_G8N
+      SAT ON DISK.ROM'S FAT_NUMFATS / FAT_SECPERFAT / HOOK_SLOT.**
+      🎚️ TIER 1 — happy path: a program that sets `S` and reads the disk draws
+      at the wrong size.
+      🔬 **FOUND** reading sysvars.inc for RAM order step 2b: D-BUFMERGE squeezed
+      disk.rom's cells "into the gap before WBUF" -- the bytes basic kept as the
+      persistent DRAW cells' "private home that nothing else touches". D-FATFLOOR
+      preserved the overlap exactly. [`diskalias_probe.py`](scratchpad/diskalias_probe.py)
+      -> [`diskalias_probe.out`](scratchpad/diskalias_probe.out): `DRAW"S8"`,
+      `DSKF(0)`, `DRAW"BM10,20R10"` -- the CF-3300 draws 20 px, zerobas 5 (the
+      mount wrote the FAT count, 2, over the scale); without the disk access
+      both agree. 🔮 HIT. `VDP(n)=` also wrote over HOOK_SLOT; DSKF did not
+      notice (it does not use that hook), so that half stays latent.
+      ✅ **FIXED BY RAM ORDER STEP 2b** (disk.rom's block moved to the diskless
+      floor, under every basic cell): [`diskalias_after.out`](scratchpad/diskalias_after.out)
+      SAME on all three rows. Gate `diskalias-acceptance`
+      (probes/basic/basic_probe_diskalias.py). Knife K-DD1
+      ([`diskalias_knife.out`](scratchpad/diskalias_knife.out)): FAT_NUMFATS put
+      back on GFX_DSCALE -> exactly `scale` diverges; restored green. HIT. (Run 1
+      NOT SCORED: I hard-coded the address from a listing taken before the DB_WIN
+      swap moved the cell; the knife reads the sym now.)
+
 - [x] ✅ **FIXED 2026-10-13 (D-ARYCUR)** — 🎨 **`DRAW"R=B(1);"` AND
       `DRAW"XC$(1);"` NEVER RETURNED, AND `VDP(B(1))=5` RAN THE WRONG OPERATION:
       AN ARRAY ELEMENT'S PARKED CURSOR OVERLAPPED `GFX_OP`.**
@@ -4351,10 +4415,30 @@ item — do **one item per session** to keep context lean.
       ([`drawinplace_knife.out`](scratchpad/drawinplace_knife.out)): the copying
       tenant put back -> exactly that row fails; restored 13/13. HIT. The whole
       graphics-acceptance green (403 rows).
-      ➡️ **(2b) NEXT: the layout.** GFX_DBUF's 256 B are still declared (the DRAW
-      parse state sits at GFX_DBUF + 256); compact the union and move the freed
-      span to the program-RAM floor, as D-FATFLOOR did -- ws_shift, a RAM-address
-      move, so FULL.
+      ✅ **(2b) DONE 2026-10-13: the layout -- diskless FRE(0) +288.** 🔴 The plan
+      ("shift basic cells into the freed span") was wrong: on the DISK build that
+      span was disk.rom's own cell block ($E8A0..$E9AB), overlaid on purpose --
+      and that overlay turned out to include the PERSISTENT DRAW cells
+      (D-DSCALEDISK, filed below). So: (1) the union shrank to its real 44 B
+      ($E7F2..$E81D) and DRAW's state follows it (GFX_DPTR = GFX_SFLAGS + 1;
+      GFX_DFREE, GFX_DBUF, GFX_PSTK_CAP/_ENTSZ/_END retired; the persistent
+      DSCALE/DANGLE follow TGT_ADDR); (2) a ws_shift ROTATION put disk.rom's cell
+      block on the diskless floor, directly above the sector buffers, and every
+      basic-core cell above it (144 names, VERIFIED; basic's own FAT_DEFER copy
+      tagged DISK-ONLY -- the tool refused without it); (3) DB_WIN must sit in one
+      page (the build said so) and no single shift allowed it, so a second
+      rotation swapped it with the cells after it (64 names). TXTMAX_NODISK
+      $E76A -> $E88A. The wall asserts that meant "basic below disk cells" now
+      read BASIC_WS_CEIL ($E9C0, basic's FAT block); disk.asm asserts its block
+      under main's TXTMAX_NODISK (exported by gen_resident_abi.py now). GFX_DANGLE
+      declared its width mid-comment (the ARY_CUR trap) and was pinned as an
+      "overruns"; declared, unpinned.
+      📏 [`drawcompact_fremem.out`](scratchpad/drawcompact_fremem.out): diskless
+      boot FRE(0) 25735 -> **26023**, gap to the VG-8020 **-2792**; disk build
+      23705 unchanged ([`drawcompact_disk.out`](scratchpad/drawcompact_disk.out)).
+      🔮 Both HIT. `CLEAR 26000` now fits here, 27000 is refused
+      ([`drawcompact_clear_probe.out`](scratchpad/drawcompact_clear_probe.out);
+      predicted 26000 refused: MISS).
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -8145,7 +8229,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33662 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33746 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8311,7 +8395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13173 (T-6FE392)8 (T-529ABE)` from `TODO.md:25967 (T-529ABE)`: a
+      `TODO.md:13257 (T-6FE392)8 (T-529ABE)` from `TODO.md:26051 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14020,7 +14104,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25967 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26051 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

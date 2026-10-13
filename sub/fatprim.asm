@@ -234,7 +234,7 @@ t_fch_restage:
 t_fch_load:
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the channel's engine row; CF = none
-                jr      c,tfl_rec           ; a device channel keeps no engine state
+                jr      c,tfl_dev           ; a device channel: no engine state, no record
                 cp      DOUT_MODE-1
                 jr      z,tfl_dout          ; S10.B: the row is disk.rom's FCB
                 ld      de,FCH_STATE0
@@ -248,6 +248,17 @@ tfl_rec:
                 ld      bc,FCH_RECMAX
                 ldir
                 jr      t_fch_restage
+; 🔴 D-FLOORREC (2026-10-13): a DEVICE channel (GRP:, CAS:, CRT:, LPT:) took the
+; record copy above too, and it has no business there: FIELD's record is a disk
+; file's. On a DISKLESS machine FSECTOR_BUF has been program RAM since D-FATFLOOR,
+; so every channel switch wrote 256 B over the program's strings and channel
+; blocks at $E36A.. (opengrp-acceptance's `errors` row read the GRP channel's FCB
+; header as 255 255 -- scratchpad/drawcompact_census2.out: tfl_rec, 256 B). And on
+; the DISK build a tape channel's live data has been its block's record since
+; D-CASFCB, which t_fch_save's copy back would have overwritten with a stale one.
+tfl_dev:
+                pop     hl
+                jp      fp_stash_ok
 ; S10.B: a DOUT_MODE row is an MSX-DOS FCB (+16..19 its size, +37..38 the cached
 ; block address). The block cannot move while the channel is open -- CLEAR and
 ; MAXFILES close every file first (D-CLEARCLOSE) -- but every load re-caches it
@@ -333,7 +344,7 @@ t_fch_save:
                 ; fch_save_active's three callers read no result.
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the engine row; CF = no disk channel
-                jr      c,tfs_rec
+                jr      c,tfs_dout          ; D-FLOORREC: a device channel keeps no record here
                 cp      DOUT_MODE-1
                 jr      z,tfs_dout          ; S10.B: nothing of main's to keep
                 ex      de,hl               ; DE = the row

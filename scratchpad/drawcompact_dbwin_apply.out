@@ -1,0 +1,32 @@
+30 literal equ(s) rewritten in 1 file(s); TXTMAX $E26A -> $E26A; TXTMAX_NODISK $E88A -> $E88A
+   basic/sysvars.inc:105  GFX_BAD  $E905 -> $E8A5
+   basic/sysvars.inc:1985  ISRCH_A  $E901 -> $E8A1
+   basic/sysvars.inc:2061  GFX_POVF  $E909 -> $E8A9
+   basic/sysvars.inc:2062  GFX_PTESTX  $E90A -> $E8AA
+   basic/sysvars.inc:2063  GFX_PTESTY  $E90B -> $E8AB
+   basic/sysvars.inc:2064  GFX_PFY  $E90C -> $E8AC
+   basic/sysvars.inc:2065  GFX_PXL  $E90D -> $E8AD
+   basic/sysvars.inc:2066  GFX_PXR  $E90E -> $E8AE
+   basic/sysvars.inc:2067  GFX_PSCX  $E90F -> $E8AF
+   basic/sysvars.inc:2068  GFX_PSCY  $E910 -> $E8B0
+   basic/sysvars.inc:2069  GFX_PSPA  $E911 -> $E8B1
+   basic/sysvars.inc:2070  GFX_PSTK  $E912 -> $E8B2
+   basic/sysvars.inc:2072  comment range  $E912 -> $E8B2
+   basic/sysvars.inc:2434  DB_WIN  $E8A1 -> $E947
+   basic/sysvars.inc:1986  ISRCH_B (comment copy)  $E903 -> $E8A3
+   basic/sysvars.inc:1997  STRENG_SPARE (comment copy)  $E905 -> $E8A5
+   basic/sysvars.inc:2133  GFX_CS_M1 (comment copy)  $E912 -> $E8B2
+   basic/sysvars.inc:2135  GFX_CS_M2 (comment copy)  $E916 -> $E8B6
+   basic/sysvars.inc:2185  GFX_VBUF (comment copy)  $E912 -> $E8B2
+   basic/sysvars.inc:2191  GFX_SN (comment copy)  $E932 -> $E8D2
+   basic/sysvars.inc:2192  GFX_VLEN (comment copy)  $E934 -> $E8D4
+   basic/sysvars.inc:2193  GFX_SDESC (comment copy)  $E935 -> $E8D5
+   basic/sysvars.inc:2195  GFX_SC (comment copy)  $E937 -> $E8D7
+   basic/sysvars.inc:2199  GFX_SPATN (comment copy)  $E939 -> $E8D9
+   basic/sysvars.inc:2200  GFX_SSIZE (comment copy)  $E93B -> $E8DB
+   basic/sysvars.inc:2202  GFX_SARGN (comment copy)  $E93C -> $E8DC
+   basic/sysvars.inc:2204  GFX_SFLAGS (comment copy)  $E93D -> $E8DD
+   basic/sysvars.inc:2142  GFX_DPTR (comment copy)  $E93E -> $E8DE
+   basic/sysvars.inc:2143  GFX_DEND (comment copy)  $E940 -> $E8E0
+   basic/sysvars.inc:2144  GFX_DFTOP (comment copy)  $E942 -> $E8E2
+🟢 VERIFIED: 64 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (70 disk mirror(s) of basic names verified through their originals; the build regenerates them).

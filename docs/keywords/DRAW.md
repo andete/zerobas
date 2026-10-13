@@ -114,6 +114,12 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **With a disk drive, any disk access forgot the scale set by `S`** (fixed
+  2026-10-13, D-DSCALEDISK). `DRAW"S8"`, then reading the disk, then
+  `DRAW"R10"` drew 5 dots where the CF-3300 draws 20: the disk system kept
+  its count of FAT copies in the same bytes as `DRAW`'s remembered scale
+  ([`diskalias_probe.out`](../../scratchpad/diskalias_probe.out),
+  [`diskalias_after.out`](../../scratchpad/diskalias_after.out)).
 - **Long sub-strings ran out of room** (fixed 2026-10-13, D-DRAWINPLACE).
   zerobas copied every `DRAW` string, and each `X` sub-string, into a 256-byte
   buffer, so two 132-character sub-strings were `Illegal function call`

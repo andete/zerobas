@@ -1,0 +1,3 @@
+scale   CF-3300 'S 15 15 4'      zerobas 'S 4 4 4'        DIFFERS
+scale0  CF-3300 'S 15 15 4'      zerobas 'S 15 15 4'      SAME
+hook    CF-3300 'H 713'          zerobas 'H 713'          SAME

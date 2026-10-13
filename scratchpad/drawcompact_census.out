@@ -1,0 +1,9 @@
+C-BIOS?:0D42                       first t=  0.00    4 B  $E800..$E800, $E800..$E800, $E800..$E800, $E800..$E800
+C-BIOS?:0D47                       first t=  0.00    4 B  $E800..$E800, $E800..$E800, $E800..$E800, $E800..$E800
+sub:sacc_lp+1                      first t= 73.11  226 B  $E76A..$E786, $E794..$E822, $E836..$E845, $E849..$E855
+main:sfs_build+19                  first t= 73.12    7 B  $E786..$E786, $E7D5..$E7D5, $E7DD..$E7DD, $E822..$E822
+main:sfs_cp+1                      first t= 73.12   28 B  $E787..$E788, $E7C1..$E7C3, $E7D6..$E7D8, $E7DE..$E7DF
+sub:sate_fits+17                   first t= 73.12  178 B  $E76A..$E7A4, $E7C4..$E7DC, $E7E0..$E7F5, $E80F..$E821
+sub:sate_fits+34                   first t= 73.12   12 B  $E786..$E786, $E793..$E793, $E7A5..$E7A5, $E7DD..$E7DD
+sub:str_body_copy+15               first t= 73.18  113 B  $E76A..$E7A5, $E7E1..$E7F6, $E826..$E835, $E859..$E862
+sub:sg_move_one+51                 first t= 73.56  116 B  $E816..$E889

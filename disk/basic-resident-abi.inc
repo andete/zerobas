@@ -37,6 +37,7 @@ CLINK equ 0EB2DH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
 TXTMAX equ 0E26AH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
+TXTMAX_NODISK equ 0E88AH   ; NOT-A-CELL: the diskless build's text ceiling
 PRGEND equ 0EB26H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EBEDH   ; SAVE: current source byte pointer (2)
 DSV_END equ 0EBEFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)

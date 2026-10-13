@@ -1,0 +1,103 @@
+101 literal equ(s) rewritten in 3 file(s); TXTMAX $E26A -> $E26A; TXTMAX_NODISK $E76A -> $E88A
+   basic/sysvars.inc:105  GFX_BAD  $E7E5 -> $E905
+   basic/sysvars.inc:1985  ISRCH_A  $E7E1 -> $E901
+   basic/sysvars.inc:2058  GFX_POVF  $E7E9 -> $E909
+   basic/sysvars.inc:2059  GFX_PTESTX  $E7EA -> $E90A
+   basic/sysvars.inc:2060  GFX_PTESTY  $E7EB -> $E90B
+   basic/sysvars.inc:2061  GFX_PFY  $E7EC -> $E90C
+   basic/sysvars.inc:2062  GFX_PXL  $E7ED -> $E90D
+   basic/sysvars.inc:2063  GFX_PXR  $E7EE -> $E90E
+   basic/sysvars.inc:2064  GFX_PSCX  $E7EF -> $E90F
+   basic/sysvars.inc:2065  GFX_PSCY  $E7F0 -> $E910
+   basic/sysvars.inc:2066  GFX_PSPA  $E7F1 -> $E911
+   basic/sysvars.inc:2067  GFX_PSTK  $E7F2 -> $E912
+   basic/sysvars.inc:2069  comment range  $E7F2 -> $E912
+   basic/sysvars.inc:2418  TXTMAX_NODISK  $E76A -> $E88A
+   basic/sysvars.inc:2432  DB_WIN  $E781 -> $E8A1
+   basic/sysvars.inc:3162  FAT_DEFER  $E9AC -> $E876
+   disk/equates.inc:261  FAT_SECPERCLUS  $E8A0 -> $E76A
+   disk/equates.inc:262  FAT_FATSTART  $E8A1 -> $E76B
+   disk/equates.inc:263  FAT_FIRSTROOT  $E8A3 -> $E76D
+   disk/equates.inc:264  FAT_TOTCLUS  $E8A5 -> $E76F
+   disk/equates.inc:266  FAT_FIRSTDATA  $E8A7 -> $E771
+   disk/equates.inc:267  FAT_CURCLUS  $E8A9 -> $E773
+   disk/equates.inc:268  FAT_CLUSSEC  $E8AB -> $E775
+   disk/equates.inc:269  FAT_FIRSTCLUS  $E8AC -> $E776
+   disk/equates.inc:270  FAT_FILESIZE  $E8AE -> $E778
+   disk/equates.inc:273  FAT_NUMFATS  $E95A -> $E824
+   disk/equates.inc:274  FAT_SECPERFAT  $E95B -> $E825
+   disk/equates.inc:277  comment range  $E95B -> $E825
+   disk/equates.inc:279  HOOK_SLOT  $E95D -> $E827
+   disk/equates.inc:292  BDOS_SRCHIDX  $E95E -> $E828
+   disk/equates.inc:302  FAT_PARITY  $E8B2 -> $E77C
+   disk/equates.inc:303  FAT_BYTEIDX  $E8B3 -> $E77D
+   disk/equates.inc:304  FAT_FATSEC  $E8B5 -> $E77F
+   disk/equates.inc:305  FAT_B0  $E8B7 -> $E781
+   disk/equates.inc:306  FAT_B1  $E8B8 -> $E782
+   disk/equates.inc:307  FAT_NAMEPTR  $E8B9 -> $E783
+   disk/equates.inc:308  FAT_DIRSEC  $E8BB -> $E785
+   disk/equates.inc:309  FAT_DIRREM  $E8BD -> $E787
+   disk/equates.inc:333  BDOS_RECIDX  $E8BF -> $E789
+   disk/equates.inc:340  BDOS_DTA  $E8C0 -> $E78A
+   disk/equates.inc:347  BDOS_BYTESLEFT  $E942 -> $E80C
+   disk/equates.inc:358  BDOS_SEQREC  $E9A6 -> $E870
+   disk/equates.inc:375  DBUF_PTR  $E9A8 -> $E872
+   disk/equates.inc:376  MBUF_PTR  $E9AA -> $E874
+   disk/equates.inc:389  BDOS_WRMODE  $E946 -> $E810
+   disk/equates.inc:390  BDOS_WRCLUS  $E947 -> $E811
+   disk/equates.inc:391  BDOS_WRFIRST  $E949 -> $E813
+   disk/equates.inc:392  BDOS_WRSECIDX  $E94B -> $E815
+   disk/equates.inc:393  BDOS_WRBUFLEN  $E94C -> $E816
+   disk/equates.inc:394  BDOS_WRBYTES  $E94E -> $E818
+   disk/equates.inc:395  BDOS_DIRSEC  $E952 -> $E81C
+   disk/equates.inc:396  BDOS_DIROFF  $E954 -> $E81E
+   disk/equates.inc:426  FAT_WRTMP  $E956 -> $E820
+   disk/equates.inc:427  FAT_WRTMP2  $E958 -> $E822
+   disk/equates.inc:450  FAT_DEFER  $E9AC -> $E876
+   disk/equates.inc:458  RRND_RECSEC  $E960 -> $E82A
+   disk/equates.inc:459  RRND_CLUSSEC  $E961 -> $E82B
+   disk/equates.inc:470  WRBLK_REC  $E97A -> $E844
+   disk/equates.inc:471  WRBLK_RECSEC  $E97D -> $E847
+   disk/equates.inc:475  WRBLK_RS  $E97E -> $E848
+   disk/equates.inc:479  WRBLK_CNT  $E980 -> $E84A
+   disk/equates.inc:480  WRBLK_REQ  $E982 -> $E84C
+   disk/equates.inc:482  WRBLK_PREVCLUS  $E984 -> $E84E
+   disk/equates.inc:486  WRBLK_KEEPCNT  $E986 -> $E850
+   disk/equates.inc:487  WRBLK_NEXTCLUS  $E988 -> $E852
+   disk/equates.inc:495  WRBLK_CURVALID  $E98A -> $E854
+   disk/equates.inc:496  WRBLK_CURSEC  $E98B -> $E855
+   disk/equates.inc:507  FAT_ALLOCHINT  $E98D -> $E857
+   disk/init.asm:209  BOOT_SV_A8  $E960 -> $E82A
+   disk/init.asm:210  BOOT_SV_SEC  $E961 -> $E82B
+   disk/init.asm:216  R30_HL  $E962 -> $E82C
+   disk/init.asm:217  R30_BC  $E964 -> $E82E
+   disk/init.asm:218  R30_DE  $E966 -> $E830
+   disk/init.asm:219  R30_AF  $E968 -> $E832
+   disk/init.asm:220  CALSLT_HL  $E96A -> $E834
+   disk/init.asm:225  RDBLK_REQ  $E96C -> $E836
+   disk/init.asm:226  RDBLK_RECSIZE  $E96E -> $E838
+   disk/init.asm:227  RDBLK_DONE  $E970 -> $E83A
+   disk/init.asm:228  RDBLK_CNT  $E972 -> $E83C
+   disk/init.asm:229  RDBLK_BUFPOS  $E974 -> $E83E
+   disk/init.asm:230  RDBLK_DST  $E976 -> $E840
+   disk/init.asm:260  RDBLK_RRSTART  $E98F -> $E859
+   disk/init.asm:262  P1_DEST  $E978 -> $E842
+   disk/init.asm:362  DRV_TRAMP  $E992 -> $E85C
+   basic/sysvars.inc:1986  ISRCH_B (comment copy)  $E7E3 -> $E903
+   basic/sysvars.inc:1997  STRENG_SPARE (comment copy)  $E7E5 -> $E905
+   basic/sysvars.inc:2130  GFX_CS_M1 (comment copy)  $E7F2 -> $E912
+   basic/sysvars.inc:2132  GFX_CS_M2 (comment copy)  $E7F6 -> $E916
+   basic/sysvars.inc:2182  GFX_VBUF (comment copy)  $E7F2 -> $E912
+   basic/sysvars.inc:2188  GFX_SN (comment copy)  $E812 -> $E932
+   basic/sysvars.inc:2189  GFX_VLEN (comment copy)  $E814 -> $E934
+   basic/sysvars.inc:2190  GFX_SDESC (comment copy)  $E815 -> $E935
+   basic/sysvars.inc:2192  GFX_SC (comment copy)  $E817 -> $E937
+   basic/sysvars.inc:2196  GFX_SPATN (comment copy)  $E819 -> $E939
+   basic/sysvars.inc:2197  GFX_SSIZE (comment copy)  $E81B -> $E93B
+   basic/sysvars.inc:2199  GFX_SARGN (comment copy)  $E81C -> $E93C
+   basic/sysvars.inc:2201  GFX_SFLAGS (comment copy)  $E81D -> $E93D
+   basic/sysvars.inc:2139  GFX_DPTR (comment copy)  $E81E -> $E93E
+   basic/sysvars.inc:2140  GFX_DEND (comment copy)  $E820 -> $E940
+   basic/sysvars.inc:2141  GFX_DFTOP (comment copy)  $E822 -> $E942
+   disk/equates.inc:472  COPY_STAMP (comment range)  $E97A -> $E844
+🟢 VERIFIED: 144 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (70 disk mirror(s) of basic names verified through their originals; the build regenerates them).

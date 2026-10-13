@@ -150,7 +150,7 @@ fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acce
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
 resetboot-acceptance keyshift-acceptance sub2-acceptance
-opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance""".split()
+opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
 # must not also be scheduled in it. The DENOMINATOR adds it separately below --
@@ -917,6 +917,22 @@ def main():
         if _g in SLOW_SWEEPS and results.get(_g, (1,))[0] == 0 and os.path.exists(_p):
             os.makedirs(SLOW_PIN_KEEP, exist_ok=True)
             shutil.copyfile(_p, os.path.join(SLOW_PIN_KEEP, os.path.basename(_p)))
+
+    # ⏱ THE SHEET FOLLOWS THE PINS THIS POOL JUST MEASURED (2026-10-13). With
+    # kwtime / kwram daily, docs/tier-status.md is rendered BEFORE a FULL from
+    # their previous pins (and says "measured on an earlier build"); the FULL
+    # re-measures them on THIS build, so the staged sheet cannot match by
+    # construction -- the first FULL after the cadence change went red on
+    # tiers-md-check for exactly that. When a slow sweep ran green here, render
+    # the sheet from the fresh pins first (after the pool-write check, so it is
+    # not a pool write), say so, and let tiers-md-check verify it; the commit
+    # must STAGE docs/tier-status.md.
+    if ("tiers-md-check" not in excl
+            and any(results.get(g, (1,))[0] == 0 for g in SLOW_SWEEPS)):
+        _rc = sh(["make", "tiers-md"], f"{OUT}/_tiers-md-rerender.log")
+        print(f"=== ⏱ the daily sweeps ran in this battery: docs/tier-status.md "
+              f"re-rendered from their fresh pins (rc={_rc}) -- STAGE IT with the "
+              f"commit ===", flush=True)
 
     # --- the post-pool serial phase (POSTCHECKS) ----------------------------
     post_results = []
