@@ -2470,6 +2470,17 @@ item — do **one item per session** to keep context lean.
       range ($18E9, not a published entry) -- possibly a second problem once the
       RAM is free; re-test then.
       ➡️ Filed: D-LISTLPTR (LIST prints a `$0D` pointer as the ADDRESS).
+      🔁 **RE-TESTED 2026-10-13, AFTER D-FATFLOOR -- THE CRASH IS GONE.** The
+      routine's range ($E05E..$E273) is diskless program RAM now (the ceiling is
+      $E76A). A one-off run (outside the repo, the cartridge never decoded):
+      SPACE at 30 s, RETURN at 45 s, then CURLIN / SP sampled every 20 s to
+      300 s on both machines. Both cycle through the same lines (1010..1050,
+      the 5000s, 8000) with SP steady at $DC73..$DCAE; zerobas no longer ends
+      with SP at $000E. ⚠️ NOT ESTABLISHED: that it plays the SAME -- the pacing
+      differs (zerobas reaches line 8000 at 120 s, the VG-8020 at 300 s), and
+      the run had no renderer, so no screen was compared. ➡️ Next: a screen
+      comparison (VRAM read at matching program states, not at matching times),
+      or Joost running it by eye -- he has the image.
 
 - [x] 🧩 **D-SLOTMAP — WHERE THE RAM AND OUR SUB ROMs SIT: A QUESTION, ANSWERED;
       NO CHANGE** (2026-10-13)
@@ -8014,7 +8025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33531 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33542 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8180,7 +8191,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13042 (T-6FE392)8 (T-529ABE)` from `TODO.md:25836 (T-529ABE)`: a
+      `TODO.md:13053 (T-6FE392)8 (T-529ABE)` from `TODO.md:25847 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13889,7 +13900,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25847 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
