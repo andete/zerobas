@@ -48,7 +48,7 @@ on:
         description: "Which target(s) to build + test"
         type: choice
         default: both
-        options: [both, linux, windows]
+        options: [both, linux, windows, macos]
   push:
     branches: [main]
   pull_request:
@@ -181,6 +181,76 @@ jobs:
 
       - name: Run the emulator-free unit tests
         run: make unit-test
+
+  # 🍎 macOS (Joost, 2026-10-13: "yes, add the mac job"). Free since the repo went
+  # public (it billed at 10x while private). The author's Mac runs the full
+  # battery, but always in a long-lived checkout -- which is how a fresh `make`
+  # could go without sub2.rom unnoticed. This is the CLEAN-checkout build on
+  # macOS's own toolchain: Apple's GNU make 3.81 (deliberately not a newer one;
+  # Linux runners have 4.x), the BSD userland, pasmo 0.5.5 built from source
+  # (there is no package), and the QUICKSTART's build-it-yourself path through to
+  # the openMSX package (`make dist`, with C-BIOS at the pinned revision since a
+  # runner has no openMSX).
+  macos:
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.target == 'both' || inputs.target == 'macos' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Cache built pasmo
+        id: pasmo-cache
+        uses: actions/cache@v4
+        with:
+          path: pasmo-bin
+          key: pasmo-macos-${{ runner.arch }}-0.5.5-v1
+
+      - name: Build pasmo from source (cache miss only)
+        if: steps.pasmo-cache.outputs.cache-hit != 'true'
+        run: |
+          set -eux
+          curl -fsSL https://pasmo.speccy.org/bin/pasmo-0.5.5.tar.gz -o pasmo.tar.gz
+          tar xf pasmo.tar.gz
+          cd pasmo-0.5.5
+          ./configure
+          make
+          mkdir -p "$GITHUB_WORKSPACE/pasmo-bin"
+          cp pasmo "$GITHUB_WORKSPACE/pasmo-bin/pasmo"
+
+      - name: Install pasmo on PATH
+        run: echo "$GITHUB_WORKSPACE/pasmo-bin" >> "$GITHUB_PATH"
+
+      - name: Show toolchain
+        run: |
+          pasmo 2>&1 | head -1 || true
+          python3 --version
+          make --version | head -1
+
+      - name: Build the ROMs with a bare `make`, as QUICKSTART says
+        run: |
+          make
+          ls -l build/basic-reloc.rom build/disk.rom build/sub.rom build/sub2.rom
+
+      - name: Clean-room mechanical floor
+        run: make audit-citations
+
+      - name: Run the emulator-free unit tests
+        run: make unit-test
+
+      - name: The openMSX package, end to end
+        run: |
+          python3 tools/make_dist.py --selftest
+          git clone -q https://github.com/cbios/cbios.git ../cbios
+          rev=$(python3 -c "import sys; sys.path.insert(0, 'tools'); import build_repacked_cbios as b; print(b.PINNED_TAG)")
+          git -C ../cbios checkout -q "$rev"
+          make -C ../cbios derived/bin/cbios_logo_msx1.rom
+          make build/zerobas-main-eu.rom CBIOS=../cbios
+          make dist LOGO=../cbios/derived/bin/cbios_logo_msx1.rom
+          unzip -l build/zerobas-openmsx.zip
+          git diff --exit-code -- zerobas-main-eu.ips zerobas-main-eu.bps
 
   # 📦 THE openMSX DOWNLOAD (Joost, 2026-10-13: "the primary use is with openMSX",
   # shipping "the ready made Rom"). Every push to main that passes the Linux job

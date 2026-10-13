@@ -2535,6 +2535,27 @@ item — do **one item per session** to keep context lean.
       interrupt trampoline; our sub ROMs carry "ZB" / "Z2", never "AB", so
       no BIOS scan runs them and a RAM search simply fails its test on them.
 
+- [ ] 🧪 **D-VG8020-20 — ALSO RUN THE DIFFERENTIALS AGAINST THE VG 8020/20 (filed
+      2026-10-13, Joost: *"add testing against the /20 as something to be done at
+      some point in the future"*)**
+      🎚️ OTHER — reference coverage, for the future; not before the tiers' own work.
+      🙋 **NEEDS-JOOST** — it starts when a VG 8020/20 BIOS ROM
+      (`vg8020-20_basic-bios1.rom`) is in openMSX's `systemroms`; that ROM is his
+      to provide. Until then nothing here is actionable.
+      📏 FACTS (openMSX's machine configs, read 2026-10-13 -- no ROM byte read):
+      openMSX knows three VG-8020s, each with its OWN BIOS+BASIC ROM (different
+      sha1s): **/00** `Philips_VG_8020` (1985, international keyboard) -- the
+      ONLY one on this Mac, and the reference every "as on the VG-8020" in this
+      tree means; **/20** `Philips_VG_8020-20` (a second version, different memory
+      layout via the S3527 chip, international keyboard); **/19**
+      `Philips_VG_8020F` (French, the /20's French version).
+      ➡️ **WHEN IT STARTS:** point the differential probes' reference side at
+      `Philips_VG_8020-20` as well (they take the machine by name) and diff /00
+      against /20 FIRST -- every row where the two references disagree is a
+      reference split, to be ruled by the 09-04 rule (presentational -> the /00's
+      value) or by Joost, before any zerobas row is judged against it. Then
+      decide whether the docs' "the VG-8020" should read "the VG 8020/00".
+
 - [ ] 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
       NUMBER (filed 2026-10-12, from D-BASICROM)**
       🎚️ TIER 3 — breaking a cartridge program and LISTing it is ordinary; the
@@ -8059,7 +8080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33576 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33597 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8225,7 +8246,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13087 (T-6FE392)8 (T-529ABE)` from `TODO.md:25881 (T-529ABE)`: a
+      `TODO.md:13108 (T-6FE392)8 (T-529ABE)` from `TODO.md:25902 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13934,7 +13955,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25881 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25902 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
