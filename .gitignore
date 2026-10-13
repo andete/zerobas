@@ -36,6 +36,8 @@ scratchpad/*.log
 # `docs/spec-probe-machxml.md` cite a path nobody else could ever open
 # (tools/check_citation_paths.py, 2026-08-26).
 scratchpad/gate_logs/
+# ⏱ the daily sweeps' last pins (kwtime / kwram), kept outside build/ by tools/run_gates.py
+scratchpad/gate_pins/
 # Same rule, same reason, for the other ephemeral classes. The tracked scratchpad
 # is .py / .json / .md / .out / .asm -- knives, characterisations, run summaries
 # that docs cite by name. Ad-hoc gate drivers and commit-message scaffolding are

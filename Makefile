@@ -4180,6 +4180,9 @@ gates-full:
 # changed handler's keyword reaches, + a canary set) for a probe/tool or a
 # handler-local ROM change; FULL for shared code, an unknown blast radius, every
 # 5th commit since the last full green, and every hand-off (`HANDOFF=1`).
+# ⏱ RE-RULED 2026-10-13 (Joost: "a tradeoff allowing to move faster"): FULL once
+# a day, at every hand-off, on a RAM-address move and on a gate-harness change;
+# every other ROM change is SCOPED; kwtime / kwram run only in FULL.
 # Every commit message states the tier that ran (`GATE TIER RAN:` line).
 gates-plan:
 	python3 tools/pick_gates.py $(if $(HANDOFF),--handoff,)

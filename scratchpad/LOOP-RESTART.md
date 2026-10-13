@@ -1101,6 +1101,7 @@ morning hand-off `98513bcc`: `79167b21` D-KWTIME · `b21a86aa` D-KWT5ALONE ·
 |---|---|
 | **T2 vs T5 measurement** | option (c): **whole program for T2, keyword ALONE for T5** (a twin without the keyword's statement) |
 | **per-form timing** | *"a classic case of two very different effects of one keyword WIDTH … both need a time measurement"* → T5 is PER FORM; a row that sets up with its own keyword declares the timed one (`TIMED:<n>`) |
+| **batteries (2026-10-13, supersedes the line below)** | *"yes, do 1 and 2, it is a tradeoff allowing to move faster"*: **FULL once a day** (24 h since the last full green), **at every hand-off, on a RAM-address move** (`layout_moves`) and on a gate-harness change; every other ROM change is SCOPED (canary incl. `kwsweep`); **`kwtime` / `kwram` run only in FULL** — the tier sheet says when its speed/RAM columns describe an earlier build. A breakage may sit on public `main` until the daily FULL: accepted. |
 | **batteries** | **scoped, FULL on risk, and at least every 5th commit** — `make gates-plan` / `make gates-scoped`, `HANDOFF=1` at a session end |
 | **the `ZB` prompt** | text stays `ZB`, but it **ends its row with CR/LF like `Ok`** (D-ZBCRLF, shipped) |
 | **CURLIN** | *"Yes, maintain CURLIN"* — shipped (D-CURLIN) |

@@ -3,23 +3,33 @@ r"""pick_gates — which battery does THIS change need? (D-GATESCOPE)
 
 🏗️ RULED BY JOOST, 2026-09-24: *"running the full battery takes a really long
 time ... only running the full after genuinely large or risky fixes"* -> scoped
-batteries, the full one on risk, **and at least every 5th commit**:
+batteries, the full one on risk, and at least every 5th commit.
+⏱ RE-RULED BY JOOST, 2026-10-13 (*"yes, do 1 and 2, it is a tradeoff allowing to
+move faster"*): the FULL battery runs **once a day** and at every hand-off, and
+per commit only when RAM ADDRESSES MOVE; kwtime / kwram left the per-ROM canary
+(they run in FULL). A day can now carry a commit that only FULL would catch.
 
   change                              runs
   docs / TODO / scratchpad only       STATIC  -- the static tier
   probe or tool, no ROM change        SCOPED  -- static + the emulator suites whose
                                                  scripts IMPORT a changed file
-  ROM change inside one handler       SCOPED  -- static + suites that mention that
-                                                 keyword + a fixed CANARY set
-  shared code / unknown blast radius  FULL    -- (+ the five excluded suites)
-  --handoff, or the 5th commit since the last full green   FULL
+  ROM change (any handler, shared     SCOPED  -- static + suites that mention the
+    code, unknown blast radius)                  keyword + a fixed CANARY (kwsweep)
+  a RAM address added or moved        FULL    -- (+ the five excluded suites)
+  the gate harness itself             FULL    -- an instrument change cannot be
+                                                 vouched for by a scoped run of it
+  --handoff, or 24 h since the last full green   FULL
 
 🔴 WHY A BACKSTOP AT ALL: on 2026-08-26 a fix that was right by its own gate broke
 a DIFFERENT suite three times, and a later one turned 32 other suites red. Each
 was caught by a gate the change did not obviously touch. Scoping trades that
 coverage for time; the every-5th rule and the shared-code list bound the trade.
-⚠️ WHEN IN DOUBT, FULL: an asm change whose enclosing handler cannot be named is
-an unknown blast radius, and is treated as shared.
+⏱ Since 2026-10-13 the bound is a DAY, not five commits, and an unknown blast
+radius runs the canary (kwsweep included) instead of everything -- Joost chose
+the speed knowing a breakage can sit on public main until the daily FULL. What
+still runs FULL at once is the class that breaks ANYTHING ANYWHERE: a RAM
+address added or moved (layout_moves) -- D-ARYCUR's hang was one cell landing
+on another.
 
     python3 tools/pick_gates.py              # print the plan
     python3 tools/pick_gates.py --run        # run it (`make gates-scoped`)
@@ -38,12 +48,13 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import run_gates  # noqa: E402  -- EMULATOR, SCRIPT_REF, _make_n, LAST_GREEN
 import probe_tmp  # noqa: E402  -- the temp root run_gates keeps flake logs under
 
-EVERY_NTH = 5                  # Joost: "5 commits"
-# Shared code: a change here can move any suite. Prefix entries end in "/".
-SHARED = ("basic/interp.asm", "basic/expr.asm", "basic/sysvars.inc",
-          "basic/main.asm", "basic/str-engine.asm", "sub/sub.asm",
-          "disk/kernel.asm", "Makefile", "tools/run_gates.py",
-          "probes/lib/")
+DAILY_HOURS = 24               # Joost 2026-10-13: the full battery once a day
+# The gate HARNESS: a change here changes the instrument, so it runs FULL.
+# Prefix entries end in "/". (Until 2026-10-13 this list also held the
+# interpreter's shared files -- interp/expr/str-engine/main/sub/kernel and
+# sysvars.inc; those are planned like any ROM file now, and a RAM-address move
+# in sysvars.inc is caught by layout_moves() instead.)
+SHARED = ("Makefile", "tools/run_gates.py", "tools/pick_gates.py", "probes/lib/")
 ROM_TREES = ("basic/", "sub/", "disk/")
 # Broad, FAST suites that exercise the interpreter core -- the canary for a
 # handler-local ROM change (each measured well under a minute in the battery).
@@ -51,7 +62,8 @@ CANARY = ("error-acceptance", "string-acceptance", "runline-acceptance",
           "keystr-acceptance", "cursor-acceptance",
           # D-STATICEMU (2026-10-08): the keyword sweeps left the STATIC tier, so
           # a ROM change gets them HERE -- they are the keyword-level net.
-          "kwsweep", "kwtime", "kwram")
+          # ⏱ kwtime / kwram left 2026-10-13 (daily, in FULL): only kwsweep stays.
+          "kwsweep")
 EXCLUDED5 = ("input-devices-acceptance", "lnblank-say-acceptance",
              "diskbasic-acceptance", "bdos-acceptance", "fat-error-acceptance")
 # 🔴 GENERATED FILES ARE NOT INPUTS. `disk/basic-resident-abi.inc` is regenerated
@@ -182,25 +194,54 @@ def mentions(files, word, read=None):
     return any(pat.search(read(f)) for f in files)
 
 
-def commits_since_full():
+def hours_since_full():
+    """Hours since the last FULL, fully green battery (run_gates.LAST_GREEN's
+    `when`, local time), or None when there is no record."""
     try:
         import json
+        import time
         with open(run_gates.LAST_GREEN) as fh:
-            sha = json.load(fh).get("sha")
-    except (OSError, ValueError):
+            when = json.load(fh).get("when")
+        return (time.time() - time.mktime(time.strptime(when, "%Y-%m-%d %H:%M:%S"))) / 3600
+    except (OSError, ValueError, TypeError):
         return None
-    if not sha:
-        return None
-    n = git("rev-list", "--count", f"{sha}..HEAD").strip()
-    return int(n) if n.isdigit() else None
 
 
-def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None):
+EQU = re.compile(r"^\s*([A-Za-z_]\w*)\s*:?\s+equ\s+([^;]*)", re.I)
+
+
+def layout_moves(diff=None, value_of=None):
+    """Names whose `equ` line was ADDED or CHANGED in this diff and whose value is
+    a RAM address ($8000+) -- a RAM layout move, which runs FULL (Joost
+    2026-10-13). A comment-only edit, a constant (`GFX_DFCAP equ 8`) and a removed
+    cell are not moves. `diff` / `value_of` are injectable for the selftest."""
+    if diff is None:
+        diff = git("diff", "-U0", "HEAD", "--", *ROM_TREES)
+    old, new = {}, {}
+    for ln in diff.splitlines():
+        if ln.startswith(("---", "+++")) or not ln[:1] in "+-":
+            continue
+        m = EQU.match(ln[1:])
+        if m:
+            (old if ln[0] == "-" else new)[m.group(1)] = m.group(2).strip()
+    cand = sorted(n for n, e in new.items() if old.get(n) != e)
+    if not cand:
+        return []
+    if value_of is None:
+        import ram_map
+        maps = [ram_map.Map(c, 0, 0x10000, use_sym=False) for c in ("basic", "disk")]
+        value_of = lambda n: next((m.vals[n] for m in maps if n in m.vals), None)
+    return [n for n in cand if (value_of(n) or 0) >= 0x8000]
+
+
+def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None,
+         layout=()):
     """-> (mode, reasons, emulator suites, excluded-five suites).
 
     Pure: `suites` is target->files, `handlers_of(path)` the keyword set or None,
-    `since` the commits since the last full green (None = unknown), `own` the
-    suites' own scripts for the keyword match (default: `suites`)."""
+    `since` the HOURS since the last full green (None = unknown), `own` the
+    suites' own scripts for the keyword match (default: `suites`), `layout` the
+    RAM-address moves (layout_moves())."""
     own = suites if own is None else own
     reasons, pick = [], set()
     disk_moved = any(f.startswith("disk/") for f in changed if f in GENERATED)
@@ -212,24 +253,24 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
     if handoff:
         reasons.append("--handoff: every hand-off runs the full battery")
     if shared:
-        reasons.append("shared code changed: " + " ".join(shared))
-    kws = set()
+        reasons.append("the gate harness changed: " + " ".join(shared))
+    if layout:
+        reasons.append("RAM addresses added or moved: " + " ".join(layout[:8])
+                       + (f" (+{len(layout) - 8})" if len(layout) > 8 else ""))
+    kws, unknown = set(), []
     for f in rom:
-        if f in shared:
-            continue
         if f.endswith(".asm"):
             h = handlers_of(f)
             if h is None:
-                reasons.append(f"{f}: a changed line has no enclosing ex_ handler "
-                               "-- unknown blast radius, treated as shared")
+                unknown.append(f)        # ⏱ SCOPED with the canary since 2026-10-13
             else:
                 kws |= h
         else:
-            reasons.append(f"{f}: a non-asm ROM input -- treated as shared")
-    if not reasons and (rom or code) and (since is None or since >= EVERY_NTH - 1):
-        reasons.append("the every-5th rule: "
-                       + ("no full green on record with a sha" if since is None
-                          else f"{since} commit(s) since the last full green"))
+            unknown.append(f)
+    if not reasons and (rom or code) and (since is None or since >= DAILY_HOURS):
+        reasons.append("the once-a-day rule: "
+                       + ("no full green on record" if since is None
+                          else f"{since:.0f} h since the last full green"))
     if reasons:
         return "FULL", reasons, sorted(suites), sorted(
             EXCLUDED5 if (rom or shared) else ())
@@ -246,7 +287,11 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
             pick.add(t)
     if rom:
         pick |= set(c for c in CANARY if c in suites)
-        reasons.append("handler-local ROM change: " + " ".join(sorted(kws)))
+        if kws:
+            reasons.append("ROM change in handler(s): " + " ".join(sorted(kws)))
+        if unknown:
+            reasons.append("ROM change with no enclosing ex_ handler (canary only, "
+                           "the daily FULL backs it): " + " ".join(unknown))
     if code:
         reasons.append("probe/tool change: " + " ".join(code))
     emu = sorted(t for t in pick if t not in EXCLUDED5)
@@ -280,24 +325,47 @@ def selftest():
         "not math", m == "SCOPED" and "width-acceptance" in e
         and "error-acceptance" in e and "math-acceptance" not in e)
     m, r, e, x = plan(["basic/screen.asm"], files, lambda f: None, 0, read=rd)
-    arm("P4 NEGATIVE: an asm change outside any ex_ handler -> FULL (unknown radius)",
+    arm("P4 an asm change outside any ex_ handler -> SCOPED with the canary "
+        "(⏱ 2026-10-13: was FULL; the daily FULL backs it)",
+        m == "SCOPED" and "error-acceptance" in e and "math-acceptance" not in e)
+    m, r, e, x = plan(["basic/interp.asm"], files, lambda f: None, 0, read=rd)
+    arm("P4b interpreter shared code with no RAM move -> SCOPED (⏱ was FULL)",
+        m == "SCOPED")
+    m, r, e, x = plan(["basic/sysvars.inc"], files, lambda f: None, 0, read=rd,
+                      layout=["FSECTOR_BUF"])
+    arm("P4c NEGATIVE: a RAM-address move -> FULL with the five excluded suites",
         m == "FULL" and x == sorted(EXCLUDED5))
+    _diff = ("--- a/basic/sysvars.inc\n+++ b/basic/sysvars.inc\n"
+             "-FSECTOR_BUF     equ     $E5C0   ; buf\n+FSECTOR_BUF     equ     $E36A   ; buf\n"
+             "-GFX_DFCAP       equ     8\n+GFX_DFCAP       equ     9\n"
+             "-ISRCH_B         equ     ISRCH_A + 2 ; $E3E3\n+ISRCH_B         equ     ISRCH_A + 2 ; $E7E3\n"
+             "+NEW_CELL        equ     $EB46   ; new (2)\n-OLD_CELL        equ     $EB2F   ; gone\n")
+    _vals = {"FSECTOR_BUF": 0xE36A, "GFX_DFCAP": 9, "NEW_CELL": 0xEB46}.get
+    arm("P15 layout_moves: a changed RAM literal and an ADDED cell are moves; a "
+        "constant, a comment-only edit and a REMOVED cell are not",
+        layout_moves(_diff, _vals) == ["FSECTOR_BUF", "NEW_CELL"])
     m, r, e, x = plan(["probes/lib/helper.py"], files, h_width, 0, read=rd)
     arm("P5 a probes/lib file is shared even when only one suite imports it",
         m == "FULL")
     m, r, e, x = plan(["probes/basic/basic_probe_math.py"], files, h_width, 0, read=rd)
     arm("P6 a probe change selects ITS suite and not an unrelated one",
         m == "SCOPED" and e == ["math-acceptance"])
-    m, r, e, x = plan(["basic/screen.asm"], files, h_width, EVERY_NTH - 1, read=rd)
-    arm("P7 NEGATIVE: the 5th commit since the last full green -> FULL", m == "FULL")
+    m, r, e, x = plan(["basic/screen.asm"], files, h_width, float(DAILY_HOURS), read=rd)
+    arm("P7 NEGATIVE: 24 h since the last full green -> FULL", m == "FULL")
+    m, r, e, x = plan(["basic/screen.asm"], files, h_width, DAILY_HOURS - 0.5, read=rd)
+    arm("P7b 23.5 h since the last full green -> still SCOPED", m == "SCOPED")
+    m, r, e, x = plan(["TODO.md"], files, h_width, 99.0, read=rd)
+    arm("P7c a docs-only change never triggers the daily FULL by itself", m == "STATIC")
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, None, read=rd)
-    arm("P8 NEGATIVE: no sha on record -> FULL, never 'assume recent'", m == "FULL")
+    arm("P8 NEGATIVE: no full green on record -> FULL, never 'assume recent'",
+        m == "FULL")
     sw = dict(files, kwsweep={"probes/basic/basic_probe_kwsweep.py"},
               kwtime={"probes/basic/basic_probe_kwtime.py"},
               kwram={"probes/basic/basic_probe_kwram.py"})
     m, r, e, x = plan(["basic/screen.asm"], sw, h_width, 0, read=rd)
-    arm("P-STATICEMU a handler-local ROM change schedules the three sweeps",
-        m == "SCOPED" and {"kwsweep", "kwtime", "kwram"} <= set(e))
+    arm("P-STATICEMU a handler-local ROM change schedules kwsweep -- and NOT "
+        "kwtime / kwram (⏱ daily since 2026-10-13)",
+        m == "SCOPED" and "kwsweep" in e and not {"kwtime", "kwram"} & set(e))
     m, r, e, x = plan(["TODO.md", "docs/a.md"], sw, h_width, 0, read=rd)
     arm("P-STATICEMU NEGATIVE: a docs-only plan schedules NO emulator unit, sweeps "
         "included", m == "STATIC" and e == [])
@@ -347,14 +415,16 @@ def main(argv):
     changed = changed_files()
     targets = list(run_gates.EMULATOR) + list(EXCLUDED5)
     suites, own = suite_files(targets)
-    since = commits_since_full()
+    since = hours_since_full()
+    layout = layout_moves()
     mode, reasons, emu, x5 = plan(changed, suites, changed_handlers, since, handoff,
-                                  own=own)
+                                  own=own, layout=layout)
     print(f"GATE TIER: {mode}")
     for r in reasons:
         print(f"  why: {r}")
-    print(f"  commits since the last full green: "
-          f"{'unknown' if since is None else since} (full every {EVERY_NTH})")
+    print(f"  hours since the last full green: "
+          f"{'unknown' if since is None else f'{since:.1f}'} (full once a day, "
+          f"at every hand-off, and on a RAM-address move)")
     if mode == "SCOPED":
         print(f"  emulator suites ({len(emu)}): {' '.join(emu) or '-'}")
     if x5:

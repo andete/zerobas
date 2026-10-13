@@ -93,6 +93,15 @@ SWEEP_PINS = ("build/kwsweep-verdicts.json", "build/kwtime.json", "build/kwram.j
 # that one -- D-STATICEMU's first ROM commit rendered the tier sheet from the
 # old ROM's pins and FULL's post-check went red (D-PUTDIR, 169/170).
 SWEEP_STAMP = "build/sweeps-rom.txt"
+# ⏱ DAILY SWEEPS (Joost, 2026-10-13: "it is a tradeoff allowing to move faster").
+# kwtime and kwram were ~34 and ~32 of a FULL battery's ~35 minutes and ran on
+# EVERY ROM change (gates-fast, then FULL again). Only kwsweep -- the keyword
+# net -- is per ROM now; kwtime / kwram run in FULL (daily, and every hand-off,
+# tools/pick_gates.py) and their pins are carried between runs, kept in
+# SLOW_PIN_KEEP as well so a knife's `rm -rf build` cannot take them.
+PER_ROM_SWEEPS = ("kwsweep",)
+SLOW_SWEEPS = ("kwtime", "kwram")
+SLOW_PIN_KEEP = "scratchpad/gate_pins"
 
 
 def sweeps_needed(sweeps_excluded, stamp, current):
@@ -704,6 +713,13 @@ def main():
             kept_pins[_p] = open(_p, "rb").read()
         except OSError:
             pass
+    for _g, _p in zip(SWEEPS, SWEEP_PINS):          # ⏱ the slow pins' kept copy
+        if _g in SLOW_SWEEPS and _p not in kept_pins:
+            try:
+                kept_pins[_p] = open(os.path.join(SLOW_PIN_KEEP, os.path.basename(_p)),
+                                     "rb").read()
+            except OSError:
+                pass
     os.system(f"rm -rf {OUT} build")
     os.makedirs(OUT, exist_ok=True)
     print(f"=== warm-up (serial build of shared artifacts) ===", flush=True)
@@ -763,14 +779,24 @@ def main():
     rom_now = " ".join(hashes())
     _stamp = kept_pins.get(SWEEP_STAMP, b"").decode().strip() or None
     if sweeps_needed("kwsweep" in excl, _stamp, rom_now):
-        excl -= set(SWEEPS)
-        print("=== D-PINSTALE: the keyword pins were measured on "
+        excl -= set(PER_ROM_SWEEPS)
+        print("=== D-PINSTALE: the kwsweep pin was measured on "
               + (f"ROM {_stamp}" if _stamp else "no recorded ROM")
-              + f", this build is {rom_now}: the three sweeps RUN ===", flush=True)
-    if "kwsweep" in excl:
-        for _p, _b in kept_pins.items():
+              + f", this build is {rom_now}: kwsweep RUNS (kwtime / kwram are "
+              "daily: their last pins are kept) ===", flush=True)
+    for _g, _p in zip(SWEEPS, SWEEP_PINS):          # restore what this run skips
+        if _g in excl and _p in kept_pins:
             os.makedirs(os.path.dirname(_p), exist_ok=True)
-            open(_p, "wb").write(_b)
+            open(_p, "wb").write(kept_pins[_p])
+    _slow_kept = [g for g in SLOW_SWEEPS if g in excl]
+    if _slow_kept:
+        print(f"=== ⏱ {' / '.join(_slow_kept)} not in this run (daily, Joost "
+              "2026-10-13): the tier sheet reads their last pins and says which "
+              "build they describe ===", flush=True)
+    if "kwsweep" in excl:
+        if SWEEP_STAMP in kept_pins:
+            os.makedirs(os.path.dirname(SWEEP_STAMP), exist_ok=True)
+            open(SWEEP_STAMP, "wb").write(kept_pins[SWEEP_STAMP])
         if SWEEP_PINS[0] in kept_pins:
             print("=== the keyword sweeps are NOT in this run: tiers-md-check reads "
                   "the PREVIOUS run's pins, kept across the build wipe ===", flush=True)
@@ -883,9 +909,14 @@ def main():
 
     # D-PINSTALE: the pins this pool just wrote belong to THIS ROM -- record it,
     # but only when all three sweeps ran and passed (a red one's pin is suspect).
-    if all(results.get(g, (1,))[0] == 0 for g in SWEEPS):
+    # ⏱ the stamp is kwsweep's alone now (kwtime / kwram are daily).
+    if all(results.get(g, (1,))[0] == 0 for g in PER_ROM_SWEEPS):
         with open(SWEEP_STAMP, "w") as fh:
             fh.write(rom_now + "\n")
+    for _g, _p in zip(SWEEPS, SWEEP_PINS):          # ⏱ keep a measured slow pin
+        if _g in SLOW_SWEEPS and results.get(_g, (1,))[0] == 0 and os.path.exists(_p):
+            os.makedirs(SLOW_PIN_KEEP, exist_ok=True)
+            shutil.copyfile(_p, os.path.join(SLOW_PIN_KEEP, os.path.basename(_p)))
 
     # --- the post-pool serial phase (POSTCHECKS) ----------------------------
     post_results = []
@@ -1051,8 +1082,9 @@ def main():
     if ok and not skip_emu and not skips and not excl:
         try:
             with open(LAST_GREEN, "w") as fh:
-                # `sha`: tools/pick_gates.py counts commits since this run to
-                # force a full battery every 5th commit (Joost, 2026-09-24).
+                # `when`: tools/pick_gates.py forces a full battery once this is
+                # 24 h old (Joost, 2026-10-13; it counted commits from `sha`
+                # for the every-5th rule of 2026-09-24).
                 json.dump({"images": hashes(), "sources": source_fingerprint(),
                            "when": time.strftime("%Y-%m-%d %H:%M:%S"),
                            "sha": subprocess.run(["git", "rev-parse", "HEAD"],
