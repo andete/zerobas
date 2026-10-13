@@ -2418,6 +2418,30 @@ item — do **one item per session** to keep context lean.
       RAM is free; re-test then.
       ➡️ Filed: D-LISTLPTR (LIST prints a `$0D` pointer as the ADDRESS).
 
+- [ ] 🧩 **D-SLOTMAP — zerobas's RAM SITS IN SLOT 3-0; THE VG-8020's IN 3-2 (filed
+      2026-10-13, Joost asked whether the sub ROMs belong in slot 0)**
+      🎚️ TIER 3 — a program that looks at where RAM is sees a different slot ID
+      ($8C here, $8E on the reference); no failure measured yet.
+      📏 Read from the machine configs (not ROM): the VG-8020 has slot 0 NOT
+      expanded (BIOS + BASIC) and slot 3 expanded with RAM in 3-2, 3-0 / 3-1 /
+      3-3 empty. zerobas's repack machines: slot 0 not expanded (main ROM + the
+      C-BIOS logo ROM at $8000), slot 3: RAM 3-0, disk 3-1, sub 3-2, sub2 3-3.
+      🏗️ Joost, 2026-10-13: the disk ROM STAYS in 3-1 ("it has a well known
+      expected location"); the sub ROMs are our own invention and "should
+      probably sit somewhere more atypical". Slot 0 expansions were considered
+      and NOT recommended: slot 0 is the one slot matching the reference today,
+      and expanding it changes EXPTBL's slot-0 bit ($FCC1 reads $80 not $00)
+      for every program, and complicates the interrupt trampoline (a slot-0
+      subslot switch maps slot 0 into page 3, taking the stack away).
+      🤖 **AUTONOMOUS** — measure first: on both machines, what a program sees
+      (EXPTBL / SLTTBL, where a RAM search lands, the slot the BIOS reports).
+      Then RAM -> 3-2 (a machine-config change: zerobas finds its sub ROMs by
+      their "ZB" / "Z2" markers and records the slot, and C-BIOS searches for
+      RAM). The sub ROMs then take the empty subslots: (a) 3-0 and 3-3 as
+      today's two ROMs, or (b) both in 3-3 as one bank-switched 64 KB ROM, so
+      3-0 stays empty as on the VG-8020 -- price (b)'s per-call bank switch
+      before choosing; Joost leans to the more atypical placement.
+
 - [ ] 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
       NUMBER (filed 2026-10-12, from D-BASICROM)**
       🎚️ TIER 3 — breaking a cartridge program and LISTing it is ordinary; the
@@ -3583,7 +3607,9 @@ item — do **one item per session** to keep context lean.
       `NOT-A-CELL` marker on the equ's own line (selftest arms A-NAC, one
       negative), rather than growing the allow-list. The MSX-DOS cells in the
       old range (`$DD0E`, `$DDAE`, `$DF93`) are live only on the DOS-boot path
-      (`lay_page0_env`), which BASIC never shares.
+      (`lay_page0_env`). BASIC and MSX-DOS never RUN together (Joost,
+      2026-09-01, D-RECLAIM: *"BASIC and DOS never co-exist"*), so BASIC REUSES
+      those same bytes as ordinary program RAM -- by design, not by accident.
       The table below is kept as the priced record:
       | lever | gain | both builds? | what it takes |
       |---|---|---|---|
@@ -7684,7 +7710,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33201 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33227 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7850,7 +7876,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12712 (T-6FE392)8 (T-529ABE)` from `TODO.md:25506 (T-529ABE)`: a
+      `TODO.md:12738 (T-6FE392)8 (T-529ABE)` from `TODO.md:25532 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13559,7 +13585,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25532 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
