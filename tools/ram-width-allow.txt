@@ -22,7 +22,6 @@
 #
 # format: <component> <name>[/<alias>...] <why>
 basic ARY_ADDR overruns
-basic ARY_CUR/RUNFLAG overruns
 basic ARY_KEY/TKRADIX overruns
 basic ARY_TYPE/CLPTR disputed
 basic BN_PTR/DISKOP_HL disputed

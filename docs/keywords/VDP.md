@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `VDP` — read or write a video chip register
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -88,6 +88,11 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **An array element in `VDP(...)=` ran a different graphics operation**
+  (fixed 2026-10-13, D-ARYCUR). `VDP(B(1))=5` left register 7 unchanged:
+  the array lookup's 2-byte pointer overlapped the cell naming the operation,
+  which `VDP(n)=` sets before it reads `n`. The `DRAW` hang was the same
+  overlap ([DRAW](DRAW.md)).
 - **`VDP` arrived on 2026-07-22** (graphics slice G8). Before that it was not
   a keyword at all. The reference was measured first: which registers, what
   a read returns, that `LET VDP(0)=2` is refused, and that the index is

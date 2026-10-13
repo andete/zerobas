@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 432 declared addresses in this project's own workspace `$E000..$F37F` (404 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
+* **basic** — 433 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
 * **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -273,7 +273,7 @@ second one is the question a per-component map cannot answer.
 | `$EB2C` | 1 B | `basic` | `ARY_NIDX` | parsed subscript/bound count for the CURRENT | `disk` CLPTR |
 | `$EB2D` | 2 B | `basic` | `ARY_IDXP/CLINK` | CLOAD/LOAD: saved link word of the current line |  |
 | `$EB2D` | 2 B | `disk` | `CLINK` | CLOAD/LOAD: saved link word of the current line |  |
-| `$EB2F` |  | `basic` | `ARY_CUR/RUNFLAG` | [D-ARR-C] the text cursor, parked across the |  |
+| `$EB2F` | 1 B | `basic` | `RUNFLAG` | 1 = ,R handoff requested (set while parsing) (1) |  |
 | `$EB30` |  | `basic` | `GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM` | main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1) |  |
 | `$EB31` | 1 B | `basic` | `GFX_C` | main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1) |  |
 | `$EB32` |  | `basic` | `GFX_RES/SL_SLOT` | tenant->main: POINT result colour 0..15 (1) |  |
@@ -291,6 +291,7 @@ second one is the question a per-component map cannot answer.
 | `$EB41` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
 | `$EB43` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
 | `$EB45` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B) |  |
+| `$EB46` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
 | `$EB50` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
 | `$EB52` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
 | `$EB54` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |

@@ -1,0 +1,7 @@
+case   sub        machine                        marks (emulated s)
+var    R=A;       Philips_VG_8020                DRAW took 0.010
+var    R=A;       C-BIOS_MSX1_EU_REPACK_NODISK   DRAW took 0.015
+arr    R=B(1);    Philips_VG_8020                DRAW took 0.010
+arr    R=B(1);    C-BIOS_MSX1_EU_REPACK_NODISK   201 at 25.695, 202 NEVER (120 s)
+xarr   XC$(1);    Philips_VG_8020                DRAW took 0.010
+xarr   XC$(1);    C-BIOS_MSX1_EU_REPACK_NODISK   201 at 25.695, 202 NEVER (120 s)

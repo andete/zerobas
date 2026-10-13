@@ -302,6 +302,59 @@ item — do **one item per session** to keep context lean.
       [`bldi_knives.out`](scratchpad/bldi_knives.out): K-BL1 (that `ei`) → bsave
       bload, with the four earlier knives re-run.
 
+- [x] ✅ **FIXED 2026-10-13 (D-ARYCUR)** — 🎨 **`DRAW"R=B(1);"` AND
+      `DRAW"XC$(1);"` NEVER RETURNED, AND `VDP(B(1))=5` RAN THE WRONG OPERATION:
+      AN ARRAY ELEMENT'S PARKED CURSOR OVERLAPPED `GFX_OP`.**
+      🎚️ TIER 1 — happy path: a valid program locks the machine.
+      🔬 **FOUND** while measuring RAM order step (2): `drawsub_probe.py` read
+      NO READING on zerobas for every array-shaped substitution;
+      [`drawarr_mark.py`](scratchpad/drawarr_mark.py) ->
+      [`drawarr_mark.out`](scratchpad/drawarr_mark.out) timed it between
+      program-written marks: the VG-8020 takes 0.010 s, zerobas wrote mark 201
+      and never 202 in 120 s (a timing artefact was ruled out -- D-PAINTHANG's
+      lesson). Ten PC samples on OUR ROM all sat in `graphics_selftest`'s VRAM
+      loops: GFX_OP was not 6 when the co-routine re-entered.
+      🎯 **CAUSE:** `ARY_CUR` (2 B, $EB2F) parks the text cursor across the array
+      engine call, and its HIGH byte was `GFX_OP` ($EB30). DRAW sets GFX_OP once
+      and re-enters the tenant after every `=...;` / `X...;`; `VDP(n)=` / `BASE(n)=`
+      park the op there before parsing n and v. An array element in either wrote
+      the cursor's high byte into the op. The width was declared mid-comment, so
+      `tools/ram_map.py` never saw it and the allowlist pinned the cell as an
+      unexplained `overruns`. In place since D-ARR-C (then $E02F/$E030).
+      ✅ **FIX: `ARY_CUR` -> $EB46**, the FREE-RAM span FOR_CUR left (machine-
+      checked by ramfree-acceptance; the claim shrinks to $EB48..$EB50), width at
+      the end of its line; the pin is gone and RUNFLAG declares its own (1).
+      0 ROM bytes. [`drawarr_mark_after.out`](scratchpad/drawarr_mark_after.out):
+      0.017 s; [`drawsub_probe_after.out`](scratchpad/drawsub_probe_after.out):
+      every former NO READING reads (`XLEFT$(A$,2);` = ERR 13 as on the VG-8020).
+      🔮 Both HIT. Rows `draw_arr_sub`, `draw_xarr_sub`, `vdp_arr_idx` in
+      graphics-acceptance phase B (the VDP row's first cut read a bare `V` on
+      BOTH machines -- the echoed `VDP(B(1))` -- and is CLS'd now). Knife K-AC1
+      ([`arycur_knife.out`](scratchpad/arycur_knife.out)): ARY_CUR back at $EB2F
+      -> exactly those three rows FAIL, the other five PASS; restored 8/8. HIT.
+
+- [ ] 🎨 **D-DRAWSUBVAR — AFTER `=` AND `X`, `DRAW` EVALUATES AN EXPRESSION; THE
+      VG-8020 READS A VARIABLE REFERENCE.**
+      🎚️ TIER 6 — `DRAW` with an expression after `=` or `X`
+      (every error: valid programs draw the same; the forms that differ are
+      malformed, or rely on a name that reads as an array).
+      🤖 **AUTONOMOUS** — a measured divergence with the reference's rule in hand.
+      📏 [`drawsub_probe.py`](scratchpad/drawsub_probe.py) ->
+      [`drawsub_probe_after.out`](scratchpad/drawsub_probe_after.out): the
+      VG-8020 accepts a variable and an array element (`=A;` `=B(1);` `XA$;`
+      `XC$(1);`) and raises ERR 5 for `=(A);`, `=5;` and `X"R2";`; zerobas
+      accepts all three. `=ABS(A);` reads, by the variable rule, as the array
+      element `AB(A)` there (INFERRED: R0 for a fresh array -- pixels unread) and
+      is the function here (R5); both print `[OK]`. `XLEFT$(A$,2);` is ERR 13 on
+      both (there, by the same rule, presumably the array `LE$(A$,2)`).
+      ⚠️ **UNMEASURED:** what the reference does with the rest of `=A+1;` /
+      `XA$+D$;` -- both `[OK]` there; read the pixels before choosing a rule.
+      🔗 **IT IS ALSO THE RAM LEVER.** With a variable reference only, nothing
+      allocates during a DRAW (a lookup moves no string), so the string can be
+      read IN PLACE, as the reference does -- the reason GFX_DBUF copies it
+      (temps reused across the co-routine's round trips) goes away with it. See
+      RAM order step (2).
+
 - [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
       WRONG SHAPE.**
@@ -4165,6 +4218,12 @@ item — do **one item per session** to keep context lean.
       the co-routine's round trips -- is zerobas's own architecture; where the
       copy LIVES is what costs RAM. Price the sub page-0 tenant from a clean
       tree first; the freed span then rotates to the diskless floor as in (1b).
+      🔁 **REVISED THE SAME DAY:** the substitution probe found the reference
+      reads a VARIABLE REFERENCE after `=` / `X`, not an expression (D-DRAWSUBVAR,
+      filed above), and found D-ARYCUR on the way. Adopting the reference's rule
+      removes the copy's reason: a lookup allocates nothing, so the string can be
+      read in place and GFX_DBUF goes entirely instead of moving below SP. Do
+      D-DRAWSUBVAR first, then this.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7955,7 +8014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33472 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33531 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8121,7 +8180,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12983 (T-6FE392)8 (T-529ABE)` from `TODO.md:25777 (T-529ABE)`: a
+      `TODO.md:13042 (T-6FE392)8 (T-529ABE)` from `TODO.md:25836 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13830,7 +13889,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -884,7 +884,7 @@ LRSET_DEST      equ     $EB1E   ; LSET/RSET: destination ADDRESS of the store (2
                                 ; own heap body, which no offset into a record buffer
                                 ; names. Both callers now compute the address and
                                 ; sub/lrsetst.asm just loads it (spec §4.1).
-RUNFLAG         equ     $EB2F   ; 1 = ,R handoff requested (set while parsing)
+RUNFLAG         equ     $EB2F   ; 1 = ,R handoff requested (set while parsing) (1)
 CLPTR           equ     $EB2B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $EB2D   ; CLOAD/LOAD: saved link word of the current line
                                 ; (= the saving machine's absolute start address of
@@ -2548,8 +2548,18 @@ ARY_IDXP        equ     $EB2D   ; [D-ARR-C] POINTER to the parsed subscripts
                                 ; succeeds, on the wrong element), and it is
                                 ; invisible on equal bounds; tests/test_arrays.py
                                 ; case 2b is the asymmetric witness.
-ARY_CUR         equ     $EB2F   ; [D-ARR-C] the text cursor, parked across the
-                                ; engine call (2). subrom_call/CALSLT clobbers HL,
+; 🔴 D-ARYCUR (2026-10-13): ARY_CUR WAS $EB2F, AND ITS HIGH BYTE WAS GFX_OP ($EB30).
+; A graphics statement keeps GFX_OP live while it evaluates: DRAW's co-routine
+; sets it once and re-enters the tenant after every `=...;` / `X...;`, and
+; VDP(n)= / BASE(n)= park it before parsing n and v. An ARRAY ELEMENT there
+; parks the text cursor here, so GFX_OP took the cursor's high byte and the
+; tenant ran the G1 floor self-test forever: `DRAW "R=B(1);"` never returned
+; (scratchpad/drawarr_mark.out; the VG-8020 takes 10 ms). The width sat mid-
+; comment where tools/ram_map.py does not read one, so the overlap was never
+; reported (the allowlist pinned it as `overruns`). Now in the FREE-RAM span
+; FOR_CUR left, with the width at the END of the line.
+ARY_CUR         equ     $EB46   ; [D-ARR-C] the text cursor, parked across the engine call (2)
+                                ; subrom_call/CALSLT clobbers HL,
                                 ; and the fused ary_parse_call has no caller left
                                 ; to hold a [CURSOR] push for it. Safe against the
                                 ; same re-entrancy ARY_NIDX/the old ARY_IDX already
@@ -4010,7 +4020,7 @@ FSP             equ     $EB43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) 
 FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
 SEQ_EOF         equ     $EB45   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
-; FREE-RAM $EB46..$EB50  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050]
+; FREE-RAM $EB48..$EB50  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
 FOR_CUR         equ     $EB9C   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the

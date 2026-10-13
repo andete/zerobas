@@ -135,6 +135,19 @@ BEHAV_CASES = [
                        'SCREEN0:PRINT"P";A;B;C'], "P"),
     ("point_step",    ["SCREEN2:COLOR15,4:PSET(50,50),9", "D=POINT STEP(0,0)",
                        'SCREEN0:PRINT"S";D'], "S"),
+    # 🔴 D-ARYCUR (2026-10-13): an ARRAY ELEMENT evaluated inside a graphics
+    # statement parked the text cursor in ARY_CUR, whose high byte WAS GFX_OP, so
+    # DRAW's co-routine re-entered the floor self-test forever and VDP(n)= ran a
+    # different op. Each row reads what its failure changes: the pixel at the end
+    # of the move and the one past it (R3 from x=50), and the register written.
+    ("draw_arr_sub",  ["DIM B(2):B(1)=3:SCREEN2:COLOR15,4:DRAW\"BM50,50R=B(1);\"",
+                       "A=POINT(53,50):B=POINT(54,50)", 'SCREEN0:PRINT"D";A;B'], "D"),
+    ("draw_xarr_sub", ['DIM C$(2):C$(1)="R3":SCREEN2:COLOR15,4:DRAW"BM50,60XC$(1);"',
+                       "A=POINT(53,60):B=POINT(54,60)", 'SCREEN0:PRINT"X";A;B'], "X"),
+    # CLS, not SCREEN0 (which reprograms register 7): the reader takes the FIRST
+    # "V" on the screen, and without a clear that is the echoed `VDP(B(1))` --
+    # the first run read a bare 'V' on BOTH machines and passed, vacuously.
+    ("vdp_arr_idx",   ["DIM B(2):B(1)=7:VDP(B(1))=5", 'CLS:PRINT"V";VDP(7)'], "V"),
 ]
 
 

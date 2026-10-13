@@ -1,0 +1,7 @@
+omsx_repl: ORACLES DISAGREE on C-BIOS_MSX1_EU_REPACK_DISK: stored-program oracle flags [7], echo oracle flags {}. Both repairs still run. Cases only one oracle sees are EXPECTED where the other is structurally blind (spec §5): direct mode and `RUN` are echo-only; a case typed in SCREEN 2, and any line whose own execution clears the screen, are stored-only.
+omsx_repl: MIS-DELIVERED case 7 on C-BIOS_MSX1_EU_REPACK_DISK: typed 10,20, machine stored 10,20,30 -- line(s) n/a never entered (the screen editor rejected a mangled echo). Body: ['DIM B(2):B(1)=7:VDP(B(1))=5', 'CLS:PRINT"V";VDP(7)']
+            -> re-running that case boot-per-case
+K-AC1: phase B 3 of 8 FAIL: ['draw_arr_sub', 'draw_xarr_sub', 'vdp_arr_idx']
+K-AC1: predicted FAIL = draw_arr_sub, draw_xarr_sub, vdp_arr_idx
+restored: build rc=0; phase B 0 of 8 FAIL
+refcache: 2 hit, 2 miss, 1 stored, 1 refused (non-reading)

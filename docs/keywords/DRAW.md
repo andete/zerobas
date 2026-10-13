@@ -6,8 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `DRAW` — draw with a string of pen commands
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
+> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: what may follow `=` and `X` (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -108,12 +109,28 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None known.
+- **After `=` and `X`, zerobas evaluates an expression; the VG-8020 reads a
+  variable** (TIER 6, open). The reference takes a variable name, with
+  subscripts if it is an array element, so `DRAW"R=5;"`, `DRAW"R=(A);"` and
+  `DRAW"X"+CHR$(34)+"R2"+CHR$(34)+";"` are error 5 there and accepted
+  here. `DRAW"R=ABS(A);"` finishes on both, but by the reference's rule it
+  names the array element `AB(A)` there and is the function here, so the two
+  can draw different lengths
+  ([`drawsub_probe_after.out`](../../scratchpad/drawsub_probe_after.out)).
 
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **An array element after `=` or `X` hung the machine** (fixed 2026-10-13,
+  D-ARYCUR). `DRAW"R=B(1);"` and `DRAW"XC$(1);"` never returned; the
+  VG-8020 draws them in 10 ms. Looking up an array element parks a 2-byte
+  pointer in RAM, and its second byte was the cell telling the graphics code
+  which statement it is running, so `DRAW` restarted as a self-test, over
+  and over ([`drawarr_mark.out`](../../scratchpad/drawarr_mark.out),
+  [`drawarr_mark_after.out`](../../scratchpad/drawarr_mark_after.out)). Found
+  while measuring where the reference keeps a `DRAW` string — on the stack,
+  read in place ([`drawbuf_probe.out`](../../scratchpad/drawbuf_probe.out)).
 - **`DRAW` arrived on 2026-07-22** (graphics slice G6), after its language
   was measured on the reference: the scale rule, the persistence of `S` and
   `A`, and the shared colour, which took three rounds to pin down
