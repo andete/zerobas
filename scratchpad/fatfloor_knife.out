@@ -1,0 +1,4 @@
+K-FF1: ram-map-check RED; 31 line(s): A17 untagged on the diskless floor: DB_WIN $E781 | A17 untagged on the diskless floor: ISRCH_A $E7E1 | A17 untagged on the diskless floor: ISRCH_B $E7E3 | A17 untagged on the diskless floor: GFX_BAD $E7E5 | A17 untagged on the diskless floor: STRENG_SPARE $E7E5 | A17 untagged on the diskless floor: MIDS_DEST $E7E6
+K-FF1: ceiling-acceptance green
+K-FF1: predicted ram-map-check RED, ceiling-acceptance green
+restored: build rc=0; ram-map-check green; ceiling-acceptance green

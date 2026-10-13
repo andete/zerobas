@@ -1,0 +1,141 @@
+138 literal equ(s) rewritten in 3 file(s); TXTMAX $E26A -> $E26A; TXTMAX_NODISK $E76A -> $E36A
+   basic/sysvars.inc:105  GFX_BAD  $E7E5 -> $E3E5
+   basic/sysvars.inc:1985  ISRCH_A  $E7E1 -> $E3E1
+   basic/sysvars.inc:2058  GFX_POVF  $E7E9 -> $E3E9
+   basic/sysvars.inc:2059  GFX_PTESTX  $E7EA -> $E3EA
+   basic/sysvars.inc:2060  GFX_PTESTY  $E7EB -> $E3EB
+   basic/sysvars.inc:2061  GFX_PFY  $E7EC -> $E3EC
+   basic/sysvars.inc:2062  GFX_PXL  $E7ED -> $E3ED
+   basic/sysvars.inc:2063  GFX_PXR  $E7EE -> $E3EE
+   basic/sysvars.inc:2064  GFX_PSCX  $E7EF -> $E3EF
+   basic/sysvars.inc:2065  GFX_PSCY  $E7F0 -> $E3F0
+   basic/sysvars.inc:2066  GFX_PSPA  $E7F1 -> $E3F1
+   basic/sysvars.inc:2067  GFX_PSTK  $E7F2 -> $E3F2
+   basic/sysvars.inc:2068  comment range  $E7F2 -> $E3F2
+   basic/sysvars.inc:2425  TXTMAX_NODISK  $E76A -> $E36A
+   basic/sysvars.inc:2439  DB_WIN  $E781 -> $E381
+   basic/sysvars.inc:3128  FSECTOR_BUF  $E36A -> $E5C0
+   basic/sysvars.inc:3143  FWBUF  $E56A -> $E7C0
+   basic/sysvars.inc:3159  FAT_DEFER  $E9AC -> $E5AC
+   disk/equates.inc:256  SECTOR_BUF  $E36A -> $E5C0
+   disk/equates.inc:261  FAT_SECPERCLUS  $E8A0 -> $E4A0
+   disk/equates.inc:262  FAT_FATSTART  $E8A1 -> $E4A1
+   disk/equates.inc:263  FAT_FIRSTROOT  $E8A3 -> $E4A3
+   disk/equates.inc:264  FAT_TOTCLUS  $E8A5 -> $E4A5
+   disk/equates.inc:266  FAT_FIRSTDATA  $E8A7 -> $E4A7
+   disk/equates.inc:267  FAT_CURCLUS  $E8A9 -> $E4A9
+   disk/equates.inc:268  FAT_CLUSSEC  $E8AB -> $E4AB
+   disk/equates.inc:269  FAT_FIRSTCLUS  $E8AC -> $E4AC
+   disk/equates.inc:270  FAT_FILESIZE  $E8AE -> $E4AE
+   disk/equates.inc:273  FAT_NUMFATS  $E95A -> $E55A
+   disk/equates.inc:274  FAT_SECPERFAT  $E95B -> $E55B
+   disk/equates.inc:277  comment range  $E95B -> $E55B
+   disk/equates.inc:279  HOOK_SLOT  $E95D -> $E55D
+   disk/equates.inc:292  BDOS_SRCHIDX  $E95E -> $E55E
+   disk/equates.inc:302  FAT_PARITY  $E8B2 -> $E4B2
+   disk/equates.inc:303  FAT_BYTEIDX  $E8B3 -> $E4B3
+   disk/equates.inc:304  FAT_FATSEC  $E8B5 -> $E4B5
+   disk/equates.inc:305  FAT_B0  $E8B7 -> $E4B7
+   disk/equates.inc:306  FAT_B1  $E8B8 -> $E4B8
+   disk/equates.inc:307  FAT_NAMEPTR  $E8B9 -> $E4B9
+   disk/equates.inc:308  FAT_DIRSEC  $E8BB -> $E4BB
+   disk/equates.inc:309  FAT_DIRREM  $E8BD -> $E4BD
+   disk/equates.inc:333  BDOS_RECIDX  $E8BF -> $E4BF
+   disk/equates.inc:340  BDOS_DTA  $E8C0 -> $E4C0
+   disk/equates.inc:347  BDOS_BYTESLEFT  $E942 -> $E542
+   disk/equates.inc:358  BDOS_SEQREC  $E9A6 -> $E5A6
+   disk/equates.inc:375  DBUF_PTR  $E9A8 -> $E5A8
+   disk/equates.inc:376  MBUF_PTR  $E9AA -> $E5AA
+   disk/equates.inc:389  BDOS_WRMODE  $E946 -> $E546
+   disk/equates.inc:390  BDOS_WRCLUS  $E947 -> $E547
+   disk/equates.inc:391  BDOS_WRFIRST  $E949 -> $E549
+   disk/equates.inc:392  BDOS_WRSECIDX  $E94B -> $E54B
+   disk/equates.inc:393  BDOS_WRBUFLEN  $E94C -> $E54C
+   disk/equates.inc:394  BDOS_WRBYTES  $E94E -> $E54E
+   disk/equates.inc:395  BDOS_DIRSEC  $E952 -> $E552
+   disk/equates.inc:396  BDOS_DIROFF  $E954 -> $E554
+   disk/equates.inc:426  FAT_WRTMP  $E956 -> $E556
+   disk/equates.inc:427  FAT_WRTMP2  $E958 -> $E558
+   disk/equates.inc:441  WBUF  $E56A -> $E7C0
+   disk/equates.inc:450  FAT_DEFER  $E9AC -> $E5AC
+   disk/equates.inc:458  RRND_RECSEC  $E960 -> $E560
+   disk/equates.inc:459  RRND_CLUSSEC  $E961 -> $E561
+   disk/equates.inc:470  WRBLK_REC  $E97A -> $E57A
+   disk/equates.inc:471  WRBLK_RECSEC  $E97D -> $E57D
+   disk/equates.inc:475  WRBLK_RS  $E97E -> $E57E
+   disk/equates.inc:479  WRBLK_CNT  $E980 -> $E580
+   disk/equates.inc:480  WRBLK_REQ  $E982 -> $E582
+   disk/equates.inc:482  WRBLK_PREVCLUS  $E984 -> $E584
+   disk/equates.inc:486  WRBLK_KEEPCNT  $E986 -> $E586
+   disk/equates.inc:487  WRBLK_NEXTCLUS  $E988 -> $E588
+   disk/equates.inc:495  WRBLK_CURVALID  $E98A -> $E58A
+   disk/equates.inc:496  WRBLK_CURSEC  $E98B -> $E58B
+   disk/equates.inc:507  FAT_ALLOCHINT  $E98D -> $E58D
+   disk/init.asm:209  BOOT_SV_A8  $E960 -> $E560
+   disk/init.asm:210  BOOT_SV_SEC  $E961 -> $E561
+   disk/init.asm:216  R30_HL  $E962 -> $E562
+   disk/init.asm:217  R30_BC  $E964 -> $E564
+   disk/init.asm:218  R30_DE  $E966 -> $E566
+   disk/init.asm:219  R30_AF  $E968 -> $E568
+   disk/init.asm:220  CALSLT_HL  $E96A -> $E56A
+   disk/init.asm:225  RDBLK_REQ  $E96C -> $E56C
+   disk/init.asm:226  RDBLK_RECSIZE  $E96E -> $E56E
+   disk/init.asm:227  RDBLK_DONE  $E970 -> $E570
+   disk/init.asm:228  RDBLK_CNT  $E972 -> $E572
+   disk/init.asm:229  RDBLK_BUFPOS  $E974 -> $E574
+   disk/init.asm:230  RDBLK_DST  $E976 -> $E576
+   disk/init.asm:260  RDBLK_RRSTART  $E98F -> $E58F
+   disk/init.asm:262  P1_DEST  $E978 -> $E578
+   disk/init.asm:362  DRV_TRAMP  $E992 -> $E592
+   basic/sysvars.inc:1986  ISRCH_B (comment copy)  $E7E3 -> $E3E3
+   basic/sysvars.inc:1997  STRENG_SPARE (comment copy)  $E7E5 -> $E3E5
+   basic/sysvars.inc:2140  GFX_CS_M1 (comment copy)  $E7F2 -> $E3F2
+   basic/sysvars.inc:2142  GFX_CS_M2 (comment copy)  $E7F6 -> $E3F6
+   basic/sysvars.inc:2147  GFX_DBUF (comment copy)  $E7F2 -> $E3F2
+   basic/sysvars.inc:2149  GFX_DPTR (comment copy)  $E8F2 -> $E4F2
+   basic/sysvars.inc:2150  GFX_DEND (comment copy)  $E8F4 -> $E4F4
+   basic/sysvars.inc:2151  GFX_DFREE (comment copy)  $E8F6 -> $E4F6
+   basic/sysvars.inc:2152  GFX_DFTOP (comment copy)  $E8F8 -> $E4F8
+   basic/sysvars.inc:2154  GFX_DFSTK (comment copy)  $E8F9 -> $E4F9
+   basic/sysvars.inc:2159  GFX_DCMD (comment copy)  $E919 -> $E519
+   basic/sysvars.inc:2161  GFX_DSUBN (comment copy)  $E91B -> $E51B
+   basic/sysvars.inc:2162  GFX_DSUBI (comment copy)  $E91C -> $E51C
+   basic/sysvars.inc:2163  GFX_DSUB (comment copy)  $E91D -> $E51D
+   basic/sysvars.inc:2164  GFX_DSUBLEN (comment copy)  $E921 -> $E521
+   basic/sysvars.inc:2165  GFX_DREQ (comment copy)  $E922 -> $E522
+   basic/sysvars.inc:2167  GFX_DRESUME (comment copy)  $E923 -> $E523
+   basic/sysvars.inc:2168  GFX_DVAL (comment copy)  $E924 -> $E524
+   basic/sysvars.inc:2169  GFX_DVLEN (comment copy)  $E926 -> $E526
+   basic/sysvars.inc:2170  GFX_DEXP (comment copy)  $E927 -> $E527
+   basic/sysvars.inc:2175  GFX_DFB (comment copy)  $E93F -> $E53F
+   basic/sysvars.inc:2176  GFX_DFN (comment copy)  $E940 -> $E540
+   basic/sysvars.inc:2177  GFX_DARG (comment copy)  $E941 -> $E541
+   basic/sysvars.inc:2178  GFX_DDX (comment copy)  $E943 -> $E543
+   basic/sysvars.inc:2179  GFX_DDY (comment copy)  $E945 -> $E545
+   basic/sysvars.inc:2180  GFX_DTX (comment copy)  $E947 -> $E547
+   basic/sysvars.inc:2181  GFX_DTY (comment copy)  $E949 -> $E549
+   basic/sysvars.inc:2182  GFX_DTMP (comment copy)  $E94B -> $E54B
+   basic/sysvars.inc:2183  GFX_DSP (comment copy)  $E94D -> $E54D
+   basic/sysvars.inc:2193  GFX_VBUF (comment copy)  $E7F2 -> $E3F2
+   basic/sysvars.inc:2199  GFX_SN (comment copy)  $E812 -> $E412
+   basic/sysvars.inc:2200  GFX_VLEN (comment copy)  $E814 -> $E414
+   basic/sysvars.inc:2201  GFX_SDESC (comment copy)  $E815 -> $E415
+   basic/sysvars.inc:2203  GFX_SC (comment copy)  $E817 -> $E417
+   basic/sysvars.inc:2207  GFX_SPATN (comment copy)  $E819 -> $E419
+   basic/sysvars.inc:2208  GFX_SSIZE (comment copy)  $E81B -> $E41B
+   basic/sysvars.inc:2210  GFX_SARGN (comment copy)  $E81C -> $E41C
+   basic/sysvars.inc:2212  GFX_SFLAGS (comment copy)  $E81D -> $E41D
+   basic/sysvars.inc:2232  DEFT_PTR (comment copy)  $E94F -> $E54F
+   basic/sysvars.inc:2240  RDV_VAL (comment copy)  $E951 -> $E551
+   basic/sysvars.inc:2241  RDV_ST (comment copy)  $E953 -> $E553
+   basic/sysvars.inc:2246  RDV_LINE (comment copy)  $E94F -> $E54F
+   basic/sysvars.inc:2251  RDV_MODE (comment copy)  $E954 -> $E554
+   basic/sysvars.inc:2273  TGT_ADDR (comment copy)  $E955 -> $E555
+   basic/sysvars.inc:2300  GFX_DSCALE (comment copy)  $E95A -> $E55A
+   basic/sysvars.inc:2305  GFX_DANGLE (comment copy)  $E95B -> $E55B
+   basic/sysvars.inc:2313  GFX_G8N (comment copy)  $E95C -> $E55C
+   basic/sysvars.inc:2314  GFX_G8V (comment copy)  $E95E -> $E55E
+   basic/sysvars.inc:2333  GFX_PPITCH (comment copy)  $E95C -> $E55C
+   disk/equates.inc:472  COPY_STAMP (comment range)  $E97A -> $E57A
+🟢 VERIFIED: 158 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (70 disk mirror(s) of basic names verified through their originals; the build regenerates them).
+(files restored)

@@ -51,7 +51,17 @@ def disk_only():
     bufs = cover(maps["basic"], lambda ns: any(n.split("/")[0] in BUFS or n in BUFS for n in ns))
     cas = cover(maps["basic"], lambda ns: any(n in CAS for n in ns))
     basic_rest = cover(maps["basic"], lambda ns: not any(n in BUFS for n in ns))
-    return sorted(((disk_all - basic_all) | bufs) - cas - (basic_rest - bufs))
+    out = ((disk_all - basic_all) | bufs) - cas - (basic_rest - bufs)
+    # D-FATFLOOR (2026-10-13): [TXTMAX, TXTMAX_NODISK) is PROGRAM RAM on the
+    # diskless build -- the string heap and the program write it, correctly, and
+    # an address watch cannot tell them from a disk-only writer. Excluded here;
+    # the FAT buffers that now sit there are reached by SYMBOL, so who writes
+    # them did not change with the move, and the census before it (dowrite at
+    # 88dd3202: the buffers written by nothing but C-BIOS's power-on RAM probe)
+    # still answers that. `make ram-map-check` keeps any non-DISK-ONLY cell out.
+    b = ram_map.Map("basic", 0, 0x10000)
+    lo, hi = b.vals["TXTMAX"], b.vals["TXTMAX_NODISK"]
+    return sorted(a for a in out if not lo <= a < hi)
 
 
 def runs(addrs):

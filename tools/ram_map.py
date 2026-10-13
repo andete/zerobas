@@ -936,6 +936,38 @@ def check(maps: dict, allow: list) -> tuple:
     return rc, lines
 
 
+def disk_floor(m) -> tuple:
+    """(offenders, tagged) for the DISKLESS FLOOR: [TXTMAX, TXTMAX_NODISK).
+
+    🔴 D-FATFLOOR (2026-10-13). The diskless build's text ceiling sits ABOVE the
+    disk build's, and what lies between is PROGRAM RAM on a diskless machine --
+    so a basic cell declared there is overwritten by the user's program unless
+    only Disk BASIC ever uses it. ws_shift.py checked this at MOVE time, from a
+    hand-typed --disk-only list; nothing checked it afterwards, and FRE(0) is
+    never gated as an absolute. Every basic name in the window must carry
+    `DISK-ONLY` at the head of its own comment, or be a bare alias (`equ NAME`)
+    of a tagged name. NOT-A-CELL constants are exempt.
+    """
+    tx, tn = m.vals.get("TXTMAX"), m.vals.get("TXTMAX_NODISK")
+    if tx is None or tn is None:
+        return [("<map>", "TXTMAX / TXTMAX_NODISK do not resolve")], []
+
+    def tag(n):
+        rec = m.raw.get(n)
+        return bool(rec and rec[3] and "DISK-ONLY" in rec[3].split(";")[0][:120])
+
+    offenders, tagged = [], []
+    for n, v in sorted(m.vals.items(), key=lambda kv: kv[1]):
+        if not (tx <= v < tn) or m.not_a_cell(n):
+            continue
+        expr = m.raw.get(n, ("",))[0].strip()
+        if tag(n) or (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", expr) and tag(expr)):
+            tagged.append(n)
+        else:
+            offenders.append((n, f"${v:04X}"))
+    return offenders, tagged
+
+
 # ---------------------------------------------------------------- selftest
 WIDTH_VECTORS = [
     # (addr, comment, expected width, why this vector exists)
@@ -1072,9 +1104,18 @@ def selftest(lo, hi) -> int:
     d_all = Map("disk", lo, hi)
     d_inc = Map("disk", lo, hi, inc_only=True)
     # D-BUFMERGE (2026-09-24) moved DRV_TRAMP out of the shared WBUF, $E800 ->
-    # $E592; the arm is about VISIBILITY of an .asm-declared cell, not the value.
-    ok["A4 `.asm` cells are visible (DRV_TRAMP $E592, disk/init.asm)"] = \
-        d_all.vals.get("DRV_TRAMP") == 0xE592
+    # $E592, and D-FATFLOOR (2026-10-13) -> $E992; the arm is about VISIBILITY of
+    # an .asm-declared cell, not the value, so the value is read from the
+    # declaration itself (a pinned literal failed both moves for no reason).
+    def _decl(path, name):
+        for ln in open(path):
+            m = re.match(rf"^{name}\s+equ\s+\$([0-9A-Fa-f]{{4}})\b", ln)
+            if m:
+                return int(m.group(1), 16)
+        return None
+    _tramp = _decl("disk/init.asm", "DRV_TRAMP")
+    ok["A4 `.asm` cells are visible (DRV_TRAMP, disk/init.asm)"] = \
+        _tramp is not None and d_all.vals.get("DRV_TRAMP") == _tramp
     ok["A4 NEGATIVE: the old `.inc`-only glob could NOT see it"] = \
         "DRV_TRAMP" not in d_inc.vals
     ok["A4 and it brought >=15 more page-3 cells with it"] = \
@@ -1082,13 +1123,17 @@ def selftest(lo, hi) -> int:
 
     # ---- A6 per-component namespaces (the shadowing control) ---------------
     b_all = Map("basic", lo, hi)
+    # values from the two declarations (D-FATFLOOR moved disk's $E4A9 -> $E8A9)
+    _bcur = _decl("basic/sysvars.inc", "FAT_CURCLUS")
+    _dcur = _decl("disk/equates.inc", "FAT_CURCLUS")
     ok["A6 per-ROM twin visible in BOTH maps (FAT_CURCLUS)"] = \
-        (b_all.vals.get("FAT_CURCLUS") == 0xE9C9
-         and d_all.vals.get("FAT_CURCLUS") == 0xE4A9)
+        (None not in (_bcur, _dcur) and _bcur != _dcur
+         and b_all.vals.get("FAT_CURCLUS") == _bcur
+         and d_all.vals.get("FAT_CURCLUS") == _dcur)
     merged, _ = parse(files_for("basic") + files_for("disk"))
     mvals, _ = resolve(merged)
     ok["A6 NEGATIVE: one merged namespace shadows it to a single address"] = \
-        mvals.get("FAT_CURCLUS") == 0xE9C9 and 0xE4A9 not in set(mvals.values())
+        mvals.get("FAT_CURCLUS") == _bcur and _dcur not in set(mvals.values())
 
     # ---- A8 an untrustworthy width must DEMOTE, not produce a number ------
     p2 = dict(raw)
@@ -1362,6 +1407,26 @@ def selftest(lo, hi) -> int:
     ok["A-NAC NEGATIVE: an unmarked neighbour IS still a cell"] = \
         "__NAC_CELL" in m9.byaddr.get(b9 + 16, [])
 
+    # ---- A17 the diskless floor (D-FATFLOOR) ---------------------------------
+    _fm = Map("basic", 0, 0x10000, use_sym=False)
+    _off, _tag = disk_floor(_fm)
+    for _n, _a in _off:
+        print(f"  A17 untagged on the diskless floor: {_n} {_a}")
+    ok["A17 the real tree: no untagged cell on the diskless floor"] = not _off
+    ok["A17 ...and the check is not vacuous (>= 3 tagged names there)"] = len(_tag) >= 3
+    _tx = _fm.vals["TXTMAX"]
+    _raw = dict(_fm.raw)
+    _raw["ZZ_FLOOR_PLANT"] = (f"${_tx + 1:04X}", "plant", 0, "a cell anyone might add (1)")
+    _off2, _ = disk_floor(Map("basic", 0, 0x10000, raw=_raw, use_sym=False))
+    ok["A17 NEGATIVE: an untagged cell planted on the floor is RED"] = \
+        any(n == "ZZ_FLOOR_PLANT" for n, _a in _off2)
+    _raw3 = dict(_fm.raw)
+    _src = next(n for n in _tag if _fm.raw[n][0].strip().startswith("$"))
+    _raw3["ZZ_FLOOR_ALIAS"] = (_src, "plant", 0, "an alias with no tag")
+    _off3, _tag3 = disk_floor(Map("basic", 0, 0x10000, raw=_raw3, use_sym=False))
+    ok["A17 a bare alias of a tagged name is accepted (FAT_DBUF's shape)"] = \
+        "ZZ_FLOOR_ALIAS" in _tag3 and all(n != "ZZ_FLOOR_ALIAS" for n, _a in _off3)
+
     print()
     for k, v in ok.items():
         print(f"  SELFTEST: {'PASS' if v else 'FAIL'}  {k}")
@@ -1391,6 +1456,20 @@ def main() -> int:
     if "--check" in sys.argv:
         maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}
         rc, lines = check(maps, load_allow(ALLOW))
+        offenders, tagged = disk_floor(Map("basic", 0, 0x10000))
+        if offenders:
+            rc = 1
+            lines.append(f"🔴 DISKLESS FLOOR: {len(offenders)} basic cell(s) in "
+                         f"[TXTMAX, TXTMAX_NODISK) -- program RAM on a diskless "
+                         f"machine -- without a DISK-ONLY tag: "
+                         + ", ".join(f"{n} {a}" for n, a in offenders))
+        elif not tagged:
+            rc = 1
+            lines.append("🔴 DISKLESS FLOOR: the window holds NO tagged cell -- "
+                         "vacuous; the disk-only buffers moved or lost their tag")
+        else:
+            lines.append(f"🟢 diskless floor: {len(tagged)} DISK-ONLY name(s) in "
+                         f"[TXTMAX, TXTMAX_NODISK), nothing else.")
         # 🔴 THE DOCUMENT IS GENERATED, SO IT CAN DRIFT, SO IT IS CHECKED.
         # Same discipline as docs/tier-status.md: regenerate into memory and
         # compare, and say which command fixes it.

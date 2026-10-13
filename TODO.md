@@ -4084,6 +4084,59 @@ item — do **one item per session** to keep context lean.
       their overlay examples; retargeted to main's FWBUF hosting the disk
       ROM's WRBLK cells (61/61). ➡️ (1b): the FAT sector buffers are now
       wholly disk-only -> the diskless floor (~1 KB).
+      ✅ **(1b) DONE 2026-10-13 (D-FATFLOOR): the two 512 B FAT sector buffers
+      moved to the diskless floor.** A rotation of $E36A..$E9BF by
+      tools/ws_shift.py: FSECTOR_BUF / FWBUF (and disk.rom's SECTOR_BUF / WBUF,
+      the same bytes) to $E36A / $E56A, everything that sat above them +$400;
+      TXTMAX_NODISK $E36A -> $E76A, TXTMAX unchanged. 158 names moved, each
+      verified ([`fatfloor_wsshift_apply.out`](scratchpad/fatfloor_wsshift_apply.out)).
+      📏 [`fatfloor_fremem.out`](scratchpad/fatfloor_fremem.out): diskless boot
+      FRE(0) 24711 -> **25735**, the gap to the VG-8020 -4104 -> **-3080**, every
+      state's delta identical to the reference's; the disk build unchanged at
+      23705, 275 ahead of the CF-3300 ([`fatfloor_disk.out`](scratchpad/fatfloor_disk.out)).
+      🔮 Predicted 25735 / 23705: HIT, both. `CLEAR 25000` now fits on both
+      machines; 26000 is the first size refused here and the VG-8020 still takes
+      28000 ([`fatfloor_clear_probe.out`](scratchpad/fatfloor_clear_probe.out),
+      🔮 HIT 6/6) -- the memory-map page's example was stale and is rewritten.
+      🔴 **WHAT THE MOVE BROKE, AND WHAT THAT FIXED IN THE INSTRUMENTS:**
+      (a) three asserts tested the literal `$E560` disk-cell wall -> they test
+      DISKROM_CELLS_LO now, and disk.asm's `MBUF_PTR + 2 > SECTOR_BUF` (cells
+      BELOW the buffers) became a disjointness test, the cells being above;
+      (b) 49 `; $XXXX` comment copies on DERIVED names went stale (only
+      wall-literal-check rule B saw them), plus COPY_STAMP's derived-line range
+      (ram-map-check: width "disputed") and a hand copy of GFX_BAD in
+      basic_probe_graphics_floor.py, which read a stale cell where a stray 0
+      means "no mismatch" -- it reads the sym now. ws_shift rewrites both kinds
+      of copy since; (c) ws_shift's overlap check said it took widths from the
+      BEFORE map and built it from the AFTER files, where the generated ABI's
+      mirrors sit at the last build's addresses: the reverse rotation was
+      REFUSED on CALSLT_HL carrying FWBUF's 512 B. Fixed (built before the
+      rewrite, without the ABI); negative control (STRSCR onto FLD_DESC) still
+      REFUSED; a reverse-apply + forward-apply round trip reproduced the
+      committed diff file for file ([`fatfloor_wsshift_reverse.out`](scratchpad/fatfloor_wsshift_reverse.out),
+      [`fatfloor_wsshift_negctl.out`](scratchpad/fatfloor_wsshift_negctl.out));
+      (d) ram_map selftest arms A4 / A6 and wall-literal's rule-B plant pinned
+      addresses the move changed -> they read the declarations now.
+      🆕 **A STANDING GATE FOR THE DISKLESS FLOOR.** Nothing checked, after a
+      move, that [TXTMAX, TXTMAX_NODISK) -- program RAM on a diskless machine --
+      holds only cells Disk BASIC alone uses: ws_shift did at move time from a
+      hand-typed list, ceiling-acceptance reads its expectation from the same
+      sym, and FRE(0) is never gated as an absolute. `make ram-map-check` now
+      refuses any basic name there whose own comment does not open with
+      `DISK-ONLY` (bare aliases of a tagged name pass); FLD_DESC, FSECTOR_BUF and
+      FWBUF carry it, and ws_shift takes the tag as --disk-only. Selftest A17
+      (real tree green, a planted untagged cell RED, the alias shape accepted).
+      Knife K-FF1 ([`fatfloor_knife.out`](scratchpad/fatfloor_knife.out)):
+      TXTMAX_NODISK +$100, into live cells -> ram-map-check RED naming 31 of
+      them, ceiling-acceptance green; restored green. 🔮 HIT (run 1 NOT SCORED:
+      its restore went red on a drifted docs/ram-map.md).
+      The census ([`dowrite_probe.out`](scratchpad/dowrite_probe.out)) now leaves
+      the floor out -- it is program RAM, where the string heap's writes are
+      correct; the buffers are reached by symbol, so the pre-move census (written
+      by nothing but C-BIOS's power-on RAM probe) still answers who writes them.
+      Same five writers above the floor as before the move.
+      ➡️ NEXT in the confirmed order: (2) GFX_PSTK -- measure where the
+      VG-8020's PAINT keeps its spans first.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7874,7 +7927,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33391 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33444 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8040,7 +8093,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12902 (T-6FE392)8 (T-529ABE)` from `TODO.md:25696 (T-529ABE)`: a
+      `TODO.md:12955 (T-6FE392)8 (T-529ABE)` from `TODO.md:25749 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13749,7 +13802,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25696 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25749 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

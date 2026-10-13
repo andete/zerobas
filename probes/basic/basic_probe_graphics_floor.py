@@ -21,8 +21,8 @@ graphics_selftest (sub/graphics.asm) EI's, writes f(addr)=low^high to every cell
 of an 8 KB VRAM block via the di-guarded direct-port primitives, reads the block
 back, and publishes two results in page-3 RAM:
 
-    GFX_DJ  ($E220) = JIFFY delta observed while drawing under EI  (>= 1 = interrupts serviced)
-    GFX_BAD ($E3E5) = VRAM read-back mismatch count               (0 = no address-latch corruption)
+    GFX_DJ  (sym)   = JIFFY delta observed while drawing under EI  (>= 1 = interrupts serviced)
+    GFX_BAD (sym)   = VRAM read-back mismatch count               (0 = no address-latch corruption)
 
 PASS = delta >= 1 AND bad == 0: interrupts stayed live during the draw (music
 would keep playing) and the di-guarded 2-byte VDP address latch kept every access
@@ -65,12 +65,26 @@ MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPAC
 
 # The CALSLT stub. Loaded at $C000; halt sentinel at $C00E. Index 8 lives at
 # page-0 entry $0040 + 3*8 = $0058. Results are written by the tenant itself into
-# GFX_DJ ($C120) / GFX_BAD ($E3E5), so the stub only needs to make the call.
+# GFX_DJ / GFX_BAD (addresses from the sym), so the stub only needs to make the call.
 STUB_ADDR = 0xC000
 STUB_HALT = 0xC00E
-GFX_DJ = 0xED20   # D-RAMSHIFT 2026-10-13: was 0xE220 (+$0B00)
-GFX_BAD = 0xE3E5
-GFX_OP = 0xEB30   # D-RAMSHIFT: was 0xE030.
+
+
+def _sym(name):
+    # READ, never copied: the workspace keeps moving. GFX_BAD sat at a stale
+    # hand copy ($E3E5) after D-FATFLOOR moved it +$400, where a stray 0
+    # reads exactly like 'no mismatch' (wall-literal-check rule A caught it).
+    import re as _re
+    for ln in open(os.path.join(REPO, "build", "basic-reloc.sym")):
+        m = _re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+GFX_DJ = _sym("GFX_DJ")
+GFX_BAD = _sym("GFX_BAD")
+GFX_OP = _sym("GFX_OP")
                   # G2: index 8 is now selector-dispatched; 0 = the floor self-test
 STUB_BYTES = bytes([
     0xF3,                    # di

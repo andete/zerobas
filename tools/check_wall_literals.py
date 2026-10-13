@@ -238,12 +238,17 @@ def selftest(root):
               "proves nothing. Fix the tree first.")
         return 1
 
+    _spatn = next((ln for ln in open(os.path.join(root, "basic/sysvars.inc")).read().splitlines()
+                   if re.match(r"^GFX_SPATN\s+equ\s+GFX_SC \+ 2\s+; \$[0-9A-Fa-f]{4}:", ln)), None)
     plants = [
         ("A", "probes/basic/basic_probe_clear.py",
          "TXTTAB       = 0xF676", "TXTTAB       = 0xF670"),
-        ("B", "basic/sysvars.inc",
-         "GFX_SPATN       equ     GFX_SC + 2      ; $E419:",
-         "GFX_SPATN       equ     GFX_SC + 2      ; $E4F9:"),
+        # rule B's anchor is READ from the line: it pinned `; $E419:` and the
+        # D-FATFLOOR rotation (+$400) moved the copy with its cell, which broke
+        # the selftest, not the gate. The plant flips one bit of the address.
+        ("B", "basic/sysvars.inc", _spatn, _spatn and re.sub(
+            r"\$([0-9A-Fa-f]{4})",
+            lambda m: f"${int(m.group(1), 16) ^ 0x0100:04X}", _spatn, count=1)),
     ]
     rc = 0
     for tag, rel, old, new in plants:

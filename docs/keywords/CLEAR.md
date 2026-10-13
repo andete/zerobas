@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `CLEAR` — reset the variables, and size the string space
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: `CLEAR` with three arguments (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -91,8 +91,11 @@ the bare form can raise is also reached by `CLEAR,`, which agrees.
 
 **zerobas has less free memory than the VG-8020**, so a string space that just
 fits there can be `Out of memory` here: on 2026-09-27 `CLEAR 25000` was
-accepted on the VG-8020 and refused here. That belongs to the **RAM usage**
-rung, which is not yet proven.
+accepted on the VG-8020 and refused here. Since 2026-10-13 it fits on both
+(the disk's sector buffers moved out of a diskless machine's memory), and the
+first refused size is between 25000 and 26000 here, while the VG-8020 still
+accepts 28000 ([`fatfloor_clear_probe.out`](../../scratchpad/fatfloor_clear_probe.out)).
+That belongs to the **RAM usage** rung, which is not yet proven.
 
 ## What we found, and how
 

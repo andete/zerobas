@@ -1,0 +1,7 @@
+1 literal equ(s) rewritten in 1 file(s); TXTMAX $E26A -> $E26A; TXTMAX_NODISK $E76A -> $E76A
+   basic/sysvars.inc:1863  STRSCR  $EF00 -> $E26A
+🔴 REFUSED -- 3 finding(s):
+   NEW OVERLAP: basic:FLD_DESC with basic:STRSCR
+   basic FAT_DBUF/FSECTOR_BUF $E36A: in the diskless program RAM [$E26A, $E76A) and not --disk-only
+   basic FAT_MBUF/FWBUF $E56A: in the diskless program RAM [$E26A, $E76A) and not --disk-only
+(files restored)

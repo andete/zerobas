@@ -64,15 +64,21 @@ DISK_BUILD      equ     1   ; D-FATENG Option 2: the shared FAT body
                 ; D-BUFMERGE: ONE shared buffer pair (Joost, 2026-09-24). The two
                 ; maps are separate assembly units, so the equality is asserted
                 ; here, where both names are in scope; the cell block moved out of
-                ; the buffers must also stay below them.
+                ; the buffers must also stay clear of them. D-FATFLOOR put the
+                ; buffers at the diskless floor and the cells ABOVE them, so the
+                ; old `MBUF_PTR + 2 > SECTOR_BUF` (cells below) became the wrong
+                ; test: the block runs FAT_SECPERCLUS (its lowest cell) .. MBUF_PTR.
     IF SECTOR_BUF - FSECTOR_BUF
                 db      DISK_SECTOR_BUF_IS_NOT_MAIN_FSECTOR_BUF
     ENDIF
     IF WBUF - FWBUF
                 db      DISK_WBUF_IS_NOT_MAIN_FWBUF
     ENDIF
-    IF MBUF_PTR + 2 > SECTOR_BUF
+    IF FAT_SECPERCLUS < WBUF + 512
                 db      DISK_CELL_BLOCK_OVERRAN_INTO_THE_SHARED_BUFFER
+    ENDIF
+    IF SECTOR_BUF + 512 - WBUF
+                db      DISK_SHARED_BUFFERS_ARE_NOT_ADJACENT
     ENDIF
                 include "init.asm"
                 include "pageenv.asm"
