@@ -49,8 +49,8 @@ dt_lp:
                 jp      z,dt_func
                 cp      LINENO_TOKEN        ; $0E,<lineno LE> -> decimal
                 jp      z,dt_lineno
-                cp      LINEADDR_TOKEN      ; $0D,<addr LE> -> decimal (post-RUN form)
-                jp      z,dt_lineno
+                cp      LINEADDR_TOKEN      ; $0D,<addr LE> -> the target's NUMBER
+                jp      z,dt_laddr
                 cp      INT_DIGIT_BASE      ; $11..$1A -> single digit 0..9
                 jr      c,dt_notdigit
                 cp      $1A+1
@@ -198,8 +198,33 @@ dt_lineno:
                 inc     hl
                 ld      d,(hl)              ; value high
                 inc     hl                  ; HL past the operand
+dt_ln_dec:
                 call    detok_dec
                 jp      dt_lp
+
+; --- dt_laddr: $0D,<pointer LE> -> the NUMBER of the line it points at -------
+; D-LISTLPTR (2026-10-13): the reference rewrites a jump's `$0E <number>` into
+; `$0D <pointer>` when it runs, the pointer being the byte BEFORE the target line
+; (scratchpad/listlptr_probe.py: `10 GOTO 20` holds `0D 0A 80` after RUN, line 20
+; at $800B) -- so the number sits at pointer+3, past the line's link word. A BASIC
+; cartridge saved after it ran carries this form; this printed the pointer
+; (`GOSUB 2000` as `GOSUB37271`), and the VG-8020 prints the number.
+dt_laddr:
+                inc     hl
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the pointer
+                inc     hl                  ; HL past the operand
+                ex      de,hl
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> the target line's number
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                ex      de,hl               ; DE = that number, HL = the cursor
+                jr      dt_ln_dec
 
 ; --- dt_hex: $0C,<word LE> -> &Hxxxx ----------------------------------------
 dt_hex:

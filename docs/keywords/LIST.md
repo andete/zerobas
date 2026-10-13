@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LIST` — show the program on the screen
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -101,6 +101,13 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A jump that had already run listed as an address** (fixed 2026-10-13,
+  D-LISTLPTR). When a program runs, the VG-8020 rewrites each `GOTO`/`GOSUB`
+  target in place, from the line number to a pointer at that line — so a
+  BASIC cartridge, saved after it ran, carries pointers. zerobas printed the
+  pointer as if it were the number: a game's `GOSUB 2000` listed as
+  `GOSUB37271`. It now prints the number of the line pointed at, as the
+  VG-8020 does ([`listlptr_after.out`](../../scratchpad/listlptr_after.out)).
 - **A number with a fraction or an exponent came out as garbage** (fixed
   2026-10-11, D-LISTFLT; reported by Vampier): `321 i=0.123456789` listed as
   `321 I=@14VxSTOP`, the stored value printed byte by byte, and an ASCII

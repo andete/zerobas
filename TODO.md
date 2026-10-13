@@ -2556,7 +2556,7 @@ item — do **one item per session** to keep context lean.
       value) or by Joost, before any zerobas row is judged against it. Then
       decide whether the docs' "the VG-8020" should read "the VG 8020/00".
 
-- [ ] 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
+- [x] ✅ **FIXED 2026-10-13** — 🔍 **D-LISTLPTR — LIST PRINTS A `$0D` LINE POINTER AS ITS ADDRESS, NOT THE LINE
       NUMBER (filed 2026-10-12, from D-BASICROM)**
       🎚️ TIER 3 — breaking a cartridge program and LISTing it is ordinary; the
       numbers shown are wrong (the golf game's `GOSUB 2000` lists as `GOSUB37271`).
@@ -2567,6 +2567,20 @@ item — do **one item per session** to keep context lean.
       the VG-8020 first. 🟢 **Room exists since D-TOKOVF the same day** (BEEP
       moved to sub2: sub page 0 read 71 B free after, clean build) -- re-read
       the wall before spending it.
+      📏 **MEASURED FIRST** ([`listlptr_probe.py`](scratchpad/listlptr_probe.py)
+      -> [`listlptr_probe.out`](scratchpad/listlptr_probe.out)): `10 GOTO 20`
+      holds `0E 14 00` at $8007 and, after RUN on the VG-8020, `0D 0A 80` -- a
+      pointer to $800A, the byte BEFORE line 20 at $800B. LISTed: the VG-8020
+      `10 GOTO 20` (after its own RUN, and with the bytes POKEd), zerobas
+      `10 GOTO 32778`. 🔮 HIT.
+      ✅ **FIX:** `dt_laddr` (basic/detok.inc) reads the pointer and prints the
+      number at pointer + 3, past the line's link word; `$0E` keeps
+      `dt_lineno`. Sub page 0 59 -> 43 B (clean build); main unchanged.
+      [`listlptr_after.out`](scratchpad/listlptr_after.out): `10 GOTO 20` on
+      both. 🔮 HIT. Row `lptr` in listflt-acceptance, guarded (PEEK(&H8007)
+      must read 13 on both, or the POKE missed and they would agree for the
+      wrong reason). Knife K-LP1 ([`listlptr_knife.out`](scratchpad/listlptr_knife.out)):
+      `$0D` back on dt_lineno -> exactly `lptr` diverges; restored green. HIT.
 
 - [x] 🧨 **D-TOKOVF — THE CRUNCH STILL OVERRAN TOKBUF: A 253-CHARACTER `0#` LINE
       WROTE ~253 B OF zerobas's WORKSPACE BEFORE BEING REFUSED** — ✅ **FIXED
@@ -8109,7 +8123,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33626 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33640 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8275,7 +8289,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13137 (T-6FE392)8 (T-529ABE)` from `TODO.md:25931 (T-529ABE)`: a
+      `TODO.md:13151 (T-6FE392)8 (T-529ABE)` from `TODO.md:25945 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13984,7 +13998,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25931 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25945 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

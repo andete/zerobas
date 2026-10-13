@@ -15,6 +15,12 @@ wrote garbage.
           '.', nothing in E form.
   row  B: type, SAVE "T.BAS",A, NEW, LOAD, LIST, RUN -- CF-3300 vs the disk
           build, everything from LOAD on (the prompt word aside).
+  row  C: D-LISTLPTR (2026-10-13). A jump's `$0D <pointer>` (the form the
+          reference writes back when a program RUNs, and a BASIC cartridge
+          carries) -- `10 GOTO 20` with the pointer POKEd in, LISTed. The
+          VG-8020 prints the target's NUMBER; zerobas printed the pointer
+          (`10 GOTO 32778`). Guarded: PEEK(&H8007) must read 13 on both, or the
+          POKE missed and the two would agree for the wrong reason.
 Clean room: typed BASIC and the screen.
 """
 import os, re, sys
@@ -54,8 +60,28 @@ def trip(machine):
     return flat[i:].replace("Ok", "ZB") if i >= 0 else None
 
 
+LPTR = ["NEW", "10 GOTO 20", "20 END", "POKE &H8007,13:POKE &H8008,10:POKE &H8009,128",
+        "CLS", '?"P";PEEK(&H8007)', "LIST"]
+
+
+def lptr(machine):
+    raw = omsx_repl.run_cases(machine, [("direct", LPTR)], batch=False,
+                              reset=("", "SCREEN 0"))[0] or ""
+    flat = raw.replace("\n", "")
+    rows = [flat[k:k + 40].strip() for k in range(0, len(flat), 40)]
+    poked = any(r == "P 13" for r in rows)
+    line = next((r for r in rows if r.startswith("10 ")), None)
+    return poked, line
+
+
 def main():
     bad, fault = [], False
+    (pa, la), (pb, lb) = lptr(VG), lptr(ZBN)
+    fault |= not (pa and pb and la)
+    print(f"ROW lptr VG-8020 [{la}] zerobas [{lb}] (pointer in place: {pa}/{pb}) "
+          f"{'SAME' if la == lb else 'DIVERGES'}", flush=True)
+    if la != lb:
+        bad.append("lptr")
     for n, lits in enumerate(ROUNDS, 1):
         ref, ours = listed(VG, lits), listed(ZBN, lits)
         fault |= len(ref) != len(lits)
@@ -73,8 +99,8 @@ def main():
     if fault:
         print("\nINSTRUMENT FAULT: a reference gave no (or a short) reading")
         return 2
-    print(f"\n{'PASS' if not bad else 'FAIL'}: LIST and ASCII SAVE spell float literals as "
-          f"the references do" + (f" -- {bad}" if bad else ""))
+    print(f"\n{'PASS' if not bad else 'FAIL'}: LIST and ASCII SAVE spell float literals and "
+          f"line pointers as the references do" + (f" -- {bad}" if bad else ""))
     return 1 if bad else 0
 
 
