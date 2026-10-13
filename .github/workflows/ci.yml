@@ -112,12 +112,16 @@ jobs:
         with:
           msystem: MSYS       # most Linux-like env; all tools share one runtime
           update: false       # skip the slow full pacman -Syuu; pinned snapshot is fine
+          # git: tools/check_citation_paths.py (run inside `make basic-reloc`)
+          # asks git which files are tracked -- the first push-triggered run
+          # (2026-10-13) failed here, as MSYS2 has no git of its own.
           install: >-
             make
             gcc
             python
             curl
             tar
+            git
 
       # pasmo has no Windows package, so we build it from source -- but that is
       # deterministic for a fixed version, so cache the built binary and skip the
@@ -159,6 +163,9 @@ jobs:
         run: |
           python3 --version
           make --version | head -1
+
+      - name: Let MSYS2's git read the checkout
+        run: git config --global --add safe.directory "$(pwd)"
 
       - name: Build the ROMs
         run: make basic-reloc   # build/basic.rom was retired 2026-07-29

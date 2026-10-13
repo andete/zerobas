@@ -122,6 +122,9 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               basic/fatio-body.inc \
               basic/fatiocreate-body.inc basic/fatiow-body.inc \
               basic/sv-diskwr.inc basic/sv-savdisk.inc
+# A bare `make` builds `all`, wherever that rule sits: it moved below SUB2_ROM's
+# definition (2026-10-13), and the first rule in the file would otherwise win.
+.DEFAULT_GOAL := all
 DISK_ROM := $(BUILD)/disk.rom
 # D-DISKDEAD: disk.rom needs a symbol table like the other two builds, because
 # the dead-code sweep reports a span's ADDRESS and SIZE from it. Without one the
@@ -256,7 +259,11 @@ TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 # Default goal: everything buildable with pasmo + python3 + openMSX's bundled ROMs.
 # The BASIC image itself is $(RELOC_ROM) (a proof/staging target) and $(MAIN_ROM)
 # (the shipped merge, needs a C-BIOS checkout), so neither is here.
-all: $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM) $(TAPE_PATCHES)
+# 🔴 `all` IS DECLARED AFTER SUB2_ROM (below), NOT HERE: make expands a rule's
+# prerequisites when it READS the rule, and SUB2_ROM was defined 33 lines later,
+# so `all` depended on an EMPTY name and a fresh `make` never built sub2.rom --
+# every gate builds it through other targets, so nothing saw it until the CI's
+# nightly job ran `make all` on a clean runner (2026-10-13).
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -291,6 +298,8 @@ SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm 
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym
+all: $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM) $(TAPE_PATCHES)
+
 $(SUB2_ROM): $(SUB2_SRC) $(SUB2_PARTS) | $(BUILD)
 	$(PASMO) -I sub --bin $(SUB2_SRC) $(SUB2_ROM) $(SUB2_SYM)
 	python3 tools/pad_rom.py $(SUB2_ROM) 32768
