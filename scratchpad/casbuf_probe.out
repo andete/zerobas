@@ -1,0 +1,10 @@
+=== Philips_VG_8020: VARPTR(#0), VARPTR(#1) = $F16E, $F277
+   save      278 B beyond its control; runs >= 8 B: $F062..$F069 (8), $F177..$F276 (256), $F866..$F870 (11)
+   load      337 B beyond its control; runs >= 8 B: $8003..$801F (29), $F05E..$F069 (12), $F177..$F276 (256), $F425..$F42E (10), $F866..$F876 (17)
+   openout   347 B beyond its control; runs >= 8 B: $F280..$F37F (256), $F430..$F44A (27), $F583..$F5A7 (37), $F866..$F870 (11)
+   openin    354 B beyond its control; runs >= 8 B: $F062..$F069 (8), $F280..$F37F (256), $F432..$F43E (13), $F583..$F5A7 (37), $F866..$F876 (17), $FC0F..$FC17 (9)
+=== C-BIOS_MSX1_EU_REPACK_NODISK: VARPTR(#0), VARPTR(#1) = $E090, $E199
+   save      286 B beyond its control; runs >= 8 B: $E600..$E6FF (256)
+   load      368 B beyond its control; runs >= 8 B: $8005..$8020 (28), $E040..$E04B (12), $E600..$E6FF (256), $F00A..$F018 (15), $F423..$F42C (10)
+   openout   376 B beyond its control; runs >= 8 B: $E600..$E6FF (256), $F42E..$F448 (27), $F583..$F5A7 (37)
+   openin    393 B beyond its control; runs >= 8 B: $E03E..$E04B (14), $E600..$E6FF (256), $EF00..$EF12 (19), $F00A..$F017 (14), $F430..$F43C (13), $F583..$F5A7 (37), $FC0F..$FC17 (9)

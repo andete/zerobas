@@ -1,0 +1,41 @@
+tape: 40 lines, 1912 B of text, 8 data block(s)
+=== Philips_VG_8020: 9 motor-ON transition(s), 10 OFF
+   t=   7.500  off
+   t=  15.522  ON 
+   t=  19.714  off
+   t=  19.719  ON 
+   t=  21.994  off
+   t=  22.099  ON 
+   t=  24.385  off
+   t=  24.485  ON 
+   t=  26.771  off
+   t=  26.886  ON 
+   t=  29.171  off
+   t=  29.281  ON 
+   t=  31.567  off
+   t=  31.672  ON 
+   t=  33.958  off
+   t=  34.078  ON 
+   t=  36.364  off
+   t=  36.474  ON 
+   t=  38.759  off
+   LIST 400 after the load: LIST 400
+=== C-BIOS_MSX1_EU_REPACK_NODISK: 8 motor-ON transition(s), 9 OFF
+   t=   7.500  off
+   t=  15.561  ON 
+   t=  24.318  off
+   t=  24.499  ON 
+   t=  26.784  off
+   t=  26.984  ON 
+   t=  29.270  off
+   t=  29.500  ON 
+   t=  31.790  off
+   t=  32.020  ON 
+   t=  34.311  off
+   t=  34.561  ON 
+   t=  36.847  off
+   t=  37.142  ON 
+   t=  39.427  off
+   t=  39.717  ON 
+   t=  44.318  off
+   LIST 400 after the load: LIST 400

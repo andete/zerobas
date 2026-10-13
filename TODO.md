@@ -4043,6 +4043,29 @@ item — do **one item per session** to keep context lean.
       (4) FLD_DESC (256 B), then PRINT USING's scratch -> FBUFFR.
       The small official-cell moves (DATPTR, LPTPOS / PRTFLG, the D-REHOME
       re-judgements) come after: they buy correctness more than bytes.
+      📏 **(1) MEASURED, 2026-10-13.** [`casbuf_probe.py`](scratchpad/casbuf_probe.py)
+      -> [`casbuf_probe.out`](scratchpad/casbuf_probe.out): the VG-8020 does
+      ALL cassette I/O through the CHANNEL's own 256 B buffer (block + 9):
+      SAVE / LOAD "CAS:" through #0's ($F177..$F276, VARPTR(#0) $F16E),
+      OPEN ... AS #1 for output or input through #1's ($F280..$F37F) --
+      no other buffer of size. zerobas wrote CAL_BUF ($E600..$E6FF) in every
+      case, its own channel blocks ($E090 / $E199, the same 265 B shape)
+      untouched. 🔮 HIT.
+      [`casmotor_probe.py`](scratchpad/casmotor_probe.py) ->
+      [`casmotor_probe.out`](scratchpad/casmotor_probe.out): an 8-block
+      ASCII LOAD with the motor line (PPI port C bit 4) sampled -- the
+      VG-8020 stops the motor between blocks (~0.1 s gaps), and so does
+      zerobas (~0.2-0.3 s; D-CAS4BLK). 🔮 "zerobas keeps it running": MISS.
+      So the read-ahead second buffer is REDUNDANT -- D-CAS4BLK's own note
+      says the motor stop was the fix and the double buffer "only moved
+      that one block later". ➡️ **(1) DESIGN:** cassette I/O through the
+      channel's own buffer, ONE buffer, as on the reference (#0 for SAVE /
+      LOAD, the opened channel for OPEN); CAL_BUF / CAL_BUF2 / CAS_WBUF
+      retired; then the FAT sector buffers are wholly disk-only and move
+      to the diskless floor (~1 KB). Cost: the page-aligned idioms
+      (`ld h,CAL_CURHI`, `ld h,CAS_WBUF >> 8`) become 16-bit base + index,
+      in the casmatch / casget tenant (sub page 1) and the SAVE / PRINT#
+      path (main). Tape-timing code: the cassette suites are the gate.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7833,7 +7856,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33350 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33373 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7999,7 +8022,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12861 (T-6FE392)8 (T-529ABE)` from `TODO.md:25655 (T-529ABE)`: a
+      `TODO.md:12884 (T-6FE392)8 (T-529ABE)` from `TODO.md:25678 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13708,7 +13731,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25655 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25678 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
