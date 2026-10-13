@@ -1,0 +1,6 @@
+=== disk: PASS
+=== memory-map: PASS
+
+PASS 2
+refcache: 1 hit, 3 miss, 3 stored
+kwdoc_rc=0

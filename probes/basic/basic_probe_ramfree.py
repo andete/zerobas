@@ -79,7 +79,20 @@ SYSVARS = os.path.join(ROOT, "basic", "sysvars.inc")
 # statement about a window that was no longer in the pool.
 # CTLTOP ($E052) caches `strheap_varceil()` on the machine, so the workload can
 # compute its own window and no constant can go stale again.
-CTLTOP_ADDR = 0xE052    # the pool's TOP, cached in RAM (sysvars.inc)
+def _sym(name):
+    """zerobas's own cells move with the RAM-usage work (D-RAMSHIFT, 2026-10-13,
+    moved CTLTOP from 0xE052): read them from the build, never copy them."""
+    import os as _os, re as _re
+    _p = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.dirname(
+        _os.path.abspath(__file__)))), "build", "basic-reloc.sym")
+    for _ln in open(_p):
+        _m = _re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", _ln)
+        if _m:
+            return int(_m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+CTLTOP_ADDR = _sym("CTLTOP")    # the pool's TOP, cached in RAM (sysvars.inc)
 POOL_BACKOFF = 24       # a few frames below the top, where a GOSUB writes first
 POOL_N = 16
 POOL_BASE = "PB"        # the BASIC variable the workload computes it into

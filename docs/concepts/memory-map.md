@@ -6,11 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # The memory map — where BASIC keeps things in RAM
 
-> **Status (2026-10-10):** program, variables and arrays sit at the Philips
+> **Status (2026-10-13):** program, variables and arrays sit at the Philips
 > VG-8020's addresses and cost the same bytes, but
-> zerobas's own workspace leaves a diskless machine 4978 bytes less `FRE(0)`
-> (the disk build is 343 short of the National CF-3300; both 267 more since
-> channel 0's block, 2026-10-10). Open, TIER 4: D-DIMRESERVE, the `GOSUB`
+> zerobas's own workspace leaves a diskless machine 4360 bytes less `FRE(0)`
+> (it was 4978 until 2026-10-13; the disk build is now 275 bytes *ahead* of
+> the National CF-3300, [`ramshift_disk.out`](../../scratchpad/ramshift_disk.out)). Open, TIER 4: D-DIMRESERVE, the `GOSUB`
 > frame, D-BOOTKEYS' CTRL.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -26,7 +26,7 @@ area, where the BIOS and BASIC keep their published variables.
 
 Reference: the VG-8020 for BASIC's layout, the CF-3300 for what a disk ROM
 adds. zerobas differs at the top: it keeps its own interpreter variables in
-`&HE000`–`&HF37F`, RAM the VG-8020 leaves free for programs.
+`&HE26A`–`&HF37F`, RAM the VG-8020 leaves free for programs.
 
 ## How it works
 
@@ -41,8 +41,8 @@ adds. zerobas differs at the top: it keeps its own interpreter variables in
 | stack: `FOR`/`GOSUB` frames, expressions | `STKTOP` `$F674` | down | below the string space | below the file blocks |
 | string space (`CLEAR n`) | `MEMSIZ` `$F672` (top) | down | below the file blocks | right under the ceiling |
 | file blocks (`MAXFILES`) | `FILTAB` `$F860` | — | right under `HIMEM` | between stack and string space |
-| BASIC's ceiling | `HIMEM` `$FC4A` | — | `$F380` at boot | `$E000` at boot (diskless) |
-| interpreter workspace | — | — | none | `$E000`–`$F37F` |
+| BASIC's ceiling | `HIMEM` `$FC4A` | — | `$F380` at boot | `$E26A` at boot (diskless) |
+| interpreter workspace | — | — | none | `$E26A`–`$F37F` |
 | system work area | `$F380` | — | BIOS and BASIC | BIOS and BASIC |
 
 The first four rows are the same addresses on both machines, measured in nine
@@ -76,7 +76,7 @@ program near the end of memory runs out at a different depth.
 | statement | effect, on both machines |
 |---|---|
 | `CLEAR n` | string space becomes n bytes; the stack top moves down by the difference, and `FRE(0)` with it |
-| `CLEAR n,top` | `HIMEM` becomes `top`, `&H8000` to `&HF380` whatever it was at start-up; refused when the program and string space would not fit. zerobas gains no memory above `&HE000`, where its workspace is |
+| `CLEAR n,top` | `HIMEM` becomes `top`, `&H8000` to `&HF380` whatever it was at start-up; refused when the program and string space would not fit. zerobas gains no memory above `&HE26A`, where its workspace is |
 | `MAXFILES=n` | 267 bytes of `FRE(0)` per channel, 0 to 15; `FRE("")` unchanged; open files are closed and variables cleared |
 | `DIM`, a new variable | `ARYTAB`/`STREND` move up |
 | a program edit | everything above the program moves; variables are cleared |
@@ -95,7 +95,8 @@ on the CF-3300 and `$DD12` on zerobas with one; zerobas's `FRE(0)` is **4711
 bytes below the VG-8020's** without a disk and **76 below the CF-3300's** with
 one.
 
-Most of the diskless gap is zerobas's 4992-byte workspace at `$E000`–`$F37F`;
+Most of the diskless gap is zerobas's workspace, 4374 bytes at `$E26A`–`$F37F`
+since 2026-10-13 (4992 at `$E000` before);
 the VG-8020 in turn spends about 270 bytes on channel 0, which zerobas does
 not reserve yet. Inside one program, `FRE(0)` also depends on how deep the expression is that
 reads it — on the VG-8020 each level of nesting costs a few bytes — so compare
@@ -164,7 +165,7 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **Less free memory on a diskless machine** (TIER 4): 4978 bytes, above
+- **Less free memory on a diskless machine** (TIER 4): 4360 bytes, above
   ([`fcb0_run.out`](../../scratchpad/fcb0_run.out),
   [`fcb0_disk.out`](../../scratchpad/fcb0_disk.out)).
   A program that just fits on the VG-8020 does not fit here; `CLEAR 25000` is
@@ -195,7 +196,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   (`&HF41F`), and zerobas wrote neither. Both now use the reference's buffers
   (D-RAMBUF, D-RAMKBUF). The bytes freed this way sit in the
   middle of zerobas's workspace, so `FRE(0)` grows only once what lies below
-  them moves up — the step after.
+  them moves up — which it then did (D-RAMSHIFT, 2026-10-13): the workspace's
+  lowest 618 bytes moved into the freed space as one block, checked name by
+  name by [`tools/ws_shift.py`](../../tools/ws_shift.py), and `FRE(0)` rose by
+  exactly 618 in every state measured ([`fremem_shift.out`](../../scratchpad/fremem_shift.out)).
 - **Channel 0 had no block, and the blocks sat the other way round** (fixed
   2026-10-10, D-FCBSHAPE). Both references keep a block for channel 0 — the
   one `LOAD` and `SAVE` use — at every `MAXFILES`, `0` included, and put the
@@ -233,7 +237,7 @@ generates [docs/ram-map.md](../ram-map.md) from them.
 
 The boundaries are derived, not stored, in
 [sub/strheap.asm](../../sub/strheap.asm): `strheap_ceiling` is the lower of
-`HIMEM` and `TXTMAX` (`$E000`); `strheap_floor` subtracts the string space;
+`HIMEM` and `TXTMAX` (`$E26A`); `strheap_floor` subtracts the string space;
 `strheap_chantab` subtracts `MAXFILES` × 267; `strheap_varceil` is the stack
 top. `strheap_ctllim` stores the two that are needed on every push — the
 published `STREND` and `CTLLIM`, the stack's floor — and `ctl_alloc` in

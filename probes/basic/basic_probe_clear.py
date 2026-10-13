@@ -126,7 +126,7 @@ STREND       = 0xF6C6   # 2 bytes: end-of-string-space pointer
 TXTTAB       = 0xF676   # 2 bytes: BASIC text base pointer
 
 # zerobas error landmark (basic/sysvars.inc — own source)
-ERRMARK      = 0xE010
+ERRMARK      = 0xEB10   # D-RAMSHIFT 2026-10-13: was 0xE010 (+$0B00)
 
 # A free RAM sentinel location clear of all cart regions
 SENT         = 0xD000   # free RAM; used by POKE continuation tests

@@ -68,9 +68,10 @@ MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPAC
 # GFX_DJ ($C120) / GFX_BAD ($E3E5), so the stub only needs to make the call.
 STUB_ADDR = 0xC000
 STUB_HALT = 0xC00E
-GFX_DJ = 0xE220
+GFX_DJ = 0xED20   # D-RAMSHIFT 2026-10-13: was 0xE220 (+$0B00)
 GFX_BAD = 0xE3E5
-GFX_OP = 0xE030   # G2: index 8 is now selector-dispatched; 0 = the floor self-test
+GFX_OP = 0xEB30   # D-RAMSHIFT: was 0xE030.
+                  # G2: index 8 is now selector-dispatched; 0 = the floor self-test
 STUB_BYTES = bytes([
     0xF3,                    # di
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)

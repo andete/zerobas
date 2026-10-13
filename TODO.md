@@ -3732,6 +3732,46 @@ item — do **one item per session** to keep context lean.
       321 live, 831 with the bound cut ([`ramkbuf_hostknife.out`](scratchpad/ramkbuf_hostknife.out)).
       🔮 Predicted the rows `32769 10` (MISS: the wrapped anchor), the knife red
       (MISS twice), the host reach ~829 cut (HIT, 831).
+      ✅ **(3) DONE 2026-10-13 (D-RAMSHIFT): THE FIRST FRE GAIN, +618 B ON BOTH
+      BUILDS.** Not 832: STRSCR ($E26D, 256 B) straddles $E340, and the first
+      cut at $E26D was REFUSED by the tool because STRSCR = RVDESC + 3 and
+      RVDESC = FRETOP + 2 chain out of the block -- RVDESC is now pinned at
+      its own address ($E26A; every FRETOP access is a 16-bit load/store by
+      name, no adjacency assumed). Block $E000..$E269 -> $EB00..$ED69 (+$0B00,
+      a whole number of pages: every low byte kept); TXTMAX $E000 -> $E26A.
+      [`tools/ws_shift.py`](tools/ws_shift.py) rewrote 195 literal equates and
+      VERIFIED from the resolved maps of both components (no .sym) that 229
+      names moved exactly as claimed and nothing else did, the 70 disk mirrors
+      through their basic originals ([`ramshift_apply.out`](scratchpad/ramshift_apply.out)).
+      📏 [`fremem_shift.out`](scratchpad/fremem_shift.out): diskless **-4360 in
+      all eight states** (was -4978), every economy delta still equal;
+      [`ramshift_disk.out`](scratchpad/ramshift_disk.out): the disk build 23705
+      against the CF-3300's 23430 -- **275 AHEAD** (was 343 short). 🔮 Both
+      predicted exactly: HIT, HIT.
+      ⚠️ $E000 IS PROGRAM RAM NOW: kwram / kwtime / castail / probe_signal POKE
+      window marks there, which used to be dead workspace. On zerobas it is now
+      the string space under the channel blocks (strings are allocated down
+      from $E051); harmless while a measured program holds under ~80 B of
+      strings -- the battery is the check. Golf (D-BASICROM) still cannot run:
+      its USR data at $E05E..$E273 is now the channel blocks and RVDESC.
+      ➡️ NEXT: the remaining hole ($ED6A..$EE3F, 214 B) cannot take STRSCR
+      (256 B). Candidates, by size: the disk share on NODISK (942 B), STRSCR
+      itself into a reference buffer, the FAT/CAL buffers on NODISK (1024 B).
+      🔴 **ITS FIRST FULL BATTERY READ 200/202 -- HAND COPIES THE CHECKERS DO NOT
+      SEE** (the battery log is not kept; the two reds were): `ramfree` (the `; FREE-RAM $A..$B` claims in sysvars.inc COMMENTS
+      still named the old spans -- the shift tool rewrites `equ`s, not claims --
+      and `CTLTOP_ADDR = 0xE052`, a copy under ANOTHER name) and `txtceil`
+      (`TXTTAB, PRGEND, HIMEM, POOL = ..., 0xE026, ..., 0xE232`, a TUPLE
+      assignment). wall-literal-check matches `NAME = value` with the cell's own
+      name only, so all three passed it. ✅ The four claims shifted (each keeps
+      its old span in a note); ramfree / txtceil / prgend_init read the moving
+      cells from build/basic-reloc.sym. Green after:
+      [`ramshift_ramfree.out`](scratchpad/ramshift_ramfree.out),
+      [`ramshift_txtceil.out`](scratchpad/ramshift_txtceil.out).
+      ➡️ FOR THE NEXT SHIFTS: ws_shift.py should rewrite the FREE-RAM claims
+      too, and the checker's blind forms (tuples, renamed copies) want a sweep
+      -- grep the probes for the shifted range's literals before the battery.
+      (prgend_init is not wired into any gate; it passes when run by hand.)
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7514,7 +7554,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33031 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33071 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7680,7 +7720,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12542 (T-6FE392)8 (T-529ABE)` from `TODO.md:25336 (T-529ABE)`: a
+      `TODO.md:12582 (T-6FE392)8 (T-529ABE)` from `TODO.md:25376 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13389,7 +13429,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25336 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25376 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -44,7 +44,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "lib"))
 import omsx_repl                                             # noqa: E402
 
-DISK_FCB = 0xE0DB
+DISK_FCB = 0xEBDB   # D-RAMSHIFT 2026-10-13: was 0xE0DB (+$0B00)
 FCB_LEN = 12
 MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE")
 if not MACHINE:

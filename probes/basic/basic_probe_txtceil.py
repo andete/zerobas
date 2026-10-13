@@ -46,7 +46,21 @@ import omsx_repl                                                  # noqa: E402
 import probe_report                                               # noqa: E402
 
 ZB_M = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
-TXTTAB, PRGEND, HIMEM, POOL = 0xF676, 0xE026, 0xFC4A, 0xE232
+# 🔴 D-RAMSHIFT (2026-10-13): PRGEND and POOLSIZE are zerobas's OWN cells, and
+# the workspace moves (RAM-usage work); they were copied here as 0xE026 / 0xE232
+# and read 65535 after the move. They come from the build's symbol table now;
+# TXTTAB and HIMEM are the MSX standard's fixed cells.
+def _sym(name):
+    import re as _re
+    for _ln in open(os.path.join(ROOT, "build", "basic-reloc.sym")):
+        _m = _re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", _ln)
+        if _m:
+            return int(_m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+TXTTAB, HIMEM = 0xF676, 0xFC4A
+PRGEND, POOL = _sym("PRGEND"), _sym("POOLSIZE")
 BODY = "REM " + "A" * 30                 # ~36 stored bytes per line
 LABEL_W = 9
 

@@ -42,7 +42,7 @@ SYM = os.path.join(ROOT, "build", "basic-reloc.sym")
 MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
 # Fixed system-var addresses (basic/sysvars.inc; RAM, mapping-independent).
-PRGEND = 0xE026
+PRGEND = None     # zerobas's own cell: read from SYM in main() (D-RAMSHIFT moved it)
 HIMEM = 0xFC4A
 GARBAGE_PRGEND = 0xFC48        # +2 == HIMEM: the F1 corruption target
 HIMEM_SENTINEL = 0xF380
@@ -68,6 +68,7 @@ def sym_addr(name):
 def main():
     clear_vars = sym_addr("clear_vars")
     new_prog = sym_addr("new_prog")
+    PRGEND = sym_addr("PRGEND")         # zerobas's own cell (D-RAMSHIFT moved it)
     out = tempfile.NamedTemporaryFile("r", suffix=".txt", delete=False)
     out.close()
     tcl = tempfile.NamedTemporaryFile("w", suffix=".tcl", delete=False)
