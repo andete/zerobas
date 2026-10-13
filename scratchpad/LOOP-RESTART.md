@@ -4,7 +4,50 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-12 AFTERNOON — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
+## 🟢 STATE AS OF 2026-10-14 EARLY MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW (TWO NEW ROWS: batteries, distribution) AND THE 2026-09-24 SECTION (READ BOTH).
+
+**Joost, 2026-10-13 (all in the rulings table):** RAM is high priority -- "for every
+ram buffer or memory location we invented ourselves, we need to verify how
+reference does it"; BIGGEST FIRST, order confirmed ("go ahead with that order").
+FULL battery once a day / every hand-off / on a RAM-address move / on a harness
+change; kwtime + kwram run only in FULL (the tier sheet notes an older build; a
+FULL re-renders the sheet -- STAGE docs/tier-status.md after a green FULL). The
+openMSX download ships the READY-MADE main ROM; CI builds on every push (Linux,
+Windows, macOS) and refreshes the rolling `nightly` release. D-VG8020-20 filed
+for the future (🙋: needs the /20 ROM).
+
+**Shipped 2026-10-13/14 (`git log --oneline 88dd3202..`), FULL-green where it mattered:**
+- RAM: D-FATFLOOR (FAT buffers to the diskless floor), D-DRAWINPLACE (DRAW reads
+  its strings in place; 256 B buffer gone), step 2b (disk.rom's cell block to the
+  floor). Diskless boot FRE(0) 24711 -> 26023; gap to the VG-8020 -2792. Disk
+  build unchanged (275 ahead of the CF-3300).
+- Bugs: D-ARYCUR (DRAW array substitution hang), D-DRAWSUBVAR, D-LISTLPTR,
+  D-DSCALEDISK (disk access lost DRAW's scale), D-FLOORREC (a diskless channel
+  switch wrote 256 B of program RAM -- a regression D-FATFLOOR had shipped).
+- Gates: diskalias-acceptance, floorcensus-acceptance (WHO writes the diskless
+  floor -- a DISK-ONLY tag is a claim about writers), graphics rows.
+- Withdrawn: D-TOKLAG (the harness's key injector overwrites pending keys).
+- Tools: ws_shift (comment copies, before-map widths, DISK-ONLY tags),
+  make_dist / `make dist` / `make install-openmsx`, pick_gates (daily FULL,
+  layout_moves), the `all:`/sub2 Makefile fix.
+
+➡️ **NEXT: RAM order step (3a), STRSCR's INPUT producer** (TODO, the RAM-order
+item, "(3) PLAN"). Measured: only INPUT, READ, file names and KEY still write
+STRSCR (scratchpad/strscr_census.out). 🔴 `STRSCR equ BUF` does NOT work: the
+splitter writes STRSCR[0] (the quote state) before reading, and console INPUT's
+source IS BUF. Do it the reference's way: console INPUT parses in place in the
+typed line (quote state in its own cell), INPUT# / tape stage in BUF,
+tgt_store_str takes (ptr, len). Then (3b) READ, (3c) FILNAM, (3d) KEY; then
+STRSCR's 256 B go. Then (4): FLD_DESC, PRINT USING's scratch -> FBUFFR.
+
+**🔧 Lessons (2026-10-13, each a miss of mine, each caught):** a knife runner
+derived from another by text substitution can cut the WRONG FILE and read green
+-- write its cut out explicitly and check the anchor; a knife's negative control
+can read green because the corpus never reaches the bug (D-FLOORCENSUS); a
+hard-coded address from a listing goes stale within the hour -- read the sym; a
+DISK-ONLY tag is a claim about writers; a FULL now re-renders the tier sheet.
+
+## 🟢 STATE AS OF 2026-10-12 AFTERNOON — superseded above (its lessons still hold). JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH).
 
 **Shipped since the 10-11 morning section (`git log --oneline 7da8a092..`), every
 code commit FULL-green (+ the five excluded):**
