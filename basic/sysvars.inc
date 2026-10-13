@@ -2390,6 +2390,14 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; (disk/init.asm's lay_page0_env, after a bootable boot sector) -- BASIC and DOS
 ; never co-exist (D-RECLAIM), as the old buffer already relied on.
 TXTMAX          equ     $E26A   ; NOT-A-CELL: the text ceiling (= the workspace floor)
+; 🧮 D-RAMCEIL (lever (2) step a, 2026-10-13): THE CEILING IS CHOSEN AT BOOT.
+; TXTMAX stays the DISK build's ceiling (the disk ROM, which exists only there,
+; keeps using the constant); TXTMAX_NODISK is the diskless one, and TXTCEIL is
+; what boot picked (interp.asm, beside the HIMEM store: a disk ROM that lowered
+; HIMEM means the disk ceiling). Every main/sub reader loads TXTCEIL. Equal for
+; now -- step (b) packs the disk-only tenants at the floor and raises _NODISK.
+TXTMAX_NODISK   equ     TXTMAX  ; NOT-A-CELL: the diskless build's text ceiling
+TXTCEIL         equ     $ED6A   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
 ; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,

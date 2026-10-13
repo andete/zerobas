@@ -522,7 +522,11 @@ ctp_line:
                 ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
                 push    de                  ; guard body length across TAPIN/stores
                 ld      hl,(CLPTR)
-                ld      de,TXTMAX-4
+                ld      de,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling, less the
+                dec     de                  ;  4-byte header
+                dec     de
+                dec     de
+                dec     de
                 or      a
                 sbc     hl,de
                 jr      nc,ctp_oom_pop
@@ -550,7 +554,7 @@ ctp_body:
                 jr      z,ctp_line          ; whole body copied -> next line
                 push    de                  ; guard remaining count across TAPIN
                 ld      hl,(CLPTR)          ; bounds check
-                ld      de,TXTMAX
+                ld      de,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling
                 or      a
                 sbc     hl,de
                 jr      nc,ctp_oom_pop

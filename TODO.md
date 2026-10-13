@@ -3772,6 +3772,50 @@ item — do **one item per session** to keep context lean.
       too, and the checker's blind forms (tuples, renamed copies) want a sweep
       -- grep the probes for the shifted range's literals before the battery.
       (prgend_init is not wired into any gate; it passes when run by hand.)
+      📐 **LEVER (2) PRICED, 2026-10-13 -- THE NEXT ~1.6 KB, DISKLESS ONLY.**
+      Census of the remaining workspace ($E26A..$F37F, docs/ram-map.md): on the
+      diskless build these are NEVER used -- the FAT data + metadata sector
+      buffers (1024 B, $E5C0..$E9BF; but CAL_BUF / CAL_BUF2, the cassette
+      ASCII-load buffers, 512 B, live INSIDE them), FLD_TAB + FLD_DESC (352 B;
+      FIELD is refused without a disk since D-FLDGATE, basic_probe_nodisk
+      `h.field`), and 91 disk-only cells (246 B declared). The main ROM is ONE
+      binary for both builds, so they can only be ceded with a RUNTIME
+      ceiling. Plan, one commit each:
+      (a) TXTMAX -> a RAM cell set at boot from disk presence (TXTMAX_DISK /
+          _NODISK, equal at first: no behaviour change, the gates prove the
+          plumbing). ~6 main sites load it as a constant (str-engine, interp
+          boot, cload x2, lineedit, strheap); ~+1 B each. The disk ROM's own
+          uses keep the DISK constant -- it exists only on that build.
+      (b) re-layout: the disk-only tenants packed at the workspace FLOOR, basic
+          ones above; TXTMAX_NODISK = the basic block's bottom. Needs a packing
+          tool (ws_shift moves one block; this reorders many) and every cell's
+          width TRUSTED first (42 are pinned width-less in
+          tools/ram-width-allow.txt). The packing also closes the unattributed
+          runs (~600 B: $E41E 212, $F195 107, ...) for BOTH builds.
+      (c) the cassette buffers: on the VG-8020 a tape ASCII load goes through
+          channel 0's 267 B block -- measure whether CAL_BUF can be FCB 0's
+          buffer, so the 512 B need not stay in the diskless workspace.
+      After lever (2), the gap is ~2.7 KB of basic tenants proper -- STRSCR
+      (256), DB_WIN (96), FN_PAREA (99, the reference has PARM1 for that
+      job), FOR/GFX/PU scratch, the math cells: lever (3), per tenant.
+      ✅ **(a) DONE 2026-10-13 (D-RAMCEIL): TXTCEIL ($ED6A, 2 B) is the ceiling
+      boot chose.** interp.asm's HIMEM store now also stores TXTCEIL: TXTMAX
+      (the disk build's) when a disk ROM lowered HIMEM, TXTMAX_NODISK otherwise
+      -- equal for now. str-engine / strheap / cload load TXTCEIL; the disk ROM
+      keeps the constant. 🔴 A BOOT-ORDER TRAP, caught by reading, not by a run:
+      clear_vars -> heap_reset runs ~150 lines BEFORE the store, so it would
+      have read power-on RAM (openMSX zero-fills: a heap ceiling of 0, and a
+      suite that could pass for the wrong reason). TXTCEIL is seeded with TXTMAX
+      before clear_vars, which is byte-for-byte what that reset always computed.
+      Walls: page 1 111 -> 90 B, low 49 -> 48, sub page 0 71 -> 70 (clean build).
+      Unchanged on all four machines, as predicted
+      ([`ramceil_fremem.out`](scratchpad/ramceil_fremem.out),
+      [`ramceil_disk.out`](scratchpad/ramceil_disk.out)). ⚠️ NO KNIFE YET: with
+      the two ceilings equal, the boot DECISION cannot be witnessed -- step (b)
+      owes the knife (cut the branch: the diskless FRE must fall back).
+      ⚠️ For (b): a SHIFT boot leaves a disk ROM RECORDED (DISKSLOT_OK) but
+      uninstalled, and HIMEM unlowered -> the diskless ceiling. Before the two
+      differ, check that no disk verb can reach the disk-only buffers then.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7554,7 +7598,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33071 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33115 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7720,7 +7764,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12582 (T-6FE392)8 (T-529ABE)` from `TODO.md:25376 (T-529ABE)`: a
+      `TODO.md:12626 (T-6FE392)8 (T-529ABE)` from `TODO.md:25420 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13429,7 +13473,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25376 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25420 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

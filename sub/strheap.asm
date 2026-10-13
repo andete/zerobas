@@ -791,13 +791,13 @@ strheap_ceiling:
                 or      l
                 jr      z,shc_txtmax
                 push    hl
-                ld      bc,TXTMAX
+                ld      bc,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling, not the constant
                 or      a
                 sbc     hl,bc
                 pop     hl
-                jr      c,shc_have          ; HIMEM<TXTMAX -> ceiling=HIMEM
+                jr      c,shc_have          ; HIMEM<TXTCEIL -> ceiling=HIMEM
 shc_txtmax:
-                ld      hl,TXTMAX
+                ld      hl,(TXTCEIL)
 shc_have:
                 ret
 

@@ -373,13 +373,13 @@ heap_reset:
                 or      l
                 jr      z,hr_txtmax
                 push    hl
-                ld      bc,TXTMAX
+                ld      bc,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling, not the constant
                 or      a
                 sbc     hl,bc
                 pop     hl
-                jr      c,hr_have           ; HIMEM<TXTMAX -> ceiling=HIMEM
+                jr      c,hr_have           ; HIMEM<TXTCEIL -> ceiling=HIMEM
 hr_txtmax:
-                ld      hl,TXTMAX
+                ld      hl,(TXTCEIL)
 hr_have:
                 ld      (FRETOP),hl         ; HL = C, the ceiling
                 ld      hl,TEMPPOOL         ; empty pool: TEMPPT at its base

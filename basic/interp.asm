@@ -35,6 +35,12 @@ init:
                 ; Cold-start semantics here, as the VG-8020 has on reset.
                 xor     a
                 ld      (SUBSLOT_OK),a
+                ; D-RAMCEIL: clear_vars -> heap_reset reads TXTCEIL, and the boot
+                ; only CHOOSES it after init_ext_roms (the HIMEM store below). Seed
+                ; it with the constant every reader used before, so this early
+                ; reset computes exactly what it always did -- never power-on RAM.
+                ld      hl,TXTMAX
+                ld      (TXTCEIL),hl
                 call    clear_vars          ; deterministic variable table
                 ; Error-handling S2a: ERR/ERL are zeroed at COLD BOOT ONLY (this is
                 ; the sole cold-only hook; clear_vars also runs on NEW/CLEAR/RUN, which
@@ -185,13 +191,21 @@ init:
                 ; storing TXTMAX here unconditionally would hand that RAM back to
                 ; BASIC. C-BIOS leaves $F380, above TXTMAX, so a diskless boot
                 ; still reads TXTMAX. The high bytes decide it ($DC.. vs $E0..).
-                ld      hl,TXTMAX
+                ; 🧮 D-RAMCEIL (2026-10-13): the same test now also PICKS THE TEXT
+                ; CEILING (TXTCEIL): a disk ROM that lowered HIMEM means the disk
+                ; build's TXTMAX, otherwise the diskless one. (Equal until lever
+                ; (2) step (b) packs the disk-only tenants at the floor.)
+                ld      hl,TXTMAX_NODISK
                 ld      de,(HIMEM)
                 ld      a,d
-                cp      h
-                jr      nc,bh_store         ; HIMEM at or above TXTMAX: TXTMAX
-                ex      de,hl               ; a disk ROM lowered it: keep it
+                cp      high TXTMAX
+                jr      nc,bh_store         ; HIMEM not lowered: the diskless ceiling
+                ld      hl,TXTMAX           ; a disk ROM lowered it: the disk ceiling
 bh_store:
+                ld      (TXTCEIL),hl        ; (`ld` leaves the flags: CF still says)
+                jr      nc,bh_himem         ; NC: HIMEM := the ceiling
+                ex      de,hl               ; C: keep the HIMEM the disk ROM lowered
+bh_himem:
                 ld      (HIMEM),hl
                 call    ctl_reset
                 ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.

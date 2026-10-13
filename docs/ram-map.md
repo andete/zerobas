@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 434 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **113** in the MSX standard work area at or above `$F380`.
+* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **113** in the MSX standard work area at or above `$F380`.
 * **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -473,6 +473,7 @@ second one is the question a per-component map cannot answer.
 | `$ED3B` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
 | `$ED3D` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$ED68` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
+| `$ED6A` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |

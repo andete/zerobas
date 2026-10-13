@@ -151,6 +151,12 @@ class Machine:
         self.traps = {}                # addr -> callback(machine)
         self._seed_fat_buffers()
         self._seed_hooks()
+        # D-RAMCEIL (2026-10-13): the text ceiling is a RAM cell the cold boot
+        # sets (TXTCEIL, basic/interp.asm) -- seeded there with TXTMAX before
+        # anything reads it. A host test that calls the heap without booting
+        # would read 0 (a ceiling of 0); seed it the way the boot does.
+        if "TXTCEIL" in self.sym and "TXTMAX" in self.sym:
+            self.poke_w(self.sym["TXTCEIL"], self.sym["TXTMAX"])
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
 
