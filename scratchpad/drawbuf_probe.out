@@ -1,0 +1,10 @@
+=== Philips_VG_8020: STKTOP, MEMSIZ = $F0A0, $F168
+   draw    44 B beyond its control (1462 written in all); runs >= 8 B: $ED3C..$ED4D (18), $FCB3..$FCBB (9)
+         smaller: $F3ED..$F3EE $F3F0..$F3F1 $F92A..$F930 $F956..$F958 $FB3B..$FB3D
+   long    41 B beyond its control (1463 written in all); runs >= 8 B: $ED42..$ED4D (12), $FCB3..$FCBB (9)
+         smaller: $80D0..$80D2 $F3ED..$F3EE $F3F0..$F3F1 $F92A..$F930 $F956..$F958 $FB3B..$FB3D
+=== C-BIOS_MSX1_EU_REPACK_NODISK: STKTOP, MEMSIZ = $F380, $0000
+   draw   129 B beyond its control (1723 written in all); runs >= 8 B: $E126..$E12E (9), $E812..$E81A (9), $E81D..$E835 (25), $E8F2..$E904 (19), $E921..$E929 (9), $E93F..$E94E (16), $EC00..$EC07 (8), $EC09..$EC19 (17), $FCB3..$FCBA (8)
+         smaller: $E919..$E91E $F92A..$F92C
+   long   267 B beyond its control (1865 written in all); runs >= 8 B: $E126..$E12E (9), $E812..$E81A (9), $E81D..$E8C4 (168), $E8F2..$E8FC (11), $E921..$E929 (9), $E93F..$E94E (16), $EC00..$EC07 (8), $EC09..$EC19 (17), $FCB3..$FCBA (8)
+         smaller: $80D1..$80D3 $E919..$E91E $F92A..$F92C

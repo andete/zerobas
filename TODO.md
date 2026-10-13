@@ -4135,8 +4135,36 @@ item — do **one item per session** to keep context lean.
       correct; the buffers are reached by symbol, so the pre-move census (written
       by nothing but C-BIOS's power-on RAM probe) still answers who writes them.
       Same five writers above the floor as before the move.
-      ➡️ NEXT in the confirmed order: (2) GFX_PSTK -- measure where the
-      VG-8020's PAINT keeps its spans first.
+      📏 **(2) RE-PRICED AND MEASURED, 2026-10-13.** The order named "the PAINT
+      span stack GFX_PSTK (360 B)" -- STALE: D-PAINTSP (2026-09-27) already put
+      PAINT's spans below SP, as on the reference; GFX_PSTK survives only as the
+      anchor of a 360 B union window ($E7F2..$E959), and PAINT's own cells there
+      are 15 B. The binding tenant is DRAW: GFX_DBUF, a 256 B buffer each
+      string is COPIED into (its header: the resident's eval between round trips
+      can reuse the temp pool a DRAW argument lives in), the X-frame stack
+      GFX_DFSTK (32 B) and ~60 B of parse state; sprites (GFX_VBUF, 32 B) and
+      CIRCLE (8 B) are the smaller tenants.
+      [`drawbuf_probe.py`](scratchpad/drawbuf_probe.py) ->
+      [`drawbuf_probe.out`](scratchpad/drawbuf_probe.out), write watch, each
+      case minus a control that assigns the same strings: the **VG-8020 has no
+      DRAW buffer** -- a 3-level `X` nest writes 18 B and a 200-character string
+      12 B, all just under STKTOP (the Z80 stack), plus documented work-area
+      cells ($FCB3.., $F92A..); it reads the string IN PLACE. zerobas copies it:
+      the 200-character string writes 168 B of GFX_DBUF beyond the control (its
+      first 43 B are written by the control's SCREEN switch too), plus the parse
+      state. 🔮 HIT. 🔴 Run 1 was VACUOUS on both machines -- the default 200 B
+      string space refused line 40, so no DRAW ran and the two agreed; the probe
+      now refuses a run that does not print its completion marker.
+      ➡️ **(2) DESIGN, by D-PAINTSP's precedent (Joost's 2026-09-27 ruling for
+      the same shape, "grow below SP"):** DRAW's frame text and X frames go to
+      the free gap below SP (SP − margin down to ARYEND + 2, PAINT's region --
+      one graphics statement is in flight at a time), the 256 B buffer and the
+      32 B frame stack leave the fixed window, and the union shrinks to the
+      parse state and the sprite block. A copy is kept (not the reference's
+      in-place read) because the reason for it -- the temp pool reused across
+      the co-routine's round trips -- is zerobas's own architecture; where the
+      copy LIVES is what costs RAM. Price the sub page-0 tenant from a clean
+      tree first; the freed span then rotates to the diskless floor as in (1b).
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7927,7 +7955,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33444 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33472 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8093,7 +8121,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12955 (T-6FE392)8 (T-529ABE)` from `TODO.md:25749 (T-529ABE)`: a
+      `TODO.md:12983 (T-6FE392)8 (T-529ABE)` from `TODO.md:25777 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13802,7 +13830,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25749 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25777 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
