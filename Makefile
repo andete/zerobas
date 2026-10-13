@@ -2513,6 +2513,15 @@ ceiling-acceptance: repack-machine
 diskalias-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_diskalias.py
 
+# --- floorcensus-acceptance: who WRITES the diskless floor (D-FLOORCENSUS) -----
+# On a diskless machine [TXTMAX, TXTMAX_NODISK) is program RAM; a DISK-ONLY tag
+# is a claim about its WRITERS that ram-map-check (declarations) cannot check.
+# A write census over a corpus, writers named by PC: stack writes and the
+# program-RAM managers pass, anything else fails (D-FLOORREC shipped through
+# this gap, 2026-10-13).
+floorcensus-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_floorcensus.py
+
 # --- officialcell-acceptance: jobs kept in the OFFICIAL work-area cell (D-OFFICIAL)
 # Joost's rule (2026-10-13): an invented RAM cell gives way to the official one
 # for the same job. TRCFLG / MAXFIL against the VG-8020; DATPTR reported.

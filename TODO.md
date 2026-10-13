@@ -333,7 +333,7 @@ item — do **one item per session** to keep context lean.
       theory built on them is VOID -- which copy alone bites is not established.
       ➡️ Follow-up: D-FLOORCENSUS (below).
 
-- [ ] 🧪 **D-FLOORCENSUS — A STANDING WRITE CENSUS OF THE DISKLESS FLOOR (filed 2026-10-13)**
+- [x] ✅ **DONE 2026-10-14** — 🧪 **D-FLOORCENSUS — A STANDING WRITE CENSUS OF THE DISKLESS FLOOR (filed 2026-10-13)**
       🎚️ APPARATUS — the DISK-ONLY tag is checked as a DECLARATION (ram-map-check)
       but never as a claim about WRITERS; D-FLOORREC shipped through that gap.
       🤖 **AUTONOMOUS** — a gate that runs a corpus on the DISKLESS build (channel
@@ -342,6 +342,21 @@ item — do **one item per session** to keep context lean.
       writer by PC, and fails on any writer outside an allowlist of the
       program-RAM managers (string heap, GC, channel blocks, stack). Its
       negative control is D-FLOORREC's own cut (K-FR1).
+      ✅ **SHIPPED: gate `floorcensus-acceptance`**
+      (probes/basic/basic_probe_floorcensus.py). The floor bounds come from the
+      sym; the watch arms after boot; each write records PC, slot and SP. A write
+      within SP-4..SP+23 is the stack's (the stack itself lives on the floor of a
+      diskless machine: 5206 of the strings case's 6223 writes); every other
+      writer must match ALLOW -- the string heap and GC, channel blocks and
+      headers, the tape buffer, the control-frame pool (FOR frames, `ef_`).
+      First run: three unlisted writers, all legitimate (`she_` / `shf_` heap
+      routines my `sh_` prefix missed, `ef_havestep`); listed with reasons.
+      🔴 **AND ITS FIRST NEGATIVE CONTROL READ GREEN:** with D-FLOORREC's cut
+      built in, the corpus (strings, GRP:, CRT:, graphics) never reached
+      t_fch_load's copy -- the gate could not have caught the bug it exists for.
+      The corpus now carries opengrp's `errors` program verbatim. Knife K-FC1
+      ([`floorcensus_knife.out`](scratchpad/floorcensus_knife.out)): the cut ->
+      FAIL naming exactly `sub:tfl_rec+12`; restored PASS. HIT.
 
 - [x] ✅ **FIXED 2026-10-13 (D-DSCALEDISK)** — 🎨 **ON THE DISK BUILD, ANY DISK ACCESS
       OVERWROTE DRAW'S PERSISTENT SCALE: BASIC'S GFX_DSCALE / GFX_DANGLE / GFX_G8N
@@ -8229,7 +8244,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33746 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33761 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8395,7 +8410,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13257 (T-6FE392)8 (T-529ABE)` from `TODO.md:26051 (T-529ABE)`: a
+      `TODO.md:13272 (T-6FE392)8 (T-529ABE)` from `TODO.md:26066 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14104,7 +14119,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26051 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26066 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

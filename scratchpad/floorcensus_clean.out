@@ -1,0 +1,7 @@
+floor [$E26A, $E88A) on C-BIOS_MSX1_EU_REPACK_NODISK
+strings   6223 distinct writes, 5206 on the stack
+grp       3163 distinct writes, 3160 on the stack
+crt       2181 distinct writes, 2172 on the stack
+grp_errors  6378 distinct writes, 4481 on the stack
+draw      2799 distinct writes, 2799 on the stack
+PASS: every non-stack writer of the floor is a program-RAM manager

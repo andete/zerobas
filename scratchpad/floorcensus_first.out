@@ -1,0 +1,20 @@
+floor [$E26A, $E88A) on C-BIOS_MSX1_EU_REPACK_NODISK
+strings   6223 distinct writes, 5206 on the stack
+grp       3163 distinct writes, 3160 on the stack
+crt       2181 distinct writes, 2172 on the stack
+draw      2799 distinct writes, 2799 on the stack
+   main:ef_havestep+37                   7 B  $E4DD..$E4E3
+   main:sfs_cp+1                        94 B  $E709..$E70B, $E710..$E716, $E71C..$E721, $E745..$E747
+   sub:fhd_dev+15                        4 B  $E39F..$E39F, $E4AD..$E4AD, $E5B6..$E5B6, $E6BF..$E6BF
+   sub:fhd_dev+4                         4 B  $E39D..$E39D, $E4AB..$E4AB, $E5B4..$E5B4, $E6BD..$E6BD
+   sub:sacc_lp+1                       303 B  $E70C..$E742, $E748..$E795, $E79C..$E7C6, $E7D8..$E80B
+   sub:sate_fits+17                    100 B  $E75A..$E7BD
+   sub:sate_fits+34                     34 B  $E7BE..$E7DF
+   sub:sg_move_one+51                   66 B  $E848..$E889
+   sub:she_slice_new+43                313 B  $E6FE..$E71E, $E72A..$E760, $E763..$E7AA, $E7BE..$E7E4
+   sub:shf_lp+0                        100 B  $E77C..$E7DF
+   sub:t_fch_hdr+17                      4 B  $E399..$E399, $E4A7..$E4A7, $E5B0..$E5B0, $E6B9..$E6B9
+UNLISTED WRITER main:ef_havestep+37                   7 B  $E4DD..$E4E3
+UNLISTED WRITER sub:she_slice_new+43                313 B  $E6FE..$E71E, $E72A..$E760, $E763..$E7AA, $E7BE..$E7E4
+UNLISTED WRITER sub:shf_lp+0                        100 B  $E77C..$E7DF
+FAIL: 3 writer(s) of the diskless floor outside the program-RAM managers
