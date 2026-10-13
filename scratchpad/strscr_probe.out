@@ -1,0 +1,18 @@
+=== Philips_VG_8020: STKTOP, MEMSIZ = $F0A0, $F168
+   concat 1862 B beyond its control (2705 written in all); runs >= 8 B: $E999..$F069 (1745), $F0A0..$F112 (115)
+         smaller: $F7B8..$F7B9
+   strs   161 B beyond its control (1087 written in all); runs >= 8 B: $E933..$E950 (30), $F0A1..$F112 (114), $F7C6..$F7D6 (17)
+         smaller: 
+   mid    503 B beyond its control (1369 written in all); runs >= 8 B: $EEE8..$F069 (386), $F0A0..$F112 (115)
+         smaller: $F7F0..$F7F1
+   string 1746 B beyond its control (2595 written in all); runs >= 8 B: $EA0B..$F069 (1631), $F0A0..$F112 (115)
+         smaller: 
+=== C-BIOS_MSX1_EU_REPACK_NODISK: STKTOP, MEMSIZ = $F380, $0000
+   concat 1854 B beyond its control (2937 written in all); runs >= 8 B: $E0BA..$E56B (1202), $E5AC..$E833 (648)
+         smaller: $DE3D..$DE40
+   strs   121 B beyond its control (1236 written in all); runs >= 8 B: $E7C2..$E833 (114)
+         smaller: $F7C6..$F7CC
+   mid    555 B beyond its control (1634 written in all); runs >= 8 B: $E609..$E833 (555)
+         smaller: 
+   string 1734 B beyond its control (2798 written in all); runs >= 8 B: $E12C..$E569 (1086), $E5AC..$E833 (648)
+         smaller: 

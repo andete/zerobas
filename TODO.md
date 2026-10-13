@@ -4454,6 +4454,25 @@ item — do **one item per session** to keep context lean.
       🔮 Both HIT. `CLEAR 26000` now fits here, 27000 is refused
       ([`drawcompact_clear_probe.out`](scratchpad/drawcompact_clear_probe.out);
       predicted 26000 refused: MISS).
+      📏 **(3) MEASURED 2026-10-14 -- STRSCR IS MOSTLY ALREADY RETIRED.**
+      [`strscr_probe.py`](scratchpad/strscr_probe.py) ->
+      [`strscr_probe.out`](scratchpad/strscr_probe.out) (write watch, case minus
+      a numeric control): concatenation, STR$, MID$ and STRING$ build their
+      results straight in the string space on BOTH machines (the VG-8020 also
+      writes FBUFFR for STR$) -- zerobas writes NOTHING in STRSCR for them.
+      🔮 "zerobas stages them in STRSCR": MISS (arrays slice-4a moved the engine
+      to the heap). [`strscr_census.py`](scratchpad/strscr_census.py) ->
+      [`strscr_census.out`](scratchpad/strscr_census.out), writers by PC: only
+      READ of string DATA (`rovs_put`), INPUT / LINE INPUT / INPUT$
+      (`read_into_strscr`, `sidr_lp`), and KEY (`fname_expr`, the shared
+      file-name evaluator, and `key_store`); string functions and PRINT USING
+      write nothing there. Most of the 129 references are readers.
+      ➡️ **(3) PLAN, one gated slice each, the reference's homes:** (3a) INPUT
+      items straight from the typed line in BUF; (3b) READ straight from the
+      program text; (3c) file names into the official FILNAM ($F866); (3d) KEY
+      strings straight into the function-key table. Then STRSCR's 256 B go, on
+      both builds. Re-run strscr_census.py after each: its writer list is the
+      denominator.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -8244,7 +8263,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33761 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33780 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8410,7 +8429,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13272 (T-6FE392)8 (T-529ABE)` from `TODO.md:26066 (T-529ABE)`: a
+      `TODO.md:13291 (T-6FE392)8 (T-529ABE)` from `TODO.md:26085 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14119,7 +14138,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26066 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26085 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

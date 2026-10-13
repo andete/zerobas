@@ -1,0 +1,6 @@
+STRSCR $EF00..$EFFF
+funcs  nothing
+read   sub:rovs_done 1 B; sub:rovs_put 5 B
+using  nothing
+key    main:fname_expr 10 B; main:fnx_term 2 B; main:key_store 1 B
+input  main:read_into_strscr 1 B; main:ris_keep 6 B; main:sidr_done 1 B; main:sidr_lp 3 B
