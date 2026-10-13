@@ -7,8 +7,7 @@ SPDX-License-Identifier: 0BSD
 # `DRAW` — draw with a string of pen commands
 
 > **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: what may follow `=` and `X` (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -109,19 +108,22 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **After `=` and `X`, zerobas evaluates an expression; the VG-8020 reads a
-  variable** (TIER 6, open). The reference takes a variable name, with
-  subscripts if it is an array element, so `DRAW"R=5;"`, `DRAW"R=(A);"` and
-  `DRAW"X"+CHR$(34)+"R2"+CHR$(34)+";"` are error 5 there and accepted
-  here. `DRAW"R=ABS(A);"` finishes on both, but by the reference's rule it
-  names the array element `AB(A)` there and is the function here, so the two
-  can draw different lengths
-  ([`drawsub_probe_after.out`](../../scratchpad/drawsub_probe_after.out)).
+None known.
 
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **After `=` and `X`, a number, a parenthesis or a string literal was
+  accepted** (fixed 2026-10-13, D-DRAWSUBVAR). Both machines take a variable
+  name there, with subscripts for an array element — `DRAW"R=A+1;"` draws
+  `R5` and `DRAW"R=ABS(A);"` reads the array element `AB(A)` on both — but
+  `R=5;`, `R=(A);`, `X"R2";`, `R=;` and `R=-A;` are error 5 on the VG-8020,
+  and zerobas drew the first three and gave other error numbers for the
+  rest. A first reading said zerobas evaluated whole expressions; reading
+  the pixels showed it did not
+  ([`drawrest_probe.out`](../../scratchpad/drawrest_probe.out),
+  [`drawsub_probe_fixed.out`](../../scratchpad/drawsub_probe_fixed.out)).
 - **An array element after `=` or `X` hung the machine** (fixed 2026-10-13,
   D-ARYCUR). `DRAW"R=B(1);"` and `DRAW"XC$(1);"` never returned; the
   VG-8020 draws them in 10 ms. Looking up an array element parks a 2-byte

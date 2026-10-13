@@ -3285,6 +3285,15 @@ gss_end:
                 call    gdrw_bump           ; consume the ';'
                 xor     a
                 ld      (de),a              ; NUL-terminate for the resident's eval
+                ; D-DRAWSUBVAR: the reference takes a VARIABLE REFERENCE here and
+                ; nothing else -- a number, `(`, a string literal, a sign or an
+                ; empty substitution is ERR 5 there (scratchpad/drawsub_probe.py).
+                ; The resident's eval would accept the first three and answer the
+                ; rest with 24 / 2 / 13. Every one of them starts below 'A'; a
+                ; name, upper or lower case, does not.
+                ld      a,(GFX_DEXP)
+                cp      'A'
+                jp      c,gdrw_err5
                 ; --- is this position's value already resolved? ---
                 ld      a,(GFX_DSUBI)
                 ld      c,a

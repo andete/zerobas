@@ -344,27 +344,50 @@ item — do **one item per session** to keep context lean.
       geometry runs after the parse is done (sub/graphics.asm writes WE_P,
       only sub/circleparse.asm touches CPHASE).
 
-- [ ] 🎨 **D-DRAWSUBVAR — AFTER `=` AND `X`, `DRAW` EVALUATES AN EXPRESSION; THE
-      VG-8020 READS A VARIABLE REFERENCE.**
-      🎚️ TIER 6 — `DRAW` with an expression after `=` or `X`
-      (every error: valid programs draw the same; the forms that differ are
-      malformed, or rely on a name that reads as an array).
+- [x] ✅ **FIXED 2026-10-13** — 🎨 **D-DRAWSUBVAR — AFTER `=` AND `X`, `DRAW` ACCEPTS A NUMBER, A
+      PARENTHESIS AND A STRING LITERAL; THE VG-8020 TAKES ONLY A VARIABLE
+      REFERENCE AND RAISES ERR 5.**
+      🎚️ TIER 6 — `DRAW` with a constant after `=` or `X`
+      (every error: the forms that differ are malformed on the reference).
       🤖 **AUTONOMOUS** — a measured divergence with the reference's rule in hand.
       📏 [`drawsub_probe.py`](scratchpad/drawsub_probe.py) ->
-      [`drawsub_probe_after.out`](scratchpad/drawsub_probe_after.out): the
-      VG-8020 accepts a variable and an array element (`=A;` `=B(1);` `XA$;`
-      `XC$(1);`) and raises ERR 5 for `=(A);`, `=5;` and `X"R2";`; zerobas
-      accepts all three. `=ABS(A);` reads, by the variable rule, as the array
-      element `AB(A)` there (INFERRED: R0 for a fresh array -- pixels unread) and
-      is the function here (R5); both print `[OK]`. `XLEFT$(A$,2);` is ERR 13 on
-      both (there, by the same rule, presumably the array `LE$(A$,2)`).
-      ⚠️ **UNMEASURED:** what the reference does with the rest of `=A+1;` /
-      `XA$+D$;` -- both `[OK]` there; read the pixels before choosing a rule.
-      🔗 **IT IS ALSO THE RAM LEVER.** With a variable reference only, nothing
-      allocates during a DRAW (a lookup moves no string), so the string can be
-      read IN PLACE, as the reference does -- the reason GFX_DBUF copies it
-      (temps reused across the co-routine's round trips) goes away with it. See
-      RAM order step (2).
+      [`drawsub_probe_after.out`](scratchpad/drawsub_probe_after.out): both
+      accept a variable and an array element (`=A;` `=B(1);` `XA$;` `XC$(1);`);
+      the VG-8020 raises ERR 5 for `=(A);`, `=5;` and `X"R2";`, zerobas accepts
+      all three. `XLEFT$(A$,2);` is ERR 13 on both.
+      📏 [`drawrest_probe.py`](scratchpad/drawrest_probe.py) ->
+      [`drawrest_probe.out`](scratchpad/drawrest_probe.out), pixels read with
+      POINT: `=A+1;` draws R5, `XA$+D$;` runs A$ alone and `=ABS(A);` draws R0
+      (the array element `AB(A)`) -- on BOTH machines, identically. 🔮 Predicted
+      "zerobas evaluates the expression: R6, A$+D$, R5": **MISS**, and the first
+      filing of this item (same day) said the same and was FALSE, in this entry
+      and in docs/keywords/DRAW.md. WHY THEY AGREE: zerobas evaluates the copied
+      substitution text, which is UNTOKENISED ASCII, and the evaluator knows
+      operators and functions only as tokens -- so `+` ends the expression after
+      `A` and `ABS(A)` parses as the name `AB` with a subscript, exactly the
+      reference's variable-reference result. A number, `(` and `"` need no token,
+      which is why those three alone differ.
+      ✅ **FIXED:** `gdrw_sub_scan` (sub/graphics.asm, the tenant) refuses a
+      substitution whose first character sorts below 'A' -- a digit, `(`, `"`,
+      a sign or nothing -- with ERR 5 (8 B, sub page 0 67 -> 59). Measured
+      BEFORE the fix on both machines, the same probe: `R=;` `R=-A;` `X;` are
+      ERR 5 on the VG-8020 and were 24 / 2 / 13 here, so the one test covers
+      them too; `R=a;` (lower case) works on both and still does.
+      [`drawsub_probe_fixed.out`](scratchpad/drawsub_probe_fixed.out): **16 of 16
+      rows identical** to the VG-8020. 🔮 HIT. Rows `draw_sub_const`,
+      `draw_sub_xlit`, `draw_sub_empty`, `draw_sub_neg` in graphics-acceptance
+      phase B. Knife K-DS1 ([`drawsubvar_knife.out`](scratchpad/drawsubvar_knife.out)):
+      the test removed -> exactly those four FAIL, the other eight PASS;
+      restored 12/12. HIT. 🔴 Its first two runs read "RESTORE BROKEN" while a
+      fresh process read the same rows green: probe_refcache memoises a
+      machine's identity PER PROCESS, so the in-process restore was served the
+      cut's own stored readings (the cut changed sub.rom only). NOT SCORED;
+      `scratchpad/knife_guard.py` `build()` now clears that memo after every
+      rebuild.
+      🔗 **THE RAM LINK (RAM order step 2):** with a name-only rule the eval can
+      only look a variable up, never build a string, so DRAW's string need not
+      be copied for safety -- measure that claim (does a lookup allocate in
+      zerobas?) before removing GFX_DBUF.
 
 - [ ] 🟢 **STEP 9 RE-OPENED WITH AN ANSWER: `LOAD` HAS CELLS OF ITS OWN, AND THE
       REFERENCE'S LOOP IS **PER SECTOR** — SO THE SLICE THAT WAS BUILT IS THE
@@ -4240,12 +4263,12 @@ item — do **one item per session** to keep context lean.
       the co-routine's round trips -- is zerobas's own architecture; where the
       copy LIVES is what costs RAM. Price the sub page-0 tenant from a clean
       tree first; the freed span then rotates to the diskless floor as in (1b).
-      🔁 **REVISED THE SAME DAY:** the substitution probe found the reference
-      reads a VARIABLE REFERENCE after `=` / `X`, not an expression (D-DRAWSUBVAR,
-      filed above), and found D-ARYCUR on the way. Adopting the reference's rule
-      removes the copy's reason: a lookup allocates nothing, so the string can be
-      read in place and GFX_DBUF goes entirely instead of moving below SP. Do
-      D-DRAWSUBVAR first, then this.
+      🔁 **REVISED THE SAME DAY:** the substitution probes found that both
+      machines resolve a VARIABLE REFERENCE after `=` / `X` (zerobas by the
+      accident of evaluating untokenised text; D-DRAWSUBVAR, filed above), and
+      found D-ARYCUR on the way. If a lookup allocates nothing, the copy's reason
+      is gone and GFX_DBUF can go entirely instead of moving below SP: measure
+      that first, then do D-DRAWSUBVAR and this together.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -8036,7 +8059,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33553 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33576 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8202,7 +8225,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13064 (T-6FE392)8 (T-529ABE)` from `TODO.md:25858 (T-529ABE)`: a
+      `TODO.md:13087 (T-6FE392)8 (T-529ABE)` from `TODO.md:25881 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13911,7 +13934,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25858 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25881 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

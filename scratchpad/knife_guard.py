@@ -33,7 +33,7 @@ Usage in a runner:
 from __future__ import annotations
 
 import hashlib
-import os
+import os, sys
 import subprocess
 
 # The images a `repack-machine` produces. build/disk.rom is included on purpose:
@@ -64,6 +64,14 @@ def build(log: str, before: str | None = None, *, clean: bool = False):
         rc = subprocess.call("make repack-machine", shell=True,
                              stdout=fh, stderr=subprocess.STDOUT)
     after = hashes()
+    # 🔴 D-DRAWSUBVAR (2026-10-13): probe_refcache memoises each machine's
+    # identity PER PROCESS (_MACHINE_ID), so a knife that measures in-process
+    # before AND after a rebuild kept the CUT ROM's identity and was served the
+    # cut's own readings at restore -- K-DS1's restore read "RESTORE BROKEN"
+    # twice while a fresh process read it green. A rebuild invalidates it.
+    rc_mod = sys.modules.get("probe_refcache")
+    if rc_mod is not None and hasattr(rc_mod, "_MACHINE_ID"):
+        rc_mod._MACHINE_ID.clear()
     return moved(before, after), after, rc
 
 

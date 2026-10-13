@@ -1,0 +1,4 @@
+K-DS1: phase B 4 of 12 FAIL: ['draw_sub_const', 'draw_sub_xlit', 'draw_sub_empty', 'draw_sub_neg']
+K-DS1: predicted FAIL = draw_sub_const, draw_sub_xlit, draw_sub_empty, draw_sub_neg
+restored: build rc=0; phase B 0 of 12 FAIL
+refcache: 4 hit, 0 miss

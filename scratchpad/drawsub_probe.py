@@ -38,6 +38,10 @@ CASES = [
     ("xexpr", "XA$+D$;"),
     ("xlit", 'X"R2";'),
     ("xfn", "XLEFT$(A$,2);"),
+    ("empty", "R=;"),
+    ("neg", "R=-A;"),
+    ("lower", "R=a;"),
+    ("xempty", "X;"),
 ]
 
 

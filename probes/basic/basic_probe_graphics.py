@@ -148,6 +148,18 @@ BEHAV_CASES = [
     # "V" on the screen, and without a clear that is the echoed `VDP(B(1))` --
     # the first run read a bare 'V' on BOTH machines and passed, vacuously.
     ("vdp_arr_idx",   ["DIM B(2):B(1)=7:VDP(B(1))=5", 'CLS:PRINT"V";VDP(7)'], "V"),
+    # D-DRAWSUBVAR (2026-10-13): after `=` / `X` the reference takes a VARIABLE
+    # REFERENCE only; a number, a string literal, an empty substitution and a
+    # sign are ERR 5 there. zerobas accepted the first two and answered the
+    # others 24 / 2 (scratchpad/drawsub_probe.py). The OK path prints no "E".
+    ("draw_sub_const", ["ON ERROR GOTO 40", 'SCREEN2:DRAW"BM50,50R=5;"',
+                        'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("draw_sub_xlit",  ["ON ERROR GOTO 40", 'SCREEN2:DRAW"BM50,50X"+CHR$(34)+"R2"+CHR$(34)+";"',
+                        'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("draw_sub_empty", ["ON ERROR GOTO 40", 'SCREEN2:DRAW"BM50,50R=;"',
+                        'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
+    ("draw_sub_neg",   ["ON ERROR GOTO 40", 'A=5:SCREEN2:DRAW"BM50,50R=-A;"',
+                        'SCREEN0:PRINT"OK":END', 'SCREEN0:PRINT"E";ERR:END'], "E"),
 ]
 
 

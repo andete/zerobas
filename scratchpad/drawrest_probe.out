@@ -1,0 +1,8 @@
+=== Philips_VG_8020
+   plus   DRAW"BM50,50R=A+1;"      POINT(55,50);POINT(56,50)                -> [ 15 4]
+   xplus  DRAW"BM50,60XA$+D$;"     POINT(52,60);POINT(52,62)                -> [ 15 4]
+   abs    DRAW"BM50,70R=ABS(A);"   POINT(50,70);POINT(51,70);POINT(55,70)   -> [ 15 4 4]
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+   plus   DRAW"BM50,50R=A+1;"      POINT(55,50);POINT(56,50)                -> [ 15 4]
+   xplus  DRAW"BM50,60XA$+D$;"     POINT(52,60);POINT(52,62)                -> [ 15 4]
+   abs    DRAW"BM50,70R=ABS(A);"   POINT(50,70);POINT(51,70);POINT(55,70)   -> [ 15 4 4]
