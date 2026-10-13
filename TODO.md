@@ -3958,6 +3958,32 @@ item — do **one item per session** to keep context lean.
       9 candidates, 477 B, written by NOTHING of ours on either build (only
       C-BIOS's power-on page probe at $EE00). 🔮 Predicted ~477 B and only
       that writer: HIT.
+      🏗️ **RULED BY JOOST, 2026-10-13 -- DO NOT RE-ASK:** *"so for every ram
+      buffer or memory location we invented ourselves, we need to verify how
+      reference does it and if we should not be using an existing "official"
+      ram location instead"*. D-REHOME (2026-08, docs/sysvar-rehoming-decisions.md)
+      did this for ten same-NAME cells; this extends it to EVERY private cell,
+      with RAM as the reason (its REJECTs -- VALTYP, SAVTXT, SAVSTK, FRETOP --
+      were judged on observability alone and get re-judged). Plan: (1) group
+      every private cell by JOB; (2) per group, a write watch on the
+      reference's published work area during that job (refwork_probe.py's
+      method, addresses only); (3) per cell: (a) same job, an official cell
+      exists -> move there, same address; (b) no reference equivalent ->
+      keep, the reason in its own comment; (c) a zerobas mechanism (the
+      sub-ROM bridge) -> keep, minimise; (4) one table, one TODO item per (a)
+      group.
+      📏 **(1) DONE, 2026-10-13** ([`officialram_inventory.py`](scratchpad/officialram_inventory.py)
+      -> [`officialram_inventory.out`](scratchpad/officialram_inventory.out)):
+      3283 B of declared cells in $E26A..$F37F -- files / channels / disk
+      1857, cassette 542, graphics 472, string engine 300, sub-ROM bridge /
+      boot 209, PRINT USING 154, traps 70, math 64, control pool 54,
+      tokeniser / editor 49, DEF FN 18, arrays 13, PLAY 2, unclassified 72
+      (grouped by name prefix: ROUGH -- step (2) corrects it by measurement).
+      Already visible, private cells with an official cell for the SAME job:
+      LPTPOS (official LPTPOS, $F415), TRACEFLAG (TRCFLG), MAXF (MAXFIL),
+      DATAPTR (DATPTR), PRDEV (PRTFLG? -- check), ARGA / ARGB (DAC / ARG: a
+      different number FORMAT, so priced, not assumed). Small in bytes; each
+      also makes a PEEK of the official cell answer as on the reference.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7748,7 +7774,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33265 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33291 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7914,7 +7940,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12776 (T-6FE392)8 (T-529ABE)` from `TODO.md:25570 (T-529ABE)`: a
+      `TODO.md:12802 (T-6FE392)8 (T-529ABE)` from `TODO.md:25596 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13623,7 +13649,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25570 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25596 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
