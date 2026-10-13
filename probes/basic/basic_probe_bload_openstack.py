@@ -130,6 +130,12 @@ def main() -> int:
         print(f"FAIL  could not record WAV (machine {args.machine} present?)")
         return 1
 
+    # ERRMARK is zerobas-PRIVATE and the workspace moves (D-RAMSHIFT, 2026-10-13:
+    # $E010 -> $EB10, and this probe, in no battery, kept reading $E010).
+    import re as _re
+    ERRMARK = next(int(m.group(1), 16) for m in (_re.match(r"^ERRMARK\s+EQU\s+([0-9A-Fa-f]+)H", l)
+                   for l in open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                       os.path.abspath(__file__)))), "build", "basic-reloc.sym"))) if m)
     # 2+3) BLOAD that WAV with zerobas; the ,R handoff runs the blob.
     rc, cap = omsx([
         "--machine", args.machine, "--cart", args.cart, "--cassette", wav,
@@ -137,7 +143,7 @@ def main() -> int:
         "--type", "\r", "--type-delay", "10",
         "--bp", hex(LANDMARK), "--reg", "PC",
         "--mem", "memory:0xE000:4",        # JONG marker
-        "--mem", "memory:0xE010:1",        # ERRMARK ($EE on load error)
+        "--mem", f"memory:0x{ERRMARK:04X}:1",  # ERRMARK ($EE on load error)
         "--mem", "memory:0xC000:8",        # loaded blob prologue
     ])
     if os.path.exists(wav):
@@ -145,7 +151,7 @@ def main() -> int:
 
     blob8 = (build_blob()[:8]).hex()
     jong = memval(cap, "mem.memory:0xE000:4=")
-    err = memval(cap, "mem.memory:0xE010:1=")
+    err = memval(cap, f"mem.memory:0x{ERRMARK:04X}:1=")
     c000 = memval(cap, "mem.memory:0xC000:8=")
     pc_ok = f"reg.PC=0x{LANDMARK:04X}" in cap
 

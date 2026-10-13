@@ -1,0 +1,6 @@
+K-C1: gate RED, red ['nodisk']; predicted ['nodisk']: HIT
+   nodisk FAIL  TXTCEIL=$E26A HIMEM=$E26A   want TXTCEIL = HIMEM = $E36A
+   disk   PASS  TXTCEIL=$E26A HIMEM=$DF7C   want TXTCEIL = $E26A, HIMEM below it
+restored: build rc=0; gate GREEN
+   nodisk PASS  TXTCEIL=$E36A HIMEM=$E36A   want TXTCEIL = HIMEM = $E36A
+   disk   PASS  TXTCEIL=$E26A HIMEM=$DF7C   want TXTCEIL = $E26A, HIMEM below it

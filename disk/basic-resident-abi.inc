@@ -16,7 +16,7 @@ round_and_finalize equ 03347H
 pu_deref_body equ 0284CH
 subrom_call equ 03B51H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
-STRSCR equ 0E26DH   ; [len][bytes:STRMAX] staging, $E26D..$E36C
+STRSCR equ 0EF00H   ; [len][bytes:STRMAX] staging, $EF00..$EFFF
 FN_RESUME equ 0ED27H   ; D-FNEXPR: cursor past a filename expr (2 B)
 DISKOP_STATUS equ 0E9FCH   ; tenant -> main: the disposition (1 B)
 DISK_FCB_NAME equ 0EBDCH   ; +1..+11: 8.3 name field (11 bytes)
@@ -67,18 +67,18 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06DC2H
-pdfcb_resume equ 06DBBH
-dirverb_op equ 06B37H
-main_fat_mount equ 06442H   ; main's fat_mount
-main_fat_find equ 06446H   ; main's fat_find
-parse_disk_fcb equ 064F8H
-field_prologue equ 07290H
-field_item equ 072C6H
-lrset_tgt equ 0737BH
-lrset_rhs equ 0739DH
-lrset_finish equ 073B4H
-fch_ctx_addr equ 06F4CH
-disk_error equ 06B68H
-read_line equ 045F8H
-fch_close_all equ 0704CH
+fname_expr equ 06DC5H
+pdfcb_resume equ 06DBEH
+dirverb_op equ 06B3AH
+main_fat_mount equ 06445H   ; main's fat_mount
+main_fat_find equ 06449H   ; main's fat_find
+parse_disk_fcb equ 064FBH
+field_prologue equ 07293H
+field_item equ 072C9H
+lrset_tgt equ 0737EH
+lrset_rhs equ 073A0H
+lrset_finish equ 073B7H
+fch_ctx_addr equ 06F4FH
+disk_error equ 06B6BH
+read_line equ 045FBH
+fch_close_all equ 0704FH

@@ -1832,7 +1832,7 @@ FRETOP          equ     $ED68               ; heap low boundary; heap occupies (
 ; derivation would have dragged RVDESC, STRSCR and the string engine's cells
 ; after it. No code relies on the adjacency (every FRETOP access is a 16-bit
 ; load/store by name).
-RVDESC          equ     $E26A               ; [len:1][ptr:2] scratch descriptor (3 B)
+RVDESC          equ     $ED6C               ; [len:1][ptr:2] scratch descriptor (3 B)
                                             ; for a value whose body is NOT in the
                                             ; heap (a token-stream literal / STRSCR) —
                                             ; excluded from GC roots by construction
@@ -1847,7 +1847,11 @@ RVDESC          equ     $E26A               ; [len:1][ptr:2] scratch descriptor 
                                             ; — the same "single shared scratch, safe
                                             ; by immediate consumption" property the
                                             ; pre-4a STRSCR already relied on.
-STRSCR          equ     RVDESC + 3          ; [len][bytes:STRMAX] staging, $E26D..$E36C
+; D-RAMFLD (2026-10-13): PINNED, like RVDESC before it -- the two are separate
+; cells, and STRSCR swaps places with FLD_DESC (lever (2) step b) while RVDESC
+; goes elsewhere. No code assumes STRSCR == RVDESC + 3 (both are addressed by
+; name; no `high`/`low` idiom uses either -- tools/ws_shift.py checks that).
+STRSCR          equ     $EF00               ; [len][bytes:STRMAX] staging, $EF00..$EFFF
                                             ; buffer — UNCHANGED role from pre-4a,
                                             ; just widened 65->256 B (1+STRMAX).
                                             ; NOT a heap root (fixed RAM, outside
@@ -2396,7 +2400,7 @@ TXTMAX          equ     $E26A   ; NOT-A-CELL: the text ceiling (= the workspace 
 ; what boot picked (interp.asm, beside the HIMEM store: a disk ROM that lowered
 ; HIMEM means the disk ceiling). Every main/sub reader loads TXTCEIL. Equal for
 ; now -- step (b) packs the disk-only tenants at the floor and raises _NODISK.
-TXTMAX_NODISK   equ     TXTMAX  ; NOT-A-CELL: the diskless build's text ceiling
+TXTMAX_NODISK   equ     $E36A  ; NOT-A-CELL: the diskless build's text ceiling
 TXTCEIL         equ     $ED6A   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
@@ -3824,7 +3828,7 @@ PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-P
 ; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
 FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
-FLD_DESC        equ     $EF00   ; transient fielded-read descriptor [len][bytes:255] (256 B)
+FLD_DESC        equ     $E26A   ; transient fielded-read descriptor [len][bytes:255] (256 B)
 ; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
 ; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
 ; it in place of the old hard-wired 256: a record of r bytes tiles the 512-byte

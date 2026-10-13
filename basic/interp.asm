@@ -207,6 +207,14 @@ bh_store:
                 ex      de,hl               ; C: keep the HIMEM the disk ROM lowered
 bh_himem:
                 ld      (HIMEM),hl
+                ; D-RAMFLD (2026-10-13): RESET THE HEAP AGAINST THE CHOSEN CEILING.
+                ; clear_vars' heap_reset ran ~150 lines up, against the SEED (the
+                ; disk build's TXTMAX); since lever (2) the diskless ceiling is
+                ; higher, and a heap whose top (FRETOP) sat 256 B below its
+                ; ceiling would count those bytes as strings -- and the collector
+                ; would walk them. (The disk build had the mild form all along: its
+                ; disk ROM lowers HIMEM after that reset.)
+                call    heap_reset
                 call    ctl_reset
                 ; 🔴 D-BOOTWIDTH (2026-09-24): BOOT AT WIDTH 37, THE VG-8020's.
                 ; Measured at cold boot: VG-8020 37, CF-3300 39 -- a presentational

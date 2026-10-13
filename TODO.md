@@ -3849,6 +3849,59 @@ item — do **one item per session** to keep context lean.
       order checked (a write after init_filechan builds the channel blocks is
       as bad); (b3) a permanent stress row: strings and channel blocks pushed
       up to the diskless ceiling, against the VG-8020; then (b4) the move.
+      📏 **(b1) THE WRITER CENSUS, 2026-10-13** ([`dowrite_probe.py`](scratchpad/dowrite_probe.py)
+      -> [`dowrite_probe.out`](scratchpad/dowrite_probe.out)): the disk-only
+      set (1085 B) watched on NODISK from POWER-ON, with the writer's PC, over
+      the same 20 cases. Main / sub code: ONLY `fldi_lp` (fld_init) -- 🔮
+      predicted fld_init + fld_clear_chan (CLOSE: no case closes a channel) +
+      a boot initialiser or two: HIT on fld_init, the rest not seen. C-BIOS: a
+      power-on page probe ($E700/$E900/$EF00), its MSX-DOS standard cells
+      ($F33B..: fixed addresses near the TOP, never moved) and stack traffic at
+      $F2B8. `vsf_wb_copy` writing $EAA2 was MY set's error (FN_PAREA has no
+      declared width, so its bytes read as disk-only). The static complement
+      (every main / sub reference to the FAT / FIELD buffers) is FAT, FORMAT,
+      random-file and FIELD code behind the disk verbs' gate -- and one
+      finding that is a READ: `strvar.asm` calls `fld_lookup` on EVERY string
+      access and walks FLD_TAB (as does sub/arrays.asm). On the diskless build
+      that table is always EMPTY, which is what keeps the answer "not FIELDed";
+      in program RAM it would read a program's data. **So FLD_TAB (96 B) stays
+      with the basic tenants; FLD_DESC (256 B), reached only through a FIELDed
+      match, is truly disk-only.**
+      ✅ **(b4), FIRST MOVE, 2026-10-13 (D-RAMFLD): +256 B DISKLESS.** STRSCR
+      (with the disk ROM's five FDC cells overlaid in it) and FLD_DESC swap
+      places; RVDESC goes to $ED6C; TXTMAX_NODISK = $E36A, TXTMAX (disk) stays
+      $E26A. tools/ws_shift.py generalised to several moves at once (swaps),
+      non-page deltas refused for page-idiom names, `--disk-only`, and a NO
+      NEW OVERLAP invariant. 🔴 **ITS FIRST OVERLAP CHECK WAS BLIND:** the
+      negative control (STRSCR moved onto FLD_DESC alone) VERIFIED -- ram_map
+      drops the widths of cells that overlap (disputed / overrun), so two cells
+      moved onto each other vanished from the check as they collided. Widths now
+      come from the BEFORE map, applied at the after addresses; the control
+      refuses with six NEW OVERLAPs ([`ramfld_apply.out`](scratchpad/ramfld_apply.out)
+      is the real run: 9 names). And a boot-order sequel: clear_vars'
+      heap_reset ran against the seed (the disk ceiling), leaving the heap's
+      top 256 B below the diskless ceiling -- boot now re-runs heap_reset once
+      the ceiling is chosen (the disk build had the mild form all along).
+      📏 [`ramfld_fremem.out`](scratchpad/ramfld_fremem.out): diskless **-4104
+      in all eight states** (was -4360), deltas equal;
+      [`ramfld_disk.out`](scratchpad/ramfld_disk.out): disk build unchanged,
+      23705. 🔮 Both exact: HIT.
+      🔒 **New gate `make ceiling-acceptance`** ([`basic_probe_ceiling.py`](probes/basic/basic_probe_ceiling.py)):
+      the boot's choice read back (TXTCEIL / HIMEM against the sym) -- the
+      knife D-RAMCEIL owed: K-C1 (the diskless branch cut) -> exactly the
+      nodisk row red, restored green ([`ramfld_knife.out`](scratchpad/ramfld_knife.out)).
+      Its first two runs read INSTRUMENT FAULT on every row
+      ([`ramfld_knife_firstrun.out`](scratchpad/ramfld_knife_firstrun.out)):
+      the readout line wrapped -- at 41 characters, then at 37: the boot width
+      is 37 (D-BOOTWIDTH), not 40.
+      ⚠️ (b3) NOT ADDED, and why: FLD_DESC's new bytes are, on the diskless
+      build, CHANNEL 0's block (it exists at every MAXFILES). A stress program
+      can only drive ordinary channel use, which never reaches FIELD code -- a
+      row that would agree for the wrong reason. The hazard is closed by the
+      census and the read above (FLD_DESC is reached only through a FIELDed
+      match, and FLD_TAB is empty without a disk).
+      ➡️ NEXT in (b): the FAT buffers need the cassette pair out of them first
+      (step c); the remaining disk-only cells are small and mostly overlays.
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -7631,7 +7684,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33148 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33201 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7797,7 +7850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12659 (T-6FE392)8 (T-529ABE)` from `TODO.md:25453 (T-529ABE)`: a
+      `TODO.md:12712 (T-6FE392)8 (T-529ABE)` from `TODO.md:25506 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13506,7 +13559,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25453 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25506 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

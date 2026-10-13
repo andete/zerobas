@@ -2474,6 +2474,12 @@ keyshift-acceptance: repack-machine
 basicrom-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_basicrom.py
 
+# --- ceiling-acceptance: the text ceiling boot chose (D-RAMFLD, RAM lever (2)) --
+# TXTCEIL = TXTMAX_NODISK on the diskless build, TXTMAX on the disk build; the
+# one gate that sees the boot's choice (FRE(0) absolutes are never gated).
+ceiling-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_ceiling.py
+
 # --- instr128-acceptance: INSTR over strings of 128+ characters (D-INSTR128)
 # max_start was sign-tested, so every haystack of 128+ read 0; 11 rows against
 # the VG-8020 on both machines, incl. a 255-long no-match that must END.

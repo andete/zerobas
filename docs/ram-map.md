@@ -40,14 +40,7 @@ second one is the question a per-component map cannot answer.
 
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
-| `$E26A` | 3 B | `basic` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
-| `$E26D` | 256 B | `basic` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
-| `$E26D` | 256 B | `disk` | `STRSCR` | [len][bytes:STRMAX] staging, $E26D..$E36C |  |
-| `$E299` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) | `basic` STRSCR |
-| `$E29A` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) | `basic` STRSCR |
-| `$E29B` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
-| `$E29D` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) | `basic` STRSCR |
-| `$E29F` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) | `basic` STRSCR |
+| `$E26A` | 256 B | `basic` | `FLD_DESC` | transient fielded-read descriptor [len][bytes:255] (256 B) |  |
 | `$E381` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
 | `$E3E1` | 2 B | `basic` | `ISRCH_A` | resolved A-operand body base (2 B) |  |
 | `$E3E3` | 2 B | `basic` | `ISRCH_B` | $E3E3: resolved B-operand body base (2 B) |  |
@@ -474,6 +467,7 @@ second one is the question a per-component map cannot answer.
 | `$ED3D` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$ED68` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$ED6A` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
+| `$ED6C` | 3 B | `basic` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$EE40` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$EE64` | 96 B | `basic` | `FLD_TAB` | field table base ($EE64..$EEC3, 96 bytes) |  |
 | `$EEC4` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
@@ -497,7 +491,13 @@ second one is the question a per-component map cannot answer.
 | `$EEFC` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
 | `$EEFD` | 1 B | `basic` | `FMT_SEC` | CALL FORMAT: current sector index being written (1) |  |
 | `$EEFE` | 2 B | `basic` | `FMT_DESC` | CALL FORMAT: chosen geometry descriptor pointer (2) |  |
-| `$EF00` | 256 B | `basic` | `FLD_DESC` | transient fielded-read descriptor [len][bytes:255] (256 B) |  |
+| `$EF00` | 256 B | `basic` | `STRSCR` | [len][bytes:STRMAX] staging, $EF00..$EFFF |  |
+| `$EF00` | 256 B | `disk` | `STRSCR` | [len][bytes:STRMAX] staging, $EF00..$EFFF |  |
+| `$EF2C` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) | `basic` STRSCR |
+| `$EF2D` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) | `basic` STRSCR |
+| `$EF2E` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) | `basic` STRSCR |
+| `$EF30` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) | `basic` STRSCR |
+| `$EF32` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) | `basic` STRSCR |
 | `$F006` | 2 B | `basic` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
 | `$F008` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F009` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |

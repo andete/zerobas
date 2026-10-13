@@ -1,0 +1,31 @@
+disk-only set: 1085 B in 29 run(s): $E4A0..$E4C1, $E557..$E558, $E560..$E56C, $E56E..$E5AB, $E5C0..$E5FF, $E700..$E7FF, $E900..$E9BF, $EAA2..$EAA2, $EAB7..$EAB8, $EAE9..$EAE9, $EAEB..$EAEE, $EE40..$EE5A ...
+control     92 distinct (PC, slot, address) writes
+longline    92 distinct (PC, slot, address) writes
+input       92 distinct (PC, slot, address) writes
+linput      92 distinct (PC, slot, address) writes
+deffn       93 distinct (PC, slot, address) writes
+traps       92 distinct (PC, slot, address) writes
+using       92 distinct (PC, slot, address) writes
+numfmt      92 distinct (PC, slot, address) writes
+strings     92 distinct (PC, slot, address) writes
+val         92 distinct (PC, slot, address) writes
+arrays      92 distinct (PC, slot, address) writes
+flow        92 distinct (PC, slot, address) writes
+errors      92 distinct (PC, slot, address) writes
+math        92 distinct (PC, slot, address) writes
+graphics    92 distinct (PC, slot, address) writes
+sound       92 distinct (PC, slot, address) writes
+edit        92 distinct (PC, slot, address) writes
+keys        92 distinct (PC, slot, address) writes
+clear       92 distinct (PC, slot, address) writes
+misc        92 distinct (PC, slot, address) writes
+
+WRITERS of the disk-only set on the diskless build: 8
+  C-BIOS?:0D42                       first t=  0.00s     3 B [$E700..$E700, $E900..$E900, $EF00..$EF00]  cases: ALL
+  C-BIOS?:0D47                       first t=  0.00s     3 B [$E700..$E700, $E900..$E900, $EF00..$EF00]  cases: ALL
+  C-BIOS?:0F32                       first t=  0.05s    49 B [$F33B..$F33E, $F340..$F344, $F347..$F350, $F353..$F357 ...]  cases: ALL
+  main:fldi_lp+0                     first t=  2.64s    16 B [$EE64..$EE64, $EE6A..$EE6A, $EE70..$EE70, $EE76..$EE76 ...]  cases: ALL
+  C-BIOS?:18F6                       first t=  2.69s     1 B [$F2B8..$F2B8]  cases: ALL
+  C-BIOS?:18F2                       first t= 10.54s     1 B [$F2B8..$F2B8]  cases: ALL
+  C-BIOS?:18EF                       first t= 10.58s     1 B [$F2B8..$F2B8]  cases: ALL
+  main:vsf_wb_copy+9                 first t= 23.04s     1 B [$EAA2..$EAA2]  cases: deffn

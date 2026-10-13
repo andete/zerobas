@@ -245,7 +245,20 @@ def _write_cas_data(cart: str, wav: str, name: str, lines: list[str]) -> None:
 # address before the string-engine S3 low-region re-layout (17b9878) and this hand
 # copy never followed. Both STRSCR cases below read all-$FF and had been FAILING
 # unnoticed: this probe is README-listed but in NO battery, so nothing read the rc.
-STRSCR = 0xE26D
+# 🔁 AND IT ROTTED AGAIN (D-RAMFLD, 2026-10-13: STRSCR moved to $EF00 when FIELD's
+# record buffer took the workspace floor). It is read from the build now.
+def _sym(name):
+    import re as _re
+    _p = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "build", "basic-reloc.sym")
+    for _ln in open(_p):
+        _m = _re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", _ln)
+        if _m:
+            return int(_m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+STRSCR = _sym("STRSCR")
 
 
 def test_open_cas_roundtrip(cart: str, tmp: str) -> bool:

@@ -1,0 +1,4 @@
+K-C1: gate RED, red []; predicted ['nodisk']: MISS
+   nodisk INSTRUMENT FAULT: no reading (TXTCEIL=None, HIMEM=None)
+restored: build rc=0; gate RED -- RESTORE BROKEN
+   nodisk INSTRUMENT FAULT: no reading (TXTCEIL=None, HIMEM=None)

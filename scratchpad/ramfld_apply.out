@@ -1,0 +1,11 @@
+9 literal equ(s) rewritten in 2 file(s); TXTMAX $E26A -> $E26A; TXTMAX_NODISK $E26A -> $E36A
+   basic/sysvars.inc:1835  RVDESC  $E26A -> $ED6C
+   basic/sysvars.inc:1854  STRSCR  $E26D -> $EF00
+   basic/sysvars.inc:2403  TXTMAX_NODISK  $E26A -> $E36A
+   basic/sysvars.inc:3831  FLD_DESC  $EF00 -> $E26A
+   disk/equates.inc:239  FDC_IFF  $E299 -> $EF2C
+   disk/equates.inc:240  FDC_CNT  $E29A -> $EF2D
+   disk/equates.inc:241  FDC_LSEC  $E29B -> $EF2E
+   disk/equates.inc:242  FDC_DEST  $E29D -> $EF30
+   disk/equates.inc:243  FDC_TRY  $E29F -> $EF32
+🟢 VERIFIED: 9 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (70 disk mirror(s) of basic names verified through their originals; the build regenerates them).

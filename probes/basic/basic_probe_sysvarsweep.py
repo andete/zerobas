@@ -189,12 +189,28 @@ ALL_SIDES = ("vg8020", "cf3300", "zb")   # narrowed by --sides (see main)
 # must keep tracking the reference at that cell. The five it did not honour keep
 # their private address and their recorded reason
 # (docs/sysvar-rehoming-decisions.md §3).
+def _sym(name):
+    """A zerobas-PRIVATE address, read from the build: the workspace moves (RAM
+    lever work). D-RAMSHIFT (2026-10-13) moved these four +$0B00 and the hand
+    copies here ($E0C8 / $E268 / $E1CF / $E1C3) were stale until D-RAMFLD's
+    probe grep found them -- this table is tuples, which wall-literal-check
+    does not parse."""
+    import re as _re
+    _p = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__)))), "build", "basic-reloc.sym")
+    for _ln in open(_p):
+        _m = _re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", _ln)
+        if _m:
+            return int(_m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
 REHOMED = [
-    ("VALTYP", 0xF663,  1, 0xE0C8, "REJECT-UNOBSERVABLE"),
+    ("VALTYP", 0xF663,  1, _sym("VALTYP"), "REJECT-UNOBSERVABLE"),
     ("ERRFLG", 0xF414,  1, 0xF414, "HONOURED"),
-    ("FRETOP", 0xF69B,  2, 0xE268, "REJECT-GROUP"),
-    ("SAVTXT", 0xF6AF,  2, 0xE1CF, "REJECT-UNOBSERVABLE"),
-    ("SAVSTK", 0xF6B1,  2, 0xE1C3, "DEFER"),
+    ("FRETOP", 0xF69B,  2, _sym("FRETOP"), "REJECT-GROUP"),
+    ("SAVTXT", 0xF6AF,  2, _sym("SAVTXT"), "REJECT-UNOBSERVABLE"),
+    ("SAVSTK", 0xF6B1,  2, _sym("SAVSTK"), "DEFER"),
     ("ERRLIN", 0xF6B3,  2, 0xF6B3, "HONOURED"),
     ("ONELIN", 0xF6B9,  2, 0xF6B9, "HONOURED"),
     ("ONEFLG", 0xF6BB,  1, 0xF6BB, "HONOURED"),
