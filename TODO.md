@@ -4007,6 +4007,42 @@ item — do **one item per session** to keep context lean.
       unpositioned): measure where the reference's pointer points after a
       READ, a RESTORE n and an exhausted DATA list first. Then LPTPOS /
       PRTFLG (LPRINT needs a printer plugged in the probe).
+      📏 DATPTR MEASURED, 2026-10-13 ([`datptr_probe.py`](scratchpad/datptr_probe.py)
+      -> [`datptr_probe.out`](scratchpad/datptr_probe.out)): ONE pointer on the
+      VG-8020, no state byte -- TXTTAB-1 when unpositioned (RUN, RESTORE), the
+      `,` after an item with more to come, the line's 0 after its last item,
+      `RESTORE n` -> the byte before line n (the $0D convention), and after
+      `Out of DATA` BACK TO THE RESTORE POINT. zerobas: four private cells
+      (DATASTATE / DATAPTR / DATALINE / RESTORE_LINE, 7 B) -- converting is
+      a rework of the READ tenant (sub page 0): its own item, priced first.
+      🔴 **AND THE MEASUREMENT FOUND A BEHAVIOUR DIVERGENCE -- D-DATARESET,
+      TIER 3, FIXED THE SAME DAY:** the rewind is observable. After `Out of
+      DATA` + RESUME NEXT the VG-8020's next READ starts over (C = 5, the
+      handler runs ONCE; after RESTORE 60 it rereads line 60's 7); zerobas
+      stayed exhausted (C = 0, the handler ran twice)
+      ([`datareset_probe.py`](scratchpad/datareset_probe.py), before values in
+      its docstring; after: [`datareset_probe.out`](scratchpad/datareset_probe.out)).
+      ✅ readdata-body.inc rov_none sets DATASTATE 0 ("unpositioned, from
+      RESTORE_LINE") as it reports out-of-data -- the error is still raised
+      on that READ; +3 B sub page 0 (70 -> 67). 🔒 Three rows in
+      `make readerl-acceptance` (oodrewind / oodcount / oodrestore), 10/10;
+      knife K-D1 (the store cut) -> exactly those three red, restored green
+      ([`datareset_knife.out`](scratchpad/datareset_knife.out)). 🔮 HIT.
+      🏗️ **ORDER CONFIRMED BY JOOST, 2026-10-13:** asked *"we should probably fix
+      the bigest own invented ram regions first?"*, he confirmed the proposed
+      order: *"go ahead with that order"*. BIGGEST FIRST, each step MEASURED
+      on the reference before anything moves:
+      (1) the FAT sector buffers (1024 B) TOGETHER with the cassette pair
+          inside them (CAL_BUF / CAL_BUF2, 512 B) -- first: which buffer the
+          VG-8020 uses for SAVE / LOAD "CAS:" and OPEN "CAS:" (the channel's
+          own? then the cassette pair moves there and the FAT buffers become
+          wholly disk-only, for the diskless floor);
+      (2) the PAINT span stack GFX_PSTK (360 B, both builds) -- where the
+          reference's PAINT keeps its spans;
+      (3) STRSCR (256 B, both builds) -- the reference's string temporaries;
+      (4) FLD_DESC (256 B), then PRINT USING's scratch -> FBUFFR.
+      The small official-cell moves (DATPTR, LPTPOS / PRTFLG, the D-REHOME
+      re-judgements) come after: they buy correctness more than bytes.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7797,7 +7833,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33314 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33350 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7963,7 +7999,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12825 (T-6FE392)8 (T-529ABE)` from `TODO.md:25619 (T-529ABE)`: a
+      `TODO.md:12861 (T-6FE392)8 (T-529ABE)` from `TODO.md:25655 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13672,7 +13708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25619 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25655 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,8 @@
+row                     Philips_VG_8020  C-BIOS_MSX1_EU_REPACK_NODISK
+run                         32768 $8000                       0 $0000
+read1of2                    32815 $802F                       0 $0000
+read2of2                    32819 $8033                       0 $0000
+readall                     32829 $803D                       0 $0000
+restore                     32768 $8000                       0 $0000
+restore30                   32819 $8033                       0 $0000
+outofdata                   32768 $8000                       0 $0000

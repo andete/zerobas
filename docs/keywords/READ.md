@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `READ` — take the next values from `DATA`
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No
 > known difference (the line a bad item's error names, fixed 2026-10-10).
 > Numbers like `1.5` read correctly since 2026-10-09.
@@ -86,6 +86,13 @@ The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`Out of DATA` did not start the data over** (fixed 2026-10-13,
+  D-DATARESET). On the VG-8020 the error also puts the `DATA` position back
+  where the last `RESTORE` left it (the program start, or the `RESTORE n`
+  line), so after `RESUME NEXT` the next `READ` reads the first item again.
+  zerobas stayed at the end, so that `READ` failed a second time. Found while
+  comparing where each machine keeps the `READ` position
+  ([`datareset_probe.py`](../../scratchpad/datareset_probe.py)).
 - **A bad item's error named the `READ` line** (fixed 2026-10-10, D-READERL).
   For `20 DATA 12X` / `30 READ A` the VG-8020 says `Syntax error in 20`, the
   `DATA` line where the typo is: `ERL` is 20 and `LIST .` lists line 20, even

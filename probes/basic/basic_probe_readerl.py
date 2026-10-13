@@ -15,6 +15,9 @@ lost (`after`).
   directdot  10 PRINT / 20 DATA 12X, LIST 10, `READ A` typed, LIST .
   after      a refused READ A, RESUME NEXT, READ A$ (the item), READ B (next line)
   reraise    ON ERROR GOTO 0 in a handler (control: the message's line)
+  oodrewind  READ past the end, RESUME NEXT, READ again: it starts over (D-DATARESET)
+  oodcount   ...and the handler runs ONCE (zerobas ran it twice)
+  oodrestore ...to the RESTORE n line, not the top
 
 Prints `ROW <name> VG=[...] ZB=[...] <SAME|DIVERGES>`; exit 0 all agree, 1 a
 divergence, 2 the VG-8020 gave no reading.
@@ -36,6 +39,15 @@ CASES = {
               "40 READ A$:READ B:PRINT A$;B:END", "90 RESUME NEXT", "RUN"],
     "reraise": ["NEW", "10 ON ERROR GOTO 100", "20 ERROR 7", "30 END",
                 "100 ON ERROR GOTO 0", "RUN"],
+    # D-DATARESET (2026-10-13): `Out of DATA` REWINDS the DATA position to the
+    # restore point -- after RESUME NEXT the next READ starts over. zerobas stayed
+    # exhausted: C read 0 and the handler ran twice.
+    "oodrewind": ["NEW", "10 ON ERROR GOTO 100", "20 READ A,B", "30 READ C:PRINT A;C:END",
+                  "40 DATA 5", "100 RESUME NEXT", "RUN"],
+    "oodcount": ["NEW", "10 ON ERROR GOTO 100", "20 READ A,B", "30 READ C",
+                 "40 PRINT A;C;E:END", "50 DATA 5", "100 E=E+1:RESUME NEXT", "RUN"],
+    "oodrestore": ["NEW", "10 ON ERROR GOTO 100", "20 RESTORE 60:READ A,B",
+                   "30 READ C:PRINT A;C:END", "50 DATA 5", "60 DATA 7", "100 RESUME NEXT", "RUN"],
 }
 
 

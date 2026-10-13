@@ -1,0 +1,8 @@
+resume-read  Philips_VG_8020               5  5 
+resume-read  C-BIOS_MSX1_EU_REPACK_NODISK  5  5 
+err-twice    Philips_VG_8020               5  1 
+err-twice    C-BIOS_MSX1_EU_REPACK_NODISK  5  1 
+restore-ood  Philips_VG_8020               7  7 
+restore-ood  C-BIOS_MSX1_EU_REPACK_NODISK  7  7 
+ptr-after    Philips_VG_8020               32806 
+ptr-after    C-BIOS_MSX1_EU_REPACK_NODISK  0 

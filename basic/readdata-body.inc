@@ -103,6 +103,13 @@ rov_exhaust:
                 ret
 rov_none:
                 xor     a                   ; 0 -> out of data
+                ; 🔴 D-DATARESET (2026-10-13): `Out of DATA` REWINDS to the restore
+                ; point, as the VG-8020 does -- after RESUME NEXT its next READ starts
+                ; over (from RESTORE n's line, or the top), where zerobas stayed
+                ; exhausted and failed again (scratchpad/datareset_probe.out). State 0
+                ; is "unpositioned, from RESTORE_LINE"; the error itself is still
+                ; raised by the caller on this READ. (`ld` keeps A = 0.)
+                ld      (DATASTATE),a
                 ret
 
 ; --- rov_str: the item's RAW ASCII span -> STRSCR ([len][bytes]) ------------
