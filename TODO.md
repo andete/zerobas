@@ -2620,7 +2620,9 @@ item — do **one item per session** to keep context lean.
       red -- a different path, the disk write's sector loops: see D-FDCDI's
       re-bound (its gate now asks for the CF-3300's best, 18 of 22).
 
-- [ ] ⏱️ **D-TOKLAG — AFTER A REFUSED 253-CHARACTER LINE, zerobas LOSES THE NEXT TYPED
+- [x] ❌ **WITHDRAWN 2026-10-13 — APPARATUS: THE HARNESS'S KEY-BUFFER INJECTOR
+      OVERWRITES PENDING KEYS; A PERSON TYPING LOSES NOTHING.** Was:
+      ⏱️ **D-TOKLAG — AFTER A REFUSED 253-CHARACTER LINE, zerobas LOSES THE NEXT TYPED
       LINE AT A 6 s GAP; THE VG-8020 DOES NOT (filed 2026-10-12, from D-TOKOVF)**
       🎚️ TIER 2 — reasonable time, if it is zerobas being slow; apparatus if it
       is the typing rate. NOT YET ATTRIBUTED.
@@ -2638,6 +2640,33 @@ item — do **one item per session** to keep context lean.
       ([`irqlat_after.out`](scratchpad/irqlat_after.out)), which points at time
       spent (zerobas still busy when the next line is typed) rather than keys
       missed -- measure the refused line's duration next.
+      🔬 **MEASURED 2026-10-13, AND THE FILING'S PREMISE WAS WRONG TWICE.**
+      (1) The lost line was not "the next" one: the SUM loop after the refused
+      line ran; `PRINT "ALIVE"` two lines later was lost. (2) There was no
+      "6 s gap" between lines: in direct mode the harness injects lines `step`
+      (2.5 s) apart, and `run_gap` is only the wait after the LAST line.
+      [`toklag_probe.py`](scratchpad/toklag_probe.py) ->
+      [`toklag_probe.out`](scratchpad/toklag_probe.out): the SUM loop takes
+      1.44 s on the VG-8020 and 4.86 s here, so ALIVE reached the key buffer
+      while zerobas was still running it; zerobas KEEPS type-ahead (a line
+      arriving mid-program, through the key buffer AND through the keyboard,
+      prints after the program -- as on the VG-8020). 🔮 "zerobas drops
+      type-ahead": MISS. (Its first run read nothing from zerobas: my 30 s
+      window was shorter than the 33.8 s an empty FOR to 5000 takes here,
+      [`toklag_control.out`](scratchpad/toklag_control.out).)
+      🎯 **THE MECHANISM IS THE INJECTOR:** `key_proc` (probes/lib/omsx_repl.py)
+      writes at GETPNT and, by design, OVERWRITES anything still pending -- so
+      ALIVE, unread when LIST was injected 2.5 s later, was replaced. With a
+      wait before LIST it arrives ([`toklag_wait.out`](scratchpad/toklag_wait.out)).
+      Without the long line it survives even at the original timing -- why
+      the refused line shifts the injector's outcome is NOT explained, and does
+      not matter to a user: [`toklag_keyboard.py`](scratchpad/toklag_keyboard.py)
+      -> [`toklag_keyboard.out`](scratchpad/toklag_keyboard.out) types the same
+      five lines through the KEYBOARD (openMSX `type`, which appends): every
+      line arrives on both machines, `ALIVE 2` included. 🔮 HIT.
+      ⚠️ The lesson for probes: a line lost in a direct-mode run on the SLOWER
+      machine may be the injector overwriting pending type-ahead. Space the
+      lines (`@WAIT`) or type them through the keyboard before believing it.
 
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
@@ -8080,7 +8109,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33597 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33626 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8246,7 +8275,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13108 (T-6FE392)8 (T-529ABE)` from `TODO.md:25902 (T-529ABE)`: a
+      `TODO.md:13137 (T-6FE392)8 (T-529ABE)` from `TODO.md:25931 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13955,7 +13984,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25902 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25931 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

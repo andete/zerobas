@@ -1,0 +1,8 @@
+=== Philips_VG_8020
+   (a) SUM loop: 1.44 s
+   (b) KEYBUF  : printed ['DONE', 'AHEAD']   | oft 28815 Bytes free Ok FOR I=1 TO 2000:NEXT:PRINT "DONE" DONE Ok PRINT "AHEAD" AHEAD Ok color  auto   goto   list   run
+   (c) keyboard: printed ['DONE', 'AHEAD']   | oft 28815 Bytes free Ok FOR I=1 TO 2000:NEXT:PRINT "DONE" DONE Ok PRINT "AHEAD" AHEAD Ok color  auto   goto   list   run
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+   (a) SUM loop: 4.86 s
+   (b) KEYBUF  : printed ['DONE', 'AHEAD']   | lean-room MSX1 BASIC ZB FOR I=1 TO 2000:NEXT:PRINT "DONE" DONE ZB PRINT "AHEAD" AHEAD ZB color  auto   goto   list   run
+   (c) keyboard: printed ['DONE', 'AHEAD']   | lean-room MSX1 BASIC ZB FOR I=1 TO 2000:NEXT:PRINT "DONE" DONE ZB PRINT "AHEAD" AHEAD ZB color  auto   goto   list   run
