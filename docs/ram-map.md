@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **113** in the MSX standard work area at or above `$F380`.
+* **basic** — 435 declared addresses in this project's own workspace `$E000..$F37F` (407 with a machine-readable width), plus **113** in the MSX standard work area at or above `$F380`.
 * **disk** — 136 declared addresses in this project's own workspace `$E000..$F37F` (124 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -55,7 +55,7 @@ second one is the question a per-component map cannot answer.
 | `$E3EF` | 1 B | `basic` | `GFX_PSCX` | gfx_paint_process/_scan_row: scan cursor column (1) |  |
 | `$E3F0` | 1 B | `basic` | `GFX_PSCY` | gfx_paint_scan_row: the neighbour row being scanned (1) |  |
 | `$E3F1` | 1 B | `basic` | `GFX_PSPA` | gfx_paint_scan_row: pending sub-span's start column (1) |  |
-| `$E3F2` |  | `basic` | `GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF` | span-stack array base: GFX_PSTK_CAP * [y][xL][xR] |  |
+| `$E3F2` | 360 B | `basic` | `GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF` | span-stack array base: GFX_PSTK_CAP * [y][xL][xR], |  |
 | `$E3F6` | 4 B | `basic` | `GFX_CS_M2` | $E3F6: r*r for the same compare (4) |  |
 | `$E3FA` | 2 B | `basic` | `GFX_PSP` | the span stack's top (lowest used byte) (2) |  |
 | `$E3FC` | 2 B | `basic` | `GFX_PBASE` | its empty position = SP - GFX_PAINT_MARGIN (2) |  |
@@ -68,25 +68,25 @@ second one is the question a per-component map cannot answer.
 | `$E41B` | 1 B | `basic` | `GFX_SSIZE` | $E41B: SCREEN's sprite-size argument while a mode |  |
 | `$E41C` | 1 B | `basic` | `GFX_SARGN` | $E41C: how many extra SCREEN arguments have been |  |
 | `$E41D` | 1 B | `basic` | `GFX_SFLAGS` | $E41D: which arguments were GIVEN -- (1 B) |  |
-| `$E4A0` | 1 B | `disk` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
-| `$E4A1` | 2 B | `disk` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
-| `$E4A3` | 2 B | `disk` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
-| `$E4A5` | 2 B | `disk` | `FAT_TOTCLUS` | total clusters + 2, from fat_mount (word; D-WCACHE W1 -- |  |
-| `$E4A7` | 2 B | `disk` | `FAT_FIRSTDATA` | first data sector (word) |  |
-| `$E4A9` | 2 B | `disk` | `FAT_CURCLUS` | current cluster in the open file's chain (word) |  |
-| `$E4AB` | 1 B | `disk` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
-| `$E4AC` | 2 B | `disk` | `FAT_FIRSTCLUS` | first cluster of the found file (word) |  |
-| `$E4AE` | 4 B | `disk` | `FAT_FILESIZE` | file size in bytes (4-byte LE) |  |
-| `$E4B2` | 1 B | `disk` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
-| `$E4B3` | 2 B | `disk` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) |  |
-| `$E4B5` | 2 B | `disk` | `FAT_FATSEC` | FAT sector currently read (word) |  |
-| `$E4B7` | 1 B | `disk` | `FAT_B0` | first FAT byte of a 12-bit entry (1 B) |  |
-| `$E4B8` | 1 B | `disk` | `FAT_B1` | second FAT byte of a 12-bit entry (1 B) |  |
-| `$E4B9` | 2 B | `disk` | `FAT_NAMEPTR` | -> 11-byte search name (word) |  |
-| `$E4BB` | 2 B | `disk` | `FAT_DIRSEC` | current root-dir sector being scanned (word) |  |
-| `$E4BD` | 2 B | `disk` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) |  |
-| `$E4BF` |  | `disk` | `BDOS_RECIDX` | next 128-byte record within SECTOR_BUF (0..4) |  |
-| `$E4C0` | 2 B | `disk` | `BDOS_DTA` | current DTA pointer (word; default DTA_DEFAULT) |  |
+| `$E4A0` | 1 B | `disk` | `FAT_SECPERCLUS` | sectors per cluster (byte) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4A1` | 2 B | `disk` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4A3` | 2 B | `disk` | `FAT_FIRSTROOT` | first root-directory sector (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4A5` | 2 B | `disk` | `FAT_TOTCLUS` | total clusters + 2, from fat_mount (word; D-WCACHE W1 -- | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4A7` | 2 B | `disk` | `FAT_FIRSTDATA` | first data sector (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4A9` | 2 B | `disk` | `FAT_CURCLUS` | current cluster in the open file's chain (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4AB` | 1 B | `disk` | `FAT_CLUSSEC` | sector index within current cluster (byte) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4AC` | 2 B | `disk` | `FAT_FIRSTCLUS` | first cluster of the found file (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4AE` | 4 B | `disk` | `FAT_FILESIZE` | file size in bytes (4-byte LE) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B2` | 1 B | `disk` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B3` | 2 B | `disk` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B5` | 2 B | `disk` | `FAT_FATSEC` | FAT sector currently read (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B7` | 1 B | `disk` | `FAT_B0` | first FAT byte of a 12-bit entry (1 B) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B8` | 1 B | `disk` | `FAT_B1` | second FAT byte of a 12-bit entry (1 B) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4B9` | 2 B | `disk` | `FAT_NAMEPTR` | -> 11-byte search name (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4BB` | 2 B | `disk` | `FAT_DIRSEC` | current root-dir sector being scanned (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4BD` | 2 B | `disk` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4BF` |  | `disk` | `BDOS_RECIDX` | next 128-byte record within SECTOR_BUF (0..4) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E4C0` | 2 B | `disk` | `BDOS_DTA` | current DTA pointer (word; default DTA_DEFAULT) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E4F2` | 2 B | `basic` | `GFX_DPTR` | $E4F2: parse cursor in the current frame (2) |  |
 | `$E4F4` | 2 B | `basic` | `GFX_DEND` | $E4F4: one past the current frame's last byte (2) |  |
 | `$E4F6` | 2 B | `basic` | `GFX_DFREE` | $E4F6: next free byte in GFX_DBUF (2) |  |
@@ -105,28 +105,28 @@ second one is the question a per-component map cannot answer.
 | `$E53F` | 1 B | `basic` | `GFX_DFB` | $E53F: 1 = B (blank move) prefix pending (1) |  |
 | `$E540` | 1 B | `basic` | `GFX_DFN` | $E540: 1 = N (no-update) prefix pending (1) |  |
 | `$E541` | 2 B | `basic` | `GFX_DARG` | $E541: last parsed argument (int16 LE) (2) |  |
-| `$E542` | 4 B | `disk` | `BDOS_BYTESLEFT` | bytes of the open file not yet delivered (4-byte LE) | `basic` GFX_DARG |
+| `$E542` | 4 B | `disk` | `BDOS_BYTESLEFT` | bytes of the open file not yet delivered (4-byte LE) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E543` | 2 B | `basic` | `GFX_DDX` | $E543: this command's dx (int16) (2) | `disk` BDOS_BYTESLEFT |
 | `$E545` | 2 B | `basic` | `GFX_DDY` | $E545: ...dy (2) | `disk` BDOS_BYTESLEFT |
-| `$E546` | 1 B | `disk` | `BDOS_WRMODE` | 1 = a file is open for sequential write (byte) | `basic` GFX_DDY |
+| `$E546` | 1 B | `disk` | `BDOS_WRMODE` | 1 = a file is open for sequential write (byte) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E547` | 2 B | `basic` | `GFX_DTX` | $E547: move target X (2) |  |
 | `$E547` | 2 B | `disk` | `BDOS_WRCLUS/FWR_CLUS` | chain-tail cluster currently being filled (word) |  |
 | `$E549` | 2 B | `basic` | `GFX_DTY` | $E549: ...Y (2) |  |
 | `$E549` | 2 B | `disk` | `BDOS_WRFIRST/FWR_FIRST` | file's first cluster, 0 until first allocated (word) |  |
 | `$E54B` | 2 B | `basic` | `GFX_DTMP` | $E54B: mul/rotate/sign scratch (2) |  |
 | `$E54B` | 1 B | `disk` | `BDOS_WRSECIDX/FWR_SECIDX` | sector index within the current cluster (byte) |  |
-| `$E54C` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes currently buffered in SECTOR_BUF (word, 0..512) | `basic` GFX_DTMP |
+| `$E54C` | 2 B | `disk` | `BDOS_WRBUFLEN/FWR_BUFLEN` | bytes currently buffered in SECTOR_BUF (word, 0..512) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E54D` | 2 B | `basic` | `GFX_DSP` | $E54D: tenant entry SP -- an error deep in the (2 B) | `disk` BDOS_WRBUFLEN/FWR_BUFLEN |
-| `$E54E` | 4 B | `disk` | `BDOS_WRBYTES/FWR_BYTES` | total bytes written so far = final file size (4-byte LE) | `basic` GFX_DSP |
+| `$E54E` | 4 B | `disk` | `BDOS_WRBYTES/FWR_BYTES` | total bytes written so far = final file size (4-byte LE) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E54F` | 2 B | `basic` | `DEFT_PTR/RDV_LINE` | $E54F: D-READERL -- the link field of the line | `disk` BDOS_WRBYTES/FWR_BYTES |
 | `$E551` | 2 B | `basic` | `RDV_VAL` | $E551: the value read (int16 LE) (2) | `disk` BDOS_WRBYTES/FWR_BYTES |
-| `$E552` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) | `basic` RDV_VAL |
+| `$E552` | 2 B | `disk` | `BDOS_DIRSEC/FWR_DIRSEC` | logical sector holding the open file's dir entry (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E553` | 1 B | `basic` | `RDV_ST` | $E553: tenant -> main STATUS (1): (1 B) | `disk` BDOS_DIRSEC/FWR_DIRSEC |
 | `$E554` | 1 B | `basic` | `RDV_MODE` | $E554: main -> tenant MODE (1 B), D-READVAR: |  |
 | `$E554` | 2 B | `disk` | `BDOS_DIROFF/FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
 | `$E555` | 2 B | `basic` | `TGT_ADDR` | $E555: element address, or 0 = scalar (2) | `disk` BDOS_DIROFF/FWR_DIROFF |
-| `$E556` | 2 B | `disk` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) | `basic` TGT_ADDR |
-| `$E558` |  | `disk` | `FAT_WRTMP2` | second transient (free-cluster scan cached sector) |  |
+| `$E556` | 2 B | `disk` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
+| `$E558` |  | `disk` | `FAT_WRTMP2` | second transient (free-cluster scan cached sector) | `basic` GFX_CS_M1/GFX_DBUF/GFX_PSTK/GFX_VBUF |
 | `$E55A` | 1 B | `basic` | `GFX_DSCALE/GFX_PSTK_END` | $E55A: persistent scale, quarter units, |  |
 | `$E55A` | 1 B | `disk` | `FAT_NUMFATS` | number of FAT copies (byte; from BPB +16) (1 B) |  |
 | `$E55B` |  | `basic` | `GFX_DANGLE` | $E55B: persistent angle 0..3 (1). Boot 0 |  |
@@ -425,7 +425,7 @@ second one is the question a per-component map cannot answer.
 | `$ECC3` | 2 B | `basic` | `SAVSTK` | 2 B: SP anchor for the trap unwind. Written by |  |
 | `$ECCB` | 4 B | `basic` | `ERRRESUME` | 4 B: resume context captured at trap time — |  |
 | `$ECCF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
-| `$ECD1` | 3 B | `basic` | `ZTRAP` | 18 entries * 3 B = 54 B ($E1D1..$E207). Each |  |
+| `$ECD1` | 54 B | `basic` | `ZTRAP` | 18 entries * 3 B = 54 B ($ECD1..$ED06; it was |  |
 | `$ED07` | 2 B | `basic` | `ZINTVAL` | 2 B: INTERVAL reload period in frames (0 = disarmed) |  |
 | `$ED09` | 2 B | `basic` | `ZINTCNT` | 2 B: INTERVAL live down-counter (frames to next fire) |  |
 | `$ED0B` | 1 B | `basic` | `TRAPENA` | 1 B: count of traps currently in state ON. Gates the |  |
@@ -518,7 +518,7 @@ second one is the question a per-component map cannot answer.
 | `$F024` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
 | `$F026` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F027` | 1 B | `basic` | `STOPHOLD` | D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
-| `$F03C` | 1 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, (1 B) |  |
+| `$F03C` | 24 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, $F03C..$F053 |  |
 | `$F054` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F055` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
 | `$F056` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |

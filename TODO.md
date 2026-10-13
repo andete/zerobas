@@ -3939,6 +3939,25 @@ item — do **one item per session** to keep context lean.
       becomes truthful); (2) the 446 B stay CANDIDATES -- dynamic absence is a
       lower bound -- so each needs a static offset check against its
       neighbours before any packing.
+      ✅ **THE MAP CORRECTED, SAME DAY.** The three were WIDTHS the map had
+      wrong, not unknown tenants: ZTRAP's comment still named its pre-D-RAMSHIFT
+      span ($E1D1..$E207), and a range that does not start at its cell is
+      ignored, so ZTRAP read 3 B -- SILENTLY (FOR_CUR's stale range had broken
+      loudly; this one degraded to a smaller TRUSTED width). GFX_PSTK, the PAINT
+      span stack, is 360 B ($E3F2..$E559), a union with DRAW's 256 B frame
+      text and the sprite x-save -- its width was "disputed", so TWO of the
+      "never written" holes ($E41E 130 B, $E4C2 48 B) were the deep end of
+      the PAINT stack, which no case filled. TKDIG declared (1 B) for a 24 B
+      array. All three now state their ranges; the GFX pin left
+      tools/ram-width-allow.txt (the ratchet's good direction). A sweep for
+      comment ranges stale by a shift delta found only ZTRAP (the rest are
+      historical notes). ⚠️ tools/ws_shift.py rewrites equates, not comment
+      ranges: the next shift must update them too (FOR_CUR and ZTRAP).
+      📏 Re-run against the corrected map ([`holecheck_probe.out`](scratchpad/holecheck_probe.out);
+      the first: [`holecheck_firstrun.out`](scratchpad/holecheck_firstrun.out)):
+      9 candidates, 477 B, written by NOTHING of ours on either build (only
+      C-BIOS's power-on page probe at $EE00). 🔮 Predicted ~477 B and only
+      that writer: HIT.
       📐 Part (c), the cassette pair, PRICED: CAL_BUF / CAL_BUF2 / CAS_WBUF are
       live while a PROGRAM runs (INPUT# from "CAS:" reads through cal_getbyte,
       input.asm / strvar.asm; PRINT# to tape writes through cas_wbyte,
@@ -7729,7 +7748,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33258 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33265 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -7895,7 +7914,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:12769 (T-6FE392)8 (T-529ABE)` from `TODO.md:25551 (T-529ABE)`: a
+      `TODO.md:12776 (T-6FE392)8 (T-529ABE)` from `TODO.md:25570 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -13604,7 +13623,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:25551 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:25570 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

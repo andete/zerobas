@@ -1322,7 +1322,9 @@ SAVTXT          equ     $ECCF   ; 2 B: the CURRENT statement's text pointer,
 ; in PROVENANCE.md alongside CONTLINE). MUST be zeroed at cold boot (garbage RAM =
 ; phantom armed traps) — trap_init does this; RUN re-arms via the same reset.
 ; Repack-only (the whole arc is IF the repack build).
-ZTRAP           equ     $ECD1   ; 18 entries * 3 B = 54 B ($E1D1..$E207). Each
+ZTRAP           equ     $ECD1   ; 18 entries * 3 B = 54 B ($ECD1..$ED06; it was
+                                ; $E1D1..$E207 before D-RAMSHIFT, and that stale range
+                                ; let the RAM map read ZTRAP as 3 B wide). Each
                                 ; entry = [state:1][handler_line_link:2].
                                 ; state bits: 1-0 = 00 OFF / 01 ON / 10 STOP(user)
                                 ; / 11 SERVICING(auto-suspend in handler);
@@ -2046,7 +2048,10 @@ GFX_PXR         equ     $E3EE   ; ...current span's right column (1)
 GFX_PSCX        equ     $E3EF   ; gfx_paint_process/_scan_row: scan cursor column (1)
 GFX_PSCY        equ     $E3F0   ; gfx_paint_scan_row: the neighbour row being scanned (1)
 GFX_PSPA        equ     $E3F1   ; gfx_paint_scan_row: pending sub-span's start column (1)
-GFX_PSTK        equ     $E3F2   ; span-stack array base: GFX_PSTK_CAP * [y][xL][xR]
+GFX_PSTK        equ     $E3F2   ; span-stack array base: GFX_PSTK_CAP * [y][xL][xR],
+                                ; $E3F2..$E559 -- the UNION GFX_CS_M1 / GFX_DBUF /
+                                ; GFX_VBUF share (time-shared; the disk ROM's per-ROM FAT
+                                ; cells at $E4A0.. overlay it too: no PAINT during disk I/O)
 GFX_PSTK_ENTSZ  equ     3
 GFX_PSTK_CAP    equ     120     ; capacity (360 B); window is 376 B ($E3E8..$E560)
                                 ; minus 10 B of the working cells above -> 366 B
@@ -3992,7 +3997,8 @@ FOR_SIGN        equ     FOR_CUR + 25    ; NEXT's scratch: the step's sign byte (
 ; var_set call. D-FORVAR keeps it on the STACK instead (one push/pop replaces one
 ; store and two loads on mutually exclusive branches), and FOR_CUR grew over it.
 ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
-; bytes are the pool's own pointers and $E058..$E080 is FREE.
+; bytes are the pool's own pointers and $E058..$E080 was FREE (addresses as of
+; that slice: D-RAMSHIFT moved the block +$0B00 on 2026-10-13).
 CSP             equ     $EB50   ; the pool's allocation frontier, descending (2)
 ; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
 ; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
@@ -4364,7 +4370,7 @@ PRMWANT         equ     $F026   ; D-OKSTORE: nonzero = print the prompt (1)
 STOPHOLD        equ     $F027   ; D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
-TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, (1 B)
+TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, $F03C..$F053
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead
 ; between literals). See sub/tkfloat.asm tk_float for field semantics (the crunch
