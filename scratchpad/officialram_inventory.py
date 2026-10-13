@@ -31,7 +31,7 @@ GROUPS = [   # (group, name regex, comment regex)
     ("string engine / heap", r"^STR|^SH_|^RVDESC|^ISRCH|^MIDS|^FRETOP|^TEMP|^LHS_", r"string|heap"),
     ("arrays / variables", r"^ARY_|^VAR|^DIM|^DEF|^VALTYP", r"array|variable"),
     ("tokeniser / line entry / editor", r"^TK|^RL_|^CSR_|^LINE|^MRG|^PLN_|^AU_|^RN_|^LST_|^SL_|^LE_|^INP_", r"tokeni|line editor|RENUM|AUTO|MERGE"),
-    ("files / channels / disk", r"^FCH_|^FLD_|^GP_|^FAT_|^DISK|^DSK|^FILES|^COPY|^LRSET|^FS|^FW|^OO_|^BN_|^FREAD|^FWR_|^BDOS|^WRBLK|^RRND|^DBUF|^MBUF|^SECTOR|^WBUF|^FDC_|^DRV|^RDBLK|^DOS|^RES_|^W50|^BASENT|^DATE|^RAMAD|^CURDRV|^INT_|^CON|^WA_|^PG_|^F365|^P1_|^SEQ_|^LOC_|^EOF", r"disk|channel|FIELD|FAT|sector"),
+    ("files / channels / disk", r"^FCH_|^FLD_|^GP_|^FAT_|^DISK|^DSK|^FILE[S]|^COPY|^LRSET|^FS|^FW|^OO_|^BN_|^FREAD|^FWR_|^BDOS|^WRBLK|^RRND|^DBUF|^MBUF|^SECTOR|^WBUF|^FDC_|^DRV|^RDBLK|^DOS|^RES_|^W50|^BASENT|^DATE|^RAMAD|^CURDRV|^INT_|^CON|^WA_|^PG_|^F365|^P1_|^SEQ_|^LOC_|^EOF", r"disk|channel|FIELD|FAT|sector"),
     ("cassette", r"^CAL_|^CAS_|^CLPTR|^CLINK|^CURPTR|^ENDPTR|^EXECPTR", r"cassette|tape"),
     ("math pack scratch", r"^MATH_|^SQRT_|^RND_|^HORNER|^FP_|^MUL|^DIV|^MC_", r"math|RND|SQR"),
     ("PLAY / sound", r"^PLY|^PLAY|^SND|^BEEP", r"PLAY|PSG"),
