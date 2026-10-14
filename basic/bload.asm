@@ -108,11 +108,25 @@ load_handoff:
                 ; never printed (the CF-3300 does; scratchpad/colon_probe.py). The
                 ; tenant parses the `,R`/`,S` tail and now leaves the cursor past it
                 ; in FN_RESUME (sub/bload.asm pcr_ok); plain BLOAD continues there.
+                ; D-BLOADRTAIL (2026-10-14): `,R` CALLS the program, and when it
+                ; returns the rest of the line runs -- `BLOAD"CAS:T",R:PRINT"[OK]"`
+                ; prints [OK] on the VG-8020, direct and in a program, whatever
+                ; the code does to HL/DE/BC. This was `jp (hl)`: the program's `ret`
+                ; went back past the statement, so the line (and in a program, the
+                ; RUN) ended silently -- tape loaders of the shape `BLOAD"CAS:",R`
+                ; then more BASIC stopped at the prompt after `Found:`. The cursor
+                ; rides the STACK across the call, not FN_RESUME: the loaded code
+                ; is free to use RAM that is ours (workspace) but free on the
+                ; reference.
                 ld      hl,(FN_RESUME)
+                push    hl                  ; the statement cursor, kept on the stack
+                ld      hl,(EXECPTR)
                 ld      a,(RUNFLAG)
                 or      a
-                jp      z,exec_stmt         ; plain BLOAD: the rest of the line runs
-                ld      hl,(EXECPTR)
+                call    nz,lh_jphl          ; ,R: run it; it RETURNS here
+                pop     hl
+                jp      exec_stmt           ; the rest of the line runs, ,R or not
+lh_jphl:
                 jp      (hl)
 
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at

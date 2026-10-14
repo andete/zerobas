@@ -1,0 +1,2 @@
+K-BT1: bloadrtail RED, diverging ['ret', 'clob', 'prog', 'ran', 'chain']; predicted ['ret', 'clob', 'prog', 'ran', 'chain'] -> HIT
+restored: build rc=0; bloadrtail green

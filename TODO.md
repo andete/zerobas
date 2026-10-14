@@ -2616,6 +2616,27 @@ item — do **one item per session** to keep context lean.
       a VISIBLE defect in SCREEN 0. Gameplay past the first tee shot was not
       compared (it needs a scripted swing); nothing seen so far differs.
 
+- [x] 📼 **D-BLOADRTAIL — AFTER `BLOAD"CAS:",R` THE REST OF THE LINE WAS DROPPED;
+      THE VG-8020 RUNS IT** — ✅ **FIXED 2026-10-14.**
+      🎚️ TIER 1 — happy path: tape loaders of the shape `BLOAD"CAS:",R` followed
+      by more BASIC (Demonia's `BLOAD"CAS:...",R:RUN`, multi-part loaders) stopped.
+      Found by D-TAPELOAD's triage. 📏 Synthetic tapes (our own code: a bare
+      `ret`; HL/DE/BC zeroed then `ret`), `BLOAD"CAS:T",R:PRINT"[OK]"` direct and
+      in a program: the VG-8020 prints [OK] in all four; zerobas printed nothing
+      and in a program ENDED it. 🔮 "Syntax error for the clobbering code only":
+      MISS -- every case dropped the line, silently.
+      🔧 `load_handoff` (basic/bload.asm) CALLS the program (`call nz,lh_jphl`)
+      with the statement cursor on the stack, then `jp exec_stmt` -- not
+      FN_RESUME, which the loaded code may overwrite (our workspace is free RAM
+      on the reference). +5 B, main page 1 5 -> 0 B (TIER 1).
+      🛡️ Gate `bloadrtail-acceptance`
+      ([`basic_probe_bloadrtail.py`](probes/basic/basic_probe_bloadrtail.py),
+      [`bloadrtail_gate.out`](scratchpad/bloadrtail_gate.out)): ret, clob, prog
+      (+ the next line), ran (the code ran: PEEK 42), chain (two `,R` loads in one
+      line) -- 5/5 SAME. 🔪 [`bloadrtail_knife.py`](scratchpad/bloadrtail_knife.py)
+      -> [`bloadrtail_knife.out`](scratchpad/bloadrtail_knife.out): K-BT1 (`call`
+      back to `jp`) -> all five red; HIT.
+
 - [x] 🎨 **D-RG7 — `SCREEN 0:COLOR 15,4,7` WAS WHITE ON CYAN; THE VG-8020 IS
       WHITE ON BLUE** — ✅ **FIXED 2026-10-14.**
       🎚️ TIER 1 — happy path: a valid COLOR gave the wrong visible background.
@@ -2808,11 +2829,12 @@ item — do **one item per session** to keep context lean.
 
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
-      NOT YET MEASURED)**
+      TRIAGED 2026-10-14, see the end)**
       🎚️ TIER 1 — happy path: loading existing software from tape.
-      🙋 **NEEDS-JOOST** — the failing tapes themselves: which titles / files
-      (they stay OUTSIDE the repo; zerobas is public). Everything after that is
-      autonomous.
+      🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
+      themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
+      and ~40 that load, and the files are on this machine (outside the repo:
+      run, never decoded, never copied in, never part of a gate).
       Joost: *"many .cas and .wav tapes are not loading"*.
       ➡️ Measure first, per tape, on the VG-8020 and both builds: WHERE it
       stops -- no `Found:` (the leader / header / baud detection: TAPION,
@@ -2824,6 +2846,43 @@ item — do **one item per session** to keep context lean.
       Classify first; the three classes have different fixes and different
       tiers. Synthetic rows (cas_encode, 1200 / 2400 baud, short / long
       leaders, multi-file tapes) can start before the corpus arrives.
+      📏 **TRIAGED 2026-10-14** (a one-off run outside the repo: each `.cas`
+      loaded on the VG-8020 and on zerobas diskless with the loader its header
+      names, VRAM / VDP registers / CURLIN / PC dumped at 60, 180, 300 and 420 s
+      of emulated time; 42 reported titles found). The reported verdicts held:
+      the controls (River Raid, Arkanoid, Navy Moves, Deus Ex Machina, Pac-Man)
+      reach the same screen on both. The failures fall into five classes:
+      **A. THE MACHINE RESETS** -- 13 titles (Manic Miner, Buzz Off, Shark
+      Hunter, Boulder Dash, Chuckie Egg, Blow Up, ...): the load completes and
+      zerobas is back at its boot banner while the VG-8020 runs the game.
+      Hypothesis, NOT yet measured: the game's own code calls a published
+      MSX-BASIC ROM entry point (the math pack, CHRGTR, ...), which zerobas,
+      with C-BIOS at $0000-$2764 and its BASIC from $2765, does not have at
+      that address. ➡️ Measure first which addresses the failing code enters.
+      **B. THE TAPE READ FAILS** -- `Device I/O error` (Disc Warrior, Jump Jet,
+      Gunfright, Harry Fox) or `Found:` then back at the prompt (Grog's Revenge,
+      Humphrey, Lazer Bykes, Loopy Laundry, Hustler, Mutant Monty).
+      **C. THE GAME'S OWN LOADER REPORTS A LOAD ERROR** (City Connection, Ninja 2,
+      Oil's Well): machine code reading the tape through the BIOS (TAPION /
+      TAPIN), which is C-BIOS's implementation here.
+      **D. A BASIC ERROR IN THE LOADER** -- `Syntax error in 50` (Demonia),
+      `Out of memory in 40` (Head over Heels: the RAM gap, TIER 4), BMX
+      Simulator stuck at line 40.
+      **E. A CRASH INSIDE THE INTERRUPT HANDLER** (Sorcery, Elidon).
+      ✅ **FIRST FIX, D-BLOADRTAIL (2026-10-14):** Demonia's line 50 is
+      `BLOAD"CAS:...",R:RUN`. A synthetic tape showed the cause: after
+      `BLOAD"CAS:",R` zerobas dropped the rest of the line (and ended a program)
+      where the VG-8020 runs it -- `,R` was a `jp`, not a `call`. Re-run after
+      the fix (same tapes): Ballblazer and Game Over now reach the reference's
+      screen byte for byte, Grog's Revenge within 14 B; Lazer Bykes gets as far
+      as `Undefined line number in 410`, Demonia to `Missing operand in 50`
+      (the loaded part replaces the program, probably), and Chuckie Egg, Knight
+      Tyme and Lazy Jones now fail later than before. 🔮 "the `Found:` group
+      recovers": HIT for Grog's Revenge and Lazer Bykes (partly), MISS for
+      Loopy Laundry and Punch & Judy (a different loader shape).
+      ➡️ Next: D first (cheapest, one line each), then A (largest), B and C.
+      HAL (the tester's "crashes on line 600, probably PRINT USING") is likely
+      D-PULONG, fixed 2026-10-14; a re-test with the new nightly is asked for.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -8385,7 +8444,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33918 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33977 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8551,7 +8610,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13413 (T-6FE392)8 (T-529ABE)` from `TODO.md:26207 (T-529ABE)`: a
+      `TODO.md:13472 (T-6FE392)8 (T-529ABE)` from `TODO.md:26266 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14260,7 +14319,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26207 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26266 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

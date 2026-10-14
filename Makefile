@@ -2385,6 +2385,11 @@ pulong-acceptance: repack-machine
 rg7-acceptance: repack-machine
 	python3 probes/basic/basic_probe_rg7.py
 
+# --- bloadrtail-acceptance: the rest of the line after BLOAD"CAS:",R (D-BLOADRTAIL)
+# `,R` CALLS the program; when it returns the line runs on (our own synthetic tapes).
+bloadrtail-acceptance: repack-machine
+	python3 probes/basic/basic_probe_bloadrtail.py
+
 # --- filesnl-acceptance: the cursor after FILES (D-FILESNL) --------------------
 # The CF-3300 ends a FULL row of the listing at once, so a PRINT after FILES
 # starts on its own row; a partly filled row keeps the cursor on it, on both.

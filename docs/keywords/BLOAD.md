@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BLOAD` — load a binary file into memory
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-14):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -36,7 +36,9 @@ The file name is a string expression (`BLOAD A$` works) and may carry a device:
   the bytes from the start address up to the end address.
 - **`,R` runs the code** at the exec address once it is loaded. Six bytes of
   machine code saved with BSAVE and reloaded with `BLOAD "R.BIN",R` run, and a
-  plain `BLOAD` of the same file does not.
+  plain `BLOAD` of the same file does not. The code is CALLED: when it
+  returns, the rest of the line runs, so `BLOAD "CAS:",R:BLOAD "CAS:",R` loads
+  and runs two parts in turn, as tape loaders often do.
 - **`,S` loads into video memory**: the header's addresses are taken as VRAM
   addresses (`&HC800` wraps to 2048 in the 16 KB VRAM), and `VPEEK` reads the
   bytes back.
@@ -112,6 +114,13 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **After `BLOAD ...,R` the rest of the line was dropped** (fixed 2026-10-14,
+  D-BLOADRTAIL). zerobas jumped to the loaded code instead of calling it, so
+  when the code returned, the line ended there, and inside a program the
+  program stopped. On the VG-8020 `BLOAD "CAS:T",R:PRINT "OK"` prints `OK`.
+  Found by loading commercial tapes on both machines: several loaders run one
+  part with `,R` and then carry on in BASIC, and here they stopped at the prompt
+  after `Found:`.
 - **Ctrl-STOP could not break a tape read once the file was found** (fixed
   2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
   error` (19); zerobas read on to the end, because its cassette routines
@@ -179,4 +188,7 @@ saved binary to try it on).
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
   header leader and in the data.
+- `make bloadrtail-acceptance` — what runs after `BLOAD "CAS:...",R`: the rest
+  of the line, the next program line, and two `,R` loads in one line, with
+  tapes the test builds itself.
 - `make kwram` — the RAM-usage comparison.
