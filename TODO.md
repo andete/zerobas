@@ -3003,6 +3003,26 @@ item — do **one item per session** to keep context lean.
       D-DSKIB's prompt to follow. Witness: dskio-acceptance, nodisk-acceptance,
       a new row from D-ALIASWCELL's write probe, a knife (the body returns
       without I/O). Then S10.D (measure the GET/PUT hook first), S10.C, S10.E.
+      🔬 **PRICED BEFORE BUILDING (2026-10-14 night), and the brief's estimate is
+      too high.** The parse calls the evaluator (main PAGE 1): a disk.rom handler
+      cannot call the low-region `eval_byte_arg` / `eval_int16_checked` /
+      `req_comma` directly (CALSLT to a page-0 target leaves disk.rom in page 1,
+      and the evaluator's page-1 calls would land in it), so moving the parse
+      needs a new page-1 bundle call-back in main (~20 B, estimated 2026-10-14). Two shapes:
+      (a) the PARSE moves too: dsk_core becomes a ~19 B verb_run-like stub + the
+          ~20 B bundle, against today's ~55 B -> ~15-20 B of main saved;
+      (b) only the I/O moves: main keeps gate + parse and crosses the hook a
+          second time with the selector in A and the sector in BC (chan_gate's
+          cg_cross touches only DE / HL, and the crossing passes A / BC -- the
+          hook direction is the same CALSLT that D-XSLOTABI measured), the
+          handler does `ld hl,(DSKBUF_PTR)` + read_sector / fatprim_write_sector
+          (both already in disk.rom) -> ~8 B of main (dirverb_op + the
+          FWR_DIRSEC poke).
+      Both delete the sub-ROM dirverb tenant (~55 B of sub page 1 on 2026-10-14; its p1 table
+      slot must stay -- the table is append-only, point it at a stub) and end
+      D-ALIASWCELL's FWR_DIRSEC hazard by construction. ⚠️ Neither is the 40-60 B
+      the brief estimated; the step-10 work (S10.D first) is where main's bytes
+      are.
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
@@ -8919,7 +8939,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34452 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34472 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9085,7 +9105,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13947 (T-6FE392)8 (T-529ABE)` from `TODO.md:26741 (T-529ABE)`: a
+      `TODO.md:13967 (T-6FE392)8 (T-529ABE)` from `TODO.md:26761 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14794,7 +14814,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26741 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26761 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

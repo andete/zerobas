@@ -46,7 +46,11 @@ near-misses (Mutant Monty 1 B, Grog's Revenge 14 B, Disc Warrior 23 B ... of VRA
 check whether they are timing, not bugs), BMX Simulator (PC ends at $F92D, the
 interrupt trampoline's new home -- look at the slot state there).
 
-➡️ **NEXT (D-ROMSIZE step 1, autonomous):** DSKI$ / DSKO$ into disk.rom -- TODO's
+➡️ **NEXT (D-ROMSIZE step 1, autonomous):** DSKI$ / DSKO$ into disk.rom -- PRICED
+2026-10-14 night at only ~8-20 B of main (TODO, the item's 🔬 paragraph: the parse
+needs main page 1, so either a page-1 bundle call-back or the parse stays). Small;
+weigh it against starting S10.D (GET/PUT, measure the hook first), where the spec
+puts ~800 B of main. TODO's
 D-ROMSIZE item carries the state of the eviction plan (2026-10-14 brief: step 13 is
 long done; S10.C/D/E, BSAVE-to-disk, DSKI$/DSKO$ and the step-14 gate are left) and
 the slice's design, risks and witnesses. Then S10.D (measure the GET/PUT hook
