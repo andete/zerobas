@@ -1,0 +1,7 @@
+ROW w24 VG=[                       1] ZB=[                       1] SAME
+ROW w25 VG=[ERR 5] ZB=[                        1] DIVERGES
+ROW w30e VG=[ERR 5] ZB=[ 1000000000000000000000000E-24] DIVERGES
+ROW w20e VG=[ 1000000000000000000E-18] ZB=[ 1000000000000000000E-18] SAME
+
+FAIL: long PRINT USING formats (2/4)
+refcache: 0 hit, 8 miss, 8 stored

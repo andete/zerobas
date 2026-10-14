@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 431 declared addresses in this project's own workspace `$E000..$F37F` (405 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
+* **basic** — 432 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
 * **disk** — 135 declared addresses in this project's own workspace `$E000..$F37F` (123 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -483,9 +483,10 @@ second one is the question a per-component map cannot answer.
 | `$EFD3` | 1 B | `basic` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$EFD4` | 1 B | `basic` | `GP_MODE` | 0 = GET (read), 1 = PUT (write) (1) |  |
 | `$EFD5` | 1 B | `basic` | `GP_CHAN` | the channel number being GET/PUT (1) |  |
-| `$EFD6` | 32 B | `basic` | `PU_FMT` | copied format string ($EFD6..$EFF5, 32 chars) |  |
+| `$EFD6` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
+| `$EFD8` | 3 B | `basic` | `PU_FDESC` | [len][ptr] copy for a format that cannot move (3) |  |
 | `$EFF6` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
-| `$EFF7` | 1 B | `basic` | `PU_POS` | current scan index into PU_FMT (1) |  |
+| `$EFF7` | 1 B | `basic` | `PU_POS` | current scan index into the format (1) |  |
 | `$EFF8` | 1 B | `basic` | `PU_W` | current field width (1) |  |
 | `$EFF9` | 1 B | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
 | `$EFFA` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |

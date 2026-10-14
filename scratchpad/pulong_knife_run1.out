@@ -1,0 +1,4 @@
+K-PL1: build rc=2 ROM moved=False -- NOT SCORED
+K-PL2: pulong RED, diverging ['w25', 'w30e', 'd24', 'd25', 's25', 'm25', 'c25', 'p25', 'x25']; predicted ['w25', 'w30e', 'd24', 'd25', 's25', 'm25', 'c25', 'p25'] -> MISS
+K-PL3: pulong RED, diverging ['big', 'big2']; predicted ['big', 'big2'] -> HIT
+restored: build rc=0; pulong green

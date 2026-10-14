@@ -1,0 +1,29 @@
+ROW short VG=[X=  5] ZB=[X=  5] SAME
+ROW tail VG=[A=  1 B=  2 C=  3 D=  4 E=  5 F=  6] ZB=[A=  1 B=  2 C=  3 D=  4 E=  5 F=  6] SAME
+ROW late VG=[...............................%7.000] ZB=[...............................%7.000] SAME
+ROW w24 VG=[                       1] ZB=[                       1] SAME
+ROW w25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW w30e VG=[ERR 5] ZB=[ERR 5] SAME
+ROW w20e VG=[ 1000000000000000000E-18] ZB=[ 1000000000000000000E-18] SAME
+ROW d24 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW d25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW s24 VG=[***********************1] ZB=[***********************1] SAME
+ROW s25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW m24 VG=[                      $1] ZB=[                      $1] SAME
+ROW m25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW c25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW p25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW x25 VG=[ERR 5] ZB=[ERR 5] SAME
+ROW d24b VG=[          1.000000000000] ZB=[          1.000000000000] SAME
+ROW e25 VG=[ 10000000000000000000E-19] ZB=[ 10000000000000000000E-19] SAME
+ROW t25 VG=[                       1] ZB=[                       1] SAME
+ROW c24 VG=[                       1] ZB=[                       1] SAME
+ROW e24p VG=[+1000000000000000000E-18] ZB=[+1000000000000000000E-18] SAME
+ROW big VG=[ERR 14] ZB=[ERR 14] SAME
+ROW gc VG=[X=90 Y=90 Z=90] ZB=[X=90 Y=90 Z=90] SAME
+ROW tmp VG=[A= 1 B= 2] ZB=[A= 1 B= 2] SAME
+ROW lit2 VG=[X and YZ] ZB=[X and YZ] SAME
+ROW var VG=[...................................%12.0 | 0] ZB=[...................................%12.0 | 0] SAME
+
+PASS: long PRINT USING formats (26/26)
+refcache: 22 hit, 30 miss, 30 stored

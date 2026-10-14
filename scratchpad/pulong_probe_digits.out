@@ -1,0 +1,12 @@
+ROW d24 VG=[ERR 5] ZB=[           1.000000000000] DIVERGES
+ROW d25 VG=[ERR 5] ZB=[           1.0000000000000] DIVERGES
+ROW s24 VG=[***********************1] ZB=[***********************1] SAME
+ROW s25 VG=[ERR 5] ZB=[************************1] DIVERGES
+ROW m24 VG=[                      $1] ZB=[                      $1] SAME
+ROW m25 VG=[ERR 5] ZB=[                       $1] DIVERGES
+ROW c25 VG=[ERR 5] ZB=[                        1] DIVERGES
+ROW p25 VG=[ERR 5] ZB=[                       +1] DIVERGES
+ROW x25 VG=[ERR 5] ZB=[                        1] DIVERGES
+
+FAIL: long PRINT USING formats (2/9)
+refcache: 0 hit, 18 miss, 18 stored

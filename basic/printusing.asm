@@ -93,25 +93,8 @@ ex_print_using:
                 call    str_eval            ; STRPTR -> the format [len][bytes]
                 jp      nc,type_mismatch_error  ; `PRINT USING 5` -> ERR 13 (0 B:
                                             ; the same instruction, retargeted)
-                ; copy the format into PU_FMT (it must survive later str_eval calls,
-                ; which reuse STRSCR/RVDESC for literal string VALUES). Clamp to
-                ; PU_FMTMAX.
                 push    hl                  ; guard the token cursor
-                ld      hl,(STRPTR)
-                ld      a,(hl)
-                cp      PU_FMTMAX+1
-                jr      c,puf_lenok
-                ld      a,PU_FMTMAX
-puf_lenok:
-                ld      (PU_FMTLEN),a
-                call    pu_deref_body       ; arrays slice-4a: HL(desc)->HL(body)
-                ld      de,PU_FMT
-                ld      c,a
-                ld      b,0
-                or      a
-                jr      z,puf_copied
-                ldir
-puf_copied:
+                call    pu_hold_fmt         ; D-PULONG: keep the format WHERE IT IS
                 pop     hl                  ; HL = cursor past the format operand
                 ; ONLY ';' separates the format from the value list. A ',' here,
                 ; or nothing at all, is ERR 2 on both references -- and this used
@@ -210,10 +193,44 @@ pu_skipnl:
 ; BODIES. The NAME and its call site survive; only the second copy goes.
 ; (pu_ifc = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 
-; pu_has_field — CF set iff PU_FMT[0..PU_FMTLEN) contains a field char (#/!/&/\).
-; Clobbers A, B, DE, HL.
+; --- pu_hold_fmt (D-PULONG, 2026-10-14): name the format for the statement --
+; The VG-8020 reads a PRINT USING format where it is; zerobas copied it into a
+; 32 B buffer and CUT a longer one (scratchpad/pulong_probe.out: a 35-char format
+; garbled its tail, a field past column 32 was ERR 5). The format must still
+; survive the VALUES' evaluation, which can run the GC (it MOVES heap bodies) and
+; reuses RVDESC for the next literal. So: a body BELOW the heap (a literal in the
+; program text, or a READ-by-reference string) cannot move -- its descriptor is
+; copied into PU_FDESC. Anything else becomes an owned temp-stack entry
+; (str_snapshot_arg keeps one that already is, and copies a variable's body):
+; the GC keeps a temp's ptr current, and only the next statement pops it.
+; PU_FMTD names whichever; every reader re-reads the ptr through it.
+; in: STRPTR -> the format's descriptor. Clobbers AF, BC, DE, HL.
+pu_hold_fmt:
+                ld      hl,(STRPTR)
+                ld      a,(hl)
+                ld      (PU_FMTLEN),a
+                call    pu_deref_body       ; HL = the body
+                ld      de,(FRETOP)
+                or      a
+                sbc     hl,de
+                jr      nc,phf_snap         ; in (or above) the heap: it can move
+                ld      hl,(STRPTR)
+                ld      de,PU_FDESC
+                ld      bc,3
+                ldir
+                ld      hl,PU_FDESC
+                jr      phf_set
+phf_snap:
+                call    str_snapshot_arg    ; HL = the owning temp entry
+phf_set:
+                ld      (PU_FMTD),hl
+                jp      check_expr_errors   ; a snapshot can run out of string space
+
+; pu_has_field — CF set iff the format's PU_FMTLEN bytes contain a field char
+; (#/!/&/\). Clobbers A, B, DE, HL.
 pu_has_field:
-                ld      hl,PU_FMT
+                ld      hl,(PU_FMTD)
+                call    pu_deref_body       ; HL = the format's current body
                 ld      a,(PU_FMTLEN)
                 ld      b,a
                 or      a
@@ -249,10 +266,16 @@ pu_to_field:
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PU_TOFIELD)
                                             ; set PU_TYPE/PU_W/PU_POS, A = no-field flag
                 jp      c,subrom_absent_error
-                push    af                  ; guard the no-field flag across the drain
+                push    af                  ; guard the tenant's answer across the drain
                 ld      hl,DB_WIN          
                 call    print_string        ; drain literals -> pchar (PRDEST sink)
-                pop     af                  ; A = 0 field found / 1 none
+                ld      a,(DB_MORE)         ; D-PULONG: the scanner stopped because the
+                or      a                   ; 96 B window was full, not at a field --
+                pop     bc                  ; B = 0 field found / 1 none / 2 too wide
+                jr      nz,pu_to_field      ; drained: scan on from PU_POS
+                ld      a,b
+                cp      2
+                jp      z,pu_ifc            ; D-PUWIDE: a field over 24 wide -> ERR 5
                 or      a
                 ret     z                   ; field -> CF clear
                 scf                         ; no field -> CF set (pu_main: jr c,pu_endlist)

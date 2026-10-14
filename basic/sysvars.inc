@@ -3815,14 +3815,21 @@ GP_FLAGS        equ     $EFD3   ; bit0 = extend (PUT allocates; GET does not) (1
 GP_MODE         equ     $EFD4   ; 0 = GET (read), 1 = PUT (write) (1)
 GP_CHAN         equ     $EFD5   ; the channel number being GET/PUT (1)
 ; --- PRINT USING formatted-output scratch (Phase 2) ------------------------
-; Transient (dead outside one PRINT USING statement). The format string is copied
-; here so it survives the str_eval calls that evaluate the string VALUES (a literal
-; format lives in the volatile STRSCR otherwise). Free gap $EED6..$EEFF, below
-; FLD_DESC ($EF00). See basic/printusing.asm.
-PU_FMT          equ     $EFD6   ; copied format string ($EFD6..$EFF5, 32 chars)
-PU_FMTMAX       equ     32      ; format length cap (longer formats truncate)
+; Transient (dead outside one PRINT USING statement).
+; D-PULONG (2026-10-14): the format is READ WHERE IT LIVES, as on the VG-8020 --
+; it used to be copied into a 32 B PU_FMT here and a longer one was CUT (`PRINT
+; USING` with a 35-char format garbled its tail, and a field past column 32 was
+; ERR 5; scratchpad/pulong_probe.out). PU_FMTD names the format's [len][ptr]
+; descriptor, re-read at every use because the GC moves heap bodies while the
+; VALUES are evaluated: either PU_FDESC (a copy, when the body lies below the heap
+; -- a literal in the program text -- and cannot move) or an owned temp-stack
+; entry (str_snapshot_arg), which the GC keeps current and only the next
+; statement pops. See basic/printusing.asm pu_hold_fmt.
+PU_FMTD         equ     $EFD6   ; -> the format's [len][ptr] descriptor (2)
+PU_FDESC        equ     $EFD8   ; [len][ptr] copy for a format that cannot move (3)
+; FREE-RAM $EFDB..$EFF5  PU_FMT's tail, given up by D-PULONG (2026-10-14)
 PU_FMTLEN       equ     $EFF6   ; live format length (1)
-PU_POS          equ     $EFF7   ; current scan index into PU_FMT (1)
+PU_POS          equ     $EFF7   ; current scan index into the format (1)
 PU_W            equ     $EFF8   ; current field width (1)
 PU_TYPE         equ     $EFF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
                                 ; BIT2 = D-PUDOLLAR's floating `$`, a MODIFIER on

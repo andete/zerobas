@@ -46,7 +46,7 @@ ptf_scan:
                 jr      z,ptf_wrap          ; at end of format
                 ld      e,b
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
@@ -80,7 +80,7 @@ ptf_notdot:
                 jp      z,ptf_dollar
                 cp      '+'
                 jp      z,ptf_plus
-                call    pchar               ; literal -> emit
+                call    pu_pchar            ; literal -> emit
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a
@@ -95,6 +95,7 @@ ptf_wrap:
                 ld      (PU_POS),a
                 jr      ptf_scan
 ptf_nofield:
+                ld      a,1                 ; the tenant's answer: no field
                 scf
                 ret
 ptf_num:
@@ -112,7 +113,7 @@ ptf_num_lp:
                 jr      z,ptf_num_done
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
@@ -141,7 +142,7 @@ ptf_num_done:
                 jr      z,ptf_num_caret     ; format ended: no decimal part
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '.'
@@ -161,7 +162,7 @@ ptf_dec_lp:
                 jr      z,ptf_dec_done
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
@@ -195,7 +196,7 @@ ptf_num_caret:
                 jr      c,ptf_num_sign      ; fewer than four characters left
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      e,4                 ; ⚠️ NOT B -- B is the field WIDTH
 ptf_car_lp:
@@ -232,7 +233,7 @@ ptf_num_sign:
                 jr      z,ptf_num_fill      ; format ended: no trailing sign
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '+'
@@ -289,6 +290,27 @@ ptf_num_dw:
                 ld      b,a
                 pop     af
 ptf_num_w:
+                ; --- D-PUWIDE: a field over 24 wide is ERR 5 ----------------------
+                ; Measured on the VG-8020 (scratchpad/pulong_probe_digits*.out): 24
+                ; columns print and 25 are ERR 5, counting every `#`, the point,
+                ; commas, a LEADING `+`, `**` and `$$` -- but not `^^^^` and not a
+                ; TRAILING sign (`#`x21 + `^^^^` and `#`x24 + `-` both print). It
+                ; also bounds PU_NUM, which an exponent field fills to its width.
+                ld      a,(PU_FLAGS)
+                and     $10                 ; a trailing sign took a column
+                ld      a,b
+                jr      z,ptf_w_nt
+                dec     a
+ptf_w_nt:
+                ld      e,a
+                ld      a,(PU_DEC)
+                rla                         ; CF = the D-PUEXP marker
+                ld      a,e
+                jr      nc,ptf_w_ne
+                sub     4                   ; ...and so did the four carets
+ptf_w_ne:
+                cp      25
+                jr      nc,ptf_wide
                 ld      a,b
                 ld      (PU_W),a
                 ld      a,c
@@ -296,6 +318,10 @@ ptf_num_w:
                 ld      a,(PU_TYPE)
                 and     $04                 ; numeric, KEEPING D-PUDOLLAR's bit2
                 ld      (PU_TYPE),a         ; (`and` clears CF, as `xor a` did)
+                ret
+ptf_wide:
+                ld      a,2                 ; the tenant's answer: ERR 5
+                scf
                 ret
 ; --- ptf_star: `**` before a `#` run selects ASTERISK FILL (D-PUSTAR) --------
 ; docs/spec-basic-pufloat.md. Both characters are consumed and both count toward
@@ -312,7 +338,7 @@ ptf_star:
                 jr      z,ptf_star_lit      ; `*` was the last char -> literal
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '*'
@@ -326,7 +352,7 @@ ptf_star:
                 jp      ptf_scan
 ptf_star_lit:
                 ld      a,'*'
-                call    pchar
+                call    pu_pchar
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a
@@ -362,7 +388,7 @@ ptf_dollar:
                 jr      z,ptf_dollar_lit    ; `$` was the last char -> literal
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '$'
@@ -383,7 +409,7 @@ ptf_dollar:
                 jp      ptf_scan
 ptf_dollar_lit:
                 ld      a,'$'
-                call    pchar
+                call    pu_pchar
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a
@@ -401,7 +427,7 @@ ptf_plus:
                 jr      z,ptf_plus_lit      ; `+` was the last char -> literal
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
@@ -426,7 +452,7 @@ ptf_plus_sign:
                 jp      ptf_scan
 ptf_plus_lit:
                 ld      a,'+'
-                call    pchar
+                call    pu_pchar
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a
@@ -461,7 +487,7 @@ ptf_back_lp:
                 jr      z,ptf_back_unterm   ; no closing '\' before the end
                 ld      e,c
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      BACKSLASH
@@ -484,7 +510,7 @@ ptf_back_close:
 ptf_back_unterm:
                 ; lone '\' with no close -> treat it as a literal and keep scanning.
                 ld      a,BACKSLASH
-                call    pchar
+                call    pu_pchar
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a
@@ -500,7 +526,7 @@ pu_emit_tail:
                 ret     z                   ; end of format
                 ld      e,b
                 ld      d,0
-                ld      hl,PU_FMT
+                call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
                 cp      '#'
@@ -511,7 +537,7 @@ pu_emit_tail:
                 ret     z
                 cp      BACKSLASH
                 ret     z
-                call    pchar
+                call    pu_pchar
                 ld      a,(PU_POS)
                 inc     a
                 ld      (PU_POS),a

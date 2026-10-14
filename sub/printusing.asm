@@ -9,7 +9,7 @@
 ; error-handling S2a slice.
 ;
 ; WHY SUB-SIDE. Both routines are PURE leaves over the PU_* RAM sysvars + pchar:
-; they scan the copied format string (PU_FMT) and emit its literal characters,
+; they scan the format string (through PU_FMTD) and emit its literal characters,
 ; identifying the next #/!/&/\..\ field (pu_to_field) or stopping at it
 ; (pu_emit_tail). No eval, no pu_deref_body, no div10 — so they are a valid
 ; page-0 tenant run under DI, and the fragile value-render/deref paths
@@ -25,34 +25,70 @@
 ; screen and PRINT# USING -> file (the 003ff70 file-form fix stays main-side).
 ;
 ; RAM: DETOKBUF ($BE00, 512 B) + DB_CUR ($F108) are shared sysvars.inc equates,
-; byte-identical main/sub. PU_FMTMAX is 32, so a scanner's literal run is <= 32 B
-; -- the 512 B buffer never overflows and needs no bound check.
+; byte-identical main/sub. Since D-PULONG a format is up to 255 B, so a literal
+; run can outgrow the 96 B window: pu_pchar stops the scanner there instead.
 ;
 ; CLEAN-ROOM: original code (the scanners are copied verbatim from our own
 ; basic/printusing.asm via basic/pu-render.inc). No disassembly.
 ; ===========================================================================
 
 BACKSLASH       equ     $5C                 ; '\' field char (pu-render.inc)
-; 🪟 D-DETOKBUF: these tenants are NOT re-runnable (pu_to_field advances
-; PU_POS), so they must never need a second window -- the worst literal run is
-; PU_FMTMAX and a numeric field is at most the format plus sign/`$`/`%`.
-    IF PU_FMTMAX + 4 > DB_WINSZ - 1
-                db      PRINT_USING_OUTPUT_MAY_EXCEED_ONE_RENDER_WINDOW
-    ENDIF
+; 🪟 D-DETOKBUF: these tenants are not re-runnable from the START (pu_to_field
+; advances PU_POS) -- but they RESUME: they read PU_POS afresh on entry. Until
+; D-PULONG (2026-10-14) a 32 B format cap kept every literal run inside one
+; window and a build assert pinned it; the cap is gone, so pu_pchar below stops
+; a scanner when the window is full, with PU_POS ON the character it did not
+; store, and the resident side drains the window and calls again (pu_to_field's
+; stub loops on DB_MORE; pu_emit_tail's driver, detok_emit, already does).
+
+; --- pu_pchar: pchar, or STOP THE SCANNER when the window is full ----------
+; Every emit site in basic/pu-render.inc sits at its scanner's own stack depth
+; (no push between the scanner's entry and the call), so dropping our return
+; address returns from the SCANNER itself, NC, with DB_MORE set. The character
+; was not stored and PU_POS was not advanced past it. Preserves every register
+; when it emits.
+pu_pchar:
+                push    af
+                ld      a,(DB_CUR)
+                cp      low(DB_WIN + DB_WINSZ - 1)
+                jr      nc,ppc_full         ; pchar would only flag it now
+                pop     af
+                jp      pchar
+ppc_full:
+                pop     af
+                pop     af                  ; drop the return into the scanner
+                ld      a,1
+                ld      (DB_MORE),a
+                or      a                   ; NC: "not the no-field answer"
+                ret                         ; ...out of the scanner
+
+; --- pu_fmtp: HL = the format's CURRENT body (D-PULONG) ----------------------
+; Through PU_FMTD's [len][ptr]: the GC may have moved a heap body since the last
+; read. Preserves every register but HL.
+pu_fmtp:
+                push    af
+                ld      hl,(PU_FMTD)
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                pop     af
+                ret
 
 ; --- pu_tofield_tenant: the SUBROM_IDX_PU_TOFIELD entry --------------------
 ; Reset the DETOKBUF cursor, run pu_to_field (emits leading literals via the
 ; sub-local pchar, sets PU_TYPE/PU_W/PU_POS, CF set if no field), 0-terminate the
-; buffer, and return the no-field flag in A (0 = a field was found; 1 = none) —
+; buffer, and return the answer in A (0 = a field was found, or the window filled
+; first -- DB_MORE says which; 1 = no field; 2 = a field over 24 wide, D-PUWIDE) —
 ; A is the CALSLT-safe result channel; the resident stub turns it back into CF.
 pu_tofield_tenant:
                 call    db_begin0           ; D-DETOKBUF: cursor -> the window, no skip
-                call    pu_to_field         ; emit leading literals -> DETOKBUF; CF=no-field
+                call    pu_to_field         ; NC field / window full; CF: A = 1 or 2
                 ld      hl,(DB_CUR)
                 ld      (hl),0              ; 0-terminate (ld: no flag effect, CF survives)
-                ld      a,0
-                ret     nc                  ; field found -> A=0
-                inc     a                   ; no field -> A=1
+                ret     c                   ; A = 1 no field / 2 too wide
+                xor     a                   ; field found (or DB_MORE) -> A=0
                 ret
 
 ; --- pu_tail_tenant: the SUBROM_IDX_PU_TAIL entry -------------------------

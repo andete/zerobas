@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `PRINT` — write text and numbers to the screen
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-14):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. Two
 > recorded differences, both in rare `PRINT USING` formats with `$$` (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -78,8 +78,15 @@ same statement for the printer.
 | `PRINT USING "##",5` (`,` instead of `;`) | error 2 |
 | `PRINT USING` with `;` and a field, but no value | error 24 |
 | `PRINT USING "abc";5` (no field in the format) | error 5 |
+| a number field more than 24 columns wide, e.g. 25 `#` | error 5 |
 
-None of the `PRINT USING` errors prints anything first.
+None of the `PRINT USING` errors above prints anything first, except the last:
+the text in front of the over-wide field comes out before the error
+(`PRINT USING "AB` followed by 25 `#` prints `AB`, then error 5).
+
+The 24 columns count every `#`, the point, commas, a leading `+`, `**` and
+`$$`, but not `^^^^` and not a trailing `+` or `-`. A format itself can be up
+to 255 characters long.
 
 ## Example
 
@@ -156,6 +163,13 @@ the set of documented work-area cells each machine writes is not the same.
   two-character prefix, which showed that it simply lacks `$$`; zerobas
   follows the machine that implements it, as it already did for `&` and
   `\ \`, which the CF-3300 refuses.
+- **A `PRINT USING` format longer than 32 characters was cut short** (fixed
+  2026-10-14, D-PULONG). zerobas copied the format into 32 bytes of its own; a
+  35-character format garbled its last field, and a field that started after
+  column 32 gave error 5 because the copy held no field at all. The VG-8020
+  reads the format where it is, and now so does zerobas. On the way, **a number
+  field wider than 24 columns printed** where the VG-8020 gives error 5 (fixed
+  the same day, D-PUWIDE).
 - **A number was split across the end of the line** (fixed 2026-10-06,
   D-PRNUMWRAP): in a `PRINT I;` loop reaching the right edge, `601` became
   `6` / `01`, where both references move the whole number to the next line.
@@ -182,6 +196,8 @@ the set of documented work-area cells each machine writes is not the same.
   position of a marker on the screen.
 - `make prnumwrap-acceptance` — numbers and a string at the end of a line.
 - `make pusing-acceptance` — the `PRINT USING` formats, splits included.
+- `make pulong-acceptance` — formats longer than 32 characters (also with the
+  string space being reorganised between values) and the 24-column limit.
 - `make kwsweep` — one row per form (`;`, `,`, trailing separator, `TAB(`,
   `SPC(`), the `Type mismatch` row, and the error rows for `TAB(` and `SPC(`.
 - `make kwram` — the RAM-usage comparison.

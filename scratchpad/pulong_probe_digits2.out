@@ -1,0 +1,8 @@
+ROW d24b VG=[          1.000000000000] ZB=[          1.000000000000] SAME
+ROW e25 VG=[ 10000000000000000000E-19] ZB=[ 10000000000000000000E-19] SAME
+ROW t25 VG=[                       1] ZB=[                       1] SAME
+ROW c24 VG=[                       1] ZB=[                       1] SAME
+ROW e24p VG=[+1000000000000000000E-18] ZB=[+1000000000000000000E-18] SAME
+
+PASS: long PRINT USING formats (5/5)
+refcache: 0 hit, 10 miss, 10 stored

@@ -1,0 +1,5 @@
+ROW big VG=[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA | AAAAAAAAAAAAAAAAAAAA 5] ZB=[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA | AAAAAAAAAAAAAAAAAAAA 5] SAME
+ROW big2 VG=[5 -------------------------------------- | ---------------------------------------- | ---------------------------------------- | - 67 ----------------------------------- | ---------------------------------------- | ---------------------------------------- | ----] ZB=[5 -------------------------------------- | ---------------------------------------- | ---------------------------------------- | - 67 ----------------------------------- | ---------------------------------------- | ---------------------------------------- | ----] SAME
+
+PASS: long PRINT USING formats (2/2)
+refcache: 0 hit, 4 miss, 4 stored

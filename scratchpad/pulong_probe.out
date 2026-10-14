@@ -1,0 +1,7 @@
+ROW short VG=[X=  5] ZB=[X=  5] SAME
+ROW tail VG=[A=  1 B=  2 C=  3 D=  4 E=  5 F=  6] ZB=[A=  1 B=  2 C=  3 D=  4 E=  5 F=A=  6 B=] DIVERGES
+ROW late VG=[...............................%7.000] ZB=[ERR 5] DIVERGES
+ROW var VG=[...................................%12.0 | 0] ZB=[ERR 5] DIVERGES
+
+FAIL: long PRINT USING formats (1/4)
+refcache: 0 hit, 8 miss, 8 stored

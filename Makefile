@@ -2372,6 +2372,13 @@ recauto-acceptance: repack-machine $(DISK_TEST_DSK)
 ampb-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ampb.py
 
+# --- pulong-acceptance: PRINT USING formats past 32 chars (D-PULONG, D-PUWIDE) --
+# The format is read in place, as on the VG-8020 (it was copied into 32 B and cut),
+# literal runs longer than the render window come out whole, and a numeric field
+# over 24 wide is ERR 5 as there.
+pulong-acceptance: repack-machine
+	python3 probes/basic/basic_probe_pulong.py
+
 # --- filesnl-acceptance: the cursor after FILES (D-FILESNL) --------------------
 # The CF-3300 ends a FULL row of the listing at once, so a PRINT after FILES
 # starts on its own row; a partly filled row keeps the cursor on it, on both.

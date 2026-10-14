@@ -4500,6 +4500,64 @@ item — do **one item per session** to keep context lean.
       restored green; 🔮 HIT. `tests/test_input.py` gained the same negative
       control (a line at LINEBUF+0 must misread).
       ➡️ **NEXT: (4) FLD_DESC, and PRINT USING's scratch into FBUFFR.**
+      📏 **(4) LOOKED AT 2026-10-14.** FLD_DESC is ALREADY on the diskless
+      floor (DISK-ONLY, program RAM without a disk): moving it gains the
+      VG-8020 comparison NOTHING; the disk build is already ahead of the
+      CF-3300. The reference's way (a descriptor INTO the channel's buffer)
+      needs a buffer that stays put, and zerobas's FSECTOR_BUF is a working
+      copy swapped on every channel switch (`PRINT #2,F1$` would print channel
+      2's bytes). Left as is, reasoned, not measured.
+      PRINT USING's 32 B format copy: measuring it found D-PULONG (below) --
+      the copy CUT formats longer than 32. Fixed by reading the format in
+      place: 27 B of the block given up (`; FREE-RAM $EFDB..$EFF5`, a HOLE in
+      the workspace until a layout move takes it; not program RAM yet).
+
+- [x] 🖥️ **D-PULONG — A `PRINT USING` FORMAT LONGER THAN 32 CHARACTERS WAS
+      CUT** — ✅ **FIXED 2026-10-14.**
+      🎚️ TIER 1 — happy path: a valid program printed the wrong thing.
+      📏 [`pulong_probe.py`](scratchpad/pulong_probe.py) ->
+      [`pulong_probe.out`](scratchpad/pulong_probe.out) (before): a 35-char
+      format garbled its last field (`F=A=  6 B=`), a field past column 32 was
+      ERR 5 (the copy held no field), on the VG-8020 both print. 🔮 HIT x3.
+      🔧 `pu_hold_fmt` (basic/printusing.asm): a body below the heap (a program
+      literal) keeps a 3 B descriptor copy (PU_FDESC); anything else becomes an
+      owned temp-stack entry (str_snapshot_arg), which the GC keeps current;
+      PU_FMTD names it and every reader re-reads the ptr. Literal runs longer
+      than the 96 B render window: `pu_pchar` (sub/printusing.asm) stops the
+      scanner with PU_POS on the unstored character and the resident side
+      drains and calls again.
+      📏 after: [`pulong_probe_after.out`](scratchpad/pulong_probe_after.out)
+      26/26 SAME; [`pulong_probe_big.out`](scratchpad/pulong_probe_big.out)
+      (literal runs of 100 and 120) SAME. Gate `pulong-acceptance`
+      ([`basic_probe_pulong.py`](probes/basic/basic_probe_pulong.py)).
+      🔪 [`pulong_knife.py`](scratchpad/pulong_knife.py): K-PL3 (pu_pchar
+      never stops) -> big, big2 red, HIT. K-PL1 (never snapshot): run 1 (the
+      32 B cap back, +6 B) did not fit main page 1 -- NOT SCORED; run 2
+      predicted `gc` red and read GREEN -- MISS, THE ROW WAS BLIND: F$ sat at
+      the heap's top and never moved, and a moved body's old bytes stay
+      readable until something lands on them
+      ([`pulong_knife_run2.out`](scratchpad/pulong_knife_run2.out)). Row
+      `gcmove` added (the GC moves F$, a 200 B string lands where it was);
+      run 3 -> exactly gcmove red, HIT
+      ([`pulong_knife.out`](scratchpad/pulong_knife.out)).
+      🔮 `litwide` ("AB" + 25 `#`): predicted the VG-8020 prints nothing
+      before ERR 5 -- MISS, it prints `AB` first, as zerobas does.
+
+- [x] 🖥️ **D-PUWIDE — A NUMBER FIELD WIDER THAN 24 COLUMNS PRINTED; THE
+      VG-8020 SAYS ERR 5** — ✅ **FIXED 2026-10-14** (with D-PULONG, whose
+      longer formats would otherwise let an exponent field overrun PU_NUM).
+      🎚️ TIER 6 — every error.
+      📏 [`pulong_probe_width.out`](scratchpad/pulong_probe_width.out),
+      [`pulong_probe_digits.out`](scratchpad/pulong_probe_digits.out),
+      [`pulong_probe_digits2.out`](scratchpad/pulong_probe_digits2.out): 24
+      columns print, 25 are ERR 5, counting `#`, the point, commas, a LEADING
+      `+`, `**`, `$$`; NOT `^^^^` and NOT a trailing sign. 🔮 "ERR 5 at 25
+      digits": HIT; "digits, not columns": MISS (`d24`, 12+`.`+12, is ERR 5).
+      🔧 the check at `ptf_num_w` (basic/pu-render.inc), answer 2 through the
+      tenant to `pu_ifc`. 🔪 K-PL2 (check unreachable) -> the nine over-24
+      rows red; predicted eight -- MISS in the prediction (x25's 25 `#` are
+      over 24 before the trailing sign), not in the gate
+      ([`pulong_knife_run1.out`](scratchpad/pulong_knife_run1.out)).
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -8282,7 +8340,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33799 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33857 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8448,7 +8506,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13310 (T-6FE392)8 (T-529ABE)` from `TODO.md:26104 (T-529ABE)`: a
+      `TODO.md:13368 (T-6FE392)8 (T-529ABE)` from `TODO.md:26162 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14157,7 +14215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26162 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
