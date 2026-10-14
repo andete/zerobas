@@ -2616,6 +2616,37 @@ item — do **one item per session** to keep context lean.
       a VISIBLE defect in SCREEN 0. Gameplay past the first tee shot was not
       compared (it needs a scripted swing); nothing seen so far differs.
 
+- [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
+      TODAY (Joost, 2026-10-14)**
+      🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
+      🤖 **AUTONOMOUS** — in Joost's order, AFTER the tape fixes (D-TAPELOAD: external
+      testers are waiting on those).
+      📏 [`romsize_report.md`](scratchpad/romsize_report.md) (a read-only
+      measurement of our own ROMs, symbols and sources; no reference byte read):
+      75 KB of content in 112 KB of ROM images; BIOS side 0.9x the reference,
+      BASIC side ~2.2x, a diskless machine ~1.8x, with disk ~1.6x. No padding,
+      dead code or MSX2 code to reclaim; the size is DESIGN: the float core
+      (~8.9 KB), disk-BASIC verbs + FAT engine outside the disk ROM (~8.7 KB),
+      graphics (~7.3 KB), the heap string engine (~5.1 KB), ~3.5-4 KB of
+      deliberate duplication between code areas that cannot call each other,
+      and ~1.5 KB of inter-slot glue.
+      🏗️ **JOOST, 2026-10-14:** *"I think we eventually want to address 1, 2, 3 and
+      4"*, then *"go ahead with that order"*. ORDER:
+      (1) **disk BASIC + FAT engine into the disk ROM**, where a real MSX keeps
+          them (the existing "eviction step 13" plan,
+          disk/docs/spec-diskcode-eviction.md); it also removes most of the
+          duplication, and costs non-disk code no speed. The disk ROM has 3.8 KB
+          free, so the move has to compact on the way in.
+      (2) **the string engine** -- measure first how the VG-8020 stores and
+          reclaims strings (descriptor cost, when space comes back), then a
+          smaller design that matches it.
+      (3) **graphics** -- the same: measure, then design.
+      (4) **the float core** -- 14 digits at one per byte (18 B per number) where
+          the reference packs 8 B; the largest and riskiest (every numeric
+          keyword and the speed tier): a written spec before any code.
+      The cheap sub-ROM table wins in the report (packed constants -600..-700 B,
+      keyword table -160..-320 B, KEY defaults -90 B) Joost "cares about less".
+
 - [x] 📼 **D-BLOADRTAIL — AFTER `BLOAD"CAS:",R` THE REST OF THE LINE WAS DROPPED;
       THE VG-8020 RUNS IT** — ✅ **FIXED 2026-10-14.**
       🎚️ TIER 1 — happy path: tape loaders of the shape `BLOAD"CAS:",R` followed
@@ -8444,7 +8475,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33977 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34008 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8610,7 +8641,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13472 (T-6FE392)8 (T-529ABE)` from `TODO.md:26266 (T-529ABE)`: a
+      `TODO.md:13503 (T-6FE392)8 (T-529ABE)` from `TODO.md:26297 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14319,7 +14350,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26266 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26297 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
