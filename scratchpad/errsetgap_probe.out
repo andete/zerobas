@@ -1,0 +1,14 @@
+ROW string6 VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW space6 VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW midste6 VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW mida6 VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW swap5 VG=[Illegal function call in 10] ZB=[Illegal function call in 10] SAME
+ROW swap9 VG=[Subscript out of range in 10] ZB=[Subscript out of range in 10] SAME
+ROW inp6 VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW out6a VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW out6b VG=[Overflow in 10] ZB=[Overflow in 10] SAME
+ROW vptr5 VG=[Illegal function call in 10] ZB=[Illegal function call in 10] SAME
+ROW vptr9 VG=[Subscript out of range in 10] ZB=[Subscript out of range in 10] SAME
+
+PASS: T6 error-set gap codes (11/11)
+refcache: 0 hit, 22 miss, 22 stored

@@ -8385,7 +8385,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33902 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33918 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -32704,9 +32704,9 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       K-BK1 (init_gate always inits) -> shift, exactly. **CTRL stays open**: one
       drive and +1558 B on the CF-3300, after D-DSKIB.
 
-- [ ] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
+- [x] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
-      2026-10-09 by the keyword-page rollout).**
+      2026-10-09 by the keyword-page rollout).** — ✅ **DONE 2026-10-14** (the end).
       🎚️ APPARATUS — the T6 rung's denominator
       🤖 **AUTONOMOUS** — the measurements already exist; the set is the gap.
       Reported by the page agents, each citing a measurement OUTSIDE the T6
@@ -32722,6 +32722,22 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       The batches that built these sets never tried an argument past 32767, a
       missing second operand, or a bad subscript for them. Add the codes (with
       rows), re-render the tier sheet, and see which ✓ survives.
+      ✅ **DONE 2026-10-14.** Each named code verified first
+      ([`errsetgap_probe.py`](scratchpad/errsetgap_probe.py) ->
+      [`errsetgap_probe.out`](scratchpad/errsetgap_probe.out), stored lines, VG-8020
+      against zerobas): STRING$ / SPACE$ / MID$ to-end and assign / INP / OUT ->
+      Overflow (6), SWAP and VARPTR's variable form -> 5 unset, 9 past the DIM --
+      11/11 SAME. 🔮 the VG-8020 codes: HIT on all eleven. Added to `ERRSETS`
+      with provenance, and ten `PROVES-T6` rows in kwsweep
+      ([`errsetgap_kwsweep.out`](scratchpad/errsetgap_kwsweep.out): 10/10
+      SUPPORTED). Every ✓ survived: zerobas already raised each code, so the
+      narrower sets were an apparatus gap, not a hidden divergence.
+      🔮 "the ✓ come back once the rows are in": MISS twice before it held --
+      (1) `gates-fast` did not run kwsweep, so the pin (`build/kwsweep-verdicts.json`,
+      written only by a FULL sweep) had no new rows and seven T6 went to —;
+      (2) after a full sweep SWAP stayed — because `DIM Q(2):SWAP A,Q(9)` was
+      attributed to DIM (a row's subject is its FIRST keyword unless it says
+      `SUBJECT:`). Both SWAP rows now carry `SUBJECT:SWAP`.
 
 - [ ] 📚 **CONCEPT PAGES — HUMAN-FRONTING DOCS FOR WHAT IS NOT A KEYWORD (D-CONCEPTDOCS,
       Joost 2026-10-09).**

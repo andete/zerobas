@@ -1,0 +1,76 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 't6string6,t6space6,t6midste6,t6mida6,t6swape5,t6swape9,t6inppr6,t6outpv6,t9varptrvariable5,t9varptrvariable9'
+msxtest: BASIC image carries islands -- loaded at $0010, not $2765
+build under measurement: git=d09f328a zerobas-main-eu.rom=e515184b28a4 sub.rom=afa95bb03b9e disk.rom=4dac493a178e
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t6string6 a=string$(99999,65)
+SAME   t6space6  a=space$(32768)
+SAME   t6midste6 a=mid$("AB",70000)
+SAME   t6mida6   A$="AB":mid$(A$,70000)="X"
+SAME   t6swape5  A=1:swap A,B
+SAME   t6swape9  DIM Q(2):swap A,Q(9)
+SAME   t6inppr6  a=inp(99999)
+SAME   t6outpv6  out 99999,0
+SAME   t9varptrvariable5 a=varptr(z)
+SAME   t9varptrvariable9 DIM Q(2):a=varptr(q(9))
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t6string6 PRINT STRING$(99999,65)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6space6  PRINT SPACE$(32768)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6midste6 PRINT MID$("AB",70000)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6mida6   A$="AB":MID$(A$,70000)="X"
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6swape5  A=1:SWAP A,B
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t6swape9  DIM Q(2):SWAP A,Q(9)
+            ref  [error:subscript out of range] 'Subscript out of range in 10'
+SUPPORTED     t6inppr6  PRINT INP(99999)
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t6outpv6  OUT 99999,0
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t9varptrvariable5 A=VARPTR(Z)
+            ref  [error:illegal function call] 'Illegal function call in 10'
+SUPPORTED     t9varptrvariable9 DIM Q(2):A=VARPTR(Q(9))
+            ref  [error:subscript out of range] 'Subscript out of range in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t6string6  present SUPPORTED   match
+t6space6   present SUPPORTED   match
+t6midste6  present SUPPORTED   match
+t6mida6    present SUPPORTED   match
+t6swape5   present SUPPORTED   match
+t6swape9   present SUPPORTED   match
+t6inppr6   present SUPPORTED   match
+t6outpv6   present SUPPORTED   match
+t9varptrvariable5 present SUPPORTED   match
+t9varptrvariable9 present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=10
+         executed 10 / 10 words; 0 crunch-only
+==============================================================================
+ROWS: 10 printed, 10 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

@@ -50,11 +50,11 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     # multi-argument functions and statements, every argument faulted in turn.
     "LEFT$": {"prefix": frozenset({2, 5, 6, 13})},
     "RIGHT$": {"suffix": frozenset({2, 5, 6, 13})},
-    "STRING$": {"repeat": frozenset({2, 5, 13})},
+    "STRING$": {"repeat": frozenset({2, 5, 6, 13})},
     "HEX$": {"to-hex": frozenset({2, 6, 13})},
     "OCT$": {"to-octal": frozenset({2, 6, 13})},
     "BIN$": {"to-binary": frozenset({2, 6, 13})},
-    "SPACE$": {"pad": frozenset({2, 5, 13})},
+    "SPACE$": {"pad": frozenset({2, 5, 6, 13})},
     "STR$": {"number-to-string": frozenset({2, 13})},
     "CINT": {"to-integer": frozenset({2, 6, 13})},
     "FIX": {"truncate": frozenset({2, 13})},
@@ -80,13 +80,13 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     # 📏 BATCH 4, MEASURED 2026-09-27 (t6enum_probe.py --batch=4 -> t6enum_b4.out):
     # statements and multi-form keywords, one-line scenarios per form.
     "INSTR": {"search": frozenset({2, 13}), "search-from": frozenset({2, 5, 6, 13})},
-    "MID$": {"substring-3arg": frozenset({2, 5, 6, 13}), "substring-to-end": frozenset({2, 5, 13}), "assign": frozenset({2, 5, 13})},
+    "MID$": {"substring-3arg": frozenset({2, 5, 6, 13}), "substring-to-end": frozenset({2, 5, 6, 13}), "assign": frozenset({2, 5, 6, 13})},
     "NEXT": {"bare": frozenset({1}), "named": frozenset({1, 2}), "comma-list": frozenset({1})},
     "RETURN": {"bare": frozenset({3}), "line": frozenset({2, 3, 8})},
     "RESTORE": {"bare": frozenset({8}), "line": frozenset({8})},
     "GOTO": {"jump": frozenset({2, 8})},
     "READ": {"read-data": frozenset({2, 4, 6})},
-    "SWAP": {"exchange": frozenset({2, 13})},
+    "SWAP": {"exchange": frozenset({2, 5, 9, 13})},
     "ERASE": {"free-array": frozenset({2, 5})},
     "DIM": {"one-dimensional": frozenset({2, 5, 6, 9, 10, 13}), "multi-dimensional": frozenset({5, 9, 10, 13})},
     # 📏 BATCH 5, MEASURED 2026-09-27 (t6enum_probe.py --batch=5 -> t6enum_b5.out).
@@ -110,9 +110,9 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "ERROR": {"raise": frozenset({2, 5, 6, 13, 24})},
     "GOSUB": {"call": frozenset({2, 8})},
     "INKEY$": {"poll-key": frozenset({13})},
-    "INP": {"port-read": frozenset({2, 13})},
+    "INP": {"port-read": frozenset({2, 6, 13})},
     "LET": {"assign": frozenset({2, 13})},
-    "OUT": {"port-value": frozenset({2, 5, 13, 24})},
+    "OUT": {"port-value": frozenset({2, 5, 6, 13, 24})},
     "POINT": {"pixel-read": frozenset({2, 13})},
     "POS": {"column-read": frozenset({2})},
     "LPOS": {"column-read": frozenset({2})},
@@ -208,7 +208,7 @@ ERRSETS: dict[str, dict[str, frozenset[int]]] = {
     "VAL": {"integer": frozenset({2, 13}), "exponent": frozenset({6}), "radix-prefix": frozenset({6}),
             "fraction": frozenset({2}), "partial-parse": frozenset({2})},
     "USR": {"default": frozenset({2}), "numbered": frozenset({2})},
-    "VARPTR": {"variable": frozenset({2}), "file-channel": frozenset({2, 5, 13, 52})},
+    "VARPTR": {"variable": frozenset({2, 5, 9}), "file-channel": frozenset({2, 5, 13, 52})},
     "WAIT": {"port-mask": frozenset({2, 5, 6, 13, 24}), "port-mask-xor": frozenset({5, 13})},
     "DATA": {"unquoted-string": frozenset({2}), "quoted-string": frozenset({2}),
              "numeric": frozenset({6}), "empty-item": frozenset({4})},
@@ -269,6 +269,13 @@ for _k in ("FRE", "VAL", "USR", "VARPTR", "WAIT", "DATA"):
 PROVENANCE["VARPTR"] += ("; file-channel codes 2 (`#` alone) and 5 (#-1, #256) from "
                          "scratchpad/varptrch_probe.py -> scratchpad/varptrch_run.out, "
                          "VG-8020 AND CF-3300, 2026-09-30 -- batch 9 never faulted them")
+# 📏 D-KWERRSETGAP, MEASURED 2026-10-14: codes the batches never faulted (an
+# argument past 32767, an unset or out-of-range operand), named by the keyword
+# pages and verified on the VG-8020 before being added.
+for _k in ("STRING$", "SPACE$", "MID$", "SWAP", "INP", "OUT", "VARPTR"):
+    PROVENANCE[_k] += ("; D-KWERRSETGAP codes (6 past the int16 range; SWAP / VARPTR 5 "
+                       "unset, 9 past the DIM) from scratchpad/errsetgap_probe.py -> "
+                       "scratchpad/errsetgap_probe.out, VG-8020, 2026-10-14")
 PROVENANCE["SAVE"] += ("; tokenised code 2 from scratchpad/colon_probe.py -> "
                        "scratchpad/colon_after_run.out, CF-3300, 2026-09-28")
 
