@@ -1,0 +1,2 @@
+K-SB1: input RED, diverging rows ["FAIL  numeric        zb=' 0 ' ref=' 42 '", "FAIL  numeric.neg    zb=' 0 ' ref='-7 '", "FAIL  string         zb='' ref='HELLO'", 'FAIL  multi          zb=\'";N;M;"\' ref=\' 3  4 \'', 'FAIL  line           zb=\'";A$;"\' ref=\' A,B C\'', 'FAIL  prompt.semi    zb=\'";A$;"\' ref=\'ZZ\'']; predicted console INPUT rows
+restored: build rc=0; input green

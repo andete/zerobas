@@ -101,8 +101,8 @@ ATRBYT          equ     $F3F2   ; current graphics attribute / plot colour (1)
 ; cells this file already documents as retired-and-free, one each:
 ;   $E220      was STOPGRACE (retired 2026-07-25, spec §12.3)
 ;   $E3E5      was STRENG_SPARE / the D-2 flag (D-PENDERR)
-GFX_DJ          equ     $ED20   ; JIFFY delta observed while drawing under EI (1)
-GFX_BAD         equ     $E8A5   ; VRAM read-back mismatch count (1)
+GFX_DJ          equ     $EE20   ; JIFFY delta observed while drawing under EI (1)
+GFX_BAD         equ     $E9A5   ; VRAM read-back mismatch count (1)
 
 ; --- Slot access BIOS entry points + work area (extension-ROM INIT scan) ----
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook. The
@@ -677,10 +677,10 @@ STAR_TOKEN      equ     $F3     ; '*'
 ; BASIC-VISIBLE side effect (rows w.pt.on / w.pt.step). POINT now marshals through
 ; GFX_PTX/GFX_PTY below. ⚠️ Before reusing a pinned cell as a parameter, ask whether
 ; THIS op writes it as part of its contract -- not whether the block does.
-GFX_OP          equ     $EB30   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
-GFX_C           equ     $EB31   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
-GFX_RES         equ     $EB32   ; tenant->main: POINT result colour 0..15 (1)
-GFX_REL         equ     $EB33   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
+GFX_OP          equ     $EC30   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
+GFX_C           equ     $EC31   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
+GFX_RES         equ     $EC32   ; tenant->main: POINT result colour 0..15 (1)
+GFX_REL         equ     $EC33   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
 ; Graphics G3 (LINE) marshalling + Bresenham state. G3 needs ~40 B that persist for
 ; the WHOLE draw (the tenant loops while EI). The $E034+ gap is NOT usable: CURLINE /
 ; the FOR/GOSUB stacks / GOTOTGT live there and must be preserved across the
@@ -696,27 +696,27 @@ GFX_REL         equ     $EB33   ; parse_coord: 1 = STEP (relative) coordinate, 0
 ; TOKBUF ($E160) out of page 3 to $BA00/$B700, so in the repack build these cells
 ; overlay NOTHING and simply own free RAM; the precondition is no longer load-bearing
 ; and must not be re-derived by a later reader as a live constraint.
-GFX_X1          equ     $EC00   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
-GFX_Y1          equ     $EC02   ; LINE endpoint 1 Y (int16 LE)
-GFX_X2          equ     $EC04   ; LINE endpoint 2 X (int16 LE)
-GFX_Y2          equ     $EC06   ; LINE endpoint 2 Y (int16 LE)
-GFX_MODE        equ     $EC08   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
-GFX_CX          equ     $EC09   ; Bresenham: current pixel X (int16, may be off-screen) (2)
-GFX_CY          equ     $EC0B   ; Bresenham: current pixel Y (int16) (2)
-GFX_ERR         equ     $EC0D   ; Bresenham: error accumulator, in [0,DMAJ) (2)
-GFX_DMAJ        equ     $EC0F   ; Bresenham: major-axis delta (2)
-GFX_DMIN        equ     $EC11   ; Bresenham: minor-axis delta (2)
-GFX_CNT         equ     $EC13   ; Bresenham: major steps still to take (2)
-GFX_STEEP       equ     $EC15   ; Bresenham: 0 = x-major, 1 = y-major (1)
-GFX_SMIN        equ     $EC16   ; Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
-GFX_SDX         equ     $EC18   ; init scratch: sign of (x2-x1), $01/$FF (1)
-GFX_SDY         equ     $EC19   ; init scratch: sign of (y2-y1), $01/$FF (1)
-GFX_TX1         equ     $EC1A   ; box: stashed corner 1 X (2)
-GFX_TY1         equ     $EC1C   ; box: stashed corner 1 Y (2)
-GFX_TX2         equ     $EC1E   ; box: stashed corner 2 X (2)
-GFX_TY2         equ     $EC20   ; box: stashed corner 2 Y (2)
-GFX_FILLCNT     equ     $EC22   ; box fill: scanlines remaining (2)
-GFX_YSTEP       equ     $EC24   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126 (2 B)
+GFX_X1          equ     $ED00   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
+GFX_Y1          equ     $ED02   ; LINE endpoint 1 Y (int16 LE)
+GFX_X2          equ     $ED04   ; LINE endpoint 2 X (int16 LE)
+GFX_Y2          equ     $ED06   ; LINE endpoint 2 Y (int16 LE)
+GFX_MODE        equ     $ED08   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
+GFX_CX          equ     $ED09   ; Bresenham: current pixel X (int16, may be off-screen) (2)
+GFX_CY          equ     $ED0B   ; Bresenham: current pixel Y (int16) (2)
+GFX_ERR         equ     $ED0D   ; Bresenham: error accumulator, in [0,DMAJ) (2)
+GFX_DMAJ        equ     $ED0F   ; Bresenham: major-axis delta (2)
+GFX_DMIN        equ     $ED11   ; Bresenham: minor-axis delta (2)
+GFX_CNT         equ     $ED13   ; Bresenham: major steps still to take (2)
+GFX_STEEP       equ     $ED15   ; Bresenham: 0 = x-major, 1 = y-major (1)
+GFX_SMIN        equ     $ED16   ; Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
+GFX_SDX         equ     $ED18   ; init scratch: sign of (x2-x1), $01/$FF (1)
+GFX_SDY         equ     $ED19   ; init scratch: sign of (y2-y1), $01/$FF (1)
+GFX_TX1         equ     $ED1A   ; box: stashed corner 1 X (2)
+GFX_TY1         equ     $ED1C   ; box: stashed corner 1 Y (2)
+GFX_TX2         equ     $ED1E   ; box: stashed corner 2 X (2)
+GFX_TY2         equ     $ED20   ; box: stashed corner 2 Y (2)
+GFX_FILLCNT     equ     $ED22   ; box fill: scanlines remaining (2)
+GFX_YSTEP       equ     $ED24   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126 (2 B)
 ; Graphics G4 (CIRCLE, docs/spec-basic-graphics-g4.md §6). Append-only after G3's
 ; $E126, same discipline (dead during any graphics statement, below the PLAY ISR
 ; region; the LINEBUF overlay it was originally argued from is retired — G3 header
@@ -724,36 +724,36 @@ GFX_YSTEP       equ     $EC24   ; box fill: row step, $0001/$FFFF (2)   -> ends 
 ; stay shared with G1/G2/G3 (op selector + resolved colour). Spoke lines (§5.3) are
 ; marshalled through the EXISTING G3 GFX_X1/Y1/X2/Y2/GFX_MODE cells with GFX_OP=3 --
 ; no new cells needed for that reuse.
-GFX_CXC         equ     $EC26   ; centre X (int16 LE) (2)
-GFX_CYC         equ     $EC28   ; centre Y (int16 LE) (2)
-GFX_R           equ     $EC2A   ; radius (int16, >=0 -- resident guards G4-rneg) (2)
-GFX_ASPMAJ      equ     $EC2C   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
-GFX_ASPS        equ     $EC2D   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
-GFX_ARCF        equ     $EC2F   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
-GFX_SVX         equ     $EC30   ; start boundary vector X, screen-offset scaled ints (2)
-GFX_SVY         equ     $EC32   ; start boundary vector Y (2)
-GFX_EVX         equ     $EC34   ; end boundary vector X (2)
-GFX_EVY         equ     $EC36   ; end boundary vector Y (2)
-GFX_FULLW       equ     $EC38   ; full-wrap flag (0/1): the two boundaries land in the
+GFX_CXC         equ     $ED26   ; centre X (int16 LE) (2)
+GFX_CYC         equ     $ED28   ; centre Y (int16 LE) (2)
+GFX_R           equ     $ED2A   ; radius (int16, >=0 -- resident guards G4-rneg) (2)
+GFX_ASPMAJ      equ     $ED2C   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
+GFX_ASPS        equ     $ED2D   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
+GFX_ARCF        equ     $ED2F   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
+GFX_SVX         equ     $ED30   ; start boundary vector X, screen-offset scaled ints (2)
+GFX_SVY         equ     $ED32   ; start boundary vector Y (2)
+GFX_EVX         equ     $ED34   ; end boundary vector X (2)
+GFX_EVY         equ     $ED36   ; end boundary vector Y (2)
+GFX_FULLW       equ     $ED38   ; full-wrap flag (0/1): the two boundaries land in the
                                 ; SAME (octant,pos) cell but their RAW (oct,u14) records
                                 ; differ -- a near-2*pi sweep, keep everything. Replaces
                                 ; GFX_ARCBIG: the D-ARCMASK wedge test needs no big/small
                                 ; split, the cyclic pair compare covers both. (1)
-GFX_QX          equ     $EC39   ; midpoint-circle octant state: x (2)
-GFX_QY          equ     $EC3B   ; midpoint-circle octant state: y (2)
-GFX_QD          equ     $EC3D   ; midpoint-circle octant state: d (signed) (2)
-GFX_PX          equ     $EC3F   ; tenant scratch: current (mirrored+scaled) offset X,
+GFX_QX          equ     $ED39   ; midpoint-circle octant state: x (2)
+GFX_QY          equ     $ED3B   ; midpoint-circle octant state: y (2)
+GFX_QD          equ     $ED3D   ; midpoint-circle octant state: d (signed) (2)
+GFX_PX          equ     $ED3F   ; tenant scratch: current (mirrored+scaled) offset X,
                                 ; used as the arc cross-product test point P (2)
-GFX_PY          equ     $EC41   ; tenant scratch: current offset Y (2)
-GFX_CS_AX       equ     $EC43   ; circleparse scratch: cpt_angle_from_arga's neg-flag
+GFX_PY          equ     $ED41   ; tenant scratch: current offset Y (2)
+GFX_CS_AX       equ     $ED43   ; circleparse scratch: cpt_angle_from_arga's neg-flag
                                 ; cell address stash (was gfx_cross_ge0's A.x -- that
                                 ; routine is retired, D-ARCMASK) (2)
-GFX_CS_AY       equ     $EC45   ; circleparse scratch: cpt_angle_from_arga /
+GFX_CS_AY       equ     $ED45   ; circleparse scratch: cpt_angle_from_arga /
                                 ; cpt_boundary_prep's dest-record-base stash (2)
-GFX_M           equ     $EC47   ; D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
+GFX_M           equ     $ED47   ; D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
                                 ; step index; gfx_circ_wedge_prep, once per CIRCLE (2)
-GFX_WS_P        equ     $EC49   ; wedge START boundary: in-octant position, 0..M-1 (2)
-GFX_WS_O        equ     $EC4B   ; wedge START boundary: octant 0..7 (1)
+GFX_WS_P        equ     $ED49   ; wedge START boundary: in-octant position, 0..M-1 (2)
+GFX_WS_O        equ     $ED4B   ; wedge START boundary: octant 0..7 (1)
 ; --- D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md §5.5): the arc
 ; boundary records are (oct_raw, u14) pairs -- the angle's octant count and its
 ; 14-bit fraction into the octant, both trunc'd, from a SINGLE-precision-rounded
@@ -761,17 +761,17 @@ GFX_WS_O        equ     $EC4B   ; wedge START boundary: octant 0..7 (1)
 ; the octant loop's STEP INDEX distributed linearly over the in-octant angle,
 ; measured against 54 whole reference planes, not a rounded exact ray. The
 ; records keep the old cells' addresses and 4-byte-per-boundary size.
-GFX_SOCT        equ     $EC4C   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (the
+GFX_SOCT        equ     $ED4C   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (the
                                 ; full word feeds the full-wrap detector; only the
                                 ; low 3 bits are the octant) (2)
-GFX_SU14        equ     $EC4E   ; start: trunc(frac * 16384), 0..16383 (2)
-GFX_EOCT        equ     $EC50   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)
-GFX_EU14        equ     $EC52   ; end: trunc(frac * 16384) (2)
-GFX_SNEG        equ     $EC54   ; resident: start angle was negative -> spoke pending (1)
-GFX_ENEG        equ     $EC55   ; resident: end angle was negative -> spoke pending (1)
-GFX_WE_P        equ     $EC56   ; wedge END boundary: in-octant position, 0..M-1 (2)
-GFX_WE_O        equ     $EC58   ; wedge END boundary: octant 0..7 (1)
-GFX_WRAPF       equ     $EC59   ; wedge wraps 0: pair S > pair E lexicographically (1)
+GFX_SU14        equ     $ED4E   ; start: trunc(frac * 16384), 0..16383 (2)
+GFX_EOCT        equ     $ED50   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)
+GFX_EU14        equ     $ED52   ; end: trunc(frac * 16384) (2)
+GFX_SNEG        equ     $ED54   ; resident: start angle was negative -> spoke pending (1)
+GFX_ENEG        equ     $ED55   ; resident: end angle was negative -> spoke pending (1)
+GFX_WE_P        equ     $ED56   ; wedge END boundary: in-octant position, 0..M-1 (2)
+GFX_WE_O        equ     $ED58   ; wedge END boundary: octant 0..7 (1)
+GFX_WRAPF       equ     $ED59   ; wedge wraps 0: pair S > pair E lexicographically (1)
                                 ; -> ends $E15A (the G3/G4/G5 window ends $E15F
                                 ; inclusive; well within the G3 header's budget note)
 ; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new cell in the same window:
@@ -782,7 +782,7 @@ GFX_WRAPF       equ     $EC59   ; wedge wraps 0: pair S > pair E lexicographical
 ; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
 ; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
 ; (GFX_PSTK).
-GFX_B           equ     $EC56   ; border colour B, RANGE-CHECKED against the mode's
+GFX_B           equ     $ED56   ; border colour B, RANGE-CHECKED against the mode's
                                 ; domain before it is stored: 0..255 in SCREEN 2,
                                 ; 0..15 in MULTICOLOUR, else ERR 5 (D-PAINTBORD --
                                 ; ⚠️ this comment used to read "NOT range-checked").
@@ -800,9 +800,9 @@ GFX_B           equ     $EC56   ; border colour B, RANGE-CHECKED against the mod
 ; PRESET/LINE/PAINT, which are statements that MOVE the work area, and false for
 ; POINT, which is a read-only function. One byte each: the resident only reaches
 ; here after gfx_in_range passed, so both coordinates are 0..255.
-GFX_PTX         equ     $EC58   ; main->tenant: POINT target X, 0..255 (1)
-GFX_PTY         equ     $EC59   ; main->tenant: POINT target Y, 0..191 (1) -> ends $E15A
-GFX_CPHASE      equ     $EC57   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
+GFX_PTX         equ     $ED58   ; main->tenant: POINT target X, 0..255 (1)
+GFX_PTY         equ     $ED59   ; main->tenant: POINT target Y, 0..191 (1) -> ends $E15A
+GFX_CPHASE      equ     $ED57   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
                                 ; which arg the tenant last requested, so it resumes at
                                 ; the right point after each resident eval-bounce
                                 ; (0=centre 1=r 2=c 3=start 4=end 5=aspect). (1)
@@ -827,10 +827,10 @@ BASETAB         equ     $F3B3   ; BASE(0..19): 20 LE words, 4 groups of 5 (name,
                                 ; pattern generator, sprite attribute, sprite pattern),
                                 ; group g describing SCREEN g
 
-CURPTR          equ     $EB20   ; current load pointer (2 bytes)
-ENDPTR          equ     $EB22   ; final load address  (2 bytes)
-EXECPTR         equ     $EB24   ; execution address   (2 bytes)
-ERRMARK         equ     $EB10   ; error landmark marker byte (1 B)
+CURPTR          equ     $EC20   ; current load pointer (2 bytes)
+ENDPTR          equ     $EC22   ; final load address  (2 bytes)
+EXECPTR         equ     $EC24   ; execution address   (2 bytes)
+ERRMARK         equ     $EC10   ; error landmark marker byte (1 B)
 ; --- Phase 2: MAXFILES multi-channel control (free $E011.. gap below CURPTR) ---
 ; The Phase-2 file verbs gained a real multi-channel table (retiring the single-
 ; channel limit). FCH_CEIL channels can be open at once. Because fat.asm keeps ONE
@@ -848,14 +848,14 @@ ERRMARK         equ     $EB10   ; error landmark marker byte (1 B)
 ; Measured (scratchpad/officialcell_probe.out): the VG-8020 keeps MAXFILES there
 ; (1 at boot, 3 after MAXFILES=3); zerobas kept it at $EB11 and left $F85F 0.
 MAXF            equ     $F85F   ; = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
-FCH_ACTIVE      equ     $EB12   ; channel live in the engine globals, 0 = none (1)
+FCH_ACTIVE      equ     $EC12   ; channel live in the engine globals, 0 = none (1)
 ; FCH_MODES — per-channel mode array [0..FCH_CEIL]; [0] unused, [ch] = 0 closed /
 ; 1 INPUT / 2 OUTPUT / 5-6 LPT-CRT / 7-8 CAS (FCH_CEIL+1 bytes).
 ; ⚠️ D-FCH §3.2: the repack build's FCH_CEIL is 15, so this array is 16 B and no
 ; longer fits the 3-byte $E013 slot (INDLR_N sits at $E016). It moves into the
 ; page-3 window S-FCH-1 freed by retiring the static FCH_CTX table ($EA00..$EAFF,
 ; below LINEBUF $EB00).
-FCH_MODES       equ     $EA00   ; 16 B ($EA00..$EA0F)
+FCH_MODES       equ     $EB00   ; 16 B ($EB00..$EB0F)
 ; D-LNLIST (docs/spec-basic-lnlist.md R-L1..R-L3): the tokeniser's LINE-NUMBER
 ; MODE. A branch keyword (GOTO/GOSUB/THEN/RESTORE/RUN/RESUME) arms it and it runs
 ; to the end of the STATEMENT, turning every digit run that would begin a numeric
@@ -866,17 +866,17 @@ FCH_MODES       equ     $EA00   ; 16 B ($EA00..$EA0F)
 ; Same aliasing argument as TKNAME/TKRADIX/TKRTOK ($E028..): a line's whole
 ; tokenise pass completes BEFORE any of its tokens execute, so this is dead for
 ; the entire duration of any statement's execution.
-TKLNUM          equ     $EB13   ; tokeniser: 1 = line-number mode is armed (1)
-INDLR_N         equ     $EB16   ; INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
-MRG_PTR         equ     $EB17   ; MERGE: write cursor into LINEBUF for the current line (2)
+TKLNUM          equ     $EC13   ; tokeniser: 1 = line-number mode is armed (1)
+INDLR_N         equ     $EC16   ; INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
+MRG_PTR         equ     $EC17   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
 ; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
-FLD_CUROFF      equ     $EB19   ; FIELD: running byte offset into the record buffer (2)
-FLD_CHAN        equ     $EB1B   ; FIELD/LSET/RSET: the channel being fielded (1)
-LRSET_JUST      equ     $EB1C   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
-LRSET_W         equ     $EB1D   ; LSET/RSET: destination field width (1)
-LRSET_DEST      equ     $EB1E   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
+FLD_CUROFF      equ     $EC19   ; FIELD: running byte offset into the record buffer (2)
+FLD_CHAN        equ     $EC1B   ; FIELD/LSET/RSET: the channel being fielded (1)
+LRSET_JUST      equ     $EC1C   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
+LRSET_W         equ     $EC1D   ; LSET/RSET: destination field width (1)
+LRSET_DEST      equ     $EC1E   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
                                 ; D-LRVAR renamed this from LRSET_OFF (same address,
                                 ; 0 RAM): it held the field's OFFSET while the only
                                 ; destination was FSECTOR_BUF + off, but a
@@ -884,17 +884,17 @@ LRSET_DEST      equ     $EB1E   ; LSET/RSET: destination ADDRESS of the store (2
                                 ; own heap body, which no offset into a record buffer
                                 ; names. Both callers now compute the address and
                                 ; sub/lrsetst.asm just loads it (spec §4.1).
-RUNFLAG         equ     $EB2F   ; 1 = ,R handoff requested (set while parsing) (1)
-CLPTR           equ     $EB2B   ; CLOAD/LOAD: store cursor into the program area (2)
-CLINK           equ     $EB2D   ; CLOAD/LOAD: saved link word of the current line
+RUNFLAG         equ     $EC2F   ; 1 = ,R handoff requested (set while parsing) (1)
+CLPTR           equ     $EC2B   ; CLOAD/LOAD: store cursor into the program area (2)
+CLINK           equ     $EC2D   ; CLOAD/LOAD: saved link word of the current line
                                 ; (= the saving machine's absolute start address of
                                 ; the line; used to derive each line's body length
                                 ; from consecutive link-word differences) (2)
-TKNAME          equ     $EB28   ; tokeniser: 1 = previous char was part of a name
+TKNAME          equ     $EC28   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
-TKRADIX         equ     $EB29   ; tokeniser: &H/&O accumulator radix (16 or 8)
-TKRTOK          equ     $EB2A   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
-NUMBUF          equ     $EBC0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
+TKRADIX         equ     $EC29   ; tokeniser: &H/&O accumulator radix (16 or 8)
+TKRTOK          equ     $EC2A   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
+NUMBUF          equ     $ECC0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
 ; Repack (arrays slice-4a): a DEDICATED cell in the freed STRTAB window
@@ -1104,7 +1104,7 @@ ARYTAB          equ     $F6C4   ; PUBLISHED: scalar-region end == array base (2 
 STREND          equ     $F6C6   ; PUBLISHED: array-region end = ARYEND (2 B)
 ; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
 ; window $E1C2..$E240 is the home for error-handling state. D-2 needs one byte:
-DIRECTF         equ     $ECC2   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)
+DIRECTF         equ     $EDC2   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)
                                 ; stored program. Read by fre_abort_low to decide
                                 ; the run-mode " in <line>" suffix. Written by
                                 ; run_prog/ex_cont (0) and dispatch_line (1) before
@@ -1125,7 +1125,7 @@ DIRECTF         equ     $ECC2   ; 1 = executing a DIRECT-mode line, 0 = running 
 ;              already uses). Another direct-mode line will not do it.
 ;   ⚠️ Until then, "zerobas' SAVSTK is an SP anchor and the published one might
 ;      not be" stays an OPEN question, not an answered one.
-SAVSTK          equ     $ECC3   ; 2 B: SP anchor for the trap unwind. Written by
+SAVSTK          equ     $EDC3   ; 2 B: SP anchor for the trap unwind. Written by
                                 ; run_prog / dispatch_line's direct-exec path
                                 ; before any statement runs; raise_error's trap
                                 ; branch does `ld sp,(SAVSTK)` to reset the stack
@@ -1293,7 +1293,7 @@ ONEFLG          equ     $F6BB   ; 1 B: $FF = currently inside a handler (no RESU
                                 ; probes/basic/basic_probe_error_trap.py, two of
                                 ; which fail if the clear is placed anywhere that
                                 ; also catches a STOP.
-ERRRESUME       equ     $ECCB   ; 4 B: resume context captured at trap time —
+ERRRESUME       equ     $EDCB   ; 4 B: resume context captured at trap time —
                                 ; [0..1] the erroring statement's CURLINE (link
                                 ; addr), [2..3] the erroring statement's text
                                 ; pointer (from SAVTXT). Read by the RESUME
@@ -1310,7 +1310,7 @@ ERRRESUME       equ     $ECCB   ; 4 B: resume context captured at trap time —
 ;              reachable and no BASIC-visible channel reads it.
 ;   ⚠️ "Never moves" here means UNOBSERVABLE, not INERT. It reads like "nothing
 ;      to honour" and it means the opposite: the question could not be put.
-SAVTXT          equ     $ECCF   ; 2 B: the CURRENT statement's text pointer,
+SAVTXT          equ     $EDCF   ; 2 B: the CURRENT statement's text pointer,
                                 ; refreshed at every exec_stmt entry (line start
                                 ; AND after every ':' via ex_sep) — mirrors
                                 ; MSX's own SAVTXT/NEWSTT. This is the ONLY
@@ -1326,7 +1326,7 @@ SAVTXT          equ     $ECCF   ; 2 B: the CURRENT statement's text pointer,
 ; in PROVENANCE.md alongside CONTLINE). MUST be zeroed at cold boot (garbage RAM =
 ; phantom armed traps) — trap_init does this; RUN re-arms via the same reset.
 ; Repack-only (the whole arc is IF the repack build).
-ZTRAP           equ     $ECD1   ; 18 entries * 3 B = 54 B ($ECD1..$ED06; it was
+ZTRAP           equ     $EDD1   ; 18 entries * 3 B = 54 B ($EDD1..$EE06; it was
                                 ; $E1D1..$E207 before D-RAMSHIFT, and that stale range
                                 ; let the RAM map read ZTRAP as 3 B wide). Each
                                 ; entry = [state:1][handler_line_link:2].
@@ -1376,19 +1376,19 @@ ZTS_SHADOW      equ     $40     ; bit 6 = the DEVICE EDGE SHADOW (traps T2,
                                 ; ON->SERVICING write, or a trigger still held when the
                                 ; handler RETURNs would re-fire (oracle Q2 says it must
                                 ; not); trap_return_check's SERVICING->ON already does.
-ZINTVAL         equ     $ED07   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
-ZINTCNT         equ     $ED09   ; 2 B: INTERVAL live down-counter (frames to next fire)
-TRAPENA         equ     $ED0B   ; 1 B: count of traps currently in state ON. Gates the
+ZINTVAL         equ     $EE07   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
+ZINTCNT         equ     $EE09   ; 2 B: INTERVAL live down-counter (frames to next fire)
+TRAPENA         equ     $EE0B   ; 1 B: count of traps currently in state ON. Gates the
                                 ; H.TIMI event_poll (fast-out when 0 — the common no-trap
                                 ; program's cost). Bumped by set_state on OFF/STOP->ON,
                                 ; dropped on ON->anything (incl. the auto ON->SERVICING).
-TRAPPEND        equ     $ED1F   ; 1 B (was just past the retired TRAPSTK): 1 =
+TRAPPEND        equ     $EE1F   ; 1 B (was just past the retired TRAPSTK): 1 =
                                 ; event_poll has latched a PENDING on some ON
                                 ; trap since the last dispatch. Gates the run-loop
                                 ; check_traps subrom_call — set (resident) by event_poll,
                                 ; cleared by the dispatch tenant once it drains the
                                 ; pending set. Keeps the per-statement cost a RAM load.
-TRAPSVC         equ     $ED0C   ; 1 B: count of live SERVICING entries == depth of the
+TRAPSVC         equ     $EE0C   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
 ; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED.
@@ -1419,8 +1419,8 @@ TRAPSVC         equ     $ED0C   ; 1 B: count of live SERVICING entries == depth 
 ; strictly in the PARSE phase, before any fat_io_* primitive), the BLOAD tenant
 ; holds its status ACROSS the whole load, during which the fatprim cells are live
 ; on every getbyte.
-BL_PTR          equ     $ED21   ; 2 B: main -> tenant, the token cursor after BLOAD
-BL_STAT         equ     $ED23   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
+BL_PTR          equ     $EE21   ; 2 B: main -> tenant, the token cursor after BLOAD
+BL_STAT         equ     $EE23   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
                                 ; error` PRINTED, and ANY OTHER VALUE IS THE MSX
                                 ; ERR CODE THE RESIDENT STUB RAISES (D-BLMODE,
                                 ; 2026-08-21): 53 `File not found` (D-BLNF),
@@ -1446,8 +1446,8 @@ BL_STAT         equ     $ED23   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
 ; SWAP's operand scratch, which only ex_swap (basic/missing.asm) touches -- never
 ; live across a BLOAD.
 BL_OFS          equ     SW_ADDR ; 2 B: main -> tenant, BLOAD's offset (0 = none)
-SV_OP           equ     $ED24   ; 1 B: main -> tenant, SV_OP_* engine selector
-SV_STAT         equ     $ED25   ; 1 B: tenant -> main, 0 = written, 1 = load_error
+SV_OP           equ     $EE24   ; 1 B: main -> tenant, SV_OP_* engine selector
+SV_STAT         equ     $EE25   ; 1 B: tenant -> main, 0 = written, 1 = load_error
 SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
@@ -1564,15 +1564,15 @@ CON_ROWS_KEYON  equ     CON_ROWS - 1        ; `KEY ON` keeps the bottom one
 ; `call`/`ret`. The two bytes were left NAMED rather than silently reused, so
 ; that the next cell wanting them would know what had been here -- and that is
 ; exactly how they were re-let above, one day later.
-FN_RESUME       equ     $ED27   ; D-FNEXPR: cursor past a filename expr (2 B)
+FN_RESUME       equ     $EE27   ; D-FNEXPR: cursor past a filename expr (2 B)
                                 ; parked by fname_expr while the staged name is
                                 ; parsed out of STRSCR
 ; LOCATE parses all three arguments and applies them only when all three are
 ; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
 ; live cursor, so an omitted axis is re-applied unchanged and needs no
 ; present-flag of its own.
-LOC_COL         equ     $ED29   ; 1 B: LOCATE's parsed column, pre-clamp
-LOC_ROW         equ     $ED2A   ; 1 B: LOCATE's parsed row, pre-clamp
+LOC_COL         equ     $EE29   ; 1 B: LOCATE's parsed column, pre-clamp
+LOC_ROW         equ     $EE2A   ; 1 B: LOCATE's parsed row, pre-clamp
 ; --- SWAP_RESIDENT: the SWAP build gate -------------------------------------
 ; 1 = SWAP is BUILT (2026-07-28). The flag is kept rather than removed because it
 ; is the seam the MISSING class was split on, and because it still guards three
@@ -1598,11 +1598,11 @@ SWAP_RESIDENT   equ     1
 ; hold the FIRST operand's resolved address and type across the parse of the
 ; second -- and that parse runs a nested eval() for any subscript list. Nothing
 ; in a register survives that, so both live here.
-SW_ADDR         equ     $ED2B   ; 2 B: the operand just resolved
-SW_TYPE         equ     $ED2D   ; 1 B: its type (1 = string, 2/4/8 numeric)
-SW_ADDR1        equ     $ED2E   ; 2 B: operand 1, held across operand 2's parse
-SW_TYPE1        equ     $ED30   ; 1 B: operand 1's type
-SW_MODE         equ     $ED31   ; 1 B: 0 = this operand MAY be created, 1 = must exist
+SW_ADDR         equ     $EE2B   ; 2 B: the operand just resolved
+SW_TYPE         equ     $EE2D   ; 1 B: its type (1 = string, 2/4/8 numeric)
+SW_ADDR1        equ     $EE2E   ; 2 B: operand 1, held across operand 2's parse
+SW_TYPE1        equ     $EE30   ; 1 B: operand 1's type
+SW_MODE         equ     $EE31   ; 1 B: 0 = this operand MAY be created, 1 = must exist
 SVT_SP          equ     SW_ADDR ; 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its
                                 ; sv_load_error ABORTS (D-DISKFULLRETRY). Borrowed: SWAP is a
                                 ; statement and never runs inside a BSAVE/SAVE/CSAVE
@@ -1612,7 +1612,7 @@ SVT_SP          equ     SW_ADDR ; 2 B: the sub-ROM SAVE tenant's SP at dispatch,
 ; a boundary CLEAR moves. Measured: CLEAR 200 -> FRE(0)=28815 and CLEAR 4000 ->
 ; 25015, a difference of EXACTLY 3800, so the pool is carved from the same RAM --
 ; a moving boundary, not a second allocator (characterization §2.1).
-POOLSIZE        equ     $ED32   ; 2 B: the size CLEAR recorded. Written ONLY by
+POOLSIZE        equ     $EE32   ; 2 B: the size CLEAR recorded. Written ONLY by
                                 ; `CLEAR <n>`; initialised to 200 at cold boot and
                                 ; deliberately NOT reset by NEW / RUN / bare CLEAR /
                                 ; `CLEAR ,himem` -- all four keep the current size
@@ -1628,11 +1628,11 @@ POOLSIZE        equ     $ED32   ; 2 B: the size CLEAR recorded. Written ONLY by
 ; out, which is why fatprim_bounce reloads DISKOP_HL/DISKOP_A rather than trusting
 ; them. So the tenant writes them here and the resident stub reads them straight
 ; back. Own choice, in the free window this comment block used to describe.
-PLN_NUM         equ     $ED34   ; 2 B: the parsed line number (BC), $FFFF if the
+PLN_NUM         equ     $EE34   ; 2 B: the parsed line number (BC), $FFFF if the
                                 ; BC*10+digit chain carried (pl_sat's saturation --
                                 ; dl_store's ceiling check rejects it)
-PLN_PTR         equ     $ED36   ; 2 B: LINEBUF pointer at the body (HL)
-; FREE-RAM $ED3E..$ED40  below STRTAB/VAREND, which begin at $E240 [D-RAMSHIFT: was $E23E..$E240]
+PLN_PTR         equ     $EE36   ; 2 B: LINEBUF pointer at the body (HL)
+; FREE-RAM $EE3E..$EE40  below STRTAB/VAREND, which begin at $E240 [D-RAMSHIFT: was $E23E..$E240]
 ; 🔴 $E238..$E23A WAS PART OF THIS RUN AND IS SPENT: TEMPTOP took $E238..$E239
 ; (2026-09-21, D-MERGEWIN, out of disk.rom's SECTOR_BUF window); since
 ; 2026-09-25 TEMPTOP is gone (the cursor is the published TEMPPT) and D-DETOKBUF
@@ -1692,22 +1692,22 @@ STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
 ;      3-byte cold-boot init is PRICED AND DECLINED against a 2 B page-1 wall
 ;      (2026-08-21). Filed in TODO.md; reopen it for a new caller that READS
 ;      BEFORE WRITING, not for a spare byte.
-VALTYP          equ     $EBC8   ; 0 = numeric result, 1 = string result (1 byte)
-STRPTR          equ     $EBC9   ; pointer to the [len][bytes] descriptor (2 bytes)
+VALTYP          equ     $ECC8   ; 0 = numeric result, 1 = string result (1 byte)
+STRPTR          equ     $ECC9   ; pointer to the [len][bytes] descriptor (2 bytes)
 ; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
 ; file channel (fat_io_putbyte). The print primitives emit through `pchar`, which
 ; consults this. Zeroed at cold start (init_filechan) and re-cleared at every
 ; statement boundary / the REPL prompt / stmt_error, so only PRINT#'s own item
 ; loop ever sees 1. Free byte in the $E0CB gap (NUMBUF/VALTYP/STRPTR below it).
-PRDEST          equ     $EBCB   ; PRINT destination: 0=screen, 1=file channel (1)
+PRDEST          equ     $ECCB   ; PRINT destination: 0=screen, 1=file channel (1)
 ; When PRDEST=1, PRDEV selects WHICH sink pchar uses: 0 = disk file (fat_io_putbyte),
 ; 1 = LPT printer (LPTOUT), 2 = CRT screen (CHPUT). Set by PRINT#'s channel classify;
 ; only read while PRDEST=1, so its staleness between statements is harmless. A "device
 ; channel" (LPT:/CRT:) stores FCH_MODES[ch]=LPT_MODE/CRT_MODE and owns no fat.asm
 ; context. OO_DEVTYPE is the transient device type stashed across the OPEN parse.
 ; Free bytes in the $E0CC gap (below CONTLINE $E0D0).
-PRDEV           equ     $EBCC   ; PRINT# device sink selector (1)
-OO_DEVTYPE      equ     $EBCD   ; OPEN device-channel type being parsed (transient, 1)
+PRDEV           equ     $ECCC   ; PRINT# device sink selector (1)
+OO_DEVTYPE      equ     $ECCD   ; OPEN device-channel type being parsed (transient, 1)
 ; ascii_read_lines' byte-source vector (files.asm D2 getbyte indirection; the
 ; read-side mirror of PRDEST/PRDEV above). Holds the address of the routine
 ; arl_getbyte (files.asm) jumps into for the next file byte: A=byte/CF clear,
@@ -1717,7 +1717,7 @@ OO_DEVTYPE      equ     $EBCD   ; OPEN device-channel type being parsed (transie
 ; it at cal_getbyte (a TAPIN wrapper) for the duration of a cassette ASCII
 ; load, then restores the default before returning. Fills the last 2 bytes of
 ; the $E0CC gap (below CONTLINE $E0D0).
-ARL_GETBYTE     equ     $EBCE   ; ascii_read_lines byte-source vector (2)
+ARL_GETBYTE     equ     $ECCE   ; ascii_read_lines byte-source vector (2)
 ; S10.B (2026-10-06): a disk file open FOR OUTPUT is mode 3 -- its channel is an
 ; MSX-DOS FCB in disk.rom (the row of DSK_ENGTAB, record = the block's +9), and
 ; its bytes cross at H_CHOUT. APPEND is stored as 2 and stays on main's engine
@@ -1821,7 +1821,7 @@ GRP_MODE        equ     9       ; FCH_MODES value: OPEN"GRP:" (PRINT# -> the gra
 ;      absolute bytes it scored NO-ORACLE, i.e. "no reading", while all three
 ;      sides agreed perfectly on the movement. NO-ORACLE is a verdict about the
 ;      COMPARISON, not about the variable.
-FRETOP          equ     $ED68               ; heap low boundary; heap occupies (2 B)
+FRETOP          equ     $EE68               ; heap low boundary; heap occupies (2 B)
                                             ; [FRETOP,C), grows DOWN as strings alloc.
                                             ; Reset to the ceiling C at cold start/
                                             ; NEW/RUN/CLEAR (heap_reset, str-
@@ -1846,7 +1846,7 @@ FRETOP          equ     $ED68               ; heap low boundary; heap occupies (
 ; derivation would have dragged RVDESC, STRSCR and the string engine's cells
 ; after it. No code relies on the adjacency (every FRETOP access is a 16-bit
 ; load/store by name).
-RVDESC          equ     $ED6C               ; [len:1][ptr:2] scratch descriptor (3 B)
+RVDESC          equ     $EE6C               ; [len:1][ptr:2] scratch descriptor (3 B)
                                             ; for a value whose body is NOT in the
                                             ; heap (a token-stream literal / STRSCR) —
                                             ; excluded from GC roots by construction
@@ -1865,7 +1865,17 @@ RVDESC          equ     $ED6C               ; [len:1][ptr:2] scratch descriptor 
 ; cells, and STRSCR swaps places with FLD_DESC (lever (2) step b) while RVDESC
 ; goes elsewhere. No code assumes STRSCR == RVDESC + 3 (both are addressed by
 ; name; no `high`/`low` idiom uses either -- tools/ws_shift.py checks that).
-STRSCR          equ     $EF00               ; [len][bytes:STRMAX] staging, $EF00..$EFFF
+; 🏗️ D-STRSCRBUF (2026-10-14, RAM order step 3): STRSCR IS THE REFERENCE'S BUF.
+; Measured first (scratchpad/strscr_probe.out): the string engine already builds in
+; the heap, as the VG-8020 does; only INPUT / LINE INPUT / INPUT$, READ, file names
+; and KEY still staged here (scratchpad/strscr_census.out) -- and each of those
+; runs when BUF's typed line is no longer needed (a direct statement executes from
+; its crunched copy in KBUF), EXCEPT console INPUT, whose source IS that line: it
+; reads its answer one byte UP (inp_readline, basic/input.asm), so the splitter's
+; [len] byte has BUF[0] and every kept byte lands at or behind the one just read.
+; STRSCR's own 256 B went to program RAM: the one-page shift moved everything in
+; [$E26A,$EF00) up by $100 and TXTMAX up with it ($E36A).
+STRSCR          equ     LINEBUF             ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
                                             ; buffer — UNCHANGED role from pre-4a,
                                             ; just widened 65->256 B (1+STRMAX).
                                             ; NOT a heap root (fixed RAM, outside
@@ -1901,10 +1911,10 @@ STRSCR          equ     $EF00               ; [len][bytes:STRMAX] staging, $EF00
 ; exact failure the note was written about. The
 ; two runs this slice spends are the two this FILE calls FREE-RAM in as many
 ; words: the retired TRAPSTK here, and $E238..$E240 for TEMPTOP below.
-SH_BASE         equ     $ED0D   ; the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
+SH_BASE         equ     $EE0D   ; the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
                                 ; is exactly 18 B and ends at $E21E, one below
                                 ; TRAPPEND $E21F -- the run is spent to the byte
-SH_OP           equ     SH_BASE             ; $ED0D (1 B)
+SH_OP           equ     SH_BASE             ; $EE0D (1 B)
 SH_LEN          equ     SH_OP + 1           ; ALLOC/TEMP_ALLOC/BUILD_CONCAT arg:
                                             ; requested length / operand count (1 B)
 SH_SRC          equ     SH_LEN + 1          ; SNAPSHOT arg: source descriptor
@@ -1982,8 +1992,8 @@ TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $F698: high boundary = the empty-
 ; ⚠️ ABSOLUTE SINCE D-ADDR29 TEMPST: it used to chain off TEMPBASE, and with the
 ; pool at $F67A that chain would have put ISRCH_A/B on the published DSCTMP
 ; ($F698) and FRETOP ($F69B). It stays where it always was.
-ISRCH_A         equ     $E8A1               ; resolved A-operand body base (2 B)
-ISRCH_B         equ     ISRCH_A + 2         ; $E8A3: resolved B-operand body base (2 B)
+ISRCH_A         equ     $E9A1               ; resolved A-operand body base (2 B)
+ISRCH_B         equ     ISRCH_A + 2         ; $E9A3: resolved B-operand body base (2 B)
 ; TMISMATCH ($E3E5, 1 B) STOOD HERE -- the string-comparison D-2 marker
 ; (spec-basic-string-compare.md §3c), a boolean read by fourteen sites ahead of
 ; FPERR. D-PENDERR (docs/spec-basic-penderr.md) retired it: it was only ever a
@@ -1994,7 +2004,7 @@ ISRCH_B         equ     ISRCH_A + 2         ; $E8A3: resolved B-operand body bas
 ; LIVE cell belonging to a different subsystem (the MID$()= statement) — a real
 ; regression surface bought for nothing, since RAM is not a wall this project is
 ; anywhere near and both ROM walls are. Spend it when something needs a byte.
-STRENG_SPARE    equ     ISRCH_B + 2         ; $E8A5: 1 B free (was TMISMATCH)
+STRENG_SPARE    equ     ISRCH_B + 2         ; $E9A5: 1 B free (was TMISMATCH)
 ; MIDS_DEST ($E7E6, 2 B, STRENG_SPARE+1, defined above) sits right above here — the
 ; last claimed cell in the freed STRTAB window.
 ; 🏗️ D-DRAWINPLACE step 2b (2026-10-13): basic-core RAM's block -- this window,
@@ -2004,7 +2014,9 @@ STRENG_SPARE    equ     ISRCH_B + 2         ; $E8A5: 1 B free (was TMISMATCH)
 ; ($E9C0, below in this file). The wall used to be DISKROM_CELLS_LO ($E960, the
 ; literal $E560 before D-FATFLOOR): basic below, disk.rom's cells above -- and
 ; that "above" was where they OVERLAPPED the persistent DRAW cells (D-DSCALEDISK).
-BASIC_WS_CEIL   equ     $E9C0  ; NOT-A-CELL: basic-core RAM stays below basic's FAT block
+BASIC_WS_CEIL   equ     $EAC0  ; NOT-A-CELL: basic-core RAM stays below basic's FAT block
+; ($E9C0 until D-STRSCRBUF's one-page shift moved that block with everything
+; under STRSCR's freed page: a NOT-A-CELL constant does not move with a shift.)
     IF MIDS_DEST + 2 > BASIC_WS_CEIL
                 db      STRING_HEAP_LAYOUT_OVERRAN_THE_BASIC_FAT_BLOCK
     ENDIF
@@ -2058,18 +2070,18 @@ BASIC_WS_CEIL   equ     $E9C0  ; NOT-A-CELL: basic-core RAM stays below basic's 
 ; removes the need for Smith's direction/overhang bookkeeping entirely). This
 ; buys MORE capacity per byte than the spec's own estimate assumed.
 ; $E3E8 was GFX_PTOP (the fixed array's 8-bit index) until D-PAINTSP.
-GFX_POVF        equ     $E8A9   ; 1 = the stack overflowed; resident raises ERR 7 (1)
-GFX_PTESTX      equ     $E8AA   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
-GFX_PTESTY      equ     $E8AB   ; ...Y (1)
-GFX_PFY         equ     $E8AC   ; gfx_paint_flood/_process: current span's row (1)
-GFX_PXL         equ     $E8AD   ; ...current span's left column (1)
-GFX_PXR         equ     $E8AE   ; ...current span's right column (1)
-GFX_PSCX        equ     $E8AF   ; gfx_paint_process/_scan_row: scan cursor column (1)
-GFX_PSCY        equ     $E8B0   ; gfx_paint_scan_row: the neighbour row being scanned (1)
-GFX_PSPA        equ     $E8B1   ; gfx_paint_scan_row: pending sub-span's start column (1)
-GFX_PSTK        equ     $E8B2   ; the graphics UNION's base ($E8B2..$E8DD)
+GFX_POVF        equ     $E9A9   ; 1 = the stack overflowed; resident raises ERR 7 (1)
+GFX_PTESTX      equ     $E9AA   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
+GFX_PTESTY      equ     $E9AB   ; ...Y (1)
+GFX_PFY         equ     $E9AC   ; gfx_paint_flood/_process: current span's row (1)
+GFX_PXL         equ     $E9AD   ; ...current span's left column (1)
+GFX_PXR         equ     $E9AE   ; ...current span's right column (1)
+GFX_PSCX        equ     $E9AF   ; gfx_paint_process/_scan_row: scan cursor column (1)
+GFX_PSCY        equ     $E9B0   ; gfx_paint_scan_row: the neighbour row being scanned (1)
+GFX_PSPA        equ     $E9B1   ; gfx_paint_scan_row: pending sub-span's start column (1)
+GFX_PSTK        equ     $E9B2   ; the graphics UNION's base ($E9B2..$E9DD)
 ; 🏗️ D-DRAWINPLACE (2026-10-13, RAM order step 2b): this was a 360 B window
-; ($E8B2..$EA19) sized for PAINT's 120-span array (D-PAINTSP retired it) and then
+; ($E9B2..$EB19) sized for PAINT's 120-span array (D-PAINTSP retired it) and then
 ; kept for DRAW's 256 B frame buffer GFX_DBUF (retired by step 2a: DRAW reads its
 ; strings in place). What still time-shares it is 44 B -- the arc mask
 ; GFX_CS_M1/M2 (+0..+7), PAINT's cursors (+8..+13), sprite staging GFX_VBUF
@@ -2130,49 +2142,49 @@ GFX_PAINT_MARGIN equ    128
 ; CIRCLE's parse co-routine is done. That co-routine borrows GFX_DPTR ($E4F2),
 ; 256 B clear of these 8, and basic/graphics.asm reads GFX_DPTR again AFTER the
 ; draw to continue the statement stream, so the two must not and do not overlap.
-GFX_CS_M1       equ     GFX_PSTK        ; $E8B2: D-ARCMASK: 2*M*M during the M
+GFX_CS_M1       equ     GFX_PSTK        ; $E9B2: D-ARCMASK: 2*M*M during the M
                                         ; floor-correction (was cross_ge0's mag1) (4)
-GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E8B6: r*r for the same compare (4)
+GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $E9B6: r*r for the same compare (4)
                                         ; CONTIGUOUS with M1 -- gcx_zlp tests both as one
                                         ; 8-byte run. (The width moved onto the equ line
                                         ; for D-PAINTSP: ram_map reads it only there, and
                                         ; GFX_PSP at +8 made the missing width visible.)
 ; (GFX_DBUF, the 256 B frame buffer at GFX_PSTK, and GFX_DFREE, its fill cursor,
 ; RETIRED by D-DRAWINPLACE: the frames are the strings' own bodies.)
-GFX_DPTR        equ     GFX_SFLAGS + 1  ; $E8DE: parse cursor in the current frame (2)
-GFX_DEND        equ     GFX_DPTR + 2    ; $E8E0: one past the current frame's last byte (2)
-GFX_DFTOP       equ     GFX_DEND + 2    ; $E8E2: X-frame stack depth (1)
+GFX_DPTR        equ     GFX_SFLAGS + 1  ; $E9DE: parse cursor in the current frame (2)
+GFX_DEND        equ     GFX_DPTR + 2    ; $E9E0: one past the current frame's last byte (2)
+GFX_DFTOP       equ     GFX_DEND + 2    ; $E9E2: X-frame stack depth (1)
 GFX_DFCAP       equ     8               ; max X nesting (own-design cap, D-G6-4)
-GFX_DFSTK       equ     GFX_DFTOP + 1   ; $E8E3: saved [ptr][end] per outer frame --
+GFX_DFSTK       equ     GFX_DFTOP + 1   ; $E9E3: saved [ptr][end] per outer frame --
                                 ; 32 B total, 4 B each * GFX_DFCAP. 🔴 THE TOTAL
                                 ; COMES FIRST ON PURPOSE (D-RAMGATE): with only
                                 ; "4 B each" the map read the WIDTH as 4 and
                                 ; reported this array's own 28 B as a free run.
-GFX_DCMD        equ     GFX_DFSTK + 4*GFX_DFCAP   ; $E903: current command's start cursor,
+GFX_DCMD        equ     GFX_DFSTK + 4*GFX_DFCAP   ; $EA03: current command's start cursor,
                                         ; the rewind point for a substitution (2)
-GFX_DSUBN       equ     GFX_DCMD + 2    ; $E905: substitutions RESOLVED for this command (1)
-GFX_DSUBI       equ     GFX_DSUBN + 1   ; $E906: substitutions SEEN so far this re-parse (1)
-GFX_DSUB        equ     GFX_DSUBI + 1   ; $E907: the resolved values, 2 slots (M takes two) (4)
-GFX_DSUBLEN     equ     GFX_DSUB + 4    ; $E90B: slot 0's string length (X only) (1)
-GFX_DREQ        equ     GFX_DSUBLEN + 1 ; $E90C: tenant->resident: 0 = done, 1 = resolve an
+GFX_DSUBN       equ     GFX_DCMD + 2    ; $EA05: substitutions RESOLVED for this command (1)
+GFX_DSUBI       equ     GFX_DSUBN + 1   ; $EA06: substitutions SEEN so far this re-parse (1)
+GFX_DSUB        equ     GFX_DSUBI + 1   ; $EA07: the resolved values, 2 slots (M takes two) (4)
+GFX_DSUBLEN     equ     GFX_DSUB + 4    ; $EA0B: slot 0's string length (X only) (1)
+GFX_DREQ        equ     GFX_DSUBLEN + 1 ; $EA0C: tenant->resident: 0 = done, 1 = resolve an
                                         ; int, 2 = resolve a string (1)
-GFX_DRESUME     equ     GFX_DREQ + 1    ; $E90D: resident->tenant: 1 = resuming (1)
-GFX_DVAL        equ     GFX_DRESUME + 1 ; $E90E: the resolved int16, or a string body ptr (2)
-GFX_DVLEN       equ     GFX_DVAL + 2    ; $E910: that string's length (1)
-GFX_DEXP        equ     GFX_DVLEN + 1   ; $E911: NUL-terminated copy of the text between
+GFX_DRESUME     equ     GFX_DREQ + 1    ; $EA0D: resident->tenant: 1 = resuming (1)
+GFX_DVAL        equ     GFX_DRESUME + 1 ; $EA0E: the resolved int16, or a string body ptr (2)
+GFX_DVLEN       equ     GFX_DVAL + 2    ; $EA10: that string's length (1)
+GFX_DEXP        equ     GFX_DVLEN + 1   ; $EA11: NUL-terminated copy of the text between
                                         ; `=`/`X` and its `;`, so the resident's eval runs
                                         ; on a BOUNDED buffer and can never walk off the
                                         ; end of a string body into the heap (24 B)
 GFX_DEXP_CAP    equ     24
-GFX_DFB         equ     GFX_DEXP + GFX_DEXP_CAP   ; $E929: 1 = B (blank move) prefix pending (1)
-GFX_DFN         equ     GFX_DFB + 1     ; $E92A: 1 = N (no-update) prefix pending (1)
-GFX_DARG        equ     GFX_DFN + 1     ; $E92B: last parsed argument (int16 LE) (2)
-GFX_DDX         equ     GFX_DARG + 2    ; $E92D: this command's dx (int16) (2)
-GFX_DDY         equ     GFX_DDX + 2     ; $E92F: ...dy (2)
-GFX_DTX         equ     GFX_DDY + 2     ; $E931: move target X (2)
-GFX_DTY         equ     GFX_DTX + 2     ; $E933: ...Y (2)
-GFX_DTMP        equ     GFX_DTY + 2     ; $E935: mul/rotate/sign scratch (2)
-GFX_DSP         equ     GFX_DTMP + 2    ; $E937: tenant entry SP -- an error deep in the (2 B)
+GFX_DFB         equ     GFX_DEXP + GFX_DEXP_CAP   ; $EA29: 1 = B (blank move) prefix pending (1)
+GFX_DFN         equ     GFX_DFB + 1     ; $EA2A: 1 = N (no-update) prefix pending (1)
+GFX_DARG        equ     GFX_DFN + 1     ; $EA2B: last parsed argument (int16 LE) (2)
+GFX_DDX         equ     GFX_DARG + 2    ; $EA2D: this command's dx (int16) (2)
+GFX_DDY         equ     GFX_DDX + 2     ; $EA2F: ...dy (2)
+GFX_DTX         equ     GFX_DDY + 2     ; $EA31: move target X (2)
+GFX_DTY         equ     GFX_DTX + 2     ; $EA33: ...Y (2)
+GFX_DTMP        equ     GFX_DTY + 2     ; $EA35: mul/rotate/sign scratch (2)
+GFX_DSP         equ     GFX_DTMP + 2    ; $EA37: tenant entry SP -- an error deep in the (2 B)
                                         ; parse restores it and exits, so every helper can
                                         ; just jump to the error tail instead of threading
                                         ; a CF through the whole call chain (2) -> ends $E54F
@@ -2182,26 +2194,26 @@ GFX_DESC        equ     $01             ; (unused by D-G6-1b; kept out of the bu
 ; ALIASES the PAINT span stack / DRAW frame buffer for exactly the reason those
 ; two alias each other: one graphics statement is in flight at a time, and a
 ; sprite statement neither paints nor draws. Sized 32 = the 16x16 pattern entry.
-GFX_VBUF        equ     GFX_PSTK        ; $E8B2: sprite pattern/attribute staging (32 B)
+GFX_VBUF        equ     GFX_PSTK        ; $E9B2: sprite pattern/attribute staging (32 B)
 ; The sprite parameter block. The resident EVALUATES (that is what it is for --
 ; `eval`, the string heap and the token cursor are all page-1 resident) and the
 ; TENANT decides: entry size and address, the domain checks, the early-clock rule,
 ; the x4 pattern scaling and the merge with the bytes already in the entry. That
 ; split is what keeps the space-blocked resident half small (spec §7/§8).
-GFX_SN          equ     GFX_VBUF + 32   ; $E8D2: SPRITE$ entry index / PUT SPRITE plane (2)
-GFX_VLEN        equ     GFX_SN + 2      ; $E8D4: the entry size the tenant read back (1)
-GFX_SDESC       equ     GFX_VLEN + 1    ; $E8D5: SPRITE$(n)= RHS string descriptor
+GFX_SN          equ     GFX_VBUF + 32   ; $E9D2: SPRITE$ entry index / PUT SPRITE plane (2)
+GFX_VLEN        equ     GFX_SN + 2      ; $E9D4: the entry size the tenant read back (1)
+GFX_SDESC       equ     GFX_VLEN + 1    ; $E9D5: SPRITE$(n)= RHS string descriptor
                                         ; ([len][ptr]); the tenant dereferences it (2)
-GFX_SC          equ     GFX_SDESC + 2   ; $E8D7: PUT SPRITE colour (2). x/y need no cells -- (2 B)
+GFX_SC          equ     GFX_SDESC + 2   ; $E9D7: PUT SPRITE colour (2). x/y need no cells -- (2 B)
                                         ; they ride the arc's pinned GXPOS/GYPOS pair, which
                                         ; PUT SPRITE writes anyway (the work area keeps the
                                         ; raw, unwrapped coordinate)
-GFX_SPATN       equ     GFX_SC + 2      ; $E8D9: ...pattern number (2)
-GFX_SSIZE       equ     GFX_SPATN + 2   ; $E8DB: SCREEN's sprite-size argument while a mode
+GFX_SPATN       equ     GFX_SC + 2      ; $E9D9: ...pattern number (2)
+GFX_SSIZE       equ     GFX_SPATN + 2   ; $E9DB: SCREEN's sprite-size argument while a mode
                                         ; set is in flight (RG1SAV bits 1..0 hold it after) (1)
-GFX_SARGN       equ     GFX_SSIZE + 1   ; $E8DC: how many extra SCREEN arguments have been
+GFX_SARGN       equ     GFX_SSIZE + 1   ; $E9DC: how many extra SCREEN arguments have been
                                         ; seen -- only the FIRST is the sprite size (1)
-GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E8DD: which arguments were GIVEN -- (1 B)
+GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E9DD: which arguments were GIVEN -- (1 B)
                                         ; bit0 = coordinates, bit1 = colour, bit2 = pattern;
                                         ; an omitted one keeps the entry's own byte (1)
 ;
@@ -2228,7 +2240,7 @@ GFX_SFLAGS      equ     GFX_SARGN + 1   ; $E8DD: which arguments were GIVEN -- (
 ; HERE rather than beside SUBROM_IDX_DEFTYPE because that block sits inside
 ; `IFNDEF SUBROM_ENTRY_BASE_P0`, which the sub-ROM build skips -- and the tenant
 ; needs these addresses.
-DEFT_PTR        equ     GFX_DSP + 2     ; $E939: token cursor in AND out (2)
+DEFT_PTR        equ     GFX_DSP + 2     ; $EA39: token cursor in AND out (2)
 DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; --- READ/DATA tenant ABI (SUBROM_IDX_READVAL, docs/spec-eviction-g7-space.md) -
 ; read_one_value's (A, DE) contract cannot ride back through subrom_call, so the
@@ -2236,18 +2248,18 @@ DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; the same one-statement-at-a-time aliasing argument as DEFT_PTR above (a READ and
 ; a graphics statement are never in flight together), and clear of the PERSISTENT
 ; GFX_DSCALE/GFX_DANGLE pair below.
-RDV_VAL         equ     DEFT_PTR + 2    ; $E93B: the value read (int16 LE) (2)
-RDV_ST          equ     RDV_VAL + 2     ; $E93D: tenant -> main STATUS (1): (1 B)
+RDV_VAL         equ     DEFT_PTR + 2    ; $EA3B: the value read (int16 LE) (2)
+RDV_ST          equ     RDV_VAL + 2     ; $EA3D: tenant -> main STATUS (1): (1 B)
                                         ;   0 = out of data      (ERR 4)
                                         ;   1 = an item was read (RDV_VAL / STRSCR)
                                         ;   2 = the item is not a NUMBER (ERR 2) --
                                         ;       D-READVAR's c.strnum, numeric mode only
-RDV_LINE        equ     DEFT_PTR        ; $E939: D-READERL -- the link field of the line
+RDV_LINE        equ     DEFT_PTR        ; $EA39: D-READERL -- the link field of the line
                                         ; holding the item just read (2). ALIASES
                                         ; DEFT_PTR, by the window's own argument: a READ
                                         ; and a DEF-type statement are never in flight
                                         ; together, and READ never touches DEFT_PTR.
-RDV_MODE        equ     RDV_ST + 1      ; $E93E: main -> tenant MODE (1 B), D-READVAR:
+RDV_MODE        equ     RDV_ST + 1      ; $EA3E: main -> tenant MODE (1 B), D-READVAR:
                                         ;   0 = numeric, data_parse_int -> RDV_VAL
                                         ;   1 = string, the item's RAW ASCII span ->
                                         ;       STRSCR ([len][bytes]); RDV_VAL undefined
@@ -2269,7 +2281,7 @@ RDV_MODE        equ     RDV_ST + 1      ; $E93E: main -> tenant MODE (1 B), D-RE
 ; engine), but its failure mode is a SCALAR store writing to a stale element
 ; address -- silent memory corruption, not an error -- guarded only by a property
 ; nothing enforces. 2 B buys that away.
-TGT_ADDR        equ     RDV_MODE + 1    ; $E93F: element address, or 0 = scalar (2)
+TGT_ADDR        equ     RDV_MODE + 1    ; $EA3F: element address, or 0 = scalar (2)
 ; D-DEFINTTOK (2026-08-18) / D-DEFTYPETOK (2026-08-19): all four DEFtype verbs
 ; reach ONE handler (basic/usr.asm `ex_deftype`) and ONE tenant (sub/deftype.asm
 ; `deftype_tenant`), and needing to know WHICH of the four cost NO extra
@@ -2296,12 +2308,12 @@ TGT_ADDR        equ     RDV_MODE + 1    ; $E93F: element address, or 0 = scalar 
 ; ~9 B this window could not afford); the token-peek needs none of that, so it
 ; is what shipped.
 ;
-GFX_DSCALE      equ     TGT_ADDR + 2    ; $E941: persistent scale, quarter units,
+GFX_DSCALE      equ     TGT_ADDR + 2    ; $EA41: persistent scale, quarter units,
                                         ; 0 = NEVER SET (D-DSCALE): a distinct
                                         ; state from S4, in which no scaling runs
                                         ; at all. `gdo_s` maps S0 to 4, so no
                                         ; explicit S can write the sentinel. (1)
-GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E942: persistent angle 0..3 (1)
+GFX_DANGLE      equ     GFX_DSCALE + 1  ; $EA42: persistent angle 0..3 (1)
                                         ; Boot 0
                                         ; and an explicit `A0` are the SAME state
                                         ; (measured, d.a0.32k): no sentinel here.
@@ -2309,8 +2321,8 @@ GFX_DANGLE      equ     GFX_DSCALE + 1  ; $E942: persistent angle 0..3 (1)
 ; `VDP(n)=v` / `BASE(n)=v` write, handed to the tenant, which owns the domain checks
 ; and the register programming. Dead outside such a statement. Below BASIC_WS_CEIL,
 ; which the guard below enforces (the disk-cell wall DISKROM_CELLS_LO until 2b).
-GFX_G8N         equ     GFX_DANGLE + 1  ; $E943: written index n (int16 LE) (2)
-GFX_G8V         equ     GFX_G8N + 2     ; $E945: written value (int16 LE) (2)
+GFX_G8N         equ     GFX_DANGLE + 1  ; $EA43: written index n (int16 LE) (2)
+GFX_G8V         equ     GFX_G8N + 2     ; $EA45: written value (int16 LE) (2)
 ; --- D-PAINTMC: PAINT's COORDINATE PITCH, 1 (SCREEN 2) or 4 (MULTICOLOUR) -----
 ; sub/graphics.asm gfx_paint_op writes it once per statement; the flood's seven
 ; step sites read it. It ALIASES G8's index cell above, on the same
@@ -2329,7 +2341,7 @@ GFX_G8V         equ     GFX_G8N + 2     ; $E945: written value (int16 LE) (2)
 ; guard. One byte turns those seven calls into seven `ld hl,nn` and gives the
 ; cost back. A wall this window could not afford would have been the other
 ; answer; it is 0 B here because G8's cells were already dead.
-GFX_PPITCH      equ     GFX_G8N         ; $E943: 1 or 4, live only inside a PAINT
+GFX_PPITCH      equ     GFX_G8N         ; $EA43: 1 or 4, live only inside a PAINT
     IF TGT_ADDR + 2 > GFX_DSCALE
                 db      TGT_ADDR_OVERRAN_THE_PERSISTENT_DRAW_STATE_CELLS
     ENDIF
@@ -2411,20 +2423,20 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; stub, $DF93 advertised top) are live ONLY on the DOS-boot path
 ; (disk/init.asm's lay_page0_env, after a bootable boot sector) -- BASIC and DOS
 ; never co-exist (D-RECLAIM), as the old buffer already relied on.
-TXTMAX          equ     $E26A   ; NOT-A-CELL: the text ceiling (= the workspace floor)
+TXTMAX          equ     $E36A   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 ; 🧮 D-RAMCEIL (lever (2) step a, 2026-10-13): THE CEILING IS CHOSEN AT BOOT.
 ; TXTMAX stays the DISK build's ceiling (the disk ROM, which exists only there,
 ; keeps using the constant); TXTMAX_NODISK is the diskless one, and TXTCEIL is
 ; what boot picked (interp.asm, beside the HIMEM store: a disk ROM that lowered
 ; HIMEM means the disk ceiling). Every main/sub reader loads TXTCEIL. Equal for
 ; now -- step (b) packs the disk-only tenants at the floor and raises _NODISK.
-TXTMAX_NODISK   equ     $E88A  ; NOT-A-CELL: the diskless build's text ceiling
-TXTCEIL         equ     $ED6A   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
+TXTMAX_NODISK   equ     $E98A  ; NOT-A-CELL: the diskless build's text ceiling
+TXTCEIL         equ     $EE6A   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
 ; 🏛️ D-CASFCB (2026-10-13): the cassette buffer is the CHANNEL's own record
 ; buffer (block + FCH_HDRSZ), as on the VG-8020 (scratchpad/casbuf_probe.out):
 ; #0's for SAVE / LOAD / MERGE / the file search, #n's for OPEN "CAS:" AS #n.
 ; Set by cas_bufp_set (basic/cload.asm) when a tape transfer starts.
-CAS_BUFP        equ     $ED6F   ; base of the tape buffer in use (2 B)
+CAS_BUFP        equ     $EE6F   ; base of the tape buffer in use (2 B)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
 ; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,
@@ -2432,10 +2444,10 @@ CAS_BUFP        equ     $ED6F   ; base of the tape buffer in use (2 B)
 ; (basic/list.asm) re-runs a re-runnable renderer (LIST, KEY LIST) with DB_SKIP
 ; advanced until DB_MORE stays clear. An ordinary line renders ONCE.
 ; Home: the 96 B the temp pool left at $E381 (it moved to TEMPST, D-ADDR29).
-DB_WIN          equ     $E947   ; the render window, one page (96 B)
+DB_WIN          equ     $EA47   ; the render window, one page (96 B)
 DB_WINSZ        equ     96      ; window size; one byte is kept for the terminator
-DB_SKIP         equ     $ED38   ; rendered bytes still to discard (2 B; TEMPTOP's old cell)
-DB_MORE         equ     $ED3A   ; 1 = the render ran past the window (1 B)
+DB_SKIP         equ     $EE38   ; rendered bytes still to discard (2 B; TEMPTOP's old cell)
+DB_MORE         equ     $EE3A   ; 1 = the render ran past the window (1 B)
 ; 🔁 RESUMPTION (D-DETOKBUF S1, second cut): re-rendering a whole line per
 ; window made LIST of a 250 x `?` line take >8 s of emulated time against the
 ; VG-8020's <1 s (linemax list-max). So LIST resumes AT A TOKEN instead: detok's
@@ -2443,8 +2455,8 @@ DB_MORE         equ     $ED3A   ; 1 = the render ran past the window (1 B)
 ; (DT_TOKN); pchar, when the window fills during a resumable render, records
 ; the resume point and ABORTS the render (SP back to DB_SP) -- the next window
 ; starts at that token, skipping only its already-drained bytes. Linear.
-DB_RESSKIP      equ     $ED3B   ; resume: bytes of the resume token already drained (2 B)
-DB_RESUME       equ     $ED3D   ; 1 = this render may abort + resume (detok only) (1 B)
+DB_RESSKIP      equ     $EE3B   ; resume: bytes of the resume token already drained (2 B)
+DB_RESUME       equ     $EE3D   ; 1 = this render may abort + resume (detok only) (1 B)
 DB_SP           equ     $F01C   ; the render's SP to abort to (2 B; FAC's old cell)
 DT_TOK          equ     $F01E   ; detok: the current token's start in the line (2 B)
 DT_TOKN         equ     $F020   ; detok: bytes the current token has emitted (2 B)
@@ -2452,7 +2464,7 @@ DB_RESPTR       equ     $F022   ; resume: the token to restart at (2 B)
     IF (DB_WIN / 256) != ((DB_WIN + DB_WINSZ - 1) / 256)
                 db      DB_WIN_MUST_SIT_IN_ONE_PAGE__PCHAR_COMPARES_THE_LOW_BYTE
     ENDIF
-PRGEND          equ     $EB26   ; addr of the $0000 end-of-program marker (2 bytes)
+PRGEND          equ     $EC26   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
 ; arrays.md §10). The array area is the LOW free region: it begins right
@@ -2510,7 +2522,7 @@ PRGEND          equ     $EB26   ; addr of the $0000 end-of-program marker (2 byt
 ; so the fix deletes the copy and hands the tenant a POINTER instead of a buffer.
 ; The block's ceiling is then the input line (43 subscripts, LINEMAX=96) against
 ; 1024 B of measured stack headroom, not a constant anyone had to pick.
-ARY_OP          equ     $EB28   ; 0=RESOLVE (read/write element, auto-dim on
+ARY_OP          equ     $EC28   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; read) / 1=DIM (explicit declare) / 2=ERASE
                                 ; (free, slice-2, docs/spec-basic-arrays-
                                 ; slice2-erase.md §4.2) / 3=COPY_STR (slice-3/
@@ -2521,13 +2533,13 @@ ARY_OP          equ     $EB28   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; SAME tenant + param block per Q4 -- reuses
                                 ; ARY_KEY/ARY_TYPE in, ARY_ADDR/ARY_ERR out,
                                 ; identical shape to RESOLVE) (1)
-ARY_KEY         equ     $EB29   ; name0/name1 key (BC round-trip: written via
+ARY_KEY         equ     $EC29   ; name0/name1 key (BC round-trip: written via
                                 ; `ld (ARY_KEY),bc`, read via `ld bc,(ARY_KEY)`
                                 ; on both sides -- byte order unobserved) (2)
-ARY_TYPE        equ     $EB2B   ; 2/4/8 (int/single/double) (1)
-ARY_NIDX        equ     $EB2C   ; parsed subscript/bound count for the CURRENT
+ARY_TYPE        equ     $EC2B   ; 2/4/8 (int/single/double) (1)
+ARY_NIDX        equ     $EC2C   ; parsed subscript/bound count for the CURRENT
                                 ; reference (1)
-ARY_IDXP        equ     $EB2D   ; [D-ARR-C] POINTER to the parsed subscripts
+ARY_IDXP        equ     $EC2D   ; [D-ARR-C] POINTER to the parsed subscripts
                                 ; (RESOLVE) or bounds (DIM) -- int16 LE, ndim of
                                 ; them, living in the CALLER's own hardware-stack
                                 ; block, not here (2). ⚠️ IT ADDRESSES SUBSCRIPT
@@ -2554,7 +2566,7 @@ ARY_IDXP        equ     $EB2D   ; [D-ARR-C] POINTER to the parsed subscripts
 ; comment where tools/ram_map.py does not read one, so the overlap was never
 ; reported (the allowlist pinned it as `overruns`). Now in the FREE-RAM span
 ; FOR_CUR left, with the width at the END of the line.
-ARY_CUR         equ     $EB46   ; [D-ARR-C] the text cursor, parked across the engine call (2)
+ARY_CUR         equ     $EC46   ; [D-ARR-C] the text cursor, parked across the engine call (2)
                                 ; subrom_call/CALSLT clobbers HL,
                                 ; and the fused ary_parse_call has no caller left
                                 ; to hold a [CURSOR] push for it. Safe against the
@@ -2566,13 +2578,13 @@ ARY_CUR         equ     $EB46   ; [D-ARR-C] the text cursor, parked across the e
                                 ; $E031..$E034 (4 B) FREED by the above -- the old
                                 ; ARY_IDX was 8 bytes. Unassigned on purpose: this
                                 ; span has CURLINE immediately above it at $E038.
-ARY_ADDR        equ     $EB35   ; [tenant return, RESOLVE] element address (2)
+ARY_ADDR        equ     $EC35   ; [tenant return, RESOLVE] element address (2)
                                 ; -- also SCALAR_FIND/SCALAR_ALLOC's own
                                 ; return (§4b): the scalar entry address, or
                                 ; 0 for SCALAR_FIND's "not found" (0 is never
                                 ; a valid entry address -- program text
                                 ; starts at $8001)
-ARY_ERR         equ     $EB37   ; [tenant return] 0 ok; 1 Subscript-oor; (1 B)
+ARY_ERR         equ     $EC37   ; [tenant return] 0 ok; 1 Subscript-oor; (1 B)
                                 ; 2 Illegal-fn (negative); 3 Redimensioned;
                                 ; 4 Out of memory -- an ALLOCATION that will
                                 ; not fit VARIABLE space (DIM, auto-dim, and
@@ -2624,10 +2636,10 @@ USRTAB          equ     $F39A   ; 20 B total, 10 USR jump vectors of 2 B each.
                                 ; day -- a width PRESENT and WRONG, which no gate
                                 ; catches.
 ; Step B scratch (page $E0, clear of LINEBUF/VARTAB in page $E1).
-SL_NUM          equ     $EB30   ; store_line: target line number (2)
-SL_SLOT         equ     $EB32   ; store_line: insertion slot address (2)
-SL_SIZE         equ     $EB34   ; store_line: new line size in bytes (2)
-SL_TOK          equ     $EB36   ; store_line: saved token-body pointer (2)
+SL_NUM          equ     $EC30   ; store_line: target line number (2)
+SL_SLOT         equ     $EC32   ; store_line: insertion slot address (2)
+SL_SIZE         equ     $EC34   ; store_line: new line size in bytes (2)
+SL_TOK          equ     $EC36   ; store_line: saved token-body pointer (2)
 
 ; --- Step B control flow: keyword tokens + line-number references ----------
 ; Keyword tokens from MSX2 Technical Handbook Table 2.20; the line-number
@@ -2844,17 +2856,17 @@ LPOS_TOKEN      equ     $9C     ; LPOS(n) — $FF-prefixed; 0-based PRINTER colu
 TAB_TOKEN       equ     $DB     ; TAB(n) — PRINT item, ABSOLUTE column
 SPC_TOKEN       equ     $DF     ; SPC(n) — PRINT item, RELATIVE n spaces
 ; Runtime control-flow state (page $E0).
-CURLINE         equ     $EB38   ; link-field addr of the line being executed (2)
-GOTOTGT         equ     $EB3A   ; pending branch-target line addr (2)
-GOTOFLAG        equ     $EB3C   ; 1 = a branch (GOTO) is pending (1 B)
-ENDFLAG         equ     $EB3D   ; 1 = END/STOP reached, stop the run (1 B)
+CURLINE         equ     $EC38   ; link-field addr of the line being executed (2)
+GOTOTGT         equ     $EC3A   ; pending branch-target line addr (2)
+GOTOFLAG        equ     $EC3C   ; 1 = a branch (GOTO) is pending (1 B)
+ENDFLAG         equ     $EC3D   ; 1 = END/STOP reached, stop the run (1 B)
 ; Mid-line resume: GOTO branches to a line *start*, but RETURN and NEXT must
 ; resume at an exact token position (the statement after GOSUB / the FOR loop
 ; body). When RESUMEFLAG is set the RUN loop runs from RESUMEPTR instead of
 ; recomputing the body from CURLINE; the resuming statement sets CURLINE to the
 ; line that holds RESUMEPTR so the post-statement "advance to next line" works.
-RESUMEPTR       equ     $EB3E   ; mid-line resume token pointer (2)
-RESUMEFLAG      equ     $EB40   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B)
+RESUMEPTR       equ     $EC3E   ; mid-line resume token pointer (2)
+RESUMEFLAG      equ     $EC40   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B)
 ; CONT / Ctrl-STOP break-resume state (own-design; see PROVENANCE.md). When a
 ; running program is broken by the STOP statement or by Ctrl-STOP (BREAKX), the
 ; run loop records exactly where to resume: CONTLINE = the link-field address of
@@ -2863,17 +2875,17 @@ RESUMEFLAG      equ     $EB40   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
 ; next line for a Ctrl-STOP between lines). CONTVALID = 1 means "a CONT resume
 ; point is live". Editing the program (store_line / NEW) clears CONTVALID so CONT
 ; then errors with "Can't CONTINUE", matching the reference's behaviour.
-CONTLINE        equ     $EBD0   ; saved CURLINE for CONT (2)
-CONTPTR         equ     $EBD2   ; saved resume token pointer for CONT (2)
-CONTVALID       equ     $EBD4   ; 1 = a CONT resume point is valid (1)
+CONTLINE        equ     $ECD0   ; saved CURLINE for CONT (2)
+CONTPTR         equ     $ECD2   ; saved resume token pointer for CONT (2)
+CONTVALID       equ     $ECD4   ; 1 = a CONT resume point is valid (1)
 ; Extension-ROM INIT scan scratch (initext.asm). Used ONCE at INIT, entirely
 ; under `di`, and dead afterwards; free page-3 RAM in the $E0D5..$E0FF gap
 ; (between CONT state and LINEBUF). RDSLT clobbers AF/BC/DE, so the slot id and
 ; INIT address are held here across reads rather than in registers.
-SCAN_PRIM       equ     $EBD5   ; primary slot currently being scanned (1)
-SCAN_SLOT       equ     $EBD6   ; candidate slot id for RDSLT/CALSLT (1)
-SCAN_INIT       equ     $EBD7   ; candidate ROM's INIT entry address (2)
-SCAN_IY         equ     $EBD9   ; CALSLT slot word: high byte = slot (IYh) (2)
+SCAN_PRIM       equ     $ECD5   ; primary slot currently being scanned (1)
+SCAN_SLOT       equ     $ECD6   ; candidate slot id for RDSLT/CALSLT (1)
+SCAN_INIT       equ     $ECD7   ; candidate ROM's INIT entry address (2)
+SCAN_IY         equ     $ECD9   ; CALSLT slot word: high byte = slot (IYh) (2)
 ; Disk filename scratch (the disk loader/saver verbs). Built by parse_disk_fcb;
 ; the loader-side FAT12 engine (basic/fat.asm) consumes the 8.3 NAME field directly
 ; — fat_find / fat_dir_create take an 11-byte name pointer, no FCB needed. The +0
@@ -2883,7 +2895,7 @@ SCAN_IY         equ     $EBD9   ; CALSLT slot word: high byte = slot (IYh) (2)
 ; scratch and clear of the FAT engine's buffers (page $E5+). The "FCB" name is
 ; retained for continuity with the parser; only the NAME field is load-bearing now.
 ; See basic/PROVENANCE.md §disk-BLOAD scratch FCB / §disk DSKIO host engine.
-DISK_FCB        equ     $EBDB   ; scratch name block ($E0DB.., 12 bytes)
+DISK_FCB        equ     $ECDB   ; scratch name block ($E0DB.., 12 bytes)
 DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR)
 DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; Disk-ROM slot id recorded by the INIT scan (initext.asm) when it inits an
@@ -2894,8 +2906,8 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; slot capture). DISKSLOT_OK = 1 once a slot was recorded. Free page-3 RAM in the
 ; $E0E7.. gap (after the name block, before LINEBUF at $E100). See basic/
 ; PROVENANCE.md §disk-ROM slot capture.
-DISKSLOT        equ     $EBE7   ; disk ROM slot id for CALSLT (1)
-DISKSLOT_OK     equ     $EBE8   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+DISKSLOT        equ     $ECE7   ; disk ROM slot id for CALSLT (1)
+DISKSLOT_OK     equ     $ECE8   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
 ; BSAVE/BLOAD) -- also cassette ASCII load's CAL_CURHI (below): a BSAVE/BLOAD
 ; ",S" and a cassette ASCII LOAD/CLOAD never run at the same time, so the two
@@ -2903,7 +2915,7 @@ DISKSLOT_OK     equ     $EBE8   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1
 ; VRAM_FLAG: 1 = the ",S" flag was given -> the data bytes stream to/from VRAM
 ; (RDVRM/WRTVRM) instead of RAM; the $FE header start/end/exec are stored/read
 ; verbatim as VRAM addresses. Cleared at the top of every BSAVE/BLOAD parse.
-VRAM_FLAG       equ     $EBE9   ; 1 = ",S" VRAM save/load (1)
+VRAM_FLAG       equ     $ECE9   ; 1 = ",S" VRAM save/load (1)
 ; CAL_CURHI: cassette ASCII load's DOUBLE-BUFFER "which buffer is being served"
 ; pointer -- the high byte of CAL_BUF ($E6) or CAL_BUF2 ($E8), CAL_CNT (below)
 ; being the low byte. TWO 256-byte buffers, not one, because a SINGLE buffer's
@@ -2953,9 +2965,9 @@ VRAM_FLAG       equ     $EBE9   ; 1 = ",S" VRAM save/load (1)
 ; pre-fetched other one". Dead outside a cassette ASCII LOAD/CLOAD — never live
 ; at the same time as a BSAVE/BLOAD ",S" — so it reuses the same free gap (like
 ; IN_RDLEN and FILES_ENTIDX below overlay each other).
-CAL_CNT         equ     $EBEA   ; cassette ASCII load: read position in the
+CAL_CNT         equ     $ECEA   ; cassette ASCII load: read position in the
                                 ; current 256-byte tape block, 0..255 (1)
-CAL_NEEDFILL    equ     $EBEB   ; cassette ASCII load: whether the buffer CAL_CURHI (1 B)
+CAL_NEEDFILL    equ     $ECEB   ; cassette ASCII load: whether the buffer CAL_CURHI (1 B)
                                 ; does NOT point at holds a live pre-fetched block.
                                 ; 0 = it does (the normal, steady-state case: swap
                                 ; to it freely on drain). 1 = a read-ahead attempt
@@ -2972,7 +2984,7 @@ CAL_NEEDFILL    equ     $EBEB   ; cassette ASCII load: whether the buffer CAL_CU
 ; the stack across TAPIN (requirement 1 in cload.asm). Overlays CAS_WCNT ($E0EC):
 ; that is the cassette SAVE block counter, dead during a LOAD, so the two never
 ; collide.
-CAL_SAVE        equ     $EBEC   ; cassette ASCII load: parked byte across a prefetch (1)
+CAL_SAVE        equ     $ECEC   ; cassette ASCII load: parked byte across a prefetch (1)
 ; Cassette ASCII SAVE (save.asm cas_wbyte) block-fill counter: bytes buffered into
 ; CAS_WBUF for the current 256-byte tape data block, 0..255 (§0.1). cas_wbyte does
 ; NOT TAPOUT per byte — like the READ side's block buffer, tape signalling is
@@ -2985,21 +2997,21 @@ CAL_SAVE        equ     $EBEC   ; cassette ASCII load: parked byte across a pref
 ; then drives the flush loop (it is 0 at flush entry). Dead outside a cassette ASCII
 ; SAVE — never live with a BSAVE (VRAM_FLAG) or a cassette ASCII LOAD (CAL_CNT) — so
 ; it reuses the same $E0E9..$E0EC free gap (the last byte, $E0EC).
-CAS_WCNT        equ     $EBEC   ; cassette ASCII save: bytes buffered in the
+CAS_WCNT        equ     $ECEC   ; cassette ASCII save: bytes buffered in the
                                 ; current 256-byte tape data block, 0..255 (1)
 ; SAVE / BSAVE program-image source-walk pointers (page $E0; dead outside a
 ; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
 ; disk_putword's word-emit (the FAT12 engine's own write buffering lives in its
 ; FWR_* scratch, basic/fat.asm — NOT here).
-DSV_PTR         equ     $EBED   ; SAVE: current source byte pointer (2)
-DSV_END         equ     $EBEF   ; SAVE/BSAVE: last source byte addr, inclusive (2)
+DSV_PTR         equ     $ECED   ; SAVE: current source byte pointer (2)
+DSV_END         equ     $ECEF   ; SAVE/BSAVE: last source byte addr, inclusive (2)
 ; Tape CSAVE / BSAVE write scratch (page $E0, $E0F1.. gap; dead outside a tape
 ; CSAVE/BSAVE). All state lives in RAM — TAPOUT clobbers every register, so no
 ; register can survive a TAPOUT call.
-TSV_PTR         equ     $EBF1   ; tape save: current source-byte pointer (2)
-TSV_END         equ     $EBF3   ; tape save: last source-byte address, inclusive (2)
-TSV_CNT         equ     $EBF5   ; tape save: loop counter (1)
-TSV_NAME        equ     $EBF6   ; tape save: 6-char filename buffer (space-padded) (1 B)
+TSV_PTR         equ     $ECF1   ; tape save: current source-byte pointer (2)
+TSV_END         equ     $ECF3   ; tape save: last source-byte address, inclusive (2)
+TSV_CNT         equ     $ECF5   ; tape save: loop counter (1)
+TSV_NAME        equ     $ECF6   ; tape save: 6-char filename buffer (space-padded) (1 B)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
 ; format.md §3/§4). ALIASED over the tape CSAVE/BSAVE write scratch just above —
 ; CALL FORMAT and a tape CSAVE/BSAVE are distinct top-level statements that never
@@ -3028,18 +3040,18 @@ SSE_OUT         equ     TSV_PTR ; tenant -> main: next statement's start, or
 ; the $E0FC.. gap below LINEBUF ($E100). The dir-walk position lives in the
 ; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a
 ; home that survives the CHPUT register clobber.
-FILES_ENTIDX    equ     $EBFC   ; FILES: dir entry index 0..15 within a sector (1)
+FILES_ENTIDX    equ     $ECFC   ; FILES: dir entry index 0..15 within a sector (1)
 ; Sequential file-channel state (Phase 2). A SINGLE open channel for now (the
 ; loader/file engine has one global FREAD_*/FWR_* state); a MAXFILES channel table
 ; is a later sub-item. FCH_NUM/FCH_MODE persist across statements (OPEN … : LINE
 ; INPUT … : CLOSE); FCH_RDMODE + IN_RDLEN are transient within one read statement.
-FCH_NUM         equ     $EBFD   ; open channel's file number, 0 = none open (1)
-FCH_MODE        equ     $EBFE   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
-FCH_RDMODE      equ     $EBFF   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+FCH_NUM         equ     $ECFD   ; open channel's file number, 0 = none open (1)
+FCH_MODE        equ     $ECFE   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
+FCH_RDMODE      equ     $ECFF   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
 ; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
 ; distinct statements that never run at the same instant, and the per-sector entry
 ; index is dead outside do_files, so the byte is reused (collision-checked).
-IN_RDLEN        equ     $EBFC   ; INPUT#/LINE INPUT#: bytes stored so far (1)
+IN_RDLEN        equ     $ECFC   ; INPUT#/LINE INPUT#: bytes stored so far (1)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats, an allowed
 ; public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is
@@ -3131,7 +3143,7 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 ; dir stamp never disturbs FSECTOR_BUF's in-flight data (same discipline as
 ; disk.asm's SECTOR_BUF/WBUF split). Placed at the diskless floor, $E36A/$E56A
 ; (D-FATFLOOR; $E5C0/$E7C0 before): RAM a diskless machine gives to programs.
-FSECTOR_BUF     equ     $E36A   ; DISK-ONLY: file data / read sector buffer ($E36A..$E569)
+FSECTOR_BUF     equ     $E46A   ; DISK-ONLY: file data / read sector buffer ($E46A..$E669)
 ; D-DSKIO (docs/spec-basic-dskio.md): the word a program reads to find DSKI$'s
 ; sector -- the MSX idiom PEEK(&HF351)+256*PEEK(&HF352), MEASURED on the CF-3300
 ; (its buffer is at $EB95 behind the same cell). Here it names ~~FSECTOR_BUF~~
@@ -3146,7 +3158,7 @@ FSECTOR_BUF     equ     $E36A   ; DISK-ONLY: file data / read sector buffer ($E3
 ; 2026-09-11 (12 planted bytes survived a two-channel/KILL/FILES/DSKF/string/DEF FN
 ; workload) and lies below the sysvar sweep's $F380 floor.
 DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer (2)
-FWBUF           equ     $E56A   ; DISK-ONLY: FAT/dir metadata sector buffer ($E56A..$E769)
+FWBUF           equ     $E66A   ; DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869)
 
 ; D-FATENG Option 2: the shared FAT body (basic/fat-prim-body.inc) is assembled
 ; into sub.rom AND disk.rom and must not spell either ROM's private names, so it
@@ -3162,43 +3174,43 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 ; saw only its own control POKE -- measured at $E5AC, before D-FATFLOOR moved it
 ; +$400); disk.rom's cells end at MBUF_PTR $E9AB, and BASIC's map keeps
 ; $E960..$E9BF for disk.rom.
-FAT_DEFER       equ     $E876   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
+FAT_DEFER       equ     $E976   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9, above disk.rom's cell block).
-FAT_SECPERCLUS  equ     $E9C0   ; sectors per cluster (byte)
-FAT_FATSTART    equ     $E9C1   ; first FAT sector (= reserved sectors) (word)
-FAT_FIRSTROOT   equ     $E9C3   ; first root-directory sector (word)
-FAT_TOTCLUS     equ     $E9C5   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+FAT_SECPERCLUS  equ     $EAC0   ; sectors per cluster (byte)
+FAT_FATSTART    equ     $EAC1   ; first FAT sector (= reserved sectors) (word)
+FAT_FIRSTROOT   equ     $EAC3   ; first root-directory sector (word)
+FAT_TOTCLUS     equ     $EAC5   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
                                 ; was FAT_ROOTSECS, now fat_rootsecs: FIRSTDATA - FIRSTROOT)
-FAT_FIRSTDATA   equ     $E9C7   ; first data sector (word)
-FAT_CURCLUS     equ     $E9C9   ; current cluster in the open file's chain (word)
-FAT_CLUSSEC     equ     $E9CB   ; sector index within current cluster (byte)
-FAT_FIRSTCLUS   equ     $E9CC   ; first cluster of the found file (word)
-FAT_FILESIZE    equ     $E9CE   ; file size in bytes (4-byte LE)
-FAT_NUMFATS     equ     $E9D2   ; number of FAT copies (byte; from BPB +16) (1 B)
-FAT_SECPERFAT   equ     $E9D3   ; sectors per FAT copy (word; from BPB +22)
+FAT_FIRSTDATA   equ     $EAC7   ; first data sector (word)
+FAT_CURCLUS     equ     $EAC9   ; current cluster in the open file's chain (word)
+FAT_CLUSSEC     equ     $EACB   ; sector index within current cluster (byte)
+FAT_FIRSTCLUS   equ     $EACC   ; first cluster of the found file (word)
+FAT_FILESIZE    equ     $EACE   ; file size in bytes (4-byte LE)
+FAT_NUMFATS     equ     $EAD2   ; number of FAT copies (byte; from BPB +16) (1 B)
+FAT_SECPERFAT   equ     $EAD3   ; sectors per FAT copy (word; from BPB +22)
 ; FAT12 working scratch (transient within a single call).
-FAT_PARITY      equ     $E9D5   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
-FAT_BYTEIDX     equ     $E9D6   ; byte index within a FAT sector (word, 0..511)
-FAT_FATSEC      equ     $E9D8   ; FAT sector currently read (word)
-FAT_B0          equ     $E9DA   ; first FAT byte of a 12-bit entry (1 B)
-FAT_B1          equ     $E9DB   ; second FAT byte of a 12-bit entry (1 B)
-FAT_NAMEPTR     equ     $E9DC   ; -> 11-byte search name (word)
-FAT_DIRSEC      equ     $E9DE   ; current root-dir sector being scanned (word)
-FAT_DIRREM      equ     $E9E0   ; root-dir sectors remaining to scan (word)
-FAT_WRTMP       equ     $E9E2   ; transient scratch for the FAT12 write helpers (word)
-FAT_WRTMP2      equ     $E9E4   ; second transient (free-cluster scan cached sector) (2 B)
+FAT_PARITY      equ     $EAD5   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
+FAT_BYTEIDX     equ     $EAD6   ; byte index within a FAT sector (word, 0..511)
+FAT_FATSEC      equ     $EAD8   ; FAT sector currently read (word)
+FAT_B0          equ     $EADA   ; first FAT byte of a 12-bit entry (1 B)
+FAT_B1          equ     $EADB   ; second FAT byte of a 12-bit entry (1 B)
+FAT_NAMEPTR     equ     $EADC   ; -> 11-byte search name (word)
+FAT_DIRSEC      equ     $EADE   ; current root-dir sector being scanned (word)
+FAT_DIRREM      equ     $EAE0   ; root-dir sectors remaining to scan (word)
+FAT_WRTMP       equ     $EAE2   ; transient scratch for the FAT12 write helpers (word)
+FAT_WRTMP2      equ     $EAE4   ; second transient (free-cluster scan cached sector) (2 B)
 ; Read byte-stream state (fat_io_open / fat_io_getbyte).
-FREAD_OFF       equ     $E9E6   ; next byte index within FSECTOR_BUF (0..512) (word)
-FREAD_LEFT      equ     $E9E8   ; bytes of the open file still undelivered (4-byte LE)
+FREAD_OFF       equ     $EAE6   ; next byte index within FSECTOR_BUF (0..512) (word)
+FREAD_LEFT      equ     $EAE8   ; bytes of the open file still undelivered (4-byte LE)
 ; Write byte-stream state (fat_io_create / fat_io_putbyte / fat_io_close).
-FWR_CLUS        equ     $E9EC   ; chain-tail cluster currently being filled (word)
-FWR_FIRST       equ     $E9EE   ; file's first cluster, 0 until first allocated (word)
-FWR_SECIDX      equ     $E9F0   ; sector index within the current cluster (byte)
-FWR_BUFLEN      equ     $E9F1   ; bytes currently buffered in FSECTOR_BUF (word, 0..512)
-FWR_BYTES       equ     $E9F3   ; total bytes written so far = final file size (4-byte LE)
-FWR_DIRSEC      equ     $E9F7   ; logical sector holding the open file's dir entry (word)
-FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its sector (word)
+FWR_CLUS        equ     $EAEC   ; chain-tail cluster currently being filled (word)
+FWR_FIRST       equ     $EAEE   ; file's first cluster, 0 until first allocated (word)
+FWR_SECIDX      equ     $EAF0   ; sector index within the current cluster (byte)
+FWR_BUFLEN      equ     $EAF1   ; bytes currently buffered in FSECTOR_BUF (word, 0..512)
+FWR_BYTES       equ     $EAF3   ; total bytes written so far = final file size (4-byte LE)
+FWR_DIRSEC      equ     $EAF7   ; logical sector holding the open file's dir entry (word)
+FWR_DIROFF      equ     $EAF9   ; byte offset of that dir entry within its sector (word)
 ; DISKOP marshalling block (repack eviction, docs/spec-evict-diskfile-cluster.md
 ; §11): the FAT12 primitive/sector layer's resident<->tenant ABI. Claims the
 ; LAST 5 free bytes below FCH_CTX ($E9FB..$E9FF, between FWR_DIROFF+2 and the
@@ -3211,15 +3223,15 @@ FWR_DIROFF      equ     $E9F9   ; byte offset of that dir entry within its secto
 ; primitive call clobber the caller's own live loop variables mid-walk. RAM,
 ; so visible from main (page-1 resident shims) and the sub-ROM page-1 tenant
 ; (sub/fatprim.asm) alike.
-DISKOP_OP       equ     $E9FB   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
-DISKOP_STATUS   equ     $E9FC   ; tenant -> main: the disposition (1 B)
+DISKOP_OP       equ     $EAFB   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+DISKOP_STATUS   equ     $EAFC   ; tenant -> main: the disposition (1 B)
                                 ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
                                 ; or no-match (NZ), per primitive
-DISKOP_A        equ     $E9FD   ; tenant -> main: the primitive's real A output,
+DISKOP_A        equ     $EAFD   ; tenant -> main: the primitive's real A output,
                                 ; if it has one (read_sector/write_sector's DSKIO
                                 ; error code); reloaded uniformly even where no
                                 ; caller currently reads it (1)
-DISKOP_HL       equ     $E9FE   ; tenant -> main: the primitive's real HL output
+DISKOP_HL       equ     $EAFE   ; tenant -> main: the primitive's real HL output
                                 ; (fat_alloc_cluster's allocated cluster number);
                                 ; reloaded uniformly for every primitive (2)
 ; fat_count_free's DE output (free cluster count) is NOT a new DISKOP_DE cell --
@@ -3417,10 +3429,10 @@ RN_LINE         equ     SL_SIZE         ; RENUM: the OLD number of the line it i
 ; to a grep and is not: $E000 is the demo blob's "JONG" marker / POKE test
 ; target (the RAM-scratch header above says so in as many words), and a 2-byte
 ; cell at $E00F runs straight over ERRMARK at $E010.
-RN_PTR          equ     $EA30           ; RENUM: the reference-pass cursor (2)
-RN_NEW          equ     $EA32           ; RENUM: first new line number (2)
-RN_OLD          equ     $EA34           ; RENUM: old line to start renumbering at (2)
-RN_INC          equ     $EA36           ; RENUM: increment (2)
+RN_PTR          equ     $EB30           ; RENUM: the reference-pass cursor (2)
+RN_NEW          equ     $EB32           ; RENUM: first new line number (2)
+RN_OLD          equ     $EB34           ; RENUM: old line to start renumbering at (2)
+RN_INC          equ     $EB36           ; RENUM: increment (2)
 ; AUTO's two values, a FIFTH namespace on RENUM's own cells: one subrom_call
 ; reaches one LE_OP, and an AUTO session and a RENUM cannot be in flight
 ; together (each ends the line and the program on its way out).
@@ -3430,7 +3442,7 @@ AU_INC          equ     RN_INC          ; AUTO: the increment (2)
 ; BREAKX (an AUTO session), because Ctrl-STOP is NOT a character and can never
 ; arrive through CHGET -- R-AU8. Cleared defensively at the top of `repl`, so a
 ; line that ERRORS out of an AUTO session cannot leave the prompt polling.
-RL_AUTO         equ     $EA38           ; read_line: 1 = AUTO's polling mode (1)
+RL_AUTO         equ     $EB38           ; read_line: 1 = AUTO's polling mode (1)
 
 ; --- D-LPTVERB: the printer column ------------------------------------------
 ; LPOS(n)'s source, and LPRINT's flush condition. 0-based: 0 = the printer head
@@ -3450,7 +3462,7 @@ RL_AUTO         equ     $EA38           ; read_line: 1 = AUTO's polling mode (1)
 ; both "zero on CR only" and "zero on CR or LF" satisfy R-LS3 (after CR/LF the
 ; count is 0 either way). LF is simply not counted as an advance here; that is a
 ; CHOICE, recorded as one, not a measured rule.
-LPTPOS          equ     $EA39           ; printer head column, 0-based (1)
+LPTPOS          equ     $EB39           ; printer head column, 0-based (1)
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER
@@ -3659,14 +3671,14 @@ PLAY_DEF_VOLUME equ     8
 ; Marshalling: audio and disk are never in flight together (a PLAY does no disk
 ; I/O, one subrom_call reaches one tenant), so audio reuses the DISKOP cells --
 ; the same "separate namespace, same cell" precedent as fatprim vs dirverb above.
-AUDIO_VMASK     equ     DISKOP_OP       ; $E9FB main->tenant: voices-present bitmask
-AUDIO_STATUS    equ     DISKOP_STATUS   ; $E9FC tenant->main: 0 ok / nonzero ERR code
+AUDIO_VMASK     equ     DISKOP_OP       ; $EAFB main->tenant: voices-present bitmask
+AUDIO_STATUS    equ     DISKOP_STATUS   ; $EAFC tenant->main: 0 ok / nonzero ERR code
 ; play_parse_tenant parse scratch -- transient, dead outside a PLAY parse. Reuses
 ; the DISKOP result cells ($E9FD-FF, audio/disk never concurrent) + the unused
 ; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
 ; do not use in 2a). The persistent per-voice state (octave/length/tempo/...) lives
 ; in the VCBs; the source cursor rides HL and the byte count B during a voice parse.
-PLY_NUMOVF      equ     DISKOP_A        ; $E9FD (1): pt_number 16-bit overflow latch
+PLY_NUMOVF      equ     DISKOP_A        ; $EAFD (1): pt_number 16-bit overflow latch
 ;                 (was PLY_NUM, a 'decimal number-literal accumulator' that NOTHING
 ;                 referenced -- the accumulator rides HL. D-PLAYCORNER repurposes the
 ;                 byte: a wrapped number literal must REJECT, not alias into range)
@@ -3721,7 +3733,7 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; for the same reason: the arithmetic lives sub-side (sub/strheap.asm
 ; strheap_varceil / op 18) where ROM is not scarce, so `CLEAR n`, `CLEAR ,himem`
 ; and `MAXFILES=n` are all picked up for free by the next derivation.
-FCH_STATE0      equ     FAT_CURCLUS         ; $E9C9 — base of the per-channel state span
+FCH_STATE0      equ     FAT_CURCLUS         ; $EAC9 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
                                 ; 15) — free now that unused channels cost nothing
@@ -3784,35 +3796,35 @@ DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 
 ; 2026-09-21; $EE40..$EE63 is simply UNCLAIMED, which is not the same as free.
 FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:1]
 FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
-FLD_TAB         equ     $EE64   ; field table base ($EE64..$EEC3, 96 bytes)
-FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EEC4
+FLD_TAB         equ     $EF64   ; field table base ($EF64..$EFC3, 96 bytes)
+FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $EFC4
 ; --- Phase 2c slice 2: GET/PUT random-record I/O scratch -------------------
 ; Transient (dead outside a single GET/PUT statement; one statement runs at a time,
 ; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
 ; by keeping its loop state here in RAM. Free gap above FLD_TAB, below FLD_DESC
 ; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
-GP_RECNO        equ     $EEC4   ; record number, 1-based (2 B)
-GP_SEC          equ     $EEC6   ; file logical-sector index of the record (2)
-GP_WITHIN       equ     $EEC8   ; byte offset of the record within its sector (0/256, 2) (2 B)
-GP_CLUS         equ     $EECA   ; current cluster during the chain walk (2)
-GP_CLIDX        equ     $EECC   ; cluster steps still to walk (2)
-GP_SECINCL      equ     $EECE   ; sector index within the final cluster (1)
-GP_PHYS         equ     $EECF   ; resolved absolute physical sector (2)
-GP_OLDNSEC      equ     $EED1   ; file's old sector count (ceil(size/512), 2) (2 B)
-GP_FLAGS        equ     $EED3   ; bit0 = extend (PUT allocates; GET does not) (1)
-GP_MODE         equ     $EED4   ; 0 = GET (read), 1 = PUT (write) (1)
-GP_CHAN         equ     $EED5   ; the channel number being GET/PUT (1)
+GP_RECNO        equ     $EFC4   ; record number, 1-based (2 B)
+GP_SEC          equ     $EFC6   ; file logical-sector index of the record (2)
+GP_WITHIN       equ     $EFC8   ; byte offset of the record within its sector (0/256, 2) (2 B)
+GP_CLUS         equ     $EFCA   ; current cluster during the chain walk (2)
+GP_CLIDX        equ     $EFCC   ; cluster steps still to walk (2)
+GP_SECINCL      equ     $EFCE   ; sector index within the final cluster (1)
+GP_PHYS         equ     $EFCF   ; resolved absolute physical sector (2)
+GP_OLDNSEC      equ     $EFD1   ; file's old sector count (ceil(size/512), 2) (2 B)
+GP_FLAGS        equ     $EFD3   ; bit0 = extend (PUT allocates; GET does not) (1)
+GP_MODE         equ     $EFD4   ; 0 = GET (read), 1 = PUT (write) (1)
+GP_CHAN         equ     $EFD5   ; the channel number being GET/PUT (1)
 ; --- PRINT USING formatted-output scratch (Phase 2) ------------------------
 ; Transient (dead outside one PRINT USING statement). The format string is copied
 ; here so it survives the str_eval calls that evaluate the string VALUES (a literal
 ; format lives in the volatile STRSCR otherwise). Free gap $EED6..$EEFF, below
 ; FLD_DESC ($EF00). See basic/printusing.asm.
-PU_FMT          equ     $EED6   ; copied format string ($EED6..$EEF5, 32 chars)
+PU_FMT          equ     $EFD6   ; copied format string ($EFD6..$EFF5, 32 chars)
 PU_FMTMAX       equ     32      ; format length cap (longer formats truncate)
-PU_FMTLEN       equ     $EEF6   ; live format length (1)
-PU_POS          equ     $EEF7   ; current scan index into PU_FMT (1)
-PU_W            equ     $EEF8   ; current field width (1)
-PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+PU_FMTLEN       equ     $EFF6   ; live format length (1)
+PU_POS          equ     $EFF7   ; current scan index into PU_FMT (1)
+PU_W            equ     $EFF8   ; current field width (1)
+PU_TYPE         equ     $EFF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
                                 ; BIT2 = D-PUDOLLAR's floating `$`, a MODIFIER on
                                 ; the numeric type rather than a type of its own.
                                 ; It lives here because PU_FLAGS is FULL (bit0
@@ -3821,8 +3833,8 @@ PU_TYPE         equ     $EEF9   ; field type: 0 num #, 1 str &, 2 str !, 3 str \
                                 ; and D-PUEXP) while PU_TYPE's four values need
                                 ; only bits 0-1. Every reader must therefore mask:
                                 ; `and $03` for the type, `and $04` for the flag.
-PU_FLAGS        equ     $EEFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
-PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
+PU_FLAGS        equ     $EFFA   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
+PU_WP           equ     $EFFB   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
                                 ; PU_COMMAS / PU_DEC below; see the block there
 ; 🔴 THE $EED6..$EEFF GAP IS FULL: PU_WP ends at $EEFC and FMT_SEC / FMT_DESC own
 ; $EEFD..$EEFF. D-PUDOT first put PU_DEC at $EEFE saying "free byte in the same
@@ -3858,18 +3870,18 @@ PU_WP           equ     $EEFB   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; they were DERIVED equates, not code; the assembler found them. Each now takes
 ; a declared FREE-RAM run of its own: both are live at once and while
 ; PRINT USING's field is being built in the render window (DB_WIN).
-PU_NUM          equ     $EA60   ; PRINT USING numeric render buffer, 0-terminated (32 B)
-PU_DIG          equ     $EB5A   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
-PU_COMMAS       equ     $EEFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
-PU_DEC          equ     $EEFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
+PU_NUM          equ     $EB60   ; PRINT USING numeric render buffer, 0-terminated (32 B)
+PU_DIG          equ     $EC5A   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
+PU_COMMAS       equ     $EFFB   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
+PU_DEC          equ     $EFFC   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
 ; the sub-ROM page-1 tenant owns these two cells (it runs the build/write loop).
 ; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
-FMT_SEC         equ     $EEFD   ; CALL FORMAT: current sector index being written (1)
-FMT_DESC        equ     $EEFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
-FLD_DESC        equ     $E26A   ; DISK-ONLY: transient fielded-read descriptor [len][bytes:255] (256 B)
+FMT_SEC         equ     $EFFD   ; CALL FORMAT: current sector index being written (1)
+FMT_DESC        equ     $EFFE   ; CALL FORMAT: chosen geometry descriptor pointer (2)
+FLD_DESC        equ     $E36A   ; DISK-ONLY: transient fielded-read descriptor [len][bytes:255] (256 B)
 ; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
 ; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
 ; it in place of the old hard-wired 256: a record of r bytes tiles the 512-byte
@@ -3882,11 +3894,11 @@ FLD_DESC        equ     $E26A   ; DISK-ONLY: transient fielded-read descriptor [
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
 ; same freed $EA00 page-3 window as FCH_MODES.
-FCH_RECLENS     equ     $EA10   ; 32 B ($EA10..$EA2F). ~~$EA92..$EAFF free (110 B)~~
+FCH_RECLENS     equ     $EB10   ; 32 B ($EB10..$EB2F). ~~$EA92..$EAFF free (110 B)~~
                                 ; \U0001f534 STALE SINCE D-DEFFN: $EA9C..$EB00 is FN_PAREA
                                 ; (tools/ram_map.py). A comment claiming free RAM is a
                                 ; claim; the band below was ASKED of the machine.
-FCH_RECNOS      equ     $EA40   ; 32 B ($EA40..$EA5F): per-channel record number
+FCH_RECNOS      equ     $EB40   ; 32 B ($EB40..$EB5F): per-channel record number
                                 ; of the last GET/PUT
                                 ; 🔴 THE RANGE IS SPELLED OUT BECAUSE "32 B"
                                 ; ALONE WAS NOT ENOUGH (D-RAMGATE, 2026-09-21):
@@ -4005,8 +4017,8 @@ CAS_VMIS        equ     $F019   ; sticky: 1 = a verify mismatch was seen (1)
 ; That is not a convenience: D-CTLCROSS (§12) measured that BOTH references
 ; refuse to match a `FOR` frame lying below a live GOSUB frame, and this is the
 ; invariant that reproduces it with no per-frame type tag and no walk.
-GSP             equ     $EB41   ; newest GOSUB frame's address; == CTLTOP if none (2)
-FSP             equ     $EB43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
+GSP             equ     $EC41   ; newest GOSUB frame's address; == CTLTOP if none (2)
+FSP             equ     $EC43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
 ; D-FORFLOAT (docs/spec-basic-forfloat.md): a FOR frame is 25 B, the reference's
 ; own size (docs/reference-stack-frames.md §2), laid out
 ;   [name1][name0][type] [limit: type + 8] [step: type + 8] [CURLINE:2] [body:2]
@@ -4015,14 +4027,14 @@ FSP             equ     $EB43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) 
 ; evaluator's own combine_add / combine_cmp, int16 fast path and BCD alike.
 FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
-SEQ_EOF         equ     $EB45   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
-; FREE-RAM $EB48..$EB50  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
-FOR_CUR         equ     $EB9C   ; scratch: a working copy of one FOR frame (25), and
+SEQ_EOF         equ     $EC45   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
+; FREE-RAM $EC48..$EC50  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
+FOR_CUR         equ     $EC9C   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the
                                 ; match, so the two uses cannot collide). D-FORFLOAT
                                 ; moved it into the declared-free remainder of the
-                                ; pre-D-FORVAR FOR stack ($EB9C..$EBB8, 28 B; it was
+                                ; pre-D-FORVAR FOR stack ($EC9C..$ECB8, 28 B; it was
                                 ; $E09C..$E0B8 until D-RAMSHIFT moved the block +$0B00).
 FOR_LIM         equ     FOR_CUR + 3     ; the limit slot [type][8] (9)
 FOR_STEP        equ     FOR_CUR + 12    ; the step slot [type][8] (9)
@@ -4035,7 +4047,7 @@ FOR_SIGN        equ     FOR_CUR + 25    ; NEXT's scratch: the step's sign byte (
 ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
 ; bytes are the pool's own pointers and $E058..$E080 was FREE (addresses as of
 ; that slice: D-RAMSHIFT moved the block +$0B00 on 2026-10-13).
-CSP             equ     $EB50   ; the pool's allocation frontier, descending (2)
+CSP             equ     $EC50   ; the pool's allocation frontier, descending (2)
 ; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
 ; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
 ; cannot be allowed down to `CTLLIM` -- the next expression the evaluator
@@ -4101,9 +4113,9 @@ STK_EDGE_RESERVE equ    116
 ; (142 refused n=13 -- scratchpad/storeedge_after.out; storeedge_s3.out is 141).
 ; With 116 zerobas stored the 32-byte line both references refuse.
 STK_STORE_RESERVE equ   141
-CTLTOP          equ     $EB52   ; the pool's TOP = strheap_varceil(), cached (2)
-TSP             equ     $EB54   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
-CTLLIM          equ     $EB56   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
+CTLTOP          equ     $EC52   ; the pool's TOP = strheap_varceil(), cached (2)
+TSP             equ     $EC54   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
+CTLLIM          equ     $EC56   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
                                 ; sub-side by strheap_ctllim at the two allocator
                                 ; success paths and at reset; read by the main ROM's
                                 ; ctl_alloc on every push. ARYEND needs an array-chain
@@ -4128,7 +4140,7 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; GOSUB (docs/spec-basic-forret.md §4). Both are
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
-SL_CEIL         equ     $EB58   ; store_line: the ceiling a store stays below (2 B)
+SL_CEIL         equ     $EC58   ; store_line: the ceiling a store stays below (2 B)
                                 ; i.e. the VARIABLE region's. D-TXTCEIL: written
                                 ; by dl_store from fch_ctx_addr(1) -- channel 1's
                                 ; block base IS strheap_varceil() -- and read by
@@ -4146,28 +4158,28 @@ SL_CEIL         equ     $EB58   ; store_line: the ceiling a store stays below (2
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
 ; D-CURSORBLOCK (2026-09-26): the line editor's block cursor (sub/cursor.asm).
-CSR_ADDR        equ     $EB7A   ; VRAM address of the cell the cursor covers (2 B)
-CSR_CHAR        equ     $EB7C   ; the character it covers, put back on removal (1 B)
-CSR_ON          equ     $EB7D   ; 1 while the cursor is shown, else 0 (1 B)
-; FREE-RAM $EB7E..$EB80  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3; CSR_* $E07A..$E07D, D-CURSORBLOCK) [D-RAMSHIFT: was $E07E..$E080]
+CSR_ADDR        equ     $EC7A   ; VRAM address of the cell the cursor covers (2 B)
+CSR_CHAR        equ     $EC7C   ; the character it covers, put back on removal (1 B)
+CSR_ON          equ     $EC7D   ; 1 while the cursor is shown, else 0 (1 B)
+; FREE-RAM $EC7E..$EC80  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3; CSR_* $E07A..$E07D, D-CURSORBLOCK) [D-RAMSHIFT: was $E07E..$E080]
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
 ; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
 ; and clobber FAT_FIRSTCLUS/FAT_FILESIZE. 17 B from the band below.
-COPY_SRC        equ     $EB80   ; the source's 11-byte 8.3 name field
-COPY_CLUS       equ     $EB8B   ; the source's first cluster (word)
-COPY_LEFT       equ     $EB8D   ; bytes still to copy (4-byte LE)
+COPY_SRC        equ     $EC80   ; the source's 11-byte 8.3 name field
+COPY_CLUS       equ     $EC8B   ; the source's first cluster (word)
+COPY_LEFT       equ     $EC8D   ; bytes still to copy (4-byte LE)
 ; D-SCREDIT (docs/spec-basic-screditor.md): read_line's marshalling to the readline
 ; tenant, 6 B from the same band.
-RL_HL           equ     $EB91   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
-RL_STAT         equ     $EB93   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
-RL_ROW0         equ     $EB94   ; the row where input began (1-based; 0 once scrolled off) (1)
-RL_COL0         equ     $EB95   ; the column where input began, after any prompt (1)
-RL_LAST         equ     $EB96   ; the logical line's last row at Enter (1)
-RL_KEY          equ     $EB97   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
+RL_HL           equ     $EC91   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
+RL_STAT         equ     $EC93   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
+RL_ROW0         equ     $EC94   ; the row where input began (1-based; 0 once scrolled off) (1)
+RL_COL0         equ     $EC95   ; the column where input began, after any prompt (1)
+RL_LAST         equ     $EC96   ; the logical line's last row at Enter (1)
+RL_KEY          equ     $EC97   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
 ; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
 ; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
 ; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
-DISKOP_ERR      equ     $EB98   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+DISKOP_ERR      equ     $EC98   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
 ; D-FNPOOL (docs/spec-basic-fnpool.md): `DEF FN` frames come from the CONTROL POOL
 ; now, not from below `SP`, so a nested call's saved formals are ADDRESSABLE and
 ; the GC can walk them (the live-frame walk alone left an outer call's string
@@ -4176,9 +4188,9 @@ DISKOP_ERR      equ     $EB98   ; tenant -> main: ERR code of the last DSKIO fai
 ;     [prevFNSP:2][size:1][the saved FN_BASE prefix: size]
 ; so one past the frame IS the CSP the call started with -- the restore needs no
 ; second cell, and the abort unwind walks the chain to the outermost.
-FNSP            equ     $EB99   ; newest FN frame's address, 0 = no FN call live (2)
-FN_FST          equ     $EB9B   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
-; FREE-RAM $EBB6..$EBB8  the rest of the pre-D-FORVAR FOR stack (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B, D-FORFLOAT's FOR_CUR + FOR_SIGN $E09C..$E0B5) [D-RAMSHIFT: was $E0B6..$E0B8]
+FNSP            equ     $EC99   ; newest FN frame's address, 0 = no FN call live (2)
+FN_FST          equ     $EC9B   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
+; FREE-RAM $ECB6..$ECB8  the rest of the pre-D-FORVAR FOR stack (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B, D-FORFLOAT's FOR_CUR + FOR_SIGN $E09C..$E0B5) [D-RAMSHIFT: was $E0B6..$E0B8]
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
 ; passes, and these two words are the state that has to survive `frnd_locate`,
@@ -4188,8 +4200,8 @@ FN_FST          equ     $EB9B   ; tenant -> main: 0 = frame saved, 1 = pool full
 ; aliasing shape this tree keeps paying for. $EA3A is watched by
 ; `make ramfree-acceptance`, which fills every declared span and runs nine
 ; subsystems over it -- so "nothing else writes here" is a measurement.
-GP_SRC          equ     $EA3A   ; pass cursor into FSECTOR_BUF (2)
-GP_LEFT         equ     $EA3C   ; record bytes still to move, ends $EA3E (2 B)
+GP_SRC          equ     $EB3A   ; pass cursor into FSECTOR_BUF (2)
+GP_LEFT         equ     $EB3C   ; record bytes still to move, ends $EA3E (2 B)
 ; --- D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ----------------------
 ; `COLOR 7,99` must leave the foreground UNCHANGED: both references reject the
 ; statement ATOMICALLY, and zerobas stored each component as it validated it.
@@ -4203,9 +4215,9 @@ GP_LEFT         equ     $EA3C   ; record bytes still to move, ends $EA3E (2 B)
 ; merely unnamed: `make ramfree-acceptance` fills it and runs nine subsystems over
 ; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,
 ; disk I/O and FILES — all leaving it at 0 bytes changed (D-RAMFIX).
-CLR_SAVE        equ     $EA3E   ; fg+bg, in flight across a COLOR statement (2)
-; FREE-RAM $EA80..$EA92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; PU_NUM $EA60..$EA7F, D-DETOKBUF S3, 2026-09-26)
-FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY as
+CLR_SAVE        equ     $EB3E   ; fg+bg, in flight across a COLOR statement (2)
+; FREE-RAM $EB80..$EB92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; PU_NUM $EA60..$EA7F, D-DETOKBUF S3, 2026-09-26)
+FOR_STK_END     equ     $EB92   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
 ; --- DEF FN: the parameter (shadow) area -----------------------------------
 ; D-DEFFN (docs/deffn-design-2026-08-22.md §2, docs/deffn-ramhunt-2026-08-22.md).
@@ -4222,7 +4234,7 @@ FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY 
 ; [value:2/4/8] -- which is what lets sub/arrays.asm's scv_find hand one back to
 ; var_load_fac / var_store_fac / str_get_key / str_set_key unchanged.
 ;
-; ⚠️ THE WINDOW IS $EA92..$EB00, 110 B, MEASURED not read: no name in basic/,
+; ⚠️ THE WINDOW IS $EB92..$EC00, 110 B, MEASURED not read: no name in basic/,
 ; sub/ or disk/ claims it (tools/ram_map.py) and 14 of 14 empirical
 ; rows -- a FULL FOR stack and a NINTH frame, GOSUB, the crunch, PAINT, DRAW,
 ; PLAY's ISR, strings, a disk write round trip, FILES -- changed 0 bytes of it
@@ -4249,7 +4261,7 @@ FOR_STK_END     equ     $EA92   ; RETIRED AS A STACK; the literal survives ONLY 
 ; them exactly as it carries FN_FEND/FN_SLOTP/FN_RTYPE. o.nestsame is the row.
 ; ⚠️ The price is 8 more bytes of Z80 stack per NESTED call (11 saved, not 3);
 ; a top-level FNA(2) still saves 11 rather than the 110 a fixed block would.
-FN_BASE         equ     FOR_STK_END     ; $EA92: base of the whole DEF FN frame
+FN_BASE         equ     FOR_STK_END     ; $EB92: base of the whole DEF FN frame
 FN_PTR          equ     FN_BASE         ; 2 B: the call cursor, main <-> tenant
 FN_DPTR         equ     FN_BASE + 2     ; 2 B: the definition cursor, tenant-only
 ; ⚠️ THERE IS NO `FN_REQ` CELL, AND THERE WAS: the request/answer byte travels
@@ -4273,7 +4285,7 @@ FN_SLOTSZ       equ     11              ; [name0][name1][type][value:8] -- a sca
 ; D-RAMBUF (2026-10-12): the area ran "up to LINEBUF" while LINEBUF sat at $EB00;
 ; LINEBUF is the reference's BUF now, so the old boundary is its OWN constant and
 ; FN_MAXP stays 9 (the page assert below caught the derived ceiling moving).
-FN_PAREA_CEIL   equ     $EB00           ; NOT-A-CELL: the parameter area's fixed top
+FN_PAREA_CEIL   equ     $EC00           ; NOT-A-CELL: the parameter area's fixed top
 FN_AREA         equ     ((FN_PAREA_CEIL - FN_PAREA)/FN_SLOTSZ)*FN_SLOTSZ
 FN_MAXP         equ     FN_AREA/FN_SLOTSZ   ; the ceiling IS this division (9)
 FN_PAREA_END    equ     FN_PAREA + FN_AREA
@@ -4308,9 +4320,10 @@ FN_STK_FLOOR    equ     $F200
                 db      FN_PAREA_CROSSES_A_PAGE__8BIT_SLOT_WALK_WOULD_CARRY
     ENDIF
 ; D-CTLPOOL: FOR_STK is retired, so this no longer guards a live stack -- but
-; FN_BASE is PINNED at $EA92 and the assert is what says so out loud.
-    IF FN_BASE != $EA92
-                db      FN_PAREA_MOVED__FN_BASE_IS_PINNED_AT_EA92
+; FN_BASE is PINNED at $EB92 and the assert is what says so out loud ($EA92 until
+; D-STRSCRBUF's one-page shift, which moved FN_PAREA_CEIL $EB00 -> $EC00 with it).
+    IF FN_BASE != $EB92
+                db      FN_PAREA_MOVED__FN_BASE_IS_PINNED_AT_EB92
     ENDIF
     IF FN_MAXP < 9
                 db      FN_PARAM_CEILING_BELOW_THE_MEASURED_NINE
@@ -4318,10 +4331,10 @@ FN_STK_FLOOR    equ     $F200
 ; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
 ; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
 ; stored program at run time and a DATA cursor walks the $84-tagged statements.
-DATASTATE       equ     $EBB8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
-DATAPTR         equ     $EBB9   ; next unread DATA item (ASCII) in the program (2)
-DATALINE        equ     $EBBB   ; link-field of the line holding DATAPTR (2)
-RESTORE_LINE    equ     $EBBD   ; link-field a READ seeks DATA from when unpositioned (2)
+DATASTATE       equ     $ECB8   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
+DATAPTR         equ     $ECB9   ; next unread DATA item (ASCII) in the program (2)
+DATALINE        equ     $ECBB   ; link-field of the line holding DATAPTR (2)
+RESTORE_LINE    equ     $ECBD   ; link-field a READ seeks DATA from when unpositioned (2)
 ; $E0BF was READVAR — the ONE letter ex_read latched as its target name. D-READVAR
 ; (docs/spec-basic-readvar.md) routes READ's target through var_name_key, which
 ; carries the whole (name, suffix) key in BC across the DATA read, so there is no

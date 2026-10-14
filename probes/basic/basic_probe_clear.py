@@ -126,7 +126,19 @@ STREND       = 0xF6C6   # 2 bytes: end-of-string-space pointer
 TXTTAB       = 0xF676   # 2 bytes: BASIC text base pointer
 
 # zerobas error landmark (basic/sysvars.inc — own source)
-ERRMARK      = 0xEB10   # D-RAMSHIFT 2026-10-13: was 0xE010 (+$0B00)
+def _sym(name):
+    # READ, never copied: hand copies went stale on D-RAMSHIFT (+$0B00) and again on
+    # D-STRSCRBUF's one-page shift (2026-10-14); wall-literal-check rule A caught both.
+    import re as _re
+    _repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    for ln in open(os.path.join(_repo, "build", "basic-reloc.sym")):
+        m = _re.match(rf"^{name}\s+EQU\s+0?([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+ERRMARK      = _sym("ERRMARK")
 
 # A free RAM sentinel location clear of all cart regions
 SENT         = 0xD000   # free RAM; used by POKE continuation tests

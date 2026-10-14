@@ -122,9 +122,12 @@ def run():
         n = m.mem[STRSCR]
         return bytes(m.mem[STRSCR + 1:STRSCR + 1 + n])
 
-    def setup_line(line):
-        m.poke(LINEBUF, line + b"\x00")
-        m.poke_w(INP_CURSOR, LINEBUF)
+    # D-STRSCRBUF (2026-10-14): STRSCR IS LINEBUF (the reference's BUF), so the
+    # console line lives ONE BYTE UP -- inp_readline (basic/input.asm) moves it
+    # there; this harness calls the splitter directly, so it places it there.
+    def setup_line(line, at=1):
+        m.poke(LINEBUF + at, line + b"\x00")
+        m.poke_w(INP_CURSOR, LINEBUF + at)
         m.poke_w(ARL_GETBYTE, s["linebuf_getbyte"])
 
     def read_field(mode):
@@ -147,8 +150,8 @@ def run():
     report("more_input after '9'(eof) -> ZF", zero(m.call("inpc_more_input")), False)
 
     # an empty line: cursor never advanced -> no more input (guards the too-few path)
-    m.poke(LINEBUF, b"\x00")
-    m.poke_w(INP_CURSOR, LINEBUF)
+    m.poke(LINEBUF + 1, b"\x00")
+    m.poke_w(INP_CURSOR, LINEBUF + 1)
     report("more_input empty line -> ZF", zero(m.call("inpc_more_input")), False)
 
     # line mode (1): commas are DATA, whole line is one field (LINE INPUT)
@@ -158,6 +161,12 @@ def run():
     # a leading space is preserved as a value byte in line mode (LINE INPUT keeps it)
     setup_line(b" hello")
     report("line mode keeps leading space", read_field(1), b" hello")
+
+    # NEGATIVE CONTROL (D-STRSCRBUF): the line at LINEBUF+0, the layout before the
+    # shift -- the splitter's [len] byte IS LINEBUF[0], so the first field cannot
+    # come out right. Proves the one-byte shift is load-bearing.
+    setup_line(b"12,AB,X", at=0)
+    report("NEGATIVE: line at LINEBUF+0 corrupts field 1", read_field(0) != b"12", True)
 
     print()
     print("ALL PASS — console INPUT core (linebuf source, field/line split) matches contract"

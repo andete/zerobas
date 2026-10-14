@@ -25,7 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-from msxtest import Machine  # noqa: E402
+from msxtest import Machine, load_symbols  # noqa: E402
 import mml_ref  # noqa: E402
 
 SUB_ROM = tp("zb_playparse_sub.rom")
@@ -41,8 +41,9 @@ VCB_STRIDE = 0x25
 VCX_VCXLEN = 2
 VCX_VCXPTR = 3
 VCX_TEMPO = 17
-AUDIO_VMASK = 0xE9FB
-AUDIO_STATUS = 0xE9FC
+AUDIO_VMASK = AUDIO_STATUS = None   # read from SUB_SYM by build(): they sit in the
+                                    # moving workspace (a hard-coded copy went stale
+                                    # at D-STRSCRBUF's one-page shift)
 
 QD_STRIDE = 6
 QD_PUT, QD_GET, QD_PUTBAK, QD_SIZE, QD_ADDR = 0, 1, 2, 3, 4
@@ -54,6 +55,9 @@ SRC = 0x8200  # where we place MML source strings (RAM, visible to a page-1 tena
 def build():
     subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
                    cwd=ROOT, check=True, capture_output=True)
+    global AUDIO_VMASK, AUDIO_STATUS
+    s = load_symbols(SUB_SYM)
+    AUDIO_VMASK, AUDIO_STATUS = s["AUDIO_VMASK"], s["AUDIO_STATUS"]
 
 
 def decode_queue(m, voice):

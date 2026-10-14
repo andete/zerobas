@@ -253,30 +253,30 @@ FDC_TRY         equ     $EF32   ; read attempt counter (1 B)
 ; bracketed and are declared outside the contract -- they already overwrote
 ; main RAM before the merge. disk.asm asserts both equalities at build time.
 ; Was $E2A0, on top of main's TEMPPOOL and GFX_* cells.
-SECTOR_BUF      equ     $E36A   ; 512-byte sector buffer ($E36A-$E569) = main FSECTOR_BUF
+SECTOR_BUF      equ     $E46A   ; 512-byte sector buffer ($E46A-$E669) = main FSECTOR_BUF
 
 ; --- FAT12 geometry + iterator state (disk/PROVENANCE.md §Scratch RAM) ------
 ; Filled by fat_mount from the on-disk BPB; the file iterator walks the cluster
 ; chain using them. All own-choice free page-3 RAM after the sector buffer.
-FAT_SECPERCLUS  equ     $E76A   ; sectors per cluster (byte)
-FAT_FATSTART    equ     $E76B   ; first FAT sector (= reserved sectors) (word)
-FAT_FIRSTROOT   equ     $E76D   ; first root-directory sector (word)
-FAT_TOTCLUS     equ     $E76F   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+FAT_SECPERCLUS  equ     $E86A   ; sectors per cluster (byte)
+FAT_FATSTART    equ     $E86B   ; first FAT sector (= reserved sectors) (word)
+FAT_FIRSTROOT   equ     $E86D   ; first root-directory sector (word)
+FAT_TOTCLUS     equ     $E86F   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
                                 ; was FAT_ROOTSECS, now fat_rootsecs: FIRSTDATA - FIRSTROOT)
-FAT_FIRSTDATA   equ     $E771   ; first data sector (word)
-FAT_CURCLUS     equ     $E773   ; current cluster in the open file's chain (word)
-FAT_CLUSSEC     equ     $E775   ; sector index within current cluster (byte)
-FAT_FIRSTCLUS   equ     $E776   ; first cluster of the found file (word)
-FAT_FILESIZE    equ     $E778   ; file size in bytes (4-byte LE)
+FAT_FIRSTDATA   equ     $E871   ; first data sector (word)
+FAT_CURCLUS     equ     $E873   ; current cluster in the open file's chain (word)
+FAT_CLUSSEC     equ     $E875   ; sector index within current cluster (byte)
+FAT_FIRSTCLUS   equ     $E876   ; first cluster of the found file (word)
+FAT_FILESIZE    equ     $E878   ; file size in bytes (4-byte LE)
 ; numFATs / secPerFAT cached at mount so the write path can sync every FAT copy
 ; without re-reading the boot sector (which would clobber SECTOR_BUF mid-flush).
-FAT_NUMFATS     equ     $E824   ; number of FAT copies (byte; from BPB +16) (1 B)
-FAT_SECPERFAT   equ     $E825   ; sectors per FAT copy (word; from BPB +22)
+FAT_NUMFATS     equ     $E924   ; number of FAT copies (byte; from BPB +16) (1 B)
+FAT_SECPERFAT   equ     $E925   ; sectors per FAT copy (word; from BPB +22)
 ; This ROM's own slot byte, captured from A at INIT entry (disk/PROVENANCE.md
 ; §INIT) and used to build the HPHYD CALLF operand. Own-choice free page-3 RAM
-; in the $E95D gap (after FAT_SECPERFAT's word $E825-$E826; $E55D, before WBUF
+; in the $E95D gap (after FAT_SECPERFAT's word $E925-$E926; $E55D, before WBUF
 ; $E560, until D-FATFLOOR moved the block +$400).
-HOOK_SLOT       equ     $E827   ; our slot byte for the HPHYD inter-slot hook (1)
+HOOK_SLOT       equ     $E927   ; our slot byte for the HPHYD inter-slot hook (1)
 ; BDOS_SRCHIDX (M19) — persistent root-directory search cursor for the runtime
 ; SFIRST ($11) / SNEXT ($12) dir-search entries ($4FB8/$5006). Absolute 0-based
 ; index of the NEXT root-dir entry to examine: SFIRST sets it to (first-match+1),
@@ -289,7 +289,7 @@ HOOK_SLOT       equ     $E827   ; our slot byte for the HPHYD inter-slot hook (1
 ; Word (rootEnts <= 254; a word keeps the >>4 sector math clean).
 ; DOS-phase-only (dead during BASIC/loader); SFIRST always seeds it before any
 ; SNEXT reads it, so no init-time build is needed. See disk/PROVENANCE.md §BDOS.
-BDOS_SRCHIDX    equ     $E828   ; runtime dir-search cursor (word; M19)
+BDOS_SRCHIDX    equ     $E928   ; runtime dir-search cursor (word; M19)
 ; The runtime DTA base (where SFIRST/SNEXT write the found 32-byte dir image) is
 ; the disk work-area's current-DTA cache at the fixed address $F23D. Stock's
 ; SETDTA-time routine ($5058) writes the new DTA pointer here and stock's SFIRST
@@ -299,14 +299,14 @@ BDOS_SRCHIDX    equ     $E828   ; runtime dir-search cursor (word; M19)
 ; code decoded. See disk/kernel.asm setdta_cache_body / docs/tier2-m19-spec.md.
 DOS_DTAPTR      equ     $F23D   ; disk work-area current-DTA cache (word, LE; M19)
 ; FAT12 working scratch (transient within a single call)
-FAT_PARITY      equ     $E77C   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
-FAT_BYTEIDX     equ     $E77D   ; byte index within a FAT sector (word, 0..511)
-FAT_FATSEC      equ     $E77F   ; FAT sector currently read (word)
-FAT_B0          equ     $E781   ; first FAT byte of a 12-bit entry (1 B)
-FAT_B1          equ     $E782   ; second FAT byte of a 12-bit entry (1 B)
-FAT_NAMEPTR     equ     $E783   ; -> 11-byte search name (word)
-FAT_DIRSEC      equ     $E785   ; current root-dir sector being scanned (word)
-FAT_DIRREM      equ     $E787   ; root-dir sectors remaining to scan (word)
+FAT_PARITY      equ     $E87C   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
+FAT_BYTEIDX     equ     $E87D   ; byte index within a FAT sector (word, 0..511)
+FAT_FATSEC      equ     $E87F   ; FAT sector currently read (word)
+FAT_B0          equ     $E881   ; first FAT byte of a 12-bit entry (1 B)
+FAT_B1          equ     $E882   ; second FAT byte of a 12-bit entry (1 B)
+FAT_NAMEPTR     equ     $E883   ; -> 11-byte search name (word)
+FAT_DIRSEC      equ     $E885   ; current root-dir sector being scanned (word)
+FAT_DIRREM      equ     $E887   ; root-dir sectors remaining to scan (word)
 
 ; --- BDOS / FCB layer (disk/PROVENANCE.md §BDOS interface) ------------------
 ; CP/M-compatible FCB file access reached through the SYSTEM-sysvar vector
@@ -330,21 +330,21 @@ RECPERSEC       equ     4       ; 512 / 128 = records per 512-byte sector (own d
 ; BDOS sequential-read position (own choice; free page-3 RAM after FAT scratch).
 ; Records consumed from SECTOR_BUF so far; RECPERSEC means "buffer exhausted,
 ; refill on next read". File position otherwise lives in the FAT iterator.
-BDOS_RECIDX     equ     $E789   ; next 128-byte record within SECTOR_BUF (0..4)
+BDOS_RECIDX     equ     $E889   ; next 128-byte record within SECTOR_BUF (0..4)
 ; Settable DTA pointer (BDOS call $1A). Under MSX-DOS the default DTA is page-0
 ; RAM at $0080; under the combined Disk-BASIC machine page 0 is BIOS ROM, so a
 ; SeqRead to $0080 silently fails. BDOS $1A lets the caller (BLOAD) point the
 ; record transfer at a writable buffer it controls. Default preserves MSX-DOS
 ; compatibility. Own choice for the variable location: free page-3 RAM after the
 ; BDOS record index. See disk/PROVENANCE.md §BDOS interface.
-BDOS_DTA        equ     $E78A   ; current DTA pointer (word; default DTA_DEFAULT)
+BDOS_DTA        equ     $E88A   ; current DTA pointer (word; default DTA_DEFAULT)
 ; Bytes of the open file still undelivered, seeded from FAT_FILESIZE by Open and
 ; decremented one record (up to RECSIZE) per Sequential Read. Bounds the partial
 ; final record and the EOF point by the true file size (own choice for the
 ; variable location: free page-3 RAM past basic-core's DISK_DTA buffer
 ; $E4C2..$E541, clear of every other disk and basic region). 4-byte LE.
 ; See disk/PROVENANCE.md §BDOS interface + §Scratch RAM.
-BDOS_BYTESLEFT  equ     $E80C   ; bytes of the open file not yet delivered (4-byte LE)
+BDOS_BYTESLEFT  equ     $E90C   ; bytes of the open file not yet delivered (4-byte LE)
 ; M33 (tier2-m33-m32-fcb-position-spec.md §2.1): records delivered so far by
 ; Sequential Read (K), seeded 0 by fopen_fill_body, incremented once per
 ; DELIVERED record (not on EOF) by wrseq_body's read-branch write-back. Every
@@ -355,7 +355,7 @@ BDOS_BYTESLEFT  equ     $E80C   ; bytes of the open file not yet delivered (4-by
 ; remained) — so this cell is placed just past DRV_TRAMP ($E800-$E813, the
 ; last claimed cell before the $F1xx+ fixed BIOS/MSX2-work-area region),
 ; grep-clean free page-3 RAM. See disk/PROVENANCE.md §Scratch RAM.
-BDOS_SEQREC     equ     $E870   ; records delivered so far by RDSEQ (K, word)
+BDOS_SEQREC     equ     $E970   ; records delivered so far by RDSEQ (K, word)
 
 ; --- D-FATENG: the FAT engine's BUFFER BASES, held in RAM ---------------------
 ; 🏗️ Joost, 2026-09-18, ruling (b) of spec-diskcode-eviction.md §6.4a:
@@ -372,8 +372,8 @@ BDOS_SEQREC     equ     $E870   ; records delivered so far by RDSEQ (K, word)
 ; scratch. The final home is basic-core's own FAT control block ($E9C0..), which
 ; this direction FREES when the sub.rom fatprim tenant is deleted.
 ; 🔴 DO NOT let a later slice read these while BASIC's metadata buffer is live.
-DBUF_PTR        equ     $E872   ; word -> the 512-byte DATA/sector buffer
-MBUF_PTR        equ     $E874   ; word -> the 512-byte FAT/dir METADATA buffer
+DBUF_PTR        equ     $E972   ; word -> the 512-byte DATA/sector buffer
+MBUF_PTR        equ     $E974   ; word -> the 512-byte FAT/dir METADATA buffer
 
 ; --- BDOS / FAT12 WRITE-back scratch (disk/PROVENANCE.md §Scratch RAM) -------
 ; The write side mirrors the read side's "single open file" model: at most one
@@ -386,14 +386,14 @@ MBUF_PTR        equ     $E874   ; word -> the 512-byte FAT/dir METADATA buffer
 ; (+14/15/16/17/24/25/26/27/31) remain untouched, as before. All own-choice
 ; free page-3 RAM after BDOS_BYTESLEFT ($E542..$E545), clear of SECTOR_BUF /
 ; FAT_* / every basic-core region. See disk/PROVENANCE.md §Scratch RAM.
-BDOS_WRMODE     equ     $E810   ; 1 = a file is open for sequential write (byte)
-BDOS_WRCLUS     equ     $E811   ; chain-tail cluster currently being filled (word)
-BDOS_WRFIRST    equ     $E813   ; file's first cluster, 0 until first allocated (word)
-BDOS_WRSECIDX   equ     $E815   ; sector index within the current cluster (byte)
-BDOS_WRBUFLEN   equ     $E816   ; bytes currently buffered in SECTOR_BUF (word, 0..512)
-BDOS_WRBYTES    equ     $E818   ; total bytes written so far = final file size (4-byte LE)
-BDOS_DIRSEC     equ     $E81C   ; logical sector holding the open file's dir entry (word)
-BDOS_DIROFF     equ     $E81E   ; byte offset of that dir entry within its sector (word)
+BDOS_WRMODE     equ     $E910   ; 1 = a file is open for sequential write (byte)
+BDOS_WRCLUS     equ     $E911   ; chain-tail cluster currently being filled (word)
+BDOS_WRFIRST    equ     $E913   ; file's first cluster, 0 until first allocated (word)
+BDOS_WRSECIDX   equ     $E915   ; sector index within the current cluster (byte)
+BDOS_WRBUFLEN   equ     $E916   ; bytes currently buffered in SECTOR_BUF (word, 0..512)
+BDOS_WRBYTES    equ     $E918   ; total bytes written so far = final file size (4-byte LE)
+BDOS_DIRSEC     equ     $E91C   ; logical sector holding the open file's dir entry (word)
+BDOS_DIROFF     equ     $E91E   ; byte offset of that dir entry within its sector (word)
 
 ; --- D-FATENG Option 2: the shared FAT body's names, bound to THIS ROM's cells -
 ; disk/docs/spec-diskcode-eviction.md §6.4a. basic/fat-prim-body.inc is assembled
@@ -423,8 +423,8 @@ FWR_BUFLEN      equ     BDOS_WRBUFLEN   ; bytes buffered
 FWR_BYTES       equ     BDOS_WRBYTES    ; total bytes written
 FWR_DIRSEC      equ     BDOS_DIRSEC     ; dir entry's sector
 FWR_DIROFF      equ     BDOS_DIROFF     ; dir entry's offset within it
-FAT_WRTMP       equ     $E820   ; transient scratch for the FAT12 write helpers (word)
-FAT_WRTMP2      equ     $E822   ; second transient (free-cluster scan cached sector)
+FAT_WRTMP       equ     $E920   ; transient scratch for the FAT12 write helpers (word)
+FAT_WRTMP2      equ     $E922   ; second transient (free-cluster scan cached sector)
 ; A SECOND 512-byte sector buffer used by the WRITE-BACK FAT/dir helpers. The
 ; data being accumulated for a Sequential Write lives in SECTOR_BUF; allocating a
 ; cluster (FAT scan) or stamping the directory entry must read/write OTHER sectors
@@ -438,7 +438,7 @@ FAT_WRTMP2      equ     $E822   ; second transient (free-cluster scan cached sec
 ; 🏗️ D-FATFLOOR (2026-10-13): the buffer pair went to the diskless floor
 ; ($E36A / $E56A) and this cell block +$400 to $E960..$E9AB, ABOVE the
 ; buffers; disk.asm now asserts the block disjoint from them, not below them.
-WBUF            equ     $E56A   ; write-back FAT/dir sector buffer ($E56A..$E769) = main FWBUF
+WBUF            equ     $E66A   ; write-back FAT/dir sector buffer ($E66A..$E869) = main FWBUF
 ; D-WCACHE W3a: the "defer this FAT write" flag (0 normal, 1 a deferral asked for,
 ; 2 a deferred write pending) -- set only by ffds_alloc's chain extension, cleared
 ; by fat_mount, fat_write_buf_allfats and every failure exit. One address in BOTH
@@ -447,7 +447,7 @@ WBUF            equ     $E56A   ; write-back FAT/dir sector buffer ($E56A..$E769
 ; $E5AC..$E5BF across MSX-DOS, every BASIC disk verb, CALL SYSTEM and DOS again
 ; saw only its own control POKE); disk.rom's cells end at MBUF_PTR $E5AB, and
 ; BASIC's map keeps $E560..$E5BF for disk.rom.
-FAT_DEFER       equ     $E876   ; (1)
+FAT_DEFER       equ     $E976   ; (1)
 
 ; Random-record ($21/$22) positioning scratch — transient within a single
 ; rrnd_position / rrnd_sector call (NO cross-call lifetime, no init needed).
@@ -455,8 +455,8 @@ FAT_DEFER       equ     $E876   ; (1)
 ; loop, and the earlier ROM-`db` cells silently no-op'd their stores (writes to
 ; the read-only $4000-$7FFF ROM image), forcing record-in-sector to 0 -> wrong
 ; record. Own-choice free page-3 RAM immediately after WBUF (PROVENANCE §Scratch RAM).
-RRND_RECSEC     equ     $E82A   ; r0 & 3 (record-in-sector) across the sector-seek loop (1 B)
-RRND_CLUSSEC    equ     $E82B   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B)
+RRND_RECSEC     equ     $E92A   ; r0 & 3 (record-in-sector) across the sector-seek loop (1 B)
+RRND_CLUSSEC    equ     $E92B   ; FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B)
 
 ; $26 WRBLK ($47BE, M28 tier2-m28-blockrandom-spec.md) 24-bit positioning scratch --
 ; transient within a single wrblk_body call (no cross-call lifetime, no init needed).
@@ -467,24 +467,24 @@ RRND_CLUSSEC    equ     $E82B   ; FAT_CLUSSEC-1 across the cluster->sector multi
 ; DRV_TRAMP $E800) -- clear of every other disk region; CONIN's own buffer state is
 ; dead whenever a BDOS FCB call (WRBLK included) is running, same lifetime-disjoint
 ; reuse discipline as RRND_RECSEC/RRND_CLUSSEC above (own choice, no oracle bytes).
-WRBLK_REC       equ     $E844   ; D-WRBLKRS: the 24-bit BYTE offset of the next write (3 bytes)
-WRBLK_RECSEC    equ     $E847   ; wrblk_seek's sector-in-cluster (D-WRBLKSEEK; its old record-in-sector use died with D-WRBLKRS) (1 B)
-COPY_STAMP      equ     WRBLK_REC ; $E844..$E847: Disk BASIC COPY's SOURCE time/date (+22..25), carried to the
+WRBLK_REC       equ     $E944   ; D-WRBLKRS: the 24-bit BYTE offset of the next write (3 bytes)
+WRBLK_RECSEC    equ     $E947   ; wrblk_seek's sector-in-cluster (D-WRBLKSEEK; its old record-in-sector use died with D-WRBLKRS) (1 B)
+COPY_STAMP      equ     WRBLK_REC ; $E944..$E947: Disk BASIC COPY's SOURCE time/date (+22..25), carried to the
                                   ; destination as the CF-3300 does (D-COPYDATE). Borrowed: only DOS WRBLK uses
                                   ; these 4 bytes, and it never runs inside a BASIC COPY (4 B)
-WRBLK_RS        equ     $E848   ; resolved record size (FCB+14..15, 0 -> 128) (word)
+WRBLK_RS        equ     $E948   ; resolved record size (FCB+14..15, 0 -> 128) (word)
 DPSAVE_SP       equ     WRBLK_RS ; hk_dpsave's SP, so sv_load_error ABORTS the SAVE (D-DISKFULL).
                                  ; Borrowed like COPY_STAMP: only DOS WRBLK uses it, never inside
                                  ; a BASIC SAVE (word)
-WRBLK_CNT       equ     $E84A   ; D-WRBLKRS: BYTES still to write this call (word, counts down to 0)
-WRBLK_REQ       equ     $E84C   ; the ORIGINAL requested count (word; HL is pinned-preserved
+WRBLK_CNT       equ     $E94A   ; D-WRBLKRS: BYTES still to write this call (word, counts down to 0)
+WRBLK_REQ       equ     $E94C   ; the ORIGINAL requested count (word; HL is pinned-preserved
                                 ; on exit, per [LANDED-A] -- WRBLK returns HL = requested, not actual)
-WRBLK_PREVCLUS  equ     $E84E   ; cluster before the current step's advance/allocate (word);
+WRBLK_PREVCLUS  equ     $E94E   ; cluster before the current step's advance/allocate (word);
                                 ; needed to link a freshly-allocated cluster onto the true
                                 ; last-good cluster (fat_advance may leave FAT_CURCLUS on a
                                 ; stale EOC/free value once the chain is exhausted)
-WRBLK_KEEPCNT   equ     $E850   ; shrink path: clusters-to-keep walk countdown (word)
-WRBLK_NEXTCLUS  equ     $E852   ; shrink path: next cluster to free, saved across the
+WRBLK_KEEPCNT   equ     $E950   ; shrink path: clusters-to-keep walk countdown (word)
+WRBLK_NEXTCLUS  equ     $E952   ; shrink path: next cluster to free, saved across the
                                 ; fat_write_fat_entry call that frees the CURRENT one (word)
 ; M29 (tier2-m29-wrblk-position-cursor-spec.md) incremental position cursor --
 ; persists wrblk_position_ext's iterator ACROSS calls within one wrblk_body loop
@@ -492,8 +492,8 @@ WRBLK_NEXTCLUS  equ     $E852   ; shrink path: next cluster to free, saved acros
 ; next-sector call can skip the from-head fat_open+re-walk. Cross-call lifetime
 ; WITHIN a single wrblk_body invocation only -- wrblk_body clears CURVALID once
 ; before wrblk_loop.
-WRBLK_CURVALID  equ     $E854   ; byte: 0 = iterator not yet positioned this call (1 B)
-WRBLK_CURSEC    equ     $E855   ; word: sector-in-file the iterator currently sits
+WRBLK_CURVALID  equ     $E954   ; byte: 0 = iterator not yet positioned this call (1 B)
+WRBLK_CURSEC    equ     $E955   ; word: sector-in-file the iterator currently sits
                                 ; on (meaningful only when CURVALID=1)
 ; M30 (tier2-m30-alloc-hint-spec.md) FAT allocator next-free scan cursor -- a FAT
 ; cell (fat_alloc_cluster is reached from WRBLK/WRSEQ/create-then-write, not just
@@ -504,7 +504,7 @@ WRBLK_CURSEC    equ     $E855   ; word: sector-in-file the iterator currently si
 ; that operation so a multi-cluster allocation scans forward instead of
 ; restarting from 2 every time (kills the O(n^2) rescan). Own-choice free
 ; page-3 RAM; see disk/PROVENANCE.md §Scratch RAM.
-FAT_ALLOCHINT   equ     $E857   ; next cluster to try in fat_alloc_cluster's scan (word)
+FAT_ALLOCHINT   equ     $E957   ; next cluster to try in fat_alloc_cluster's scan (word)
 ; The one-shot RR*RS size multiply (wrblk_mul_rr_rs) runs AFTER fat_find's SECTOR_BUF
 ; scan and BEFORE fat_dir_update's own WBUF read/write -- no fat_alloc_cluster/
 ; fat_write_fat_entry call happens during the multiply itself, so WBUF's tail is safe,

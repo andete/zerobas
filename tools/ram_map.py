@@ -1382,8 +1382,12 @@ def selftest(lo, hi) -> int:
     # assembler can evaluate. ⚠️ Pinning the ADDRESS as well is deliberate -- an
     # arm that only checked `in from_sym` would pass on a cell resolved to the
     # wrong place.
-    ok["A7 sym supplies a label-derived cell (CONOUT_CHAR $EAB7)"] = \
-        d_all.vals.get("CONOUT_CHAR") == 0xEAB7 \
+    # the VALUE is the disk sym's own (pinned $EAB7 failed D-STRSCRBUF's one-page
+    # shift, 2026-10-14; the arm is about the sym SUPPLYING the cell, not where).
+    _cc = next((int(mm.group(1), 16) for mm in (re.match(r"CONOUT_CHAR\s+EQU\s+0?([0-9A-Fa-f]+)H", l)
+                for l in open("build/disk.sym")) if mm), None)
+    ok["A7 sym supplies a label-derived cell (CONOUT_CHAR, from build/disk.sym)"] = \
+        _cc is not None and d_all.vals.get("CONOUT_CHAR") == _cc \
         and "CONOUT_CHAR" in d_all.from_sym
     ok["A7 NEGATIVE: without the sym it is absent from the map"] = \
         "CONOUT_CHAR" not in d_nosym.vals

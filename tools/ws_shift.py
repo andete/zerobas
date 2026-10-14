@@ -69,6 +69,24 @@ def is_mirror(m, n):
     return m.comp == "disk" and m.raw.get(n, ("", ""))[1].endswith("basic-resident-abi.inc")
 
 
+def derives_from_mirror(m, n, seen=None):
+    """True when disk name n is defined, through any chain, by a name the
+    generated ABI imports from main (`FOPEN_SEL equ DISKOP_OP`). Such a name
+    moves when the BUILD regenerates the ABI, which a dry run does not -- so it
+    is verified through its main original, like the mirror itself (2026-10-14:
+    the one-page shift was refused on FOPEN_SEL, unmoved in the dry run)."""
+    if m.comp != "disk":
+        return False
+    seen = seen or set()
+    if n in seen:
+        return False
+    seen.add(n)
+    for tok in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", m.raw.get(n, ("",))[0]):
+        if tok in m.raw and (is_mirror(m, tok) or derives_from_mirror(m, tok, seen)):
+            return True
+    return False
+
+
 def page_idiom_names():
     import glob
     used = set()
@@ -243,7 +261,7 @@ def main():
         for c in ("basic", "disk"):
             b, a = before[c], after[c]
             for n, v in b.vals.items():
-                if is_mirror(b, n):
+                if is_mirror(b, n) or derives_from_mirror(b, n):
                     orig = n if n in before["basic"].vals else n[5:] if n.startswith("main_") else None
                     if move_of(v) is not None and (orig is None or orig not in before["basic"].vals):
                         bad.append(f"disk {n}: a mirror of moved RAM with no basic original")
@@ -348,6 +366,15 @@ def main():
             if body != open(f).read():
                 saved.setdefault(f, open(f).read())
                 open(f, "w").write(body)
+        # ⚠️ NOT-A-CELL constants never move (some are sizes), but an ADDRESS one
+        # inside a moved range must (2026-10-14: BASIC_WS_CEIL and FN_PAREA_CEIL
+        # stayed behind under the one-page shift and only the build said so).
+        stay = sorted(f"{c} {n} ${v:04X}" for c, m in before.items() for n, v in m.vals.items()
+                      if m.not_a_cell(n) and move_of(v) is not None
+                      and n not in ("TXTMAX", "TXTMAX_NODISK") and not is_mirror(m, n))
+        if stay:
+            print("⚠️ NOT-A-CELL constant(s) inside a moved range, NOT moved -- move an "
+                  "ADDRESS by hand: " + ", ".join(stay))
         print(f"{len(edits)} literal equ(s) rewritten in {len(saved)} file(s); "
               f"TXTMAX ${oldtop:04X} -> ${newtop:04X}; TXTMAX_NODISK ${oldnod:04X} -> ${newnod:04X}")
         for f, i, n, o, v in edits:

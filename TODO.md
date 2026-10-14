@@ -4481,6 +4481,25 @@ item — do **one item per session** to keep context lean.
       (tape I/O through the channel's own FCB buffer) -- which retires the
       read-ahead double buffer that exists because the tokeniser could not
       keep up with the tape between blocks: a tape-timing risk to measure.
+      ✅ **(3) DONE 2026-10-14 (D-STRSCRBUF): +256 B, BOTH BUILDS.** Not the
+      four-slice plan above: one move. STRSCR is now an alias of `BUF`
+      (`basic/sysvars.inc`), the reference's own line buffer -- every remaining
+      writer (READ, file names, KEY) runs while BUF holds nothing live. The one
+      reader that DID keep a line in BUF while staging, console INPUT, now
+      parses its typed line one byte up (`inp_readline`, `basic/input.asm`),
+      so an item staged at BUF+0.. never overwrites the text still to be read.
+      Then the one-page shift `ws_shift.py --move E26A EF00 100` freed
+      STRSCR's old page (TXTMAX $E36A, diskless ceiling $E98A).
+      📏 [`strscrbuf_fremem.out`](scratchpad/strscrbuf_fremem.out): diskless
+      boot FRE(0) 26279, VG-8020 28815, gap -2536 (was -2792); 🔮 -2536 HIT.
+      [`strscrbuf_disk.out`](scratchpad/strscrbuf_disk.out): disk build 23961,
+      CF-3300 23430 (531 ahead); 🔮 23961 HIT.
+      🔪 K-SB1 ([`strscrbuf_knife.py`](scratchpad/strscrbuf_knife.py) ->
+      [`strscrbuf_knife.out`](scratchpad/strscrbuf_knife.out)): the one-byte
+      shift undone -> `input-acceptance` RED on the console INPUT rows only,
+      restored green; 🔮 HIT. `tests/test_input.py` gained the same negative
+      control (a line at LINEBUF+0 must misread).
+      ➡️ **NEXT: (4) FLD_DESC, and PRINT USING's scratch into FBUFFR.**
 
 - [x] 🖥️ **D-KEYBOOT — zerobas BOOTS WITH THE FUNCTION-KEY LINE HIDDEN; THE
       VG-8020 SHOWS IT** — ✅ **FIXED 2026-09-25**, see the end of this item.
@@ -8263,7 +8282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33780 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33799 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8429,7 +8448,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13291 (T-6FE392)8 (T-529ABE)` from `TODO.md:26085 (T-529ABE)`: a
+      `TODO.md:13310 (T-6FE392)8 (T-529ABE)` from `TODO.md:26104 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14138,7 +14157,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26085 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26104 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

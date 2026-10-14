@@ -84,11 +84,7 @@ inpc_dispatch:
                 ; --- INPUT: comma-separated variable list ---
                 push    hl                  ; [stack: varstart] — survives every ?redo
 inpc_reread:
-                call    read_line           ; LINEBUF <- typed line (clobbers HL,A,B)
-                ld      hl,LINEBUF
-                ld      (INP_CURSOR),hl     ; reset the LINEBUF read cursor (16-bit)
-                ld      de,linebuf_getbyte
-                ld      (ARL_GETBYTE),de    ; field splitter reads from LINEBUF
+                call    inp_readline        ; LINEBUF+1 <- typed line; cursor + source set
                 pop     hl                  ; HL = varstart
                 push    hl                  ; keep it for a possible ?redo re-read
 inpc_vloop:
@@ -212,11 +208,7 @@ inpc_line:
                                             ; INPUT path, AFTER the branch to here
                 push    hl                  ; guard the text cursor across the read
                 push    bc                  ; save the key
-                call    read_line           ; LINEBUF <- typed line
-                ld      hl,LINEBUF
-                ld      (INP_CURSOR),hl
-                ld      de,linebuf_getbyte
-                ld      (ARL_GETBYTE),de
+                call    inp_readline        ; LINEBUF+1 <- typed line; cursor + source set
                 call    read_into_strscr    ; STRSCR <- the whole line (mode 1)
                 pop     bc                  ; key
                 call    tgt_store_str       ; D-ARYLV: var$[key] = the line, or the
@@ -239,12 +231,33 @@ inpc_print_q:
                 ld      a,' '
                 jp      CHPUT
 
+; --- inp_readline: read the console answer ONE BYTE UP in LINEBUF ----------
+; D-STRSCRBUF (2026-10-14): STRSCR is the reference's BUF -- the same buffer the
+; answer is typed into. read_line fills LINEBUF..LINEBUF+255 (255 chars and the
+; 0); the LDDR moves it to LINEBUF+1.. (BUF is 258 B, so LINEBUF+256 is still
+; BUF), which leaves BUF[0] for the splitter's [len] / quote-state byte and puts
+; every byte the splitter KEEPS at or behind the one it just read: the field is
+; parsed in place, as the reference parses INPUT out of BUF. (A first idea, plain
+; `STRSCR equ BUF` with the line at BUF+0, overtakes the reader by one byte on
+; the first character -- and the [len] byte is written before anything is read.)
+inp_readline:
+                call    read_line           ; LINEBUF <- typed line (clobbers HL,A,B)
+                ld      hl,LINEBUF+255
+                ld      de,LINEBUF+256
+                ld      bc,256
+                lddr                        ; -> LINEBUF+1 .. LINEBUF+256
+                ld      hl,LINEBUF+1
+                ld      (INP_CURSOR),hl     ; the read cursor (16-bit)
+                ld      de,linebuf_getbyte
+                ld      (ARL_GETBYTE),de    ; the field splitter reads from LINEBUF
+                ret
+
 ; --- inpc_more_input: is there another field to read from LINEBUF? ----------
 ; The only delimiters in LINEBUF are ',' and the 0 terminator (read_line stores
 ; no CR). `linebuf_getbyte` consumes a ',' and advances the cursor past it, but
 ; leaves the cursor ON the 0 at end-of-line. So a field was comma-terminated (=>
 ; more input follows) iff the byte just before the cursor is a ',' — and nothing
-; was consumed at all (cursor == LINEBUF) means an empty line.
+; was consumed at all (cursor == LINEBUF+1, D-STRSCRBUF) means an empty line.
 ; out: ZF = 1 iff more input remains (the last field ended on a ','). Clobbers A,HL.
 ; D-RAMBUF: the cursor is a 16-bit POINTER since LINEBUF became the reference's
 ; BUF ($F55E), which crosses $F600; "at the start" is its low byte equal to
@@ -252,7 +265,7 @@ inpc_print_q:
 inpc_more_input:
                 ld      hl,(INP_CURSOR)
                 ld      a,l
-                cp      low LINEBUF
+                cp      low (LINEBUF+1)     ; D-STRSCRBUF: the line starts one byte up
                 jr      z,inpc_nomore       ; at the start -> nothing consumed -> no more
                 dec     hl
                 ld      a,(hl)

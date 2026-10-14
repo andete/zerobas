@@ -44,7 +44,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "lib"))
 import omsx_repl                                             # noqa: E402
 
-DISK_FCB = 0xEBDB   # D-RAMSHIFT 2026-10-13: was 0xE0DB (+$0B00)
+def _sym(name):
+    # READ, never copied: hand copies went stale on D-RAMSHIFT (+$0B00) and again on
+    # D-STRSCRBUF's one-page shift (2026-10-14); wall-literal-check rule A caught both.
+    import re as _re
+    _repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    for ln in open(os.path.join(_repo, "build", "basic-reloc.sym")):
+        m = _re.match(rf"^{name}\s+EQU\s+0?([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+DISK_FCB = _sym("DISK_FCB")
 FCB_LEN = 12
 MACHINE = os.environ.get("ZEROBAS_BASIC_MACHINE")
 if not MACHINE:
