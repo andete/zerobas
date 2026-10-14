@@ -70,9 +70,12 @@ RANGES = {
     # the ceiling at $E98A zerobas's SP was $E6A6, inside this block: the next
     # `ret` popped the loaded bytes.
     "noclear": (0xE000, 0xE7FF),
+    # slice 6 (2026-10-14): the ceiling rose $EBCD -> $ECF8, so boot's stack moved
+    # from ~$E8E9 to ~$EA14 -- this span held it before and must be free now.
+    "noclear2": (0xE800, 0xE97F),
 }
 # Rows that run the program without `CLEAR` (the stack stays where boot put it).
-NOCLEAR = {"noclear"}
+NOCLEAR = {"noclear", "noclear2"}
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [

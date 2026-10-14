@@ -901,11 +901,14 @@ fpm_outer:
                 ld      a,(MUL_I)
                 add     a,(MULPROD & $FF)+14 ; bug fix: MUL_PP = MULPROD+MUL_I+14, not
                                             ; $F000+MUL_I+14 -- MULPROD's low byte
-                                            ; ($8E) plus the max offset (27) never
+                                            ; (low MULPROD) plus the max offset (27) never
                                             ; carries past $FF, so the low-byte-only
-                                            ; add stays correct and H is always $F0
+                                            ; add stays correct and H is always MULPROD's page
                 ld      l,a
-                ld      h,$F0               ; MULPROD's page (sysvars.inc)
+                ld      h,high MULPROD      ; MULPROD's page -- was the literal $F0, which no idiom scan sees (D-WSZERO s6 moved it)
+    IF (MULPROD & $FF) + 14 + 27 > $FF
+                db      MULPROD_TOO_CLOSE_TO_A_PAGE_END__LOW_BYTE_ADD_WOULD_CARRY
+    ENDIF
                 ld      (MUL_PP),hl
                 ld      hl,ARGB+FPNUM_DIG+13
                 ld      b,14

@@ -93,10 +93,12 @@ the bare form can raise is also reached by `CLEAR,`, which agrees.
 fits there can be `Out of memory` here: on 2026-09-27 `CLEAR 25000` was
 accepted on the VG-8020 and refused here. Since 2026-10-13 it fits on both
 (the disk's sector buffers moved out of a diskless machine's memory), and the
-first refused size is between 26000 and 27000 here (25000 to 26000 before a
-second step the same day), while the VG-8020 still accepts 28000
+first refused size is between 27000 and 27500 here since 2026-10-14 (26000 to
+27000 before, 25000 to 26000 before a second step on 2026-10-13), while the
+VG-8020 still accepts 28000
 ([`fatfloor_clear_probe.out`](../../scratchpad/fatfloor_clear_probe.out),
-[`drawcompact_clear_probe.out`](../../scratchpad/drawcompact_clear_probe.out)).
+[`drawcompact_clear_probe.out`](../../scratchpad/drawcompact_clear_probe.out),
+[`wszero_s6_clear2.out`](../../scratchpad/wszero_s6_clear2.out)).
 That belongs to the **RAM usage** rung, which is not yet proven.
 
 ## What we found, and how

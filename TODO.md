@@ -2855,6 +2855,48 @@ item — do **one item per session** to keep context lean.
       the POOLSIZE pair, and it is ONE equate to revert if the testers prefer
       F1. ➡️ The remaining ~1.4 KB must leave the window as fast as possible --
       every further step shuffles collisions until the last one.
+      ✅ **SLICE 6 (2026-10-14): THE DEF FN FRAME AND THE FLOAT SCRATCH MOVE TO THE
+      REFERENCE'S OWN CELLS FOR THOSE JOBS; CEILING $EBCD -> $ECF8 (+299 B).**
+      Disk-only cells first, measured and REJECTED as the lever: only ~77 B are
+      disk-only by every reference (the FAT engine block, COPY, FILES' flag) --
+      FREAD_* are read by a TAPE channel's EOF() and ERASE walks and rewrites
+      FLD_TAB, so either in the diskless floor would read or corrupt program RAM.
+      Instead (equates, `tools/ws_shift.py`, verified): the DEF FN frame (109 B,
+      FN_BASE..FN_PAREA_END) -> PRMPRV / PRMLN2 / PARM2 / PRMFLG / ARYTA2 /
+      NOFUNS $F74C-$F7B8, the reference's FN parameter area (VRAM_FLAG $F7B8 ->
+      DORES $F664 to make the 109 contiguous; FN_PAREA_CEIL -> $F7BA, FN_BASE's
+      pin -> $F74C); ARGA / ARGB / MULPROD (+ the RND_* overlay, + DIVPAD's head)
+      -> HOLD8 / HOLD2 / HOLD / ARG $F806-$F84C, the reference's math scratch.
+      Both idle on zerobas and C-BIOS (scratchpad/pubfree_map.py, then every
+      build sym checked against the destinations). Then the window re-packed
+      ([`wszero_s6_plan.out`](scratchpad/wszero_s6_plan.out); the planner now
+      packs under the first island that STAYS -- its first plan stacked islands
+      on the float tail + DRVA_DPB, and ws_shift refused all 20 overlaps).
+      🔴 **A PAGE LITERAL NO IDIOM SCAN SEES:** fp_mul did `ld h,$F0 ; MULPROD's
+      page` -- a number, not `high MULPROD`. test_float read every product as 0
+      (and test_control_flow's GOSUB row, downstream). Now `high MULPROD`
+      (byte-identical) plus a zero-byte assert that the low-byte add never
+      carries. A grep of every `ld h/d/b,$Ex/$Fx` in the tree found no other.
+      📏 wszero-acceptance 9/9 SAME (a new row `noclear2`, $E800-$E97F with no
+      CLEAR: boot's stack moved ~$E8E9 -> ~$EA14), 🔮 HIT; 🔪
+      [`wszero_s6_knife.py`](scratchpad/wszero_s6_knife.py): K-WS8 (ceiling back
+      at $EBCD) -> `noclear2` diverges, HIT. FRE(0) vs the VG-8020 -1658 in every
+      state ([`wszero_s6_fremem.out`](scratchpad/wszero_s6_fremem.out)), 🔮 HIT.
+      📏 `CLEAR 27000`: 🔮 "still refused" MISS -- accepted now, 357 B left
+      ([`wszero_s6_clear.out`](scratchpad/wszero_s6_clear.out)); the first refused
+      size is between 27000 and 27500 (the VG-8020 accepts 28000:
+      [`wszero_s6_clear2.out`](scratchpad/wszero_s6_clear2.out)); the memory-map
+      and CLEAR pages updated, their examples re-run.
+      📏 **THE REAL TAPES (one-off, outside the repo): the shuffle continues.**
+      SAME 9 -> 9. 737 Flight now reaches the reference's line 128 in the same
+      mode; Boulder Dash I / II and BMX Simulator no longer reset or loop but end
+      somewhere else (text mode, a line number of 16385 / a PC in RAM: probably
+      another crash, not a run); Colony resets again. 🔮 "Formula 1 Simulator
+      recovers": MISS -- it now resets with SP = $00F3, i.e. zerobas RELOADED SP
+      from a garbled cell (an abort's `ld sp,(SAVSTK)` is the suspect), not a
+      zeroed stack. ➡️ NEXT (slice 7): the SP-save cells. SAVSTK / SAVTXT have
+      published twins of the SAME NAME and job ($F6B1 / $F6AF, idle on zerobas
+      and C-BIOS); a gate row with an error AFTER the load would witness it.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8724,7 +8766,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34257 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34299 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8890,7 +8932,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13752 (T-6FE392)8 (T-529ABE)` from `TODO.md:26546 (T-529ABE)`: a
+      `TODO.md:13794 (T-6FE392)8 (T-529ABE)` from `TODO.md:26588 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14599,7 +14641,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26546 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26588 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

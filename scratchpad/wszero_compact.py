@@ -88,8 +88,13 @@ def crosses(a, w):
 
 # the plan: top-down, each island directly under the next one's new start,
 # lowered as far as needed to keep its page-constrained blocks inside one page
-moves, ceil = [], PACK_TOP
-for a, b in reversed([i for i in islands if i[1] <= PACK_TOP]):
+# an island that runs past PACK_TOP stays where it is, so packing starts under
+# ITS start (slice 6: $F0D7..$F1A6 is one island, basic's float tail + the disk
+# ROM's DRVA_DPB, and the first plan stacked islands on top of it)
+stay = [i for i in islands if i[1] > PACK_TOP]
+top = min([PACK_TOP] + [i[0] for i in stay])
+moves, ceil = [], top
+for a, b in reversed([i for i in islands if i[1] <= top]):
     new_b = ceil
     d = new_b - b
     inside = [(v, w) for v, w, _ in pblocks if a <= v < b]

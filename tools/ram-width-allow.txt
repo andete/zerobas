@@ -27,8 +27,6 @@ basic CAL_SAVE/CAS_WCNT disputed
 basic CVT_MODE overruns
 basic DISKOP_A/PLY_NUMOVF disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
-basic FN_PAREA undeclared
-basic FN_PAREA_END undeclared
 basic FN_STK_FLOOR undeclared
 basic FOSIGCOUNT/TKVALEND disputed
 basic GFX_B/GFX_WE_P disputed
@@ -37,18 +35,14 @@ basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed
 basic INP_CURSOR/NUMBUF disputed
 basic KEYARG/WIDIG disputed
 basic MATH_A/RND_STATE/SQRT_Y disputed
-basic MULPROD/RND_ACCLE overruns
 basic OO_DEVTYPE overruns
 basic SH_BASE/SH_OP disputed
 disk BDOS_RECIDX overruns
 disk F365_STUB undeclared
 disk FAT_WRTMP2 overruns
 disk FREAD_LEFT/RDBLK_REQ disputed
-disk INT_SP_SAVE/INT_STK_TOP disputed
 disk RES_PRINT undeclared
 disk RES_STUBS undeclared
 disk RES_STUBS_END undeclared
 disk W50A9_RET_DE undeclared
 disk W50A9_RET_HL undeclared
-disk WA_SEG/WA_SEG_ROM undeclared
-disk WA_SEG_RAM undeclared
