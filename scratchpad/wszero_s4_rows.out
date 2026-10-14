@@ -1,0 +1,7 @@
+ROW e $F03C-$F0A9 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW g $F100-$F109 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW w4 $EE80-$F0FF VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW w5 $F100-$F37F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+PASS: a load over the window, then BASIC (4/4 as pinned)
+refcache: 0 hit, 8 miss, 8 stored

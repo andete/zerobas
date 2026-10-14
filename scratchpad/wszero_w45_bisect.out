@@ -1,0 +1,13 @@
+ROW a $EE80-$EF63 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW b $EF64-$EFC3 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW c $EFC4-$F009 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW d $F00A-$F03B VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW e $F03C-$F0A9 VG=[[A][G] 1  2 XY]] ZB=[Unprintable error in 10] DIVERGES
+ROW f $F0AA-$F0FF VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW g $F100-$F109 VG=[[A][G] 1  2 XY]] ZB=[[A][G]] DIVERGES
+ROW h $F10A-$F14F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW i $F150-$F194 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW j $F195-$F37F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+FAIL: a load over the window, then BASIC (8/10 as pinned); unpinned divergence: e, g
+refcache: 0 hit, 20 miss, 20 stored

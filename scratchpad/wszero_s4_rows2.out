@@ -1,0 +1,6 @@
+ROW fperr $F03C-$F0A9 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW slot $F100-$F109 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW all $E98A-$F37F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+PASS: a load over the window, then BASIC (3/3 as pinned)
+refcache: 0 hit, 6 miss, 6 stored

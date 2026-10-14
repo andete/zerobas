@@ -38,6 +38,7 @@ throwaway machine into the openMSX user dir.
 from __future__ import annotations
 
 import glob
+import re
 import os
 import signal
 import subprocess
@@ -57,6 +58,19 @@ _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
 import omsx_preflight  # noqa: E402
 from subrom_entry import page0_entry, le16  # noqa: E402
 
+
+def _sub_sym(name):
+    """D-WSZERO slice 4 (2026-10-14): SUB_PING moved ($F105 -> SLTWRK); the stub's
+    addresses come from build/sub.sym, never a constant."""
+    for ln in open(_zbo.path.join(REPO, "build", "sub.sym")):
+        m = re.match(rf"^{name}\s+EQU\s+0?([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    sys.exit(f"{name} not in build/sub.sym -- build first")
+
+
+PING_CELL = _sub_sym("SUB_PING")
+
 SUB_ROM = os.path.join(REPO, "build", "sub.rom")
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 MACHINE = "ZEROBAS_SUBROM_PROBE"
@@ -69,17 +83,17 @@ STUB_HALT = 0xC02B
 RES_P0, RES_P1 = 0xC100, 0xC101
 STUB_BYTES = bytes([
     0xF3,                    # di
-    0xAF, 0x32, 0x05, 0xF1,  # xor a ; ld ($F105),a       (clear SUB_PING)
+    0xAF, 0x32, *le16(PING_CELL),  # xor a ; ld ($F105),a       (clear SUB_PING)
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
     0xDD, 0x21, *le16(page0_entry("PING")),   # ld ix,<derived: base + 3*PING>
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT)
-    0x3A, 0x05, 0xF1,        # ld a,($F105)
+    0x3A, *le16(PING_CELL),        # ld a,($F105)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (page-0 result)
-    0xAF, 0x32, 0x05, 0xF1,  # xor a ; ld ($F105),a       (clear SUB_PING)
+    0xAF, 0x32, *le16(PING_CELL),  # xor a ; ld ($F105),a       (clear SUB_PING)
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
     0xDD, 0x21, 0x10, 0x40,  # ld ix,$4010                (page-1 entry)
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT)
-    0x3A, 0x05, 0xF1,        # ld a,($F105)
+    0x3A, *le16(PING_CELL),        # ld a,($F105)
     0x32, 0x01, 0xC1,        # ld ($C101),a               (page-1 result)
     0x76,                    # halt                       (capture bp)
 ])

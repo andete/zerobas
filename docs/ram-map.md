@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 381 declared addresses in this project's own workspace `$E000..$F37F` (362 with a machine-readable width), plus **167** in the MSX standard work area at or above `$F380`.
-* **disk** — 131 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **36** in the MSX standard work area at or above `$F380`.
+* **basic** — 376 declared addresses in this project's own workspace `$E000..$F37F` (357 with a machine-readable width), plus **172** in the MSX standard work area at or above `$F380`.
+* **disk** — 130 declared addresses in this project's own workspace `$E000..$F37F` (118 with a machine-readable width), plus **37** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -477,8 +477,6 @@ second one is the question a per-component map cannot answer.
 | `$F064` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
 | `$F065` | 1 B | `basic` | `FOMBYTES` | (1 B) UNUSED since C8 -- widen_fac_to reads |  |
 | `$F067` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
-| `$F069` | 1 B | `basic` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
-| `$F069` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F06A` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F06A` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F07C` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
@@ -512,13 +510,9 @@ second one is the question a per-component map cannot answer.
 | `$F100` |  | `basic` | `CVT_MODE` | domain_convert_core: 0=strict int16 domain, |  |
 | `$F101` | 2 B | `basic` | `PLF_RA` | pop_lhs_and_probe: scratch home for its own |  |
 | `$F103` | 2 B | `basic` | `PLF_RA2` | ...and for its DIRECT caller's (combine_add/ (2 B) |  |
-| `$F105` | 1 B | `basic` | `SUB_PING` | PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
-| `$F106` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
-| `$F107` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
 | `$F108` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
 | `$F10A` | 64 B | `basic` | `SUB_INT_RAM` | the copied trampoline stub (<= 64 B; executes from RAM) |  |
 | `$F14A` | 1 B | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) (1 B) |  |
-| `$F14B` | 1 B | `basic` | `SUBSLOT2` | slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent. |  |
 | `$F14C` | 1 B | `basic` | `GRP_HDR` | D-OPENGRP: bit 0 = a CHR$(1) header is pending on the |  |
 | `$F14D` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
 | `$F14E` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
@@ -657,6 +651,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F718` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
 | `$F71A` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$F7B8` |  | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published TEMP9 (D-WSZERO) |  |
+| `$F7B9` | 1 B | `basic` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
+| `$F7B9` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F7BC` | 2 B | `basic` | `CURPTR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BE` | 2 B | `basic` | `ENDPTR` | final load address (2 bytes) -- SWPTMP+2 |  |
 | `$F7C0` | 2 B | `basic` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
@@ -721,6 +717,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$FCC1` | 1 B | `disk` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit 7 = expanded |  |
 | `$FCC5` |  | `disk` | `SLTTBL` | SLTTBL base: per-primary mirror of the secondary-slot regs |  |
 | `$FCC8` |  | `disk` | `SLTTBL3` | SLTTBL[3]: RAM mirror of slot-3 secondary-slot register (=SLTTBL+3) |  |
+| `$FD09` | 1 B | `basic` | `SUBSLOT` | slot id of zerobas-sub (bit7 exp \| 3-2 \| 3), 1 (1 B) |  |
+| `$FD0A` | 1 B | `basic` | `SUBSLOT_OK` | 1 = a CD sub-ROM was found and recorded, else 0 (1 B) |  |
+| `$FD0B` | 1 B | `basic` | `SUBSLOT2` | slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent. |  |
+| `$FD0C` | 1 B | `basic` | `SUB_PING` | (SLTWRK, D-WSZERO) PING page tag: $C0 (page 0) / $C1 (page 1) (1 B) |  |
 | `$FD9F` | 5 B | `basic` | `H_TIMI` | timer-interrupt hook, 5-byte inter-slot call area |  |
 | `$FDEF` |  | `basic` | `H_DSKO` | DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG |  |
 | `$FDEF` |  | `disk` | `H_DSKO` | DSKO$ (D-DSKIO) -- 🔴 WAS $FDF4 (D-DSKOHOOK |  |

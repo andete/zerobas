@@ -4543,7 +4543,10 @@ FPNUM_DEXP      equ     1       ; field offset: signed dec_exp (2)
 FPNUM_DIG       equ     3       ; field offset: digit array, 14 sig + 1 guard (15)
 FPNUM_SIZE      equ     18
 
-FPERR           equ     $F069   ; runtime numeric-error flag: 0 none / 1 overflow / (1 B)
+; D-WSZERO slice 4 (2026-10-14): FPERR is read at EVERY statement boundary (a pending
+; code is raised there), so a load over $F069 raised a garbage `Unprintable error`.
+; It now sits in TEMP9's spare byte ($F7B9; VRAM_FLAG holds $F7B8).
+FPERR           equ     $F7B9   ; runtime numeric-error flag: 0 none / 1 overflow / (1 B)
                                 ; 2 division by zero (spec §10.2 D-F2-1) / 3 illegal
                                 ; function call (math pack slice 1b, SQR(x<0),
                                 ; spec-basic-math-pack.md §10.4/§10.5 -- same
@@ -4624,8 +4627,11 @@ PLF_RA2         equ     $F103   ; ...and for its DIRECT caller's (combine_add/ (
 ; SUB_PING ($F105, sub/equates.inc) is the S2a injection-gate cell and is not
 ; referenced by main-ROM code; SUBSLOT/SUBSLOT_OK are the private dispatch path
 ; (decoupled from EXBRSA $FAF8, which a stray program could clobber — D-6/R4).
-SUBSLOT         equ     $F106   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
-SUBSLOT_OK      equ     $F107   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
+; D-WSZERO slice 4: the sub-ROM slot cells live in SLTWRK ($FD09..), the published
+; per-(slot, page) ROM work area -- the entries of OUR OWN slot 0, pages 0-1. They are
+; read on every tenant call, so a load over $F106 sent the next call to a garbage slot.
+SUBSLOT         equ     $FD09   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
+SUBSLOT_OK      equ     $FD0A   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
 DB_CUR          equ     $F108   ; wave-3 detok: the DETOKBUF write cursor, held across (2 B)
                                 ; the whole sub-side walk (the core clobbers DE/HL, so
                                 ; the cursor cannot live in a register). Own-choice free
@@ -4648,7 +4654,7 @@ INT_MAIN_PRIM   equ     $F14A   ; page-0 primary field of the MAIN (BIOS) slot (
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
 ; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.
-SUBSLOT2        equ     $F14B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
+SUBSLOT2        equ     $FD0B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
                                 ; Cleared by init_ext_roms before the scan (RAM survives
                                 ; a reset, D-RESETBOOT), set by try_sub_slot. (1 B)
 GRP_HDR         equ     $F14C   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the

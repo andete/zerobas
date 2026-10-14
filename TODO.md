@@ -2734,9 +2734,36 @@ item — do **one item per session** to keep context lean.
       scan past TOKBUF now covered the tokeniser's own scratch in PARM1 (the
       moved block is skipped). tools/ram-width-allow.txt lost 7 pins whose
       cells left the window (the good direction).
-      ➡️ Still pinned: w4 ($EE80-$F0FF) and w5 ($F100-$F37F). Next: bisect them
-      the same way (w4 holds FLD_TAB, read on every string access; w5 the sub-ROM
-      slot cells and the RAM-resident $0038 trampoline).
+      ✅ **SLICE 4 (2026-10-14): FPERR and the sub-ROM slot cells; NO PINS LEFT.**
+      📏 w4 / w5 bisected ([`wszero_w45_bisect.out`](scratchpad/wszero_w45_bisect.out)):
+      only $F03C-$F0A9 (`Unprintable error in 10`) and $F100-$F109 (stops after
+      [A][G]) are fatal to this program. 🔮 FIELD table fatal: MISS (harmless
+      here); slot cells fatal: HIT; the $0038 RAM stub "likely fatal": MISS
+      (page-0 tenants mostly run DI; it stays on the list for programs that
+      interrupt one). The fatal tenants: FPERR ($F069, read at EVERY statement
+      boundary -- $A5 raised as error 165 "Unprintable") and SUBSLOT /
+      SUBSLOT_OK (read on every tenant call).
+      🔧 FPERR -> $F7B9 (TEMP9's spare byte); SUBSLOT / SUBSLOT_OK / SUBSLOT2 /
+      SUB_PING -> SLTWRK $FD09-$FD0C, the published per-(slot, page) ROM work
+      area: the entries of our own slot 0, pages 0-1. Equates only.
+      📏 Rows `fperr`, `slot`, and `all` -- ONE load over the WHOLE window
+      $E98A-$F37F, as a real tape does -- SAME
+      ([`wszero_s4_rows2.out`](scratchpad/wszero_s4_rows2.out)); w4 / w5 SAME
+      ([`wszero_s4_rows.out`](scratchpad/wszero_s4_rows.out)), their pins removed:
+      the gate has no pins. 🔪 [`wszero_s4_knife.py`](scratchpad/wszero_s4_knife.py)
+      -> [`wszero_s4_knife.out`](scratchpad/wszero_s4_knife.out): K-WS5 (all four
+      back) -> fperr, slot, all diverge; HIT.
+      🔴 The FULL battery then went red on subrom-acceptance and sub2-acceptance:
+      both PROBES hard-coded the old addresses ($F105 / $F106 / $F14B, one of
+      them inside a machine-code stub's bytes). They read build/sub.sym now; both
+      green. The same lesson as test_play_parse's on 10-14: a constant copied
+      from a listing goes stale on the next layout move.
+      ⚠️ What this does NOT yet cover: state a program uses AFTER the load that
+      this gate program does not exercise (DEF FN's frame, the FIELD table, the
+      graphics / DRAW / PRINT USING / float scratch, the $0038 stub under an
+      interrupted page-0 tenant). Those stay in the window; ➡️ next: re-run the
+      real tapes, then a richer gate program (FN, FIELD, graphics, PRINT USING,
+      PLAY, traps) to find the next fatal tenants.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8597,7 +8624,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34130 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34157 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8763,7 +8790,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13625 (T-6FE392)8 (T-529ABE)` from `TODO.md:26419 (T-529ABE)`: a
+      `TODO.md:13652 (T-6FE392)8 (T-529ABE)` from `TODO.md:26446 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14472,7 +14499,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26446 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

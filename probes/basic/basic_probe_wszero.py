@@ -46,6 +46,12 @@ RANGES = {
     # slice 3 (2026-10-14): PRGEND .. SL_CEIL's old home -- the run loop's control and
     # the control-pool anchors (CSP is loaded into SP at every line).
     "loop": (0xEC26, 0xEC59),
+    # slice 4 (2026-10-14): FPERR's old home (read at every statement boundary) and
+    # the sub-ROM slot cells' (read on every tenant call); then the whole window at
+    # once, as a real tape loads it.
+    "fperr": (0xF03C, 0xF0A9),
+    "slot": (0xF100, 0xF109),
+    "all": (0xE98A, 0xF37F),
 }
 # First run (2026-10-14, scratchpad/wszero_gate_first.out): w2 `Device I/O error`
 # (BLOAD's loop cells), w3 nothing printed, w4 `Unprintable error in 10`, w5 stops
@@ -55,7 +61,9 @@ RANGES = {
 # pin). w2 now prints nothing where it gave `Device I/O error` before slice 1.
 # Slice 3 (2026-10-14) un-pinned w2: its fatal tenants were PRGEND..SL_CEIL
 # ($EC26-$EC59, bisected: scratchpad/wszero_s3_bisect.out).
-KNOWN_DIVERGE = {"w4", "w5"}
+# Slice 4 (2026-10-14) un-pinned w4 and w5: their fatal tenants were FPERR and the
+# sub-ROM slot cells (bisected: scratchpad/wszero_w45_bisect.out). No pins left.
+KNOWN_DIVERGE = set()
 
 PROGRAM = [
     "NEW",

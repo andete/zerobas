@@ -49,7 +49,17 @@ import omsx_preflight  # noqa: E402
 
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 MACHINES = ("C-BIOS_MSX1_EU_REPACK_DISK", "C-BIOS_MSX1_EU_REPACK_NODISK")
-SUB_PING, SUBSLOT, SUBSLOT2 = 0xF105, 0xF106, 0xF14B
+# D-WSZERO slice 4 (2026-10-14): the three cells moved ($F105 / $F106 / $F14B -> SLTWRK
+# $FD0C / $FD09 / $FD0B); read from build/sub.sym, never constants.
+def _sub_sym(name):
+    for ln in open(os.path.join(REPO, "build", "sub.sym")):
+        p = ln.split()
+        if len(p) >= 3 and p[0] == name and p[1].upper() == "EQU":
+            return int(p[2].rstrip("Hh"), 16)
+    sys.exit(f"{name} not in build/sub.sym -- build first")
+
+
+SUB_PING, SUBSLOT, SUBSLOT2 = _sub_sym("SUB_PING"), _sub_sym("SUBSLOT"), _sub_sym("SUBSLOT2")
 MAIN_CELL = 0xC104
 STUB = 0xC000
 CALLS = ((0x8B, 0x0040, 0xC100, 0xC0, "3-2 page 0 (zerobas-sub) "),

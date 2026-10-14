@@ -1,0 +1,2 @@
+K-WS5: rows ['fperr', 'slot', 'all'] diverging ['fperr', 'slot', 'all']; predicted ['fperr', 'slot', 'all'] -> HIT
+restored: build rc=0; trap SAME
