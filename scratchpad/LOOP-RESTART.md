@@ -1,10 +1,53 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-10)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-14 evening)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-14 MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH); NOTHING NEW FROM HIM SINCE 10-13.
+## 🟢 STATE AS OF 2026-10-14 EVENING — THE CURRENT ONE. JOOST'S RULINGS: THE 2026-10-09 TABLE (THREE NEW ROWS 10-14: RAM gap target, ROM size program, D-WSZERO "Shrink to zero") AND THE 2026-09-24 SECTION.
+
+**Joost, 2026-10-14:** *"the tape fixes take precedence, I have external people
+testing with that"* (Quibus). So **D-WSZERO first** (TIER 1), then D-ROMSIZE in
+his order (disk BASIC -> disk ROM, string engine, graphics, float core). He was
+told each slice as it landed and given a testers' summary after slice 5.
+
+**Shipped this afternoon (`git log --oneline 4e360f72..`), each FULL-green:**
+D-WSZERO slices 4-7. zerobas's private state in the diskless program's RAM
+($E98A-$F37F at noon) is now $ECF8-$F37F; FRE(0) gap to the VG-8020 **-1658**
+(was -2536). Crash-critical cells moved to the reference's own cells for the
+same job (FPERR, slot cells, POOLSIZE / TXTCEIL / FRETOP, the DEF FN frame ->
+PARM2, float scratch -> HOLD8, FNSP -> PRMSTK, the DATA cursor -> DATPTR /
+DATLIN, the RAM interrupt trampoline -> the CIRCLE / PAINT scratch); the rest
+PACKED against the top (scratchpad/wszero_compact.py plans, tools/ws_shift.py
+verifies -- now with page-idiom AND page-assert awareness, `--page-ok`).
+wszero-acceptance: 13 rows incl. `noclear` / `noclear2` (no-CLEAR loaders),
+`abort` / `onerr` (an error after the load), `rich` / `rich2` (what a loader
+runs next); every row's move knifed.
+
+**🔴 THE LESSON THAT SETS THE ORDER:** the testers' RESET class is loaders that
+never CLEAR and put data where the VG-8020 has free RAM below ITS stack ($F09E).
+Every intermediate ceiling only MOVES zerobas's stack to another spot inside
+that RAM: slice 5 fixed some titles and broke Formula 1 Simulator (still
+broken). Only an EMPTY window fixes the class -- go as fast as possible. Real
+tapes are re-run outside the repo (session scratchpad tape_triage.py /
+tape_compare.py / tapes/cls.py; the tapes are never decoded or copied in).
+
+➡️ **NEXT:** DB_WIN (96 B, the LIST / PRINT USING render window) pins its island
+under $EE00 -- move it OUT (BUF / KBUF overlap needs analysis: STRSCR is BUF,
+TOKBUF is KBUF and holds the running direct statement), then re-pack. Then the
+graphics / DRAW scratch (~150 B), the remaining float / tokeniser scratch, the
+channel state, the editor cells. Main page 1 is ~0 B, so homes stay equate-only
+until a carve. `make basic-reloc` before quoting any wall.
+
+**🔧 Lessons (2026-10-14 afternoon):** a page constant written as a NUMBER
+(`ld h,$F0`) is invisible to every idiom scan (fp_mul read 0 after a move);
+gate logs must never match a staging glob (a tracked log written during the
+pool is a POOL WRITE red); a stale hard-coded address can leave a gate GREEN
+(subrom-inttest read $F14D for two slices); a failed build leaves the disk
+ROM's generated ABI mirror stale and ws_shift then refuses -- a throwaway build
+refreshes it; zsh does not word-split `$VAR` (use `eval` or `${=VAR}`).
+
+## 🟢 STATE AS OF 2026-10-14 MORNING — superseded above. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH); NOTHING NEW FROM HIM SINCE 10-13.
 
 **Shipped 2026-10-14 (`git log --oneline 72f55418..`), each FULL-green (+ the five excluded):**
 - **RAM order DONE.** Step (3) D-STRSCRBUF: STRSCR is `BUF`, console INPUT parses
