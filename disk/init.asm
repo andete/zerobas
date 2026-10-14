@@ -260,7 +260,7 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
 RDBLK_RRSTART   equ     $E959   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $E942   ; saved page-1 destination word (dskio bounce path)
-P1_BLIT         equ     $EF40   ; installed blit routine (27 B) -- declared
+P1_BLIT         equ     $EFB7   ; installed blit routine (27 B) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
                                 ; contiguous, and claims past this 36 B run
@@ -277,7 +277,7 @@ P1_BLIT         equ     $EF40   ; installed blit routine (27 B) -- declared
 ; the split is what separated the two.
 ; 🎯 THE TWO BLOCKS NO LONGER HAVE TO BE CONTIGUOUS, because no single free run
 ; is big enough for 54 B: the source-vouched runs are $EA60..$EA91 (50 B) and
-; $EF40..$EF63 (36 B), and $EA9C..$EAFF (100 B, bounded by FN_RTYPE below and
+; $EFB7..$EFDA (36 B), and $EA9C..$EAFF (100 B, bounded by FN_RTYPE below and
 ; LINEBUF above). So the blit goes to $EE40 and the hook bodies to $EA9C, and
 ; `install_resident` (disk/kernel.asm, the free tail) does TWO LDIRs.
 ; ⚠️ THE CHAIN BELOW FOLLOWS WA_SEG, SO IT MOVES TOO: CONOUT_CHAR, PG_SV_A8, the
@@ -287,7 +287,7 @@ P1_BLIT         equ     $EF40   ; installed blit routine (27 B) -- declared
 ; that every unattributed run >= 20 B in ram_map's output turned out to be
 ; occupied when read against that file -- $E700/$E900 are inside
 ; FSECTOR_BUF/FWBUF and LINEBUF $EB00 sits inside the biggest one.
-WA_SEG          equ     $EB9C   ; base of the two hook bodies -- no width
+WA_SEG          equ     $ED9C   ; base of the two hook bodies -- no width
                                 ; here: WA_SEG_ROM shares the address and
                                 ; declares none, so one would only DISPUTE
 ; Inter-slot helper scratch (M8/§8.67 CONOUT + A-2/§8.70 int_h): transient page-3 RAM

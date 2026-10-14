@@ -304,8 +304,11 @@ def run():
         # here it only gets as far as its own `CSP := 0` -- and `ld sp,(CSP)` then
         # takes SP to 0 and the CPU runs away. Standing in for the boot is the same
         # fix D-TXTCEIL made for `SL_CEIL`: supply what the machine publishes. The
-        # value only has to sit in the harness's stack band [0x8000,0xf380].
-        mm.trap("ctl_reset", lambda mm: (mm.poke_w(mm.sym["CSP"], 0xF000),
+        # value only has to sit in the harness's stack band [0x8000,0xf380] AND
+        # below every private cell: $F000 sat in a 174-byte hole until D-WSZERO slice
+        # 5 packed the workspace (2026-10-14) and the pool then grew over live cells.
+        # TXTMAX_NODISK is the diskless program-RAM top, under every private cell.
+        mm.trap("ctl_reset", lambda mm: (mm.poke_w(mm.sym["CSP"], mm.sym["TXTMAX_NODISK"]),
                                            mm.poke_w(mm.sym["CTLLIM"], 0x8000)))
         mm.call("run_prog")
         return mm, bytes(out)

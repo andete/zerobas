@@ -1,0 +1,18 @@
+  $EDB9-$EFA4 BAD [[A][G]]
+  $EDB9-$EEAE ok  [[A][G] 1  2 XY]]
+  $EEAF-$EFA4 BAD [[A][G]]
+  $EEAF-$EF29 ok  [[A][G] 1  2 XY]]
+  $EF2A-$EFA4 BAD [[A][G]]
+  $EF2A-$EF67 ok  [[A][G] 1  2 XY]]
+  $EF68-$EFA4 BAD [[A][G]]
+  $EF68-$EF86 ok  [[A][G] 1  2 XY]]
+  $EF87-$EFA4 BAD [[A][G]]
+  $EF87-$EF95 ok  [[A][G] 1  2 XY]]
+  $EF96-$EFA4 BAD [[A][G]]
+  $EF96-$EF9D BAD [[A][G]]
+  $EF96-$EF99 ok  [[A][G] 1  2 XY]]
+  $EF9A-$EF9D BAD [[A][G]]
+  $EF9A-$EF9B ok  [[A][G] 1  2 XY]]
+  $EF9C-$EF9D BAD [[A][G]]
+FATAL SPAN: $EF9C-$EF9D
+refcache: 0 hit, 16 miss, 16 stored

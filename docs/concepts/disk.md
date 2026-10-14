@@ -137,7 +137,7 @@ disk system out altogether — no Disk BASIC (`DSKF` is `Illegal function
 call`), `HIMEM` `&HF380`, 5385 bytes more free — and **CTRL** keeps Disk BASIC
 with one drive instead of two, 1558 bytes more free. zerobas honours SHIFT
 since 2026-10-10: its disk ROM then installs nothing and BASIC starts as on the
-diskless machine (`HIMEM` `&HE98A` since 2026-10-14, zerobas's own layout —
+diskless machine (`HIMEM` `&HEBCD` since 2026-10-14, zerobas's own layout —
 [memory map](memory-map.md)).
 
 ## Example

@@ -13,7 +13,9 @@ to zero, TIER 1 -- scratchpad/wszero_inventory.md).
 Each row: OUR OWN synthetic tape (cas_encode) holding one binary that covers one
 slice of the window -- a `ret` at its start, the rest $A5 -- loaded by a program
 with `CLEAR 100,&HE000:BLOAD"CAS:",R`, which then runs PRINT, GOSUB, FOR and a
-string concatenation. `ctl` loads below the window. The VG-8020 is the oracle.
+string concatenation. `ctl` loads below the window; `noclear` runs the same
+program WITHOUT the `CLEAR`, as the loaders of D-TAPELOAD's RESET class do, so
+the stack is wherever boot put it. The VG-8020 is the oracle.
 
 KNOWN_DIVERGE pins the rows zerobas still fails: they must DIVERGE (a row that
 starts agreeing is a pin that ROTTED -- remove it), every other row must be SAME.
@@ -23,48 +25,64 @@ Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`. Exit 0 as pinned;
 1 a divergence outside the pins or a rotted pin; 2 the VG-8020 gave no reading.
 Typed BASIC in, the text screen out. VG-8020 vs zerobas NODISK.
 """
-import os, sys, tempfile
+import os, re, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                    # noqa: E402
 from cas_encode import build_cas                    # noqa: E402
 
+def sym(name):
+    for ln in open(os.path.join(REPO, "build", "basic-reloc.sym")):
+        m = re.match(rf"^{name}\s+EQU\s+([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    raise SystemExit(f"{name} is not in build/basic-reloc.sym -- build first")
+
+
+# 🔁 SLICE 5 (2026-10-14) PACKED THE WORKSPACE against the top and raised the
+# diskless ceiling (TXTMAX_NODISK $E98A -> the build's value), so the rows of
+# slices 1-4 -- each the OLD HOME of a block that had just moved out -- stopped
+# meaning anything: packed cells now sit in most of them. Their history, kept:
+#   slice 0: ctl, w1-w5 (the window in five slices); first run w2 `Device I/O
+#     error`, w3 nothing printed, w4 `Unprintable error in 10`, w5 stops after
+#     [A][G] (scratchpad/wszero_gate_first.out).
+#   slice 1: bl $EC20-$EC25, cas $F000-$F01F (BLOAD's loop cells, the tape
+#     search's names); slice 2: trap $EDD1-$EE1F (the trap block, read by the
+#     interrupt service every frame); slice 3: loop $EC26-$EC59 (PRGEND..SL_CEIL,
+#     bisected: scratchpad/wszero_s3_bisect.out); slice 4: fperr $F03C-$F0A9 and
+#     slot $F100-$F109 (scratchpad/wszero_w45_bisect.out), and `all` -- after
+#     which no pin was left.
+# The rows now come from the build: what is left of the window, in quarters and
+# whole, and the RAM slice 5 handed back to programs.
+NODISK = sym("TXTMAX_NODISK")
+_q = (0xF380 - NODISK) // 4
 RANGES = {
     "ctl": (0xC000, 0xC17F),
-    "w1": (0xE98A, 0xEAFF),     # graphics / DRAW scratch, the LIST window, holes
-    "w2": (0xEB00, 0xEC7F),     # DEF FN frame, BLOAD's CURPTR..EXECPTR, run-loop, CSP
-    "w3": (0xEC80, 0xEE7F),     # FOR copy, DATA, channel state, SAVSTK, the trap table
-    "w4": (0xEE80, 0xF0FF),     # FIELD table, PRINT USING, tape search, float scratch
-    "w5": (0xF100, 0xF37F),     # sub-ROM slots, the $0038 trampoline, math scratch
-    # slice 1 (2026-10-14): the old homes of BLOAD's loop / flag cells and of the
-    # tape search's names -- empty of anything a load needs since the move.
-    "bl": (0xEC20, 0xEC25),
-    "cas": (0xF000, 0xF01F),
-    # slice 2 (2026-10-14): the trap block's old home -- the interrupt service read
-    # it every frame, so a load over it armed garbage traps one frame later.
-    "trap": (0xEDD1, 0xEE1F),
-    # slice 3 (2026-10-14): PRGEND .. SL_CEIL's old home -- the run loop's control and
-    # the control-pool anchors (CSP is loaded into SP at every line).
-    "loop": (0xEC26, 0xEC59),
-    # slice 4 (2026-10-14): FPERR's old home (read at every statement boundary) and
-    # the sub-ROM slot cells' (read on every tenant call); then the whole window at
-    # once, as a real tape loads it.
-    "fperr": (0xF03C, 0xF0A9),
-    "slot": (0xF100, 0xF109),
-    "all": (0xE98A, 0xF37F),
+    # program RAM since slice 5: a load here must be harmless
+    "freed": (0xE98A, NODISK - 1),
+    "q1": (NODISK, NODISK + _q - 1),
+    "q2": (NODISK + _q, NODISK + 2 * _q - 1),
+    "q3": (NODISK + 2 * _q, NODISK + 3 * _q - 1),
+    "q4": (NODISK + 3 * _q, 0xF37F),
+    "all": (NODISK, 0xF37F),
+    # D-TAPELOAD's RESET class (2026-10-14): a loader that does NOT `CLEAR` and
+    # loads where the VG-8020 keeps free RAM below its stack ($F09E there). With
+    # the ceiling at $E98A zerobas's SP was $E6A6, inside this block: the next
+    # `ret` popped the loaded bytes.
+    "noclear": (0xE000, 0xE7FF),
 }
-# First run (2026-10-14, scratchpad/wszero_gate_first.out): w2 `Device I/O error`
-# (BLOAD's loop cells), w3 nothing printed, w4 `Unprintable error in 10`, w5 stops
-# after [A][G]. ctl and w1 agree.
-# Slice 2 (2026-10-14) un-pinned w3: with the trap block out of $EDD1-$EE1F, a
-# load over $EC80-$EE7F no longer stops BASIC (the FULL battery caught the rotted
-# pin). w2 now prints nothing where it gave `Device I/O error` before slice 1.
-# Slice 3 (2026-10-14) un-pinned w2: its fatal tenants were PRGEND..SL_CEIL
-# ($EC26-$EC59, bisected: scratchpad/wszero_s3_bisect.out).
-# Slice 4 (2026-10-14) un-pinned w4 and w5: their fatal tenants were FPERR and the
-# sub-ROM slot cells (bisected: scratchpad/wszero_w45_bisect.out). No pins left.
+# Rows that run the program without `CLEAR` (the stack stays where boot put it).
+NOCLEAR = {"noclear"}
 KNOWN_DIVERGE = set()
 
+PROGRAM_NOCLEAR = [
+    "NEW",
+    '10 BLOAD"CAS:",R',
+    '20 PRINT"[A]";:GOSUB 100:FOR I=1 TO 2:PRINT I;:NEXT:A$="X"+"Y":PRINT A$;"]"',
+    "30 END",
+    '100 PRINT"[G]";:RETURN',
+    "RUN",
+]
 PROGRAM = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -99,7 +117,8 @@ def main():
         open(path, "wb").write(tape(lo, hi))
         got = {}
         for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
-            got[side] = rows(omsx_repl.run_cases(m, [("direct", PROGRAM)], batch=False,
+            prog = PROGRAM_NOCLEAR if name in NOCLEAR else PROGRAM
+            got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,
                                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
                                                  run_gap=40.0, cassette=path)[0])
         if not got["VG"]:

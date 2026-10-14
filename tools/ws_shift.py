@@ -113,9 +113,13 @@ def overlaps(cells):
     return pairs
 
 
+page_ok = set()
+
+
 def parse_args():
     argv = sys.argv[1:]
     moves, txtmax, nodisk, donly = [], None, None, set()
+    page_ok.clear()
     pos = [a for a in argv if not a.startswith("--")]
     i = 0
     while i < len(argv):
@@ -128,6 +132,8 @@ def parse_args():
             txtmax = int(argv[i + 1].replace("$", ""), 16); i += 2; continue
         if a == "--nodisk":
             nodisk = int(argv[i + 1].replace("$", ""), 16); i += 2; continue
+        if a == "--page-ok":                       # a block whose page the BUILD asserts
+            page_ok.update(argv[i + 1].split(",")); i += 2; continue
         if a == "--disk-only":
             donly |= set(argv[i + 1].split(",")); i += 2; continue
         i += 1
@@ -167,12 +173,34 @@ def main():
         return None
 
     # page-idiom names may only move by whole pages
+    # 🔧 D-WSZERO slice 5 (2026-10-14): every idiom in the tree is low-byte
+    # arithmetic INSIDE the name's own block (`add a,FCH_MODES & $FF`, `cp low
+    # TKDIG`) -- the assembler recomputes `high` / `low`, so what such code
+    # assumes is that the block does not CROSS a page. A non-page delta is
+    # therefore accepted when the name's DECLARED extent lies in one page both
+    # before and after the move; an unknown width is still refused.
     idioms = page_idiom_names()
-    bad_pg = sorted(n for c, m in before.items() for n, v in m.vals.items()
-                    if n in idioms and move_of(v) is not None and move_of(v) % 0x100
-                    and not m.not_a_cell(n))         # constants never move
+    wmaps = {c: ram_map.Map(c, 0xE000, 0xF380, use_sym=False) for c in ("basic", "disk")}
+
+    def one_page(a, w):
+        return (a >> 8) == ((a + w - 1) >> 8)
+
+    bad_pg = []
+    for c, m in before.items():
+        for n, v in m.vals.items():
+            d = move_of(v)
+            if n not in idioms or d is None or not d % 0x100 or m.not_a_cell(n):
+                continue                             # constants never move
+            if n in page_ok:
+                continue                             # the build asserts its page
+            w = wmaps[c].width.get(v)
+            if w is None and v in wmaps[c].overrun:  # an overlay inside it (MULPROD /
+                w = wmaps[c].overrun[v][0]           # RND_*): its own claim still holds
+            if w is None or not one_page(v, w) or not one_page(v + d, w):
+                bad_pg.append(f"{n}(${v:04X}+{w})")
     if bad_pg:
-        sys.exit(f"REFUSED: a non-page delta would move page-idiom name(s): {bad_pg}")
+        sys.exit(f"REFUSED: a non-page delta would move page-idiom name(s) whose block "
+                 f"crosses a page or has no declared width: {sorted(set(bad_pg))}")
 
     # 🔴 THE WIDTH MAP IS BUILT HERE, BEFORE ANY FILE IS REWRITTEN (2026-10-13).
     # It was built inside the verify block, i.e. from the AFTER files, while the

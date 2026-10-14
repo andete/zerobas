@@ -236,11 +236,11 @@ BASIC_DISK_ID   equ     $FF
 ; ROM reserves no local DPB area.)
 ;
 ; FDC driver state (7 bytes below the sector buffer)
-FDC_IFF         equ     $EF2C   ; saved caller IFF2 across a sector op (1 = was EI) (1 B)
-FDC_CNT         equ     $EF2D   ; remaining sector count (1 B)
-FDC_LSEC        equ     $EF2E   ; current logical sector (word)
-FDC_DEST        equ     $EF30   ; current transfer address (word)
-FDC_TRY         equ     $EF32   ; read attempt counter (1 B)
+FDC_IFF         equ     $EFB0   ; saved caller IFF2 across a sector op (1 = was EI) (1 B)
+FDC_CNT         equ     $EFB1   ; remaining sector count (1 B)
+FDC_LSEC        equ     $EFB2   ; current logical sector (word)
+FDC_DEST        equ     $EFB4   ; current transfer address (word)
+FDC_TRY         equ     $EFB6   ; read attempt counter (1 B)
 
 ; Sector buffer (512 bytes) — DSKIO reads land here for FAT12 parsing.
 ; 🏗️ D-BUFMERGE (Joost, 2026-09-24: *"(b) One shared buffer"*): this IS main's

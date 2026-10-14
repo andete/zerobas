@@ -2787,6 +2787,74 @@ item — do **one item per session** to keep context lean.
       bottom-up ($E98A first), raising TXTMAX_NODISK at each step to the lowest
       cell still used on the diskless machine -- every step moves SP up by the
       bytes it frees (and FRE(0) toward the reference, TIER 4's gap).
+      ✅ **SLICE 5 (2026-10-14): THE WORKSPACE IS PACKED AGAINST THE TOP; THE
+      DISKLESS CEILING RISES $E98A -> $EBCD (+579 B).** Bottom-up one cell group
+      at a time would have raised nothing until $E9A1 was empty, and the idle
+      published cells add up to ~230 B
+      ([`pubfree_map.py`](scratchpad/pubfree_map.py), a static first cut). The
+      holes inside the window -- incl. the blocks slices 1-4 had just emptied --
+      were the larger and immediate lever:
+      [`wszero_compact.py`](scratchpad/wszero_compact.py) plans it
+      ([`wszero_s5_plan.out`](scratchpad/wszero_s5_plan.out)): 29 islands slide
+      up, each directly under the next, below $F16D (basic's MATH cells share an
+      island with the disk ROM's own DRVA_DPB there, and the disk ROM's work area
+      $F195-$F37F stays); `tools/ws_shift.py` applied and VERIFIED it (408 names,
+      each moved exactly by its island's delta, no new overlap:
+      [`wszero_s5_apply.out`](scratchpad/wszero_s5_apply.out)).
+      🔧 ws_shift's page rule was wider than the code: it refused ANY non-page
+      delta for a name used in `high` / `low` / `& $FF`, and every such use in the
+      tree is low-byte arithmetic inside the name's own block. It now accepts a
+      non-page delta when the name's declared extent stays in one page before and
+      after (an overlay's demoted width still counts -- MULPROD hosts RND_*), and
+      `--page-ok` names a block whose page the BUILD asserts (the DEF FN frame).
+      The planner lowers an island until its page-constrained blocks fit (the FN
+      frame moved exactly two pages; ~95 B of packing lost to it). The first
+      apply was reverted before building: the FN frame would have crossed $EE00.
+      Two address constants moved by hand (BASIC_WS_CEIL, FN_PAREA_CEIL) and
+      FN_BASE's pin $EB92 -> $ED92.
+      🔧 Two unit tests stood in for the boot's CSP with $F000 -- a 174-byte hole
+      until now; the control pool then grew over live cells and the CPU ran
+      away. They seed TXTMAX_NODISK from the sym now.
+      📏 Gate: wszero-acceptance's rows were the OLD HOMES of slices 1-4 and
+      packed cells now sit in most of them; the rows come from the build
+      (`freed`, the remaining window in quarters, `all`) plus `noclear`: the
+      RESET class reproduced with our own tape -- no `CLEAR`, a load over
+      $E000-$E7FF.
+      🔴 **THE NEW GEOMETRY FOUND A FATAL PAIR EVERY EARLIER ROW HAD HIDDEN.** First
+      run: `noclear` SAME (🔮 HIT), but `q2` stopped after `[A][G]` while `all`,
+      a superset, agreed (🔮 "all SAME": MISS). Bisected
+      ([`wszero_bisect.py`](scratchpad/wszero_bisect.py) ->
+      [`wszero_s5_q2_bisect.out`](scratchpad/wszero_s5_q2_bisect.out)) to $EF9C:
+      POOLSIZE's high byte. The control pool's floor is min(HIMEM, TXTCEIL) -
+      POOLSIZE; a load over ONE of the pair gave a floor that broke the next FOR,
+      a load over BOTH happened to give a usable one -- and until the packing every
+      row spanned both. POOLSIZE / TXTCEIL -> CONLO $F66A-$F66D (the reference's
+      CHRGTR constant scratch, idle on zerobas and C-BIOS), FRETOP -> the
+      published FRETOP $F69B, the same job. Equates only. Then all 8 rows SAME
+      ([`wszero_s5_rows.out`](scratchpad/wszero_s5_rows.out)).
+      🔪 [`wszero_s5_knife.py`](scratchpad/wszero_s5_knife.py) ->
+      [`wszero_s5_knife.out`](scratchpad/wszero_s5_knife.out): K-WS6
+      (TXTMAX_NODISK back at $E98A, the cells left packed) -> `noclear` diverges,
+      HIT; K-WS7 (POOLSIZE back at $EF9B) -> `q2` diverges, HIT.
+      📏 FRE(0) on the diskless pair
+      ([`wszero_s5_fremem.out`](scratchpad/wszero_s5_fremem.out)): -1957 against
+      the VG-8020 in every state (was -2536), every delta equal. 🔮 -1957: HIT.
+      📏 **THE REAL TAPES (one-off, outside the repo) -- A TRADE, NOT A WIN.**
+      RESET 10 -> 6: Knight Tyme now runs (far from the reference's screen), Blow
+      Up and Exterminator get as far as their OWN tape loader and stop where City
+      Connection's class C does (the same PC), 737 Flight reaches its second
+      part's `Found:`, Colony `Syntax error in 10`. 🔮 ">= 3 of the 6 stop
+      resetting": HIT (3), but only one of them runs. And Formula 1 Simulator,
+      which reached the reference's screen on the slice-4 build, now RESETS --
+      deterministic, the same signature with SP at the NEW stack ($E8DD): its
+      data lands there. SAME 10 -> 9. 🔴 **LESSON: an intermediate ceiling only
+      MOVES the stack to a different spot inside the RAM the games treat as free;
+      it trades one title's collision for another's.** Only SP where the
+      reference has it ($F09E, i.e. the window EMPTY, ceiling $F380) fixes the
+      class. Shipped anyway: the direction Joost ruled, FRE(0) +579 B (TIER 4),
+      the POOLSIZE pair, and it is ONE equate to revert if the testers prefer
+      F1. ➡️ The remaining ~1.4 KB must leave the window as fast as possible --
+      every further step shuffles collisions until the last one.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8656,7 +8724,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34189 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34257 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8822,7 +8890,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13684 (T-6FE392)8 (T-529ABE)` from `TODO.md:26478 (T-529ABE)`: a
+      `TODO.md:13752 (T-6FE392)8 (T-529ABE)` from `TODO.md:26546 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14531,7 +14599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26478 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26546 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
