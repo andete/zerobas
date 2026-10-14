@@ -2764,6 +2764,29 @@ item — do **one item per session** to keep context lean.
       interrupted page-0 tenant). Those stay in the window; ➡️ next: re-run the
       real tapes, then a richer gate program (FN, FIELD, graphics, PRINT USING,
       PLAY, traps) to find the next fatal tenants.
+      📏 **THE REAL TAPES AFTER SLICE 4 (2026-10-14, the same one-off run outside
+      the repo, zerobas re-run against the earlier VG-8020 dumps):** 8 titles get
+      further -- Sorcery and Elidon reach the reference's screen byte for byte,
+      Disc Warrior, Lazy Jones, Jump Jet, Hustler, Manic Miner and Mutant Monty
+      now run where they reset or failed to load (Mutant Monty within 1 B of
+      VRAM). BMX Simulator gets past its line 40 to the reference's line-50
+      screen (0 B differ at 180 s), then crashes later. 🔮 "RESET shrinks
+      sharply": MISS -- 13 -> 10.
+      📏 **THE RESET CLASS IS THE CEILING, NOT A CELL** (the triage harness's
+      breakpoint on $0000, then the published cells read on entry to the failing
+      line, both machines): in 6 of the 10 (Blow Up, Exterminator, Boulder Dash I
+      and II, Finders Keepers, Knight Tyme) the reset is a `ret` into a stack
+      that holds zeros -- SP $E69A, the registers of a block copy into
+      $E000-$E7FF. The loaders do NOT `CLEAR` first: at the failing line the
+      VG-8020 has HIMEM $F380 and SP $F09E, zerobas HIMEM $E98A and SP $E6A6.
+      The game's own data goes where the reference keeps free RAM and lands on
+      our stack. 🔮 "they call a BASIC ROM entry point" (class A's hypothesis):
+      MISS for these six. So moving cells out of the window is necessary but
+      not sufficient: the stack follows the ceiling, and the ceiling rises only
+      when the window is empty from the BOTTOM up. ➡️ Order from here: vacate
+      bottom-up ($E98A first), raising TXTMAX_NODISK at each step to the lowest
+      cell still used on the diskless machine -- every step moves SP up by the
+      bytes it frees (and FRE(0) toward the reference, TIER 4's gap).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -3063,6 +3086,15 @@ item — do **one item per session** to keep context lean.
       ➡️ Next: D first (cheapest, one line each), then A (largest), B and C.
       HAL (the tester's "crashes on line 600, probably PRINT USING") is likely
       D-PULONG, fixed 2026-10-14; a re-test with the new nightly is asked for.
+      📏 **RE-RUN AFTER D-WSZERO SLICES 1-4 (2026-10-14):** 8 more titles reach
+      or approach the reference (D-WSZERO has the list). The 10 still in class A
+      are mostly NOT entry points: 6 reset because zerobas's stack sits 2.3 KB
+      below the reference's ($E6A6 vs $F09E, no `CLEAR` in the loader) and the
+      game's data lands on it -- D-WSZERO's ceiling, bottom-up. Still open as
+      before: B (Fruit Panic, Harry Fox `Device I/O`; Loopy Laundry, Punch &
+      Judy `Found:`), C (City Connection, Ninja 2, Oil's Well -- all stop at
+      the same PC), D (Head over Heels `Out of memory`), the `PC 0038` loop
+      (Chuckie Egg, BMX Simulator's later crash).
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -8624,7 +8656,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34157 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34189 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8790,7 +8822,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13652 (T-6FE392)8 (T-529ABE)` from `TODO.md:26446 (T-529ABE)`: a
+      `TODO.md:13684 (T-6FE392)8 (T-529ABE)` from `TODO.md:26478 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14499,7 +14531,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26446 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26478 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
