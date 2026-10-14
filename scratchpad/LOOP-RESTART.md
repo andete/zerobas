@@ -4,7 +4,46 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-14 EARLY MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW (TWO NEW ROWS: batteries, distribution) AND THE 2026-09-24 SECTION (READ BOTH).
+## 🟢 STATE AS OF 2026-10-14 MORNING — THE CURRENT ONE. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW AND THE 2026-09-24 SECTION (READ BOTH); NOTHING NEW FROM HIM SINCE 10-13.
+
+**Shipped 2026-10-14 (`git log --oneline 72f55418..`), each FULL-green (+ the five excluded):**
+- **RAM order DONE.** Step (3) D-STRSCRBUF: STRSCR is `BUF`, console INPUT parses
+  one byte up -- +256 B on both builds (diskless boot FRE(0) 26279, gap to the
+  VG-8020 **-2536**; disk build 23961, 531 ahead of the CF-3300). Step (4):
+  FLD_DESC left as is (already program RAM without a disk; a descriptor into
+  FSECTOR_BUF would follow channel switches -- reasoned in TODO); PRINT USING's
+  32 B format copy -> 5 B, 27 B a declared FREE-RAM hole (not program RAM until
+  a layout move takes it).
+- **D-PULONG (TIER 1)** found by step (4): a PRINT USING format past 32 chars was
+  cut. Now read in place (pu_hold_fmt; GC-safe through a temp-stack entry) and
+  literal runs longer than the 96 B window are emitted in pieces. **D-PUWIDE**:
+  a numeric field over 24 wide is ERR 5, as on the VG-8020. Gate pulong-acceptance.
+- **D-BASICROM CLOSED**: the 3D Golf cartridge draws what the VG-8020 draws up to
+  the first tee shot (one-off VRAM comparison at matching program states, outside
+  the repo). It found **D-RG7 (TIER 1)**: `SCREEN 0:COLOR 15,4,7` was white on
+  cyan -- C-BIOS's CHGCLR put BDRCLR in register 7's text-background nibble.
+  Repack patch 8 (cbios-repack/vdp-reg7.patch), byte-neutral. Gate rg7-acceptance.
+
+**Walls after 22407d11 (READ THEM AGAIN, `make basic-reloc`):** main low ~46 B,
+page 1 ~5 B, sub p0 ~17 B. Main is nearly full again -- D-PULONG spent page 1.
+
+➡️ **NEXT, by tier (`python3 tools/tier_table.py --all`):** TIER 1 left = the rung
+definitions + D-TAPELOAD (🙋); TIER 3 = D-COPYWILD (🙋); TIER 4 = D-DIMRESERVE's
+remainder (needs the per-op string-heap failure SPEC first -- read the item's
+end) and D-BOOTKEYS' CTRL half (after D-DSKIB). So: **the TIER 5 queue**, or the
+D-DIMRESERVE spec. Most of both need main bytes: a MAIN CARVE (into sub2, see
+the 10-12 section) is likely the first step of either.
+
+**🔧 Lessons (2026-10-14):** a test that hard-codes a workspace address goes stale
+on a layout move (test_play_parse; read the sym); a FREE-RAM claim written for a
+page that a shift FILLS is wrong by construction (ram-claim-check caught it); a
+GC knife row is blind unless the GC both MOVES the body and something lands on
+the old bytes (K-PL1 run 2); a byte-neutral rewrite can come from computing a
+value once that two branches each computed (D-RG7); an unquoted heredoc RUNS
+backticks in the text (it ran `SCREEN 0:...` as a shell command) -- edit with
+the Edit tool.
+
+## 🟢 STATE AS OF 2026-10-14 EARLY MORNING — superseded above. JOOST'S RULINGS ARE IN THE 2026-10-09 TABLE BELOW (TWO NEW ROWS: batteries, distribution) AND THE 2026-09-24 SECTION (READ BOTH).
 
 **Joost, 2026-10-13 (all in the rulings table):** RAM is high priority -- "for every
 ram buffer or memory location we invented ourselves, we need to verify how
