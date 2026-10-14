@@ -1,0 +1,4 @@
+ROW boot VG=[[F16E]] ZB=[[E6B0]] DIVERGES
+ROW clear VG=[[81DE]] ZB=[[81AC]] DIVERGES
+ROW himem VG=[[83F0]] ZB=[[83F0]] SAME
+refcache: 2 hit, 4 miss, 4 stored

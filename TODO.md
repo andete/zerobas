@@ -2616,6 +2616,39 @@ item — do **one item per session** to keep context lean.
       a VISIBLE defect in SCREEN 0. Gameplay past the first tee shot was not
       compared (it needs a scripted swing); nothing seen so far differs.
 
+- [ ] 🧨 **D-WSZERO — zerobas's OWN WORKSPACE SITS IN RAM A PROGRAM OWNS: 22 OF ~43
+      FAILING TAPES LOAD OVER IT (found 2026-10-14 by D-TAPELOAD)**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🤖 **AUTONOMOUS** — ruled (Joost, 2026-10-14, "Shrink to zero"): every piece
+      of zerobas state in $E98A-$F37F (diskless) moves to the reference's own cell
+      for the same job, or is redesigned away; CRASH-CRITICAL STATE FIRST.
+      📏 On a real MSX1 a program that does `CLEAR n,&Hxxxx` owns HIMEM..$F37F;
+      tape loaders do exactly that and then BLOAD up to $F000 / $F37F. On zerobas
+      that range holds ~2.5 KB of our state (stack anchors CSP / SAVSTK, the BLOAD
+      loop's CURPTR / ENDPTR, tape and interrupt state, the string engine's cells,
+      ...). Measured (one-off runs outside the repo, the tapes never decoded --
+      only each binary's BSAVE header and length were read): 22 of the reported
+      failing titles load a binary ending above $E98A (Disc Warrior $9000-$F000,
+      Manic Miner $8958-$EDFF, Boulder Dash I/II $C100-$F37F, Sorcery,
+      Elidon, Knight Tyme, Hustler, ...); 1 of 6 working controls does (Alien 8,
+      which never returns to BASIC). Three more (Buzz Off, Shark Hunter, Colony)
+      write the range from their own loaders. Mechanism, Disc Warrior: zerobas's
+      own BLOAD overwrote ENDPTR mid-load, read 2 bytes past the block and raised
+      `Device I/O error` (zerobas's raise_error caught by breakpoint, called from
+      the statement level; TAPIN counts 24585 vs the VG-8020's 24583).
+      🔴 Instrument lessons, both mine: a watch for "writes by GAME code" cannot
+      see a write zerobas makes ON THE PROGRAM'S BEHALF (BLOAD's load loop) --
+      that is the main path here; and the secondary-slot register decides
+      whether page-1 code is RAM or our sub ROM -- read it, do not assume.
+      ➡️ Plan: (1) inventory the range by job (tools/ram_map.py lists 432 named
+      addresses in [E000,F380), plus unattributed runs -- some may be holes);
+      (2) crash-critical first: what BLOAD, the tape and the interrupt service
+      touch, and what BASIC needs to SURVIVE a load into the range and continue
+      (Disc Warrior returns to BASIC for its second BLOAD); (3) per cell: the
+      reference's published cell for the same job (the 2026-10-13 rule), else a
+      redesign; (4) gate: a synthetic tape that BLOADs over $E98A-$F37F and then
+      runs more BASIC, both machines.
+
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -8475,7 +8508,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34008 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34041 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8641,7 +8674,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13503 (T-6FE392)8 (T-529ABE)` from `TODO.md:26297 (T-529ABE)`: a
+      `TODO.md:13536 (T-6FE392)8 (T-529ABE)` from `TODO.md:26330 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14350,7 +14383,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26297 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26330 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
