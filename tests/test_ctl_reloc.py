@@ -56,18 +56,21 @@ def check(fails, label, got, want):
 def test_copy(m, fails):
     """SP inside the region: the block must move and SP must follow it."""
     CSP, CTLLIM = m.sym["CSP"], m.sym["CTLLIM"]
-    TOP, SIZE = 0xF800, 8
+    # D-WSZERO slice 3 (2026-10-14): TOP was $F800, and CSP itself now lives at
+    # $F712 (PARM1) -- inside [SP, $F800), so the copy moved CSP and read back 0.
+    # $F700 keeps the copied block between the harness's stack ($F380) and CSP.
+    TOP, SIZE = 0xF700, 8
     m.poke_w(CSP, TOP)
     m.poke_w(CTLLIM, 0x8000)
-    # Markers inside the block the copy has to move. 0xF700 is comfortably above
+    # Markers inside the block the copy has to move. 0xF600 is comfortably above
     # the harness's own frame and below the frontier.
-    m.poke(0xF700, bytes([0xA5, 0x5A, 0xC3]))
+    m.poke(0xF600, bytes([0xA5, 0x5A, 0xC3]))
     r = m.call("ctl_alloc", hl=SIZE)
     fails = check(fails, "CSP := base", m.peek(CSP, 2)[0] | (m.peek(CSP, 2)[1] << 8), TOP - SIZE)
     fails = check(fails, "HL = the frame's base", r.hl, TOP - SIZE)
     fails = check(fails, "CF clear (allocated)", r.f & 1, 0)
     fails = check(fails, "marker moved down by size",
-                  bytes(m.peek(0xF700 - SIZE, 3)), bytes([0xA5, 0x5A, 0xC3]))
+                  bytes(m.peek(0xF600 - SIZE, 3)), bytes([0xA5, 0x5A, 0xC3]))
     return fails
 
 

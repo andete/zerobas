@@ -677,10 +677,10 @@ STAR_TOKEN      equ     $F3     ; '*'
 ; BASIC-VISIBLE side effect (rows w.pt.on / w.pt.step). POINT now marshals through
 ; GFX_PTX/GFX_PTY below. ⚠️ Before reusing a pinned cell as a parameter, ask whether
 ; THIS op writes it as part of its contract -- not whether the block does.
-GFX_OP          equ     $EC30   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
-GFX_C           equ     $EC31   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
-GFX_RES         equ     $EC32   ; tenant->main: POINT result colour 0..15 (1)
-GFX_REL         equ     $EC33   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
+GFX_OP          equ     $F6F2   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
+GFX_C           equ     $F6F3   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
+GFX_RES         equ     $F6F4   ; tenant->main: POINT result colour 0..15 (1)
+GFX_REL         equ     $F6F5   ; parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1)
 ; Graphics G3 (LINE) marshalling + Bresenham state. G3 needs ~40 B that persist for
 ; the WHOLE draw (the tenant loops while EI). The $E034+ gap is NOT usable: CURLINE /
 ; the FOR/GOSUB stacks / GOTOTGT live there and must be preserved across the
@@ -889,15 +889,15 @@ LRSET_DEST      equ     $EC1E   ; LSET/RSET: destination ADDRESS of the store (2
                                 ; names. Both callers now compute the address and
                                 ; sub/lrsetst.asm just loads it (spec §4.1).
 RUNFLAG         equ     $FCBE   ; 1 = ,R handoff requested (set while parsing) (1) -- the published RUNBNF (D-WSZERO)
-CLPTR           equ     $EC2B   ; CLOAD/LOAD: store cursor into the program area (2)
-CLINK           equ     $EC2D   ; CLOAD/LOAD: saved link word of the current line
+CLPTR           equ     $F6ED   ; CLOAD/LOAD: store cursor into the program area (2)
+CLINK           equ     $F6EF   ; CLOAD/LOAD: saved link word of the current line
                                 ; (= the saving machine's absolute start address of
                                 ; the line; used to derive each line's body length
                                 ; from consecutive link-word differences) (2)
-TKNAME          equ     $EC28   ; tokeniser: 1 = previous char was part of a name
+TKNAME          equ     $F6EA   ; tokeniser: 1 = previous char was part of a name
                                 ; (so a following digit stays verbatim, not crunched)
-TKRADIX         equ     $EC29   ; tokeniser: &H/&O accumulator radix (16 or 8)
-TKRTOK          equ     $EC2A   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
+TKRADIX         equ     $F6EB   ; tokeniser: &H/&O accumulator radix (16 or 8)
+TKRTOK          equ     $F6EC   ; tokeniser: &H/&O constant token to emit, $0C/$0B (1 B)
 NUMBUF          equ     $ECC0   ; PRINT: decimal-format scratch (8 bytes, 0-term)
 ; MID$-statement: the destination var's descriptor address, stashed for one
 ; MID$(A$,n,m)=B$ so the token cursor can stay in HL through the arg parse.
@@ -2475,7 +2475,13 @@ DB_RESPTR       equ     $F022   ; resume: the token to restart at (2 B)
     IF (DB_WIN / 256) != ((DB_WIN + DB_WINSZ - 1) / 256)
                 db      DB_WIN_MUST_SIT_IN_ONE_PAGE__PCHAR_COMPARES_THE_LOW_BYTE
     ENDIF
-PRGEND          equ     $EC26   ; addr of the $0000 end-of-program marker (2 bytes)
+; D-WSZERO slice 3 (2026-10-14): PRGEND .. SL_CEIL ($EC26-$EC59, 52 B: the run loop's
+; control and the control-pool anchors) moved as ONE block (tools/ws_shift.py, +$AC2)
+; into the published PARM1 ($F6E8, 100 B, the reference's DEF FN parameter area,
+; unused by zerobas) -- an INTERIM home: a load over $EC26-$EC59 left BASIC with a
+; garbage CSP / CURLINE / PRGEND. The same-job homes (CTLTOP -> STKTOP, PRGEND =
+; VARTAB-2, CSP merged with SAVSTK) are code changes, for when main has bytes.
+PRGEND          equ     $F6E8   ; addr of the $0000 end-of-program marker (2 bytes)
 
 ; --- Arrays slice-1, SPLIT design (repack build only, docs/spec-basic- ------
 ; arrays.md §10). The array area is the LOW free region: it begins right
@@ -2533,7 +2539,7 @@ PRGEND          equ     $EC26   ; addr of the $0000 end-of-program marker (2 byt
 ; so the fix deletes the copy and hands the tenant a POINTER instead of a buffer.
 ; The block's ceiling is then the input line (43 subscripts, LINEMAX=96) against
 ; 1024 B of measured stack headroom, not a constant anyone had to pick.
-ARY_OP          equ     $EC28   ; 0=RESOLVE (read/write element, auto-dim on
+ARY_OP          equ     $F6EA   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; read) / 1=DIM (explicit declare) / 2=ERASE
                                 ; (free, slice-2, docs/spec-basic-arrays-
                                 ; slice2-erase.md §4.2) / 3=COPY_STR (slice-3/
@@ -2544,13 +2550,13 @@ ARY_OP          equ     $EC28   ; 0=RESOLVE (read/write element, auto-dim on
                                 ; SAME tenant + param block per Q4 -- reuses
                                 ; ARY_KEY/ARY_TYPE in, ARY_ADDR/ARY_ERR out,
                                 ; identical shape to RESOLVE) (1)
-ARY_KEY         equ     $EC29   ; name0/name1 key (BC round-trip: written via
+ARY_KEY         equ     $F6EB   ; name0/name1 key (BC round-trip: written via
                                 ; `ld (ARY_KEY),bc`, read via `ld bc,(ARY_KEY)`
                                 ; on both sides -- byte order unobserved) (2)
-ARY_TYPE        equ     $EC2B   ; 2/4/8 (int/single/double) (1)
-ARY_NIDX        equ     $EC2C   ; parsed subscript/bound count for the CURRENT
+ARY_TYPE        equ     $F6ED   ; 2/4/8 (int/single/double) (1)
+ARY_NIDX        equ     $F6EE   ; parsed subscript/bound count for the CURRENT
                                 ; reference (1)
-ARY_IDXP        equ     $EC2D   ; [D-ARR-C] POINTER to the parsed subscripts
+ARY_IDXP        equ     $F6EF   ; [D-ARR-C] POINTER to the parsed subscripts
                                 ; (RESOLVE) or bounds (DIM) -- int16 LE, ndim of
                                 ; them, living in the CALLER's own hardware-stack
                                 ; block, not here (2). ⚠️ IT ADDRESSES SUBSCRIPT
@@ -2577,7 +2583,7 @@ ARY_IDXP        equ     $EC2D   ; [D-ARR-C] POINTER to the parsed subscripts
 ; comment where tools/ram_map.py does not read one, so the overlap was never
 ; reported (the allowlist pinned it as `overruns`). Now in the FREE-RAM span
 ; FOR_CUR left, with the width at the END of the line.
-ARY_CUR         equ     $EC46   ; [D-ARR-C] the text cursor, parked across the engine call (2)
+ARY_CUR         equ     $F708   ; [D-ARR-C] the text cursor, parked across the engine call (2)
                                 ; subrom_call/CALSLT clobbers HL,
                                 ; and the fused ary_parse_call has no caller left
                                 ; to hold a [CURSOR] push for it. Safe against the
@@ -2589,13 +2595,13 @@ ARY_CUR         equ     $EC46   ; [D-ARR-C] the text cursor, parked across the e
                                 ; $E031..$E034 (4 B) FREED by the above -- the old
                                 ; ARY_IDX was 8 bytes. Unassigned on purpose: this
                                 ; span has CURLINE immediately above it at $E038.
-ARY_ADDR        equ     $EC35   ; [tenant return, RESOLVE] element address (2)
+ARY_ADDR        equ     $F6F7   ; [tenant return, RESOLVE] element address (2)
                                 ; -- also SCALAR_FIND/SCALAR_ALLOC's own
                                 ; return (§4b): the scalar entry address, or
                                 ; 0 for SCALAR_FIND's "not found" (0 is never
                                 ; a valid entry address -- program text
                                 ; starts at $8001)
-ARY_ERR         equ     $EC37   ; [tenant return] 0 ok; 1 Subscript-oor; (1 B)
+ARY_ERR         equ     $F6F9   ; [tenant return] 0 ok; 1 Subscript-oor; (1 B)
                                 ; 2 Illegal-fn (negative); 3 Redimensioned;
                                 ; 4 Out of memory -- an ALLOCATION that will
                                 ; not fit VARIABLE space (DIM, auto-dim, and
@@ -2647,10 +2653,10 @@ USRTAB          equ     $F39A   ; 20 B total, 10 USR jump vectors of 2 B each.
                                 ; day -- a width PRESENT and WRONG, which no gate
                                 ; catches.
 ; Step B scratch (page $E0, clear of LINEBUF/VARTAB in page $E1).
-SL_NUM          equ     $EC30   ; store_line: target line number (2)
-SL_SLOT         equ     $EC32   ; store_line: insertion slot address (2)
-SL_SIZE         equ     $EC34   ; store_line: new line size in bytes (2)
-SL_TOK          equ     $EC36   ; store_line: saved token-body pointer (2)
+SL_NUM          equ     $F6F2   ; store_line: target line number (2)
+SL_SLOT         equ     $F6F4   ; store_line: insertion slot address (2)
+SL_SIZE         equ     $F6F6   ; store_line: new line size in bytes (2)
+SL_TOK          equ     $F6F8   ; store_line: saved token-body pointer (2)
 
 ; --- Step B control flow: keyword tokens + line-number references ----------
 ; Keyword tokens from MSX2 Technical Handbook Table 2.20; the line-number
@@ -2867,17 +2873,17 @@ LPOS_TOKEN      equ     $9C     ; LPOS(n) — $FF-prefixed; 0-based PRINTER colu
 TAB_TOKEN       equ     $DB     ; TAB(n) — PRINT item, ABSOLUTE column
 SPC_TOKEN       equ     $DF     ; SPC(n) — PRINT item, RELATIVE n spaces
 ; Runtime control-flow state (page $E0).
-CURLINE         equ     $EC38   ; link-field addr of the line being executed (2)
-GOTOTGT         equ     $EC3A   ; pending branch-target line addr (2)
-GOTOFLAG        equ     $EC3C   ; 1 = a branch (GOTO) is pending (1 B)
-ENDFLAG         equ     $EC3D   ; 1 = END/STOP reached, stop the run (1 B)
+CURLINE         equ     $F6FA   ; link-field addr of the line being executed (2)
+GOTOTGT         equ     $F6FC   ; pending branch-target line addr (2)
+GOTOFLAG        equ     $F6FE   ; 1 = a branch (GOTO) is pending (1 B)
+ENDFLAG         equ     $F6FF   ; 1 = END/STOP reached, stop the run (1 B)
 ; Mid-line resume: GOTO branches to a line *start*, but RETURN and NEXT must
 ; resume at an exact token position (the statement after GOSUB / the FOR loop
 ; body). When RESUMEFLAG is set the RUN loop runs from RESUMEPTR instead of
 ; recomputing the body from CURLINE; the resuming statement sets CURLINE to the
 ; line that holds RESUMEPTR so the post-statement "advance to next line" works.
-RESUMEPTR       equ     $EC3E   ; mid-line resume token pointer (2)
-RESUMEFLAG      equ     $EC40   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B)
+RESUMEPTR       equ     $F700   ; mid-line resume token pointer (2)
+RESUMEFLAG      equ     $F702   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B)
 ; CONT / Ctrl-STOP break-resume state (own-design; see PROVENANCE.md). When a
 ; running program is broken by the STOP statement or by Ctrl-STOP (BREAKX), the
 ; run loop records exactly where to resume: CONTLINE = the link-field address of
@@ -4038,8 +4044,8 @@ CAS_VMIS        equ     $F879   ; sticky: 1 = a verify mismatch was seen (1) -- 
 ; That is not a convenience: D-CTLCROSS (§12) measured that BOTH references
 ; refuse to match a `FOR` frame lying below a live GOSUB frame, and this is the
 ; invariant that reproduces it with no per-frame type tag and no walk.
-GSP             equ     $EC41   ; newest GOSUB frame's address; == CTLTOP if none (2)
-FSP             equ     $EC43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
+GSP             equ     $F703   ; newest GOSUB frame's address; == CTLTOP if none (2)
+FSP             equ     $F705   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) (2)
 ; D-FORFLOAT (docs/spec-basic-forfloat.md): a FOR frame is 25 B, the reference's
 ; own size (docs/reference-stack-frames.md §2), laid out
 ;   [name1][name0][type] [limit: type + 8] [step: type + 8] [CURLINE:2] [body:2]
@@ -4048,8 +4054,8 @@ FSP             equ     $EC43   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) 
 ; evaluator's own combine_add / combine_cmp, int16 fast path and BCD alike.
 FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
-SEQ_EOF         equ     $EC45   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
-; FREE-RAM $EC48..$EC50  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
+SEQ_EOF         equ     $F707   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
+; FREE-RAM $F70A..$F712  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
 FOR_CUR         equ     $EC9C   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the
@@ -4068,7 +4074,7 @@ FOR_SIGN        equ     FOR_CUR + 25    ; NEXT's scratch: the step's sign byte (
 ; D-CTLPOOL: $E050.. held GOSUB_STK (8 x 6 B). The array is retired; these six
 ; bytes are the pool's own pointers and $E058..$E080 was FREE (addresses as of
 ; that slice: D-RAMSHIFT moved the block +$0B00 on 2026-10-13).
-CSP             equ     $EC50   ; the pool's allocation frontier, descending (2)
+CSP             equ     $F712   ; the pool's allocation frontier, descending (2)
 ; --- CTL_STACK_MARGIN: what the pool leaves for the MACHINE STACK ------------
 ; D-SPMERGE cut 2. `SP` now descends from the pool's frontier, so the frontier
 ; cannot be allowed down to `CTLLIM` -- the next expression the evaluator
@@ -4134,9 +4140,9 @@ STK_EDGE_RESERVE equ    116
 ; (142 refused n=13 -- scratchpad/storeedge_after.out; storeedge_s3.out is 141).
 ; With 116 zerobas stored the 32-byte line both references refuse.
 STK_STORE_RESERVE equ   141
-CTLTOP          equ     $EC52   ; the pool's TOP = strheap_varceil(), cached (2)
-TSP             equ     $EC54   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
-CTLLIM          equ     $EC56   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
+CTLTOP          equ     $F714   ; the pool's TOP = strheap_varceil(), cached (2)
+TSP             equ     $F716   ; newest trap SERVICE record; valid iff TRAPSVC != 0 (2)
+CTLLIM          equ     $F718   ; the pool's collision FLOOR = ARYEND+2 (2). Written (2 B)
                                 ; sub-side by strheap_ctllim at the two allocator
                                 ; success paths and at reset; read by the main ROM's
                                 ; ctl_alloc on every push. ARYEND needs an array-chain
@@ -4161,7 +4167,7 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; GOSUB (docs/spec-basic-forret.md §4). Both are
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
-SL_CEIL         equ     $EC58   ; store_line: the ceiling a store stays below (2 B)
+SL_CEIL         equ     $F71A   ; store_line: the ceiling a store stays below (2 B)
                                 ; i.e. the VARIABLE region's. D-TXTCEIL: written
                                 ; by dl_store from fch_ctx_addr(1) -- channel 1's
                                 ; block base IS strheap_varceil() -- and read by

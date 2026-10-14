@@ -119,7 +119,12 @@ def run():
     line = "A=" + "0#+" * 82 + "0#"
     m.poke(SRC, line.encode("ascii") + b"\x00")
     m.call("tokenise", hl=SRC, de=tb)
-    reach = max(i for i in range(900) if m.mem[tb + i] != mark)
+    # D-WSZERO slice 3: the tokeniser's own scratch cells (TKRADIX, TKRTOK ...) now
+    # sit in PARM1 ($F6E8+), inside this 900-byte scan -- they are not the crunch's
+    # reach, so the moved block is skipped.
+    lo_skip, hi_skip = s["PRGEND"], s["SL_CEIL"] + 1
+    reach = max(i for i in range(900) if m.mem[tb + i] != mark
+                and not lo_skip <= tb + i <= hi_skip)
     for label, got, want in (("crunch reach <= TOKBUFSZ-1", reach <= s["TOKBUFSZ"] - 1, True),
                              ("crunch refuses it (TKOVF)", m.mem[s["TKOVF"]], 25)):
         ok = got == want

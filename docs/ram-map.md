@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 411 declared addresses in this project's own workspace `$E000..$F37F` (385 with a machine-readable width), plus **137** in the MSX standard work area at or above `$F380`.
-* **disk** — 134 declared addresses in this project's own workspace `$E000..$F37F` (122 with a machine-readable width), plus **33** in the MSX standard work area at or above `$F380`.
+* **basic** — 381 declared addresses in this project's own workspace `$E000..$F37F` (362 with a machine-readable width), plus **167** in the MSX standard work area at or above `$F380`.
+* **disk** — 131 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **36** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -259,39 +259,6 @@ second one is the question a per-component map cannot answer.
 | `$EC1D` | 1 B | `disk` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
 | `$EC1E` | 2 B | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EC1E` | 2 B | `disk` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
-| `$EC26` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
-| `$EC26` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
-| `$EC28` | 1 B | `basic` | `ARY_OP/TKNAME` | tokeniser: 1 = previous char was part of a name |  |
-| `$EC29` |  | `basic` | `ARY_KEY/TKRADIX` | tokeniser: &H/&O accumulator radix (16 or 8) |  |
-| `$EC2A` | 1 B | `basic` | `TKRTOK` | tokeniser: &H/&O constant token to emit, $0C/$0B (1 B) |  |
-| `$EC2B` |  | `basic` | `ARY_TYPE/CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
-| `$EC2B` | 2 B | `disk` | `CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
-| `$EC2C` | 1 B | `basic` | `ARY_NIDX` | parsed subscript/bound count for the CURRENT | `disk` CLPTR |
-| `$EC2D` | 2 B | `basic` | `ARY_IDXP/CLINK` | CLOAD/LOAD: saved link word of the current line |  |
-| `$EC2D` | 2 B | `disk` | `CLINK` | CLOAD/LOAD: saved link word of the current line |  |
-| `$EC30` |  | `basic` | `GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM` | main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1) |  |
-| `$EC31` | 1 B | `basic` | `GFX_C` | main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1) |  |
-| `$EC32` |  | `basic` | `GFX_RES/SL_SLOT` | tenant->main: POINT result colour 0..15 (1) |  |
-| `$EC33` | 1 B | `basic` | `GFX_REL` | parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1) |  |
-| `$EC34` |  | `basic` | `LST_HI/RN_LINE/SL_DELHI/SL_SIZE` | RENUM: the OLD number of the line it is in -- |  |
-| `$EC35` |  | `basic` | `ARY_ADDR` | [tenant return, RESOLVE] element address (2) |  |
-| `$EC36` |  | `basic` | `LST_PTR/SL_DELPTR/SL_TOK` | DELETE: the statement cursor, on the token |  |
-| `$EC37` | 1 B | `basic` | `ARY_ERR` | [tenant return] 0 ok; 1 Subscript-oor; (1 B) |  |
-| `$EC38` | 2 B | `basic` | `CURLINE` | link-field addr of the line being executed (2) |  |
-| `$EC3A` | 2 B | `basic` | `GOTOTGT` | pending branch-target line addr (2) |  |
-| `$EC3C` | 1 B | `basic` | `GOTOFLAG` | 1 = a branch (GOTO) is pending (1 B) |  |
-| `$EC3D` | 1 B | `basic` | `ENDFLAG` | 1 = END/STOP reached, stop the run (1 B) |  |
-| `$EC3E` | 2 B | `basic` | `RESUMEPTR` | mid-line resume token pointer (2) |  |
-| `$EC40` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
-| `$EC41` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
-| `$EC43` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
-| `$EC45` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B) |  |
-| `$EC46` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
-| `$EC50` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
-| `$EC52` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
-| `$EC54` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
-| `$EC56` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
-| `$EC58` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$EC5A` | 32 B | `basic` | `PU_DIG` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
 | `$EC7A` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
 | `$EC7C` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
@@ -656,6 +623,39 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6C4` | 2 B | `basic` | `ARYTAB` | PUBLISHED: scalar-region end == array base (2 B) |  |
 | `$F6C6` | 2 B | `basic` | `STREND` | PUBLISHED: array-region end = ARYEND (2 B) |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
+| `$F6E8` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$F6E8` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
+| `$F6EA` | 1 B | `basic` | `ARY_OP/TKNAME` | tokeniser: 1 = previous char was part of a name |  |
+| `$F6EB` |  | `basic` | `ARY_KEY/TKRADIX` | tokeniser: &H/&O accumulator radix (16 or 8) |  |
+| `$F6EC` | 1 B | `basic` | `TKRTOK` | tokeniser: &H/&O constant token to emit, $0C/$0B (1 B) |  |
+| `$F6ED` |  | `basic` | `ARY_TYPE/CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
+| `$F6ED` | 2 B | `disk` | `CLPTR` | CLOAD/LOAD: store cursor into the program area (2) |  |
+| `$F6EE` | 1 B | `basic` | `ARY_NIDX` | parsed subscript/bound count for the CURRENT | `disk` CLPTR |
+| `$F6EF` | 2 B | `basic` | `ARY_IDXP/CLINK` | CLOAD/LOAD: saved link word of the current line |  |
+| `$F6EF` | 2 B | `disk` | `CLINK` | CLOAD/LOAD: saved link word of the current line |  |
+| `$F6F2` |  | `basic` | `GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM` | main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1) |  |
+| `$F6F3` | 1 B | `basic` | `GFX_C` | main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1) |  |
+| `$F6F4` |  | `basic` | `GFX_RES/SL_SLOT` | tenant->main: POINT result colour 0..15 (1) |  |
+| `$F6F5` | 1 B | `basic` | `GFX_REL` | parse_coord: 1 = STEP (relative) coordinate, 0 = absolute (1) |  |
+| `$F6F6` |  | `basic` | `LST_HI/RN_LINE/SL_DELHI/SL_SIZE` | RENUM: the OLD number of the line it is in -- |  |
+| `$F6F7` |  | `basic` | `ARY_ADDR` | [tenant return, RESOLVE] element address (2) |  |
+| `$F6F8` |  | `basic` | `LST_PTR/SL_DELPTR/SL_TOK` | DELETE: the statement cursor, on the token |  |
+| `$F6F9` | 1 B | `basic` | `ARY_ERR` | [tenant return] 0 ok; 1 Subscript-oor; (1 B) |  |
+| `$F6FA` | 2 B | `basic` | `CURLINE` | link-field addr of the line being executed (2) |  |
+| `$F6FC` | 2 B | `basic` | `GOTOTGT` | pending branch-target line addr (2) |  |
+| `$F6FE` | 1 B | `basic` | `GOTOFLAG` | 1 = a branch (GOTO) is pending (1 B) |  |
+| `$F6FF` | 1 B | `basic` | `ENDFLAG` | 1 = END/STOP reached, stop the run (1 B) |  |
+| `$F700` | 2 B | `basic` | `RESUMEPTR` | mid-line resume token pointer (2) |  |
+| `$F702` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
+| `$F703` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
+| `$F705` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
+| `$F707` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B) |  |
+| `$F708` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
+| `$F712` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
+| `$F714` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
+| `$F716` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
+| `$F718` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
+| `$F71A` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
 | `$F7B8` |  | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published TEMP9 (D-WSZERO) |  |
 | `$F7BC` | 2 B | `basic` | `CURPTR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BE` | 2 B | `basic` | `ENDPTR` | final load address (2 bytes) -- SWPTMP+2 |  |

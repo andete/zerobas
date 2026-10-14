@@ -1,0 +1,39 @@
+37 literal equ(s) rewritten in 1 file(s); TXTMAX $E36A -> $E36A; TXTMAX_NODISK $E98A -> $E98A
+   basic/sysvars.inc:680  GFX_OP  $EC30 -> $F6F2
+   basic/sysvars.inc:681  GFX_C  $EC31 -> $F6F3
+   basic/sysvars.inc:682  GFX_RES  $EC32 -> $F6F4
+   basic/sysvars.inc:683  GFX_REL  $EC33 -> $F6F5
+   basic/sysvars.inc:892  CLPTR  $EC2B -> $F6ED
+   basic/sysvars.inc:893  CLINK  $EC2D -> $F6EF
+   basic/sysvars.inc:897  TKNAME  $EC28 -> $F6EA
+   basic/sysvars.inc:899  TKRADIX  $EC29 -> $F6EB
+   basic/sysvars.inc:900  TKRTOK  $EC2A -> $F6EC
+   basic/sysvars.inc:2478  PRGEND  $EC26 -> $F6E8
+   basic/sysvars.inc:2536  ARY_OP  $EC28 -> $F6EA
+   basic/sysvars.inc:2547  ARY_KEY  $EC29 -> $F6EB
+   basic/sysvars.inc:2550  ARY_TYPE  $EC2B -> $F6ED
+   basic/sysvars.inc:2551  ARY_NIDX  $EC2C -> $F6EE
+   basic/sysvars.inc:2553  ARY_IDXP  $EC2D -> $F6EF
+   basic/sysvars.inc:2580  ARY_CUR  $EC46 -> $F708
+   basic/sysvars.inc:2592  ARY_ADDR  $EC35 -> $F6F7
+   basic/sysvars.inc:2598  ARY_ERR  $EC37 -> $F6F9
+   basic/sysvars.inc:2650  SL_NUM  $EC30 -> $F6F2
+   basic/sysvars.inc:2651  SL_SLOT  $EC32 -> $F6F4
+   basic/sysvars.inc:2652  SL_SIZE  $EC34 -> $F6F6
+   basic/sysvars.inc:2653  SL_TOK  $EC36 -> $F6F8
+   basic/sysvars.inc:2870  CURLINE  $EC38 -> $F6FA
+   basic/sysvars.inc:2871  GOTOTGT  $EC3A -> $F6FC
+   basic/sysvars.inc:2872  GOTOFLAG  $EC3C -> $F6FE
+   basic/sysvars.inc:2873  ENDFLAG  $EC3D -> $F6FF
+   basic/sysvars.inc:2879  RESUMEPTR  $EC3E -> $F700
+   basic/sysvars.inc:2880  RESUMEFLAG  $EC40 -> $F702
+   basic/sysvars.inc:4041  GSP  $EC41 -> $F703
+   basic/sysvars.inc:4042  FSP  $EC43 -> $F705
+   basic/sysvars.inc:4051  SEQ_EOF  $EC45 -> $F707
+   basic/sysvars.inc:4052  FREE-RAM claim  $EC48 -> $F70A
+   basic/sysvars.inc:4071  CSP  $EC50 -> $F712
+   basic/sysvars.inc:4137  CTLTOP  $EC52 -> $F714
+   basic/sysvars.inc:4138  TSP  $EC54 -> $F716
+   basic/sysvars.inc:4139  CTLLIM  $EC56 -> $F718
+   basic/sysvars.inc:4164  SL_CEIL  $EC58 -> $F71A
+🟢 VERIFIED: 44 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (77 disk mirror(s) of basic names verified through their originals; the build regenerates them).

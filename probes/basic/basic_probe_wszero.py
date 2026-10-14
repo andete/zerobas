@@ -43,6 +43,9 @@ RANGES = {
     # slice 2 (2026-10-14): the trap block's old home -- the interrupt service read
     # it every frame, so a load over it armed garbage traps one frame later.
     "trap": (0xEDD1, 0xEE1F),
+    # slice 3 (2026-10-14): PRGEND .. SL_CEIL's old home -- the run loop's control and
+    # the control-pool anchors (CSP is loaded into SP at every line).
+    "loop": (0xEC26, 0xEC59),
 }
 # First run (2026-10-14, scratchpad/wszero_gate_first.out): w2 `Device I/O error`
 # (BLOAD's loop cells), w3 nothing printed, w4 `Unprintable error in 10`, w5 stops
@@ -50,7 +53,9 @@ RANGES = {
 # Slice 2 (2026-10-14) un-pinned w3: with the trap block out of $EDD1-$EE1F, a
 # load over $EC80-$EE7F no longer stops BASIC (the FULL battery caught the rotted
 # pin). w2 now prints nothing where it gave `Device I/O error` before slice 1.
-KNOWN_DIVERGE = {"w2", "w4", "w5"}
+# Slice 3 (2026-10-14) un-pinned w2: its fatal tenants were PRGEND..SL_CEIL
+# ($EC26-$EC59, bisected: scratchpad/wszero_s3_bisect.out).
+KNOWN_DIVERGE = {"w4", "w5"}
 
 PROGRAM = [
     "NEW",

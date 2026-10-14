@@ -2712,8 +2712,31 @@ item — do **one item per session** to keep context lean.
       was the fatal tenant for this program, the anchors there (SAVSTK, SAVTXT,
       FRETOP) are rewritten before they are read. Pin removed; w2 now prints
       nothing instead of `Device I/O error` (slice 1's effect).
-      ➡️ Next: slice 3 (stack / text anchors: SAVSTK + CSP, SAVTXT, CTLTOP, FRETOP,
-      PRGEND, CONT, DATA ...), then 2b (the $0038 trampoline, after a carve).
+      ✅ **SLICE 3 (2026-10-14): the run loop's block out of the window.**
+      📏 w2 bisected first ([`wszero_s3_bisect.out`](scratchpad/wszero_s3_bisect.out)):
+      $EB00-$EB91, the DEF FN frame and $EC5A-$EC7F are harmless to this program;
+      $EC26-$EC37 (PRGEND + marshalling) and $EC38-$EC59 (CURLINE, the GOTO /
+      END / RESUME flags, GSP / FSP / TSP, CSP, CTLTOP, CTLLIM, SL_CEIL) are
+      fatal. 🔮 "d fatal (CSP), c probably (PRGEND), the rest not": HIT.
+      🔧 Main page 1 had 0 B free on 2026-10-14 (after D-BLOADRTAIL), so equates only: the whole block PRGEND .. SL_CEIL
+      ($EC26-$EC59, 44 names) moved as one by `tools/ws_shift.py --move EC26 EC5A
+      AC2` into the published PARM1 ($F6E8, the reference's DEF FN parameter
+      area, unused by zerobas) -- an INTERIM home; the same-job homes (CTLTOP ->
+      STKTOP, PRGEND = VARTAB-2, CSP merged with SAVSTK) are code changes for when
+      main has bytes. ws_shift verified 44 names moved exactly, nothing else.
+      📏 Rows: `loop` ($EC26-$EC59) SAME; `w2` SAME, its pin removed. 🔪
+      [`wszero_s3_knife.py`](scratchpad/wszero_s3_knife.py) ->
+      [`wszero_s3_knife.out`](scratchpad/wszero_s3_knife.out): K-WS4 (ws_shift
+      back by -$AC2) -> loop and w2 diverge; HIT.
+      🔧 Two unit tests overlapped the new home and were adjusted (the ROM was
+      right): test_ctl_reloc's synthetic pool top $F800 put CSP ($F712 now)
+      inside the block it copies (top -> $F700); test_tokenise's 900-byte reach
+      scan past TOKBUF now covered the tokeniser's own scratch in PARM1 (the
+      moved block is skipped). tools/ram-width-allow.txt lost 7 pins whose
+      cells left the window (the good direction).
+      ➡️ Still pinned: w4 ($EE80-$F0FF) and w5 ($F100-$F37F). Next: bisect them
+      the same way (w4 holds FLD_TAB, read on every string access; w5 the sub-ROM
+      slot cells and the RAM-resident $0038 trampoline).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8574,7 +8597,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34107 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34130 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8740,7 +8763,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13602 (T-6FE392)8 (T-529ABE)` from `TODO.md:26396 (T-529ABE)`: a
+      `TODO.md:13625 (T-6FE392)8 (T-529ABE)` from `TODO.md:26419 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14449,7 +14472,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26396 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26419 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

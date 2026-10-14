@@ -1,0 +1,8 @@
+ROW a $EB00-$EB91 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW b $EB92-$EC1F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW c $EC26-$EC37 VG=[[A][G] 1  2 XY]] ZB=[[A][G]] DIVERGES
+ROW d $EC38-$EC59 VG=[[A][G] 1  2 XY]] ZB=[] DIVERGES
+ROW e $EC5A-$EC7F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+FAIL: a load over the window, then BASIC (3/5 as pinned); unpinned divergence: c, d
+refcache: 0 hit, 10 miss, 10 stored

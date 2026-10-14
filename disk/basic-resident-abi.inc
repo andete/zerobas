@@ -32,13 +32,13 @@ LRSET_DEST equ 0EC1EH   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
 STRPTR equ 0ECC9H   ; pointer to the [len][bytes] descriptor (2 bytes)
 DISKOP_OP equ 0EAFBH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
 DISKOP_ERR equ 0EC98H   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
-CLPTR equ 0EC2BH   ; CLOAD/LOAD: store cursor into the program area (2)
-CLINK equ 0EC2DH   ; CLOAD/LOAD: saved link word of the current line
+CLPTR equ 0F6EDH   ; CLOAD/LOAD: store cursor into the program area (2)
+CLINK equ 0F6EFH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
 TXTMAX equ 0E36AH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 TXTMAX_NODISK equ 0E98AH   ; NOT-A-CELL: the diskless build's text ceiling
-PRGEND equ 0EC26H   ; addr of the $0000 end-of-program marker (2 bytes)
+PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0ECEDH   ; SAVE: current source byte pointer (2)
 DSV_END equ 0ECEFH   ; SAVE/BSAVE: last source byte addr, inclusive (2)
 DISKSLOT_OK equ 0ECE8H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
