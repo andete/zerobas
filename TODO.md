@@ -2522,8 +2522,9 @@ item — do **one item per session** to keep context lean.
       ⚠️ Main page 1 is now 0 B: D-KEYSHIFT and D-OPENGRP need a main carve
       first (low region 19 B).
 
-- [ ] 🎮 **D-BASICROM — A BASIC-PROGRAM CARTRIDGE DOES NOT RUN: zerobas IGNORES THE
-      HEADER'S TEXT FIELD (reported by Vampier via Joost, 2026-10-12)**
+- [x] 🎮 **D-BASICROM — A BASIC-PROGRAM CARTRIDGE DOES NOT RUN: zerobas IGNORES THE
+      HEADER'S TEXT FIELD (reported by Vampier via Joost, 2026-10-12)** — ✅
+      **CLOSED 2026-10-14: it runs, and draws what the VG-8020 draws** (see the end).
       🎚️ TIER 1 — happy path: running existing software. Vampier tried "3D Golf
       Simulation - High-speed" (T&ESOFT, 1984) and it did not start; Joost's
       list of BASIC-cartridge titles (kept outside the repo) is the same kind.
@@ -2594,6 +2595,50 @@ item — do **one item per session** to keep context lean.
       the run had no renderer, so no screen was compared. ➡️ Next: a screen
       comparison (VRAM read at matching program states, not at matching times),
       or Joost running it by eye -- he has the image.
+      ✅ **SCREENS COMPARED 2026-10-14 -- THE SAME, UP TO THE FIRST TEE SHOT.**
+      A one-off run OUTSIDE the repo (the cartridge run, never decoded, no
+      part of it kept): both machines booted with it in slot 1, the same keys
+      at the same emulated times, and the whole 16 KB of VRAM dumped at
+      MATCHING PROGRAM STATES (the first arrival of CURLIN at a line) and at
+      idle moments. Only VRAM, the VDP registers, CURLIN and RNDX were read.
+      Both visit the same 126 lines. At the first arrival at 8000 VRAM is
+      byte-identical. 🔮 "the idle screens match, the in-game states differ
+      little": the differences were (a) THE FONT (C-BIOS's, accepted), (b)
+      THE WIND -- a random number; the title screen spins RND while it waits
+      for SPACE, so the draw depends on how fast that loop runs (RNDX already
+      differs at 29 s, before any key; with RNDX written equal at line 8000
+      on both, every later RNDX and the wind agree; zerobas's RND sequence is
+      already gated digit for digit, math-acceptance), (c) the club text, an
+      animation caught at different phases (six dumps 5 s apart: both show
+      `1W`, half-drawn and blank in turn), (d) SPEED -- zerobas reaches the
+      course later (TIER 5, PAINT among others), and (e) VDP REGISTER 7's
+      upper nibble, invisible in these modes -- which led to D-RG7 (below),
+      a VISIBLE defect in SCREEN 0. Gameplay past the first tee shot was not
+      compared (it needs a scripted swing); nothing seen so far differs.
+
+- [x] 🎨 **D-RG7 — `SCREEN 0:COLOR 15,4,7` WAS WHITE ON CYAN; THE VG-8020 IS
+      WHITE ON BLUE** — ✅ **FIXED 2026-10-14.**
+      🎚️ TIER 1 — happy path: a valid COLOR gave the wrong visible background.
+      Found by D-BASICROM's screen comparison: VDP register 7 read 0 on the
+      VG-8020 and $F0 here in SCREEN 1 / 2 (invisible there).
+      📏 [`rg7_probe_before.out`](scratchpad/rg7_probe_before.out) (RG7SAV,
+      [`rg7_probe.py`](scratchpad/rg7_probe.py)) and
+      [`rg7_vdp_probe_before.out`](scratchpad/rg7_vdp_probe_before.out) (the
+      VDP's own register, [`rg7_vdp_probe.py`](scratchpad/rg7_vdp_probe.py)):
+      after `COLOR 15,4,7` the VG-8020 has 244 (FORCLR*16+BAKCLR) in SCREEN 0
+      and 7 (BDRCLR alone) in SCREEN 1..3; zerobas had 247 (FORCLR*16+BDRCLR)
+      in all four. 🔮 SCREEN 1..3: HIT; "SCREEN 0 the same on both": MISS --
+      and that miss is the visible bug (the low nibble is the text background).
+      🔧 [`vdp-reg7.patch`](cbios-repack/vdp-reg7.patch), repack patch 8, in
+      C-BIOS's `chgclr`; byte-neutral (SCREEN 1's colour-table byte is the same
+      FORCLR*16+BAKCLR, computed once), so island 1 stays at $1AF5.
+      📏 after: [`rg7_probe_after.out`](scratchpad/rg7_probe_after.out) 5/5,
+      [`rg7_vdp_probe_after.out`](scratchpad/rg7_vdp_probe_after.out) SAME.
+      Gate `rg7-acceptance` ([`basic_probe_rg7.py`](probes/basic/basic_probe_rg7.py),
+      7 rows incl. COLOR-before-SCREEN and SCREEN 1's colour table).
+      🔪 [`rg7_knife.py`](scratchpad/rg7_knife.py) ->
+      [`rg7_knife.out`](scratchpad/rg7_knife.out): K-RG1 (the patch left out)
+      -> exactly the six register rows red, `s1tab` green; HIT.
 
 - [x] 🧩 **D-SLOTMAP — WHERE THE RAM AND OUR SUB ROMs SIT: A QUESTION, ANSWERED;
       NO CHANGE** (2026-10-13)
@@ -8340,7 +8385,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:33857 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:33902 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8506,7 +8551,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13368 (T-6FE392)8 (T-529ABE)` from `TODO.md:26162 (T-529ABE)`: a
+      `TODO.md:13413 (T-6FE392)8 (T-529ABE)` from `TODO.md:26207 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14215,7 +14260,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26162 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26207 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

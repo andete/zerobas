@@ -61,11 +61,17 @@ PATCHES = [
     # moved one entry too few. 3 bytes in chput.asm, before the font pad: island 1
     # moves to $1AF5.
     os.path.join(REPO, "cbios-repack", "linttb-scroll.patch"),
+    # D-RG7: register 7 is FORCLR*16+BAKCLR in SCREEN 0 (its low nibble is the
+    # text background) and BDRCLR alone in SCREEN 1..3; C-BIOS wrote
+    # FORCLR*16+BDRCLR everywhere, so `SCREEN 0:COLOR 15,4,7` was cyan, not blue.
+    # Byte-neutral in video.asm (SCREEN 1's colour-table byte is computed once),
+    # so the font pad -- and island 1 -- stay at $1AF5.
+    os.path.join(REPO, "cbios-repack", "vdp-reg7.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "f0e3e80512bc5c70d968ca868241a3f18dd838ce"
+REPACKED_SHA1 = "373752916ff09f56e319ac63edd93d178fe31566"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

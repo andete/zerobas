@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `COLOR` — set the foreground, background and border colours
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-14):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -39,6 +39,11 @@ Each argument is a numeric expression. At least one must be present.
 - **The foreground is also the drawing colour.** `COLOR` copies the foreground
   into `ATRBYT`, the colour the graphics statements use when no colour is
   given (`COLOR 5` makes it 5; `COLOR ,1` leaves it at the foreground).
+- **In `SCREEN 0` the border colour does nothing.** The text screen has one
+  background, and the background argument sets it: `COLOR 15,4,7` gives white
+  on blue, border included. In `SCREEN 1` to `3` the background argument
+  colours the text or graphics behind the pixels and the third argument the
+  border around the picture.
 
 ### Errors
 
@@ -106,6 +111,13 @@ the tree.
   nothing. And `COLOR 7,"A"` left the background at 0, a value nobody asked
   for. The fix keeps the new colours in a shadow and copies them into place
   only after the whole statement has been checked.
+- **`SCREEN 0` showed the border colour as its background** (fixed
+  2026-10-14, D-RG7): `COLOR 15,4,7` gave white on cyan, where the VG-8020
+  gives white on blue. The colour call zerobas uses (from C-BIOS) wrote the
+  border colour into the video chip's text-background bits in every mode. It
+  turned up while comparing the screens of a cartridge game on both machines:
+  nothing on its screen differed, but the colour register did, and a direct
+  test in `SCREEN 0` showed the visible difference.
 - **`COLOR` did not set the drawing colour cell `ATRBYT`** (fixed 2026-09-25,
   D-ADDR29), found by comparing which work-area cells each machine writes.
 - **The tests read two cells, not one.** Each `COLOR` row reads the cell it
@@ -117,7 +129,8 @@ the tree.
 `ex_color` in [basic/screen.asm](../../basic/screen.asm). The range check
 `clr_eval` and the shadow (`clr_prep`, `clr_commit`) are in
 [basic/main.asm](../../basic/main.asm). The colours reach the screen through
-the BIOS colour call.
+the BIOS colour call, which zerobas takes from C-BIOS with one change:
+[cbios-repack/vdp-reg7.patch](../../cbios-repack/vdp-reg7.patch).
 
 ## Related concepts
 
@@ -127,4 +140,6 @@ the BIOS colour call.
 
 - `make kwsweep` — one row per position (each reading two cells) and the
   error rows for {2, 5, 13}.
+- `make rg7-acceptance` — the colour register after `COLOR` in each screen
+  mode, and `SCREEN 1`'s colour table.
 - `make kwram` — the RAM-usage comparison.

@@ -2379,6 +2379,12 @@ ampb-acceptance: repack-machine
 pulong-acceptance: repack-machine
 	python3 probes/basic/basic_probe_pulong.py
 
+# --- rg7-acceptance: VDP register 7 after COLOR, per screen mode (D-RG7) ------
+# SCREEN 0's background is register 7's low nibble: FORCLR*16+BAKCLR there, BDRCLR
+# alone in SCREEN 1..3 (cbios-repack/vdp-reg7.patch).
+rg7-acceptance: repack-machine
+	python3 probes/basic/basic_probe_rg7.py
+
 # --- filesnl-acceptance: the cursor after FILES (D-FILESNL) --------------------
 # The CF-3300 ends a FULL row of the listing at once, so a PRINT after FILES
 # starts on its own row; a partly filled row keeps the cursor on it, on both.

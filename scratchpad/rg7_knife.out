@@ -1,0 +1,2 @@
+K-RG1: rg7 RED, diverging ['s0', 's1', 's2', 's3', 's2c', 's0c']; predicted ['s0', 's1', 's2', 's3', 's2c', 's0c'] -> HIT
+restored: build rc=0; rg7 green

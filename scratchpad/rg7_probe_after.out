@@ -1,0 +1,8 @@
+ROW s0 VG=[ 244] ZB=[ 244] SAME
+ROW s1 VG=[ 7] ZB=[ 7] SAME
+ROW s2 VG=[ 7] ZB=[ 7] SAME
+ROW s3 VG=[ 7] ZB=[ 7] SAME
+ROW s2c VG=[ 7] ZB=[ 7] SAME
+
+PASS: RG7SAV after COLOR (5/5)
+refcache: 5 hit, 5 miss, 5 stored

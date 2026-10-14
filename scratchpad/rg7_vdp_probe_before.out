@@ -1,0 +1,5 @@
+ROW s0 Philips_VG_8020 VDP R#7 = 244
+ROW s0 C-BIOS_MSX1_EU_REPACK_NODISK VDP R#7 = 247
+ROW s2 Philips_VG_8020 VDP R#7 = 7
+ROW s2 C-BIOS_MSX1_EU_REPACK_NODISK VDP R#7 = 247
+refcache: 0 hit, 4 miss, 2 stored, 2 refused (non-reading)

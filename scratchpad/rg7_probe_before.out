@@ -1,0 +1,8 @@
+ROW s0 VG=[ 244] ZB=[ 247] DIVERGES
+ROW s1 VG=[ 7] ZB=[ 247] DIVERGES
+ROW s2 VG=[ 7] ZB=[ 247] DIVERGES
+ROW s3 VG=[ 7] ZB=[ 247] DIVERGES
+ROW s2c VG=[ 7] ZB=[ 247] DIVERGES
+
+FAIL: RG7SAV after COLOR (0/5)
+refcache: 0 hit, 10 miss, 10 stored

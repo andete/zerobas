@@ -1,0 +1,58 @@
+diff --git a/src/video.asm b/src/video.asm
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -419,33 +419,38 @@
+                 ld      a,(SCRMOD)
+                 cp      8
+                 jr      z,chgclr_sc8
+-                dec     a
+-                push    af
++                ; zerobas repack (D-RG7) - register 7 is FORCLR*16 + BAKCLR in
++                ; SCREEN 0, where its low nibble IS the text background, and
++                ; BDRCLR alone in SCREEN 1 to 3. C-BIOS wrote FORCLR*16 + BDRCLR
++                ; in every mode, so SCREEN 0 with COLOR 15,4,7 showed a cyan
++                ; background where the VG-8020 shows blue (there register 7
++                ; reads 244, here 247; in SCREEN 1 to 3 it reads 7, here 247).
++                ; FORCLR*16 + BAKCLR is computed ONCE - the SCREEN 1 colour
++                ; table fill below wants the same byte, so this costs no bytes.
++                ld      d,a                     ; D = the screen mode
+                 ld      a,(FORCLR)
+                 rlca
+                 rlca
+                 rlca
+                 rlca
+                 and     $F0
+-                ld      l,a
+-                ld      a,(BDRCLR)
+-                or      l
+-
++                ld      hl,BAKCLR
++                or      (hl)
++                ld      e,a                     ; E = FORCLR*16 + BAKCLR
+                 ld      b,a
++                ld      a,d
++                or      a
++                jr      z,chgclr_txt            ; SCREEN 0: the text colours
++                ld      a,(BDRCLR)
++                ld      b,a                     ; SCREEN 1..3: the border alone
++chgclr_txt:
+                 ld      c,7
+-                call    wrtvdp
+-                pop     af
++                call    wrtvdp                  ; (keeps DE)
++                dec     d
+                 ret     nz
+ 
+                 ; SCREEN1
+-                ld      a,(FORCLR)
+-                rlca
+-                rlca
+-                rlca
+-                rlca
+-                and     $F0
+-                ld      hl,BAKCLR
+-                or      (hl)
++                ld      a,e
+                 ld      hl,(T32COL)
+                 ld      bc,$0020
+                 push    af
