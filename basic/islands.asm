@@ -356,7 +356,8 @@ zks_paint:
 ; C-BIOS src/main.asm:631 pads `ds $0D01 - $` from the end of debug.asm up to its
 ; pinned compat ISR-exit tail at $0D01 ("Hacker" jumps to $0D02, Star Force calls
 ; $0D0E). zerobas's tape bodies take $09EE..tape_end of that run; what is left is
-; $09D9..$09ED (21 B, island 3) and $0CC9..$0D00 (56 B, island 4).
+; $09D9..$09ED (21 B, island 3) and $0CCF..$0D00 (50 B, island 4 -- $0CC9 until D-TAPLEAD
+; grew the tape by 9 B on 2026-10-14; the 50-byte error table fills it exactly).
 ; ⚠️ That pad is C-BIOS's deliberate "wrong jumper" slide (src/main.asm:631-633,
 ; "put RET instruction there"): a stray jump into $0CC9..$0D00 used to slide to
 ; the RET at $0D01. With island 4 filled, only the bytes after the table still
@@ -445,7 +446,7 @@ fperr_to_err:
                 db      ISLAND3_OVERRAN_09EE__IT_WOULD_OVERWRITE_THE_TAPE_BODIES
     ENDIF
 
-                org     $0CC9
+                org     $0CCF
 ; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
 ; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
 ; (this table replaces the old FPERR-indexed fre_msgtab AND every direct

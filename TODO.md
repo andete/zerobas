@@ -2937,6 +2937,17 @@ item — do **one item per session** to keep context lean.
       a throwaway build refreshed the disk ROM's stale ABI mirror). DB_WIN
       (96 B) sits just under $EE00 and pins its island: a candidate to move OUT.
       🔮 Formula 1 Simulator recovers with FNSP moved: MISS (still resets).
+      📏 **THE EQUATE-ONLY PHASE IS NEARLY SPENT (2026-10-14 evening).** Left in
+      the window: ~1100 B of basic state ($ECF8-$F194; the rest up to $F37F is
+      the disk ROM's own area, unused on the diskless machine). Idle published
+      cells left: ~140 B, none larger than 34 B contiguous
+      (scratchpad/pubfree_map.py). So the remaining ~1000 B must become stack
+      frames, overlays on published buffers that are idle while their tenant
+      runs (BUF, KBUF, FBUFFR -- each overlay needs its own exclusivity
+      analysis), or be eliminated -- all of which costs ROM bytes, and main page
+      1 is ~0 B. ➡️ D-WSZERO's next phase depends on D-ROMSIZE step 1 (disk BASIC
+      into the disk ROM frees main bytes) -- Joost's own order, and now also the
+      tape fix's prerequisite.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -3245,6 +3256,56 @@ item — do **one item per session** to keep context lean.
       Judy `Found:`), C (City Connection, Ninja 2, Oil's Well -- all stop at
       the same PC), D (Head over Heels `Out of memory`), the `PC 0038` loop
       (Chuckie Egg, BMX Simulator's later crash).
+      ✅ **CLASS C FIXED: D-TAPLEAD (2026-10-14) -- `TAPION` LOCKED ONTO DATA.**
+      After D-WSZERO slices 5-7, class C held five titles (City Connection,
+      Ninja 2, Oil's Well, Blow Up, Exterminator), all ending on the same screen
+      of one shared machine-code loader, `Load error or aborted`, at the same PC.
+      📏 The triage harness logged only the published tape entries ($00E1 /
+      $00E4 / $00E7) -- the caller word and, at each return, the CARRY and the
+      published LOWLIM / WINWID; never A, which for TAPIN is the game's byte (one
+      first run did print A; its output was deleted and the harness changed).
+      The loader calls TAPION while the previous file is still playing: the
+      VG-8020 waited for the next leader and read 641 bytes; zerobas returned in
+      ~27 ms with a long-half LOWLIM and the next TAPIN set carry. Our TAPION
+      (tape/tape.asm) accepted ANY 256+16 carrier halves without a flat.
+      🔮 "LOWLIM / WINWID values" (forcing the VG-8020's 13 / 10 after the
+      loader's TAPION): MISS -- same `Load error`.
+      🔧 After LOWLIM, `tapion_verify` requires CAS_VERIFY (128) half-periods in
+      a row that are all SHORT; a long half or a flat relocks. Data cannot hold
+      that (every byte has a long start bit; the longest run of shorts is ~40);
+      a leader has thousands. 14 B in the C-BIOS page-0 tape block, which ran 10 B
+      into island 4 ($0CC9, basic/islands.asm's error-message table): paid by
+      `call stmotr_on` in TAPION (-2), one shared out/ret tail in stmotr (-1),
+      and island 4 moved to $0CCF -- its 50-byte table now fills it exactly
+      (tools/build_mainrom.py's ISLAND4_LO follows).
+      🔴 My first stmotr reorder put `stmotr_off` where the dispatch FALLS
+      THROUGH: STMOTR with A=1 stopped the motor (TAPOON's writes ran motor-off).
+      tests/test_tape.py caught it; TAPION was untouched (it calls stmotr_on
+      directly now), and the gate rows, the knife and all 51 tapes were re-run on
+      the corrected ROM -- identical. A byte-saving reorder is a semantic change
+      wherever control falls through.
+      📏 Real tapes, all 51 (one-off, outside the repo): SAME 9 -> 12 (City
+      Connection, Exterminator, Oil's Well byte for byte), class C 5 -> 0 (Blow Up
+      within 723 B of VRAM, Ninja 2 runs on), and as a side effect Fruit Panic
+      (`Device I/O`), Chuckie Egg (the `PC 0038` loop) and Formula 1 Simulator
+      (reset) now run; NO title that matched before changed. 🔮 HIT.
+      📏 Gate `tapionlead-acceptance` (our own two-file tape + our own routine:
+      TAPION, A's header, TAPION, K bytes of A's 206-byte data, TAPION AGAIN,
+      one TAPIN = B's header byte $D0): k190 / k200 / k204 / end SAME. 🔪
+      [`taplead_knife.py`](scratchpad/taplead_knife.py) ->
+      [`taplead_knife.out`](scratchpad/taplead_knife.out): K-TL1 (the loop cut,
+      byte-neutral -- the first cut added 2 B and overflowed the tape block's
+      1-byte margin, NOT SCORED) -> k190 diverges, HIT.
+      ⚠️ **RESIDUAL, PINNED:** `mid` (K = 8, a TAPION deep inside the data) still
+      diverges: it measured a run of LONG halves (zero bits) as its short --
+      LOWLIM 41 against a leader's 21
+      ([`taplead_lowlim.out`](scratchpad/taplead_lowlim.out)) -- so every half
+      classifies short and the verify passes on data. A lower bound would catch
+      it, but at these counts (~3 per half at 1200 baud, ~1.5 at 2400) one would
+      also reject real 2400-baud leaders: a redesign of the measurement, not a
+      patch; and the tape block has 1 B left. Also measured, no row: after
+      TAPION the VG-8020 leaves LOWLIM / WINWID 13 / 10, zerobas its own 21 and
+      never writes WINWID.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -8806,7 +8867,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34339 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34400 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8972,7 +9033,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13834 (T-6FE392)8 (T-529ABE)` from `TODO.md:26628 (T-529ABE)`: a
+      `TODO.md:13895 (T-6FE392)8 (T-529ABE)` from `TODO.md:26689 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14681,7 +14742,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26628 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26689 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

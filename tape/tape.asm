@@ -176,6 +176,7 @@ CAS_FLUSHLEN:   equ     32              ; trailing carrier cycles flushed at TAP
 ; (scratchpad/tapion_trace.out: 4,2,4,2). Only the lean edge count survives.
 CAS_SKIP:       equ     256
 CAS_RUNLEN:     equ     16
+CAS_VERIFY:     equ     128             ; D-TAPLEAD: short halves a lock must be followed by
 ; Leading-silence tolerance. openMSX renders a .cas as audio with ~2 s of silence
 ; before the leader (CasImage.cc LONG_SILENCE), and a real/recorded tape can have
 ; an arbitrary gap before the carrier too. Before measuring, TAPION waits for the
@@ -242,14 +243,14 @@ stmotr:
                 jr      z,stmotr_off    ; A = 0 -> stop
                 inc     a
                 jr      z,stmotr_tog    ; A = 0xFF -> toggle
-stmotr_on:
-                ld      a,MOTOR_ON      ; Port C bit 4 := 0
-                out     (PPI_REGS),a
+stmotr_on:                              ; ⚠️ MUST stay the fall-through of the dispatch
+                ld      a,MOTOR_ON      ; Port C bit 4 := 0  (D-TAPLEAD's first reorder put
+stmotr_out:                             ; stmotr_off here and A=1 stopped the motor --
+                out     (PPI_REGS),a    ; test_tape caught it)
                 ret
 stmotr_off:
                 ld      a,MOTOR_OFF     ; Port C bit 4 := 1
-                out     (PPI_REGS),a
-                ret
+                jr      stmotr_out      ; D-TAPLEAD: one shared out/ret tail (-1 B)
 stmotr_tog:
                 in      a,(PPI_PORTC)   ; read the Port C output latch
                 bit     4,a
@@ -495,8 +496,9 @@ cas_readbit_0:
 ; Output:  CF = set if failed (no tape / no leader)
 ; Changes: all
 tapion:
-                ld      a,1
-                call    stmotr          ; motor on -> inserted tape plays
+                call    stmotr_on       ; motor on -> inserted tape plays (D-TAPLEAD:
+                                        ; `ld a,1 / call stmotr` reached the same code
+                                        ; in 2 more bytes)
                 di
                 call    cas_level       ; D = current CAS-in level
                 ; Lock onto a SUSTAINED leader carrier, tolerating silence and
@@ -578,8 +580,24 @@ tapion_avg:
                 djnz    tapion_avg
                 ld      a,l
                 ld      (LOWLIM),a
-                or      a               ; CF = 0: locked
-                ret
+                ; D-TAPLEAD (2026-10-14): VERIFY it is a LEADER, not data. The
+                ; skip + measure above accept any carrier without a flat, so a
+                ; TAPION called while the previous file's data / stop bits are
+                ; still playing (a game loader calling it straight after BASIC's
+                ; own load) locked onto DATA in ~27 ms, set a long-half LOWLIM,
+                ; and the next TAPIN failed -- five reported titles' loaders
+                ; stopped there with their own `Load error`. Data cannot hold
+                ; CAS_VERIFY short halves in a row (every byte has a long-half
+                ; start bit; the longest run is ~40); a real leader has
+                ; thousands. A long half or a flat -> relock.
+                ld      c,CAS_VERIFY
+tapion_verify:
+                call    cas_half
+                call    nc,cas_islong   ; (a flat keeps CF=1 and skips the test)
+                jr      c,tapion_relock ; flat or a long half -> data, not a leader
+                dec     c
+                jr      nz,tapion_verify
+                ret                     ; CF = 0 (cas_islong: short): locked
 
 ;--------------------------------
 ; $00E4 TAPIN

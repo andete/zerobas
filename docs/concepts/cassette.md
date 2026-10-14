@@ -6,12 +6,14 @@ SPDX-License-Identifier: 0BSD
 
 # The cassette — files on tape, and how BASIC finds them
 
-> **Status (2026-10-13):** every measured tape behaviour agrees with the
+> **Status (2026-10-14):** every measured tape behaviour agrees with the
 > VG-8020, and with the CF-3300 where a row was run there too: the recorded
 > bytes, the search and its messages, the type filter, Ctrl-STOP while
-> reading and while writing. Open: a damaged ASCII program still prints `load
-> error` instead of raising a code (part of D-LOADERRRET, TIER 3; the
-> references' answer there is not measured). Speed is deliberately left out of these docs
+> reading and while writing, and since 2026-10-14 a machine-code loader that
+> calls `TAPION` again before the previous file's data has ended. Open: a
+> damaged ASCII program still prints `load error` instead of raising a code
+> (part of D-LOADERRRET, TIER 3; the references' answer there is not
+> measured), and a `TAPION` started deep inside a long data block. Speed is deliberately left out of these docs
 > until on-par speed is established for every keyword.
 
 ## Summary
@@ -152,7 +154,21 @@ zerobas by `make castail-acceptance`
 
 ## Differences from the reference
 
-No measured difference is open. Not compared, or not measured:
+One measured difference is open:
+
+- **`TAPION` called deep inside a file's data.** A machine-code loader that
+  reads 8 bytes of a 206-byte block and then calls `TAPION` again gets the
+  next file's first header byte on the VG-8020; zerobas's `TAPION` measures
+  a run of the data's long half-periods as if they were the leader and locks
+  onto the data (`tapionlead-acceptance`, row `mid`, pinned). Calling it
+  near the end of a block, as the reported loaders do, works on both.
+- **`LOWLIM` and `WINWID` after `TAPION`** (`&HFCA4`, `&HFCA5`). On one
+  measured tape the VG-8020 left 13 and 10 there; zerobas keeps its own 0/1
+  threshold in `LOWLIM` (21 on the same tape) and never writes `WINWID`. A
+  loader that reads them to time bits itself would see different values; none
+  of the reported tapes was found doing that. No row pins it.
+
+Not compared, or not measured:
 
 - **An ASCII program with a line that has no number** prints `load error`
   here and does not raise a code (part of D-LOADERRRET, TIER 3).
@@ -229,13 +245,27 @@ No measured difference is open. Not compared, or not measured:
   motor between blocks makes a burst of noise that the leader lock averaged
   in. Real game-tape captures, not synthetic ones, showed it.
 
+- **`TAPION` locked onto data** (found 2026-10-14, D-TAPLEAD). Five reported
+  games share one machine-code loader that stopped with its own `Load error`.
+  Logging only the published tape entry points and their carry flag on both
+  machines showed the loader calling `TAPION` while the previous file was
+  still playing: the VG-8020 waited for the next leader and read on, zerobas
+  returned within about 27 ms and the next `TAPIN` failed. Requiring a long run
+  of short half-periods after the lock got all five past the loader: three now
+  reach the VG-8020's screen byte for byte, two run on to a screen that still
+  differs. No title that loaded before changed. The games' own bytes were
+  never read.
+
 ## How zerobas does it
 
 The open C-BIOS stubs the cassette read and write entries; zerobas provides
 all seven in [tape/tape.asm](../../tape/tape.asm). `tapion` waits for a real
 edge, skips the motor's spin-up noise, measures 16 leader half-periods and
 sets the 0/1 threshold (`LOWLIM`, `&HFCA4`) at 1.75 times the short one;
-`tapout` frames each byte with two stop bits; `stmotr` drives the relay.
+and then requires 128 more half-periods in a row that are all short --
+tape data cannot hold that many, because every byte starts with a long start
+bit, so a `TAPION` called while a file's data is still playing waits for the
+next real leader (D-TAPLEAD, 2026-10-14); `tapout` frames each byte with two stop bits; `stmotr` drives the relay.
 `tapout` and `tapin` before each byte, and `tapion` on each attempt to lock
 on, ask `BREAKX` whether Ctrl-STOP is down; if it is, they wait for the key to
 come up and return with carry set (`cas_stop`).
@@ -286,6 +316,8 @@ openMSX:
   leader, and held after it broke the write.
 - `make casrbrk-acceptance` — Ctrl-STOP during a read, in the leader and in
   the data, for every read verb.
+- `make tapionlead-acceptance` — a machine-code loader (our own routine) that
+  calls `TAPION` again before the previous file's data has ended.
 - `make cas-ascii-acceptance`, `make eofcas-acceptance`,
   `make casprdir-acceptance` — ASCII files and the tape channel.
 - `make tapetail-acceptance`, `make loadtail-acceptance`,

@@ -61,9 +61,9 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # D-CTRLKEYS (2026-10-05): patch #6 adds 23 more there -- island 1 starts at $1AF2.
 # D-LINTTBWRAP (2026-10-06): patch #7 adds 3 more (chput.asm) -- island 1 at $1AF5.
 # Space plan A3 (2026-10-04): the two remainders of C-BIOS gap 1 around the tape
-# bodies -- $09D9-$09ED before TAPE_BODY_LO and $0CC9-$0D00 after tape_end, up to
+# bodies -- $09D9-$09ED before TAPE_BODY_LO and $0CCF-$0D00 after tape_end, up to
 # the pinned compat tail at $0D01 (basic/islands.asm, islands 3 and 4).
-ISLAND4_LO = 0x0CC9
+ISLAND4_LO = 0x0CCF   # $0CC9 until D-TAPLEAD (2026-10-14) grew the tape 9 B
 ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE), (ISLAND4_LO, 0x0D01))
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).

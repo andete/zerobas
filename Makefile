@@ -2390,6 +2390,12 @@ rg7-acceptance: repack-machine
 bloadrtail-acceptance: repack-machine
 	python3 probes/basic/basic_probe_bloadrtail.py
 
+# --- tapionlead-acceptance: TAPION called while data is playing (D-TAPLEAD) ------
+# A machine-code loader re-calls TAPION before the previous file's data has ended;
+# it must wait for a real leader (our own synthetic two-file tape + our own routine).
+tapionlead-acceptance: repack-machine
+	python3 probes/basic/basic_probe_tapionlead.py
+
 # --- wszero-acceptance: a load over $E98A-$F37F, then BASIC (D-WSZERO) ----------
 # A program owns HIMEM..$F37F after CLEAR n,&Hxxxx; zerobas's own state there must
 # go (TIER 1). Rows that still fail are PINNED and must keep failing until fixed.
