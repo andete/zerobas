@@ -2966,10 +2966,43 @@ item — do **one item per session** to keep context lean.
       🏗️ **JOOST, 2026-10-14:** *"I think we eventually want to address 1, 2, 3 and
       4"*, then *"go ahead with that order"*. ORDER:
       (1) **disk BASIC + FAT engine into the disk ROM**, where a real MSX keeps
-          them (the existing "eviction step 13" plan,
-          disk/docs/spec-diskcode-eviction.md); it also removes most of the
+          them (the existing eviction plan, disk/docs/spec-diskcode-eviction.md
+          -- 🔧 CORRECTED 2026-10-14: not "step 13", which finished 2026-09-21;
+          what is left is step 10's S10.C / S10.D / S10.E, BSAVE-to-disk,
+          DSKI$ / DSKO$ and the step-14 gate); it also removes most of the
           duplication, and costs non-disk code no speed. The disk ROM has 3.8 KB
           free, so the move has to compact on the way in.
+      📏 **STATE OF STEP (1), 2026-10-14 (a read-only brief of TODO, the spec,
+      the syms and git log):** DONE -- steps 1-5, 9, 11, 12, 13; S10.0, S10.A,
+      S10.B in three increments (c6d03ec8, ed213e5c, ef291642: main's write
+      engine deleted). LEFT -- S10.C (the INPUT side; Joost 2026-10-09 "defer to
+      later", taken up WITH S10.D/E), S10.D (RANDOM: GET / PUT -- the reference's
+      GET/PUT hook contract is UNMEASURED; D-CHANHOOK covered OPEN/CLOSE, the
+      byte cells and EOF/LOF only), S10.E (retire main's engine globals and the
+      FAT tenant's channel half), BSAVE to disk (still the sub tenant's engine
+      copy), DSKI$ / DSKO$ (main low `dsk_core` + the sub dirverb tenant; the
+      disk-side hook is a presence test only), the step-14 gate. Still outside
+      disk.rom (label spans, approximate): main page 1 files.asm 1728 B (about
+      half device-generic), field.asm 622 B, fatio-body 111 B, fat.asm stubs
+      41 B, fch_* ~90 B, autoexec 43 B (spans on 2026-10-14); main low dsk_core 68 B; sub ROM a second
+      FAT engine copy (fat-prim-body 1839 B; disk.rom has its own 1719 B),
+      randio-body 765 B, fatprim 456 B, the BLOAD / SEQIO / BSAVE / fcbname /
+      dirverb chains ~1.2 KB. The spec's own estimate for step 10: ~800 B of main.
+      The spec was last edited 2026-10-06; TODO is the current record.
+      ➡️ **NEXT SLICE (autonomous under the 2026-09-17 standing ruling "every disk
+      command's implementation belongs in disk.rom"): DSKI$ / DSKO$ into
+      disk.rom**, the verb_run way: the hook becomes hk_dski / hk_dsko, main
+      keeps the gate first (a diskless machine answers ERR 5 before the parse),
+      the handler parses through call-backs and does the I/O with disk.rom's own
+      read_sector / write path; main loses dsk_core's post-parse half,
+      dirverb_op and chan_restore_st, sub loses the dirverb tenant. Expected
+      ~40-60 B of main (low + page 1, one budget), ~55 B of sub page 1 (estimates of 2026-10-14); disk.rom
+      pays ~60-80 B. Risks: DSKI$ is a FUNCTION inside the evaluator (the IX
+      cursor and eval call-backs re-enter mid-expression); CALSLT returns DI (the
+      D-LOADDI lesson); a disk-local sector cell, not FWR_DIRSEC; design for
+      D-DSKIB's prompt to follow. Witness: dskio-acceptance, nodisk-acceptance,
+      a new row from D-ALIASWCELL's write probe, a knife (the body returns
+      without I/O). Then S10.D (measure the GET/PUT hook first), S10.C, S10.E.
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
@@ -8886,7 +8919,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34419 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34452 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9052,7 +9085,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13914 (T-6FE392)8 (T-529ABE)` from `TODO.md:26708 (T-529ABE)`: a
+      `TODO.md:13947 (T-6FE392)8 (T-529ABE)` from `TODO.md:26741 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14761,7 +14794,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26708 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26741 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

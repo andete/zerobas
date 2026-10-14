@@ -46,7 +46,13 @@ near-misses (Mutant Monty 1 B, Grog's Revenge 14 B, Disc Warrior 23 B ... of VRA
 check whether they are timing, not bugs), BMX Simulator (PC ends at $F92D, the
 interrupt trampoline's new home -- look at the slot state there).
 
-➡️ **NEXT (window):** DB_WIN (96 B, the LIST / PRINT USING render window) pins its island
+➡️ **NEXT (D-ROMSIZE step 1, autonomous):** DSKI$ / DSKO$ into disk.rom -- TODO's
+D-ROMSIZE item carries the state of the eviction plan (2026-10-14 brief: step 13 is
+long done; S10.C/D/E, BSAVE-to-disk, DSKI$/DSKO$ and the step-14 gate are left) and
+the slice's design, risks and witnesses. Then S10.D (measure the GET/PUT hook
+first). Main bytes freed there fund D-WSZERO's next phase.
+
+➡️ **ALSO NEXT (window):** DB_WIN (96 B, the LIST / PRINT USING render window) pins its island
 under $EE00 -- move it OUT (BUF / KBUF overlap needs analysis: STRSCR is BUF,
 TOKBUF is KBUF and holds the running direct statement), then re-pack. Then the
 graphics / DRAW scratch (~150 B), the remaining float / tokeniser scratch, the
