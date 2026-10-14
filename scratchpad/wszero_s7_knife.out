@@ -1,0 +1,4 @@
+K-WS9: rows ['ctl', 'abort', 'onerr'] diverging ['abort', 'onerr']; predicted ['abort', 'onerr'] -> HIT
+K-WS10: rows ['ctl', 'rich'] diverging ['rich']; predicted ['rich'] -> HIT
+K-WS11: rows ['ctl', 'rich'] diverging ['rich']; predicted ['rich'] -> HIT
+restored: build rc=0; SAME

@@ -1,0 +1,344 @@
+⚠️ NOT-A-CELL constant(s) inside a moved range, NOT moved -- move an ADDRESS by hand: basic BASIC_WS_CEIL $EDFD
+340 literal equ(s) rewritten in 3 file(s); TXTMAX $E36A -> $E36A; TXTMAX_NODISK $ECF8 -> $ECFB
+   basic/sysvars.inc:104  GFX_DJ  $EFDC -> $F019
+   basic/sysvars.inc:105  GFX_BAD  $ECFC -> $ECFF
+   basic/sysvars.inc:699  GFX_X1  $EF67 -> $EFA4
+   basic/sysvars.inc:700  GFX_Y1  $EF69 -> $EFA6
+   basic/sysvars.inc:701  GFX_X2  $EF6B -> $EFA8
+   basic/sysvars.inc:702  GFX_Y2  $EF6D -> $EFAA
+   basic/sysvars.inc:703  GFX_MODE  $EF6F -> $EFAC
+   basic/sysvars.inc:704  GFX_CX  $EF70 -> $EFAD
+   basic/sysvars.inc:705  GFX_CY  $EF72 -> $EFAF
+   basic/sysvars.inc:706  GFX_ERR  $EF74 -> $EFB1
+   basic/sysvars.inc:707  GFX_DMAJ  $EF76 -> $EFB3
+   basic/sysvars.inc:708  GFX_DMIN  $EF78 -> $EFB5
+   basic/sysvars.inc:709  GFX_CNT  $EF7A -> $EFB7
+   basic/sysvars.inc:710  GFX_STEEP  $EF7C -> $EFB9
+   basic/sysvars.inc:711  GFX_SMIN  $EF7D -> $EFBA
+   basic/sysvars.inc:712  GFX_SDX  $EF7F -> $EFBC
+   basic/sysvars.inc:713  GFX_SDY  $EF80 -> $EFBD
+   basic/sysvars.inc:714  GFX_TX1  $EF81 -> $EFBE
+   basic/sysvars.inc:715  GFX_TY1  $EF83 -> $EFC0
+   basic/sysvars.inc:716  GFX_TX2  $EF85 -> $EFC2
+   basic/sysvars.inc:717  GFX_TY2  $EF87 -> $EFC4
+   basic/sysvars.inc:718  GFX_FILLCNT  $EF89 -> $EFC6
+   basic/sysvars.inc:719  GFX_YSTEP  $EF8B -> $EFC8
+   basic/sysvars.inc:727  GFX_CXC  $EF8D -> $EFCA
+   basic/sysvars.inc:728  GFX_CYC  $EF8F -> $EFCC
+   basic/sysvars.inc:729  GFX_R  $EF91 -> $EFCE
+   basic/sysvars.inc:730  GFX_ASPMAJ  $EF93 -> $EFD0
+   basic/sysvars.inc:731  GFX_ASPS  $EF94 -> $EFD1
+   basic/sysvars.inc:732  GFX_ARCF  $EF96 -> $EFD3
+   basic/sysvars.inc:733  GFX_SVX  $EF97 -> $EFD4
+   basic/sysvars.inc:734  GFX_SVY  $EF99 -> $EFD6
+   basic/sysvars.inc:735  GFX_EVX  $EF9B -> $EFD8
+   basic/sysvars.inc:736  GFX_EVY  $EF9D -> $EFDA
+   basic/sysvars.inc:737  GFX_FULLW  $EF9F -> $EFDC
+   basic/sysvars.inc:742  GFX_QX  $EFA0 -> $EFDD
+   basic/sysvars.inc:743  GFX_QY  $EFA2 -> $EFDF
+   basic/sysvars.inc:744  GFX_QD  $EFA4 -> $EFE1
+   basic/sysvars.inc:745  GFX_PX  $EFA6 -> $EFE3
+   basic/sysvars.inc:747  GFX_PY  $EFA8 -> $EFE5
+   basic/sysvars.inc:748  GFX_CS_AX  $EFAA -> $EFE7
+   basic/sysvars.inc:751  GFX_CS_AY  $EFAC -> $EFE9
+   basic/sysvars.inc:753  GFX_M  $EFAE -> $EFEB
+   basic/sysvars.inc:755  GFX_WS_P  $EFB0 -> $EFED
+   basic/sysvars.inc:756  GFX_WS_O  $EFB2 -> $EFEF
+   basic/sysvars.inc:764  GFX_SOCT  $EFB3 -> $EFF0
+   basic/sysvars.inc:767  GFX_SU14  $EFB5 -> $EFF2
+   basic/sysvars.inc:768  GFX_EOCT  $EFB7 -> $EFF4
+   basic/sysvars.inc:769  GFX_EU14  $EFB9 -> $EFF6
+   basic/sysvars.inc:770  GFX_SNEG  $EFBB -> $EFF8
+   basic/sysvars.inc:771  GFX_ENEG  $EFBC -> $EFF9
+   basic/sysvars.inc:772  GFX_WE_P  $EFBD -> $EFFA
+   basic/sysvars.inc:773  GFX_WE_O  $EFBF -> $EFFC
+   basic/sysvars.inc:774  GFX_WRAPF  $EFC0 -> $EFFD
+   basic/sysvars.inc:785  GFX_B  $EFBD -> $EFFA
+   basic/sysvars.inc:803  GFX_PTX  $EFBF -> $EFFC
+   basic/sysvars.inc:804  GFX_PTY  $EFC0 -> $EFFD
+   basic/sysvars.inc:805  GFX_CPHASE  $EFBE -> $EFFB
+   basic/sysvars.inc:837  ERRMARK  $EEBD -> $EEC0
+   basic/sysvars.inc:855  FCH_ACTIVE  $EEBE -> $EEC1
+   basic/sysvars.inc:862  FCH_MODES  $EE3D -> $EE40
+   basic/sysvars.inc:873  TKLNUM  $EEBF -> $EEC2
+   basic/sysvars.inc:874  INDLR_N  $EEC0 -> $EEC3
+   basic/sysvars.inc:875  MRG_PTR  $EEC1 -> $EEC4
+   basic/sysvars.inc:879  FLD_CUROFF  $EEC3 -> $EEC6
+   basic/sysvars.inc:880  FLD_CHAN  $EEC5 -> $EEC8
+   basic/sysvars.inc:881  LRSET_JUST  $EEC6 -> $EEC9
+   basic/sysvars.inc:882  LRSET_W  $EEC7 -> $EECA
+   basic/sysvars.inc:883  LRSET_DEST  $EEC8 -> $EECB
+   basic/sysvars.inc:901  NUMBUF  $EF2D -> $EF6A
+   basic/sysvars.inc:1111  DIRECTF  $EFC1 -> $EFFE
+   basic/sysvars.inc:1132  SAVSTK  $EFC2 -> $EFFF
+   basic/sysvars.inc:1300  ERRRESUME  $EFC4 -> $F001
+   basic/sysvars.inc:1317  SAVTXT  $EFC8 -> $F005
+   basic/sysvars.inc:1460  SV_OP  $EFDD -> $F01A
+   basic/sysvars.inc:1461  SV_STAT  $EFDE -> $F01B
+   basic/sysvars.inc:1585  LOC_COL  $EFDF -> $F01C
+   basic/sysvars.inc:1586  LOC_ROW  $EFE0 -> $F01D
+   basic/sysvars.inc:1612  SW_ADDR  $EFE1 -> $F01E
+   basic/sysvars.inc:1613  SW_TYPE  $EFE3 -> $F020
+   basic/sysvars.inc:1614  SW_ADDR1  $EFE4 -> $F021
+   basic/sysvars.inc:1615  SW_TYPE1  $EFE6 -> $F023
+   basic/sysvars.inc:1616  SW_MODE  $EFE7 -> $F024
+   basic/sysvars.inc:1650  PLN_NUM  $EFE8 -> $F025
+   basic/sysvars.inc:1653  PLN_PTR  $EFEA -> $F027
+   basic/sysvars.inc:1654  FREE-RAM claim  $EE3E -> $EE41
+   basic/sysvars.inc:1714  VALTYP  $EF35 -> $EF72
+   basic/sysvars.inc:1715  STRPTR  $EF36 -> $EF73
+   basic/sysvars.inc:1721  PRDEST  $EF38 -> $EF75
+   basic/sysvars.inc:1728  PRDEV  $EF39 -> $EF76
+   basic/sysvars.inc:1729  OO_DEVTYPE  $EF3A -> $EF77
+   basic/sysvars.inc:1739  ARL_GETBYTE  $EF3B -> $EF78
+   basic/sysvars.inc:1868  RVDESC  $EFF2 -> $F02F
+   basic/sysvars.inc:1933  SH_BASE  $EFCA -> $F007
+   basic/sysvars.inc:2014  ISRCH_A  $ECF8 -> $ECFB
+   basic/sysvars.inc:2092  GFX_POVF  $ECFF -> $ED02
+   basic/sysvars.inc:2093  GFX_PTESTX  $ED00 -> $ED03
+   basic/sysvars.inc:2094  GFX_PTESTY  $ED01 -> $ED04
+   basic/sysvars.inc:2095  GFX_PFY  $ED02 -> $ED05
+   basic/sysvars.inc:2096  GFX_PXL  $ED03 -> $ED06
+   basic/sysvars.inc:2097  GFX_PXR  $ED04 -> $ED07
+   basic/sysvars.inc:2098  GFX_PSCX  $ED05 -> $ED08
+   basic/sysvars.inc:2099  GFX_PSCY  $ED06 -> $ED09
+   basic/sysvars.inc:2100  GFX_PSPA  $ED07 -> $ED0A
+   basic/sysvars.inc:2101  GFX_PSTK  $ED08 -> $ED0B
+   basic/sysvars.inc:2103  comment range  $ED08 -> $ED0B
+   basic/sysvars.inc:2452  TXTMAX_NODISK  $ECF8 -> $ECFB
+   basic/sysvars.inc:2458  CAS_BUFP  $EFF5 -> $F032
+   basic/sysvars.inc:2466  DB_WIN  $ED9D -> $EDA0
+   basic/sysvars.inc:2468  DB_SKIP  $EFEC -> $F029
+   basic/sysvars.inc:2469  DB_MORE  $EFEE -> $F02B
+   basic/sysvars.inc:2477  DB_RESSKIP  $EFEF -> $F02C
+   basic/sysvars.inc:2478  DB_RESUME  $EFF1 -> $F02E
+   basic/sysvars.inc:2479  DB_SP  $F0A0 -> $F0DD
+   basic/sysvars.inc:2480  DT_TOK  $F0A2 -> $F0DF
+   basic/sysvars.inc:2481  DT_TOKN  $F0A4 -> $F0E1
+   basic/sysvars.inc:2482  DB_RESPTR  $F0A6 -> $F0E3
+   basic/sysvars.inc:2903  CONTLINE  $EF3D -> $EF7A
+   basic/sysvars.inc:2904  CONTPTR  $EF3F -> $EF7C
+   basic/sysvars.inc:2905  CONTVALID  $EF41 -> $EF7E
+   basic/sysvars.inc:2910  SCAN_PRIM  $EF42 -> $EF7F
+   basic/sysvars.inc:2911  SCAN_SLOT  $EF43 -> $EF80
+   basic/sysvars.inc:2912  SCAN_INIT  $EF44 -> $EF81
+   basic/sysvars.inc:2913  SCAN_IY  $EF46 -> $EF83
+   basic/sysvars.inc:2923  DISK_FCB  $EF48 -> $EF85
+   basic/sysvars.inc:2934  DISKSLOT  $EF54 -> $EF91
+   basic/sysvars.inc:2935  DISKSLOT_OK  $EF55 -> $EF92
+   basic/sysvars.inc:2993  CAL_CNT  $EF56 -> $EF93
+   basic/sysvars.inc:2995  CAL_NEEDFILL  $EF57 -> $EF94
+   basic/sysvars.inc:3012  CAL_SAVE  $EF58 -> $EF95
+   basic/sysvars.inc:3025  CAS_WCNT  $EF58 -> $EF95
+   basic/sysvars.inc:3031  DSV_PTR  $EF59 -> $EF96
+   basic/sysvars.inc:3032  DSV_END  $EF5B -> $EF98
+   basic/sysvars.inc:3036  TSV_PTR  $EF5D -> $EF9A
+   basic/sysvars.inc:3037  TSV_END  $EF5F -> $EF9C
+   basic/sysvars.inc:3038  TSV_CNT  $EF61 -> $EF9E
+   basic/sysvars.inc:3039  TSV_NAME  $EF62 -> $EF9F
+   basic/sysvars.inc:3068  FILES_ENTIDX  $EF63 -> $EFA0
+   basic/sysvars.inc:3073  FCH_NUM  $EF64 -> $EFA1
+   basic/sysvars.inc:3074  FCH_MODE  $EF65 -> $EFA2
+   basic/sysvars.inc:3075  FCH_RDMODE  $EF66 -> $EFA3
+   basic/sysvars.inc:3079  IN_RDLEN  $EF63 -> $EFA0
+   basic/sysvars.inc:3205  FAT_SECPERCLUS  $EDFD -> $EE00
+   basic/sysvars.inc:3206  FAT_FATSTART  $EDFE -> $EE01
+   basic/sysvars.inc:3207  FAT_FIRSTROOT  $EE00 -> $EE03
+   basic/sysvars.inc:3208  FAT_TOTCLUS  $EE02 -> $EE05
+   basic/sysvars.inc:3210  FAT_FIRSTDATA  $EE04 -> $EE07
+   basic/sysvars.inc:3211  FAT_CURCLUS  $EE06 -> $EE09
+   basic/sysvars.inc:3212  FAT_CLUSSEC  $EE08 -> $EE0B
+   basic/sysvars.inc:3213  FAT_FIRSTCLUS  $EE09 -> $EE0C
+   basic/sysvars.inc:3214  FAT_FILESIZE  $EE0B -> $EE0E
+   basic/sysvars.inc:3215  FAT_NUMFATS  $EE0F -> $EE12
+   basic/sysvars.inc:3216  FAT_SECPERFAT  $EE10 -> $EE13
+   basic/sysvars.inc:3218  FAT_PARITY  $EE12 -> $EE15
+   basic/sysvars.inc:3219  FAT_BYTEIDX  $EE13 -> $EE16
+   basic/sysvars.inc:3220  FAT_FATSEC  $EE15 -> $EE18
+   basic/sysvars.inc:3221  FAT_B0  $EE17 -> $EE1A
+   basic/sysvars.inc:3222  FAT_B1  $EE18 -> $EE1B
+   basic/sysvars.inc:3223  FAT_NAMEPTR  $EE19 -> $EE1C
+   basic/sysvars.inc:3224  FAT_DIRSEC  $EE1B -> $EE1E
+   basic/sysvars.inc:3225  FAT_DIRREM  $EE1D -> $EE20
+   basic/sysvars.inc:3226  FAT_WRTMP  $EE1F -> $EE22
+   basic/sysvars.inc:3227  FAT_WRTMP2  $EE21 -> $EE24
+   basic/sysvars.inc:3229  FREAD_OFF  $EE23 -> $EE26
+   basic/sysvars.inc:3230  FREAD_LEFT  $EE25 -> $EE28
+   basic/sysvars.inc:3232  FWR_CLUS  $EE29 -> $EE2C
+   basic/sysvars.inc:3233  FWR_FIRST  $EE2B -> $EE2E
+   basic/sysvars.inc:3234  FWR_SECIDX  $EE2D -> $EE30
+   basic/sysvars.inc:3235  FWR_BUFLEN  $EE2E -> $EE31
+   basic/sysvars.inc:3236  FWR_BYTES  $EE30 -> $EE33
+   basic/sysvars.inc:3237  FWR_DIRSEC  $EE34 -> $EE37
+   basic/sysvars.inc:3238  FWR_DIROFF  $EE36 -> $EE39
+   basic/sysvars.inc:3251  DISKOP_OP  $EE38 -> $EE3B
+   basic/sysvars.inc:3252  DISKOP_STATUS  $EE39 -> $EE3C
+   basic/sysvars.inc:3255  DISKOP_A  $EE3A -> $EE3D
+   basic/sysvars.inc:3259  DISKOP_HL  $EE3B -> $EE3E
+   basic/sysvars.inc:3457  RN_PTR  $EE6D -> $EE70
+   basic/sysvars.inc:3458  RN_NEW  $EE6F -> $EE72
+   basic/sysvars.inc:3459  RN_OLD  $EE71 -> $EE74
+   basic/sysvars.inc:3460  RN_INC  $EE73 -> $EE76
+   basic/sysvars.inc:3470  RL_AUTO  $EE75 -> $EE78
+   basic/sysvars.inc:3490  LPTPOS  $EE76 -> $EE79
+   basic/sysvars.inc:3824  FLD_TAB  $F019 -> $F056
+   basic/sysvars.inc:3831  GP_RECNO  $F079 -> $F0B6
+   basic/sysvars.inc:3832  GP_SEC  $F07B -> $F0B8
+   basic/sysvars.inc:3833  GP_WITHIN  $F07D -> $F0BA
+   basic/sysvars.inc:3834  GP_CLUS  $F07F -> $F0BC
+   basic/sysvars.inc:3835  GP_CLIDX  $F081 -> $F0BE
+   basic/sysvars.inc:3836  GP_SECINCL  $F083 -> $F0C0
+   basic/sysvars.inc:3837  GP_PHYS  $F084 -> $F0C1
+   basic/sysvars.inc:3838  GP_OLDNSEC  $F086 -> $F0C3
+   basic/sysvars.inc:3839  GP_FLAGS  $F088 -> $F0C5
+   basic/sysvars.inc:3840  GP_MODE  $F089 -> $F0C6
+   basic/sysvars.inc:3841  GP_CHAN  $F08A -> $F0C7
+   basic/sysvars.inc:3853  PU_FMTD  $F08B -> $F0C8
+   basic/sysvars.inc:3854  PU_FDESC  $F08D -> $F0CA
+   basic/sysvars.inc:3855  FREE-RAM claim  $F022 -> $F05F
+   basic/sysvars.inc:3856  PU_FMTLEN  $F090 -> $F0CD
+   basic/sysvars.inc:3857  PU_POS  $F091 -> $F0CE
+   basic/sysvars.inc:3858  PU_W  $F092 -> $F0CF
+   basic/sysvars.inc:3859  PU_TYPE  $F093 -> $F0D0
+   basic/sysvars.inc:3868  PU_FLAGS  $F094 -> $F0D1
+   basic/sysvars.inc:3869  PU_WP  $F095 -> $F0D2
+   basic/sysvars.inc:3905  PU_NUM  $EE9D -> $EEA0
+   basic/sysvars.inc:3906  PU_DIG  $EECA -> $EECD
+   basic/sysvars.inc:3907  PU_COMMAS  $F095 -> $F0D2
+   basic/sysvars.inc:3908  PU_DEC  $F096 -> $F0D3
+   basic/sysvars.inc:3914  FMT_SEC  $F097 -> $F0D4
+   basic/sysvars.inc:3915  FMT_DESC  $F098 -> $F0D5
+   basic/sysvars.inc:3929  FCH_RECLENS  $EE4D -> $EE50
+   basic/sysvars.inc:3933  FCH_RECNOS  $EE7D -> $EE80
+   basic/sysvars.inc:3957  GP_RECLEN  $F09A -> $F0D7
+   basic/sysvars.inc:3958  OO_RECLEN_CHAN  $F09C -> $F0D9
+   basic/sysvars.inc:3959  FILES_HASPAT  $F09D -> $F0DA
+   basic/sysvars.inc:4067  FOR_CUR  $EF0A -> $EF4D
+   basic/sysvars.inc:4072  comment range  $EF0A -> $EF4D
+   basic/sysvars.inc:4196  CSR_ADDR  $EEEA -> $EEED
+   basic/sysvars.inc:4197  CSR_CHAR  $EEEC -> $EEEF
+   basic/sysvars.inc:4198  CSR_ON  $EEED -> $EEF0
+   basic/sysvars.inc:4199  FREE-RAM claim  $EDA9 -> $EDAC
+   basic/sysvars.inc:4203  COPY_SRC  $EEEE -> $EEF1
+   basic/sysvars.inc:4204  COPY_CLUS  $EEF9 -> $EEFC
+   basic/sysvars.inc:4205  COPY_LEFT  $EEFB -> $EEFE
+   basic/sysvars.inc:4208  RL_HL  $EEFF -> $EF02
+   basic/sysvars.inc:4209  RL_STAT  $EF01 -> $EF04
+   basic/sysvars.inc:4210  RL_ROW0  $EF02 -> $EF05
+   basic/sysvars.inc:4211  RL_COL0  $EF03 -> $EF06
+   basic/sysvars.inc:4212  RL_LAST  $EF04 -> $EF07
+   basic/sysvars.inc:4213  RL_KEY  $EF05 -> $EF08
+   basic/sysvars.inc:4217  DISKOP_ERR  $EF06 -> $EF09
+   basic/sysvars.inc:4234  FREE-RAM claim  $EF24 -> $EF67
+   basic/sysvars.inc:4244  GP_SRC  $EE77 -> $EE7A
+   basic/sysvars.inc:4245  GP_LEFT  $EE79 -> $EE7C
+   basic/sysvars.inc:4259  CLR_SAVE  $EE7B -> $EE7E
+   basic/sysvars.inc:4415  FACTYP  $F09E -> $F0DB
+   basic/sysvars.inc:4421  TKOVF  $F09F -> $F0DC
+   basic/sysvars.inc:4454  PLY_XSP  $F0A8 -> $F0E5
+   basic/sysvars.inc:4472  PRMWANT  $F0AA -> $F0E7
+   basic/sysvars.inc:4476  TKDIG  $F0AB -> $F0E8
+   basic/sysvars.inc:4481  TKPOS  $F0C3 -> $F100
+   basic/sysvars.inc:4482  TKINTLEN  $F0C4 -> $F101
+   basic/sysvars.inc:4483  TKHAVESIG  $F0C5 -> $F102
+   basic/sysvars.inc:4484  TKNZPOS  $F0C6 -> $F103
+   basic/sysvars.inc:4485  TKDCOUNT  $F0C7 -> $F104
+   basic/sysvars.inc:4486  TKSTORED  $F0C8 -> $F105
+   basic/sysvars.inc:4487  TKFLAGS  $F0C9 -> $F106
+   basic/sysvars.inc:4488  TKEXP  $F0CA -> $F107
+   basic/sysvars.inc:4489  TKEXPD  $F0CC -> $F109
+   basic/sysvars.inc:4490  TKEXPSIGN  $F0CD -> $F10A
+   basic/sysvars.inc:4491  TKPC  $F0CE -> $F10B
+   basic/sysvars.inc:4492  TKDEXP  $F0CF -> $F10C
+   basic/sysvars.inc:4493  TKLEAD  $F0D1 -> $F10E
+   basic/sysvars.inc:4529  TKVALEND  $F0D3 -> $F110
+   basic/sysvars.inc:4530  FOSIGN  $F0D2 -> $F10F
+   basic/sysvars.inc:4533  FOSIGCOUNT  $F0D3 -> $F110
+   basic/sysvars.inc:4535  FOMBYTES  $F0D4 -> $F111
+   basic/sysvars.inc:4549  TKSRCSAVE  $F0D5 -> $F112
+   basic/sysvars.inc:4593  DIVREM  $F0D7 -> $F114
+   basic/sysvars.inc:4594  CVT  $F0E6 -> $F123
+   basic/sysvars.inc:4596  LHS_FACTYP  $F0F8 -> $F135
+   basic/sysvars.inc:4600  LHS_FAC  $F0F9 -> $F136
+   basic/sysvars.inc:4604  FP_SHIFTAMT  $F101 -> $F13E
+   basic/sysvars.inc:4605  FP_LHSVAL  $F102 -> $F13F
+   basic/sysvars.inc:4607  FP_TMP_B  $F104 -> $F141
+   basic/sysvars.inc:4609  FP_RSIGN  $F106 -> $F143
+   basic/sysvars.inc:4610  KEYARG  $F107 -> $F144
+   basic/sysvars.inc:4615  WIDIG  $F107 -> $F144
+   basic/sysvars.inc:4617  MUL_I  $F10C -> $F149
+   basic/sysvars.inc:4620  MUL_ADIG  $F10D -> $F14A
+   basic/sysvars.inc:4621  MUL_CARRY  $F10E -> $F14B
+   basic/sysvars.inc:4624  MUL_PP  $F10F -> $F14C
+   basic/sysvars.inc:4625  MULCAND  $F111 -> $F14E
+   basic/sysvars.inc:4626  MULTPLR  $F113 -> $F150
+   basic/sysvars.inc:4627  MUL32  $F115 -> $F152
+   basic/sysvars.inc:4629  WSRC  $F119 -> $F156
+   basic/sysvars.inc:4632  WSRC_TYP  $F11B -> $F158
+   basic/sysvars.inc:4634  FP_OPMODE  $F11D -> $F15A
+   basic/sysvars.inc:4636  CVT_MODE  $F11E -> $F15B
+   basic/sysvars.inc:4638  PLF_RA  $F11F -> $F15C
+   basic/sysvars.inc:4640  PLF_RA2  $F121 -> $F15E
+   basic/sysvars.inc:4662  DB_CUR  $F123 -> $F160
+   disk/equates.inc:239  FDC_IFF  $EFF7 -> $F034
+   disk/equates.inc:240  FDC_CNT  $EFF8 -> $F035
+   disk/equates.inc:241  FDC_LSEC  $EFF9 -> $F036
+   disk/equates.inc:242  FDC_DEST  $EFFB -> $F038
+   disk/equates.inc:243  FDC_TRY  $EFFD -> $F03A
+   disk/init.asm:263  P1_BLIT  $EFFE -> $F03B
+   disk/init.asm:280  comment range  $EFFE -> $F03B
+   basic/sysvars.inc:1936  SH_OP (comment copy)  $EFCA -> $F007
+   basic/sysvars.inc:2015  ISRCH_B (comment copy)  $ECFA -> $ECFD
+   basic/sysvars.inc:2026  STRENG_SPARE (comment copy)  $ECFC -> $ECFF
+   basic/sysvars.inc:2164  GFX_CS_M1 (comment copy)  $ED08 -> $ED0B
+   basic/sysvars.inc:2166  GFX_CS_M2 (comment copy)  $ED0C -> $ED0F
+   basic/sysvars.inc:2216  GFX_VBUF (comment copy)  $ED08 -> $ED0B
+   basic/sysvars.inc:2222  GFX_SN (comment copy)  $ED28 -> $ED2B
+   basic/sysvars.inc:2223  GFX_VLEN (comment copy)  $ED2A -> $ED2D
+   basic/sysvars.inc:2224  GFX_SDESC (comment copy)  $ED2B -> $ED2E
+   basic/sysvars.inc:2226  GFX_SC (comment copy)  $ED2D -> $ED30
+   basic/sysvars.inc:2230  GFX_SPATN (comment copy)  $ED2F -> $ED32
+   basic/sysvars.inc:2231  GFX_SSIZE (comment copy)  $ED31 -> $ED34
+   basic/sysvars.inc:2233  GFX_SARGN (comment copy)  $ED32 -> $ED35
+   basic/sysvars.inc:2235  GFX_SFLAGS (comment copy)  $ED33 -> $ED36
+   basic/sysvars.inc:3699  AUDIO_VMASK (comment copy)  $EE38 -> $EE3B
+   basic/sysvars.inc:3700  AUDIO_STATUS (comment copy)  $EE39 -> $EE3C
+   basic/sysvars.inc:3706  PLY_NUMOVF (comment copy)  $EE3A -> $EE3D
+   basic/sysvars.inc:3761  FCH_STATE0 (comment copy)  $EE06 -> $EE09
+   basic/sysvars.inc:3825  FLD_TABEND (comment copy)  $F079 -> $F0B6
+   basic/sysvars.inc:2173  GFX_DPTR (comment copy)  $ED34 -> $ED37
+   basic/sysvars.inc:2174  GFX_DEND (comment copy)  $ED36 -> $ED39
+   basic/sysvars.inc:2175  GFX_DFTOP (comment copy)  $ED38 -> $ED3B
+   basic/sysvars.inc:2177  GFX_DFSTK (comment copy)  $ED39 -> $ED3C
+   basic/sysvars.inc:2182  GFX_DCMD (comment copy)  $ED59 -> $ED5C
+   basic/sysvars.inc:2184  GFX_DSUBN (comment copy)  $ED5B -> $ED5E
+   basic/sysvars.inc:2185  GFX_DSUBI (comment copy)  $ED5C -> $ED5F
+   basic/sysvars.inc:2186  GFX_DSUB (comment copy)  $ED5D -> $ED60
+   basic/sysvars.inc:2187  GFX_DSUBLEN (comment copy)  $ED61 -> $ED64
+   basic/sysvars.inc:2188  GFX_DREQ (comment copy)  $ED62 -> $ED65
+   basic/sysvars.inc:2190  GFX_DRESUME (comment copy)  $ED63 -> $ED66
+   basic/sysvars.inc:2191  GFX_DVAL (comment copy)  $ED64 -> $ED67
+   basic/sysvars.inc:2192  GFX_DVLEN (comment copy)  $ED66 -> $ED69
+   basic/sysvars.inc:2193  GFX_DEXP (comment copy)  $ED67 -> $ED6A
+   basic/sysvars.inc:2198  GFX_DFB (comment copy)  $ED7F -> $ED82
+   basic/sysvars.inc:2199  GFX_DFN (comment copy)  $ED80 -> $ED83
+   basic/sysvars.inc:2200  GFX_DARG (comment copy)  $ED81 -> $ED84
+   basic/sysvars.inc:2201  GFX_DDX (comment copy)  $ED83 -> $ED86
+   basic/sysvars.inc:2202  GFX_DDY (comment copy)  $ED85 -> $ED88
+   basic/sysvars.inc:2203  GFX_DTX (comment copy)  $ED87 -> $ED8A
+   basic/sysvars.inc:2204  GFX_DTY (comment copy)  $ED89 -> $ED8C
+   basic/sysvars.inc:2205  GFX_DTMP (comment copy)  $ED8B -> $ED8E
+   basic/sysvars.inc:2206  GFX_DSP (comment copy)  $ED8D -> $ED90
+   basic/sysvars.inc:2262  DEFT_PTR (comment copy)  $ED8F -> $ED92
+   basic/sysvars.inc:2270  RDV_VAL (comment copy)  $ED91 -> $ED94
+   basic/sysvars.inc:2271  RDV_ST (comment copy)  $ED93 -> $ED96
+   basic/sysvars.inc:2276  RDV_LINE (comment copy)  $ED8F -> $ED92
+   basic/sysvars.inc:2281  RDV_MODE (comment copy)  $ED94 -> $ED97
+   basic/sysvars.inc:2303  TGT_ADDR (comment copy)  $ED95 -> $ED98
+   basic/sysvars.inc:2330  GFX_DSCALE (comment copy)  $ED97 -> $ED9A
+   basic/sysvars.inc:2335  GFX_DANGLE (comment copy)  $ED98 -> $ED9B
+   basic/sysvars.inc:2343  GFX_G8N (comment copy)  $ED99 -> $ED9C
+   basic/sysvars.inc:2344  GFX_G8V (comment copy)  $ED9B -> $ED9E
+   basic/sysvars.inc:2363  GFX_PPITCH (comment copy)  $ED99 -> $ED9C
+🟢 VERIFIED: 369 resolved name(s) moved, each exactly as claimed; every other name unchanged; no new overlap; nothing but disk-only cells between the ceilings (77 disk mirror(s) of basic names verified through their originals; the build regenerates them).
+(files restored)

@@ -79,6 +79,21 @@ for c, m in maps.items():
             pblocks.append((v, w, n))
 bm = maps["basic"]
 pblocks.append((bm.vals["FN_BASE"], bm.vals["FN_PAREA_CEIL"] - bm.vals["FN_BASE"], "FN frame"))   # <= FN_BLK
+# ...and every block a BUILD ASSERT keeps in one page (slice 7: DB_WIN's assert
+# fired on the first apply -- the planner had only read the code idioms)
+import glob, re as _re                              # noqa: E402
+_pat = (_re.compile(r"IF\s+\((\w+)\s*/\s*256\)\s*!=\s*\(\(\1\s*\+\s*(\w+)\s*-\s*1\)\s*/\s*256\)"),
+        _re.compile(r"IF\s+\(high\s+(\w+)\)\s*!=\s*\(high\s+\(\1\s*\+\s*(\w+)\s*-\s*1\)\)"))
+for f in [x for g in ("basic/*.inc", "basic/*.asm", "sub/*.inc", "sub/*.asm") for x in glob.glob(g)]:
+    for ln in open(f, errors="replace"):
+        for pt in _pat:
+            mm = pt.search(ln)
+            if not mm:
+                continue
+            v = bm.vals.get(mm.group(1))
+            w = int(mm.group(2)) if mm.group(2).isdigit() else bm.vals.get(mm.group(2))
+            if v is not None and w and lo <= v < TOP:
+                pblocks.append((v, w, mm.group(1) + " (assert)"))
 print("page-constrained blocks: " + ", ".join(f"{n} ${v:04X}+{w}" for v, w, n in sorted(set(pblocks))))
 
 

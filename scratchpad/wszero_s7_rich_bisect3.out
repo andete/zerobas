@@ -1,0 +1,9 @@
+  $F11B-$F127 BAD []
+  $F11B-$F121 ok  [[ 7  5  6  40  7  4  3.14]]
+  $F122-$F127 BAD []
+  $F122-$F124 ok  [[ 7  5  6  40  7  4  3.14]]
+  $F125-$F127 BAD []
+  $F125-$F126 ok  [[ 7  5  6  40  7  4  3.14]]
+  $F127-$F127 ok  [[ 7  5  6  40  7  4  3.14]]
+NEITHER half alone is bad: an interaction across $F126
+refcache: 0 hit, 7 miss, 5 stored, 2 refused (non-reading)

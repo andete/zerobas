@@ -2897,6 +2897,46 @@ item — do **one item per session** to keep context lean.
       zeroed stack. ➡️ NEXT (slice 7): the SP-save cells. SAVSTK / SAVTXT have
       published twins of the SAME NAME and job ($F6B1 / $F6AF, idle on zerobas
       and C-BIOS); a gate row with an error AFTER the load would witness it.
+      ✅ **SLICE 7 (2026-10-14): THE CELLS A LOADER'S NEXT STATEMENTS READ.** The
+      gate program only ran PRINT / GOSUB / FOR / a concatenation after its load;
+      four new rows, each over the whole window, run what a BASIC loader runs
+      next: `abort` (an error, no handler), `onerr` (an ON ERROR handler +
+      RESUME), `rich` (DEF FN call, READ, string GC, DIM, PRINT USING, CIRCLE /
+      PAINT, PLAY) and `rich2` (ON INTERVAL, MID$ statement, INSTR, SWAP, ERASE,
+      SQR / SIN / RND, VAL, VPOKE / VPEEK, LOCATE). All but `rich2` DIVERGED;
+      each bisected ([`wszero_bisect.py`](scratchpad/wszero_bisect.py), now
+      `--prog`) to one tenant:
+      - **FNSP** ($EF07, [`wszero_s7_abort_bisect.out`](scratchpad/wszero_s7_abort_bisect.out)):
+        the error trap unwinds FN frames from it and the GC walks the chain it
+        heads -- garbage after a load. 🔮 "SAVSTK": MISS; FNSP alone fixed
+        both `abort` and `onerr`. -> PRMSTK $F6E4 (the reference's previous-
+        definition-block cell for nested FN calls), FN_FST -> PRMLEN.
+      - **the DATA cursor** ($EF27, [`wszero_s7_rich_bisect.out`](scratchpad/wszero_s7_rich_bisect.out)):
+        READ after the load -> `Syntax error in 90`. DATAPTR -> the published
+        DATPTR $F6C8 (same job), DATALINE -> DATLIN, RESTORE_LINE / DATASTATE ->
+        ENDFOR / SUBFLG.
+      - **the RAM interrupt trampoline** ($F125, CODE): an interrupt inside the
+        PAINT / CIRCLE tenant ran the loaded bytes. VALUE-DEPENDENT, which
+        nearly hid it: with the bisect's `ret` byte at the stub's start it
+        survived, so neither half of the span failed alone -- `--noret` (all
+        $A5) found $F125-$F127 ([`wszero_s7_rich_bisect3.out`](scratchpad/wszero_s7_rich_bisect3.out)).
+        SUB_INT_RAM / INT_MAIN_PRIM / SUB_INT_DELTA / GRP_HDR -> $F92D-$F953,
+        the reference's CIRCLE / PAINT scratch MINDEL..MCLFLG (idle on zerobas
+        and C-BIOS).
+      All equates. 11 rows + `rich` / `rich2` SAME. 🔪
+      [`wszero_s7_knife.py`](scratchpad/wszero_s7_knife.py) ->
+      [`wszero_s7_knife.out`](scratchpad/wszero_s7_knife.out): K-WS9 (FNSP back)
+      -> abort / onerr diverge, K-WS10 (DATAPTR back) and K-WS11 (SUB_INT_RAM
+      back) -> rich diverges: all HIT.
+      🔴 subrom-inttest's stub hard-coded SUB_INT_DELTA as $F14D -- stale since
+      slice 5 moved it to $F167, and the gate stayed GREEN (whatever lived at
+      $F14D read as a plausible tick count). It reads build/sub.sym now.
+      📏 No ceiling change: the re-pack would gain +3 B. Its first apply broke
+      DB_WIN's one-page build assert (the planner knew code idioms, not asserts
+      -- it reads both now; reverted through ws_shift with negative deltas after
+      a throwaway build refreshed the disk ROM's stale ABI mirror). DB_WIN
+      (96 B) sits just under $EE00 and pins its island: a candidate to move OUT.
+      🔮 Formula 1 Simulator recovers with FNSP moved: MISS (still resets).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8766,7 +8806,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34299 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34339 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8932,7 +8972,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13794 (T-6FE392)8 (T-529ABE)` from `TODO.md:26588 (T-529ABE)`: a
+      `TODO.md:13834 (T-6FE392)8 (T-529ABE)` from `TODO.md:26628 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14641,7 +14681,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26588 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26628 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

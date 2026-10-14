@@ -76,6 +76,20 @@ RANGES = {
 }
 # Rows that run the program without `CLEAR` (the stack stays where boot put it).
 NOCLEAR = {"noclear", "noclear2"}
+# slice 7 (2026-10-14): an ERROR after the load, over the whole window. The run
+# loop anchors SP in SAVSTK once per RUN and the error trap reloads it -- a load
+# over that cell and then any error jumped to a garbage stack (Formula 1
+# Simulator's SP = $00F3). `abort` has no handler, `onerr` resumes from one.
+ERRROWS = {"abort", "onerr"}
+RANGES["abort"] = RANGES["all"]
+RANGES["onerr"] = RANGES["all"]
+# slice 7 (2026-10-14): the statements a BASIC loader typically runs AFTER the
+# load, each a different tenant -- DEF FN, the string GC, READ / DATA, PRINT
+# USING, graphics, PLAY, DIM -- over the whole window. A cell that only one of
+# them reads is invisible to the core program.
+RICH = {"rich", "rich2"}
+RANGES["rich"] = RANGES["all"]
+RANGES["rich2"] = RANGES["all"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -84,6 +98,41 @@ PROGRAM_NOCLEAR = [
     '20 PRINT"[A]";:GOSUB 100:FOR I=1 TO 2:PRINT I;:NEXT:A$="X"+"Y":PRINT A$;"]"',
     "30 END",
     '100 PRINT"[G]";:RETURN',
+    "RUN",
+]
+PROGRAM_RICH = [
+    "NEW",
+    '10 CLEAR 300,&HE000:DEFFNF(X)=X*2+1:READ P:BLOAD"CAS:",R',
+    '20 SCREEN 2:CIRCLE(128,96),60,15:PAINT(128,96),4,15:C=POINT(128,96):SCREEN 0',
+    '30 F=FNF(3):READ Q:FOR K=1 TO 40:B$=B$+"Z":NEXT:DIM Z(50):Z(50)=7:PLAY"T255L64C"',
+    '40 PRINT"[";F;P;Q;LEN(B$);Z(50);C;:PRINT USING"##.##";3.14159;:PRINT"]"',
+    "90 DATA 5,6",
+    "RUN",
+]
+PROGRAM_RICH2 = [
+    "NEW",
+    '10 CLEAR 300,&HE000:A$="HELLO":DIM W(9):BLOAD"CAS:",R',
+    '20 ON INTERVAL=2 GOSUB 100:INTERVAL ON:FOR K=1 TO 300:NEXT:INTERVAL OFF',
+    '30 MID$(A$,2,2)="EY":I=INSTR(A$,"LO"):B$=STRING$(3,"Q"):SWAP A$,B$:ERASE W',
+    '40 R=SQR(16)+INT(SIN(0))+INT(RND(1)):V=VAL(STR$(12)):VPOKE 6000,77:Q=VPEEK(6000)',
+    '50 LOCATE 0,20:PRINT"[";-(T>0);A$;B$;I;R;V;Q;"]"',
+    "60 END",
+    "100 T=T+1:RETURN",
+    "RUN",
+]
+PROGRAM_ABORT = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 PRINT"[A]";:ERROR 2',
+    "RUN",
+]
+PROGRAM_ONERR = [
+    "NEW",
+    '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 PRINT"[A]";:ERROR 2',
+    '30 PRINT"[R]";:GOSUB 200:PRINT"]":END',
+    '100 PRINT"[E";ERR;"]";:RESUME 30',
+    '200 PRINT"[G]";:RETURN',
     "RUN",
 ]
 PROGRAM = [
@@ -120,7 +169,10 @@ def main():
         open(path, "wb").write(tape(lo, hi))
         got = {}
         for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
-            prog = PROGRAM_NOCLEAR if name in NOCLEAR else PROGRAM
+            prog = (PROGRAM_NOCLEAR if name in NOCLEAR else PROGRAM_ABORT if name == "abort"
+                    else PROGRAM_ONERR if name == "onerr" else PROGRAM_RICH2 if name == "rich2"
+                    else PROGRAM_RICH if name in RICH
+                    else PROGRAM)
             got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,
                                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
                                                  run_gap=40.0, cassette=path)[0])

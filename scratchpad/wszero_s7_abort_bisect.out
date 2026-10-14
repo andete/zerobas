@@ -1,0 +1,16 @@
+  $ECF8-$F37F BAD [[A]]
+  $ECF8-$F03B BAD [[A]]
+  $ECF8-$EE99 ok  [[A] | Syntax error in 20]
+  $EE9A-$F03B BAD [[A]]
+  $EE9A-$EF6A BAD [[A]]
+  $EE9A-$EF02 ok  [[A] | Syntax error in 20]
+  $EF03-$EF6A BAD [[A]]
+  $EF03-$EF36 BAD [[A]]
+  $EF03-$EF1C BAD [[A]]
+  $EF03-$EF0F BAD [[A]]
+  $EF03-$EF09 BAD [[A]]
+  $EF03-$EF06 ok  [[A] | Syntax error in 20]
+  $EF07-$EF09 BAD [[A]]
+  $EF07-$EF08 BAD [[A]]
+FATAL SPAN: $EF07-$EF08
+refcache: 0 hit, 14 miss, 14 stored

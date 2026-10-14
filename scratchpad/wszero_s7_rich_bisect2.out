@@ -1,0 +1,13 @@
+  $ECF8-$F37F BAD []
+  $ECF8-$F03B ok  [[ 7  5  6  40  7  4  3.14]]
+  $F03C-$F37F BAD []
+  $F03C-$F1DD BAD []
+  $F03C-$F10C ok  [[ 7  5  6  40  7  4  3.14]]
+  $F10D-$F1DD BAD []
+  $F10D-$F175 BAD []
+  $F10D-$F141 BAD []
+  $F10D-$F127 BAD []
+  $F10D-$F11A ok  [[ 7  5  6  40  7  4  3.14]]
+  $F11B-$F127 ok  [[ 7  5  6  40  7  4  3.14]]
+NEITHER half alone is bad: an interaction across $F11A
+refcache: 0 hit, 11 miss, 5 stored, 6 refused (non-reading)

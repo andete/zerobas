@@ -95,6 +95,20 @@ OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 # the repack-acceptance machine-remap convention.
 MACHINE = os.environ.get("ZEROBAS_SUBROM_INTTEST_MACHINE", "C-BIOS_MSX1_EU_REPACK_DISK")
 
+def _sub_sym(name):
+    """D-WSZERO slice 7 (2026-10-14): SUB_INT_DELTA moved twice ($F14D, then $F167 --
+    stale since slice 5 -- now in the reference's CIRCLE / PAINT scratch); the stub
+    reads it from build/sub.sym, never a constant."""
+    import re
+    for ln in open(os.path.join(REPO, "build", "sub.sym")):
+        m = re.match(rf"^{name}\s+EQU\s+0?([0-9A-Fa-f]+)H", ln)
+        if m:
+            return int(m.group(1), 16)
+    sys.exit(f"{name} not in build/sub.sym -- build first")
+
+
+DELTA_CELL = _sub_sym("SUB_INT_DELTA")
+
 # The CALSLT stub. Loaded at $C000; halt sentinel at $C012; result (JIFFY delta)
 # at $C100. Index 3 lives at page-0 entry $0040 + 3*3 = $0049.
 STUB_ADDR = 0xC000
@@ -105,7 +119,7 @@ STUB_BYTES = bytes([
     0xFD, 0x21, 0x00, 0x8B,  # ld iy,$8B00                (slot 3-2)
     0xDD, 0x21, *le16(page0_entry("INTTEST")),  # ld ix,<derived: base + 3*INTTEST>
     0xCD, 0x1C, 0x00,        # call $001C                 (CALSLT -> sub_int_selftest)
-    0x3A, 0x4D, 0xF1,        # ld a,($F14D)               (SUB_INT_DELTA)
+    0x3A, *le16(DELTA_CELL), # ld a,(SUB_INT_DELTA)        (from build/sub.sym)
     0x32, 0x00, 0xC1,        # ld ($C100),a               (stash result)
     0x76,                    # halt                       (capture bp)
 ])

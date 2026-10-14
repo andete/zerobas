@@ -1,0 +1,18 @@
+  $ECF8-$F37F BAD []
+  $ECF8-$F03B BAD []
+  $ECF8-$EE99 ok  [[ 7  5  6  40  7  4  3.14]]
+  $EE9A-$F03B BAD []
+  $EE9A-$EF6A BAD []
+  $EE9A-$EF02 ok  [[ 7  5  6  40  7  4  3.14]]
+  $EF03-$EF6A BAD []
+  $EF03-$EF36 BAD []
+  $EF03-$EF1C ok  [[ 7  5  6  40  7  4  3.14]]
+  $EF1D-$EF36 BAD []
+  $EF1D-$EF29 BAD []
+  $EF1D-$EF23 ok  [[ 7  5  6  40  7  4  3.14]]
+  $EF24-$EF29 BAD []
+  $EF24-$EF26 ok  [[ 7  5  6  40  7  4  3.14]]
+  $EF27-$EF29 BAD []
+  $EF27-$EF28 BAD [Syntax error in 90]
+FATAL SPAN: $EF27-$EF28
+refcache: 0 hit, 16 miss, 16 stored

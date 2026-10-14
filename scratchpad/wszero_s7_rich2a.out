@@ -1,0 +1,4 @@
+ROW rich2 $ECF8-$F37F VG=[[ 1 QQQHEYLO 4  4  12  77 ]] ZB=[[ 1 QQQHEYLO 4  4  12  77 ]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

@@ -1,0 +1,4 @@
+ROW rich $ECF8-$F37F VG=[[ 7  5  6  40  7  4  3.14]] ZB=[] DIVERGES
+
+FAIL: a load over the window, then BASIC (0/1 as pinned); unpinned divergence: rich
+refcache: 0 hit, 2 miss, 2 stored

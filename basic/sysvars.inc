@@ -4223,8 +4223,14 @@ DISKOP_ERR      equ     $EF06   ; tenant -> main: ERR code of the last DSKIO fai
 ;     [prevFNSP:2][size:1][the saved FN_BASE prefix: size]
 ; so one past the frame IS the CSP the call started with -- the restore needs no
 ; second cell, and the abort unwind walks the chain to the outermost.
-FNSP            equ     $EF07   ; newest FN frame's address, 0 = no FN call live (2)
-FN_FST          equ     $EF09   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
+; 🧨 D-WSZERO slice 7 (2026-10-14): FNSP left the window. The error trap reads it
+; to unwind FN frames and the string GC walks the chain it heads, so a load over
+; it and then ANY error (or a GC) followed garbage (wszero-acceptance `abort`,
+; bisected to $EF07: scratchpad/wszero_s7_abort_bisect.out). Its home is the
+; reference's own cell for the job: PRMSTK, the previous definition block of a
+; nested FN call; FN_FST rides in PRMLEN. Both idle on zerobas and C-BIOS.
+FNSP            equ     $F6E4   ; newest FN frame's address, 0 = no FN call live (2)
+FN_FST          equ     $F6E6   ; tenant -> main: 0 = frame saved, 1 = pool full -> ERR 7 (1)
 ; FREE-RAM $EF24..$EF26  the rest of the pre-D-FORVAR FOR stack (D-COPY took $E080..$E090, D-FNPOOL $E099..$E09B, D-FORFLOAT's FOR_CUR + FOR_SIGN $E09C..$E0B5) [D-RAMSHIFT: was $E0B6..$E0B8]
 ; --- D-STRADDLE: the random-record PASS cursor (2026-09-06) -----------------
 ; A record whose span crosses a 512-byte sector boundary is written in TWO
@@ -4372,10 +4378,17 @@ FN_STK_FLOOR    equ     $F200
 ; DATA / READ / RESTORE state. The reference stores DATA items as verbatim ASCII
 ; text (oracle: `data 5,6` -> $84 $20 '5' ',' '6'), so READ parses ASCII from the
 ; stored program at run time and a DATA cursor walks the $84-tagged statements.
-DATASTATE       equ     $EF26   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
-DATAPTR         equ     $EF27   ; next unread DATA item (ASCII) in the program (2)
-DATALINE        equ     $EF29   ; link-field of the line holding DATAPTR (2)
-RESTORE_LINE    equ     $EF2B   ; link-field a READ seeks DATA from when unpositioned (2)
+; 🧨 D-WSZERO slice 7 (2026-10-14): the DATA cursor left the window. A loader that
+; READs after its load read garbage (wszero-acceptance `rich`, bisected to $EF27:
+; scratchpad/wszero_s7_rich_bisect.out -- `Syntax error in 90`). DATAPTR is the
+; reference's own DATPTR, the same job; DATALINE sits in DATLIN (the reference
+; keeps the line NUMBER there, this the line's link field); RESTORE_LINE and
+; DATASTATE in ENDFOR / SUBFLG, the reference's transient FOR and subscript
+; scratch. All four idle on zerobas and C-BIOS (scratchpad/pubfree_map.py).
+DATASTATE       equ     $F6A5   ; 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B)
+DATAPTR         equ     $F6C8   ; next unread DATA item (ASCII) in the program (2)
+DATALINE        equ     $F6A3   ; link-field of the line holding DATAPTR (2)
+RESTORE_LINE    equ     $F6A1   ; link-field a READ seeks DATA from when unpositioned (2)
 ; $E0BF was READVAR — the ONE letter ex_read latched as its target name. D-READVAR
 ; (docs/spec-basic-readvar.md) routes READ's target through var_name_key, which
 ; carries the whole (name, suffix) key in BC across the DATA read, so there is no
@@ -4663,15 +4676,21 @@ DB_CUR          equ     $F123   ; wave-3 detok: the DETOKBUF write cursor, held 
 ; stub is the SAME technique the BIOS uses for CLPRIM ($F38C, the RAM inter-slot call
 ; primitive); these cells sit at $F10A.. — well below the C-BIOS sysvar/primitive area
 ; (RDPRIM/WRPRIM/CLPRIM $F380+ and the C-BIOS stack), so there is no collision.
-SUB_INT_RAM     equ     $F125   ; the copied trampoline stub (<= 64 B; executes from RAM)
-INT_MAIN_PRIM   equ     $F165   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
+; 🧨 D-WSZERO slice 7 (2026-10-14): the trampoline and its cells left the window. They
+; are CODE: a load over the stub's first bytes and then an interrupt inside a page-0
+; tenant (PAINT, CIRCLE) ran the program's data (wszero-acceptance `rich`, bisected
+; to $F125-$F127 with $A5 fill: scratchpad/wszero_s7_rich_bisect3.out -- with the
+; bisect's `ret` byte first it survived, which hid it). Home: the reference's
+; CIRCLE / PAINT scratch MINDEL..MCLFLG $F92D-$F958, idle on zerobas and C-BIOS.
+SUB_INT_RAM     equ     $F92D   ; the copied trampoline stub (<= 36 B; executes from RAM)
+INT_MAIN_PRIM   equ     $F951   ; page-0 primary field of the MAIN (BIOS) slot (=0) (1 B)
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
 ; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.
 SUBSLOT2        equ     $FD0B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
                                 ; Cleared by init_ext_roms before the scan (RAM survives
                                 ; a reset, D-RESETBOOT), set by try_sub_slot. (1 B)
-GRP_HDR         equ     $F166   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the
+GRP_HDR         equ     $F953   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the
                                 ; GRP: channel (the next byte draws glyph byte-64).
                                 ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
@@ -4680,7 +4699,7 @@ SUB2_IDX_EDCTRL equ     2       ; zerobas-sub2 page-1 index: edctrl_tenant (D-ED
 SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
                                 ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
                                 ; no result, cannot fail, so nothing marshals.
-SUB_INT_DELTA   equ     $F167   ; self-test tenant result: JIFFY ticks observed under EI (1)
+SUB_INT_DELTA   equ     $F952   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG
 ; state, packed BCD (2 digits/byte, MSD-first -- same nibble convention as
