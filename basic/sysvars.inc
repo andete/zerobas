@@ -1330,7 +1330,14 @@ SAVTXT          equ     $EDCF   ; 2 B: the CURRENT statement's text pointer,
 ; in PROVENANCE.md alongside CONTLINE). MUST be zeroed at cold boot (garbage RAM =
 ; phantom armed traps) — trap_init does this; RUN re-arms via the same reset.
 ; Repack-only (the whole arc is IF the repack build).
-ZTRAP           equ     $EDD1   ; 18 entries * 3 B = 54 B ($EDD1..$EE06; it was
+; D-WSZERO slice 2 (2026-10-14): the whole trap block -- ZTRAP, the INTERVAL pair,
+; the three gates and STOPHOLD -- lives in the published TRPTBL span ($FC4C-$FC99,
+; 78 B; C-BIOS writes none of it: scratchpad/trapcells_probe.out), one contiguous
+; block because trap_init zero-fills ZTRAP..TRAPPEND. The interrupt service reads
+; it every frame, so a program's load over our old $EDD1-$EE1F armed garbage traps.
+; Own layout still (the VG-8020's entry order / bits / INTVAL-INTCNT-ONGSBF homes
+; are a later fidelity step).
+ZTRAP           equ     $FC4C   ; 18 entries * 3 B = 54 B ($FC4C..$FC81; was $EDD1..$EE06; it was
                                 ; $E1D1..$E207 before D-RAMSHIFT, and that stale range
                                 ; let the RAM map read ZTRAP as 3 B wide). Each
                                 ; entry = [state:1][handler_line_link:2].
@@ -1380,19 +1387,19 @@ ZTS_SHADOW      equ     $40     ; bit 6 = the DEVICE EDGE SHADOW (traps T2,
                                 ; ON->SERVICING write, or a trigger still held when the
                                 ; handler RETURNs would re-fire (oracle Q2 says it must
                                 ; not); trap_return_check's SERVICING->ON already does.
-ZINTVAL         equ     $EE07   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
-ZINTCNT         equ     $EE09   ; 2 B: INTERVAL live down-counter (frames to next fire)
-TRAPENA         equ     $EE0B   ; 1 B: count of traps currently in state ON. Gates the
+ZINTVAL         equ     $FC82   ; 2 B: INTERVAL reload period in frames (0 = disarmed)
+ZINTCNT         equ     $FC84   ; 2 B: INTERVAL live down-counter (frames to next fire)
+TRAPENA         equ     $FC86   ; 1 B: count of traps currently in state ON. Gates the
                                 ; H.TIMI event_poll (fast-out when 0 — the common no-trap
                                 ; program's cost). Bumped by set_state on OFF/STOP->ON,
                                 ; dropped on ON->anything (incl. the auto ON->SERVICING).
-TRAPPEND        equ     $EE1F   ; 1 B (was just past the retired TRAPSTK): 1 =
+TRAPPEND        equ     $FC88   ; 1 B (was just past the retired TRAPSTK): 1 =
                                 ; event_poll has latched a PENDING on some ON
                                 ; trap since the last dispatch. Gates the run-loop
                                 ; check_traps subrom_call — set (resident) by event_poll,
                                 ; cleared by the dispatch tenant once it drains the
                                 ; pending set. Keeps the per-statement cost a RAM load.
-TRAPSVC         equ     $EE0C   ; 1 B: count of live SERVICING entries == depth of the
+TRAPSVC         equ     $FC87   ; 1 B: count of live SERVICING entries == depth of the
                                 ; service stack. Gates ex_return's re-enable hook (0 =
                                 ; no added cost on a normal RETURN).
 ; D-CTLPOOL: TRAPSTK ($E20D, 6 x 3 B) IS RETIRED.
@@ -4430,7 +4437,7 @@ PLY_XSP         equ     $F024   ; PLAY X: saved SP at pt_voice's call (2)
 H_CHRG          equ     $FF48   ; published hook CHRGTR calls first (MSX2 TH hook table)
 H_OUTD          equ     $FEE4   ; published hook OUTDO calls first (MSX2 TH hook table)
 PRMWANT         equ     $F026   ; D-OKSTORE: nonzero = print the prompt (1)
-STOPHOLD        equ     $F027   ; D-STOPTAP: frames Ctrl-STOP has been held (1)
+STOPHOLD        equ     $FC89   ; (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
 TKDIG           equ     $F03C   ; tokeniser/formatter: significant-digit array, $F03C..$F053

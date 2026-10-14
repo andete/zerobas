@@ -2687,8 +2687,33 @@ item — do **one item per session** to keep context lean.
       -> `cas` stays SAME, as predicted: that row is BLIND to the move (the search
       fills the cells before the data block and refills them for the next file),
       so it is a regression row, not a witness.
-      ➡️ Next: slice 2 (the interrupt service's trap state -> TRPTBL / INTVAL /
-      INTCNT / ONGSBF; 📏 first whether C-BIOS counts INTCNT itself).
+      ✅ **SLICE 2 (2026-10-14): the trap block out of the window.**
+      📏 [`trapcells_probe.py`](scratchpad/trapcells_probe.py) ->
+      [`trapcells_probe.out`](scratchpad/trapcells_probe.out) (writes to ONGSBF,
+      TRPTBL, INTVAL/INTCNT, idle / ON INTERVAL / ON KEY + F1): zerobas's C-BIOS
+      writes NONE of them; the VG-8020 clears TRPTBL at RUN, keeps INTCNT as a
+      free-running per-frame down-counter (even idle), and arms TRPTBL entries as
+      [status][handler-text-pointer] (ON INTERVAL: entry 17, status 1 -> 5 ->
+      3, ONGSBF 0 -> 1; KEY(1): entry 0). 🔮 "C-BIOS writes none": HIT; "INTCNT
+      counts down when INTERVAL is on": HIT and more -- it always counts.
+      🔧 ZTRAP (54 B) + ZINTVAL / ZINTCNT / TRAPENA / TRAPSVC / TRAPPEND +
+      STOPHOLD -> ONE contiguous block in TRPTBL's span ($FC4C-$FC89): trap_init
+      zero-fills ZTRAP..TRAPPEND in one ldir, so the block cannot be split yet.
+      Equates only; layout still our own. The faithful layout (TRPTBL's entry
+      order and status bits, INTVAL / INTCNT / ONGSBF at their own cells, a
+      free-running INTCNT) is a later fidelity step, filed here.
+      📏 Gate row `trap` ($EDD1-$EE1F, the block's old home) SAME
+      ([`wszero_s2_rows.out`](scratchpad/wszero_s2_rows.out)). 🔪
+      [`wszero_s2_knife.py`](scratchpad/wszero_s2_knife.py) ->
+      [`wszero_s2_knife.out`](scratchpad/wszero_s2_knife.out): K-WS3 (all seven
+      back) -> `trap` diverges; HIT.
+      🔮 "the pinned w2-w5 keep failing until slice 3": MISS for w3 -- the FULL
+      battery reported its pin ROTTED (SAME now): in $EC80-$EE7F the trap block
+      was the fatal tenant for this program, the anchors there (SAVSTK, SAVTXT,
+      FRETOP) are rewritten before they are read. Pin removed; w2 now prints
+      nothing instead of `Device I/O error` (slice 1's effect).
+      ➡️ Next: slice 3 (stack / text anchors: SAVSTK + CSP, SAVTXT, CTLTOP, FRETOP,
+      PRGEND, CONT, DATA ...), then 2b (the $0038 trampoline, after a carve).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8549,7 +8574,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34082 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34107 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8715,7 +8740,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13577 (T-6FE392)8 (T-529ABE)` from `TODO.md:26371 (T-529ABE)`: a
+      `TODO.md:13602 (T-6FE392)8 (T-529ABE)` from `TODO.md:26396 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14424,7 +14449,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26371 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26396 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

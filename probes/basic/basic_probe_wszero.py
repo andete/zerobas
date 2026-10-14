@@ -40,11 +40,17 @@ RANGES = {
     # tape search's names -- empty of anything a load needs since the move.
     "bl": (0xEC20, 0xEC25),
     "cas": (0xF000, 0xF01F),
+    # slice 2 (2026-10-14): the trap block's old home -- the interrupt service read
+    # it every frame, so a load over it armed garbage traps one frame later.
+    "trap": (0xEDD1, 0xEE1F),
 }
 # First run (2026-10-14, scratchpad/wszero_gate_first.out): w2 `Device I/O error`
 # (BLOAD's loop cells), w3 nothing printed, w4 `Unprintable error in 10`, w5 stops
 # after [A][G]. ctl and w1 agree.
-KNOWN_DIVERGE = {"w2", "w3", "w4", "w5"}
+# Slice 2 (2026-10-14) un-pinned w3: with the trap block out of $EDD1-$EE1F, a
+# load over $EC80-$EE7F no longer stops BASIC (the FULL battery caught the rotted
+# pin). w2 now prints nothing where it gave `Device I/O error` before slice 1.
+KNOWN_DIVERGE = {"w2", "w4", "w5"}
 
 PROGRAM = [
     "NEW",

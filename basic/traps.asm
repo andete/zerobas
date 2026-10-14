@@ -306,7 +306,7 @@ ep_out:
 ; trap_init: reset the whole ZTRAP table + all bookkeeping to zero — every trap
 ; OFF, no handler, no pending, counters/gates clear. Called at cold boot (before
 ; any statement runs) and at RUN (re-arm), so garbage RAM can never look like a
-; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($E1D1..$E21F) in one fill. The edge
+; phantom armed trap. Zeroes ZTRAP..TRAPPEND ($FC4C..$FC88, in TRPTBL since D-WSZERO) in one fill. The edge
 ; shadow needs no byte of its own -- it is bit 6 of each entry (T2 STRIG, T3 KEY and
 ; now T1 STOP), so this same fill clears it. Clobbers A, BC, DE, HL.
 trap_init:
