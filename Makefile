@@ -2390,6 +2390,12 @@ rg7-acceptance: repack-machine
 bloadrtail-acceptance: repack-machine
 	python3 probes/basic/basic_probe_bloadrtail.py
 
+# --- wszero-acceptance: a load over $E98A-$F37F, then BASIC (D-WSZERO) ----------
+# A program owns HIMEM..$F37F after CLEAR n,&Hxxxx; zerobas's own state there must
+# go (TIER 1). Rows that still fail are PINNED and must keep failing until fixed.
+wszero-acceptance: repack-machine
+	python3 probes/basic/basic_probe_wszero.py
+
 # --- filesnl-acceptance: the cursor after FILES (D-FILESNL) --------------------
 # The CF-3300 ends a FULL row of the listing at once, so a PRINT after FILES
 # starts on its own row; a partly filled row keeps the cursor on it, on both.

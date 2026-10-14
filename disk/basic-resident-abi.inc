@@ -17,7 +17,7 @@ pu_deref_body equ 0284CH
 subrom_call equ 03B53H
 ARGA equ 0F06AH   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
-FN_RESUME equ 0EE27H   ; D-FNEXPR: cursor past a filename expr (2 B)
+FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
 DISKOP_STATUS equ 0EAFCH   ; tenant -> main: the disposition (1 B)
 DISK_FCB_NAME equ 0ECDCH   ; +1..+11: 8.3 name field (11 bytes)
 FILES_HASPAT equ 0F009H   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)

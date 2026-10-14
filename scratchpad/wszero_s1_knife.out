@@ -1,0 +1,3 @@
+K-WS1: rows ['bl'] diverging ['bl']; predicted ['bl'] -> HIT
+K-WS2: rows ['cas'] diverging []; predicted [] -> HIT
+restored: build rc=0; bl/cas SAME

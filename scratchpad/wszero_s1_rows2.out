@@ -1,0 +1,4 @@
+ROW bl $EC20-$EC25 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

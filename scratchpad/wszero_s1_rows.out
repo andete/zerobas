@@ -1,0 +1,5 @@
+ROW bl $EC10-$EC37 VG=[[A][G] 1  2 XY]] ZB=[[A][G]] DIVERGES
+ROW cas $F000-$F01F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: bl
+refcache: 0 hit, 4 miss, 4 stored

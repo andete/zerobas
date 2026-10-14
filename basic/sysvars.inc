@@ -827,9 +827,13 @@ BASETAB         equ     $F3B3   ; BASE(0..19): 20 LE words, 4 groups of 5 (name,
                                 ; pattern generator, sprite attribute, sprite pattern),
                                 ; group g describing SCREEN g
 
-CURPTR          equ     $EC20   ; current load pointer (2 bytes)
-ENDPTR          equ     $EC22   ; final load address  (2 bytes)
-EXECPTR         equ     $EC24   ; execution address   (2 bytes)
+; D-WSZERO slice 1 (2026-10-14): BLOAD/BSAVE's six-byte header block lives in the
+; published SWPTMP ($F7BC, 8 B: SWAP's scratch, never live during a load), not in
+; our workspace -- a tape binary loaded over $EC20 rewrote the loop's own end
+; address mid-load (Disc Warrior: `Device I/O error`).
+CURPTR          equ     $F7BC   ; current load pointer (2 bytes) -- SWPTMP+0
+ENDPTR          equ     $F7BE   ; final load address  (2 bytes) -- SWPTMP+2
+EXECPTR         equ     $F7C0   ; execution address   (2 bytes) -- SWPTMP+4
 ERRMARK         equ     $EC10   ; error landmark marker byte (1 B)
 ; --- Phase 2: MAXFILES multi-channel control (free $E011.. gap below CURPTR) ---
 ; The Phase-2 file verbs gained a real multi-channel table (retiring the single-
@@ -884,7 +888,7 @@ LRSET_DEST      equ     $EC1E   ; LSET/RSET: destination ADDRESS of the store (2
                                 ; own heap body, which no offset into a record buffer
                                 ; names. Both callers now compute the address and
                                 ; sub/lrsetst.asm just loads it (spec §4.1).
-RUNFLAG         equ     $EC2F   ; 1 = ,R handoff requested (set while parsing) (1)
+RUNFLAG         equ     $FCBE   ; 1 = ,R handoff requested (set while parsing) (1) -- the published RUNBNF (D-WSZERO)
 CLPTR           equ     $EC2B   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK           equ     $EC2D   ; CLOAD/LOAD: saved link word of the current line
                                 ; (= the saving machine's absolute start address of
@@ -1419,8 +1423,8 @@ TRAPSVC         equ     $EE0C   ; 1 B: count of live SERVICING entries == depth 
 ; strictly in the PARSE phase, before any fat_io_* primitive), the BLOAD tenant
 ; holds its status ACROSS the whole load, during which the fatprim cells are live
 ; on every getbyte.
-BL_PTR          equ     $EE21   ; 2 B: main -> tenant, the token cursor after BLOAD
-BL_STAT         equ     $EE23   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
+BL_PTR          equ     $F6A7   ; 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO)
+BL_STAT         equ     $F69D   ; 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO)
                                 ; error` PRINTED, and ANY OTHER VALUE IS THE MSX
                                 ; ERR CODE THE RESIDENT STUB RAISES (D-BLMODE,
                                 ; 2026-08-21): 53 `File not found` (D-BLNF),
@@ -1445,7 +1449,7 @@ BL_STAT         equ     $EE23   ; 1 B: tenant -> main. 0 = loaded, 1 = `load
 ; runs and added by the tenant to the header's start / end / exec. An ALIAS of
 ; SWAP's operand scratch, which only ex_swap (basic/missing.asm) touches -- never
 ; live across a BLOAD.
-BL_OFS          equ     SW_ADDR ; 2 B: main -> tenant, BLOAD's offset (0 = none)
+BL_OFS          equ     $F69F   ; 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's)
 SV_OP           equ     $EE24   ; 1 B: main -> tenant, SV_OP_* engine selector
 SV_STAT         equ     $EE25   ; 1 B: tenant -> main, 0 = written, 1 = load_error
 SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
@@ -1564,7 +1568,7 @@ CON_ROWS_KEYON  equ     CON_ROWS - 1        ; `KEY ON` keeps the bottom one
 ; `call`/`ret`. The two bytes were left NAMED rather than silently reused, so
 ; that the next cell wanting them would know what had been here -- and that is
 ; exactly how they were re-let above, one day later.
-FN_RESUME       equ     $EE27   ; D-FNEXPR: cursor past a filename expr (2 B)
+FN_RESUME       equ     $F6BC   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
                                 ; parked by fname_expr while the staged name is
                                 ; parsed out of STRSCR
 ; LOCATE parses all three arguments and applies them only when all three are
@@ -2915,7 +2919,7 @@ DISKSLOT_OK     equ     $ECE8   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1
 ; VRAM_FLAG: 1 = the ",S" flag was given -> the data bytes stream to/from VRAM
 ; (RDVRM/WRTVRM) instead of RAM; the $FE header start/end/exec are stored/read
 ; verbatim as VRAM addresses. Cleared at the top of every BSAVE/BLOAD parse.
-VRAM_FLAG       equ     $ECE9   ; 1 = ",S" VRAM save/load (1)
+VRAM_FLAG       equ     $F7B8   ; 1 = ",S" VRAM save/load (1) -- published TEMP9 (D-WSZERO)
 ; CAL_CURHI: cassette ASCII load's DOUBLE-BUFFER "which buffer is being served"
 ; pointer -- the high byte of CAL_BUF ($E6) or CAL_BUF2 ($E8), CAL_CNT (below)
 ; being the low byte. TWO 256-byte buffers, not one, because a SINGLE buffer's
@@ -3939,10 +3943,13 @@ FILES_HASPAT    equ     $F009   ; FILES: 1 = a filespec pattern is in DISK_FCB_N
 ; each candidate header, and the matched file-type id for the caller's dispatch.
 ; The compare is BYTE-EXACT / case-sensitive — oracle-confirmed on the stock
 ; National_CF-3300 (spec §A.5): CLOAD"ABC" does NOT match a tape file "abc".
-CAS_WANT        equ     $F00A   ; requested 6-char tape name, space-padded (6)
-CAS_WANT_ON     equ     $F010   ; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1)
-CAS_HDRNAME     equ     $F011   ; 6-char name read from the current tape header (6)
-CAS_HDRID       equ     $F017   ; file-type id byte read from the current header (1)
+; D-WSZERO slice 1: the tape search's names live in the published FILNAM / FILNM2
+; ($F866 / $F871, 11 B each), as on the VG-8020 (it writes $F866-$F876 on a tape
+; BLOAD: scratchpad/refwork_bload_probe.out).
+CAS_WANT        equ     $F866   ; requested 6-char tape name, space-padded (6) -- FILNAM+0
+CAS_WANT_ON     equ     $F86C   ; FILNAM+6; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1)
+CAS_HDRNAME     equ     $F871   ; 6-char name read from the current tape header (6) -- FILNM2+0
+CAS_HDRID       equ     $F877   ; file-type id byte read from the current header (1) -- FILNM2+6
 ; --- Tier-3 CLOAD? verify (Item B): compare a tokenised tape program against the
 ; in-memory program WITHOUT mutating it; "Verify error" on any difference. The
 ; tokenised reader (ctp_line/ctp_body) runs in compare-mode when CAS_VERIFY=1:
@@ -3950,8 +3957,8 @@ CAS_HDRID       equ     $F017   ; file-type id byte read from the current header
 ; program at CLPTR (which walks TXTBASE.. in lock-step, so it IS the comparand
 ; cursor — no separate pointer needed), setting the sticky CAS_VMIS on a diff.
 ; Scope: tokenised ($D3) only (spec §B).
-CAS_VERIFY      equ     $F018   ; 1 = CLOAD? compare-mode (no store) (1)
-CAS_VMIS        equ     $F019   ; sticky: 1 = a verify mismatch was seen (1)
+CAS_VERIFY      equ     $F878   ; 1 = CLOAD? compare-mode (no store) (1) -- FILNM2+7
+CAS_VMIS        equ     $F879   ; sticky: 1 = a verify mismatch was seen (1) -- FILNM2+8
 ; --- Cassette ASCII load 256-byte block buffer (cload.asm cal_getbyte) -------
 ; A DEDICATED 256-byte RAM block buffer the cassette-ASCII byte source serves
 ; from, so TAPIN is called only in the tight 256-read refill loop at each block

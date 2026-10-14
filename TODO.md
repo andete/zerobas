@@ -2648,6 +2648,47 @@ item — do **one item per session** to keep context lean.
       reference's published cell for the same job (the 2026-10-13 rule), else a
       redesign; (4) gate: a synthetic tape that BLOADs over $E98A-$F37F and then
       runs more BASIC, both machines.
+      📐 **INVENTORY (2026-10-14)** -- [`wszero_inventory.md`](scratchpad/wszero_inventory.md)
+      (findings, homes, the 12-slice plan) and the full 428-row
+      [`wszero_inventory_table.md`](scratchpad/wszero_inventory_table.md): the
+      window is 2550 B, 1474 named and 1076 already HOLES; class A (BLOAD/tape)
+      55 B, B (interrupt service) 128 B, C (continue BASIC) 290 B, D 999 B; 917 B
+      have a published same-job cell. Two findings: the ISR reads the trap table in
+      the window EVERY frame, and C-BIOS itself writes $F2B8 and $F33B-$F357.
+      📏 [`refwork_bload_probe.out`](scratchpad/refwork_bload_probe.out): the
+      VG-8020's tape `BLOAD ...,R` writes FILNAM $F866-$F876 and $FCBE-$FCC0
+      (RUNBNF, SAVENT) and no published start / end cell -- zerobas writes none.
+      ✅ **SLICE 0 (apparatus): gate `wszero-acceptance`**
+      ([`basic_probe_wszero.py`](probes/basic/basic_probe_wszero.py),
+      [`wszero_gate_first.out`](scratchpad/wszero_gate_first.out)): our own tape
+      loads a `ret` + $A5 binary over one slice of the window, then PRINT /
+      GOSUB / FOR / a string op run. ctl and w1 ($E98A-$EAFF) SAME; w2 `Device
+      I/O error`, w3 nothing, w4 `Unprintable error in 10`, w5 dies after
+      `[A][G]` -- PINNED, to come off slice by slice. 🔮 HIT on all six.
+      ✅ **SLICE 1 (2026-10-14): BLOAD / tape state out of the window.**
+      CURPTR / ENDPTR / EXECPTR (the 6-byte header block the load loop re-reads
+      every byte) -> the published SWPTMP $F7BC (SWAP's scratch, never live in a
+      load); RUNFLAG -> RUNBNF $FCBE (the published `,R` flag); CAS_WANT /
+      CAS_WANT_ON -> FILNAM $F866; CAS_HDRNAME / HDRID / VERIFY / VMIS -> FILNM2
+      $F871 (the VG-8020 itself writes $F866-$F876 on a tape BLOAD); FN_RESUME,
+      BL_PTR, BL_STAT, BL_OFS, VRAM_FLAG -> the published evaluator temporaries
+      TEMP2 $F6BC, TEMP $F6A7, TEMP3 $F69D, TEMP8 $F69F, TEMP9 $F7B8 (zerobas's
+      evaluator never uses them; BL_OFS no longer shares SWAP's SW_ADDR). Every
+      target checked free in zerobas's three symbol files first. Equates only: no
+      code changed.
+      📏 Gate rows added: `bl` ($EC20-$EC25, the loop's old cells) SAME
+      ([`wszero_s1_rows2.out`](scratchpad/wszero_s1_rows2.out)) -- a first cut
+      $EC10-$EC37 also covered PRGEND / FCH_ACTIVE (slices 3 and 7) and failed in
+      the FOR loop; `cas` ($F000-$F01F) SAME
+      ([`wszero_s1_rows.out`](scratchpad/wszero_s1_rows.out)). 🔪
+      [`wszero_s1_knife.py`](scratchpad/wszero_s1_knife.py) ->
+      [`wszero_s1_knife.out`](scratchpad/wszero_s1_knife.out): K-WS1 (the loop
+      cells back at $EC20) -> `bl` diverges, HIT; K-WS2 (the names back at $F00A)
+      -> `cas` stays SAME, as predicted: that row is BLIND to the move (the search
+      fills the cells before the data block and refills them for the next file),
+      so it is a regression row, not a witness.
+      ➡️ Next: slice 2 (the interrupt service's trap state -> TRPTBL / INTVAL /
+      INTCNT / ONGSBF; 📏 first whether C-BIOS counts INTCNT itself).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -8508,7 +8549,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34041 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34082 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -8674,7 +8715,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13536 (T-6FE392)8 (T-529ABE)` from `TODO.md:26330 (T-529ABE)`: a
+      `TODO.md:13577 (T-6FE392)8 (T-529ABE)` from `TODO.md:26371 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14383,7 +14424,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26330 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26371 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

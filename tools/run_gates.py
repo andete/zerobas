@@ -142,7 +142,7 @@ nodiskverbs-acceptance readref-acceptance litref-acceptance
 asavedev-acceptance casprdir-acceptance casbrk-acceptance
 castype-acceptance casbin-acceptance
 fcbhdr-acceptance putdir-acceptance readflt-acceptance
-recauto-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance filesnl-acceptance
+recauto-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance wszero-acceptance filesnl-acceptance
 filesbare-acceptance callsystem-acceptance bootkey-acceptance
 resnext-acceptance readerl-acceptance
 dosmode-acceptance bootkeys-acceptance

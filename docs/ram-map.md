@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 432 declared addresses in this project's own workspace `$E000..$F37F` (406 with a machine-readable width), plus **115** in the MSX standard work area at or above `$F380`.
-* **disk** — 135 declared addresses in this project's own workspace `$E000..$F37F` (123 with a machine-readable width), plus **32** in the MSX standard work area at or above `$F380`.
+* **basic** — 418 declared addresses in this project's own workspace `$E000..$F37F` (392 with a machine-readable width), plus **130** in the MSX standard work area at or above `$F380`.
+* **disk** — 134 declared addresses in this project's own workspace `$E000..$F37F` (122 with a machine-readable width), plus **33** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -259,9 +259,6 @@ second one is the question a per-component map cannot answer.
 | `$EC1D` | 1 B | `disk` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
 | `$EC1E` | 2 B | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EC1E` | 2 B | `disk` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
-| `$EC20` | 2 B | `basic` | `CURPTR` | current load pointer (2 bytes) |  |
-| `$EC22` | 2 B | `basic` | `ENDPTR` | final load address (2 bytes) |  |
-| `$EC24` | 2 B | `basic` | `EXECPTR` | execution address (2 bytes) |  |
 | `$EC26` | 2 B | `basic` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
 | `$EC26` | 2 B | `disk` | `PRGEND` | addr of the $0000 end-of-program marker (2 bytes) |  |
 | `$EC28` | 1 B | `basic` | `ARY_OP/TKNAME` | tokeniser: 1 = previous char was part of a name |  |
@@ -272,7 +269,6 @@ second one is the question a per-component map cannot answer.
 | `$EC2C` | 1 B | `basic` | `ARY_NIDX` | parsed subscript/bound count for the CURRENT | `disk` CLPTR |
 | `$EC2D` | 2 B | `basic` | `ARY_IDXP/CLINK` | CLOAD/LOAD: saved link word of the current line |  |
 | `$EC2D` | 2 B | `disk` | `CLINK` | CLOAD/LOAD: saved link word of the current line |  |
-| `$EC2F` | 1 B | `basic` | `RUNFLAG` | 1 = ,R handoff requested (set while parsing) (1) |  |
 | `$EC30` |  | `basic` | `GFX_OP/LST_LO/RN_TGT/SL_DELLO/SL_NUM` | main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1) |  |
 | `$EC31` | 1 B | `basic` | `GFX_C` | main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1) |  |
 | `$EC32` |  | `basic` | `GFX_RES/SL_SLOT` | tenant->main: POINT result colour 0..15 (1) |  |
@@ -347,7 +343,6 @@ second one is the question a per-component map cannot answer.
 | `$ECE7` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
 | `$ECE8` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$ECE8` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
-| `$ECE9` | 1 B | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) |  |
 | `$ECEA` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
 | `$ECEB` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
 | `$ECEC` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
@@ -441,15 +436,11 @@ second one is the question a per-component map cannot answer.
 | `$EE1E` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
 | `$EE1F` | 1 B | `basic` | `TRAPPEND` | 1 B (was just past the retired TRAPSTK): 1 = |  |
 | `$EE20` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
-| `$EE21` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD |  |
-| `$EE23` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load |  |
 | `$EE24` | 1 B | `basic` | `SV_OP` | 1 B: main -> tenant, SV_OP_* engine selector |  |
 | `$EE25` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
-| `$EE27` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) |  |
-| `$EE27` | 2 B | `disk` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) |  |
 | `$EE29` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
 | `$EE2A` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
-| `$EE2B` | 2 B | `basic` | `BL_OFS/SVT_SP/SW_ADDR` | 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its |  |
+| `$EE2B` | 2 B | `basic` | `SVT_SP/SW_ADDR` | 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its |  |
 | `$EE2D` | 1 B | `basic` | `SW_TYPE` | 1 B: its type (1 = string, 2/4/8 numeric) |  |
 | `$EE2E` | 2 B | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse |  |
 | `$EE30` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type |  |
@@ -498,12 +489,6 @@ second one is the question a per-component map cannot answer.
 | `$F008` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F009` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F009` | 1 B | `disk` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F00A` | 6 B | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) |  |
-| `$F010` | 1 B | `basic` | `CAS_WANT_ON` | bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1) |  |
-| `$F011` | 6 B | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) |  |
-| `$F017` | 1 B | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) |  |
-| `$F018` | 1 B | `basic` | `CAS_VERIFY` | 1 = CLOAD? compare-mode (no store) (1) |  |
-| `$F019` | 1 B | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) |  |
 | `$F01A` | 1 B | `basic` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F01A` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F01B` | 1 B | `basic` | `TKOVF` | tokeniser reject code, 0 = ok (1 B) |  |
@@ -665,14 +650,23 @@ extents the standard already fixes would be noise, not rigour.
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
 | `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
 | `$F698` |  | `basic` | `TEMPBASE` | $F698: high boundary = the empty- |  |
+| `$F69D` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO) |  |
+| `$F69F` | 2 B | `basic` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
+| `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
 | `$F6B5` | 2 B | `basic` | `DOT` | 2 B: the line `.` names. Cold value 0 (init). |  |
 | `$F6B9` | 2 B | `basic` | `ONELIN` | 2 B: ON ERROR handler line's LINK address (the |  |
 | `$F6BB` | 1 B | `basic` | `ONEFLG` | 1 B: $FF = currently inside a handler (no RESUME |  |
+| `$F6BC` | 2 B | `basic` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO) |  |
+| `$F6BC` | 2 B | `disk` | `FN_RESUME` | D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO) |  |
 | `$F6C2` | 2 B | `basic` | `VARTAB` | PUBLISHED: variable-table base = (PRGEND)+2 (2 B) |  |
 | `$F6C4` | 2 B | `basic` | `ARYTAB` | PUBLISHED: scalar-region end == array base (2 B) |  |
 | `$F6C6` | 2 B | `basic` | `STREND` | PUBLISHED: array-region end = ARYEND (2 B) |  |
 | `$F6CA` | 26 B | `basic` | `DEFTBL` | per-letter default-type map, A..Z (26) -- |  |
+| `$F7B8` |  | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published TEMP9 (D-WSZERO) |  |
+| `$F7BC` | 2 B | `basic` | `CURPTR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
+| `$F7BE` | 2 B | `basic` | `ENDPTR` | final load address (2 bytes) -- SWPTMP+2 |  |
+| `$F7C0` | 2 B | `basic` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
 | `$F7C4` | 1 B | `basic` | `TRACEFLAG` | = TRCFLG: TRON state, 175 = TRON / 0 = TROFF (1 B) |  |
 | `$F7C5` |  | `basic` | `FBUFFR` | published: number-conversion buffer (43 B) |  |
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
@@ -683,6 +677,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
+| `$F866` |  | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) -- FILNAM+0 |  |
+| `$F86C` | 1 B | `basic` | `CAS_WANT_ON` | FILNAM+6; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1) |  |
+| `$F871` |  | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) -- FILNM2+0 |  |
+| `$F877` |  | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) -- FILNM2+6 |  |
+| `$F878` |  | `basic` | `CAS_VERIFY` | 1 = CLOAD? compare-mode (no store) (1) -- FILNM2+7 |  |
+| `$F879` |  | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) -- FILNM2+8 |  |
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F91F` | 1 B | `basic` | `CGPNT` | published: the font's slot (1 B) then address (2 B) |  |
 | `$F922` |  | `basic` | `NAMBAS` | name-table base of the current text mode (MSX work area; D-SCREDIT) |  |
@@ -716,6 +716,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FCB5` | 2 B | `basic` | `GYPOS` | pending plot Y (int16 LE) |  |
 | `$FCB7` | 2 B | `basic` | `GRPACX` | last-referenced point X (int16 LE) |  |
 | `$FCB9` | 2 B | `basic` | `GRPACY` | last-referenced point Y (int16 LE) |  |
+| `$FCBE` |  | `basic` | `RUNFLAG` | 1 = ,R handoff requested (set while parsing) (1) -- the published RUNBNF (D-WSZERO) |  |
 | `$FCC1` | 1 B | `basic` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit7 = expanded |  |
 | `$FCC1` | 1 B | `disk` | `EXPTBL` | expanded-slot flags, 1 byte/primary, bit 7 = expanded |  |
 | `$FCC5` |  | `disk` | `SLTTBL` | SLTTBL base: per-primary mirror of the secondary-slot regs |  |
