@@ -32,7 +32,21 @@ broken). Only an EMPTY window fixes the class -- go as fast as possible. Real
 tapes are re-run outside the repo (session scratchpad tape_triage.py /
 tape_compare.py / tapes/cls.py; the tapes are never decoded or copied in).
 
-➡️ **NEXT:** DB_WIN (96 B, the LIST / PRINT USING render window) pins its island
+**Also shipped 2026-10-14 evening:** D-WSZERO slices 6-7 and **D-TAPLEAD**
+(e30dcfae): TAPION verifies a run of short half-periods, so a loader that re-calls
+it while data plays waits for a real leader -- real tapes SAME 9 -> 12, the
+"Load error" class 5 -> 0; one residual PINNED (`mid`, deep in data). **🙋 OPEN
+FOR JOOST:** Loopy Laundry and Punch & Judy call the undocumented BASIC-ROM
+internal $73AC (Punch & Judy also $3297) -- provide such entry points
+(black-box characterised)? Parked until ruled (TODO, D-TAPELOAD's end). **D-WSZERO's
+equate-only phase is nearly spent** (~140 B idle published cells for ~1100 B):
+its next phase needs main ROM bytes, i.e. D-ROMSIZE step 1 (Joost's own order).
+Still autonomous on tape: Harry Fox (`Device I/O error in 50`, our own read), the
+near-misses (Mutant Monty 1 B, Grog's Revenge 14 B, Disc Warrior 23 B ... of VRAM:
+check whether they are timing, not bugs), BMX Simulator (PC ends at $F92D, the
+interrupt trampoline's new home -- look at the slot state there).
+
+➡️ **NEXT (window):** DB_WIN (96 B, the LIST / PRINT USING render window) pins its island
 under $EE00 -- move it OUT (BUF / KBUF overlap needs analysis: STRSCR is BUF,
 TOKBUF is KBUF and holds the running direct statement), then re-pack. Then the
 graphics / DRAW scratch (~150 B), the remaining float / tokeniser scratch, the
