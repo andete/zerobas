@@ -3319,6 +3319,12 @@ item — do **one item per session** to keep context lean.
       code at that fixed address inside main page 1 (0 B free on 2026-10-14). ➡️ **Joost: should
       zerobas provide undocumented MSX-BASIC internal entry points that games
       call, characterised black-box?** Until ruled, the class is parked.
+      📏 **Harry Fox is the same class** (`Device I/O error in 50`): on the
+      VG-8020 its second file's code calls the published BIOS (INIGRP, LDIRVM,
+      DCOMPR) and then the BASIC-ROM internals $6CF3 (where the reference spends
+      ~25 s before the next load) and $3297; zerobas skips that pause, reads on
+      past the reference's last file and fails. Three titles, three internal
+      addresses: $73AC, $6CF3, $3297.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -8880,7 +8886,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34413 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34419 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9046,7 +9052,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13908 (T-6FE392)8 (T-529ABE)` from `TODO.md:26702 (T-529ABE)`: a
+      `TODO.md:13914 (T-6FE392)8 (T-529ABE)` from `TODO.md:26708 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14755,7 +14761,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26702 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26708 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
