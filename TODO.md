@@ -2995,6 +2995,54 @@ item — do **one item per session** to keep context lean.
       FILES never reads the flag; a `d:` name does. ⏱ Unattributed, filed for
       TIER 5: zerobas took longer than the VG-8020 on that program (tape load +
       1681 POINT calls); which part is slower is not measured.
+      ✅ **S10 (2026-10-15): THE PERSISTENT DISKLESS SET -> PARM1's TAIL
+      $F71C-$F73F (36 B), equates only.** FCH_MODES (16), CSR_ADDR / CSR_CHAR /
+      CSR_ON, ARL_GETBYTE, CAS_BUFP, RL_AUTO, FCH_ACTIVE, CONTVALID, CAL_CNT /
+      CAL_NEEDFILL / CAL_SAVE (= CAS_WCNT), FCH_NUM / FCH_MODE, DIRECTF,
+      PRMWANT, ERRRESUME: the cells a loader's NEXT statements read after a load
+      over the window. $F740-$F74B declared FREE-RAM. Prep by a read-only
+      subagent (no build), applied and verified here.
+      📏 S10.0, the span measured free FIRST
+      ([`s10_parm1_fill.py`](scratchpad/s10_parm1_fill.py), basic_probe_ramfree's
+      instrument over $F71C-$F74C plus 7 rows -- FN, arrays, an error, ON
+      INTERVAL, CRT:, tape BLOAD, SWAP): zerobas 0 on every row, diskless
+      ([`s10_parm1_fill_C-BIOS_MSX1_EU_REPACK_NODISK.out`](scratchpad/s10_parm1_fill_C-BIOS_MSX1_EU_REPACK_NODISK.out))
+      and with the disk
+      ([`s10_parm1_fill_C-BIOS_MSX1_EU_REPACK_DISK.out`](scratchpad/s10_parm1_fill_C-BIOS_MSX1_EU_REPACK_DISK.out));
+      the VG-8020 0 everywhere but a 9-parameter double DEF FN, 46 B -- its FN
+      parameter block
+      ([`s10_parm1_fill_Philips_VG_8020.out`](scratchpad/s10_parm1_fill_Philips_VG_8020.out)).
+      🔮 All three HIT. So only state zerobas keeps BETWEEN statements lives
+      there (sysvars.inc states the rule).
+      📏 Six gate rows, each setting state before the load (or loading inside
+      the statement that reads it): `chan` (a CRT: channel open across it),
+      `input` (INPUT's cursor), `midline` (DEF FN + ERROR on the BLOAD's own
+      line), `resume` (BLOAD in the handler, then RESUME NEXT), `contdir` (CONT
+      after a direct load), `prm` (the Ok after RUN; a $00 fill -- $A5 is blind
+      to it). On the S8 build all six DIVERGED
+      ([`wszero_s10_before.out`](scratchpad/wszero_s10_before.out): `[E 52 20]`
+      for `[C]`, VPEEK 165 for 7, nothing for `[A 2 ]`, `Device I/O error in
+      100`, `Syntax error in 3346`, `[Y 2 ]` for `[Y 3 ]`); 🔮 six HIT, and the
+      predicted values for chan / input / prm exact. After S10: 20/20 SAME
+      ([`wszero_s10_rows.out`](scratchpad/wszero_s10_rows.out)); 🔮 "resume may
+      stay red (its Device I/O error might not be ERRRESUME's)": MISS, the good
+      way. 🔪 [`wszero_s10_knife.py`](scratchpad/wszero_s10_knife.py) ->
+      [`wszero_s10_knife.out`](scratchpad/wszero_s10_knife.out): one group back
+      at its old home per knife -- K-WS14 FCH_MODES -> chan, K-WS16 CSR_* ->
+      input, K-WS18 DIRECTF -> midline, K-WS19 ERRRESUME -> resume, K-WS20
+      CONTVALID -> contdir, K-WS21 PRMWANT -> prm, each the predicted row and
+      only it; K-WS15 FCH_ACTIVE predicted BLIND and blind: 7/7 HIT. Stated so
+      nobody counts them as covered: RL_AUTO (differs only on Ctrl-STOP during
+      INPUT), ARL_GETBYTE / FCH_NUM / FCH_MODE (written before every diskless
+      read), CAL_* / CAS_BUFP (below) have no row.
+      🆕 **D-CASCHANLOAD -- a CAS: INPUT channel open across a tape BLOAD**
+      (🎚️ TIER 6, found 2026-10-15 by S10's prep, UNMEASURED -- run it on both
+      machines first). The tape channel's state is one global every tape
+      operation re-seeds --
+      `BLOAD"CAS:"` resets CAS_BUFP and the file search reuses CAL_* -- so a
+      CAS: INPUT channel left open across a BLOAD probably reads the wrong
+      buffer afterwards. That is also why no tape-load row can witness CAL_* /
+      CAS_BUFP.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9593,7 +9641,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35126 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35174 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9759,7 +9807,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14621 (T-6FE392)8 (T-529ABE)` from `TODO.md:27415 (T-529ABE)`: a
+      `TODO.md:14669 (T-6FE392)8 (T-529ABE)` from `TODO.md:27463 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15468,7 +15516,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27415 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27463 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

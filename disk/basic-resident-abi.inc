@@ -49,8 +49,8 @@ COPY_CLUS equ 0EEF9H   ; the source's first cluster (word)
 COPY_LEFT equ 0EEFBH   ; bytes still to copy (4-byte LE)
 FILES_ENTIDX equ 0EF63H   ; FILES: dir entry index 0..15 within a sector (1)
 LPTPOS equ 0F415H   ; printer head column, 0-based (1)
-FCH_ACTIVE equ 0EEBEH   ; channel live in the engine globals, 0 = none (1)
-FCH_MODES equ 0EE3DH   ; 16 B ($EE3D..$EE4C)
+FCH_ACTIVE equ 0F733H   ; channel live in the engine globals, 0 = none (1)
+FCH_MODES equ 0F71CH   ; 16 B ($F71C..$F72B)
 FCH_STATESZ equ 00032H   ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device

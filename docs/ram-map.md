@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 322 declared addresses in this project's own workspace `$E000..$F37F` (306 with a machine-readable width), plus **223** in the MSX standard work area at or above `$F380`.
-* **disk** — 132 declared addresses in this project's own workspace `$E000..$F37F` (123 with a machine-readable width), plus **51** in the MSX standard work area at or above `$F380`.
+* **basic** — 305 declared addresses in this project's own workspace `$E000..$F37F` (292 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
+* **disk** — 130 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **53** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -210,13 +210,10 @@ second one is the question a per-component map cannot answer.
 | `$EE39` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
 | `$EE3A` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | tenant -> main: the primitive's real A output, |  |
 | `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output |  |
-| `$EE3D` | 16 B | `basic` | `FCH_MODES` | 16 B ($EE3D..$EE4C) |  |
-| `$EE3D` | 16 B | `disk` | `FCH_MODES` | 16 B ($EE3D..$EE4C) |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE6D` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
 | `$EE71` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
-| `$EE75` | 1 B | `basic` | `RL_AUTO` | read_line: 1 = AUTO's polling mode (1) |  |
 | `$EE77` | 2 B | `basic` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
 | `$EE77` | 2 B | `disk` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
@@ -226,8 +223,6 @@ second one is the question a per-component map cannot answer.
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE9D` | 32 B | `basic` | `PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
-| `$EEBE` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
-| `$EEBE` | 1 B | `disk` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
 | `$EEBF` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
 | `$EEC0` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
 | `$EEC1` | 2 B | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
@@ -240,9 +235,6 @@ second one is the question a per-component map cannot answer.
 | `$EEC8` | 2 B | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EEC8` | 2 B | `disk` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EECA` | 32 B | `basic` | `PU_DIG` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
-| `$EEEA` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
-| `$EEEC` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
-| `$EEED` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
 | `$EEEE` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$EEEE` | 11 B | `disk` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
 | `$EEF9` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
@@ -269,9 +261,7 @@ second one is the question a per-component map cannot answer.
 | `$EF36` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
-| `$EF3A` |  | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
-| `$EF3B` | 2 B | `basic` | `ARL_GETBYTE` | ascii_read_lines byte-source vector (2) |  |
-| `$EF41` | 1 B | `basic` | `CONTVALID` | 1 = a CONT resume point is valid (1) |  |
+| `$EF3A` | 2 B | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
 | `$EF42` | 1 B | `basic` | `SCAN_PRIM` | primary slot currently being scanned (1) |  |
 | `$EF43` | 1 B | `basic` | `SCAN_SLOT` | candidate slot id for RDSLT/CALSLT (1) |  |
 | `$EF44` | 2 B | `basic` | `SCAN_INIT` | candidate ROM's INIT entry address (2) |  |
@@ -279,9 +269,6 @@ second one is the question a per-component map cannot answer.
 | `$EF48` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR) |  |
 | `$EF49` | 11 B | `basic` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
 | `$EF49` | 11 B | `disk` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
-| `$EF56` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
-| `$EF57` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
-| `$EF58` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
 | `$EF59` | 2 B | `basic` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
 | `$EF59` | 2 B | `disk` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
 | `$EF5B` | 2 B | `basic` | `DSV_END` | SAVE/BSAVE: last source byte addr, inclusive (2) |  |
@@ -293,8 +280,6 @@ second one is the question a per-component map cannot answer.
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX/IN_RDLEN` | FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | FILES: dir entry index 0..15 within a sector (1) |  |
-| `$EF64` | 1 B | `basic` | `FCH_NUM` | open channel's file number, 0 = none open (1) |  |
-| `$EF65` | 1 B | `basic` | `FCH_MODE` | open mode: 0=none, 1=INPUT, 2=OUTPUT (1) |  |
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF67` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
@@ -349,8 +334,6 @@ second one is the question a per-component map cannot answer.
 | `$EFBE` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$EFBF` | 1 B | `basic` | `GFX_PTX/GFX_WE_O` | main->tenant: POINT target X, 0..255 (1) |  |
 | `$EFC0` | 1 B | `basic` | `GFX_PTY/GFX_WRAPF` | main->tenant: POINT target Y, 0..191 (1) -> ends $E15A |  |
-| `$EFC1` | 1 B | `basic` | `DIRECTF` | 1 = executing a DIRECT-mode line, 0 = running a (1 B) |  |
-| `$EFC4` | 2 B | `basic` | `ERRRESUME` | 2 B (was 4): resume context captured at trap time — |  |
 | `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
 | `$EFCB` | 1 B | `basic` | `SH_LEN` | ALLOC/TEMP_ALLOC/BUILD_CONCAT arg: |  |
 | `$EFCC` | 2 B | `basic` | `SH_SRC` | SNAPSHOT arg: source descriptor |  |
@@ -375,7 +358,6 @@ second one is the question a per-component map cannot answer.
 | `$EFEF` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
 | `$EFF1` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$EFF2` | 3 B | `basic` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
-| `$EFF5` | 2 B | `basic` | `CAS_BUFP` | base of the tape buffer in use (2 B) |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |
@@ -421,7 +403,6 @@ second one is the question a per-component map cannot answer.
 | `$F0A4` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
 | `$F0A6` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
 | `$F0A8` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
-| `$F0AA` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F0AB` | 24 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, $F0AB..$F0C2 |  |
 | `$F0C3` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F0C4` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
@@ -618,6 +599,25 @@ extents the standard already fixes would be noise, not rigour.
 | `$F716` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
 | `$F718` | 2 B | `basic` | `CTLLIM` | the pool's collision FLOOR = ARYEND+2 (2). Written (2 B) |  |
 | `$F71A` | 2 B | `basic` | `SL_CEIL` | store_line: the ceiling a store stays below (2 B) |  |
+| `$F71C` | 16 B | `basic` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
+| `$F71C` | 16 B | `disk` | `FCH_MODES` | 16 B ($F71C..$F72B) |  |
+| `$F72C` | 2 B | `basic` | `CSR_ADDR` | VRAM address of the cell the cursor covers (2 B) |  |
+| `$F72E` | 2 B | `basic` | `ARL_GETBYTE` | ascii_read_lines byte-source vector (2) |  |
+| `$F730` | 2 B | `basic` | `CAS_BUFP` | base of the tape buffer in use (2 B) |  |
+| `$F732` | 1 B | `basic` | `RL_AUTO` | read_line: 1 = AUTO's polling mode (1) |  |
+| `$F733` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
+| `$F733` | 1 B | `disk` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
+| `$F734` | 1 B | `basic` | `CSR_CHAR` | the character it covers, put back on removal (1 B) |  |
+| `$F735` | 1 B | `basic` | `CSR_ON` | 1 while the cursor is shown, else 0 (1 B) |  |
+| `$F736` | 1 B | `basic` | `CONTVALID` | 1 = a CONT resume point is valid (1) |  |
+| `$F737` |  | `basic` | `CAL_CNT` | cassette ASCII load: read position in the |  |
+| `$F738` | 1 B | `basic` | `CAL_NEEDFILL` | cassette ASCII load: whether the buffer CAL_CURHI (1 B) |  |
+| `$F739` |  | `basic` | `CAL_SAVE/CAS_WCNT` | cassette ASCII load: parked byte across a prefetch (1) |  |
+| `$F73A` | 1 B | `basic` | `FCH_NUM` | open channel's file number, 0 = none open (1) |  |
+| `$F73B` | 1 B | `basic` | `FCH_MODE` | open mode: 0=none, 1=INPUT, 2=OUTPUT (1) |  |
+| `$F73C` | 1 B | `basic` | `DIRECTF` | 1 = executing a DIRECT-mode line, 0 = running a (1 B) |  |
+| `$F73D` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
+| `$F73E` | 2 B | `basic` | `ERRRESUME` | 2 B (was 4): resume context captured at trap time — |  |
 | `$F74C` | 2 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
 | `$F74E` | 2 B | `basic` | `FN_DPTR` | 2 B: the definition cursor, tenant-only |  |
 | `$F750` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF result slot) |  |

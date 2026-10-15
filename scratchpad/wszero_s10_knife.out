@@ -1,0 +1,9 @@
+K-WS14: rows ['ctl', 'chan'] diverging ['chan']; predicted ['chan'] -> HIT
+K-WS15: rows ['ctl', 'chan'] diverging []; predicted [] -> HIT
+K-WS16: rows ['ctl', 'input'] diverging ['input']; predicted ['input'] -> HIT
+K-WS18: rows ['abort', 'midline'] diverging ['midline']; predicted ['midline'] -> HIT
+K-WS19: rows ['onerr', 'resume'] diverging ['resume']; predicted ['resume'] -> HIT
+K-WS20: rows ['ctl', 'contdir'] diverging ['contdir']; predicted ['contdir'] -> HIT
+K-WS21: rows ['all', 'prm'] diverging ['prm']; predicted ['prm'] -> HIT
+restored: build rc=0; SAME
+rc=0

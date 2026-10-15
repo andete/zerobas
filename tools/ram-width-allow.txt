@@ -22,8 +22,6 @@
 #
 # format: <component> <name>[/<alias>...] <why>
 basic BN_PTR/DISKOP_HL disputed
-basic CAL_CNT overruns
-basic CAL_SAVE/CAS_WCNT disputed
 basic CVT_MODE overruns
 basic DISKOP_A/PLY_NUMOVF disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
@@ -35,7 +33,6 @@ basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed
 basic INP_CURSOR/NUMBUF disputed
 basic KEYARG/WIDIG disputed
 basic MATH_A/RND_STATE/SQRT_Y disputed
-basic OO_DEVTYPE overruns
 basic SH_BASE/SH_OP disputed
 disk BDOS_RECIDX overruns
 disk F365_STUB undeclared

@@ -863,14 +863,16 @@ ERRMARK         equ     $EEBD   ; error landmark marker byte (1 B)
 ; Measured (scratchpad/officialcell_probe.out): the VG-8020 keeps MAXFILES there
 ; (1 at boot, 3 after MAXFILES=3); zerobas kept it at $EB11 and left $F85F 0.
 MAXF            equ     $F85F   ; = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
-FCH_ACTIVE      equ     $EEBE   ; channel live in the engine globals, 0 = none (1)
+FCH_ACTIVE      equ     $F733   ; channel live in the engine globals, 0 = none (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EEBE)
 ; FCH_MODES — per-channel mode array [0..FCH_CEIL]; [0] unused, [ch] = 0 closed /
 ; 1 INPUT / 2 OUTPUT / 5-6 LPT-CRT / 7-8 CAS (FCH_CEIL+1 bytes).
 ; ⚠️ D-FCH §3.2: the repack build's FCH_CEIL is 15, so this array is 16 B and no
 ; longer fits the 3-byte $E013 slot (INDLR_N sits at $E016). It moves into the
 ; page-3 window S-FCH-1 freed by retiring the static FCH_CTX table ($EA00..$EAFF,
 ; below LINEBUF $EB00).
-FCH_MODES       equ     $EE3D   ; 16 B ($EE3D..$EE4C)
+FCH_MODES       equ     $F71C   ; 16 B ($F71C..$F72B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EE3D)
 ; D-LNLIST (docs/spec-basic-lnlist.md R-L1..R-L3): the tokeniser's LINE-NUMBER
 ; MODE. A branch keyword (GOTO/GOSUB/THEN/RESTORE/RUN/RESUME) arms it and it runs
 ; to the end of the STATEMENT, turning every digit run that would begin a numeric
@@ -1119,7 +1121,8 @@ ARYTAB          equ     $F6C4   ; PUBLISHED: scalar-region end == array base (2 
 STREND          equ     $F6C6   ; PUBLISHED: array-region end = ARYEND (2 B)
 ; Error-handling S1 (docs/spec-basic-error-handling.md §5.5): the freed VARTAB
 ; window $E1C2..$E240 is the home for error-handling state. D-2 needs one byte:
-DIRECTF         equ     $EFC1   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)
+DIRECTF         equ     $F73C   ; 1 = executing a DIRECT-mode line, 0 = running a (1 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EFC1)
                                 ; stored program. Read by fre_abort_low to decide
                                 ; the run-mode " in <line>" suffix. Written by
                                 ; run_prog/ex_cont (0) and dispatch_line (1) before
@@ -1312,7 +1315,8 @@ ONEFLG          equ     $F6BB   ; 1 B: $FF = currently inside a handler (no RESU
                                 ; probes/basic/basic_probe_error_trap.py, two of
                                 ; which fail if the clear is placed anywhere that
                                 ; also catches a STOP.
-ERRRESUME       equ     $EFC4   ; 2 B (was 4): resume context captured at trap time —
+ERRRESUME       equ     $F73E   ; 2 B (was 4): resume context captured at trap time —
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EFC4)
                                 ; [0..1] the erroring statement's CURLINE (link
                                 ; addr), [2..3] the erroring statement's text
                                 ; pointer (from SAVTXT). Read by the RESUME
@@ -1764,7 +1768,8 @@ OO_DEVTYPE      equ     $EF3A   ; OPEN device-channel type being parsed (transie
 ; it at cal_getbyte (a TAPIN wrapper) for the duration of a cassette ASCII
 ; load, then restores the default before returning. Fills the last 2 bytes of
 ; the $E0CC gap (below CONTLINE $E0D0).
-ARL_GETBYTE     equ     $EF3B   ; ascii_read_lines byte-source vector (2)
+ARL_GETBYTE     equ     $F72E   ; ascii_read_lines byte-source vector (2)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF3B)
 ; S10.B (2026-10-06): a disk file open FOR OUTPUT is mode 3 -- its channel is an
 ; MSX-DOS FCB in disk.rom (the row of DSK_ENGTAB, record = the block's +9), and
 ; its bytes cross at H_CHOUT. APPEND is stored as 2 and stays on main's engine
@@ -2488,7 +2493,8 @@ TXTCEIL         equ     $F66C   ; the text ceiling boot chose: TXTMAX or TXTMAX_
 ; buffer (block + FCH_HDRSZ), as on the VG-8020 (scratchpad/casbuf_probe.out):
 ; #0's for SAVE / LOAD / MERGE / the file search, #n's for OPEN "CAS:" AS #n.
 ; Set by cas_bufp_set (basic/cload.asm) when a tape transfer starts.
-CAS_BUFP        equ     $EFF5   ; base of the tape buffer in use (2 B)
+CAS_BUFP        equ     $F730   ; base of the tape buffer in use (2 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EFF5)
 ; 🪟 D-DETOKBUF S1 (docs/spec-detokbuf-drop.md, Joost 2026-09-25 "Drop
 ; DETOKBUF"): the renderers write a 96 B WINDOW instead. The sub-side pchar
 ; (sub/detok.asm) discards the first DB_SKIP rendered bytes, stores what fits,
@@ -2937,7 +2943,8 @@ CONTLINE        equ     $F6BE   ; saved CURLINE for CONT (2)
                                   ; D-WSZERO S8: the reference's OLDLIN (holds the line's link address here, not its number) (was $EF3D)
 CONTPTR         equ     $F6C0   ; saved resume token pointer for CONT (2)
                                   ; D-WSZERO S8: the reference's OLDTXT (was $EF3F)
-CONTVALID       equ     $EF41   ; 1 = a CONT resume point is valid (1)
+CONTVALID       equ     $F736   ; 1 = a CONT resume point is valid (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF41)
 ; Extension-ROM INIT scan scratch (initext.asm). Used ONCE at INIT, entirely
 ; under `di`, and dead afterwards; free page-3 RAM in the $E0D5..$E0FF gap
 ; (between CONT state and LINEBUF). RDSLT clobbers AF/BC/DE, so the slot id and
@@ -3027,9 +3034,11 @@ VRAM_FLAG       equ     $F664   ; 1 = ",S" VRAM save/load (1) -- published DORES
 ; pre-fetched other one". Dead outside a cassette ASCII LOAD/CLOAD — never live
 ; at the same time as a BSAVE/BLOAD ",S" — so it reuses the same free gap (like
 ; IN_RDLEN and FILES_ENTIDX below overlay each other).
-CAL_CNT         equ     $EF56   ; cassette ASCII load: read position in the
+CAL_CNT         equ     $F737   ; cassette ASCII load: read position in the
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF56)
                                 ; current 256-byte tape block, 0..255 (1)
-CAL_NEEDFILL    equ     $EF57   ; cassette ASCII load: whether the buffer CAL_CURHI (1 B)
+CAL_NEEDFILL    equ     $F738   ; cassette ASCII load: whether the buffer CAL_CURHI (1 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF57)
                                 ; does NOT point at holds a live pre-fetched block.
                                 ; 0 = it does (the normal, steady-state case: swap
                                 ; to it freely on drain). 1 = a read-ahead attempt
@@ -3046,7 +3055,8 @@ CAL_NEEDFILL    equ     $EF57   ; cassette ASCII load: whether the buffer CAL_CU
 ; the stack across TAPIN (requirement 1 in cload.asm). Overlays CAS_WCNT ($E0EC):
 ; that is the cassette SAVE block counter, dead during a LOAD, so the two never
 ; collide.
-CAL_SAVE        equ     $EF58   ; cassette ASCII load: parked byte across a prefetch (1)
+CAL_SAVE        equ     $F739   ; cassette ASCII load: parked byte across a prefetch (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF58)
 ; Cassette ASCII SAVE (save.asm cas_wbyte) block-fill counter: bytes buffered into
 ; CAS_WBUF for the current 256-byte tape data block, 0..255 (§0.1). cas_wbyte does
 ; NOT TAPOUT per byte — like the READ side's block buffer, tape signalling is
@@ -3059,7 +3069,8 @@ CAL_SAVE        equ     $EF58   ; cassette ASCII load: parked byte across a pref
 ; then drives the flush loop (it is 0 at flush entry). Dead outside a cassette ASCII
 ; SAVE — never live with a BSAVE (VRAM_FLAG) or a cassette ASCII LOAD (CAL_CNT) — so
 ; it reuses the same $E0E9..$E0EC free gap (the last byte, $E0EC).
-CAS_WCNT        equ     $EF58   ; cassette ASCII save: bytes buffered in the
+CAS_WCNT        equ     $F739   ; cassette ASCII save: bytes buffered in the
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF58)
                                 ; current 256-byte tape data block, 0..255 (1)
 ; SAVE / BSAVE program-image source-walk pointers (page $E0; dead outside a
 ; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
@@ -3108,8 +3119,10 @@ FILES_ENTIDX    equ     $EF63   ; FILES: dir entry index 0..15 within a sector (
 ; loader/file engine has one global FREAD_*/FWR_* state); a MAXFILES channel table
 ; is a later sub-item. FCH_NUM/FCH_MODE persist across statements (OPEN … : LINE
 ; INPUT … : CLOSE); FCH_RDMODE + IN_RDLEN are transient within one read statement.
-FCH_NUM         equ     $EF64   ; open channel's file number, 0 = none open (1)
-FCH_MODE        equ     $EF65   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
+FCH_NUM         equ     $F73A   ; open channel's file number, 0 = none open (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF64)
+FCH_MODE        equ     $F73B   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EF65)
 FCH_RDMODE      equ     $EF66   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
 ; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
 ; distinct statements that never run at the same instant, and the per-sector entry
@@ -3503,7 +3516,8 @@ AU_INC          equ     RN_INC          ; AUTO: the increment (2)
 ; BREAKX (an AUTO session), because Ctrl-STOP is NOT a character and can never
 ; arrive through CHGET -- R-AU8. Cleared defensively at the top of `repl`, so a
 ; line that ERRORS out of an AUTO session cannot leave the prompt polling.
-RL_AUTO         equ     $EE75           ; read_line: 1 = AUTO's polling mode (1)
+RL_AUTO         equ     $F732           ; read_line: 1 = AUTO's polling mode (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EE75)
 
 ; --- D-LPTVERB: the printer column ------------------------------------------
 ; LPOS(n)'s source, and LPRINT's flush condition. 0-based: 0 = the printer head
@@ -4252,6 +4266,16 @@ GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
                                 ; needed; neither is derivable from the other.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
 SL_CEIL         equ     $F71A   ; store_line: the ceiling a store stays below (2 B)
+; 🏗️ D-WSZERO S10 (2026-10-15): $F71C..$F73F is the PERSISTENT diskless set --
+; FCH_MODES, CSR_*, ARL_GETBYTE, CAS_BUFP, RL_AUTO, FCH_ACTIVE, CONTVALID, CAL_*,
+; FCH_NUM / FCH_MODE, DIRECTF, PRMWANT, ERRRESUME -- the cells a loader's NEXT
+; statements read after a load over $ECF8..$F37F. PARM1's tail: the reference
+; writes it only during a DEF FN call (46 B under a 9-parameter double FN, 0 under
+; every other workout; zerobas never, its FN frame is at $F74C up --
+; scratchpad/s10_parm1_fill_*.out). RULE: only state zerobas keeps between
+; statements goes here; transient scratch would collide with nothing today but
+; is what the reference's own use of the block looks like.
+; FREE-RAM $F740..$F74C  PARM1's last 12 B, idle (D-WSZERO S10)
                                 ; i.e. the VARIABLE region's. D-TXTCEIL: written
                                 ; by dl_store from fch_ctx_addr(1) -- channel 1's
                                 ; block base IS strheap_varceil() -- and read by
@@ -4269,9 +4293,12 @@ SL_CEIL         equ     $F71A   ; store_line: the ceiling a store stays below (2
                                 ; reads 0 of 40 bytes changed. A map is a reading;
                                 ; that is a measurement.
 ; D-CURSORBLOCK (2026-09-26): the line editor's block cursor (sub/cursor.asm).
-CSR_ADDR        equ     $EEEA   ; VRAM address of the cell the cursor covers (2 B)
-CSR_CHAR        equ     $EEEC   ; the character it covers, put back on removal (1 B)
-CSR_ON          equ     $EEED   ; 1 while the cursor is shown, else 0 (1 B)
+CSR_ADDR        equ     $F72C   ; VRAM address of the cell the cursor covers (2 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EEEA)
+CSR_CHAR        equ     $F734   ; the character it covers, put back on removal (1 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EEEC)
+CSR_ON          equ     $F735   ; 1 while the cursor is shown, else 0 (1 B)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $EEED)
 ; FREE-RAM $EDA9..$EDAB  the rest of the retired GOSUB_STK (PU_DIG took $E05A..$E079, D-DETOKBUF S3; CSR_* $E07A..$E07D, D-CURSORBLOCK) [D-RAMSHIFT: was $E07E..$E080]
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
 ; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
@@ -4546,7 +4573,8 @@ PLY_XSP         equ     $F0A8   ; PLAY X: saved SP at pt_voice's call (2)
 ; stores cleared it -- editverb 55/61, castail 27/31).
 H_CHRG          equ     $FF48   ; published hook CHRGTR calls first (MSX2 TH hook table)
 H_OUTD          equ     $FEE4   ; published hook OUTDO calls first (MSX2 TH hook table)
-PRMWANT         equ     $F0AA   ; D-OKSTORE: nonzero = print the prompt (1)
+PRMWANT         equ     $F73D   ; D-OKSTORE: nonzero = print the prompt (1)
+                                ; D-WSZERO S10: PARM1's unattributed tail (was $F0AA)
 STOPHOLD        equ     $FC89   ; (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)

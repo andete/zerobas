@@ -114,6 +114,19 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A load into the top of memory could break the BASIC that runs next**
+  (D-WSZERO, 2026-10-14 to 2026-10-15, still in progress). A diskless
+  VG-8020 leaves `&HECF8`–`&HF37F` to programs; zerobas kept its own state
+  there, and tape loaders do `CLEAR n,&Hxxxx` and load right over it. Moving
+  that state out, one group at a time, fixed in turn: the load itself
+  stopping with `Device I/O error`, an error or `RESUME` after the load, `READ`,
+  `PAINT`, `DRAW`'s scale, a `"A:X"` name, a `CRT:` channel left open across
+  the load, the cursor of the next `INPUT`, `DEF FN` later on the `BLOAD`'s own
+  line, `CONT`, and the `Ok` after the program ends. The test loads over the
+  whole range and then runs each of these
+  ([`wszero_s10_rows.out`](../../scratchpad/wszero_s10_rows.out)). Loaders that
+  do *not* `CLEAR` first still find zerobas's stack lower than the
+  VG-8020's; that changes only when the last of the state has moved.
 - **A `,R` program that loads a BASIC program lost it to its own variables**
   (fixed 2026-10-15, D-VARTABADOPT). Some loaders' machine code loads the next
   BASIC program and sets the end-of-program pointer (`VARTAB`, `&HF6C2`)

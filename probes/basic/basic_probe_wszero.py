@@ -98,6 +98,15 @@ RANGES["rich2"] = RANGES["all"]
 # ⏱ The scan is 17x17: a 41x41 one ran past the 40 s run gap on zerobas after a
 # full-window load (the VG-8020 finished inside it) and read as an empty screen.
 RANGES["persist"] = RANGES["all"]
+# D-WSZERO S10 (2026-10-15): the persistent cells a loader's NEXT statements
+# read, each set BEFORE the load (or by a load inside the statement that reads
+# it) -- an open channel (FCH_MODES), INPUT's cursor (CSR_*), the direct-mode
+# flag mid-line (DIRECTF), a RESUME after a load in the handler (ERRRESUME), CONT
+# after a direct load (CONTVALID) and the `Ok` after RUN (PRMWANT -- only a $00
+# fill can see it: $A5 is nonzero, which is what the cell wants).
+for _r in ("chan", "input", "midline", "resume", "contdir", "prm"):
+    RANGES[_r] = RANGES["all"]
+FILL = {"prm": 0x00}
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -138,6 +147,54 @@ PROGRAM_PERSIST = [
     '100 PRINT"[E";ERR;"]";:RESUME 50',
     "RUN",
 ]
+PROGRAM_CHAN = [
+    "NEW",
+    '10 CLEAR 100,&HE000:ON ERROR GOTO 100:OPEN"CRT:"FOR OUTPUT AS#1:BLOAD"CAS:",R',
+    '20 PRINT#1,"[C]"',
+    '30 CLOSE#1:OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"[D]":CLOSE',
+    '40 FILES',
+    '50 PRINT"[N]":END',
+    '100 PRINT"[E";ERR;ERL;"]":RESUME NEXT',
+    "RUN",
+]
+PROGRAM_INPUT = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 CLS:FOR R=0 TO 9:PRINT"[R";STRING$(34,"X");"]":NEXT:VPOKE &H25A5,7',
+    '30 INPUT"[I";A:PRINT"[V";A;VPEEK(&H25A5);"]":END',
+    "RUN",
+    "@WAIT40",
+    "42",
+]
+PROGRAM_MIDLINE = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R:DEFFNA(X)=X+1:PRINT"[A";FNA(1);"]";:ERROR 2',
+    "RUN",
+]
+PROGRAM_RESUME = [
+    "NEW",
+    '10 CLEAR 100,&HE000:ON ERROR GOTO 100',
+    '20 PRINT"[A]";:ERROR 2:PRINT"[B]"',
+    '30 PRINT"[C]":END',
+    '100 BLOAD"CAS:",R:RESUME NEXT',
+    "RUN",
+]
+PROGRAM_CONTDIR = [
+    "NEW",
+    "CLEAR 100,&HE000",
+    'BLOAD"CAS:",R',
+    "@WAIT40",
+    "CONT",
+    'PRINT"[Z";ERR;"]"',
+]
+PROGRAM_PRM = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 CLS:PRINT"[P]"',
+    "RUN",
+    "@WAIT40",
+    'PRINT"[Y";CSRLIN;"]"',
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -163,8 +220,15 @@ PROGRAM = [
 ]
 
 
-def tape(lo, hi):
-    data = bytes([0xC9]) + bytes([0xA5]) * (hi - lo)
+PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
+            "onerr": PROGRAM_ONERR, "rich": PROGRAM_RICH, "rich2": PROGRAM_RICH2,
+            "persist": PROGRAM_PERSIST, "chan": PROGRAM_CHAN, "input": PROGRAM_INPUT,
+            "midline": PROGRAM_MIDLINE, "resume": PROGRAM_RESUME,
+            "contdir": PROGRAM_CONTDIR, "prm": PROGRAM_PRM}
+
+
+def tape(lo, hi, fill=0xA5):
+    data = bytes([0xC9]) + bytes([fill]) * (hi - lo)
     return build_cas("W", lo, lo, data)
 
 
@@ -184,13 +248,10 @@ def main():
     for name in only:
         lo, hi = RANGES[name]
         path = os.path.join(tmp, f"{name}.cas")
-        open(path, "wb").write(tape(lo, hi))
+        open(path, "wb").write(tape(lo, hi, FILL.get(name, 0xA5)))
         got = {}
         for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
-            prog = (PROGRAM_NOCLEAR if name in NOCLEAR else PROGRAM_ABORT if name == "abort"
-                    else PROGRAM_ONERR if name == "onerr" else PROGRAM_PERSIST if name == "persist" else PROGRAM_RICH2 if name == "rich2"
-                    else PROGRAM_RICH if name in RICH
-                    else PROGRAM)
+            prog = PROGRAMS.get(name, PROGRAM)
             got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,
                                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
                                                  run_gap=40.0, cassette=path)[0])

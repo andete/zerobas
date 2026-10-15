@@ -1,0 +1,26 @@
+machine C-BIOS_MSX1_EU_REPACK_NODISK
+
+watching 1 declared FREE-RAM span(s):
+    $F71C..$F74C     48 B
+
+  OK   ctl.poke  1                        every span saw its one poked byte
+  OK   ctl.pool  0 16                     the pool moved (16 B) and no declared span did
+  OK   base.none 0                        clean
+  OK   n.for8    0                        clean
+  OK   n.deep    0                        clean
+  OK   n.crunch  0                        clean
+  OK   s.paint   0                        clean
+  OK   s.draw    0                        clean
+  OK   s.play    0                        clean
+  OK   s.str     0                        clean
+  OK   n.fn9     0                        clean
+  OK   n.arr     0                        clean
+  OK   n.err     0                        clean
+  OK   n.trap    0                        clean
+  OK   n.chan    0                        clean
+  OK   n.tape    0                        clean
+  OK   n.swap    0                        clean
+
+rows 17  red 0
+RAMFREE: PASS
+refcache: 0 hit, 17 miss, 17 stored

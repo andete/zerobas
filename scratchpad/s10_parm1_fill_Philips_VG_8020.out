@@ -1,0 +1,26 @@
+machine Philips_VG_8020
+
+watching 1 declared FREE-RAM span(s):
+    $F71C..$F74C     48 B
+
+  OK   ctl.poke  1                        every span saw its one poked byte
+  OK   base.none 0                        clean
+  OK   n.for8    0                        clean
+  OK   n.deep    0                        clean
+  OK   n.crunch  0                        clean
+  OK   s.paint   0                        clean
+  OK   s.draw    0                        clean
+  OK   s.play    0                        clean
+  OK   s.str     0                        clean
+  FAIL n.fn9     46                       🔴 A DECLARED-FREE WINDOW WAS WRITTEN
+  OK   n.arr     0                        clean
+  OK   n.err     0                        clean
+  OK   n.trap    0                        clean
+  OK   n.chan    0                        clean
+  OK   n.tape    0                        clean
+  OK   n.swap    0                        clean
+
+rows 16  red 1
+  A declared-free window that MOVES is a false claim: the span is in use by something no name covers, or a cell below it extends up into it -- which is exactly what ram-claim-check cannot see.
+RAMFREE: RED (1)
+refcache: 0 hit, 16 miss, 16 stored

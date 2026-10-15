@@ -214,7 +214,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   workspace no longer loses its `DRAW` scale or makes a `"A:X"` file name
   look for a disk that is not there. Where zerobas encodes a value its own
   way (`OLDLIN` holds the line's address, not its number), a `PEEK` still
-  differs from the reference. The workspace is the same size until the last
+  differs from the reference. The state zerobas keeps between statements
+  (open channels, the cursor, `CONT`'s and `RESUME`'s flags, the prompt) moved
+  the same day into `PARM1`'s last bytes (`&HF71C`–`&HF73F`), which the
+  VG-8020 uses only while a `DEF FN` call runs. The workspace is the same size until the last
   of it has moved: raising the ceiling one step at a time only moves the
   stack to a different spot that games use.
 - **zerobas kept its own copies of buffers the reference already has**
