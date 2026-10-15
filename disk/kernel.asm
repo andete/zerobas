@@ -3995,7 +3995,8 @@ hkm_copy:
 ; that is mostly parse moves almost nothing however the crossings are arranged.
 ;
 ;   in   FN_RESUME = the statement cursor, just past the LSET/RSET token
-;        LRSET_JUST = 0 left / 1 right, set by main before the gate
+;        LRSET_JUST = the LSET / RSET token (bit 0 = right), set by main's
+;        lrset_tgt call-back (D-WSZERO S9: never written on a diskless machine)
 ;   out  the statement is DONE; FN_RESUME = the resume cursor
 ;        CF = 1 (claimed), which is what chan_gate tests
 ;

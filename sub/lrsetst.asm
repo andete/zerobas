@@ -55,7 +55,7 @@
 ;                    UNSET target a NO-OP rather than a wild write through a body
 ;                    pointer that points at nothing (spec §4.3) -- the `jr z` and
 ;                    the `ret z` below are both load-bearing for that.
-;      (LRSET_JUST)= 0 left-justify (LSET) / 1 right-justify (RSET)
+;      (LRSET_JUST)= the verb's token: bit 0 clear left-justify (LSET), set right (RSET)
 ;      (STRPTR)   -> the source [len][ptr] descriptor
 ; out: the destination is space-filled and then min(srclen,width) bytes are copied
 ;      into it, left- or right-aligned. No failure mode.
@@ -99,8 +99,8 @@ lrst_filled:
                 ld      c,a                 ; width < len -> copy width (truncate)
 lrst_ncopy:
                 ld      a,(LRSET_JUST)
-                or      a
-                jr      z,lrst_copy         ; left: dest = field start
+                rra                         ; bit 0: the RSET token's (D-WSZERO S9)
+                jr      nc,lrst_copy        ; left: dest = field start
                 ; right: dest = field start + (width - ncopy)
                 ld      a,(LRSET_W)
                 sub     c

@@ -95,8 +95,8 @@ lrset_rhs equ 073E8H
 lrset_finish equ 073FFH
 fch_ctx_addr equ 06F82H
 disk_error equ 06B9AH
-read_line equ 045FBH
+read_line equ 045FEH
 fch_close_all equ 07070H
-eval_int16_checked equ 0454AH
+eval_int16_checked equ 0454DH
 fch_select equ 06FB6H
-raise_error equ 04326H
+raise_error equ 04329H

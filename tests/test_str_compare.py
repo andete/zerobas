@@ -109,7 +109,6 @@ def run():
     m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
     STRPTR = s["STRPTR"]
-    VALTYP = s["VALTYP"]
     ERRMARK = s["ERRMARK"]
     FPERR = s["FPERR"]
     FPERR_TYPEMM = 10       # sysvars.inc; -> ERR 13 via interp.asm fperr_to_err

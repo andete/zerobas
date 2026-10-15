@@ -891,7 +891,7 @@ MRG_PTR         equ     $EEC1   ; MERGE: write cursor into LINEBUF for the curre
 ; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
 FLD_CUROFF      equ     $EEC3   ; FIELD: running byte offset into the record buffer (2)
 FLD_CHAN        equ     $EEC5   ; FIELD/LSET/RSET: the channel being fielded (1)
-LRSET_JUST      equ     $EEC6   ; LSET/RSET: 0 = left-justify, 1 = right-justify (1)
+LRSET_JUST      equ     $EEC6   ; LSET/RSET: the verb's token, bit 0 = right-justify (1)
 LRSET_W         equ     $EEC7   ; LSET/RSET: destination field width (1)
 LRSET_DEST      equ     $EEC8   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
                                 ; D-LRVAR renamed this from LRSET_OFF (same address,
@@ -1743,7 +1743,7 @@ STRMAX          equ     255     ; repack build: string heap (slice-4a §8)
 ;      3-byte cold-boot init is PRICED AND DECLINED against a 2 B page-1 wall
 ;      (2026-08-21). Filed in TODO.md; reopen it for a new caller that READS
 ;      BEFORE WRITING, not for a spare byte.
-VALTYP          equ     $EF35   ; 0 = numeric result, 1 = string result (1 byte)
+; (VALTYP $EF35 deleted in D-WSZERO S9: write-only -- nothing read it in any image)
 STRPTR          equ     $EF36   ; pointer to the [len][bytes] descriptor (2 bytes)
 ; PRINT output destination (Phase 2 PRINT#). 0 = screen (CHPUT), 1 = the open
 ; file channel (fat_io_putbyte). The print primitives emit through `pchar`, which
@@ -4632,12 +4632,12 @@ TKLEAD          equ     $F0D1   ; computed lead byte (sign+excess-64 exponent) (
 ; 0 = no bound (ordinary tokenising); otherwise the first address PAST the
 ; source. `tokenise` clears it on entry, so only VAL can ever set it.
 TKVALEND        equ     $F0D3   ; VAL-mode source bound, 0 = unbounded (2)
-FOSIGN          equ     $F0D2   ; UNUSED since C8 -- the sign is ARGA+FPNUM_SIGN
+; (FOSIGN $F0D2 deleted in D-WSZERO S9: unused)
                                 ; now, so the cell is reclaimable. It held 0 / $80,
                                 ; the value's sign bit (1)
 FOSIGCOUNT      equ     $F0D3   ; significant digit count = s, trailing zeros
                                 ; stripped (1)
-FOMBYTES        equ     $F0D4   ; (1 B) UNUSED since C8 -- widen_fac_to reads
+; (FOMBYTES $F0D4 deleted in D-WSZERO S9: unused)
                                 ; FACTYP itself. It also sits on TKVALEND's high
                                 ; half. It held the mantissa length, 3 single /
                                 ; 7 double. The width is spelled `(1 B)`, not a

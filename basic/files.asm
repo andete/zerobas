@@ -319,7 +319,7 @@ ex_copy:
 ; RAISED; else nothing read is 55, as before; else the item's bytes stand.
 ; raise_error resets SP, so the callers' pushes need no unwinding.
 seq_end:
-                ld      a,(DISKOP_ERR)
+                call    se_pending          ; D-WSZERO S9: 0 without a disk ROM
                 or      a
                 jp      nz,raise_error      ; a failed read: its own code
                 ld      a,(STRSCR)
@@ -336,7 +336,7 @@ seq_end:
 ; successful read, an absent sub-ROM) the `load error` face is unchanged. The
 ; cassette exits keep load_error itself [[a-shared-tail-is-not-a-decision]].
 disk_error:
-                ld      a,(DISKOP_ERR)
+                call    se_pending          ; D-WSZERO S9: 0 without a disk ROM
                 or      a
                 jp      nz,raise_error
                 jp      load_error
@@ -1595,7 +1595,7 @@ ifc_zero:
                 djnz    ifc_zero
                 ld      a,1
                 ld      (MAXF),a            ; default ceiling = 1 (#1 always usable)
-                jp      fld_init            ; empty the random-access field table
+                jp      fld_init_g          ; empty the random-access field table (disk only)
 
 ; ===========================================================================
 ; Channel manager (Phase 2 MAXFILES) — the multi-channel substrate that retires

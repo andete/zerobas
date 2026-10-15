@@ -82,7 +82,6 @@ def run():
     m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
     STRPTR = s["STRPTR"]
-    VALTYP = s["VALTYP"]
     TEMPBASE = s["TEMPBASE"]
     TEMPPOOL = s["TEMPPOOL"]    # empty pool: TEMPPT = TEMPPOOL (grows UP)
     TEMPPT = s["TEMPPT"]
@@ -139,7 +138,6 @@ def run():
         """Evaluate a STRING expression -> (cpu, len, bytes)."""
         tok(text)
         stmt_boundary()
-        m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         cpu = m.call("str_eval", hl=TOKBUF)
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
@@ -155,10 +153,10 @@ def run():
     def ck_str(label, res, want):
         nonlocal fails
         cpu, dlen, dbytes = res
-        ok = carry(cpu) and m.mem[VALTYP] == 1 and dbytes == want and dlen == len(want)
+        ok = carry(cpu) and dbytes == want and dlen == len(want)
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  {label} = {dbytes!r} "
-              f"(want {want!r}) CF={int(carry(cpu))} VALTYP={m.mem[VALTYP]}")
+              f"(want {want!r}) CF={int(carry(cpu))}")
 
     print("# --- LEN / ASC / VAL (string -> number) ---")
     ck_num('LEN("HELLO")', num_expr('LEN("HELLO")'), 5)

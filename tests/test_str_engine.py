@@ -85,7 +85,6 @@ def run():
     FPERR = s["FPERR"]          # D-STRLONG: the deferred-error cell str_concat_tail
     FPERR_STRLONG = s["FPERR_STRLONG"]      # arms when a fold exceeds STRMAX
     STRPTR = s["STRPTR"]
-    VALTYP = s["VALTYP"]
     RVDESC = s["RVDESC"]        # the single-rvalue descriptor cell (non-concat literals)
     TEMPPOOL = s["TEMPPOOL"]    # temp-descriptor stack floor / current frontier top
     TEMPPOOL = s["TEMPPOOL"]    # temp-descriptor pool base (empty = TEMPPT, which grows UP)
@@ -131,7 +130,6 @@ def run():
         m.mem[TOKBUF:TOKBUF + 96] = b"\x00" * 96
         m.call("tokenise", hl=SRC, de=TOKBUF)
         m.poke_w(TEMPPT, TEMPPOOL)
-        m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         m.poke(s["FPERR"], 0)       # D-STRLONG: exec_stmt clears the pending-error
                                     # cell at every statement boundary and str_eval
@@ -144,7 +142,7 @@ def run():
 
     def check(label, cpu, ptr, dlen, dbytes, want_bytes, want_temp=None):
         nonlocal fails
-        ok = carry(cpu) and m.mem[VALTYP] == 1 and dbytes == want_bytes and dlen == len(want_bytes)
+        ok = carry(cpu) and dbytes == want_bytes and dlen == len(want_bytes)
         if want_temp is True:
             ok = ok and in_temp(ptr)              # concat result -> temp stack
         elif want_temp is False:
@@ -152,7 +150,7 @@ def run():
         fails += not ok
         loc = "temp" if in_temp(ptr) else ("RVDESC" if ptr == RVDESC else f"{ptr:#06x}")
         print(f"{'PASS' if ok else 'FAIL'}  {label}: CF={int(carry(cpu))} "
-              f"VALTYP={m.mem[VALTYP]} len={dlen} bytes={dbytes!r} @{loc}")
+              f"len={dlen} bytes={dbytes!r} @{loc}")
 
     print(f"# repack build: STRMAX={STRMAX}, temp stack [{TEMPPOOL:#06x},{TEMPBASE:#06x})")
     # STRMAX must be the widened repack value (slice-4a: 64 -> 255).
@@ -196,11 +194,11 @@ def run():
     set_var("A", a200)
     cpu, ptr, dlen, dbytes = eval_expr("A$+A$")
     got_fperr = m.mem[FPERR]
-    ok = (carry(cpu) and m.mem[VALTYP] == 1 and in_temp(ptr)
+    ok = (carry(cpu) and in_temp(ptr)
           and dbytes == a200 and got_fperr == FPERR_STRLONG)
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  200+200 raises String too long (no clamp): "
-          f"CF={int(carry(cpu))} VALTYP={m.mem[VALTYP]} len={dlen} "
+          f"CF={int(carry(cpu))} len={dlen} "
           f"FPERR={got_fperr} (want {FPERR_STRLONG}) R-intact={dbytes == a200}")
 
     # 6b) 🟢 THE GREEN CONTROL ON THE SAME APPARATUS. Exactly STRMAX bytes is
@@ -213,7 +211,7 @@ def run():
     b55 = b"b" * 55
     set_var("A", a200); set_var("B", b55)
     cpu, ptr, dlen, dbytes = eval_expr("A$+B$")
-    ok = (carry(cpu) and m.mem[VALTYP] == 1 and in_temp(ptr)
+    ok = (carry(cpu) and in_temp(ptr)
           and dbytes == a200 + b55 and m.mem[FPERR] == 0)
     fails += not ok
     print(f"{'PASS' if ok else 'FAIL'}  exactly {STRMAX} chars is LEGAL: "

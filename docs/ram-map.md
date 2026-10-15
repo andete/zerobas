@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 305 declared addresses in this project's own workspace `$E000..$F37F` (292 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
+* **basic** — 302 declared addresses in this project's own workspace `$E000..$F37F` (289 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
 * **disk** — 130 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **53** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -229,7 +229,7 @@ second one is the question a per-component map cannot answer.
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | FIELD: running byte offset into the record buffer (2) |  |
 | `$EEC5` | 1 B | `basic` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
 | `$EEC5` | 1 B | `disk` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
-| `$EEC6` | 1 B | `basic` | `LRSET_JUST` | LSET/RSET: 0 = left-justify, 1 = right-justify (1) |  |
+| `$EEC6` | 1 B | `basic` | `LRSET_JUST` | LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
 | `$EEC7` | 1 B | `basic` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
 | `$EEC7` | 1 B | `disk` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
 | `$EEC8` | 2 B | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
@@ -256,7 +256,6 @@ second one is the question a per-component map cannot answer.
 | `$EF21` | 2 B | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
 | `$EF23` | 1 B | `basic` | `FOR_SIGN` | NEXT's scratch: the step's sign byte (1) |  |
 | `$EF2D` |  | `basic` | `INP_CURSOR/NUMBUF` | console INPUT LINEBUF read pointer (2 B, aliases NUMBUF) |  |
-| `$EF35` | 1 B | `basic` | `VALTYP` | 0 = numeric result, 1 = string result (1 byte) |  |
 | `$EF36` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$EF36` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
@@ -417,9 +416,7 @@ second one is the question a per-component map cannot answer.
 | `$F0CE` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
 | `$F0CF` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
 | `$F0D1` | 1 B | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
-| `$F0D2` | 1 B | `basic` | `FOSIGN` | UNUSED since C8 -- the sign is ARGA+FPNUM_SIGN |  |
 | `$F0D3` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
-| `$F0D4` | 1 B | `basic` | `FOMBYTES` | (1 B) UNUSED since C8 -- widen_fac_to reads |  |
 | `$F0D5` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
 | `$F0D7` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
 | `$F0E6` | 18 B | `basic` | `CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |

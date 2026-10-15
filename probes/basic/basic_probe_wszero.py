@@ -29,7 +29,7 @@ import os, re, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                    # noqa: E402
-from cas_encode import build_cas                    # noqa: E402
+from cas_encode import build_cas, build_cas_ascii  # noqa: E402
 
 def sym(name):
     for ln in open(os.path.join(REPO, "build", "basic-reloc.sym")):
@@ -107,6 +107,25 @@ RANGES["persist"] = RANGES["all"]
 for _r in ("chan", "input", "midline", "resume", "contdir", "prm"):
     RANGES[_r] = RANGES["all"]
 FILL = {"prm": 0x00}
+# D-WSZERO S9 (2026-10-15): the DISK-ONLY cells, made disk-only in fact -- the
+# diskless machine must neither read nor write them, so they may stay below
+# $F380 when the ceiling rises (S15). Each row loads over one of them and runs
+# the diskless statement that still touched it. `fldread` fills the FIELD table
+# with $41 so EVERY entry names `AA$` -- a $A5 key matches no variable, which is
+# why `rich2` (ERASE + string reads) never saw the table.
+FT, FTE = sym("FLD_TAB"), sym("FLD_TABEND")
+RANGES["fldread"] = (FT - 1, FTE - 1)
+RANGES["fldclr"] = (FT - 1, FTE - 1)
+RANGES["flderase"] = (FT - 1, FTE - 1)
+FILL["fldread"] = 0x41
+for _r in ("lset", "valtyp"):
+    RANGES[_r] = RANGES["all"]
+# `inpeof` loads nothing: its tape holds one ASCII file, and the row pokes the
+# disk error cell between two LINE INPUT # -- the OPEN clears it, so a value
+# written AFTER the OPEN is what a tape EOF reads (scratchpad/inpeof_probe.out).
+RANGES["inpeof"] = (0, 0)
+TAPES = {"inpeof": lambda: build_cas_ascii("D", "HELLO\r\n")}
+VALTYP_OLD = 0xEF35     # S9 deleted the write-only VALTYP that lived here
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -195,6 +214,46 @@ PROGRAM_PRM = [
     "@WAIT40",
     'PRINT"[Y";CSRLIN;"]"',
 ]
+PROGRAM_FLDREAD = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 AA$="OK":PRINT"[";AA$;LEN(AA$);"]"',
+    "RUN",
+]
+PROGRAM_FLDCLR = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    f'20 CLEAR 100,&HE000:PRINT"[";PEEK(&H{FT:04X});PEEK(&H{FT + 6:04X});PEEK(&H{FT + 90:04X});"]"',
+    "RUN",
+]
+PROGRAM_FLDERASE = [
+    "NEW",
+    '10 CLEAR 100,&HE000:DIM W(9):BLOAD"CAS:",R',
+    f'20 ERASE W:PRINT"[";PEEK(&H{FT + 1:04X});PEEK(&H{FT + 2:04X});"]"',
+    "RUN",
+]
+PROGRAM_LSET = [
+    "NEW",
+    '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 LSET A$="X":RSET A$="X":FIELD#1,2 AS A$',
+    f'30 PRINT"[";PEEK(&H{sym("LRSET_JUST"):04X});PEEK(&H{sym("FLD_CHAN"):04X});"]":END',
+    '100 PRINT"[E";ERR;"]";:RESUME NEXT',
+    "RUN",
+]
+PROGRAM_INPEOF = [
+    "NEW",
+    "10 ON ERROR GOTO 100",
+    f'20 OPEN"CAS:D"FOR INPUT AS#1:LINE INPUT#1,A$:POKE &H{sym("DISKOP_ERR"):04X},165:LINE INPUT#1,B$',
+    '30 PRINT"[";A$;"]":END',
+    '100 PRINT"[E";ERR;ERL;"]";:RESUME 30',
+    "RUN",
+]
+PROGRAM_VALTYP = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    f'20 A$="X":PRINT"[";PEEK(&H{VALTYP_OLD:04X});"]"',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -224,7 +283,10 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "onerr": PROGRAM_ONERR, "rich": PROGRAM_RICH, "rich2": PROGRAM_RICH2,
             "persist": PROGRAM_PERSIST, "chan": PROGRAM_CHAN, "input": PROGRAM_INPUT,
             "midline": PROGRAM_MIDLINE, "resume": PROGRAM_RESUME,
-            "contdir": PROGRAM_CONTDIR, "prm": PROGRAM_PRM}
+            "contdir": PROGRAM_CONTDIR, "prm": PROGRAM_PRM,
+            "fldread": PROGRAM_FLDREAD, "fldclr": PROGRAM_FLDCLR,
+            "flderase": PROGRAM_FLDERASE, "lset": PROGRAM_LSET,
+            "inpeof": PROGRAM_INPEOF, "valtyp": PROGRAM_VALTYP}
 
 
 def tape(lo, hi, fill=0xA5):
@@ -248,7 +310,7 @@ def main():
     for name in only:
         lo, hi = RANGES[name]
         path = os.path.join(tmp, f"{name}.cas")
-        open(path, "wb").write(tape(lo, hi, FILL.get(name, 0xA5)))
+        open(path, "wb").write(TAPES[name]() if name in TAPES else tape(lo, hi, FILL.get(name, 0xA5)))
         got = {}
         for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
             prog = PROGRAMS.get(name, PROGRAM)

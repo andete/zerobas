@@ -122,7 +122,9 @@ saved binary to try it on).
   stopping with `Device I/O error`, an error or `RESUME` after the load, `READ`,
   `PAINT`, `DRAW`'s scale, a `"A:X"` name, a `CRT:` channel left open across
   the load, the cursor of the next `INPUT`, `DEF FN` later on the `BLOAD`'s own
-  line, `CONT`, and the `Ok` after the program ends. The test loads over the
+  line, `CONT`, the `Ok` after the program ends, a string variable reading
+  back garbage when the loaded bytes happened to look like a `FIELD` entry, and
+  `LSET` / `ERASE` touching the disk's field table. The test loads over the
   whole range and then runs each of these
   ([`wszero_s10_rows.out`](../../scratchpad/wszero_s10_rows.out)). Loaders that
   do *not* `CLEAR` first still find zerobas's stack lower than the

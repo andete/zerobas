@@ -1227,7 +1227,7 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; invokes itself, AFTER establishing PRGEND -- the §13a-F1
                 ; invariant documented above). The STRTAB pool this loop
                 ; used to wipe no longer exists -- nothing to do here.
-                jp      fld_init            ; also reset the random-access field table
+                jp      fld_init_g          ; also reset the random-access field table (disk only)
 
 ; --- RND_S0_PACKED: math pack slice 2e (repack build only, docs/spec-basic- -
 ; mathpack-slice2.md §15.1/§15.3). S0's 7-byte packed-BCD encoding (2

@@ -254,8 +254,8 @@ sea_fld:
                 pop     hl
                                             ; fall through into str_eval_ok
 str_eval_ok:
-                ld      a,1
-                ld      (VALTYP),a
+                ld      a,1                 ; (VALTYP's store went in D-WSZERO S9:
+                                            ; nothing read it, in any image)
                 scf
                 ret
 

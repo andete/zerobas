@@ -21,8 +21,10 @@ session and the loop resumes exactly where it stopped.
   now exist) -- CLASSIFIED (`scratchpad/wszero_classify.md`, its slice plan S8-S15)
   and **S8 + S10 done** (same-job cells; the persistent set into PARM1's tail
   $F71C-$F73F, fill-tested on both machines; wszero-acceptance 20 rows, knives
-  K-WS12..21). NEXT: S9 (disk-only fixes, ~+15 B main p1), S11 (idle published
-  bytes), S12 (overlays), S14 (code);
+  K-WS12..27) and **S9** (disk-only cells gated: FIELD table, error cell,
+  LSET flag, VALTYP gone; main p1 152 B, sub p0 12 B). NEXT: S9b (DISK-ONLY /
+  BOOT-ONLY tags + `ram_map --floor-top`, 0 ROM, scratchpad/s9_plan.md E16-E18),
+  S11 (idle published bytes), S12 (overlays), S14 (code);
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs

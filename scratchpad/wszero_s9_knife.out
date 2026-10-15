@@ -1,0 +1,8 @@
+K-WS22: rows ['ctl', 'fldread'] diverging ['fldread']; predicted ['fldread'] -> HIT
+K-WS23: rows ['ctl', 'fldclr'] diverging ['fldclr']; predicted ['fldclr'] -> HIT
+K-WS24: rows ['ctl', 'flderase'] diverging ['flderase']; predicted ['flderase'] -> HIT
+K-WS25: rows ['ctl', 'lset'] diverging ['lset']; predicted ['lset'] -> HIT
+K-WS26: rows ['ctl', 'inpeof'] diverging ['inpeof']; predicted ['inpeof'] -> HIT
+K-WS27: rows ['ctl', 'valtyp'] diverging ['valtyp']; predicted ['valtyp'] -> HIT
+restored: build rc=0; SAME
+rc=0

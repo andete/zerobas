@@ -311,6 +311,9 @@ aer_notfound:
 ; reads it again, and ARY_IDXP belongs to aeng_dim alone. Every call site writes
 ; both before every call, so nothing carries across.
 aer_fldfix:
+                ld      a,(DISKSLOT_OK)     ; D-WSZERO S9: no disk ROM, no field
+                or      a                   ; table to slide (the caller keeps
+                ret     z                   ; BC/DE/HL; A and the flags are free)
                 or      a
                 sbc     hl,de               ; HL = stride (SRC - DST)
                 ld      (ARY_KEY),hl        ; scratch: STRIDE

@@ -544,11 +544,17 @@ fadd_free:
 ; Measured diskless (D-NODISKGAP): the VG-8020 answers ERR 5 to `LSET A$="X"`
 ; and `RSET A$="X"`, where this tree simply RAN them.
 ex_lset:
-                xor     a                   ; justify = left
-                ld      de,H_LSET
-                jr      lrset_common
+                ld      de,H_LSET           ; (left / right is the TOKEN's bit 0,
+                jr      lrset_common        ; read by lrset_tgt -- D-WSZERO S9)
+    IF BASICINT_PINS
+; D-WSZERO S9: moved here from in front of the $73E5 pin below -- the 6 B that
+; came out of this segment (the justify store) are refilled with it, so the
+; $73AC pin does not move (tools/pin_plan.py). A `jp z` target only.
+ex_on_key:
+                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
+                jp      eon_trap_in         ; (program.asm's ex_on_key has the story)
+    ENDIF
 ex_rset:
-                ld      a,1                 ; justify = right
                 ld      de,H_RSET
 lrset_common:
                 ; 🏗️ D-LRSETMOVE (Joost, 2026-09-17). The body is in disk.rom as
@@ -571,7 +577,6 @@ lrset_common:
                 ; it across fld_find and the store are GONE rather than moved,
                 ; which matters because a push that straddles a calbak straddles
                 ; a CALSLT.
-                ld      (LRSET_JUST),a
                 inc     hl                  ; past the LSET/RSET token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ex      de,hl               ; HL = this verb's own hook cell
@@ -613,6 +618,17 @@ lrc_go:
 ;      unwind discards the disk-ROM frame and the handler never resumes.
 lrset_tgt:
                 ld      hl,(FN_RESUME)
+                ; D-WSZERO S9: the justify flag is the verb's own token (FN_RESUME
+                ; = token + 1, from lrset_common): bit 0 is 0 for LSET, 1 for RSET.
+                ; Stored HERE, a disk.rom call-back, so a diskless machine -- whose
+                ; LSET / RSET end at the gate with ERR 5 -- never writes the cell.
+                dec     hl
+                ld      a,(hl)
+                inc     hl
+                ld      (LRSET_JUST),a
+    IF (LSET_TOKEN & 1) != 0 || RSET_TOKEN != LSET_TOKEN + 1
+                db      LRSET_JUST_BIT0_RULE_NEEDS_LSET_EVEN_AND_RSET_LSET_PLUS_1
+    ENDIF
                 call    req_letter          ; D-NGRAM: a FIELD target must be a name
                 call    var_str_type        ; A=1 if `$`
                 or      a
@@ -633,9 +649,9 @@ lrset_tgt:
 ; Placed by tools/pin_plan.py after the `ret` above with a 6 B gap, and the gap is
 ; REFILLED, not padded: ex_on_key (6 B, a `jp z` target only) moved here from
 ; basic/program.asm, whose copy is now the ELSE arm (Joost: no growing holes).
-ex_on_key:
-                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
-                jp      eon_trap_in         ; (program.asm's ex_on_key has the story)
+; D-WSZERO S9 (2026-10-15): the gap is now lrset_tgt's own 6 B (the justify flag
+; read from the token), and ex_on_key moved on, in front of the $73AC pin, to
+; refill the 6 B the justify store left there.
                 ds      $73E5 - $, $00
 basicint_73e5:
                 jp      basicint_play       ; basic/missing.asm: call PLAY's body, return
@@ -714,6 +730,8 @@ lrset_store:
 ; call site: str_eval_one's OTHER branch on the same variable path is
 ; `call str_get_key`, which reaches `ary_engine_call` and clobbers IX already.
 fld_lookup:
+                call    diskslot_test       ; D-WSZERO S9: no disk ROM, no FIELD --
+                ret     z                   ; CF=0 (the `or a`): not fielded
                 call    fld_find            ; CF set -> HL -> entry
                 ret     nc                  ; not fielded -> caller's str_get_key
                 ld      a,(hl)              ; chan
@@ -724,6 +742,26 @@ fld_lookup:
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK)
                 scf                         ; fielded
                 ret
+
+; --- D-WSZERO S9 (2026-10-15): the disk-only cells, made disk-only in fact -----
+; FLD_TAB and DISKOP_ERR are the disk machine's: on a diskless one no FIELD can
+; exist and no DSKIO can fail. But a string-variable read walked the table
+; (fld_lookup, above) and NEW / RUN / CLEAR re-wrote it, and a tape INPUT # past
+; the end read the error cell -- so when the diskless ceiling rises over them
+; (S15) a program's own bytes there would be read as fields and error codes. Each
+; reader now asks diskslot_test first. They live here, past the $73E5 pin: the
+; segments ahead of the pins have no free byte (tools/pin_plan.py).
+; se_pending: A = the DSKIO failure code pending, 0 without a disk ROM. Z/NZ unset.
+se_pending:
+                call    diskslot_test
+                ret     z                   ; A = 0: nothing pending
+                ld      a,(DISKOP_ERR)
+                ret
+; fld_init_g: fld_init on a machine with a disk ROM, nothing without one.
+fld_init_g:
+                call    diskslot_test
+                ret     z
+                jp      fld_init
 
 ; (fat_rand_open / fat_rand_put / fat_rand_get -- the three two-instruction
 ; fatprim_bounce heads of the sub-ROM record engine, DISKOP_SEL_RAND_* 15/16/17 --

@@ -1,0 +1,5 @@
+DISKOP_ERR = $EF06 on zerobas (the VG-8020 row pokes the same address: free RAM there)
+ROW eof   VG=[[E 55  20 ][HELLO]] ZB=[[E 55  20 ][HELLO]] SAME
+ROW eofv  VG=[[E 55  20 ][HELLO]] ZB=[[E 55  20 ][HELLO]] SAME
+ROW eofm  VG=[[E 55  20 ][HELLO]] ZB=[[E 165  20 ][HELLO]] DIFFERS
+refcache: 0 hit, 6 miss, 6 stored

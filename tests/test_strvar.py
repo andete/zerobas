@@ -73,7 +73,6 @@ def run():
     STRSCR   = s["STRSCR"]     # scratch BODY buffer for literals
     RVDESC   = s["RVDESC"]     # the [len][ptr] descriptor that wraps STRSCR
     STRPTR   = s["STRPTR"]     # pointer word -> active descriptor
-    VALTYP   = s["VALTYP"]     # 0=numeric, 1=string
 
     SRCDESC = 0xC300           # our own [len][ptr] source descriptor
     SRCBODY = 0xC340           # the body it points at
@@ -167,13 +166,11 @@ def run():
     # Oracle: strvar.asm str_eval_lit inline comments + STRSCR/STRPTR/VALTYP sysvars.
     # Expected: STRSCR[0] = 5, STRSCR[1..5] = b"HELLO".
     # ==================================================================
-    # Clear VALTYP and STRPTR first.
-    m.poke(VALTYP, 0)
+    # Clear STRPTR first (VALTYP, write-only, went in D-WSZERO S9).
     m.poke_w(STRPTR, 0)
     lit_text = b'"HELLO"\x00'            # NUL-terminated operand
     m.poke(TOKBUF, lit_text)
     cpu_ev = m.call("str_eval", hl=TOKBUF)
-    val_valtyp = m.mem[VALTYP]
     val_strptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
     desc_len, desc_bytes = deref(val_strptr)
     # ⚠️ TWO CHANGES HERE, BOTH MEASURED.
@@ -187,13 +184,13 @@ def run():
     #     does not make. Pinned to TOKBUF+1 so the no-copy property is what is
     #     actually gated.
     lit_ptr = m.mem[RVDESC + 1] | (m.mem[RVDESC + 2] << 8)
-    ok_eval = (carry(cpu_ev) and val_valtyp == 1
+    ok_eval = (carry(cpu_ev)
                and val_strptr == RVDESC
                and lit_ptr == TOKBUF + 1
                and desc_len == 5 and desc_bytes == b"HELLO")
     fails += not ok_eval
     print(f"{'PASS' if ok_eval else 'FAIL'}  str_eval '\"HELLO\"': CF={int(carry(cpu_ev))}, "
-          f"VALTYP={val_valtyp}, STRPTR={val_strptr:#06x}(RVDESC), "
+          f"STRPTR={val_strptr:#06x}(RVDESC), "
           f"body@{lit_ptr:#06x}(TOKBUF+1={TOKBUF+1:#06x}, no copy), "
           f"len={desc_len}, bytes={desc_bytes!r}")
 
@@ -208,18 +205,16 @@ def run():
     WORLD = b"WORLD"
     m.call("str_set_key", b=ord("A"), c=0, de=src(WORLD))
 
-    m.poke(VALTYP, 0)
     m.poke_w(STRPTR, 0)
     poke_name(m, NAMEBUF, "A$")
     cpu_vev = m.call("str_eval", hl=NAMEBUF)
-    val_valtyp2 = m.mem[VALTYP]
     val_strptr2 = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
     desc_len2, desc_bytes2 = deref(val_strptr2)
-    ok_vev = (carry(cpu_vev) and val_valtyp2 == 1
+    ok_vev = (carry(cpu_vev)
               and desc_len2 == len(WORLD) and desc_bytes2 == WORLD)
     fails += not ok_vev
     print(f"{'PASS' if ok_vev else 'FAIL'}  str_eval A$='WORLD': CF={int(carry(cpu_vev))}, "
-          f"VALTYP={val_valtyp2}, len={desc_len2}, bytes={desc_bytes2!r}")
+          f"len={desc_len2}, bytes={desc_bytes2!r}")
 
     # ==================================================================
     # Case 6: str_eval of a non-string operand returns CF=0.
@@ -227,13 +222,11 @@ def run():
     # → CF clear, VALTYP untouched. Oracle: strvar.asm str_eval_no "CF clear
     # -> not a string operand".
     # ==================================================================
-    m.poke(VALTYP, 0)
     poke_name(m, NAMEBUF, "A")
     cpu_no = m.call("str_eval", hl=NAMEBUF)
-    ok_no = not carry(cpu_no) and m.mem[VALTYP] == 0
+    ok_no = not carry(cpu_no)
     fails += not ok_no
-    print(f"{'PASS' if ok_no else 'FAIL'}  str_eval non-string 'A': CF={int(carry(cpu_no))}, "
-          f"VALTYP={m.mem[VALTYP]}")
+    print(f"{'PASS' if ok_no else 'FAIL'}  str_eval non-string 'A': CF={int(carry(cpu_no))}")
 
     # ==================================================================
     # Case 7: print_strval emits the bytes of a literal "HELLO" via CHPUT.
@@ -243,7 +236,6 @@ def run():
     # Oracle: CHPUT entry $00A2; print_strval code "call CHPUT" per byte.
     # Expected captured bytes = b"HELLO" (ASCII 72 69 76 76 79).
     # ==================================================================
-    m.poke(VALTYP, 0)
     m.poke_w(STRPTR, 0)
     lit_text2 = b'"HELLO"\x00'
     m.poke(TOKBUF, lit_text2)

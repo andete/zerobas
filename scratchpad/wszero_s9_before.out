@@ -1,0 +1,9 @@
+ROW fldread $F018-$F078 VG=[[OK 2 ]] ZB=[[m   #*  "g "k *  "i *  "m   #  &:  !] DIVERGES
+ROW fldclr $F018-$F078 VG=[[ 165  165  165 ]] ZB=[[ 0  0  0 ]] DIVERGES
+ROW flderase $F018-$F078 VG=[[ 165  165 ]] ZB=[[ 165  77 ]] DIVERGES
+ROW lset $ECF8-$F37F VG=[[E 5 ][E 5 ][E 5 ][ 165  165 ]] ZB=[[E 5 ][E 5 ][E 5 ][ 1  165 ]] DIVERGES
+ROW inpeof $0000-$0000 VG=[[E 55  20 ][HELLO]] ZB=[[E 165  20 ][HELLO]] DIVERGES
+ROW valtyp $ECF8-$F37F VG=[[ 165 ]] ZB=[[ 1 ]] DIVERGES
+
+FAIL: a load over the window, then BASIC (0/6 as pinned); unpinned divergence: fldread, fldclr, flderase, lset, inpeof, valtyp
+refcache: 0 hit, 12 miss, 12 stored

@@ -86,7 +86,6 @@ def run():
     m.poke_w(s["POOLSIZE"], 4096)
     m.call("heap_reset")
     STRPTR = s["STRPTR"]
-    VALTYP = s["VALTYP"]
     ERRMARK = s["ERRMARK"]
     STRMAX = s["STRMAX"]     # 255 in the repack build (slice-4a widened 64->255)
     TEMPBASE = s["TEMPBASE"]
@@ -155,7 +154,6 @@ def run():
         tok(text)
         clear_markers()
         stmt_boundary()
-        m.poke(VALTYP, 0)
         m.poke_w(STRPTR, 0)
         cpu = m.call("str_eval", hl=TOKBUF)
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
@@ -171,10 +169,10 @@ def run():
     def ck_str(label, res, want):
         nonlocal fails
         cpu, dlen, dbytes = res
-        ok = carry(cpu) and m.mem[VALTYP] == 1 and dbytes == want and dlen == len(want)
+        ok = carry(cpu) and dbytes == want and dlen == len(want)
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  {label} = {dbytes!r} "
-              f"(want {want!r}) CF={int(carry(cpu))} VALTYP={m.mem[VALTYP]}")
+              f"(want {want!r}) CF={int(carry(cpu))}")
 
     def ck_str_err(label, res):
         """A malformed/erroring string call -> CF clear (str_eval_no)."""

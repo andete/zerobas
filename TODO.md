@@ -3043,6 +3043,50 @@ item — do **one item per session** to keep context lean.
       CAS: INPUT channel left open across a BLOAD probably reads the wrong
       buffer afterwards. That is also why no tape-load row can witness CAL_* /
       CAS_BUFP.
+      ✅ **S9 (2026-10-15): THE DISK-ONLY CELLS MADE DISK-ONLY IN FACT** (the
+      code half; the DISK-ONLY / BOOT-ONLY tags and `ram_map --floor-top` are
+      S9b, below). Designed by a read-only subagent
+      ([`s9_plan.md`](scratchpad/s9_plan.md), pin geometry first), applied here:
+      the FIELD table (96 B) and the disk error cell were read or written on a
+      diskless machine, so once the ceiling rises over them a program's own bytes
+      there would be read as fields and error codes. Now: `fld_lookup` (every
+      string-variable read) and NEW / RUN / CLEAR's table reset (`fld_init_g`)
+      ask diskslot_test first; ERASE's key slide (sub `aer_fldfix`) likewise;
+      `seq_end` and `disk_error` read the error cell through `se_pending` (0
+      without a disk ROM); LSET / RSET take left / right from their own token
+      inside the disk call-back, so a diskless LSET -- ERR 5 at the gate --
+      writes nothing (the 6 B that left the segment in front of $73AC are
+      refilled by ex_on_key, moved across the pin); VALTYP $EF35 (write-only)
+      and FOSIGN / FOMBYTES (unused) deleted, the 3 B paying for the
+      post-boot-scan `fld_init_g` a disk machine now needs (both earlier boot
+      inits run before DISKSLOT_OK is known). Main page 1 171 -> 152 B (all of
+      it past the $73E5 pin), sub page 0 17 -> 12 B; pin-check 4/4.
+      📏 Measured first ([`inpeof_probe.py`](scratchpad/inpeof_probe.py) ->
+      [`inpeof_probe.out`](scratchpad/inpeof_probe.out)): 🔮 "LINE INPUT # past
+      a tape file's end raises the stale code": MISS at power-on -- the OPEN
+      clears the cell -- and HIT once 165 is written between the two reads
+      (`[E 165 20]` for `[E 55 20]`). Not a shipped defect today; certain once
+      the cell is program RAM.
+      📏 Six rows, run on the S10 build first
+      ([`wszero_s9_before.out`](scratchpad/wszero_s9_before.out)): `fldread` (a
+      $41 fill makes every table entry name `AA$`; zerobas then printed garbage
+      for `AA$="OK"` -- a $A5 fill matches no name, which is why `rich2` never
+      saw the table), `fldclr`, `flderase`, `lset` (`1` for `165`), `inpeof`,
+      `valtyp`: all six DIVERGED as predicted. After S9: 26/26 SAME
+      ([`wszero_s9_rows.out`](scratchpad/wszero_s9_rows.out)). 🔪
+      [`wszero_s9_knife.py`](scratchpad/wszero_s9_knife.py) ->
+      [`wszero_s9_knife.out`](scratchpad/wszero_s9_knife.out): K-WS22..27 --
+      each guard's `ret z` cut to `nop`, or its group reverted whole (G5, G1) --
+      each diverges exactly its own row: 6/6 HIT, every knife build pin-checked.
+      Not run, stated: K-WS28 (the post-scan call alone), predicted BLIND on
+      openMSX -- a disk machine's power-on table holds no key a program names.
+      ➡️ **S9b (next, 0 ROM):** the DISK-ONLY tags on the disk cells and a
+      BOOT-ONLY tag for SCAN_*, `ram_map --floor-top F380` as S15's census, and
+      the alias splits (PLY_NUMOVF = DISKOP_A would launder a diskless user past
+      A17's alias rule; DISKOP_OP / DISKOP_STATUS stay untagged -- diskless
+      users through aliases). s9_plan.md §2 E16-E18 has the list. Also from the
+      plan, for S11 / S12's planner: TSV_NAME is declared 1 B but written as 6
+      ($EF62-$EF67), so $EF64 / $EF65 look like holes and are not.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9641,7 +9685,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35174 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35218 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9807,7 +9851,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14669 (T-6FE392)8 (T-529ABE)` from `TODO.md:27463 (T-529ABE)`: a
+      `TODO.md:14713 (T-6FE392)8 (T-529ABE)` from `TODO.md:27507 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15516,7 +15560,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27463 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27507 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
