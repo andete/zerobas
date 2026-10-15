@@ -3061,10 +3061,48 @@ item — do **one item per session** to keep context lean.
       "FIELD none": HIT; "GET and PUT each one claimed cell per record": MISS --
       they share H.DGET, alongside H.GETP and the bare $FE53. zerobas claims none
       of $FE4E / $FE80.
-      ➡️ Next: what H.DGET receives (a breakpoint on the RAM hook cell itself:
-      registers, the stack words, PTRFIL -- no ROM byte, no target followed),
-      then the S10.D design: GET / PUT's record engine (main field.asm's gp_* +
-      the sub-ROM randio tenant today) behind hk_dget in disk.rom.
+      📏 **S10.D's SECOND MEASUREMENT (2026-10-15): WHAT H.DGET RECEIVES -- THE
+      RECORD NUMBER IS NOT EVALUATED YET** ([`dget_probe.py`](scratchpad/dget_probe.py)
+      -> [`dget_run.out`](scratchpad/dget_run.out), [`dget_run2.out`](scratchpad/dget_run2.out),
+      [`dget_run3.out`](scratchpad/dget_run3.out); a breakpoint on the RAM hook
+      cells $FE80 / $FE4E / $FE53 on the CF-3300, logging registers, 8 stack
+      words, PTRFIL, VALTYP, DAC, the BASIC FCB header and the disk FCB it points
+      at -- every read guarded to >= $8000, no ROM byte, no target followed).
+      Per GET / PUT the order is $FE4E -> $FE53 -> $FE80. At $FE80:
+      * **channel**: HL = PTRFIL = the channel's BASIC FCB (#1 $DD6E alone; with
+        MAXFILES=2, #2 is $DD6E and #1 $DC65); A = 4 = its mode byte (FCB +0);
+        FCB +1..+2 = the disk FCB (+14 = LEN: $10 / $64; +16 = the file size).
+      * **GET vs PUT**: A is 4 for both; the third stack word is $0013 for GET and
+        $8013 for PUT (BC differs too). The second stack word is the text pointer.
+      * **record number**: NOT in a register, NOT in DAC (it still holds the `#n`
+        channel number at entry; `,3` shows up there only after the hook) and NOT
+        in the disk FCB (+33 = 0 for `GET#1,3`). **The disk ROM evaluates `,r`
+        itself.** Bare `GET#1` after `GET#1,2`: the disk FCB's random-record field
+        +33 already reads 2 (0-based NEXT record) -- D-RECAUTO is that field.
+      * **errors**: record 0 ("Illegal function call"), 300 and -1 (both "Input past
+        end" on a 40-record file) all ENTER $FE80 first -- the disk side raises
+        them. An unopened `GET#1,1` is "File not OPEN" with NO hook entered: the
+        channel-open check is main's.
+      🔮 Scored: "no entry for record 0 (main checks first)": MISS; "A or a stack
+      word separates GET / PUT": partial HIT (the stack word, not A); "record in
+      +33 or DE": MISS; "PTRFIL = the FCB": HIT; "bare GET passes record 3":
+      partial HIT (+33 holds it; nothing is passed). Apparatus misses, re-run:
+      MAXFILES defaults to 1, so the first `#2` cases stopped at "Bad file
+      number" before any hook, and a second OPEN of the same file is "File
+      already open" -- the channel case uses B.DAT.
+      ➡️ **S10.D design (the brief, revised by this measurement):** main keeps the
+      `#n` parse, the "File not OPEN" / mode checks, PUT SPRITE's split and the
+      crossing; **`hk_dget` in disk.rom parses `,r` itself** through a call-back
+      (precedent: `fname_expr` in REQUIRED_DISK_CALLBACK), raises 5 / 55 there,
+      and owns D-RECAUTO, the offset, D-STRADDLE's two-pass and the size update.
+      OPEN RANDOM (H_FOPEN, a new selector) and CLOSE mode 4 (H_CHCLOSE) move in
+      the same slice -- S10.B's lesson: the record path cannot move unless the
+      state is disk-side from OPEN. Witnesses: geteject, putdir, loc, recauto,
+      dout, the diskless 59, tests/test_rand_straddle.py re-pointed at disk.rom,
+      and a knife. Estimated (unmeasured): main page 1 frees ~105-120 B plus the
+      record parse; the sub-ROM randio tenant (~790 B) goes; disk.rom pays
+      ~450-650 B across its interior holes (the largest is ~843 B, `make basic-reloc`
+      2026-10-15 -- READ IT, never this number).
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
@@ -9076,7 +9114,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34609 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34647 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9242,7 +9280,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14104 (T-6FE392)8 (T-529ABE)` from `TODO.md:26898 (T-529ABE)`: a
+      `TODO.md:14142 (T-6FE392)8 (T-529ABE)` from `TODO.md:26936 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14951,7 +14989,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26898 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26936 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

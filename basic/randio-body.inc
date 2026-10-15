@@ -590,8 +590,8 @@ frg_ok:
 ; ENTIRE record with spaces rather than only the missing tail. That matches the
 ; lenient empty-record rule this routine already has (a GET past EOF is not an
 ; error here), and it is a DECISION, not an oversight -- what the reference does
-; with a record half past EOF is unmeasured, and no row here can carry it while
-; `oo_parse_reclen` still refuses a straddling length.
+; with a record half past EOF is unmeasured. (`oo_parse_reclen` no longer refuses
+; a straddling length -- D-RECLENFIX -- so a row CAN carry it now; none does yet.)
 ; 🔴 D-GETEJECT (D-LOADERRRET's GET site, 2026-10-11): frnd_locate's carry is
 ; BOTH "beyond EOF" and a chain-walk READ that failed, and the read failure was
 ; filled with spaces as an empty record: with the disk ejected between OPEN and

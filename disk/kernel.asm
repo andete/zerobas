@@ -4081,7 +4081,8 @@ fat_bufinit:
 ; PREFERENCE. Placed after fat.asm it pushed kernel.asm past a pin and pasmo
 ; wrapped the image; appended after runtime.asm it overran the ROM by 1369 B,
 ; because disk.rom's 8314 B of free space is 32 INTERIOR HOLES, not a tail. This
-; corridor is the largest (2712 B at $6B0D) and is where install_hook below
+; corridor was the largest when this was written (2712 B at $6B0D; by 2026-10-15
+; the largest hole was ~843 B -- `make basic-reloc`, never this text) and is where install_hook below
 ; already lives for the same reason.
                 ; ⚠️ REPO-ROOT RELATIVE, NOT "../basic/...". pasmo accepts
                 ; both, but tools/check_tenant_closure.py's _resolve_include

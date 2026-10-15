@@ -589,10 +589,9 @@ oo_setmode:
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
                 ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
-                ; reads it. A channel without LEN= defaults to 256. r must be a power
-                ; of two in 1..256 so records tile the 512-byte sector without
-                ; straddling (the sector-tiling scope; non-tiling sizes -> Syntax
-                ; error). Stored per channel in FCH_RECLENS[ch].
+                ; reads it. A channel without LEN= defaults to 256; r is any value
+                ; in 1..256 (oo_parse_reclen's header: the power-of-two rule left
+                ; with D-RECLENFIX / D-STRADDLE). Stored per channel in FCH_RECLENS[ch].
                 ld      a,e
                 ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
                 call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad

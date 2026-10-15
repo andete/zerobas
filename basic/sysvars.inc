@@ -3641,7 +3641,7 @@ FOPEN_SEL_APND  equ     $50         ; S10.B increment 2: OPEN FOR APPEND (hk_fap
 ; FCH_ACTIVE; claimed only by disk.rom, so a diskless machine never calls them
 ; (it cannot open a disk file).
 H_CHOUT         equ     $FE85
-H_CHCLOSE       equ     $FE62   ; FILES handler
+H_CHCLOSE       equ     $FE62   ; CLOSE of an OUTPUT channel / SAVE ,A's end (disk.rom hk_chclose)
 H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS WRONG
                                 ; (D-DSKOHOOK 2026-09-15). The CF-3300 claims $FDEF and does
                                 ; NOT claim $FDF4, and un-claiming $FDEF on it (POKE ,201 --

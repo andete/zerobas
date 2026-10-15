@@ -37,8 +37,9 @@
 ; per channel — 256 by default (oracle: a CF-3300 PUT of one record makes a
 ; 256-byte file), or the OPEN..AS #n LEN=r value (disk-BASIC option-closure Item 3;
 ; parsed in files.asm, held in FCH_RECLENS[ch], loaded into GP_RECLEN per calc).
-; r is constrained to a power of two in 1..256 so records TILE the 512-byte sector
-; (512/r per sector) and never straddle two sectors. Record N (1-based) occupies
+; r is any length in 1..256 (D-RECLENFIX; it was a power of two, so records tiled
+; the sector -- no longer: D-STRADDLE reads / writes a record split across two
+; sectors in two passes). Record N (1-based) occupies
 ; file bytes [(N-1)*reclen, N*reclen), i.e. file logical sector ((N-1)*reclen)>>9 at
 ; within-sector offset ((N-1)*reclen)&511 (frnd_calc) — 512/reclen records per
 ; 512-byte sector (r=256 -> the historical two per sector). PUT does a

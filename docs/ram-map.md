@@ -755,7 +755,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE49` |  | `disk` | `H_CVD` | CVD |  |
 | `$FE5D` |  | `basic` | `H_FOPEN` |  |  |
 | `$FE5D` |  | `disk` | `H_FOPEN` |  |  |
-| `$FE62` |  | `basic` | `H_CHCLOSE` | FILES handler |  |
+| `$FE62` |  | `basic` | `H_CHCLOSE` | CLOSE of an OUTPUT channel / SAVE ,A's end (disk.rom hk_chclose) |  |
 | `$FE62` |  | `disk` | `H_CHCLOSE` | S10.B: CLOSE of an OUTPUT channel |  |
 | `$FE7B` |  | `basic` | `H_FILE` |  |  |
 | `$FE7B` |  | `disk` | `H_FILE` |  |  |
