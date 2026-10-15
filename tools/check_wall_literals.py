@@ -238,17 +238,18 @@ def selftest(root):
               "proves nothing. Fix the tree first.")
         return 1
 
-    _spatn = next((ln for ln in open(os.path.join(root, "basic/sysvars.inc")).read().splitlines()
-                   if re.match(r"^GFX_SPATN\s+equ\s+GFX_SC \+ 2\s+; \$[0-9A-Fa-f]{4}:", ln)), None)
+    _anchor = next((ln for ln in open(os.path.join(root, "basic/sysvars.inc")).read().splitlines()
+                   if re.match(r"^GFX_DFSTK\s+equ\s+GFX_DFTOP \+ 1\s+; \$[0-9A-Fa-f]{4}:", ln)), None)
+    # (re-anchored from GFX_SPATN in D-WSZERO S11, which made that row a literal)
     plants = [
         ("A", "probes/basic/basic_probe_clear.py",
          "TXTTAB       = 0xF676", "TXTTAB       = 0xF670"),
         # rule B's anchor is READ from the line: it pinned `; $E419:` and the
         # D-FATFLOOR rotation (+$400) moved the copy with its cell, which broke
         # the selftest, not the gate. The plant flips one bit of the address.
-        ("B", "basic/sysvars.inc", _spatn, _spatn and re.sub(
+        ("B", "basic/sysvars.inc", _anchor, _anchor and re.sub(
             r"\$([0-9A-Fa-f]{4})",
-            lambda m: f"${int(m.group(1), 16) ^ 0x0100:04X}", _spatn, count=1)),
+            lambda m: f"${int(m.group(1), 16) ^ 0x0100:04X}", _anchor, count=1)),
     ]
     rc = 0
     for tag, rel, old, new in plants:

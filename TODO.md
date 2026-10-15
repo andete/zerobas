@@ -3095,6 +3095,50 @@ item — do **one item per session** to keep context lean.
       DISKOP_OP / DISKOP_STATUS stay untagged on purpose (diskless users through
       their aliases). For S11 / S12's planner: TSV_NAME is declared 1 B but
       written as 6 ($EF62-$EF67) -- s9_plan.md §1.6.
+      ✅ **S11 (2026-10-15): 63 TRANSIENT CELLS INTO IDLE PUBLISHED BYTES, equates
+      only, no byte shared between two guests.** Re-verified against the S9 tree
+      by a read-only subagent ([`s11_plan.md`](scratchpad/s11_plan.md), exact
+      lines in [`s11_replacements.md`](scratchpad/s11_replacements.md), an
+      in-memory dry run: 0 new overlaps). DRAW's 19 cells -> TRPTBL's reserved
+      tail + RTYCNT, the MSX1 RS-232 queue bytes and FUNACT; LINE's X1..Y2 (one
+      8-byte run: gfx_clamp_coords walks it) -> PARM1 $F70A; CIRCLE's angle
+      records + centre (one zero-filled run) -> PARM1 $F740, radius / aspect ->
+      CONLO's tail; sprites + G8 -> MAXUPD / MINUPD, VLZADR.., DONUM..; the
+      tokeniser's TK* cells and the float core + KEYARG -> the DAC / ARG tails
+      (only cells that call nothing outside zerobas while live: user USR code
+      may use DAC / ARG); NUMBUF -> HIGH_..ASPCT (it is live while PRINT calls
+      CHPUT, so not the math tails); STRPTR / INP_CURSOR / GFX_SFLAGS -> LFPROG..;
+      RDV_MODE -> PTRFLG (the plan's CLMLST is a user-settable setting on the
+      reference: changed here). The classification's map had real defects the
+      re-verification fixed (two contiguity breaks, MATH_N's width, FILTAB /
+      MEMSIZ / INTVAL / ONGSBF / QUEBAK not free); deferred: the detok cells and
+      RVDESC (15 B, with DB_WIN / S12), MATH_N (S14). 92 window bytes freed; the
+      window guards that S11 falsified became 13 host-fit guards at the end of
+      sysvars.inc; the two FREE-RAM claims S11 consumes retired; five width pins
+      went (the good direction); TSV_NAME declared as the 6 bytes it is; the
+      wall-literal selftest re-anchored; the prose that described the old
+      aliases (INP_CURSOR / NUMBUF, KEYARG / WIDIG, GFX_PPITCH / G8N) corrected.
+      📏 Witness: a transient cell is rewritten before it is read, so no row
+      could see it being loaded over -- S11 changes that its users no longer
+      WRITE the window. Three rows load $A5 over the whole window, run every
+      user of one group, then sum the 91 vacated bytes (VG-8020 15015):
+      `s11gfx` (sprites, VDP()=, LINE, CIRCLE with angles, DRAW with
+      substitutions), `s11num` (READ, \ / MOD, double division, VAL, PRINT,
+      HEX$ / OCT$, PRINT USING, KEY), `s11inp` (INPUT into an element). Before:
+      6961 / 12688 / 13902 ([`wszero_s11_before.out`](scratchpad/wszero_s11_before.out)),
+      🔮 three DIVERGE: HIT; after: 29/29 SAME
+      ([`wszero_s11_rows.out`](scratchpad/wszero_s11_rows.out)). 🔪
+      [`wszero_s11_knife.py`](scratchpad/wszero_s11_knife.py) ->
+      [`wszero_s11_knife.out`](scratchpad/wszero_s11_knife.out): K-WS29..36,
+      one group back at its literal old address per knife (the old chained
+      equates would follow anchors that moved too) -- each diverges exactly its
+      predicted rows: 8/8 HIT, every build pin-checked.
+      ➡️ Left in the window for the diskless machine: ~614 B -- S12 overlays
+      ~340 (PAINT's span stack, PRINT USING, TKDIG, DIVREM, LINE / CIRCLE
+      internals, ...), S14 code ~219 (DB_WIN 96, the DRAW X-frame stack, the FOR
+      frame copy, CVT, the math-pack cells), S13 ~40 (SLTWRK / PROCNM, 🙋
+      Joost's call), deferred 15; `python3 tools/ram_map.py --floor-top F380`
+      counts what still stands.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9693,7 +9737,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35226 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35270 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9859,7 +9903,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14721 (T-6FE392)8 (T-529ABE)` from `TODO.md:27515 (T-529ABE)`: a
+      `TODO.md:14765 (T-6FE392)8 (T-529ABE)` from `TODO.md:27559 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15568,7 +15612,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27515 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27559 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 301 declared addresses in this project's own workspace `$E000..$F37F` (289 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
-* **disk** — 130 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **53** in the MSX standard work area at or above `$F380`.
+* **basic** — 242 declared addresses in this project's own workspace `$E000..$F37F` (235 with a machine-readable width), plus **302** in the MSX standard work area at or above `$F380`.
+* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **54** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -132,43 +132,13 @@ second one is the question a per-component map cannot answer.
 | `$ED10` | 2 B | `basic` | `GFX_PSP` | the span stack's top (lowest used byte) (2) |  |
 | `$ED12` | 2 B | `basic` | `GFX_PBASE` | its empty position = SP - GFX_PAINT_MARGIN (2) |  |
 | `$ED14` | 2 B | `basic` | `GFX_PFLOOR` | the lowest byte it may use = ARYEND + 2 (2) |  |
-| `$ED28` | 2 B | `basic` | `GFX_SN` | $ED28: SPRITE$ entry index / PUT SPRITE plane (2) |  |
-| `$ED2A` | 1 B | `basic` | `GFX_VLEN` | $ED2A: the entry size the tenant read back (1) |  |
-| `$ED2B` | 2 B | `basic` | `GFX_SDESC` | $ED2B: SPRITE$(n)= RHS string descriptor |  |
-| `$ED2D` | 2 B | `basic` | `GFX_SC` | $ED2D: PUT SPRITE colour (2). x/y need no cells -- (2 B) |  |
-| `$ED2F` | 2 B | `basic` | `GFX_SPATN` | $ED2F: ...pattern number (2) |  |
-| `$ED31` | 1 B | `basic` | `GFX_SSIZE` | $ED31: SCREEN's sprite-size argument while a mode |  |
-| `$ED32` | 1 B | `basic` | `GFX_SARGN` | $ED32: how many extra SCREEN arguments have been |  |
-| `$ED33` | 1 B | `basic` | `GFX_SFLAGS` | $ED33: which arguments were GIVEN -- (1 B) |  |
-| `$ED34` | 2 B | `basic` | `GFX_DPTR` | $ED34: parse cursor in the current frame (2) |  |
-| `$ED36` | 2 B | `basic` | `GFX_DEND` | $ED36: one past the current frame's last byte (2) |  |
 | `$ED38` | 1 B | `basic` | `GFX_DFTOP` | $ED38: X-frame stack depth (1) |  |
 | `$ED39` | 32 B | `basic` | `GFX_DFSTK` | $ED39: saved [ptr][end] per outer frame -- |  |
-| `$ED59` | 2 B | `basic` | `GFX_DCMD` | $ED59: current command's start cursor, |  |
-| `$ED5B` | 1 B | `basic` | `GFX_DSUBN` | $ED5B: substitutions RESOLVED for this command (1) |  |
-| `$ED5C` | 1 B | `basic` | `GFX_DSUBI` | $ED5C: substitutions SEEN so far this re-parse (1) |  |
-| `$ED5D` | 4 B | `basic` | `GFX_DSUB` | $ED5D: the resolved values, 2 slots (M takes two) (4) |  |
-| `$ED61` | 1 B | `basic` | `GFX_DSUBLEN` | $ED61: slot 0's string length (X only) (1) |  |
-| `$ED62` | 1 B | `basic` | `GFX_DREQ` | $ED62: tenant->resident: 0 = done, 1 = resolve an |  |
-| `$ED63` | 1 B | `basic` | `GFX_DRESUME` | $ED63: resident->tenant: 1 = resuming (1) |  |
-| `$ED64` | 2 B | `basic` | `GFX_DVAL` | $ED64: the resolved int16, or a string body ptr (2) |  |
-| `$ED66` | 1 B | `basic` | `GFX_DVLEN` | $ED66: that string's length (1) |  |
 | `$ED67` | 24 B | `basic` | `GFX_DEXP` | $ED67: NUL-terminated copy of the text between |  |
-| `$ED80` | 1 B | `basic` | `GFX_DFN` | $ED80: 1 = N (no-update) prefix pending (1) |  |
-| `$ED81` | 2 B | `basic` | `GFX_DARG` | $ED81: last parsed argument (int16 LE) (2) |  |
-| `$ED83` | 2 B | `basic` | `GFX_DDX` | $ED83: this command's dx (int16) (2) |  |
-| `$ED85` | 2 B | `basic` | `GFX_DDY` | $ED85: ...dy (2) |  |
-| `$ED87` | 2 B | `basic` | `GFX_DTX` | $ED87: move target X (2) |  |
-| `$ED89` | 2 B | `basic` | `GFX_DTY` | $ED89: ...Y (2) |  |
-| `$ED8B` | 2 B | `basic` | `GFX_DTMP` | $ED8B: mul/rotate/sign scratch (2) |  |
-| `$ED8D` | 2 B | `basic` | `GFX_DSP` | $ED8D: tenant entry SP -- an error deep in the (2 B) |  |
 | `$ED8F` | 2 B | `basic` | `DEFT_PTR/RDV_LINE` | $ED8F: D-READERL -- the link field of the line |  |
 | `$ED91` | 2 B | `basic` | `RDV_VAL` | $ED91: the value read (int16 LE) (2) |  |
 | `$ED93` | 1 B | `basic` | `RDV_ST` | $ED93: tenant -> main STATUS (1): (1 B) |  |
-| `$ED94` | 1 B | `basic` | `RDV_MODE` | $ED94: main -> tenant MODE (1 B), D-READVAR: |  |
-| `$ED95` | 2 B | `basic` | `TGT_ADDR` | $ED95: element address, or 0 = scalar (2) |  |
-| `$ED99` | 2 B | `basic` | `GFX_G8N/GFX_PPITCH` | $ED99: 1 or 4, live only inside a PAINT |  |
-| `$ED9B` | 2 B | `basic` | `GFX_G8V` | $ED9B: written value (int16 LE) (2) |  |
+| `$ED99` | 1 B | `basic` | `GFX_PPITCH` | $ED99: 1 or 4, live only inside a PAINT (1) |  |
 | `$ED9D` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
@@ -255,9 +225,6 @@ second one is the question a per-component map cannot answer.
 | `$EF1F` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
 | `$EF21` | 2 B | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
 | `$EF23` | 1 B | `basic` | `FOR_SIGN` | NEXT's scratch: the step's sign byte (1) |  |
-| `$EF2D` |  | `basic` | `INP_CURSOR/NUMBUF` | console INPUT LINEBUF read pointer (2 B, aliases NUMBUF) |  |
-| `$EF36` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
-| `$EF36` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$EF3A` | 2 B | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
@@ -275,16 +242,12 @@ second one is the question a per-component map cannot answer.
 | `$EF5D` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
 | `$EF61` | 1 B | `basic` | `FMT_GEOMSEL/TSV_CNT` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$EF61` | 1 B | `disk` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
-| `$EF62` | 1 B | `basic` | `FMT_RESULT/TSV_NAME` | tape save: 6-char filename buffer (space-padded) (1 B) |  |
+| `$EF62` | 6 B | `basic` | `FMT_RESULT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), $EF62..$EF67 |  |
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX/IN_RDLEN` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
-| `$EF67` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
-| `$EF69` | 2 B | `basic` | `GFX_Y1` | LINE endpoint 1 Y (int16 LE) |  |
-| `$EF6B` | 2 B | `basic` | `GFX_X2` | LINE endpoint 2 X (int16 LE) |  |
-| `$EF6D` | 2 B | `basic` | `GFX_Y2` | LINE endpoint 2 Y (int16 LE) |  |
 | `$EF6F` | 1 B | `basic` | `GFX_MODE` | GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1) |  |
 | `$EF70` | 2 B | `basic` | `GFX_CX` | Bresenham: current pixel X (int16, may be off-screen) (2) |  |
 | `$EF72` | 2 B | `basic` | `GFX_CY` | Bresenham: current pixel Y (int16) (2) |  |
@@ -302,11 +265,7 @@ second one is the question a per-component map cannot answer.
 | `$EF87` | 2 B | `basic` | `GFX_TY2` | box: stashed corner 2 Y (2) |  |
 | `$EF89` | 2 B | `basic` | `GFX_FILLCNT` | box fill: scanlines remaining (2) |  |
 | `$EF8B` | 2 B | `basic` | `GFX_YSTEP` | box fill: row step, $0001/$FFFF (2) -> ends $E126 (2 B) |  |
-| `$EF8D` | 2 B | `basic` | `GFX_CXC` | centre X (int16 LE) (2) |  |
-| `$EF8F` | 2 B | `basic` | `GFX_CYC` | centre Y (int16 LE) (2) |  |
-| `$EF91` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
 | `$EF93` | 1 B | `basic` | `GFX_ASPMAJ` | 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1) |  |
-| `$EF94` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
 | `$EF96` | 1 B | `basic` | `GFX_ARCF` | 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1) |  |
 | `$EF97` | 2 B | `basic` | `GFX_SVX` | start boundary vector X, screen-offset scaled ints (2) |  |
 | `$EF99` | 2 B | `basic` | `GFX_SVY` | start boundary vector Y (2) |  |
@@ -323,14 +282,9 @@ second one is the question a per-component map cannot answer.
 | `$EFAE` | 2 B | `basic` | `GFX_M` | D-ARCMASK: M = floor(r/sqrt(2)), the octant's top |  |
 | `$EFB0` | 2 B | `basic` | `GFX_WS_P` | wedge START boundary: in-octant position, 0..M-1 (2) |  |
 | `$EFB2` | 1 B | `basic` | `GFX_WS_O` | wedge START boundary: octant 0..7 (1) |  |
-| `$EFB3` | 2 B | `basic` | `GFX_SOCT` | start: trunc(\|a0\|*4/pi), RAW/unmasked int16 (the |  |
-| `$EFB5` | 2 B | `basic` | `GFX_SU14` | start: trunc(frac * 16384), 0..16383 (2) |  |
-| `$EFB7` | 2 B | `basic` | `GFX_EOCT` | end: trunc(\|a1\|*4/pi), RAW/unmasked (2) |  |
-| `$EFB9` | 2 B | `basic` | `GFX_EU14` | end: trunc(frac * 16384) (2) |  |
 | `$EFBB` | 1 B | `basic` | `GFX_SNEG` | resident: start angle was negative -> spoke pending (1) |  |
 | `$EFBC` | 1 B | `basic` | `GFX_ENEG` | resident: end angle was negative -> spoke pending (1) |  |
-| `$EFBD` |  | `basic` | `GFX_WE_P` | wedge END boundary: in-octant position, 0..M-1 (2) |  |
-| `$EFBE` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
+| `$EFBD` | 2 B | `basic` | `GFX_WE_P` | wedge END boundary: in-octant position, 0..M-1 (2) |  |
 | `$EFBF` | 1 B | `basic` | `GFX_PTX/GFX_WE_O` | main->tenant: POINT target X, 0..255 (1) |  |
 | `$EFC0` | 1 B | `basic` | `GFX_PTY/GFX_WRAPF` | main->tenant: POINT target Y, 0..191 (1) -> ends $E15A |  |
 | `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
@@ -380,7 +334,6 @@ second one is the question a per-component map cannot answer.
 | `$F084` | 2 B | `disk` | `GP_PHYS` | DISK-ONLY: resolved absolute physical sector (2) |  |
 | `$F088` | 1 B | `basic` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$F088` | 1 B | `disk` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
-| `$F08B` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$F08D` | 3 B | `basic` | `PU_FDESC` | [len][ptr] copy for a format that cannot move (3) |  |
 | `$F090` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
 | `$F091` | 1 B | `basic` | `PU_POS` | current scan index into the format (1) |  |
@@ -406,35 +359,22 @@ second one is the question a per-component map cannot answer.
 | `$F0C3` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F0C4` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
 | `$F0C5` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |
-| `$F0C6` | 1 B | `basic` | `TKNZPOS` | position of the first nonzero digit = f (1) |  |
-| `$F0C7` | 1 B | `basic` | `TKDCOUNT` | classification digit count = D, saturating (1) |  |
-| `$F0C8` | 1 B | `basic` | `TKSTORED` | digits actually written to TKDIG, capped 24 (1) |  |
-| `$F0C9` | 1 B | `basic` | `TKFLAGS` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
 | `$F0CA` | 2 B | `basic` | `TKEXP` | signed explicit exponent, saturated +-9999 (2) |  |
 | `$F0CC` | 1 B | `basic` | `TKEXPD` | 1 = the exponent marker being parsed is D/d (1) |  |
 | `$F0CD` | 1 B | `basic` | `TKEXPSIGN` | 1 = the exponent being parsed is negative (1) |  |
-| `$F0CE` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
 | `$F0CF` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
-| `$F0D1` | 1 B | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
-| `$F0D3` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
 | `$F0D5` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
 | `$F0D7` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
 | `$F0E6` | 18 B | `basic` | `CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |
 | `$F0F8` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
 | `$F0F9` | 8 B | `basic` | `LHS_FAC` | ...and the LHS operand's raw FAC bytes (8) |  |
 | `$F101` | 1 B | `basic` | `FP_SHIFTAMT` | dig15_shr/dig15_shl: shift-amount parameter (1) |  |
-| `$F102` | 2 B | `basic` | `FP_LHSVAL` | combine_*: the LHS operand's plain int16 value, |  |
-| `$F104` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |
-| `$F106` | 1 B | `basic` | `FP_RSIGN` | signed_div_de_bc/signed_mod_de_bc: result sign (1) |  |
-| `$F107` |  | `basic` | `KEYARG/WIDIG` | widen_int_to: binary->BCD digit scratch, up to |  |
+| `$F107` | 5 B | `basic` | `WIDIG` | widen_int_to: binary->BCD digit scratch, up to |  |
 | `$F10C` | 1 B | `basic` | `MUL_I` | fp_mul: outer-loop digit index i, 13 downto 0; |  |
-| `$F10D` | 1 B | `basic` | `MUL_ADIG` | fp_mul: A[i], the current outer-loop digit (1) |  |
-| `$F10E` | 1 B | `basic` | `MUL_CARRY` | fp_mul: running carry within one outer pass; |  |
 | `$F10F` | 2 B | `basic` | `MUL_PP` | fp_mul: MULPROD write-cursor for the inner loop (2) |  |
 | `$F111` | 2 B | `basic` | `MULCAND` | mul16x16_32: multiplicand operand (2) |  |
 | `$F113` | 2 B | `basic` | `MULTPLR` | mul16x16_32: multiplier operand, shifted in place (2) |  |
 | `$F115` | 4 B | `basic` | `MUL32` | mul16x16_32: 32-bit unsigned product, LE |  |
-| `$F119` | 2 B | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
 | `$F11D` | 1 B | `basic` | `FP_OPMODE` | combine_add/combine_sub shared body: 0=add, |  |
 | `$F11E` |  | `basic` | `CVT_MODE` | domain_convert_core: 0=strict int16 domain, |  |
@@ -511,25 +451,41 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3E9` |  | `basic` | `FORCLR` | foreground colour |  |
 | `$F3EA` |  | `basic` | `BAKCLR` | background colour |  |
 | `$F3EB` |  | `basic` | `BDRCLR` | border colour |  |
+| `$F3EC` | 2 B | `basic` | `GFX_SN` | $F3EC: SPRITE$ entry index / PUT SPRITE plane (2) |  |
+| `$F3EE` | 2 B | `basic` | `GFX_SDESC` | $F3EE: SPRITE$(n)= RHS string descriptor |  |
+| `$F3F0` | 2 B | `basic` | `GFX_SC` | $F3F0: PUT SPRITE colour (2). x/y need no cells -- (2 B) |  |
 | `$F3F2` | 1 B | `basic` | `ATRBYT` | current graphics attribute / plot colour (1) |  |
+| `$F3F5` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$F3F6` |  | `basic` | `SCNCNT` | key-scan countdown: the interrupt scans the keyboard when it reaches 0 (MSX work area; D-BOOTSCAN) |  |
 | `$F3FC` | 2 B | `basic` | `CS120_LOW` | 1200-baud reference low-signal length word |  |
 | `$F401` | 2 B | `basic` | `CS240_LOW` | 2400-baud reference low-signal length word |  |
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |
+| `$F408` | 8 B | `basic` | `NUMBUF` | PRINT: decimal-format scratch (8 bytes, 0-term) |  |
+| `$F410` | 2 B | `basic` | `GFX_DTX` | $F410: move target X (2) |  |
+| `$F412` | 2 B | `basic` | `GFX_DTY` | $F412: ...Y (2) |  |
 | `$F414` | 1 B | `basic` | `ERRFLG` | 1 B: last error's MSX ERR code (0 = none yet). |  |
 | `$F415` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$F415` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
+| `$F417` | 2 B | `basic` | `GFX_SPATN` | $F417: ...pattern number (2) |  |
+| `$F419` | 2 B | `basic` | `GFX_G8N` | $F419: written index n (int16 LE) (2) |  |
+| `$F41B` | 1 B | `basic` | `GFX_VLEN` | $F41B: the entry size the tenant read back (1) |  |
 | `$F41C` |  | `basic` | `CURLIN` | D-CURLIN (Joost, 2026-09-24): the PUBLISHED current |  |
 | `$F41F` |  | `basic` | `BROM_TEXT/TOKBUF` | repack: crunch buffer = the reference's KBUF (318 B) |  |
 | `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` |  | `basic` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` |  | `disk` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
+| `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
 | `$F663` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F664` |  | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6) |  |
+| `$F665` | 2 B | `basic` | `GFX_G8V` | $F665: written value (int16 LE) (2) |  |
+| `$F667` | 2 B | `basic` | `TGT_ADDR` | $F667: element address, or 0 = scalar (2) |  |
+| `$F669` | 1 B | `basic` | `GFX_SSIZE` | $F669: SCREEN's sprite-size argument while a mode |  |
 | `$F66A` | 2 B | `basic` | `POOLSIZE` | 2 B: the size CLEAR recorded. Written ONLY by |  |
 | `$F66C` | 2 B | `basic` | `TXTCEIL` | the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B) |  |
+| `$F66E` | 2 B | `basic` | `GFX_R` | radius (int16, >=0 -- resident guards G4-rneg) (2) |  |
+| `$F670` | 2 B | `basic` | `GFX_ASPS` | 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2) |  |
 | `$F676` |  | `basic` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F676` |  | `disk` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
@@ -542,6 +498,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6A3` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
 | `$F6A5` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
 | `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
+| `$F6A9` | 1 B | `basic` | `RDV_MODE` | $F6A9: main -> tenant MODE (1 B), D-READVAR: |  |
 | `$F6AB` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |
 | `$F6AD` | 2 B | `basic` | `AU_INC/RN_INC` | AUTO: the increment (2) |  |
 | `$F6AF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
@@ -590,6 +547,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$F705` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
 | `$F707` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = the TAPE channel is at its end (D-EOFCAS; S10.C) (1 B) |  |
 | `$F708` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
+| `$F70A` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
+| `$F70C` | 2 B | `basic` | `GFX_Y1` | LINE endpoint 1 Y (int16 LE) |  |
+| `$F70E` | 2 B | `basic` | `GFX_X2` | LINE endpoint 2 X (int16 LE) |  |
+| `$F710` | 2 B | `basic` | `GFX_Y2` | LINE endpoint 2 Y (int16 LE) |  |
 | `$F712` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
 | `$F714` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
 | `$F716` | 2 B | `basic` | `TSP` | newest trap SERVICE record; valid iff TRAPSVC != 0 (2) |  |
@@ -614,6 +575,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$F73C` | 1 B | `basic` | `DIRECTF` | 1 = executing a DIRECT-mode line, 0 = running a (1 B) |  |
 | `$F73D` | 1 B | `basic` | `PRMWANT` | D-OKSTORE: nonzero = print the prompt (1) |  |
 | `$F73E` | 2 B | `basic` | `ERRRESUME` | 2 B (was 4): resume context captured at trap time — |  |
+| `$F740` | 2 B | `basic` | `GFX_SOCT` | start: trunc(\|a0\|*4/pi), RAW/unmasked int16 (the |  |
+| `$F742` | 2 B | `basic` | `GFX_SU14` | start: trunc(frac * 16384), 0..16383 (2) |  |
+| `$F744` | 2 B | `basic` | `GFX_EOCT` | end: trunc(\|a1\|*4/pi), RAW/unmasked (2) |  |
+| `$F746` | 2 B | `basic` | `GFX_EU14` | end: trunc(frac * 16384) (2) |  |
+| `$F748` | 2 B | `basic` | `GFX_CXC` | centre X (int16 LE) (2) |  |
+| `$F74A` | 2 B | `basic` | `GFX_CYC` | centre Y (int16 LE) (2) |  |
 | `$F74C` | 2 B | `basic` | `FN_BASE/FN_PTR/FOR_STK_END` | RETIRED AS A STACK; the literal survives ONLY as |  |
 | `$F74E` | 2 B | `basic` | `FN_DPTR` | 2 B: the definition cursor, tenant-only |  |
 | `$F750` | 2 B | `basic` | `FN_KEY` | 2 B: the formal (or the $FFFF result slot) |  |
@@ -632,6 +599,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7A8` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
 | `$F7B9` | 1 B | `basic` | `FN_PAREA_END/FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F7B9` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
+| `$F7BA` | 2 B | `basic` | `GFX_DDY` | $F7BA: ...dy (2) |  |
 | `$F7BC` | 2 B | `basic` | `CURPTR/SW_ADDR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BE` |  | `basic` | `ENDPTR/SW_TYPE` | 1 B: its type (1 = string, 2/4/8 numeric) |  |
 | `$F7BF` |  | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse |  |
@@ -645,6 +613,13 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
 | `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7F6` | 8 B | `disk` | `FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
+| `$F7FE` | 1 B | `basic` | `TKNZPOS` | position of the first nonzero digit = f (1) |  |
+| `$F7FF` | 1 B | `basic` | `TKDCOUNT` | classification digit count = D, saturating (1) |  |
+| `$F800` | 1 B | `basic` | `TKSTORED` | digits actually written to TKDIG, capped 24 (1) |  |
+| `$F801` | 1 B | `basic` | `TKFLAGS` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
+| `$F802` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
+| `$F803` | 1 B | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
+| `$F804` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
 | `$F806` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F806` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F818` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
@@ -656,6 +631,13 @@ extents the standard already fixes would be noise, not rigour.
 | `$F83C` | 1 B | `basic` | `RND_CARRY` | multiply-add loop: running BCD carry, |  |
 | `$F83D` | 1 B | `basic` | `RND_K` | output normalisation: count of leading |  |
 | `$F83E` | 15 B | `basic` | `DIVPAD` | fp_div: divisor zero-padded to 15 digits (15) |  |
+| `$F84D` | 2 B | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
+| `$F84F` | 2 B | `basic` | `FP_LHSVAL` | combine_*: the LHS operand's plain int16 value, |  |
+| `$F851` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |
+| `$F853` | 1 B | `basic` | `FP_RSIGN` | signed_div_de_bc/signed_mod_de_bc: result sign (1) |  |
+| `$F854` | 1 B | `basic` | `MUL_ADIG` | fp_mul: A[i], the current outer-loop digit (1) |  |
+| `$F855` | 1 B | `basic` | `MUL_CARRY` | fp_mul: running carry within one outer pass; |  |
+| `$F856` | 1 B | `basic` | `KEYARG` | D-KEYSTR: main -> keystr_tenant op/slot (0 = |  |
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
@@ -675,13 +657,24 @@ extents the standard already fixes would be noise, not rigour.
 | `$F951` | 1 B | `basic` | `INT_MAIN_PRIM` | page-0 primary field of the MAIN (BIOS) slot (=0) (1 B) |  |
 | `$F952` | 1 B | `basic` | `SUB_INT_DELTA` | self-test tenant result: JIFFY ticks observed under EI (1) |  |
 | `$F953` | 1 B | `basic` | `GRP_HDR` | D-OPENGRP: bit 0 = a CHR$(1) header is pending on the |  |
+| `$F954` | 2 B | `basic` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
+| `$F954` | 2 B | `disk` | `STRPTR` | pointer to the [len][bytes] descriptor (2 bytes) |  |
+| `$F956` | 2 B | `basic` | `INP_CURSOR` | console INPUT LINEBUF read pointer (2 B) |  |
+| `$F958` | 1 B | `basic` | `GFX_SFLAGS` | $F958: which arguments were GIVEN -- (1 B) |  |
 | `$F959` | 6 B | `basic` | `QUETAB` | 4 x 6-byte ring descriptors (3 voice + 1 RS232) |  |
 | `$F971` |  | `basic` | `PLY_LASTDUR` | QUEBAK+0 (2): saved write pointer across pt_length |  |
 | `$F973` |  | `basic` | `PLY_BUFEND` | QUEBAK+2 (2): current voice buffer end (overflow guard) |  |
 | `$F975` | 128 B | `basic` | `VOICAQ` | voice-0 packet buffer (128 B) |  |
 | `$F9F5` | 128 B | `basic` | `VOICBQ` | voice-1 packet buffer (128 B) |  |
 | `$FA75` | 128 B | `basic` | `VOICCQ` | voice-2 packet buffer (128 B) |  |
+| `$FAF5` | 2 B | `basic` | `GFX_DARG` | $FAF5: last parsed argument (int16 LE) (2) |  |
+| `$FAF7` | 1 B | `basic` | `GFX_DVLEN` | $FAF7: that string's length (1) |  |
 | `$FAF8` |  | `basic` | `EXBRSA` |  |  |
+| `$FAF9` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
+| `$FAFB` | 2 B | `basic` | `GFX_DDX` | $FAFB: this command's dx (int16) (2) |  |
+| `$FAFD` | 1 B | `basic` | `GFX_DFN` | $FAFD: 1 = N (no-update) prefix pending (1) |  |
+| `$FAFE` | 2 B | `basic` | `GFX_DTMP` | $FAFE: mul/rotate/sign scratch (2) |  |
+| `$FB00` | 2 B | `basic` | `GFX_DSP` | $FB00: tenant entry SP -- an error deep in the (2 B) |  |
 | `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$FB22` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
@@ -705,6 +698,16 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC87` | 1 B | `basic` | `TRAPSVC` | 1 B: count of live SERVICING entries == depth of the |  |
 | `$FC88` | 1 B | `basic` | `TRAPPEND` | 1 B (was just past the retired TRAPSTK): 1 = |  |
 | `$FC89` | 1 B | `basic` | `STOPHOLD` | (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1) |  |
+| `$FC8A` | 2 B | `basic` | `GFX_DPTR` | $FC8A: parse cursor in the current frame (2) |  |
+| `$FC8C` | 2 B | `basic` | `GFX_DEND` | $FC8C: one past the current frame's last byte (2) |  |
+| `$FC8E` | 2 B | `basic` | `GFX_DCMD` | $FC8E: current command's start cursor, |  |
+| `$FC90` | 1 B | `basic` | `GFX_DSUBN` | $FC90: substitutions RESOLVED for this command (1) |  |
+| `$FC91` | 1 B | `basic` | `GFX_DSUBI` | $FC91: substitutions SEEN so far this re-parse (1) |  |
+| `$FC92` | 4 B | `basic` | `GFX_DSUB` | $FC92: the resolved values, 2 slots (M takes two) (4) |  |
+| `$FC96` | 1 B | `basic` | `GFX_DSUBLEN` | $FC96: slot 0's string length (X only) (1) |  |
+| `$FC97` | 1 B | `basic` | `GFX_DREQ` | $FC97: tenant->resident: 0 = done, 1 = resolve an |  |
+| `$FC98` | 1 B | `basic` | `GFX_DRESUME` | $FC98: resident->tenant: 1 = resuming (1) |  |
+| `$FC99` | 2 B | `basic` | `GFX_DVAL` | $FC99: the resolved int16, or a string body ptr (2) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |

@@ -409,11 +409,12 @@ key_store:
                 jp      z,gb_illegal        ; KEY 0,   -> ERR 5 (measured)
                 cp      11
                 jp      nc,gb_illegal       ; KEY 11,  -> ERR 5 (measured)
-                ; 🔴 NOT into KEYARG yet: it aliases WIDIG, the fp widening
+                ; 🔴 NOT into KEYARG yet: it aliased WIDIG, the fp widening
                 ; scratch, and the STRING may widen a number on its way in
-                ; (`KEY 1,STR$(5)`). The slot rides the stack across the string
-                ; evaluation; an error inside it resets SP, so the push is
-                ; harmless on every refusal path.
+                ; (`KEY 1,STR$(5)`). D-WSZERO S11 gave KEYARG its own byte, so
+                ; the reason is gone and the push is merely harmless: the slot
+                ; rides the stack across the string evaluation; an error inside
+                ; it resets SP on every refusal path.
                 push    af                  ; [n]
                 call    req_comma           ; KEY n without `,`: unmeasured, refuse
                                             ; (ERR 2). req_comma CONSUMES the comma --

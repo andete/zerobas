@@ -1,0 +1,10 @@
+K-WS29: rows ['ctl', 's11gfx'] diverging ['s11gfx']; predicted ['s11gfx'] -> HIT
+K-WS30: rows ['ctl', 's11gfx'] diverging ['s11gfx']; predicted ['s11gfx'] -> HIT
+K-WS31: rows ['ctl', 's11gfx'] diverging ['s11gfx']; predicted ['s11gfx'] -> HIT
+K-WS32: rows ['ctl', 's11gfx'] diverging ['s11gfx']; predicted ['s11gfx'] -> HIT
+K-WS33: rows ['s11num', 's11inp'] diverging ['s11num', 's11inp']; predicted ['s11num', 's11inp'] -> HIT
+K-WS34: rows ['ctl', 's11num'] diverging ['s11num']; predicted ['s11num'] -> HIT
+K-WS35: rows ['s11num', 's11inp'] diverging ['s11num', 's11inp']; predicted ['s11num', 's11inp'] -> HIT
+K-WS36: rows ['s11num', 's11inp'] diverging ['s11num', 's11inp']; predicted ['s11num', 's11inp'] -> HIT
+restored: build rc=0; SAME
+rc=0

@@ -126,6 +126,19 @@ for _r in ("lset", "valtyp"):
 RANGES["inpeof"] = (0, 0)
 TAPES = {"inpeof": lambda: build_cas_ascii("D", "HELLO\r\n")}
 VALTYP_OLD = 0xEF35     # S9 deleted the write-only VALTYP that lived here
+# D-WSZERO S11 (2026-10-15): 63 TRANSIENT cells left the window for idle published
+# bytes. A transient cell is rewritten before it is read, so no row could see it
+# being loaded over -- what S11 changes is that its users no longer WRITE the
+# window. Each row loads $A5 over the whole window, runs every user of one group,
+# then sums the 91 bytes S11 vacated (the pre-S11 homes, frozen here: 19 spans):
+# the VG-8020 leaves them alone, 165 * 91 = 15015.
+for _r in ("s11gfx", "s11num", "s11inp"):
+    RANGES[_r] = RANGES["all"]
+S11_SPANS = "60724,60727,60761,60774,60800,60814,60820,60822,60826,60828,61229,61236,61238,61239,61288,61294,61325,61330,61332,61333,61363,61370,61579,61580,61638,61641,61646,61646,61649,61649,61651,61652,61698,61702,61709,61710,61721,61722"
+_S11_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 19:READ P,Q:FOR I=P TO Q:S=S+PEEK(I):NEXT:NEXT'
+            ':PRINT"[S";S;"]":END',
+            "950 DATA " + S11_SPANS]
+RUN_GAP = {"s11gfx": 60.0}
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -254,6 +267,25 @@ PROGRAM_VALTYP = [
     f'20 A$="X":PRINT"[";PEEK(&H{VALTYP_OLD:04X});"]"',
     "RUN",
 ]
+PROGRAM_S11GFX = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2,2:SPRITE$(0)=STRING$(32,255):A$=SPRITE$(0):PUT SPRITE 0,(60,60),15,0:VDP(7)=VDP(7)',
+    '30 LINE(10,10)-(60,40),15,B:LINE-(80,80),15:CIRCLE(128,96),40,15,-.5,-2.5,1.4',
+    '40 B$="D3":K=4:DRAW"BM100,100S8A1NR10C15U5XB$;R=K;":GOTO 900',
+] + _S11_SUM + ["RUN"]
+PROGRAM_S11NUM = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DIM X(2):READ X(1),B$:A%=7\\2:B%=-7 MOD 3:C#=1#/3#:D=1.5*2.25:E=A%+1.5:V=VAL("12.5E1")',
+    '30 PRINT 1/3;123;HEX$(255);OCT$(8):PRINT USING"##.##";V:KEY 1,"AB":C$=B$+"Z":GOTO 900',
+    '60 DATA 5,"Q"',
+] + _S11_SUM + ["RUN"]
+PROGRAM_S11INP = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DIM A(2):INPUT"[I";A(1):GOTO 900',
+] + _S11_SUM + ["RUN", "@WAIT40", "42"]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -286,7 +318,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "contdir": PROGRAM_CONTDIR, "prm": PROGRAM_PRM,
             "fldread": PROGRAM_FLDREAD, "fldclr": PROGRAM_FLDCLR,
             "flderase": PROGRAM_FLDERASE, "lset": PROGRAM_LSET,
-            "inpeof": PROGRAM_INPEOF, "valtyp": PROGRAM_VALTYP}
+            "inpeof": PROGRAM_INPEOF, "valtyp": PROGRAM_VALTYP,
+            "s11gfx": PROGRAM_S11GFX, "s11num": PROGRAM_S11NUM, "s11inp": PROGRAM_S11INP}
 
 
 def tape(lo, hi, fill=0xA5):
@@ -316,7 +349,7 @@ def main():
             prog = PROGRAMS.get(name, PROGRAM)
             got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,
                                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
-                                                 run_gap=40.0, cassette=path)[0])
+                                                 run_gap=RUN_GAP.get(name, 40.0), cassette=path)[0])
         if not got["VG"]:
             blind.append(name)
             verdict = "NO-REFERENCE"

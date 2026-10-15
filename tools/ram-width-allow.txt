@@ -25,12 +25,7 @@ basic BN_PTR/DISKOP_HL disputed
 basic CVT_MODE overruns
 basic DISKOP_A/PLY_NUMOVF disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
-basic FOSIGCOUNT/TKVALEND disputed
-basic GFX_WE_P overruns
-basic GFX_CPHASE overruns
 basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed
-basic INP_CURSOR/NUMBUF disputed
-basic KEYARG/WIDIG disputed
 basic MATH_A/RND_STATE/SQRT_Y disputed
 basic SH_BASE/SH_OP disputed
 disk BDOS_RECIDX overruns

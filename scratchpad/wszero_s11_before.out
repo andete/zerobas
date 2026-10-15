@@ -1,0 +1,6 @@
+ROW s11gfx $ECF8-$F37F VG=[[S 15015 ]] ZB=[[S 6961 ]] DIVERGES
+ROW s11num $ECF8-$F37F VG=[[S 15015 ]] ZB=[[S 12688 ]] DIVERGES
+ROW s11inp $ECF8-$F37F VG=[[S 15015 ]] ZB=[[S 13902 ]] DIVERGES
+
+FAIL: a load over the window, then BASIC (0/3 as pinned); unpinned divergence: s11gfx, s11num, s11inp
+refcache: 0 hit, 6 miss, 6 stored

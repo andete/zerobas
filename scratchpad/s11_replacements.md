@@ -1,0 +1,201 @@
+- `basic/sysvars.inc:2206` **GFX_DPTR**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DPTR        equ     GFX_SFLAGS + 1  ; $ED34: parse cursor in the current frame (2)`
+  - new: `GFX_DPTR        equ     $FC8A           ; $FC8A: parse cursor in the current frame (2)`
+- `basic/sysvars.inc:2207` **GFX_DEND**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DEND        equ     GFX_DPTR + 2    ; $ED36: one past the current frame's last byte (2)`
+  - new: `GFX_DEND        equ     $FC8C           ; $FC8C: one past the current frame's last byte (2)`
+- `basic/sysvars.inc:2215` **GFX_DCMD**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DCMD        equ     GFX_DFSTK + 4*GFX_DFCAP   ; $ED59: current command's start cursor,`
+  - new: `GFX_DCMD        equ     $FC8E                     ; $FC8E: current command's start cursor,`
+- `basic/sysvars.inc:2217` **GFX_DSUBN**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DSUBN       equ     GFX_DCMD + 2    ; $ED5B: substitutions RESOLVED for this command (1)`
+  - new: `GFX_DSUBN       equ     $FC90           ; $FC90: substitutions RESOLVED for this command (1)`
+- `basic/sysvars.inc:2218` **GFX_DSUBI**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DSUBI       equ     GFX_DSUBN + 1   ; $ED5C: substitutions SEEN so far this re-parse (1)`
+  - new: `GFX_DSUBI       equ     $FC91           ; $FC91: substitutions SEEN so far this re-parse (1)`
+- `basic/sysvars.inc:2219` **GFX_DSUB**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DSUB        equ     GFX_DSUBI + 1   ; $ED5D: the resolved values, 2 slots (M takes two) (4)`
+  - new: `GFX_DSUB        equ     $FC92           ; $FC92: the resolved values, 2 slots (M takes two) (4)`
+- `basic/sysvars.inc:2220` **GFX_DSUBLEN**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DSUBLEN     equ     GFX_DSUB + 4    ; $ED61: slot 0's string length (X only) (1)`
+  - new: `GFX_DSUBLEN     equ     $FC96           ; $FC96: slot 0's string length (X only) (1)`
+- `basic/sysvars.inc:2221` **GFX_DREQ**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DREQ        equ     GFX_DSUBLEN + 1 ; $ED62: tenant->resident: 0 = done, 1 = resolve an`
+  - new: `GFX_DREQ        equ     $FC97           ; $FC97: tenant->resident: 0 = done, 1 = resolve an`
+- `basic/sysvars.inc:2223` **GFX_DRESUME**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DRESUME     equ     GFX_DREQ + 1    ; $ED63: resident->tenant: 1 = resuming (1)`
+  - new: `GFX_DRESUME     equ     $FC98           ; $FC98: resident->tenant: 1 = resuming (1)`
+- `basic/sysvars.inc:2224` **GFX_DVAL**  [H3 TRPTBL tail (24 B reserved, zeroed by RUN on the VG-8020) + RTYCNT: $FC8A-$FC9A]
+  - old: `GFX_DVAL        equ     GFX_DRESUME + 1 ; $ED64: the resolved int16, or a string body ptr (2)`
+  - new: `GFX_DVAL        equ     $FC99           ; $FC99: the resolved int16, or a string body ptr (2)`
+- `basic/sysvars.inc:914` **NUMBUF**  [H4 HIGH_/HEADER/ASPCT1/ASPCT2/ENDPRG $F408-$F413]
+  - old: `NUMBUF          equ     $EF2D   ; PRINT: decimal-format scratch (8 bytes, 0-term)`
+  - new: `NUMBUF          equ     $F408   ; PRINT: decimal-format scratch (8 bytes, 0-term)`
+- `basic/sysvars.inc:2238` **GFX_DTX**  [H4 HIGH_/HEADER/ASPCT1/ASPCT2/ENDPRG $F408-$F413]
+  - old: `GFX_DTX         equ     GFX_DDY + 2     ; $ED87: move target X (2)`
+  - new: `GFX_DTX         equ     $F410           ; $F410: move target X (2)`
+- `basic/sysvars.inc:2239` **GFX_DTY**  [H4 HIGH_/HEADER/ASPCT1/ASPCT2/ENDPRG $F408-$F413]
+  - old: `GFX_DTY         equ     GFX_DTX + 2     ; $ED89: ...Y (2)`
+  - new: `GFX_DTY         equ     $F412           ; $F412: ...Y (2)`
+- `basic/sysvars.inc:2235` **GFX_DARG**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DARG        equ     GFX_DFN + 1     ; $ED81: last parsed argument (int16 LE) (2)`
+  - new: `GFX_DARG        equ     $FAF5           ; $FAF5: last parsed argument (int16 LE) (2)`
+- `basic/sysvars.inc:2225` **GFX_DVLEN**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DVLEN       equ     GFX_DVAL + 2    ; $ED66: that string's length (1)`
+  - new: `GFX_DVLEN       equ     $FAF7           ; $FAF7: that string's length (1)`
+- `basic/sysvars.inc:3943` **PU_FMTD**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `PU_FMTD         equ     $F08B   ; -> the format's [len][ptr] descriptor (2)`
+  - new: `PU_FMTD         equ     $FAF9   ; -> the format's [len][ptr] descriptor (2)`
+- `basic/sysvars.inc:2236` **GFX_DDX**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DDX         equ     GFX_DARG + 2    ; $ED83: this command's dx (int16) (2)`
+  - new: `GFX_DDX         equ     $FAFB           ; $FAFB: this command's dx (int16) (2)`
+- `basic/sysvars.inc:2233` **GFX_DFN**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DFN         equ     $ED80     ; $ED80: 1 = N (no-update) prefix pending (1)`
+  - new: `GFX_DFN         equ     $FAFD     ; $FAFD: 1 = N (no-update) prefix pending (1)`
+- `basic/sysvars.inc:2240` **GFX_DTMP**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DTMP        equ     GFX_DTY + 2     ; $ED8B: mul/rotate/sign scratch (2)`
+  - new: `GFX_DTMP        equ     $FAFE           ; $FAFE: mul/rotate/sign scratch (2)`
+- `basic/sysvars.inc:2241` **GFX_DSP**  [H11 MSX1 RS2IQ (MSX2: DPPAGE/ACPAGE/AVCSAV, CHRCNT/ROMA/MODE/rsvd, XSAVE/YSAVE)]
+  - old: `GFX_DSP         equ     GFX_DTMP + 2    ; $ED8D: tenant entry SP -- an error deep in the (2 B)`
+  - new: `GFX_DSP         equ     $FB00           ; $FB00: tenant entry SP -- an error deep in the (2 B)`
+- `basic/sysvars.inc:2237` **GFX_DDY**  [FUNACT $F7BA-$F7BB]
+  - old: `GFX_DDY         equ     GFX_DDX + 2     ; $ED85: ...dy (2)`
+  - new: `GFX_DDY         equ     $F7BA           ; $F7BA: ...dy (2)`
+- `basic/sysvars.inc:709` **GFX_X1**  [H1 PARM1 $F70A-$F711]
+  - old: `GFX_X1          equ     $EF67   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads`
+  - new: `GFX_X1          equ     $F70A   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads`
+- `basic/sysvars.inc:710` **GFX_Y1**  [H1 PARM1 $F70A-$F711]
+  - old: `GFX_Y1          equ     $EF69   ; LINE endpoint 1 Y (int16 LE)`
+  - new: `GFX_Y1          equ     $F70C   ; LINE endpoint 1 Y (int16 LE)`
+- `basic/sysvars.inc:711` **GFX_X2**  [H1 PARM1 $F70A-$F711]
+  - old: `GFX_X2          equ     $EF6B   ; LINE endpoint 2 X (int16 LE)`
+  - new: `GFX_X2          equ     $F70E   ; LINE endpoint 2 X (int16 LE)`
+- `basic/sysvars.inc:712` **GFX_Y2**  [H1 PARM1 $F70A-$F711]
+  - old: `GFX_Y2          equ     $EF6D   ; LINE endpoint 2 Y (int16 LE)`
+  - new: `GFX_Y2          equ     $F710   ; LINE endpoint 2 Y (int16 LE)`
+- `basic/sysvars.inc:774` **GFX_SOCT**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_SOCT        equ     $EFB3   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (the`
+  - new: `GFX_SOCT        equ     $F740   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (the`
+- `basic/sysvars.inc:777` **GFX_SU14**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_SU14        equ     $EFB5   ; start: trunc(frac * 16384), 0..16383 (2)`
+  - new: `GFX_SU14        equ     $F742   ; start: trunc(frac * 16384), 0..16383 (2)`
+- `basic/sysvars.inc:778` **GFX_EOCT**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_EOCT        equ     $EFB7   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)`
+  - new: `GFX_EOCT        equ     $F744   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)`
+- `basic/sysvars.inc:779` **GFX_EU14**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_EU14        equ     $EFB9   ; end: trunc(frac * 16384) (2)`
+  - new: `GFX_EU14        equ     $F746   ; end: trunc(frac * 16384) (2)`
+- `basic/sysvars.inc:737` **GFX_CXC**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_CXC         equ     $EF8D   ; centre X (int16 LE) (2)`
+  - new: `GFX_CXC         equ     $F748   ; centre X (int16 LE) (2)`
+- `basic/sysvars.inc:738` **GFX_CYC**  [H2 PARM1 tail $F740-$F74B]
+  - old: `GFX_CYC         equ     $EF8F   ; centre Y (int16 LE) (2)`
+  - new: `GFX_CYC         equ     $F74A   ; centre Y (int16 LE) (2)`
+- `basic/sysvars.inc:739` **GFX_R**  [H7 CONLO tail $F66E-$F671 (NOT MEMSIZ)]
+  - old: `GFX_R           equ     $EF91   ; radius (int16, >=0 -- resident guards G4-rneg) (2)`
+  - new: `GFX_R           equ     $F66E   ; radius (int16, >=0 -- resident guards G4-rneg) (2)`
+- `basic/sysvars.inc:741` **GFX_ASPS**  [H7 CONLO tail $F66E-$F671 (NOT MEMSIZ)]
+  - old: `GFX_ASPS        equ     $EF94   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)`
+  - new: `GFX_ASPS        equ     $F670   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)`
+- `basic/sysvars.inc:2257` **GFX_SN**  [H6 MAXUPD/MINUPD $F3EC-$F3F1]
+  - old: `GFX_SN          equ     GFX_VBUF + 32   ; $ED28: SPRITE$ entry index / PUT SPRITE plane (2)`
+  - new: `GFX_SN          equ     $F3EC           ; $F3EC: SPRITE$ entry index / PUT SPRITE plane (2)`
+- `basic/sysvars.inc:2259` **GFX_SDESC**  [H6 MAXUPD/MINUPD $F3EC-$F3F1]
+  - old: `GFX_SDESC       equ     GFX_VLEN + 1    ; $ED2B: SPRITE$(n)= RHS string descriptor`
+  - new: `GFX_SDESC       equ     $F3EE           ; $F3EE: SPRITE$(n)= RHS string descriptor`
+- `basic/sysvars.inc:2261` **GFX_SC**  [H6 MAXUPD/MINUPD $F3EC-$F3F1]
+  - old: `GFX_SC          equ     GFX_SDESC + 2   ; $ED2D: PUT SPRITE colour (2). x/y need no cells -- (2 B)`
+  - new: `GFX_SC          equ     $F3F0           ; $F3F0: PUT SPRITE colour (2). x/y need no cells -- (2 B)`
+- `basic/sysvars.inc:2265` **GFX_SPATN**  [H8 NTMSXP/RAWPRT/VLZADR/VLZDAT $F417-$F41B]
+  - old: `GFX_SPATN       equ     GFX_SC + 2      ; $ED2F: ...pattern number (2)`
+  - new: `GFX_SPATN       equ     $F417           ; $F417: ...pattern number (2)`
+- `basic/sysvars.inc:2380` **GFX_G8N**  [H8 NTMSXP/RAWPRT/VLZADR/VLZDAT $F417-$F41B]
+  - old: `GFX_G8N         equ     $ED99  ; $ED99: written index n (int16 LE) (2)`
+  - new: `GFX_G8N         equ     $F419  ; $F419: written index n (int16 LE) (2)`
+- `basic/sysvars.inc:2258` **GFX_VLEN**  [H8 NTMSXP/RAWPRT/VLZADR/VLZDAT $F417-$F41B]
+  - old: `GFX_VLEN        equ     GFX_SN + 2      ; $ED2A: the entry size the tenant read back (1)`
+  - new: `GFX_VLEN        equ     $F41B           ; $F41B: the entry size the tenant read back (1)`
+- `basic/sysvars.inc:2382` **GFX_G8V**  [H9 DONUM/CONTXT/CONSAV/CONTYP $F665-$F669]
+  - old: `GFX_G8V         equ     GFX_G8N + 2     ; $ED9B: written value (int16 LE) (2)`
+  - new: `GFX_G8V         equ     $F665           ; $F665: written value (int16 LE) (2)`
+- `basic/sysvars.inc:2338` **TGT_ADDR**  [H9 DONUM/CONTXT/CONSAV/CONTYP $F665-$F669]
+  - old: `TGT_ADDR        equ     RDV_MODE + 1    ; $ED95: element address, or 0 = scalar (2)`
+  - new: `TGT_ADDR        equ     $F667           ; $F667: element address, or 0 = scalar (2)`
+- `basic/sysvars.inc:2266` **GFX_SSIZE**  [H9 DONUM/CONTXT/CONSAV/CONTYP $F665-$F669]
+  - old: `GFX_SSIZE       equ     GFX_SPATN + 2   ; $ED31: SCREEN's sprite-size argument while a mode`
+  - new: `GFX_SSIZE       equ     $F669           ; $F669: SCREEN's sprite-size argument while a mode`
+- `basic/sysvars.inc:1747` **STRPTR**  [H10 LFPROG/RTPROG/MCLTAB/MCLFLG $F954-$F958]
+  - old: `STRPTR          equ     $EF36   ; pointer to the [len][bytes] descriptor (2 bytes)`
+  - new: `STRPTR          equ     $F954   ; pointer to the [len][bytes] descriptor (2 bytes)`
+- `basic/sysvars.inc:939` **INP_CURSOR**  [H10 LFPROG/RTPROG/MCLTAB/MCLFLG $F954-$F958]
+  - old: `INP_CURSOR      equ     NUMBUF   ; console INPUT LINEBUF read pointer (2 B, aliases NUMBUF)`
+  - new: `INP_CURSOR      equ     $F956    ; console INPUT LINEBUF read pointer (2 B, aliases NUMBUF)`
+- `basic/sysvars.inc:2270` **GFX_SFLAGS**  [H10 LFPROG/RTPROG/MCLTAB/MCLFLG $F954-$F958]
+  - old: `GFX_SFLAGS      equ     GFX_SARGN + 1   ; $ED33: which arguments were GIVEN -- (1 B)`
+  - new: `GFX_SFLAGS      equ     $F958           ; $F958: which arguments were GIVEN -- (1 B)`
+- `basic/sysvars.inc:2268` **GFX_SARGN**  [singles]
+  - old: `GFX_SARGN       equ     GFX_SSIZE + 1   ; $ED32: how many extra SCREEN arguments have been`
+  - new: `GFX_SARGN       equ     $F662           ; $F662: how many extra SCREEN arguments have been`
+- `basic/sysvars.inc:816` **GFX_CPHASE**  [singles]
+  - old: `GFX_CPHASE      equ     $EFBE   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):`
+  - new: `GFX_CPHASE      equ     $F3F5   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):`
+- `basic/sysvars.inc:2316` **RDV_MODE**  [singles]
+  - old: `RDV_MODE        equ     RDV_ST + 1      ; $ED94: main -> tenant MODE (1 B), D-READVAR:`
+  - new: `RDV_MODE        equ     $F3B2           ; $F3B2: main -> tenant MODE (1 B), D-READVAR:`
+- `basic/sysvars.inc:4589` **TKNZPOS**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKNZPOS         equ     $F0C6   ; position of the first nonzero digit = f (1)`
+  - new: `TKNZPOS         equ     $F7FE   ; position of the first nonzero digit = f (1)`
+- `basic/sysvars.inc:4590` **TKDCOUNT**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKDCOUNT        equ     $F0C7   ; classification digit count = D, saturating (1)`
+  - new: `TKDCOUNT        equ     $F7FF   ; classification digit count = D, saturating (1)`
+- `basic/sysvars.inc:4591` **TKSTORED**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKSTORED        equ     $F0C8   ; digits actually written to TKDIG, capped 24 (1)`
+  - new: `TKSTORED        equ     $F800   ; digits actually written to TKDIG, capped 24 (1)`
+- `basic/sysvars.inc:4592` **TKFLAGS**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKFLAGS         equ     $F0C9   ; bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1)`
+  - new: `TKFLAGS         equ     $F801   ; bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1)`
+- `basic/sysvars.inc:4596` **TKPC**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKPC            equ     $F0CE   ; target precision digit count: 6 / 14 (1)`
+  - new: `TKPC            equ     $F802   ; target precision digit count: 6 / 14 (1)`
+- `basic/sysvars.inc:4598` **TKLEAD**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKLEAD          equ     $F0D1   ; computed lead byte (sign+excess-64 exponent) (1)`
+  - new: `TKLEAD          equ     $F803   ; computed lead byte (sign+excess-64 exponent) (1)`
+- `basic/sysvars.inc:4634` **TKVALEND**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `TKVALEND        equ     $F0D3   ; VAL-mode source bound, 0 = unbounded (2)`
+  - new: `TKVALEND        equ     $F804   ; VAL-mode source bound, 0 = unbounded (2)`
+- `basic/sysvars.inc:4638` **FOSIGCOUNT**  [H13 DAC tail $F7FE-$F805 (T-only, no out-call while live): the tk_float scan cells]
+  - old: `FOSIGCOUNT      equ     $F0D3   ; significant digit count = s, trailing zeros`
+  - new: `FOSIGCOUNT      equ     $F804   ; significant digit count = s, trailing zeros`
+- `basic/sysvars.inc:4734` **WSRC**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `WSRC            equ     $F119   ; widen_fac_to/widen_lhsframe_to (shared unpack`
+  - new: `WSRC            equ     $F84D   ; widen_fac_to/widen_lhsframe_to (shared unpack`
+- `basic/sysvars.inc:4710` **FP_LHSVAL**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `FP_LHSVAL       equ     $F102   ; combine_*: the LHS operand's plain int16 value,`
+  - new: `FP_LHSVAL       equ     $F84F   ; combine_*: the LHS operand's plain int16 value,`
+- `basic/sysvars.inc:4712` **FP_TMP_B**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `FP_TMP_B        equ     $F104   ; combine_*: the RHS operand's plain int16 value,`
+  - new: `FP_TMP_B        equ     $F851   ; combine_*: the RHS operand's plain int16 value,`
+- `basic/sysvars.inc:4714` **FP_RSIGN**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `FP_RSIGN        equ     $F106   ; signed_div_de_bc/signed_mod_de_bc: result sign (1)`
+  - new: `FP_RSIGN        equ     $F853   ; signed_div_de_bc/signed_mod_de_bc: result sign (1)`
+- `basic/sysvars.inc:4725` **MUL_ADIG**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `MUL_ADIG        equ     $F10D   ; fp_mul: A[i], the current outer-loop digit (1)`
+  - new: `MUL_ADIG        equ     $F854   ; fp_mul: A[i], the current outer-loop digit (1)`
+- `basic/sysvars.inc:4726` **MUL_CARRY**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `MUL_CARRY       equ     $F10E   ; fp_mul: running carry within one outer pass;`
+  - new: `MUL_CARRY       equ     $F855   ; fp_mul: running carry within one outer pass;`
+- `basic/sysvars.inc:4715` **KEYARG**  [H5 ARG tail $F84D-$F856 (T-only, no out-call while live): float core + KEYARG]
+  - old: `KEYARG          equ     $F107   ; D-KEYSTR: main -> keystr_tenant op/slot (0 =`
+  - new: `KEYARG          equ     $F856   ; D-KEYSTR: main -> keystr_tenant op/slot (0 =`
+- `basic/sysvars.inc:2208` **GFX_DFTOP**  [S11: re-anchored, was GFX_DEND + 2]
+  - old: `GFX_DFTOP       equ     GFX_DEND + 2    ; $ED38: X-frame stack depth (1)`
+  - new: `GFX_DFTOP       equ     $ED38           ; $ED38: X-frame stack depth (1)`
+- `basic/sysvars.inc:2226` **GFX_DEXP**  [S11: re-anchored, was GFX_DVLEN + 1]
+  - old: `GFX_DEXP        equ     GFX_DVLEN + 1   ; $ED67: NUL-terminated copy of the text between`
+  - new: `GFX_DEXP        equ     $ED67           ; $ED67: NUL-terminated copy of the text between`
+- `basic/sysvars.inc:2297` **DEFT_PTR**  [S11: re-anchored, was GFX_DSP + 2]
+  - old: `DEFT_PTR        equ     GFX_DSP + 2     ; $ED8F: token cursor in AND out (2)`
+  - new: `DEFT_PTR        equ     $ED8F           ; $ED8F: token cursor in AND out (2)`
+- `basic/sysvars.inc:2401` **GFX_PPITCH**  [S11: re-anchored, was GFX_G8N]
+  - old: `GFX_PPITCH      equ     GFX_G8N         ; $ED99: 1 or 4, live only inside a PAINT`
+  - new: `GFX_PPITCH      equ     $ED99           ; $ED99: 1 or 4, live only inside a PAINT (1)`
