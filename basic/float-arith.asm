@@ -290,6 +290,17 @@ dig15_shr:
                 ld      a,(FP_SHIFTAMT)
                 ld      b,a
                 jr      zero_fill           ; tail call
+; 📌 D-BASICINT PIN $3297 (2026-10-15): games (Harry Fox) jump to the reference's
+; $3297, which the VG-8020 measured as `pop hl / ret` (scratchpad/basicint_pop.out:
+; HL = the pushed word, BC / DE untouched). FIXED ADDRESS -- placed by
+; tools/pin_plan.py after an unconditional transfer; the `ds` is the pad, and
+; `pin_plan.py --check` fails if it grows (Joost: no growing holes).
+    IF BASICINT_PINS
+                ds      $3297 - $, $00
+basicint_3297:
+                pop     hl
+                ret
+    ENDIF
 dshr_allzero:
                 jp      dig15_zero15
 

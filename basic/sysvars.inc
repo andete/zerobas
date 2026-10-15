@@ -645,6 +645,16 @@ COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
 APOS_MARK       equ     $E6     ; "remark-quote" marker emitted after `'`'s REM token
 
+; BASICINT_PINS -- D-BASICINT's three fixed-address entries ($3297 / $6CF3 /
+; $73AC, 2026-10-15) exist only in the SHIPPING configuration: every switch
+; `make switch-build-check` flips must be at its shipped value. A switch turned
+; off removes code ahead of a pin, its `ds` pad grows by exactly that much, and a
+; `jr` spanning the pin overflows -- six of seven switch builds failed that way
+; when the pins first landed. A switch-off build is a scaffold, a different
+; machine [[a-scaffolded-build-is-a-different-machine]]: it has no game's
+; addresses to keep, so it assembles the code as it was before the pins.
+BASICINT_PINS   equ     G6_RESIDENT & G7_RESIDENT & G8_RESIDENT & I1_RESIDENT & TRAPS_T3 & TRAPS_T4 & CLEARPOOL
+
 ; --- Step A: byte-identical constant + operator tokens --------------------
 ; Captured byte-exact from the reference (spec-tokens-statements.md §3/§4,
 ; fidelity sweep). Numbers/operators are no longer kept verbatim: the tokeniser

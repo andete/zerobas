@@ -124,6 +124,9 @@ load_handoff:
                 ld      a,(RUNFLAG)
                 or      a
                 call    nz,lh_jphl          ; ,R: run it; it RETURNS here
+lh_back:                                    ; D-BASICINT: $6CF3's target -- a game that
+                                            ; pops our return and jumps there lands here
+                                            ; with the cursor on top, as after a `ret`
                 pop     hl
                 jp      exec_stmt           ; the rest of the line runs, ,R or not
 lh_jphl:

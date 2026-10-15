@@ -1,10 +1,33 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-14 evening)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-15)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-14 EVENING — THE CURRENT ONE. JOOST'S RULINGS: THE 2026-10-09 TABLE (THREE NEW ROWS 10-14: RAM gap target, ROM size program, D-WSZERO "Shrink to zero") AND THE 2026-09-24 SECTION.
+## 🟢 STATE AS OF 2026-10-15 — THE CURRENT ONE. JOOST'S RULINGS: THE 2026-10-09 TABLE (NEW ROWS 10-15: undocumented BASIC internals, disk evictions first, pins without growing holes, FILL THE GATE WAIT -- amended with the worktree rule) AND THE 2026-09-24 SECTION.
+
+- **Landed 2026-10-15 (each gated and pushed):** D-DSKLOCAL (DSKI$ / DSKO$ in
+  disk.rom, 347452e0); S10.D's H.DGET measurement (57b4558a); tools/pin_plan.py
+  for D-BASICINT (40c62a1f); **S10.D -- RANDOM OPEN / GET / PUT / CLOSE in
+  disk.rom (c577b59c: main page 1 8 -> 139 B, sub page 1 141 -> 928 B)**; the
+  13 dead $49xx asserts deleted, disk.rom byte-identical.
+- **D-BASICINT PINNED (2026-10-15):** $3297 / $6CF3 / $73AC at their addresses,
+  `make pin-check` (static, budget = the measured 6 B) and `make
+  basicint-acceptance` 7/7. Loopy Laundry runs; Punch & Judy and Harry Fox now
+  share ONE failure: a BASIC-level tape load ends in `Device I/O error`.
+- **NEXT, FIRST (TIER 1): D-TAPELOAD class B, `Device I/O error` on the next
+  tape load** (Harry Fox line 50, Punch & Judy line 10, Fruit Panic). Measure
+  with the session triage harness's published-entry log (TAPEBP / TAPRET:
+  caller, CARRY, LOWLIM / WINWID -- never A after TAPIN). If the session died,
+  the harness is gone: it lived in the session scratchpad.
+- **THEN (TODO D-ROMSIZE "S10.D BUILT", its ➡️ NEXT list):** BSAVE-
+  to-disk -- measure its hook on the CF-3300 first (a design brief + a draft
+  probe were being prepared in the session scratchpad: `bsave_brief.md`,
+  `bsave_hook_probe.py`; if the session died, redo them); then S10.C, S10.E;
+  the vestigial disk.rom veneers (bytes move: bdos-acceptance).
+- **🙋 Open for Joost:** D-BASICPUB (scope / tier); a separate gate runner.
+
+## 🟢 STATE AS OF 2026-10-14 EVENING — superseded above. JOOST'S RULINGS: THE 2026-10-09 TABLE (THREE NEW ROWS 10-14: RAM gap target, ROM size program, D-WSZERO "Shrink to zero") AND THE 2026-09-24 SECTION.
 
 **Joost, 2026-10-14:** *"the tape fixes take precedence, I have external people
 testing with that"* (Quibus). So **D-WSZERO first** (TIER 1), then D-ROMSIZE in
@@ -1256,7 +1279,7 @@ morning hand-off `98513bcc`: `79167b21` D-KWTIME · `b21a86aa` D-KWT5ALONE ·
 | **Undocumented BASIC-ROM internals (2026-10-15)** | Asked whether zerobas should provide the BASIC-ROM internal entry points games call directly (Loopy Laundry and Punch & Judy `$73AC`, Harry Fox `$6CF3` / `$3297`; documented only by disassemblies, which allowed-sources excludes): **"Yes, we'll have to figure out those undocumented addresses and support them."** Characterise each BLACK-BOX on the VG-8020 (entry state read from registers / published cells when a game reaches it; then our own programs as oracle inputs), never from a disassembly or ROM bytes; implement at the same address in main. TIER 1 (tape loading). |
 | **Disk evictions first (2026-10-15)** | *"I think the remaining disk evictions make a lot of sense: 1. it matches reference better 2. it creates space for other fixes 3. it reduces the total non-disk rom size"* -- D-ROMSIZE step 1 (the eviction plan's leftovers: S10.C/D/E, BSAVE-to-disk, DSKI$/DSKO$ -- done 2026-10-15 as D-DSKLOCAL -- and the step-14 gate) goes NOW; it also funds D-BASICINT's pins. |
 | **Pins without growing holes (2026-10-15)** | *"We have to be careful that we do not create growing holes by pinning addresses. I know this somewhat complicates the writing of the assembly."* -- a fixed-address pin may only sit where the padding before it is ~0; upstream shrinkage is refilled (move small routines into the gap), and a gate caps the total pin waste. |
-| **Fill the gate wait (2026-10-15)** | *"It is exactly this waiting period I'd like to see filled"*, *"I think having the research and prep done for one or several of the next steps while gates run could significantly speed up our loop"* -- WHILE A GATE RUNS (this checkout frozen, the emulator busy): research and PREPARE the next one or two slices through subagents -- read-only design briefs, and code in their OWN git worktrees (edit / `make all` / unit tests; no openMSX, no `make repack-machine`). Emulator measurements still serialise. A separate gate runner (worktree or Linux laptop) is NOT decided -- Joost is thinking about it. |
+| **Fill the gate wait (2026-10-15)** | *"It is exactly this waiting period I'd like to see filled"*, *"I think having the research and prep done for one or several of the next steps while gates run could significantly speed up our loop"* -- WHILE A GATE RUNS (this checkout frozen, the emulator busy): research and PREPARE the next one or two slices through subagents -- read-only design briefs, and code in their OWN git worktrees (edit / `make all` / `make basic-reloc` / `python3 tests/run.py`; no openMSX, no `make repack-machine`). 🔴 **AND NO `make gates-*` IN A WORKTREE (2026-10-15):** `gates-fast` is NOT static in effect -- its `wall-literal-check` depends on `repack-machine` (repoints the SHARED `~/.openMSX` machine XMLs at the worktree's `build/`) and its D-PINSTALE arm starts `kwsweep` in openMSX. The S10.D drafter did exactly that; no committed reading was hit, by timing. `make all` touches neither (checked with `make -n`). Say the forbidden targets BY NAME in the prompt; "no emulator" was not enough. Read-only briefs: no `make` at all. Emulator measurements still serialise. A separate gate runner (worktree or Linux laptop) is NOT decided -- Joost is thinking about it. |
 | **distribution (2026-10-13)** | *"the primary use is with openMSX"* and *"I think using the ready made Rom makes more sense"*: the download is `zerobas-openmsx.zip` (`make dist`, `tools/make_dist.py`) — the GATED machine definition, ROMs by relative path, the READY-MADE main ROM with C-BIOS's BSD-2 notice; CI builds on every push and publishes it on the rolling `nightly` pre-release; QUICKSTART leads with the download. |
 | **batteries (2026-10-13, supersedes the line below)** | *"yes, do 1 and 2, it is a tradeoff allowing to move faster"*: **FULL once a day** (24 h since the last full green), **at every hand-off, on a RAM-address move** (`layout_moves`) and on a gate-harness change; every other ROM change is SCOPED (canary incl. `kwsweep`); **`kwtime` / `kwram` run only in FULL** — the tier sheet says when its speed/RAM columns describe an earlier build. A breakage may sit on public `main` until the daily FULL: accepted. |
 | **batteries** | **scoped, FULL on risk, and at least every 5th commit** — `make gates-plan` / `make gates-scoped`, `HANDOFF=1` at a session end |

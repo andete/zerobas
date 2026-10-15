@@ -793,6 +793,18 @@ oo_dev_lpt:
                 jr      oo_dev_open
 oo_dev_crt:
                 ld      a,CRT_MODE
+                ; 📌 D-BASICINT PIN $6CF3 (2026-10-15), bridged: games (Harry Fox)
+                ; drop BLOAD,R's return address and `jp $6CF3`, the reference's
+                ; continuation, which then runs the rest of the statement exactly as
+                ; a `ret` would (scratchpad/basicint_probe.out row `cont`). Ours is
+                ; load_handoff's tail (basic/bload.asm lh_back). FIXED ADDRESS, from
+                ; tools/pin_plan.py's `jr` bridge (no pad today; --check caps it).
+    IF BASICINT_PINS
+                jr      oo_dev_open
+                ds      $6CF3 - $, $00
+basicint_6cf3:
+                jp      lh_back
+    ENDIF
 oo_dev_open:
                 ld      (OO_DEVTYPE),a      ; remember the device type across the parse
                 ; skip any remaining "filename" chars up to the closing quote (ignored)

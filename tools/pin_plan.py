@@ -82,8 +82,12 @@ class Pin:
 
 PINS = [
     Pin(0x3297, 2, bytes([0xE1, 0xC9]), None, "D-BASICINT pop hl / ret"),
-    Pin(0x6CF3, 3, "jp", None, "D-BASICINT BLOAD,R continuation: jp <continuation>"),
-    Pin(0x73AC, 3, "jp", None, "D-BASICINT RUN entry: jp <RUN entry>"),
+    Pin(0x6CF3, 3, "jp", "lh_back", "D-BASICINT BLOAD,R continuation: jp lh_back"),
+    # $73AC IS the RUN entry's body (basic/field.asm basicint_run), not a `jp` to
+    # it: the 8 bytes checked are its address-free head -- ld hl,(VARTAB $F6C2) /
+    # dec hl / dec hl / ld (PRGEND $F6E8),hl; the `jp run_prog_top` after them moves.
+    Pin(0x73AC, 8, bytes.fromhex("2AC2F62B2B22E8F6"), None,
+        "D-BASICINT RUN entry: PRGEND := VARTAB - 2, then run_prog_top"),
 ]
 
 SRC = "basic/main.asm"
@@ -771,8 +775,11 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int) -> int:
                 end = it.addr
                 j -= 1
                 continue
-            if it.kind == "instr" and it.hexb[:1] == b"\x18" and jr_target(it) == pin.addr + pin.length:
-                pad += 2                           # jr bridge over the pin
+            # a jr bridge over the pin; `>=` because a body pin (checked by its head
+            # bytes only) is longer than pin.length -- any forward jr from right
+            # before the pin that lands past its start is skipping it.
+            if it.kind == "instr" and it.hexb[:1] == b"\x18" and (jr_target(it) or 0) >= pin.addr + pin.length:
+                pad += 2
             break
         waste += pad
         st = "OK  " if ok else "FAIL"

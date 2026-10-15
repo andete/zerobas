@@ -575,6 +575,33 @@ lrset_common:
                 inc     hl                  ; past the LSET/RSET token
                 ld      (FN_RESUME),hl      ; the handler's cursor
                 ex      de,hl               ; HL = this verb's own hook cell
+    IF BASICINT_PINS
+                jr      lrc_go              ; over the D-BASICINT pin below
+; 📌 D-BASICINT PIN $73AC (2026-10-15), bridged: the reference's RUN-without-
+; argument, which tape games (Loopy Laundry, Punch & Judy) jump to after loading
+; a BASIC program and setting VARTAB ($F6C2) to its end themselves. Measured
+; black-box on the VG-8020 (scratchpad/basicint_probe.out): variables cleared,
+; DATA restored, the variables start AT VARTAB AS GIVEN (a VARTAB moved +64
+; stays moved), HL ignored, the rest of the calling statement dropped -- a bare
+; RUN in every way but where the program ends. zerobas keeps that end in PRGEND
+; (vars_reset derives VARTAB = PRGEND + 2), so it is taken FROM the game's
+; VARTAB, then RUN starts at the top level (run_prog_top resets SP, dropping
+; BLOAD,R's frames). RELINKED first, like every load (cload.asm
+; load_commit_prog): the VG-8020 runs a program whose first line link was
+; garbled, and without the relink zerobas answered `Syntax error in 4803`
+; (scratchpad/basicint_pins.out, row run_link). FIXED ADDRESS, from tools/pin_plan.py's `jr`
+; bridge (no pad today; `pin_plan.py --check` caps it -- Joost: no growing
+; holes). The `jr` above costs LSET / RSET 12 T-states.
+                ds      $73AC - $, $00
+basicint_run:
+                ld      hl,(VARTAB)
+                dec     hl
+                dec     hl
+                ld      (PRGEND),hl         ; the $0000 end marker the game's VARTAB implies
+                call    relink              ; the game's own loader set the links
+                jp      run_prog_top
+lrc_go:
+    ENDIF
                 jp      fld_gate_resume     ; chan_gate_bare, then resume at
                                             ; FN_RESUME -- FIELD's tail (C4)
 

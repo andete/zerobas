@@ -114,6 +114,14 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **Some games' `,R` code jumps into BASIC's own ROM** (supported 2026-10-15,
+  D-BASICINT). Three tape titles jump to addresses no published table names:
+  one runs the BASIC program it has just loaded (the reference's `RUN` at
+  `$73AC`), one drops its return address and continues the `BLOAD` statement
+  at `$6CF3`, and one uses a two-byte `pop hl / ret` at `$3297`. Each was
+  measured from the outside on the VG-8020 with our own test code, and zerobas
+  now has the same behaviour at the same addresses. Loopy Laundry loads and
+  runs; before, these jumps landed on unrelated code.
 - **After `BLOAD ...,R` the rest of the line was dropped** (fixed 2026-10-14,
   D-BLOADRTAIL). zerobas jumped to the loaded code instead of calling it, so
   when the code returned, the line ended there, and inside a program the
@@ -188,6 +196,8 @@ saved binary to try it on).
 - `make nodiskverbs-acceptance` — the diskless machine.
 - `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
   header leader and in the data.
+- `make basicint-acceptance` — the three addresses games jump to after `,R`,
+  against the VG-8020; `make pin-check` keeps them at those addresses.
 - `make bloadrtail-acceptance` — what runs after `BLOAD "CAS:...",R`: the rest
   of the line, the next program line, and two `,R` loads in one line, with
   tapes the test builds itself.

@@ -570,6 +570,17 @@ ram-map-check:
 	python3 tools/ram_map.py --selftest
 	python3 tools/ram_map.py --check
 
+# --- pin-check: D-BASICINT's fixed-address entries ($3297 / $6CF3 / $73AC) ---
+# Joost 2026-10-15: "We have to be careful that we do not create growing holes by
+# pinning addresses." Each pin sits behind a `ds PIN-$` pad that absorbs every
+# size change of the code before it; this fails when a pin's bytes are wrong OR
+# the total pad in front of the pins exceeds the budget. The budget is the waste
+# MEASURED when the pins landed (6 B: $3297's 2 B pad + two 2 B `jr` bridges),
+# so ANY growth is red. Fixing a red: re-run `python3 tools/pin_plan.py` and move
+# the split point or refill the pad -- never raise the budget to make it pass.
+pin-check: basic-reloc
+	python3 tools/pin_plan.py --check --budget 6
+
 # --- rigstick: the host joystick openMSX does not have (ruling 4's rig) -------
 # D-RIGBLOCK: openMSX 21.0 has NO key-joystick pluggable (0 occurrences of
 # `keyjoystick` in its binary) and builds `joystick1` from SDL's HOST
@@ -2393,6 +2404,13 @@ bloadrtail-acceptance: repack-machine
 tapionlead-acceptance: repack-machine
 	python3 probes/basic/basic_probe_tapionlead.py
 
+# --- basicint-acceptance: the undocumented BASIC entries games jump to (D-BASICINT)
+# $73AC (RUN), $6CF3 (BLOAD,R's continuation), $3297 (pop hl / ret), at their FIXED
+# addresses, driven by OUR OWN code on OUR OWN tape through BLOAD"CAS:",R. The pins'
+# bytes and pads are `pin-check`'s; this is their behaviour against the VG-8020.
+basicint-acceptance: repack-machine
+	python3 probes/basic/basic_probe_basicint.py
+
 # --- wszero-acceptance: a load over $E98A-$F37F, then BASIC (D-WSZERO) ----------
 # A program owns HIMEM..$F37F after CLEAR n,&Hxxxx; zerobas's own state there must
 # go (TIER 1). Rows that still fail are PINNED and must keep failing until fixed.
@@ -4162,7 +4180,7 @@ clean:
         bdos-cbios-selfcheck audit-citations basic-reloc deadcode repack-main repack-boot \
         repack-machine diskbasic-acceptance-repack string-acceptance time-acceptance \
         battery-membership-check fixture-integrity-check diskmap ram-claim-check \
-        ram-map-check ram-map-doc \
+        ram-map-check ram-map-doc pin-check \
         rigstick rigstick-selftest rigstick-probe \
         asciidigit-acceptance \
         build-assert-check \

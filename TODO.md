@@ -3442,7 +3442,11 @@ item — do **one item per session** to keep context lean.
       below the reference's ($E6A6 vs $F09E, no `CLEAR` in the loader) and the
       game's data lands on it -- D-WSZERO's ceiling, bottom-up. Still open as
       before: B (Fruit Panic, Harry Fox `Device I/O`; Loopy Laundry, Punch &
-      Judy `Found:`), C (City Connection, Ninja 2, Oil's Well -- all stop at
+      Judy `Found:` -- 🔧 2026-10-15, D-BASICINT's pins: Loopy Laundry RUNS, and
+      Punch & Judy now stops with `Device I/O error in 10` on its next tape load,
+      joining Harry Fox; class B is now "a BASIC-level tape load fails with
+      Device I/O" -- measure it next with the triage harness's published-entry
+      log, never A after TAPIN), C (City Connection, Ninja 2, Oil's Well -- all stop at
       the same PC), D (Head over Heels `Out of memory`), the `PC 0038` loop
       (Chuckie Egg, BMX Simulator's later crash).
       ✅ **CLASS C FIXED: D-TAPLEAD (2026-10-14) -- `TAPION` LOCKED ONTO DATA.**
@@ -3537,8 +3541,8 @@ item — do **one item per session** to keep context lean.
       🙋 **Joost: in scope, and at which tier?** It shares D-BASICINT's pin
       mechanism, which comes first either way.
 
-- [ ] 🧩 **D-BASICINT — GAMES CALL UNDOCUMENTED BASIC-ROM INTERNALS ($73AC, $6CF3,
-      $3297): SUPPORT THEM (Joost, 2026-10-15)**
+- [x] 🧩 **D-BASICINT — GAMES CALL UNDOCUMENTED BASIC-ROM INTERNALS ($73AC, $6CF3,
+      $3297): SUPPORT THEM (Joost, 2026-10-15)** — ✅ **PINNED 2026-10-15.**
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — ruled: *"Yes, we'll have to figure out those undocumented
       addresses and support them."* (LOOP-RESTART rulings table.)
@@ -3625,6 +3629,42 @@ item — do **one item per session** to keep context lean.
       needs ~6-15 B the slice does not have** -- after S10.D frees page 1, or fill
       $3297's pad with a page-1 chunk (a move DOWN, check every caller's page-0
       visibility). `--check` is NOT a gate target until the pins exist (red now).
+      ✅ **PINNED (2026-10-15), once S10.D freed page 1:** $3297 `pop hl / ret`
+      (basic/float-arith.asm, after `jr zero_fill`: 2 B pad); $6CF3 `jp lh_back`
+      (basic/files.asm, a `jr` bridge in oo_dev_crt; lh_back is the code after
+      load_handoff's `call`, so a game that pops our return lands with the
+      cursor on top as after a `ret`); $73AC IS the RUN entry's body
+      (basic/field.asm basicint_run, a `jr` bridge in lrset_common: PRGEND :=
+      VARTAB - 2, `call relink`, `jp run_prog_top`). Placed one pin at a time,
+      re-planning after each -- a body added EARLIER in the include order (cload.asm)
+      first drove $6CF3's `ds` negative, which the build caught as a wrapped image.
+      Cost: low region 52 -> 48 B, page 1 139 -> 118 B (2026-10-15). Waste 6 B
+      (one 2 B pad + two 2 B bridges) = **`make pin-check`'s budget, so ANY
+      growth is red** (a static gate; the knife -- one byte deleted upstream of
+      $3297 -- read 7 B and FAIL, exit 1).
+      📏 **`make basicint-acceptance`** ([`basic_probe_basicint.py`](probes/basic/basic_probe_basicint.py),
+      [`basicint_gate.out`](scratchpad/basicint_gate.out)): 7/7 SAME against the
+      VG-8020 -- run_vt, run_0, run_link, run_data, cont, vt64 (FRE after VARTAB
+      += 64 minus FRE after += 0: -64 on both, so neither the D-WSZERO gap nor the
+      variable layout enters it) and pop3297 (HL = marker, BC / DE untouched;
+      output cells zeroed first, A / F not read). 🔮 Scored: the first run with
+      the old characterisation probe ([`basicint_pins.out`](scratchpad/basicint_pins.out)):
+      run_vt / run_0 / cont / run_data SAME: HIT; fin / fin_noa DIVERGES (D-BASICPUB's
+      FIN): HIT; run_vt64 and f3297pop SAME: MISS as row verdicts -- each printed
+      fields its routine does not control (the variable layout and the FRE gap,
+      exactly -1658; BLOAD,R's own A / F and unwritten RAM), which is why the
+      gate rows were rebuilt; run_link (not predicted) DIVERGED, `Syntax error in
+      4803`, because the first build had NO relink -- added, and the gate's 7/7
+      includes it. 🔮 "all 7 SAME" on the gate: HIT.
+      📼 **THE TAPES (run, never decoded; 2026-10-15):** **Loopy Laundry now
+      runs** -- line 60 and in game code on both machines, VRAM within 1 B at T180
+      and 15 B at T300 (4260 B by T420: gameplay timing, unseparated). **Punch &
+      Judy moved on**: it used to reset at `Found:logo`; now it RUNs its BASIC
+      program and stops with `Device I/O error in 10` on the next tape load.
+      **Harry Fox is unchanged**: `Device I/O error in 50`, before its jumps, as
+      in every triage since 10-14. 🔮 "all three reach the reference's screen":
+      HIT for Loopy Laundry only; the other two are now ONE class -- a BASIC-level
+      tape load that fails with Device I/O -- filed in D-TAPELOAD's class B.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -9186,7 +9226,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34719 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34759 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9352,7 +9392,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14214 (T-6FE392)8 (T-529ABE)` from `TODO.md:27008 (T-529ABE)`: a
+      `TODO.md:14254 (T-6FE392)8 (T-529ABE)` from `TODO.md:27048 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15061,7 +15101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27008 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -67,7 +67,7 @@ WARM = ["repack-machine", "basic-reloc", "subrom-abi-check", "disk/test720.dsk"]
 # emulator units = 2870. The entire cost of a battery is the emulator tier, and
 # both of that day's real reds came out of the static one.
 STATIC = """basic-reloc deps-check subrom-abi-check diskrom-abi-check rom-parts-check subrom-closure-check unit-test deadcode
-wall-assertion-check ram-claim-check ram-map-check build-assert-check needle-case-check redundant-load-check stubinl-check rowshape-check injector-check
+wall-assertion-check ram-claim-check ram-map-check pin-check build-assert-check needle-case-check redundant-load-check stubinl-check rowshape-check injector-check
 dead-alias-check alias-order-check hostkill-check session-path-check
 temp-root-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check chokepoint-check wall-literal-check
 filed-pin-check disk-mount-check
@@ -142,7 +142,7 @@ nodiskverbs-acceptance readref-acceptance litref-acceptance
 asavedev-acceptance casprdir-acceptance casbrk-acceptance
 castype-acceptance casbin-acceptance
 fcbhdr-acceptance putdir-acceptance readflt-acceptance
-recauto-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance wszero-acceptance tapionlead-acceptance filesnl-acceptance
+recauto-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-acceptance wszero-acceptance tapionlead-acceptance basicint-acceptance filesnl-acceptance
 filesbare-acceptance callsystem-acceptance bootkey-acceptance
 resnext-acceptance readerl-acceptance
 dosmode-acceptance bootkeys-acceptance

@@ -1,0 +1,11 @@
+ROW run_vt VG=[[1] 0 [2]] ZB=[[1] 0 [2]] SAME
+ROW run_0 VG=[[1] 0 [2]] ZB=[[1] 0 [2]] SAME
+ROW run_link VG=[[1] 0 [2]] ZB=[[1] 0 [2]] SAME
+ROW run_data VG=[[ 5 ]] ZB=[[ 5 ]] SAME
+ROW cont VG=[[TAIL]] ZB=[[TAIL]] SAME
+ROW vt64 VG=[-64] ZB=[-64] SAME
+ROW pop3297 VG=[[CDAB22221111]] ZB=[[CDAB22221111]] SAME
+
+PASS: undocumented BASIC entries (7/7)
+refcache: 0 hit, 16 miss, 16 stored
+rc=0
