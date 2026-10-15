@@ -3459,6 +3459,21 @@ item — do **one item per session** to keep context lean.
       ✅ FIXED THE SAME DAY (D-TAPLEAD's residual, above): Punch & Judy now
       loads past line 10; its NEXT divergence (one extra TAPIN before its third
       load, then direct mode on a graphics screen from T180) is open.
+      📏 **THAT NEXT DIVERGENCE IS D-WSZERO, NOT TAPE (2026-10-15).** A per-caller
+      count of TAPION / TAPIN calls between the second and third file (the stack
+      word at entry and SP -- never A) shows the second file's data block read in
+      full on both machines (6 + 337 bytes, the sub-ROM BLOAD loop), and then, on
+      zerobas only, a TAPION + TAPIN called from RAM at $E9DD with SP = $E9DC --
+      while zerobas's own stack sat at SP $EA02-$EA04 during that BLOAD. The
+      game's file loads over zerobas's STACK (the reference's is near $F0xx and
+      that RAM is free there), a `ret` runs game bytes out of context, they call
+      the tape, and the stray TAPIN eats the third file's first header byte: the
+      search then skips that file (24 s later) and the game ends at the prompt.
+      -> Punch & Judy joins D-WSZERO's RESET class (its window, its ceiling);
+      no tape fix applies. B2 (Harry Fox) is NOT this: its stacks are normal
+      (SP ~$8CA5 after its CLEAR on both) and no RAM code calls the tape; zerobas
+      just runs four more header + program loads (sub-ROM loaders) than the
+      VG-8020 -- its BASIC takes another path; locate it with a line trace.
       (B2) **Harry Fox is NOT a tape defect.** Both machines load the SAME four
       files (TAPIN counts 16 / 1336 / 1352 / 10287 / 10303 / 12440 / 12456
       identical); then the VG-8020 starts the game while zerobas's BASIC goes on
@@ -9392,7 +9407,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34925 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34940 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9558,7 +9573,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14420 (T-6FE392)8 (T-529ABE)` from `TODO.md:27214 (T-529ABE)`: a
+      `TODO.md:14435 (T-6FE392)8 (T-529ABE)` from `TODO.md:27229 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15267,7 +15282,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27229 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

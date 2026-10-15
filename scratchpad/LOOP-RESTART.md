@@ -25,7 +25,9 @@ session and the loop resumes exactly where it stopped.
 - **D-AVTAK DONE (2026-10-15):** $73E5 (PLAY's body) pinned; A View to a Kill
   back to 54 B. ⚠️ PINS ARE RIGID: growth ahead of a pad-0 pin makes pasmo write
   an EMPTY binary (rc 0) -- put new bytes AFTER the pins. NEXT (TIER 1): **Punch & Judy's next
-  divergence** (one extra TAPIN before its third load) and **B2 Harry Fox**.
+  divergence** -- MEASURED: it is D-WSZERO (the game's 2nd file loads over
+  zerobas's stack at ~$EA02); and **B2 Harry Fox** (normal stacks; its BASIC
+  takes another path -- next: a CURLIN trace on both machines).
   ⚠️ Compare tape runs ONLY on the same pick file (pick_martos = the m-series).
 - **THEN B2 (Harry Fox):** locate where its BASIC diverges after file 4
   (TRANS / CALLAT black-box; never decode the game).
