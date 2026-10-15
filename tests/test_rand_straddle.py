@@ -27,10 +27,18 @@ about the ENGINE, not about the disk, and it is what the emulator cannot make.
 
 `frnd_locate` is trapped to make GP_PHYS a function of GP_SEC, isolating the
 overlay from the cluster walk exactly as test_fat_read_file_sector.py isolates
-the address math from `fat_advance`. read_sector / write_sector serve and capture
-a virtual disk. All three are sub-local symbols in the sub image.
+the address math from `fat_advance`. read_sector / fatprim_write_sector serve and
+capture a virtual disk.
 
-Clean-room: our own routines (basic/randio-body.inc), public FAT sector geometry.
+🧭 S10.D (2026-10-15): THE ENGINE IS disk.rom's NOW (disk/kernel.asm hk_dget, the
+record I/O behind H_DGET), so this drives the DISK image at $4000 -- it drove the
+sub image while the engine was the sub-ROM's randio tenant. Two contract changes
+come with it, and the rows are unchanged by both: the file's size is the
+channel's FCB row (+16..19, IX), not main's FWR_BYTES; and GP_FLAGS is set by
+hk_dget, not by the engine (frnd_locate is trapped here, so nothing reads it).
+
+Clean-room: our own routines (disk/kernel.asm, disk/fat.asm), public FAT sector
+geometry.
 """
 
 import os
@@ -45,15 +53,21 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-SUB_BASE = 0x0000
+DISK_BASE = 0x4000
 SECSIZE = 512
-SUB_ROM, SUB_SYM = tp("rand_straddle_sub.rom"), tp("rand_straddle_sub.sym")
+DISK_ROM, DISK_SYM = tp("rand_straddle_disk.rom"), tp("rand_straddle_disk.sym")
 PHYS0 = 100                     # GP_PHYS = PHYS0 + GP_SEC, under the trap
+ROW = 0xD000                    # the channel's FCB row (IX): +16..19 = the size
 
 
 def build():
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
+    subprocess.run(["pasmo", "-I", "disk", "--bin", "disk/disk.asm", DISK_ROM, DISK_SYM],
                    check=True, capture_output=True, cwd=ROOT)
+
+
+def set_size(m, size):
+    """The file's size, where the engine reads it: the FCB row's +16..19."""
+    m.poke(ROW + 16, size.to_bytes(4, "little"))
 
 
 def rec_bytes(recno, reclen):
@@ -76,7 +90,7 @@ def model_put(disk, recno, reclen):
 
 
 def make_machine(disk):
-    m = Machine(SUB_ROM, SUB_SYM, rom_base=SUB_BASE)
+    m = Machine(DISK_ROM, DISK_SYM, rom_base=DISK_BASE)
 
     def frnd_locate(mm):
         sec = mm.mem[mm.sym["GP_SEC"]] | (mm.mem[mm.sym["GP_SEC"] + 1] << 8)
@@ -94,12 +108,11 @@ def make_machine(disk):
 
     m.trap("frnd_locate", frnd_locate)
     m.trap("read_sector", read_sector)
-    m.trap("write_sector", write_sector)
     # D-FATENG Option 2: the shared FAT body writes through
-    # `fatprim_write_sector`, not disk's own `write_sector` (which
-    # the BDOS half still uses). Trapping only the old name let the
-    # engine's writes through untrapped, so the simulated FAT never
-    # updated and the cluster read back 0x000.
+    # `fatprim_write_sector`, not disk's own `write_sector` (the kernel's, which
+    # the BDOS half still uses and which maps no DSKIO code) -- and so does the
+    # record engine since S10.D. Trapping only the old name would let the
+    # engine's writes through untrapped.
     m.trap("fatprim_write_sector", write_sector)
     # the directory stamp is a separate concern with its own tests
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~0x01))
@@ -136,24 +149,28 @@ def run():
         m.poke(s["FCH_ACTIVE"], CHAN)
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
         m.poke_w(s["GP_RECNO"], recno)
-        m.poke_w(s["FWR_BYTES"], 0)
-        m.poke_w(s["FWR_BYTES"] + 2, 0)
+        set_size(m, 0)
         m.poke(s["FSECTOR_BUF"], rec_bytes(recno, reclen))
         model_put(want, recno, reclen)
 
-        m.call("fat_rand_put")
+        m.call("fat_rand_put", ix=ROW)
 
         tag = f"r={reclen} rec={recno}" + ("  [STRADDLE]" if straddles else "")
         # 🔴 THE GUARD HAS TO EXCLUDE THE CELLS THE ROUTINE LEGITIMATELY
-        # WRITES, or it flags every row and says nothing. `frnd_update_size`
-        # stores FWR_BYTES and FAT_FILESIZE, and BOTH sit above FWBUF+512
-        # (offsets 51 and 14) — the first cut of this guard reported "8 of 64
-        # clobbered" on rows with no straddle at all, which is an instrument
+        # WRITES, or it flags every row and says nothing. The sub-ROM engine's
+        # `frnd_update_size` stored FWR_BYTES and FAT_FILESIZE, and BOTH sat above
+        # FWBUF+512 (offsets 51 and 14) — the first cut of this guard reported "8
+        # of 64 clobbered" on rows with no straddle at all, which is an instrument
         # result read as a machine one [[an-unnamed-outcome-reads-as-no-outcome]].
+        # Since S10.D it writes the FCB row and dout_mirror's two MAIN cells;
+        # every one of them is excluded by address, wherever it falls.
         legit = set()
-        for name, width in (("FAT_FILESIZE", 4), ("FWR_BYTES", 4)):
+        for name, width in (("main_FAT_FILESIZE", 4), ("main_FWR_BYTES", 4),
+                            ("FCH_RECNOS", 32)):
             for k in range(width):
                 legit.add(s[name] - (fwbuf + SECSIZE) + k)
+        for k in range(50):
+            legit.add(ROW - (fwbuf + SECSIZE) + k)
         got_guard = bytes(m.peek(fwbuf + SECSIZE, GUARD))
         clob = [i for i, b in enumerate(got_guard) if b != 0xA5 and i not in legit]
         report(f"{tag}: nothing written above FWBUF+512", not clob,
@@ -177,10 +194,11 @@ def run():
     s = m.sym
     m.poke(s["FCH_ACTIVE"], CHAN)
     m.poke_w(s["FCH_RECLENS"] + CHAN * 2, 100)
+    set_size(m, 0)
     for recno in (5, 7, 6):
         m.poke_w(s["GP_RECNO"], recno)
         m.poke(s["FSECTOR_BUF"], rec_bytes(recno, 100))
-        m.call("fat_rand_put")
+        m.call("fat_rand_put", ix=ROW)
         model_put(want, recno, 100)
     for sec, exp in sorted(want.items()):
         got = disk.get(sec)
@@ -211,10 +229,9 @@ def run():
         m.poke(s["FCH_ACTIVE"], CHAN)
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
         m.poke_w(s["GP_RECNO"], recno)
-        m.poke_w(s["FWR_BYTES"], 0xFFFF)          # far past the record: never EOF
-        m.poke_w(s["FWR_BYTES"] + 2, 0)
+        set_size(m, 0xFFFF)                       # far past the record: never EOF
         m.poke(s["FSECTOR_BUF"], b"\x00" * reclen)
-        m.call("fat_rand_get")
+        m.call("fat_rand_get", ix=ROW)
         got = bytes(m.peek(s["FSECTOR_BUF"], reclen))
         exp = rec_bytes(recno, reclen)
         bad = [i for i in range(reclen) if got[i] != exp[i]]
@@ -223,6 +240,33 @@ def run():
         report(f"GET r={reclen} rec={recno}{straddle}: reads the record back",
                not bad,
                f"{len(bad)} byte(s) differ, first at offset {bad[0]}" if bad else "")
+
+    # 🎯 THE CHAIN WALK'S DIVISION, PAST 128 KB (S10.D). The sub-ROM's
+    # frnd_locate divided GP_SEC by sectors-per-cluster on its LOW BYTE only, so
+    # file sector 300 walked to cluster index 22 instead of 150. Every row above
+    # traps frnd_locate, so none of them can see it; this one runs it for real
+    # over a contiguous chain (frnd_next: cluster + 1) and checks GP_PHYS against
+    # FIRSTDATA + (cluster - 2) * spc + sector-in-cluster, derived here.
+    for spc, sec in ((2, 0), (2, 1), (2, 255), (2, 300), (2, 1439), (1, 300)):
+        m = Machine(DISK_ROM, DISK_SYM, rom_base=DISK_BASE)
+        s = m.sym
+        FIRST, FIRSTDATA = 2, 14
+        m.poke(s["FAT_SECPERCLUS"], spc)
+        m.poke_w(s["FAT_FIRSTDATA"], FIRSTDATA)
+        m.poke_w(ROW + s["DOUT_FIRST"], FIRST)
+        m.poke(s["GP_FLAGS"], 0)                  # GET: walk, never extend
+        m.poke_w(s["GP_SEC"], sec)
+
+        def next_clus(mm):
+            mm.cpu.hl = (mm.cpu.hl + 1) & 0xFFFF
+            mm.cpu.f &= ~0x01
+        m.trap("frnd_next", next_clus)
+        cpu = m.call("frnd_locate", ix=ROW)
+        phys = m.mem[s["GP_PHYS"]] | (m.mem[s["GP_PHYS"] + 1] << 8)
+        want = FIRSTDATA + (FIRST + sec // spc - 2) * spc + sec % spc
+        report(f"frnd_locate spc={spc} GP_SEC={sec}: GP_PHYS",
+               not (cpu.f & 1) and phys == want,
+               f"got {phys} (CF={cpu.f & 1}), want {want}")
 
     print()
     print("ALL PASS — a straddling record writes both sectors and damages neither "

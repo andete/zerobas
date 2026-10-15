@@ -222,6 +222,14 @@ fopen_cross:
 ; ⚠️ A verb added here must be one that does NO sector I/O. When in doubt take
 ; the full gate -- the cost of the bookkeeping is a re-read, the cost of missing
 ; it is data on the medium (D-ALIASBITE).
+; 🔴 ONE EXCEPTION, AND IT IS NOT A LOOSENING: GET / PUT (S10.D, 2026-10-15) DO
+; sector I/O through this gate. They are LSET's case one level up -- a GET writes
+; the live record on purpose, so the full gate's restore would undo it -- and
+; their handler (disk.rom hk_dget) does the channel bookkeeping ITSELF: it calls
+; back `fch_select` on the GET's own channel after parsing `, recno`, which saves
+; whatever was live and loads this channel, exactly as main's GET used to. A verb
+; that does sector I/O here WITHOUT making its own channel live first is the
+; D-ALIASBITE bug.
 chan_gate_bare:
                 ld      de,cgb_back
                 push    de
@@ -401,9 +409,10 @@ df_notfound:
 ;
 ; ⚠️ WHY THE OTHER OPEN MODES CANNOT FALSE-POSITIVE, checked per path, not assumed:
 ;   * FOR OUTPUT -> fat_io_create, which calls fat_dir_create, NOT fat_find.
-;   * RANDOM     -> fat_rand_open is ITSELF a tenant selector (DISKOP_SEL_RAND_
-;     OPEN); its internal fat_find runs SUB-SIDE as a plain in-page call and never
-;     touches DISKOP_OP. Same for every other tenant-hosted verb.
+;   * RANDOM     -> since S10.D a disk.rom open (hk_frnd) reached through
+;     fopen_cross, so DISKOP_OP holds FOPEN_SEL_RAND; its internal fat_find runs
+;     DISK-SIDE as a plain in-page call and never touches DISKOP_OP. (It was the
+;     sub-ROM selector DISKOP_SEL_RAND_OPEN before -- the same argument.)
 ;   * EOF inside fat_io_getbyte -> a successful open ended at `call fat_open`, so
 ;     DISKOP_OP is FAT_OPEN by then, never FAT_FIND.
 ;   * A path where NO primitive ran at all (DISKSLOT_OK == 0) would read a STALE
@@ -690,15 +699,17 @@ oo_create:
                 jr      oo_cross
 oo_append:
                 ld      a,FOPEN_SEL_APND
+                jr      oo_cross
+oo_random_setup:
+                ; S10.D (2026-10-15): RANDOM is disk.rom's too (hk_frnd) -- the same
+                ; FCB-in-the-row channel, opened or created, LOC zeroed, the record
+                ; (FSECTOR_BUF, live) space-filled. It was the sub-ROM's
+                ; fat_rand_open, through a fatprim_bounce shim; GET / PUT
+                ; (basic/field.asm) now cross H_DGET to the same ROM.
+                ld      a,FOPEN_SEL_RAND
 oo_cross:
                 call    fopen_cross         ; A = status, 0 = open
                 add     a,$FF               ; CF iff status != 0
-                jr      oo_done
-oo_random_setup:
-                ; RANDOM: open-or-create the on-disk file and seed the channel's
-                ; record state (FWR_FIRST/FWR_BYTES/FWR_DIRSEC-OFF), then space-fill
-                ; the record buffer. GET/PUT (basic/field.asm) drive the record I/O.
-                call    fat_rand_open
 oo_done:
                 pop     de
                 pop     hl
@@ -1931,7 +1942,7 @@ fdcc_disk:
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
                 cp      4
-                jr      z,fdcc_rnd          ; RANDOM: the directory, once (D-PUTDIR)
+                jr      z,fdcc_hook         ; RANDOM: the directory, once (D-PUTDIR)
                 cp      DOUT_MODE
                 jr      nz,fdcc_clear       ; INPUT (or none): nothing to flush
                 ; 🗑️ D-MODE2DEAD (2026-10-07): mode 2 -- OUTPUT through main's own
@@ -1943,17 +1954,18 @@ fdcc_disk:
                 ; Ctrl-Z, the last record, the re-date. A failure RAISES from in
                 ; there (66) and leaves the channel open, marked so that the next
                 ; CLOSE frees it silently -- D-DISKFULL's face, kept.
+                ; 🧭 S10.D (2026-10-15): a RANDOM channel crosses the SAME cell.
+                ; ⚠️ A = THE MODE AT THE CALL (FCH_MODE, untouched by the two `cp`s
+                ; above), AND disk.rom READS IT: hk_chclose_e keeps it in B, and
+                ; mode 4 takes only the directory stamp -- D-PUTDIR's once-at-CLOSE
+                ; entry (first cluster, size, date) from the channel's FCB row,
+                ; where hk_dget keeps them. It was fdcc_rnd here: the sub-ROM's
+                ; fat_dir_update over main's engine globals, which a RANDOM
+                ; channel no longer fills. A failure raises from in there, the
+                ; channel still open -- as fdcc_rnd's `jp c,disk_error` left it.
+fdcc_hook:
                 call    H_CHCLOSE
                 ei                          ; a CALLF returns DI (cg_back's note)
-                jr      fdcc_clear
-; fdcc_rnd -- D-PUTDIR (2026-10-08): a RANDOM channel's directory entry is
-; stamped HERE, once, from the channel's engine state fch_select just loaded
-; (FWR_FIRST / FWR_BYTES / FWR_DIRSEC / FWR_DIROFF) -- as the CF-3300 updates it
-; at CLOSE, not per PUT. A failure is the disk's code, raised.
-fdcc_rnd:
-                ld      a,DISKOP_SEL_FAT_DIR_UPDATE
-                call    fatprim_bounce
-                jp      c,disk_error
 fdcc_clear:
                 ; 🧭 CLOSE LEAVES THE FIELD DEFINITIONS ALONE (2026-09-01,
                 ; Joost's call: match the reference). This used to

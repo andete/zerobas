@@ -95,15 +95,16 @@ fp_table:
                 jp      t_fat_dir_create        ; 12 DISKOP_SEL_FAT_DIR_CREATE
                 jp      t_fat_dir_update        ; 13 DISKOP_SEL_FAT_DIR_UPDATE
                 jp      t_fat_delete            ; 14 DISKOP_SEL_FAT_DELETE
-; --- rows 15-17: the fat_rand_* random-access record engine (docs/spec-
-; eviction-g4-space.md §3, carve #1). Same fp_table/DISKOP_OP selector, no new
-; tenant index -- the bodies live in sub/randio.asm, included right after
-; this file (+ dirverb.asm) in sub/sub.asm.
-                jp      t_fat_rand_open         ; 15 DISKOP_SEL_RAND_OPEN
-                jp      t_fat_rand_get          ; 16 DISKOP_SEL_RAND_GET
-                jp      t_fat_rand_put          ; 17 DISKOP_SEL_RAND_PUT
+; --- rows 15-17: RETIRED by S10.D (2026-10-15). They were the fat_rand_*
+; random-access record engine (docs/spec-eviction-g4-space.md §3, carve #1:
+; DISKOP_SEL_RAND_OPEN / GET / PUT, bodies in sub/randio.asm). RANDOM OPEN / GET
+; / PUT / CLOSE run in disk.rom now (hk_frnd / hk_dget / hk_chclose), so nothing
+; sends these; each keeps its 3 B so 18.. stay put (the table is append-only).
+                jp      fp_stash_ok             ; 15 retired (was DISKOP_SEL_RAND_OPEN)
+                jp      fp_stash_ok             ; 16 retired (was DISKOP_SEL_RAND_GET)
+                jp      fp_stash_ok             ; 17 retired (was DISKOP_SEL_RAND_PUT)
 ; --- row 18: fat_io_append's resume-point tail (docs/spec-eviction-g7-space.md,
-; carve 2). Body in sub/fiawalk.asm, included alongside randio.asm in sub/sub.asm.
+; carve 2). Body in sub/fiawalk.asm, included after this file in sub/sub.asm.
                 jp      t_fia_walked            ; 18 DISKOP_SEL_FIA_WALKED
 ; --- row 19: the file-channel re-stage (D-FCH S-FCH-1, docs/spec-basic-
 ; filechan-alloc.md §3.1). Body is fat_restage_channel in basic/fat-prim-body.inc,
@@ -237,6 +238,8 @@ t_fch_load:
                 jr      c,tfl_dev           ; a device channel: no engine state, no record
                 cp      DOUT_MODE-1
                 jr      z,tfl_dout          ; S10.B: the row is disk.rom's FCB
+                cp      4-1
+                jr      z,tfl_rnd           ; S10.D: RANDOM's row is too
                 ld      de,FCH_STATE0
                 ld      bc,FCH_STATESZ
                 ldir                        ; engine row -> globals
@@ -266,10 +269,25 @@ tfl_dev:
 ; the bytes committed in whole records, as on the CF-3300 (spec-diskcode-
 ; eviction.md, S10.B DESIGN INPUT 2). No record copy and no re-stage: the record
 ; lives in the block, and FSECTOR_BUF is not this channel's.
+; 🧭 S10.D (2026-10-15): a RANDOM channel (mode 4) is the same FCB row, filled by
+; disk.rom's hk_frnd / hk_dget -- so the mirror below is its LOF too (the size,
+; +16) -- BUT ITS RECORD STILL TRAVELS: FIELD / LSET / RSET / fld_lookup and
+; GET / PUT all work on the live channel's record in FSECTOR_BUF, as before. So
+; mode 4 takes the mirror, then tfl_rec's copy and re-stage (a no-op for it).
+tfl_rnd:
+                pop     de
+                push    de                  ; DE = the block (tfl_rec pops it)
+                call    tfl_mirror
+                jr      tfl_rec
 tfl_dout:
+                pop     de                  ; DE = the block
+                call    tfl_mirror
+                jp      fp_stash_ok
+; tfl_mirror -- HL = the row, DE = the block: cache the block at DOUT_BLK, then
+; LOF := the FCB's size (+16) and LOC := its random record (+33). Clobbers A,BC,DE,HL.
+tfl_mirror:
                 ld      bc,DOUT_BLK
                 add     hl,bc
-                pop     de                  ; DE = the block
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d
@@ -285,7 +303,7 @@ tfl_dout:
                 ldir                        ; LOC (S10.B increment 2: on an APPEND
                 xor     a                   ; channel it is not LOF)
                 ld      (de),a
-                jp      fp_stash_ok
+                ret
 
 ; t_fch_save (D-FCBSHAPE S0): the engine globals -> channel context block at
 ; HL. Was main's fch_save_active body, moved whole.
@@ -347,6 +365,9 @@ t_fch_save:
                 jr      c,tfs_dout          ; D-FLOORREC: a device channel keeps no record here
                 cp      DOUT_MODE-1
                 jr      z,tfs_dout          ; S10.B: nothing of main's to keep
+                cp      4-1
+                jr      z,tfs_rec           ; S10.D: RANDOM's row is disk.rom's FCB,
+                                            ; but its record travels (tfl_rnd's note)
                 ex      de,hl               ; DE = the row
                 ld      hl,FCH_STATE0       ; the 50-byte engine-state span
                 ld      bc,FCH_STATESZ
@@ -392,26 +413,8 @@ feng_lp:
                 ret
 
 
-; t_fat_rand_open/get/put (docs/spec-eviction-g4-space.md §3, carve #1): call
-; the sub-local bodies (sub/randio.asm, included after this file + dirverb.asm
-; so `call read_sector`/`fat_mount`/... inside them resolve to the fatprim
-; primitive bodies already resident in this page -- the same mechanism
-; t_read_sector etc. above use). Uniform Cy-only convention; fp_stash_ok/err
-; still persist HL/A for consistency with the other primitives, though no
-; caller currently reads them back for any of the three (field.asm/files.asm
-; only test Cy).
-t_fat_rand_open:
-                call    fat_rand_open
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
-t_fat_rand_get:
-                call    fat_rand_get
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
-t_fat_rand_put:
-                call    fat_rand_put
-                jp      c,fp_stash_err
-                jp      fp_stash_ok
+; (t_fat_rand_open / get / put -- the wrappers over sub/randio.asm's record
+; engine -- are GONE with it: S10.D, 2026-10-15, disk.rom runs RANDOM files.)
 
 ; The shared primitive bodies (dskio_calslt/read_sector/write_sector through
 ; fat_dir_update, then fat_delete). Included here WHOLESALE -- this file's

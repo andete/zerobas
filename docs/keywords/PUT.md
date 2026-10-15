@@ -111,6 +111,10 @@ All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
   `PUT` line, so `ON ERROR` sees it; `GET #` and `PUT #` share their error exit
   here, and one change fixed both. `make geteject-acceptance` covers it.
 
+- **Records 128 KB or more into a file were written to the wrong place**
+  (fixed 2026-10-15, found while moving `PUT` into the disk ROM): the cluster
+  walk used only the low byte of the sector number. Covered by
+  `tests/test_rand_straddle.py`.
 - **A `PUT` without a record number always wrote record 1** (fixed
   2026-10-09, D-RECAUTO), so a program writing its records in order kept only
   the last; the CF-3300 writes the record after the last one read or written.
@@ -131,10 +135,10 @@ All measured in [`getput_run.out`](../../scratchpad/getput_run.out):
 
 ## Where it lives
 
-`ex_put` in [basic/field.asm](../../basic/field.asm) parses the statement; the
-record engine is [basic/randio-body.inc](../../basic/randio-body.inc), run from
-the sub-ROM; the directory entry is written by `CLOSE`
-([basic/files.asm](../../basic/files.asm)).
+`ex_put` in [basic/field.asm](../../basic/field.asm) parses `#n` and checks
+the channel; the record number and the record engine are the disk ROM's
+(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D); the
+directory entry is written by `CLOSE` (`hk_chclose`, same file).
 
 ## Related concepts
 

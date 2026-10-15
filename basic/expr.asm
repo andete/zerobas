@@ -2743,34 +2743,8 @@ ixsp:
                 inc     ix
                 jp      ev_sp
 
-; --- mul16sat: HL = HL * DE, SATURATED to $FFFF on 16-bit overflow ----------
-; D-GETEOF2. `mul16` returns the low 16 bits, which is fine for every caller
-; that knows its operands fit -- and wrong for a BOUND TEST, where a wrapped
-; product reads as a SMALL offset and accepts a record that is nowhere near the
-; file. Record 300 at reclen 256 is 76800; low word 11264, which is "inside" any
-; file bigger than 11 KB.
-; \U0001f3af SATURATION IS THE RIGHT ANSWER RATHER THAN A WIDER PRODUCT, because the
-; only question asked of it is `offset >= size` and `size` is 16-bit: anything
-; that overflows is past EOF by definition, so $FFFF answers correctly without a
-; 32-bit compare. Clobbers A, BC, DE, HL, exactly as mul16 does.
-mul16sat:
-                ld      b,h
-                ld      c,l                 ; BC = multiplicand
-                ld      hl,0
-                ld      a,16
-ms_lp:
-                add     hl,hl               ; product <<= 1
-                jr      c,ms_sat            ; ...carried out of 16 bits
-                ex      de,hl
-                add     hl,hl               ; multiplier <<= 1, CF = old MSB
-                ex      de,hl               ; (ex does not affect flags)
-                jr      nc,ms_skip
-                add     hl,bc               ; bit set -> product += multiplicand
-                jr      c,ms_sat            ; ...and that carried too
-ms_skip:
-                dec     a
-                jr      nz,ms_lp
-                ret
-ms_sat:
-                ld      hl,$FFFF            ; past any 16-bit file size
-                ret
+; (mul16sat -- HL = HL * DE saturated to $FFFF, D-GETEOF2's overflow-proof bound
+; for GET's "record starts past EOF" test -- is GONE since S10.D, 2026-10-15: that
+; test runs in disk.rom's fat_rand_get now, on the full 24-bit offset against the
+; 32-bit size, so neither the saturation nor the ">64 KB file: skip the test"
+; shortcut it needed survives. Its only caller was basic/field.asm gp_doget.)

@@ -96,7 +96,6 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/missing.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
-         basic/randio-body.inc basic/fld-fill-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
          basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
@@ -198,11 +197,9 @@ SUB_SRC   := sub/sub.asm
 # reuses fatprim's already-listed primitive bodies sub-locally); until the lean
 # cart retired it kept its verb-body copies inline in basic/files.asm -- same
 # staleness hazard, same fix.
-# sub/randio.asm + basic/randio-body.inc + basic/fld-fill-body.inc (fat_rand_*
-# random-access record engine, docs/spec-eviction-g4-space.md §3, carve #1 of
-# the G4-space eviction slice): the tenant body + its two shared .inc files
-# (the lean cart's inline copies, basic/field.asm) -- same staleness hazard,
-# same fix ([[makefile-subparts-stale-tenant]]).
+# sub/randio.asm + basic/randio-body.inc + basic/fld-fill-body.inc -- DELETED
+# 2026-10-15 (S10.D): the fat_rand_* random-access record engine runs in disk.rom
+# (disk/kernel.asm, hk_frnd / hk_dget), not in a sub-ROM tenant.
 # sub/lineedit.asm + (numbered-line editor TXTTAB-
 # memmove engine, docs/spec-eviction-g4-space.md §4, carve #2 of the
 # G4-space eviction slice): the tenant body + its shared .inc file (the lean
@@ -233,7 +230,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc basic/fatfits-body.inc \
-             sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
+             sub/fiawalk.asm basic/fiawalked-body.inc \
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \

@@ -657,6 +657,40 @@ dos_clear_screen:
 ; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
+; --- S10.D: the RANDOM record engine's multiply (disk/kernel.asm hk_dget), in the
+; fill below the $7F7C pin (and below the $7F80 FDC window).
+
+; mul_reclen -- A:HL := HL * GP_RECLEN, a 24-bit product (D-PUTU32: k is 0..65535
+; and reclen 1..256, so the product is < 2^24). Two cases, because 256 does not
+; fit an 8-bit multiplier: reclen == 256 is k << 8, moved by bytes; reclen < 256
+; is 8 MSB-first steps with k FIXED in BC and the product doubling in A:HL.
+; Clobbers BC, DE (the sub-ROM copy kept BC; no caller here needs it).
+mul_reclen:
+                ld      b, h
+                ld      c, l                ; BC = k
+                ld      de, (GP_RECLEN)
+                ld      a, d
+                or      a
+                jr      z, mr_lt256
+                ld      a, b                ; reclen == 256: A:HL = k << 8
+                ld      h, c
+                ld      l, 0
+                ret
+mr_lt256:                                   ; A = 0; E = reclen (1..255)
+                ld      h, a
+                ld      l, a
+                ld      d, 8
+mr_loop:
+                add     hl, hl
+                rla                         ; A:HL <<= 1
+                sla     e                   ; reclen's top bit -> CF
+                jr      nc, mr_skip
+                add     hl, bc
+                adc     a, 0                ; A:HL += k
+mr_skip:
+                dec     d
+                jr      nz, mr_loop
+                ret
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
                 ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).

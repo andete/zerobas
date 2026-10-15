@@ -242,10 +242,11 @@ Each disk channel's 50 bytes of FAT bookkeeping live in a row of
 tenant (`seq_peek` in [sub/bload.asm](../../sub/bload.asm)); writing,
 appending and the "is this file already open" check are the disk ROM's
 ([disk/kernel.asm](../../disk/kernel.asm)). Random records go through
-`ex_get` / `ex_put` in [basic/field.asm](../../basic/field.asm) and the record
-engine [basic/randio-body.inc](../../basic/randio-body.inc), which keeps each
-channel's last record number for `LOC`; the CF-3300's bare `GET` / `PUT` use
-that number plus one.
+`ex_get` / `ex_put` in [basic/field.asm](../../basic/field.asm) (the channel
+checks) and the disk ROM's record engine (`hk_dget` in
+[disk/kernel.asm](../../disk/kernel.asm)), which keeps each channel's last
+record number for `LOC`; the CF-3300's bare `GET` / `PUT` use that number plus
+one.
 
 ## Related pages
 

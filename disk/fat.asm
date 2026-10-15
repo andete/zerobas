@@ -341,6 +341,39 @@ fwd_ok:
                 or      a               ; A = 0, Cy = 0
                 ret
 
+; --- S10.D: the RANDOM record reader (disk/kernel.asm hk_dget), in this fill
+; below the $4919 loader anchor. IX = the channel's FCB row.
+
+; fat_rand_get -- read record GP_RECNO into the record (FAT_DBUF[0..reclen)).
+; 🔴 D-GETEOF: a record that STARTS at or past EOF is `Input past end` (55),
+; raised; one that starts inside and ends past is accepted (D-GETSTRADDLE).
+; The bound is the whole 24-bit offset against the 32-bit size: main's resident
+; test skipped files over 64 KB ("recno <= 255", false since D-PUTU32).
+; 🎯 D-STRADDLE: two passes, as fat_rand_put.
+;   in:  GP_RECNO, GP_FLAGS = 0 (hk_dget), IX = the row
+;   out: CF = 0 read (a second sector past the chain: the record is spaces);
+;        CF = 1 a read failed (D-GETEJECT: the code pending, hk_dget raises it)
+fat_rand_get:
+                call    frnd_calc           ; A:HL = the offset; the pass cursor
+                call    rnd_cmp
+                ld      a, 55
+                jp      nc, hdg_raise       ; starts at or past EOF
+                call    rnd_loc             ; LOC
+frg_pass:
+                call    frnd_locate
+                jp      c, frg_eofchk       ; past the chain -- or a FAILED READ
+                call    rnd_rd
+                ret     c
+                call    frnd_pass_len       ; BC = this sector's share
+                ld      hl, (GP_WITHIN)
+                ld      de, FAT_MBUF
+                add     hl, de              ; HL = FAT_MBUF + within
+                ld      de, (GP_SRC)        ; the record, advanced per pass
+                ldir
+                ld      (GP_SRC), de
+                call    rnd_step
+                jr      nz, frg_pass
+                ret                         ; CF = 0
 
                 ds      $4919 - $, $00      ; anchor canonical address
                 ds      $4935 - $, $00      ; anchor canonical address

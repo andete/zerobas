@@ -3103,6 +3103,57 @@ item — do **one item per session** to keep context lean.
       record parse; the sub-ROM randio tenant (~790 B) goes; disk.rom pays
       ~450-650 B across its interior holes (the largest is ~843 B, `make basic-reloc`
       2026-10-15 -- READ IT, never this number).
+      ✅ **S10.D BUILT (2026-10-15): RANDOM OPEN / GET / PUT / CLOSE RUN IN
+      disk.rom.** Drafted by a subagent in its own worktree while the gates ran,
+      reviewed and integrated here. Main (basic/field.asm gp_common) keeps the
+      `#n` parse, 5 / 59 / 52 / 58 / 61 and PUT SPRITE's split, then crosses
+      `chan_gate_bare` to H_DGET with A = 0 GET / 1 PUT, C = the channel,
+      FN_RESUME = the cursor; disk.rom's `hk_dget` parses `,r` (call-back
+      `eval_int16_checked`), raises 5 for record 0, takes LOC + 1 bare
+      (D-RECAUTO), makes the channel live (call-back `fch_select`, AFTER the
+      evaluator: `GET #1,LOF(2)`), and runs the engine. OPEN RANDOM is H_FOPEN
+      selector FOPEN_SEL_RAND -> `hk_frnd`; CLOSE mode 4 joins OUTPUT at
+      H_CHCLOSE. Deleted: sub/randio.asm, basic/randio-body.inc,
+      basic/fld-fill-body.inc, mul16sat, fdcc_rnd, GP_MODE / GP_CHAN / GP_OLDNSEC;
+      fatprim rows 15-17 retired in place. Why the BARE gate with sector I/O is
+      right here: basic/files.asm chan_gate_bare's new exception note.
+      📏 Walls (`make basic-reloc`, 2026-10-15): main page 1 8 -> 139 B, sub page
+      1 141 -> 928 B, disk.rom 3844 -> 3149 B free (26 runs), main low unchanged.
+      🔮 Scored (2026-10-15) against the estimates above: page 1 "~105-120 B plus the parse"
+      -> +131: HIT; sub "~790 B" -> +787: HIT; disk.rom "~450-650 B" -> 695: MISS
+      (over). The corridors S10.D's engine landed in ($5FE8, $77BB, $7793, the
+      $75A5 tail) have single-digit slack before their next pin, measured
+      2026-10-15 -- 🔴 BUT THOSE PINS, AND THE ONES INSIDE THE 793 B RUN AT $4910,
+      ARE MOSTLY NOT REAL. A read-only room brief (2026-10-15, after S10.D) found,
+      and disk/fat.asm:378-391 confirms, that $4919 .. $4C25 are FOURTEEN BARE
+      `ds` POSITION ASSERTS with no code between them -- the `jp k_49xx` veneers
+      went with D-FATENG (06c7574c, 2026-09-18: "position assertions survive,
+      code goes") and each `k_49xx` is a lone `ret` near $7835. The drafting
+      subagent's "only ~59 B of the $4910 run is free" took them for pins and was
+      WRONG: the run is bounded only by the internal `fdc_di_save` ($4C29,
+      net-zero). The brief classes disk.rom's pins as truly fixed (the $4010
+      table, $402D, the BDOS entries the stock kernel CALLs, the FDC window
+      $7F80-$7FBF), our own ABI ($7F7C, main's `ld ix,$7F7C`), VESTIGIAL (`jp` to a
+      lone `ret`, reached only through RET-filled $F2xx stubs: $41FD, $4558,
+      $46C8, $4E4B, $4EDE, $5FE5, $607B, $75A5, $77B8, $782B) and net-zero layout.
+      Pooled to the next truly fixed pin: ~1224 B before $4FB8 (estimate).
+      ➡️ NEXT (the brief's ranking, unverified beyond the fat.asm read): (a) the
+      byte-identical pin cleanup -- drop the dead asserts and vestigial veneers,
+      teach tools/check_disk_walls.py the pin classes (it also counts the FDC
+      window as free); (b) BSAVE-to-disk, measured on the CF-3300 first (~130 B of
+      disk.rom for ~312 B of sub page 1, estimated); (c) S10.C into the pooled
+      corridor; (d) S10.E. Also found: the sub tenant `t_fia_walked` (148 B, sub
+      page 1) has no sender since S10.B moved APPEND.
+      🐛 Two pre-existing engine bugs fixed on the way (found by the drafting
+      subagent, witnessed by new tests/test_rand_straddle.py rows and a knife that
+      restored the old code): `frnd_locate` divided the file sector by sectors-
+      per-cluster on the LOW BYTE only, so a record 128 KB or more into a file
+      walked the wrong cluster; and D-GETEOF skipped its bound for files over
+      64 KB ("recno <= 255", false since D-PUTU32), so GET past the end of such a
+      file gave spaces, not 55.
+      ↔️ Behaviour change, the reference's order: `GET #1,0` / `GET #1,"A"` on a
+      CLOSED channel now answer 59 (the channel check is main's, before any
+      hook) where they answered 5 / 13.
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
@@ -9130,7 +9181,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34663 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34714 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9296,7 +9347,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14158 (T-6FE392)8 (T-529ABE)` from `TODO.md:26952 (T-529ABE)`: a
+      `TODO.md:14209 (T-6FE392)8 (T-529ABE)` from `TODO.md:27003 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15005,7 +15056,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26952 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

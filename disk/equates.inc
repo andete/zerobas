@@ -205,6 +205,9 @@ DISKOP_SEL_DSKO equ     4       ; D-DSKLOCAL: mirror of basic/sysvars.inc's -- m
 FOPEN_SEL_MAKE  equ     $4D     ; S10.B (2026-10-06): OPEN FOR OUTPUT -- create
                                 ; DISK_FCB_NAME as the live channel's FCB (hk_fmake)
 FOPEN_SEL_APND  equ     $50     ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)
+FOPEN_SEL_RAND  equ     $52     ; S10.D (2026-10-15): OPEN ... AS #n, RANDOM (hk_frnd)
+H_DGET          equ     $FE80   ; S10.D: GET / PUT (hk_dget) -- A = 0 GET / 1 PUT,
+                                ; C = the channel, FN_RESUME = the cursor past `#n`
 H_CHOUT         equ     $FE85   ; S10.B: one byte out of an OUTPUT channel (A)
 H_CHCLOSE       equ     $FE62   ; S10.B: CLOSE of an OUTPUT channel
 FOPEN_SEL_OCHK  equ     $4F     ; D-OPENSAME (2026-09-29): OPEN's same-file check

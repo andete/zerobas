@@ -1195,6 +1195,8 @@ hco_tail:
 ; SAVE ,A's end: the partial sector, then the directory entry (size, first
 ; cluster). The Ctrl-Z is main's -- the listing's last byte, as before.
 hk_chclose_e:
+                ld      b, a                ; S10.D: the caller's mode -- main's fdcc_disk
+                                            ; crosses with A = FCH_MODE (3 or 4)
                 ld      a, (FCH_ACTIVE)
                 or      a
                 jp      nz, hk_chclose      ; a channel: Ctrl-Z, record, entry
@@ -1424,27 +1426,31 @@ dwr_lof:
                 jp      dout_mirror
 
 ; dout_secread -- FAT_DBUF := the sector at (FWR_CLUS, FWR_SECIDX). Cy = I/O.
+; S10.D: its address arithmetic is clus_sec now, shared with the RANDOM record
+; engine's chain walk (frnd_locate), which carried a second copy of it.
 dout_secread:
                 ld      hl, (FWR_CLUS)
-                ld      de, 2
-                or      a
-                sbc     hl, de
-                ex      de, hl              ; DE = cluster - 2
-                ld      hl, 0
-                ld      a, (FAT_SECPERCLUS)
-                ld      b, a
-dsr_mul:
-                add     hl, de
-                djnz    dsr_mul             ; HL = (cluster-2) * secPerClus
-                ld      de, (FAT_FIRSTDATA)
-                add     hl, de
                 ld      a, (FWR_SECIDX)
-                ld      e, a
-                ld      d, 0
-                add     hl, de
-                ex      de, hl              ; DE = the sector
+                call    clus_sec            ; DE = the sector
                 ld      hl, FAT_DBUF
                 jp      read_sector
+; clus_sec -- DE = the absolute sector of sector A of cluster HL:
+; FIRSTDATA + (cluster - 2) * secPerClus + A. Clobbers A, B, HL.
+clus_sec:
+                dec     hl
+                dec     hl
+                ex      de, hl              ; DE = cluster - 2 (a data cluster is >= 2)
+                ld      l, a
+                ld      h, 0                ; HL = the sector in the cluster
+                ld      a, (FAT_SECPERCLUS)
+                ld      b, a
+cs_mul:
+                add     hl, de
+                djnz    cs_mul              ; + (cluster - 2) * secPerClus
+                ld      de, (FAT_FIRSTDATA)
+                add     hl, de
+                ex      de, hl
+                ret
 dwr_fail:
                 ; 🔴 D-PRINTFULLSTAMP (2026-10-06): a FAILING CLOSE (DOUT_DEAD is set
                 ; before its writes) commits nothing, as the CF-3300's: MSX-DOS 1
@@ -1482,6 +1488,12 @@ dwr_raise:
 hk_chclose:
                 ei
                 call    dout_live
+                ld      a, b
+                cp      4
+                jr      z, hcc_stamp        ; S10.D: RANDOM -- the entry only, once
+                                            ; (D-PUTDIR); a failure raises through
+                                            ; dwr_fail, DOUT_DEAD clear, the channel
+                                            ; still open -- fdcc_rnd's old face
                 bit     DOUT_DEAD, (ix+DOUT_FLG)
                 jr      nz, hcc_done        ; the failed CLOSE's second: just free it
                 set     DOUT_DEAD, (ix+DOUT_FLG)
@@ -1572,8 +1584,9 @@ wfs_geom:
                 ret
 
 
-; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B: its name is
-; the FCB's +1..11, no sector to read. CF=1 a match.
+; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B -- or, since S10.D,
+; a RANDOM one (the same FCB row): its name is the FCB's +1..11, no sector to
+; read. CF=1 a match.
 hoc_dout:
                 push    bc
                 ld      a, b
@@ -1585,6 +1598,216 @@ hoc_dout:
                 scf
                 ret     z
                 jp      hoc_next
+
+; ===== S10.D (2026-10-15): a RANDOM channel is the same FCB row, and its record
+; I/O runs HERE ==============================================================
+; D-ROMSIZE step 1 / spec-diskcode-eviction.md S10.D. Until now OPEN ... AS #n,
+; GET, PUT and a RANDOM CLOSE ran main's head over the sub-ROM's record engine
+; (sub/randio.asm, fatprim rows 15-17) with the channel's state in MAIN's engine
+; globals (FWR_FIRST / FWR_BYTES / FWR_DIRSEC / FWR_DIROFF), saved per channel by
+; the sub-ROM's t_fch_save. S10.B's lesson holds here too: the record path can
+; only move if the state is disk-side FROM OPEN. So a RANDOM channel's row is the
+; S10.B FCB row -- name +1..11 (hkk_open_check), size +16..19 (LOF), DOUT_FIRST,
+; DOUT_DIRSEC / DOUT_DIROFF (CLOSE's stamp), DOUT_BLK -- filled by hk_frnd and
+; kept by hk_dget's engine through IX.
+; ⚠️ WHAT DID NOT MOVE: THE RECORD. FIELD, LSET / RSET, fld_lookup and GET / PUT
+; all work on the LIVE channel's record in FSECTOR_BUF (= this ROM's FAT_DBUF,
+; the merged buffer pair), saved to the block's +9 when another channel goes live
+; -- the sub-ROM's t_fch_save / t_fch_load still copy it for mode 4, and only the
+; row's engine-state copy stopped. So the engine below reads and writes FAT_DBUF
+; exactly as the sub-ROM's did, and uses FAT_MBUF for the sector it overlays.
+; The reference's contract at $FE80 (scratchpad/dget_run*.out, CF-3300): main has
+; done the "File not OPEN" check and nothing else; the RECORD NUMBER IS PARSED
+; HERE (record 0 -> 5, past EOF / -1 -> 55 are raised by the disk side). Ours
+; crosses with A / C / FN_RESUME rather than its HL = PTRFIL and a stacked text
+; pointer -- own-design ABI, the reference's split.
+
+; hk_frnd -- OPEN "f" AS #n (no FOR clause: RANDOM) -- H_FOPEN, FOPEN_SEL_RAND.
+; FCH_ACTIVE is the channel being opened (fch_claim), DISK_FCB_NAME the parsed
+; 8.3 name. The sub-ROM's fat_rand_open, moved: LOC := 0 (D-LOC: the CF-3300
+; reads 0 before any GET / PUT), find the file -- or create it (no truncation:
+; RANDOM keeps an existing file) -- and space-fill the record (fld_fill_record's
+; 512 B). hk_fmake's tail: status 0 open; 1 with the code pending.
+hk_frnd:
+                ei
+                call    dout_open           ; IX = the row: the name, the block, mounted
+                jp      c, hfm_fail
+                ld      a, (FCH_ACTIVE)
+                call    rnd_recno           ; HL = &FCH_RECNOS[ch]
+                xor     a
+                ld      (hl), a
+                inc     hl
+                ld      (hl), a             ; LOC = 0
+                ld      hl, DISK_FCB_NAME
+                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
+                jr      c, hfr_make
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+DOUT_FIRST), l
+                ld      (ix+DOUT_FIRST+1), h
+                push    ix
+                pop     hl
+                ld      de, 16
+                add     hl, de
+                ex      de, hl              ; DE = the FCB's size, +16
+                ld      hl, FAT_FILESIZE
+                ld      bc, 4
+                ldir                        ; the whole 32-bit size (D-PUTU32)
+                jr      hfr_fill
+hfr_make:
+                push    ix
+                pop     hl
+                inc     hl                  ; HL = the FCB's name
+                call    fat_dir_create      ; a new, empty entry (dout_open zeroed the
+                jp      c, hfm_fail         ; first cluster and the size)
+hfr_fill:
+                ld      hl, FAT_DBUF
+                call    fill_sec            ; the record (the live channel's) = spaces
+                jp      hfm_ok              ; the entry's place, LOF, status 0
+
+; hk_dget -- GET / PUT (H_DGET, $FE80). Main (basic/field.asm gp_common) has
+; parsed `#n` and raised 5 / 59 / 52 / 58 / 61 itself, so the channel is OPEN
+; and RANDOM.
+;   in   A = 0 GET / 1 PUT, C = the channel, FN_RESUME = the cursor past `#n`
+;   out  FN_RESUME = the cursor past `, recno`; CF = 1 (claimed)
+;   raises (never returns): the evaluator's own (13, 6, ...), 5 record 0, 55 a
+;        GET at or past EOF, a pending DSKIO / disk-full code (disk_error)
+; ⚠️ THE CHANNEL IS MADE LIVE AFTER THE EVALUATOR, NOT BEFORE: the record is an
+; EXPRESSION, and `GET #1,LOF(2)` or a FIELDed variable of another channel in it
+; runs fch_select on THAT channel. Main used to parse first and select second for
+; the same reason; the order survives the move.
+hk_dget:
+                ei                          ; D-HOOKDI: the hook arrives DI
+                ld      b, a
+                push    bc                  ; [B = GET / PUT, C = the channel]
+                ld      hl, (FN_RESUME)
+                call    hkp_sp              ; A = the first non-blank
+                cp      ','
+                jr      nz, hdg_next
+                inc     hl
+                ld      ix, eval_int16_checked
+                call    calbak              ; DE = the record (D-RECLENERR: a string
+                ld      (FN_RESUME), hl     ; is 13 there, as before)
+                jr      hdg_have
+hdg_next:
+                ; ✅ D-RECAUTO: NO RECORD NUMBER MEANS THE NEXT ONE -- LOC + 1. The
+                ; CF-3300's disk FCB already holds it (+33 = 2 after `GET#1,2`).
+                ld      a, c
+                call    rnd_recno
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                inc     de
+hdg_have:
+                ld      a, d
+                or      e
+                ld      a, 5
+                jr      z, hdg_raise        ; 🔴 D-GETREC: record 0 is Illegal function
+                                            ; call, RAISED (trappable), GET and PUT
+                ld      (GP_RECNO), de
+                pop     bc
+                push    bc
+                ld      a, c
+                ld      ix, fch_select
+                call    calbak              ; the channel live: FSECTOR_BUF its record
+                call    dout_live           ; IX = its row
+                pop     bc
+                ld      a, b
+                ld      (GP_FLAGS), a       ; 1 = PUT extends the chain, 0 = GET stops
+                djnz    hdg_get             ; B was 0: GET
+                call    fat_rand_put
+                jr      hdg_fin
+hdg_get:
+                call    fat_rand_get
+hdg_fin:
+                ld      ix, disk_error
+                call    c, calbak           ; D-GETEJECT: the pending code RAISED (70
+                                            ; with the disk out); none -> `load error`,
+                                            ; which returns -- so this is a call
+                scf                         ; claimed
+                ret
+hdg_raise:
+                ld      ix, raise_error     ; A = the code; never returns
+                jp      calbak
+
+; rnd_recno -- HL = &FCH_RECNOS[A], the word LOC reads. rnd_tab -- HL = DE + 2*A.
+; Clobbers A, DE.
+rnd_recno:
+                ld      de, FCH_RECNOS
+rnd_tab:
+                add     a, a
+                ld      l, a
+                ld      h, 0
+                add     hl, de
+                ret
+
+; rnd_loc -- D-LOC: FCH_RECNOS[FCH_ACTIVE] := GP_RECNO, written only by a GET /
+; PUT that reaches the record (a GET refused past EOF leaves LOC, as the CF-3300
+; does). Clobbers A, DE, HL.
+rnd_loc:
+                ld      a, (FCH_ACTIVE)
+                call    rnd_recno
+                ld      de, (GP_RECNO)
+                ld      (hl), e
+                inc     hl
+                ld      (hl), d
+                ret
+
+; frnd_calc -- split GP_RECNO into GP_SEC (the file sector) and GP_WITHIN (the
+; offset in it): offset = (recno - 1) * reclen, 24 bits (D-PUTU32), reclen =
+; FCH_RECLENS[FCH_ACTIVE] (OPEN's LEN=, 1..256) into GP_RECLEN -- and arm
+; D-STRADDLE's pass cursor: GP_SRC := the record, GP_LEFT := its length.
+;   out: A:HL = the offset (GET's EOF bound reads it). Clobbers BC, DE.
+frnd_calc:
+                ld      a, (FCH_ACTIVE)
+                ld      de, FCH_RECLENS
+                call    rnd_tab
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)
+                ld      (GP_RECLEN), de
+                ld      (GP_LEFT), de       ; the pass cursor: all of the record...
+                ld      hl, FAT_DBUF
+                ld      (GP_SRC), hl        ; ...from its first byte
+                ld      hl, (GP_RECNO)
+                dec     hl                  ; k = recno - 1 (0..65534)
+                call    mul_reclen          ; A:HL = k * reclen
+                ld      c, a
+                ld      e, l
+                ld      a, h
+                and     1
+                ld      d, a
+                ld      (GP_WITHIN), de     ; offset & 511
+                ld      e, h
+                ld      d, c
+                srl     d
+                rr      e
+                ld      (GP_SEC), de        ; offset >> 9: 16 bits on any disk that holds it
+                ld      a, c
+                ret
+
+; frnd_pass_len -- BC := min(GP_LEFT, 512 - GP_WITHIN), and GP_LEFT -= BC: the
+; bytes of the record that fit in the sector this pass holds. Clobbers A, DE, HL.
+frnd_pass_len:
+                ld      hl, 512
+                ld      de, (GP_WITHIN)
+                or      a
+                sbc     hl, de              ; HL = room in the sector (1..512)
+                ex      de, hl
+                ld      hl, (GP_LEFT)
+                or      a
+                sbc     hl, de              ; left - room
+                jr      nc, fpl_split       ; left >= room: this pass takes the room
+                add     hl, de              ; the rest fits: n = left, none over
+                ld      b, h
+                ld      c, l
+                ld      hl, 0
+                ld      (GP_LEFT), hl
+                ret
+fpl_split:
+                ld      (GP_LEFT), hl
+                ld      b, d
+                ld      c, e
+                ret
 
 
 ; ===== D-DOSDATE (2026-10-01): the DOS date, kept as the CF-3300 keeps it ====
@@ -2139,6 +2362,108 @@ csb_p0_back:
 
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
+; --- S10.D: the RANDOM record writer, in the free region after the $5FE5 veneer
+; (no canonical entry inside; hk_dget and its helpers are in the fill above
+; `ds $5FE5 - $`). IX = the channel's FCB row throughout.
+
+; fat_rand_put -- write the record (FAT_DBUF[0..reclen)) as record GP_RECNO: a
+; read-modify-write of each sector it touches, the chain extended as needed, the
+; size grown to recno * reclen. 🔴 D-PUTDIR: NO DIRECTORY WRITE -- the CF-3300
+; leaves the entry alone until CLOSE (hk_chclose stamps it, once).
+; 🎯 D-STRADDLE: a record that crosses a sector boundary is written in TWO
+; passes (tests/test_rand_straddle.py builds the expected image independently).
+;   in:  GP_RECNO, GP_FLAGS = 1 (hk_dget), IX = the row
+;   out: CF = 0 written; CF = 1 disk full / I/O (the code pending in DISKOP_ERR)
+fat_rand_put:
+                call    frnd_calc           ; GP_SEC, GP_WITHIN, GP_RECLEN, the cursor
+                call    rnd_loc             ; LOC
+frp_pass:
+                call    frnd_locate         ; GP_PHYS, the chain extended
+                ret     c
+                ; did the file already have this sector? GP_SEC * 512 < size --
+                ; the sub-ROM's `GP_SEC < ceil(size / 512)` (GP_OLDNSEC), asked of
+                ; the row's size directly: it does not move until the record is
+                ; written (frnd_update_size), so it is still the OLD size here.
+                ld      hl, (GP_SEC)
+                ld      a, h
+                ld      h, l
+                ld      l, 0
+                sla     h
+                rla                         ; A:HL = GP_SEC << 9
+                call    rnd_cmp
+                jr      c, frp_readold      ; yes: read it first
+                ld      hl, FAT_MBUF
+                call    fill_sec            ; past the old end: start from spaces
+                jr      frp_overlay
+frp_readold:
+                call    rnd_rd
+                ret     c
+frp_overlay:
+                call    frnd_pass_len       ; BC = what fits in this sector
+                ld      hl, (GP_WITHIN)
+                ld      de, FAT_MBUF
+                add     hl, de
+                ex      de, hl              ; DE = FAT_MBUF + within
+                ld      hl, (GP_SRC)        ; the record, advanced per pass
+                ldir
+                ld      (GP_SRC), hl
+                ld      de, (GP_PHYS)
+                ld      hl, FAT_MBUF
+                call    fatprim_write_sector    ; NOT the kernel's write_sector:
+                ret     c                   ; this one maps the DSKIO code (D-DISKERR)
+                call    rnd_step
+                jr      nz, frp_pass        ; the record's second sector
+                ; FALLS INTO frnd_update_size
+
+; frnd_update_size -- size := max(size, recno * reclen), 32 bits, in the row
+; (+16..19); then main's LOF mirror (dout_mirror): D-LOF §4c, a RANDOM PUT moves
+; LOF live, before the directory knows. CF = 0.
+frnd_update_size:
+                ld      hl, (GP_RECNO)
+                call    mul_reclen          ; A:HL = recno * reclen
+                call    rnd_cmp
+                ccf                         ; (CF must come back 0: hk_dget reads
+                ret     nc                  ;  CF = 1 as a failed write) -- the file
+                                            ;  already reaches past it
+                ld      (ix+16), l
+                ld      (ix+17), h
+                ld      (ix+18), a
+                ld      (ix+19), 0
+                jp      dout_mirror         ; (ends `xor a / ld (de),a / ret`: CF = 0)
+
+; rnd_rd -- FAT_MBUF := sector GP_PHYS. CF = the read failed.
+rnd_rd:
+                ld      de, (GP_PHYS)
+                ld      hl, FAT_MBUF
+                jp      read_sector
+
+; rnd_step -- the next pass of a straddling record: Z = the record is done; else
+; GP_WITHIN := 0, GP_SEC += 1, NZ. CF = 0 either way.
+rnd_step:
+                ld      hl, (GP_LEFT)
+                ld      a, h
+                or      l
+                ret     z
+                ld      hl, 0
+                ld      (GP_WITHIN), hl
+                ld      hl, (GP_SEC)
+                inc     hl
+                ld      (GP_SEC), hl        ; (inc hl leaves the flags: NZ)
+                ret
+
+; fill_sec -- 512 bytes at HL := spaces. fill_sp -- BC+1 bytes at HL := spaces.
+; CF = 0. Clobbers BC, DE, HL.
+fill_sec:
+                ld      bc, 511
+fill_sp:
+                ld      (hl), ' '
+                ld      d, h
+                ld      e, l
+                inc     de
+                ldir
+                or      a
+                ret
+
                 ds      $607B - $, $00
                 jp      k_607B          ; $607B  (BDOS callback; spec §5.2)
 
@@ -4004,7 +4329,9 @@ hook_tab:
                 dw      H_SYST, hk_system    ; D-CALLSYSTEM: CALL SYSTEM, back to MSX-DOS
                 dw      H_CHOUT, hk_chout_e  ; S10.B: PRINT# to an OUTPUT channel, a byte
                                              ; (and SAVE ,A's, increment 3: _e below)
-                dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise)
+                dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise; S10.D:
+                                             ; a RANDOM channel's too, A = its mode)
+                dw      H_DGET, hk_dget      ; S10.D: GET / PUT's record I/O
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,
@@ -4236,6 +4563,8 @@ hk_dpload:
                 jp      z,hk_fmake          ; S10.B: OPEN FOR OUTPUT
                 cp      FOPEN_SEL_APND
                 jp      z,hk_fapp           ; S10.B increment 2: OPEN FOR APPEND
+                cp      FOPEN_SEL_RAND
+                jp      z,hk_frnd           ; S10.D: OPEN RANDOM
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.
@@ -4538,7 +4867,9 @@ hoc_loop:
                 cp      LPT_MODE
                 jr      nc,hoc_next         ; a device or cassette channel
                 cp      DOUT_MODE
-                jp      z,hoc_dout          ; S10.B: its name is in its FCB
+                jp      nc,hoc_dout         ; S10.B: its name is in its FCB -- and
+                                            ; S10.D: a RANDOM channel's (4) too;
+                                            ; mode 2 is never stored (D-MODE2DEAD)
                 push    bc
                 ld      a,(FCH_ACTIVE)
                 cp      b
@@ -5238,6 +5569,28 @@ dfo_done:
                 pop     hl
                 ret
 
+; --- S10.D: two RANDOM record-engine helpers (disk/kernel.asm hk_dget), at the
+; end of this corridor; frnd_locate (in the $77BB fill) calls both.
+; frl_alloc -- GET (GP_FLAGS 0): CF = 1, past the end. PUT: a new cluster in HL
+; (marked end-of-chain), CF = 1 disk full (66 pending) / I/O.
+frl_alloc:
+                ld      a, (GP_FLAGS)
+                or      a
+                scf
+                ret     z
+                jp      fat_alloc_cluster
+; frnd_next -- HL = the cluster after HL. The FAT sector goes into FAT_MBUF, never
+; FAT_DBUF, which holds the record: fat_read_fat_sector + fac_entry_from_wbuf,
+; the two halves this ROM's allocator already uses (the sub-ROM carried a private
+; 75 B copy of them). CF = 1 the read failed.
+frnd_next:
+                call    fat_read_fat_sector
+                ret     c
+                call    fac_entry_from_wbuf ; DE = the 12-bit entry
+                ex      de, hl
+                or      a
+                ret
+
                 ds      $75A5 - $, $00
                 jp      k_75A5          ; $75A5
 
@@ -5581,8 +5934,104 @@ k47b2_mid:
                 ret     c
                 ld      (RDBLK_BUFPOS), hl
                 ret                         ; Cy = 0 (fat_read_file_sector's)
+; --- S10.D: two of the RANDOM record engine's helpers (disk/kernel.asm hk_dget),
+; in the free region before the $77B8 veneer.
+
+; rnd_cmp -- CF = A:HL (24 bits) < the row's size (+16..19, 32 bits). IX = the
+; row; A and HL are kept, DE is not.
+rnd_cmp:
+                push    hl
+                ld      e, (ix+16)
+                ld      d, (ix+17)
+                or      a
+                sbc     hl, de
+                ld      l, a
+                ld      h, 0
+                ld      e, (ix+18)
+                ld      d, (ix+19)
+                sbc     hl, de
+                pop     hl
+                ret
+
+; 🔴 D-GETEJECT (fat_rand_get's tail): frnd_locate's carry is BOTH "past the
+; chain" and a chain-walk READ that failed. A failed DSKIO leaves its code in
+; DISKOP_ERR and every successful one clears it, so a pending code is the failure.
+frg_eofchk:
+                ld      a, (DISKOP_ERR)
+                or      a
+                scf
+                ret     nz                  ; a read failure
+                ld      hl, FAT_DBUF
+                jp      fill_sec            ; a clean end: the record is spaces, CF = 0
+                                            ; (the whole 512: hk_frnd's own fill; only
+                                            ; the first 256 are ever a record)
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
+; --- S10.D: the RANDOM record engine's chain walk, in the free region between the
+; $77B8 and $782B veneers (no canonical entry inside). IX = the channel's row.
+
+; frnd_locate -- GP_PHYS := the absolute sector of file sector GP_SEC, walking the
+; chain from the row's first cluster -- and, if GP_FLAGS is 1 (PUT), extending it.
+; CF = 1: past the end (GET) or disk full / I/O (the code pending).
+; 🔴 FIXED ON THE WAY: the sub-ROM's copy divided GP_SEC by sectors-per-cluster
+; on its LOW BYTE ONLY (`ld a,l / cp c`), so a record at or past 128 KB into the
+; file (GP_SEC >= 256 on 512 B sectors -- record 513 at LEN=256) walked to the
+; WRONG cluster. A 16-bit subtract now, and no bigger.
+frnd_locate:
+                ld      hl, (GP_SEC)
+                ld      a, (FAT_SECPERCLUS)
+                ld      c, a
+                ld      b, 0
+                ld      de, -1              ; DE = the cluster's index in the chain
+frl_div:
+                inc     de
+                or      a
+                sbc     hl, bc
+                jr      nc, frl_div
+                add     hl, bc              ; HL = the sector within that cluster
+                ld      a, l
+                ld      (GP_SECINCL), a
+                ld      (GP_CLIDX), de
+                ld      l, (ix+DOUT_FIRST)
+                ld      h, (ix+DOUT_FIRST+1)
+                ld      a, h
+                or      l
+                jr      nz, frl_have
+                call    frl_alloc           ; an empty file: its first cluster
+                ret     c
+                ld      (ix+DOUT_FIRST), l
+                ld      (ix+DOUT_FIRST+1), h
+frl_have:
+                ld      (GP_CLUS), hl
+                ld      hl, (GP_CLIDX)
+                ld      a, h
+                or      l
+                jr      z, frl_walked
+                dec     hl
+                ld      (GP_CLIDX), hl      ; one step fewer to walk
+                ld      hl, (GP_CLUS)
+                call    frnd_next           ; HL = the next cluster
+                ret     c
+                ld      a, l
+                add     a, 8
+                ld      a, h
+                adc     a, $F0              ; CF iff HL >= $0FF8: the end of the chain
+                jr      nc, frl_have        ; a real cluster
+                call    frl_alloc           ; the chain ends: extend it (PUT) or stop
+                ret     c
+                push    hl
+                ld      de, (GP_CLUS)
+                ex      de, hl              ; HL = the last cluster, DE = the new one
+                call    fat_write_fat_entry ; link it
+                pop     hl
+                ret     c
+                jr      frl_have
+frl_walked:
+                ld      hl, (GP_CLUS)
+                ld      a, (GP_SECINCL)
+                call    clus_sec            ; (its adds cannot carry: CF = 0)
+                ld      (GP_PHYS), de
+                ret
                 ds      $782B - $, $00
                 jp      k_782B          ; $782B
 ; --- contract bodies (stubs; filled in milestone 4; added as each veneer lands) ---

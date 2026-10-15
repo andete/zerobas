@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: OPEN..AS #n LEN=r record geometry (field.asm frnd_calc), no emulator.
+"""Unit test: OPEN..AS #n LEN=r record geometry (disk.rom frnd_calc), no emulator.
 
 Disk-BASIC option-closure Item 3 generalizes the random-record engine from a
 hard-wired 256-byte record (2 per 512-byte sector) to ANY LEN=r in 1..256.
@@ -38,27 +38,29 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-# ⚠️ frnd_calc IS A SUB-ROM TENANT, so this test drives the SUB image, not the
-# main one. Its body is basic/randio-body.inc, which the main ROM used to inline
-# in the lean build and the shipped build EVICTS to sub/randio.asm. Until S3 this
-# test built basic/main.asm and read frnd_calc out of the main symbol file — which
+# ⚠️ frnd_calc IS A disk.rom ROUTINE SINCE S10.D (2026-10-15), so this test drives
+# the DISK image, not the main one. It was a sub-ROM tenant (sub/randio.asm, body
+# basic/randio-body.inc) until RANDOM files moved into disk.rom (disk/kernel.asm
+# hk_dget), and before that inlined in the lean cart's main ROM: until S3 this
+# test built basic/main.asm and read frnd_calc out of the main symbol file, which
 # worked only because msxtest.Machine's rom_base defaulted to $4000 and it was
 # therefore assembling the LEAN cart (docs/spec-lean-retire-s3-gates.md §5, F-U).
-# The routine under test is the same source either way; this just loads it from
-# the ROM that actually carries it. The sub image is flat $0000-$7FFF, page-0
-# tenants low and page-1 tenants high, exactly where a real CALSLT maps them.
+# The arithmetic is the same; this loads it from the ROM that carries it, mapped
+# at $4000 as disk.rom is. FCH_ACTIVE / FCH_RECLENS / GP_* are MAIN's cells,
+# reached through the generated disk/basic-resident-abi.inc, so the symbols this
+# test pokes are the very addresses the ROM reads.
 # The two halves live in DIFFERENT ROMs, so this test builds both.
-SUB_BASE = 0x0000     # sub image: flat $0000-$7FFF, page-0 low / page-1 high
+DISK_BASE = 0x4000    # disk.rom is mapped at $4000
 BASIC_BASE = 0x2765   # the shipped BASIC image's org
 
-SUB_ROM = tp("zb_openlen_sub.rom")
-SUB_SYM = tp("zb_openlen_sub.sym")
+DISK_ROM = tp("zb_openlen_disk.rom")
+DISK_SYM = tp("zb_openlen_disk.sym")
 ROM = tp("zb_openlen.rom")
 SYM = tp("zb_openlen.sym")
 
 
 def build():
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
+    subprocess.run(["pasmo", "-I", "disk", "--bin", "disk/disk.asm", DISK_ROM, DISK_SYM],
                    check=True, capture_output=True, cwd=ROOT)
     subprocess.run(["pasmo", "--bin", os.path.join(ROOT, "basic", "main.asm"), ROM, SYM],
                    check=True, capture_output=True)
@@ -66,7 +68,7 @@ def build():
 
 def run():
     build()
-    m = Machine(SUB_ROM, SUB_SYM, rom_base=SUB_BASE)
+    m = Machine(DISK_ROM, DISK_SYM, rom_base=DISK_BASE)
     s = m.sym
     fails = 0
 
@@ -138,7 +140,7 @@ def run():
     # those rows pin OUR limit, not the reference's rule.
     # -----------------------------------------------------------------------
     # oo_parse_reclen is MAIN-ROM resident (basic/files.asm), so this half runs
-    # on the main image while the geometry half above ran on the sub image.
+    # on the main image while the geometry half above ran on the disk image.
     from msxtest import carry
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym

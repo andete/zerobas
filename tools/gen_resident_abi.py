@@ -242,6 +242,25 @@ REQUIRED_DISK_RAM = [
     # ⚠️ ALIASED likewise (disk.rom's FWR_BYTES is BDOS_WRBYTES): LOC on such a
     # channel reads MAIN's, which disk.rom keeps at the FCB's random record.
     "main_FWR_BYTES=FWR_BYTES",
+    # S10.D (2026-10-15): RANDOM files -- OPEN / GET / PUT / CLOSE -- run in
+    # disk.rom (hk_frnd / hk_dget). The per-channel tables stay MAIN's (OPEN's
+    # LEN= parse writes FCH_RECLENS, LOC reads FCH_RECNOS) and the record engine's
+    # scratch cells are main's GP_* block, which nothing in main reads any more.
+    # 🎯 NOT ALIASED, COPY_SRC's argument: disk.rom has no cells of these names,
+    # one address serves the one consumer, and a sysvar move reaches it by regen.
+    "FCH_RECLENS",              # [ch] word: the record length, OPEN's LEN= (default 256)
+    "FCH_RECNOS",               # [ch] word: the last GET / PUT's record -- LOC
+    "GP_RECNO",                 # the record number, 1-based
+    "GP_SEC",                   # the record's file sector
+    "GP_WITHIN",                # its offset in that sector
+    "GP_CLUS",                  # chain walk: the current cluster
+    "GP_CLIDX",                 # chain walk: clusters still to step
+    "GP_SECINCL",               # the sector within the final cluster
+    "GP_PHYS",                  # the absolute sector
+    "GP_FLAGS",                 # 1 = extend (PUT), 0 = read only (GET)
+    "GP_RECLEN",                # the live channel's record length
+    "GP_SRC",                   # D-STRADDLE: the pass cursor into the record
+    "GP_LEFT",                  # D-STRADDLE: record bytes still to move
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
@@ -327,6 +346,17 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # D-CALLSYSTEM: CALL SYSTEM closes every file before handing over to MSX-DOS,
     # as the CF-3300 does (scratchpad/callsystem_peek.out `dosfile`).
     "fch_close_all",
+    # S10.D: GET / PUT's `, recno` is parsed in disk.rom's hk_dget, as the CF-3300's
+    # disk ROM parses it (scratchpad/dget_run*.out) -- HL = the cursor in, DE = the
+    # record and HL past it out; it may RAISE (13, 6), which is safe from here.
+    "eval_int16_checked",
+    # ...then the channel is made live: A = the channel. AFTER the evaluator,
+    # whose expression may itself select another channel (`GET #1,LOF(2)`).
+    "fch_select",
+    # ...and the record's own refusals (5 record 0, 55 past EOF) are raised with
+    # their code in A. disk_error would need the code parked in DISKOP_ERR, where
+    # a later verb's `disk_error` could find it stale.
+    "raise_error",
 ]
 
 Profile = collections.namedtuple("Profile", "code ram callback what")

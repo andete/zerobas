@@ -3287,17 +3287,11 @@ DISKOP_SEL_FAT_FLUSH_DATA_SECTOR equ 11
 DISKOP_SEL_FAT_DIR_CREATE       equ 12
 DISKOP_SEL_FAT_DIR_UPDATE       equ 13
 DISKOP_SEL_FAT_DELETE           equ 14
-; DISKOP_SEL_RAND_OPEN/GET/PUT (docs/spec-eviction-g4-space.md §3, carve #1):
-; three MORE rows on the SAME fp_table/DISKOP_OP selector (still
-; SUBROM_IDX_FATPRIM, no new tenant index) -- the fat_rand_* random-access
-; record engine (basic/field.asm), evicted whole to sub/randio.asm and
-; co-located after fatprim so its own FAT12 primitive calls (fat_mount/
-; fat_find/fat_dir_create/fat_alloc_cluster/fat_write_fat_entry/
-; fat_read_fat_sector/read_sector/write_sector/fat_dir_update) resolve
-; sub-locally, the same "dirverb" pattern. Never renumber.
-DISKOP_SEL_RAND_OPEN            equ 15
-DISKOP_SEL_RAND_GET             equ 16
-DISKOP_SEL_RAND_PUT             equ 17
+; (15 / 16 / 17 were DISKOP_SEL_RAND_OPEN / GET / PUT -- docs/spec-eviction-
+; g4-space.md §3, carve #1: the fat_rand_* random-record engine as sub-ROM
+; fatprim rows. RETIRED by S10.D (2026-10-15): the engine runs in disk.rom behind
+; H_DGET / H_FOPEN's FOPEN_SEL_RAND, and the three rows are `jp fp_stash_ok`.
+; The numbers are not reused: the table is append-only.)
 ; DISKOP_SEL_FIA_WALKED (docs/spec-eviction-g7-space.md, carve 2): fat_io_append's
 ; "chain already walked" tail -- pure FAT_*/FWR_*/FSECTOR_BUF arithmetic, evicted
 ; whole to free page-1 tail for G7's sprite statements.
@@ -3596,6 +3590,13 @@ H_LSET          equ     $FE21   ; LSET handler
 H_RSET          equ     $FE26   ; RSET handler
 H_FIELD         equ     $FE2B   ; FIELD handler
 H_FILE          equ     $FE7B
+; S10.D (2026-10-15): GET / PUT's record I/O. $FE80 is the cell the CF-3300's
+; disk ROM claims and its main ROM enters once per GET / PUT, AFTER its own
+; "File not OPEN" check (TODO D-ROMSIZE, S10.D's first and second measurements:
+; scratchpad/getputhook_run.out, dget_run*.out). Our contract, not the
+; reference's: A = 0 GET / 1 PUT, C = the channel, FN_RESUME = the cursor past
+; `#n`; the handler (disk/kernel.asm hk_dget) parses `,r` itself, as there.
+H_DGET          equ     $FE80   ; GET / PUT handler
 ; D-FMTHOOK: CALL FORMAT's cell -- H.FORM in the MSX2 TH hook table, and one of
 ; the 35 cells the CF-3300's disk ROM claims (docs/spec-basic-nodisk.md §5.2
 ; census). Main's do_format gates on DISKSLOT_OK, then crosses here through
@@ -3635,6 +3636,9 @@ FOPEN_SEL_MAKE  equ     $4D         ; S10.B: OPEN FOR OUTPUT -- create DISK_FCB_
                                     ; -- or, with NO channel live, SAVE"name",A's
                                     ; file (S10 increment 3, hk_asav)
 FOPEN_SEL_APND  equ     $50         ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)
+FOPEN_SEL_RAND  equ     $52         ; S10.D: OPEN ... AS #n with no FOR -- RANDOM
+                                    ; (disk.rom hk_frnd). Same rule: outside every
+                                    ; DISKOP_SEL_* range
 ; S10.B: the CF-3300's per-byte and per-CLOSE channel cells (spec-diskcode-
 ; eviction.md §6.6bb: PRINT# enters $FE85 once a byte, CLOSE $FE62 once).
 ; Our contract, not the reference's: A = the byte, the live channel is
@@ -3828,6 +3832,11 @@ FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $F079
 ; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
 ; by keeping its loop state here in RAM. Free gap above FLD_TAB, below FLD_DESC
 ; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
+; 🧭 S10.D (2026-10-15): MAIN NO LONGER READS OR WRITES THESE. The record engine
+; runs in disk.rom (hk_dget), which reaches them through the generated
+; disk/basic-resident-abi.inc -- one consumer, no disk-side twin, so the address
+; is published unaliased (COPY_SRC's precedent). They stay declared HERE so the
+; RAM map has one owner for them and a sysvar move reaches disk.rom by regen.
 GP_RECNO        equ     $F079   ; record number, 1-based (2 B)
 GP_SEC          equ     $F07B   ; file logical-sector index of the record (2)
 GP_WITHIN       equ     $F07D   ; byte offset of the record within its sector (0/256, 2) (2 B)
@@ -3835,10 +3844,12 @@ GP_CLUS         equ     $F07F   ; current cluster during the chain walk (2)
 GP_CLIDX        equ     $F081   ; cluster steps still to walk (2)
 GP_SECINCL      equ     $F083   ; sector index within the final cluster (1)
 GP_PHYS         equ     $F084   ; resolved absolute physical sector (2)
-GP_OLDNSEC      equ     $F086   ; file's old sector count (ceil(size/512), 2) (2 B)
+; ($F086 GP_OLDNSEC -- the file's old sector count -- is gone since S10.D: disk.rom's
+; PUT asks the FCB row's size directly, GP_SEC * 512 < size. 2 B free.)
 GP_FLAGS        equ     $F088   ; bit0 = extend (PUT allocates; GET does not) (1)
-GP_MODE         equ     $F089   ; 0 = GET (read), 1 = PUT (write) (1)
-GP_CHAN         equ     $F08A   ; the channel number being GET/PUT (1)
+; ($F089 GP_MODE / $F08A GP_CHAN are gone since S10.D, 2026-10-15: GET / PUT
+; cross H_DGET with the mode in A and the channel in C, and disk.rom's hk_dget
+; keeps both on its stack across the record evaluator. The two bytes are free.)
 ; --- PRINT USING formatted-output scratch (Phase 2) ------------------------
 ; Transient (dead outside one PRINT USING statement).
 ; D-PULONG (2026-10-14): the format is READ WHERE IT LIVES, as on the VG-8020 --

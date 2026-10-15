@@ -33,6 +33,10 @@
 ; to the VG-8020 crunch (FIELD $B1, LSET $B8, RSET $B9). No disassembly. See
 ; basic/PROVENANCE.md §random-access records.
 ;
+; 🧭 S10.D (2026-10-15): everything below about the record I/O -- the offset, the
+; read-modify-write, the chain walk, the buffers -- describes the engine that now
+; runs in disk.rom (disk/kernel.asm, hk_dget and fat_rand_get / fat_rand_put),
+; not code in this file. What is left here is GET / PUT's head (below).
 ; GET/PUT (slice 2) add the on-disk record I/O. The record length is `reclen`,
 ; per channel — 256 by default (oracle: a CF-3300 PUT of one record makes a
 ; 256-byte file), or the OPEN..AS #n LEN=r value (disk-BASIC option-closure Item 3;
@@ -149,8 +153,8 @@ fldf_next:
                 ret
 
 ; fld_fill_record — moved whole to sub/randio.asm (docs/spec-eviction-g4-
-; space.md §3, carve #1): its only caller, fat_rand_open, is itself sub-side
-; now (see below), so no resident shim is needed for the repack build.
+; space.md §3, carve #1), and on to disk.rom with S10.D (2026-10-15): the RANDOM
+; open that space-fills the record is disk/kernel.asm's hk_frnd now (fill_sp).
 
 ; ===========================================================================
 ; D-FLDARY — an ARRAY ELEMENT as a FIELD / LSET / RSET target
@@ -681,59 +685,47 @@ fld_lookup:
                 scf                         ; fielded
                 ret
 
-; --- repack: resident shims replacing the fat_rand_* engine ----------------
-; docs/spec-eviction-g4-space.md §3 (carve #1). Bodies moved whole to sub/
-; randio.asm (fatprim.asm's fp_table extended with 3 new selector rows,
-; DISKOP_SEL_RAND_OPEN/GET/PUT = 15/16/17 -> t_fat_rand_open/get/put). These
-; shims keep the ORIGINAL names + calling convention (Cy-only; no caller
-; reads HL/A back from any of the three) so files.asm's `call fat_rand_open`
-; and gp_common's `call fat_rand_put`/`call fat_rand_get` call sites are
-; unchanged.
-;
-; SWAP-funding carve (2026-07-28): these three were three byte-identical 20 B
-; copies of one body differing only in the selector immediate — 60 B saying one
-; thing three times, and tools/clone_scout.py's top row. They now bounce off
-; `fatprim_bounce` (basic/fat.asm), the shared body the FAT tenant-shim collapse
-; (6f8ac0f) already built for exactly this shape, so the whole carve is three
-; two-instruction heads: 60 B -> 15 B.
-;
-; ⚠️ WHY THE SHARED BODY IS SAFE HERE, and it is NOT the same contract.
-; `fatprim_bounce` ends with two extra FLAG-TRANSPARENT reloads the old bodies
-; did not have — `ld hl,(DISKOP_HL)` and `ld a,(DISKOP_A)` — so it CLOBBERS HL
-; (which the old bodies preserved) and returns a DIFFERENT A (DISKOP_A, stale
-; for a randio op, where the old bodies left DISKOP_STATUS). Cy/Z are unchanged,
-; which is the whole contract these three callers use. Both call sites were
-; re-read before this carve, not assumed from the header line above:
-;   * gp_common (below) `push hl` … `pop hl` around the call and then tests
-;     `jp c,load_error` only;
-;   * files.asm oo_random_setup falls into `oo_done`, which `pop de`/`pop hl`
-;     and tests Cy, then RELOADS A from E — and that same `oo_done` tail is
-;     already shared with fat_io_create/fat_io_append, which route through
-;     `fatprim_bounce` themselves. So HL/A clobber is already the norm there.
-; If a future caller of these three ever needs HL or A back, it needs its own
-; tail (the `name_cmp`/`fat_count_free` pattern in fat.asm), not this bounce.
-fat_rand_open:
-                ld      a,DISKOP_SEL_RAND_OPEN
-                jp      fatprim_bounce
-fat_rand_put:
-                ld      a,DISKOP_SEL_RAND_PUT
-                jp      fatprim_bounce
-fat_rand_get:
-                ld      a,DISKOP_SEL_RAND_GET
-                jp      fatprim_bounce
+; (fat_rand_open / fat_rand_put / fat_rand_get -- the three two-instruction
+; fatprim_bounce heads of the sub-ROM record engine, DISKOP_SEL_RAND_* 15/16/17 --
+; are GONE since S10.D, 2026-10-15: the engine runs in disk.rom. OPEN RANDOM
+; crosses H_FOPEN with FOPEN_SEL_RAND (basic/files.asm oo_random_setup), GET /
+; PUT cross H_DGET below, CLOSE crosses H_CHCLOSE as an OUTPUT channel does.)
 
 ; ===========================================================================
 ; GET [#]f [, recno]   /   PUT [#]f [, recno]
 ; ===========================================================================
-; Select the channel (must be open RANDOM), then read/write the record. The text
-; cursor (HL) is guarded across fch_select + the disk op (CALSLT clobbers all).
+; 🧭 S10.D (2026-10-15, D-ROMSIZE step 1): THE RECORD I/O RUNS IN disk.rom, AND
+; SO DOES THE `, recno` PARSE -- the reference's split, measured on the CF-3300
+; (TODO D-ROMSIZE, "S10.D's SECOND MEASUREMENT": scratchpad/dget_run*.out). Its
+; main ROM raises "File not OPEN" with NO hook entered, then enters $FE80 (H.DGET)
+; with the record number NOT YET EVALUATED: record 0 (5), 300 and -1 (55) all
+; enter the hook first, so the disk side raises them. So MAIN keeps exactly what
+; comes before that cell -- the PUT SPRITE split, `#n`, the channel number's
+; 5 / 59 / 52 and the mode class's 59 / 58 / 61 -- and crosses. disk/kernel.asm
+; hk_dget does the rest: the `, recno` parse (a call-back into eval_int16_checked),
+; record 0 -> 5, the bare form's NEXT record (D-RECAUTO), making the channel live
+; (a call-back into fch_select, AFTER the evaluator: `GET #1,LOF(2)` selects
+; channel 2 on the way), the EOF bound (55, D-GETEOF), LOC (D-LOC), the offset
+; math (D-PUTU32), D-STRADDLE's two passes, the size and LOF.
+; ⚠️ THE ORDER CHANGED WITH IT, ON PURPOSE. This used to parse the record BEFORE
+; the mode checks, so `GET #1,0` on a CLOSED channel was 5 and `GET #1,"A"` was 13;
+; with the parse in the hook they are 59, the reference's order (its check is
+; main's and comes first). An OPEN channel answers exactly as before.
+; ⚠️ chan_gate_BARE, NOT THE FULL GATE (the FIELD / LSET rule, files.asm): GET
+; writes the live channel's record in FSECTOR_BUF and PUT reads it there; the full
+; gate would save the record before the crossing and LDIR the stale copy back
+; after it, undoing every GET.
+; 🟢 THE DISKLESS ANSWER IS UNCHANGED, AND IT IS STRUCTURAL: no hook is reached
+; without an OPEN disk channel of mode 4, which a machine without disk.rom cannot
+; create -- so the VG-8020-shaped 59 comes from fch_mode_class, before the cell.
+;   crossing: A = 0 GET / 1 PUT, C = the channel, FN_RESUME = the cursor past `#n`
 ex_put:
     IF G7_RESIDENT
                 ; `PUT SPRITE ...` is a graphics statement, not a record write --
                 ; two reserved words (PUT $B3 + SPRITE $C7), disambiguated at RUN
                 ; time on the token that follows (basic/graphics.asm ex_put_sprite).
                 push    hl
-                rst    $10     
+                rst    $10
                 cp      SPRITE_TOKEN
                 jr      z,pus_is_sprite
                 pop     hl
@@ -748,7 +740,7 @@ pus_is_sprite:
 ex_get:
                 xor     a                   ; mode = GET (read)
 gp_common:
-                ld      (GP_MODE),a
+                push    af                  ; the mode, for the crossing
                 rst    $10                ; past the GET/PUT token
                 cp      '#'
                 jr      nz,gp_nochan
@@ -757,143 +749,43 @@ gp_nochan:
                 call    eval                ; DE = channel
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52, all three
                                             ; previously stmt_error (ERR 2)
-                ld      a,e
-                ld      (GP_CHAN),a
-                ; optional ", recno" (else the NEXT record: D-RECAUTO below)
-                call    skip_comma
-                jr      nz,gp_defrec
-                ; D-RECLENERR (2026-10-07): a string record number is Type
-                ; mismatch (13) on the CF-3300, not the 5 the bare eval reached.
-                inc     hl
-                call    eval_int16_checked  ; DE = record number
-                jr      gp_haverec
-gp_defrec:
-                ; ✅ D-RECAUTO (2026-10-09): NO RECORD NUMBER MEANS THE NEXT ONE.
-                ; The CF-3300 keeps a current record per channel: three bare
-                ; `PUT #1` write records 1, 2, 3 (LOF 24 at LEN=8), and after
-                ; `PUT #1,1:PUT #1,2` a bare `GET #1` asks for record 3
-                ; (scratchpad/getput_run.out). This read `ld de,1`, so a program
-                ; writing its records in order kept only the last. The number is
-                ; FCH_RECNOS[chan] + 1 -- the word LOC reads, 0 after OPEN, and
-                ; written only by a GET/PUT that reached the record engine, so a
-                ; GET refused past EOF (resident, below) leaves it as the
-                ; reference leaves LOC. D = 0 here: fch_check bounded the channel.
-                push    hl                  ; the text cursor
-                ld      hl,FCH_RECNOS
-                add     hl,de
-                add     hl,de               ; HL = &FCH_RECNOS[chan]
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                inc     de                  ; the record after the last GET / PUT
-                pop     hl
-gp_haverec:
-                ld      (GP_RECNO),de
-                ; D-LOC: the per-channel copy of this number (FCH_RECNOS[GP_CHAN]) is
-                ; written SUB-SIDE in frnd_calc (basic/randio-body.inc, sub page 1):
-                ; here it cost 14 B of main page 1 and the image overran $8000.
-                ; 🔴 D-GETREC: RECORD 0 IS `Illegal function call`, AND TRAPPABLE.
-                ; `GET#1,0` and `PUT#1,0` are ERR 5 on the CF-3300; here they reached
-                ; fat_rand_get's own zero test, whose failure returns CF to gp_fin's
-                ; `jp c,load_error` — which PRINTS and does not raise, so a program
-                ; guarding its disk I/O with ON ERROR was told nothing went wrong.
-                ; Same class as D-SAVETRAP, in a second verb pair.
-                ; 🎯 ONLY RECORD 0 IS FIXED HERE, AND THAT IS THE WHOLE POINT.
-                ; The reference's OTHER refusals (`,256`, `,300`, `,-1`, and `,2` on
-                ; a one-record file — all ERR 55) are bounded by END OF FILE, not by
-                ; a record cap: `PUT#1,256` is ACCEPTED there and extends the file,
-                ; and `GET#1,2` is refused though 2 is inside any cap. zerobas's
-                ; 1..255 test in randio-body.inc is a DIFFERENT RULE that coincides
-                ; on three rows. Record 0 is invalid whatever the file's length, so
-                ; it is the one part that can ship without settling the EOF bound
-                ; [[two-rules-that-coincide-on-every-row-you-have]].
-                ld      a,d
-                or      e
-                jp      z,gb_illegal        ; record 0 -> ERR 5, RAISED
-                push    hl                  ; guard cursor across select + disk op
                 ; the channel must be open RANDOM (FCH_MODES[ch] == 4). D-NOTOPEN2:
                 ; the old `cp 4` conflated THREE conditions the reference separates --
                 ; not open (59), open-but-not-RANDOM (61), device channel (58).
-                ld      a,(GP_CHAN)
-                ld      e,a
-                call    fch_mode_class      ; ERR 59 if NOT OPEN; CF set = disk channel
+                push    hl                  ; fch_mode_class's index uses HL
+                call    fch_mode_class      ; ERR 59 if NOT OPEN; CF set = disk
+                pop     hl                  ; channel; E (the channel) survives
                 jr      nc,gp_dev           ; LPT:/CRT: -> ERR 58 sequential i/o only
                 cp      4
                 jr      nz,gp_bfm           ; a disk channel must be RANDOM -> ERR 61
-                ld      a,(GP_CHAN)
-                call    fch_select          ; FSECTOR_BUF + FWR_* = this channel's state
-                ld      a,(GP_MODE)
-                or      a
-                jr      z,gp_doget
-                call    fat_rand_put
-                jr      gp_fin
-gp_doget:
-                ; 🔴 D-GETEOF: A RECORD THAT *STARTS* AT OR PAST EOF IS `Input past
-                ; end` (ERR 55) ON THE REFERENCE, AND WAS SILENT SUCCESS HERE.
-                ; `GET#1,3` on a 14-byte file at LEN=10 reads ERR 55 on the
-                ; CF-3300 and 0 here (D-GETREC row `g.past`).
-                ; 🎯 AND THE BOUND IS THE RECORD'S START, NOT ANY BYTE OF IT.
-                ; D-GETSTRADDLE measured the separating case the filed design had
-                ; guessed at: `GET#1,2` on that same file -- bytes 10..19, so it
-                ; STARTS inside and ENDS past -- is **accepted and padded** on the
-                ; reference. Refusing on "any part past EOF" would have broken a
-                ; row that agrees today [[two-rules-that-coincide-on-every-row-you-have]].
-                ; ⚠️ GET ONLY. `PUT` past the end EXTENDS the file on the reference
-                ; (`PUT#1,256` is ERR 0 there), so this must not sit above the
-                ; mode split.
-                ; 🟢 AND IT IS RESIDENT, WHICH IS WHY IT COSTS NO CONTRACT CHANGE.
-                ; The filed design wanted a new tenant status byte to tell "past
-                ; EOF" from an I/O error, because `gp_fin` sees only Cy. It is not
-                ; needed: `FWR_BYTES` is page-3 RAM bound by the `fch_select`
-                ; above, `FCH_RECLENS` is a resident table, and `mul16` is a
-                ; resident multiply -- so the test happens BEFORE the tenant is
-                ; ever called and raises directly.
-                ; ⚠️ THE MULTIPLY MUST NOT TRUNCATE, AND `mul16` DOES.
-                ; (recno-1)*reclen can exceed 16 bits -- record 300 at reclen 256
-                ; is 76800, low word 11264, which reads as INSIDE any file bigger
-                ; than 11 KB. D-GETEOF shipped with the test bounded to
-                ; recno <= 255 so overflow was impossible; D-GETEOF2 replaces that
-                ; bound with `mul16sat`, which saturates to $FFFF -- past any
-                ; 16-bit file size by definition -- so ALL record numbers get the
-                ; EOF rule instead of only the ones inside the tenant's own cap.
-                ld      hl,(FWR_BYTES+2)
-                ld      a,h
-                or      l
-                jr      nz,gp_get_go        ; file > 64 KB: recno <= 255 and
-                                            ; reclen <= 256 cap the offset at
-                                            ; 65024, so it is inside by construction
-                ld      a,(GP_CHAN)
-                add     a,a                 ; channel * 2 (word index), the same
-                ld      e,a                 ; inline read ex_field uses above
-                ld      d,0
-                ld      hl,FCH_RECLENS
-                add     hl,de
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = reclen (1..256)
-                ld      hl,(GP_RECNO)
-                dec     hl                  ; HL = recno - 1
-                call    mul16sat            ; HL = (recno-1) * reclen, saturated
-                ld      de,(FWR_BYTES)
-                or      a
-                sbc     hl,de
-                jr      nc,gp_past_eof      ; offset >= size -> starts at/past EOF
-gp_get_go:
-                call    fat_rand_get
+                ld      (FN_RESUME),hl      ; the cursor past `#n`, for the handler
+                ld      c,e                 ; C = the channel
+                pop     af                  ; A = 0 GET / 1 PUT
+                ld      hl,H_DGET
+                call    chan_gate_bare      ; disk.rom's hk_dget: `,r`, the record
+                                            ; (claimed: a mode-4 channel exists only
+                                            ; where disk.rom opened it)
+                ei                          ; a CALLF returns with interrupts OFF
+                ld      hl,(FN_RESUME)      ; where the handler left the cursor
+                jp      exec_stmt
+; gp_fin -- C4 shared tail (2026-10-03): pop the cursor; CF -> disk_error (the
+; pending DSKIO code, else `load error`); else the next statement. GET / PUT's
+; own use of it went to disk.rom with S10.D; CALL FORMAT (basic/format.asm
+; exc_go, a `jr`) still ends here.
 gp_fin:
                 pop     hl
-                jp      c,disk_error        ; D-GETEJECT: raise the pending DSKIO code
-                                            ; (70 Disk offline with the disk out), as
-                                            ; the CF-3300 does; none -> `load error`
+                jp      c,disk_error
                 jp      exec_stmt
 gp_dev:
                 ld      a,58                ; sequential i/o only (LPT:/CRT:)
                 jr      gp_raise
+; gp_past_eof -- `Input past end` (55), RAISED. GET's own use of it is disk.rom's
+; since S10.D (fat_rand_get); INPUT$ (strvar.asm str_inputd_read) and the
+; sequential reader's end (files.asm) still raise it here.
 gp_past_eof:
-                ld      a,55                ; `Input past end` -- RAISED, so ON ERROR
-                jr      gp_raise            ; sees it (no `pop hl`: raise_error
-                                            ; resets SP, exactly as gp_dev/gp_bfm)
+                ld      a,55
+                jr      gp_raise
 gp_bfm:
                 ld      a,61                ; bad file mode (disk, not RANDOM)
 gp_raise:
-                jp      raise_error         ; no `pop hl` -- raise_error resets SP
+                jp      raise_error         ; no `pop` -- raise_error resets SP

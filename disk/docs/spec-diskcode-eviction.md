@@ -4188,7 +4188,11 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      of 256 at a full record), CLOSE (the partial record, then FCLOSE).
   3. **S10.C** — the input side: OPEN FOR INPUT, `INPUT#`/`INPUT$`/`EOF`/`LOF`
      on RDBLK. D-INPQUOTE2's peek belongs here.
-  4. **S10.D** — RANDOM.
+  4. **S10.D** — RANDOM. ✅ Built 2026-10-15, ahead of S10.C: OPEN RANDOM,
+     GET / PUT and CLOSE run in disk.rom (`hk_frnd`, `hk_dget` on H.DGET
+     `$FE80`, `hk_chclose`), and the `, recno` parse moved with them -- the
+     CF-3300 enters H.DGET with the record still unevaluated. TODO.md
+     D-ROMSIZE ("S10.D BUILT") is the current record.
   5. **S10.E** — retire main's engine globals and the FAT tenant's channel
      half.
 - S10.A is the prerequisite and can be built and gated on its own, with no

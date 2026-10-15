@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 344 declared addresses in this project's own workspace `$E000..$F37F` (328 with a machine-readable width), plus **203** in the MSX standard work area at or above `$F380`.
-* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **46** in the MSX standard work area at or above `$F380`.
+* **basic** — 341 declared addresses in this project's own workspace `$E000..$F37F` (325 with a machine-readable width), plus **204** in the MSX standard work area at or above `$F380`.
+* **disk** — 134 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **47** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -216,6 +216,7 @@ second one is the question a per-component map cannot answer.
 | `$EE3D` | 16 B | `basic` | `FCH_MODES` | 16 B ($EE3D..$EE4C) |  |
 | `$EE3D` | 16 B | `disk` | `FCH_MODES` | 16 B ($EE3D..$EE4C) |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
+| `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE6D` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
 | `$EE6F` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |
 | `$EE71` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
@@ -224,9 +225,12 @@ second one is the question a per-component map cannot answer.
 | `$EE76` | 1 B | `basic` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$EE76` | 1 B | `disk` | `LPTPOS` | printer head column, 0-based (1) |  |
 | `$EE77` | 2 B | `basic` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
+| `$EE77` | 2 B | `disk` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
+| `$EE79` | 2 B | `disk` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7B` | 2 B | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | 32 B ($EE7D..$EE9C): per-channel record number |  |
+| `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE9D` | 32 B | `basic` | `PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$EEBE` | 1 B | `basic` | `FCH_ACTIVE` | channel live in the engine globals, 0 = none (1) |  |
@@ -399,16 +403,21 @@ second one is the question a per-component map cannot answer.
 | `$EFFE` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$F019` | 96 B | `basic` | `FLD_TAB` | field table base ($F019..$F078, 96 bytes) |  |
 | `$F079` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
+| `$F079` | 2 B | `disk` | `GP_RECNO` | record number, 1-based (2 B) |  |
 | `$F07B` | 2 B | `basic` | `GP_SEC` | file logical-sector index of the record (2) |  |
+| `$F07B` | 2 B | `disk` | `GP_SEC` | file logical-sector index of the record (2) |  |
 | `$F07D` | 2 B | `basic` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) (2 B) |  |
+| `$F07D` | 2 B | `disk` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) (2 B) |  |
 | `$F07F` | 2 B | `basic` | `GP_CLUS` | current cluster during the chain walk (2) |  |
+| `$F07F` | 2 B | `disk` | `GP_CLUS` | current cluster during the chain walk (2) |  |
 | `$F081` | 2 B | `basic` | `GP_CLIDX` | cluster steps still to walk (2) |  |
+| `$F081` | 2 B | `disk` | `GP_CLIDX` | cluster steps still to walk (2) |  |
 | `$F083` | 1 B | `basic` | `GP_SECINCL` | sector index within the final cluster (1) |  |
+| `$F083` | 1 B | `disk` | `GP_SECINCL` | sector index within the final cluster (1) |  |
 | `$F084` | 2 B | `basic` | `GP_PHYS` | resolved absolute physical sector (2) |  |
-| `$F086` | 2 B | `basic` | `GP_OLDNSEC` | file's old sector count (ceil(size/512), 2) (2 B) |  |
+| `$F084` | 2 B | `disk` | `GP_PHYS` | resolved absolute physical sector (2) |  |
 | `$F088` | 1 B | `basic` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
-| `$F089` | 1 B | `basic` | `GP_MODE` | 0 = GET (read), 1 = PUT (write) (1) |  |
-| `$F08A` | 1 B | `basic` | `GP_CHAN` | the channel number being GET/PUT (1) |  |
+| `$F088` | 1 B | `disk` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$F08B` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$F08D` | 3 B | `basic` | `PU_FDESC` | [len][ptr] copy for a format that cannot move (3) |  |
 | `$F090` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
@@ -421,6 +430,7 @@ second one is the question a per-component map cannot answer.
 | `$F097` | 1 B | `basic` | `FMT_SEC` | CALL FORMAT: current sector index being written (1) |  |
 | `$F098` | 2 B | `basic` | `FMT_DESC` | CALL FORMAT: chosen geometry descriptor pointer (2) |  |
 | `$F09A` | 2 B | `basic` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
+| `$F09A` | 2 B | `disk` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
 | `$F09C` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
@@ -759,6 +769,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE62` |  | `disk` | `H_CHCLOSE` | S10.B: CLOSE of an OUTPUT channel |  |
 | `$FE7B` |  | `basic` | `H_FILE` |  |  |
 | `$FE7B` |  | `disk` | `H_FILE` |  |  |
+| `$FE80` |  | `basic` | `H_DGET` | GET / PUT handler |  |
+| `$FE80` |  | `disk` | `H_DGET` | S10.D: GET / PUT (hk_dget) -- A = 0 GET / 1 PUT, |  |
 | `$FE85` |  | `basic` | `H_CHOUT` |  |  |
 | `$FE85` |  | `disk` | `H_CHOUT` | S10.B: one byte out of an OUTPUT channel (A) |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |

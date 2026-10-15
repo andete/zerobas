@@ -99,6 +99,11 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
   ([`geteject_run.out`](../../scratchpad/geteject_run.out)). Now it raises 70
   too. `make geteject-acceptance` covers it.
 
+- **Records 128 KB or more into a file came from the wrong place** (fixed
+  2026-10-15, found while moving `GET` into the disk ROM): the cluster walk
+  used only the low byte of the sector number. On the same day: **a `GET` past
+  the end of a file over 64 KB returned a blank record** instead of `Input past
+  end`. Both are covered by `tests/test_rand_straddle.py`.
 - **A `GET` without a record number always read record 1** (fixed
   2026-10-09, D-RECAUTO): the CF-3300 reads the record after the last one read
   or written. Found while writing these pages
@@ -118,9 +123,10 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 
 ## Where it lives
 
-`ex_get` in [basic/field.asm](../../basic/field.asm) parses the statement;
-the record engine is [basic/randio-body.inc](../../basic/randio-body.inc), run
-from the sub-ROM.
+`ex_get` in [basic/field.asm](../../basic/field.asm) parses `#n` and checks
+the channel; the record number and the record engine are the disk ROM's
+(`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D), as on
+the CF-3300, whose disk ROM parses the record number itself.
 
 ## Related concepts
 

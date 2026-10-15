@@ -112,8 +112,8 @@ The one rung not yet proven is **RAM usage**.
   reads its own record number; any other open channel falls through to
   `LOF`'s code.
 - The per-channel record numbers (`FCH_RECNOS`) are written by `GET` and
-  `PUT` in the random-file engine,
-  [basic/randio-body.inc](../../basic/randio-body.inc).
+  `PUT` in the random-file engine, which runs in the disk ROM (`hk_dget` in
+  [disk/kernel.asm](../../disk/kernel.asm), since S10.D).
 
 ## Related concepts
 

@@ -61,6 +61,19 @@ DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
 main_FAT_FILESIZE equ 0EE0BH   ; main's FAT_FILESIZE -- file size in bytes (4-byte LE)
 main_FWR_BYTES equ 0EE30H   ; main's FWR_BYTES -- total bytes written so far = final file size (4-byte LE)
+FCH_RECLENS equ 0EE4DH   ; 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
+FCH_RECNOS equ 0EE7DH   ; 32 B ($EE7D..$EE9C): per-channel record number
+GP_RECNO equ 0F079H   ; record number, 1-based (2 B)
+GP_SEC equ 0F07BH   ; file logical-sector index of the record (2)
+GP_WITHIN equ 0F07DH   ; byte offset of the record within its sector (0/256, 2) (2 B)
+GP_CLUS equ 0F07FH   ; current cluster during the chain walk (2)
+GP_CLIDX equ 0F081H   ; cluster steps still to walk (2)
+GP_SECINCL equ 0F083H   ; sector index within the final cluster (1)
+GP_PHYS equ 0F084H   ; resolved absolute physical sector (2)
+GP_FLAGS equ 0F088H   ; bit0 = extend (PUT allocates; GET does not) (1)
+GP_RECLEN equ 0F09AH   ; active channel's record length (word), loaded per calc
+GP_SRC equ 0EE77H   ; pass cursor into FSECTOR_BUF (2)
+GP_LEFT equ 0EE79H   ; record bytes still to move, ends $EA3E (2 B)
 FMT_GEOMSEL equ 0EF61H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
@@ -68,17 +81,20 @@ SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
-fname_expr equ 06E14H
-pdfcb_resume equ 06E0DH
-main_fat_mount equ 06468H   ; main's fat_mount
-main_fat_find equ 0646CH   ; main's fat_find
-parse_disk_fcb equ 06522H
-field_prologue equ 072E2H
-field_item equ 07318H
-lrset_tgt equ 073CDH
-lrset_rhs equ 073EFH
-lrset_finish equ 07406H
-fch_ctx_addr equ 06F9EH
-disk_error equ 06BAAH
+fname_expr equ 06DF9H
+pdfcb_resume equ 06DF2H
+main_fat_mount equ 0644EH   ; main's fat_mount
+main_fat_find equ 06452H   ; main's fat_find
+parse_disk_fcb equ 06508H
+field_prologue equ 072BDH
+field_item equ 072F3H
+lrset_tgt equ 073A8H
+lrset_rhs equ 073CAH
+lrset_finish equ 073E1H
+fch_ctx_addr equ 06F83H
+disk_error equ 06B90H
 read_line equ 045FBH
-fch_close_all equ 0709EH
+fch_close_all equ 07079H
+eval_int16_checked equ 0454AH
+fch_select equ 06FB7H
+raise_error equ 04326H
