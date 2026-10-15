@@ -3140,7 +3140,12 @@ item — do **one item per session** to keep context lean.
       ➡️ NEXT (the brief's ranking, unverified beyond the fat.asm read): (a) the
       byte-identical pin cleanup -- drop the dead asserts and vestigial veneers,
       teach tools/check_disk_walls.py the pin classes (it also counts the FDC
-      window as free); (b) BSAVE-to-disk, measured on the CF-3300 first (~130 B of
+      window as free); ✅ the 13 dead asserts deleted 2026-10-15, disk.rom
+      byte-identical (pins parsed 71 -> 58, free total unchanged: the tool had
+      ALREADY priced the run at 793 B -- the drafter misread the source's
+      "anchor canonical address" comments, not the tool). Left of (a): the
+      vestigial veneers and orphan `ret`s (bytes move: bdos-acceptance), the
+      tool's pin classes; (b) BSAVE-to-disk, measured on the CF-3300 first (~130 B of
       disk.rom for ~312 B of sub page 1, estimated); (c) S10.C into the pooled
       corridor; (d) S10.E. Also found: the sub tenant `t_fia_walked` (148 B, sub
       page 1) has no sender since S10.B moved APPEND.
@@ -9181,7 +9186,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34714 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34719 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9347,7 +9352,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14209 (T-6FE392)8 (T-529ABE)` from `TODO.md:27003 (T-529ABE)`: a
+      `TODO.md:14214 (T-6FE392)8 (T-529ABE)` from `TODO.md:27008 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15056,7 +15061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27003 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27008 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

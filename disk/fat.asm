@@ -115,7 +115,8 @@ k_47BE:         jp      wrblk_body          ; $47BE: BDOS $26 WRBLK canonical en
 
 ; fat_write_fat_entry_hot -- disk.rom's copy of the shared body's routine
 ; (basic/fat-prim-body.inc, D-WCACHE W2, which says when a caller may use it). It
-; lives in this fill ($47C1.., free up to the $4919 anchor) because the body's region, pinned at $75A5, had no room.
+; lives in this fill ($47C1.., free up to $4C29 -- the old "$4919 anchor" was a dead assert,
+; deleted 2026-10-15) because the body's region, pinned at $75A5, had no room.
 fat_write_fat_entry_hot:
                 ld      (FAT_WRTMP), de     ; save the value
                 push    hl                  ; save cluster
@@ -342,7 +343,7 @@ fwd_ok:
                 ret
 
 ; --- S10.D: the RANDOM record reader (disk/kernel.asm hk_dget), in this fill
-; below the $4919 loader anchor. IX = the channel's FCB row.
+; below $4C29 (no pin in between since 2026-10-15). IX = the channel's FCB row.
 
 ; fat_rand_get -- read record GP_RECNO into the record (FAT_DBUF[0..reclen)).
 ; 🔴 D-GETEOF: a record that STARTS at or past EOF is `Input past end` (55),
@@ -375,19 +376,16 @@ frg_pass:
                 jr      nz, frg_pass
                 ret                         ; CF = 0
 
-                ds      $4919 - $, $00      ; anchor canonical address
-                ds      $4935 - $, $00      ; anchor canonical address
-                ds      $4941 - $, $00      ; net-zero: absorbs the relocated write_sector
-                ds      $498C - $, $00      ; anchor canonical address
-                ds      $49B4 - $, $00      ; anchor canonical address
-                ds      $49C3 - $, $00      ; pad to fac_have_sec (net-zero)
-                ds      $4A39 - $, $00      ; anchor canonical address
-                ds      $4A40 - $, $00      ; pad to fat_write_fat_entry (net-zero)
-                ds      $4B59 - $, $00      ; anchor canonical address
-                ds      $4B62 - $, $00      ; pad to ffds_alloc (net-zero)
-                ds      $4BE5 - $, $00      ; anchor canonical address
-                ds      $4C05 - $, $00      ; pad to fdc_useslot (net-zero)
-                ds      $4C25 - $, $00      ; anchor canonical address
+                ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25
+                ; - $` lines stood here, commented "anchor canonical address", with NO
+                ; code between them: the `jp k_49xx` veneers left with D-FATENG
+                ; (06c7574c, "position assertions survive, code goes"), each k_49xx is
+                ; a lone `ret` in kernel.asm that nothing references, and the stock
+                ; kernel's only route to these addresses -- the $F27C.. hiRAM
+                ; trampolines (disk/docs/provider-oracle-scope.md) -- init.asm fills
+                ; with RET. They were deleted because the comment MISLED: S10.D's
+                ; drafter read them as pins and priced this 793 B run at ~59 B.
+                ; tools/check_disk_walls.py was right all along (room-before-pin 793 B).
                 ds      $4C29 - $, $00      ; pad to fdc_zero (net-zero)
 ; fdc_di_save / fdc_io_done — bracket a sector op with a DI..(EI) guard.
 ; The WD2793 data transfer is a tight DRQ poll: a foreign interrupt (the 50 Hz

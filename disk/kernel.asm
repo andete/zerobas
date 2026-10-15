@@ -416,7 +416,7 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
                 xor     a                   ; A = $00 success
                 ret
 
-write_sector:                           ; relocated (entry collided with $4935 veneer)
+write_sector:                           ; relocated (its entry once collided with the $4935 veneer, gone)
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte (ignored, single drive)
                 ld      a, 0            ; drive 0 (ignored)
@@ -4388,7 +4388,7 @@ hook_tab:
 ; pad before the $41EF pin is 25 B and one inline install already spent it.
 ; --- ftc_totsec: total sectors from the boot sector's BPB +19 ----------------
 ; disk/docs/spec-diskcode-eviction.md §6.4a. Split out of fat_total_clusters
-; because that routine sits in a region pinned by `ds $4B59 - $` with no slack:
+; because that routine then sat in a region pinned by `ds $4B59 - $` with no slack (that pin is gone, 2026-10-15):
 ; the 3-byte `ld hl,(WBUF + 19)` it replaces could not grow in place. Reached by
 ; label only, so it is position-free here.
 ;   in   the boot sector is already in the METADATA buffer
