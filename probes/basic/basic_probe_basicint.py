@@ -35,6 +35,10 @@ same `,R` return chain. Each row prints ONLY what its routine controls:
            it returns. ("AB" is NOT a row: the reference reports voice 2 busy
            after a direct call, which a plain PLAY "AB" does not -- recorded in
            TODO D-AVTAK, not chased.)
+  rvt64    (D-VARTABADOPT, 2026-10-15) OUR ,R code moves VARTAB +64 and RETURNS;
+           then `CLEAR` -- FRE(0) after it minus the same with +0, per machine:
+           the reference keeps the program end the ,R code set (-64); zerobas
+           re-derived VARTAB from its own PRGEND and gave 0.
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`.
 Exit 0 all SAME; 1 a divergence; 2 the VG-8020 gave no reading.
 Typed BASIC in, the text screen out. VG-8020 vs zerobas NODISK.
@@ -67,6 +71,9 @@ CODE = {
     # ld hl,(VARTAB) / ld de,K / add hl,de / ld (VARTAB),hl / jp $73AC
     "vt64": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 64, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB)] + JP73AC,
     "vt0": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 0, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB)] + JP73AC,
+    # ld hl,(VARTAB) / ld de,K / add hl,de / ld (VARTAB),hl / ret  -- through BLOAD,R's continuation
+    "rvt64": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 64, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB), 0xC9],
+    "rvt0": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 0, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB), 0xC9],
     # ld hl,$D020 / push hl / ld hl,$ABCD / push hl / ld hl,0 / ld de,$1111 /
     # ld bc,$2222 / jp $3297; at $D020: ld ($D180),hl / ld ($D182),bc /
     # ld ($D184),de / ret
@@ -85,12 +92,14 @@ LINES = {
     "cont": PROG + ["A=7:" + TAIL],
     "vt64": ["NEW", '10 PRINT"[";FRE(0);"]":END', TAIL],
     "vt0": ["NEW", '10 PRINT"[";FRE(0);"]":END', TAIL],
+    "rvt64": ["NEW", 'BLOAD"CAS:",R:CLEAR:PRINT"[";FRE(0);"]"'],
+    "rvt0": ["NEW", 'BLOAD"CAS:",R:CLEAR:PRINT"[";FRE(0);"]"'],
     "pop3297": ["NEW", "10 FOR I=&HD180 TO &HD185:POKE I,0:NEXT",
                 '20 BLOAD"CAS:",R',
                 '30 P$="[":FOR I=&HD180 TO &HD185:P$=P$+RIGHT$("0"+HEX$(PEEK(I)),2):NEXT:PRINT P$;"]":END',
                 "RUN"],
 }
-ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "pop3297",
+ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "rvt64", "pop3297",
         "play_ok", "play_e5", "play_e13"]
 PLAYTEXT = {"play_ok": [0x22, 0x41, 0x42, 0x43, 0x22, 0x00],                 # "ABC"
             "play_e5": [0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x22, 0x00],     # "HELLO"
@@ -148,8 +157,8 @@ def main():
     for name in only:
         got = {}
         for side, m in MACHINES:
-            if name == "vt64":
-                a, b = fre(run(m, "vt64", tmp)), fre(run(m, "vt0", tmp))
+            if name in ("vt64", "rvt64"):
+                a, b = fre(run(m, name, tmp)), fre(run(m, name.replace("64", "0"), tmp))
                 got[side] = None if a is None or b is None else f"{a - b}"
             else:
                 got[side] = run(m, name, tmp)

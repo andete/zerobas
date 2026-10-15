@@ -1,0 +1,4 @@
+ROW rvt64 VG=[-64] ZB=[0] DIVERGES
+
+FAIL: undocumented BASIC entries (0/1)
+refcache: 0 hit, 4 miss, 4 stored

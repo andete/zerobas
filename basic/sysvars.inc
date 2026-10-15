@@ -645,8 +645,8 @@ COLON           equ     $3A     ; ':' statement separator
 QUOTE_REM       equ     $27     ; "'" — apostrophe comment, treated as REM
 APOS_MARK       equ     $E6     ; "remark-quote" marker emitted after `'`'s REM token
 
-; BASICINT_PINS -- D-BASICINT's three fixed-address entries ($3297 / $6CF3 /
-; $73AC, 2026-10-15) exist only in the SHIPPING configuration: every switch
+; BASICINT_PINS -- the fixed-address entries games call: D-BASICINT's $3297 / $6CF3 /
+; $73AC and D-AVTAK's $73E5 (all 2026-10-15) exist only in the SHIPPING configuration: every switch
 ; `make switch-build-check` flips must be at its shipped value. A switch turned
 ; off removes code ahead of a pin, its `ds` pad grows by exactly that much, and a
 ; `jr` spanning the pin overflows -- six of seven switch builds failed that way

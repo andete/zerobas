@@ -114,6 +114,13 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A `,R` program that loads a BASIC program lost it to its own variables**
+  (fixed 2026-10-15, D-VARTABADOPT). Some loaders' machine code loads the next
+  BASIC program and sets the end-of-program pointer (`VARTAB`, `&HF6C2`)
+  themselves, as the reference expects. zerobas kept the program's end in its
+  own place and, at the next `CLEAR` or `RUN`, put `VARTAB` back where its own
+  record said -- so variables were stored over the program. Now the end that
+  the `,R` code set is kept, as on the VG-8020.
 - **Some games' `,R` code jumps into BASIC's own ROM** (supported 2026-10-15,
   D-BASICINT). Three tape titles jump to addresses no published table names:
   one runs the BASIC program it has just loaded (the reference's `RUN` at

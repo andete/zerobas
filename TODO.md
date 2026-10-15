@@ -3515,6 +3515,39 @@ item — do **one item per session** to keep context lean.
       on OUR ROM's handlers), a finer CURLIN trace (a breakpoint on the line
       dispatcher, line numbers only), and errors raised by other paths
       (stmt_error $4306).
+      🔴 **CORRECTION (2026-10-15, later the same day): THE "NO PEEK" AND "NO
+      raise_error" LINES ABOVE WERE NEVER MEASURED.** Their harness edits put Tcl
+      braces inside a Python f-string -- a SyntaxError -- so every run from the
+      PEEK edit on died before the emulator started, and an absent output file
+      read as "nothing fired". Re-measured with the harness fixed AND a positive
+      control (exec_stmt fires 4 / 6 / 1 / 1 times on lines 30 / 40 / 45 / 50):
+      no FRE, INP, USR, VDP, PEEK, TIME, STR$, CHR$, HEX$, INKEY$, LEFT$, MID$,
+      RIGHT$, STRING$, SPACE$, VAL, ASC, LEN or INSTR runs in lines 30-50 on
+      zerobas. A CURLIN write-watch (every change, line numbers only) gives
+      65535 -> 65310 -> 30 -> 40 -> 45 -> 50 on BOTH machines: line 45 is NOT
+      skipped (the 0.25 s samples missed it). FILNAM-hash control done properly:
+      OUR tape's `BLOAD"CAS:AB"` hashes $21A4 at the search on both machines, so
+      the witness holds -- Harry Fox's line 50 still asks for $36B2 vs $34D1.
+      📏 **AND A REAL DEFECT ON THE WAY: D-VARTABADOPT (fixed).** An EQUALITY
+      witness on the program text -- a hash and the length of [TXTTAB, VARTAB)
+      at every line change -- reads $088F / 1302 B on the VG-8020 throughout,
+      but on zerobas VARTAB - TXTTAB fell to 2 at the first line after the ,R
+      loader: Harry Fox's first file loads its BASIC program and SETS VARTAB, as
+      the reference keeps the program end there; zerobas derives VARTAB from its
+      own PRGEND, and the next variable reset put VARTAB at an EMPTY program's
+      end -- variables then stored over the program's text. Fixed byte-neutral
+      ahead of the pins: BLOAD,R's `call nz,lh_jphl` -> `call nz,lh_runr`
+      (syncs VARTAB := PRGEND + 2 before the code runs) and lh_back's `jp
+      exec_stmt` -> `jp lh_adopt` (PRGEND := VARTAB - 2 after it) -- a no-op
+      unless the code moved VARTAB, so a VARTAB stale from another path cannot
+      leak in. Page 1 46 -> 20 B (2026-10-15). Gate row rvt64 in
+      basicint-acceptance (-64 on both); knife K-VA1 (the adoption store cut)
+      -> ZB 0, DIVERGES: HIT ([`vartab_knife.out`](scratchpad/vartab_knife.out)).
+      With it, Harry Fox's program text stays intact ($088F / 1302 B on both)
+      -- 🔮 "and line 50 then matches file 2": MISS, the name still differs
+      ($36B2); bare `BLOAD"AB"` / `BLOAD"AB",R` match alike too
+      ([`casname_run4.out`](scratchpad/casname_run4.out)). Parked: the input of
+      that name is still unlocated.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -9452,7 +9485,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34985 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35018 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9618,7 +9651,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14480 (T-6FE392)8 (T-529ABE)` from `TODO.md:27274 (T-529ABE)`: a
+      `TODO.md:14513 (T-6FE392)8 (T-529ABE)` from `TODO.md:27307 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15327,7 +15360,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27307 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

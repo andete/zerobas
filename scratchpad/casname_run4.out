@@ -1,0 +1,3 @@
+ROW bare VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+ROW bare_r VG=[Found:AB] ZB=[Found:AB] SAME
+refcache: 0 hit, 4 miss, 4 stored

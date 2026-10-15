@@ -801,3 +801,35 @@ ple_stmt:
                 ret     z                   ; called from basicint_play -> bp_ret
                 jp      exec_stmt           ; the PLAY statement: chain the next one
 
+; --- D-VARTABADOPT (2026-10-15): a ,R program that loads a BASIC program ------
+; Harry Fox's first file is machine code that loads its BASIC program itself and
+; sets the PUBLISHED VARTAB ($F6C2) to the program's end, as the reference keeps
+; it (VARTAB IS the reference's program end). zerobas keeps the end in PRGEND and
+; DERIVES VARTAB = PRGEND + 2 (vars_reset), so the next variable reset put VARTAB
+; back at an EMPTY program's end ($8003, measured: VARTAB - TXTTAB = 2), and the
+; program's own variables were then stored over its text -- line 50's file name
+; among them, so its tape search asked for a different file. The fix adopts a
+; VARTAB the ,R code MOVED: lh_runr syncs VARTAB := PRGEND + 2 before the code
+; runs, lh_adopt sets PRGEND := VARTAB - 2 after it -- a no-op unless the code
+; changed VARTAB, so a VARTAB stale from any other path cannot leak in. Placed
+; past every pin; bload.asm's two sites changed byte for byte (D-BASICINT's pins
+; are rigid). The $6CF3 pin reaches lh_adopt too (it jumps to lh_back).
+lh_runr:                                    ; HL = the exec address; the caller pushed
+                push    hl                  ; the cursor and `call`ed us: lh_back is our
+                ld      hl,(PRGEND)         ; return address, as for lh_jphl
+                inc     hl
+                inc     hl
+                ld      (VARTAB),hl         ; in sync before the code runs
+                pop     hl
+                jp      lh_jphl             ; bload.asm's `jp (hl)`: run it; its `ret` lands
+                                            ; on lh_back (kept there, not deleted: a byte
+                                            ; removed ahead of the pins would shift them)
+lh_adopt:                                   ; HL = the statement cursor
+                push    hl
+                ld      hl,(VARTAB)
+                dec     hl
+                dec     hl
+                ld      (PRGEND),hl         ; the $0000 end marker the VARTAB implies
+                pop     hl
+                jp      exec_stmt
+

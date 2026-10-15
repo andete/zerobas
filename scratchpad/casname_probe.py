@@ -32,7 +32,10 @@ FORMS = {"up": "CAS:AB", "low": "cas:AB", "mixed": "Cas:AB", "sp": "CAS: AB",
          # run 3 (Harry Fox's search wants $41 -- BLOAD + a NAME -- and the header
          # IS $D0, so it is the name; every ordinary form above matches alike):
          "zpad": "CAS:AB",                             # header "AB" padded with $00
-         "prefix": "CAS:ABC"}                          # request shorter than the header "ABCDEF"
+         "prefix": "CAS:ABC",                          # request shorter than the header "ABCDEF"
+         # run 4 (Harry Fox still asks for a different name with an identical program):
+         "bare": "AB",                                 # NO device: the diskless cassette
+         "bare_r": 'AB",R:REM "'}                      # bare + ,R (the REM eats the tail quote)
 TAPE = build_cas("AB", 0xD000, 0xD000, bytes([0xC9])) + build_cas("ZZ", 0xD000, 0xD000, bytes([0xC9]))
 _KN = build_cas("KN", 0xD000, 0xD000, bytes([0xC9]))      # cas_encode encodes ASCII only:
 assert _KN.count(b"KN    ") == 1                            # patch the 2 header-name bytes
