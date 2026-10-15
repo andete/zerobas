@@ -3493,9 +3493,15 @@ item — do **one item per session** to keep context lean.
       space after the colon, a lowercase name, $00 padding and a short prefix.
       🔮 "a lowercase device separates them": MISS; "zero padding or a prefix":
       MISS. Also ruled out: the BIOS ID bytes $002B-$002D are never read (a read
-      watch, addresses only). ➡️ Find the machine-dependent INPUT of the name
-      (published work-area reads between lines 30 and 50, values allowed -- they
-      are RAM -- but never the program text).
+      watch, addresses only); zerobas runs NO `PEEK` between t = 20 and 24 s (a
+      breakpoint on PEEK's own `ld e,(hl)` in OUR ROM, $4EDB -- verified in the
+      listing), and raises NO error through raise_error between 13 and 30 s (so
+      not an ON ERROR detour). The VG-8020's line samples show 30 -> 45 -> 50 and
+      zerobas's 30 -> 50, but a 0.25 s sample can miss a fast line: weak.
+      ➡️ Still to try: INP / USR / VDP / STICK / INKEY$ as the input (breakpoints
+      on OUR ROM's handlers), a finer CURLIN trace (a breakpoint on the line
+      dispatcher, line numbers only), and errors raised by other paths
+      (stmt_error $4306).
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -9433,7 +9439,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34966 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34972 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9599,7 +9605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14461 (T-6FE392)8 (T-529ABE)` from `TODO.md:27255 (T-529ABE)`: a
+      `TODO.md:14467 (T-6FE392)8 (T-529ABE)` from `TODO.md:27261 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15308,7 +15314,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27255 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27261 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
