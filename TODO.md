@@ -3608,10 +3608,27 @@ item — do **one item per session** to keep context lean.
       z,lrf_var` that the game's Z flag took into an unrelated LSET tail which
       happened to return harmlessly; the $73AC pin shifted `lrset_rhs+6` under
       it. **The pins did not break a feature: they ended a coincidence.**
-      ➡️ Characterise $73E5 black-box on the VG-8020 (OUR code calls it with
-      controlled HL / DE / BC / A; outputs: returned registers, RAM around HL and
-      DE, the screen), then pin it beside $73AC with tools/pin_plan.py, add rows
-      to basicint-acceptance, and re-run all 51.
+      📏 **CHARACTERISED (2026-10-15): $73E5 IS THE PLAY STATEMENT'S BODY**
+      ([`basicint_73e5_probe.py`](scratchpad/basicint_73e5_probe.py): OUR code,
+      run by USR, calls $73E5 with HL at a tokenised text it POKEd; outputs on the
+      screen, under ON ERROR). With a garbage buffer at HL: ERR 13 and our code
+      after the `call` never runs ([`basicint_73e5.out`](scratchpad/basicint_73e5.out)).
+      With TEXT at HL ([`basicint_73e5_t.out`](scratchpad/basicint_73e5_t.out),
+      [`basicint_73e5_s.out`](scratchpad/basicint_73e5_s.out),
+      [`basicint_73e5_len.out`](scratchpad/basicint_73e5_len.out)): `""`, `"A"`,
+      `"AB"`, `"ABC"` RETURN (HL past the argument, at the line's end); `7` and `A`
+      -> 13; `"HELLO"` and A$ = "XYZ" -> 5 -- the rule is the CHARACTERS (H, X, Y
+      are not music-macro commands), not the length. And right after, PLAY(1)
+      reads -1 ([`basicint_73e5_play.out`](scratchpad/basicint_73e5_play.out)):
+      the string was QUEUED as music. So the game plays its tunes by CALLING
+      BASIC's PLAY handler, HL at its own `"..."` arguments, and it RETURNS.
+      🔮 Scored: "it returns": HIT (for valid MML); "it moves or compares memory
+      between HL and DE": MISS; my first decoding of DE as the string's address
+      was wrong (the bytes there are not the string).
+      ➡️ Pin: `$73E5: dec hl / jp play_body` (ex_play's `inc hl` skips the token
+      the game's HL is already past), with ex_play split into a body that RETURNS
+      (`call play_body / jp exec_stmt` at the statement); place it beside $73AC
+      with tools/pin_plan.py, add PLAY rows to basicint-acceptance, re-run all 51.
       🔴 **The class lesson:** ANY layout change in page 0 / page 1 can break a
       game that hard-codes an internal address where zerobas's code worked by
       luck; no gate can hold third-party tapes, so the 51-tape run on
@@ -9346,7 +9363,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34879 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34896 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9512,7 +9529,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14374 (T-6FE392)8 (T-529ABE)` from `TODO.md:27168 (T-529ABE)`: a
+      `TODO.md:14391 (T-6FE392)8 (T-529ABE)` from `TODO.md:27185 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15221,7 +15238,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27168 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
