@@ -3080,13 +3080,21 @@ item — do **one item per session** to keep context lean.
       each diverges exactly its own row: 6/6 HIT, every knife build pin-checked.
       Not run, stated: K-WS28 (the post-scan call alone), predicted BLIND on
       openMSX -- a disk machine's power-on table holds no key a program names.
-      ➡️ **S9b (next, 0 ROM):** the DISK-ONLY tags on the disk cells and a
-      BOOT-ONLY tag for SCAN_*, `ram_map --floor-top F380` as S15's census, and
-      the alias splits (PLY_NUMOVF = DISKOP_A would launder a diskless user past
-      A17's alias rule; DISKOP_OP / DISKOP_STATUS stay untagged -- diskless
-      users through aliases). s9_plan.md §2 E16-E18 has the list. Also from the
-      plan, for S11 / S12's planner: TSV_NAME is declared 1 B but written as 6
-      ($EF62-$EF67), so $EF64 / $EF65 look like holes and are not.
+      ✅ **S9b (2026-10-15, 0 ROM -- all four ROMs byte-identical): THE TAGS AND
+      S15's CENSUS.** DISK-ONLY on the 66 disk cells S9 made disk-only (the FAT
+      engine block, FIELD / GET / PUT / COPY / FILES / FORMAT cells, DISKOP_A /
+      HL / ERR, FCH_RECLENS / RECNOS, DSKBUF_PTR), BOOT-ONLY on SCAN_*,
+      NOT-A-CELL on FLD_TABEND / FN_STK_FLOOR (a width pin went: the good
+      direction); FMT_GEOMSEL, FMT_RESULT and PLY_NUMOVF are literals now -- an
+      alias of a DISK-ONLY name passes A17 as tagged, which would have hidden
+      PLAY's diskless use of $EE3A. `tools/ram_map.py --floor-top HEX` (advisory)
+      lists what still stands below a projected ceiling; A17 accepts BOOT-ONLY
+      and gained three selftest arms (68/68). First reading
+      ([`s9b_floortop.out`](scratchpad/s9b_floortop.out)): **261 untagged names
+      in [TXTMAX, $F380)** must move before S15; 80 tagged names may stay.
+      DISKOP_OP / DISKOP_STATUS stay untagged on purpose (diskless users through
+      their aliases). For S11 / S12's planner: TSV_NAME is declared 1 B but
+      written as 6 ($EF62-$EF67) -- s9_plan.md §1.6.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9685,7 +9693,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35218 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35226 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9851,7 +9859,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14713 (T-6FE392)8 (T-529ABE)` from `TODO.md:27507 (T-529ABE)`: a
+      `TODO.md:14721 (T-6FE392)8 (T-529ABE)` from `TODO.md:27515 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15560,7 +15568,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27507 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27515 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 302 declared addresses in this project's own workspace `$E000..$F37F` (289 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
+* **basic** — 301 declared addresses in this project's own workspace `$E000..$F37F` (289 with a machine-readable width), plus **240** in the MSX standard work area at or above `$F380`.
 * **disk** — 130 declared addresses in this project's own workspace `$E000..$F37F` (121 with a machine-readable width), plus **53** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -170,85 +170,85 @@ second one is the question a per-component map cannot answer.
 | `$ED99` | 2 B | `basic` | `GFX_G8N/GFX_PPITCH` | $ED99: 1 or 4, live only inside a PAINT |  |
 | `$ED9B` | 2 B | `basic` | `GFX_G8V` | $ED9B: written value (int16 LE) (2) |  |
 | `$ED9D` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
-| `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | sectors per cluster (byte) |  |
-| `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | first FAT sector (= reserved sectors) (word) |  |
-| `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | first root-directory sector (word) |  |
-| `$EE02` | 2 B | `basic` | `FAT_TOTCLUS` | total clusters + 2, from fat_mount (word; D-WCACHE W1 -- |  |
-| `$EE04` | 2 B | `basic` | `FAT_FIRSTDATA` | first data sector (word) |  |
-| `$EE06` | 2 B | `basic` | `FAT_CURCLUS/FCH_STATE0` | current cluster in the open file's chain (word) |  |
-| `$EE08` | 1 B | `basic` | `FAT_CLUSSEC` | sector index within current cluster (byte) |  |
-| `$EE09` | 2 B | `basic` | `FAT_FIRSTCLUS` | first cluster of the found file (word) |  |
-| `$EE0B` | 4 B | `basic` | `FAT_FILESIZE` | file size in bytes (4-byte LE) |  |
-| `$EE0B` | 4 B | `disk` | `main_FAT_FILESIZE` | main's FAT_FILESIZE -- file size in bytes (4-byte LE) |  |
-| `$EE0F` | 1 B | `basic` | `FAT_NUMFATS` | number of FAT copies (byte; from BPB +16) (1 B) |  |
-| `$EE10` | 2 B | `basic` | `FAT_SECPERFAT` | sectors per FAT copy (word; from BPB +22) |  |
-| `$EE12` | 1 B | `basic` | `FAT_PARITY` | 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
-| `$EE13` | 2 B | `basic` | `FAT_BYTEIDX` | byte index within a FAT sector (word, 0..511) |  |
-| `$EE15` | 2 B | `basic` | `FAT_FATSEC` | FAT sector currently read (word) |  |
-| `$EE17` | 1 B | `basic` | `FAT_B0` | first FAT byte of a 12-bit entry (1 B) |  |
-| `$EE18` | 1 B | `basic` | `FAT_B1` | second FAT byte of a 12-bit entry (1 B) |  |
-| `$EE19` | 2 B | `basic` | `FAT_NAMEPTR` | -> 11-byte search name (word) |  |
-| `$EE1B` | 2 B | `basic` | `FAT_DIRSEC` | current root-dir sector being scanned (word) |  |
-| `$EE1D` | 2 B | `basic` | `FAT_DIRREM` | root-dir sectors remaining to scan (word) |  |
-| `$EE1F` | 2 B | `basic` | `FAT_WRTMP` | transient scratch for the FAT12 write helpers (word) |  |
-| `$EE21` | 2 B | `basic` | `FAT_WRTMP2` | second transient (free-cluster scan cached sector) (2 B) |  |
-| `$EE23` | 2 B | `basic` | `FREAD_OFF` | next byte index within FSECTOR_BUF (0..512) (word) |  |
-| `$EE25` | 4 B | `basic` | `FREAD_LEFT` | bytes of the open file still undelivered (4-byte LE) |  |
-| `$EE29` | 2 B | `basic` | `FWR_CLUS` | chain-tail cluster currently being filled (word) |  |
-| `$EE2B` | 2 B | `basic` | `FWR_FIRST` | file's first cluster, 0 until first allocated (word) |  |
-| `$EE2D` | 1 B | `basic` | `FWR_SECIDX` | sector index within the current cluster (byte) |  |
-| `$EE2E` | 2 B | `basic` | `FWR_BUFLEN` | bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
-| `$EE30` | 4 B | `basic` | `FWR_BYTES` | total bytes written so far = final file size (4-byte LE) |  |
-| `$EE30` | 4 B | `disk` | `main_FWR_BYTES` | main's FWR_BYTES -- total bytes written so far = final file size (4-byte LE) |  |
-| `$EE34` | 2 B | `basic` | `FWR_DIRSEC` | logical sector holding the open file's dir entry (word) |  |
-| `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- logical sector holding the open file's dir entry (word) |  |
-| `$EE36` | 2 B | `basic` | `FWR_DIROFF` | byte offset of that dir entry within its sector (word) |  |
-| `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- byte offset of that dir entry within its sector (word) |  |
+| `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
+| `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
+| `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |
+| `$EE02` | 2 B | `basic` | `FAT_TOTCLUS` | DISK-ONLY: total clusters + 2, from fat_mount (word; D-WCACHE W1 -- |  |
+| `$EE04` | 2 B | `basic` | `FAT_FIRSTDATA` | DISK-ONLY: first data sector (word) |  |
+| `$EE06` | 2 B | `basic` | `FAT_CURCLUS/FCH_STATE0` | DISK-ONLY: current cluster in the open file's chain (word) |  |
+| `$EE08` | 1 B | `basic` | `FAT_CLUSSEC` | DISK-ONLY: sector index within current cluster (byte) |  |
+| `$EE09` | 2 B | `basic` | `FAT_FIRSTCLUS` | DISK-ONLY: first cluster of the found file (word) |  |
+| `$EE0B` | 4 B | `basic` | `FAT_FILESIZE` | DISK-ONLY: file size in bytes (4-byte LE) |  |
+| `$EE0B` | 4 B | `disk` | `main_FAT_FILESIZE` | main's FAT_FILESIZE -- DISK-ONLY: file size in bytes (4-byte LE) |  |
+| `$EE0F` | 1 B | `basic` | `FAT_NUMFATS` | DISK-ONLY: number of FAT copies (byte; from BPB +16) (1 B) |  |
+| `$EE10` | 2 B | `basic` | `FAT_SECPERFAT` | DISK-ONLY: sectors per FAT copy (word; from BPB +22) |  |
+| `$EE12` | 1 B | `basic` | `FAT_PARITY` | DISK-ONLY: 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
+| `$EE13` | 2 B | `basic` | `FAT_BYTEIDX` | DISK-ONLY: byte index within a FAT sector (word, 0..511) |  |
+| `$EE15` | 2 B | `basic` | `FAT_FATSEC` | DISK-ONLY: FAT sector currently read (word) |  |
+| `$EE17` | 1 B | `basic` | `FAT_B0` | DISK-ONLY: first FAT byte of a 12-bit entry (1 B) |  |
+| `$EE18` | 1 B | `basic` | `FAT_B1` | DISK-ONLY: second FAT byte of a 12-bit entry (1 B) |  |
+| `$EE19` | 2 B | `basic` | `FAT_NAMEPTR` | DISK-ONLY: -> 11-byte search name (word) |  |
+| `$EE1B` | 2 B | `basic` | `FAT_DIRSEC` | DISK-ONLY: current root-dir sector being scanned (word) |  |
+| `$EE1D` | 2 B | `basic` | `FAT_DIRREM` | DISK-ONLY: root-dir sectors remaining to scan (word) |  |
+| `$EE1F` | 2 B | `basic` | `FAT_WRTMP` | DISK-ONLY: transient scratch for the FAT12 write helpers (word) |  |
+| `$EE21` | 2 B | `basic` | `FAT_WRTMP2` | DISK-ONLY: second transient (free-cluster scan cached sector) (2 B) |  |
+| `$EE23` | 2 B | `basic` | `FREAD_OFF` | DISK-ONLY: next byte index within FSECTOR_BUF (0..512) (word) |  |
+| `$EE25` | 4 B | `basic` | `FREAD_LEFT` | DISK-ONLY: bytes of the open file still undelivered (4-byte LE) |  |
+| `$EE29` | 2 B | `basic` | `FWR_CLUS` | DISK-ONLY: chain-tail cluster currently being filled (word) |  |
+| `$EE2B` | 2 B | `basic` | `FWR_FIRST` | DISK-ONLY: file's first cluster, 0 until first allocated (word) |  |
+| `$EE2D` | 1 B | `basic` | `FWR_SECIDX` | DISK-ONLY: sector index within the current cluster (byte) |  |
+| `$EE2E` | 2 B | `basic` | `FWR_BUFLEN` | DISK-ONLY: bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
+| `$EE30` | 4 B | `basic` | `FWR_BYTES` | DISK-ONLY: total bytes written so far = final file size (4-byte LE) |  |
+| `$EE30` | 4 B | `disk` | `main_FWR_BYTES` | main's FWR_BYTES -- DISK-ONLY: total bytes written so far = final file size (4-byte LE) |  |
+| `$EE34` | 2 B | `basic` | `FWR_DIRSEC` | DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
+| `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
+| `$EE36` | 2 B | `basic` | `FWR_DIROFF` | DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
+| `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
 | `$EE38` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$EE38` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$EE39` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $EE39 tenant->main: 0 ok / nonzero ERR code |  |
 | `$EE39` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
-| `$EE3A` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | tenant -> main: the primitive's real A output, |  |
-| `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output |  |
-| `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
-| `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
+| `$EE3A` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
+| `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | DISK-ONLY: tenant -> main: the primitive's real HL output |  |
+| `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
+| `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE6D` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
 | `$EE71` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
-| `$EE77` | 2 B | `basic` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
-| `$EE77` | 2 B | `disk` | `GP_SRC` | pass cursor into FSECTOR_BUF (2) |  |
-| `$EE79` | 2 B | `basic` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
-| `$EE79` | 2 B | `disk` | `GP_LEFT` | record bytes still to move, ends $EA3E (2 B) |  |
+| `$EE77` | 2 B | `basic` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
+| `$EE77` | 2 B | `disk` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
+| `$EE79` | 2 B | `basic` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
+| `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7B` | 2 B | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
-| `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | 32 B ($EE7D..$EE9C): per-channel record number |  |
+| `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
+| `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE9D` | 32 B | `basic` | `PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$EEBF` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
 | `$EEC0` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
 | `$EEC1` | 2 B | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
-| `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | FIELD: running byte offset into the record buffer (2) |  |
-| `$EEC5` | 1 B | `basic` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
-| `$EEC5` | 1 B | `disk` | `FLD_CHAN` | FIELD/LSET/RSET: the channel being fielded (1) |  |
-| `$EEC6` | 1 B | `basic` | `LRSET_JUST` | LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
-| `$EEC7` | 1 B | `basic` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
-| `$EEC7` | 1 B | `disk` | `LRSET_W` | LSET/RSET: destination field width (1) |  |
-| `$EEC8` | 2 B | `basic` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
-| `$EEC8` | 2 B | `disk` | `LRSET_DEST` | LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
+| `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: running byte offset into the record buffer (2) |  |
+| `$EEC5` | 1 B | `basic` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
+| `$EEC5` | 1 B | `disk` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
+| `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
+| `$EEC7` | 1 B | `basic` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
+| `$EEC7` | 1 B | `disk` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
+| `$EEC8` | 2 B | `basic` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
+| `$EEC8` | 2 B | `disk` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EECA` | 32 B | `basic` | `PU_DIG` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
-| `$EEEE` | 11 B | `basic` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
-| `$EEEE` | 11 B | `disk` | `COPY_SRC` | the source's 11-byte 8.3 name field |  |
-| `$EEF9` | 2 B | `basic` | `COPY_CLUS` | the source's first cluster (word) |  |
-| `$EEF9` | 2 B | `disk` | `COPY_CLUS` | the source's first cluster (word) |  |
-| `$EEFB` | 4 B | `basic` | `COPY_LEFT` | bytes still to copy (4-byte LE) |  |
-| `$EEFB` | 4 B | `disk` | `COPY_LEFT` | bytes still to copy (4-byte LE) |  |
+| `$EEEE` | 11 B | `basic` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
+| `$EEEE` | 11 B | `disk` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
+| `$EEF9` | 2 B | `basic` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
+| `$EEF9` | 2 B | `disk` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
+| `$EEFB` | 4 B | `basic` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
+| `$EEFB` | 4 B | `disk` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
 | `$EEFF` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
 | `$EF01` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
 | `$EF02` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
 | `$EF03` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
 | `$EF04` | 1 B | `basic` | `RL_LAST` | the logical line's last row at Enter (1) |  |
 | `$EF05` | 1 B | `basic` | `RL_KEY` | main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1) |  |
-| `$EF06` | 1 B | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
-| `$EF06` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$EF06` | 1 B | `basic` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$EF06` | 1 B | `disk` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF0A` | 29 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (25), and |  |
 | `$EF0D` | 9 B | `basic` | `FOR_LIM` | the limit slot [type][8] (9) |  |
 | `$EF16` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
@@ -261,24 +261,24 @@ second one is the question a per-component map cannot answer.
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$EF3A` | 2 B | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
-| `$EF42` | 1 B | `basic` | `SCAN_PRIM` | primary slot currently being scanned (1) |  |
-| `$EF43` | 1 B | `basic` | `SCAN_SLOT` | candidate slot id for RDSLT/CALSLT (1) |  |
-| `$EF44` | 2 B | `basic` | `SCAN_INIT` | candidate ROM's INIT entry address (2) |  |
-| `$EF46` | 2 B | `basic` | `SCAN_IY` | CALSLT slot word: high byte = slot (IYh) (2) |  |
+| `$EF42` | 1 B | `basic` | `SCAN_PRIM` | BOOT-ONLY: primary slot currently being scanned (1) |  |
+| `$EF43` | 1 B | `basic` | `SCAN_SLOT` | BOOT-ONLY: candidate slot id for RDSLT/CALSLT (1) |  |
+| `$EF44` | 2 B | `basic` | `SCAN_INIT` | BOOT-ONLY: candidate ROM's INIT entry address (2) |  |
+| `$EF46` | 2 B | `basic` | `SCAN_IY` | BOOT-ONLY: CALSLT slot word: high byte = slot (IYh) (2) |  |
 | `$EF48` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR) |  |
-| `$EF49` | 11 B | `basic` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
-| `$EF49` | 11 B | `disk` | `DISK_FCB_NAME` | +1..+11: 8.3 name field (11 bytes) |  |
-| `$EF59` | 2 B | `basic` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
-| `$EF59` | 2 B | `disk` | `DSV_PTR` | SAVE: current source byte pointer (2) |  |
-| `$EF5B` | 2 B | `basic` | `DSV_END` | SAVE/BSAVE: last source byte addr, inclusive (2) |  |
-| `$EF5B` | 2 B | `disk` | `DSV_END` | SAVE/BSAVE: last source byte addr, inclusive (2) |  |
+| `$EF49` | 11 B | `basic` | `DISK_FCB_NAME` | DISK-ONLY: +1..+11: 8.3 name field (11 bytes) |  |
+| `$EF49` | 11 B | `disk` | `DISK_FCB_NAME` | DISK-ONLY: +1..+11: 8.3 name field (11 bytes) |  |
+| `$EF59` | 2 B | `basic` | `DSV_PTR` | DISK-ONLY: SAVE: current source byte pointer (2) |  |
+| `$EF59` | 2 B | `disk` | `DSV_PTR` | DISK-ONLY: SAVE: current source byte pointer (2) |  |
+| `$EF5B` | 2 B | `basic` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
+| `$EF5B` | 2 B | `disk` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
 | `$EF5D` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
 | `$EF61` | 1 B | `basic` | `FMT_GEOMSEL/TSV_CNT` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$EF61` | 1 B | `disk` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$EF62` | 1 B | `basic` | `FMT_RESULT/TSV_NAME` | tape save: 6-char filename buffer (space-padded) (1 B) |  |
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
-| `$EF63` | 1 B | `basic` | `FILES_ENTIDX/IN_RDLEN` | FILES: dir entry index 0..15 within a sector (1) |  |
-| `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | FILES: dir entry index 0..15 within a sector (1) |  |
+| `$EF63` | 1 B | `basic` | `FILES_ENTIDX/IN_RDLEN` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
+| `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF67` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
@@ -363,23 +363,23 @@ second one is the question a per-component map cannot answer.
 | `$EFFB` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) |  |
 | `$EFFD` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) |  |
 | `$EFFE` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
-| `$F019` | 96 B | `basic` | `FLD_TAB` | field table base ($F019..$F078, 96 bytes) |  |
-| `$F079` | 2 B | `basic` | `FLD_TABEND/GP_RECNO` | record number, 1-based (2 B) |  |
-| `$F079` | 2 B | `disk` | `GP_RECNO` | record number, 1-based (2 B) |  |
-| `$F07B` | 2 B | `basic` | `GP_SEC` | file logical-sector index of the record (2) |  |
-| `$F07B` | 2 B | `disk` | `GP_SEC` | file logical-sector index of the record (2) |  |
-| `$F07D` | 2 B | `basic` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) (2 B) |  |
-| `$F07D` | 2 B | `disk` | `GP_WITHIN` | byte offset of the record within its sector (0/256, 2) (2 B) |  |
-| `$F07F` | 2 B | `basic` | `GP_CLUS` | current cluster during the chain walk (2) |  |
-| `$F07F` | 2 B | `disk` | `GP_CLUS` | current cluster during the chain walk (2) |  |
-| `$F081` | 2 B | `basic` | `GP_CLIDX` | cluster steps still to walk (2) |  |
-| `$F081` | 2 B | `disk` | `GP_CLIDX` | cluster steps still to walk (2) |  |
-| `$F083` | 1 B | `basic` | `GP_SECINCL` | sector index within the final cluster (1) |  |
-| `$F083` | 1 B | `disk` | `GP_SECINCL` | sector index within the final cluster (1) |  |
-| `$F084` | 2 B | `basic` | `GP_PHYS` | resolved absolute physical sector (2) |  |
-| `$F084` | 2 B | `disk` | `GP_PHYS` | resolved absolute physical sector (2) |  |
-| `$F088` | 1 B | `basic` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
-| `$F088` | 1 B | `disk` | `GP_FLAGS` | bit0 = extend (PUT allocates; GET does not) (1) |  |
+| `$F019` | 96 B | `basic` | `FLD_TAB` | DISK-ONLY: field table base ($F019..$F078, 96 bytes) |  |
+| `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
+| `$F079` | 2 B | `disk` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
+| `$F07B` | 2 B | `basic` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |
+| `$F07B` | 2 B | `disk` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |
+| `$F07D` | 2 B | `basic` | `GP_WITHIN` | DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B) |  |
+| `$F07D` | 2 B | `disk` | `GP_WITHIN` | DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B) |  |
+| `$F07F` | 2 B | `basic` | `GP_CLUS` | DISK-ONLY: current cluster during the chain walk (2) |  |
+| `$F07F` | 2 B | `disk` | `GP_CLUS` | DISK-ONLY: current cluster during the chain walk (2) |  |
+| `$F081` | 2 B | `basic` | `GP_CLIDX` | DISK-ONLY: cluster steps still to walk (2) |  |
+| `$F081` | 2 B | `disk` | `GP_CLIDX` | DISK-ONLY: cluster steps still to walk (2) |  |
+| `$F083` | 1 B | `basic` | `GP_SECINCL` | DISK-ONLY: sector index within the final cluster (1) |  |
+| `$F083` | 1 B | `disk` | `GP_SECINCL` | DISK-ONLY: sector index within the final cluster (1) |  |
+| `$F084` | 2 B | `basic` | `GP_PHYS` | DISK-ONLY: resolved absolute physical sector (2) |  |
+| `$F084` | 2 B | `disk` | `GP_PHYS` | DISK-ONLY: resolved absolute physical sector (2) |  |
+| `$F088` | 1 B | `basic` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
+| `$F088` | 1 B | `disk` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$F08B` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$F08D` | 3 B | `basic` | `PU_FDESC` | [len][ptr] copy for a format that cannot move (3) |  |
 | `$F090` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
@@ -389,13 +389,13 @@ second one is the question a per-component map cannot answer.
 | `$F094` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
 | `$F095` | 1 B | `basic` | `PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
 | `$F096` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
-| `$F097` | 1 B | `basic` | `FMT_SEC` | CALL FORMAT: current sector index being written (1) |  |
-| `$F098` | 2 B | `basic` | `FMT_DESC` | CALL FORMAT: chosen geometry descriptor pointer (2) |  |
-| `$F09A` | 2 B | `basic` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
-| `$F09A` | 2 B | `disk` | `GP_RECLEN` | active channel's record length (word), loaded per calc |  |
+| `$F097` | 1 B | `basic` | `FMT_SEC` | DISK-ONLY: CALL FORMAT: current sector index being written (1) |  |
+| `$F098` | 2 B | `basic` | `FMT_DESC` | DISK-ONLY: CALL FORMAT: chosen geometry descriptor pointer (2) |  |
+| `$F09A` | 2 B | `basic` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
+| `$F09A` | 2 B | `disk` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
 | `$F09C` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
-| `$F09D` | 1 B | `basic` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F09D` | 1 B | `disk` | `FILES_HASPAT` | FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
+| `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
+| `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09F` | 1 B | `basic` | `TKOVF` | tokeniser reject code, 0 = ok (1 B) |  |
 | `$F0A0` | 2 B | `basic` | `DB_SP` | the render's SP to abort to (2 B; FAC's old cell) |  |
 | `$F0A2` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
@@ -454,7 +454,6 @@ second one is the question a per-component map cannot answer.
 | `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
-| `$F200` |  | `basic` | `FN_STK_FLOOR` |  |  |
 | `$F23D` | 2 B | `disk` | `DOS_DTAPTR` | disk work-area current-DTA cache (word, LE; M19) |  |
 | `$F242` | 1 B | `disk` | `W50A9_WRKB` | the one work-area cell $50A9 clears (semantic: black-box) (1 B) |  |
 | `$F247` | 1 B | `disk` | `CURDRV_CELL` | current-drive index ($00=A:); read by $50C4 (M18) (1 B) |  |
@@ -466,7 +465,7 @@ second one is the question a per-component map cannot answer.
 | `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
 | `$F347` | 1 B | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B) |  |
 | `$F348` | 16 B | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table, $F348..$F357 (§8.22; |  |
-| `$F351` | 2 B | `basic` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer (2) |  |
+| `$F351` | 2 B | `basic` | `DSKBUF_PTR` | DISK-ONLY: word -> the DSKI$/DSKO$ sector buffer (2) |  |
 | `$F351` | 2 B | `disk` | `DSKBUF_PTR` | word -> the DSKI$/DSKO$ sector buffer; the disk ROM writes it |  |
 | `$F359` |  | `disk` | `W50A9_RET_HL` | HL on return: disk work-area pointer (DRVTBL+$11 region) |  |
 | `$F365` |  | `disk` | `F365_STUB` | fixed disk-work-area slot-read stub (IN A,($A8);RET; M15 §7.1) |  |

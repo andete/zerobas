@@ -936,8 +936,13 @@ def check(maps: dict, allow: list) -> tuple:
     return rc, lines
 
 
-def disk_floor(m) -> tuple:
+def disk_floor(m, top=None) -> tuple:
     """(offenders, tagged) for the DISKLESS FLOOR: [TXTMAX, TXTMAX_NODISK).
+
+    `top` replaces TXTMAX_NODISK: D-WSZERO S9b's `--floor-top F380` asks what
+    would stand in the way if the diskless ceiling rose to $F380 (S15's census).
+    A `BOOT-ONLY` tag counts too: a cell used only by the boot scan, before any
+    program exists (SCAN_*).
 
     🔴 D-FATFLOOR (2026-10-13). The diskless build's text ceiling sits ABOVE the
     disk build's, and what lies between is PROGRAM RAM on a diskless machine --
@@ -949,12 +954,15 @@ def disk_floor(m) -> tuple:
     of a tagged name. NOT-A-CELL constants are exempt.
     """
     tx, tn = m.vals.get("TXTMAX"), m.vals.get("TXTMAX_NODISK")
+    if top is not None:
+        tn = top
     if tx is None or tn is None:
         return [("<map>", "TXTMAX / TXTMAX_NODISK do not resolve")], []
 
     def tag(n):
         rec = m.raw.get(n)
-        return bool(rec and rec[3] and "DISK-ONLY" in rec[3].split(";")[0][:120])
+        head = rec[3].split(";")[0][:120] if rec and rec[3] else ""
+        return "DISK-ONLY" in head or "BOOT-ONLY" in head
 
     offenders, tagged = [], []
     for n, v in sorted(m.vals.items(), key=lambda kv: kv[1]):
@@ -1430,6 +1438,16 @@ def selftest(lo, hi) -> int:
     _off3, _tag3 = disk_floor(Map("basic", 0, 0x10000, raw=_raw3, use_sym=False))
     ok["A17 a bare alias of a tagged name is accepted (FAT_DBUF's shape)"] = \
         "ZZ_FLOOR_ALIAS" in _tag3 and all(n != "ZZ_FLOOR_ALIAS" for n, _a in _off3)
+    for _w, _want in (("BOOT-ONLY: the boot scan's (1)", True), ("BOOT ONLY: no hyphen (1)", False)):
+        _raw4 = dict(_fm.raw)
+        _raw4["ZZ_FLOOR_BOOT"] = (f"${_tx + 1:04X}", "plant", 0, _w)
+        _off4, _ = disk_floor(Map("basic", 0, 0x10000, raw=_raw4, use_sym=False))
+        ok["A17 a BOOT-ONLY tag is accepted" if _want else
+           "A17 NEGATIVE: `BOOT ONLY` (no hyphen) is RED"] = \
+            (all(n != "ZZ_FLOOR_BOOT" for n, _a in _off4) == _want)
+    _offt, _ = disk_floor(_fm, top=0xF380)
+    ok["A17 --floor-top widens the floor (F380 lists more than TXTMAX_NODISK)"] = \
+        len(_offt) > len(_off)
 
     print()
     for k, v in ok.items():
@@ -1456,6 +1474,18 @@ def main() -> int:
         print(f"{DOC}: {body.count(chr(10))} lines, {nrows} row(s) "
               f"(one per declared address; the count used to come from the "
               f"NARROW maps and under-reported the standard work area)")
+        return 0
+    if "--floor-top" in sys.argv:
+        # D-WSZERO S9b: ADVISORY, never a gate -- what still stands below a
+        # projected diskless ceiling, untagged. S15 raises TXTMAX_NODISK only
+        # when this list is empty.
+        top = int(sys.argv[sys.argv.index("--floor-top") + 1], 16)
+        offenders, tagged = disk_floor(Map("basic", 0, 0x10000), top=top)
+        print(f"floor-top ${top:04X}: {len(offenders)} untagged basic name(s) in "
+              f"[TXTMAX, ${top:04X}) -- diskless state that must move before the "
+              f"ceiling can rise there; {len(tagged)} DISK-/BOOT-ONLY name(s) may stay")
+        for n, a in offenders:
+            print(f"    {a}  {n}")
         return 0
     if "--check" in sys.argv:
         maps = {c: Map(c, lo, hi) for c in ("basic", "disk")}

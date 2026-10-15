@@ -889,11 +889,11 @@ MRG_PTR         equ     $EEC1   ; MERGE: write cursor into LINEBUF for the curre
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
 ; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
-FLD_CUROFF      equ     $EEC3   ; FIELD: running byte offset into the record buffer (2)
-FLD_CHAN        equ     $EEC5   ; FIELD/LSET/RSET: the channel being fielded (1)
-LRSET_JUST      equ     $EEC6   ; LSET/RSET: the verb's token, bit 0 = right-justify (1)
-LRSET_W         equ     $EEC7   ; LSET/RSET: destination field width (1)
-LRSET_DEST      equ     $EEC8   ; LSET/RSET: destination ADDRESS of the store (2). (2 B)
+FLD_CUROFF      equ     $EEC3   ; DISK-ONLY: FIELD: running byte offset into the record buffer (2)
+FLD_CHAN        equ     $EEC5   ; DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1)
+LRSET_JUST      equ     $EEC6   ; DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1)
+LRSET_W         equ     $EEC7   ; DISK-ONLY: LSET/RSET: destination field width (1)
+LRSET_DEST      equ     $EEC8   ; DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B)
                                 ; D-LRVAR renamed this from LRSET_OFF (same address,
                                 ; 0 RAM): it held the field's OFFSET while the only
                                 ; destination was FSECTOR_BUF + off, but a
@@ -2949,10 +2949,10 @@ CONTVALID       equ     $F736   ; 1 = a CONT resume point is valid (1)
 ; under `di`, and dead afterwards; free page-3 RAM in the $E0D5..$E0FF gap
 ; (between CONT state and LINEBUF). RDSLT clobbers AF/BC/DE, so the slot id and
 ; INIT address are held here across reads rather than in registers.
-SCAN_PRIM       equ     $EF42   ; primary slot currently being scanned (1)
-SCAN_SLOT       equ     $EF43   ; candidate slot id for RDSLT/CALSLT (1)
-SCAN_INIT       equ     $EF44   ; candidate ROM's INIT entry address (2)
-SCAN_IY         equ     $EF46   ; CALSLT slot word: high byte = slot (IYh) (2)
+SCAN_PRIM       equ     $EF42   ; BOOT-ONLY: primary slot currently being scanned (1)
+SCAN_SLOT       equ     $EF43   ; BOOT-ONLY: candidate slot id for RDSLT/CALSLT (1)
+SCAN_INIT       equ     $EF44   ; BOOT-ONLY: candidate ROM's INIT entry address (2)
+SCAN_IY         equ     $EF46   ; BOOT-ONLY: CALSLT slot word: high byte = slot (IYh) (2)
 ; Disk filename scratch (the disk loader/saver verbs). Built by parse_disk_fcb;
 ; the loader-side FAT12 engine (basic/fat.asm) consumes the 8.3 NAME field directly
 ; — fat_find / fat_dir_create take an 11-byte name pointer, no FCB needed. The +0
@@ -2962,9 +2962,9 @@ SCAN_IY         equ     $EF46   ; CALSLT slot word: high byte = slot (IYh) (2)
 ; scratch and clear of the FAT engine's buffers (page $E5+). The "FCB" name is
 ; retained for continuity with the parser; only the NAME field is load-bearing now.
 ; See basic/PROVENANCE.md §disk-BLOAD scratch FCB / §disk DSKIO host engine.
-DISK_FCB        equ     $EF48   ; scratch name block ($E0DB.., 12 bytes)
+DISK_FCB        equ     $EF48   ; DISK-ONLY: scratch name block ($E0DB.., 12 bytes)
 DISK_FCB_DRV    equ     DISK_FCB        ; +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR)
-DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
+DISK_FCB_NAME   equ     DISK_FCB + 1    ; DISK-ONLY: +1..+11: 8.3 name field (11 bytes)
 ; Disk-ROM slot id recorded by the INIT scan (initext.asm) when it inits an
 ; external "AB" ROM, so the disk verbs can CALSLT the disk ROM's standard DSKIO
 ; ($4010) across slots (basic/fat.asm dskio_calslt). The combined machine has
@@ -3076,8 +3076,8 @@ CAS_WCNT        equ     $F739   ; cassette ASCII save: bytes buffered in the
 ; SAVE/BSAVE). DSV_PTR / DSV_END drive do_save's program-image source walk and
 ; disk_putword's word-emit (the FAT12 engine's own write buffering lives in its
 ; FWR_* scratch, basic/fat.asm — NOT here).
-DSV_PTR         equ     $EF59   ; SAVE: current source byte pointer (2)
-DSV_END         equ     $EF5B   ; SAVE/BSAVE: last source byte addr, inclusive (2)
+DSV_PTR         equ     $EF59   ; DISK-ONLY: SAVE: current source byte pointer (2)
+DSV_END         equ     $EF5B   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)
 ; Tape CSAVE / BSAVE write scratch (page $E0, $E0F1.. gap; dead outside a tape
 ; CSAVE/BSAVE). All state lives in RAM — TAPOUT clobbers every register, so no
 ; register can survive a TAPOUT call.
@@ -3093,8 +3093,10 @@ TSV_NAME        equ     $EF62   ; tape save: 6-char filename buffer (space-padde
 ; IN_RDLEN/FILES_ENTIDX below), and RAM below DRVA_DPB ($F195) is exhausted (math
 ; pack slice 2 §11.6), so no fresh claim is available. Both are RAM, so visible
 ; from main (page-1 resident stub) and the sub-ROM page-1 tenant alike.
-FMT_GEOMSEL     equ     TSV_CNT ; main -> tenant: 0 = 360k, 1 = 720k (1)
-FMT_RESULT      equ     TSV_NAME ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+FMT_GEOMSEL     equ     $EF61 ; main -> tenant: 0 = 360k, 1 = 720k (1)
+                                ; D-WSZERO S9b: a literal, was `equ TSV_CNT` (a disk-only twin)
+FMT_RESULT      equ     $EF62 ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+                                ; D-WSZERO S9b: a literal, was `equ TSV_NAME` (a disk-only twin)
 ; scan_stmt_end (SUBROM_IDX_SCANSTMT, sub/errtrap.asm) result -- error-
 ; handling S2b's RESUME NEXT (docs/spec-basic-error-handling-s2b-packet.md
 ; §5.5). ALIASED over the SAME tape CSAVE/BSAVE write scratch as FMT_GEOMSEL/
@@ -3114,7 +3116,7 @@ SSE_OUT         equ     TSV_PTR ; tenant -> main: next statement's start, or
 ; the $E0FC.. gap below LINEBUF ($E100). The dir-walk position lives in the
 ; fat.asm FAT_DIRSEC/FAT_DIRREM scratch; only the per-sector entry index needs a
 ; home that survives the CHPUT register clobber.
-FILES_ENTIDX    equ     $EF63   ; FILES: dir entry index 0..15 within a sector (1)
+FILES_ENTIDX    equ     $EF63   ; DISK-ONLY: FILES: dir entry index 0..15 within a sector (1)
 ; Sequential file-channel state (Phase 2). A SINGLE open channel for now (the
 ; loader/file engine has one global FREAD_*/FWR_* state); a MAXFILES channel table
 ; is a later sub-item. FCH_NUM/FCH_MODE persist across statements (OPEN … : LINE
@@ -3233,7 +3235,7 @@ FSECTOR_BUF     equ     $E46A   ; DISK-ONLY: file data / read sector buffer ($E4
 ; buffer at $ED95 -- FWBUF is ours, so this now matches its geometry. $F34D..$F358 was ASKED of the machine on
 ; 2026-09-11 (12 planted bytes survived a two-channel/KILL/FILES/DSKF/string/DEF FN
 ; workload) and lies below the sysvar sweep's $F380 floor.
-DSKBUF_PTR      equ     $F351   ; word -> the DSKI$/DSKO$ sector buffer (2)
+DSKBUF_PTR      equ     $F351   ; DISK-ONLY: word -> the DSKI$/DSKO$ sector buffer (2)
 FWBUF           equ     $E66A   ; DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869)
 
 ; D-FATENG Option 2: the shared FAT body (basic/fat-prim-body.inc) is assembled
@@ -3253,42 +3255,42 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 FAT_DEFER       equ     $E976   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9, above disk.rom's cell block).
-FAT_SECPERCLUS  equ     $EDFD   ; sectors per cluster (byte)
-FAT_FATSTART    equ     $EDFE   ; first FAT sector (= reserved sectors) (word)
-FAT_FIRSTROOT   equ     $EE00   ; first root-directory sector (word)
-FAT_TOTCLUS     equ     $EE02   ; total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+FAT_SECPERCLUS  equ     $EDFD   ; DISK-ONLY: sectors per cluster (byte)
+FAT_FATSTART    equ     $EDFE   ; DISK-ONLY: first FAT sector (= reserved sectors) (word)
+FAT_FIRSTROOT   equ     $EE00   ; DISK-ONLY: first root-directory sector (word)
+FAT_TOTCLUS     equ     $EE02   ; DISK-ONLY: total clusters + 2, from fat_mount (word; D-WCACHE W1 --
                                 ; was FAT_ROOTSECS, now fat_rootsecs: FIRSTDATA - FIRSTROOT)
-FAT_FIRSTDATA   equ     $EE04   ; first data sector (word)
-FAT_CURCLUS     equ     $EE06   ; current cluster in the open file's chain (word)
-FAT_CLUSSEC     equ     $EE08   ; sector index within current cluster (byte)
-FAT_FIRSTCLUS   equ     $EE09   ; first cluster of the found file (word)
-FAT_FILESIZE    equ     $EE0B   ; file size in bytes (4-byte LE)
-FAT_NUMFATS     equ     $EE0F   ; number of FAT copies (byte; from BPB +16) (1 B)
-FAT_SECPERFAT   equ     $EE10   ; sectors per FAT copy (word; from BPB +22)
+FAT_FIRSTDATA   equ     $EE04   ; DISK-ONLY: first data sector (word)
+FAT_CURCLUS     equ     $EE06   ; DISK-ONLY: current cluster in the open file's chain (word)
+FAT_CLUSSEC     equ     $EE08   ; DISK-ONLY: sector index within current cluster (byte)
+FAT_FIRSTCLUS   equ     $EE09   ; DISK-ONLY: first cluster of the found file (word)
+FAT_FILESIZE    equ     $EE0B   ; DISK-ONLY: file size in bytes (4-byte LE)
+FAT_NUMFATS     equ     $EE0F   ; DISK-ONLY: number of FAT copies (byte; from BPB +16) (1 B)
+FAT_SECPERFAT   equ     $EE10   ; DISK-ONLY: sectors per FAT copy (word; from BPB +22)
 ; FAT12 working scratch (transient within a single call).
-FAT_PARITY      equ     $EE12   ; 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
-FAT_BYTEIDX     equ     $EE13   ; byte index within a FAT sector (word, 0..511)
-FAT_FATSEC      equ     $EE15   ; FAT sector currently read (word)
-FAT_B0          equ     $EE17   ; first FAT byte of a 12-bit entry (1 B)
-FAT_B1          equ     $EE18   ; second FAT byte of a 12-bit entry (1 B)
-FAT_NAMEPTR     equ     $EE19   ; -> 11-byte search name (word)
-FAT_DIRSEC      equ     $EE1B   ; current root-dir sector being scanned (word)
-FAT_DIRREM      equ     $EE1D   ; root-dir sectors remaining to scan (word)
-FAT_WRTMP       equ     $EE1F   ; transient scratch for the FAT12 write helpers (word)
-FAT_WRTMP2      equ     $EE21   ; second transient (free-cluster scan cached sector) (2 B)
+FAT_PARITY      equ     $EE12   ; DISK-ONLY: 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
+FAT_BYTEIDX     equ     $EE13   ; DISK-ONLY: byte index within a FAT sector (word, 0..511)
+FAT_FATSEC      equ     $EE15   ; DISK-ONLY: FAT sector currently read (word)
+FAT_B0          equ     $EE17   ; DISK-ONLY: first FAT byte of a 12-bit entry (1 B)
+FAT_B1          equ     $EE18   ; DISK-ONLY: second FAT byte of a 12-bit entry (1 B)
+FAT_NAMEPTR     equ     $EE19   ; DISK-ONLY: -> 11-byte search name (word)
+FAT_DIRSEC      equ     $EE1B   ; DISK-ONLY: current root-dir sector being scanned (word)
+FAT_DIRREM      equ     $EE1D   ; DISK-ONLY: root-dir sectors remaining to scan (word)
+FAT_WRTMP       equ     $EE1F   ; DISK-ONLY: transient scratch for the FAT12 write helpers (word)
+FAT_WRTMP2      equ     $EE21   ; DISK-ONLY: second transient (free-cluster scan cached sector) (2 B)
 ; Read byte-stream state (fat_io_open / fat_io_getbyte) -- since S10.C (2026-10-15)
 ; only the sub-ROM BLOAD tenant's copy of basic/fatio-body.inc uses these; an
 ; INPUT channel reads its own FCB row in disk.rom.
-FREAD_OFF       equ     $EE23   ; next byte index within FSECTOR_BUF (0..512) (word)
-FREAD_LEFT      equ     $EE25   ; bytes of the open file still undelivered (4-byte LE)
+FREAD_OFF       equ     $EE23   ; DISK-ONLY: next byte index within FSECTOR_BUF (0..512) (word)
+FREAD_LEFT      equ     $EE25   ; DISK-ONLY: bytes of the open file still undelivered (4-byte LE)
 ; Write byte-stream state (fat_io_create / fat_io_putbyte / fat_io_close).
-FWR_CLUS        equ     $EE29   ; chain-tail cluster currently being filled (word)
-FWR_FIRST       equ     $EE2B   ; file's first cluster, 0 until first allocated (word)
-FWR_SECIDX      equ     $EE2D   ; sector index within the current cluster (byte)
-FWR_BUFLEN      equ     $EE2E   ; bytes currently buffered in FSECTOR_BUF (word, 0..512)
-FWR_BYTES       equ     $EE30   ; total bytes written so far = final file size (4-byte LE)
-FWR_DIRSEC      equ     $EE34   ; logical sector holding the open file's dir entry (word)
-FWR_DIROFF      equ     $EE36   ; byte offset of that dir entry within its sector (word)
+FWR_CLUS        equ     $EE29   ; DISK-ONLY: chain-tail cluster currently being filled (word)
+FWR_FIRST       equ     $EE2B   ; DISK-ONLY: file's first cluster, 0 until first allocated (word)
+FWR_SECIDX      equ     $EE2D   ; DISK-ONLY: sector index within the current cluster (byte)
+FWR_BUFLEN      equ     $EE2E   ; DISK-ONLY: bytes currently buffered in FSECTOR_BUF (word, 0..512)
+FWR_BYTES       equ     $EE30   ; DISK-ONLY: total bytes written so far = final file size (4-byte LE)
+FWR_DIRSEC      equ     $EE34   ; DISK-ONLY: logical sector holding the open file's dir entry (word)
+FWR_DIROFF      equ     $EE36   ; DISK-ONLY: byte offset of that dir entry within its sector (word)
 ; DISKOP marshalling block (repack eviction, docs/spec-evict-diskfile-cluster.md
 ; §11): the FAT12 primitive/sector layer's resident<->tenant ABI. Claims the
 ; LAST 5 free bytes below FCH_CTX ($E9FB..$E9FF, between FWR_DIROFF+2 and the
@@ -3305,11 +3307,11 @@ DISKOP_OP       equ     $EE38   ; main -> tenant: DISKOP_SEL_* primitive selecto
 DISKOP_STATUS   equ     $EE39   ; tenant -> main: the disposition (1 B)
                                 ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
                                 ; or no-match (NZ), per primitive
-DISKOP_A        equ     $EE3A   ; tenant -> main: the primitive's real A output,
+DISKOP_A        equ     $EE3A   ; DISK-ONLY: tenant -> main: the primitive's real A output,
                                 ; if it has one (read_sector/write_sector's DSKIO
                                 ; error code); reloaded uniformly even where no
                                 ; caller currently reads it (1)
-DISKOP_HL       equ     $EE3B   ; tenant -> main: the primitive's real HL output
+DISKOP_HL       equ     $EE3B   ; DISK-ONLY: tenant -> main: the primitive's real HL output
                                 ; (fat_alloc_cluster's allocated cluster number);
                                 ; reloaded uniformly for every primitive (2)
 ; fat_count_free's DE output (free cluster count) is NOT a new DISKOP_DE cell --
@@ -3778,7 +3780,9 @@ AUDIO_STATUS    equ     DISKOP_STATUS   ; $EE39 tenant->main: 0 ok / nonzero ERR
 ; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
 ; do not use in 2a). The persistent per-voice state (octave/length/tempo/...) lives
 ; in the VCBs; the source cursor rides HL and the byte count B during a voice parse.
-PLY_NUMOVF      equ     DISKOP_A        ; $EE3A (1): pt_number 16-bit overflow latch
+PLY_NUMOVF      equ     $EE3A        ; $EE3A (1): pt_number 16-bit overflow latch
+                                ; D-WSZERO S9b: a literal, was `equ DISKOP_A` -- an alias of a
+                                ; DISK-ONLY name would hide this diskless user from A17
 ;                 (was PLY_NUM, a 'decimal number-literal accumulator' that NOTHING
 ;                 referenced -- the accumulator rides HL. D-PLAYCORNER repurposes the
 ;                 byte: a wrapped number literal must REJECT, not alias into range)
@@ -3904,8 +3908,8 @@ DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 
 ; 2026-09-21; $EE40..$EE63 is simply UNCLAIMED, which is not the same as free.
 FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:1]
 FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
-FLD_TAB         equ     $F019   ; field table base ($F019..$F078, 96 bytes)
-FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $F079
+FLD_TAB         equ     $F019   ; DISK-ONLY: field table base ($F019..$F078, 96 bytes)
+FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; NOT-A-CELL: $F079
 ; --- Phase 2c slice 2: GET/PUT random-record I/O scratch -------------------
 ; Transient (dead outside a single GET/PUT statement; one statement runs at a time,
 ; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
@@ -3916,16 +3920,16 @@ FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; $F079
 ; disk/basic-resident-abi.inc -- one consumer, no disk-side twin, so the address
 ; is published unaliased (COPY_SRC's precedent). They stay declared HERE so the
 ; RAM map has one owner for them and a sysvar move reaches disk.rom by regen.
-GP_RECNO        equ     $F079   ; record number, 1-based (2 B)
-GP_SEC          equ     $F07B   ; file logical-sector index of the record (2)
-GP_WITHIN       equ     $F07D   ; byte offset of the record within its sector (0/256, 2) (2 B)
-GP_CLUS         equ     $F07F   ; current cluster during the chain walk (2)
-GP_CLIDX        equ     $F081   ; cluster steps still to walk (2)
-GP_SECINCL      equ     $F083   ; sector index within the final cluster (1)
-GP_PHYS         equ     $F084   ; resolved absolute physical sector (2)
+GP_RECNO        equ     $F079   ; DISK-ONLY: record number, 1-based (2 B)
+GP_SEC          equ     $F07B   ; DISK-ONLY: file logical-sector index of the record (2)
+GP_WITHIN       equ     $F07D   ; DISK-ONLY: byte offset of the record within its sector (0/256, 2) (2 B)
+GP_CLUS         equ     $F07F   ; DISK-ONLY: current cluster during the chain walk (2)
+GP_CLIDX        equ     $F081   ; DISK-ONLY: cluster steps still to walk (2)
+GP_SECINCL      equ     $F083   ; DISK-ONLY: sector index within the final cluster (1)
+GP_PHYS         equ     $F084   ; DISK-ONLY: resolved absolute physical sector (2)
 ; ($F086 GP_OLDNSEC -- the file's old sector count -- is gone since S10.D: disk.rom's
 ; PUT asks the FCB row's size directly, GP_SEC * 512 < size. 2 B free.)
-GP_FLAGS        equ     $F088   ; bit0 = extend (PUT allocates; GET does not) (1)
+GP_FLAGS        equ     $F088   ; DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1)
 ; ($F089 GP_MODE / $F08A GP_CHAN are gone since S10.D, 2026-10-15: GET / PUT
 ; cross H_DGET with the mode in A and the channel in C, and disk.rom's hk_dget
 ; keeps both on its stack across the record evaluator. The two bytes are free.)
@@ -4001,8 +4005,8 @@ PU_DEC          equ     $F096   ; PRINT USING `.`: decimal places requested (D-P
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
 ; the sub-ROM page-1 tenant owns these two cells (it runs the build/write loop).
 ; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
-FMT_SEC         equ     $F097   ; CALL FORMAT: current sector index being written (1)
-FMT_DESC        equ     $F098   ; CALL FORMAT: chosen geometry descriptor pointer (2)
+FMT_SEC         equ     $F097   ; DISK-ONLY: CALL FORMAT: current sector index being written (1)
+FMT_DESC        equ     $F098   ; DISK-ONLY: CALL FORMAT: chosen geometry descriptor pointer (2)
 FLD_DESC        equ     $E36A   ; DISK-ONLY: transient fielded-read descriptor [len][bytes:255] (256 B)
 ; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
 ; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
@@ -4016,11 +4020,11 @@ FLD_DESC        equ     $E36A   ; DISK-ONLY: transient fielded-read descriptor [
 ; ⚠️ D-FCH §3.2: with FCH_CEIL=15 the repack array is 32 B and would run over
 ; GP_RECLEN/OO_RECLEN_CHAN/FILES_HASPAT/CAS_WANT at $F006..; it moves into the
 ; same freed $EA00 page-3 window as FCH_MODES.
-FCH_RECLENS     equ     $EE4D   ; 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
+FCH_RECLENS     equ     $EE4D   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
                                 ; \U0001f534 STALE SINCE D-DEFFN: $EA9C..$EB00 is FN_PAREA
                                 ; (tools/ram_map.py). A comment claiming free RAM is a
                                 ; claim; the band below was ASKED of the machine.
-FCH_RECNOS      equ     $EE7D   ; 32 B ($EE7D..$EE9C): per-channel record number
+FCH_RECNOS      equ     $EE7D   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number
                                 ; of the last GET/PUT
                                 ; 🔴 THE RANGE IS SPELLED OUT BECAUSE "32 B"
                                 ; ALONE WAS NOT ENOUGH (D-RAMGATE, 2026-09-21):
@@ -4044,9 +4048,9 @@ FCH_RECNOS      equ     $EE7D   ; 32 B ($EE7D..$EE9C): per-channel record number
                                 ; (D-EDITVERB took $EA30..$EA38: the RENUM
                                 ; round-trip cells RN_PTR/RN_NEW/RN_OLD/RN_INC
                                 ; and read_line's RL_AUTO mode flag)
-GP_RECLEN       equ     $F09A   ; active channel's record length (word), loaded per calc
+GP_RECLEN       equ     $F09A   ; DISK-ONLY: active channel's record length (word), loaded per calc
 OO_RECLEN_CHAN  equ     $F09C   ; OPEN scratch: channel # stashed across the LEN= eval (1)
-FILES_HASPAT    equ     $F09D   ; FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
+FILES_HASPAT    equ     $F09D   ; DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
 ; --- Tier-3 cassette name-matching (CLOAD"name" / LOAD"CAS:name" / RUN"CAS:" /
 ; MERGE"CAS:"): tape/docs/spec-cas-tier3-cload.md Item A. Clean high RAM above
 ; FCH_RECLENS ($F00A.., below the C-BIOS sysvars ~$F380). Live ONLY during a
@@ -4303,9 +4307,9 @@ CSR_ON          equ     $F735   ; 1 while the cursor is shown, else 0 (1 B)
 ; D-COPY (2026-09-11): COPY "src" TO "dst" keeps the SOURCE name and what fat_find
 ; said about it across the destination's delete/create, which reuse DISK_FCB_NAME
 ; and clobber FAT_FIRSTCLUS/FAT_FILESIZE. 17 B from the band below.
-COPY_SRC        equ     $EEEE   ; the source's 11-byte 8.3 name field
-COPY_CLUS       equ     $EEF9   ; the source's first cluster (word)
-COPY_LEFT       equ     $EEFB   ; bytes still to copy (4-byte LE)
+COPY_SRC        equ     $EEEE   ; DISK-ONLY: the source's 11-byte 8.3 name field
+COPY_CLUS       equ     $EEF9   ; DISK-ONLY: the source's first cluster (word)
+COPY_LEFT       equ     $EEFB   ; DISK-ONLY: bytes still to copy (4-byte LE)
 ; D-SCREDIT (docs/spec-basic-screditor.md): read_line's marshalling to the readline
 ; tenant, 6 B from the same band.
 RL_HL           equ     $EEFF   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
@@ -4317,7 +4321,7 @@ RL_KEY          equ     $EF05   ; main -> tenant: the key CHGET returned (main w
 ; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
 ; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
 ; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
-DISKOP_ERR      equ     $EF06   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+DISKOP_ERR      equ     $EF06   ; DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
 ; D-FNPOOL (docs/spec-basic-fnpool.md): `DEF FN` frames come from the CONTROL POOL
 ; now, not from below `SP`, so a nested call's saved formals are ADDRESSABLE and
 ; the GC can walk them (the live-frame walk alone left an outer call's string
@@ -4344,8 +4348,8 @@ FN_FST          equ     $F6E6   ; tenant -> main: 0 = frame saved, 1 = pool full
 ; aliasing shape this tree keeps paying for. $EA3A is watched by
 ; `make ramfree-acceptance`, which fills every declared span and runs nine
 ; subsystems over it -- so "nothing else writes here" is a measurement.
-GP_SRC          equ     $EE77   ; pass cursor into FSECTOR_BUF (2)
-GP_LEFT         equ     $EE79   ; record bytes still to move, ends $EA3E (2 B)
+GP_SRC          equ     $EE77   ; DISK-ONLY: pass cursor into FSECTOR_BUF (2)
+GP_LEFT         equ     $EE79   ; DISK-ONLY: record bytes still to move, ends $EA3E (2 B)
 ; --- D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ----------------------
 ; `COLOR 7,99` must leave the foreground UNCHANGED: both references reject the
 ; statement ATOMICALLY, and zerobas stored each component as it validated it.
@@ -4452,7 +4456,7 @@ FN_BLK          equ     FN_CELLS + FN_AREA  ; the whole frame, cells first
 ; depth, so depth 30 would want kilobytes. What IS pinned from below is b.nest10.
 ; ⚠️ The references' own ceiling is still unmeasured ABOVE 30 -- the 255-character
 ; BASIC line is what stopped the ramp, not a reference error.
-FN_STK_FLOOR    equ     $F200
+FN_STK_FLOOR    equ     $F200   ; NOT-A-CELL
 ; ⚠️ THE ASSERTS SHIP WITH THE ALLOCATION, NOT AFTER IT. The last RAM obstacle
 ; this verb hit was a BUILD ERROR rather than a probe reading garbage out of the
 ; PLAY parser's stack only because the draft carried its own page-crossing
