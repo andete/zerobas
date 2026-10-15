@@ -3593,6 +3593,30 @@ item — do **one item per session** to keep context lean.
       counted only SAME titles, and this one was at 54 B). ➡️ Bisect on
       pick_martos (session triage harness; a worktree build repoints the shared
       machine -- re-repack from main after).
+      📏 **BISECTED (2026-10-15): 967cd255, D-BASICINT's PINS.** c19e7fd6 54 B,
+      e30dcfae (D-TAPLEAD) 54 B, c577b59c 54 B, 8644bd09 54 B, 967cd255 `Syntax
+      error in 140`. 🔮 "c19e7fd6 works": HIT; "D-TAPLEAD first" as the suspect:
+      cleared. The TRANS log (RAM -> ROM transitions, PC values only), on the
+      good AND the bad build alike, shows the game's code at $C060 going to
+      **$73E5** -- the same number on both, so it is HARD-CODED: a fourth
+      undocumented BASIC-ROM internal, 57 B past $73AC. (Its `$BDC2 -> $5494`
+      is `usr_ret` on both builds: a return through USR's return address, not
+      an entry.) On the VG-8020 $73E5 is CALLED (stack top $C063, the game's
+      return), three times in line 140, with HL in the game's RAM ($C19E /
+      $C1B3), DE $0038 / $8279 / $8277, BC $00F3 / $FB92, A $07 / $83 / $00.
+      On the good build zerobas's byte there was `lrset_finish+4` -- a `jr
+      z,lrf_var` that the game's Z flag took into an unrelated LSET tail which
+      happened to return harmlessly; the $73AC pin shifted `lrset_rhs+6` under
+      it. **The pins did not break a feature: they ended a coincidence.**
+      ➡️ Characterise $73E5 black-box on the VG-8020 (OUR code calls it with
+      controlled HL / DE / BC / A; outputs: returned registers, RAM around HL and
+      DE, the screen), then pin it beside $73AC with tools/pin_plan.py, add rows
+      to basicint-acceptance, and re-run all 51.
+      🔴 **The class lesson:** ANY layout change in page 0 / page 1 can break a
+      game that hard-codes an internal address where zerobas's code worked by
+      luck; no gate can hold third-party tapes, so the 51-tape run on
+      pick_martos is the only guard -- run ALL 51 after a ROM layout change, not
+      the titles the change was for (D-BASICINT ran three).
       🙋 **CLASS "FOUND" = GAMES CALLING AN UNDOCUMENTED BASIC-ROM INTERNAL
       (2026-10-14).** Loopy Laundry and Punch & Judy BLOAD,R a binary that, on
       BOTH machines, calls BASIC-ROM address $73AC directly (the harness's TRANS
@@ -9322,7 +9346,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34855 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34879 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9488,7 +9512,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14350 (T-6FE392)8 (T-529ABE)` from `TODO.md:27144 (T-529ABE)`: a
+      `TODO.md:14374 (T-6FE392)8 (T-529ABE)` from `TODO.md:27168 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15197,7 +15221,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27144 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27168 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

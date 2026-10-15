@@ -22,8 +22,10 @@ session and the loop resumes exactly where it stopped.
 - **D-TAPLEAD's residual FIXED (2026-10-15):** TAPION verifies full cycles
   both ways after a settle cycle; `tapionlead-acceptance` 5/5, `mid` unpinned;
   err_msgtab back in main page 1 (end of missing.asm), island 4 retired.
-- **NEXT (TIER 1): D-AVTAK** (A View to a Kill: 54 B on 10-14 -> `Syntax error
-  in 140` now; bisect m7 -> HEAD on pick_martos), then **Punch & Judy's next
+- **NEXT (TIER 1): D-AVTAK** -- bisected to D-BASICINT's pins: the game
+  hard-codes a FOURTH internal, **$73E5** (called, returns; TODO has its entry
+  state). Characterise it black-box on the VG-8020, pin it beside $73AC, add
+  basicint-acceptance rows, re-run ALL 51 (pick_martos). Then **Punch & Judy's next
   divergence** (one extra TAPIN before its third load) and **B2 Harry Fox**.
   ⚠️ Compare tape runs ONLY on the same pick file (pick_martos = the m-series).
 - **THEN B2 (Harry Fox):** locate where its BASIC diverges after file 4
