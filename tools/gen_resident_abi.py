@@ -284,7 +284,8 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # both ways intact, so nothing here needs RAM staging it does not already use.
     "fname_expr",               # HL = cursor in; stashes FN_RESUME + STRSCR
     "pdfcb_resume",             # parse_disk_fcb, then HL = (FN_RESUME)
-    "dirverb_op",               # A = DISKOP_SEL_*; runs the dirverb sub-ROM tenant
+    # (dirverb_op left with D-DSKLOCAL, 2026-10-15: disk.rom does DSKI$ / DSKO$'s
+    # sector I/O itself in hk_dsk, and no handler calls back for it any more.)
     # D-DISKVERB2 phase 3 (NAME). CF now crosses too -- measured two-sided, a
     # callee that SETS it comes back set and one that CLEARS it comes back clear
     # (scratchpad/xslot_abi.py leg 4) -- so these two may be read for their carry.

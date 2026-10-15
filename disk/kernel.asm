@@ -3576,34 +3576,41 @@ dsb_end:
 disk_banner:
                 db      "zerobas Disk BASIC",13,10,0
 
-; --- hk_present: the handler ALL SEVEN conversion hooks are installed at ------
-; D-MKHOOK, docs/spec-basic-nodisk.md §6/§9.
-; ⚠️ DELIBERATELY A SPIKE, AND THE SMALLEST ONE THAT PROVES ANYTHING. Nothing in
-; zerobas had ever CALLED an installed hook -- HPHYD is installed for foreign
-; hosts and never invoked here -- so the whole round trip (main page 1 -> a RAM
-; CALLF stub -> RST 30h across slots -> this ROM -> back) was unproven. This body
-; therefore does the minimum that is still a real answer: it says "a disk ROM is
-; present and claims MKI$".
-;
-; ⚠️ THE CONVERSIONS THEMSELVES STAY MAIN-SIDE FOR NOW, AND THAT IS A SCOPE
-; DECISION RECORDED, NOT AN OVERSIGHT. §8 measured how little can actually move:
-; the parse/marshalling half of every one of these verbs calls main PAGE 1
-; (`eval`, `str_eval_no`, `ev_sp`, `str_eval_ix`, `cvi_tmm`), which is switched
-; OUT while this ROM is mapped. Only the float coercion could follow, and it is
-; ~50 B against ~36 B of call overhead. So this slice buys the thing that was
-; actually broken -- a diskless build must REFUSE -- and leaves the byte-shuffling
-; to a follow-up that has to justify itself on its own.
-;
-; One body for all seven because today they all answer the same question. When a
-; conversion does move here, it gets its own entry and this one keeps the rest.
-;
-; Contract (own-design signalling over the published layout, §6):
-;   in   nothing; the argument is already evaluated and the width is in STRSCR
-;   out  CF=1  handled. An unclaimed slot is C-BIOS's `ret`, which leaves CF
-;              exactly as the caller set it -- so CF=0 means "no disk ROM".
-;   Clobbers nothing but the flags.
-hk_present:
+; --- (hk_present, D-MKHOOK's spike -- `scf / ret`, "a disk ROM is present" -- is
+; GONE: every conversion hook got its own body, and DSKI$ / DSKO$, its last two
+; users, run hk_dsk below since D-DSKLOCAL, 2026-10-15.)
+
+; --- hk_dsk: DSKI$ / DSKO$'s sector I/O in the disk ROM (MSX2 TH hooks H.DSKI / H.DSKO) ---
+; D-ROMSIZE step 1 (Joost 2026-10-14/15: the disk evictions first). Main's dsk_core
+; (basic/str-engine.asm) crosses this hook TWICE: first with A = 0, BEFORE the parse,
+; so a diskless machine (cell unclaimed) still answers ERR 5 where the CF-3300
+; answers ERR 2 -- that crossing only says "present"; then, after parsing `d,s`,
+; with A = the selector and BC = the sector. The sector moves between
+; (DSKBUF_PTR) and the disk with THIS ROM's own primitives (basic/fat-prim-body.inc,
+; raw DSKIO through dskio_calslt: no mount, and the DISKOP_ERR mapping inside).
+; It used to be the sub-ROM dirverb tenant, reached through main's dirverb_op with
+; the sector poked into FWR_DIRSEC -- the open OUTPUT channel's own directory
+; pointer, which made a DSKI$ with a file open lose that file (D-ALIASWCELL). The
+; sector now crosses in BC, so that hazard is gone by construction.
+;   in   A = 0 (presence) / DISKOP_SEL_DSKO / DISKOP_SEL_DSKI; BC = the sector
+;   out  DISKOP_STATUS = 0 ok / $FF failed (DISKOP_ERR = the DSKIO code); CF = 1
+hk_dsk:
+                or      a
                 scf
+                ret     z               ; the gate crossing: present, nothing to do
+                ld      d,b
+                ld      e,c             ; DE = the sector
+                ld      hl,(DSKBUF_PTR) ; HL = the buffer
+                cp      DISKOP_SEL_DSKO
+                jr      nz,hkd_read
+                call    fatprim_write_sector
+                jr      hkd_st
+hkd_read:
+                call    read_sector
+hkd_st:
+                sbc     a,a             ; CF -> $FF, clear -> 0
+                ld      (DISKOP_STATUS),a
+                scf                     ; claimed
                 ret
 
 ; --- hk_mkfloat: MKS$/MKD$'s conversion, RUNNING IN THE DISK ROM -------------
@@ -3988,8 +3995,8 @@ hook_tab:
                 dw      H_RSET, hk_lrset     ; (one body; LRSET_JUST says which)
                 dw      H_FIELD, hk_field    ; D-FIELDMOVE: the trio is complete --
                                              ; body here, not just its presence
-                dw      H_DSKO, hk_present   ; D-DSKIO: both bodies are a sub-ROM tenant,
-                dw      H_DSKI, hk_present   ; the hook buys the diskless ERR 5
+                dw      H_DSKO, hk_dsk       ; D-DSKLOCAL: the sector I/O runs HERE now
+                dw      H_DSKI, hk_dsk       ; (a sub-ROM tenant behind a presence-only hook before)
                 dw      H_COPY, hk_copy      ; D-DISKVERB3: body here too
                 dw      H_ERRP, hk_errp      ; D-DISKERR: the disk codes' messages live HERE
                 dw      H_FORM, hk_format    ; D-FMTHOOK: CALL FORMAT's menu + tenant

@@ -126,8 +126,9 @@ The one rung not yet proven is **RAM usage**.
 - Main ROM: `str_dski` in [basic/strvar.asm](../../basic/strvar.asm) makes
   the empty-string value; the parse and the drive check are `dsk_core` in
   [basic/str-engine.asm](../../basic/str-engine.asm), shared with `DSKO$`.
-- The sector read itself is `tnt_dski` in
-  [sub/dirverb.asm](../../sub/dirverb.asm).
+- The sector read itself is `hk_dsk` in the disk ROM,
+  [disk/kernel.asm](../../disk/kernel.asm), reached through the `H_DSKI` hook
+  (since 2026-10-15; it was a sub-ROM tenant before).
 - Design and measurements: [spec-basic-dskio.md](../spec-basic-dskio.md).
 
 ## Related concepts

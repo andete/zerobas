@@ -2464,20 +2464,29 @@ ex_dsko:
 ; stood at 0 B free.
 
 ; --- dsk_core: the shared half of DSKO$ d,s and DSKI$(d,s) (D-DSKIO) -----------
-; docs/spec-basic-dskio.md §3. In: A = the dirverb-tenant op (4 write / 5 read),
-; DE = the hook cell (H_DSKO / H_DSKI), HL = the cursor at `d`. The op is parked
-; on the stack across the parse because an argument may itself run a disk tenant
-; (`DSKO$ 0,LOF(1)`) through DISKOP_OP. The hook gate comes BEFORE the parse: the
-; diskless VG-8020 answers ERR 5 to `DSKO$ 0` where the CF-3300 answers ERR 2.
+; docs/spec-basic-dskio.md §3. In: A = the selector (DISKOP_SEL_DSKO / _DSKI),
+; DE = the hook cell (H_DSKO / H_DSKI), HL = the cursor at `d`. Out: HL = the
+; cursor after `s`.
+; 🧭 D-DSKLOCAL (2026-10-15, D-ROMSIZE step 1): THE SECTOR I/O RUNS IN disk.rom
+; (hk_dsk). The hook is crossed TWICE. First with A = 0, BEFORE the parse: the
+; diskless VG-8020 answers ERR 5 to `DSKO$ 0` where the CF-3300 answers ERR 2, so
+; an unclaimed cell must refuse before any argument is read (and an argument may
+; itself run a disk verb, `DSKO$ 0,LOF(1)`, which is why the selector is parked on
+; the stack). Then, parsed, with A = the selector and BC = the sector: hk_dsk
+; moves one sector between (DSKBUF_PTR) and the disk with disk.rom's own DSKIO.
 ; `drive` is a byte -- 0 and 1 both name the one drive; 2.. is `Bad drive name`
-; (ERR 62), measured on the reference with DSKI$(3,0) -- then `,`, then `sector`
-; as an int16 into FWR_DIRSEC, the sector-number word the dirverb tenant already
-; owns for NAME. The tenant moves one sector between (DSKBUF_PTR) and the disk;
-; a DSKIO failure lands in load_error. Out: HL = the cursor after `s`.
+; (ERR 62), measured on the reference with DSKI$(3,0).
+; It used to poke the sector into FWR_DIRSEC and run the sub-ROM dirverb tenant;
+; FWR_DIRSEC is also an open OUTPUT channel's directory pointer, which is what
+; D-ALIASWCELL (2026-09-23) had to restore around. The sector crosses in BC now,
+; so nothing the channel owns is touched. The restore after the I/O stays: the
+; raw read may have used the buffer main's staged sector lives in.
 dsk_core:
-                push    af                  ; the tenant op, across the parse
+                push    af                  ; the selector, across the parse
+                push    de                  ; the hook cell, for the second crossing
                 push    hl                  ; HL IS THE STATEMENT CURSOR (see ex_kill)
                 ex      de,hl               ; HL = the hook cell
+                xor     a                   ; A = 0: the presence crossing
                 call    chan_gate           ; unclaimed -> ERR 5, trappable
                 pop     hl
                 call    eval_byte_arg       ; A = E = drive (0..255, else ERR 5)
@@ -2488,39 +2497,21 @@ dsk_core:
 dsk_drv_ok:
                 call    req_comma           ; D-CARVERC: ERR 2 without it, past it
                 call    eval_int16_checked  ; DE = sector
-                ; 🔴 THIS POKES A CELL THE OPEN CHANNEL OWNS, AND THAT IS WHY
-                ; THE RESTORE BELOW IS NOT OPTIONAL (D-ALIASWCELL, 2026-09-23).
-                ; `FWR_DIRSEC` is the sector-number word the dirverb tenant
-                ; already owns for NAME -- and it is also where an OUTPUT
-                ; channel remembers which sector holds ITS directory entry, so
-                ; `CLOSE` stamps the file's size and first cluster there. With a
-                ; file open, `DSKI$(0,0)` used to leave that pointing at sector
-                ; 0: the entry was never updated and the file came back EMPTY.
-                ; ⚠️ chan_gate ABOVE saved the state block BEFORE this poke, so
-                ; the context still holds the channel's real FWR_DIRSEC and the
-                ; restore after the tenant puts it back. That ordering is
-                ; load-bearing: moving the gate below the parse would snapshot
-                ; the poisoned value and break this silently.
-                ld      (FWR_DIRSEC),de
-                pop     af                  ; the op again
-                push    hl                  ; guard the cursor across CALSLT
+                ld      b,d
+                ld      c,e                 ; BC = the sector, for hk_dsk
+                pop     de                  ; DE = the hook cell
+                pop     af                  ; A = the selector
+                push    hl                  ; guard the cursor across the crossing
                 push    ix                  ; and IX -- DSKI$ runs inside the evaluator
-                call    dirverb_op
-                ; The tenant just moved a raw sector, so main's staged sector and
-                ; the cells addressing it are both stale -- and FWR_DIRSEC, which
-                ; the parse poked above, is the open channel's own directory
-                ; pointer. Same restore chan_gate gives every other verb.
-                ; ⚠️ INSIDE the HL/IX guards, not after them: chan_restore_st
-                ; clobbers both, and HL here is the statement cursor.
-                jr      c,dsk_out           ; sub-ROM absent -- CF must reach the
-                call    chan_restore_st     ; `jp c` below, so skip and keep it
-                or      a                   ; CF = 0: the sub-ROM answered
-dsk_out:
+                ex      de,hl               ; HL = the hook cell
+                call    chan_gate_bare      ; disk.rom moves the sector (claimed: the
+                                            ; presence crossing above proved it)
+                ei                          ; a CALLF returns with interrupts OFF
+                call    chan_restore_st     ; main's staged sector may be stale now;
+                                            ; clobbers HL / IX, hence the guards
                 pop     ix
-                pop     hl
-                jp      c,load_error        ; sub-ROM absent
-                ld      a,(DISKOP_STATUS)
-                or      a
+                pop     hl                  ; A = DISKOP_STATUS, handed back by
+                or      a                   ; chan_restore_st (the pops keep it)
                 ret     z
                 jp      disk_error          ; DSKIO error -> its code (D-DISKERR)
 

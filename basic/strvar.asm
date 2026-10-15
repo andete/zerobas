@@ -414,7 +414,8 @@ mkf_have:
                 ; conversion -- hk_mkfloat (disk/kernel.asm) widened, packed and
                 ; filled STRSCR before returning. For MKI$ the packed form IS the
                 ; raw integer, staged into STRSCR+1 above, so the hook has nothing
-                ; to compute and `hk_present` is the truthful entry for H_MKI.
+                ; to compute (H_MKI's hk_mki only claims it; `hk_present`, the
+                ; presence-only spike, is gone since D-DSKLOCAL).
                 ; 🔑 SO ALL THREE ARRIVE THE SAME WAY -- bytes in STRSCR+1.., the
                 ; length in STRSCR -- and `strscr_desc` re-reads that length
                 ; itself (basic/str-engine.asm:319), which is why nothing needs

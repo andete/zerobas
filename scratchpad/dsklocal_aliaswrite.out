@@ -1,0 +1,31 @@
+D-ALIASWRITE: does a disk verb between two PRINT# corrupt the FILE?
+
+  no-disk   ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  truncate! ran to END  b'EEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  NAME      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  DSKF      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  FILES     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  LFILES    DID NOT FINISH  b''
+  COPY      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  DSKI$     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  DSKO$     ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+  SAVE      ran to END  b'AAAABBBBCCCCDDDD\r\nEEEEFFFFGGGGHHHH\r\n\x1a'
+
+  truncate! DATA LOST ON THE MEDIUM — record(s) AAAABBBBCCCCDDDD are absent from the committed file; got b'EEEEFFFFGGGGHHHH\r\n\x1a'
+  KILL     CLEAN — the file on disk is byte-identical to the control
+  NAME     CLEAN — the file on disk is byte-identical to the control
+  DSKF     CLEAN — the file on disk is byte-identical to the control
+  FILES    CLEAN — the file on disk is byte-identical to the control
+  LFILES   REFUSED — the arm never reached its CLOSE, so the file on disk shows a missing flush and NOT what the verb did to it
+  COPY     CLEAN — the file on disk is byte-identical to the control
+  DSKI$    CLEAN — the file on disk is byte-identical to the control
+  DSKO$    CLEAN — the file on disk is byte-identical to the control
+  SAVE     CLEAN — the file on disk is byte-identical to the control
+
+🟢 KILL came back CLEAN, and the sweep is NOT blind: the constructed positive control above still reports damage.
+
+VERDICT: 0 of 8 JUDGED verbs damage the file: (none)
+  1 arm(s) could not be judged and are NOT counted either way: LFILES
+  controls: no-disk clean (negative) and truncate! damaged (positive), both in this run
+refcache: 0 hit, 11 miss, 11 stored

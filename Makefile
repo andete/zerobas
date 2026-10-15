@@ -193,7 +193,7 @@ SUB_SRC   := sub/sub.asm
 # (FAT12 primitive/sector-layer eviction, docs/spec-evict-diskfile-cluster.md
 # §11, Phase 1): the tenant body + its two shared .inc files (the lean cart's
 # inline copies) -- same staleness hazard, same fix.
-# sub/dirverb.asm (KILL/NAME directory-verb I/O bodies, docs/spec-evict-
+# sub/dirverb.asm -- DELETED 2026-10-15 (D-DSKLOCAL) -- (KILL/NAME directory-verb I/O bodies, docs/spec-evict-
 # diskfile-cluster.md §12, Phase 2): a self-contained tenant (no new .inc -- it
 # reuses fatprim's already-listed primitive bodies sub-locally); until the lean
 # cart retired it kept its verb-body copies inline in basic/files.asm -- same
@@ -233,7 +233,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
              sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc basic/fatfits-body.inc \
-             sub/dirverb.asm sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
+             sub/randio.asm sub/fiawalk.asm basic/fiawalked-body.inc basic/randio-body.inc basic/fld-fill-body.inc \
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \

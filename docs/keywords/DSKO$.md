@@ -113,8 +113,9 @@ The one rung not yet proven is **RAM usage**.
 
 - Main ROM: `ex_dsko` and the shared parse `dsk_core` in
   [basic/str-engine.asm](../../basic/str-engine.asm).
-- The sector write itself is `tnt_dsko` in
-  [sub/dirverb.asm](../../sub/dirverb.asm).
+- The sector write itself is `hk_dsk` in the disk ROM,
+  [disk/kernel.asm](../../disk/kernel.asm), reached through the `H_DSKO` hook
+  (since 2026-10-15; it was a sub-ROM tenant before).
 - Design and measurements: [spec-basic-dskio.md](../spec-basic-dskio.md).
 
 ## Related concepts

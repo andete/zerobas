@@ -3581,7 +3581,7 @@ H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call a
 ; $FD9A..$FFE7) and leaves CF exactly as the caller set it, which is what makes
 ; "CF=0 -> no disk ROM" a sound test rather than a guess.
 H_DSKF          equ     $FE12   ; DSKF handler
-H_MKI           equ     $FE30   ; MKI$ handler (disk/kernel.asm hk_present)
+H_MKI           equ     $FE30   ; MKI$ handler (disk/kernel.asm hk_mki)
 H_MKS           equ     $FE35   ; MKS$ handler
 H_MKD           equ     $FE3A   ; MKD$ handler
 H_CVI           equ     $FE3F   ; CVI handler

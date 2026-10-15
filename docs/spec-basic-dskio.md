@@ -75,13 +75,17 @@ the hook gate comes BEFORE the parse, on both keywords.
   machine (planted pattern, disk workload incl. two channels, KILL, FILES,
   DSKF, strings, DEF FN — all 12 bytes survived); it is outside the sysvar
   sweep's `$F380..$FFFE` denominator.
-* Parse (main page 1, shared): `dsk_core` — store the tenant op, gate on the
-  hook (ERR 5 unclaimed), `drive` via `eval_byte_arg`, `,`, `sector` via
-  `eval_int16_checked` into `FWR_DIRSEC` (a sector-number word the dirverb
-  tenant already owns for `NAME`), then `dirverb_op`; `DISKOP_STATUS` ≠ 0 →
-  `load_error`.
-* Bodies (sub page 1, `dirverb_tenant` ops 4/5): `ld de,(FWR_DIRSEC)`,
-  `ld hl,(DSKBUF_PTR)`, `read_sector` / `fatprim_write_sector`, CF → STATUS.
+* Parse (main, shared): `dsk_core` — cross the hook with A = 0 (the presence
+  gate: ERR 5 unclaimed), `drive` via `eval_byte_arg`, `,`, `sector` via
+  `eval_int16_checked`, then cross the hook AGAIN with A = the selector and
+  BC = the sector; restore the live channel; `DISKOP_STATUS` ≠ 0 →
+  `disk_error`.
+* Body (disk.rom, `hk_dsk`, since D-DSKLOCAL 2026-10-15): `DE = BC`,
+  `ld hl,(DSKBUF_PTR)`, the disk ROM's own `read_sector` /
+  `fatprim_write_sector`, CF → STATUS. ⚠️ Until then the body was the sub-ROM
+  `dirverb_tenant` (ops 4/5) with the sector poked into `FWR_DIRSEC` -- also an
+  open OUTPUT channel's directory pointer, which D-ALIASWCELL had to restore
+  around; the sector crosses in BC now.
 * `DSKI$` returns the empty string via `STRSCR` length 0 → `str_mkf_desc`.
 * Nodisk rows for `nodisk-acceptance`: `k.dski` `PRINT LEN(DSKI$(0,0))` and
   `h.dsko` `DSKO$ 0,0`, both `ERR 5` on VG-8020 and zb-nodisk.

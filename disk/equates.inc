@@ -198,6 +198,10 @@ FOPEN_SEL_SAVE  equ     $53     ; step 12 (D-SAVEPORT): tokenised SAVE. Same
                                 ; rule as LOAD's $4C -- outside DISKOP_SEL_*'s
                                 ; 0..7 range, so an idle cell can never read as
                                 ; "SAVE is asking".
+DISKOP_SEL_DSKO equ     4       ; D-DSKLOCAL: mirror of basic/sysvars.inc's -- main
+                                ; passes it in A on DSKO$'s second crossing of
+                                ; H_DSKO / H_DSKI (DSKI$ passes DISKOP_SEL_DSKI, 5;
+                                ; the gate crossing passes 0)
 FOPEN_SEL_MAKE  equ     $4D     ; S10.B (2026-10-06): OPEN FOR OUTPUT -- create
                                 ; DISK_FCB_NAME as the live channel's FCB (hk_fmake)
 FOPEN_SEL_APND  equ     $50     ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)

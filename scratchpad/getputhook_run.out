@@ -1,0 +1,51 @@
+  quiet       20944 hit(s) over  33 cell(s)
+  files       21218 hit(s) over  35 cell(s)
+  openR       21075 hit(s) over  41 cell(s)
+  field       24177 hit(s) over  43 cell(s)
+  get1        24238 hit(s) over  45 cell(s)
+  get40       25397 hit(s) over  46 cell(s)
+  put1        24098 hit(s) over  46 cell(s)
+  put40       28269 hit(s) over  47 cell(s)
+
+=== DELTA vs quiet (cells any case moved) ===
+cell       files     openR     field      get1     get40      put1     put40
+$FD9A        -18       -19     +1478     +1479     +1476     +1362     +2861
+$FD9F        -18       -19     +1478     +1479     +1476     +1362     +2861
+$FDA4        +97       +28       +45       +53       +70       +63       +81
+$FDA9         +0        +0        +1        +1        +1        +1        +2
+$FDAE         +0        +0        +1        +1        +1        +1        +2
+$FDC2         +2       +28       +45       +53       +70       +63       +81
+$FE21         +0        +0        +0        +0        +0        +1        +1
+$FE2B         +0        +0        +1        +1        +1        +1        +1
+$FE4E         +0        +1        +2        +3       +42        +3       +42
+$FE53         +0        +0        +0        +1       +40        +1       +40
+$FE58         +0        +1        +1        +1        +1        +1        +1
+$FE5D         +0        +1        +1        +1        +1        +1        +1
+$FE62         +0        +1        +1        +1        +1        +1        +1
+$FE7B         +1        +0        +0        +0        +0        +0        +0
+$FE80         +0        +0        +0        +1       +40        +1       +40
+$FEB2         +0        +1        +1        +1        +1        +1        +1
+$FEB7         +0        +1        +1        +1        +1        +1        +1
+$FEDF       +100       +28       +45       +53       +70       +63       +81
+$FEE4        +97       +28       +45       +53       +70       +63       +81
+$FEE9         +3        +0        +0        +0        +0        +0        +0
+$FF25         +0        +4        +8        +9       +14       +11       +16
+$FF2A         +0        +2        +3        +4        +7        +5        +8
+$FF2F         +0        +1        +2        +3        +6        +4        +7
+$FF34         +0        +2        +5        +5        +7        +6        +8
+$FF3E         +0        +1        +2        +3       +83        +4       +84
+$FF43         +0        +1        +2        +3       +83        +4       +84
+$FF48         -1       +24       +46       +60      +625       +68      +633
+$FF5C         +1        +1        +1        +2       +41        +2       +41
+$FF66         +0        +3        +5        +7       +87        +8       +88
+$FF70         +0        +1        +1        +1        +1        +2        +2
+$FF93         +0        +0        +0        +0       +80        +0       +80
+$FF9D         +0        +1        +1        +1        +1        +2        +2
+$FFA2         +0        +0        +1        +1       +42        +2       +43
+$FFCF         +5        +5        +5        +6        +7       +23       +25
+$FFD4         +5        +5        +5        +6        +7       +23       +25
+
+[get40 screen tail] '                                                                                 color   auto    goto    list    run    '
+
+[put40 screen tail] '                                                                                 color   auto    goto    list    run    '
+refcache: 0 hit, 8 miss, 8 stored

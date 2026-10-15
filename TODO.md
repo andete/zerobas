@@ -3023,6 +3023,48 @@ item — do **one item per session** to keep context lean.
       D-ALIASWCELL's FWR_DIRSEC hazard by construction. ⚠️ Neither is the 40-60 B
       the brief estimated; the step-10 work (S10.D first) is where main's bytes
       are.
+      🏗️ **JOOST, 2026-10-15:** *"I think the remaining disk evictions make a lot of
+      sense: 1. it matches reference better 2. it creates space for other fixes 3.
+      it reduces the total non-disk rom size"* -> the evictions go FIRST (they
+      also fund D-BASICINT's pins).
+      ✅ **D-DSKLOCAL DONE (2026-10-15): DSKI$ / DSKO$'s sector I/O runs in disk.rom.**
+      Shape (b): main's dsk_core keeps the parse, crosses the hook with A = 0
+      before it (the diskless ERR 5) and AGAIN after it with A = the selector and
+      BC = the sector; disk.rom's new `hk_dsk` moves the sector with its own
+      read_sector / fatprim_write_sector. Deleted: main's dirverb_op, the sub-ROM
+      dirverb tenant (sub/dirverb.asm; table row 13 now `ret/nop/nop` so 14..
+      stay put), disk.rom's now-unused `hk_present` spike, dirverb_op from the
+      call-back ABI; the status comes back in A from chan_restore_st (-3 B).
+      Walls: main low 46 -> 52 B, main page 1 0 -> 8 B (+14 B; 🔮 ~12 B: HIT),
+      sub page 1 91 -> 141 B (+50; 🔮 ~55: HIT). The FWR_DIRSEC aliasing
+      (D-ALIASWCELL) is gone by construction: the sector crosses in BC.
+      📏 dskio-acceptance 5/5, nodisk-acceptance PASS, unit tests green,
+      D-ALIASWCELL's write probe re-run
+      ([`dsklocal_aliaswrite.out`](scratchpad/dsklocal_aliaswrite.out)): DSKI$ /
+      DSKO$ with an OUTPUT file open CLEAN, as before. 🔪
+      [`dsklocal_knife.py`](scratchpad/dsklocal_knife.py) ->
+      [`dsklocal_knife.out`](scratchpad/dsklocal_knife.out): K-DL1 (hk_dsk's read
+      cut, byte-neutral) -> dir, boot AND dsko diverge (🔮 "dir, boot": partial
+      MISS -- `dsko` reads the sector with DSKI$ before writing it back, so it
+      witnesses the read too). Keyword pages DSKI$ / DSKO$ and
+      docs/spec-basic-dskio.md updated; examples re-run.
+      📏 **S10.D's FIRST MEASUREMENT (2026-10-15): GET / PUT CROSS H.DGET, PER
+      RECORD** ([`getputhook_probe.py`](scratchpad/getputhook_probe.py) ->
+      [`getputhook_run.out`](scratchpad/getputhook_run.out); the D-CHANHOOK
+      entry counter on every published hook slot, CF-3300, 1 record against 40):
+      GET and PUT enter the SAME three cells once per record -- `$FE80` H.DGET
+      (CLAIMED by the reference's disk ROM: the dedicated GET/PUT hook), `$FE4E`
+      H.GETP (claimed; per channel statement, as D-CHANHOOK found) and `$FE53`
+      (a bare `ret` there). OPEN ... LEN= enters H.NULO $FE5D once and the
+      OPEN/CLOSE set; FIELD enters no claimed cell. The per-sector notification
+      $FFCF / $FFD4 moves +2 on GET, +18 on PUT. 🔮 "OPEN once at $FE5D": HIT;
+      "FIELD none": HIT; "GET and PUT each one claimed cell per record": MISS --
+      they share H.DGET, alongside H.GETP and the bare $FE53. zerobas claims none
+      of $FE4E / $FE80.
+      ➡️ Next: what H.DGET receives (a breakpoint on the RAM hook cell itself:
+      registers, the stack words, PTRFIL -- no ROM byte, no target followed),
+      then the S10.D design: GET / PUT's record engine (main field.asm's gp_* +
+      the sub-ROM randio tenant today) behind hk_dget in disk.rom.
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
@@ -3418,6 +3460,13 @@ item — do **one item per session** to keep context lean.
       single-stepping); (2) our own programs and machine code calling the
       address with controlled inputs, outputs observed (screen, registers,
       published cells). Then each address gets its own row in a gate.
+      🏗️ **JOOST, 2026-10-15, on the pins:** *"We have to be careful that we do not
+      create growing holes by pinning addresses. I know this somewhat complicates
+      the writing of the assembly."* -> a pin may only sit where the padding
+      before it is ~0: the planner picks the split point (after an unconditional
+      transfer) with the smallest gap, upstream shrinkage is REFILLED by moving
+      small routines into the gap rather than left as padding, and a gate caps
+      the total pin waste (and fails when it grows).
       ⚠️ Implementation: the entry must sit at the SAME address in main page 1
       (0 B free on 2026-10-14) -- a pinned stub at a fixed address, which this
       tree has never had in page 1; find what lives there first.
@@ -9027,7 +9076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34560 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34609 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9193,7 +9242,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14055 (T-6FE392)8 (T-529ABE)` from `TODO.md:26849 (T-529ABE)`: a
+      `TODO.md:14104 (T-6FE392)8 (T-529ABE)` from `TODO.md:26898 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14902,7 +14951,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26849 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26898 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

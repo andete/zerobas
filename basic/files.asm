@@ -237,11 +237,12 @@ cgb_back:
 ; CALSLT on this path already does.
 ;
 ; ⚠️ SHARED WITH dsk_core (basic/str-engine.asm) AND THAT IS THE POINT.
-; DSKI$/DSKO$ do their sector I/O through `dirverb_op` DIRECTLY, not through
-; `chan_gate`, so the gate's own restore runs too early for them -- it happens
-; while the hook is being claimed, before the sector number is even parsed.
-; Without a second restore after the tenant runs they were the last two verbs
-; still committing a wrecked file (D-ALIASWCELL, 2026-09-23).
+; DSKI$/DSKO$ cross their hook TWICE (the presence gate before the parse, the
+; sector I/O after it, D-DSKLOCAL), so the gate's own restore runs too early for
+; them; dsk_core restores again after the I/O. (Until D-DSKLOCAL the I/O was the
+; sub-ROM dirverb tenant with the sector poked into FWR_DIRSEC, and without this
+; second restore they were the last two verbs still committing a wrecked file,
+; D-ALIASWCELL, 2026-09-23.)
 chan_restore:
                 ld      a,(FCH_ACTIVE)
                 or      a
@@ -262,17 +263,9 @@ chan_restore_st:
                 ld      (DISKOP_STATUS),a   ; hand the VERB's status back
                 ret
 
-; --- dirverb_op: run dirverb-tenant op A ------------------------------------
-; 💰 D-PAIRCARVE (2026-09-11): the `ld (DISKOP_OP),a` / `ld ix,...DIRVERB` /
-; `call subrom_call` triple stood at two clean sites (KILL, NAME), 10 B each; a
-; call is 3. The FILES site keeps a `push hl` between the store and the call and
-; stays open-coded. Returns what subrom_call returns: CF=1 iff the sub-ROM is
-; absent. Clobbers IX, as subrom_call does.
-dirverb_op:
-                ld      (DISKOP_OP),a
-                call    sr_inl1             ; D-STUBINL
-                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_DIRVERB)
-                ret
+; (dirverb_op -- `ld (DISKOP_OP),a` + the sub-ROM dirverb tenant -- is GONE since
+; D-DSKLOCAL, 2026-10-15: DSKI$ / DSKO$, its last callers, cross their hook to
+; disk.rom's hk_dsk instead.)
 
 ; --- COPY "src" TO "dst" — the run half (D-COPY) -----------------------------------
 ; copy_parse (low region) did the gate and both names; this runs dirverb op 7

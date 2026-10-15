@@ -741,7 +741,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE26` |  | `disk` | `H_RSET` | RSET |  |
 | `$FE2B` |  | `basic` | `H_FIELD` | FIELD handler |  |
 | `$FE2B` |  | `disk` | `H_FIELD` | FIELD |  |
-| `$FE30` |  | `basic` | `H_MKI` | MKI$ handler (disk/kernel.asm hk_present) |  |
+| `$FE30` |  | `basic` | `H_MKI` | MKI$ handler (disk/kernel.asm hk_mki) |  |
 | `$FE30` |  | `disk` | `H_MKI` | MKI$ -- the first verb routed this way (D-MKHOOK) |  |
 | `$FE35` |  | `basic` | `H_MKS` | MKS$ handler |  |
 | `$FE35` |  | `disk` | `H_MKS` | MKS$ |  |

@@ -545,19 +545,11 @@ sub_p1_table:
                                                 ;   Main-ROM stubs are the
                                                 ;   resident shims in
                                                 ;   basic/fat.asm (repack).
-                jp      dirverb_tenant          ; index 13 (SUBROM_IDX_DIRVERB):
-                                                ;   the KILL/NAME directory-verb
-                                                ;   I/O bodies (docs/spec-evict-
-                                                ;   diskfile-cluster.md §12,
-                                                ;   Phase 2) -- ONE selector-
-                                                ;   dispatched entry (DISKOP_OP
-                                                ;   picks KILL's delete loop vs
-                                                ;   NAME's dir-entry stamp), each
-                                                ;   calling the Phase-1 fatprim
-                                                ;   primitives sub-locally. Main-
-                                                ;   ROM heads are the repack
-                                                ;   ELSE branches of do_kill/
-                                                ;   do_name (basic/files.asm).
+                ret                             ; index 13: RETIRED (D-DSKLOCAL, 2026-10-15).
+                nop                             ;   It was the dirverb tenant: KILL/NAME's
+                nop                             ;   directory I/O, then only DSKI$/DSKO$'s
+                                                ;   raw sector, which disk.rom's hk_dsk does
+                                                ;   now. The row keeps its 3 B so 14.. stay put.
                 jp      play_parse_tenant       ; index 14 (SUBROM_IDX_PLAY_PARSE):
                                                 ;   the audio Slice-2a MML parser
                                                 ;   (sub/playparse.asm) -- a pure
@@ -794,14 +786,7 @@ sub_p1_ping:
 ; leaf -- own header has the full rationale.
                 include "fatprim.asm"
 
-; KILL/NAME directory-verb I/O bodies (index 13 = dirverb_tenant, sub/
-; dirverb.asm): the THIRTEENTH page-1 tenant, Phase 2 of the disk/file cluster
-; eviction (docs/spec-evict-diskfile-cluster.md §12). Needs no resident-ABI
-; import (same shape as fatprim_tenant): a pure RAM+BIOS(CALSLT) leaf whose two
-; bodies call the Phase-1 fatprim primitives (included just above) sub-locally.
-; Placed AFTER fatprim so its sub-local calls resolve within the same page-1
-; region -- own header has the full rationale.
-                include "dirverb.asm"
+; (dirverb.asm -- index 13's tenant -- was deleted by D-DSKLOCAL, 2026-10-15.)
 
 ; fat_rand_* random-access record engine (index 12 = fatprim_tenant, extra
 ; fp_table rows 15-17; sub/randio.asm): docs/spec-eviction-g4-space.md §3,
