@@ -261,6 +261,15 @@ REQUIRED_DISK_RAM = [
     "GP_RECLEN",                # the live channel's record length
     "GP_SRC",                   # D-STRADDLE: the pass cursor into the record
     "GP_LEFT",                  # D-STRADDLE: record bytes still to move
+    # S10.C (2026-10-15): an INPUT channel is disk.rom's FCB too, and its text
+    # rules run there (hk_chin, disk/fat.asm). Main keeps the read loops
+    # (read_into_strscr, INPUT$'s str_inputd_read) and sets the mode they read in;
+    # the numeric item is built straight into STRSCR (published above), its
+    # length byte the counter -- so IN_RDLEN, main's own, is not needed here.
+    "FCH_RDMODE",               # 2 = INPUT$ (raw: a CR-LF is two bytes of data),
+                                # else INPUT# / LINE INPUT# (the CR eats its LF)
+    "STRMAX",                   # ⚠️ a CONSTANT: the longest string -- a numeric
+                                # item's bytes past it are read and dropped
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the

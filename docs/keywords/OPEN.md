@@ -253,8 +253,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - `GRP:`: the `OPEN` arm and `pchar`'s sink are in
   [basic/grpdev.asm](../../basic/grpdev.asm); the drawing is `grpprt_tenant` in
   [sub2/grpprt.asm](../../sub2/grpprt.asm), in the second sub-ROM.
-- Reading a disk text file — the Ctrl-Z end, the line feed, a numeric item —
-  is the SEQIO tenant in [sub/bload.asm](../../sub/bload.asm) (`seq_peek`).
+- A disk file open for input (`hk_finp`) and reading it — the Ctrl-Z end, the
+  line feed, a numeric item (`hk_chin`) — are the disk ROM's, in
+  [disk/fat.asm](../../disk/fat.asm), since S10.C (2026-10-15).
 - A disk file open for output, and the "is this file already open" check
   (`hkk_open_check`), are the disk ROM's: [disk/kernel.asm](../../disk/kernel.asm).
 - The block layout: [spec-fcbshape.md](../spec-fcbshape.md); the channel

@@ -118,9 +118,10 @@ one with an input tape in the recorder.
 - `ev_ff_eof` in [basic/expr.asm](../../basic/expr.asm): the channel checks,
   the mode check (61), and the call to `fat_io_eof` in
   [basic/input.asm](../../basic/input.asm).
-- The look-ahead itself is the SEQIO tenant in
-  [sub/bload.asm](../../sub/bload.asm): `seq_peek` for a disk file and
-  `sq_deveof` for the cassette.
+- The look-ahead itself is the disk ROM's for a disk file (`hk_chin` /
+  `din_peek` in [disk/fat.asm](../../disk/fat.asm), since S10.C, 2026-10-15)
+  and the SEQIO tenant's for the cassette (`sq_deveof` in
+  [sub/bload.asm](../../sub/bload.asm)).
 
 ## Related concepts
 

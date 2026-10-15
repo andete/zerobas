@@ -3,38 +3,36 @@
 
 ; fatio-body.inc — the sequential FAT12 READ layer (fat_io_open + fat_io_getbyte).
 ; ===========================================================================
-; Shared, byte-identically, between the RESIDENT main ROM (basic/fat.asm, where
-; fat_mount/fat_find/fat_open/fat_read_file_sector are marshalling STUBS over the
-; fatprim sub-ROM tenant) and the sub-ROM PAGE-1 BLOAD tenant (sub/bload.asm,
-; docs/spec-traps-t3-key.md §7.6), where those same four names bind to the REAL
-; implementations sitting right there in sub/fatprim.asm.
-;
-; That is the whole trick, and it is why the carve is affordable: this layer is
-; pure RAM bookkeeping over four calls, so the identical source text becomes a
-; cross-slot round trip on one side and four plain in-page calls on the other.
-; The resident copy must stay — do_load, ex_merge and the file verbs all use it.
+; Shared, byte-identically, between the sub-ROM PAGE-1 BLOAD tenant (sub/bload.asm,
+; docs/spec-traps-t3-key.md §7.6), where fat_mount/fat_find/fat_open/
+; fat_read_file_sector bind to the REAL implementations sitting right there in
+; sub/fatprim.asm, and disk.rom (disk/kernel.asm, LOAD / MERGE), where they bind
+; to its own FAT engine.
+; 🗑️ S10.C (2026-10-15): THE RESIDENT MAIN COPY IS GONE. This header said "The
+; resident copy must stay — do_load, ex_merge and the file verbs all use it";
+; do_load and ex_merge moved to disk.rom with steps 9 / 11, and OPEN FOR INPUT,
+; the last file verb on it, with S10.C (hk_finp / hk_chin read the channel's FCB
+; row, not this cursor). basic/fat.asm no longer includes it.
 ;
 ; CLEAN-ROOM: extracted verbatim from our own basic/fat.asm. FAT12 provenance is
 ; unchanged (basic/PROVENANCE.md §disk DSKIO host engine).
 ; ===========================================================================
 
-; fat_io_open — open the file named in DISK_FCB_NAME for sequential READ.
-;   out: Cy = 0 opened (stream ready); Cy = 1 not found / mount / I/O error.
-; Mounts the volume, finds the 8.3 name, primes the read iterator, seeds the
+; 🗑️ fat_io_open -- `call fat_mount / ret c` falling into fat_io_find, the
+; combined open -- IS GONE (S10.C, 2026-10-15). Main was its only caller (OPEN FOR
+; INPUT); both ROMs that still include this body mount SEPARATELY and enter
+; below, which is D-BLNF's whole point, so its 4 B were dead in each and
+; allowlisted as "load-bearing in main" (tools/deadcode-allow.txt). That reason
+; left with main's copy, and so did the two allowlist lines.
+; fat_io_find — open the file named in DISK_FCB_NAME for sequential READ, for a
+; caller that has already mounted and wants the find's carry BY ITSELF. Cy out
+; of here means precisely "the volume mounted and the 8.3 name is NOT in the
+; directory" — the tail below cannot set it (it ends `or a`). D-BLNF: that is how
+; the BLOAD tenant tells NOT FOUND from a mount/I-O fault without a DISKOP_OP it
+; never writes (sub/bload.asm, basic/bload-body.inc), and how disk.rom's
+; hk_dpload / hk_aopen do (disk/kernel.asm). Primes the read iterator, seeds the
 ; bytes-remaining counter from the true file size, and marks the sector buffer
 ; empty so the first fat_io_getbyte refills it.
-fat_io_open:
-                call    fat_mount
-                ret     c
-; fat_io_find — the same open MINUS the mount, for a caller that has already
-; mounted and wants the find's carry BY ITSELF. A ZERO-BYTE label: it splits no
-; code, it only names the boundary `fat_io_open` already had. Cy out of here
-; means precisely "the volume mounted and the 8.3 name is NOT in the directory"
-; — the tail below cannot set it (it ends `or a`). D-BLNF: that is how the BLOAD
-; tenant tells NOT FOUND from a mount/I-O fault without a DISKOP_OP it never
-; writes (sub/bload.asm, basic/bload-body.inc); df_or_loaderr reads the same
-; distinction off DISKOP_OP on the resident side, where fat_find is a
-; marshalling stub (basic/files.asm).
 fat_io_find:
                 ld      hl, DISK_FCB_NAME
                 call    fat_find

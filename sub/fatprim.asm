@@ -107,11 +107,12 @@ fp_table:
 ; carve 2). Body in sub/fiawalk.asm, included after this file in sub/sub.asm.
                 jp      t_fia_walked            ; 18 DISKOP_SEL_FIA_WALKED
 ; --- row 19: the file-channel re-stage (D-FCH S-FCH-1, docs/spec-basic-
-; filechan-alloc.md §3.1). Body is fat_restage_channel in basic/fat-prim-body.inc,
-; already included below. Sited here rather than resident because the
-; cluster->absolute-sector arithmetic it needs lives in this file twice over and
-; main page 1 has 6 B free.
-                jp      t_fch_restage           ; 19 DISKOP_SEL_FCH_RESTAGE
+; filechan-alloc.md §3.1) -- RETIRED by S10.C (2026-10-15). Its body,
+; fat_restage_channel, re-read an INPUT channel's staged sector (no other mode
+; ever staged one), and an INPUT channel is disk.rom's FCB now, its read-ahead the
+; block's record. No sender had used the row itself since D-FCBSHAPE S0 (the
+; shim went; t_fch_load called the body directly).
+                jp      fp_stash_ok             ; 19 retired (was DISKOP_SEL_FCH_RESTAGE)
                 jp      fp_stash_ok             ; 20 retired (D-MODE2DEAD: no sender;
                                                 ; the detach flushed mode 2 only)
 ; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
@@ -218,31 +219,30 @@ t_fat_delete:
                 jr      c,fp_stash_err
                 jr      fp_stash_ok
 
-; t_fch_restage (D-FCH S-FCH-1): re-read the live channel's staged sector back
-; into the shared FSECTOR_BUF. Takes no register inputs -- fat_restage_channel
-; reads FCH_ACTIVE/FCH_MODES and the engine state straight out of RAM -- so the
-; resident shim marshals nothing.
-t_fch_restage:
-                call    fat_restage_channel
-                jr      c,fp_stash_err
-                jp      fp_stash_ok
+; (t_fch_restage, row 19's wrapper over fat_restage_channel, is gone with it:
+; S10.C, 2026-10-15 -- see the row.)
 
 ; t_fch_load (D-FCBSHAPE S0): channel context block -> the engine globals, then
 ; the re-stage. HL = the block (main's fch_ctx_addr, passed through CALSLT
 ; untouched); FCH_ACTIVE is already the new channel, which the re-stage reads.
 ; This was main's fch_load_ctx body, moved whole: the block's LAYOUT is now
 ; known in one ROM only, the one D-FCBSHAPE's later slices change.
+; 🏗️ S10.C (2026-10-15): EVERY DISK CHANNEL'S ROW IS NOW disk.rom's FCB -- INPUT
+; (1) joined OUTPUT / APPEND (DOUT_MODE) and RANDOM (4). The arm that LDIR'd the
+; row into the FCH_STATE0 globals and re-staged the input sector served mode 1
+; alone (mode 2 is never stored, D-MODE2DEAD) and is gone with the re-stage
+; (fat_restage_channel); an INPUT channel's record -- its read-ahead -- lives in
+; its block's +9, which hk_chin fills, so nothing travels.
 t_fch_load:
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the channel's engine row; CF = none
                 jr      c,tfl_dev           ; a device channel: no engine state, no record
-                cp      DOUT_MODE-1
-                jr      z,tfl_dout          ; S10.B: the row is disk.rom's FCB
                 cp      4-1
-                jr      z,tfl_rnd           ; S10.D: RANDOM's row is too
-                ld      de,FCH_STATE0
-                ld      bc,FCH_STATESZ
-                ldir                        ; engine row -> globals
+                jr      nz,tfl_dout         ; INPUT / OUTPUT / APPEND: the mirror only
+                                            ; (S10.D: RANDOM's record travels, below)
+                pop     de
+                push    de                  ; DE = the block (tfl_rec pops it)
+                call    tfl_mirror
 tfl_rec:
                 pop     hl
                 ld      de,FCH_HDRSZ
@@ -250,7 +250,7 @@ tfl_rec:
                 ld      de,FSECTOR_BUF      ; D-FIELDFIX: and this channel's record
                 ld      bc,FCH_RECMAX
                 ldir
-                jr      t_fch_restage
+                jp      fp_stash_ok
 ; 🔴 D-FLOORREC (2026-10-13): a DEVICE channel (GRP:, CAS:, CRT:, LPT:) took the
 ; record copy above too, and it has no business there: FIELD's record is a disk
 ; file's. On a DISKLESS machine FSECTOR_BUF has been program RAM since D-FATFLOOR,
@@ -273,12 +273,10 @@ tfl_dev:
 ; disk.rom's hk_frnd / hk_dget -- so the mirror below is its LOF too (the size,
 ; +16) -- BUT ITS RECORD STILL TRAVELS: FIELD / LSET / RSET / fld_lookup and
 ; GET / PUT all work on the live channel's record in FSECTOR_BUF, as before. So
-; mode 4 takes the mirror, then tfl_rec's copy and re-stage (a no-op for it).
-tfl_rnd:
-                pop     de
-                push    de                  ; DE = the block (tfl_rec pops it)
-                call    tfl_mirror
-                jr      tfl_rec
+; mode 4 takes the mirror, then tfl_rec's copy (t_fch_load above; S10.C dropped
+; the re-stage that followed, a no-op for it).
+; 🧭 S10.C: an INPUT channel takes tfl_dout too -- LOF its size (+16); LOC stays
+; LOF's for it on main's side (expr.asm ev_ff_loc, D-LOCSEM's 26,26,26).
 tfl_dout:
                 pop     de                  ; DE = the block
                 call    tfl_mirror
@@ -360,18 +358,15 @@ t_fch_save:
                 ; D-MODE2DEAD (2026-10-07): no flush first any more -- only a mode-2
                 ; channel could be dirty, and none is stored. Nothing here can fail;
                 ; fch_save_active's three callers read no result.
+                ; S10.C (2026-10-15): nor any engine state -- every disk mode's row
+                ; is disk.rom's FCB now (INPUT was the last to keep main's globals),
+                ; so only RANDOM's record travels and the globals -> row LDIR is gone.
                 push    hl                  ; the block
                 call    fch_engrow          ; HL = the engine row; CF = no disk channel
                 jr      c,tfs_dout          ; D-FLOORREC: a device channel keeps no record here
-                cp      DOUT_MODE-1
-                jr      z,tfs_dout          ; S10.B: nothing of main's to keep
                 cp      4-1
-                jr      z,tfs_rec           ; S10.D: RANDOM's row is disk.rom's FCB,
-                                            ; but its record travels (tfl_rnd's note)
-                ex      de,hl               ; DE = the row
-                ld      hl,FCH_STATE0       ; the 50-byte engine-state span
-                ld      bc,FCH_STATESZ
-                ldir
+                jr      nz,tfs_dout         ; INPUT / OUTPUT / APPEND: nothing of main's
+                                            ; S10.D: RANDOM's record travels (t_fch_load)
 tfs_rec:
                 pop     hl                  ; the block
                 ld      de,FCH_HDRSZ

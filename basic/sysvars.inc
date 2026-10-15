@@ -3235,7 +3235,9 @@ FAT_DIRSEC      equ     $EE1B   ; current root-dir sector being scanned (word)
 FAT_DIRREM      equ     $EE1D   ; root-dir sectors remaining to scan (word)
 FAT_WRTMP       equ     $EE1F   ; transient scratch for the FAT12 write helpers (word)
 FAT_WRTMP2      equ     $EE21   ; second transient (free-cluster scan cached sector) (2 B)
-; Read byte-stream state (fat_io_open / fat_io_getbyte).
+; Read byte-stream state (fat_io_open / fat_io_getbyte) -- since S10.C (2026-10-15)
+; only the sub-ROM BLOAD tenant's copy of basic/fatio-body.inc uses these; an
+; INPUT channel reads its own FCB row in disk.rom.
 FREAD_OFF       equ     $EE23   ; next byte index within FSECTOR_BUF (0..512) (word)
 FREAD_LEFT      equ     $EE25   ; bytes of the open file still undelivered (4-byte LE)
 ; Write byte-stream state (fat_io_create / fat_io_putbyte / fat_io_close).
@@ -3312,7 +3314,7 @@ DISKOP_SEL_FIA_WALKED           equ 18
 ; the cluster->absolute-sector arithmetic it needs already lives there twice
 ; (fat_read_file_sector's frs_incluster, fat_flush_data_sector's ffds_haveclus)
 ; and main page 1 has 6 B free.
-DISKOP_SEL_FCH_RESTAGE          equ 19
+DISKOP_SEL_FCH_RESTAGE          equ 19  ; RETIRED by S10.C (2026-10-15): no sender, row is `jp fp_stash_ok`
 DISKOP_SEL_FCH_DETACH           equ 20  ; RETIRED 2026-10-07 (D-MODE2DEAD; it never
                                         ; had a sender). Was: the inverse: flush the dirty partial
                                         ; sector in place before handing the
@@ -3649,6 +3651,20 @@ FOPEN_SEL_APND  equ     $50         ; S10.B increment 2: OPEN FOR APPEND (hk_fap
 FOPEN_SEL_RAND  equ     $52         ; S10.D: OPEN ... AS #n with no FOR -- RANDOM
                                     ; (disk.rom hk_frnd). Same rule: outside every
                                     ; DISKOP_SEL_* range
+FOPEN_SEL_INP   equ     $49         ; S10.C: OPEN FOR INPUT (disk.rom hk_finp) --
+                                    ; the file must exist: 53 after the crossing,
+                                    ; as the CF-3300 raises it after $FE5D
+; S10.C (2026-10-15): the INPUT side's byte cell. The CF-3300's main ROM enters
+; $FE8A once per byte an INPUT# / LINE INPUT# / INPUT$ reads (TODO D-ROMSIZE,
+; S10.C STEP C0: scratchpad/s10c_hook_run.out), and EOF / the numeric item / INPUT$
+; each add a cell of their own there ($FEA3 / $FEAD / $FE8F). Ours is ONE cell
+; with the operation in A -- 0 a byte (FCH_RDMODE 2 = INPUT$, raw), 2 EOF()'s
+; test, 4 one numeric INPUT # item into STRSCR -- because main page 1 is the
+; binding wall and one crossing helper (input.asm din_call) serves all three;
+; per-function cells would cost a helper or a cell address per site. Out: A = the
+; byte, CF = the end. Claimed only by disk.rom; a diskless machine cannot open a
+; disk file FOR INPUT (OPEN goes to the cassette), so it never enters it.
+H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item (disk.rom hk_chin)
 ; S10.B: the CF-3300's per-byte and per-CLOSE channel cells (spec-diskcode-
 ; eviction.md §6.6bb: PRINT# enters $FE85 once a byte, CLOSE $FE62 once).
 ; Our contract, not the reference's: A = the byte, the live channel is
@@ -3772,6 +3788,14 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; for the same reason: the arithmetic lives sub-side (sub/strheap.asm
 ; strheap_varceil / op 18) where ROM is not scarce, so `CLEAR n`, `CLEAR ,himem`
 ; and `MAXFILES=n` are all picked up for free by the next derivation.
+; 🧭 S10.C (2026-10-15): NO CHANNEL'S STATE LIVES IN THIS SPAN ANY MORE, and the
+; two blocks above describe the tree before S10.B. OUTPUT / APPEND (S10.B),
+; RANDOM (S10.D) and now INPUT (S10.C) each keep an MSX-DOS FCB in the channel's
+; DSK_ENGTAB row, owned by disk.rom; the sub-ROM's t_fch_save / t_fch_load no
+; longer copy the span at all, and the re-stage (fat_restage_channel) is gone.
+; FCH_STATESZ survives as the ROW's size -- the stride every ROM derives the row
+; from -- and the span's cells are main's own FAT scratch (autoexec_run, BLOAD's
+; tenant), shared, not per channel.
 FCH_STATE0      equ     FAT_CURCLUS         ; $EE06 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
@@ -4083,7 +4107,7 @@ FSP             equ     $F705   ; the FOR run's FLOOR: FOR frames are [CSP,FSP) 
 ; evaluator's own combine_add / combine_cmp, int16 fast path and BCD alike.
 FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
-SEQ_EOF         equ     $F707   ; seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B)
+SEQ_EOF         equ     $F707   ; seqio tenant -> main: 1 = the TAPE channel is at its end (D-EOFCAS; S10.C) (1 B)
 ; FREE-RAM $F70A..$F712  the old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
 FOR_CUR         equ     $EF0A   ; scratch: a working copy of one FOR frame (25), and
                                 ; ALSO the key a NEXT parses into before it matches
@@ -5359,11 +5383,12 @@ SUBROM_IDX_PUNUM     equ 24     ; pu_num_tenant (sub/punum.asm): PRINT USING's
                                 ; numeric renderer (D-PUNUM). PAGE 1, because it
                                 ; calls flt_fmt in the main LOW region -- and
                                 ; because main page 1 had 32 B free.
-SUBROM_IDX_SEQIO     equ 28     ; seqio_tenant (sub/bload.asm): a TEXT file's byte
-                                ; source -- Ctrl-Z is a soft end, INPUT#'s CR eats
-                                ; the LF after it -- and EOF()'s test; L = 0 byte /
-                                ; 2 EOF, the answer's end flag in SEQ_EOF (D-SEQEOF).
-                                ; PAGE 1: it runs on sub/bload.asm's fatio copy.
+SUBROM_IDX_SEQIO     equ 28     ; seqio_tenant (sub/bload.asm): EOF() on a TAPE
+                                ; channel, H = its mode, the answer in SEQ_EOF
+                                ; (D-EOFCAS). It was a disk TEXT file's byte source
+                                ; too (D-SEQEOF: L = 0 byte / 2 EOF / 4 numeric item)
+                                ; until S10.C (2026-10-15) moved that to disk.rom's
+                                ; hk_chin. PAGE 1: it calls cal_refill.
 SUBROM_IDX_CASGET    equ 27     ; casget_tenant (sub/casmatch.asm): the cassette
                                 ; ASCII byte source, L = 0 serve / 1 prime
                                 ; (D-CARVECAS, funding D-FORFLOAT). PAGE 1: it

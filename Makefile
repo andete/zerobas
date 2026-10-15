@@ -575,11 +575,12 @@ ram-map-check:
 # pinning addresses." Each pin sits behind a `ds PIN-$` pad that absorbs every
 # size change of the code before it; this fails when a pin's bytes are wrong OR
 # the total pad in front of the pins exceeds the budget. The budget is the waste
-# MEASURED when the pins landed (6 B: $3297's 2 B pad + two 2 B `jr` bridges),
+# MEASURED (6 B when the pins landed; 4 B since S10.C C1 refilled $3297's pad
+# with eval_addr, 2026-10-15 -- now two 2 B `jr` bridges),
 # so ANY growth is red. Fixing a red: re-run `python3 tools/pin_plan.py` and move
 # the split point or refill the pad -- never raise the budget to make it pass.
 pin-check: basic-reloc
-	python3 tools/pin_plan.py --check --budget 6
+	python3 tools/pin_plan.py --check --budget 4
 
 # --- rigstick: the host joystick openMSX does not have (ruling 4's rig) -------
 # D-RIGBLOCK: openMSX 21.0 has NO key-joystick pluggable (0 occurrences of

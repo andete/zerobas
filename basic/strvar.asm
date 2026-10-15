@@ -510,6 +510,9 @@ sid_fnum:
                 ; is cas_in_getbyte (input_common has its own `cp CAS_IN_MODE`
                 ; arm for exactly this). Filed in TODO with the measurement;
                 ; scratchpad/casfch_probe.py --input-only is the reading.
+                ; ✅ AND SINCE CLOSED (D-CASINP): the `cp CAS_IN_MODE` below reads
+                ; it through arl_set_src -- this paragraph is the history, not the
+                ; code (noted 2026-10-15 by S10.C's brief).
                 call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
                 cp      1                   ; open FOR INPUT -> read it
                 jr      z,sid_ok
@@ -534,7 +537,8 @@ sid_ok:
                 ld      a,e
                 call    fch_select          ; make channel f live; FCH_MODE = its mode
                 pop     af
-                call    arl_set_src         ; A = 1 -> fat_io_seqbyte
+                call    arl_set_src         ; A = 1 -> fat_io_seqbyte (S10.C: disk.rom's
+                                            ; H_CHIN, raw by the FCH_RDMODE 2 below)
                 ld      a,2                 ; D-SEQEOF: INPUT$ reads RAW -- the CR-LF
                 ld      (FCH_RDMODE),a      ; pair is two bytes of data to it
 sid_read:

@@ -3177,6 +3177,52 @@ item — do **one item per session** to keep context lean.
       `s10c_brief_summary.md`) plans `hk_chin` on $FE8A with an op in A; the
       reference uses a cell per function instead ($FE8A byte, $FE8F INPUT$,
       $FEAD numeric item, $FEA3 / $FE9E / $FE99 EOF / LOF / LOC). ➡️ C1.
+      ✅ **S10.C C1 BUILT (2026-10-15): DISK INPUT CHANNELS RUN IN disk.rom.**
+      Drafted by a subagent in its own worktree (build + unit tests only; the
+      shared machine files' mtimes checked unchanged after it), integrated here.
+      OPEN FOR INPUT -> H_FOPEN selector FOPEN_SEL_INP ($49) -> hk_finp
+      (disk/fat.asm; 53 parked through hk_fapp's tail for a missing file); the
+      byte reader is ONE cell, H_CHIN = $FE8A, op in A (0 byte, 2 EOF, 4 numeric
+      item) -> hk_chin over the FCB row, refilled 256 B at a time with RDBLK's
+      k47b2_seek + k47b2_nextbyte; EOF answers without a seek when position =
+      size (else an emptied drive made INPUT# at EOF say 70, not 55); every disk
+      CLOSE crosses H_CHCLOSE (an INPUT arm that writes nothing). 🔀 DIVERGENCE
+      KEPT: the reference enters a cell PER FUNCTION ($FE8F INPUT$, $FEAD numeric
+      item, $FEA3 EOF); ours all enter $FE8A -- one 9 B main helper serves every
+      site at 2 B each, and main bytes are D-WSZERO's budget. Deleted from main:
+      the resident fatio-body (111 B), the fat_open / fat_read_file_sector shims,
+      df_or_loaderr, seq_call, the dead ARL_GETBYTE seed; sub: SEQIO down to the
+      tape EOF, fatprim row 19 retired, fat_restage_channel gone.
+      📏 Walls (`make basic-reloc`, 2026-10-15): main page 1 20 -> 171 B, low
+      48 -> 57 B, sub page 1 928 -> 1240 B, disk.rom 3149 -> 2857 B free. 🔮
+      Brief's estimate "page 1 +~141 B": HIT (+151). PINS: 128 B removed ahead of
+      $6CF3 and 23 B ahead of $73AC, all REFILLED in place (ex_for + cont_record
+      + ctl_put at the first, ex_new / end_line_end + diskslot_test at the
+      second, eval_addr into $3297's old 2 B pad, each original kept as the ELSE
+      arm): `make pin-check` waste 6 -> 4 B, and its budget tightened to 4.
+      ⏱ SPEED, MEASURED ([`seqin_speed_probe.py`](scratchpad/seqin_speed_probe.py):
+      LINE INPUT # over a 16 400 B file, TIME in frames): CF-3300 1694, C1 1677
+      ([`seqin_speed_c1.out`](scratchpad/seqin_speed_c1.out)), the build before
+      it 960 ([`seqin_speed_head.out`](scratchpad/seqin_speed_head.out)) -- the
+      256 B refill reads each sector twice, so C1 is 1.75x slower than zerobas was
+      and now ON PAR with the reference (0.99x). 🔮 "slower than before, inside
+      10x": HIT. Kept: faithful speed is the charter; a sector-reuse cache would
+      need invalidation on every DSKIO, RANDOM record copy and LSET.
+      Tests: tests/test_seqin.py (23 rows on disk.rom: CR / LF across a refill,
+      Ctrl-Z, a numeric item straddling a refill, 70 left pending, no read at
+      EOF); unit tests 66/66. Open, unmeasured: VARPTR(#n)'s +6 now moves during
+      reads (the reference's layout -- fcbhdr will say); `INPUT #1,A$(LOF(2))`
+      now answers 55 when #2 is not INPUT (it read #2's bytes before).
+      📼 All 51 (pick_martos) against the previous run: SAME 12 -> 12, none lost.
+      Two titles changed WHICH failure they show, both already failing and both
+      in D-WSZERO's layout-sensitive class: Formula 1 Simulator flips between
+      "line 40, graphics" and "the prompt" from build to build (m9 prompt, m10
+      line 40, m11 prompt); Knight Tyme, A/B'd against HEAD's build (TRANS log,
+      PC values only): identical early transitions, its stack at SP $E9F0-$EA12
+      -- INSIDE zerobas's window -- then HEAD's build runs game code (8389 B
+      from the VG-8020) and C1's waits in ROM (14223 B). Which bytes sit under a
+      stack the game overwrites decides the failure; only D-WSZERO's empty
+      window fixes the class.
       🐛 Two pre-existing engine bugs fixed on the way (found by the drafting
       subagent, witnessed by new tests/test_rand_straddle.py rows and a knife that
       restored the old code): `frnd_locate` divided the file sector by sectors-
@@ -9500,7 +9546,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35033 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35079 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9666,7 +9712,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14528 (T-6FE392)8 (T-529ABE)` from `TODO.md:27322 (T-529ABE)`: a
+      `TODO.md:14574 (T-6FE392)8 (T-529ABE)` from `TODO.md:27368 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15375,7 +15421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27322 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27368 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

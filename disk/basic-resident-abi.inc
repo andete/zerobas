@@ -10,11 +10,11 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 0385BH
+widen_rhs_operand equ 03852H
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
 pu_deref_body equ 0284CH
-subrom_call equ 03B51H
+subrom_call equ 03B48H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
@@ -74,6 +74,8 @@ GP_FLAGS equ 0F088H   ; bit0 = extend (PUT allocates; GET does not) (1)
 GP_RECLEN equ 0F09AH   ; active channel's record length (word), loaded per calc
 GP_SRC equ 0EE77H   ; pass cursor into FSECTOR_BUF (2)
 GP_LEFT equ 0EE79H   ; record bytes still to move, ends $EA3E (2 B)
+FCH_RDMODE equ 0EF66H   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+STRMAX equ 000FFH   ; repack build: string heap (slice-4a §8)
 FMT_GEOMSEL equ 0EF61H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
@@ -83,18 +85,18 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-main_fat_mount equ 0644EH   ; main's fat_mount
-main_fat_find equ 06452H   ; main's fat_find
-parse_disk_fcb equ 06508H
+main_fat_mount equ 06455H   ; main's fat_mount
+main_fat_find equ 06459H   ; main's fat_find
+parse_disk_fcb equ 06518H
 field_prologue equ 072C2H
 field_item equ 072F8H
 lrset_tgt equ 073BDH
 lrset_rhs equ 073E8H
 lrset_finish equ 073FFH
-fch_ctx_addr equ 06F88H
-disk_error equ 06B90H
+fch_ctx_addr equ 06F82H
+disk_error equ 06B9AH
 read_line equ 045FBH
-fch_close_all equ 0707EH
+fch_close_all equ 07070H
 eval_int16_checked equ 0454AH
-fch_select equ 06FBCH
+fch_select equ 06FB6H
 raise_error equ 04326H

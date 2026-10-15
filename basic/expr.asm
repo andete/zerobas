@@ -1352,8 +1352,11 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ld      a,e
                 call    fch_select
                 call    fat_io_eof         ; D-SEQEOF: CF = at the end -- Ctrl-Z
-                                            ; NEXT counts (R1); other modes keep the
-                                            ; byte count (the tenant does both)
+                                            ; NEXT counts (R1). Only mode 1 gets
+                                            ; here (the 61 above), so the byte-
+                                            ; count arm the tenant kept for other
+                                            ; modes was dead; S10.C dropped it
+                                            ; when the test moved to disk.rom
 eof_answer:
                 sbc     a,a
                 inc     a                   ; Z iff at the end
@@ -1483,9 +1486,18 @@ ev_ff_varptrch:
 eof_dev:                                    ; D-EOFCAS: A = FCH_MODES[E], not disk.
                                             ; Past LOC on purpose: LOF's dispatch
                                             ; `jr` has no slack for a byte before it
+                ; 🧭 S10.C (2026-10-15): the tape is the seqio tenant's LAST job --
+                ; a disk INPUT channel's EOF crosses to disk.rom now (input.asm
+                ; fat_io_eof) -- so its crossing is inlined here and input.asm's
+                ; seq_call is gone. H = the mode is the tenant's whole input (the
+                ; `ld l,6` op went with the dispatch it fed).
                 ld      h,a
-                ld      l,6
-                call    seq_call            ; CF = at the end (tape); 0 otherwise
+                push    ix                  ; IX: the evaluator's token cursor
+                call    sc_inl1             ; D-STUBINL
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO)
+                pop     ix
+                ld      a,(SEQ_EOF)
+                rra                         ; CF = at the end (tape); 0 otherwise
                 jr      eof_answer
 
 ; fch_mode_class — the shared channel-mode classifier. A = FCH_MODES[E]; raises

@@ -121,7 +121,8 @@ sector with interrupts on (D-FDCDI).
   channel checks, `fch_do_close_ch` for one channel and `fch_close_all` for
   the bare form.
 - The flush of a disk output channel, the Ctrl-Z and the directory entry are
-  the disk ROM's ([disk/kernel.asm](../../disk/kernel.asm)).
+  the disk ROM's ([disk/kernel.asm](../../disk/kernel.asm), `hk_chclose`),
+  which every disk channel's `CLOSE` enters, an input one too (since S10.C).
 
 ## Related concepts
 

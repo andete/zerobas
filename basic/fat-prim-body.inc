@@ -561,59 +561,14 @@ frs_eof:
                 scf
                 ret
 
-; 🏗️ D-FATENG Option 2: and "sub-ROM only" is now ENFORCED, not just asserted --
-; BDOS has no channel concept, and these are the only routines that touch
-; basic-core's FCH_ACTIVE / FCH_MODES, which disk.rom does not define.
-    IF DISK_BUILD
-    ELSE
-; ⚠️ SUB-ROM ONLY, and it stays that way: this primitive is sized for the sub-ROM,
-; its only real home. (It used to be gated out of the retired lean 16 KB cart,
-; which was byte-full and would have overrun its $8000 ceiling outright.)
-; fat_restage_channel — re-read into FAT_DBUF whatever the LIVE channel had
-; staged there before it was switched away (D-FCH S-FCH-1,
-; docs/spec-basic-filechan-alloc.md §3.1).
-;   in:  the engine globals already hold the channel's state (fch_load_ctx has
-;        just LDIR'd it in); FCH_ACTIVE names the channel.
-;   out: Cy = 0 ok — INCLUDING "nothing was staged", which is the common case;
-;        Cy = 1 read error.
-;
-; This is what replaces the per-channel 512-byte save copy. The reference charges
-; 267 B per channel — less than one sector — so it cannot be keeping a private
-; sector per channel either; it treats the shared buffer as a CACHE
-; (docs/chancost-cf3300-characterization.md §5.1).
-;
-; ⚠️ Reads the mode from FCH_MODES[FCH_ACTIVE], NOT from the FCH_MODE mirror:
-; fch_sync_mirror runs AFTER fch_load_ctx, so at re-stage time FCH_MODE still
-; holds the mode of the channel we switched AWAY from.
-fat_restage_channel:
-                ld      a, (FCH_ACTIVE)
-                or      a
-                ret     z                   ; no channel live -> nothing staged
-                ld      e, a
-                ld      d, 0
-                ld      hl, FCH_MODES
-                add     hl, de
-                ld      a, (hl)             ; A = the live channel's own mode
-                dec     a
-                jr      z, frst_read        ; 1 = INPUT
-                or      a                   ; nothing else owns a staged sector:
-                ret                         ; mode 2 (main's own OUTPUT engine) is
-                                            ; not stored since S10.B, and its
-                                            ; frst_write re-read went with it
-                                            ; (D-MODE2DEAD); Cy=0
-; (fat_detach_channel, the write-back half of this cache, is gone: only a
-; mode-2 channel could be dirty, and none is stored -- D-MODE2DEAD, 2026-10-07.)
-frst_read:
-                ; the read iterator leaves FAT_CLUSSEC one PAST the staged sector
-                ; (fat_read_file_sector increments after the read), so step back
-                ; onto it and let the normal reader re-read + re-increment.
-                ld      a, (FAT_CLUSSEC)
-                or      a
-                ret     z                   ; nothing read yet -> buffer is empty
-                dec     a
-                ld      (FAT_CLUSSEC), a
-                jp      fat_read_file_sector
-    ENDIF
+; (D-FATENG Option 2 assembled the next routine in the sub-ROM only -- `IF
+; DISK_BUILD / ELSE` -- because it touched basic-core's FCH_ACTIVE / FCH_MODES.)
+; 🗑️ fat_restage_channel IS GONE (S10.C, 2026-10-15). It re-read into FAT_DBUF
+; whatever the LIVE channel had staged there before a switch (D-FCH S-FCH-1,
+; docs/spec-basic-filechan-alloc.md §3.1: the shared buffer as a CACHE, as the
+; reference treats it), and only an INPUT channel ever staged a sector (mode 2,
+; the other, left with D-MODE2DEAD). An INPUT channel is disk.rom's FCB now and
+; its read-ahead is the block's own record, so there is nothing to re-stage.
 
 ; ===========================================================================
 ; FAT12 WRITE-BACK substrate (ported verbatim from disk.asm §FAT12 write-back).

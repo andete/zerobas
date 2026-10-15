@@ -298,28 +298,48 @@ ass_store:
                 ld      (ARL_GETBYTE),hl
                 ret
 
-; --- fat_io_seqbyte / fat_io_eof: stubs over the seqio tenant (D-SEQEOF) -----
+; --- fat_io_seqbyte / fat_io_eof: the INPUT channel's crossing (S10.C) -------
 ; fat_io_seqbyte is the ARL_GETBYTE source for a disk channel open FOR INPUT
 ; (INPUT#, LINE INPUT#, INPUT$): the next byte by the reference's text rules,
 ; CF set at the end. fat_io_eof is EOF()'s test: CF set = at the end. Both guard
 ; IX -- EOF() and INPUT$ run inside the evaluator, whose token cursor it is, and
-; this crosses once per BYTE, where the old source crossed only on a refill.
-; ASCII LOAD / MERGE keep fat_io_getbyte: a program's Ctrl-Z ends it anyway.
+; a hook is a CALLF.
+; 🏗️ S10.C (D-ROMSIZE, 2026-10-15): THEY CROSS TO disk.rom NOW, NOT TO THE
+; SUB-ROM. The channel is an MSX-DOS FCB in its engine row there since OPEN
+; (hk_finp), its record the block's +9, and disk.rom's hk_chin reads it -- the
+; D-SEQEOF rules (Ctrl-Z a soft end never consumed, INPUT# swallowing the LF
+; after its CR, INPUT$ raw) and D-CHANSWITCH's numeric item moved with it from
+; sub/bload.asm's seqio tenant, which keeps only the TAPE's EOF (expr.asm
+; eof_dev). One cell, H_CHIN = $FE8A, the reference's per-byte one, with the
+; operation in A (sysvars.inc says why one and not the reference's four).
+; A CALLF returns DI (cg_back's note), hence the `ei`.
+; ASCII LOAD / MERGE keep their own source (files.asm dsk_agetbyte).
 fat_io_eof:
-                ld      l,2
-                jr      seq_call
+                ld      a,2
+                jr      din_call
 fat_io_seqbyte:
-                ld      l,0
-seq_call:
+                xor     a                   ; op 0: the next byte
+din_call:
                 push    ix
-                call    sc_inl1             ; D-STUBINL: A = the byte (subrom_call's `or a`)
-                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO)
+                call    H_CHIN              ; A = the byte, CF = the end
+                ei
                 pop     ix
-                ld      c,a
-                ld      a,(SEQ_EOF)
-                rra                         ; CF = the end flag
-                ld      a,c
                 ret
+    IF BASICINT_PINS
+; 📌 REFILL FOR D-BASICINT'S $3297 PIN (S10.C, 2026-10-15). This block was 21 B
+; (fat_io_seqbyte / fat_io_eof / seq_call over the seqio tenant) and is 14 now,
+; and every byte removed ahead of a pinned address grows its `ds` pad (basic/
+; float-arith.asm `ds $3297 - $`) -- Joost: no growing holes. So eval_addr, a
+; self-contained 9 B wrapper entered only by `call` (tools/pin_plan.py's chunk
+; list), moved here from basic/float-arith.asm, whose copy is now the ELSE arm:
+; the pad goes 2 -> 0.
+eval_addr:
+                call    eval
+                push    hl
+                call    fac_to_int_addr
+                pop     hl
+                ret
+    ENDIF
 
 ; --- linebuf_getbyte: ARL_GETBYTE source for the console line --------------
 ; The byte-source vector read_into_strscr calls (via arl_getbyte) while parsing a
@@ -412,17 +432,18 @@ inu_got:
                 jp      inp_tail
 
 ; inp_numread: one numeric INPUT # item -> STRSCR; CF = the end of the file.
-; A DISK channel reads it in the seqio tenant (L = 4), which can PEEK -- the rules
-; need it (D-CHANSWITCH, sub/bload.asm sq_numitem). A CAS: channel has no peek
-; and keeps the field rule (commas and CR split; a blank does not).
+; A DISK channel reads it in disk.rom (H_CHIN op 4, hk_chin's din_num, S10.C),
+; which can PEEK -- the rules need it (D-CHANSWITCH; it was the seqio tenant's
+; sq_numitem). A CAS: channel has no peek and keeps the field rule (commas and
+; CR split; a blank does not).
 inp_numread:
                 ld      hl,(ARL_GETBYTE)
                 ld      de,fat_io_seqbyte
                 or      a
                 sbc     hl,de
                 jp      nz,read_into_strscr ; CAS: the field rule (FCH_RDMODE is 0)
-                ld      l,4
-                jp      seq_call
+                ld      a,4
+                jp      din_call
 
 ; inp_store: the parsed number -> the resolved target (console INPUT and INPUT #).
 ; in: BC = key, (TGT_ADDR) per tgt_parse, SH_LEN / DE / FAC as inp_num leaves them.

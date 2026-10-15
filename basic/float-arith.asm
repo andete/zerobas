@@ -1358,12 +1358,19 @@ fac_to_int_go:
 ; HL(cursor advanced). Thin wrapper combining eval + fac_to_int_addr — the
 ; shared shape POKE/VPOKE's argument parses both need (basic/poke.asm,
 ; basic/vdpio.asm). Clobbers as eval + fac_to_int_addr.
+    IF BASICINT_PINS
+                                            ; (eval_addr lives in basic/input.asm in
+                                            ; the shipping build: it REFILLS the 9 B
+                                            ; S10.C freed ahead of the pinned $3297,
+                                            ; 2026-10-15 -- no growing holes)
+    ELSE
 eval_addr:
                 call    eval
                 push    hl
                 call    fac_to_int_addr
                 pop     hl
                 ret
+    ENDIF
 
 ; --- eval_chan: evaluate a file-channel-number expression, surfacing a channel-
 ; expr FP error as a run abort (spec §5.7 gaps). eval, then — for a NUMERIC

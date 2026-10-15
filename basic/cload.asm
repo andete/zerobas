@@ -828,19 +828,19 @@ cas_ascii_setup:
                 rra                         ; $FF -> CF set, 0 -> CF clear
                 ret
 
-; --- cas_ascii_drive: run ascii_read_lines off the tape byte source, then restore
-; the default (disk) source and stop the motor. Shared by cas_ascii_load (LOAD) and
-; merge_cas (MERGE"CAS:"). The getbyte indirection (ARL_GETBYTE) is pointed at
-; cal_getbyte for the read and put back to fat_io_getbyte afterwards so a later
-; MERGE / disk LOAD is unaffected.
+; --- cas_ascii_drive: run ascii_read_lines off the tape byte source, then stop
+; the motor. Shared by cas_ascii_load (LOAD) and merge_cas (MERGE"CAS:"). The
+; getbyte indirection (ARL_GETBYTE) is pointed at cal_getbyte for the read; it
+; was put back to fat_io_getbyte afterwards until S10.C (every reader sets it).
 ;   out: CF from ascii_read_lines (set = a non-blank, non-numbered line).
 cas_ascii_drive:
                 ld      hl,cal_getbyte
                 ld      (ARL_GETBYTE),hl
                 call    ascii_read_lines    ; tokenise + store; CF set = bad line
                 push    af                  ; preserve the ascii_read_lines result CF
-                ld      hl,fat_io_getbyte
-                ld      (ARL_GETBYTE),hl
+                ; (S10.C, 2026-10-15: the vector is no longer put back on main's
+                ; fat_io_getbyte -- that body left main, and every reader points
+                ; the vector itself first: files.asm init_filechan's note.)
                 call    TAPIOF              ; motor off (file fully read), as ctp_done
                 pop     af
                 ret     c

@@ -1196,7 +1196,7 @@ hco_tail:
 ; cluster). The Ctrl-Z is main's -- the listing's last byte, as before.
 hk_chclose_e:
                 ld      b, a                ; S10.D: the caller's mode -- main's fdcc_disk
-                                            ; crosses with A = FCH_MODE (3 or 4)
+                                            ; crosses with A = FCH_MODE (3 or 4; S10.C: 1 too)
                 ld      a, (FCH_ACTIVE)
                 or      a
                 jp      nz, hk_chclose      ; a channel: Ctrl-Z, record, entry
@@ -1221,6 +1221,7 @@ hk_fapp:
                 ld      hl, DISK_FCB_NAME
                 call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE / the entry
                 jr      nc, hfa_found
+hfa_nf:                                     ; S10.C: hk_finp's refusal too (disk/fat.asm)
                 ld      a, 53               ; not found: refused, `File not found`, as
                 ld      (DISKOP_ERR), a     ; main's own APPEND open raised it (its
                 jp      hfm_fail            ; df_or_loaderr keyed on fat_find's OP)
@@ -1480,8 +1481,9 @@ dwr_raise:
                 ld      ix, disk_error
                 jp      calbak              ; raises; does not return
 
-; hk_chclose -- CLOSE of an OUTPUT channel (H_CHCLOSE): Ctrl-Z, the last
-; record, the directory entry. A failure raises with
+; hk_chclose -- CLOSE of a disk channel (H_CHCLOSE), B = its mode. OUTPUT /
+; APPEND: Ctrl-Z, the last record, the directory entry; RANDOM (S10.D): the entry
+; only; INPUT (S10.C): nothing. A failure raises with
 ; DOUT_DEAD set and the channel still open, so a re-OPEN is 54 and the NEXT
 ; CLOSE lands here, clears it and frees the channel without touching the disk
 ; -- D-DISKFULL's measured CF-3300 face.
@@ -1494,6 +1496,10 @@ hk_chclose:
                                             ; (D-PUTDIR); a failure raises through
                                             ; dwr_fail, DOUT_DEAD clear, the channel
                                             ; still open -- fdcc_rnd's old face
+                dec     a
+                jr      z, hcc_done         ; S10.C: INPUT (1) -- nothing to write; the
+                                            ; CF-3300 enters $FE62 here too
+                                            ; (s10c_hook_run.out), main frees the row
                 bit     DOUT_DEAD, (ix+DOUT_FLG)
                 jr      nz, hcc_done        ; the failed CLOSE's second: just free it
                 set     DOUT_DEAD, (ix+DOUT_FLG)
@@ -1585,8 +1591,8 @@ wfs_geom:
 
 
 ; hoc_dout -- hkk_open_check's arm for a DOUT_MODE channel B -- or, since S10.D,
-; a RANDOM one (the same FCB row): its name is the FCB's +1..11, no sector to
-; read. CF=1 a match.
+; a RANDOM one, and since S10.C an INPUT one (the same FCB row): its name is the
+; FCB's +1..11, no sector to read. CF=1 a match.
 hoc_dout:
                 push    bc
                 ld      a, b
@@ -2086,8 +2092,9 @@ sav_full:
 ;
 ; 🔴 MOUNT AND FIND SEPARATELY, for hk_dpload's reason: their two carries are
 ; what tells `File not found` from a mount/I-O fault. `fat_io_find` is the
-; zero-byte label inside fat_io_open that splits them (D-BLNF), and it leaves
-; the stream primed, which is why nothing else is needed here.
+; open minus the mount (D-BLNF; the combined fat_io_open it once split is gone
+; since S10.C), and it leaves the stream primed, which is why nothing else is
+; needed here.
 ; ⚠️ DISKOP_STATUS IS WRITTEN ONCE, LAST, on every arm -- it is a SHARED channel
 ; (main's FAT primitives marshal through the same cell) and pre-setting it is
 ; what made `NAME ... AS ...` answer Syntax error at an empty drive (§6.6an).
@@ -4332,6 +4339,8 @@ hook_tab:
                 dw      H_CHCLOSE, hk_chclose_e ; S10.B: its CLOSE (likewise; S10.D:
                                              ; a RANDOM channel's too, A = its mode)
                 dw      H_DGET, hk_dget      ; S10.D: GET / PUT's record I/O
+                dw      H_CHIN, hk_chin      ; S10.C: an INPUT channel's byte / EOF /
+                                             ; numeric item (disk/fat.asm)
                 ; --- H_FOPEN: INSTALLED 2026-09-20 (D-STOPRELATCH) --------
                 ; 🏗️ Joost ruled §6.6m, re-affirmed in §6.7's *"we do as the
                 ; reference does"*: LOAD arrives at the cell the REFERENCE uses,
@@ -4565,6 +4574,8 @@ hk_dpload:
                 jp      z,hk_fapp           ; S10.B increment 2: OPEN FOR APPEND
                 cp      FOPEN_SEL_RAND
                 jp      z,hk_frnd           ; S10.D: OPEN RANDOM
+                cp      FOPEN_SEL_INP
+                jp      z,hk_finp           ; S10.C: OPEN FOR INPUT (disk/fat.asm)
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.
@@ -4840,17 +4851,17 @@ hkk_done:
 ; --- hkk_open_check: does an OPEN disk file match DISK_FCB_NAME? (D-KILLOPEN) --
 ; The RULE is the CF-3300 oracle's, measured (scratchpad/killopen_probe.py); the
 ; walk below is our own design over our own channel table.
-; Walks FCH_MODES[1..15]. For each DISK channel (mode 1..LPT_MODE-1) it takes the
-; file's directory position -- from the engine globals if the channel is the live
-; one, else from its saved context block -- re-reads that directory sector into
-; this ROM's FAT_DBUF and matches the entry against the KILL pattern with the very
-; name_cmp fat_find uses, so `KILL "K*.TXT"` sees an open K1.TXT as the reference
-; does. ⚠️ The position is MAIN's (main_FWR_DIRSEC/DIROFF and the context copy of
-; them), never this ROM's own FWR_DIRSEC, which is disk-map scratch at $E4xx.
-; It is valid for every disk mode: main's fat_find records it on OPEN FOR INPUT
-; and fat_io_create on OUTPUT.
-;   out: CF=1 a match is open; CF=0 none (or a read failed -- then the delete loop
-;        below meets the same drive and reports it). Clobbers everything.
+; Walks FCH_MODES[1..15]. For each DISK channel (mode 1..LPT_MODE-1) it matches
+; the name in the channel's FCB row (hoc_dout) against the KILL pattern with the
+; very name_cmp fat_find uses, so `KILL "K*.TXT"` sees an open K1.TXT as the
+; reference does.
+; 🧭 S10.C (2026-10-15): EVERY disk mode has its FCB in the row now -- OUTPUT /
+; APPEND since S10.B, RANDOM since S10.D, INPUT since S10.C -- so the arm that
+; took an INPUT channel's directory position from main's engine globals (live) or
+; its saved row (main_FWR_DIRSEC / main_FWR_DIROFF), re-read that directory
+; sector and matched the entry is gone, and with it a sector read per open INPUT
+; channel on every KILL / NAME / COPY / OPEN.
+;   out: CF=1 a match is open; CF=0 none. Clobbers everything.
 hkk_open_check:
                 ld      b,1                 ; B = channel
 hoc_loop:
@@ -4865,61 +4876,11 @@ hoc_loop:
                 or      a
                 jr      z,hoc_next          ; closed
                 cp      LPT_MODE
-                jr      nc,hoc_next         ; a device or cassette channel
-                cp      DOUT_MODE
-                jp      nc,hoc_dout         ; S10.B: its name is in its FCB -- and
-                                            ; S10.D: a RANDOM channel's (4) too;
-                                            ; mode 2 is never stored (D-MODE2DEAD)
-                push    bc
-                ld      a,(FCH_ACTIVE)
-                cp      b
-                jr      nz,hoc_saved
-                ld      de,(main_FWR_DIRSEC)    ; the live channel: the globals
-                ld      hl,(main_FWR_DIROFF)
-                jr      hoc_have
-hoc_saved:
-                ; D-FCBSHAPE S2 (2026-09-30): a saved DISK channel's engine state is
-                ; its row of the fixed engine table (main's DSK_ENGTAB, derived here
-                ; from the published TXTMAX/FCH_CEIL/FCH_STATESZ so the two ROMs
-                ; cannot drift) -- no call back into main any more.
-                ld      hl,TXTMAX-(FCH_CEIL+1)*FCH_STATESZ + main_FWR_DIRSEC-(main_FWR_DIROFF+2-FCH_STATESZ)
-                ld      de,FCH_STATESZ
-                ld      a,b
-hoc_row:
-                add     hl,de               ; row ch -> HL -> its saved FWR_DIRSEC
-                dec     a
-                jr      nz,hoc_row
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = the dir sector
-                inc     hl
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a                 ; HL = the entry offset (FWR_DIROFF
-                                            ; follows FWR_DIRSEC; asserted below)
-hoc_have:
-                push    hl                  ; the offset
-                ld      hl,FAT_DBUF
-                call    read_sector         ; DE = sector -> FAT_DBUF
-                pop     de                  ; DE = the offset
-                jr      c,hoc_skip          ; unreadable: leave it to the delete
-                ld      hl,FAT_DBUF
-                add     hl,de               ; HL -> the open file's dir entry
-                ld      de,DISK_FCB_NAME
-                call    name_cmp            ; Z = it matches the pattern
-                jr      nz,hoc_skip
-                pop     bc
-                scf                         ; an open file matches
-                ret
-hoc_skip:
-                pop     bc
-hoc_next:
+                jp      c,hoc_dout          ; a disk channel: its name is in its FCB
+                                            ; (mode 2 is never stored, D-MODE2DEAD)
+hoc_next:                                   ; a device or cassette channel
                 inc     b
                 jr      hoc_loop
-    IF main_FWR_DIROFF - main_FWR_DIRSEC - 2
-                db      HKK_OPEN_CHECK_READS_FWR_DIROFF_AS_THE_WORD_AFTER_FWR_DIRSEC
-    ENDIF
 
 ; ⚠️ STILL CONFLATED, AND IT TRAVELS WITH THE CODE: a DSKIO failure INSIDE
 ; fat_delete, after the mount and before anything was deleted, returns C = 0 and

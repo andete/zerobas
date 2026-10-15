@@ -376,6 +376,290 @@ frg_pass:
                 jr      nz, frg_pass
                 ret                         ; CF = 0
 
+; ===== S10.C (2026-10-15): an INPUT channel is the same FCB row, read HERE =====
+; D-ROMSIZE / spec-diskcode-eviction.md S10.C. Until now OPEN FOR INPUT was
+; main's resident fat_io_open (basic/fatio-body.inc) over main's engine globals --
+; FREAD_OFF / FREAD_LEFT and the staged sector in FSECTOR_BUF, copied per channel
+; by the sub-ROM's t_fch_save / t_fch_load and re-staged after every crossing --
+; and the bytes came from the sub-ROM's seqio tenant (D-SEQEOF), one subrom_call
+; per byte. S10.B / S10.D's lesson again: the reader can only move if the state is
+; disk-side FROM OPEN. So an INPUT channel's row is the S10.B FCB too, its record
+; (the block's +9) is its read-ahead, and the CF-3300's measured cells set the
+; split (scratchpad/s10c_hook_run.out): OPEN FOR INPUT reaches $FE5D and a
+; missing file is 53 AFTER it; every byte read enters $FE8A once.
+;   row: +1..11 the name (hkk_open_check), +14 RS = 1, +16..19 the size (LOF,
+;        the end), +26 the first cluster, +28..31 RDBLK's running cluster and its
+;        index, +33..35 the random record = the file offset just past the bytes
+;        loaded into the record, DIN_LEFT the record's bytes not yet read.
+;   block+6 = the position in the record (the reference's header +6), +9.. the
+;        record.
+; The refill is RDBLK's own positioning and byte source (k47b2_seek /
+; k47b2_nextbyte, D-RDBLKSEEK): no re-mount, no re-find, the chain walked from
+; the FCB's running cluster -- 256 B a refill, the CF-3300's block size.
+DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..256).
+                                        ; DOUT_FIRST's place -- an INPUT row has no
+                                        ; write cursor
+    IF DIN_LEFT+2 > FCH_STATESZ
+                db      DIN_ROW_FIELDS_OVERRUN_FCH_STATESZ
+    ENDIF
+
+; hk_finp -- OPEN FOR INPUT (H_FOPEN, FOPEN_SEL_INP). FCH_ACTIVE is the channel
+; being opened (fch_claim), DISK_FCB_NAME the parsed 8.3 name. The FCB is
+; dout_open's (name, RS = 1, everything else 0: random record 0, nothing loaded,
+; position 0) plus the file's first cluster (+26, where k47b2_seek walks from)
+; and its 32-bit size (+16). A missing file is refused with 53 pending -- hk_fapp's
+; own tail -- which main raises after the crossing, as the CF-3300 raises it after
+; $FE5D. Status 0 open, LOF mirrored (hfm_ok); 1 with the code pending.
+hk_finp:
+                ei                          ; D-HOOKDI: the hook arrives DI
+                call    dout_open           ; IX = the row: the name, the block, mounted
+                jp      c, hfm_fail
+                ld      hl, DISK_FCB_NAME
+                call    fat_find            ; FAT_FIRSTCLUS / FAT_FILESIZE
+                jp      c, hfa_nf           ; 53, pending
+                ld      hl, (FAT_FIRSTCLUS)
+                ld      (ix+26), l
+                ld      (ix+27), h
+                push    ix
+                pop     hl
+                ld      de, 16
+                add     hl, de
+                ex      de, hl              ; DE = the FCB's size, +16
+                ld      hl, FAT_FILESIZE
+                ld      bc, 4
+                ldir                        ; the whole 32-bit size
+                jp      hfm_ok              ; LOF / LOC mirrored, status 0
+
+; hk_chin -- H_CHIN ($FE8A): the live INPUT channel's text, the reference's way.
+;   in   A = 0 the next byte -- FCH_RDMODE 2 (INPUT$) raw, else INPUT# / LINE
+;            INPUT#'s line rule: a CR swallows the LF after it (D-SEQEOF R2);
+;        A = 2 EOF()'s test, nothing consumed;
+;        A = 4 one numeric INPUT # item into STRSCR (D-CHANSWITCH);
+;        the live channel (FCH_ACTIVE) is the one main selected.
+;   out  A = the byte, CF clear; CF set = the end: nothing left, a Ctrl-Z next (the
+;        soft end, never consumed -- R1), or a failed read, whose code is pending
+;        in DISKOP_ERR (D-LINEJECT: main's seq_end raises it, else 55).
+; The rules are the sub-ROM seqio tenant's, moved (sub/bload.asm; measured on the
+; CF-3300: scratchpad/ipe_run*.out, inpnum_run2.out, inpnum_run3.out).
+; ⚠️ A LIVE CHANNEL THAT IS NOT OPEN FOR INPUT ANSWERS "THE END". Main selects the
+; channel once per statement, and an expression inside the statement can select
+; another -- `INPUT #1,A$(LOF(2))` -- before the read (the brief's unmeasured
+; latent case). Reading that row as an INPUT one would fill FSECTOR_BUF -- a
+; RANDOM channel's live record -- with file bytes, so the guard refuses instead:
+; 55, where the old reader served the other channel's bytes. Neither is the
+; reference's answer, which is unmeasured.
+hk_chin:
+                ei                          ; D-HOOKDI: a refill is sector I/O
+                ld      c, a                ; C = the operation
+                xor     a
+                ld      (DISKOP_ERR), a     ; only THIS read's failure is pending
+                ld      a, (FCH_ACTIVE)
+                ld      e, a
+                ld      d, 0
+                ld      hl, FCH_MODES
+                add     hl, de
+                ld      a, (hl)
+                dec     a                   ; open FOR INPUT?
+                scf
+                ret     nz                  ; no: the end (see the header)
+                push    bc
+                call    dout_live           ; IX = the row
+                pop     bc
+                ld      a, c
+                cp      4
+                jr      z, din_num
+                or      a
+                jp      nz, din_peek        ; 2: EOF() is the peek's CF (`jp`: din_num sits between)
+                ; 0: the next byte
+                call    din_peek
+                ret     c                   ; the end: nothing consumed
+                call    din_take
+                cp      $0D
+                jr      nz, din_ok
+                ld      a, (FCH_RDMODE)
+                cp      2                   ; INPUT$ reads the CR-LF pair as data
+                jr      z, din_cr
+                call    din_peek            ; INPUT#: what follows the CR?
+                jr      c, din_cr
+                cp      $0A
+                call    z, din_take         ; an LF: swallow it (R2)
+din_cr:
+                ld      a, $0D
+din_ok:
+                or      a                   ; CF clear: a byte
+                ret
+
+; din_num -- A = 4: ONE NUMERIC INPUT # item into STRSCR = [len][bytes], the
+; length byte the counter (D-CHANSWITCH, the seqio tenant's sq_numitem, moved).
+; Measured on the CF-3300 (inpnum_run2.out, inpnum_run3.out): leading blanks, CRs
+; and LFs are skipped; the item ends at a blank, a comma or a CR; then the blanks
+; after it are eaten, and ONE comma, or ONE CR with its LF, with them -- any
+; other byte belongs to the NEXT item and stays: `" 1  2 "` read with INPUT #1,X
+; leaves "2 " for a LINE INPUT, `" 1 \r\n"` leaves nothing (EOF is -1 after the
+; last number), `"1   ,2"` leaves "2". Leaving a byte needs the PEEK below.
+; out: CF set only when the end came before any byte (length 0 then).
+din_num:
+                xor     a
+                ld      (STRSCR), a
+dnm_lead:
+                call    din_peek
+                ret     c                   ; the end before any byte
+                cp      ' '
+                jr      z, dnm_skip
+                cp      $0D
+                jr      z, dnm_skip
+                cp      $0A
+                jr      nz, dnm_body
+dnm_skip:
+                call    din_take
+                jr      dnm_lead
+dnm_body:
+                call    din_peek
+                jr      c, din_ok           ; the end (or Ctrl-Z) closes the item
+                cp      ' '
+                jr      z, dnm_tail
+                cp      ','
+                jr      z, dnm_tail
+                cp      $0D
+                jr      z, dnm_tail
+                call    din_take            ; A = the byte
+                ld      c, a
+                ld      hl, STRSCR
+                ld      a, (hl)
+                cp      STRMAX
+                jr      nc, dnm_body        ; full: read it and drop it
+                inc     (hl)
+                ld      e, (hl)
+                ld      d, 0
+                add     hl, de
+                ld      (hl), c
+                jr      dnm_body
+dnm_tail:
+                call    din_peek
+                jr      c, din_ok
+                cp      ' '
+                jr      nz, dnm_delim
+                call    din_take            ; a blank after the number
+                jr      dnm_tail
+dnm_delim:
+                cp      ','
+                jr      z, dnm_eat
+                cp      $0D
+                jr      nz, din_ok          ; the NEXT item's byte: leave it
+                call    din_take            ; the CR ...
+                call    din_peek
+                jr      c, din_ok
+                cp      $0A
+                jr      nz, din_ok
+dnm_eat:
+                call    din_take            ; ... and its LF, or the comma
+                jr      din_ok
+
+; din_peek -- A = the row's next byte, NOT consumed, CF clear; CF set when there
+; is none (the end, a failed read) or it is a Ctrl-Z. A spent record is refilled
+; first, so a peek at a record boundary reads the next 256 B. IX = the row (kept).
+; Clobbers BC, DE, HL.
+din_peek:
+                ld      a, (ix+DIN_LEFT)
+                or      (ix+DIN_LEFT+1)
+                call    z, din_fill         ; spent: the next block (CF = none)
+                ret     c
+                call    dout_pos            ; HL = &block+6, the position
+                ld      e, (hl)
+                ld      d, 0
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the record
+                add     hl, de
+                ld      a, (hl)
+                cp      $1A
+                scf
+                ret     z                   ; Ctrl-Z: the soft end (R1)
+                or      a
+                ret
+
+; din_take -- consume the byte din_peek saw: position + 1, DIN_LEFT - 1. A and
+; the flags are kept; BC, DE, HL clobbered. IX = the row.
+din_take:
+                push    af
+                call    dout_pos
+                inc     (hl)                ; the position (wraps with the record)
+                ld      l, (ix+DIN_LEFT)
+                ld      h, (ix+DIN_LEFT+1)
+                dec     hl
+                ld      (ix+DIN_LEFT), l
+                ld      (ix+DIN_LEFT+1), h
+                pop     af
+                ret
+
+; din_fill -- the record := the file's next (up to) 256 bytes, read at the FCB's
+; random record (RS = 1, so it is the byte offset) through k47b2_seek, which
+; bounds it by the size and walks the chain from the FCB's running cluster
+; (+28/+30), and k47b2_nextbyte. The random record moves past them, the position
+; goes to 0, DIN_LEFT = the count. out: CF = nothing read -- the end, or a failed
+; read with its code pending (DISKOP_ERR). IX = the row (kept: the FAT walk and the
+; driver do not touch it, which k47b2_seek itself relies on).
+din_fill:
+                ; 🔴 THE END IS ANSWERED WITHOUT A SEEK. The random record never
+                ; passes the size, so "equal" is the end -- and k47b2_seek at an
+                ; offset inside a sector READS that sector even when nothing is
+                ; left to deliver. Without this an INPUT# at the end of a file in
+                ; an ejected drive raised 70 where main's old reader (FREAD_LEFT = 0,
+                ; no I/O) raised 55, and every EOF() at the end cost a sector read.
+                ; 24 bits: a floppy file's size never reaches +19.
+                ld      a, (ix+33)
+                cp      (ix+16)
+                jr      nz, dfl_go
+                ld      a, (ix+34)
+                cp      (ix+17)
+                jr      nz, dfl_go
+                ld      a, (ix+35)
+                cp      (ix+18)
+                scf
+                ret     z                   ; RR = the size: the end, DIN_LEFT 0
+dfl_go:
+                ld      hl, 1
+                ld      (RDBLK_RECSIZE), hl ; RS = 1
+                call    k47b2_seek          ; Cy: unreadable, or past the size
+                ld      hl, 0
+                jr      c, dfl_set
+                call    dout_pos
+                ld      (hl), 0             ; the position
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the record
+                ld      de, 0               ; DE = the count
+dfl_lp:
+                push    hl
+                push    de
+                call    k47b2_nextbyte      ; A = the byte; Cy = no more (or a fault)
+                pop     de
+                pop     hl
+                jr      c, dfl_done
+                ld      (hl), a
+                inc     hl
+                inc     de
+                bit     0, d                ; 256 read: the record is full
+                jr      z, dfl_lp
+dfl_done:
+                ex      de, hl              ; HL = the count
+                ld      a, (ix+33)
+                add     a, l
+                ld      (ix+33), a
+                ld      a, (ix+34)
+                adc     a, h
+                ld      (ix+34), a
+                jr      nc, dfl_set
+                inc     (ix+35)             ; the random record (24 bits)
+dfl_set:
+                ld      (ix+DIN_LEFT), l
+                ld      (ix+DIN_LEFT+1), h
+                ld      a, h
+                or      l
+                ret     nz                  ; CF clear: bytes to read
+                scf
+                ret
+
                 ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25
                 ; - $` lines stood here, commented "anchor canonical address", with NO
                 ; code between them: the `jp k_49xx` veneers left with D-FATENG

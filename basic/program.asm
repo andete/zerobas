@@ -707,6 +707,13 @@ rp_goto:
 ; raising the error would leave `exec` walking a program that no longer exists.
 ; ⚠️ SITED IMMEDIATELY ABOVE `end_line_end` SO THE STOP IS A FALL-THROUGH, not a
 ; `jp` -- 3 bytes, in a region that had 2 free.
+    IF BASICINT_PINS
+                                            ; (ex_new and the end_line_end it falls
+                                            ; into live in basic/files.asm in the
+                                            ; shipping build: with ctl_get they REFILL
+                                            ; the 25 B S10.C freed between the pinned
+                                            ; $6CF3 and $73AC, 2026-10-15)
+    ELSE
 ex_new:
                 ; 🔴 D-NEWARG (2026-09-28): `NEW 1` ERASED THE PROGRAM. NEW takes no
                 ; argument; the VG-8020 answers `20 NEW 1` with `Syntax error in 20`
@@ -725,6 +732,7 @@ end_line_end:
                 ld      a,1
                 ld      (ENDFLAG),a
                 ret                         ; -> stage A turns THIS into `jp rp_after`
+    ENDIF
 ; --- derive_directf: DIRECTF := "the line CURLINE names is the TYPED one" ----
 ; Clobbers A (and the flags). Everything else is preserved -- rp_exec calls it
 ; with the resume pointer live in HL.
@@ -922,6 +930,10 @@ do_break:
 ;
 ; CONT does NOT consume what this records (spec §2.1, cont2_thrice /
 ; cont2_err_twice): only RUN, NEW and a program edit clear CONTVALID.
+    IF BASICINT_PINS
+                                            ; (cont_record lives in basic/fat.asm in
+                                            ; the shipping build: S10.C's $6CF3 refill)
+    ELSE
 cont_record:
                 ld      a,(DIRECTF)
                 or      a
@@ -932,6 +944,7 @@ cont_record:
                 inc     a                   ; A is still 0 -> 1
                 ld      (CONTVALID),a       ; a CONT resume point is now live
                 ret
+    ENDIF
 
 ; --- print_in_lineno: " in <CURLINE lineno>" + CRLF (repack, error-handling D-2) --
 ; Shared by do_break ("break in <N>") and fre_abort_low (a runtime error's run-mode
@@ -1580,6 +1593,10 @@ gp_full:
 ; ctl_put / ctl_get: store/load HL at (DE), DE += 2. Four call sites each in the
 ; two routines below -- open-coding them costs 21 bytes of main page 1 apiece,
 ; which this region does not have (`make basic-reloc` reports the wall).
+    IF BASICINT_PINS
+                                            ; (ctl_put lives in basic/fat.asm in the
+                                            ; shipping build: S10.C's $6CF3 refill)
+    ELSE
 ctl_put:
                 ld      a,l
                 ld      (de),a
@@ -1588,6 +1605,7 @@ ctl_put:
                 ld      (de),a
                 inc     de
                 ret
+    ENDIF
 ctl_get:
                 ld      a,(de)
                 ld      l,a
@@ -1876,6 +1894,12 @@ sld_fac:
 ; walks a name and a suffix and never a subscript, so it leaves HL on the `(`
 ; and the EQ_TOKEN test below rejects it -- this is a NAME residual, not an
 ; array one, and tgt_parse (which resolves subscripts) is the wrong tool.
+    IF BASICINT_PINS
+                                            ; (ex_for lives in basic/fat.asm in the
+                                            ; shipping build: with cont_record and
+                                            ; ctl_put it REFILLS the 128 B S10.C freed
+                                            ; ahead of the pinned $6CF3, 2026-10-15)
+    ELSE
 ex_for:
                 inc     hl                  ; past the FOR token
                 call    req_letter          ; D-NGRAM: FOR needs a loop variable
@@ -1937,6 +1961,7 @@ ef_havestep:
                 ld      bc,FOR_FRAME
                 ldir
                 jp      pop_exec            ; HL = loop body -> run it
+    ENDIF
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to gosub_stk_over,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).
@@ -2580,10 +2605,15 @@ goto_take_bc:
 ; instead of aborting. It cost a whole battery to find.
 ; ⚠️ 17 T per call, on parse and disk-entry paths only: not one of the 25 is in
 ; expr.asm or float-arith.asm, which is where the TIER 4 speed item lives.
+    IF BASICINT_PINS
+                                            ; (diskslot_test lives in basic/files.asm in
+                                            ; the shipping build: S10.C's $73AC refill)
+    ELSE
 diskslot_test:
                 ld      a,(DISKSLOT_OK)
                 or      a
                 ret
+    ENDIF
 
 ; --- eon_seek_nth: find Nth $0E entry in an ON...GOTO/GOSUB target list ------
 ; in:  HL = first token after the GOTO/GOSUB token, DE = N (1-based index)

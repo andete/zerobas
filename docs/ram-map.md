@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 341 declared addresses in this project's own workspace `$E000..$F37F` (325 with a machine-readable width), plus **204** in the MSX standard work area at or above `$F380`.
-* **disk** — 134 declared addresses in this project's own workspace `$E000..$F37F` (125 with a machine-readable width), plus **47** in the MSX standard work area at or above `$F380`.
+* **basic** — 341 declared addresses in this project's own workspace `$E000..$F37F` (325 with a machine-readable width), plus **205** in the MSX standard work area at or above `$F380`.
+* **disk** — 135 declared addresses in this project's own workspace `$E000..$F37F` (126 with a machine-readable width), plus **48** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -309,6 +309,7 @@ second one is the question a per-component map cannot answer.
 | `$EF64` | 1 B | `basic` | `FCH_NUM` | open channel's file number, 0 = none open (1) |  |
 | `$EF65` | 1 B | `basic` | `FCH_MODE` | open mode: 0=none, 1=INPUT, 2=OUTPUT (1) |  |
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
+| `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF67` | 2 B | `basic` | `GFX_X1` | LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads |  |
 | `$EF69` | 2 B | `basic` | `GFX_Y1` | LINE endpoint 1 Y (int16 LE) |  |
 | `$EF6B` | 2 B | `basic` | `GFX_X2` | LINE endpoint 2 X (int16 LE) |  |
@@ -622,7 +623,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F702` | 1 B | `basic` | `RESUMEFLAG` | 1 = resume at RESUMEPTR (set by RETURN / NEXT) (1 B) |  |
 | `$F703` | 2 B | `basic` | `GSP` | newest GOSUB frame's address; == CTLTOP if none (2) |  |
 | `$F705` | 2 B | `basic` | `FSP` | the FOR run's FLOOR: FOR frames are [CSP,FSP) (2) |  |
-| `$F707` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = no byte / at the end (D-SEQEOF) (1 B) |  |
+| `$F707` | 1 B | `basic` | `SEQ_EOF` | seqio tenant -> main: 1 = the TAPE channel is at its end (D-EOFCAS; S10.C) (1 B) |  |
 | `$F708` | 2 B | `basic` | `ARY_CUR` | [D-ARR-C] the text cursor, parked across the engine call (2) |  |
 | `$F712` | 2 B | `basic` | `CSP` | the pool's allocation frontier, descending (2) |  |
 | `$F714` | 2 B | `basic` | `CTLTOP` | the pool's TOP = strheap_varceil(), cached (2) |  |
@@ -773,6 +774,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE80` |  | `disk` | `H_DGET` | S10.D: GET / PUT (hk_dget) -- A = 0 GET / 1 PUT, |  |
 | `$FE85` |  | `basic` | `H_CHOUT` |  |  |
 | `$FE85` |  | `disk` | `H_CHOUT` | S10.B: one byte out of an OUTPUT channel (A) |  |
+| `$FE8A` |  | `basic` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item (disk.rom hk_chin) |  |
+| `$FE8A` |  | `disk` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |

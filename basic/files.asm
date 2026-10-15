@@ -394,54 +394,19 @@ df_notfound:
                 ld      a,53
                 jp      raise_error
 
-; --- df_or_loaderr: ERR 53 if the file was simply NOT THERE, else `load error`
-; D-LOADERR (docs/loaderr-msx1-characterization.md). Both references RAISE
-; `File not found` and STOP for a missing file at LOAD / RUN"f" / MERGE /
-; OPEN..FOR INPUT / OPEN..FOR APPEND; zerobas printed `load error` and RAN ON,
-; because every one of those failures funnelled into one non-raising tail.
-;
-; 🎯 THE SPLIT NEEDED NO NEW STATUS, BECAUSE ONE ALREADY EXISTS. `fatprim_bounce`
-; (basic/fat.asm) writes DISKOP_OP with the selector of the primitive it is about
-; to run, so after a failure the cell names WHICH primitive failed. `fat_io_open`
-; and `fat_io_append` reach the disk through exactly two of them -- fat_mount then
-; fat_find -- so `DISKOP_OP == FAT_FIND` on a failure means, precisely, "mounted
-; fine, the name is not there". That is the measured class and nothing else.
-;
-; ⚠️ WHY THE OTHER OPEN MODES CANNOT FALSE-POSITIVE, checked per path, not assumed:
-;   * FOR OUTPUT -> fat_io_create, which calls fat_dir_create, NOT fat_find.
-;   * RANDOM     -> since S10.D a disk.rom open (hk_frnd) reached through
-;     fopen_cross, so DISKOP_OP holds FOPEN_SEL_RAND; its internal fat_find runs
-;     DISK-SIDE as a plain in-page call and never touches DISKOP_OP. (It was the
-;     sub-ROM selector DISKOP_SEL_RAND_OPEN before -- the same argument.)
-;   * EOF inside fat_io_getbyte -> a successful open ended at `call fat_open`, so
-;     DISKOP_OP is FAT_OPEN by then, never FAT_FIND.
-;   * A path where NO primitive ran at all (DISKSLOT_OK == 0) would read a STALE
-;     cell, so those arms deliberately do NOT come here -- see cload.asm's
-;     `dpl_hard` and do_merge's own DISKSLOT check, both still `load_error`.
-;
-; ⚠️ `jp load_error` here, not `jr`: load_error RETURNS (basic/bload.asm), and ~73
-; call sites depend on that -- several resume into their caller on purpose. So a
-; caller that `call`s THIS routine still gets load_error's return, unchanged; only
-; the not-found arm diverts, and it diverts to a raise that never comes back.
-; raise_error fires from arbitrary call depth by design (fre_abort_low resets SP
-; from SAVSTK as its own first act), so raising from inside disk_prog_load is safe.
-;
-; ⚠️ BLOAD DOES NOT COME HERE, AND IT IS NOT UNCOVERED EITHER (D-BLNF,
-; 2026-08-21). Its loader is the sub-ROM page-1 tenant (sub/bload.asm), where the
-; shared fatio-body.inc binds to the REAL sub-side primitives and DISKOP_OP is
-; never written, so this test is blind to it and always will be. It reaches the
-; SAME verdict by a different road: the tenant splits fat_io_open at its own
-; mount/find boundary (the zero-byte `fat_io_find` label, basic/fatio-body.inc),
-; files BL_STAT = 2 for "the name is not there", and the resident stub
-; (basic/bload.asm) jumps HERE, at df_notfound, with the same ERR 53.
-; 🎯 So df_notfound has TWO callers with two different ways of knowing, and only
-; one of them is this cell — which is the point: a routine's correctness must not
-; depend on how its callers found out.
-df_or_loaderr:
-                ld      a,(DISKOP_OP)
-                cp      DISKOP_SEL_FAT_FIND
-                jr      z,df_notfound
-                jr      disk_error          ; D-DISKERR: a DSKIO failure raises its code
+; --- df_or_loaderr: GONE (S10.C, 2026-10-15) -------------------------------
+; D-LOADERR (docs/loaderr-msx1-characterization.md) split a failed OPEN into
+; ERR 53 for "mounted fine, the name is not there" and disk_error for the rest,
+; keyed on DISKOP_OP == DISKOP_SEL_FAT_FIND: `fatprim_bounce` wrote the selector
+; of the primitive it ran, so after main's fat_io_open failed the cell named
+; which one. Its last caller was OPEN FOR INPUT. Since S10.C every disk mode
+; opens in disk.rom (hk_finp / hk_fmake / hk_fapp / hk_frnd) through fopen_cross,
+; DISKOP_OP holds an FOPEN_SEL_* selector there and never FAT_FIND, and the
+; not-found reading is the disk side's own: it parks 53 in DISKOP_ERR, so OPEN's
+; oo_fail goes straight to disk_error. The REFERENCE's rule is unchanged and so
+; is the face: 53 raised for a missing file, a DSKIO code for a fault.
+; ⚠️ BLOAD never came here and still does not (D-BLNF): its tenant files
+; BL_STAT = 2 and the resident stub jumps to df_notfound above.
 
 ; ===========================================================================
 ; Sequential file channel (Phase 2). A SINGLE open channel, layered on the
@@ -470,11 +435,14 @@ df_or_loaderr:
 ;     (D-FCH §3.2 made the table dynamic, so unused channels cost nothing).
 ;     The per-channel CHARGE (50 B out of FRE(0),
 ;     vs the reference's 267) is the remaining deliberate divergence.
-;   * INPUT#/LINE INPUT# fill STRING variables only (numeric INPUT# is Phase 3);
-;     a value longer than STRMAX is truncated (the string layer's own limit).
-;   * console INPUT (no '#') and graphics LINE are NOT implemented — they error.
-;   * OPEN handles FOR INPUT and FOR OUTPUT; APPEND is a later item.
-;   * file/channel errors reuse the loader's `load_error` ("load error") path.
+;   * a value longer than STRMAX is truncated (the string layer's own limit).
+; 🔴 STALE AS A WHOLE, CORRECTED 2026-10-15 (S10.C) RATHER THAN DELETED: this
+; block described the Phase-2 tree. Since then numeric INPUT# (D-INPNUM),
+; console INPUT (basic/input.asm), graphics LINE, APPEND (S10.B), RANDOM
+; (S10.D) and RAISED channel errors (D-BADFNUM, D-CHDIR, D-LOADERR) all
+; shipped, and every disk channel's bytes now live in disk.rom -- OUTPUT /
+; APPEND since S10.B, RANDOM since S10.D, INPUT since S10.C. What is left of
+; "layered on fat.asm" is the header above, kept as history.
 
 ; --- OPEN "name" FOR INPUT AS #n -------------------------------------------
 ex_open:
@@ -690,8 +658,15 @@ oo_endok:
                 jr      z,oo_append
                 cp      4
                 jr      z,oo_random_setup
-                call    fat_io_open         ; INPUT: mount + find + prime read
-                jr      oo_done
+                ; S10.C (2026-10-15): INPUT is disk.rom's too (hk_finp) -- the FCB
+                ; in the channel's row, the record the block's +9, read by H_CHIN
+                ; (basic/input.asm din_call). It was main's resident fat_io_open
+                ; (basic/fatio-body.inc), whose read state lived in the engine
+                ; globals the sub-ROM's t_fch_save / t_fch_load copied per switch.
+                ; A missing file is 53, raised after the crossing as the CF-3300
+                ; raises it after $FE5D (s10c_hook_run.out).
+                ld      a,FOPEN_SEL_INP
+                jr      oo_cross
 oo_create:
                 ; S10.B: OUTPUT and APPEND are disk.rom's -- the channel is an
                 ; MSX-DOS FCB in the channel's engine row (hk_fmake / hk_fapp)
@@ -747,10 +722,14 @@ oo_fail:
                 ld      (FCH_MODE),a
                 ld      (FCH_ACTIVE),a      ; no channel live (don't save the garbage)
                 ; D-LOADERR: AFTER the channel cleanup, never before -- a raise
-                ; here would leave the slot claimed. The cleanup is address
-                ; arithmetic and touches no disk primitive, so DISKOP_OP still
-                ; names the one that failed.
-                jp      df_or_loaderr
+                ; here would leave the slot claimed.
+                ; 🧭 S10.C (2026-10-15): disk_error, NOT df_or_loaderr any more.
+                ; Every disk mode's open is a disk.rom crossing now (INPUT was the
+                ; last on main's fat_io_open), so DISKOP_OP holds an FOPEN_SEL_*
+                ; selector here, never DISKOP_SEL_FAT_FIND, and the not-found
+                ; reading is disk.rom's: it parks 53 in DISKOP_ERR (hk_finp /
+                ; hk_fapp), and a mount / DSKIO fault parks its own code.
+                jp      disk_error
 oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
@@ -1440,7 +1419,7 @@ inp_tail:                                   ; D-INPNUM: the numeric item rejoins
 ; ([len][bytes]) until the mode's delimiter or EOF. FCH_RDMODE: 0 = field (stop at
 ; ',' or CR), 1 = line (stop at CR). LF bytes are ignored; CR ends the read. A byte
 ; past STRMAX is dropped (input keeps consuming to the delimiter). All loop state
-; is in RAM — fat_io_getbyte's DSKIO clobbers every register.
+; is in RAM — the byte source is a CALLF / CALSLT, which clobbers every register.
 read_into_strscr:
                 xor     a
                 ld      (IN_RDLEN),a
@@ -1452,9 +1431,10 @@ read_into_strscr:
                 ; variable, so `INPUT #1,A$,N` would have inherited the state.
                 ld      (STRSCR),a
 ris_lp:
-                call    arl_getbyte         ; byte source vector: fat_io_getbyte (disk)
-                                            ; or cas_in_getbyte (CAS: input), set by
-                                            ; ex_input per channel type
+                call    arl_getbyte         ; byte source vector: fat_io_seqbyte (disk:
+                                            ; H_CHIN into disk.rom since S10.C) or
+                                            ; cas_in_getbyte (CAS: input), set by
+                                            ; arl_set_src per channel type
                 jp     c,ris_done          ; EOF -> stop
                 cp      $0A                 ; ignore LF entirely
                 jr      z,ris_lp
@@ -1599,8 +1579,13 @@ init_filechan:
                 ; new code and showed up on a row that is not about its subject.
                 ld      (LPTPOS),a          ; printer head at column 0
                 ld      (FCH_ACTIVE),a      ; no channel live in the engine globals
-                ld      hl,fat_io_getbyte
-                ld      (ARL_GETBYTE),hl    ; default ascii_read_lines source (D2)
+                ; 🗑️ S10.C (2026-10-15): ARL_GETBYTE IS NO LONGER DEFAULTED HERE.
+                ; It was seeded with main's fat_io_getbyte (D2), which left with
+                ; the resident fatio-body.inc -- and the seed was already dead: every
+                ; reader sets the vector itself before its first byte (input_common
+                ; and INPUT$ through arl_set_src, the console through inp_readline /
+                ; chget_getbyte, LOAD / MERGE through dsk_ascii_drive /
+                ; cas_ascii_drive). Checked at every `arl_getbyte` caller, 2026-10-15.
                 ; clear the per-channel mode array [0..FCH_CEIL].
                 ld      hl,FCH_MODES
                 ld      b,FCH_CEIL+1
@@ -1953,10 +1938,12 @@ fdcc_disk:
                 ld      a,e
                 call    fch_select          ; load the channel; FCH_MODE = its mode
                 ld      a,(FCH_MODE)
-                cp      4
-                jr      z,fdcc_hook         ; RANDOM: the directory, once (D-PUTDIR)
-                cp      DOUT_MODE
-                jr      nz,fdcc_clear       ; INPUT (or none): nothing to flush
+                ; 🧭 S10.C (2026-10-15): EVERY disk mode crosses H_CHCLOSE now --
+                ; INPUT too, which the CF-3300 does ($FE62 at an INPUT channel's
+                ; CLOSE, s10c_hook_run.out). Its row is disk.rom's FCB since OPEN
+                ; and hk_chclose's mode-1 arm writes nothing. The two `cp`s that
+                ; routed INPUT past the cell are gone (-8 B); no other mode can be
+                ; stored on a disk channel (1 / DOUT_MODE / 4, D-MODE2DEAD).
                 ; 🗑️ D-MODE2DEAD (2026-10-07): mode 2 -- OUTPUT through main's own
                 ; engine -- has not been STORED since S10.B increment 2; OPEN maps
                 ; OUTPUT and APPEND to DOUT_MODE. Its arm here (Ctrl-Z through
@@ -1975,7 +1962,6 @@ fdcc_disk:
                 ; fat_dir_update over main's engine globals, which a RANDOM
                 ; channel no longer fills. A failure raises from in there, the
                 ; channel still open -- as fdcc_rnd's `jp c,disk_error` left it.
-fdcc_hook:
                 call    H_CHCLOSE
                 ei                          ; a CALLF returns DI (cg_back's note)
 fdcc_clear:
@@ -2489,22 +2475,55 @@ dag_eof:
                 ret
 
 ; --- dsk_ascii_drive: ascii_read_lines off the CROSSING byte source ----------
-; The disk twin of cas_ascii_drive (cload.asm), and deliberately the same shape:
-; point ARL_GETBYTE at this slice's source, run the reader, put the vector back.
-; 🔴 THE RESTORE IS NOT COSMETIC. `INPUT #n` / `LINE INPUT #n` read through the
-; SAME vector (read_into_strscr), and their disk arm is still main's own
-; fat_io_getbyte because step 10 has not moved -- so leaving the crossing source
-; installed would send a channel read across the slot with no open file there.
+; The disk twin of cas_ascii_drive (cload.asm): point ARL_GETBYTE at this
+; slice's source and run the reader.
+; 🗑️ S10.C (2026-10-15): THE RESTORE IS GONE, AND ITS OWN REASON SAYS WHY. It
+; read "not cosmetic: INPUT #n's disk arm is still main's fat_io_getbyte because
+; step 10 has not moved". That stopped being true with D-CASINP's arl_set_src --
+; input_common points the vector itself before every read -- and step 10 (S10.C)
+; has now moved: main has no fat_io_getbyte to put back. A tail call (-9 B).
 ;   out: CF from ascii_read_lines (set = a non-blank, non-numbered line).
 dsk_ascii_drive:
                 ld      hl,dsk_agetbyte
                 ld      (ARL_GETBYTE),hl
-                call    ascii_read_lines
-                push    af                  ; preserve the reader's CF
-                ld      hl,fat_io_getbyte
-                ld      (ARL_GETBYTE),hl
-                pop     af
+                jp      ascii_read_lines
+
+    IF BASICINT_PINS
+; 📌 REFILL FOR D-BASICINT'S $73AC PIN (S10.C, 2026-10-15). S10.C took 23 B out of
+; the stretch between the pinned $6CF3 and $73AC -- init_filechan's dead
+; ARL_GETBYTE seed (6), this routine's restore (9) and fdcc_disk's mode tests (8)
+; -- which would have grown basic/field.asm's `ds $73AC - $` from 2 to 25 B. Joost:
+; no growing holes. So two self-contained routines from past every pin (basic/
+; program.asm, no `jr` across their edges -- tools/pin_plan.py's chunk list) moved
+; here: ex_new with the end_line_end it falls into (18 B) and diskslot_test (5).
+; ⚠️ EXACTLY 23, NOT 25: the 2 B pin_plan reports in front of $73AC are a `jr`
+; BRIDGE (lrset_common's `jr` over the pin), not a `ds` pad -- the `ds` itself
+; was already 0, and a 25 B refill drove it negative (pasmo then writes an EMPTY
+; image, split_islands' "image base $8000" the only sign). program.asm's copies
+; are the ELSE arms; their stories stay there.
+ex_new:
+                ; 🔴 D-NEWARG (2026-09-28): `NEW 1` ERASED THE PROGRAM. NEW takes no
+                ; argument; the VG-8020 answers `20 NEW 1` with `Syntax error in 20`
+                ; and LIST still shows the program, where zerobas erased it
+                ; (scratchpad/newarg_before.out; T6 batch 10, t6enum_b10.out). The
+                ; check comes FIRST, before anything is cleared.
+                call    stmt_bare_end       ; Z iff the statement ends here
+                jp      nz,stmt_error       ; anything else: ERR 2, nothing erased
+                call    clear_vars          ; NEW clears variables too (dl_new's
+                                            ; own comment: MS-BASIC semantics)
+                call    new_prog            ; then the stored program itself
+                                            ; falls into end_line_end: ENDFLAG := 1,
+                                            ; so the run loop returns to the REPL
+                                            ; instead of walking erased text
+end_line_end:
+                ld      a,1
+                ld      (ENDFLAG),a
+                ret                         ; -> stage A turns THIS into `jp rp_after`
+diskslot_test:
+                ld      a,(DISKSLOT_OK)
+                or      a
                 ret
+    ENDIF
 
 ; --- chget_getbyte: ARL_GETBYTE source for the CONSOLE (D-INPDCON) ---------
 ; `INPUT$(n)` with no `,#f` reads n characters from the KEYBOARD. That is the

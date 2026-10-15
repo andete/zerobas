@@ -151,6 +151,9 @@ keyboard form.
   keyboard or the file form; `read_into_strscr` there splits a line into
   fields for both.
 - `str_inputd` in [basic/strvar.asm](../../basic/strvar.asm) is `INPUT$`.
+- From a disk file, each byte comes from the disk ROM (`hk_chin` in
+  [disk/fat.asm](../../disk/fat.asm), through `$FE8A`, since S10.C), which also
+  reads a numeric `INPUT #` item.
 - Design notes: [spec-basic-input.md](../spec-basic-input.md) (2026-07-11;
   its "integer fields" and "lower-case messages" no longer hold — this page is
   current).

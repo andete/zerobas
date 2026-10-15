@@ -68,11 +68,12 @@
 ; PAGE-1 tenant (sub/fatprim.asm fatprim_tenant, SUBROM_IDX_FATPRIM) — a
 ; single selector-dispatched entry covering all 15 marshalled primitives
 ; (DISKOP_OP picks the routine; a subrom_call only reaches one tenant entry).
-; The BYTE-GRANULAR fat_io_* cursor's READ half (fat_io_open/fat_io_getbyte) below
-; stays resident in BOTH builds (its WRITE half is not assembled in main since S10
-; increment 3, D-ASAVEDOUT): it is reached via the ARL_GETBYTE polymorphic RAM
-; vector, valid only while the owning code is mapped in, so it cannot move
-; yet (spec §11's empirical rationale). The shared bodies live in
+; The BYTE-GRANULAR fat_io_* cursor is NOT assembled in main at all any more:
+; its WRITE half left with S10 increment 3 (D-ASAVEDOUT), its READ half
+; (fat_io_open/fat_io_getbyte) with S10.C (2026-10-15), when OPEN FOR INPUT
+; moved to disk.rom. (It "could not move yet" because ARL_GETBYTE reached it
+; per byte -- spec §11; that vector now points at a per-byte HOOK crossing,
+; basic/input.asm din_call, the reference's own $FE8A.) The shared bodies live in
 ; basic/fat-prim-body.inc (dskio_calslt..fat_dir_update) and
 ; basic/fat-delete-body.inc (fat_delete, kept separate only because it sits
 ; AFTER the resident cursor in this file — see that file's header).
@@ -149,15 +150,11 @@ fat_find:
                 ld      a,DISKOP_SEL_FAT_FIND
                 jr      fatprim_bounce
 
-; fat_open — see basic/fat-prim-body.inc for the full contract.
-fat_open:
-                ld      a,DISKOP_SEL_FAT_OPEN
-                jr      fatprim_bounce
-
-; fat_read_file_sector — see basic/fat-prim-body.inc for the full contract.
-fat_read_file_sector:
-                ld      a,DISKOP_SEL_FAT_READ_FILE_SECTOR
-                jr      fatprim_bounce
+; (S10.C, 2026-10-15: the fat_open and fat_read_file_sector shims are gone --
+; 8 B. Their only main callers were fat_io_open / fat_io_getbyte, main's resident
+; copy of basic/fatio-body.inc, which left with OPEN FOR INPUT (hk_finp in
+; disk.rom). Selectors 2/3 and their tenant rows stay: the numbering is published.
+; fat_find, above, now ends the block with `jr fatprim_bounce` in its place.)
 
 ; (D-FCBSHAPE S0, 2026-09-29: the fch_restage / fch_flush_active shims are gone.
 ; Their only callers were fch_load_ctx / fch_save_active, whose bodies moved into
@@ -241,7 +238,108 @@ fatprim_bounce:
 ; is its true length (SAVE/BSAVE produce byte-exact images that round-trip).
 ; ===========================================================================
 
-                include "basic/fatio-body.inc"
+; 🗑️ S10.C (D-ROMSIZE, 2026-10-15): basic/fatio-body.inc IS NO LONGER INCLUDED
+; HERE -- 111 B of main page 1. Its last main caller was OPEN FOR INPUT
+; (files.asm `call fat_io_open`), and an INPUT channel is disk.rom's FCB now
+; (hk_finp / hk_chin, disk/fat.asm). The ARL_GETBYTE default and the two
+; restores that named fat_io_getbyte were dead stores (files.asm init_filechan).
+; The body stays shared by sub/bload.asm (BLOAD's tenant) and disk/kernel.asm
+; (LOAD / MERGE), byte-identical in both.
+
+    IF BASICINT_PINS
+; 📌 REFILL FOR D-BASICINT'S $6CF3 PIN (S10.C, 2026-10-15). S10.C took 128 B out
+; of main page 1 AHEAD of the pinned $6CF3 -- the 111 B fatio-body.inc above, the
+; fat_open / fat_read_file_sector shims (8), files.asm's df_or_loaderr (9) and
+; OPEN's INPUT arm (1), cload.asm's restore (6), less the 7 B expr.asm's eof_dev
+; grew by inlining the tape EOF crossing -- and every byte removed ahead of a pin
+; grows its `ds` pad (files.asm `ds $6CF3 - $`). Joost: no growing holes. So three
+; self-contained routines from PAST every pin (basic/program.asm; entered only by
+; call / jp / the statement table, no `jr` across their edges -- tools/pin_plan.py's
+; chunk list) moved HERE, at the hole itself, which also keeps every `jr` that
+; spans the hole at its old reach: ex_for (102 B), cont_record (19), ctl_put (7).
+; program.asm's copies are the ELSE arms (a switch-off build is a different
+; machine with no pinned addresses to keep, [[a-scaffolded-build-is-a-different-machine]]).
+; Their stories stay at the original sites.
+ex_for:
+                inc     hl                  ; past the FOR token
+                call    req_letter          ; D-NGRAM: FOR needs a loop variable
+                call    for_name            ; FOR_CUR[0..2] = the key; A = the type
+                cp      DEFTBL_STR          ; `FOR A$=` -- and `DEFSTR A` / `FOR AB=` --
+                jp      z,type_mismatch_error ; are ERR 13, not ERR 2 (rows f.str and
+                                            ; f.defstr, both references). The test is on
+                                            ; the RESOLVED type, not on the `$` char,
+                                            ; because f.defstr says the rule is.
+                call    skip_eq             ; '=' -> $EF
+                jp      nz,stmt_error
+                call    inc_eval            ; DE = initial value, HL advanced
+                push    hl                  ; guard cursor across for_set
+                call    for_set             ; var := initial value
+                pop     hl
+                call    skip_spaces
+                cp      TO_TOKEN           ; TO -> $D9
+                jp      nz,stmt_error
+                call    inc_eval            ; the limit, as a factor leaves it
+                push    hl
+                ld      hl,FOR_LIM
+                call    slot_store          ; D-FORFLOAT: typed, not an int16 tail
+                pop     hl
+                call    set_factyp2         ; the default STEP below is an int16 1
+                call    skip_spaces
+                ; D-NXARY: the default is loaded FIRST and eval overwrites it, so the
+                ; two arms stop needing a join (-2 B). `ld de,nn` touches no flag, so
+                ; the CP below still reads skip_spaces' char. Guarded in both
+                ; directions by rows that already exist: f.step (forvar, `STEP -3` ->
+                ; `-2 `) and m.step (nxlist, a negative step inside a list) take the
+                ; STEP arm, every other loop row takes the default.
+                ld      de,1                ; default step = +1
+                cp      STEP_TOKEN         ; STEP -> $DC (optional)
+                jr      nz,ef_havestep
+                call    inc_eval            ; DE = step
+ef_havestep:
+                push    hl
+                ld      hl,FOR_STEP
+                call    slot_store          ; the step, typed
+                pop     hl
+                ld      (FOR_BODY),hl       ; the resume ptr (loop body)
+                push    hl                  ; D-NXARY: and it rides the stack to the
+                                            ; tail below instead of being re-loaded --
+                                            ; ldir does not touch the stack (-1 B)
+                ld      de,(CURLINE)
+                ld      (FOR_LINE),de       ; CURLINE
+                ; D-CTLPOOL: the FOR_STK_END bound test is gone with the array.
+                ; ⚠️ FSP IS NOT TOUCHED HERE, and that is the invariant the whole
+                ; NEXT walk rests on: the FOR run is [CSP, FSP), so lowering the
+                ; frontier IS the push and the run stays contiguous -- nothing but
+                ; a FOR frame is ever pushed without also moving FSP.
+                ; ⚠️ Row a.dep8 (8 nested loops) is still the row that reaches the
+                ; full-pool arm, and K-NA4 is still its knife.
+                ld      hl,FOR_FRAME
+                call    ctl_alloc
+                jp      c,ef_over           ; collided with the variable area
+                ex      de,hl               ; DE = the frame base (ldir destination)
+                ld      hl,FOR_CUR          ; push the FOR_FRAME-byte frame
+                ld      bc,FOR_FRAME
+                ldir
+                jp      pop_exec            ; HL = loop body -> run it
+cont_record:
+                ld      a,(DIRECTF)
+                or      a
+                ret     nz                  ; direct mode: leave the resume point alone
+                ld      (CONTPTR),hl        ; resume token pointer (0 = fresh-line entry)
+                ld      hl,(CURLINE)
+                ld      (CONTLINE),hl       ; line to resume in (link-field addr)
+                inc     a                   ; A is still 0 -> 1
+                ld      (CONTVALID),a       ; a CONT resume point is now live
+                ret
+ctl_put:
+                ld      a,l
+                ld      (de),a
+                inc     de
+                ld      a,h
+                ld      (de),a
+                inc     de
+                ret
+    ENDIF
 
 
                 include "basic/fatiocreate-body.inc"   ; fat_io_create: body under SUB_BUILD/DISK_BUILD only; main's stub is in the shim block above (SBH-3)

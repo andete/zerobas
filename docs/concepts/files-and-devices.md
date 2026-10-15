@@ -234,14 +234,16 @@ each plus 2 bytes of table; `fch_ctx_addr` finds one, and `VARPTR(#n)`
 sit in fixed per-channel tables (`FCH_MODES`, `FCH_RECLENS`, `FCH_RECNOS` in
 [basic/sysvars.inc](../../basic/sysvars.inc)).
 
-Each disk channel's 50 bytes of FAT bookkeeping live in a row of
-`DSK_ENGTAB`, which the disk ROM reserves at start-up by lowering `HIMEM` by
-750 bytes, the way the CF-3300 reserves its own work area; `t_fch_save` and
-`t_fch_load` swap rows when the program switches channels. Reading disk text
-(the Ctrl-Z rule, the line feed, `EOF`'s look-ahead) is the sub-ROM's SEQIO
-tenant (`seq_peek` in [sub/bload.asm](../../sub/bload.asm)); writing,
-appending and the "is this file already open" check are the disk ROM's
-([disk/kernel.asm](../../disk/kernel.asm)). Random records go through
+Each disk channel's 50-byte row of `DSK_ENGTAB`, which the disk ROM reserves
+at start-up by lowering `HIMEM` by 750 bytes, the way the CF-3300 reserves its
+own work area, holds an MSX-DOS file control block that the disk ROM keeps:
+for every disk mode since S10.C (2026-10-15), so a channel switch copies no
+state, only a random channel's record. Reading disk text (the Ctrl-Z rule, the
+line feed, a numeric item, `EOF`'s look-ahead) is `hk_chin` in
+[disk/fat.asm](../../disk/fat.asm), reached once per byte through `$FE8A` as
+on the CF-3300; the bytes are read 256 at a time into the block's record.
+Writing, appending and the "is this file already open" check are the disk
+ROM's too ([disk/kernel.asm](../../disk/kernel.asm)). Random records go through
 `ex_get` / `ex_put` in [basic/field.asm](../../basic/field.asm) (the channel
 checks) and the disk ROM's record engine (`hk_dget` in
 [disk/kernel.asm](../../disk/kernel.asm)), which keeps each channel's last
