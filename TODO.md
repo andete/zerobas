@@ -3378,6 +3378,94 @@ item — do **one item per session** to keep context lean.
       ~25 s before the next load) and $3297; zerobas skips that pause, reads on
       past the reference's last file and fails. Three titles, three internal
       addresses: $73AC, $6CF3, $3297.
+      ✅ **RULED (Joost, 2026-10-15):** *"Yes, we'll have to figure out those
+      undocumented addresses and support them."* -> filed as **D-BASICINT**
+      (below): characterise each address BLACK-BOX on the VG-8020, implement it
+      at the same address.
+
+- [ ] 🙋 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
+      INTERNALS) ARE NOT AT THEIR ADDRESSES (found 2026-10-15 by D-BASICINT)**
+      🎚️ TIER 1 — happy path: machine code that calls the published BASIC ROM
+      (PROPOSED -- the same class Joost ruled in for the undocumented three;
+      he confirms or re-tiers it in the question below).
+      🙋 **NEEDS-JOOST** — scope and tier (the question at the end).
+      📚 MSX2 Technical Handbook (allowed source B): App. 2 publishes ~70
+      math-pack entries with their contracts ($268C DECSUB ... $383F INTEXP; DAC
+      $F7F6, ARG $F847), ch. 2 eight interpreter internals for CALL-statement
+      extensions (CHRGTR $4666, FRMEVL $4C64, FRMQNT $542F, GETBYT $521C, FRESTR
+      $67D0, PTRGET $5EA4, NEWSTT $4601, READYR $409B). zerobas implements the
+      RST-vector contracts but none of these addresses. The cost is a LAYOUT
+      project: ~80 pinned entries across $268C-$67D0, part inside the repacked
+      C-BIOS region, some 1 B apart (FOUT $3425 / PUFOUT $3426), and the float
+      core's format differs from DAC's BCD (D-ROMSIZE step 4 meets it).
+      🙋 **Joost: in scope, and at which tier?** It shares D-BASICINT's pin
+      mechanism, which comes first either way.
+
+- [ ] 🧩 **D-BASICINT — GAMES CALL UNDOCUMENTED BASIC-ROM INTERNALS ($73AC, $6CF3,
+      $3297): SUPPORT THEM (Joost, 2026-10-15)**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🤖 **AUTONOMOUS** — ruled: *"Yes, we'll have to figure out those undocumented
+      addresses and support them."* (LOOP-RESTART rulings table.)
+      📏 Found by D-TAPELOAD's triage (2026-10-14, the RAM -> ROM transition log,
+      PC values only): Loopy Laundry and Punch & Judy call $73AC from their BLOAD,R
+      binaries, after which the VG-8020 runs a stored BASIC program; Harry Fox
+      calls $6CF3 (the reference then spends ~25 s before the next load) and $3297.
+      🔴 CLEAN ROOM: these are interpreter internals documented only by
+      disassemblies, which docs/allowed-sources.md excludes -- they are
+      characterised as an ORACLE: (1) the entry state each game passes, read on
+      the VG-8020 from registers, the stack words and published work-area cells
+      when PC reaches the address (never a game byte, never a ROM byte, no
+      single-stepping); (2) our own programs and machine code calling the
+      address with controlled inputs, outputs observed (screen, registers,
+      published cells). Then each address gets its own row in a gate.
+      ⚠️ Implementation: the entry must sit at the SAME address in main page 1
+      (0 B free on 2026-10-14) -- a pinned stub at a fixed address, which this
+      tree has never had in page 1; find what lives there first.
+      📏 **ENTRY STATE, MEASURED 2026-10-15** (the triage harness's new CALLAT:
+      registers, 8 stack words, published BASIC pointers at the moment PC reaches
+      the address -- no game byte, no ROM byte): at $73AC both games have just
+      loaded a program and set VARTAB to its end (Loopy Laundry $84E2, Punch &
+      Judy $8A57; CURLIN $FFFF), HL = VARTAB / 0, and the stack top is $6CF3 --
+      they JUMP there from the code BLOAD,R called. Harry Fox jumps to $6CF3 with
+      the return already popped (stack: text pointer, $4601), and to $3297 from a
+      USR-like context (stack: $F428, $4C73 ...).
+      📏 **BLACK-BOX CHARACTERISATION, 2026-10-15** ([`basicint_probe.py`](scratchpad/basicint_probe.py):
+      OUR OWN code on OUR OWN tape, run by `BLOAD"CAS:",R` as the games run
+      theirs; outputs: the screen and PEEKs of published cells;
+      [`basicint_probe.out`](scratchpad/basicint_probe.out),
+      [`basicint_probe2.out`](scratchpad/basicint_probe2.out),
+      [`basicint_fin.out`](scratchpad/basicint_fin.out),
+      [`basicint_pop.out`](scratchpad/basicint_pop.out)):
+      - **$73AC = RUN without an argument**: the program runs from its first
+        line with variables CLEARED (`A=7` before reads 0 after), the DATA
+        pointer RESET (a READ in direct mode first, then READ in the program
+        reads the first item again), ARYTAB / STREND restarted AT VARTAB AS
+        GIVEN (VARTAB moved +64 stays moved -- it does not recompute the
+        program's end), HL ignored (VARTAB or 0, same result), the rest of the
+        calling statement dropped. A garbled line link still runs (relinked, or
+        walked physically -- not separated; the games load valid programs).
+        🔮 "RUN, variables cleared": HIT.
+      - **$6CF3 = BLOAD,R's continuation**: `pop hl / jp $6CF3` from the loaded
+        code runs the rest of the statement exactly as a `ret` does. 🔮 HIT.
+      - **$3297 = `pop hl / ret`**: with a continuation and a marker pushed, it
+        returned to the continuation with HL = the marker and BC / DE untouched
+        (2 B, ending right where the PUBLISHED FIN starts, $3299). 🔮 HIT (after
+        a first `call` showed it never returns to its caller).
+      zerobas: `load error` or a wrong continuation on every row (nothing there).
+      📚 Found on the way, NOT ruled: the MSX2 Technical Handbook (an allowed
+      source) PUBLISHES ~70 math-pack entries (App. 2: DECADD $269A ... FIN
+      $3299, FOUT $3425, FRCINT $2F8A, ...) and 8 interpreter internals (ch. 2:
+      CHRGTR $4666, FRMEVL $4C64, FRMQNT $542F, GETBYT $521C, FRESTR $67D0, PTRGET
+      $5EA4, NEWSTT $4601, READYR $409B). zerobas provides none at those
+      addresses (only the RST-vector contracts). Some sit inside the repacked
+      C-BIOS region ($268C-$2764), some 1 B apart (FOUT / PUFOUT) -> its own item,
+      D-BASICPUB, below.
+      ➡️ **IMPLEMENTATION NEEDS A PIN MECHANISM**: bytes at fixed addresses inside
+      BASIC's own image -- $3297 (low region: `pop hl / ret`, two bytes), $6CF3 (page 1:
+      the load_handoff tail, `pop hl / jp exec_stmt`), $73AC (page 1: `jp` a
+      handler that sets PRGEND from VARTAB and enters RUN). The basic-reloc image
+      is one include stream; this tree pins only C-BIOS-gap islands
+      (basic/islands.asm, tools/build_mainrom.py). Main page 1 was 0 B on 2026-10-14.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -8939,7 +9027,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34472 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34560 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9105,7 +9193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:13967 (T-6FE392)8 (T-529ABE)` from `TODO.md:26761 (T-529ABE)`: a
+      `TODO.md:14055 (T-6FE392)8 (T-529ABE)` from `TODO.md:26849 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14814,7 +14902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26761 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26849 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
