@@ -15,11 +15,17 @@ session and the loop resumes exactly where it stopped.
   `make pin-check` (static, budget = the measured 6 B) and `make
   basicint-acceptance` 7/7. Loopy Laundry runs; Punch & Judy and Harry Fox now
   share ONE failure: a BASIC-level tape load ends in `Device I/O error`.
-- **NEXT, FIRST (TIER 1): D-TAPELOAD class B, `Device I/O error` on the next
-  tape load** (Harry Fox line 50, Punch & Judy line 10, Fruit Panic). Measure
-  with the session triage harness's published-entry log (TAPEBP / TAPRET:
-  caller, CARRY, LOWLIM / WINWID -- never A after TAPIN). If the session died,
-  the harness is gone: it lived in the session scratchpad.
+- **CLASS B MEASURED (2026-10-15) = TWO defects** (TODO D-TAPELOAD, B1 / B2):
+  B1 Punch & Judy = D-TAPLEAD's pinned `mid` residual on a real tape (TAPION
+  locks on long halves, LOWLIM $2A vs $15); B2 Harry Fox = not a tape defect,
+  its BASIC loops into extra loads after the same four files (unlocated).
+- **NEXT, FIRST (TIER 1): D-TAPLEAD's residual -- redesign TAPION's leader
+  measurement** so `tapionlead-acceptance`'s pinned `mid` row flips to SAME
+  (the tape block had 1 B left on 2026-10-14: find room first). Witness: the
+  gate row, then Punch & Judy and all 51 tapes (session harness; if the
+  session died, it is gone -- rebuild it from TODO's description).
+- **THEN B2 (Harry Fox):** locate where its BASIC diverges after file 4
+  (TRANS / CALLAT black-box; never decode the game).
 - **THEN (TODO D-ROMSIZE "S10.D BUILT", its ➡️ NEXT list):** BSAVE-
   to-disk -- measure its hook on the CF-3300 first (a design brief + a draft
   probe were being prepared in the session scratchpad: `bsave_brief.md`,

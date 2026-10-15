@@ -3445,8 +3445,33 @@ item — do **one item per session** to keep context lean.
       Judy `Found:` -- 🔧 2026-10-15, D-BASICINT's pins: Loopy Laundry RUNS, and
       Punch & Judy now stops with `Device I/O error in 10` on its next tape load,
       joining Harry Fox; class B is now "a BASIC-level tape load fails with
-      Device I/O" -- measure it next with the triage harness's published-entry
-      log, never A after TAPIN), C (City Connection, Ninja 2, Oil's Well -- all stop at
+      Device I/O" -- 📏 MEASURED THE SAME DAY, and it is TWO defects, not one
+      (session triage harness, outside the repo: every TAPION return and every
+      TAPIN that set CF, with caller, CF, LOWLIM / WINWID -- never A; and the
+      TRANS log of RAM -> ROM transitions, PC values only):
+      (B1) **Punch & Judy = D-TAPLEAD's pinned residual `mid`, on a real tape.**
+      zerobas's BASIC loader calls TAPION ~2.6 s earlier on the tape than the
+      VG-8020's (the game leaves the motor running while BASIC works), TAPION
+      returns CF=0 with **LOWLIM $2A against every normal lock's $15**, and the
+      next TAPIN sets CF -> `Device I/O error in 10`. The VG-8020 locks at
+      LOWLIM $0D. Same signature as the gate row (41 vs 21): a run of LONG
+      halves taken for the leader's short. -> D-TAPLEAD's residual is now TIER 1.
+      (B2) **Harry Fox is NOT a tape defect.** Both machines load the SAME four
+      files (TAPIN counts 16 / 1336 / 1352 / 10287 / 10303 / 12440 / 12456
+      identical); then the VG-8020 starts the game while zerobas's BASIC goes on
+      loading four MORE files until the tape ends (TAPION CF=1 at t=246 s ->
+      `Device I/O error in 50`). Where its BASIC diverges is not located yet.
+      🔴 AND D-BASICINT'S HARRY FOX PREMISE WAS WRONG: the TRANS log shows the
+      SAME game instruction ($8033) transferring to $6CF3 on the VG-8020 and to
+      $6545 -- our lh_back -- on zerobas, i.e. it RETURNS through BLOAD,R's
+      return address; it does not hard-code $6CF3. The entry-state log saw the
+      reference's own return points. The $6CF3 / $3297 pins are correct (the
+      black-box rows) but Harry Fox does not need them; $73AC IS hard-coded
+      (Loopy Laundry runs because of it). Whether Punch & Judy's $3297 is a
+      return point too is unmeasured. 🔮 Scored: "TAPION returns carry on the
+      BASIC-level load": MISS for Punch & Judy (TAPION locked WRONG with CF=0;
+      TAPIN carried), and for Harry Fox a hit in letter only (the carry is the
+      end of the tape, not the cause), C (City Connection, Ninja 2, Oil's Well -- all stop at
       the same PC), D (Head over Heels `Out of memory`), the `PC 0038` loop
       (Chuckie Egg, BMX Simulator's later crash).
       ✅ **CLASS C FIXED: D-TAPLEAD (2026-10-14) -- `TAPION` LOCKED ONTO DATA.**
@@ -3489,7 +3514,9 @@ item — do **one item per session** to keep context lean.
       [`taplead_knife.out`](scratchpad/taplead_knife.out): K-TL1 (the loop cut,
       byte-neutral -- the first cut added 2 B and overflowed the tape block's
       1-byte margin, NOT SCORED) -> k190 diverges, HIT.
-      ⚠️ **RESIDUAL, PINNED:** `mid` (K = 8, a TAPION deep inside the data) still
+      ⚠️ **RESIDUAL, PINNED:** 🎚️ TIER 1 since 2026-10-15 -- Punch & Judy stops on
+      exactly this (class B1 below: LOWLIM $2A vs $15 on a real tape). `mid`
+      (K = 8, a TAPION deep inside the data) still
       diverges: it measured a run of LONG halves (zero bits) as its short --
       LOWLIM 41 against a leader's 21
       ([`taplead_lowlim.out`](scratchpad/taplead_lowlim.out)) -- so every half
@@ -3663,8 +3690,10 @@ item — do **one item per session** to keep context lean.
       program and stops with `Device I/O error in 10` on the next tape load.
       **Harry Fox is unchanged**: `Device I/O error in 50`, before its jumps, as
       in every triage since 10-14. 🔮 "all three reach the reference's screen":
-      HIT for Loopy Laundry only; the other two are now ONE class -- a BASIC-level
-      tape load that fails with Device I/O -- filed in D-TAPELOAD's class B.
+      HIT for Loopy Laundry only; the other two looked like ONE class (a BASIC-level
+      tape load ending in Device I/O) and measured as TWO -- D-TAPELOAD class B1 /
+      B2, which also corrects this item's Harry Fox premise ($8033 RETURNS through
+      BLOAD,R's return address: $6CF3 on the reference, $6545 here).
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -9226,7 +9255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34759 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34788 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9392,7 +9421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14254 (T-6FE392)8 (T-529ABE)` from `TODO.md:27048 (T-529ABE)`: a
+      `TODO.md:14283 (T-6FE392)8 (T-529ABE)` from `TODO.md:27077 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15101,7 +15130,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27048 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
