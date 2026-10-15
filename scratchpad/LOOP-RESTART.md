@@ -26,8 +26,9 @@ session and the loop resumes exactly where it stopped.
   back to 54 B. ⚠️ PINS ARE RIGID: growth ahead of a pad-0 pin makes pasmo write
   an EMPTY binary (rc 0) -- put new bytes AFTER the pins. NEXT (TIER 1): **Punch & Judy's next
   divergence** -- MEASURED: it is D-WSZERO (the game's 2nd file loads over
-  zerobas's stack at ~$EA02); and **B2 Harry Fox** (normal stacks; its BASIC
-  takes another path -- next: a CURLIN trace on both machines).
+  zerobas's stack at ~$EA02); and **B2 Harry Fox** -- NARROWED: its line 50 builds a DIFFERENT file name
+  on zerobas (FILNAM hash $36B2 vs $34D1; matching rules identical on 11 forms);
+  next: find the machine-dependent input of that name (work-area reads, lines 30-50).
   ⚠️ Compare tape runs ONLY on the same pick file (pick_martos = the m-series).
 - **THEN B2 (Harry Fox):** locate where its BASIC diverges after file 4
   (TRANS / CALLAT black-box; never decode the game).

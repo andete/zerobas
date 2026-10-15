@@ -3474,6 +3474,32 @@ item — do **one item per session** to keep context lean.
       (SP ~$8CA5 after its CLEAR on both) and no RAM code calls the tape; zerobas
       just runs four more header + program loads (sub-ROM loaders) than the
       VG-8020 -- its BASIC takes another path; locate it with a line trace.
+      📏 **B2 NARROWED (2026-10-15): HARRY FOX ASKS FOR A DIFFERENT FILE NAME.**
+      A CURLIN sample every 0.25 s (a line NUMBER, never the program): the
+      VG-8020 leaves line 50 after its second load and runs 140 .. 400 (the next
+      program); zerobas stays on line 50. On zerobas that search wants $41 (BLOAD
+      + a NAME, CAS_WANT_ON) and the header IS $D0, yet it SKIPS (csd_bin) every
+      file to the tape's end. An EQUALITY witness -- a hash of the published
+      FILNAM ($F866, 6 B) at each search, never the bytes -- reads $34D1 on the
+      VG-8020 and $36B2 on zerobas at line 50, against the SAME $AD06 on both for
+      the first (direct) BLOAD, the control. So the program BUILDS a different
+      name here; the search is not at fault: OUR tapes
+      ([`casname_probe.py`](scratchpad/casname_probe.py) ->
+      [`casname_run.out`](scratchpad/casname_run.out),
+      [`casname_run2.out`](scratchpad/casname_run2.out),
+      [`casname_run3.out`](scratchpad/casname_run3.out)) match alike on BOTH
+      machines for `CAS:` / `cas:` / `Cas:`, trailing spaces, a kana name, a
+      name built by an expression, a name longer than six, and skip alike for a
+      space after the colon, a lowercase name, $00 padding and a short prefix.
+      🔮 "a lowercase device separates them": MISS; "zero padding or a prefix":
+      MISS. Also ruled out: the BIOS ID bytes $002B-$002D are never read (a read
+      watch, addresses only). ➡️ Find the machine-dependent INPUT of the name
+      (published work-area reads between lines 30 and 50, values allowed -- they
+      are RAM -- but never the program text).
+      🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
+      -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
+      after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
+      beyond this line until a tester meets it.
       (B2) **Harry Fox is NOT a tape defect.** Both machines load the SAME four
       files (TAPIN counts 16 / 1336 / 1352 / 10287 / 10303 / 12440 / 12456
       identical); then the VG-8020 starts the game while zerobas's BASIC goes on
@@ -9407,7 +9433,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34940 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34966 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9573,7 +9599,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14435 (T-6FE392)8 (T-529ABE)` from `TODO.md:27229 (T-529ABE)`: a
+      `TODO.md:14461 (T-6FE392)8 (T-529ABE)` from `TODO.md:27255 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15282,7 +15308,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27229 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27255 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

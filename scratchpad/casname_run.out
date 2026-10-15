@@ -1,0 +1,7 @@
+ROW up VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+ROW low VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+ROW mixed VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+ROW sp VG=[Skip :AB | Skip :ZZ] ZB=[Skip :AB | Skip :ZZ | Device I/O error] DIVERGES
+ROW lowname VG=[Skip :AB | Skip :ZZ] ZB=[Skip :AB | Skip :ZZ | Device I/O error] DIVERGES
+ROW trail VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+refcache: 0 hit, 12 miss, 12 stored

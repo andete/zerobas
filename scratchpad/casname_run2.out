@@ -1,0 +1,4 @@
+ROW kana VG=[Found: | [OK]] ZB=[Found: | [OK]] SAME
+ROW expr VG=[Found:AB | [OK]] ZB=[Found:AB | [OK]] SAME
+ROW long VG=[Found:ABCDEF | [OK]] ZB=[Found:ABCDEF | [OK]] SAME
+refcache: 0 hit, 6 miss, 6 stored
