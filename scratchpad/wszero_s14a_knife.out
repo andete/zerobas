@@ -1,0 +1,9 @@
+K-WS56: rows ['ctl', 's14eq'] diverging ['s14eq']; predicted ['s14eq'] -> HIT
+K-WS57: rows ['ctl', 's14eq'] diverging ['s14eq']; predicted ['s14eq'] -> HIT
+K-WS58: rows ['ctl', 's14eq'] diverging ['s14eq']; predicted ['s14eq'] -> HIT
+K-WS59: rows ['ctl', 's14eq'] diverging ['s14eq']; predicted ['s14eq'] -> HIT
+K-WS60: build rc=2, S14A_CVT_MUST_BE_EXACTLY_ARGB named in the log; predicted the guard refuses -> HIT
+K-WS61: build rc=2, S14A_DAC_TAIL_GUESTS_MUST_NOT_SHARE_A_BYTE named in the log; predicted the guard refuses -> HIT
+K-WS62: rows ['ctl', 'ovdac'] diverging ['ovdac']; predicted ['ovdac'] -> HIT
+restored: build rc=0; SAME
+rc=0

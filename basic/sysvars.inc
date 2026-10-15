@@ -1905,7 +1905,8 @@ FRETOP          equ     $F69B               ; heap low boundary; heap occupies (
 ; derivation would have dragged RVDESC, STRSCR and the string engine's cells
 ; after it. No code relies on the adjacency (every FRETOP access is a 16-bit
 ; load/store by name).
-RVDESC          equ     $EFF2               ; [len:1][ptr:2] scratch descriptor (3 B)
+RVDESC          equ     $F698               ; [len:1][ptr:2] scratch descriptor (3 B)
+                                ; D-WSZERO S14a: the reference's DSCTMP; TEMPBASE is the temp pool's exclusive top, never a slot (was $EFF2)
                                             ; for a value whose body is NOT in the
                                             ; heap (a token-stream literal / STRSCR) —
                                             ; excluded from GC roots by construction
@@ -3310,7 +3311,8 @@ FWR_DIROFF      equ     $EE36   ; DISK-ONLY: byte offset of that dir entry withi
 ; so visible from main (page-1 resident shims) and the sub-ROM page-1 tenant
 ; (sub/fatprim.asm) alike.
 DISKOP_OP       equ     $EE38   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
-DISKOP_STATUS   equ     $EE39   ; tenant -> main: the disposition (1 B)
+DISKOP_STATUS   equ     $FCAE   ; tenant -> main: the disposition (1 B)
+                                ; D-WSZERO S14a: FLBMEM, idle on zerobas and C-BIOS (was $EE39)
                                 ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
                                 ; or no-match (NZ), per primitive
 DISKOP_A        equ     $EE3A   ; DISK-ONLY: tenant -> main: the primitive's real A output,
@@ -3780,7 +3782,7 @@ PLAY_DEF_VOLUME equ     8
 ; I/O, one subrom_call reaches one tenant), so audio reuses the DISKOP cells --
 ; the same "separate namespace, same cell" precedent as fatprim vs dirverb above.
 AUDIO_VMASK     equ     DISKOP_OP       ; $EE38 main->tenant: voices-present bitmask
-AUDIO_STATUS    equ     DISKOP_STATUS   ; $EE39 tenant->main: 0 ok / nonzero ERR code
+AUDIO_STATUS    equ     DISKOP_STATUS   ; $FCAE tenant->main: 0 ok / nonzero ERR code
 ; play_parse_tenant parse scratch -- transient, dead outside a PLAY parse. Reuses
 ; the DISKOP result cells ($E9FD-FF, audio/disk never concurrent) + the unused
 ; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
@@ -4706,7 +4708,8 @@ ARGB            equ     $F818   ; operand B, FPNUM record (18)
 MULPROD         equ     $F82A   ; fp_mul: 28-digit product (14x14), MSD first (28)
 DIVPAD          equ     $F83E   ; fp_div: divisor zero-padded to 15 digits (15)
 DIVREM          equ     $F7DE   ; fp_div: running remainder, 15 digits (15)
-CVT             equ     $F0E6   ; fac_to_int_strict/addr + flt_to_int16 (float.asm)
+CVT             equ     ARGB   ; fac_to_int_strict/addr + flt_to_int16 (float.asm)
+                                ; D-WSZERO S14a: ARGB is dead at every domain_convert_core (s14_plan.md §2.1) (was $F0E6)
                                 ; shared unpack scratch, FPNUM-shaped (18)
 LHS_FACTYP      equ     $F7F5   ; ev_e/ev_t binary-op sites: the LHS operand's FACTYP,
                                 ; popped off the machine-stack frame (spec §1 bullet 4:
@@ -4748,7 +4751,8 @@ WSRC_TYP        equ     $F11B   ; ...and the address of its type byte, FACTYP
                                 ; or LHS_FACTYP (2)
 FP_OPMODE       equ     $F84C   ; combine_add/combine_sub shared body: 0=add,
                                 ; 1=sub (1)
-CVT_MODE        equ     $F11E   ; domain_convert_core: 0 = the strict signed domain,
+CVT_MODE        equ     $F7FE   ; domain_convert_core: 0 = the strict signed domain,
+                                ; D-WSZERO S14a: DAC tail, over tk_float's TKNZPOS (tk_float calls nothing) (was $F11E)
                                 ; 1=address domain (1)
 PLF_RA          equ     $F837   ; pop_lhs_and_probe: scratch home for its own
                                 ; "call"-pushed return address (2)
@@ -4848,14 +4852,19 @@ RND_SEED        equ     RNDX+1  ; packed BCD, MSD-first, 7 bytes ($F858..$F85E)
 ; F1/F2 blocks above: $F14E.. is unclaimed free RAM below DRVA_DPB ($F195,
 ; disk/init.asm) and above SUB_INT_DELTA (permanent, not transient like DB_CUR).
 VARTYPE         equ     $F168   ; var_name_key: the RESOLVED type (2/4/8) of the
+                                ; D-WSZERO S14a: NOT the DAC tail -- READ resolves its target (this
+                                ; cell) BEFORE tk_float parses the DATA item over TKDCOUNT; the
+                                ; plan's "no call between" was wrong for READ (test_control_flow)
                                 ; just-parsed name's suffix (unsuffixed -> 8,
                                 ; hardcoded double in S3a; the per-letter DEFtbl
                                 ; override is S3b, not here). Read by ev_f_var/
                                 ; ev_f_varptr/ex_let right after var_name_key (1)
-VS_TARGET_TYPE  equ     $F169   ; var_store_fac/var_alloc_or_find (vars.asm):
+VS_TARGET_TYPE  equ     $F800   ; var_store_fac/var_alloc_or_find (vars.asm):
+                                ; D-WSZERO S14a: DAC tail, over TKSTORED (was $F169)
                                 ; the target type parameter, stashed across the
                                 ; coercion calls that clobber A (1)
-VS_INT_VAL      equ     $F16A   ; var_store_fac (vars.asm): the coerced int16 value
+VS_INT_VAL      equ     $F801   ; var_store_fac (vars.asm): the coerced int16 value
+                                ; D-WSZERO S14a: DAC tail, over TKFLAGS / TKPC (was $F16A)
                                 ; (fac_to_int_strict's DE), stashed across the
                                 ; var_alloc_or_find call that CLOBBERS DE for its
                                 ; own room-check arithmetic, so the int write-back
@@ -4938,7 +4947,8 @@ DEFTBL_STR      equ     3       ; an unsuffixed name of this letter is a STRING
 ; --- Math pack slice 1a RAM (repack build only) ------------------------------
 ; docs/spec-basic-math-pack.md §9.2. Own-choice free RAM, the $F16D.. tail
 ; below DRVA_DPB ($F195), immediately following DEFTBL (ends $F153+26=$F16D).
-MC_TYPE         equ     $F16D   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/8),
+MC_TYPE         equ     $F803   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/8),
+                                ; D-WSZERO S14a: DAC tail, over TKLEAD (was $F16D)
                                 ; stashed across fp_sub's forced-double
                                 ; round_and_finalize so INT's post-truncate -1
                                 ; adjustment (negative operand, spec §9.2) can
@@ -5634,4 +5644,18 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF TKOVF != FBUFFR
                 db      S12_TKOVF_LEFT_FBUFFR_0
+    ENDIF
+
+; --- D-WSZERO S14a (2026-10-16): the overlay-fit guards ------------------------
+    IF CVT != ARGB || FPNUM_SIZE != 18
+                db      S14A_CVT_MUST_BE_EXACTLY_ARGB
+    ENDIF
+    IF MC_TYPE + 1 > TKVALEND
+                db      S14A_DAC_TAIL_GUESTS_OVERRAN_INTO_TKVALEND
+    ENDIF
+    IF CVT_MODE != TKNZPOS || VS_TARGET_TYPE != TKSTORED || VS_TARGET_TYPE + 1 != VS_INT_VAL || VS_INT_VAL + 2 != MC_TYPE
+                db      S14A_DAC_TAIL_GUESTS_MUST_NOT_SHARE_A_BYTE
+    ENDIF
+    IF RVDESC != TEMPBASE || TEMPBASE + 3 != FRETOP
+                db      S14A_RVDESC_MUST_BE_DSCTMP_AT_THE_TEMP_POOLS_TOP
     ENDIF

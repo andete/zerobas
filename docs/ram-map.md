@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 150 declared addresses in this project's own workspace `$E000..$F37F` (145 with a machine-readable width), plus **386** in the MSX standard work area at or above `$F380`.
-* **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **54** in the MSX standard work area at or above `$F380`.
+* **basic** — 143 declared addresses in this project's own workspace `$E000..$F37F` (138 with a machine-readable width), plus **387** in the MSX standard work area at or above `$F380`.
+* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -156,8 +156,6 @@ second one is the question a per-component map cannot answer.
 | `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
 | `$EE38` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$EE38` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
-| `$EE39` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $EE39 tenant->main: 0 ok / nonzero ERR code |  |
-| `$EE39` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
 | `$EE3A` | 1 B | `basic` | `DISKOP_A` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
 | `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | DISK-ONLY: tenant -> main: the primitive's real HL output |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
@@ -242,7 +240,6 @@ second one is the question a per-component map cannot answer.
 | `$EFEE` | 1 B | `basic` | `DB_MORE` | 1 = the render ran past the window (1 B) |  |
 | `$EFEF` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
 | `$EFF1` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
-| `$EFF2` | 3 B | `basic` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |
@@ -285,15 +282,10 @@ second one is the question a per-component map cannot answer.
 | `$F0A2` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
 | `$F0A4` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
 | `$F0A6` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
-| `$F0E6` | 18 B | `basic` | `CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
-| `$F11E` | 1 B | `basic` | `CVT_MODE` | domain_convert_core: 0 = the strict signed domain, |  |
 | `$F123` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
 | `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
-| `$F169` | 1 B | `basic` | `VS_TARGET_TYPE` | var_store_fac/var_alloc_or_find (vars.asm): |  |
-| `$F16A` | 2 B | `basic` | `VS_INT_VAL` | var_store_fac (vars.asm): the coerced int16 value |  |
 | `$F16C` | 1 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
-| `$F16D` | 1 B | `basic` | `MC_TYPE` | evmc_sub1 (expr.asm): the operand's FACTYP (4/8), |  |
 | `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
 | `$F180` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
 | `$F192` | 2 B | `basic` | `MATH_N/MATH_SIGN/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
@@ -439,7 +431,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F676` |  | `disk` | `TXTTAB` | sysvar: pointer to the BASIC text base |  |
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
 | `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
-| `$F698` |  | `basic` | `TEMPBASE` | $F698: high boundary = the empty- |  |
+| `$F698` | 3 B | `basic` | `RVDESC/TEMPBASE` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$F69B` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$F69D` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO) |  |
 | `$F69F` | 2 B | `basic` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
@@ -590,16 +582,16 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7F5` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
 | `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7F6` | 8 B | `disk` | `FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
-| `$F7FE` | 1 B | `basic` | `TKNZPOS` | position of the first nonzero digit = f (1) |  |
+| `$F7FE` | 1 B | `basic` | `CVT_MODE/TKNZPOS` | domain_convert_core: 0 = the strict signed domain, |  |
 | `$F7FF` | 1 B | `basic` | `TKDCOUNT` | classification digit count = D, saturating (1) |  |
-| `$F800` | 1 B | `basic` | `TKSTORED` | digits actually written to TKDIG, capped 24 (1) |  |
-| `$F801` | 1 B | `basic` | `TKFLAGS` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
+| `$F800` | 1 B | `basic` | `TKSTORED/VS_TARGET_TYPE` | digits actually written to TKDIG, capped 24 (1) |  |
+| `$F801` |  | `basic` | `TKFLAGS/VS_INT_VAL` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
 | `$F802` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |
-| `$F803` | 1 B | `basic` | `TKLEAD` | computed lead byte (sign+excess-64 exponent) (1) |  |
+| `$F803` | 1 B | `basic` | `MC_TYPE/TKLEAD` | evmc_sub1 (expr.asm): the operand's FACTYP (4/8), |  |
 | `$F804` |  | `basic` | `FOSIGCOUNT/TKVALEND` | significant digit count = s, trailing zeros |  |
 | `$F806` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F806` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
-| `$F818` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
+| `$F818` | 18 B | `basic` | `ARGB/CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |
 | `$F82A` | 24 B | `basic` | `GFX_VBUF/MULCAND/MULPROD/PLY_XSP/RND_ACCLE/TKDIG` | tokeniser/formatter: significant-digit array, $F82A..$F841 |  |
 | `$F82C` | 2 B | `basic` | `MULTPLR/PLY_NUMOVF` | mul16x16_32: multiplier operand, shifted in place (2) |  |
 | `$F82E` |  | `basic` | `MUL32` | mul16x16_32: 32-bit unsigned product, LE |  |
@@ -703,6 +695,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
+| `$FCAE` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $FCAE tenant->main: 0 ok / nonzero ERR code |  |
+| `$FCAE` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
 | `$FCAF` |  | `basic` | `SCRMOD` | current screen mode (0..3) |  |
 | `$FCB2` | 1 B | `basic` | `GFX_B` | border colour B, RANGE-CHECKED against the mode's |  |
 | `$FCB3` | 2 B | `basic` | `GXPOS` | pending plot X (int16 LE) |  |

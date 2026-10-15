@@ -3196,6 +3196,45 @@ item — do **one item per session** to keep context lean.
       resets FN_FEND; ws_shift misses `low(` without a space; disk.rom's BDOS
       console scratch lies inside the FN parameter area (since S6); ram_map's
       DISK-ONLY test read PLY_NUMOVF's own S9b note as a tag (moot: it moved).
+      📐 **S14 DESIGNED (2026-10-16, read-only subagent):**
+      [`s14_plan.md`](scratchpad/s14_plan.md) -- every remaining diskless group
+      has a home: S14a equates (~35 B, 0 ROM), S14b the render window into BUF
+      (~114 B, sub p0 +2: the KEY-bar repaint dispatched before db_begin), S14c
+      a shared BUF+256 slot + MID$ on the stack (~13 B), S14d INPUT$ into the
+      heap, which frees BUF $F567-$F59F for FOR / PRINT USING / DRAW (~90 B,
+      seg C -29 refilled), S14e the math block saved on the stack around the
+      math tenants (39 B, sub p1 ~+99, TIER 5 cost ~1.7k T per call); the S15
+      checklist. Risk filed, not gated: a USR routine that scribbles BUF inside
+      `FOR I=1 TO USR(0)` (TIER 6). If S13 is refused, 21 B (SH_*, WSRC_TYP,
+      FCH_RDMODE) still need a home.
+      ✅ **S14a (2026-10-16): CVT -> ARGB, four singles onto tk_float's DAC-tail
+      bytes, RVDESC -> DSCTMP, DISKOP_STATUS -> FLBMEM; equates only, 27 window
+      bytes.** CVT_MODE / VS_TARGET_TYPE / VS_INT_VAL / MC_TYPE over TKNZPOS /
+      TKSTORED / TKFLAGS..TKPC / TKLEAD (tk_float zeroes them on entry and calls
+      nothing); RVDESC at TEMPBASE, the temp pool's exclusive top; four guards.
+      🔴 **The plan's VARTYPE -> TKDCOUNT was WRONG and the unit tests caught it**
+      (test_control_flow: every READ returned 0): READ resolves its target
+      (VARTYPE) BEFORE tk_float parses the DATA item over TKDCOUNT -- the plan's
+      "no call between" held for var_name_key's other callers, not READ. VARTYPE
+      stays; `ovdac` gained a READ. Lesson in memory
+      (an-overlay-proof-must-walk-the-target-before-the-source). Not done from
+      the plan, unverified: TSV_NAME -> FILNAM (no tape write in the harness to
+      prove CAS_WANT idle), OO_RECLEN_CHAN, deleting STRENG_SPARE (S14c).
+      📏 Rows: `s14eq` (the 27 vacated bytes, VG-8020 4455), `ovdac` (INPUT A%
+      = 2.5E1, a VAL subscript, INT, an FN with an integer formal, READ into a
+      VAL subscript), `ovargb` (every transcendental, ROUNDED to 6 digits: the
+      full results already differ from the VG-8020 in the last digit or two --
+      docs/spec-basic-mathacc.md, not this row's subject). Before, on S12's
+      build ([`wszero_s14a_before.out`](scratchpad/wszero_s14a_before.out),
+      [`wszero_s14a_before2.out`](scratchpad/wszero_s14a_before2.out)): s14eq
+      337 vs 4620 (the 28-byte first cut), ovdac / ovargb SAME after rounding.
+      After: 40/40 SAME ([`wszero_s14a_rows.out`](scratchpad/wszero_s14a_rows.out)).
+      🔪 [`wszero_s14a_knife.py`](scratchpad/wszero_s14a_knife.py) ->
+      [`wszero_s14a_knife.out`](scratchpad/wszero_s14a_knife.out): K-WS56..59
+      (each group back, guards off) -> s14eq: 4/4 HIT; K-WS60 (CVT onto the live
+      ARGA) and K-WS61 (VS_INT_VAL onto TKVALEND) -> the build refuses on the
+      named guard, HIT, HIT; K-WS62 (VARTYPE onto TKDCOUNT, the refuted
+      placement) -> `ovdac` diverges, HIT.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9794,7 +9833,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35327 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35366 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9960,7 +9999,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14822 (T-6FE392)8 (T-529ABE)` from `TODO.md:27616 (T-529ABE)`: a
+      `TODO.md:14861 (T-6FE392)8 (T-529ABE)` from `TODO.md:27655 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15669,7 +15708,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27655 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

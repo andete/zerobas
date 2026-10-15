@@ -18,7 +18,7 @@ subrom_call equ 03B48H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
-DISKOP_STATUS equ 0EE39H   ; tenant -> main: the disposition (1 B)
+DISKOP_STATUS equ 0FCAEH   ; tenant -> main: the disposition (1 B)
 DISK_FCB_NAME equ 0EF49H   ; DISK-ONLY: +1..+11: 8.3 name field (11 bytes)
 FILES_HASPAT equ 0F09DH   ; DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
 FAC equ 0F7F6H   ; float accumulator = DAC: value bytes as tokenised (8)

@@ -155,6 +155,17 @@ _S12_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 27:READ P,Q:FOR I=P TO Q:S=
             "950 DATA " + S12_SPANS_A, "951 DATA " + S12_SPANS_B]
 RUN_GAP.update({"s12gfx": 60.0, "s12num": 60.0, "s12dir": 60.0})
 TAPES["s12dir"] = lambda: tape(*RANGES["s12dir"]) + build_cas_ascii("M", '30 PRINT"[M]"\r\n')
+# D-WSZERO S14a (2026-10-16): CVT -> ARGB, five singles -> the DAC tail (over
+# tk_float's cells), RVDESC -> DSCTMP, DISKOP_STATUS -> FLBMEM (s14_plan.md §3.1).
+# `s14eq` sums the 27 vacated bytes (VG-8020 165 * 27 = 4455; LHS_VARTYPE at
+# $F16C and VARTYPE at $F168 stay -- VARTYPE's DAC-tail home broke READ, which
+# resolves its target before tk_float parses the item); `ovdac` / `ovargb` run
+# the new overlays' users together, READ included.
+for _r in ("s14eq", "ovdac", "ovargb"):
+    RANGES[_r] = RANGES["all"]
+_S14A_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 6:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+             ':PRINT"[S";S;"]":END',
+             "950 DATA 60985,60985,61426,61428,61670,61687,61726,61726,61801,61803,61805,61805"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -363,6 +374,34 @@ PROGRAM_OVFBUF = [
     '20 A=1/3:B$=STR$(-2/3):C=1.5*2.25:D#=-1.23456789012345D-12:PRINT"[Q";A;B$;C;D#;-7/3;"]":END',
     "RUN",
 ]
+PROGRAM_S14EQ = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 A=1.5:B%=A\\1:C=A MOD 1:POKE &HE000+.5,1:H$=HEX$(255.4):X=INT(-1.5):A%=2.5:A#=A%',
+    '30 A$="AB"+"C":PRINT"[L";A$;"]":DEFINT W:PLAY"C":K=VAL("12.5"):GOTO 900',
+] + _S14A_SUM + ["RUN"]
+PROGRAM_OVDAC = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DIM A(3),Q(3):INPUT"[I";A%:A(VAL("1"))=INT(-2.5):B=1.5*2.25+INT(VAL("-0.5")):DEF FNC(X%)=X%\\2:Z=FNC(7.9)',
+    '25 READ R,R$:READ Q(VAL("2"))',
+    '30 PRINT"[D";A%;A(1);B;Z;R;R$;"]":END',
+    '40 DATA 7.5,"X",9',
+    "RUN", "@WAIT40", "2.5E1",
+]
+PROGRAM_OVARGB = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    # rounded to 6 digits: the full 14-digit results differ from the VG-8020's in
+    # the last digit or two on zerobas already (a math-precision difference this
+    # row is not about); an overlay fault garbles far more than that
+    '15 DEF FNR(X)=INT(X*1E6+.5)',
+    '20 PRINT"[M";FNR(SQR(2));FNR(ATN(1))',
+    '30 PRINT"[N";FNR(2^0.5);FNR(EXP(1))',
+    '40 PRINT"[O";FNR(LOG(2));FNR(SIN(1))',
+    '50 PRINT"[P";(1/3)\\1;"]":END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -399,7 +438,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s11gfx": PROGRAM_S11GFX, "s11num": PROGRAM_S11NUM, "s11inp": PROGRAM_S11INP,
             "s12gfx": PROGRAM_S12GFX, "s12num": PROGRAM_S12NUM, "s12inp": PROGRAM_S12INP,
             "s12dir": PROGRAM_S12DIR, "ovbuf": PROGRAM_OVBUF, "ovfn": PROGRAM_OVFN,
-            "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF}
+            "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF,
+            "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB}
 
 
 def tape(lo, hi, fill=0xA5):

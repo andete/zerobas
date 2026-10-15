@@ -1,0 +1,4 @@
+ROW ovargb $ECF8-$F37F VG=[[M 1414214  785398 | [N 1414214  2718282 | [O 693147  841471 | [P 0 ]] ZB=[[M 1414214  785398 | [N 1414214  2718282 | [O 693147  841471 | [P 0 ]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

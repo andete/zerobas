@@ -26,9 +26,10 @@ session and the loop resumes exactly where it stopped.
   `ram_map --floor-top F380`) and **S11** (63 transient cells into idle published
   bytes, scratchpad/s11_plan.md; rows s11gfx / s11num / s11inp, K-WS29..36).
   **S12** (89 cells overlaid on BUF / the FN slots / MULPROD / FBUFFR, 290 B,
-  scratchpad/s12_plan.md; 37 rows, K-WS37..54 incl. negative controls). NEXT:
-  S14 (code, ~287 B: DB_WIN 96, DRAW X-frames 33, FOR frame 29, GFX_DEXP 24, CVT,
-  math cells; BUF has 186 spare B for statement-only cells), S13 (~41 B, 🙋 Joost);
+  scratchpad/s12_plan.md; K-WS37..54) and **S14a** (equates, 27 B; 40 rows,
+  K-WS56..62). NEXT: S14b..e per scratchpad/s14_plan.md (render window, BUF+256
+  slot + MID$, INPUT$ into the heap, the math block), then S15 (the ceiling,
+  once). S13 (~41 B) is 🙋 Joost's call.
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
