@@ -3553,6 +3553,22 @@ item — do **one item per session** to keep context lean.
       handler that sets PRGEND from VARTAB and enters RUN). The basic-reloc image
       is one include stream; this tree pins only C-BIOS-gap islands
       (basic/islands.asm, tools/build_mainrom.py). Main page 1 was 0 B on 2026-10-14.
+      🧰 **THE PLANNER EXISTS (2026-10-15): [`tools/pin_plan.py`](tools/pin_plan.py)**
+      -- instruction boundaries from `pasmo -d`'s own listing (our sources only;
+      the binary is compared byte-for-byte), split points after an unconditional
+      transfer ranked by gap, a `jr` bridge fallback, `db`-skip-trick and
+      `jr`-overflow hazards, refill chunks from AFTER the pin or the other region
+      (a chunk from before it only grows the `ds`), and `--check`, the future
+      gate: pins' bytes present, total pad <= `--budget` (4 B), exit 2 on a stale
+      build. Its first plan (on 00e251e8, read it again, never these numbers):
+      $3297 a 2 B bridge or a 33 B split with exact 33 B refills; $6CF3 a 9 B
+      split; $73AC a 12 B split (0 B once $6CF3's shift lands). One commit later
+      (57b4558a, after D-DSKLOCAL moved code) it read $3297 2 B, $6CF3 2 B, $73AC
+      15 B, page 1 was short by 15 B of 8 free on 2026-10-15 -- the gaps MOVE with every upstream
+      change, which is Joost's growing-hole point made concrete. **Blocker: page 1
+      needs ~6-15 B the slice does not have** -- after S10.D frees page 1, or fill
+      $3297's pad with a page-1 chunk (a move DOWN, check every caller's page-0
+      visibility). `--check` is NOT a gate target until the pins exist (red now).
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -9114,7 +9130,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34647 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34663 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9280,7 +9296,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14142 (T-6FE392)8 (T-529ABE)` from `TODO.md:26936 (T-529ABE)`: a
+      `TODO.md:14158 (T-6FE392)8 (T-529ABE)` from `TODO.md:26952 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -14989,7 +15005,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:26936 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:26952 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
