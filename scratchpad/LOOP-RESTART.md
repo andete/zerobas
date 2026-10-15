@@ -14,6 +14,15 @@ session and the loop resumes exactly where it stopped.
   (967cd255); D-TAPLEAD's residual -- TAPION's cycle verify (347d12fa); D-AVTAK
   -- $73E5 = PLAY's body pinned, A View to a Kill back (9f54906c); Punch & Judy
   measured as D-WSZERO (16fa061a); Harry Fox narrowed (5a01509b, ab5c45ec).
+- **S10.C C1 LANDED (d09acc09, FULL green 2026-10-15):** disk INPUT channels in
+  disk.rom (H.FOPEN selector $49, $FE8A per byte); main page 1 20 -> 171 B, sub
+  page 1 1240 B, pin waste 4 B (`make pin-check --budget 4`). Read the walls with
+  `make basic-reloc`, never from here. NEXT: **D-WSZERO's next phase** (main bytes
+  now exist) -- CLASSIFIED (`scratchpad/wszero_classify.md`, its slice plan S8-S15)
+  and **S8 done** (same-job published cells, equates; `persist` row + K-WS12/13).
+  NEXT: S10 -- the persistent diskless set into PARM1's unattributed
+  $F71C-$F74B, a RUNTIME fill test of that hole first; then S9, S11, S12, S14;
+  the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
   MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**

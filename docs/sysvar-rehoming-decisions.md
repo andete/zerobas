@@ -223,9 +223,21 @@ right about at any moment a `PEEK` could observe it. The one real observer is th
 `HL` and leaves DAC/`VALTYP` untouched, a deliberate own-design divergence.
 Recording it at the equate is this slice's only change for `VALTYP`.
 
+> 🔁 **Superseded for the RAM placement, 2026-10-15 (D-WSZERO S8).** Joost's
+> 2026-10-14 ruling for D-WSZERO (*"Shrink to zero"*: every piece of zerobas state
+> in the diskless program's RAM moves to the reference's own cell for the same job)
+> moved zerobas's expression type `FACTYP` into `VALTYP $F663` (the same 2 / 4 / 8 code). The observability finding above still stands: a `PEEK` at a prompt
+> cannot compare the value.
+
 **`SAVTXT $F6AF`** — pinned at `$F40F` on every reference capture: by the time
 the machine is back at a prompt it points at the line buffer, so its live value
 is not reachable by this instrument, and no BASIC-visible channel reads it.
+
+> 🔁 **Superseded for the RAM placement, 2026-10-15 (D-WSZERO S8).** Joost's
+> 2026-10-14 ruling for D-WSZERO (*"Shrink to zero"*: every piece of zerobas state
+> in the diskless program's RAM moves to the reference's own cell for the same job)
+> moved zerobas's `SAVTXT` to `$F6AF`. The observability finding above still stands: a `PEEK` at a prompt
+> cannot compare the value.
 
 ### ⏸ DEFER — one, with the settling measurement named
 
@@ -237,6 +249,12 @@ route does not rescue it either. It is not "different"; it is **unmeasured**.
 > at a moment the capture can see — i.e. a capture taken **inside** a running
 > statement rather than at a prompt (the `holds`/breakpoint mechanism
 > `basic_probe_bload.py` already uses), not another direct-mode line.
+
+> 🔁 **Superseded for the RAM placement, 2026-10-15 (D-WSZERO S8).** Joost's
+> 2026-10-14 ruling for D-WSZERO (*"Shrink to zero"*: every piece of zerobas state
+> in the diskless program's RAM moves to the reference's own cell for the same job)
+> moved zerobas's `SAVSTK` to `$F6B1`. The observability finding above still stands: a `PEEK` at a prompt
+> cannot compare the value.
 
 ---
 
@@ -294,5 +312,11 @@ Build: **low 23 B, page 1 8 B — unchanged** — and dead-code `0/0` in both bu
 * **`ERRTXT $F6B7`** has no zerobas counterpart as a stored cell (the resume text
   pointer lives in `ERRRESUME[2..3]`). Outside the observable error group
   (`ERR`/`ERL`), so untouched — and now stated rather than absent.
+
+> 🔁 **Superseded for the RAM placement, 2026-10-15 (D-WSZERO S8).** Joost's
+> 2026-10-14 ruling for D-WSZERO (*"Shrink to zero"*: every piece of zerobas state
+> in the diskless program's RAM moves to the reference's own cell for the same job)
+> moved the resume text pointer (`ERRRESUME[2..3]`) into `ERRTXT $F6B7`. The observability finding above still stands: a `PEEK` at a prompt
+> cannot compare the value.
 * The `$E1C5..$E1CB` bytes freed by the four moves are **not reclaimed**;
   `DIRECTF`, `SAVSTK`, `ERRRESUME` and `SAVTXT` still surround them.

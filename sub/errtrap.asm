@@ -73,7 +73,7 @@ scan_stmt_end:
                 ld      hl,(ERRRESUME)
                 ld      (CURLINE),hl        ; restore the erroring line (sse_eol below
                                             ; reads this back to find the NEXT line)
-                ld      hl,(ERRRESUME+2)    ; the erroring statement's own start
+                ld      hl,(ERRRESUME_TXT)    ; the erroring statement's own start
 sse_lp:
                 ld      a,(hl)
                 or      a

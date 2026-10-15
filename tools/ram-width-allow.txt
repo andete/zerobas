@@ -29,7 +29,7 @@ basic DISKOP_A/PLY_NUMOVF disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
 basic FN_STK_FLOOR undeclared
 basic FOSIGCOUNT/TKVALEND disputed
-basic GFX_B/GFX_WE_P disputed
+basic GFX_WE_P overruns
 basic GFX_CPHASE overruns
 basic HORNER_G/MATH_T/RND_LE/SQRT_X disputed
 basic INP_CURSOR/NUMBUF disputed

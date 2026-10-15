@@ -1419,7 +1419,7 @@ raise_error_hl:
                 ld      hl,(CURLINE)         ; capture the resume context (§4) via HL, so DE
                 ld      (ERRRESUME),hl       ; keeps ONELIN for the CURLINE store below
                 ld      hl,(SAVTXT)
-                ld      (ERRRESUME+2),hl
+                ld      (ERRRESUME_TXT),hl
                 ld      (CURLINE),de         ; CURLINE := ONELIN: point the run loop AT the
                                              ; handler line. rp_lp runs CURLINE's own body, so
                                              ; setting CURLINE IS the branch (GOTOFLAG is only
@@ -1736,7 +1736,7 @@ res_ctx:
                 ld      (ONEFLG),a
                 ld      hl,(ERRRESUME)
                 ld      (CURLINE),hl
-                ld      hl,(ERRRESUME+2)
+                ld      hl,(ERRRESUME_TXT)
                 ret
 res_same:                                   ; RESUME / RESUME 0 -> re-run the erroring
                 call    res_ctx             ; statement; falls through to res_setptr

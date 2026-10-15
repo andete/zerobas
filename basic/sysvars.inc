@@ -792,7 +792,8 @@ GFX_WRAPF       equ     $EFC0   ; wedge wraps 0: pair S > pair E lexicographical
 ; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
 ; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
 ; (GFX_PSTK).
-GFX_B           equ     $EFBD   ; border colour B, RANGE-CHECKED against the mode's
+GFX_B           equ     $FCB2   ; border colour B, RANGE-CHECKED against the mode's
+                                  ; D-WSZERO S8: the reference's BRDATR (PAINT's border colour) (was $EFBD)
                                 ; domain before it is stored: 0..255 in SCREEN 2,
                                 ; 0..15 in MULTICOLOUR, else ERR 5 (D-PAINTBORD --
                                 ; ⚠️ this comment used to read "NOT range-checked").
@@ -1126,6 +1127,9 @@ DIRECTF         equ     $EFC1   ; 1 = executing a DIRECT-mode line, 0 = running 
                                 ; error reads it — no cold-boot init needed.
 ; Error-handling S2b (docs/spec-basic-error-handling-s2b-packet.md §3): the
 ; trap + RESUME state. SAVSTK claims the $E1C3/C4 window S2a reserved for it.
+; 🔁 SUPERSEDED 2026-10-15 (D-WSZERO S8, Joost's "Shrink to zero"): SAVSTK IS AT $F6B1, the
+; reference's cell for the same job. The decision below is history: its
+; observability finding stands, its "stays" does not.
 ; ⏸ RE-HOMING DECISION: **DEFER** — stays at $E1C3, published address $F6B1
 ; (docs/sysvar-rehoming-decisions.md §3). ⚠️ It is not "different", it is
 ; UNMEASURED, and the difference matters:
@@ -1139,7 +1143,8 @@ DIRECTF         equ     $EFC1   ; 1 = executing a DIRECT-mode line, 0 = running 
 ;              already uses). Another direct-mode line will not do it.
 ;   ⚠️ Until then, "zerobas' SAVSTK is an SP anchor and the published one might
 ;      not be" stays an OPEN question, not an answered one.
-SAVSTK          equ     $EFC2   ; 2 B: SP anchor for the trap unwind. Written by
+SAVSTK          equ     $F6B1   ; 2 B: SP anchor for the trap unwind. Written by
+                                  ; D-WSZERO S8: the reference's SAVSTK (was $EFC2)
                                 ; run_prog / dispatch_line's direct-exec path
                                 ; before any statement runs; raise_error's trap
                                 ; branch does `ld sp,(SAVSTK)` to reset the stack
@@ -1307,7 +1312,7 @@ ONEFLG          equ     $F6BB   ; 1 B: $FF = currently inside a handler (no RESU
                                 ; probes/basic/basic_probe_error_trap.py, two of
                                 ; which fail if the clear is placed anywhere that
                                 ; also catches a STOP.
-ERRRESUME       equ     $EFC4   ; 4 B: resume context captured at trap time —
+ERRRESUME       equ     $EFC4   ; 2 B (was 4): resume context captured at trap time —
                                 ; [0..1] the erroring statement's CURLINE (link
                                 ; addr), [2..3] the erroring statement's text
                                 ; pointer (from SAVTXT). Read by the RESUME
@@ -1315,6 +1320,12 @@ ERRRESUME       equ     $EFC4   ; 4 B: resume context captured at trap time —
                                 ; trap before RESUME can ever read it — ONEFLG=0
                                 ; guards a premature read via "RESUME without
                                 ; error", ERR 22).
+ERRRESUME_TXT   equ     $F6B7   ; 2 B: ERRRESUME's old [2..3], the erroring statement's
+                                ; text pointer -- D-WSZERO S8: the reference's ERRTXT,
+                                ; the same job (RESUME's text pointer).
+; 🔁 SUPERSEDED 2026-10-15 (D-WSZERO S8, Joost's "Shrink to zero"): SAVTXT IS AT $F6AF, the
+; reference's cell for the same job. The decision below is history: its
+; observability finding stands, its "stays" does not.
 ; ❌ RE-HOMING DECISION: **REJECT-UNOBSERVABLE** — stays at $E1CF, published
 ; address $F6AF (docs/sysvar-rehoming-decisions.md §3).
 ;   SEMANTICS  MEASURED: both references hold a CONSTANT $F40F at $F6AF in all
@@ -1324,7 +1335,8 @@ ERRRESUME       equ     $EFC4   ; 4 B: resume context captured at trap time —
 ;              reachable and no BASIC-visible channel reads it.
 ;   ⚠️ "Never moves" here means UNOBSERVABLE, not INERT. It reads like "nothing
 ;      to honour" and it means the opposite: the question could not be put.
-SAVTXT          equ     $EFC8   ; 2 B: the CURRENT statement's text pointer,
+SAVTXT          equ     $F6AF   ; 2 B: the CURRENT statement's text pointer,
+                                  ; D-WSZERO S8: the reference's SAVTXT (was $EFC8)
                                 ; refreshed at every exec_stmt entry (line start
                                 ; AND after every ':' via ex_sep) — mirrors
                                 ; MSX's own SAVTXT/NEWSTT. This is the ONLY
@@ -1619,12 +1631,18 @@ SWAP_RESIDENT   equ     1
 ; hold the FIRST operand's resolved address and type across the parse of the
 ; second -- and that parse runs a nested eval() for any subscript list. Nothing
 ; in a register survives that, so both live here.
-SW_ADDR         equ     $EFE1   ; 2 B: the operand just resolved
-SW_TYPE         equ     $EFE3   ; 1 B: its type (1 = string, 2/4/8 numeric)
-SW_ADDR1        equ     $EFE4   ; 2 B: operand 1, held across operand 2's parse
-SW_TYPE1        equ     $EFE6   ; 1 B: operand 1's type
-SW_MODE         equ     $EFE7   ; 1 B: 0 = this operand MAY be created, 1 = must exist
-SVT_SP          equ     SW_ADDR ; 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its
+SW_ADDR         equ     $F7BC   ; 2 B: the operand just resolved
+                                  ; D-WSZERO S8: the reference's SWPTMP (SWAP's scratch; BLOAD's CURPTR.. share it, never in one statement) (was $EFE1)
+SW_TYPE         equ     $F7BE   ; 1 B: its type (1 = string, 2/4/8 numeric)
+                                  ; D-WSZERO S8: the reference's SWPTMP+2 (was $EFE3)
+SW_ADDR1        equ     $F7BF   ; 2 B: operand 1, held across operand 2's parse
+                                  ; D-WSZERO S8: the reference's SWPTMP+3 (was $EFE4)
+SW_TYPE1        equ     $F7C1   ; 1 B: operand 1's type
+                                  ; D-WSZERO S8: the reference's SWPTMP+5 (was $EFE6)
+SW_MODE         equ     $F7C2   ; 1 B: 0 = this operand MAY be created, 1 = must exist
+                                  ; D-WSZERO S8: the reference's SWPTMP+6 (was $EFE7)
+SVT_SP          equ     $F7C2 ; 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its
+                                  ; D-WSZERO S8: the reference's SWPTMP+6: NOT under CURPTR..EXECPTR, which BSAVE uses while the SAVE tenant runs (was SW_ADDR)
                                 ; sv_load_error ABORTS (D-DISKFULLRETRY). Borrowed: SWAP is a
                                 ; statement and never runs inside a BSAVE/SAVE/CSAVE
 ; --- D-CLP: the CLEAR string-pool partition RAM (docs/spec-basic-clearpool.md)
@@ -2205,8 +2223,10 @@ GFX_DEXP        equ     GFX_DVLEN + 1   ; $ED67: NUL-terminated copy of the text
                                         ; on a BOUNDED buffer and can never walk off the
                                         ; end of a string body into the heap (24 B)
 GFX_DEXP_CAP    equ     24
-GFX_DFB         equ     GFX_DEXP + GFX_DEXP_CAP   ; $ED7F: 1 = B (blank move) prefix pending (1)
-GFX_DFN         equ     GFX_DFB + 1     ; $ED80: 1 = N (no-update) prefix pending (1)
+GFX_DFB         equ     $FCBB   ; $FCBB: 1 = B (blank move) prefix pending (1)
+                                  ; D-WSZERO S8: the reference's DRWFLG (was GFX_DEXP + GFX_DEXP_CAP)
+GFX_DFN         equ     $ED80     ; $ED80: 1 = N (no-update) prefix pending (1)
+                                  ; D-WSZERO S8: (pinned: was GFX_DFB + 1)
 GFX_DARG        equ     GFX_DFN + 1     ; $ED81: last parsed argument (int16 LE) (2)
 GFX_DDX         equ     GFX_DARG + 2    ; $ED83: this command's dx (int16) (2)
 GFX_DDY         equ     GFX_DDX + 2     ; $ED85: ...dy (2)
@@ -2337,12 +2357,14 @@ TGT_ADDR        equ     RDV_MODE + 1    ; $ED95: element address, or 0 = scalar 
 ; ~9 B this window could not afford); the token-peek needs none of that, so it
 ; is what shipped.
 ;
-GFX_DSCALE      equ     TGT_ADDR + 2    ; $ED97: persistent scale, quarter units,
+GFX_DSCALE      equ     $FCBC    ; $FCBC: persistent scale, quarter units,
+                                  ; D-WSZERO S8: the reference's DRWSCL (was TGT_ADDR + 2)
                                         ; 0 = NEVER SET (D-DSCALE): a distinct
                                         ; state from S4, in which no scaling runs
                                         ; at all. `gdo_s` maps S0 to 4, so no
                                         ; explicit S can write the sentinel. (1)
-GFX_DANGLE      equ     GFX_DSCALE + 1  ; $ED98: persistent angle 0..3 (1)
+GFX_DANGLE      equ     $FCBD  ; $FCBD: persistent angle 0..3 (1)
+                                  ; D-WSZERO S8: the reference's DRWANG (was GFX_DSCALE + 1)
                                         ; Boot 0
                                         ; and an explicit `A0` are the SAME state
                                         ; (measured, d.a0.32k): no sentinel here.
@@ -2350,7 +2372,8 @@ GFX_DANGLE      equ     GFX_DSCALE + 1  ; $ED98: persistent angle 0..3 (1)
 ; `VDP(n)=v` / `BASE(n)=v` write, handed to the tenant, which owns the domain checks
 ; and the register programming. Dead outside such a statement. Below BASIC_WS_CEIL,
 ; which the guard below enforces (the disk-cell wall DISKROM_CELLS_LO until 2b).
-GFX_G8N         equ     GFX_DANGLE + 1  ; $ED99: written index n (int16 LE) (2)
+GFX_G8N         equ     $ED99  ; $ED99: written index n (int16 LE) (2)
+                                  ; D-WSZERO S8: (pinned: was GFX_DANGLE + 1)
 GFX_G8V         equ     GFX_G8N + 2     ; $ED9B: written value (int16 LE) (2)
 ; --- D-PAINTMC: PAINT's COORDINATE PITCH, 1 (SCREEN 2) or 4 (MULTICOLOUR) -----
 ; sub/graphics.asm gfx_paint_op writes it once per statement; the flood's seven
@@ -2910,8 +2933,10 @@ RESUMEFLAG      equ     $F702   ; 1 = resume at RESUMEPTR (set by RETURN / NEXT)
 ; next line for a Ctrl-STOP between lines). CONTVALID = 1 means "a CONT resume
 ; point is live". Editing the program (store_line / NEW) clears CONTVALID so CONT
 ; then errors with "Can't CONTINUE", matching the reference's behaviour.
-CONTLINE        equ     $EF3D   ; saved CURLINE for CONT (2)
-CONTPTR         equ     $EF3F   ; saved resume token pointer for CONT (2)
+CONTLINE        equ     $F6BE   ; saved CURLINE for CONT (2)
+                                  ; D-WSZERO S8: the reference's OLDLIN (holds the line's link address here, not its number) (was $EF3D)
+CONTPTR         equ     $F6C0   ; saved resume token pointer for CONT (2)
+                                  ; D-WSZERO S8: the reference's OLDTXT (was $EF3F)
 CONTVALID       equ     $EF41   ; 1 = a CONT resume point is valid (1)
 ; Extension-ROM INIT scan scratch (initext.asm). Used ONCE at INIT, entirely
 ; under `di`, and dead afterwards; free page-3 RAM in the $E0D5..$E0FF gap
@@ -2941,8 +2966,10 @@ DISK_FCB_NAME   equ     DISK_FCB + 1    ; +1..+11: 8.3 name field (11 bytes)
 ; slot capture). DISKSLOT_OK = 1 once a slot was recorded. Free page-3 RAM in the
 ; $E0E7.. gap (after the name block, before LINEBUF at $E100). See basic/
 ; PROVENANCE.md §disk-ROM slot capture.
-DISKSLOT        equ     $EF54   ; disk ROM slot id for CALSLT (1)
-DISKSLOT_OK     equ     $EF55   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+DISKSLOT        equ     $FB22   ; disk ROM slot id for CALSLT (1)
+                                  ; D-WSZERO S8: the reference's DRVINF+1 (the interface's slot) (was $EF54)
+DISKSLOT_OK     equ     $FB21   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+                                  ; D-WSZERO S8: the reference's DRVINF (drive count; every reader tests nonzero) (was $EF55)
 ; BSAVE/BLOAD ",S" VRAM select (page $E0 free gap $E0E9..$E0EC; dead outside a
 ; BSAVE/BLOAD) -- also cassette ASCII load's CAL_CURHI (below): a BSAVE/BLOAD
 ; ",S" and a cassette ASCII LOAD/CLOAD never run at the same time, so the two
@@ -3044,7 +3071,8 @@ DSV_END         equ     $EF5B   ; SAVE/BSAVE: last source byte addr, inclusive (
 ; CSAVE/BSAVE). All state lives in RAM — TAPOUT clobbers every register, so no
 ; register can survive a TAPOUT call.
 TSV_PTR         equ     $EF5D   ; tape save: current source-byte pointer (2)
-TSV_END         equ     $EF5F   ; tape save: last source-byte address, inclusive (2)
+TSV_END         equ     $F87D   ; tape save: last source-byte address, inclusive (2)
+                                  ; D-WSZERO S8: the reference's SAVEND (was $EF5F)
 TSV_CNT         equ     $EF61   ; tape save: loop counter (1)
 TSV_NAME        equ     $EF62   ; tape save: 6-char filename buffer (space-padded) (1 B)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
@@ -3461,9 +3489,11 @@ RN_LINE         equ     SL_SIZE         ; RENUM: the OLD number of the line it i
 ; target (the RAM-scratch header above says so in as many words), and a 2-byte
 ; cell at $E00F runs straight over ERRMARK at $E010.
 RN_PTR          equ     $EE6D           ; RENUM: the reference-pass cursor (2)
-RN_NEW          equ     $EE6F           ; RENUM: first new line number (2)
+RN_NEW          equ     $F6AB           ; RENUM: first new line number (2)
+                                  ; D-WSZERO S8: the reference's AUTLIN (shared with AUTO's AU_NUM) (was $EE6F)
 RN_OLD          equ     $EE71           ; RENUM: old line to start renumbering at (2)
-RN_INC          equ     $EE73           ; RENUM: increment (2)
+RN_INC          equ     $F6AD           ; RENUM: increment (2)
+                                  ; D-WSZERO S8: the reference's AUTINC (shared with AUTO's AU_INC) (was $EE73)
 ; AUTO's two values, a FIFTH namespace on RENUM's own cells: one subrom_call
 ; reaches one LE_OP, and an AUTO session and a RENUM cannot be in flight
 ; together (each ends the line and the program on its way out).
@@ -3493,7 +3523,8 @@ RL_AUTO         equ     $EE75           ; read_line: 1 = AUTO's polling mode (1)
 ; both "zero on CR only" and "zero on CR or LF" satisfy R-LS3 (after CR/LF the
 ; count is 0 either way). LF is simply not counted as an advance here; that is a
 ; CHOICE, recorded as one, not a measured rule.
-LPTPOS          equ     $EE76           ; printer head column, 0-based (1)
+LPTPOS          equ     $F415           ; printer head column, 0-based (1)
+                                  ; D-WSZERO S8: the reference's LPTPOS (C-BIOS's LPTOUT zeroes it on an abort, as the reference) (was $EE76)
 
 ; --- Cassette name-match/skip tenant ABI (SUBROM_IDX_CASMATCH, docs/spec-
 ; eviction-g5-space.md): reuses the SAME DISKOP_STATUS RAM cell, ANOTHER
@@ -4457,7 +4488,8 @@ RESTORE_LINE    equ     $F6A1   ; link-field a READ seeks DATA from when unposit
 ; or not zerobas-disk is present in the combined machine. "own choice — free
 ; RAM" (like every other cell in this section), just relocated off the
 ; spec's suggested addresses to avoid the collision.
-FACTYP          equ     $F09E   ; 2=int / 4=single / 8=double (1)
+FACTYP          equ     $F663   ; 2=int / 4=single / 8=double (1)
+                                  ; D-WSZERO S8: the reference's VALTYP (the same 2/4/8 code; = VALTYP_PUB) (was $F09E)
 ; TKOVF: the tokeniser's crunch-time reject -- 0 = ok, else the ERR CODE (6 a
 ; float literal, 25 body too long). dl_overflow stores it into ERRFLG
 ; unconditionally (D-MSGMIGRATE). ⚠️ The width lives on the equ line on purpose:

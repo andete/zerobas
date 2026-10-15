@@ -1,0 +1,377 @@
+$ECF8    2  ISRCH_A/TXTMAX_NODISK                     2024 resolved A-operand body base (2 B)
+$ECFA    2  ISRCH_B                                   2025 $ECFA: resolved B-operand body base (2 B)
+$ECFC    1  GFX_BAD/STRENG_SPARE                       105 VRAM read-back mismatch count (1)
+$ECFD    2  MIDS_DEST                                  929 MID$ statement: the target descriptor's address (2 B)
+$ECFF    1  GFX_POVF                                  2102 1 = the stack overflowed; resident raises ERR 7 (1)
+$ED00    1  GFX_PTESTX                                2103 gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
+$ED01    1  GFX_PTESTY                                2104 ...Y (1)
+$ED02    1  GFX_PFY                                   2105 gfx_paint_flood/_process: current span's row (1)
+$ED03    1  GFX_PXL                                   2106 ...current span's left column (1)
+$ED04    1  GFX_PXR                                   2107 ...current span's right column (1)
+$ED05    1  GFX_PSCX                                  2108 gfx_paint_process/_scan_row: scan cursor column (1)
+$ED06    1  GFX_PSCY                                  2109 gfx_paint_scan_row: the neighbour row being scanned (1)
+$ED07    1  GFX_PSPA                                  2110 gfx_paint_scan_row: pending sub-span's start column (1)
+$ED08    4  GFX_CS_M1/GFX_PSTK/GFX_VBUF               2174 $ED08: D-ARCMASK: 2*M*M during the M
+$ED0C    4  GFX_CS_M2                                 2176 $ED0C: r*r for the same compare (4)
+$ED10    2  GFX_PSP                                   2131 the span stack's top (lowest used byte) (2)
+$ED12    2  GFX_PBASE                                 2132 its empty position = SP - GFX_PAINT_MARGIN (2)
+$ED14   20  GFX_PFLOOR                                2133 the lowest byte it may use = ARYEND + 2 (2)
+$ED28    2  GFX_SN                                    2232 $ED28: SPRITE$ entry index / PUT SPRITE plane (2)
+$ED2A    1  GFX_VLEN                                  2233 $ED2A: the entry size the tenant read back (1)
+$ED2B    2  GFX_SDESC                                 2234 $ED2B: SPRITE$(n)= RHS string descriptor
+$ED2D    2  GFX_SC                                    2236 $ED2D: PUT SPRITE colour (2). x/y need no cells -- (2 B)
+$ED2F    2  GFX_SPATN                                 2240 $ED2F: ...pattern number (2)
+$ED31    1  GFX_SSIZE                                 2241 $ED31: SCREEN's sprite-size argument while a mode
+$ED32    1  GFX_SARGN                                 2243 $ED32: how many extra SCREEN arguments have been
+$ED33    1  GFX_SFLAGS                                2245 $ED33: which arguments were GIVEN -- (1 B)
+$ED34    2  GFX_DPTR                                  2183 $ED34: parse cursor in the current frame (2)
+$ED36    2  GFX_DEND                                  2184 $ED36: one past the current frame's last byte (2)
+$ED38    1  GFX_DFTOP                                 2185 $ED38: X-frame stack depth (1)
+$ED39   32  GFX_DFSTK                                 2187 $ED39: saved [ptr][end] per outer frame --
+$ED59    2  GFX_DCMD                                  2192 $ED59: current command's start cursor,
+$ED5B    1  GFX_DSUBN                                 2194 $ED5B: substitutions RESOLVED for this command (1)
+$ED5C    1  GFX_DSUBI                                 2195 $ED5C: substitutions SEEN so far this re-parse (1)
+$ED5D    4  GFX_DSUB                                  2196 $ED5D: the resolved values, 2 slots (M takes two) (4)
+$ED61    1  GFX_DSUBLEN                               2197 $ED61: slot 0's string length (X only) (1)
+$ED62    1  GFX_DREQ                                  2198 $ED62: tenant->resident: 0 = done, 1 = resolve an
+$ED63    1  GFX_DRESUME                               2200 $ED63: resident->tenant: 1 = resuming (1)
+$ED64    2  GFX_DVAL                                  2201 $ED64: the resolved int16, or a string body ptr (2)
+$ED66    1  GFX_DVLEN                                 2202 $ED66: that string's length (1)
+$ED67   24  GFX_DEXP                                  2203 $ED67: NUL-terminated copy of the text between
+$ED7F    1  GFX_DFB                                   2208 $ED7F: 1 = B (blank move) prefix pending (1)
+$ED80    1  GFX_DFN                                   2209 $ED80: 1 = N (no-update) prefix pending (1)
+$ED81    2  GFX_DARG                                  2210 $ED81: last parsed argument (int16 LE) (2)
+$ED83    2  GFX_DDX                                   2211 $ED83: this command's dx (int16) (2)
+$ED85    2  GFX_DDY                                   2212 $ED85: ...dy (2)
+$ED87    2  GFX_DTX                                   2213 $ED87: move target X (2)
+$ED89    2  GFX_DTY                                   2214 $ED89: ...Y (2)
+$ED8B    2  GFX_DTMP                                  2215 $ED8B: mul/rotate/sign scratch (2)
+$ED8D    2  GFX_DSP                                   2216 $ED8D: tenant entry SP -- an error deep in the (2 B)
+$ED8F    2  DEFT_PTR/RDV_LINE                         2272 $ED8F: token cursor in AND out (2)
+$ED91    2  RDV_VAL                                   2280 $ED91: the value read (int16 LE) (2)
+$ED93    1  RDV_ST                                    2281 $ED93: tenant -> main STATUS (1): (1 B)
+$ED94    1  RDV_MODE                                  2291 $ED94: main -> tenant MODE (1 B), D-READVAR:
+$ED95    2  TGT_ADDR                                  2313 $ED95: element address, or 0 = scalar (2)
+$ED97    1  GFX_DSCALE                                2340 $ED97: persistent scale, quarter units,
+$ED98    1  GFX_DANGLE                                2345 $ED98: persistent angle 0..3 (1)
+$ED99    2  GFX_G8N/GFX_PPITCH                        2353 $ED99: written index n (int16 LE) (2)
+$ED9B    2  GFX_G8V                                   2354 $ED9B: written value (int16 LE) (2)
+$ED9D   96  DB_WIN                                    2476 the render window, one page (96 B)
+$EDFD    1  BASIC_WS_CEIL/FAT_SECPERCLUS              2046 NOT-A-CELL: basic-core RAM stays below basic's FAT block
+$EDFE    2  FAT_FATSTART                              3216 first FAT sector (= reserved sectors) (word)
+$EE00    2  FAT_FIRSTROOT                             3217 first root-directory sector (word)
+$EE02    2  FAT_TOTCLUS                               3218 total clusters + 2, from fat_mount (word; D-WCACHE W1 --
+$EE04    2  FAT_FIRSTDATA                             3220 first data sector (word)
+$EE06    2  FAT_CURCLUS/FCH_STATE0                    3221 current cluster in the open file's chain (word)
+$EE08    1  FAT_CLUSSEC                               3222 sector index within current cluster (byte)
+$EE09    2  FAT_FIRSTCLUS                             3223 first cluster of the found file (word)
+$EE0B    4  FAT_FILESIZE                              3224 file size in bytes (4-byte LE)
+$EE0F    1  FAT_NUMFATS                               3225 number of FAT copies (byte; from BPB +16) (1 B)
+$EE10    2  FAT_SECPERFAT                             3226 sectors per FAT copy (word; from BPB +22)
+$EE12    1  FAT_PARITY                                3228 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B)
+$EE13    2  FAT_BYTEIDX                               3229 byte index within a FAT sector (word, 0..511)
+$EE15    2  FAT_FATSEC                                3230 FAT sector currently read (word)
+$EE17    1  FAT_B0                                    3231 first FAT byte of a 12-bit entry (1 B)
+$EE18    1  FAT_B1                                    3232 second FAT byte of a 12-bit entry (1 B)
+$EE19    2  FAT_NAMEPTR                               3233 -> 11-byte search name (word)
+$EE1B    2  FAT_DIRSEC                                3234 current root-dir sector being scanned (word)
+$EE1D    2  FAT_DIRREM                                3235 root-dir sectors remaining to scan (word)
+$EE1F    2  FAT_WRTMP                                 3236 transient scratch for the FAT12 write helpers (word)
+$EE21    2  FAT_WRTMP2                                3237 second transient (free-cluster scan cached sector) (2 B)
+$EE23    2  FREAD_OFF                                 3241 next byte index within FSECTOR_BUF (0..512) (word)
+$EE25    4  FREAD_LEFT                                3242 bytes of the open file still undelivered (4-byte LE)
+$EE29    2  FWR_CLUS                                  3244 chain-tail cluster currently being filled (word)
+$EE2B    2  FWR_FIRST                                 3245 file's first cluster, 0 until first allocated (word)
+$EE2D    1  FWR_SECIDX                                3246 sector index within the current cluster (byte)
+$EE2E    2  FWR_BUFLEN                                3247 bytes currently buffered in FSECTOR_BUF (word, 0..512)
+$EE30    4  FWR_BYTES                                 3248 total bytes written so far = final file size (4-byte LE)
+$EE34    2  FWR_DIRSEC                                3249 logical sector holding the open file's dir entry (word)
+$EE36    2  FWR_DIROFF                                3250 byte offset of that dir entry within its sector (word)
+$EE38    1  AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP     3729 $EE38 main->tenant: voices-present bitmask
+$EE39    1  AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STAT  3730 $EE39 tenant->main: 0 ok / nonzero ERR code
+$EE3A    1  DISKOP_A/PLY_NUMOVF                       3267 tenant -> main: the primitive's real A output,
+$EE3B    2  BN_PTR/DISKOP_HL                          3520 main <-> tenant: filename ptr (in) /
+$EE3D   16  FCH_MODES                                  872 16 B ($EE3D..$EE4C)
+$EE4D   32  FCH_RECLENS                               3974 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
+$EE6D    2  RN_PTR                                    3463 RENUM: the reference-pass cursor (2)
+$EE6F    2  AU_NUM/RN_NEW                             3470 AUTO: the line number being prompted (2)
+$EE71    2  RN_OLD                                    3465 RENUM: old line to start renumbering at (2)
+$EE73    2  AU_INC/RN_INC                             3471 AUTO: the increment (2)
+$EE75    1  RL_AUTO                                   3476 read_line: 1 = AUTO's polling mode (1)
+$EE76    1  LPTPOS                                    3496 printer head column, 0-based (1)
+$EE77    2  GP_SRC                                    4289 pass cursor into FSECTOR_BUF (2)
+$EE79    2  GP_LEFT                                   4290 record bytes still to move, ends $EA3E (2 B)
+$EE7B    2  CLR_SAVE                                  4304 fg+bg, in flight across a COLOR statement (2)
+$EE7D   32  FCH_RECNOS                                3978 32 B ($EE7D..$EE9C): per-channel record number
+$EE9D   32  PU_NUM                                    3950 PRINT USING numeric render buffer, 0-terminated (32 B)
+$EEBD    1  ERRMARK                                    847 error landmark marker byte (1 B)
+$EEBE    1  FCH_ACTIVE                                 865 channel live in the engine globals, 0 = none (1)
+$EEBF    1  TKLNUM                                     883 tokeniser: 1 = line-number mode is armed (1)
+$EEC0    1  INDLR_N                                    884 INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
+$EEC1    2  MRG_PTR                                    885 MERGE: write cursor into LINEBUF for the current line (2)
+$EEC3    2  FLD_CUROFF                                 889 FIELD: running byte offset into the record buffer (2)
+$EEC5    1  FLD_CHAN                                   890 FIELD/LSET/RSET: the channel being fielded (1)
+$EEC6    1  LRSET_JUST                                 891 LSET/RSET: 0 = left-justify, 1 = right-justify (1)
+$EEC7    1  LRSET_W                                    892 LSET/RSET: destination field width (1)
+$EEC8    2  LRSET_DEST                                 893 LSET/RSET: destination ADDRESS of the store (2). (2 B)
+$EECA   32  PU_DIG                                    3951 D-PUEXP: flt_fmt's significant digits, point removed (32 B)
+$EEEA    2  CSR_ADDR                                  4241 VRAM address of the cell the cursor covers (2 B)
+$EEEC    1  CSR_CHAR                                  4242 the character it covers, put back on removal (1 B)
+$EEED    1  CSR_ON                                    4243 1 while the cursor is shown, else 0 (1 B)
+$EEEE   11  COPY_SRC                                  4248 the source's 11-byte 8.3 name field
+$EEF9    2  COPY_CLUS                                 4249 the source's first cluster (word)
+$EEFB    4  COPY_LEFT                                 4250 bytes still to copy (4-byte LE)
+$EEFF    2  RL_HL                                     4253 main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
+$EF01    1  RL_STAT                                   4254 tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
+$EF02    1  RL_ROW0                                   4255 the row where input began (1-based; 0 once scrolled off) (1)
+$EF03    1  RL_COL0                                   4256 the column where input began, after any prompt (1)
+$EF04    1  RL_LAST                                   4257 the logical line's last row at Enter (1)
+$EF05    1  RL_KEY                                    4258 main -> tenant: the key CHGET returned (main waits in CHGET, as before
+$EF06    4  DISKOP_ERR                                4262 tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+$EF0A    3  FOR_CUR                                   4112 scratch: a working copy of one FOR frame (25), and
+$EF0D    9  FOR_LIM                                   4119 the limit slot [type][8] (9)
+$EF16    9  FOR_STEP                                  4120 the step slot [type][8] (9)
+$EF1F    2  FOR_LINE                                  4121 CURLINE of the FOR (2)
+$EF21    2  FOR_BODY                                  4122 the loop body's text pointer (2)
+$EF23   10  FOR_SIGN                                  4123 NEXT's scratch: the step's sign byte (1)
+$EF2D    8  INP_CURSOR/NUMBUF                          936 console INPUT LINEBUF read pointer (2 B, aliases NUMBUF)
+$EF35    1  VALTYP                                    1724 0 = numeric result, 1 = string result (1 byte)
+$EF36    2  STRPTR                                    1725 pointer to the [len][bytes] descriptor (2 bytes)
+$EF38    1  PRDEST                                    1731 PRINT destination: 0=screen, 1=file channel (1)
+$EF39    1  PRDEV                                     1738 PRINT# device sink selector (1)
+$EF3A    1  OO_DEVTYPE                                1739 OPEN device-channel type being parsed (transient, 1)
+$EF3B    2  ARL_GETBYTE                               1749 ascii_read_lines byte-source vector (2)
+$EF3D    2  CONTLINE                                  2913 saved CURLINE for CONT (2)
+$EF3F    2  CONTPTR                                   2914 saved resume token pointer for CONT (2)
+$EF41    1  CONTVALID                                 2915 1 = a CONT resume point is valid (1)
+$EF42    1  SCAN_PRIM                                 2920 primary slot currently being scanned (1)
+$EF43    1  SCAN_SLOT                                 2921 candidate slot id for RDSLT/CALSLT (1)
+$EF44    2  SCAN_INIT                                 2922 candidate ROM's INIT entry address (2)
+$EF46    2  SCAN_IY                                   2923 CALSLT slot word: high byte = slot (IYh) (2)
+$EF48    1  DISK_FCB/DISK_FCB_DRV                     2933 scratch name block ($E0DB.., 12 bytes)
+$EF49   11  DISK_FCB_NAME                             2935 +1..+11: 8.3 name field (11 bytes)
+$EF54    1  DISKSLOT                                  2944 disk ROM slot id for CALSLT (1)
+$EF55    1  DISKSLOT_OK                               2945 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+$EF56    1  CAL_CNT                                   3003 cassette ASCII load: read position in the
+$EF57    1  CAL_NEEDFILL                              3005 cassette ASCII load: whether the buffer CAL_CURHI (1 B)
+$EF58    1  CAL_SAVE/CAS_WCNT                         3022 cassette ASCII load: parked byte across a prefetch (1)
+$EF59    2  DSV_PTR                                   3041 SAVE: current source byte pointer (2)
+$EF5B    2  DSV_END                                   3042 SAVE/BSAVE: last source byte addr, inclusive (2)
+$EF5D    2  SSE_OUT/TSV_PTR                           3071 tenant -> main: next statement's start, or
+$EF5F    2  TSV_END                                   3047 tape save: last source-byte address, inclusive (2)
+$EF61    1  FMT_GEOMSEL/TSV_CNT                       3057 main -> tenant: 0 = 360k, 1 = 720k (1)
+$EF62    1  FMT_RESULT/TSV_NAME                       3058 tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+$EF63    1  FILES_ENTIDX/IN_RDLEN                     3078 FILES: dir entry index 0..15 within a sector (1)
+$EF64    1  FCH_NUM                                   3083 open channel's file number, 0 = none open (1)
+$EF65    1  FCH_MODE                                  3084 open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
+$EF66    1  FCH_RDMODE                                3085 current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+$EF67    2  GFX_X1                                     709 LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
+$EF69    2  GFX_Y1                                     710 LINE endpoint 1 Y (int16 LE)
+$EF6B    2  GFX_X2                                     711 LINE endpoint 2 X (int16 LE)
+$EF6D    2  GFX_Y2                                     712 LINE endpoint 2 Y (int16 LE)
+$EF6F    1  GFX_MODE                                   713 GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
+$EF70    2  GFX_CX                                     714 Bresenham: current pixel X (int16, may be off-screen) (2)
+$EF72    2  GFX_CY                                     715 Bresenham: current pixel Y (int16) (2)
+$EF74    2  GFX_ERR                                    716 Bresenham: error accumulator, in [0,DMAJ) (2)
+$EF76    2  GFX_DMAJ                                   717 Bresenham: major-axis delta (2)
+$EF78    2  GFX_DMIN                                   718 Bresenham: minor-axis delta (2)
+$EF7A    2  GFX_CNT                                    719 Bresenham: major steps still to take (2)
+$EF7C    1  GFX_STEEP                                  720 Bresenham: 0 = x-major, 1 = y-major (1)
+$EF7D    2  GFX_SMIN                                   721 Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
+$EF7F    1  GFX_SDX                                    722 init scratch: sign of (x2-x1), $01/$FF (1)
+$EF80    1  GFX_SDY                                    723 init scratch: sign of (y2-y1), $01/$FF (1)
+$EF81    2  GFX_TX1                                    724 box: stashed corner 1 X (2)
+$EF83    2  GFX_TY1                                    725 box: stashed corner 1 Y (2)
+$EF85    2  GFX_TX2                                    726 box: stashed corner 2 X (2)
+$EF87    2  GFX_TY2                                    727 box: stashed corner 2 Y (2)
+$EF89    2  GFX_FILLCNT                                728 box fill: scanlines remaining (2)
+$EF8B    2  GFX_YSTEP                                  729 box fill: row step, $0001/$FFFF (2)   -> ends $E126 (2 B)
+$EF8D    2  GFX_CXC                                    737 centre X (int16 LE) (2)
+$EF8F    2  GFX_CYC                                    738 centre Y (int16 LE) (2)
+$EF91    2  GFX_R                                      739 radius (int16, >=0 -- resident guards G4-rneg) (2)
+$EF93    1  GFX_ASPMAJ                                 740 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
+$EF94    2  GFX_ASPS                                   741 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
+$EF96    1  GFX_ARCF                                   742 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
+$EF97    2  GFX_SVX                                    743 start boundary vector X, screen-offset scaled ints (2)
+$EF99    2  GFX_SVY                                    744 start boundary vector Y (2)
+$EF9B    2  GFX_EVX                                    745 end boundary vector X (2)
+$EF9D    2  GFX_EVY                                    746 end boundary vector Y (2)
+$EF9F    1  GFX_FULLW                                  747 full-wrap flag (0/1): the two boundaries land in the
+$EFA0    2  GFX_QX                                     752 midpoint-circle octant state: x (2)
+$EFA2    2  GFX_QY                                     753 midpoint-circle octant state: y (2)
+$EFA4    2  GFX_QD                                     754 midpoint-circle octant state: d (signed) (2)
+$EFA6    2  GFX_PX                                     755 tenant scratch: current (mirrored+scaled) offset X,
+$EFA8    2  GFX_PY                                     757 tenant scratch: current offset Y (2)
+$EFAA    2  GFX_CS_AX                                  758 circleparse scratch: cpt_angle_from_arga's neg-flag
+$EFAC    2  GFX_CS_AY                                  761 circleparse scratch: cpt_angle_from_arga /
+$EFAE    2  GFX_M                                      763 D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
+$EFB0    2  GFX_WS_P                                   765 wedge START boundary: in-octant position, 0..M-1 (2)
+$EFB2    1  GFX_WS_O                                   766 wedge START boundary: octant 0..7 (1)
+$EFB3    2  GFX_SOCT                                   774 start: trunc(|a0|*4/pi), RAW/unmasked int16 (the
+$EFB5    2  GFX_SU14                                   777 start: trunc(frac * 16384), 0..16383 (2)
+$EFB7    2  GFX_EOCT                                   778 end: trunc(|a1|*4/pi), RAW/unmasked (2)
+$EFB9    2  GFX_EU14                                   779 end: trunc(frac * 16384) (2)
+$EFBB    1  GFX_SNEG                                   780 resident: start angle was negative -> spoke pending (1)
+$EFBC    1  GFX_ENEG                                   781 resident: end angle was negative -> spoke pending (1)
+$EFBD    1  GFX_B/GFX_WE_P                             795 border colour B, RANGE-CHECKED against the mode's
+$EFBE    1  GFX_CPHASE                                 815 CIRCLE-parse co-routine phase (sub/circleparse.asm):
+$EFBF    1  GFX_PTX/GFX_WE_O                           813 main->tenant: POINT target X, 0..255 (1)
+$EFC0    1  GFX_PTY/GFX_WRAPF                          814 main->tenant: POINT target Y, 0..191 (1) -> ends $E15A
+$EFC1    1  DIRECTF                                   1121 1 = executing a DIRECT-mode line, 0 = running a (1 B)
+$EFC2    2  SAVSTK                                    1142 2 B: SP anchor for the trap unwind. Written by
+$EFC4    4  ERRRESUME                                 1310 4 B: resume context captured at trap time —
+$EFC8    2  SAVTXT                                    1327 2 B: the CURRENT statement's text pointer,
+$EFCA    1  SH_BASE/SH_OP                             1943 the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
+$EFCB    1  SH_LEN                                    1947 ALLOC/TEMP_ALLOC/BUILD_CONCAT arg:
+$EFCC    2  SH_SRC                                    1949 SNAPSHOT arg: source descriptor
+$EFCE    2  SH_PTR                                    1951 result: ALLOC's body ptr / GC's new
+$EFD0    2  SH_PTR2                                   1954 result: TEMP_ALLOC's body-to-fill
+$EFD2    1  SH_START                                  1956 SLICE (op=5) arg: 0-based start (1 B)
+$EFD3    1  SH_COUNT                                  1957 SLICE (op=5) arg: byte count (1 B)
+$EFD4    2  SH_NUM                                    1958 HEX_BUILD/OCT_BUILD (op=6/7) arg: the
+$EFD6    1  SH_FILLBYTE                               1960 FILL (op=8) arg: the byte to repeat
+$EFD7    2  SH_DEST                                   1964 MID_STORE (op=9) arg: the MID$-
+$EFD9    2  SH_P                                      1975 INSTR_SEARCH (op=11) arg: p (2 B)
+$EFDB    1  SH_ERR                                    1976 result: 0 ok, 1 Out of memory, 2 =
+$EFDC    1  GFX_DJ                                     104 JIFFY delta observed while drawing under EI (1)
+$EFDD    1  SV_OP                                     1470 1 B: main -> tenant, SV_OP_* engine selector
+$EFDE    1  SV_STAT                                   1471 1 B: tenant -> main, 0 = written, 1 = load_error
+$EFDF    1  LOC_COL                                   1595 1 B: LOCATE's parsed column, pre-clamp
+$EFE0    1  LOC_ROW                                   1596 1 B: LOCATE's parsed row, pre-clamp
+$EFE1    2  SVT_SP/SW_ADDR                            1627 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its
+$EFE3    1  SW_TYPE                                   1623 1 B: its type (1 = string, 2/4/8 numeric)
+$EFE4    2  SW_ADDR1                                  1624 2 B: operand 1, held across operand 2's parse
+$EFE6    1  SW_TYPE1                                  1625 1 B: operand 1's type
+$EFE7    1  SW_MODE                                   1626 1 B: 0 = this operand MAY be created, 1 = must exist
+$EFE8    2  PLN_NUM                                   1660 2 B: the parsed line number (BC), $FFFF if the
+$EFEA    2  PLN_PTR                                   1663 2 B: LINEBUF pointer at the body (HL)
+$EFEC    2  DB_SKIP                                   2478 rendered bytes still to discard (2 B; TEMPTOP's old cell)
+$EFEE    1  DB_MORE                                   2479 1 = the render ran past the window (1 B)
+$EFEF    2  DB_RESSKIP                                2487 resume: bytes of the resume token already drained (2 B)
+$EFF1    1  DB_RESUME                                 2488 1 = this render may abort + resume (detok only) (1 B)
+$EFF2    3  RVDESC                                    1878 [len:1][ptr:2] scratch descriptor (3 B)
+$EFF5   36  CAS_BUFP                                  2468 base of the tape buffer in use (2 B)
+$F019   96  FLD_TAB                                   3862 field table base ($F019..$F078, 96 bytes)
+$F079    2  FLD_TABEND/GP_RECNO                       3863 $F079
+$F07B    2  GP_SEC                                    3875 file logical-sector index of the record (2)
+$F07D    2  GP_WITHIN                                 3876 byte offset of the record within its sector (0/256, 2) (2 B)
+$F07F    2  GP_CLUS                                   3877 current cluster during the chain walk (2)
+$F081    2  GP_CLIDX                                  3878 cluster steps still to walk (2)
+$F083    1  GP_SECINCL                                3879 sector index within the final cluster (1)
+$F084    4  GP_PHYS                                   3880 resolved absolute physical sector (2)
+$F088    3  GP_FLAGS                                  3883 bit0 = extend (PUT allocates; GET does not) (1)
+$F08B    2  PU_FMTD                                   3898 -> the format's [len][ptr] descriptor (2)
+$F08D    3  PU_FDESC                                  3899 [len][ptr] copy for a format that cannot move (3)
+$F090    1  PU_FMTLEN                                 3901 live format length (1)
+$F091    1  PU_POS                                    3902 current scan index into the format (1)
+$F092    1  PU_W                                      3903 current field width (1)
+$F093    1  PU_TYPE                                   3904 field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+$F094    1  PU_FLAGS                                  3913 bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
+$F095    1  PU_COMMAS/PU_WP                           3952 PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
+$F096    1  PU_DEC                                    3953 PRINT USING `.`: decimal places requested (D-PUDOT) (1)
+$F097    1  FMT_SEC                                   3959 CALL FORMAT: current sector index being written (1)
+$F098    2  FMT_DESC                                  3960 CALL FORMAT: chosen geometry descriptor pointer (2)
+$F09A    2  GP_RECLEN                                 4002 active channel's record length (word), loaded per calc
+$F09C    1  OO_RECLEN_CHAN                            4003 OPEN scratch: channel # stashed across the LEN= eval (1)
+$F09D    1  FILES_HASPAT                              4004 FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
+$F09E    1  FACTYP                                    4460 2=int / 4=single / 8=double (1)
+$F09F    1  TKOVF                                     4466 tokeniser reject code, 0 = ok (1 B)
+$F0A0    2  DB_SP                                     2489 the render's SP to abort to (2 B; FAC's old cell)
+$F0A2    2  DT_TOK                                    2490 detok: the current token's start in the line (2 B)
+$F0A4    2  DT_TOKN                                   2491 detok: bytes the current token has emitted (2 B)
+$F0A6    2  DB_RESPTR                                 2492 resume: the token to restart at (2 B)
+$F0A8    2  PLY_XSP                                   4499 PLAY X: saved SP at pt_voice's call (2)
+$F0AA    1  PRMWANT                                   4517 D-OKSTORE: nonzero = print the prompt (1)
+$F0AB   24  TKDIG                                     4521 tokeniser/formatter: significant-digit array, $F0AB..$F0C2
+$F0C3    1  TKPOS                                     4526 running digit-position counter (1)
+$F0C4    1  TKINTLEN                                  4527 integer-part digit count = P (1)
+$F0C5    1  TKHAVESIG                                 4528 1 once the first nonzero digit is seen (1)
+$F0C6    1  TKNZPOS                                   4529 position of the first nonzero digit = f (1)
+$F0C7    1  TKDCOUNT                                  4530 classification digit count = D, saturating (1)
+$F0C8    1  TKSTORED                                  4531 digits actually written to TKDIG, capped 24 (1)
+$F0C9    1  TKFLAGS                                   4532 bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1)
+$F0CA    2  TKEXP                                     4533 signed explicit exponent, saturated +-9999 (2)
+$F0CC    1  TKEXPD                                    4534 1 = the exponent marker being parsed is D/d (1)
+$F0CD    1  TKEXPSIGN                                 4535 1 = the exponent being parsed is negative (1)
+$F0CE    1  TKPC                                      4536 target precision digit count: 6 / 14 (1)
+$F0CF    2  TKDEXP                                    4537 signed dec_exp, pre-/post-round (2)
+$F0D1    1  TKLEAD                                    4538 computed lead byte (sign+excess-64 exponent) (1)
+$F0D2    1  FOSIGN                                    4575 UNUSED since C8 -- the sign is ARGA+FPNUM_SIGN
+$F0D3    1  FOSIGCOUNT/TKVALEND                       4578 significant digit count = s, trailing zeros
+$F0D4    1  FOMBYTES                                  4580 (1 B) UNUSED since C8 -- widen_fac_to reads
+$F0D5    2  TKSRCSAVE                                 4594 (2)
+$F0D7   15  DIVREM                                    4638 fp_div: running remainder, 15 digits (15)
+$F0E6   18  CVT                                       4639 fac_to_int_strict/addr + flt_to_int16 (float.asm)
+$F0F8    1  LHS_FACTYP                                4641 ev_e/ev_t binary-op sites: the LHS operand's FACTYP,
+$F0F9    8  LHS_FAC                                   4645 ...and the LHS operand's raw FAC bytes (8)
+$F101    1  FP_SHIFTAMT                               4649 dig15_shr/dig15_shl: shift-amount parameter (1)
+$F102    2  FP_LHSVAL                                 4650 combine_*: the LHS operand's plain int16 value,
+$F104    2  FP_TMP_B                                  4652 combine_*: the RHS operand's plain int16 value,
+$F106    1  FP_RSIGN                                  4654 signed_div_de_bc/signed_mod_de_bc: result sign (1)
+$F107    5  KEYARG/WIDIG                              4655 D-KEYSTR: main -> keystr_tenant op/slot (0 =
+$F10C    1  MUL_I                                     4662 fp_mul: outer-loop digit index i, 13 downto 0;
+$F10D    1  MUL_ADIG                                  4665 fp_mul: A[i], the current outer-loop digit (1)
+$F10E    1  MUL_CARRY                                 4666 fp_mul: running carry within one outer pass;
+$F10F    2  MUL_PP                                    4669 fp_mul: MULPROD write-cursor for the inner loop (2)
+$F111    2  MULCAND                                   4670 mul16x16_32: multiplicand operand (2)
+$F113    2  MULTPLR                                   4671 mul16x16_32: multiplier operand, shifted in place (2)
+$F115    4  MUL32                                     4672 mul16x16_32: 32-bit unsigned product, LE
+$F119    2  WSRC                                      4674 widen_fac_to/widen_lhsframe_to (shared unpack
+$F11B    2  WSRC_TYP                                  4677 ...and the address of its type byte, FACTYP
+$F11D    1  FP_OPMODE                                 4679 combine_add/combine_sub shared body: 0=add,
+$F11E    1  CVT_MODE                                  4681 domain_convert_core: 0=strict int16 domain,
+$F11F    2  PLF_RA                                    4683 pop_lhs_and_probe: scratch home for its own
+$F121    2  PLF_RA2                                   4685 ...and for its DIRECT caller's (combine_add/ (2 B)
+$F123   69  DB_CUR                                    4707 wave-3 detok: the DETOKBUF write cursor, held across (2 B)
+$F168    1  VARTYPE                                   4780 var_name_key: the RESOLVED type (2/4/8) of the
+$F169    1  VS_TARGET_TYPE                            4785 var_store_fac/var_alloc_or_find (vars.asm):
+$F16A    2  VS_INT_VAL                                4788 var_store_fac (vars.asm): the coerced int16 value
+$F16C    1  LHS_VARTYPE                               4793 ex_let (interp.asm): the LHS variable's resolved
+$F16D    1  MC_TYPE                                   4871 evmc_sub1 (expr.asm): the operand's FACTYP (4/8),
+$F16E   18  HORNER_G/MATH_T/RND_LE/SQRT_X             4965 fp_poly_horner's "g" input cell (an alias of
+$F180   18  MATH_A/RND_STATE/SQRT_Y                   4954 fp_atan's persistent reduced-argument "a" --
+$F192    1  MATH_N/MATH_SIGN/SQRT_K                   5010 fp_exp's n8 (steps 2-4)/n (steps 4-8) or
+$F193    1  MATH_RECIP/SQRT_ITER                      4946 fp_atan's reduction-1 flag (1 = "a:=1/a"
+$F194    1  MATH_BREAK/MATH_J/SQRT_POW10              4950 fp_atan's reduction-2 flag (1 = the
+
+=== by section ===
+  146 B  10 cells  The page-2 buffer window, $B700..$BFFF (D-LINEMAX §3) 
+  111 B  33 cells  G6 DRAW (docs/spec-basic-graphics-g6.md §7, D-G6-1b) -
+   98 B   2 cells  Phase 2c slice 1: random-access FIELD table + fielded-
+   79 B  13 cells  PRINT USING formatted-output scratch (Phase 2) -------
+   76 B  42 cells  RAM scratch (page-3 RAM; NOT part of the ROM image) --
+   76 B  22 cells  Math float pack, slice F2 RAM (repack build only) ----
+   69 B   1 cells  sub-ROM dispatch (subrom S2b, docs/spec-basic-subrom.m
+   68 B   5 cells  Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) -----
+   59 B  30 cells  Phase 1.5: loader-side FAT12 engine over the STANDARD 
+   49 B  22 cells  Math float pack, slice F1 RAM (repack build only) ----
+   42 B  24 cells  the MISSING class (docs/spec-basic-missing-class.md §3
+   38 B  12 cells  Phase 2: MAXFILES multi-channel control (free $E011.. 
+   38 B   4 cells  Math pack slice 2a RAM (repack build only) -----------
+   35 B   6 cells  Cassette ASCII load 256-byte block buffer (cload.asm c
+   33 B  12 cells  G5 PAINT (docs/spec-basic-graphics-g5.md §4/D3): the s
+   32 B  13 cells  STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRE
+   26 B  16 cells  repack build: string HEAP RAM (arrays slice-4a, spec-b
+   16 B   7 cells  Phase 2c slice 2: GET/PUT random-record I/O scratch --
+   15 B  11 cells  D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterizat
+    9 B   5 cells  D-EDITVERB: RENUM's namespace ------------------------
+    8 B   5 cells  D-ARYLV: the resolved lvalue TARGET of a READ / INPUT 
+    8 B   6 cells  Phase 1: minimal string-variable store (own-design; se
+    7 B   5 cells  SWAP (basic/missing.asm ex_swap) ---------------------
+    6 B   2 cells  ✅ D-DOTLINE: `.`, the current-line pseudo-line-number 
+    5 B   4 cells  Math float pack, slice F3 S3a RAM (repack build only) 
+    4 B   3 cells  READ/DATA tenant ABI (SUBROM_IDX_READVAL, docs/spec-ev
+    4 B   2 cells  D-STRADDLE: the random-record PASS cursor (2026-09-06)
+    4 B   2 cells  D-EVLNO: the line-number scanner's tenant result pair 
+    3 B   2 cells  the $E1C0..$E240 window: HISTORY, and what actually li
+    2 B   2 cells  Graphics arc (SCREEN 2 geometry engine; docs/spec-basi
+    2 B   1 cells  DEFtype tenant ABI (SUBROM_IDX_DEFTYPE, docs/spec-evic
+    2 B   2 cells  the KEY-trap fn-key hook (interrupt-traps T3, docs/spe
+    2 B   1 cells  8.3-FCB-name builder tenant ABI (SUBROM_IDX_FCBNAME, d
+    2 B   1 cells  D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ---
+    2 B   2 cells  SAVE-family tenant marshalling (docs/decision-fund-tim
+    2 B   2 cells  $E227..$E228 (2 B): FN_RESUME. The cell `LOC_RET` free
+    1 B   1 cells  D-LPTVERB: the printer column ------------------------
+    1 B   1 cells  Math pack slice 1a RAM (repack build only) -----------
+    1 B   1 cells  Math pack slice 2b RAM (repack build only, docs/spec-b
+1181

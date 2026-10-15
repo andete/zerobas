@@ -1,0 +1,17 @@
+ROW ctl $C000-$C17F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW freed $E98A-$ECF7 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW q1 $ECF8-$EE99 VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW q2 $EE9A-$F03B VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW q3 $F03C-$F1DD VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW q4 $F1DE-$F37F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW all $ECF8-$F37F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW noclear $E000-$E7FF VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW noclear2 $E800-$E97F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW abort $ECF8-$F37F VG=[[A] | Syntax error in 20] ZB=[[A] | Syntax error in 20] SAME
+ROW onerr $ECF8-$F37F VG=[[A][E 2 ][R][G]]] ZB=[[A][E 2 ][R][G]]] SAME
+ROW rich $ECF8-$F37F VG=[[ 7  5  6  40  7  4  3.14]] ZB=[[ 7  5  6  40  7  4  3.14]] SAME
+ROW rich2 $ECF8-$F37F VG=[[ 1 QQQHEYLO 4  4  12  77 ]] ZB=[[ 1 QQQHEYLO 4  4  12  77 ]] SAME
+ROW persist $ECF8-$F37F VG=[[E 56 ][ 11  4325 ]] ZB=[[E 56 ][ 11  4325 ]] SAME
+
+PASS: a load over the window, then BASIC (14/14 as pinned)
+refcache: 0 hit, 28 miss, 28 stored

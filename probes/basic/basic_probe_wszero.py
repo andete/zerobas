@@ -90,6 +90,14 @@ RANGES["onerr"] = RANGES["all"]
 RICH = {"rich", "rich2"}
 RANGES["rich"] = RANGES["all"]
 RANGES["rich2"] = RANGES["all"]
+# D-WSZERO S8 (2026-10-15): state SET BEFORE the load and READ AFTER it --
+# the persistent cells (DRAW's scale / angle, the disk-ROM-present flag that
+# decides a `d:` name: 56 with no disk ROM, the disk arm with one -- FILES does
+# not read it, knife K-WS13's first cut). Every other row sets its state after
+# the load, so a persistent cell that a load garbles was invisible to them.
+# ⏱ The scan is 17x17: a 41x41 one ran past the 40 s run gap on zerobas after a
+# full-window load (the VG-8020 finished inside it) and read as an empty screen.
+RANGES["persist"] = RANGES["all"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -118,6 +126,16 @@ PROGRAM_RICH2 = [
     '50 LOCATE 0,20:PRINT"[";-(T>0);A$;B$;I;R;V;Q;"]"',
     "60 END",
     "100 T=T+1:RETURN",
+    "RUN",
+]
+PROGRAM_PERSIST = [
+    "NEW",
+    '10 CLEAR 100,&HE000:SCREEN 2:DRAW"S8A1":BLOAD"CAS:",R',
+    '20 PSET(100,100),15:DRAW"C15R3U2"',
+    '30 FOR Y=92 TO 108:FOR X=92 TO 108:IF POINT(X,Y)=15 THEN N=N+1:S=S+X*3+Y',
+    '40 NEXT:NEXT:SCREEN 0:ON ERROR GOTO 100:OPEN"A:X"FOR INPUT AS#1',
+    '50 PRINT"[";N;S;"]":END',
+    '100 PRINT"[E";ERR;"]";:RESUME 50',
     "RUN",
 ]
 PROGRAM_ABORT = [
@@ -170,7 +188,7 @@ def main():
         got = {}
         for side, m in (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK")):
             prog = (PROGRAM_NOCLEAR if name in NOCLEAR else PROGRAM_ABORT if name == "abort"
-                    else PROGRAM_ONERR if name == "onerr" else PROGRAM_RICH2 if name == "rich2"
+                    else PROGRAM_ONERR if name == "onerr" else PROGRAM_PERSIST if name == "persist" else PROGRAM_RICH2 if name == "rich2"
                     else PROGRAM_RICH if name in RICH
                     else PROGRAM)
             got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,

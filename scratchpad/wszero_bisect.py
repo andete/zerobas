@@ -9,7 +9,7 @@ cas_encode, the gate's own `tape()` shape: `ret` then $A5) over [lo, hi], the
 gate's program, and the verdict OK / BAD against that answer. Halves until a
 range of <= MIN bytes is bad, printing every step.
 
-    python3 -u scratchpad/wszero_bisect.py LO HI [MIN] [--fill XX] [--noret] [--prog core|abort|onerr]
+    python3 -u scratchpad/wszero_bisect.py LO HI [MIN] [--fill XX] [--noret] [--prog core|abort|onerr|rich|rich2|persist]
 """
 import os, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,7 +22,8 @@ import basic_probe_wszero as g                      # noqa: E402
 PROG = next((sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--prog"), "core")
 GOOD = {"core": "[A][G] 1  2 XY]", "abort": "[A] | Syntax error in 20",
         "onerr": "[A][E 2 ][R][G]]",
-        "rich": os.environ.get("GOOD", ""), "rich2": os.environ.get("GOOD", "")}[PROG]
+        "rich": os.environ.get("GOOD", ""), "rich2": os.environ.get("GOOD", ""),
+        "persist": os.environ.get("GOOD", "")}[PROG]
 FILL = int(next((sys.argv[i + 1] for i, a in enumerate(sys.argv) if a == "--fill"), "A5"), 16)
 NORET = "--noret" in sys.argv
 
@@ -32,7 +33,8 @@ def bad(lo, hi):
     path = os.path.join(tempfile.mkdtemp(prefix="wsbis_"), "t.cas")
     open(path, "wb").write(build_cas("W", lo, lo, data))
     prog = list({"core": g.PROGRAM, "abort": g.PROGRAM_ABORT, "onerr": g.PROGRAM_ONERR,
-                 "rich": g.PROGRAM_RICH, "rich2": g.PROGRAM_RICH2}[PROG])
+                 "rich": g.PROGRAM_RICH, "rich2": g.PROGRAM_RICH2,
+                 "persist": g.PROGRAM_PERSIST}[PROG])
     if NORET:
         prog[1] = prog[1].replace(",R", "")
     got = g.rows(omsx_repl.run_cases("C-BIOS_MSX1_EU_REPACK_NODISK", [("direct", prog)],

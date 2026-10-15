@@ -114,6 +114,14 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A program that loaded data high in memory lost the scale and angle**
+  (fixed 2026-10-15, D-WSZERO S8). `DRAW"S8A1"`, then a `BLOAD` over
+  `&HECF8`–`&HF37F` (RAM a diskless VG-8020 leaves to programs), then a
+  `DRAW` drew with whatever the load had put in zerobas's own copy of the
+  two settings. They now live in the reference's own cells, `DRWSCL` and
+  `DRWANG`, with the blank-move flag in `DRWFLG`
+  ([`wszero_s8_rows.out`](../../scratchpad/wszero_s8_rows.out), row
+  `persist`).
 - **With a disk drive, any disk access forgot the scale set by `S`** (fixed
   2026-10-13, D-DSCALEDISK). `DRAW"S8"`, then reading the disk, then
   `DRAW"R10"` drew 5 dots where the CF-3300 draws 20: the disk system kept

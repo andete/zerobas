@@ -203,6 +203,20 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   published cells. `DATPTR` (the `READ` position) is next; it needs a change
   in how an unpositioned `DATA` pointer is written
   ([`officialcell_probe.out`](../../scratchpad/officialcell_probe.out)).
+- **More of zerobas's own state now sits in the published cell for the same
+  job** (2026-10-15, D-WSZERO S8). The `CONT` position is in `OLDLIN` /
+  `OLDTXT`; the `AUTO` / `RENUM` line and step in `AUTLIN` / `AUTINC`; `DRAW`'s
+  scale, angle and blank-move flag in `DRWSCL` / `DRWANG` / `DRWFLG`; the
+  printer column in `LPTPOS`; the expression type in `VALTYP`; the error
+  trap's stack and statement pointers in `SAVSTK` / `SAVTXT` / `ERRTXT`;
+  `PAINT`'s border in `BRDATR`; `BSAVE`'s end in `SAVEND`; and whether a
+  disk ROM was found in `DRVINF`. A program that loads data over zerobas's
+  workspace no longer loses its `DRAW` scale or makes a `"A:X"` file name
+  look for a disk that is not there. Where zerobas encodes a value its own
+  way (`OLDLIN` holds the line's address, not its number), a `PEEK` still
+  differs from the reference. The workspace is the same size until the last
+  of it has moved: raising the ceiling one step at a time only moves the
+  stack to a different spot that games use.
 - **zerobas kept its own copies of buffers the reference already has**
   (2026-10-12, Joost: *"our own buffers, test what buffers the reference uses,
   and see if we can meet the same"*). A watch on the VG-8020's work area showed

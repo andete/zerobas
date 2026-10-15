@@ -2948,6 +2948,53 @@ item — do **one item per session** to keep context lean.
       1 is ~0 B. ➡️ D-WSZERO's next phase depends on D-ROMSIZE step 1 (disk BASIC
       into the disk ROM frees main bytes) -- Joost's own order, and now also the
       tape fix's prerequisite.
+      📐 **CLASSIFIED (2026-10-15, after S10.C C1 freed main page 1)** --
+      [`wszero_classify.md`](scratchpad/wszero_classify.md) (a read-only subagent:
+      every cell left in $ECF8-$F194, its diskless use, lifetime, users and home,
+      with a call-graph exclusivity model whose blind spots it lists). Of 1181 B:
+      767 used on the diskless machine (44 B persistent, 7 B while a tape channel
+      is open, the rest transient), 186 disk-only (may stay below $F380), 99
+      disk-only after small fixes (FLD_TAB 96 -- read on EVERY string-variable
+      read today), 6 boot-only, 5 dead (VALTYP $EF35 is write-only), 118 holes.
+      The equate-only phase is NOT spent once statement-exclusive overlays are
+      allowed: ~550 B have a 0-ROM home; ~250 B need code (DB_WIN 96 -- the KEY
+      bar repaints through it --, the DRAW X-frame stack, GFX_VBUF, the FOR frame
+      copy, CVT, the math-pack cells). Its plan: S8 same-job cells, S10 the
+      persistent set into PARM1's unattributed $F71C-$F74B (runtime fill test
+      first), S9 the disk-only fixes, S11 idle published bytes, S12 overlays,
+      S13 the risky SLTWRK / PROCNM bytes (🙋 Joost's call when we get there), S14
+      code, S15 the ceiling ONCE -- the 10-14 lesson: an intermediate ceiling
+      only moves the stack to another spot the games use.
+      ✅ **S8 (2026-10-15): THE REFERENCE'S OWN CELLS FOR THE SAME JOB, equates
+      only (+3 operand renames, byte-neutral).** SAVSTK -> $F6B1, SAVTXT ->
+      $F6AF, ERRRESUME's text half -> ERRTXT $F6B7 (ERRRESUME_TXT; ERRRESUME is
+      2 B now), CONTLINE / CONTPTR -> OLDLIN / OLDTXT, RENUM's and AUTO's line
+      and step -> AUTLIN / AUTINC, DRAW's B flag / scale / angle -> DRWFLG /
+      DRWSCL / DRWANG (GFX_DFN and GFX_G8N pinned where they were), LPTPOS ->
+      LPTPOS $F415 (C-BIOS zeroes it on an abort, as the reference), FACTYP ->
+      VALTYP $F663 (the same 2 / 4 / 8 code), DISKSLOT_OK / DISKSLOT -> DRVINF /
+      +1 (every reader tests nonzero), TSV_END -> SAVEND, GFX_B -> BRDATR,
+      SWAP's five cells -> SWPTMP (BLOAD's CURPTR..EXECPTR share it -- never in
+      one statement) with SVT_SP at SWPTMP+6, clear of what BSAVE uses while the
+      SAVE tenant runs. 76 B of names leave the window; the ceiling stays. The
+      2026-08 DEFER / REJECT-UNOBSERVABLE decisions for SAVSTK / SAVTXT are
+      marked superseded (docs/sysvar-rehoming-decisions.md, sysvars.inc).
+      📏 Gate row `persist` (state SET BEFORE the load, READ AFTER it -- every
+      older row sets its state after the load): DRAW"S8A1" then a full-window
+      load, DRAW + a POINT scan, then OPEN"A:X" (56 with no disk ROM). SAME
+      ([`wszero_s8_rows.out`](scratchpad/wszero_s8_rows.out)). 🔪
+      [`wszero_s8_knife.py`](scratchpad/wszero_s8_knife.py) ->
+      [`wszero_s8_knife.out`](scratchpad/wszero_s8_knife.out): K-WS12 (DRAW's
+      scale / angle back) and K-WS13 (the disk flag back) -> `persist` diverges:
+      HIT, HIT. 🔮 Scored honestly: "persist diverges before S8" read as a HIT
+      and was not one -- the row's 41x41 POINT scan ran past the 40 s run gap on
+      zerobas after a full-window load (the VG-8020 finished inside it), so BOTH
+      the "before" divergence and the first "after" miss were the clock; a
+      two-range bisect found no cell pair, a 90 s gap gave the reference's
+      answer. The scan is 17x17 now. K-WS13's first cut used FILES: MISS --
+      FILES never reads the flag; a `d:` name does. ⏱ Unattributed, filed for
+      TIER 5: zerobas took longer than the VG-8020 on that program (tape load +
+      1681 POINT calls); which part is slower is not measured.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9546,7 +9593,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35079 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35126 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9712,7 +9759,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14574 (T-6FE392)8 (T-529ABE)` from `TODO.md:27368 (T-529ABE)`: a
+      `TODO.md:14621 (T-6FE392)8 (T-529ABE)` from `TODO.md:27415 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15421,7 +15468,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27368 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27415 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
