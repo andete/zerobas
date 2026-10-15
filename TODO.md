@@ -3625,10 +3625,39 @@ item — do **one item per session** to keep context lean.
       🔮 Scored: "it returns": HIT (for valid MML); "it moves or compares memory
       between HL and DE": MISS; my first decoding of DE as the string's address
       was wrong (the bytes there are not the string).
-      ➡️ Pin: `$73E5: dec hl / jp play_body` (ex_play's `inc hl` skips the token
-      the game's HL is already past), with ex_play split into a body that RETURNS
-      (`call play_body / jp exec_stmt` at the statement); place it beside $73AC
-      with tools/pin_plan.py, add PLAY rows to basicint-acceptance, re-run all 51.
+      ✅ **PINNED (2026-10-15): $73E5 = `jp basicint_play`.** basicint_play
+      (end of basic/missing.asm, PAST every pin) CALLs PLAY's body `pl_args` (a
+      0-byte label after ex_play's `inc hl`), and PLAY's success exit -- was `jp
+      exec_stmt`, now `jp pl_exit`, the same 3 B -- RETURNS when the word under
+      the cursor is basicint_play's return point, else chains the next statement.
+      No RAM flag, so an error raised mid-PLAY leaves nothing behind. The pin sits
+      after lrset_tgt's `ret` with a 6 B gap REFILLED by ex_on_key (moved from
+      basic/program.asm, whose copy is now the ELSE arm): pad 0, pin waste still
+      6 B, `make pin-check` 4/4. Cost: page 1 72 -> 46 B (2026-10-15).
+      🔴 **PINS ARE RIGID -- learned twice in this slice.** The first cut grew
+      play.asm by 2 B (a pushed exec_stmt + `ret`): play.asm sits AHEAD of the
+      $6CF3 / $73AC pins, both at pad 0, so their `ds` went negative -- and
+      **pasmo then writes an EMPTY binary with rc 0**; only split_islands' "image
+      base $8000 is ABOVE $2765" says so. Re-bridging $6CF3 just carried the 2 B
+      on to $73AC. Any growth upstream of a pad-0 pin needs a re-plan; prefer a
+      change that is byte-neutral ahead of the pins and puts its bytes AFTER them.
+      📏 Gate rows play_ok ("ABC": [OK + PLAY(0..3)] and the HL returned),
+      play_e5 ("HELLO"), play_e13 (7): 3/3 SAME, `make basicint-acceptance` 10/10.
+      🔪 K-AV1 (basicint_play's call cut, byte-neutral) -> play_ok DIVERGES: HIT
+      ([`avtak_knife.out`](scratchpad/avtak_knife.out)). The probe on the pinned
+      ROM ([`basicint_73e5_pinned.out`](scratchpad/basicint_73e5_pinned.out)):
+      HL and the error codes match on every row; two leftovers, both NOT the
+      entry's: (a) "AB" leaves the reference reporting voice 2 busy after a
+      DIRECT call, which a plain `PLAY "AB"` does not (same PLAY(0..3) on both
+      machines) -- reference state its statement path sets up, not chased; (b)
+      A$ = "XYZ" -> the reference raises 5, zerobas plays it -- and a plain
+      `PLAY A$` does the same, so it is a PLAY divergence: 🆕 D-PLAYXYZ below.
+      📼 **A View to a Kill: 54 B at T180 / T300 / T420 again**, and zerobas now
+      reports line 140 as the VG-8020 does (the pre-pin build read 5184). 🔮 HIT.
+      🆕 **D-PLAYXYZ -- `PLAY "XYZ"` plays on zerobas; the VG-8020 raises 5**
+      (🎚️ TIER 6, found 2026-10-15 by D-AVTAK). `A$="XY"+"Z":PLAY A$` -> `Illegal
+      function call` there, nothing here. X is MML's execute-substring and Y is
+      not a command; which character the reference refuses is unmeasured.
       🔴 **The class lesson:** ANY layout change in page 0 / page 1 can break a
       game that hard-codes an internal address where zerobas's code worked by
       luck; no gate can hold third-party tapes, so the 51-tape run on
@@ -9363,7 +9392,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34896 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34925 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9529,7 +9558,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14391 (T-6FE392)8 (T-529ABE)` from `TODO.md:27185 (T-529ABE)`: a
+      `TODO.md:14420 (T-6FE392)8 (T-529ABE)` from `TODO.md:27214 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15238,7 +15267,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27185 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27214 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

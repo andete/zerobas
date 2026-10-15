@@ -88,6 +88,7 @@ PINS = [
     # dec hl / dec hl / ld (PRGEND $F6E8),hl; the `jp run_prog_top` after them moves.
     Pin(0x73AC, 8, bytes.fromhex("2AC2F62B2B22E8F6"), None,
         "D-BASICINT RUN entry: PRGEND := VARTAB - 2, then run_prog_top"),
+    Pin(0x73E5, 3, "jp", "basicint_play", "D-AVTAK PLAY body: jp basicint_play (call pl_args, return)"),
 ]
 
 SRC = "basic/main.asm"

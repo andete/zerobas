@@ -627,6 +627,19 @@ lrset_tgt:
                 xor     a
                 ld      (FLD_CHAN),a        ; 0 = "not fielded" -- never a legal chan
                 ret                         ; CF=0 from `xor a`
+    IF BASICINT_PINS
+; 📌 D-AVTAK PIN $73E5 (2026-10-15): the reference's PLAY body, which A View to a
+; Kill CALLs with HL at its own "..." arguments (scratchpad/basicint_73e5_probe.py).
+; Placed by tools/pin_plan.py after the `ret` above with a 6 B gap, and the gap is
+; REFILLED, not padded: ex_on_key (6 B, a `jp z` target only) moved here from
+; basic/program.asm, whose copy is now the ELSE arm (Joost: no growing holes).
+ex_on_key:
+                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
+                jp      eon_trap_in         ; (program.asm's ex_on_key has the story)
+                ds      $73E5 - $, $00
+basicint_73e5:
+                jp      basicint_play       ; basic/missing.asm: call PLAY's body, return
+    ENDIF
 
 ; --- lrset_rhs: call-back 2 -- the `=` and the RHS string expression ---------
 ; out: STRPTR -> [len][ptr]; FN_RESUME = cursor past the RHS. May RAISE.

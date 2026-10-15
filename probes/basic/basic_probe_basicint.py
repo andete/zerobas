@@ -28,6 +28,13 @@ same `,R` return chain. Each row prints ONLY what its routine controls:
   pop3297  a continuation and a marker pushed, BC / DE set, `jp $3297`: the
            continuation runs with HL = the marker and BC / DE untouched; its
            output cells are zeroed first, and A / F (BLOAD,R's own) are not read.
+  play_ok / play_e5 / play_e13 (D-AVTAK, 2026-10-15): $73E5 is the reference's
+           PLAY body, which A View to a Kill CALLs. OUR code, run by USR, calls
+           it with HL at a tokenised text it POKEd ("ABC" / "HELLO" / 7); the row
+           is the outcome ([OK] + PLAY(0..3), or [E n] under ON ERROR) and the HL
+           it returns. ("AB" is NOT a row: the reference reports voice 2 busy
+           after a direct call, which a plain PLAY "AB" does not -- recorded in
+           TODO D-AVTAK, not chased.)
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`.
 Exit 0 all SAME; 1 a divergence; 2 the VG-8020 gave no reading.
 Typed BASIC in, the text screen out. VG-8020 vs zerobas NODISK.
@@ -83,7 +90,27 @@ LINES = {
                 '30 P$="[":FOR I=&HD180 TO &HD185:P$=P$+RIGHT$("0"+HEX$(PEEK(I)),2):NEXT:PRINT P$;"]":END',
                 "RUN"],
 }
-ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "pop3297"]
+ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "pop3297",
+        "play_ok", "play_e5", "play_e13"]
+PLAYTEXT = {"play_ok": [0x22, 0x41, 0x42, 0x43, 0x22, 0x00],                 # "ABC"
+            "play_e5": [0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x22, 0x00],     # "HELLO"
+            "play_e13": [0x18, 0x00]}                                       # 7
+
+
+def play_lines(name):
+    # USR routine: ld hl,$D200 / call $73E5 / ld ($D180),hl / ret
+    code = [0x21, 0x00, 0xD2, 0xCD, 0xE5, 0x73, 0x22, 0x80, 0xD1, 0xC9]
+    text = PLAYTEXT[name]
+    return ["NEW",
+            "10 FOR I=0 TO %d:READ B:POKE &HD000+I,B:NEXT" % (len(code) - 1),
+            "20 FOR I=0 TO %d:READ B:POKE &HD200+I,B:NEXT:POKE &HD180,0:POKE &HD181,0" % (len(text) - 1),
+            '30 ON ERROR GOTO 50:DEFUSR=&HD000:X=USR(0)',
+            '40 PRINT"[OK";PLAY(0);PLAY(1);PLAY(2);PLAY(3);"]":GOTO 60',
+            '50 PRINT"[E";ERR;"]":RESUME 60',
+            '60 PRINT"[HL";PEEK(&HD180);PEEK(&HD181);"]":END',
+            "70 DATA " + ",".join(str(b) for b in code),
+            "80 DATA " + ",".join(str(b) for b in text),
+            "RUN"]
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 
 
@@ -96,6 +123,10 @@ def screen_rows(scr):
 
 
 def run(machine, name, tmp):
+    if name in PLAYTEXT:
+        return screen_rows(omsx_repl.run_cases(machine, [("direct", play_lines(name))], batch=False,
+                                               reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+                                               run_gap=20.0)[0])
     path = os.path.join(tmp, f"{name}.cas")
     open(path, "wb").write(build_cas("T", 0xD000, 0xD000, bytes(CODE[name])))
     return screen_rows(omsx_repl.run_cases(machine, [("direct", LINES[name])], batch=False,

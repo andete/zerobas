@@ -89,8 +89,8 @@ parse_disk_fcb equ 06508H
 field_prologue equ 072C2H
 field_item equ 072F8H
 lrset_tgt equ 073BDH
-lrset_rhs equ 073DFH
-lrset_finish equ 073F6H
+lrset_rhs equ 073E8H
+lrset_finish equ 073FFH
 fch_ctx_addr equ 06F88H
 disk_error equ 06B90H
 read_line equ 045FBH

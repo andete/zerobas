@@ -1,0 +1,4 @@
+ROW play_ok VG=[[OK-1 -1  0  0 ] | [HL 5  210 ]] ZB=[[OK 0  0  0  0 ] | [HL 0  0 ]] DIVERGES
+
+FAIL: undocumented BASIC entries (0/1)
+refcache: 1 hit, 1 miss, 1 stored

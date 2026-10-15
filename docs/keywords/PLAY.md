@@ -131,6 +131,14 @@ the ten test programs also showed a different amount of free string space.
 
 ## What we found, and how
 
+- **A game plays its music by calling BASIC's own `PLAY` code directly**
+  (supported 2026-10-15, D-AVTAK). A View to a Kill jumps into the reference's
+  `PLAY` handler at the fixed address `&H73E5`, with its own music strings, and
+  expects it to return. Measured from the outside on the VG-8020 with our own
+  test code: valid strings are queued as music, an invalid character is error 5,
+  a number is error 13. zerobas now has the same behaviour at that address, and
+  the game loads and plays again; it had stopped with `Syntax error in 140` when
+  other code at that address moved.
 - **`PLAY(n)` did not exist** (added 2026-08-28, D-PLAYFN). `PLAY(0)` was
   `Missing operand`. Measuring it showed that `n = 0` means "any voice" rather
   than "the first voice" — two rules that agreed until a program played only
@@ -185,3 +193,5 @@ the ten test programs also showed a different amount of free string space.
 - `make kwsweep` — one row per MML command, each reading the sound chip back,
   and the error rows.
 - `make kwram` — the RAM-usage comparison.
+- `make basicint-acceptance` — the `&H73E5` entry games call, against the
+  VG-8020; `make pin-check` keeps it at that address.

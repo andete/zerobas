@@ -27,6 +27,11 @@
 ; which only the repack build reaches); PLAY is dispatched, not resident.
 ex_play:
                 inc     hl                  ; past the PLAY token
+; pl_args -- PLAY's body, HL at the first argument. ALSO ENTERED from the pinned
+; $73E5 (basicint_play, basic/missing.asm): games call the reference's $73E5 -- its
+; PLAY body -- with HL at their own "..." arguments and expect it to RETURN (A View
+; to a Kill; scratchpad/basicint_73e5_probe.py). D-AVTAK, 2026-10-15.
+pl_args:
                 xor     a
                 ld      (AUDIO_VMASK),a     ; no voices present yet
                 ld      iy,VCBA             ; IY = running VCB base (voice 0)
@@ -116,7 +121,12 @@ pl_dispatch:
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)
                 or      a
                 jp     nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
-                jp      exec_stmt           ; PLAY returns immediately; chain the next stmt
+                jp      pl_exit             ; PLAY returns immediately: chain the next
+                                            ; stmt -- or back to a $73E5 caller. NOT a
+                                            ; `ret` + a pushed exec_stmt: this file sits
+                                            ; ahead of D-BASICINT's pins, and 2 B here
+                                            ; drove their `ds` negative (pasmo then
+                                            ; writes an EMPTY binary, rc 0)
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to tm_raise,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

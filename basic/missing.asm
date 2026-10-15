@@ -773,3 +773,31 @@ err_msgtab:
                 ; unchanged. The bound is DERIVED from the table now -- it once
                 ; drifted from it and left ERR 25 dead for a whole arc.
 ERR_MSGTAB_N    equ     ($ - err_msgtab) / 2    ; codes 1..N are in the table
+
+; --- D-AVTAK (2026-10-15): $73E5, the reference's PLAY body, CALLED by games ---
+; basicint_play is the pinned $73E5's target (basic/field.asm). It CALLs PLAY's
+; body (pl_args, basic/play.asm), whose success exit is pl_exit: when the word
+; under the line cursor is bp_ret -- this call's return point -- PLAY was entered
+; from here and goes BACK to the game; otherwise it chains the next statement as
+; it always did. No flag in RAM: an error raised mid-PLAY unwinds the stack and
+; leaves nothing behind. Placed here, past every pin, so PLAY's 0-byte change
+; ahead of them moves nothing (the first cut grew play.asm 2 B and broke them).
+basicint_play:
+                call    pl_args             ; HL = the game's "..." arguments
+bp_ret:
+                ret                         ; back to the game's `call $73E5`
+pl_exit:
+                push    hl                  ; the statement cursor
+                ld      hl,2
+                add     hl,sp               ; HL -> the word under it
+                ld      a,(hl)
+                cp      low bp_ret
+                jr      nz,ple_stmt
+                inc     hl
+                ld      a,(hl)
+                cp      high bp_ret
+ple_stmt:
+                pop     hl
+                ret     z                   ; called from basicint_play -> bp_ret
+                jp      exec_stmt           ; the PLAY statement: chain the next one
+
