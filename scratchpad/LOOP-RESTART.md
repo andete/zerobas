@@ -10,7 +10,16 @@ session and the loop resumes exactly where it stopped.
   disk.rom, 347452e0); S10.D's H.DGET measurement (57b4558a); tools/pin_plan.py
   for D-BASICINT (40c62a1f); **S10.D -- RANDOM OPEN / GET / PUT / CLOSE in
   disk.rom (c577b59c: main page 1 8 -> 139 B, sub page 1 141 -> 928 B)**; the
-  13 dead $49xx asserts deleted, disk.rom byte-identical.
+  13 dead $49xx asserts deleted, disk.rom byte-identical; D-BASICINT pins
+  (967cd255); D-TAPLEAD's residual -- TAPION's cycle verify (347d12fa); D-AVTAK
+  -- $73E5 = PLAY's body pinned, A View to a Kill back (9f54906c); Punch & Judy
+  measured as D-WSZERO (16fa061a); Harry Fox narrowed (5a01509b, ab5c45ec).
+- **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
+  err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
+  MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**
+  ahead of BSAVE-to-disk (sub only). Prep in flight when this was written: an
+  S10.C design brief (session scratchpad `s10c_*`) and the BSAVE hook probe
+  (`scratchpad/bsave_hook_probe.py` -> `bsave_hook_run.out`).
 - **D-BASICINT PINNED (2026-10-15):** $3297 / $6CF3 / $73AC at their addresses,
   `make pin-check` (static, budget = the measured 6 B) and `make
   basicint-acceptance` 7/7. Loopy Laundry runs; Punch & Judy and Harry Fox now
