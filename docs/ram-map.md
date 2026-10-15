@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 242 declared addresses in this project's own workspace `$E000..$F37F` (235 with a machine-readable width), plus **302** in the MSX standard work area at or above `$F380`.
+* **basic** — 150 declared addresses in this project's own workspace `$E000..$F37F` (145 with a machine-readable width), plus **386** in the MSX standard work area at or above `$F380`.
 * **disk** — 129 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **54** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -114,31 +114,11 @@ second one is the question a per-component map cannot answer.
 | `$E974` | 2 B | `disk` | `MBUF_PTR` | word -> the 512-byte FAT/dir METADATA buffer |  |
 | `$E976` | 1 B | `basic` | `FAT_DEFER` | DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1) |  |
 | `$E976` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
-| `$ECF8` | 2 B | `basic` | `ISRCH_A` | resolved A-operand body base (2 B) |  |
-| `$ECFA` | 2 B | `basic` | `ISRCH_B` | $ECFA: resolved B-operand body base (2 B) |  |
 | `$ECFC` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
 | `$ECFD` | 2 B | `basic` | `MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
-| `$ECFF` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) |  |
-| `$ED00` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) |  |
-| `$ED01` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) |  |
-| `$ED02` | 1 B | `basic` | `GFX_PFY` | gfx_paint_flood/_process: current span's row (1) |  |
-| `$ED03` | 1 B | `basic` | `GFX_PXL` | ...current span's left column (1) |  |
-| `$ED04` | 1 B | `basic` | `GFX_PXR` | ...current span's right column (1) |  |
-| `$ED05` | 1 B | `basic` | `GFX_PSCX` | gfx_paint_process/_scan_row: scan cursor column (1) |  |
-| `$ED06` | 1 B | `basic` | `GFX_PSCY` | gfx_paint_scan_row: the neighbour row being scanned (1) |  |
-| `$ED07` | 1 B | `basic` | `GFX_PSPA` | gfx_paint_scan_row: pending sub-span's start column (1) |  |
-| `$ED08` | 44 B | `basic` | `GFX_CS_M1/GFX_PSTK/GFX_VBUF` | $ED08: sprite pattern/attribute staging (32 B) |  |
-| `$ED0C` | 4 B | `basic` | `GFX_CS_M2` | $ED0C: r*r for the same compare (4) |  |
-| `$ED10` | 2 B | `basic` | `GFX_PSP` | the span stack's top (lowest used byte) (2) |  |
-| `$ED12` | 2 B | `basic` | `GFX_PBASE` | its empty position = SP - GFX_PAINT_MARGIN (2) |  |
-| `$ED14` | 2 B | `basic` | `GFX_PFLOOR` | the lowest byte it may use = ARYEND + 2 (2) |  |
 | `$ED38` | 1 B | `basic` | `GFX_DFTOP` | $ED38: X-frame stack depth (1) |  |
 | `$ED39` | 32 B | `basic` | `GFX_DFSTK` | $ED39: saved [ptr][end] per outer frame -- |  |
 | `$ED67` | 24 B | `basic` | `GFX_DEXP` | $ED67: NUL-terminated copy of the text between |  |
-| `$ED8F` | 2 B | `basic` | `DEFT_PTR/RDV_LINE` | $ED8F: D-READERL -- the link field of the line |  |
-| `$ED91` | 2 B | `basic` | `RDV_VAL` | $ED91: the value read (int16 LE) (2) |  |
-| `$ED93` | 1 B | `basic` | `RDV_ST` | $ED93: tenant -> main STATUS (1): (1 B) |  |
-| `$ED99` | 1 B | `basic` | `GFX_PPITCH` | $ED99: 1 or 4, live only inside a PAINT (1) |  |
 | `$ED9D` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
@@ -178,12 +158,10 @@ second one is the question a per-component map cannot answer.
 | `$EE38` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$EE39` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $EE39 tenant->main: 0 ok / nonzero ERR code |  |
 | `$EE39` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
-| `$EE3A` |  | `basic` | `DISKOP_A/PLY_NUMOVF` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
+| `$EE3A` | 1 B | `basic` | `DISKOP_A` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
 | `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | DISK-ONLY: tenant -> main: the primitive's real HL output |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
-| `$EE6D` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
-| `$EE71` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
 | `$EE77` | 2 B | `basic` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
 | `$EE77` | 2 B | `disk` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
@@ -191,11 +169,8 @@ second one is the question a per-component map cannot answer.
 | `$EE7B` | 2 B | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EE9D` | 32 B | `basic` | `PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
-| `$EEBF` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
 | `$EEC0` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
-| `$EEC1` | 2 B | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: running byte offset into the record buffer (2) |  |
 | `$EEC5` | 1 B | `basic` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
 | `$EEC5` | 1 B | `disk` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
@@ -204,19 +179,12 @@ second one is the question a per-component map cannot answer.
 | `$EEC7` | 1 B | `disk` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
 | `$EEC8` | 2 B | `basic` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EEC8` | 2 B | `disk` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
-| `$EECA` | 32 B | `basic` | `PU_DIG` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
 | `$EEEE` | 11 B | `basic` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
 | `$EEEE` | 11 B | `disk` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
 | `$EEF9` | 2 B | `basic` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
 | `$EEF9` | 2 B | `disk` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
 | `$EEFB` | 4 B | `basic` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
 | `$EEFB` | 4 B | `disk` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
-| `$EEFF` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
-| `$EF01` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
-| `$EF02` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
-| `$EF03` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
-| `$EF04` | 1 B | `basic` | `RL_LAST` | the logical line's last row at Enter (1) |  |
-| `$EF05` | 1 B | `basic` | `RL_KEY` | main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1) |  |
 | `$EF06` | 1 B | `basic` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF06` | 1 B | `disk` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF0A` | 29 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (25), and |  |
@@ -249,44 +217,12 @@ second one is the question a per-component map cannot answer.
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF6F` | 1 B | `basic` | `GFX_MODE` | GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1) |  |
-| `$EF70` | 2 B | `basic` | `GFX_CX` | Bresenham: current pixel X (int16, may be off-screen) (2) |  |
-| `$EF72` | 2 B | `basic` | `GFX_CY` | Bresenham: current pixel Y (int16) (2) |  |
-| `$EF74` | 2 B | `basic` | `GFX_ERR` | Bresenham: error accumulator, in [0,DMAJ) (2) |  |
-| `$EF76` | 2 B | `basic` | `GFX_DMAJ` | Bresenham: major-axis delta (2) |  |
-| `$EF78` | 2 B | `basic` | `GFX_DMIN` | Bresenham: minor-axis delta (2) |  |
-| `$EF7A` | 2 B | `basic` | `GFX_CNT` | Bresenham: major steps still to take (2) |  |
-| `$EF7C` | 1 B | `basic` | `GFX_STEEP` | Bresenham: 0 = x-major, 1 = y-major (1) |  |
-| `$EF7D` | 2 B | `basic` | `GFX_SMIN` | Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2) |  |
-| `$EF7F` | 1 B | `basic` | `GFX_SDX` | init scratch: sign of (x2-x1), $01/$FF (1) |  |
-| `$EF80` | 1 B | `basic` | `GFX_SDY` | init scratch: sign of (y2-y1), $01/$FF (1) |  |
-| `$EF81` | 2 B | `basic` | `GFX_TX1` | box: stashed corner 1 X (2) |  |
-| `$EF83` | 2 B | `basic` | `GFX_TY1` | box: stashed corner 1 Y (2) |  |
-| `$EF85` | 2 B | `basic` | `GFX_TX2` | box: stashed corner 2 X (2) |  |
-| `$EF87` | 2 B | `basic` | `GFX_TY2` | box: stashed corner 2 Y (2) |  |
-| `$EF89` | 2 B | `basic` | `GFX_FILLCNT` | box fill: scanlines remaining (2) |  |
-| `$EF8B` | 2 B | `basic` | `GFX_YSTEP` | box fill: row step, $0001/$FFFF (2) -> ends $E126 (2 B) |  |
 | `$EF93` | 1 B | `basic` | `GFX_ASPMAJ` | 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1) |  |
 | `$EF96` | 1 B | `basic` | `GFX_ARCF` | 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1) |  |
-| `$EF97` | 2 B | `basic` | `GFX_SVX` | start boundary vector X, screen-offset scaled ints (2) |  |
-| `$EF99` | 2 B | `basic` | `GFX_SVY` | start boundary vector Y (2) |  |
-| `$EF9B` | 2 B | `basic` | `GFX_EVX` | end boundary vector X (2) |  |
-| `$EF9D` | 2 B | `basic` | `GFX_EVY` | end boundary vector Y (2) |  |
-| `$EF9F` | 1 B | `basic` | `GFX_FULLW` | full-wrap flag (0/1): the two boundaries land in the |  |
-| `$EFA0` | 2 B | `basic` | `GFX_QX` | midpoint-circle octant state: x (2) |  |
-| `$EFA2` | 2 B | `basic` | `GFX_QY` | midpoint-circle octant state: y (2) |  |
-| `$EFA4` | 2 B | `basic` | `GFX_QD` | midpoint-circle octant state: d (signed) (2) |  |
-| `$EFA6` | 2 B | `basic` | `GFX_PX` | tenant scratch: current (mirrored+scaled) offset X, |  |
-| `$EFA8` | 2 B | `basic` | `GFX_PY` | tenant scratch: current offset Y (2) |  |
-| `$EFAA` | 2 B | `basic` | `GFX_CS_AX` | circleparse scratch: cpt_angle_from_arga's neg-flag |  |
-| `$EFAC` | 2 B | `basic` | `GFX_CS_AY` | circleparse scratch: cpt_angle_from_arga / |  |
-| `$EFAE` | 2 B | `basic` | `GFX_M` | D-ARCMASK: M = floor(r/sqrt(2)), the octant's top |  |
-| `$EFB0` | 2 B | `basic` | `GFX_WS_P` | wedge START boundary: in-octant position, 0..M-1 (2) |  |
-| `$EFB2` | 1 B | `basic` | `GFX_WS_O` | wedge START boundary: octant 0..7 (1) |  |
 | `$EFBB` | 1 B | `basic` | `GFX_SNEG` | resident: start angle was negative -> spoke pending (1) |  |
 | `$EFBC` | 1 B | `basic` | `GFX_ENEG` | resident: end angle was negative -> spoke pending (1) |  |
-| `$EFBD` | 2 B | `basic` | `GFX_WE_P` | wedge END boundary: in-octant position, 0..M-1 (2) |  |
-| `$EFBF` | 1 B | `basic` | `GFX_PTX/GFX_WE_O` | main->tenant: POINT target X, 0..255 (1) |  |
-| `$EFC0` | 1 B | `basic` | `GFX_PTY/GFX_WRAPF` | main->tenant: POINT target Y, 0..191 (1) -> ends $E15A |  |
+| `$EFBF` | 1 B | `basic` | `GFX_PTX` | main->tenant: POINT target X, 0..255 (1) |  |
+| `$EFC0` | 1 B | `basic` | `GFX_PTY` | main->tenant: POINT target Y, 0..191 (1) |  |
 | `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
 | `$EFCB` | 1 B | `basic` | `SH_LEN` | ALLOC/TEMP_ALLOC/BUILD_CONCAT arg: |  |
 | `$EFCC` | 2 B | `basic` | `SH_SRC` | SNAPSHOT arg: source descriptor |  |
@@ -300,12 +236,8 @@ second one is the question a per-component map cannot answer.
 | `$EFD9` | 2 B | `basic` | `SH_P` | INSTR_SEARCH (op=11) arg: p (2 B) |  |
 | `$EFDB` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
 | `$EFDC` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
-| `$EFDD` | 1 B | `basic` | `SV_OP` | 1 B: main -> tenant, SV_OP_* engine selector |  |
-| `$EFDE` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
 | `$EFDF` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
 | `$EFE0` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
-| `$EFE8` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
-| `$EFEA` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
 | `$EFEC` | 2 B | `basic` | `DB_SKIP` | rendered bytes still to discard (2 B; TEMPTOP's old cell) |  |
 | `$EFEE` | 1 B | `basic` | `DB_MORE` | 1 = the render ran past the window (1 B) |  |
 | `$EFEF` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
@@ -349,37 +281,13 @@ second one is the question a per-component map cannot answer.
 | `$F09C` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F09F` | 1 B | `basic` | `TKOVF` | tokeniser reject code, 0 = ok (1 B) |  |
 | `$F0A0` | 2 B | `basic` | `DB_SP` | the render's SP to abort to (2 B; FAC's old cell) |  |
 | `$F0A2` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
 | `$F0A4` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
 | `$F0A6` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
-| `$F0A8` | 2 B | `basic` | `PLY_XSP` | PLAY X: saved SP at pt_voice's call (2) |  |
-| `$F0AB` | 24 B | `basic` | `TKDIG` | tokeniser/formatter: significant-digit array, $F0AB..$F0C2 |  |
-| `$F0C3` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
-| `$F0C4` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
-| `$F0C5` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |
-| `$F0CA` | 2 B | `basic` | `TKEXP` | signed explicit exponent, saturated +-9999 (2) |  |
-| `$F0CC` | 1 B | `basic` | `TKEXPD` | 1 = the exponent marker being parsed is D/d (1) |  |
-| `$F0CD` | 1 B | `basic` | `TKEXPSIGN` | 1 = the exponent being parsed is negative (1) |  |
-| `$F0CF` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
-| `$F0D5` | 2 B | `basic` | `TKSRCSAVE` | (2) |  |
-| `$F0D7` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
 | `$F0E6` | 18 B | `basic` | `CVT` | fac_to_int_strict/addr + flt_to_int16 (float.asm) |  |
-| `$F0F8` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
-| `$F0F9` | 8 B | `basic` | `LHS_FAC` | ...and the LHS operand's raw FAC bytes (8) |  |
-| `$F101` | 1 B | `basic` | `FP_SHIFTAMT` | dig15_shr/dig15_shl: shift-amount parameter (1) |  |
-| `$F107` | 5 B | `basic` | `WIDIG` | widen_int_to: binary->BCD digit scratch, up to |  |
-| `$F10C` | 1 B | `basic` | `MUL_I` | fp_mul: outer-loop digit index i, 13 downto 0; |  |
-| `$F10F` | 2 B | `basic` | `MUL_PP` | fp_mul: MULPROD write-cursor for the inner loop (2) |  |
-| `$F111` | 2 B | `basic` | `MULCAND` | mul16x16_32: multiplicand operand (2) |  |
-| `$F113` | 2 B | `basic` | `MULTPLR` | mul16x16_32: multiplier operand, shifted in place (2) |  |
-| `$F115` | 4 B | `basic` | `MUL32` | mul16x16_32: 32-bit unsigned product, LE |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
-| `$F11D` | 1 B | `basic` | `FP_OPMODE` | combine_add/combine_sub shared body: 0=add, |  |
-| `$F11E` |  | `basic` | `CVT_MODE` | domain_convert_core: 0=strict int16 domain, |  |
-| `$F11F` | 2 B | `basic` | `PLF_RA` | pop_lhs_and_probe: scratch home for its own |  |
-| `$F121` | 2 B | `basic` | `PLF_RA2` | ...and for its DIRECT caller's (combine_add/ (2 B) |  |
+| `$F11E` | 1 B | `basic` | `CVT_MODE` | domain_convert_core: 0 = the strict signed domain, |  |
 | `$F123` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
 | `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F169` | 1 B | `basic` | `VS_TARGET_TYPE` | var_store_fac/var_alloc_or_find (vars.asm): |  |
@@ -474,6 +382,47 @@ extents the standard already fixes would be noise, not rigour.
 | `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` |  | `basic` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` |  | `disk` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
+| `$F5A0` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) |  |
+| `$F5A1` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) |  |
+| `$F5A2` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) |  |
+| `$F5A3` | 1 B | `basic` | `GFX_PFY` | gfx_paint_flood/_process: current span's row (1) |  |
+| `$F5A4` | 1 B | `basic` | `GFX_PXL` | ...current span's left column (1) |  |
+| `$F5A5` | 1 B | `basic` | `GFX_PXR` | ...current span's right column (1) |  |
+| `$F5A6` | 1 B | `basic` | `GFX_PSCX` | gfx_paint_process/_scan_row: scan cursor column (1) |  |
+| `$F5A7` | 1 B | `basic` | `GFX_PSCY` | gfx_paint_scan_row: the neighbour row being scanned (1) |  |
+| `$F5A8` | 1 B | `basic` | `GFX_PSPA` | gfx_paint_scan_row: pending sub-span's start column (1) |  |
+| `$F5A9` | 14 B | `basic` | `GFX_CS_M1/GFX_PSTK` | $F5A9: the PAINT/arc union's base ($F5A9..$F5B6): CS_M1/M2 +0..+7, PSP/PBASE/PFLOOR +8..+13 |  |
+| `$F5AD` | 4 B | `basic` | `GFX_CS_M2` | $F5AD: r*r for the same compare (4) |  |
+| `$F5B1` | 2 B | `basic` | `GFX_PSP` | the span stack's top (lowest used byte) (2) |  |
+| `$F5B3` | 2 B | `basic` | `GFX_PBASE` | its empty position = SP - GFX_PAINT_MARGIN (2) |  |
+| `$F5B5` | 2 B | `basic` | `GFX_PFLOOR` | the lowest byte it may use = ARYEND + 2 (2) |  |
+| `$F5B7` | 1 B | `basic` | `GFX_PPITCH` | $F5B7: 1 or 4, live only inside a PAINT (1) |  |
+| `$F5B8` | 2 B | `basic` | `GFX_TX1` | box: stashed corner 1 X (2) |  |
+| `$F5BA` | 2 B | `basic` | `GFX_TY1` | box: stashed corner 1 Y (2) |  |
+| `$F5BC` | 2 B | `basic` | `GFX_TX2` | box: stashed corner 2 X (2) |  |
+| `$F5BE` | 2 B | `basic` | `GFX_TY2` | box: stashed corner 2 Y (2) |  |
+| `$F5C0` | 2 B | `basic` | `GFX_FILLCNT` | box fill: scanlines remaining (2) |  |
+| `$F5C2` | 2 B | `basic` | `GFX_YSTEP` | box fill: row step, $0001/$FFFF (2) |  |
+| `$F5C4` | 2 B | `basic` | `GFX_SVX` | start boundary vector X, screen-offset scaled ints (2) |  |
+| `$F5C6` | 2 B | `basic` | `GFX_SVY` | start boundary vector Y (2) |  |
+| `$F5C8` | 2 B | `basic` | `GFX_EVX` | end boundary vector X (2) |  |
+| `$F5CA` | 2 B | `basic` | `GFX_EVY` | end boundary vector Y (2) |  |
+| `$F5CC` | 1 B | `basic` | `GFX_FULLW` | full-wrap flag (0/1): the two boundaries land in the |  |
+| `$F5CD` | 2 B | `basic` | `GFX_QX` | midpoint-circle octant state: x (2) |  |
+| `$F5CF` | 2 B | `basic` | `GFX_QY` | midpoint-circle octant state: y (2) |  |
+| `$F5D1` | 2 B | `basic` | `GFX_QD` | midpoint-circle octant state: d (signed) (2) |  |
+| `$F5D3` | 2 B | `basic` | `GFX_PX` | tenant scratch: current (mirrored+scaled) offset X, |  |
+| `$F5D5` | 2 B | `basic` | `GFX_PY` | tenant scratch: current offset Y (2) |  |
+| `$F5D7` | 2 B | `basic` | `GFX_CS_AX` | circleparse scratch: cpt_angle_from_arga's neg-flag |  |
+| `$F5D9` | 2 B | `basic` | `GFX_CS_AY` | circleparse scratch: cpt_angle_from_arga / |  |
+| `$F5DB` | 2 B | `basic` | `GFX_M` | D-ARCMASK: M = floor(r/sqrt(2)), the octant's top |  |
+| `$F5DD` | 2 B | `basic` | `GFX_WS_P` | wedge START boundary: in-octant position, 0..M-1 (2) |  |
+| `$F5DF` | 1 B | `basic` | `GFX_WS_O` | wedge START boundary: octant 0..7 (1) |  |
+| `$F5E0` | 2 B | `basic` | `GFX_WE_P` | wedge END boundary: in-octant position, 0..M-1 (2) |  |
+| `$F5E2` | 1 B | `basic` | `GFX_WE_O` | wedge END boundary: octant 0..7 (1) |  |
+| `$F5E3` | 1 B | `basic` | `GFX_WRAPF` | wedge wraps 0: pair S > pair E lexicographically (1) |  |
+| `$F5E4` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
+| `$F5E6` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
@@ -588,15 +537,40 @@ extents the standard already fixes would be noise, not rigour.
 | `$F753` | 1 B | `basic` | `FN_FEND` | 1 B: low byte of one-past the live frame. |  |
 | `$F754` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
 | `$F755` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
-| `$F756` |  | `basic` | `FN_PAREA` | the shadow-parameter slots themselves |  |
+| `$F756` | 32 B | `basic` | `FN_PAREA/PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$F756` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies -- no width |  |
-| `$F75C` |  | `disk` | `WA_SEG_RAM` |  |  |
-| `$F771` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) |  |
-| `$F772` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) |  |
+| `$F75C` |  | `disk` | `WA_SEG_RAM` |  | `basic` FN_PAREA/PU_NUM |
+| `$F771` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) | `basic` FN_PAREA/PU_NUM |
+| `$F772` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) | `basic` FN_PAREA/PU_NUM |
+| `$F776` |  | `basic` | `DEFT_PTR/PU_DIG/RDV_LINE` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
+| `$F778` | 2 B | `basic` | `RDV_VAL` | $F778: the value read (int16 LE) (2) |  |
+| `$F77A` | 1 B | `basic` | `RDV_ST` | $F77A: tenant -> main STATUS (1): (1 B) |  |
+| `$F796` | 2 B | `basic` | `GFX_CX` | Bresenham: current pixel X (int16, may be off-screen) (2) |  |
+| `$F798` | 2 B | `basic` | `GFX_CY` | Bresenham: current pixel Y (int16) (2) |  |
+| `$F79A` | 2 B | `basic` | `GFX_ERR` | Bresenham: error accumulator, in [0,DMAJ) (2) |  |
+| `$F79C` | 2 B | `basic` | `GFX_DMAJ` | Bresenham: major-axis delta (2) |  |
+| `$F79E` | 2 B | `basic` | `GFX_DMIN` | Bresenham: minor-axis delta (2) |  |
+| `$F7A0` | 2 B | `basic` | `GFX_CNT` | Bresenham: major steps still to take (2) |  |
+| `$F7A2` | 1 B | `basic` | `GFX_STEEP` | Bresenham: 0 = x-major, 1 = y-major (1) |  |
+| `$F7A3` | 2 B | `basic` | `GFX_SMIN` | Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2) |  |
 | `$F7A3` |  | `disk` | `INT_SP_SAVE/INT_STK_TOP` | caller SP saved above the stack top (word) |  |
+| `$F7A5` | 1 B | `basic` | `GFX_SDX` | init scratch: sign of (x2-x1), $01/$FF (1) |  |
 | `$F7A5` | 2 B | `disk` | `CONIN_BUF` | CONIN: buffer base (word) |  |
+| `$F7A6` | 1 B | `basic` | `GFX_SDY` | init scratch: sign of (y2-y1), $01/$FF (1) | `disk` CONIN_BUF |
+| `$F7A7` | 1 B | `basic` | `SV_OP` | 1 B: main -> tenant, SV_OP_* engine selector |  |
 | `$F7A7` | 1 B | `disk` | `CONIN_MAX` | CONIN: max length ([DE+0]) (1 B) |  |
+| `$F7A8` | 1 B | `basic` | `SV_STAT` | 1 B: tenant -> main, 0 = written, 1 = load_error |  |
 | `$F7A8` | 1 B | `disk` | `CONIN_COUNT` | CONIN: running fill count (1 B) |  |
+| `$F7A9` | 2 B | `basic` | `RL_HL` | main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2) |  |
+| `$F7AB` | 1 B | `basic` | `RL_STAT` | tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1) |  |
+| `$F7AC` | 1 B | `basic` | `RL_ROW0` | the row where input began (1-based; 0 once scrolled off) (1) |  |
+| `$F7AD` | 1 B | `basic` | `RL_COL0` | the column where input began, after any prompt (1) |  |
+| `$F7AE` | 1 B | `basic` | `RL_LAST` | the logical line's last row at Enter (1) |  |
+| `$F7AF` | 1 B | `basic` | `RL_KEY` | main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1) |  |
+| `$F7B0` | 2 B | `basic` | `PLN_NUM` | 2 B: the parsed line number (BC), $FFFF if the |  |
+| `$F7B2` | 2 B | `basic` | `PLN_PTR` | 2 B: LINEBUF pointer at the body (HL) |  |
+| `$F7B4` | 2 B | `basic` | `MRG_PTR` | MERGE: write cursor into LINEBUF for the current line (2) |  |
+| `$F7B6` | 1 B | `basic` | `TKLNUM` | tokeniser: 1 = line-number mode is armed (1) |  |
 | `$F7B9` | 1 B | `basic` | `FN_PAREA_END/FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F7B9` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F7BA` | 2 B | `basic` | `GFX_DDY` | $F7BA: ...dy (2) |  |
@@ -607,10 +581,13 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7C1` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type |  |
 | `$F7C2` |  | `basic` | `SVT_SP/SW_MODE` | 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its |  |
 | `$F7C4` | 1 B | `basic` | `TRACEFLAG` | = TRCFLG: TRON state, 175 = TRON / 0 = TROFF (1 B) |  |
-| `$F7C5` |  | `basic` | `FBUFFR` | published: number-conversion buffer (43 B) |  |
+| `$F7C5` |  | `basic` | `FBUFFR/TKOVF` | published: number-conversion buffer (43 B) |  |
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
 | `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
+| `$F7DE` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
+| `$F7ED` | 8 B | `basic` | `LHS_FAC` | ...and the LHS operand's raw FAC bytes (8) |  |
+| `$F7F5` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
 | `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7F6` | 8 B | `disk` | `FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7FE` | 1 B | `basic` | `TKNZPOS` | position of the first nonzero digit = f (1) |  |
@@ -623,14 +600,29 @@ extents the standard already fixes would be noise, not rigour.
 | `$F806` | 18 B | `basic` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F806` | 18 B | `disk` | `ARGA` | operand A / working result, FPNUM record (18) |  |
 | `$F818` | 18 B | `basic` | `ARGB` | operand B, FPNUM record (18) |  |
-| `$F82A` |  | `basic` | `MULPROD/RND_ACCLE` | fp_mul: 28-digit product (14x14), MSD first (28) |  |
+| `$F82A` | 24 B | `basic` | `GFX_VBUF/MULCAND/MULPROD/PLY_XSP/RND_ACCLE/TKDIG` | tokeniser/formatter: significant-digit array, $F82A..$F841 |  |
+| `$F82C` | 2 B | `basic` | `MULTPLR/PLY_NUMOVF` | mul16x16_32: multiplier operand, shifted in place (2) |  |
+| `$F82E` |  | `basic` | `MUL32` | mul16x16_32: 32-bit unsigned product, LE |  |
+| `$F831` | 1 B | `basic` | `FP_SHIFTAMT` | dig15_shr/dig15_shl: shift-amount parameter (1) |  |
+| `$F832` | 5 B | `basic` | `WIDIG` | widen_int_to: binary->BCD digit scratch, up to |  |
+| `$F837` |  | `basic` | `PLF_RA` | pop_lhs_and_probe: scratch home for its own |  |
 | `$F838` | 1 B | `basic` | `RND_I` | multiply-add loop: S/acc digit index i |  |
-| `$F839` | 1 B | `basic` | `RND_J` | multiply-add loop: A's digit index j |  |
+| `$F839` |  | `basic` | `PLF_RA2/RND_J` | ...and for its DIRECT caller's (combine_add/ (2 B) |  |
 | `$F83A` | 1 B | `basic` | `RND_IJ` | multiply-add loop: i+j, the target |  |
-| `$F83B` | 1 B | `basic` | `RND_AJ` | multiply-add loop: A_LE[j], stashed |  |
+| `$F83B` |  | `basic` | `ISRCH_A/RND_AJ` | multiply-add loop: A_LE[j], stashed |  |
 | `$F83C` | 1 B | `basic` | `RND_CARRY` | multiply-add loop: running BCD carry, |  |
-| `$F83D` | 1 B | `basic` | `RND_K` | output normalisation: count of leading |  |
-| `$F83E` | 15 B | `basic` | `DIVPAD` | fp_div: divisor zero-padded to 15 digits (15) |  |
+| `$F83D` |  | `basic` | `ISRCH_B/RND_K` | $F83D: resolved B-operand body base (2 B) |  |
+| `$F83E` |  | `basic` | `DIVPAD` | fp_div: divisor zero-padded to 15 digits (15) |  |
+| `$F842` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
+| `$F843` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
+| `$F844` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |
+| `$F845` |  | `basic` | `TKEXP` | signed explicit exponent, saturated +-9999 (2) |  |
+| `$F846` | 1 B | `basic` | `MUL_I` | fp_mul: outer-loop digit index i, 13 downto 0; |  |
+| `$F847` |  | `basic` | `MUL_PP/TKEXPD` | fp_mul: MULPROD write-cursor for the inner loop (2) |  |
+| `$F848` | 1 B | `basic` | `TKEXPSIGN` | 1 = the exponent being parsed is negative (1) |  |
+| `$F849` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
+| `$F84B` |  | `basic` | `TKSRCSAVE` | (2) |  |
+| `$F84C` | 1 B | `basic` | `FP_OPMODE` | combine_add/combine_sub shared body: 0=add, |  |
 | `$F84D` | 2 B | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
 | `$F84F` | 2 B | `basic` | `FP_LHSVAL` | combine_*: the LHS operand's plain int16 value, |  |
 | `$F851` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |

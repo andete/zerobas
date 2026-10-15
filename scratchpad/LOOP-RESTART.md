@@ -25,8 +25,10 @@ session and the loop resumes exactly where it stopped.
   LSET flag, VALTYP gone; main p1 152 B, sub p0 12 B), **S9b** (tags +
   `ram_map --floor-top F380`) and **S11** (63 transient cells into idle published
   bytes, scratchpad/s11_plan.md; rows s11gfx / s11num / s11inp, K-WS29..36).
-  NEXT: S12 (overlays on BUF / FBUFFR / MULPROD, ~340 B, per-pair proofs), S14
-  (code, ~219 B: DB_WIN, DRAW X-frames, FOR frame, CVT, math cells);
+  **S12** (89 cells overlaid on BUF / the FN slots / MULPROD / FBUFFR, 290 B,
+  scratchpad/s12_plan.md; 37 rows, K-WS37..54 incl. negative controls). NEXT:
+  S14 (code, ~287 B: DB_WIN 96, DRAW X-frames 33, FOR frame 29, GFX_DEXP 24, CVT,
+  math cells; BUF has 186 spare B for statement-only cells), S13 (~41 B, 🙋 Joost);
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs

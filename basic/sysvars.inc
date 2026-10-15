@@ -706,30 +706,38 @@ GFX_REL         equ     $F6F5   ; parse_coord: 1 = STEP (relative) coordinate, 0
 ; TOKBUF ($E160) out of page 3 to $BA00/$B700, so in the repack build these cells
 ; overlay NOTHING and simply own free RAM; the precondition is no longer load-bearing
 ; and must not be re-derived by a later reader as a live constraint.
+; 🔁 D-WSZERO S12 (2026-10-16) RE-DERIVED IT, deliberately and for a NARROWER set:
+; the box / CIRCLE / PAINT draw-phase cells overlay BUF (= LINEBUF / STRSCR) again,
+; at $F5A0-$F5E7, because LINE / CIRCLE / PAINT take no string argument, every
+; STRSCR value is consumed before the tenant runs, and nothing the evaluator can
+; reach (POINT, SPRITE$) touches them. The Bresenham cells did NOT go there: DRAW
+; reads an INPUT$ argument IN PLACE in STRSCR (s12_plan.md §3.1, knife K-WS52). The
+; precondition IS load-bearing again, for those cells; the guards at the end of
+; this file pin the layout half of it.
 GFX_X1          equ     $F70A   ; LINE endpoint 1 X (int16 LE) -- resident marshals, tenant reads
 GFX_Y1          equ     $F70C   ; LINE endpoint 1 Y (int16 LE)
 GFX_X2          equ     $F70E   ; LINE endpoint 2 X (int16 LE)
 GFX_Y2          equ     $F710   ; LINE endpoint 2 Y (int16 LE)
 GFX_MODE        equ     $EF6F   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
-GFX_CX          equ     $EF70   ; Bresenham: current pixel X (int16, may be off-screen) (2)
-GFX_CY          equ     $EF72   ; Bresenham: current pixel Y (int16) (2)
-GFX_ERR         equ     $EF74   ; Bresenham: error accumulator, in [0,DMAJ) (2)
-GFX_DMAJ        equ     $EF76   ; Bresenham: major-axis delta (2)
-GFX_DMIN        equ     $EF78   ; Bresenham: minor-axis delta (2)
-GFX_CNT         equ     $EF7A   ; Bresenham: major steps still to take (2)
-GFX_STEEP       equ     $EF7C   ; Bresenham: 0 = x-major, 1 = y-major (1)
-GFX_SMIN        equ     $EF7D   ; Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
-GFX_SDX         equ     $EF7F   ; init scratch: sign of (x2-x1), $01/$FF (1)
-GFX_SDY         equ     $EF80   ; init scratch: sign of (y2-y1), $01/$FF (1)
-GFX_TX1         equ     $EF81   ; box: stashed corner 1 X (2)
-GFX_TY1         equ     $EF83   ; box: stashed corner 1 Y (2)
-GFX_TX2         equ     $EF85   ; box: stashed corner 2 X (2)
-GFX_TY2         equ     $EF87   ; box: stashed corner 2 Y (2)
-GFX_FILLCNT     equ     $EF89   ; box fill: scanlines remaining (2)
-GFX_YSTEP       equ     $EF8B   ; box fill: row step, $0001/$FFFF (2)   -> ends $E126 (2 B)
+GFX_CX          equ     $F796   ; Bresenham: current pixel X (int16, may be off-screen) (2)
+GFX_CY          equ     $F798   ; Bresenham: current pixel Y (int16) (2)
+GFX_ERR         equ     $F79A   ; Bresenham: error accumulator, in [0,DMAJ) (2)
+GFX_DMAJ        equ     $F79C   ; Bresenham: major-axis delta (2)
+GFX_DMIN        equ     $F79E   ; Bresenham: minor-axis delta (2)
+GFX_CNT         equ     $F7A0   ; Bresenham: major steps still to take (2)
+GFX_STEEP       equ     $F7A2   ; Bresenham: 0 = x-major, 1 = y-major (1)
+GFX_SMIN        equ     $F7A3   ; Bresenham: minor-axis step, $0001 (+1) or $FFFF (-1) (2)
+GFX_SDX         equ     $F7A5   ; init scratch: sign of (x2-x1), $01/$FF (1)
+GFX_SDY         equ     $F7A6   ; init scratch: sign of (y2-y1), $01/$FF (1)
+GFX_TX1         equ     $F5B8   ; box: stashed corner 1 X (2)
+GFX_TY1         equ     $F5BA   ; box: stashed corner 1 Y (2)
+GFX_TX2         equ     $F5BC   ; box: stashed corner 2 X (2)
+GFX_TY2         equ     $F5BE   ; box: stashed corner 2 Y (2)
+GFX_FILLCNT     equ     $F5C0   ; box fill: scanlines remaining (2)
+GFX_YSTEP       equ     $F5C2   ; box fill: row step, $0001/$FFFF (2)
 ; Graphics G4 (CIRCLE, docs/spec-basic-graphics-g4.md §6). Append-only after G3's
 ; $E126, same discipline (dead during any graphics statement, below the PLAY ISR
-; region; the LINEBUF overlay it was originally argued from is retired — G3 header
+; region; the LINEBUF overlay it was originally argued from is retired — G3 header (re-derived for the draw cells by D-WSZERO S12)
 ; above). GFX_OP=4 selects the tenant arm; GFX_OP/GFX_C ($E030/$E031)
 ; stay shared with G1/G2/G3 (op selector + resolved colour). Spoke lines (§5.3) are
 ; marshalled through the EXISTING G3 GFX_X1/Y1/X2/Y2/GFX_MODE cells with GFX_OP=3 --
@@ -740,30 +748,30 @@ GFX_R           equ     $F66E   ; radius (int16, >=0 -- resident guards G4-rneg)
 GFX_ASPMAJ      equ     $EF93   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
 GFX_ASPS        equ     $F670   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
 GFX_ARCF        equ     $EF96   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
-GFX_SVX         equ     $EF97   ; start boundary vector X, screen-offset scaled ints (2)
-GFX_SVY         equ     $EF99   ; start boundary vector Y (2)
-GFX_EVX         equ     $EF9B   ; end boundary vector X (2)
-GFX_EVY         equ     $EF9D   ; end boundary vector Y (2)
-GFX_FULLW       equ     $EF9F   ; full-wrap flag (0/1): the two boundaries land in the
+GFX_SVX         equ     $F5C4   ; start boundary vector X, screen-offset scaled ints (2)
+GFX_SVY         equ     $F5C6   ; start boundary vector Y (2)
+GFX_EVX         equ     $F5C8   ; end boundary vector X (2)
+GFX_EVY         equ     $F5CA   ; end boundary vector Y (2)
+GFX_FULLW       equ     $F5CC   ; full-wrap flag (0/1): the two boundaries land in the
                                 ; SAME (octant,pos) cell but their RAW (oct,u14) records
                                 ; differ -- a near-2*pi sweep, keep everything. Replaces
                                 ; GFX_ARCBIG: the D-ARCMASK wedge test needs no big/small
                                 ; split, the cyclic pair compare covers both. (1)
-GFX_QX          equ     $EFA0   ; midpoint-circle octant state: x (2)
-GFX_QY          equ     $EFA2   ; midpoint-circle octant state: y (2)
-GFX_QD          equ     $EFA4   ; midpoint-circle octant state: d (signed) (2)
-GFX_PX          equ     $EFA6   ; tenant scratch: current (mirrored+scaled) offset X,
+GFX_QX          equ     $F5CD   ; midpoint-circle octant state: x (2)
+GFX_QY          equ     $F5CF   ; midpoint-circle octant state: y (2)
+GFX_QD          equ     $F5D1   ; midpoint-circle octant state: d (signed) (2)
+GFX_PX          equ     $F5D3   ; tenant scratch: current (mirrored+scaled) offset X,
                                 ; used as the arc cross-product test point P (2)
-GFX_PY          equ     $EFA8   ; tenant scratch: current offset Y (2)
-GFX_CS_AX       equ     $EFAA   ; circleparse scratch: cpt_angle_from_arga's neg-flag
+GFX_PY          equ     $F5D5   ; tenant scratch: current offset Y (2)
+GFX_CS_AX       equ     $F5D7   ; circleparse scratch: cpt_angle_from_arga's neg-flag
                                 ; cell address stash (was gfx_cross_ge0's A.x -- that
                                 ; routine is retired, D-ARCMASK) (2)
-GFX_CS_AY       equ     $EFAC   ; circleparse scratch: cpt_angle_from_arga /
+GFX_CS_AY       equ     $F5D9   ; circleparse scratch: cpt_angle_from_arga /
                                 ; cpt_boundary_prep's dest-record-base stash (2)
-GFX_M           equ     $EFAE   ; D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
+GFX_M           equ     $F5DB   ; D-ARCMASK: M = floor(r/sqrt(2)), the octant's top
                                 ; step index; gfx_circ_wedge_prep, once per CIRCLE (2)
-GFX_WS_P        equ     $EFB0   ; wedge START boundary: in-octant position, 0..M-1 (2)
-GFX_WS_O        equ     $EFB2   ; wedge START boundary: octant 0..7 (1)
+GFX_WS_P        equ     $F5DD   ; wedge START boundary: in-octant position, 0..M-1 (2)
+GFX_WS_O        equ     $F5DF   ; wedge START boundary: octant 0..7 (1)
 ; --- D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md §5.5): the arc
 ; boundary records are (oct_raw, u14) pairs -- the angle's octant count and its
 ; 14-bit fraction into the octant, both trunc'd, from a SINGLE-precision-rounded
@@ -779,15 +787,15 @@ GFX_EOCT        equ     $F744   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)
 GFX_EU14        equ     $F746   ; end: trunc(frac * 16384) (2)
 GFX_SNEG        equ     $EFBB   ; resident: start angle was negative -> spoke pending (1)
 GFX_ENEG        equ     $EFBC   ; resident: end angle was negative -> spoke pending (1)
-GFX_WE_P        equ     $EFBD   ; wedge END boundary: in-octant position, 0..M-1 (2)
-GFX_WE_O        equ     $EFBF   ; wedge END boundary: octant 0..7 (1)
-GFX_WRAPF       equ     $EFC0   ; wedge wraps 0: pair S > pair E lexicographically (1)
+GFX_WE_P        equ     $F5E0   ; wedge END boundary: in-octant position, 0..M-1 (2)
+GFX_WE_O        equ     $F5E2   ; wedge END boundary: octant 0..7 (1)
+GFX_WRAPF       equ     $F5E3   ; wedge wraps 0: pair S > pair E lexicographically (1)
                                 ; -> ends $E15A (the G3/G4/G5 window ends $E15F
                                 ; inclusive; well within the G3 header's budget note)
 ; G5 PAINT (docs/spec-basic-graphics-g5.md §6). ONE new cell in the same window:
 ; the resident-marshalled border colour (the raw, NOT range-checked comparison
 ; value -- spec §3/§5). Same discipline as G3/G4 (dead during any graphics
-; statement, below the PLAY ISR region; the LINEBUF overlay is retired -- G3
+; statement, below the PLAY ISR region; the LINEBUF overlay is retired -- G3 (re-derived for the draw cells by D-WSZERO S12)
 ; header). GFX_OP=5 selects the tenant arm; GFX_OP/GFX_C stay shared with G1-G4.
 ; The much bigger span-stack + its own working scratch do NOT fit here (only 9 B
 ; remain, $E157-$E15F) -- they live in a separate repack-only RAM window below
@@ -812,7 +820,7 @@ GFX_B           equ     $FCB2   ; border colour B, RANGE-CHECKED against the mod
 ; POINT, which is a read-only function. One byte each: the resident only reaches
 ; here after gfx_in_range passed, so both coordinates are 0..255.
 GFX_PTX         equ     $EFBF   ; main->tenant: POINT target X, 0..255 (1)
-GFX_PTY         equ     $EFC0   ; main->tenant: POINT target Y, 0..191 (1) -> ends $E15A
+GFX_PTY         equ     $EFC0   ; main->tenant: POINT target Y, 0..191 (1)
 GFX_CPHASE      equ     $F3F5   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
                                 ; which arg the tenant last requested, so it resumes at
                                 ; the right point after each resident eval-bounce
@@ -883,9 +891,9 @@ FCH_MODES       equ     $F71C   ; 16 B ($F71C..$F72B)
 ; Same aliasing argument as TKNAME/TKRADIX/TKRTOK ($E028..): a line's whole
 ; tokenise pass completes BEFORE any of its tokens execute, so this is dead for
 ; the entire duration of any statement's execution.
-TKLNUM          equ     $EEBF   ; tokeniser: 1 = line-number mode is armed (1)
+TKLNUM          equ     $F7B6   ; tokeniser: 1 = line-number mode is armed (1)
 INDLR_N         equ     $EEC0   ; INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
-MRG_PTR         equ     $EEC1   ; MERGE: write cursor into LINEBUF for the current line (2)
+MRG_PTR         equ     $F7B4   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
 ; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
@@ -1482,8 +1490,8 @@ BL_STAT         equ     $F69D   ; 1 B: tenant -> main. 0 = loaded, 1 = `load -- 
 ; SWAP's operand scratch, which only ex_swap (basic/missing.asm) touches -- never
 ; live across a BLOAD.
 BL_OFS          equ     $F69F   ; 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's)
-SV_OP           equ     $EFDD   ; 1 B: main -> tenant, SV_OP_* engine selector
-SV_STAT         equ     $EFDE   ; 1 B: tenant -> main, 0 = written, 1 = load_error
+SV_OP           equ     $F7A7   ; 1 B: main -> tenant, SV_OP_* engine selector
+SV_STAT         equ     $F7A8   ; 1 B: tenant -> main, 0 = written, 1 = load_error
 SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
 SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
@@ -1678,10 +1686,10 @@ POOLSIZE        equ     $F66A   ; 2 B: the size CLEAR recorded. Written ONLY by
 ; out, which is why fatprim_bounce reloads DISKOP_HL/DISKOP_A rather than trusting
 ; them. So the tenant writes them here and the resident stub reads them straight
 ; back. Own choice, in the free window this comment block used to describe.
-PLN_NUM         equ     $EFE8   ; 2 B: the parsed line number (BC), $FFFF if the
+PLN_NUM         equ     $F7B0   ; 2 B: the parsed line number (BC), $FFFF if the
                                 ; BC*10+digit chain carried (pl_sat's saturation --
                                 ; dl_store's ceiling check rejects it)
-PLN_PTR         equ     $EFEA   ; 2 B: LINEBUF pointer at the body (HL)
+PLN_PTR         equ     $F7B2   ; 2 B: LINEBUF pointer at the body (HL)
 ; FREE-RAM $EE3E..$EE40  below STRTAB/VAREND, which begin at $E240 [D-RAMSHIFT: was $E23E..$E240]
 ; 🔴 $E238..$E23A WAS PART OF THIS RUN AND IS SPENT: TEMPTOP took $E238..$E239
 ; (2026-09-21, D-MERGEWIN, out of disk.rom's SECTOR_BUF window); since
@@ -2043,8 +2051,8 @@ TEMPBASE        equ     TEMPPOOL + TEMPD*3  ; $F698: high boundary = the empty-
 ; ⚠️ ABSOLUTE SINCE D-ADDR29 TEMPST: it used to chain off TEMPBASE, and with the
 ; pool at $F67A that chain would have put ISRCH_A/B on the published DSCTMP
 ; ($F698) and FRETOP ($F69B). It stays where it always was.
-ISRCH_A         equ     $ECF8               ; resolved A-operand body base (2 B)
-ISRCH_B         equ     ISRCH_A + 2         ; $ECFA: resolved B-operand body base (2 B)
+ISRCH_A         equ     $F83B               ; resolved A-operand body base (2 B)
+ISRCH_B         equ     ISRCH_A + 2         ; $F83D: resolved B-operand body base (2 B)
 ; TMISMATCH ($E3E5, 1 B) STOOD HERE -- the string-comparison D-2 marker
 ; (spec-basic-string-compare.md §3c), a boolean read by fourteen sites ahead of
 ; FPERR. D-PENDERR (docs/spec-basic-penderr.md) retired it: it was only ever a
@@ -2055,7 +2063,7 @@ ISRCH_B         equ     ISRCH_A + 2         ; $ECFA: resolved B-operand body bas
 ; LIVE cell belonging to a different subsystem (the MID$()= statement) — a real
 ; regression surface bought for nothing, since RAM is not a wall this project is
 ; anywhere near and both ROM walls are. Spend it when something needs a byte.
-STRENG_SPARE    equ     ISRCH_B + 2         ; $ECFC: 1 B free (was TMISMATCH)
+STRENG_SPARE    equ     $ECFC               ; $ECFC: 1 B free (was TMISMATCH)
 ; MIDS_DEST ($E7E6, 2 B, STRENG_SPARE+1, defined above) sits right above here — the
 ; last claimed cell in the freed STRTAB window.
 ; 🏗️ D-DRAWINPLACE step 2b (2026-10-13): basic-core RAM's block -- this window,
@@ -2121,16 +2129,16 @@ BASIC_WS_CEIL   equ     $EDFD  ; NOT-A-CELL: basic-core RAM stays below basic's 
 ; removes the need for Smith's direction/overhang bookkeeping entirely). This
 ; buys MORE capacity per byte than the spec's own estimate assumed.
 ; $E3E8 was GFX_PTOP (the fixed array's 8-bit index) until D-PAINTSP.
-GFX_POVF        equ     $ECFF   ; 1 = the stack overflowed; resident raises ERR 7 (1)
-GFX_PTESTX      equ     $ED00   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
-GFX_PTESTY      equ     $ED01   ; ...Y (1)
-GFX_PFY         equ     $ED02   ; gfx_paint_flood/_process: current span's row (1)
-GFX_PXL         equ     $ED03   ; ...current span's left column (1)
-GFX_PXR         equ     $ED04   ; ...current span's right column (1)
-GFX_PSCX        equ     $ED05   ; gfx_paint_process/_scan_row: scan cursor column (1)
-GFX_PSCY        equ     $ED06   ; gfx_paint_scan_row: the neighbour row being scanned (1)
-GFX_PSPA        equ     $ED07   ; gfx_paint_scan_row: pending sub-span's start column (1)
-GFX_PSTK        equ     $ED08   ; the graphics UNION's base ($ED08..$ED33)
+GFX_POVF        equ     $F5A0   ; 1 = the stack overflowed; resident raises ERR 7 (1)
+GFX_PTESTX      equ     $F5A1   ; gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1)
+GFX_PTESTY      equ     $F5A2   ; ...Y (1)
+GFX_PFY         equ     $F5A3   ; gfx_paint_flood/_process: current span's row (1)
+GFX_PXL         equ     $F5A4   ; ...current span's left column (1)
+GFX_PXR         equ     $F5A5   ; ...current span's right column (1)
+GFX_PSCX        equ     $F5A6   ; gfx_paint_process/_scan_row: scan cursor column (1)
+GFX_PSCY        equ     $F5A7   ; gfx_paint_scan_row: the neighbour row being scanned (1)
+GFX_PSPA        equ     $F5A8   ; gfx_paint_scan_row: pending sub-span's start column (1)
+GFX_PSTK        equ     $F5A9   ; $F5A9: the PAINT/arc union's base ($F5A9..$F5B6): CS_M1/M2 +0..+7, PSP/PBASE/PFLOOR +8..+13
 ; 🏗️ D-DRAWINPLACE (2026-10-13, RAM order step 2b): this was a 360 B window
 ; ($ED08..$EE6F) sized for PAINT's 120-span array (D-PAINTSP retired it) and then
 ; kept for DRAW's 256 B frame buffer GFX_DBUF (retired by step 2a: DRAW reads its
@@ -2193,9 +2201,9 @@ GFX_PAINT_MARGIN equ    128
 ; CIRCLE's parse co-routine is done. That co-routine borrows GFX_DPTR ($E4F2),
 ; 256 B clear of these 8, and basic/graphics.asm reads GFX_DPTR again AFTER the
 ; draw to continue the statement stream, so the two must not and do not overlap.
-GFX_CS_M1       equ     GFX_PSTK        ; $ED08: D-ARCMASK: 2*M*M during the M
+GFX_CS_M1       equ     GFX_PSTK        ; $F5A9: D-ARCMASK: 2*M*M during the M
                                         ; floor-correction (was cross_ge0's mag1) (4)
-GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $ED0C: r*r for the same compare (4)
+GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $F5AD: r*r for the same compare (4)
                                         ; CONTIGUOUS with M1 -- gcx_zlp tests both as one
                                         ; 8-byte run. (The width moved onto the equ line
                                         ; for D-PAINTSP: ram_map reads it only there, and
@@ -2247,7 +2255,7 @@ GFX_DESC        equ     $01             ; (unused by D-G6-1b; kept out of the bu
 ; ALIASES the PAINT span stack / DRAW frame buffer for exactly the reason those
 ; two alias each other: one graphics statement is in flight at a time, and a
 ; sprite statement neither paints nor draws. Sized 32 = the 16x16 pattern entry.
-GFX_VBUF        equ     GFX_PSTK        ; $ED08: sprite pattern/attribute staging (32 B)
+GFX_VBUF        equ     $F82A           ; $F82A: sprite pattern/attribute staging (32 B)
 ; The sprite parameter block. The resident EVALUATES (that is what it is for --
 ; `eval`, the string heap and the token cursor are all page-1 resident) and the
 ; TENANT decides: entry size and address, the domain checks, the early-clock rule,
@@ -2293,7 +2301,7 @@ GFX_SFLAGS      equ     $F958           ; $F958: which arguments were GIVEN -- (
 ; HERE rather than beside SUBROM_IDX_DEFTYPE because that block sits inside
 ; `IFNDEF SUBROM_ENTRY_BASE_P0`, which the sub-ROM build skips -- and the tenant
 ; needs these addresses.
-DEFT_PTR        equ     $ED8F           ; $ED8F: token cursor in AND out (2)
+DEFT_PTR        equ     $F776           ; $F776: token cursor in AND out (2)
 DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; --- READ/DATA tenant ABI (SUBROM_IDX_READVAL, docs/spec-eviction-g7-space.md) -
 ; read_one_value's (A, DE) contract cannot ride back through subrom_call, so the
@@ -2301,13 +2309,13 @@ DEFT_STATUS     equ     DISKOP_STATUS   ; tenant -> main: 0 ok / 1 = stmt_error
 ; the same one-statement-at-a-time aliasing argument as DEFT_PTR above (a READ and
 ; a graphics statement are never in flight together), and clear of the PERSISTENT
 ; GFX_DSCALE/GFX_DANGLE pair below.
-RDV_VAL         equ     DEFT_PTR + 2    ; $ED91: the value read (int16 LE) (2)
-RDV_ST          equ     RDV_VAL + 2     ; $ED93: tenant -> main STATUS (1): (1 B)
+RDV_VAL         equ     DEFT_PTR + 2    ; $F778: the value read (int16 LE) (2)
+RDV_ST          equ     RDV_VAL + 2     ; $F77A: tenant -> main STATUS (1): (1 B)
                                         ;   0 = out of data      (ERR 4)
                                         ;   1 = an item was read (RDV_VAL / STRSCR)
                                         ;   2 = the item is not a NUMBER (ERR 2) --
                                         ;       D-READVAR's c.strnum, numeric mode only
-RDV_LINE        equ     DEFT_PTR        ; $ED8F: D-READERL -- the link field of the line
+RDV_LINE        equ     DEFT_PTR        ; $F776: D-READERL -- the link field of the line
                                         ; holding the item just read (2). ALIASES
                                         ; DEFT_PTR, by the window's own argument: a READ
                                         ; and a DEF-type statement are never in flight
@@ -2398,7 +2406,7 @@ GFX_G8V         equ     $F665           ; $F665: written value (int16 LE) (2)
 ; guard. One byte turns those seven calls into seven `ld hl,nn` and gives the
 ; cost back. A wall this window could not afford would have been the other
 ; answer; it is 0 B here because G8's cells were already dead.
-GFX_PPITCH      equ     $ED99           ; $ED99: 1 or 4, live only inside a PAINT (1)
+GFX_PPITCH      equ     $F5B7           ; $F5B7: 1 or 4, live only inside a PAINT (1)
 ; (The two window guards that stood here -- TGT_ADDR below the persistent DRAW
 ; cells, G8's cells below BASIC_WS_CEIL -- went with D-WSZERO S11: both cells live
 ; in idle published bytes now. The host-fit guards are at the end of this file.)
@@ -3501,10 +3509,10 @@ RN_LINE         equ     SL_SIZE         ; RENUM: the OLD number of the line it i
 ; to a grep and is not: $E000 is the demo blob's "JONG" marker / POKE test
 ; target (the RAM-scratch header above says so in as many words), and a 2-byte
 ; cell at $E00F runs straight over ERRMARK at $E010.
-RN_PTR          equ     $EE6D           ; RENUM: the reference-pass cursor (2)
+RN_PTR          equ     $F5E4           ; RENUM: the reference-pass cursor (2)
 RN_NEW          equ     $F6AB           ; RENUM: first new line number (2)
                                   ; D-WSZERO S8: the reference's AUTLIN (shared with AUTO's AU_NUM) (was $EE6F)
-RN_OLD          equ     $EE71           ; RENUM: old line to start renumbering at (2)
+RN_OLD          equ     $F5E6           ; RENUM: old line to start renumbering at (2)
 RN_INC          equ     $F6AD           ; RENUM: increment (2)
                                   ; D-WSZERO S8: the reference's AUTINC (shared with AUTO's AU_INC) (was $EE73)
 ; AUTO's two values, a FIFTH namespace on RENUM's own cells: one subrom_call
@@ -3778,7 +3786,7 @@ AUDIO_STATUS    equ     DISKOP_STATUS   ; $EE39 tenant->main: 0 ok / nonzero ERR
 ; QUEBAK putback area ($F971-F974, a "TODO purpose" cell in the music work area we
 ; do not use in 2a). The persistent per-voice state (octave/length/tempo/...) lives
 ; in the VCBs; the source cursor rides HL and the byte count B during a voice parse.
-PLY_NUMOVF      equ     $EE3A        ; $EE3A (1): pt_number 16-bit overflow latch
+PLY_NUMOVF      equ     $F82C        ; $F82C (1): pt_number 16-bit overflow latch
                                 ; D-WSZERO S9b: a literal, was `equ DISKOP_A` -- an alias of a
                                 ; DISK-ONLY name would hide this diskless user from A17
 ;                 (was PLY_NUM, a 'decimal number-literal accumulator' that NOTHING
@@ -3994,8 +4002,8 @@ PU_WP           equ     $F095   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; they were DERIVED equates, not code; the assembler found them. Each now takes
 ; a declared FREE-RAM run of its own: both are live at once and while
 ; PRINT USING's field is being built in the render window (DB_WIN).
-PU_NUM          equ     $EE9D   ; PRINT USING numeric render buffer, 0-terminated (32 B)
-PU_DIG          equ     $EECA   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
+PU_NUM          equ     $F756   ; PRINT USING numeric render buffer, 0-terminated (32 B)
+PU_DIG          equ     $F776   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
 PU_COMMAS       equ     $F095   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
 PU_DEC          equ     $F096   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
@@ -4310,12 +4318,12 @@ COPY_CLUS       equ     $EEF9   ; DISK-ONLY: the source's first cluster (word)
 COPY_LEFT       equ     $EEFB   ; DISK-ONLY: bytes still to copy (4-byte LE)
 ; D-SCREDIT (docs/spec-basic-screditor.md): read_line's marshalling to the readline
 ; tenant, 6 B from the same band.
-RL_HL           equ     $EEFF   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
-RL_STAT         equ     $EF01   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
-RL_ROW0         equ     $EF02   ; the row where input began (1-based; 0 once scrolled off) (1)
-RL_COL0         equ     $EF03   ; the column where input began, after any prompt (1)
-RL_LAST         equ     $EF04   ; the logical line's last row at Enter (1)
-RL_KEY          equ     $EF05   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
+RL_HL           equ     $F7A9   ; main -> tenant: the write cursor (LINEBUF, or AUTO's preset) (2)
+RL_STAT         equ     $F7AB   ; tenant -> main: 0 = Enter, $FF = Ctrl-STOP / Ctrl-C (1)
+RL_ROW0         equ     $F7AC   ; the row where input began (1-based; 0 once scrolled off) (1)
+RL_COL0         equ     $F7AD   ; the column where input began, after any prompt (1)
+RL_LAST         equ     $F7AE   ; the logical line's last row at Enter (1)
+RL_KEY          equ     $F7AF   ; main -> tenant: the key CHGET returned (main waits in CHGET, as before) (1)
 ; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
 ; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
 ; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
@@ -4524,7 +4532,7 @@ FACTYP          equ     $F663   ; 2=int / 4=single / 8=double (1)
 ; unconditionally (D-MSGMIGRATE). ⚠️ The width lives on the equ line on purpose:
 ; spread over the continuation, the width reader took a number from the middle
 ; of the prose, which only mattered once D-DETOKBUF put DB_SP at $F01C.
-TKOVF           equ     $F09F   ; tokeniser reject code, 0 = ok (1 B)
+TKOVF           equ     $F7C5   ; tokeniser reject code, 0 = ok (1 B)
 ; 🏗️ D-ADDR29 DAC, the FAC half (2026-09-25): FAC IS the published DAC. The
 ; 8 bytes are the same MSX BCD layout as the tokenised literal and as DAC, so
 ; this is an equate; $F01C..$F023 is freed. Every FAC user is offset-internal
@@ -4557,7 +4565,7 @@ FBUFFR          equ     $F7C5   ; published: number-conversion buffer (43 B)
 ; any X nesting depth drops the saved source cursors in one `ld sp,(nn)`, and
 ; depth 0 is "SP is back here". In the 24 B S1 freed at $F024 (FOUTBUF's old
 ; home -- nothing addressed FAC+8.. or the old run, checked by grep).
-PLY_XSP         equ     $F0A8   ; PLAY X: saved SP at pt_voice's call (2)
+PLY_XSP         equ     $F82A   ; PLAY X: saved SP at pt_voice's call (2)
 ; D-OKSTORE (2026-09-24, scratchpad/okstore_probe.py): does a prompt follow this
 ; typed line? The reference prints `Ok` after a direct command and after an error,
 ; and NOTHING after a stored/deleted line or an empty Enter. Protocol:
@@ -4580,23 +4588,23 @@ PRMWANT         equ     $F73D   ; D-OKSTORE: nonzero = print the prompt (1)
 STOPHOLD        equ     $FC89   ; (TRPTBL tail, D-WSZERO) D-STOPTAP: frames Ctrl-STOP has been held (1)
 STOPREP_FIRST   equ     39      ; D-STOPTAP: frames held before the first re-fire, as COUNTED here
 FOUTBUF         equ     FBUFFR+1 ; flt_out formatter output scratch (24)
-TKDIG           equ     $F0AB   ; tokeniser/formatter: significant-digit array, $F0AB..$F0C2
+TKDIG           equ     $F82A   ; tokeniser/formatter: significant-digit array, $F82A..$F841
                                 ; one decimal digit value (0-9) per byte (24)
 ; tk_float single-literal scan state (own choice — free RAM; transient, dead
 ; between literals). See sub/tkfloat.asm tk_float for field semantics (the crunch
 ; was evicted to the sub-ROM; this pointer said basic/float.asm until 2026-08-30).
-TKPOS           equ     $F0C3   ; running digit-position counter (1)
-TKINTLEN        equ     $F0C4   ; integer-part digit count = P (1)
-TKHAVESIG       equ     $F0C5   ; 1 once the first nonzero digit is seen (1)
+TKPOS           equ     $F842   ; running digit-position counter (1)
+TKINTLEN        equ     $F843   ; integer-part digit count = P (1)
+TKHAVESIG       equ     $F844   ; 1 once the first nonzero digit is seen (1)
 TKNZPOS         equ     $F7FE   ; position of the first nonzero digit = f (1)
 TKDCOUNT        equ     $F7FF   ; classification digit count = D, saturating (1)
 TKSTORED        equ     $F800   ; digits actually written to TKDIG, capped 24 (1)
 TKFLAGS         equ     $F801   ; bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1)
-TKEXP           equ     $F0CA   ; signed explicit exponent, saturated +-9999 (2)
-TKEXPD          equ     $F0CC   ; 1 = the exponent marker being parsed is D/d (1)
-TKEXPSIGN       equ     $F0CD   ; 1 = the exponent being parsed is negative (1)
+TKEXP           equ     $F845   ; signed explicit exponent, saturated +-9999 (2)
+TKEXPD          equ     $F847   ; 1 = the exponent marker being parsed is D/d (1)
+TKEXPSIGN       equ     $F848   ; 1 = the exponent being parsed is negative (1)
 TKPC            equ     $F802   ; target precision digit count: 6 / 14 (1)
-TKDEXP          equ     $F0CF   ; signed dec_exp, pre-/post-round (2)
+TKDEXP          equ     $F849   ; signed dec_exp, pre-/post-round (2)
 TKLEAD          equ     $F803   ; computed lead byte (sign+excess-64 exponent) (1)
 ; flt_out formatter scratch (own choice — free RAM; transient, dead between
 ; PRINT items). TKPC/TKDEXP/TKDIG above WERE reused here too until C8
@@ -4653,7 +4661,7 @@ FOSIGCOUNT      equ     $F804   ; significant digit count = s, trailing zeros
 ; across those calls (own choice — free RAM; simpler and less error-prone
 ; than juggling stack push/pop order against the also-stacked TOKBUF dest
 ; cursor). See tkf_classify / the tkf_go_int / tkf_single / tkf_double tails.
-TKSRCSAVE       equ     $F0D5   ; (2)
+TKSRCSAVE       equ     $F84B   ; (2)
 
 ; --- Math float pack, slice F2 RAM (repack build only) ----------------------
 ; docs/spec-basic-float-core.md §10. Own-choice free RAM, same rationale as the
@@ -4697,18 +4705,18 @@ ARGA            equ     $F806   ; operand A / working result, FPNUM record (18)
 ARGB            equ     $F818   ; operand B, FPNUM record (18)
 MULPROD         equ     $F82A   ; fp_mul: 28-digit product (14x14), MSD first (28)
 DIVPAD          equ     $F83E   ; fp_div: divisor zero-padded to 15 digits (15)
-DIVREM          equ     $F0D7   ; fp_div: running remainder, 15 digits (15)
+DIVREM          equ     $F7DE   ; fp_div: running remainder, 15 digits (15)
 CVT             equ     $F0E6   ; fac_to_int_strict/addr + flt_to_int16 (float.asm)
                                 ; shared unpack scratch, FPNUM-shaped (18)
-LHS_FACTYP      equ     $F0F8   ; ev_e/ev_t binary-op sites: the LHS operand's FACTYP,
+LHS_FACTYP      equ     $F7F5   ; ev_e/ev_t binary-op sites: the LHS operand's FACTYP,
                                 ; popped off the machine-stack frame (spec §1 bullet 4:
                                 ; "fixed lhs frames live on the machine stack, not RAM")
                                 ; into RAM so the widening loaders can address it (1)
-LHS_FAC         equ     $F0F9   ; ...and the LHS operand's raw FAC bytes (8)
+LHS_FAC         equ     $F7ED   ; ...and the LHS operand's raw FAC bytes (8)
 ; Small general scratch cells, own choice — free RAM, grouped so each use is
 ; documented once instead of at every call site (float-arith.asm headers name
 ; which routine owns which cell at the point of use).
-FP_SHIFTAMT     equ     $F101   ; dig15_shr/dig15_shl: shift-amount parameter (1)
+FP_SHIFTAMT     equ     $F831   ; dig15_shr/dig15_shl: shift-amount parameter (1)
 FP_LHSVAL       equ     $F84F   ; combine_*: the LHS operand's plain int16 value,
                                 ; stashed off the machine stack (2)
 FP_TMP_B        equ     $F851   ; combine_*: the RHS operand's plain int16 value,
@@ -4719,32 +4727,32 @@ KEYARG          equ     $F856   ; D-KEYSTR: main -> keystr_tenant op/slot (0 =
                                 ; aliased WIDIG until D-WSZERO S11: fp widening scratch, dead
                                 ; by the time a statement calls the tenant, and
                                 ; a KEY statement widens nothing after it. (1)
-WIDIG           equ     $F107   ; widen_int_to: binary->BCD digit scratch, up to
+WIDIG           equ     $F832   ; widen_int_to: binary->BCD digit scratch, up to
                                 ; 5 decimal digits (32768 max magnitude) (5)
-MUL_I           equ     $F10C   ; fp_mul: outer-loop digit index i, 13 downto 0;
+MUL_I           equ     $F846   ; fp_mul: outer-loop digit index i, 13 downto 0;
                                 ; widen_int_to: digit count N, 0..5 (shared, dead
                                 ; between uses) (1)
 MUL_ADIG        equ     $F854   ; fp_mul: A[i], the current outer-loop digit (1)
 MUL_CARRY       equ     $F855   ; fp_mul: running carry within one outer pass;
                                 ; fp_div's fpd_trial_digit: trial-subtract count
                                 ; (shared, dead between uses) (1)
-MUL_PP          equ     $F10F   ; fp_mul: MULPROD write-cursor for the inner loop (2)
-MULCAND         equ     $F111   ; mul16x16_32: multiplicand operand (2)
-MULTPLR         equ     $F113   ; mul16x16_32: multiplier operand, shifted in place (2)
-MUL32           equ     $F115   ; mul16x16_32: 32-bit unsigned product, LE
+MUL_PP          equ     $F847   ; fp_mul: MULPROD write-cursor for the inner loop (2)
+MULCAND         equ     $F82A   ; mul16x16_32: multiplicand operand (2)
+MULTPLR         equ     $F82C   ; mul16x16_32: multiplier operand, shifted in place (2)
+MUL32           equ     $F82E   ; mul16x16_32: 32-bit unsigned product, LE
                                 ; (low16 then high16) (4)
 WSRC            equ     $F84D   ; widen_fac_to/widen_lhsframe_to (shared unpack
                                 ; body): address of the source's lead+mantissa
                                 ; bytes, FAC or LHS_FAC (2)
 WSRC_TYP        equ     $F11B   ; ...and the address of its type byte, FACTYP
                                 ; or LHS_FACTYP (2)
-FP_OPMODE       equ     $F11D   ; combine_add/combine_sub shared body: 0=add,
+FP_OPMODE       equ     $F84C   ; combine_add/combine_sub shared body: 0=add,
                                 ; 1=sub (1)
-CVT_MODE        equ     $F11E   ; domain_convert_core: 0=strict int16 domain,
+CVT_MODE        equ     $F11E   ; domain_convert_core: 0 = the strict signed domain,
                                 ; 1=address domain (1)
-PLF_RA          equ     $F11F   ; pop_lhs_and_probe: scratch home for its own
+PLF_RA          equ     $F837   ; pop_lhs_and_probe: scratch home for its own
                                 ; "call"-pushed return address (2)
-PLF_RA2         equ     $F121   ; ...and for its DIRECT caller's (combine_add/ (2 B)
+PLF_RA2         equ     $F839   ; ...and for its DIRECT caller's (combine_add/ (2 B)
                                 ; sub/mul/cmp/div_float's own) "call"-pushed
                                 ; return address, which sits ON TOP of the
                                 ; persistent lhs frame too -- every combine_*
@@ -5548,4 +5556,82 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF GFX_DDY + 2 > SW_ADDR
                 db      S11_DRAW_DELTA_OVERRAN_INTO_SWAPS_CELLS
+    ENDIF
+
+; --- D-WSZERO S12: the overlay-fit guards --------------------------------------
+; 89 transient cells now OVERLAY four hosts whose own users provably never run
+; while they are live (scratchpad/s12_plan.md): BUF (the graphics draw-phase
+; cells DRAW never touches, + RENUM), the DEF FN shadow slots (statement-only
+; cells with no expression evaluation in their live range), MULPROD+DIVPAD (the
+; scratch of leaf routines that never nest), and FBUFFR's idle bytes. Each guard
+; pins a LAYOUT fact one of those proofs relies on; 0 ROM bytes.
+    IF GFX_POVF < LINEBUF
+                db      S12_BUF_GUESTS_BELOW_BUF
+    ENDIF
+    IF RN_OLD + 2 > LINEBUF + 258
+                db      S12_BUF_GUESTS_OVERRAN_BUF
+    ENDIF
+    IF GFX_PFLOOR + 2 > GFX_PPITCH
+                db      S12_PAINT_UNION_OVERRAN_INTO_PPITCH
+    ENDIF
+    IF PU_NUM < FN_PAREA
+                db      S12_FN_GUESTS_BELOW_THE_SHADOW_SLOTS
+    ENDIF
+    IF TKLNUM + 1 > FN_PAREA_END
+                db      S12_FN_GUESTS_OVERRAN_INTO_FPERR
+    ENDIF
+    IF RL_HL < $F7A9
+                db      S12_READLINE_CELLS_INSIDE_DISKROM_BDOS_CONSOLE_SCRATCH
+    ENDIF
+    IF TKDIG < MULPROD
+                db      S12_LEAF_GUESTS_BELOW_MULPROD
+    ENDIF
+    IF TKSRCSAVE + 2 > DIVPAD + 15
+                db      S12_TK_CELLS_OVERRAN_INTO_WSRC
+    ENDIF
+    IF GFX_VBUF + 32 > DIVPAD + 15
+                db      S12_SPRITE_STAGING_OVERRAN_INTO_WSRC
+    ENDIF
+    IF FP_OPMODE + 1 > DIVPAD + 15
+                db      S12_OPMODE_OVERRAN_INTO_WSRC
+    ENDIF
+    IF (high TKDIG) != (high (TKDIG + 23))
+                db      S12_TKDIG_CROSSES_A_PAGE__DETOK_CP_LOW_TKDIG
+    ENDIF
+; co-live pairs (one routine holds both): they may NOT share a byte
+    IF MUL_I < MULPROD + 28
+                db      S12_MUL_I_INSIDE_FP_MULS_OWN_PRODUCT
+    ENDIF
+    IF MUL_PP < MUL_I + 1
+                db      S12_MUL_PP_ON_MUL_I
+    ENDIF
+    IF WIDIG + 5 > MUL_I
+                db      S12_WIDIG_ON_MUL_I__WIDEN_UINT_TO_HOLDS_BOTH
+    ENDIF
+    IF FP_SHIFTAMT + 1 > DIVPAD
+                db      S12_SHIFTAMT_INSIDE_FP_DIVS_DIVPAD
+    ENDIF
+    IF WIDIG + 5 > PLF_RA
+                db      S12_WIDIG_ON_PLF__CADDSUB_HOLDS_FP_OPMODE_ACROSS_BOTH
+    ENDIF
+    IF MUL_PP + 2 > FP_OPMODE
+                db      S12_MUL_PP_ON_FP_OPMODE
+    ENDIF
+    IF FP_OPMODE < PLF_RA2 + 2
+                db      S12_FP_OPMODE_ON_PLF
+    ENDIF
+    IF DIVREM < FOUTBUF + 24
+                db      S12_DIVREM_INSIDE_FOUTBUF
+    ENDIF
+    IF DIVREM + 15 > LHS_FAC
+                db      S12_DIVREM_ON_LHS_FAC
+    ENDIF
+    IF LHS_FAC + 8 > LHS_FACTYP
+                db      S12_LHS_FAC_ON_LHS_FACTYP
+    ENDIF
+    IF LHS_FACTYP + 1 > DAC
+                db      S12_LHS_FRAME_OVERRAN_INTO_DAC
+    ENDIF
+    IF TKOVF != FBUFFR
+                db      S12_TKOVF_LEFT_FBUFFR_0
     ENDIF

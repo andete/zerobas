@@ -1,0 +1,5 @@
+K-WS37: rows ['ctl', 's12gfx', 's12dir'] diverging ['s12gfx', 's12dir']; predicted ['s12gfx', 's12dir'] -> HIT
+K-WS38: rows ['s12gfx', 's12num', 's12inp', 's12dir'] diverging ['s12gfx', 's12num', 's12inp', 's12dir']; predicted ['s12gfx', 's12num', 's12inp', 's12dir'] -> HIT
+K-WS39: rows ['ctl', 's12gfx', 's12num', 's12inp'] diverging ['s12gfx', 's12num', 's12inp']; predicted ['s12gfx', 's12num', 's12inp'] -> HIT
+K-WS40: rows ['ctl', 's12num'] diverging ['s12num']; predicted ['s12num'] -> HIT
+restored: build rc=0; SAME

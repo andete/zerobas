@@ -139,6 +139,22 @@ _S11_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 19:READ P,Q:FOR I=P TO Q:S=
             ':PRINT"[S";S;"]":END',
             "950 DATA " + S11_SPANS]
 RUN_GAP = {"s11gfx": 60.0}
+# D-WSZERO S12: 89 transient cells OVERLAY four hosts (BUF, the DEF FN shadow
+# slots, MULPROD+DIVPAD, FBUFFR's idle bytes). As S11: load $A5 over the whole
+# window, run every user of one group, sum the 290 bytes S12 vacated (the pre-S12
+# homes, frozen here: 27 spans) -- the VG-8020 leaves them alone: 165 * 290 = 47850.
+# The ov* rows sum nothing: each runs a host's users and its guests' users
+# interleaved in ONE program (the closest-to-breaking shapes, s12_plan.md §5) and
+# must read as the VG-8020 does.
+for _r in ("s12gfx", "s12num", "s12inp", "s12dir", "ovbuf", "ovfn", "ovleaf", "ovfbuf"):
+    RANGES[_r] = RANGES["all"]
+S12_SPANS_A = "60664,60667,60671,60723,60815,60819,60825,60825,61037,61038,61041,61042,61085,61116,61119,61119,61121,61122,61130,61161,61183,61189,61296,61324,61335,61362"
+S12_SPANS_B = "61373,61374,61405,61406,61416,61419,61599,61599,61608,61609,61611,61637,61642,61645,61647,61648,61653,61669,61688,61697,61703,61708,61711,61720,61725,61725,61727,61730"
+_S12_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 27:READ P,Q:FOR I=P TO Q:S=S+PEEK(I):NEXT:NEXT'
+            ':PRINT"[S";S;"]":END',
+            "950 DATA " + S12_SPANS_A, "951 DATA " + S12_SPANS_B]
+RUN_GAP.update({"s12gfx": 60.0, "s12num": 60.0, "s12dir": 60.0})
+TAPES["s12dir"] = lambda: tape(*RANGES["s12dir"]) + build_cas_ascii("M", '30 PRINT"[M]"\r\n')
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -286,6 +302,67 @@ PROGRAM_S11INP = [
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
     '20 DIM A(2):INPUT"[I";A(1):GOTO 900',
 ] + _S11_SUM + ["RUN", "@WAIT40", "42"]
+PROGRAM_S12GFX = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2,2:SPRITE$(0)=STRING$(32,255):A$=SPRITE$(0):PUT SPRITE 0,(60,60),15,0',
+    '30 LINE(10,10)-(60,40),15,B:LINE(70,10)-(120,40),15,BF:CIRCLE(128,96),40,15,-.5,-2.5,1.4',
+    '40 CIRCLE(60,140),20,15:PAINT(60,140),15:DRAW"BM200,100R10D10L10":GOTO 900',
+] + _S12_SUM + ["RUN"]
+PROGRAM_S12NUM = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DIM X(2):DEFINT W:READ X(1),B$:C#=1#/3#:D=1.5*2.25:E=300*200:A%=7:F=A%+1.5:V=VAL("12.5E1")',
+    '30 J=INSTR("ABCDEF","DE"):PLAY"T255L64C":PRINT"[U";:PRINT USING"##.##^^^^";V',
+    '40 PRINT"[N";X(1);C#;D;E;F;J;"]":GOTO 900',
+    '60 DATA 5.5,"Q"',
+] + _S12_SUM + ["RUN"]
+PROGRAM_S12INP = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DIM A(2):INPUT"[I";A(1):LINE INPUT"[L";B$:GOTO 900',
+] + _S12_SUM + ["RUN", "@WAIT40", "4.2", "HI"]
+PROGRAM_S12DIR = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    "20 END",
+] + _S12_SUM + ["RUN", "@WAIT40", 'MERGE"CAS:"', "@WAIT40", "RENUM 2000,900,100", "GOTO 2000"]
+# (the waits: lines typed while the tape load ran lost their leading characters
+# on the VG-8020 -- the harness reported it as an apparatus failure, first cut)
+PROGRAM_OVBUF = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2:DRAW INPUT$(24):P=POINT(50,10)+2*POINT(50,50)+4*POINT(10,50)',
+    '30 CIRCLE(128,96),30,15:PAINT(128,96),15:Q=POINT(128,96):LINE(0,0)-(20,20),15,BF:R=POINT(5,5)',
+    '40 SCREEN 0:PRINT"[P";P;Q;R;"]":END',
+    "RUN", "@WAIT40", "BM10,10R40D40L40U40BM0,0",
+]
+PROGRAM_OVFN = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 DEF FNA(A,B,C,D,E,F,G,H,I)=A+B+C+D+E+F+G+H+I:DEF FNE(X)=Y(99):X=7:DIM Z(2):ON ERROR GOTO 100',
+    '30 PRINT"[U";:PRINT USING"###.##";FNA(1,2,3,4,5,6,7,8,9.5):SCREEN 2:K=FNA(1,1,1,1,1,1,1,1,2):DRAW"BM50,50R=K;D10"',
+    '40 Q=POINT(55,50)+2*POINT(60,55):CIRCLE(FNA(1,2,3,4,5,6,7,8,9)+83,96),FNA(1,1,1,1,1,1,1,1,12),15:R=POINT(128,76)',
+    '45 READ Z(FNA(0,0,0,0,0,0,0,0,1)):W=FNE(1)',
+    '50 SCREEN 0:LINE INPUT"[L";B$:PRINT"[F";Q;R;Z(1);X;B$;"]":END',
+    '60 DATA 5',
+    '100 RESUME NEXT',
+    "RUN", "@WAIT40", "HI",
+]
+PROGRAM_OVLEAF = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2,VAL("2"):SPRITE$(0)=STRING$(32,VAL("255")):A$=SPRITE$(VAL("0")):PUT SPRITE 0,(INSTR("ABC","C")*10,VAL("50")),15,0',
+    '30 J=INSTR(STR$(1/3),"3"):K=VAL("1.5E1")*3/7:L=300*200:M=VAL("2.5")+1.5:PLAY"T200L64C"',
+    '40 SCREEN 0:PRINT"[V";LEN(A$);ASC(A$);J;K;L;M;"]":END',
+    "RUN",
+]
+PROGRAM_OVFBUF = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 A=1/3:B$=STR$(-2/3):C=1.5*2.25:D#=-1.23456789012345D-12:PRINT"[Q";A;B$;C;D#;-7/3;"]":END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -319,7 +396,10 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "fldread": PROGRAM_FLDREAD, "fldclr": PROGRAM_FLDCLR,
             "flderase": PROGRAM_FLDERASE, "lset": PROGRAM_LSET,
             "inpeof": PROGRAM_INPEOF, "valtyp": PROGRAM_VALTYP,
-            "s11gfx": PROGRAM_S11GFX, "s11num": PROGRAM_S11NUM, "s11inp": PROGRAM_S11INP}
+            "s11gfx": PROGRAM_S11GFX, "s11num": PROGRAM_S11NUM, "s11inp": PROGRAM_S11INP,
+            "s12gfx": PROGRAM_S12GFX, "s12num": PROGRAM_S12NUM, "s12inp": PROGRAM_S12INP,
+            "s12dir": PROGRAM_S12DIR, "ovbuf": PROGRAM_OVBUF, "ovfn": PROGRAM_OVFN,
+            "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF}
 
 
 def tape(lo, hi, fill=0xA5):

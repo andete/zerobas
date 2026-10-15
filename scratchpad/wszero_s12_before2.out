@@ -1,0 +1,8 @@
+ROW s12dir $ECF8-$F37F VG=[[S 47886 ]] ZB=[[S 36134 ]] DIVERGES
+ROW ovbuf $ECF8-$F37F VG=[[P 105  15  15 ]] ZB=[[P 105  15  15 ]] SAME
+ROW ovfn $ECF8-$F37F VG=[[LHI | [F 45  15  5  7 HI]] ZB=[[LHI | [F 45  15  5  7 HI]] SAME
+ROW ovleaf $ECF8-$F37F VG=[[V 32  255  3  6.4285714285714  60000  4] ZB=[[V 32  255  3  6.4285714285714  60000  4] SAME
+ROW ovfbuf $ECF8-$F37F VG=[[Q .33333333333333 -.66666666666667] ZB=[[Q .33333333333333 -.66666666666667] SAME
+
+FAIL: a load over the window, then BASIC (4/5 as pinned); unpinned divergence: s12dir
+refcache: 0 hit, 10 miss, 10 stored

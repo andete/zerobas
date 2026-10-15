@@ -1341,8 +1341,10 @@ def selftest(lo, hi) -> int:
     ok["A14 a disk cell INSIDE basic's FWBUF names that buffer"] = \
         any("FWBUF" in n for _c, n, _o
             in byaddr14[d_all.vals["WRBLK_MULACC"]][1])
+    # (DB_WIN, not TKLNUM: D-WSZERO S12 moved TKLNUM out of [$E000,$F380), which
+    # this map does not cover -- the arm then read a KeyError, not a verdict)
     ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
-        byaddr14[b_all.vals["TKLNUM"]][1] == []
+        byaddr14[b_all.vals["DB_WIN"]][1] == []
     # SH_SRC's width lives on its continuation line ("address (2 B)"), which is
     # exactly why joining exists -- and exactly why the PURPOSE must not join.
     flat14 = Map("basic", lo, hi, joint=False)

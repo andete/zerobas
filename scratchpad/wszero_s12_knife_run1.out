@@ -1,0 +1,9 @@
+K-WS37: build rc=2 ROM moved=False pin-check rc=2 -- NOT SCORED
+K-WS38: build rc=2 ROM moved=False pin-check rc=2 -- NOT SCORED
+K-WS39: build rc=2 ROM moved=False pin-check rc=2 -- NOT SCORED
+K-WS40: build rc=2 ROM moved=False pin-check rc=2 -- NOT SCORED
+K-WS52: rows ['ctl', 'ovbuf'] diverging ['ovbuf']; predicted ['ovbuf'] -> HIT
+K-WS53: build rc=2, S12_MUL_PP_ON_FP_OPMODE named in the log; predicted the guard refuses -> HIT
+K-WS54: build rc=2, S12_MUL_I_INSIDE_FP_MULS_OWN_PRODUCT named in the log; predicted the guard refuses -> HIT
+restored: build rc=0; SAME
+rc=0

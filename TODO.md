@@ -3139,6 +3139,63 @@ item — do **one item per session** to keep context lean.
       frame copy, CVT, the math-pack cells), S13 ~40 (SLTWRK / PROCNM, 🙋
       Joost's call), deferred 15; `python3 tools/ram_map.py --floor-top F380`
       counts what still stands.
+      ✅ **S12 (2026-10-16): 89 TRANSIENT CELLS OVERLAY FOUR HOSTS WHOSE OWN USERS
+      PROVABLY NEVER RUN WHILE THEY ARE LIVE -- 290 window bytes freed, 0 ROM.**
+      Planned by a read-only subagent ([`s12_plan.md`](scratchpad/s12_plan.md),
+      exact lines in [`s12_replacements.md`](scratchpad/s12_replacements.md), a
+      proof per placement with file:line, an in-memory dry run): BUF $F5A0-$F5E7
+      (72 B: the PAINT / box / CIRCLE draw-phase cells and RENUM's -- none of those
+      statements takes a string argument, the graphics tenant calls nothing
+      outside itself; the Bresenham cells were REJECTED there because DRAW reads
+      an INPUT$ argument in place in STRSCR = BUF); the DEF FN shadow slots
+      $F756-$F7B8 (97 of 99 B: PRINT USING's buffers, Bresenham, read_line, PLN,
+      MERGE, SAVE, TKLNUM, READ / DEFINT on PU_DIG -- every slot read stops at
+      FN_FEND, empty whenever no FN call runs, and these users evaluate nothing
+      while their cells are live); MULPROD + DIVPAD (96 guest bytes over 35: leaf
+      routines that never call each other or out); FBUFFR's idle bytes (TKOVF,
+      DIVREM, LHS_FAC / LHS_FACTYP). Rejected: KBUF (a direct GOSUB keeps the
+      typed line live) and every cell live across an expression evaluation.
+      23 overlay-fit guards pin the layout facts the proofs rest on (most with
+      zero slack); STRENG_SPARE re-anchored; two width pins went; two comments
+      whose wording ram_map read as widths fixed; ram_map's A14 negative arm
+      re-anchored (TKLNUM left its range).
+      📏 Rows: `s12gfx` / `s12num` / `s12inp` / `s12dir` sum the 290 vacated
+      bytes after a full-window load (VG-8020 47886 -- the plan's 47850 forgot
+      the `ret` byte at the load's first address); `ovbuf` / `ovfn` / `ovleaf` /
+      `ovfbuf` run each host's users and its guests' users in ONE program
+      (DRAW INPUT$ + CIRCLE / PAINT, a 9-formal FN inside PRINT USING / CIRCLE /
+      READ and an error inside an FN body, VAL / INSTR / STR$ inside sprites and
+      PLAY, the longest number forms). Before, on S11's build
+      ([`wszero_s12_before.out`](scratchpad/wszero_s12_before.out),
+      [`wszero_s12_before2.out`](scratchpad/wszero_s12_before2.out)): the four
+      sums 28083 / 32283 / 36817 / 36134, the four overlay rows SAME -- 🔮 HIT x8;
+      `s12dir`'s first cut typed MERGE while the tape load still ran and the
+      harness reported an APPARATUS FAILURE (now two @WAIT40). After: 37/37 SAME
+      ([`wszero_s12_rows.out`](scratchpad/wszero_s12_rows.out)). 🔪
+      [`wszero_s12_knife.py`](scratchpad/wszero_s12_knife.py): K-WS37..40, one
+      host's guests back per knife -- the first run
+      ([`wszero_s12_knife_run1.out`](scratchpad/wszero_s12_knife_run1.out)) could
+      score none of the four: the S12 guards REFUSED every group put back, each on
+      its own S12_* symbol (the guards' own witness); re-run with them disabled
+      ([`wszero_s12_knife.out`](scratchpad/wszero_s12_knife.out)): each diverges
+      exactly its predicted rows, 4/4 HIT. Negative controls, each a placement the
+      plan REJECTED: K-WS52 (Bresenham into BUF at LINEBUF+8) -> `ovbuf` diverges,
+      HIT; K-WS53 (FP_OPMODE onto WIDIG) and K-WS54 (MUL_I inside fp_mul's
+      product) -> the build refuses on the named guard, HIT, HIT. Not run, stated:
+      K-WS55 (a cell live across an evaluation into the FN slots) needs a
+      `COLOR FNA()` row the probe lacks; SV_OP / SV_STAT have no row (no tape
+      write in this harness).
+      ➡️ Left, untagged and diskless, in the window: ~328 B -- S14 code ~287
+      (DB_WIN 96 + detok 12, the DRAW X-frame stack 33, FOR's frame copy 29,
+      GFX_DEXP 24, CVT 18, HORNER_G 18, MATH_A 18, singles), S13 ~41 (🙋 Joost:
+      the slot-0 sub-slot SLTWRK entries and PROCNM). BUF has 186 spare bytes
+      for S14's statement-only cells once they stop being live across an
+      evaluation.
+      🔎 Found in passing (s12_plan.md §8, unmeasured): `INPUT A,B(LEN(INPUT$(5)))`
+      may overwrite the unread answer in BUF; RUN (and the pinned $73AC) never
+      resets FN_FEND; ws_shift misses `low(` without a space; disk.rom's BDOS
+      console scratch lies inside the FN parameter area (since S6); ram_map's
+      DISK-ONLY test read PLY_NUMOVF's own S9b note as a tag (moot: it moved).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9737,7 +9794,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35270 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35327 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9903,7 +9960,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14765 (T-6FE392)8 (T-529ABE)` from `TODO.md:27559 (T-529ABE)`: a
+      `TODO.md:14822 (T-6FE392)8 (T-529ABE)` from `TODO.md:27616 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15612,7 +15669,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27559 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27616 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
