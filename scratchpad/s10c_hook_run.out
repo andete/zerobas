@@ -1,0 +1,23 @@
+  quiet   screen: [@Q]
+  oin     screen: [HR$(64);"K" | @K]
+  omiss   screen: [File not found]
+  linput  screen: [@K]
+  inum    screen: [@K]
+  eof     screen: [@K]
+  lof     screen: [@K]
+  loc     screen: [@K]
+  in1     screen: [@K]
+  in256   screen: [4);"K" | Illegal function call]
+
+delta vs quiet (cells entered by any case):
+  case     FE4E FE53 FE58 FE5D FE62 FE8A FE8F FE94 FE99 FE9E FEA3 FEAD FEB2 FEB7
+  oin         1    0    1    1    1    0    0    0    0    0    0    0    1    1
+  omiss       0    0    1    1    0    0    0    0    0    0    0    0    1    1
+  linput      2    1    1    1    1    4    0    0    0    0    0    0    1    1
+  inum        2    1    1    1    1    5    0    0    0    0    0    1    1    1
+  eof         2    0    1    1    1    0    0    1    0    0    1    0    1    1
+  lof         3    0    1    1    1    0    0    1    0    1    0    0    1    1
+  loc         3    0    1    1    1    0    0    1    1    0    0    0    1    1
+  in1         2    1    1    1    1    1    1    0    0    0    0    0    1    1
+  in256       1    1    1    1    0    1    1    0    0    0    0    0    1    1
+refcache: 0 hit, 10 miss, 10 stored

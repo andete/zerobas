@@ -3162,6 +3162,21 @@ item — do **one item per session** to keep context lean.
       (c) S10.C into the pooled
       corridor; (d) S10.E. Also found: the sub tenant `t_fia_walked` (148 B, sub
       page 1) has no sender since S10.B moved APPEND.
+      📏 **S10.C STEP C0 MEASURED (2026-10-15)** ([`s10c_hook_probe.py`](scratchpad/s10c_hook_probe.py)
+      -> [`s10c_hook_run.out`](scratchpad/s10c_hook_run.out), CF-3300, entry
+      counts per hook slot, deltas against a quiet baseline): OPEN FOR INPUT
+      enters $FE4E $FE58 $FE5D $FEB2 $FEB7 (and $FE62 at its CLOSE); a missing
+      file raises 53 AFTER $FE5D (no $FE4E). `LINE INPUT#` over "AB" CR LF
+      enters $FE8A 4x -- ONE PER BYTE READ; `INPUT#1,X` over " 1  2 " 5x plus
+      $FEAD once (the numeric item); `INPUT$(1,#1)` $FE8A 1x plus $FE8F once.
+      EOF / LOF / LOC SEPARATED: EOF -> $FEA3, LOF -> $FE9E, LOC -> $FE99, each
+      with $FE94 once. 🔮 "$FE8A per byte": HIT; "EOF / LOF each one of $FE9E /
+      $FEA3": HIT (and LOC has its own); "53 after a crossing": HIT; the
+      INPUT$(256) scaling row was MY error -- INPUT$ takes at most 255, so it
+      raised 5 and is NOT scored. The design brief (session scratchpad
+      `s10c_brief_summary.md`) plans `hk_chin` on $FE8A with an op in A; the
+      reference uses a cell per function instead ($FE8A byte, $FE8F INPUT$,
+      $FEAD numeric item, $FEA3 / $FE9E / $FE99 EOF / LOF / LOC). ➡️ C1.
       🐛 Two pre-existing engine bugs fixed on the way (found by the drafting
       subagent, witnessed by new tests/test_rand_straddle.py rows and a knife that
       restored the old code): `frnd_locate` divided the file sector by sectors-
@@ -9485,7 +9500,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35018 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35033 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9651,7 +9666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14513 (T-6FE392)8 (T-529ABE)` from `TODO.md:27307 (T-529ABE)`: a
+      `TODO.md:14528 (T-6FE392)8 (T-529ABE)` from `TODO.md:27322 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15360,7 +15375,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27307 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27322 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
