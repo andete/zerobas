@@ -1357,10 +1357,12 @@ rerr_msg:                                  ; D-ONERR0 (docs/spec-basic-onerr0.md
                                            ; an optimisation.
                 ld      a,(ERRFLG)
                 dec     a                  ; 1-based code -> 0-based index; code 0 wraps
-                                           ; to $FF (>= 25, so it too falls to unprintable
+                                           ; to $FF (>= N, so it too falls to unprintable
                                            ; -- ERROR n now validates 1..255 upstream, so
                                            ; 0 no longer reaches here, but keep it safe)
-                cp      25                 ; index >= 25  <=>  code 0 (via $FF) or code >= 26
+                cp      ERR_MSGTAB_N       ; index >= N  <=>  code 0 (via $FF) or code > N
+                                           ; (N = 23 since 2026-10-15; derived from the
+                                           ; table in basic/islands.asm, never a literal)
                 jr      nc,rerr_unprintable ; D-MSGMIGRATE: straight to the marker.
                                            ; S-FCH-2's rerr_sparse/rerr_sparse2 used to
                                            ; sit here to pick 52/59/55/58/61's messages;
@@ -1548,10 +1550,11 @@ rel_direct:
                 ; event under DIFFERENT rules, and the cheaper shape is wrong.
                 ret
 
-; err_msgtab -- MOVED to basic/islands.asm (D-ISLDATA, MAKING ROOM lever B):
-; the ERR code -> message word table now lives in C-BIOS's $0160 padding
-; island (page 0, always mapped with main), still reached only by raise_error's
-; absolute `ld hl,err_msgtab` above; `cp 25` there is still its bound.
+; err_msgtab -- in main page 1 again since 2026-10-15, at the END of basic/missing.asm
+; (the last page-1 file). D-ISLDATA had moved it into C-BIOS's gap-1 padding
+; (island 4); D-TAPLEAD's residual needed that padding for the tape bodies. It
+; cannot sit HERE: interp.asm assembles before D-BASICINT's pinned $6CF3 / $73AC,
+; and 46 B added ahead of a pin drives its `ds` negative (the build refused it).
 ; err_subhosted / err_unprintable stay HERE -- their adjacency is load-bearing.
 ; --- err_subhosted: the whole main-side cost of D-MSGSUB's message text ------
 ; ONE BYTE. A body consisting of just MSGESC_SUB tells print_msg_stopcr's pm_sub

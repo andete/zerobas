@@ -1,0 +1,8 @@
+ROW mid VG=[[ 208  0  0 ]] ZB=[[ 208  0  0 ]] SAME (PIN ROTTED)
+ROW k190 VG=[[ 208  0  0 ]] ZB=[[ 208  0  0 ]] SAME
+ROW k200 VG=[[ 208  0  0 ]] ZB=[[ 208  0  0 ]] SAME
+ROW k204 VG=[[ 208  0  0 ]] ZB=[[ 208  0  0 ]] SAME
+ROW end VG=[[ 208  0  0 ]] ZB=[[ 208  0  0 ]] SAME
+
+FAIL: TAPION called while data is playing (4/5)
+refcache: 0 hit, 10 miss, 10 stored

@@ -63,8 +63,11 @@ CASSETTE_VECS = (0x00E2, 0x00F6)   # seven cassette vector targets
 # Space plan A3 (2026-10-04): the two remainders of C-BIOS gap 1 around the tape
 # bodies -- $09D9-$09ED before TAPE_BODY_LO and $0CCF-$0D00 after tape_end, up to
 # the pinned compat tail at $0D01 (basic/islands.asm, islands 3 and 4).
-ISLAND4_LO = 0x0CCF   # $0CC9 until D-TAPLEAD (2026-10-14) grew the tape 9 B
-ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE), (ISLAND4_LO, 0x0D01))
+# Island 4 is RETIRED (2026-10-15): $0CC9 until D-TAPLEAD grew the tape 9 B, then
+# $0CCF, and gone when its residual's cycle verify took the rest -- err_msgtab is
+# back in main page 1. ISLAND4_LO stays as the tape's CAP: C-BIOS's compat tail.
+ISLAND4_LO = 0x0D01
+ISLAND_RANGES = ((0x0160, 0x0200), (0x1AF5, 0x1BBF), (0x09D9, 0x09EE))
 # ...and the PATCHES: non-padding bytes BASIC may overwrite, each only while the
 # base still holds the exact bytes named here (a C-BIOS change refuses, loudly).
 # $0010: the RST 10h vector -> zerobas's published-contract CHRGTR (lever A).

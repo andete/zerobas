@@ -3456,6 +3456,9 @@ item — do **one item per session** to keep context lean.
       next TAPIN sets CF -> `Device I/O error in 10`. The VG-8020 locks at
       LOWLIM $0D. Same signature as the gate row (41 vs 21): a run of LONG
       halves taken for the leader's short. -> D-TAPLEAD's residual is now TIER 1.
+      ✅ FIXED THE SAME DAY (D-TAPLEAD's residual, above): Punch & Judy now
+      loads past line 10; its NEXT divergence (one extra TAPIN before its third
+      load, then direct mode on a graphics screen from T180) is open.
       (B2) **Harry Fox is NOT a tape defect.** Both machines load the SAME four
       files (TAPIN counts 16 / 1336 / 1352 / 10287 / 10303 / 12440 / 12456
       identical); then the VG-8020 starts the game while zerobas's BASIC goes on
@@ -3526,6 +3529,70 @@ item — do **one item per session** to keep context lean.
       patch; and the tape block has 1 B left. Also measured, no row: after
       TAPION the VG-8020 leaves LOWLIM / WINWID 13 / 10, zerobas its own 21 and
       never writes WINWID.
+      ✅ **RESIDUAL FIXED (2026-10-15): TAPION'S VERIFY CHECKS FULL CYCLES, BOTH
+      WAYS.** After the measure, one settle CYCLE is discarded, then CAS_VERIFY / 2
+      (64) cycles must each satisfy cycle*2 < LOWLIM (< 1.75 x the average cycle:
+      a 0-bit is data) AND cycle*4 >= LOWLIM (>= 0.875 x: a 1-bit cycle in a lock
+      that averaged LONG halves is data). A ratio window, so scale-free on openMSX
+      and on hardware. `tapionlead-acceptance` 5/5 SAME, `mid` UNPINNED.
+      How it got there (each step measured on openMSX, our ROM, our tape):
+      (1) a per-HALF lower bound (B > LOWLIM >> 4, taken free from 7*sum's high
+      byte) passed the simulator and refused EVERY real leader -- the first
+      verify half read B = 1 on 290 of 347 locks
+      ([`taplead_bvals.out`](scratchpad/taplead_bvals.out)): the LOWLIM
+      arithmetic eats most of the half in progress. (2) Full cycles with ONE
+      settle half: the first verified cycle still read 4-5 against the leader's
+      steady 6 ([`taplead_cycles.out`](scratchpad/taplead_cycles.out), the lower
+      bound disabled for the measurement). (3) A settle CYCLE: 5/5.
+      🐛 Found on the way: tapion_haveavg copied the sum through DE and CLOBBERED
+      D -- cas_half's current level -- so the first verify half was measured
+      against a garbage level. Now through BC. tests/test_tape.py's leader grew
+      400 -> 440 halves: TAPION genuinely needs 401 once D is right (the old 400
+      passed only because of the bug).
+      📏 Room: the tape bodies needed ~26 B and had 1. err_msgtab (46 B, error
+      codes 1..23 -- 24 and 25 left it, both were `err_subhosted`, which every
+      code past the bound already takes; the bound `ERR_MSGTAB_N` is now DERIVED
+      from the table) went from island 4 back to main page 1, at the END of
+      basic/missing.asm because D-BASICINT's pins sit earlier (46 B added ahead
+      of a pin drove its `ds` negative and the build refused). Island 4 is
+      retired; the tape may run to C-BIOS's compat tail $0D01, the cap every
+      other variant's patch already has (tape_end $0CE8 on 2026-10-15). Moving
+      FREE_ORG down into island 3's 8 B padding was rejected: the MSX2 C-BIOS
+      mains have content up to $09ED. Cost: main page 1 118 -> 72 B (2026-10-15).
+      🔮 Scored: per-half bound "mid SAME, the rest stay": MISS (all five
+      diverged); one-settle-half cycles: MISS (all five); settle cycle: HIT.
+      🔪 Knives ([`taplead_knife.py`](scratchpad/taplead_knife.py) ->
+      [`taplead_knife2.out`](scratchpad/taplead_knife2.out)): K-TL1 (the whole
+      verify cut) -> mid + k190 diverge, end SAME: HIT; K-TL2 (ONLY the lower
+      bound cut, byte-neutral) -> ONLY `mid` diverges: HIT -- the gate sees the
+      new bound and nothing else depends on it.
+      📼 Punch & Judy (run, never decoded): zerobas's BASIC loader now locks at
+      t = 31.5 s with LOWLIM $15 (the VG-8020: 31.6 s), the next file loads with
+      the same TAPIN counts, and at T60 zerobas is in line 770 within 380 B of
+      the reference's VRAM. 🔮 "the line-10 load succeeds": HIT. A LATER
+      divergence remains (one more TAPIN before the following load, 3093 vs
+      3092, which then comes 24 s later; from T180 zerobas sits in direct mode
+      on a graphics screen) -- unlocated, filed in class B1 below.
+      📼 **All 51 (pick_martos, the SAME collection as the 10-14 baseline
+      summary_m7):** SAME 12 -> 11; better: Punch & Judy, Formula 1 Simulator,
+      Knight Tyme. Two worse, each A/B'd against HEAD's tape code on today's tree:
+      **Ballblazer** 0 -> 279 B at T420, deterministic -- but TAPION locks within
+      0.13 ms of the old code's on EVERY block (the settle cycle), so it is the
+      game's animation phase at the dump, not a load difference; **A View to a
+      Kill** 54 B -> `Syntax error in 140` at the prompt, IDENTICAL with the old
+      tape code -> NOT this change; filed below as 🆕 D-AVTAK. 🔴 And the first
+      comparison ran `pick.json` -- the OTHER collection, archive dumps -- against
+      summary_m7: six "regressions", and a bisect that failed at every commit.
+      The apparatus was the difference [[apparatus-is-part-of-the-measurement]].
+      🆕 **D-AVTAK -- A View to a Kill stopped loading: `Syntax error in 140`**
+      (🎚️ TIER 1, found 2026-10-15). 54 B from the VG-8020 at T420 on 10-14
+      (summary_m7, before D-TAPLEAD's commit) -> zerobas at the prompt with
+      `Syntax error in 140` on 10-15, with the tape code of HEAD (6b729794) and
+      of the cycle verify alike. Candidates: every ROM commit since 10-14 20:57
+      (D-TAPLEAD e30dcfae first -- its own "no title that matched changed" check
+      counted only SAME titles, and this one was at 54 B). ➡️ Bisect on
+      pick_martos (session triage harness; a worktree build repoints the shared
+      machine -- re-repack from main after).
       🙋 **CLASS "FOUND" = GAMES CALLING AN UNDOCUMENTED BASIC-ROM INTERNAL
       (2026-10-14).** Loopy Laundry and Punch & Judy BLOAD,R a binary that, on
       BOTH machines, calls BASIC-ROM address $73AC directly (the harness's TRANS
@@ -9255,7 +9322,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:34788 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:34855 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9421,7 +9488,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14283 (T-6FE392)8 (T-529ABE)` from `TODO.md:27077 (T-529ABE)`: a
+      `TODO.md:14350 (T-6FE392)8 (T-529ABE)` from `TODO.md:27144 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15130,7 +15197,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27077 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27144 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

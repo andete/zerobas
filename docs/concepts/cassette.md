@@ -256,16 +256,26 @@ Not compared, or not measured:
   differs. No title that loaded before changed. The games' own bytes were
   never read.
 
+- **`TAPION` could still lock inside data** (fixed 2026-10-15). Called deep
+  inside a run of zero bits, the lock measured the long half-periods, so every
+  half-period looked short and the check above passed. Punch & Judy stopped
+  there with `Device I/O error`. The check now measures whole wave cycles and
+  rejects a cycle that is too long *or* too short for the measured leader; a
+  first attempt that checked single half-periods refused real leaders in the
+  emulator, because the threshold arithmetic eats into the half-period that
+  follows it. Punch & Judy now loads past that point.
+
 ## How zerobas does it
 
 The open C-BIOS stubs the cassette read and write entries; zerobas provides
 all seven in [tape/tape.asm](../../tape/tape.asm). `tapion` waits for a real
 edge, skips the motor's spin-up noise, measures 16 leader half-periods and
 sets the 0/1 threshold (`LOWLIM`, `&HFCA4`) at 1.75 times the short one;
-and then requires 128 more half-periods in a row that are all short --
-tape data cannot hold that many, because every byte starts with a long start
-bit, so a `TAPION` called while a file's data is still playing waits for the
-next real leader (D-TAPLEAD, 2026-10-14); `tapout` frames each byte with two stop bits; `stmotr` drives the relay.
+then it skips one wave cycle and requires 64 more cycles in a row, each
+between 0.875 and 1.75 times the leader's -- tape data cannot pass that,
+because every byte has a long start bit and short stop bits, so a `TAPION`
+called while a file's data is still playing waits for the next real leader
+(D-TAPLEAD, 2026-10-14 and 2026-10-15); `tapout` frames each byte with two stop bits; `stmotr` drives the relay.
 `tapout` and `tapin` before each byte, and `tapion` on each attempt to lock
 on, ask `BREAKX` whether Ctrl-STOP is down; if it is, they wait for the key to
 come up and return with carry set (`cas_stop`).

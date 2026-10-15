@@ -18,6 +18,9 @@ bytes of A's 206-byte data block, then calls TAPION AGAIN and reads one byte --
 B's header byte, $D0 = 208 -- storing A and both carries:
   `mid`  K = 8: the third TAPION runs while A's data is still playing.
   `end`  K = 206: the whole block first -- the control.
+`mid` was a PINNED divergence until 2026-10-15 (a TAPION deep inside data averaged
+LONG halves and every half then classified short); TAPION's verify now checks full
+cycles against both bounds, and all five rows are SAME.
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`.
 Exit 0 as pinned; 1 an unpinned divergence or a rotted pin; 2 the VG-8020
 gave no reading.
@@ -76,7 +79,7 @@ CASES = {"mid": 8, "k190": 190, "k200": 200, "k204": 204, "end": 206}
 # at these counts (~3 per half at 1200 baud, ~1.5 at 2400) one would also reject
 # real 2400-baud leaders. The rows near the END of a block are the reported
 # loaders' case and are fixed. A pinned row that starts agreeing is a ROTTED pin.
-KNOWN_DIVERGE = {"mid"}
+KNOWN_DIVERGE = set()             # `mid` unpinned 2026-10-15: the cycle verify
 
 
 def rows(scr):

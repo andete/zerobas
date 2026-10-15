@@ -683,3 +683,93 @@ trace_line:
 ;   61  GET/PUT/FIELD on a disk channel open but not RANDOM, and INPUT$ on RANDOM
 ; and FIELD on a device channel is ERR 5, not 58 -- a dense code that never came
 ; through here at all.
+
+; err_msgtab -- BACK IN MAIN PAGE 1 (2026-10-15). D-ISLDATA had moved it into
+; C-BIOS's gap-1 padding (island 4, $0CC9..$0D00) to make room; D-TAPLEAD's
+; residual needed that padding for the tape bodies (TAPION's cycle verify), and
+; page 1 had the room S10.D freed. Placed LAST in page 1 because D-BASICINT's
+; pins ($6CF3 / $73AC) sit earlier and code added ahead of a pin drives its `ds`
+; negative. Reached only by raise_error's absolute `ld hl,err_msgtab`
+; (basic/interp.asm); `cp ERR_MSGTAB_N` there is its bound.
+; err_msgtab: MSX ERR code (1..N) -> message string (docs/spec-basic- --
+; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
+; (this table replaces the old FPERR-indexed fre_msgtab AND every direct
+; site's own `ld hl,msg`); holes (12/14/15/18/19/20/21/22 -- not yet raised by
+; any S2a site) point at the code-23 "unprintable error" string, same as an
+; out-of-table `ERROR n` argument (raise_error, above). The capitalised
+; arrays-arc strings (err_subscript/err_redim/err_mem_arr/err_illegal_fn_arr)
+; stay separate from the lowercase shared strings, unmerged (spec-basic-
+; arrays §9.5) -- their codes (9/10/7/5) just index this table at their own
+; entries, same string, no new copy.
+err_msgtab:
+                dw      err_subhosted       ; 1: next without for
+                dw      err_syntax          ; 2: syntax error
+                dw      err_subhosted       ; 3: return without gosub
+                dw      err_subhosted       ; 4: out of data
+                dw      err_illegal_fn_arr  ; 5: illegal function call (arrays' own
+                                            ; capitalised string; §9.5 keep)
+                dw      err_subhosted       ; 6: Overflow. D-MSGMIGRATE: sub-hosted
+                                            ; (em_overflow) -- and it only became
+                                            ; migratable when dl_overflow's float arm
+                                            ; was FIXED to store ERRFLG at all. Until
+                                            ; then this code had one ERRFLG-keyed reader
+                                            ; and one that was not keyed on anything.
+                dw      err_mem             ; 7: out of memory (program.asm err_mem;
+                                            ; err_stack aliases it -- program.asm)
+                dw      err_subhosted       ; 8: undefined line number (zerobas's own
+                                            ; "undefined line" wording, spec-basic-error-
+                                            ; handling.md §4)
+                dw      err_subhosted       ; 9: Subscript out of range (C5-LOW:
+                                            ; sub-hosted, em_subscript)
+                dw      err_subhosted       ; 10: Redimensioned array (C5-LOW:
+                                            ; sub-hosted, em_redim)
+                dw      err_subhosted       ; 11: division by zero
+                dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
+                                            ; lives in the sub-ROM tenant, keyed on
+                                            ; ERRFLG. Still not RAISED by any zerobas
+                                            ; site -- `ERROR 12` is the only way here --
+                                            ; but it no longer prints the wrong thing.
+                dw      err_subhosted       ; 13: type mismatch
+                dw      err_subhosted       ; 14: Out of string space (C5-LOW:
+                                            ; sub-hosted, em_out_of_str, on both
+                                            ; CLEARPOOL settings)
+                dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
+                                            ; not raised by any zerobas site)
+                dw      err_subhosted       ; 16: String formula too complex (C5-LOW:
+                                            ; sub-hosted, em_too_complex)
+                dw      err_subhosted       ; 17: can't continue
+                dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
+                                            ; sub-hosted; not raised -- DEF FN's own
+                                            ; slice would be the raiser)
+                dw      err_subhosted       ; 19: Device I/O error (D-MSGSUB, sub-hosted).
+                                            ; The load_error family unification that would
+                                            ; RAISE it is still its own later item
+                                            ; (S1 §9.1) -- this fixes the TEXT only.
+                dw      err_verify          ; 20: Verify error. 🎯 D-MSGEXACT: this was a
+                                            ; HOLE pointing at "unprintable error" while
+                                            ; cload.asm's own err_verify -- already the
+                                            ; reference's exact `Verify error`, measured
+                                            ; 2026-08-02 on a real CLOAD? mismatch -- sat
+                                            ; right there on a separate path. Repointing
+                                            ; costs 0 B and is the whole fix: `ERROR 20`
+                                            ; now says what the tape path has always said.
+                dw      err_no_resume       ; 21: no resume (D-ERR21, docs/spec-basic-
+                                            ; err21-no-resume.md -- was a hole until the
+                                            ; run loop could raise it: falling off the
+                                            ; END of the program while still owing a
+                                            ; RESUME. The string and e21_no_resume both
+                                            ; live in basic/arrays.asm's low region;
+                                            ; this entry also gives `ERROR 21` the right
+                                            ; message, which it did not have)
+                dw      err_subhosted       ; 22: RESUME without error (raised by
+                                            ; raise_error_forced, below)
+                dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
+                                            ; an out-of-table code, or any hole above)
+                ; 24 (missing operand) and 25 (line buffer overflow) LEFT THE TABLE
+                ; 2026-10-15 (D-TAPLEAD's residual needed 4 B of this island for the
+                ; tape bodies below it): both were `err_subhosted`, which is exactly
+                ; what every code past the bound already takes (interp.asm
+                ; rerr_unprintable), so their messages and trap behaviour are
+                ; unchanged. The bound is DERIVED from the table now -- it once
+                ; drifted from it and left ERR 25 dead for a whole arc.
+ERR_MSGTAB_N    equ     ($ - err_msgtab) / 2    ; codes 1..N are in the table

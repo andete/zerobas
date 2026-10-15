@@ -1,0 +1,4 @@
+K-TL1: rows ['mid', 'k190', 'k200', 'k204', 'end'] diverging ['mid', 'k190']
+K-TL2: rows ['mid', 'k190', 'k200', 'k204', 'end'] diverging ['mid']
+restored: build rc=0; SAME
+rc=0

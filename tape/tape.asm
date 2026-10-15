@@ -566,13 +566,15 @@ tapion_haveavg:
                 ; threshold at 1.75x rejects it with symmetric margin -- but at
                 ; fast bauds only the fractional precision keeps 1.5x and 2x on
                 ; opposite sides. cas_islong compares B*4 against this.
-                ld      d,h             ; DE = sum
-                ld      e,l
+                ld      b,h             ; BC = sum -- NOT DE: D is cas_half's current
+                ld      c,l             ; LEVEL, and the verify below measures with it
+                                        ; (via DE the first verify half read against a
+                                        ; garbage level and could come back B = 1)
                 add     hl,hl           ; 2*sum
                 add     hl,hl           ; 4*sum
                 add     hl,hl           ; 8*sum
                 or      a               ; clear carry for sbc
-                sbc     hl,de           ; 7*sum
+                sbc     hl,bc           ; 7*sum
                 ld      b,4             ; >>4  -> 7*sum/16
 tapion_avg:
                 srl     h
@@ -590,14 +592,49 @@ tapion_avg:
                 ; CAS_VERIFY short halves in a row (every byte has a long-half
                 ; start bit; the longest run is ~40); a real leader has
                 ; thousands. A long half or a flat -> relock.
-                ld      c,CAS_VERIFY
+                ; 🔴 AND IT CHECKS FULL CYCLES, BOTH WAYS (2026-10-15: the residual `mid`,
+                ; and Punch & Judy on a real tape). Called deep inside data, the measure
+                ; can average a run of LONG halves (zero bits): LOWLIM comes out ~1.75 x
+                ; long (41 against a leader's 21), every half classifies short, and an
+                ; upper bound alone passes on data. A per-HALF lower bound was built
+                ; first and refused real leaders on openMSX: its halves alternate
+                ; (4,2,4,2 -- tapion_trace.out) and, worse, the arithmetic above eats
+                ; most of the half in progress, so the first verify half read B = 1 on
+                ; 290 of 347 locks (scratchpad/taplead_bvals.out). A CYCLE (two halves)
+                ; is stable on openMSX and on hardware alike, and the window is a ratio,
+                ; so it is scale-free: LOWLIM = 3.5 x the average cycle, and a leader
+                ; cycle (1.0) must satisfy cycle*2 < LOWLIM (< 1.75: a 0-bit cycle,
+                ; 2.0, is data) AND cycle*4 >= LOWLIM (>= 0.875: a 1-bit cycle in a
+                ; long-half lock, 0.5, is data). The half in progress is DISCARDED
+                ; first (the settle half), and the verify spans the same tape as
+                ; before: CAS_VERIFY halves = CAS_VERIFY / 2 cycles.
+                ld      hl,LOWLIM       ; (the sum is spent; HL is free)
+                call    cas_half        ; SETTLE a whole CYCLE: the half the arithmetic
+                call    cas_half        ; ate, and the next -- with ONE settle half the
+                                        ; first verified cycle still read 4-5 counts
+                                        ; against the leader's steady 6 (openMSX,
+                                        ; scratchpad/taplead_cycles.out); a flat here
+                                        ; is caught by the verify's own first call
+                ld      c,CAS_VERIFY / 2
 tapion_verify:
                 call    cas_half
-                call    nc,cas_islong   ; (a flat keeps CF=1 and skips the test)
-                jr      c,tapion_relock ; flat or a long half -> data, not a leader
+                jr      c,tapion_relock ; flat -> not a sustained leader
+                ld      e,b             ; the cycle's first half
+                call    cas_half        ; (keeps C, E, HL)
+                jr      c,tapion_relock
+                ld      a,b
+                add     a,e             ; A = one full cycle, in counts
+                jr      c,tapion_relock ; > 255: a dropout, not a leader
+                add     a,a             ; cycle * 2
+                jr      c,tapion_relock ; > 127: certainly too long
+                cp      (hl)
+                jr      nc,tapion_relock ; cycle >= 1.75 x avg: a 0-bit / start bit
+                add     a,a             ; cycle * 4 (no carry for any lock LOWLIM < 224)
+                cp      (hl)
+                jr      c,tapion_relock ; cycle < 0.875 x avg: the lock averaged LONG halves
                 dec     c
                 jr      nz,tapion_verify
-                ret                     ; CF = 0 (cas_islong: short): locked
+                ret                     ; CF = 0 -- the last `cp` passed: locked
 
 ;--------------------------------
 ; $00E4 TAPIN

@@ -1,0 +1,8 @@
+ROW mid VG=[[ 208  0  0 ]] ZB=[[ 126  255  255 ]] DIVERGES (pinned)
+ROW k190 VG=[[ 208  0  0 ]] ZB=[[ 126  255  255 ]] DIVERGES
+ROW k200 VG=[[ 208  0  0 ]] ZB=[[ 126  255  255 ]] DIVERGES
+ROW k204 VG=[[ 208  0  0 ]] ZB=[[ 126  255  255 ]] DIVERGES
+ROW end VG=[[ 208  0  0 ]] ZB=[[ 126  255  255 ]] DIVERGES
+
+FAIL: TAPION called while data is playing (1/5)
+refcache: 0 hit, 10 miss, 10 stored

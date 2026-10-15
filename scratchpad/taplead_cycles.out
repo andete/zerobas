@@ -1,0 +1,10 @@
+# D-TAPLEAD residual, attempt 2 (2026-10-15): the verify on FULL CYCLES after ONE
+# settle half, with the lower bound DISABLED for this measurement (a debug build,
+# `jr c` -> `jr $+2`) so whole verify runs could be seen. openMSX, our own tape
+# (case `end`); a breakpoint after `add a,e` logging CYC (the cycle's count), C
+# (cycles left, 64 = the first) and LOWLIM. 3 leader locks x 64 cycles.
+192 hits
+first cycles (C=64): CYC=5 x2, CYC=4 x1     <- short: the settle half was not enough
+all cycles:          CYC=6 x185, CYC=7 x4, CYC=5 x2, CYC=4 x1
+# With the bound live, the short first cycle failed cycle*4 >= LOWLIM (16-20 < 21)
+# on every lock. Settling a whole CYCLE first (attempt 3) -> tapionlead 5/5 SAME.

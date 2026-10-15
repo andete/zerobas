@@ -356,8 +356,10 @@ zks_paint:
 ; C-BIOS src/main.asm:631 pads `ds $0D01 - $` from the end of debug.asm up to its
 ; pinned compat ISR-exit tail at $0D01 ("Hacker" jumps to $0D02, Star Force calls
 ; $0D0E). zerobas's tape bodies take $09EE..tape_end of that run; what is left is
-; $09D9..$09ED (21 B, island 3) and $0CCF..$0D00 (50 B, island 4 -- $0CC9 until D-TAPLEAD
-; grew the tape by 9 B on 2026-10-14; the 50-byte error table fills it exactly).
+; $09D9..$09ED (21 B, island 3). Island 4 ($0CC9.., the error-message table) is
+; RETIRED (2026-10-15): TAPION's cycle verify (D-TAPLEAD's residual) needed the tape
+; bodies to run to C-BIOS's compat tail at $0D01, the cap every other variant's
+; tape patch already has, and err_msgtab went back to main page 1 (interp.asm).
 ; ⚠️ That pad is C-BIOS's deliberate "wrong jumper" slide (src/main.asm:631-633,
 ; "put RET instruction there"): a stray jump into $0CC9..$0D00 used to slide to
 ; the RET at $0D01. With island 4 filled, only the bytes after the table still
@@ -446,117 +448,6 @@ fperr_to_err:
                 db      ISLAND3_OVERRAN_09EE__IT_WOULD_OVERWRITE_THE_TAPE_BODIES
     ENDIF
 
-                org     $0CCF
-; --- err_msgtab: MSX ERR code (1..25) -> message string (docs/spec-basic- --
-; error-handling-s2a-packet.md §2/(a)). Every code's message is stored ONCE
-; (this table replaces the old FPERR-indexed fre_msgtab AND every direct
-; site's own `ld hl,msg`); holes (12/14/15/18/19/20/21/22 -- not yet raised by
-; any S2a site) point at the code-23 "unprintable error" string, same as an
-; out-of-table `ERROR n` argument (raise_error, above). The capitalised
-; arrays-arc strings (err_subscript/err_redim/err_mem_arr/err_illegal_fn_arr)
-; stay separate from the lowercase shared strings, unmerged (spec-basic-
-; arrays §9.5) -- their codes (9/10/7/5) just index this table at their own
-; entries, same string, no new copy.
-err_msgtab:
-                dw      err_subhosted       ; 1: next without for
-                dw      err_syntax          ; 2: syntax error
-                dw      err_subhosted       ; 3: return without gosub
-                dw      err_subhosted       ; 4: out of data
-                dw      err_illegal_fn_arr  ; 5: illegal function call (arrays' own
-                                            ; capitalised string; §9.5 keep)
-                dw      err_subhosted       ; 6: Overflow. D-MSGMIGRATE: sub-hosted
-                                            ; (em_overflow) -- and it only became
-                                            ; migratable when dl_overflow's float arm
-                                            ; was FIXED to store ERRFLG at all. Until
-                                            ; then this code had one ERRFLG-keyed reader
-                                            ; and one that was not keyed on anything.
-                dw      err_mem             ; 7: out of memory (program.asm err_mem;
-                                            ; err_stack aliases it -- program.asm)
-                dw      err_subhosted       ; 8: undefined line number (zerobas's own
-                                            ; "undefined line" wording, spec-basic-error-
-                                            ; handling.md §4)
-                dw      err_subhosted       ; 9: Subscript out of range (C5-LOW:
-                                            ; sub-hosted, em_subscript)
-                dw      err_subhosted       ; 10: Redimensioned array (C5-LOW:
-                                            ; sub-hosted, em_redim)
-                dw      err_subhosted       ; 11: division by zero
-                dw      err_subhosted       ; 12: Illegal direct. D-MSGSUB: the text
-                                            ; lives in the sub-ROM tenant, keyed on
-                                            ; ERRFLG. Still not RAISED by any zerobas
-                                            ; site -- `ERROR 12` is the only way here --
-                                            ; but it no longer prints the wrong thing.
-                dw      err_subhosted       ; 13: type mismatch
-                dw      err_subhosted       ; 14: Out of string space (C5-LOW:
-                                            ; sub-hosted, em_out_of_str, on both
-                                            ; CLEARPOOL settings)
-                dw      err_subhosted       ; 15: String too long (D-MSGSUB, sub-hosted;
-                                            ; not raised by any zerobas site)
-                dw      err_subhosted       ; 16: String formula too complex (C5-LOW:
-                                            ; sub-hosted, em_too_complex)
-                dw      err_subhosted       ; 17: can't continue
-                dw      err_subhosted       ; 18: Undefined user function (D-MSGSUB,
-                                            ; sub-hosted; not raised -- DEF FN's own
-                                            ; slice would be the raiser)
-                dw      err_subhosted       ; 19: Device I/O error (D-MSGSUB, sub-hosted).
-                                            ; The load_error family unification that would
-                                            ; RAISE it is still its own later item
-                                            ; (S1 §9.1) -- this fixes the TEXT only.
-                dw      err_verify          ; 20: Verify error. 🎯 D-MSGEXACT: this was a
-                                            ; HOLE pointing at "unprintable error" while
-                                            ; cload.asm's own err_verify -- already the
-                                            ; reference's exact `Verify error`, measured
-                                            ; 2026-08-02 on a real CLOAD? mismatch -- sat
-                                            ; right there on a separate path. Repointing
-                                            ; costs 0 B and is the whole fix: `ERROR 20`
-                                            ; now says what the tape path has always said.
-                dw      err_no_resume       ; 21: no resume (D-ERR21, docs/spec-basic-
-                                            ; err21-no-resume.md -- was a hole until the
-                                            ; run loop could raise it: falling off the
-                                            ; END of the program while still owing a
-                                            ; RESUME. The string and e21_no_resume both
-                                            ; live in basic/arrays.asm's low region;
-                                            ; this entry also gives `ERROR 21` the right
-                                            ; message, which it did not have)
-                dw      err_subhosted       ; 22: RESUME without error (raised by
-                                            ; raise_error_forced, below)
-                dw      err_unprintable     ; 23: unprintable error (self; ERROR n with
-                                            ; an out-of-table code, or any hole above)
-                dw      err_subhosted       ; 24: missing operand. The table used to stop
-                                            ; at 23, so this code -- ALREADY raised by
-                                            ; graphics.asm g8_missing and time.asm
-                                            ; tm_err24 -- printed "unprintable error" on
-                                            ; every site that used it. Found by LOCATE,
-                                            ; which is the third: `LOCATE` bare reads
-                                            ; `Missing operand` on the reference and read
-                                            ; `unprintable error` here. Adding the entry
-                                            ; fixes all three at once. raise_error's own
-                                            ; range test moved from `cp 23` to `cp 24`
-                                            ; with it -- the table bound and that test are
-                                            ; one fact in two places.
-                dw      err_subhosted       ; 25: line buffer overflow (D-LINEMAX R-2 --
-                                            ; the crunched body exceeded TOKMAX_BODY=314).
-                                            ; Same two-places-one-fact pair -- and the
-                                            ; SECOND place did NOT move when this entry
-                                            ; landed: `cp 24` stayed, so this entry was
-                                            ; two bytes of DEAD TABLE and `ERROR 25` read
-                                            ; `unprintable error` for the whole of
-                                            ; D-LINEMAX. Fixed 2026-07-29 (`cp 24` ->
-                                            ; `cp 25`, zero bytes). It went unnoticed
-                                            ; because the ONLY raiser of 25 -- program.asm
-                                            ; dl_overflow -- deliberately bypasses this
-                                            ; table (see its header), so linemax-acceptance
-                                            ; was green throughout. MEASURED on the
-                                            ; VG-8020 before landing: `ERROR 25` ->
-                                            ; `Line buffer overflow`, `ERROR 26` ->
-                                            ; `Unprintable error` (so 25 IS the bound).
-
-    IF $ > $0D01
-                db      ISLAND4_OVERRAN_0D01__IT_WOULD_OVERWRITE_THE_CBIOS_COMPAT_TAIL
-    ENDIF
-
-; --- the RST 10h vector: $0010 `jp chrgtr` (was C-BIOS's `jp $10FF`) ---------
-; tools/build_mainrom.py PATCH_RANGES allows exactly these 3 bytes, and only
-; while the base still holds C-BIOS's `C3 FF 10`.
                 org     $0010
                 jp      chrgtr
 

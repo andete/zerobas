@@ -19,11 +19,13 @@ session and the loop resumes exactly where it stopped.
   B1 Punch & Judy = D-TAPLEAD's pinned `mid` residual on a real tape (TAPION
   locks on long halves, LOWLIM $2A vs $15); B2 Harry Fox = not a tape defect,
   its BASIC loops into extra loads after the same four files (unlocated).
-- **NEXT, FIRST (TIER 1): D-TAPLEAD's residual -- redesign TAPION's leader
-  measurement** so `tapionlead-acceptance`'s pinned `mid` row flips to SAME
-  (the tape block had 1 B left on 2026-10-14: find room first). Witness: the
-  gate row, then Punch & Judy and all 51 tapes (session harness; if the
-  session died, it is gone -- rebuild it from TODO's description).
+- **D-TAPLEAD's residual FIXED (2026-10-15):** TAPION verifies full cycles
+  both ways after a settle cycle; `tapionlead-acceptance` 5/5, `mid` unpinned;
+  err_msgtab back in main page 1 (end of missing.asm), island 4 retired.
+- **NEXT (TIER 1): D-AVTAK** (A View to a Kill: 54 B on 10-14 -> `Syntax error
+  in 140` now; bisect m7 -> HEAD on pick_martos), then **Punch & Judy's next
+  divergence** (one extra TAPIN before its third load) and **B2 Harry Fox**.
+  ⚠️ Compare tape runs ONLY on the same pick file (pick_martos = the m-series).
 - **THEN B2 (Harry Fox):** locate where its BASIC diverges after file 4
   (TRANS / CALLAT black-box; never decode the game).
 - **THEN (TODO D-ROMSIZE "S10.D BUILT", its ➡️ NEXT list):** BSAVE-

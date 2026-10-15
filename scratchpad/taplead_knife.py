@@ -5,7 +5,9 @@
 
 K-TL1  tape/tape.asm: the verify loop cut -- TAPION returns right after storing
        LOWLIM, as before D-TAPLEAD. Predicted: at least one of k190 / k200 / k204
-       DIVERGES; `end` SAME; `mid` stays diverged (pinned).
+       DIVERGES; `end` SAME; `mid` diverges (unpinned since 2026-10-15).
+K-TL2  (2026-10-15) only the cycle verify's LOWER bound cut (`jr c` -> `jr $+2`,
+       byte-neutral). Predicted: `mid` DIVERGES, the other four SAME.
 Built through knife_guard (ROM must MOVE), restored, rebuilt CLEAN, re-run green.
 """
 import os, subprocess, sys, tempfile
@@ -17,7 +19,10 @@ import knife_guard                                 # noqa: E402
 TMP = os.path.join(tempfile.gettempdir(), "zerobas", "taplead_knife")
 SRC = "tape/tape.asm"
 KNIVES = [
-    ("K-TL1", "                ld      c,CAS_VERIFY\n", "                or      a\n                ret\n",   # byte-neutral: the loop goes dead
+    ("K-TL1", "                ld      c,CAS_VERIFY / 2\n", "                or      a\n                ret\n",   # byte-neutral: the loop goes dead
+     ["mid", "k190", "k200", "k204", "end"], None),
+    ("K-TL2", "                jr      c,tapion_relock ; cycle < 0.875 x avg: the lock averaged LONG halves\n",
+     "                jr      $+2\n",                                              # byte-neutral: lower bound dead
      ["mid", "k190", "k200", "k204", "end"], None),
 ]
 

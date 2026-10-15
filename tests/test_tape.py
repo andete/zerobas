@@ -412,11 +412,14 @@ def encode_byte(byte, short=SHORT, long_=LONG, level0=0x00):
     return _halves_to_samples(halves, level0)
 
 
-def leader(short, n_halves=400, level0=0x00):
+def leader(short, n_halves=440, level0=0x00):
     """A pure carrier leader: n_halves short (high-freq) halves — the tone
-    TAPION locks onto and measures to derive LOWLIM. 400, was 80: TAPION now
-    needs CAS_SKIP (256) + CAS_RUNLEN (16) unbroken halves (D-CASRELOCK); a real
-    leader is >= 8000 (a short header's 4000 cycles)."""
+    TAPION locks onto and measures to derive LOWLIM. 440, was 400 (and 80): TAPION
+    needs 1 (the wait) + CAS_SKIP (256) + CAS_RUNLEN (16) + CAS_VERIFY (128) = 401
+    unbroken halves. 400 passed only while tapion_haveavg clobbered D (cas_half's
+    level) and the first verify "half" consumed ONE sample, not a half -- fixed
+    2026-10-15 with the verify's lower bound; a real leader is >= 8000 (a short
+    header's 4000 cycles)."""
     return _halves_to_samples([short] * n_halves, level0)
 
 

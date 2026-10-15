@@ -1,0 +1,19 @@
+# D-TAPLEAD residual, attempt 1 (2026-10-15): a per-HALF lower bound in TAPION's
+# verify (reject B <= LOWLIM >> 4). openMSX, C-BIOS_MSX1_EU_REPACK_NODISK, our own
+# two-file tape and routine (basic_probe_tapionlead.py case `end`); a breakpoint
+# on the bound's compare logging B (the half's count), E = (LOWLIM>>4)+1 and LOWLIM.
+# Result: the FIRST verify half after the LOWLIM arithmetic reads B = 1 on a real
+# leader, so every lock was refused and relocked (the gate's five rows all failed).
+347 hits
+B=1 E=2 LOWLIM=21   290
+B=7 E=3 LOWLIM=39    11
+B=1 E=2 LOWLIM=31     9
+B=1 E=2 LOWLIM=26     8
+B=1 E=3 LOWLIM=39     4
+B=3 E=2 LOWLIM=31     4
+B=7 E=2 LOWLIM=31     4
+B=3 E=3 LOWLIM=39     2
+B=1 E=2 LOWLIM=28     1
+B=1 E=3 LOWLIM=36     1
+B=1 E=3 LOWLIM=37     1
+B=3 E=3 LOWLIM=44     1
