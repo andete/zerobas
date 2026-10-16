@@ -3405,6 +3405,23 @@ item — do **one item per session** to keep context lean.
       stack-passed parameter block -- while the rest find BUF / idle-byte homes.
       S15 (TXTMAX_NODISK $ECF8 -> $F380, scratchpad/s14_plan.md §6's checklist)
       waits on it.
+      📏 **THE REAL TAPES AFTER S8..S14f (2026-10-16, the one-off run outside the
+      repo, the same 51-title pick as C1's run; failure CLASSES only, the tapes
+      never decoded):** SAME 12 -> 12. Five titles changed class: Formula 1
+      Simulator and Ninja 2 RESET -> RUNS? (Ninja 2 now at the reference's line
+      70), BMX Simulator ISRCRASH -> RUNS? -- all three have flip-flopped across
+      earlier runs (the layout-sensitive class) -- and two new, deterministic
+      (re-run) worse classes: Boulder Dash II RUNS? -> RESET and Punch & Judy RUNS?
+      -> ISRCRASH (PC $0038). 🔮 "none worse": MISS. Bisected over the twelve
+      commits (checkout + repack + the two titles): Boulder Dash II resets from
+      **S8** on (6e0612f8 -- the same-job published cells: the game likely uses
+      one of them, $F6AF-$F6C0 / DRVINF / DRWSCL.., as its own RAM), Punch & Judy
+      crashes in the ISR from **S14e** on (28470b41 -- the math block in the FN
+      slots and sub page 1's layout shift). Both titles failed before today; both
+      stay in D-WSZERO's layout-sensitive class until S15 moves the stack, and
+      which published cell Boulder Dash II writes is the next measurement (a
+      watchpoint on $F6AF-$F6C0 / $FB21 / $FCBB-$FCBD during its load, both
+      machines -- registers and RAM only).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10003,7 +10020,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35536 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35553 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10169,7 +10186,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15031 (T-6FE392)8 (T-529ABE)` from `TODO.md:27825 (T-529ABE)`: a
+      `TODO.md:15048 (T-6FE392)8 (T-529ABE)` from `TODO.md:27842 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15878,7 +15895,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27825 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27842 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
