@@ -30,7 +30,9 @@ session and the loop resumes exactly where it stopped.
   **S14b** (render window into BUF, 112 B; K-WS63/64 -- 64 blind, filed) and
   **S14c** (WSTX = BUF+256 for one-statement cells, 11 B, 0 ROM; K-WS65..67) and
   **S14d** (INPUT$ into a heap temp -- also a behaviour fix --, BUFTX for FOR /
-  PRINT USING / DRAW, 88 B; K-WS68..70). NEXT: S14e per scratchpad/s14_plan.md (BUF+256
+  PRINT USING / DRAW, 88 B; K-WS68..70) and **S14e** (the math block saved around
+  every math tenant, 39 B; K-WS71/72). `ram_map --floor-top F380` lists what
+  is left: the S13 set (🙋 Joost) + a few singles. NEXT: (BUF+256
   slot + MID$, INPUT$ into the heap, the math block), then S15 (the ceiling,
   once). S13 (~41 B) is 🙋 Joost's call.
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.

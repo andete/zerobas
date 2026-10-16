@@ -1,0 +1,4 @@
+ROW ovmath $ECF8-$F37F VG=[[A 42785  1  2  1764  45 ] | [U 1.414]] ZB=[[A 42785  1  2  1764  45 ] | [U 1.414]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

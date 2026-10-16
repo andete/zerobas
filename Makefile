@@ -223,7 +223,7 @@ SUB_SRC   := sub/sub.asm
 # build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
 # T1 funding carve): the tenant body + its shared .inc file (the lean cart's
 # inline copy, basic/bload.asm) -- same staleness hazard, same fix.
-SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/fp_sqrt.asm sub/fp_atan.asm \
+SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm sub/fp_sqrt.asm sub/fp_atan.asm \
              sub/fp_exp.asm sub/fp_log.asm sub/fp_pow.asm sub/fp_sin.asm \
              sub/fp_rnd.asm sub/arrays.asm sub/strheap.asm sub/detok.asm \
              sub/printusing.asm basic/pu-render.inc sub/punum.asm \

@@ -455,52 +455,52 @@ __MEAS_SUB_P0_END:
     ENDIF
 sub_p1_table:
                 jp      sub_p1_ping             ; index 0: round-trip ping
-                jp      fp_sqrt                 ; index 1 (SUBROM_IDX_SQR): SQR(x)'s
+                jp      mw_sqrt                 ; index 1 (SUBROM_IDX_SQR): SQR(x)'s
                                                 ;   Heron/Newton body (math-pack slice
                                                 ;   1b), migrated from main-ROM page-0
                                                 ;   low (docs/spec-basic-subrom-
                                                 ;   mathpack.md). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_sqr`.
-                jp      fp_atan                 ; index 2 (SUBROM_IDX_ATN): ATN(x)'s
+                jp      mw_atan                 ; index 2 (SUBROM_IDX_ATN): ATN(x)'s
                                                 ;   reduction + minimax-polynomial body
                                                 ;   (math pack slice 2a, docs/spec-
                                                 ;   basic-mathpack-slice2.md §11) -- the
                                                 ;   FIRST transcendental tenant. Main-ROM
                                                 ;   stub is basic/expr.asm `evmc_atn`.
-                jp      fp_exp                  ; index 3 (SUBROM_IDX_EXP): EXP(x)'s
+                jp      mw_exp                  ; index 3 (SUBROM_IDX_EXP): EXP(x)'s
                                                 ;   table-assisted range reduction +
                                                 ;   minimax-polynomial body (math pack
                                                 ;   slice 2b, docs/spec-basic-mathpack-
                                                 ;   slice2.md §12). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_exp`.
-                jp      fp_log                  ; index 4 (SUBROM_IDX_LOG): LOG(x)'s
+                jp      mw_log                  ; index 4 (SUBROM_IDX_LOG): LOG(x)'s
                                                 ;   split + breakpoint-table reduction +
                                                 ;   minimax-polynomial body (math pack
                                                 ;   slice 2b, docs/spec-basic-mathpack-
                                                 ;   slice2.md §12). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_log`.
-                jp      fp_pow                  ; index 5 (SUBROM_IDX_POW): `^`'s
+                jp      mw_pow                  ; index 5 (SUBROM_IDX_POW): `^`'s
                                                 ;   int-path square-and-multiply /
                                                 ;   frac-path EXP(y*LOG(x)) body (math
                                                 ;   pack slice 2c, docs/spec-basic-
                                                 ;   mathpack-slice2.md §13). Main-ROM
                                                 ;   stub is basic/float-arith.asm
                                                 ;   `combine_pow`.
-                jp      fp_sin                  ; index 6 (SUBROM_IDX_SIN): SIN(x)'s
+                jp      mw_sin                  ; index 6 (SUBROM_IDX_SIN): SIN(x)'s
                                                 ;   sincos_kernel + quadrant-select
                                                 ;   (math pack slice 2d, docs/spec-
                                                 ;   basic-mathpack-slice2.md §14).
                                                 ;   Main-ROM stub is basic/expr.asm
                                                 ;   `evmc_sin`.
-                jp      fp_cos                  ; index 7 (SUBROM_IDX_COS): COS(x),
+                jp      mw_cos                  ; index 7 (SUBROM_IDX_COS): COS(x),
                                                 ;   same sincos_kernel (math pack
                                                 ;   slice 2d, §14). Main-ROM stub is
                                                 ;   basic/expr.asm `evmc_cos`.
-                jp      fp_tan                  ; index 8 (SUBROM_IDX_TAN): TAN(x) =
+                jp      mw_tan                  ; index 8 (SUBROM_IDX_TAN): TAN(x) =
                                                 ;   SIN(x)/COS(x) (math pack slice 2d,
                                                 ;   §14). Main-ROM stub is basic/
                                                 ;   expr.asm `evmc_tan`.
-                jp      fp_rnd                  ; index 9 (SUBROM_IDX_RND): RND(x)'s
+                jp      mw_rnd                  ; index 9 (SUBROM_IDX_RND): RND(x)'s
                                                 ;   14-digit BCD LCG advance (math
                                                 ;   pack slice 2e, docs/spec-basic-
                                                 ;   mathpack-slice2.md §15). LAST
@@ -716,6 +716,8 @@ sub_p1_ping:
 ; consistency gate (re-diffs the shipped sub.rom against a fresh regen).
                 include "basic-resident-abi.inc"
 
+                include "mathwrap.asm"          ; D-WSZERO S14e: the table's nine math
+                                                ; entries save / restore their scratch
                 include "fp_sqrt.asm"
 
 ; fp_atan (math pack slice 2a, docs/spec-basic-mathpack-slice2.md §11): the

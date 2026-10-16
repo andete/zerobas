@@ -206,6 +206,15 @@ RUN_GAP["s14buf"] = 60.0
 # zerobas read the keys into BUF first and left only the Enter
 # (scratchpad/inpoom_probe.out). No load: the tape is never read.
 RANGES["inpoom"] = (0, 0)
+# D-WSZERO S14e (2026-10-16): the math block (SQRT_* / MATH_* / HORNER_G /
+# RND_*, 39 B) lives in the DEF FN slots, SAVED on the Z80 stack and restored
+# around every math tenant. `s14math` sums the 39 vacated bytes (VG-8020 6435);
+# `ovmath` is the save / restore witness: math called inside a 9-formal FN body,
+# inside INPUT's subscript before the second answer is parsed, next to PRINT
+# USING (whose buffers share the slots) and CIRCLE's aspect.
+for _r in ("s14math", "ovmath"):
+    RANGES[_r] = RANGES["all"]
+_S14E_SUM = ['900 SCREEN 0:S=0:FOR J=61806 TO 61844:S=S+PEEK(J):NEXT:PRINT"[S";S;"]":END']
 _S14D_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60728,60760,60775,60798,61194,61219,61581,61583,61589,61590"]
@@ -496,6 +505,22 @@ PROGRAM_INPOOM = [
     '130 K$=INKEY$:IF K$<>"" THEN N=N+1:GOTO 130', '140 PRINT"[E";ERR;N;"]":END',
     "RUN", "Z" * 30,
 ]
+PROGRAM_S14MATH = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 A=SQR(2)+ATN(1)+EXP(1)+LOG(2)+SIN(1)+COS(1)+TAN(1)+RND(1)+RND(-3)+2^.5+2^10:GOTO 900',
+] + _S14E_SUM + ["RUN"]
+PROGRAM_OVMATH = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R:DIM Y(3)',
+    '20 DEF FNA(A,B,C,D,E,F,G,H,I)=SQR(A)+A+B+C+D+E+F+G+H+I+ATN(I)',
+    # every value is kept and printed AFTER the CIRCLE's SCREEN 0, which clears the
+    # screen (first cut: only the last line survived, the rest compared nothing)
+    '30 F=INT(FNA(4,2,3,4,5,6,7,8,1)*1000):INPUT"[I";X,Y(SQR(4))',
+    '50 SCREEN 2:CIRCLE(128,96),40,15,,,1.5:P=POINT(128,56)+2*POINT(128,136):SCREEN 0',
+    '60 Z=2^FNA(1,1,1,1,1,1,1,1,1):PRINT"[A";F;X;Y(2);INT(Z);P;"]":PRINT USING"[U##.###]";SQR(2):END',
+    "RUN", "@WAIT40", "1,2",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -536,7 +561,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB,
             "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY,
             "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX,
-            "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM}
+            "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM,
+            "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH}
 
 
 def tape(lo, hi, fill=0xA5):

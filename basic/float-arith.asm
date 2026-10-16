@@ -2054,7 +2054,8 @@ cpow_d5_cmp:
                 ld      b,5
                 call    dig_to_word         ; DE := n (0..32768)
 cpow_int_have_n:
-                ld      (MATH_N),de
+                                            ; DE = n rides to the tenant in DE
+                                            ; (D-WSZERO S14e: MATH_N is math_wrap's)
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
                 jr      z,cpow_j_int_pos
@@ -2063,7 +2064,7 @@ cpow_int_have_n:
 cpow_j_int_pos:
                 xor     a
 cpow_j_int_store:
-                ld      (MATH_J),a          ; bit0 = y negative, bit7 = 0 (int)
+                                            ; A = j: bit0 = y negative, bit7 = 0 (int)
                 jr      cpow_dispatch
 cpow_frac:
                 ; --- 4) fractional y (or int-valued y outside int16) -------
@@ -2085,9 +2086,9 @@ penderr_de0:
                 call    penderr_set         ; illegal function call
                 jp      ret_de0
 cpow_frac_ok:
-                ld      a,$80
-                ld      (MATH_J),a          ; bit7 = 1 (frac path)
+                ld      a,$80               ; j: bit7 = 1 (frac path)
 cpow_dispatch:
+                ld      l,a                 ; D-WSZERO S14e: j rides to the tenant in L
                 push    ix                  ; save the parser's text-position
                                             ; pointer -- subrom_call/CALSLT
                                             ; clobbers ALL registers, and IX

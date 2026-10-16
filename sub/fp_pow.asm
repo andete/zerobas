@@ -111,7 +111,9 @@
 ; y!=0), MATH_N/MATH_J as combine_pow set them -> FAC (double). Every exit is
 ; a plain `ret`. COMPUTE-ONLY.
 fp_pow:
-                ld      a,(MATH_J)
+                ld      (MATH_N),de         ; D-WSZERO S14e: n and j arrive in DE / L
+                ld      a,l                 ; (combine_pow can no longer store them:
+                ld      (MATH_J),a          ; the cells are math_wrap's saved host)
                 bit     7,a
                 jr      nz,fp_pow_frac
 

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 113 declared addresses in this project's own workspace `$E000..$F37F` (108 with a machine-readable width), plus **411** in the MSX standard work area at or above `$F380`.
+* **basic** — 108 declared addresses in this project's own workspace `$E000..$F37F` (105 with a machine-readable width), plus **414** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -256,11 +256,6 @@ second one is the question a per-component map cannot answer.
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
 | `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
-| `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
-| `$F180` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
-| `$F192` | 2 B | `basic` | `MATH_N/MATH_SIGN/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
-| `$F193` | 1 B | `basic` | `MATH_RECIP/SQRT_ITER` | Heron loop iteration counter, 1-based (the stop- |  |
-| `$F194` | 1 B | `basic` | `MATH_BREAK/MATH_J/SQRT_POW10` | final decision-loop (§10.4 step 4, REVISED |  |
 | `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
@@ -523,14 +518,17 @@ extents the standard already fixes would be noise, not rigour.
 | `$F753` | 1 B | `basic` | `FN_FEND` | 1 B: low byte of one-past the live frame. |  |
 | `$F754` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
 | `$F755` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
-| `$F756` | 32 B | `basic` | `FN_PAREA/PU_NUM` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
+| `$F756` |  | `basic` | `FN_PAREA/HORNER_G/MATH_T/PU_NUM/RND_LE/SQRT_X` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
 | `$F756` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies -- no width |  |
-| `$F75C` |  | `disk` | `WA_SEG_RAM` |  | `basic` FN_PAREA/PU_NUM |
-| `$F771` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) | `basic` FN_PAREA/PU_NUM |
-| `$F772` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) | `basic` FN_PAREA/PU_NUM |
+| `$F75C` |  | `disk` | `WA_SEG_RAM` |  |  |
+| `$F768` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
+| `$F771` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) |  |
+| `$F772` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) |  |
 | `$F776` |  | `basic` | `DEFT_PTR/PU_DIG/RDV_LINE` | D-PUEXP: flt_fmt's significant digits, point removed (32 B) |  |
 | `$F778` | 2 B | `basic` | `RDV_VAL` | $F778: the value read (int16 LE) (2) |  |
-| `$F77A` | 1 B | `basic` | `RDV_ST` | $F77A: tenant -> main STATUS (1): (1 B) |  |
+| `$F77A` |  | `basic` | `MATH_N/MATH_SIGN/RDV_ST/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
+| `$F77B` | 1 B | `basic` | `MATH_RECIP/SQRT_ITER` | Heron loop iteration counter, 1-based (the stop- |  |
+| `$F77C` | 1 B | `basic` | `MATH_BREAK/MATH_J/SQRT_POW10` | final decision-loop (§10.4 step 4, REVISED |  |
 | `$F796` | 2 B | `basic` | `GFX_CX` | Bresenham: current pixel X (int16, may be off-screen) (2) |  |
 | `$F798` | 2 B | `basic` | `GFX_CY` | Bresenham: current pixel Y (int16) (2) |  |
 | `$F79A` | 2 B | `basic` | `GFX_ERR` | Bresenham: error accumulator, in [0,DMAJ) (2) |  |

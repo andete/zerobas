@@ -5014,21 +5014,31 @@ MC_TYPE         equ     $F803   ; evmc_sub1 (expr.asm): the operand's FACTYP (4/
 ; array including the guard, so reusing an op's own post-round leftover guard
 ; digit as if it were real extra precision would silently corrupt the next
 ; alignment/round (own-design pitfall, caught in this slice's design pass).
-SQRT_X          equ     $F16E   ; the efficiency-normalized argument x' (constant
+; 🏗️ D-WSZERO S14e (2026-10-16): the math tenants' 39 B of scratch lives at the
+; head of the DEF FN shadow slots and is SAVED on the Z80 stack around every math
+; tenant (sub/mathwrap.asm): an FN call's formals or a PRINT USING render that
+; were live there come back untouched. NOT-A-CELL: the host's base and size.
+MW_HOST         equ     FN_PAREA        ; NOT-A-CELL: $F756, the saved host
+MW_N            equ     39              ; NOT-A-CELL: SQRT_X 18 + SQRT_Y 18 + K / ITER / POW10
+SQRT_X          equ     MW_HOST   ; the efficiency-normalized argument x' (constant
+                                ; D-WSZERO S14e: in MW_HOST, saved around every math tenant (was $F16E)
                                 ; across the whole iterate loop), FPNUM record (18)
-SQRT_Y          equ     $F180   ; the current iterate y (updated once per loop
+SQRT_Y          equ     MW_HOST + 18   ; the current iterate y (updated once per loop
+                                ; D-WSZERO S14e: in MW_HOST, saved around every math tenant (was $F180)
                                 ; pass, canonical/clean per the note above),
                                 ; FPNUM record (18). REUSED post-loop (§10.4
                                 ; step 4, REVISED 2026-07-13) as the final
                                 ; Newton-correction's canonical-y scratch --
                                 ; the loop is done with it by then.
-SQRT_K          equ     $F192   ; signed net count of the x'/y<->x/y-under-100^k
+SQRT_K          equ     MW_HOST + 36   ; signed net count of the x'/y<->x/y-under-100^k
+                                ; D-WSZERO S14e: in MW_HOST, saved around every math tenant (was $F192)
                                 ; rescale (spec §10.4 step 2): +1 per /100 step,
                                 ; -1 per *100 step applied to reach x'∈[1,100);
                                 ; the result is rescaled by 10^SQRT_K at the end
                                 ; (dexp+=SQRT_K -- exact, no digit shift, since
                                 ; the FPNUM digit array is magnitude-independent) (1)
-SQRT_ITER       equ     $F193   ; Heron loop iteration counter, 1-based (the stop-
+SQRT_ITER       equ     MW_HOST + 37   ; Heron loop iteration counter, 1-based (the stop-
+                                ; D-WSZERO S14e: in MW_HOST, saved around every math tenant (was $F193)
                                 ; rule's "suppress the check on iteration 1" needs
                                 ; to know which pass this is) (1); REUSED post-loop
                                 ; as the final decision-loop's own pass counter.
@@ -5049,7 +5059,8 @@ SQRT_R          equ     FOUTBUF ; final-correction high-precision residual scrat
                                 ; cell) -- avoids a second SQRT_* RAM claim when
                                 ; the $F194..$F195(DRVA_DPB) gap has only 1 free
                                 ; byte left.
-SQRT_POW10      equ     $F194   ; final decision-loop (§10.4 step 4, REVISED
+SQRT_POW10      equ     MW_HOST + 38   ; final decision-loop (§10.4 step 4, REVISED
+                                ; D-WSZERO S14e: in MW_HOST, saved around every math tenant (was $F194)
                                 ; 2026-07-13): 1=SQRT_Y is exactly a power of 10
                                 ; (its "step down" needs the next decade's finer
                                 ; ulp, not its own -- see fsqn_down_check), 0
@@ -5727,4 +5738,9 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF FOR_SIGN + 1 > GFX_POVF || PU_DEC + 1 > GFX_POVF || GFX_DEXP + GFX_DEXP_CAP > GFX_DFTOP
                 db      S14D_BUFTX_GUEST_OVERRAN
+    ENDIF
+
+; --- D-WSZERO S14e (2026-10-16): the math host guard ------------------------------
+    IF SQRT_POW10 + 1 != MW_HOST + MW_N || MW_HOST + MW_N > FN_PAREA_END
+                db      S14E_MATH_BLOCK_OUTSIDE_ITS_SAVED_HOST
     ENDIF
