@@ -178,6 +178,18 @@ RUN_GAP["s14lst"] = 60.0
 _S14B_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 4:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60829,60924,61420,61425,61600,61607,61731,61732"]
+# D-WSZERO S14c (2026-10-16): WSTX = BUF+256 ($F65E-$F65F), the two bytes no
+# expression can reach (STRSCR staging ends at $F65D), shared by cells that are
+# each live in ONE statement only: MID$'s / LSET's target (MIDS_DEST), COLOR,
+# LOCATE, LET's LHS type, OPEN's device type; the tape-save / RESUME NEXT pair
+# TSV_PTR (= SSE_OUT) / TSV_CNT -> BUF $F5FA-$F5FC. `s14stx` sums the 11
+# vacated bytes (VG-8020 1815); `ovstx` stages INPUT$(255) in STRSCR -- up to
+# $F65D -- INSIDE a MID$ statement, whose target is held in WSTX at $F65E.
+for _r in ("s14stx", "ovstx"):
+    RANGES[_r] = RANGES["all"]
+_S14C_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+             ':PRINT"[S";S;"]":END',
+             "950 DATA 60669,60670,61051,61052,61242,61242,61277,61278,61281,61281,61407,61408,61804,61804"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -428,6 +440,23 @@ PROGRAM_OVKEY = [
     '20 KEY ON:LINE INPUT"[L";B$:PRINT"[B";LEN(B$);ASC(MID$(B$,163));"]":KEY LIST:END',
     "RUN", "@WAIT40", "A" * 162 + "Q" + "B" * 7,
 ]
+PROGRAM_S14STX = [
+    "NEW",
+    '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 COLOR 15,4:LOCATE 5,5:OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"[C]":CLOSE:A$="ABCDE":MID$(A$,2)="XY":A%=1.5',
+    '30 ERROR 5:PRINT"[R";A$;A%;"]":GOTO 900',
+    '100 RESUME NEXT',
+] + _S14C_SUM + ["RUN"]
+PROGRAM_OVSTX = [
+    "NEW",
+    '10 CLEAR 400,&HE000:BLOAD"CAS:",R',
+    '20 DIM A$(3):A$(1)="ABCDE":MID$(A$(1),LEN(INPUT$(255))-252)=STRING$(2,"Q"):PRINT"[M";A$(1);"]":END',
+    # 200 + Enter + 54 = the 255 keys INPUT$(255) takes (the harness refuses a
+    # typed line over 254 characters -- first cut)
+    # Z, not Q: the echo guard read the result's "QQ" as a mangled echo of a
+    # typed Q line (second cut, an APPARATUS FAILURE on the VG-8020)
+    "RUN", "@WAIT40", "Z" * 200, "Z" * 54,
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -466,7 +495,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s12dir": PROGRAM_S12DIR, "ovbuf": PROGRAM_OVBUF, "ovfn": PROGRAM_OVFN,
             "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF,
             "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB,
-            "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY}
+            "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY,
+            "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX}
 
 
 def tape(lo, hi, fill=0xA5):

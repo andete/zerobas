@@ -1,0 +1,5 @@
+K-WS65: rows ['ctl', 's14stx'] diverging ['s14stx']; predicted ['s14stx'] -> HIT
+K-WS66: rows ['ctl', 'ovstx'] diverging ['ovstx']; predicted ['ovstx'] -> HIT
+K-WS67: build rc=2, S14C_SOMETHING_AN_EXPRESSION_RUNS_NOW_REACHES_WSTX named in the log; predicted the guard refuses -> HIT
+restored: build rc=0; SAME
+rc=0

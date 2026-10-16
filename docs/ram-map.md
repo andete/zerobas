@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 132 declared addresses in this project's own workspace `$E000..$F37F` (127 with a machine-readable width), plus **399** in the MSX standard work area at or above `$F380`.
+* **basic** — 125 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **403** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -115,7 +115,6 @@ second one is the question a per-component map cannot answer.
 | `$E976` | 1 B | `basic` | `FAT_DEFER` | DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1) |  |
 | `$E976` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
 | `$ECFC` | 1 B | `basic` | `STRENG_SPARE` | $ECFC: 1 B free (was TMISMATCH) |  |
-| `$ECFD` | 2 B | `basic` | `MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
 | `$ED38` | 1 B | `basic` | `GFX_DFTOP` | $ED38: X-frame stack depth (1) |  |
 | `$ED39` | 32 B | `basic` | `GFX_DFSTK` | $ED39: saved [ptr][end] per outer frame -- |  |
 | `$ED67` | 24 B | `basic` | `GFX_DEXP` | $ED67: NUL-terminated copy of the text between |  |
@@ -163,7 +162,6 @@ second one is the question a per-component map cannot answer.
 | `$EE77` | 2 B | `disk` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
 | `$EE79` | 2 B | `basic` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
-| `$EE7B` | 2 B | `basic` | `CLR_SAVE` | fg+bg, in flight across a COLOR statement (2) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
@@ -192,7 +190,6 @@ second one is the question a per-component map cannot answer.
 | `$EF23` | 1 B | `basic` | `FOR_SIGN` | NEXT's scratch: the step's sign byte (1) |  |
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
-| `$EF3A` | 2 B | `basic` | `OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
 | `$EF42` | 1 B | `basic` | `SCAN_PRIM` | BOOT-ONLY: primary slot currently being scanned (1) |  |
 | `$EF43` | 1 B | `basic` | `SCAN_SLOT` | BOOT-ONLY: candidate slot id for RDSLT/CALSLT (1) |  |
 | `$EF44` | 2 B | `basic` | `SCAN_INIT` | BOOT-ONLY: candidate ROM's INIT entry address (2) |  |
@@ -204,8 +201,7 @@ second one is the question a per-component map cannot answer.
 | `$EF59` | 2 B | `disk` | `DSV_PTR` | DISK-ONLY: SAVE: current source byte pointer (2) |  |
 | `$EF5B` | 2 B | `basic` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
 | `$EF5B` | 2 B | `disk` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
-| `$EF5D` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
-| `$EF61` | 1 B | `basic` | `FMT_GEOMSEL/TSV_CNT` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
+| `$EF61` | 1 B | `basic` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$EF61` | 1 B | `disk` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
 | `$EF62` | 6 B | `basic` | `FMT_RESULT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), $EF62..$EF67 |  |
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
@@ -232,8 +228,6 @@ second one is the question a per-component map cannot answer.
 | `$EFD7` | 2 B | `basic` | `SH_DEST` | MID_STORE (op=9) arg: the MID$- |  |
 | `$EFD9` | 2 B | `basic` | `SH_P` | INSTR_SEARCH (op=11) arg: p (2 B) |  |
 | `$EFDB` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
-| `$EFDF` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
-| `$EFE0` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |
@@ -274,7 +268,6 @@ second one is the question a per-component map cannot answer.
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
 | `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
-| `$F16C` | 1 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
 | `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
 | `$F180` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
 | `$F192` | 2 B | `basic` | `MATH_N/MATH_SIGN/SQRT_K` | signed net count of the x'/y<->x/y-under-100^k |  |
@@ -415,7 +408,11 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5F7` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$F5F8` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
 | `$F5F9` | 1 B | `basic` | `GFX_BAD` | VRAM read-back mismatch count (1) |  |
+| `$F5FA` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
+| `$F5FC` | 1 B | `basic` | `TSV_CNT` | tape save: loop counter (1) |  |
 | `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
+| `$F65E` |  | `basic` | `CLR_SAVE/LHS_VARTYPE/LOC_COL/MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
+| `$F65F` |  | `basic` | `LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |

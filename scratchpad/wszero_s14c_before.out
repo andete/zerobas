@@ -1,0 +1,43 @@
+ROW s14stx $ECF8-$F37F VG=[[S 1815 ]] ZB=[[S 650 ]] DIVERGES
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/probes/basic/basic_probe_wszero.py", line 552, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/joost/projects/zerobas/probes/basic/basic_probe_wszero.py", line 523, in main
+    got[side] = rows(omsx_repl.run_cases(m, [("direct", prog)], batch=False,
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                         reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                         run_gap=RUN_GAP.get(name, 40.0), cassette=path)[0])
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 1891, in run_cases
+    result = _run_cases_impl(machine, cases, **kw)
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 2014, in _run_cases_impl
+    out.append(run_batch(machine, [c], reset=reset, timeout=to_single,
+               ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         holds=[holds[i]] if holds else None,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         verify_delivery=verify_delivery,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         **(dict(kw, settle_out=one) if one is not None else kw))[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 1741, in run_batch
+    caps, delivered, echo = _run_batch(machine, cases, **kw)
+                            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 1215, in _run_batch
+    f.write(_tcl(out, cases, boot, step, cap_gap, reset, capture,
+            ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 holds, hold_secs, prologue, slots,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+                 sentinel_capture=sentinel_capture,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 watch_values=watch_values))
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 716, in _tcl
+    t = emit(t, ln)
+  File "/Users/joost/projects/zerobas/probes/lib/omsx_repl.py", line 644, in emit
+    raise ValueError(f"line exceeds MSX line buffer (~{MAX_BUF}): "
+                     f"{len(s)} chars {s!r}")
+ValueError: line exceeds MSX line buffer (~254): 255 chars 'QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ'
+refcache: 0 hit, 2 miss, 2 stored

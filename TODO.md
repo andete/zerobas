@@ -3268,6 +3268,38 @@ item — do **one item per session** to keep context lean.
       BUF). A witness needs a SHIFT toggle WHILE an expression runs -- the
       harness's `holds` presses after the last typed line, too late; filed as
       the residual.
+      ✅ **S14c (2026-10-16): WSTX, BUF's LAST TWO BYTES, FOR THE CELLS HELD ACROSS
+      ONE STATEMENT'S OWN EVALUATION -- 11 window bytes, equates only (0 ROM).**
+      MIDS_DEST (MID$'s and LSET's target), CLR_SAVE (COLOR), LOC_COL / ROW
+      (LOCATE), LHS_VARTYPE (LET), OO_DEVTYPE (OPEN) -> WSTX $F65E-$F65F; TSV_PTR
+      (= SSE_OUT, RESUME NEXT) / TSV_CNT -> BUF $F5FA-$F5FC, below the render
+      window. Nothing an expression runs reaches WSTX: STRSCR staging ends at
+      $F65D (LINEBUF + 1 + STRMAX), the render window too; fname_expr's
+      terminator can land on $F65E only inside a file statement. 🔁 **Changed from
+      the plan:** it kept MID$'s target on the Z80 stack (seg A -1 B: the $3297
+      pad would grow to 5 B, over pin-check's 4-B budget and Joost's "no growing
+      holes") and LSET's in a new disk-only cell; WSTX itself takes both at 0 B,
+      since MID$ / LSET never run inside another WSTX statement. Kept in the
+      window for now, as the plan itself said: IN_RDLEN (INPUT$ still uses it,
+      S14d), OO_RECLEN_CHAN. Two guards (STRSCR's and the window's reach end
+      exactly at WSTX; the tape cells clear of the window); the old
+      `MIDS_DEST + 2 > BASIC_WS_CEIL` guard retired with its subject.
+      📏 Rows: `s14stx` (COLOR, LOCATE, a CRT: channel, MID$, A%=1.5, an error +
+      RESUME NEXT; the 11 vacated bytes, VG-8020 1815) and `ovstx` (MID$ whose
+      position argument is LEN(INPUT$(255)) -- 255 typed keys staged up to $F65D
+      while the target sits in WSTX at $F65E). Before, on S14b's build
+      ([`wszero_s14c_before.out`](scratchpad/wszero_s14c_before.out),
+      [`wszero_s14c_before2.out`](scratchpad/wszero_s14c_before2.out)): s14stx
+      650, ovstx SAME `[MABQQE]` -- after two harness lessons: a typed line over
+      254 characters is refused (now 200 + Enter + 54 keys), and the echo guard
+      read the result's "QQ" as a mangled echo of a typed Q line (now Z keys).
+      After: 44/44 SAME ([`wszero_s14c_rows.out`](scratchpad/wszero_s14c_rows.out)). 🔪
+      [`wszero_s14c_knife.py`](scratchpad/wszero_s14c_knife.py) ->
+      [`wszero_s14c_knife.out`](scratchpad/wszero_s14c_knife.out): K-WS65 (the
+      eight cells back) -> s14stx, HIT; negative controls with WSTX one byte too
+      low ($F65D, inside STRSCR's reach): K-WS66 (guards off) -> `ovstx`
+      diverges, HIT; K-WS67 (guards on) -> the build refuses on the named
+      guard, HIT.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9866,7 +9898,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35399 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35431 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10032,7 +10064,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14894 (T-6FE392)8 (T-529ABE)` from `TODO.md:27688 (T-529ABE)`: a
+      `TODO.md:14926 (T-6FE392)8 (T-529ABE)` from `TODO.md:27720 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15741,7 +15773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27720 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,4 @@
+ROW ovstx $ECF8-$F37F VG=[[MABQQE]] ZB=[[MABQQE]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

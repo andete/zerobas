@@ -939,7 +939,8 @@ NUMBUF          equ     $F408   ; PRINT: decimal-format scratch (8 bytes, 0-term
 ; top of the block; $E3E6, 378 B under the wall. (That anchor was TMISMATCH+1
 ; until D-PENDERR retired the TMISMATCH cell; STRENG_SPARE is the same address,
 ; deliberately left standing so MIDS_DEST does NOT move -- see its definition.)
-MIDS_DEST       equ     STRENG_SPARE + 1    ; MID$ statement: the target descriptor's address (2 B)
+MIDS_DEST       equ     WSTX    ; MID$ statement: the target descriptor's address (2 B)
+                                ; D-WSZERO S14c: held across MID$'s / LSET's RHS: WSTX, which no expression reaches (was STRENG_SPARE + 1)
 ; Console INPUT (repack build only): the LINEBUF read cursor for linebuf_getbyte (2 B)
 ; (basic/input.asm). A 16-bit POINTER since D-RAMBUF (2026-10-12): LINEBUF is the
 ; reference's BUF ($F55E), which crosses $F600, so the old single low byte under
@@ -974,6 +975,15 @@ INP_CURSOR      equ     $F956    ; console INPUT LINEBUF read pointer (2 B)
 ; was an ORDER test, `jr nc`) and console INPUT's cursor is a 16-bit pointer.
 ; 254 characters + the 0 end at $F65C, inside BUF ($F55E..$F65F).
 LINEBUF         equ     $F55E   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
+; 🏗️ D-WSZERO S14c (2026-10-16): WSTX, BUF's last two bytes ($F65E-$F65F). Nothing an
+; EXPRESSION runs reaches them: STRSCR staging is [len] + at most STRMAX bytes from
+; LINEBUF, ending at $F65D; the render window ends there too (DB_WINSZ 94);
+; fname_expr's `"` terminator can land on $F65E, but only inside a file statement.
+; So a cell held across ONE statement's own evaluation lives here -- MID$'s / LSET's
+; target, COLOR's pair, LOCATE's, LET's LHS type, OPEN's device type -- and those
+; statements never run inside one another (an expression runs no statement).
+; NOT-A-CELL: the slot's base; its tenants are the aliases.
+WSTX            equ     LINEBUF + 256   ; NOT-A-CELL: $F65E, the statement-exclusive slot (2 B)
 LINEMAX         equ     255     ; 254 chars + the 0 terminator (measured reference ceiling)
 ; The largest STORABLE line number. Anything past this is refused outright with
 ; `Syntax error` (ERR 2) at line entry -- MEASURED on both the VG-8020 and the
@@ -1617,8 +1627,10 @@ FN_RESUME       equ     $F6BC   ; D-FNEXPR: cursor past a filename expr (2 B) --
 ; valid -- measured (basic/missing.asm ex_locate). Both cells are SEEDED from the
 ; live cursor, so an omitted axis is re-applied unchanged and needs no
 ; present-flag of its own.
-LOC_COL         equ     $EFDF   ; 1 B: LOCATE's parsed column, pre-clamp
-LOC_ROW         equ     $EFE0   ; 1 B: LOCATE's parsed row, pre-clamp
+LOC_COL         equ     WSTX   ; 1 B: LOCATE's parsed column, pre-clamp
+                                ; D-WSZERO S14c: LOCATE: WSTX (was $EFDF)
+LOC_ROW         equ     WSTX + 1   ; 1 B: LOCATE's parsed row, pre-clamp
+                                ; D-WSZERO S14c: LOCATE: WSTX (was $EFE0)
 ; --- SWAP_RESIDENT: the SWAP build gate -------------------------------------
 ; 1 = SWAP is BUILT (2026-07-28). The flag is kept rather than removed because it
 ; is the seam the MISSING class was split on, and because it still guards three
@@ -1767,7 +1779,8 @@ PRDEST          equ     $EF38   ; PRINT destination: 0=screen, 1=file channel (1
 ; context. OO_DEVTYPE is the transient device type stashed across the OPEN parse.
 ; Free bytes in the $E0CC gap (below CONTLINE $E0D0).
 PRDEV           equ     $EF39   ; PRINT# device sink selector (1)
-OO_DEVTYPE      equ     $EF3A   ; OPEN device-channel type being parsed (transient, 1)
+OO_DEVTYPE      equ     WSTX + 1   ; OPEN device-channel type being parsed (transient, 1)
+                                ; D-WSZERO S14c: OPEN: WSTX+1, past fname_expr's terminator at $F65E (was $EF3A)
 ; ascii_read_lines' byte-source vector (files.asm D2 getbyte indirection; the
 ; read-side mirror of PRDEST/PRDEV above). Holds the address of the routine
 ; arl_getbyte (files.asm) jumps into for the next file byte: A=byte/CF clear,
@@ -2067,8 +2080,8 @@ ISRCH_B         equ     ISRCH_A + 2         ; $F83D: resolved B-operand body bas
 ; regression surface bought for nothing, since RAM is not a wall this project is
 ; anywhere near and both ROM walls are. Spend it when something needs a byte.
 STRENG_SPARE    equ     $ECFC               ; $ECFC: 1 B free (was TMISMATCH)
-; MIDS_DEST ($E7E6, 2 B, STRENG_SPARE+1, defined above) sits right above here — the
-; last claimed cell in the freed STRTAB window.
+; (MIDS_DEST sat right above here, STRENG_SPARE+1, until D-WSZERO S14c moved it to
+; BUF's WSTX slot.)
 ; 🏗️ D-DRAWINPLACE step 2b (2026-10-13): basic-core RAM's block -- this window,
 ; DB_WIN, the graphics union, DRAW's state and the persistent cells -- sits ABOVE
 ; disk.rom's cell block now (the rotation put that block at the diskless floor,
@@ -2079,9 +2092,9 @@ STRENG_SPARE    equ     $ECFC               ; $ECFC: 1 B free (was TMISMATCH)
 BASIC_WS_CEIL   equ     $EDFD  ; NOT-A-CELL: basic-core RAM stays below basic's FAT block
 ; ($E9C0 until D-STRSCRBUF's one-page shift moved that block with everything
 ; under STRSCR's freed page: a NOT-A-CELL constant does not move with a shift.)
-    IF MIDS_DEST + 2 > BASIC_WS_CEIL
-                db      STRING_HEAP_LAYOUT_OVERRAN_THE_BASIC_FAT_BLOCK
-    ENDIF
+; (The guard `MIDS_DEST + 2 > BASIC_WS_CEIL` stood here; D-WSZERO S14c moved
+; MIDS_DEST into BUF's WSTX slot, so its subject left this window -- the WSTX
+; guards at the end of this file replace it.)
 
 ; --- G5 PAINT (docs/spec-basic-graphics-g5.md §4/D3): the scanline span-fill
 ; stack home. The fill needs a FIXED-CAPACITY span stack (D3, sign-off'd) that
@@ -3099,10 +3112,12 @@ DSV_END         equ     $EF5B   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, 
 ; Tape CSAVE / BSAVE write scratch (page $E0, $E0F1.. gap; dead outside a tape
 ; CSAVE/BSAVE). All state lives in RAM — TAPOUT clobbers every register, so no
 ; register can survive a TAPOUT call.
-TSV_PTR         equ     $EF5D   ; tape save: current source-byte pointer (2)
+TSV_PTR         equ     $F5FA   ; tape save: current source-byte pointer (2)
+                                ; D-WSZERO S14c: BUF, below DB_WIN (an ASCII SAVE to tape runs both) (was $EF5D)
 TSV_END         equ     $F87D   ; tape save: last source-byte address, inclusive (2)
                                   ; D-WSZERO S8: the reference's SAVEND (was $EF5F)
-TSV_CNT         equ     $EF61   ; tape save: loop counter (1)
+TSV_CNT         equ     $F5FC   ; tape save: loop counter (1)
+                                ; D-WSZERO S14c: BUF (was $EF61)
 TSV_NAME        equ     $EF62   ; tape save: 6-char filename buffer (space-padded), $EF62..$EF67
                                 ; (declared (1 B) until D-WSZERO S11: tape_parse_name writes all 6)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
@@ -4383,7 +4398,8 @@ GP_LEFT         equ     $EE79   ; DISK-ONLY: record bytes still to move, ends $E
 ; merely unnamed: `make ramfree-acceptance` fills it and runs nine subsystems over
 ; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,
 ; disk I/O and FILES — all leaving it at 0 bytes changed (D-RAMFIX).
-CLR_SAVE        equ     $EE7B   ; fg+bg, in flight across a COLOR statement (2)
+CLR_SAVE        equ     WSTX   ; fg+bg, in flight across a COLOR statement (2)
+                                ; D-WSZERO S14c: held across COLOR's arguments: WSTX (was $EE7B)
 ; FREE-RAM $EB80..$EB92   (D-LOC took $EA40..$EA5F for FCH_RECNOS, 2026-09-11; PU_NUM $EA60..$EA7F, D-DETOKBUF S3, 2026-09-26)
 FOR_STK_END     equ     $F74C   ; RETIRED AS A STACK; the literal survives ONLY as
                                 ; FN_BASE's anchor below, which must not move.
@@ -4882,7 +4898,8 @@ VS_INT_VAL      equ     $F801   ; var_store_fac (vars.asm): the coerced int16 va
                                 ; var_alloc_or_find call that CLOBBERS DE for its
                                 ; own room-check arithmetic, so the int write-back
                                 ; sees the value and not leftover VAREND (2)
-LHS_VARTYPE     equ     $F16C   ; ex_let (interp.asm): the LHS variable's resolved
+LHS_VARTYPE     equ     WSTX   ; ex_let (interp.asm): the LHS variable's resolved
+                                ; D-WSZERO S14c: held across LET's RHS: WSTX (was $F16C)
                                 ; type, latched from (VARTYPE) BEFORE eval -- every
                                 ; RHS variable factor re-runs var_name_key, which
                                 ; overwrites the GLOBAL (VARTYPE), so a cross-type
@@ -5680,4 +5697,12 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF GFX_BAD + 1 > DB_WIN || DB_SKIP < RN_OLD + 2
                 db      S14B_DETOK_CELLS_OVERLAP_THE_WINDOW_OR_S12S_BUF_GUESTS
+    ENDIF
+
+; --- D-WSZERO S14c (2026-10-16): the WSTX guards ---------------------------------
+    IF LINEBUF + 1 + STRMAX != WSTX || DB_WIN + DB_WINSZ != WSTX
+                db      S14C_SOMETHING_AN_EXPRESSION_RUNS_NOW_REACHES_WSTX
+    ENDIF
+    IF TSV_CNT + 1 > DB_WIN || TSV_PTR < DB_RESUME + 1
+                db      S14C_TAPE_SAVE_CELLS_OVERLAP_THE_RENDER_WINDOW
     ENDIF
