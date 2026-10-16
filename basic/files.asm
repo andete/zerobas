@@ -1634,10 +1634,39 @@ ifc_zero:
 ; hazard — but any NEW caller must be checked against that contract.
 ; Clobbers A, BC, DE, IX.
 fch_ctx_addr:
-                ld      (SH_LEN),a          ; the channel number (1-based)
+                ld      l,a                 ; blk+0 = the channel number (1-based)
                 ld      a,18
-                call    sh_call_op         ; op 18 = channel block address
-                ld      hl,(SH_PTR)
+                jp      sh_go               ; op 18: HL = the channel block address
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/program.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $73AC pin -- tools/pin_plan.py's exact fill.
+; --- le_call / le_call_op: the lineedit tenant's call sequence (D-NGRAM3) ----
+; Five sites drove SUBROM_IDX_LINEEDIT with the identical 14 B run --
+;     ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
+;     call subrom_call / jp c,subrom_absent_error / ld a,(LE_STATUS) / or a
+; -- LIST (list.asm), the line STORE, DELETE, RENUM and AUTO (this file). 70 B in
+; all; one 15 B body plus five 3 B calls is 30 B.
+; 🎯 AND FOUR OF THE FIVE SET LE_OP IMMEDIATELY BEFORE IT, so `le_call_op` is a
+; 3 B second ENTRY rather than a second body: those four drop their own
+; `ld (LE_OP),a` for nothing. Together: **-49 B of page 1.**
+;   in:  A = the LE_OP_* code (passed on to the tenant in C).
+;   out: A = LE_STATUS, Z set when it is 0 (ok). Every caller branches on exactly
+;        that, and `ret` preserves both. Does NOT return when the sub-ROM is
+;        absent: subrom_absent_error owns that exit.
+; ⚠️ `relink` below is a SIXTH site with the same prefix and is deliberately NOT
+; folded in: it returns WITHOUT reading LE_STATUS, so routing it through here
+; would change the A and flags its callers see (cload.asm has two plain
+; `call relink` sites). 7 B, declined until that contract is measured rather
+; than assumed. [[a-shared-tail-is-not-a-decision]]
+le_call_op:
+                ld      c,a                 ; D-WSZERO S14g-d: the op rides in C (it
+                                            ; was a RAM cell, LE_OP); sc_inl1,
+                                            ; subrom_call and CALSLT pass BC
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
+                ld      a,(LE_STATUS)
+                or      a
                 ret
 
 ; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): the two halves of the
@@ -2402,38 +2431,8 @@ arl_ok:
                 or      a                   ; CF clear = success
                 ret
 
-; --- arl_getbyte: ascii_read_lines' byte-source indirection (D2) ------------
-; Jumps through the ARL_GETBYTE RAM vector to the CURRENT byte-source routine
-; (fat_io_getbyte by default; cload.asm's cal_getbyte during a cassette ASCII
-; load). Standard Z80 call-through-pointer idiom: `call arl_getbyte` pushes
-; OUR caller's return address, then `jp (hl)` jumps to the target WITHOUT
-; touching the stack, so the target's own `ret` pops that same address —
-; reaching ascii_read_lines exactly as a direct `call fat_io_getbyte` would.
-; Preserves nothing (neither source routine does); ascii_read_lines already
-; reloads everything it needs from RAM after each call.
-;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
-; 🔁 DEMOTED BACK TO PAGE 1, 2026-09-08 (D-REBALANCE). It was PROMOTED
-; into the low region earlier the same evening, when main page 1 had 3 B and the
-; low region 14 B. D-INCSKIP and D-SKIPCOMMA then freed 113 B of page 1 and only
-; 12 of low, so the SCARCE wall changed sides and the promotion now costs the
-; wrong region. The two regions are one budget; which side a routine sits on is a
-; reading of today's split, not a property of the routine.
-; arl_getbyte — the indirect byte source ascii_read_lines reads through.
-;   out: A = byte, CF clear; or CF set = no more data (source-defined "EOF").
-; Preserves nothing (neither source routine does); ascii_read_lines already
-; reloads everything it needs from RAM after each call.
-; 💰 PROMOTED OUT OF basic/files.asm (main page 1) INTO THE LOW REGION,
-; 2026-09-08, to fund `ATTR$`'s `ev_f` arm (D-ATTRFN). Same route as `upcase`
-; above (D-PROMOTE): the two regions are one contiguous, freely inter-callable
-; image, so these four bytes cost nothing here and buy four bytes of page 1.
-; 🎯 It qualifies because nothing about it is position-dependent: entered only by
-; `call`, left only by `jp (hl)` — an unconditional terminator — emits no data,
-; and no `jr`/`djnz` crosses its boundary. `ascii_read_lines`, its only caller,
-; reaches it absolutely. Sited ABOVE the overflow guard, which has to stay the
-; last thing in this block or it does not guard the bytes after it.
-arl_getbyte:
-                ld      hl,(ARL_GETBYTE)
-                jp      (hl)
+; (arl_getbyte lives in basic/program.asm since D-WSZERO S16: it refills bytes the stack
+; parameter block freed in front of a pinned address)
 
 ; --- dsk_aopen: open an ASCII program file THROUGH the crossing (step 11) ----
 ; The disk side mounts, searches the directory and primes the stream; main keeps

@@ -1,0 +1,6 @@
+ROW s16sh $ECF8-$F37F VG=[[S 2970 ] | [VDDDDABCBC***  A] | [WFF10101 3  0  7  1.5 ]] ZB=[[S 1129 ] | [VAQCDABCBC***  A] | [WFF10101 3  0  7  1.5 ]] DIVERGES
+ROW ovread $ECF8-$F37F VG=[[R 1.5  16 ] | [E 2  30 ] | [E 6  30 ]] ZB=[[R 1.5  16 ] | [E 2  30 ] | [E 6  20 ]] DIVERGES
+ROW ovfre $ECF8-$F37F VG=[[R 96  0 ]] ZB=[[R 96 -1 ]] DIVERGES
+
+FAIL: a load over the window, then BASIC (0/3 as pinned); unpinned divergence: s16sh, ovread, ovfre
+refcache: 0 hit, 6 miss, 6 stored

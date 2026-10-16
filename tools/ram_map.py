@@ -1232,11 +1232,17 @@ def selftest(lo, hi) -> int:
     ok["A10 NEGATIVE: and the control reproduces the OLD coverage exactly, "
        "so the gain is the continuations and nothing else"] = \
         len(b_flat.width) == len(Map("basic", lo, hi, joint=False).width)
-    a_shsrc = b_joint.vals["SH_SRC"]
-    ok[f"A10 SH_SRC ${a_shsrc:04X} reads 2 B with joining and nothing "
-       "without it (the ADDRESS is derived, not typed -- it moved on "
-       "2026-09-21 and a typed one would have rotted)"] = \
-        b_joint.width.get(a_shsrc) == 2 and b_flat.width.get(a_shsrc) is None
+    # (HORNER_PTR since D-WSZERO S16, 2026-10-16: SH_SRC, the first anchor, left
+    # RAM with the whole SH_* block -- the arm read a KeyError, not a verdict)
+    # (on a FULL-range map: the default window $E000..$F380 holds no such basic
+    # cell any more -- D-WSZERO emptied it)
+    bj_full = Map("basic", 0, 0x10000, joint=True)
+    bf_full = Map("basic", 0, 0x10000, joint=False)
+    a_shsrc = bj_full.vals["HORNER_PTR"]
+    ok[f"A10 HORNER_PTR ${a_shsrc:04X} reads 2 B with joining and nothing "
+       "without it (the ADDRESS is derived, not typed -- FOUTBUF+19 -- so it "
+       "cannot rot when FOUTBUF moves)"] = \
+        bj_full.width.get(a_shsrc) == 2 and bf_full.width.get(a_shsrc) is None
 
 
     # ---- A11 CONTAINMENT: a gap inside a declared span is NOT a run --------
@@ -1346,10 +1352,12 @@ def selftest(lo, hi) -> int:
     # map does not cover -- the arm then read a KeyError, not a verdict)
     ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
         byaddr14[b_all.vals["FLD_TAB"]][1] == []
-    # SH_SRC's width lives on its continuation line ("address (2 B)"), which is
+    # SH_SRC's width lived on its continuation line ("address (2 B)"), which is
     # exactly why joining exists -- and exactly why the PURPOSE must not join.
+    # Since D-WSZERO S16 deleted SH_*, the arm reads FAT_TOTCLUS: a DISK-ONLY cell
+    # with a multi-line comment that stays below $F380 for good, as FLD_TAB above.
     flat14 = Map("basic", lo, hi, joint=False)
-    a_src = b_all.vals["SH_SRC"]
+    a_src = b_all.vals["FAT_TOTCLUS"]
     ok["A14 the purpose is the DECLARATION line, not the joined block -- the "
        "first draft had a cell swallow the next section's paragraph"] = \
         len(purpose(b_all, a_src, flat14)) < len(purpose(b_all, a_src))
@@ -1448,9 +1456,19 @@ def selftest(lo, hi) -> int:
         ok["A17 a BOOT-ONLY tag is accepted" if _want else
            "A17 NEGATIVE: `BOOT ONLY` (no hyphen) is RED"] = \
             (all(n != "ZZ_FLOOR_BOOT" for n, _a in _off4) == _want)
-    _offt, _ = disk_floor(_fm, top=0xF380)
-    ok["A17 --floor-top widens the floor (F380 lists more than TXTMAX_NODISK)"] = \
-        len(_offt) > len(_off)
+    # --floor-top: a PLANTED untagged cell between the diskless ceiling and $F380
+    # is listed by `--floor-top F380` and not by the default floor. (It compared
+    # the real tree's two counts until D-WSZERO S16 left nothing between them;
+    # once S15 raises TXTMAX_NODISK to $F380 the two floors coincide and this
+    # arm needs a lower plant top.)
+    _raw5 = dict(_fm.raw)
+    _raw5["ZZ_UNDER_F380"] = ("$F37E", "plant", 0, "an untagged cell under $F380 (1)")
+    _fm5 = Map("basic", 0, 0x10000, raw=_raw5, use_sym=False)
+    _offd5, _ = disk_floor(_fm5)
+    _offt5, _ = disk_floor(_fm5, top=0xF380)
+    ok["A17 --floor-top widens the floor (F380 lists a cell TXTMAX_NODISK does not)"] = \
+        any(n == "ZZ_UNDER_F380" for n, _a in _offt5) and \
+        not any(n == "ZZ_UNDER_F380" for n, _a in _offd5)
 
     print()
     for k, v in ok.items():

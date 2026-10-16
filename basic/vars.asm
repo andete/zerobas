@@ -1090,11 +1090,10 @@ str_set_key:
                                             ; root) / STR_EMPTY on overflow --
                                             ; FPERR already set either way
     ENDIF
-                ld      (SH_SRC),hl         ; stash now -- a plain RAM cell,
-                                            ; survives the target alloc below
-                                            ; untouched (no CPU-stack relay
-                                            ; needed for it)
-                pop     bc                  ; [KEY] restored
+                pop     bc                  ; BC = [KEY]              [SAVED_TEMPPT]
+                push    hl                  ; [SAVED_TEMPPT][the source]: it rides the
+                                            ; stack across the target alloc (D-WSZERO
+                                            ; S16: it was the SH_SRC RAM cell)
                 ld      a,1                 ; type=1 -- the `$` unifier
                 call    var_alloc_or_find   ; D-NGRAM (2026-10-10): CF + HL = the
                                             ; entry (found or newly inserted) /
@@ -1107,25 +1106,47 @@ str_set_key:
                 inc     hl
                 inc     hl
                 inc     hl                  ; HL -> dest descriptor (entry+3)
-                ld      (SH_DEST),hl
-                ld      a,12
-                ld      (SH_OP),a           ; op = 12 (VAR_STORE) -- unchanged
-                                            ; sub-side body copy
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
-                pop     hl                  ; [SAVED_TEMPPT]
+                ex      de,hl               ; DE = the dest descriptor (blk+4)
+                pop     hl                  ; HL = the source (blk+2)  [SAVED_TEMPPT]
+                ld      a,12                ; op = 12 (VAR_STORE) -- the sub-side
+                call    sh_go               ; body copy; A = ERR
+                pop     hl                  ; [SAVED_TEMPPT] (pop and ld keep the flags)
                 ld      (TEMPPT),hl        ; release the H1 snapshot
-                ld      a,(SH_ERR)
-                or      a
                 ret     z
                 jp      str_heap_oom_error
 ssk_target_oom:
+                pop     hl                  ; drop [the source]
                 pop     hl                  ; [SAVED_TEMPPT]
                 ld      (TEMPPT),hl        ; release the H1 snapshot (the
                                             ; target alloc failed before ANY
                                             ; store happened, but the
                                             ; snapshot push above still ran)
                 ret                         ; FPERR already mapped+set (OOM)
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/program.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $6CF3 pin -- tools/pin_plan.py's exact fill.
+; --- parse_lineno: the resident stub for the sub-ROM line-number scanner ------
+; D-EVLNO (docs/spec-rom-region-evict-lineno.md): the 73 B body -- the whole
+; D-LNBLANK blank/zero-separator scan -- moved VERBATIM to sub/lineno.asm as
+; page-1 tenant SUBROM_IDX_PARSELN, opening rank 4 of the ROM REGION STRUCTURE
+; REVIEW §7. 73 B out, 18 B back: 55 B at the wall that binds.
+;
+; PAGE 1 rather than the review's preferred page 0 because the body calls NOTHING
+; -- it needs neither island's privilege -- and the page-0 entry table is FULL
+; (13 rows $0010..$0036, one spare byte before the $0038 vector; sub/sub.asm).
+;
+; Contract UNCHANGED for dl_store: HL -> the first digit in; BC = the number and
+; HL at the body out; A clobbered. HL rides IN through subrom_call/CALSLT; the two
+; results ride back in PLN_NUM/PLN_PTR, because CALSLT owns the registers on the
+; way out (the same reason fatprim_bounce reloads DISKOP_HL/DISKOP_A).
+parse_lineno:
+                call    sc_inl1             ; D-STUBINL: reduced build w/o sub-ROM (never on
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PARSELN)
+                                            ; the merged machine, which always ships it)
+                ld      bc,(PLN_NUM)        ; the parsed number ($FFFF if it saturated)
+                ld      hl,(PLN_PTR)        ; LINEBUF pointer at the body
+                ret
 
 
 ; --- clear_vars: empty the numeric AND string tables (called at INIT / RUN) --

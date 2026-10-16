@@ -1,0 +1,6 @@
+K-WS89: diverging ['s16sh']; predicted exactly ['s16sh'] -> HIT
+K-WS90: diverging ['ovcat', 'ovcmp', 'ovval', 'ovread']; predicted among them ['ovcat', 'ovval', 'ovread', 'ovcmp'] -> HIT
+K-WS91: diverging ['s16sh', 'ovval', 'ovread']; predicted among them ['ovval', 'ovread'] -> HIT
+K-WS92: diverging ['ctl', 's16sh', 'ovcat', 'ovslice', 'ovgc', 'ovcmp']; predicted among them ['ovgc'] -> HIT
+K-WS93: diverging ['ovslice']; predicted among them ['ovslice'] -> HIT
+restored: build rc=0; SAME

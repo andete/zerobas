@@ -1,0 +1,6 @@
+ROW s16sh $ECF8-$F37F VG=[[S 2970 ] | [VABCBC***  A] | [WFF10101 3  0  7  1.5 ]] ZB=[[S 2970 ] | [VABCBC***  A] | [WFF10101 3  0  7  1.5 ]] SAME
+ROW ovread $ECF8-$F37F VG=[[R 1.5  16 ] | [E 2 ] | [E 6 ]] ZB=[[R 1.5  16 ] | [E 2 ] | [E 6 ]] SAME
+ROW ovfre $ECF8-$F37F VG=[[R 96  0 ]] ZB=[[R 96  0 ]] SAME
+
+PASS: a load over the window, then BASIC (3/3 as pinned)
+refcache: 0 hit, 6 miss, 6 stored

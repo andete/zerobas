@@ -2005,41 +2005,11 @@ BUFTX           equ     LINEBUF + 9         ; NOT-A-CELL: $F567, the statement-e
 ; exact failure the note was written about. The
 ; two runs this slice spends are the two this FILE calls FREE-RAM in as many
 ; words: the retired TRAPSTK here, and $E238..$E240 for TEMPTOP below.
-SH_BASE         equ     $EFCA   ; the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR
-                                ; is exactly 18 B and ends at $E21E, one below
-                                ; TRAPPEND $E21F -- the run is spent to the byte
-SH_OP           equ     SH_BASE             ; $EFCA (1 B)
-SH_LEN          equ     SH_OP + 1           ; ALLOC/TEMP_ALLOC/BUILD_CONCAT arg:
-                                            ; requested length / operand count (1 B)
-SH_SRC          equ     SH_LEN + 1          ; SNAPSHOT arg: source descriptor
-                                            ; address (2 B)
-SH_PTR          equ     SH_SRC + 2          ; result: ALLOC's body ptr / GC's new
-                                            ; FRETOP / BUILD_CONCAT's & TEMP_ALLOC's
-                                            ; & SNAPSHOT's new temp-stack slot (2 B)
-SH_PTR2         equ     SH_PTR + 2          ; result: TEMP_ALLOC's body-to-fill
-                                            ; address (0 if length 0 or OOM) (2 B)
-SH_START        equ     SH_PTR2 + 2         ; SLICE (op=5) arg: 0-based start (1 B)
-SH_COUNT        equ     SH_START + 1        ; SLICE (op=5) arg: byte count (1 B)
-SH_NUM          equ     SH_COUNT + 1        ; HEX_BUILD/OCT_BUILD (op=6/7) arg: the
-                                            ; unsigned-16 value to render (2 B)
-SH_FILLBYTE     equ     SH_NUM + 2          ; FILL (op=8) arg: the byte to repeat
-                                            ; SH_LEN times (1 B) — covers SPACE$/
-                                            ; STRING$/CHR$'s shared "n copies of
-                                            ; one byte" shape
-SH_DEST         equ     SH_FILLBYTE + 1     ; MID_STORE (op=9) arg: the MID$-
-                                            ; statement destination (A$)
-                                            ; descriptor address (2 B) — SH_SRC
-                                            ; doubles as the source (B$) descriptor,
-                                            ; SH_START as the 1-based position,
-                                            ; SH_COUNT as the pre-Lb-clamped cap.
-                                            ; CMP (op=10) reuses SH_SRC/SH_DEST as
-                                            ; the lhs/rhs descriptors. INSTR_SEARCH
-                                            ; (op=11) reuses SH_SRC/SH_DEST as the
-                                            ; a$/b$ descriptors, SH_P as the
-                                            ; 1-based start position.
-SH_P            equ     SH_DEST + 2         ; INSTR_SEARCH (op=11) arg: p (2 B)
-SH_ERR          equ     SH_P + 2            ; result: 0 ok, 1 Out of memory, 2 =
-                                            ; temp-descriptor stack full (1 B)
+; (SH_BASE / SH_OP..SH_ERR, the string-heap tenant's 18-byte parameter block at
+; $EFCA..$EFDB, are GONE since D-WSZERO S16, 2026-10-16: the block is pushed on
+; the Z80 stack for the length of one op by basic/str-engine.asm's sh_go, and the
+; tenant addresses it through IY -- sub/strheap.asm's SHB_* equates carry the
+; layout. The prose above and below that names SH_* describes the old cells.)
 ; Temp-descriptor stack (§6): replaces the old STRTMP N=3 ring. A downward-
 ; growing array of [len:1][ptr:2] entries; TEMPTOP is the live cursor (reset to
 ; TEMPBASE — the empty-stack value — at every statement boundary, exec_stmt,

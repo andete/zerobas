@@ -1747,8 +1747,8 @@ ev_ff_fre:
                 push    hl
                 pop     ix                  ; IX = past the string operand
     IF CLEARPOOL
-                ld      a,15                ; op 15 = the STRING POOL's free bytes
-                ld      (SH_OP),a           ; (stored NOW: ev_fre_close's own ev_sp
+                ld      c,15                ; op 15 = the STRING POOL's free bytes, in C
+                                            ; (ev_fre_close's evsp_close is A / IX only;
                                             ;  and (ix+0) read clobber A)
     ENDIF
                 jr      ev_fre_close
@@ -1766,27 +1766,36 @@ ev_fre_num:
                 ; has always split them. Leaving both on op 15 makes FRE(0)
                 ; answer 200 at boot, which the probe's ctl-fre0 control catches
                 ; immediately (FRE(0)>1000 reads false).
-                ld      a,17                ; op 17 = free VARIABLE space
-                ld      (SH_OP),a
+                ld      c,17                ; op 17 = free VARIABLE space (in C)
     ENDIF
 ev_fre_close:
                 call    evsp_close          ; D-EVSPCLOSE
                 inc     ix
-                push    ix                  ; call_strheap clobbers IX (the cursor)
+                push    ix                  ; sh_go clobbers IX (the cursor)
     IF CLEARPOOL
-                                            ; SH_OP already selected above -- which
+                ld      a,c                 ; the op chosen above, in C -- which
                                             ; POOL to report is decided by the
                                             ; ARGUMENT'S TYPE, not here
     ELSE
-                ld      a,15
-                ld      (SH_OP),a           ; op = 15 (FREE_GAP)
+                ld      a,15                ; op = 15 (FREE_GAP)
     ENDIF
-                call    call_strheap
+                call    sh_go               ; HL = the free bytes
                 pop     ix
                 call    flt_int_result      ; an int result even when the argument
-                jp      inm_ok              ;  was a float or a string (A only):
-                                            ;  DE = (SH_PTR), ret -- input.asm's
-                                            ;  tail, C4 shared (2026-10-03)
+                ex      de,hl               ;  was a float or a string (A only):
+                ret                         ;  DE = the free bytes
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/program.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $6CF3 pin -- tools/pin_plan.py's exact fill.
+ctl_get:
+                ld      a,(de)
+                ld      l,a
+                inc     de
+                ld      a,(de)
+                ld      h,a
+                inc     de
+                ret
 
     IF I2_RESIDENT
 ; --- PDL(n) / PAD(n): analog input devices, slice I2 -----------------------

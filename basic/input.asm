@@ -376,12 +376,11 @@ lgb_eof:
 ; out: CF clear = a number: SH_LEN = 0 and DE = the int16, or SH_LEN = FACTYP
 ;      (4/8) with the value in FAC. CF set = ?Redo. Clobbers A,BC,DE,HL,IX.
 inp_num:
-                call    inp_val             ; SH_ERR / SH_LEN / SH_PTR|FAC / SH_SRC
-                ld      a,(SH_ERR)
-                or      a
-                scf
-                ret     nz                  ; a refused literal (`&`, `1E99`) -> ?Redo
-                ld      hl,(SH_SRC)         ; where the number ended
+                call    inp_val             ; A = ERR, HL = the end, DE = the int,
+                scf                         ; C = the type (0 = the int; 4/8 = FAC)
+                ret     nz                  ; a refused literal (`&`, `1E99`) -> ?Redo,
+                                            ; A = VAL's code (READ's exr_nan reads it)
+                push    de                  ; [the int]
                 ld      de,(TKVALEND)       ; one past the field's last byte
 inm_lp:
                 push    hl
@@ -393,19 +392,21 @@ inm_lp:
                 inc     hl
                 cp      ' '
                 jr      z,inm_lp
+                pop     de                  ; drop [the int]
+                xor     a                   ; A = 0: not one of VAL's codes (S16)
                 scf                         ; anything else after the number
                 ret
-inm_ok:                                     ; C4 shared tail (2026-10-03): str-engine's
-                ld      de,(SH_PTR)         ; the int16, when SH_LEN says int  -- VAL's
-                ret                         ; int arm (ev_ff_val) and expr.asm's FRE
-                                            ; (ev_fre_close) jump here
+inm_ok:
+                pop     de                  ; DE = the int16 (D-WSZERO S16: was SH_PTR)
+                ld      a,c                 ; A = the type, for inp_store (NC kept)
+                ret
 
 ; inp_val: VAL's parse over the STRSCR field (sub op 19). Shared by console
 ; INPUT (inp_num, strict) and INPUT # (inp_numitem, lenient: the CF-3300 reads
 ; `12X` in a file as 12).
 inp_val:
                 ld      a,19
-                jp      sh_call_op
+                jp      sh_go
 
 ;   inp_numitem: INPUT #'s NUMERIC target (D-INPNUM). Reached by `jp` from
 ; files.asm's inp_readvar with HL on the variable name and FCH_RDMODE as INPUT #
@@ -425,7 +426,8 @@ inp_numitem:
                 call    inp_numread         ; STRSCR <- the item; CF = the end
                 call    c,seq_end           ; a failed read / nothing read / the item
 inu_got:
-                call    inp_val             ; lenient: SH_ERR is not a refusal here
+                call    inp_val             ; lenient: ERR is not a refusal here
+                ld      a,c                 ; A = the type, across the key's pop
                 pop     bc
                 call    inp_store
                 pop     hl
@@ -446,9 +448,8 @@ inp_numread:
                 jp      din_call
 
 ; inp_store: the parsed number -> the resolved target (console INPUT and INPUT #).
-; in: BC = key, (TGT_ADDR) per tgt_parse, SH_LEN / DE / FAC as inp_num leaves them.
-inp_store:
-                ld      a,(SH_LEN)
+; in: BC = key, (TGT_ADDR) per tgt_parse, A (the type) / DE / FAC as inp_num leaves them.
+inp_store:                                  ; A = the type (inp_num / inu_got)
                 or      a
                 jp      z,tgt_store_num     ; an int16 in DE
                 jp      tgt_store_fac       ; a float in FAC, FACTYP already its type
@@ -457,3 +458,146 @@ inp_store:
 ; print_msg now emits. Their two print sites below move to print_msg with them.
 msg_redo:       db      "?Redo from start",0    ; 19 B -> 17 B
 msg_extra:      db      "?Extra ignored",0      ; 17 B -> 15 B
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/arrays.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $3297 pin -- tools/pin_plan.py's exact fill.
+; --- ary_engine_call: subrom_call to the array tenant (SUBROM_IDX_ARY). ----
+; The caller has already filled ARY_OP/ARY_KEY/ARY_TYPE (and ARY_NIDX/
+; ARY_IDXP, via ary_parse_call) in the param block. On return: reads
+; ARY_ERR; if nonzero, maps it to the matching FPERR code (ary_errmap below)
+; and returns NZ; if zero (ok), returns Z. CF from subrom_call itself (the
+; sub-ROM absent — never on the merged machine, which always ships it) jumps
+; straight to subrom_absent_error and never returns, the same defensive
+; convention every other subrom_call site uses (evmc_sqr, list.asm detok,
+; interp.asm tokenise). Clobbers A,IX — the caller must guard any live IX
+; (e.g. the text cursor) around this call, the same discipline evmc_sqr uses
+; across SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SQR.
+ary_engine_call:
+                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_ARY
+                call    sc_call             ; D-SCCALL: tenant call + absent raise
+                ld      a,(ARY_ERR)
+                or      a
+                ret     z
+                ld      hl,ary_errmap-1
+                ld      d,0
+                ld      e,a
+                add     hl,de               ; Z80 ADD HL,rr affects C/H/N only --
+                                            ; S/Z/P-V are UNCHANGED (documented Z80
+                                            ; behaviour), so the NZ this routine
+                                            ; must return is STILL the one the `or a`
+                                            ; above set (A was nonzero, else we'd
+                                            ; have taken `ret z`) and survives,
+                                            ; untouched, through every instruction
+                                            ; between here and the final `ret` below
+                                            ; (none of LD (nn),A / LD A,(HL) / LD
+                                            ; A,(nn) touch flags either) -- slice-3
+                                            ; space audit: the trailing "ensure NZ"
+                                            ; `or a` this comment replaces was
+                                            ; therefore provably redundant
+                ld      a,(hl)
+                jp      penderr_set
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/float-arith.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $3297 pin -- tools/pin_plan.py's exact fill.
+; --- pop_lhs_and_probe: shared preamble for combine_add/sub/mul/cmp -------
+; (below): pops the lhs frame (FACTYP+FAC, written by push_lhs_frame above),
+; then the lhs value (into FP_LHSVAL). TWO return addresses sit on top of
+; that frame by the time this runs, not one: this routine's own (pushed by
+; "call pop_lhs_and_probe") AND its DIRECT caller's -- combine_add/sub/mul/
+; cmp/div_float is itself reached via a plain "call" from an ev_* site made
+; AFTER push_lhs_frame already ran, so that combine_* return address is
+; ALSO sitting on top of the frame, one slot further down, for the entire
+; time combine_* is running (an earlier version of this fix only accounted
+; for one level and got the frame data wrong as a result -- caught by the
+; eval() integration tests reading back a corrupted LHS_FACTYP). Fixed by
+; stashing BOTH in RAM (PLF_RA = ours, PLF_RA2 = our caller's -- neither is
+; a register, since DE and BC must both stay live across this call for
+; various combine_* callers) before touching the frame, then restoring
+; PLF_RA2 to the stack first (so it's sitting exactly where combine_* will
+; expect its own eventual return address to be) and finally jumping to
+; PLF_RA (a "jp (hl)" is equivalent to a "ret" here but doesn't need the
+; target on the stack first). Note LD/PUSH/JP(HL) never touch flags on the
+; Z80, so the ZF the final "cp 2" sets for our caller survives this restore
+; untouched. out: ZF set iff both LHS_FACTYP and the current (rhs) FACTYP
+; are int (==2); ZF clear (and A holds the mismatching FACTYP value)
+; otherwise. Clobbers A, HL (DE, BC preserved).
+pop_lhs_and_probe:
+                pop     hl                  ; HL = our own return address
+                ld      (PLF_RA),hl
+                pop     hl                  ; HL = our direct caller's (combine_*'s
+                                            ; own) return address
+                ld      (PLF_RA2),hl
+                pop     af
+                ld      (LHS_FACTYP),a
+                pop     hl
+                ld      (LHS_FAC+0),hl
+                pop     hl
+                ld      (LHS_FAC+2),hl
+                pop     hl
+                ld      (LHS_FAC+4),hl
+                pop     hl
+                ld      (LHS_FAC+6),hl
+                pop     hl
+                ld      (FP_LHSVAL),hl
+                ; A still holds LHS_FACTYP's value here, untouched since the
+                ; "pop af" above -- none of "pop hl" / "ld (nn),hl" affect A
+                ; on the Z80, so no need to reload it from RAM
+                cp      2
+                jr      nz,plap_ret         ; NZ -> mismatch; ZF stays clear below
+                call    factyp_is2
+                                           ; ZF set iff both int
+plap_ret:
+                ld      hl,(PLF_RA2)        ; does not affect flags
+                push    hl                  ; restore our caller's (combine_*'s
+                                            ; own) return address to the stack,
+                                            ; exactly where it needs to be for
+                                            ; ITS eventual ret/tail-jump home
+                ld      hl,(PLF_RA)         ; does not affect flags
+                jp      (hl)                ; jump to OUR return address directly
+                                            ; (cheaper than push+ret); does not
+                                            ; affect flags -- ZF from the cp above
+                                            ; reaches our caller intact
+
+; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/float-arith.asm, whole and
+; self-contained (entered only by label), to refill bytes the stack parameter
+; block freed in front of the $3297 pin -- tools/pin_plan.py's exact fill.
+; --- mul16x16_32: HL(multiplicand, unsigned) * DE(multiplier, unsigned) ----
+; -> 32-bit unsigned product in (MUL32) [low16][high16], LE. Classic shift-
+; double-and-add over 16 iterations, MSB-first on the multiplier; own-design
+; extension of expr.asm's mul16 (which only keeps the low 16 bits) to the
+; full width, needed to detect MSX-signed 16-bit multiply overflow (spec
+; §10.2 int-overflow promotion) exactly rather than by wraparound. All
+; working state in RAM except the loop counter (register pressure: operand +
+; operand + 32-bit accumulator exceeds the comfortable register budget).
+; Clobbers A, B, HL, DE.
+mul16x16_32:
+                ld      (MULCAND),hl
+                ld      (MULTPLR),de
+                ld      hl,MUL32
+                ld      b,4
+                call    zero_fill
+                ld      b,16
+m32_lp:
+                ld      hl,(MUL32)
+                add     hl,hl
+                ld      (MUL32),hl
+                ld      hl,(MUL32+2)
+                adc     hl,hl
+                ld      (MUL32+2),hl
+                ld      hl,(MULTPLR)
+                add     hl,hl
+                ld      (MULTPLR),hl
+                jr      nc,m32_skip
+                ld      hl,(MUL32)
+                ld      de,(MULCAND)
+                add     hl,de
+                ld      (MUL32),hl
+                jr      nc,m32_skip
+                ld      hl,(MUL32+2)
+                inc     hl
+                ld      (MUL32+2),hl
+m32_skip:
+                djnz    m32_lp
+                ret

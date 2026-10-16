@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 86 declared addresses in this project's own workspace `$E000..$F37F` (83 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
+* **basic** — 74 declared addresses in this project's own workspace `$E000..$F37F` (72 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -191,18 +191,6 @@ second one is the question a per-component map cannot answer.
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
-| `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
-| `$EFCB` | 1 B | `basic` | `SH_LEN` | ALLOC/TEMP_ALLOC/BUILD_CONCAT arg: |  |
-| `$EFCC` | 2 B | `basic` | `SH_SRC` | SNAPSHOT arg: source descriptor |  |
-| `$EFCE` | 2 B | `basic` | `SH_PTR` | result: ALLOC's body ptr / GC's new |  |
-| `$EFD0` | 2 B | `basic` | `SH_PTR2` | result: TEMP_ALLOC's body-to-fill |  |
-| `$EFD2` | 1 B | `basic` | `SH_START` | SLICE (op=5) arg: 0-based start (1 B) |  |
-| `$EFD3` | 1 B | `basic` | `SH_COUNT` | SLICE (op=5) arg: byte count (1 B) |  |
-| `$EFD4` | 2 B | `basic` | `SH_NUM` | HEX_BUILD/OCT_BUILD (op=6/7) arg: the |  |
-| `$EFD6` | 1 B | `basic` | `SH_FILLBYTE` | FILL (op=8) arg: the byte to repeat |  |
-| `$EFD7` | 2 B | `basic` | `SH_DEST` | MID_STORE (op=9) arg: the MID$- |  |
-| `$EFD9` | 2 B | `basic` | `SH_P` | INSTR_SEARCH (op=11) arg: p (2 B) |  |
-| `$EFDB` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |

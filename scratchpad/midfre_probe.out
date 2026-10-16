@@ -1,0 +1,11 @@
+midonly  C-BIOS_MSX1_EU_REPACK_NODISK   [AAQCD]
+midonly  Philips_VG_8020                [AAQCD]
+midfre   C-BIOS_MSX1_EU_REPACK_NODISK   [AAQCD]
+midfre   Philips_VG_8020                [AAQCD]
+cpyfre   C-BIOS_MSX1_EU_REPACK_NODISK   [AAQCDABCD]
+cpyfre   Philips_VG_8020                [AAQCDABCD]
+s16like  C-BIOS_MSX1_EU_REPACK_NODISK   [A";A$;F$;"]" | [AAQCDAQCD]
+s16like  Philips_VG_8020                [A";A$;F$;"]" | [AAQCDAQCD]
+litfre   C-BIOS_MSX1_EU_REPACK_NODISK   [AAQCD]
+litfre   Philips_VG_8020                [AAQCD]
+refcache: 0 hit, 10 miss, 10 stored

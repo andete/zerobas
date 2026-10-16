@@ -220,6 +220,20 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   VG-8020 uses only while a `DEF FN` call runs. The workspace is the same size until the last
   of it has moved: raising the ceiling one step at a time only moves the
   stack to a different spot that games use.
+- **No zerobas state is left in the diskless workspace** (2026-10-15 to
+  2026-10-16, D-WSZERO S9 to S16). What `$ECF8`–`$F37F` still held moved out,
+  each piece where the reference keeps the same thing: into the published cell
+  for the same job where there is one (`INPUT #`'s read mode in `FLKINP`,
+  `PLAY`'s voice mask in `PRSCNT`, the "output goes to a file" flag in the low
+  byte of `PTRFIL`), into `BUF` for state that lives only during one statement,
+  into registers (`POINT`'s coordinates, the type of a number being widened) or
+  onto the Z80 stack for the length of one call (`INPUT$`'s count, and the
+  string engine's arguments and results, an 18-byte block that the reference
+  never keeps either). Two behaviours changed with it: `INPUT$` puts its result
+  in string space before it reads, as `INKEY$` does, and an `INPUT$` inside
+  another `INPUT$`'s channel number no longer breaks the outer one. `FRE(0)` does
+  not change yet: the ceiling a diskless program can use moves up to `&HF380` in
+  one step, next, and that is when the workspace's bytes become the program's.
 - **zerobas kept its own copies of buffers the reference already has**
   (2026-10-12, Joost: *"our own buffers, test what buffers the reference uses,
   and see if we can meet the same"*). A watch on the VG-8020's work area showed

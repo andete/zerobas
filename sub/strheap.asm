@@ -115,7 +115,10 @@ strheap_engine:
                 ; SH_* -- so clobbering HL / DE here is free. Main only ever writes
                 ; ops 0..21; the table has no range check, as the chain had none
                 ; (its fall-through sent any other value to VAL, op 13).
-                ld      a,(SH_OP)
+                push    hl
+                pop     iy                  ; IY = the parameter block (sh_go's HL),
+                                            ; for the whole op (D-WSZERO S16)
+                ld      a,(iy+SHB_OP)
                 add     a,a
                 ld      l,a
                 ld      h,0
@@ -151,50 +154,93 @@ she_table:
                 dw      sh_ctl_reset        ; 20 D-CTLPOOL: derive the pool's top
                 dw      she_snap_slice      ; 21 D-SLICEOOM: a slice's source
     ENDIF
+; --- the parameter block (D-WSZERO S16, 2026-10-16) -------------------------
+; main's `sh_go` (basic/str-engine.asm) pushes BC, DE, HL and then a word whose
+; high byte is the op and low byte the caller's L, and passes the block's address
+; in HL; the tenant keeps it in IY for the whole op. ONE slot per cell, for every
+; op (the cells that share a slot are never live in the same op -- checked per
+; handler):
+;   +0 LEN (the caller's L)          +1 OP in, ERR out (sh_go's A)
+;   +2 SRC in / PTR out (HL)         +4 DEST / PTR2 / FILLBYTE (DE)
+;   +6 NUM / P (BC)                  +8 sh_go's return address
+;   +10 START, +11 COUNT (pushed by the caller before `call sh_go`: ops 5 and 9)
+; VAL (ops 13 / 19) puts its int result at +4 and its type at +6 (main's DE / C),
+; and CMP (op 10) its relation bits in the ERR slot (main's A).
+; IY is the block: heap_alloc saves it around its own frame, INSTR around b$.
+SHB_LEN         equ     0
+SHB_OP          equ     1
+SHB_ERR         equ     1
+SHB_SRC         equ     2
+SHB_PTR         equ     2
+SHB_DEST        equ     4
+SHB_PTR2        equ     4
+SHB_FILLBYTE    equ     4
+SHB_NUM         equ     6
+SHB_P           equ     6
+SHB_START       equ     10
+SHB_COUNT       equ     11
+SHB_VINT        equ     4
+SHB_VTYPE       equ     6
+; she_src / she_dest / she_putp: the three commonest block accesses, so a 3-byte
+; `ld hl,(nn)` / `ld (nn),hl` stays 3 bytes. Flags and every other register kept.
+she_src:
+                ld      l,(iy+SHB_SRC)
+                ld      h,(iy+SHB_SRC+1)
+                ret
+she_dest:
+                ld      l,(iy+SHB_DEST)
+                ld      h,(iy+SHB_DEST+1)
+                ret
+she_putp:
+                ld      (iy+SHB_PTR),l
+                ld      (iy+SHB_PTR+1),h
+                ret
 she_instr_op:
-                call    sh_instr_search
+                push    iy                  ; the search takes IY for b$
+                call    sh_instr_search     ; HL = the position
+                pop     iy
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 she_cmp_op:
-                ld      hl,(SH_SRC)
-                ld      de,(SH_DEST)
+                call    she_dest
+                ex      de,hl               ; DE = rhs
+                call    she_src             ; HL = lhs
                 call    sh_cmp_bits
-                ld      (SH_LEN),a          ; A = 1/2/4 relation bits (reuses
-                                            ; SH_LEN as the 1-byte result field)
-                xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a      ; A = 1/2/4 relation bits, in the ERR
+                                            ; slot: main's A (S16)
                 ; D-TEMPPOL part 2: both operands are CONSUMED -- the answer is a
                 ; number. Pop the right (newer) then the left, each only if it
                 ; is on top: `X=(MID$(A$,1)="X")+...` held TWO temps per compare
                 ; and ran out at 8 terms on a 10-entry pool (the VG-8020: none).
-                ld      hl,(SH_DEST)
+                call    she_dest
                 call    sh_pop_top
-                ld      hl,(SH_SRC)
+                call    she_src
                 jp      sh_pop_top
 she_slice_op:
                 call    she_slice
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 she_gc:
                 call    strheap_gc
                 ld      hl,(FRETOP)
-                ld      (SH_PTR),hl
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 she_alloc:
-                ld      a,(SH_LEN)
+                ld      a,(iy+SHB_LEN)
                 call    heap_alloc          ; -> CF+HL=ptr / CF clear=OOM
                 jr      nc,she_oom
-                ld      (SH_PTR),hl
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 she_oom:
                 ld      a,1
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; she_temp_alloc / she_snapshot: op=3/4 handlers. Both build on
@@ -203,17 +249,18 @@ she_oom:
 ; len!=0 <=> the heap_alloc inside sh_temp_push_alloc failed) rather than
 ; threading extra registers through — simpler and correct either way.
 she_temp_alloc:
-                ld      a,(SH_LEN)
+                ld      a,(iy+SHB_LEN)
                 call    sh_temp_push_alloc  ; CF clear=overflow(A=2) / CF set:B=err(0/1)
                 jr      nc,she_ta_full
-                ld      (SH_PTR),hl
-                ld      (SH_PTR2),de
+                call    she_putp
+                ld      (iy+SHB_PTR2),e
+                ld      (iy+SHB_PTR2+1),d
                 ld      a,b                 ; err code (0 ok / 1 heap OOM) -- S7:
-                ld      (SH_ERR),a          ; read B, NOT the neutralised slot
+                ld      (iy+SHB_ERR),a          ; read B, NOT the neutralised slot
                 ret
 she_ta_full:
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
     IF CLEARPOOL
@@ -223,7 +270,7 @@ she_ta_full:
 ; body) and FIXED-ADDRESS (the array-region shift only touches [ARYTAB,ARYEND)),
 ; and it is an enumerated GC root (sg_walk_temps). Clobbers A,D,E,H,L.
 sh_src_is_temp:
-                ld      hl,(SH_SRC)
+                call    she_src
                 ; fall through
 ; --- sh_hl_is_temp: the same test on an arbitrary HL, HL PRESERVED. ---------
 ; sub/arrays.asm aeng_copy_str needs it for (STRPTR) rather than (SH_SRC).
@@ -264,11 +311,9 @@ sit_no:
 she_snap_keep:
                 call    sh_src_is_temp
                 jr      nc,she_snapshot     ; not a temp -> the real snapshot
-she_snap_asis:
-                ld      hl,(SH_SRC)
-                ld      (SH_PTR),hl         ; the source IS the owned temp
-                xor     a
-                ld      (SH_ERR),a
+she_snap_asis:                              ; the source IS the owned temp, and the
+                xor     a                   ; PTR slot IS the SRC slot: nothing to
+                ld      (iy+SHB_ERR),a      ; write but ERR (S16)
                 ret
 
 ; --- she_snap_slice: op=21 -- a SLICE's source (D-SLICEOOM, 2026-09-26) ------
@@ -290,18 +335,18 @@ she_snap_asis:
 ; on op 16: concat appends INTO its accumulator in place, which must never be a
 ; variable.
 she_snap_slice:
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      de,(VARTAB)
                 or      a
                 sbc     hl,de
                 jr      c,she_snap_keep     ; below the scalars -> op 16's rule
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      de,(ARYTAB)
                 or      a
                 sbc     hl,de
                 jr      c,she_snap_asis     ; a scalar: stable, keep it
                 ex      de,hl               ; DE = element - ARYTAB
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      bc,(STREND)
                 or      a
                 sbc     hl,bc
@@ -311,8 +356,9 @@ she_snap_slice:
                 call    sh_temp_push_alloc  ; a bodiless slot; CF clear = overflow
                 pop     de                  ; DE = ofs (pop keeps CF)
                 jr      nc,sss_full         ; A = 2
-                ld      (SH_PTR),hl
-                ld      bc,(SH_SRC)
+                ld      c,(iy+SHB_SRC)      ; SRC FIRST: PTR shares its slot (S16)
+                ld      b,(iy+SHB_SRC+1)
+                call    she_putp
                 ld      a,(bc)
                 ld      (hl),a              ; slot.len = the element's
                 inc     hl
@@ -321,19 +367,19 @@ she_snap_slice:
                 ld      (hl),d              ; slot.ptr = the offset (bit 15 clear)
                 xor     a
 sss_full:
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
     ENDIF
 
 she_snapshot:
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      a,(hl)              ; source length
                 push    hl                  ; guard source addr          [SRC]
                 call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
                 jr      nc,she_sn_full
-                ld      (SH_PTR),hl         ; slot
+                call    she_putp         ; slot
                 ld      a,b
-                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                ld      (iy+SHB_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
                 or      a
                 jr      nz,she_sn_oom       ; heap OOM -> no body to copy (DE=0)
                 ; success: DE = body (nonzero). Copy source -> body.
@@ -346,7 +392,7 @@ she_sn_oom:
 she_sn_full:
                 pop     hl                  ; discard [SRC]
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; she_slice: op=5 handler (shape-C follow-up move of str_temp_slice,
@@ -370,8 +416,9 @@ she_slice:
                 ; and a body AT the edge (FRETOP) gives it back at once, as the
                 ; reference's heap reads: `A$=MID$("ABCDEF",2,3)` holds 3 B, not
                 ; the 6 of the literal's copy (scratchpad/strtemp_probe.py).
-                ld      hl,(SH_SRC)
-                ld      bc,(SH_START)       ; C = start, B = count
+                call    she_src
+                ld      c,(iy+SHB_START)       ; C = start, B = count
+                ld      b,(iy+SHB_START+1)
                 ld      a,(hl)              ; A = the body's length
                 ld      (hl),b              ; temp.len := count
                 inc     b
@@ -423,7 +470,7 @@ ss_inner:
 ; result becomes STRPTR. An overflow or OOM is a pending error (first error
 ; wins), raised at the statement boundary before the value is used.
 she_slice_new:
-                ld      a,(SH_COUNT)
+                ld      a,(iy+SHB_COUNT)
                 call    sh_temp_push_alloc  ; CF clear = no slot; CF set: B=err,
                 jr      nc,ssn_full         ; HL = slot, DE = body
                 ld      (STRPTR),hl         ; the result (a [0][0] slot on OOM)
@@ -435,17 +482,17 @@ she_slice_new:
                 or      e
                 ret     z                   ; count 0 -> the empty string, done
                 push    de                  ; [body]
-                ld      hl,(SH_SRC)
+                call    she_src
                 inc     hl
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = the source's body, NOW
-                ld      a,(SH_START)
+                ld      a,(iy+SHB_START)
                 ld      l,a
                 ld      h,0
                 add     hl,de               ; HL = source + start
                 pop     de                  ; DE = the new body
-                ld      a,(SH_COUNT)
+                ld      a,(iy+SHB_COUNT)
                 ld      c,a
                 ld      b,0
                 ldir
@@ -457,13 +504,13 @@ she_slice_new:
 ; the GC's range test skips. A real EMPTY temp ([0][0]) lands here too, and
 ; its count is 0.
 she_slice_ofs:
-                ld      a,(SH_COUNT)
+                ld      a,(iy+SHB_COUNT)
                 or      a
                 jr      z,sso_empty
                 call    heap_alloc          ; A = count -> CF+HL = body / CF clear = OOM
                 jr      nc,sso_oom
                 ex      de,hl               ; DE = the new body
-                ld      hl,(SH_SRC)
+                call    she_src
                 inc     hl
                 ld      c,(hl)
                 inc     hl
@@ -475,16 +522,16 @@ she_slice_ofs:
                 inc     hl
                 ld      h,(hl)
                 ld      l,a                 ; HL = its body, NOW
-                ld      a,(SH_START)
+                ld      a,(iy+SHB_START)
                 ld      c,a
                 ld      b,0
                 add     hl,bc               ; HL = source + start
                 push    de                  ; [body]
-                ld      a,(SH_COUNT)
+                ld      a,(iy+SHB_COUNT)
                 ld      c,a
                 ldir
                 pop     de                  ; DE = body
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      (hl),a              ; slot.len = count (A still = count)
                 inc     hl
                 ld      (hl),e
@@ -495,7 +542,7 @@ sso_oom:
                 ld      a,FPERR_STROOM
                 call    ssn_err             ; pending, first error wins
 sso_empty:
-                ld      hl,(SH_SRC)
+                call    she_src
                 xor     a
                 ld      (hl),a
                 inc     hl
@@ -684,6 +731,7 @@ heap_alloc:
                 scf                         ; change
                 ret
 ha_real:
+                push    iy                  ; S16: IY is the strheap op's block
                 dec     sp
                 dec     sp
                 dec     sp
@@ -743,6 +791,7 @@ ha_ok:
                 inc     sp
                 inc     sp
                 inc     sp                  ; deallocate the 4-byte frame
+                pop     iy
                 scf
                 ret
 ha_oom:
@@ -750,6 +799,7 @@ ha_oom:
                 inc     sp
                 inc     sp
                 inc     sp                  ; deallocate the 4-byte frame
+                pop     iy
                 or      a                   ; CF clear
                 ret
 
@@ -1659,10 +1709,10 @@ stpa_overflow:
 ; which is what lets a small pool report the LENGTH error rather than the
 ; out-of-space error it used to reach first (the sweep in the spec, §4).
 sh_append:
-                ld      hl,(SH_DEST)
+                call    she_dest
                 ld      a,(hl)              ; lenR
                 ld      c,a                 ; C = lenR
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      a,(hl)              ; lenTk
                 add     a,c                 ; total = lenR + lenTk
                 jr      c,sap_toolong       ; D-STRLONG: over STRMAX -> ERR 15, and
@@ -1683,30 +1733,30 @@ sap_ok:
                 push    af                  ; [newbody][total]
                 ld      c,a                 ; C = ROOM remaining
                 ex      de,hl               ; DE = newbody (dest cursor)
-                ld      hl,(SH_DEST)        ; R descriptor
+                call    she_dest        ; R descriptor
                 call    sap_copy_clamped    ; copy min(lenR,ROOM) of R's body; DE+=,C-=
-                ld      hl,(SH_SRC)         ; Tk descriptor
+                call    she_src         ; Tk descriptor
                 call    sap_copy_clamped    ; copy min(lenTk,remaining) of Tk's body
                 pop     af                  ; A = total     [newbody]
                 pop     de                  ; DE = newbody  [ ]
-                ld      hl,(SH_DEST)
+                call    she_dest
                 ld      (hl),a              ; R.len = total
                 inc     hl
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d              ; R.ptr = newbody (old R body -> garbage)
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 jr      sap_release
 sap_empty:
-                ld      hl,(SH_DEST)
+                call    she_dest
                 xor     a
                 ld      (hl),a              ; R.len = 0
                 inc     hl
                 ld      (hl),a
                 inc     hl
                 ld      (hl),a              ; R.ptr = 0
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ; fall through
 ; --- sap_release (D-TEMPPOL, 2026-09-25): the operand is CONSUMED -----------
 ; Once Tk's bytes are in R, a Tk that is the NEWEST temp-stack entry is popped,
@@ -1717,7 +1767,7 @@ sap_empty:
 ; a literal or an OLDER temp is left alone -- only the top entry can be popped
 ; without disturbing a live one. SH_ERR is already 0 on every path here.
 sap_release:
-                ld      hl,(SH_SRC)
+                call    she_src
                 ; fall through
 ; --- sh_pop_top (D-TEMPPOL part 2): HL = a descriptor; pop it iff it is the ---
 ; NEWEST temp-stack entry. The one rule every consumer below uses: only the top
@@ -1736,11 +1786,11 @@ sh_pop_top:
 sap_oom:
                 pop     af                  ; discard [total]
                 ld      a,1
-                ld      (SH_ERR),a          ; heap OOM -- R left unchanged (valid)
+                ld      (iy+SHB_ERR),a          ; heap OOM -- R left unchanged (valid)
                 ret
 sap_toolong:
                 ld      a,3
-                ld      (SH_ERR),a          ; D-STRLONG: combined length > STRMAX.
+                ld      (iy+SHB_ERR),a          ; D-STRLONG: combined length > STRMAX.
                                             ; R is unchanged and still valid; main's
                                             ; sct_append_err maps 3 -> FPERR_STRLONG.
                 ret
@@ -1782,7 +1832,7 @@ sap_try_extend:
                 ld      a,c
                 or      a
                 jr      z,sate_no           ; R has no body to extend
-                ld      hl,(SH_DEST)
+                call    she_dest
                 inc     hl
                 ld      e,(hl)
                 inc     hl
@@ -1832,7 +1882,7 @@ sate_fits:
                 ld      d,h
                 ld      e,l                 ; DE = dest cursor
                 push    bc                  ; [total|lenR]
-                ld      hl,(SH_DEST)
+                call    she_dest
                 inc     hl
                 ld      a,(hl)
                 inc     hl
@@ -1846,7 +1896,7 @@ sate_fits:
                 sub     c
                 ld      c,a
                 ld      b,0                 ; BC = ext (what is left for Tk)
-                ld      hl,(SH_SRC)
+                call    she_src
                 inc     hl
                 ld      a,(hl)
                 inc     hl
@@ -1855,7 +1905,7 @@ sate_fits:
                 ldir                        ; append Tk's first `ext` bytes
                 pop     bc                  ; B = total
 sate_write:
-                ld      hl,(SH_DEST)
+                call    she_dest
                 ld      (hl),b              ; R.len = total
                 inc     hl
                 ld      de,(FRETOP)
@@ -1863,7 +1913,7 @@ sate_write:
                 inc     hl
                 ld      (hl),d              ; R.ptr = FRETOP
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 scf                         ; handled
                 ret
 sate_len_only:
@@ -1915,7 +1965,8 @@ sacc_lp:
 ; above). SH_ERR: 0 ok / 1 = heap OOM (can't practically happen for a <=6-
 ; byte alloc, but honoured regardless) / 2 = temp-descriptor stack full.
 sh_hex_build:
-                ld      de,(SH_NUM)
+                ld      e,(iy+SHB_NUM)
+                ld      d,(iy+SHB_NUM+1)
                 ld      hl,NUMBUF
                 ld      c,0                 ; C = digit count so far
                 ld      b,0                 ; B = "a non-zero nibble seen" flag
@@ -1935,9 +1986,9 @@ sh_hex_build:
                 push    af                  ; guard the count             [CNT]
                 call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
                 jr      nc,shb_hex_full
-                ld      (SH_PTR),hl
+                call    she_putp
                 ld      a,b
-                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                ld      (iy+SHB_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
                 or      a
                 jr      z,shb_hex_fill      ; ok -> fill (DE=body, count>=1)
                 pop     af                  ; heap OOM -> discard [CNT], leave SH_ERR=1
@@ -1957,7 +2008,7 @@ shb_hex_cp:
 shb_hex_full:
                 pop     af                  ; discard [CNT]
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 shx_nib_hi:
                 rrca
@@ -2028,9 +2079,9 @@ sh_free_gap:
                 jr      nc,sfg_have
                 ld      hl,0                ; a full heap must read 0, never negative
 sfg_have:
-                ld      (SH_PTR),hl
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
     IF CLEARPOOL
@@ -2069,9 +2120,9 @@ sh_free_vars:
                 jr      nc,sfv_have
                 ld      hl,0                ; region already at/over the floor -> 0
 sfv_have:
-                ld      (SH_PTR),hl
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- sh_ctl_reset: op=20 -- (re)derive the CONTROL POOL's top and floor -----
@@ -2112,10 +2163,10 @@ sh_ctl_reset:
                 ld      (GSP),hl
                 ld      (FSP),hl
                 ld      (TSP),hl
-                ld      (SH_PTR),hl
+                call    she_putp
                 call    strheap_ctllim      ; CTLLIM := ARYEND+2 (and STREND)
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- sh_chan_addr: op=18 handler -- the DYNAMIC file-channel block address ---
@@ -2145,7 +2196,7 @@ sh_chan_addr:
                 ld      e,a
                 ld      d,0
                 add     hl,de               ; HL = FCB #0
-                ld      a,(SH_LEN)          ; A = channel number, 0..MAXFILES
+                ld      a,(iy+SHB_LEN)          ; A = channel number, 0..MAXFILES
                 or      a
                 jr      z,sca_have          ; channel 0 -> the first block
                 ld      b,a
@@ -2155,9 +2206,9 @@ sca_lp:
                 add     hl,de
                 djnz    sca_lp
 sca_have:
-                ld      (SH_PTR),hl
+                call    she_putp
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
     ENDIF
 
@@ -2179,7 +2230,8 @@ sca_have:
 ; and the >=1-digit rule needs no special case of its own.
 ; SH_ERR: 0 ok / 1 = heap OOM / 2 = temp-descriptor stack full.
 sh_bin_build:
-                ld      hl,(SH_NUM)
+                ld      l,(iy+SHB_NUM)
+                ld      h,(iy+SHB_NUM+1)
                 ld      c,1                 ; BIN$(0) is one digit
                 ld      a,h
                 or      l
@@ -2197,9 +2249,9 @@ sbb_have:
                 push    hl                  ; guard the normalised value  [CNT][VAL]
                 call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
                 jr      nc,sbb_full
-                ld      (SH_PTR),hl
+                call    she_putp
                 ld      a,b
-                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                ld      (iy+SHB_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
                 or      a
                 jr      z,sbb_fill          ; ok -> fill (DE=body, count>=1)
                 pop     hl                  ; heap OOM -> discard the guards,
@@ -2224,11 +2276,12 @@ sbb_full:
                 pop     hl                  ; discard [VAL]
                 pop     bc                  ; discard [CNT]
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 sh_oct_build:
-                ld      de,(SH_NUM)
+                ld      e,(iy+SHB_NUM)
+                ld      d,(iy+SHB_NUM+1)
                 ld      hl,NUMBUF
                 ld      b,0                 ; leading-zero suppression flag
                 ld      a,d                 ; digit 0 = bit 15
@@ -2256,9 +2309,9 @@ sho_last:
                 push    af                  ; guard ndigits               [CNT]
                 call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
                 jr      nc,shb_oct_full
-                ld      (SH_PTR),hl
+                call    she_putp
                 ld      a,b
-                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                ld      (iy+SHB_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
                 or      a
                 jr      z,shb_oct_fill      ; ok -> fill
                 pop     af                  ; heap OOM -> discard [CNT], leave SH_ERR=1
@@ -2278,7 +2331,7 @@ shb_oct_cp:
 shb_oct_full:
                 pop     af                  ; discard [CNT]
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 ; emit octal digit in A unless it is a leading zero (B tracks "seen non-zero").
 sho_digit_susp:
@@ -2318,21 +2371,21 @@ sh_oct_digit:
 ; SH_PTR = the new temp descriptor. SH_ERR as the other ops (0/1/2).
 ; Clobbers A, B, C, D, E, H, L.
 sh_fill:
-                ld      a,(SH_LEN)
+                ld      a,(iy+SHB_LEN)
                 call    sh_temp_push_alloc  ; CF clear=overflow / CF set:B=err,DE=body
                 jr      nc,shf_full
-                ld      (SH_PTR),hl
+                call    she_putp
                 ld      a,b
-                ld      (SH_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
+                ld      (iy+SHB_ERR),a          ; err (0 ok / 1 heap OOM) -- S7
                 or      a
                 ret     nz                  ; heap OOM -> no body to fill (DE=0)
                 ld      a,d
                 or      e
                 ret     z                   ; length 0 -> nothing to fill
 shf_fill:
-                ld      a,(SH_LEN)
+                ld      a,(iy+SHB_LEN)
                 ld      b,a                 ; B = fill count
-                ld      a,(SH_FILLBYTE)
+                ld      a,(iy+SHB_FILLBYTE)
 shf_lp:
                 ld      (de),a
                 inc     de
@@ -2340,7 +2393,7 @@ shf_lp:
                 ret
 shf_full:
                 ld      a,2
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- sh_mid_store: op=9 handler (shape-C follow-up move of the MID$ ---------
@@ -2356,7 +2409,8 @@ shf_full:
 ; overwrites k bytes of A$'s body starting at body+(n-1) with B$'s current
 ; bytes. LEN(A$) never changes. Clobbers A, B, C, D, E, H, L.
 sh_mid_store:
-                ld      bc,(SH_START)       ; BC = n (16-bit; C=lo,B=hi via
+                ld      c,(iy+SHB_START)       ; BC = n (16-bit; C=lo,B=hi via
+                ld      b,(iy+SHB_START+1)
                                             ; the SH_START/SH_COUNT alias)
                 ld      a,b
                 or      a
@@ -2364,14 +2418,15 @@ sh_mid_store:
                 ld      a,c
                 or      a
                 jr      z,smd_range         ; n == 0 -> error
-                ld      hl,(SH_DEST)        ; HL -> A$ descriptor
+                call    she_dest        ; HL -> A$ descriptor
                 ld      a,(hl)              ; A = La
                 cp      c
                 jr      c,smd_range         ; La < n -> error
                 sub     c                   ; A = La - n
                 inc     a                   ; A = avail = La-n+1 (1..La)
                 ld      b,a                 ; B = avail
-                ld      de,(SH_NUM)         ; DE = m
+                ld      e,(iy+SHB_NUM)         ; DE = m
+                ld      d,(iy+SHB_NUM+1)
                 ld      a,d
                 or      a
                 jr      nz,smd_cap_avail    ; m >= 256 -> cap = avail
@@ -2385,7 +2440,7 @@ smd_cap_avail:
 smd_have_cap:
                 ; k = min(cap, Lb). cap in A, Lb = (SH_SRC).
                 ld      b,a                 ; B = cap
-                ld      hl,(SH_SRC)         ; HL -> B$ descriptor
+                call    she_src         ; HL -> B$ descriptor
                 ld      a,(hl)              ; A = Lb
                 cp      b
                 jr      nc,smd_k            ; Lb >= cap -> k = cap (B unchanged)
@@ -2400,13 +2455,14 @@ smd_k:
                 ld      d,(hl)              ; DE = B$ body (source)
                 push    de                  ; guard source                 [SRC]
                 push    bc                  ; guard k (B)                  [SRC][K]
-                ld      hl,(SH_DEST)        ; HL = A$ descriptor address
+                call    she_dest        ; HL = A$ descriptor address
                 inc     hl
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = A$ body (dest base)
                 pop     bc                  ; BC restored: B=k             [SRC]
-                ld      hl,(SH_START)       ; n (1-based; write_ptr =
+                ld      l,(iy+SHB_START)       ; n (1-based; write_ptr =
+                ld      h,(iy+SHB_START+1)
                                             ; body+(n-1)); high byte (garbage
                                             ; here, aliases the now-dead cap
                                             ; slot) is not used below
@@ -2424,11 +2480,11 @@ smd_nocarry:
                                             ; B$'s bytes
 smd_done:
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 smd_range:
                 ld      a,3
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- sh_cmp_bits: op=10 handler (shape-C follow-up move of str_cmp_bits, ---
@@ -2523,10 +2579,16 @@ scmp_lt:
 ; len_a-len_b+1 (<=0 -> no room -> 0); if p > max_start, no match; else try
 ; start = p..max_start, comparing len_b bytes each time. Clobbers A, B, C,
 ; D, E, H, L, IX, IY.
-sh_instr_search:
-                ld      ix,(SH_SRC)         ; IX = a$ descriptor
-                ld      iy,(SH_DEST)        ; IY = b$ descriptor
-                ld      bc,(SH_P)           ; BC = p
+sh_instr_search:                            ; IY = the block on entry (S16)
+                call    she_src
+                push    hl
+                pop     ix                  ; IX = a$ descriptor
+                ld      c,(iy+SHB_P)
+                ld      b,(iy+SHB_P+1)      ; BC = p
+                call    she_dest
+                push    hl
+                pop     iy                  ; IY = b$ descriptor (she_instr_op
+                                            ; saved the block's)
                 ld      a,(ix+1)
                 ld      (ISRCH_A),a
                 ld      a,(ix+2)
@@ -2554,8 +2616,7 @@ sis_ceil_ok:
                 ld      a,c                 ; else min is p
 sis_empty_result:
                 ld      l,a
-                ld      h,0
-                ld      (SH_PTR),hl
+                ld      h,0                 ; HL = the result (she_instr_op stores it)
                 ret
 sis_nonempty:
                 ; 🔴 D-INSTR128 (2026-10-12): max_start is an UNSIGNED byte. This
@@ -2597,7 +2658,6 @@ sis_cmp:
                 djnz    sis_cmp
                 ld      l,c                 ; full match -> result = start
                 ld      h,0
-                ld      (SH_PTR),hl
                 ret
 sis_next:
                 ld      a,c                 ; A = start
@@ -2622,7 +2682,6 @@ sis_next:
                 jr      c,sis_outer
 sis_zero:
                 ld      hl,0
-                ld      (SH_PTR),hl
                 ret
 
 ; --- sh_var_store: op=12 handler (shape-C follow-up move of str_set_key's --
@@ -2652,34 +2711,35 @@ sh_var_store:
                 ; takes the copy path below: those are not ours to take.
                 call    sh_src_is_temp
                 jr      nc,svs_copy
-                ld      hl,(SH_SRC)
-                ld      de,(SH_DEST)
+                call    she_src
+                ld      e,(iy+SHB_DEST)
+                ld      d,(iy+SHB_DEST+1)
                 ld      bc,3
                 ldir                        ; dest := [len][ptr] verbatim
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      (hl),0              ; temp.len = 0
                 inc     hl
                 ld      (hl),0
                 inc     hl
                 ld      (hl),0              ; temp.ptr = 0 -> no longer a root
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 svs_copy:
     ENDIF
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      a,(hl)              ; source length
                 call    heap_alloc          ; -> CF+HL=new body / CF clear=OOM
                 jr      nc,svs_oom
                 push    hl                  ; guard new body ptr            [BODY]
-                ld      hl,(SH_SRC)         ; re-fetch source desc (stable addr)
+                call    she_src         ; re-fetch source desc (stable addr)
                 pop     de                  ; DE = new body ptr               [ ]
                 push    de                  ; re-guard it                     [BODY]
                 call    str_body_copy       ; HL=source(desc), DE=body -> copies
                                             ; the source's CURRENT length fresh
-                ld      hl,(SH_SRC)
+                call    she_src
                 ld      a,(hl)              ; length (re-read; unchanged)
-                ld      hl,(SH_DEST)
+                call    she_dest
                 ld      (hl),a              ; dest.len
                 inc     hl
                 pop     de                  ; DE = body ptr (guarded above)    [ ]
@@ -2687,11 +2747,11 @@ svs_copy:
                 inc     hl
                 ld      (hl),d              ; dest.ptr := the new heap body
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 svs_oom:
                 ld      a,1
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- sh_val_parse: op=13 handler (shape-C follow-up move of VAL's integer ---
@@ -2711,7 +2771,7 @@ svs_oom:
 ; scratchpad/inpnum_run2.out).
 sh_val_scr:
                 xor     a
-                ld      (SH_LEN),a
+                ld      (iy+SHB_VTYPE),a
                 ld      hl,STRSCR
                 ld      b,(hl)              ; B = the field's length
                 inc     hl                  ; HL = its first byte
@@ -2719,7 +2779,7 @@ sh_val_scr:
 
 sh_val_parse:
                 xor     a
-                ld      (SH_LEN),a          ; 0 = "the answer is the integer in
+                ld      (iy+SHB_VTYPE),a          ; 0 = "the answer is the integer in
                                             ; SH_PTR"; every early exit below
                                             ; (empty, bare sign, base literal)
                                             ; inherits it, and only the float
@@ -2743,7 +2803,7 @@ svp_body:
                 ld      e,b
                 add     hl,de
                 ld      (TKVALEND),hl       ; one past the last body byte
-                ld      (SH_SRC),hl         ; D-INPNUM: where the number ENDED --
+                call    she_putp         ; D-INPNUM: where the number ENDED --
                                             ; the end unless a scan below stops
                                             ; short (tk_float, a base literal)
                 pop     hl
@@ -2824,7 +2884,7 @@ svp_flt:
                 ld      sp,hl               ; 10 bytes of scratch AT SP
                 ex      de,hl               ; HL = source cursor, DE = emit dest
                 call    tk_float
-                ld      (SH_SRC),hl         ; D-INPNUM: tk_float's stop (tkf_done
+                call    she_putp         ; D-INPNUM: tk_float's stop (tkf_done
                                             ; hands the source cursor back in HL)
                 ld      a,(TKOVF)
                 or      a
@@ -2845,7 +2905,7 @@ svp_frel:
                 jp      nz,svp_bovf         ; `VAL("1E99")` -> Overflow on both
                                             ; references, the same ERR 6 the base
                                             ; literal's own overflow raises
-                ld      a,(SH_LEN)
+                ld      a,(iy+SHB_VTYPE)
                 or      a
                 jr      z,svp_fin           ; an integer: the sign path below
                 ; a float: the sign is a BIT, and value 0 is exempt -- the same
@@ -2860,7 +2920,7 @@ svp_frel:
                 ld      (FAC),a
 svp_fok:
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- svp_token: decode the token tk_float emitted at (HL) -------------------
@@ -2898,7 +2958,7 @@ svp_t_sng:
                 ld      c,4
 svp_t_f:
                 ld      a,c
-                ld      (SH_LEN),a          ; the marker IS the FACTYP value
+                ld      (iy+SHB_VTYPE),a          ; the marker IS the FACTYP value
                 ld      (FACTYP),a
                 ld      b,0
                 ld      de,FAC
@@ -2913,9 +2973,10 @@ svp_fin:
                 sbc     hl,de               ; HL = -DE
                 ex      de,hl               ; DE = negated value
 svp_done:
-                ld      (SH_PTR),de
+                ld      (iy+SHB_VINT),e
+                ld      (iy+SHB_VINT+1),d
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 
 ; --- D-VALBASE: the base-literal scan ---------------------------------------
@@ -2957,9 +3018,10 @@ svp_amperr:
 svp_bovf:
                 ld      a,5                 ; SH_ERR 5 -> FPERR 1 -> ERR 6 (overflow)
 svp_berr:
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ld      de,0
-                ld      (SH_PTR),de
+                ld      (iy+SHB_VINT),e
+                ld      (iy+SHB_VINT+1),d
                 ret
 svp_bpfx:
                 inc     de
@@ -3023,11 +3085,13 @@ svp_bovfpop:
 svp_bpopfin:
                 pop     bc
 svp_bfin:
-                ld      (SH_SRC),de         ; D-INPNUM: the base scan's stop (DE is
+                ld      (iy+SHB_SRC),e         ; D-INPNUM: the base scan's stop (DE is
+                ld      (iy+SHB_SRC+1),d
                                             ; its cursor on this path)
                 ex      de,hl               ; DE = accumulator (the value)
-                ld      (SH_PTR),de
+                ld      (iy+SHB_VINT),e
+                ld      (iy+SHB_VINT+1),d
                 xor     a
-                ld      (SH_ERR),a
+                ld      (iy+SHB_ERR),a
                 ret
 

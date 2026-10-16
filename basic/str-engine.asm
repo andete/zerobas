@@ -55,24 +55,37 @@ arga_dig_iszero:
                 ld      hl,ARGA+FPNUM_DIG
                 jp      dig15_iszero
 
-; --- sh_call_op: SH_OP := A, then call_strheap (D-PAIRCARVE2, 2026-09-11) -----
-; 💰 The pair stood at SIX sites, 6 B each against 3 for a call. Same contract as
-; call_strheap: clobbers A, IX; returns with the tenant's results in RAM.
-sh_call_op:
-                ld      (SH_OP),a
-                ; ...and FALLS THROUGH into call_strheap (the `jr` here was to the
-                ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
-
-; --- call_strheap: dispatch to the string-heap tenant (SUBROM_IDX_STRHEAP) -
-; Shared tail every SH_* glue wrapper below funnels through (13 call sites)
-; instead of repeating "ld ix,.. / call subrom_call / jp c,subrom_absent_
-; error" inline — this low region has no room to spare for the duplication.
-; Clobbers A, IX.
-call_strheap:
+; --- sh_go: run string-heap op A on a Z80-STACK PARAMETER BLOCK (D-WSZERO S16) --
+; The tenant's arguments and results used to live in an 18-byte RAM block
+; (SH_OP..SH_ERR) inside the memory a diskless program owns. The reference keeps
+; no such block -- its string engine passes its operands in registers and on the
+; stack -- so zerobas's goes on the stack too, for the length of one op:
+;   in : A = the op; HL / DE / BC = the three argument words (per op: the block
+;        layout and each op's slots are at sub/strheap.asm's SHB_* equates), L =
+;        the length for the ops that take one. Ops 5 and 9 also take a 4th word
+;        (START / COUNT) that the caller pushes right before `call sh_go`.
+;   out: A = the ERR slot (or CMP's bits), Z iff 0, CF = 0; HL / DE / BC = the
+;        three words as the tenant left them -- its results, or the caller's own
+;        values where the op writes none (so an op that writes no BC keeps it).
+; The block is pushed here, its address rides to the tenant in HL (subrom_call
+; and CALSLT pass HL), and the tenant addresses it through IY. Clobbers IX, IY.
+; Raises (sc_call) only if the sub ROM is absent.
+sh_go:
+                push    bc                  ; blk+6
+                push    de                  ; blk+4
+                push    hl                  ; blk+2
+                ld      h,a
+                push    hl                  ; blk+0 = L, blk+1 = the op
+                ld      hl,0
+                add     hl,sp               ; HL = the block
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP
-                jp      sc_call             ; C4 (2026-10-03): `call subrom_call / ret
-                                            ; nc / jp subrom_absent_error` IS sc_call
-                                            ; (interp.asm, page 1) -- one copy
+                call    sc_call
+                pop     af                  ; A = blk+1: ERR (the tenant overwrote the op)
+                pop     hl
+                pop     de
+                pop     bc
+                or      a                   ; Z iff ERR = 0, CF = 0
+                ret
 
 ; --- ctl_alloc / ctl_reset: the CONTROL POOL's two main-ROM entry points ----
 ; D-CTLPOOL (docs/spec-basic-trapsvc.md §11-§16). Both are thin wrappers over
@@ -269,11 +282,8 @@ ctl_reset:
                 ld      a,(SUBSLOT_OK)
                 cp      1
                 ret     nz                  ; not recorded yet -- CSP=0 stands
-                ld      a,20
-                ld      (SH_OP),a
-                call    sr_inl0             ; D-STUBINL: CF set = not discovered yet: harmless
-                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_STRHEAP)
-                ret
+                ld      a,20                ; op 20 (CTL_RESET); SUBSLOT_OK = 1 above, so
+                jp      sh_go               ; sh_go's absent-raise cannot fire
 
 ; --- penderr_set: FIRST-ERROR-WINS, AS A PROPERTY OF THE WRITE --------------
 ; (D-PENDERR, docs/spec-basic-penderr.md §4.) FPERR is the interpreter's single
@@ -604,25 +614,18 @@ skipsp_test:
 ; the caller can keep going structurally and the abort still happens before
 ; any bad value is ever consumed. Clobbers A, DE, IX.
 str_temp_alloc:
-                ld      (SH_LEN),a
+                ld      l,a                 ; blk+0 = the length
                 ld      a,3
-                call    sh_call_op         ; op = 3 (TEMP_ALLOC)
-                ld      a,(SH_ERR)
-                or      a
-                jr      z,sta_ok
+                call    sh_go               ; op 3 (TEMP_ALLOC): HL = the slot, DE =
+                ret     z                   ; its body; A = ERR (Z: ok)
                 cp      2
                 jr      z,sta_overflow
                 ld      a,FPERR_STROOM
                 call    penderr_set         ; the heap-OOM code (sysvars.inc):
                                             ; ERR 14 with the partition on, ERR 7
                                             ; without. The tenant still hands back
-                                            ; a valid (neutralised) slot here.
-                ld      hl,(SH_PTR)
+                                            ; a valid (neutralised) slot in HL here.
                 jp      ret_de0
-sta_ok:
-                ld      hl,(SH_PTR)
-                ld      de,(SH_PTR2)
-                ret
 sta_overflow:
                 ld      a,9
                 call    penderr_set         ; "String formula too complex"
@@ -690,12 +693,8 @@ str_snapshot_slice equ str_snapshot_to_temp
 str_snapshot_to_temp:
                 ld      a,4                 ; op = 4 (SNAPSHOT)
 sst_op:
-                ld      (SH_OP),a
-                ld      hl,(STRPTR)
-                ld      (SH_SRC),hl         ; source descriptor address (stable)
-                call    call_strheap
-                ld      a,(SH_ERR)
-                or      a
+                ld      hl,(STRPTR)         ; source descriptor address (stable)
+                call    sh_go               ; HL = the owned slot, A = ERR
                 jr      z,sst_ok
                 cp      2
                 jr      z,sst_overflow
@@ -709,8 +708,7 @@ sst_ok:
                 ; above it) AND by jp from the string-space-overflow arm, which
                 ; differs only in the `penderr_set` it runs FIRST -- the decision
                 ; stays with them.
-sh_publish:
-                ld      hl,(SH_PTR)
+sh_publish:                                 ; HL = the result descriptor (sh_go's)
                 ld      (STRPTR),hl
                 ret
 sst_overflow:
@@ -770,17 +768,13 @@ sct_loop:
                 push    hl                  ; [R][advanced cursor] (save the ADVANCED
                                             ; cursor -- past the operand, not its start)
                 ; append R += operand(STRPTR), in place
-                ld      hl,(STRPTR)
-                ld      (SH_SRC),hl         ; SH_SRC = the operand (any stable descriptor)
-                pop     de                  ; DE = advanced cursor   [R]
-                pop     hl                  ; HL = R                 [ ]
-                ld      (SH_DEST),hl        ; SH_DEST = R (stable temp slot, modified in place)
-                push    hl                  ; [R]
-                push    de                  ; [R][cursor]
+                pop     bc                  ; BC = advanced cursor   [R]
+                pop     de                  ; DE = R (the stable temp slot, modified
+                push    de                  ; in place)              [R]
+                push    bc                  ; [R][cursor]
+                ld      hl,(STRPTR)         ; HL = the operand (any stable descriptor)
                 ld      a,2
-                call    sh_call_op         ; op = 2 (APPEND)
-                ld      a,(SH_ERR)
-                or      a
+                call    sh_go               ; op 2 (APPEND): A = ERR
                 jr      nz,sct_append_err   ; heap OOM / overflow -> [R][cursor]
 sct_cont:
                 pop     hl                  ; HL = cursor            [R]
@@ -859,8 +853,7 @@ sct_append_err:
                 ; is reported -- and the normal exit at sct_cont publishes R and
                 ; the final cursor exactly as it does on the success path. That
                 ; also deletes this tail's own STRPTR store and `scf`/`ret`.
-                ld      a,(SH_ERR)
-                cp      2                   ; `ld` does not touch flags, so both
+                cp      2                   ; A = ERR (sh_go's); `ld` does not touch flags, so both
                                             ; branches below read THIS compare
                 ld      a,FPERR_STROOM      ; SH_ERR=1 -> heap OOM (sysvars.inc)
                 jr      c,sct_ae_set
@@ -913,14 +906,15 @@ str_min_bc:
 ; them; SAME calling convention (BC=temp descriptor, D=start, E=count), so
 ; every caller (str_fn_left/right/mid) is unchanged. Clobbers A, BC, DE, IX.
 str_temp_slice:
-                ld      (SH_SRC),bc
-                ld      a,d
-                ld      (SH_START),a
-                ld      a,e
-                ld      (SH_COUNT),a
+                ld      h,b
+                ld      l,c                 ; HL = the temp descriptor (blk+2)
+                ld      c,d
+                ld      b,e
+                push    bc                  ; blk+10 = start, blk+11 = count
                 ld      a,5
-                ld      (SH_OP),a           ; op = 5 (SLICE)
-                jp      call_strheap
+                call    sh_go               ; op 5 (SLICE)
+                pop     bc
+                ret
 
 ; --- LEN/ASC/VAL: string-argument functions in the NUMERIC evaluator -------
 ; Reached from ev_f_ff (basic/expr.asm) via `jp ev_ff_strnum` on an unrecognised
@@ -1080,11 +1074,10 @@ ev_ff_val:
                 ; moved to the sub-ROM tenant (sub/strheap.asm sh_val_parse,
                 ; op=13) — pure-RAM parse of (STRPTR)'s body, page-1/low both
                 ; byte-full. Thin glue mirrors str_temp_alloc.
-                ld      a,13
-                ld      (SH_OP),a           ; op = 13 (VAL_PARSE)
-                push    ix                  ; the CALSLT in call_strheap clobbers IX
-                call    call_strheap        ; -- guard the token cursor ev_f needs back
-                pop     ix
+                ld      a,13                ; op 13 (VAL_PARSE)
+                push    ix                  ; the CALSLT in sh_go clobbers IX -- guard
+                call    sh_go               ; the token cursor ev_f needs back. A = ERR,
+                pop     ix                  ; DE = the int, C = the type
                 ; D-VALBASE: the base-literal scan can REFUSE, and VAL's usual
                 ; "never raises, returns 0" does not cover it -- both references
                 ; answer `Syntax error` for `VAL("&")` and `VAL("&17")` ('&' not
@@ -1093,19 +1086,16 @@ ev_ff_val:
                 ; 🟢 Deferred through ev_f_defer like every other factor refusal,
                 ; so first-error-wins still lets an operand's own fault outrank
                 ; this one.
-                ld      a,(SH_ERR)
-                or      a
-                jr      nz,evv_refuse
-                ; D-VALFLT: SH_LEN is 0 when the answer is the integer in SH_PTR,
+                jr      nz,evv_refuse       ; (`pop ix` kept sh_go's flags)
+                ; D-VALFLT: the type is 0 when the answer is the integer in DE,
                 ; and otherwise the FACTYP (4/8) of a value the tenant has already
                 ; placed in FAC. The float arm then ends exactly where a float
                 ; LITERAL's does -- ev_f_float's own tail -- so every int consumer
                 ; downstream keeps working and the type is the literal's type.
-                ld      a,(SH_LEN)
+                ld      a,c
                 or      a
                 jp      nz,flt_to_int16     ; DE = the rounded int16; FAC/FACTYP stand
-                jp      inm_ok              ; DE = the parsed integer value (SH_PTR),
-                                            ; ret -- input.asm's tail, C4 (2026-10-03)
+                ret                         ; DE = the parsed integer value
 evv_refuse:
                 ld      e,4                 ; SH_ERR 4 -> syntax error
                 cp      5
@@ -1223,12 +1213,10 @@ str_fn_chr:
                 jr      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor across the temp write
-                ld      a,1
-                ld      (SH_LEN),a          ; length = 1 (FILL op, same as
-                ld      a,e                 ; SPACE$/STRING$ — shape-C follow-up)
-                ld      (SH_FILLBYTE),a     ; fill byte = the char (low byte of n)
+                ld      l,1                 ; length 1 (the FILL op, as SPACE$ /
+                                            ; STRING$); E = the char = the fill byte
                 ld      a,8                 ; op = 8 (FILL)
-                jp      shx_op_tail         ; sets SH_OP, drives it, publishes
+                jp      shx_op_tail         ; drives it, publishes
 
 ; STR$(n): the decimal text of n. Leading blank for non-negative n (MSX format);
 ; the '-' for a negative is emitted by pu_fmt_int. Reuses print.asm's div10 via
@@ -1658,20 +1646,23 @@ ems_close:
                 pop     de                  ; DE = m           stack: [n]
                 pop     bc                  ; BC = n           stack: []
                 push    hl                  ; [cursor] guard across the call
-                ld      (SH_NUM),de         ; m
-                ld      (SH_START),bc       ; n (full 16-bit; sub-side range-
+                push    bc                  ; [cursor][n]: n (full 16-bit; sub-side range-
                                             ; checks 1..255 itself)
+                push    de                  ; [cursor][n][m]
                 ld      hl,(STRPTR)
-                ld      (SH_SRC),hl         ; B$ descriptor address
+                push    hl                  ; [cursor][n][m][B$]: read FIRST, as before
                 call    tgt_desc_fix        ; HL = the stashed dest, corrected for any
                                             ; ARYTAB move the arg parse caused (§5.1);
                                             ; a scalar target comes back verbatim
-                ld      (SH_DEST),hl        ; A$ descriptor address
+                push    hl                  ; [cursor][n][m][B$][A$]
                 call    mid_own             ; D-READREF: a body in the program text is
                                             ; copied into the heap first
+                pop     de                  ; DE = A$ (blk+4)
+                pop     hl                  ; HL = B$ (blk+2)
+                pop     bc                  ; BC = m (blk+6)         [cursor][n]
                 ld      a,9
-                call    sh_call_op         ; op = 9 (MID_STORE)
-                ld      a,(SH_ERR)
+                call    sh_go               ; op = 9 (MID_STORE); n is blk+10
+                pop     bc                  ; drop n                 [cursor]
                 cp      3
                 jp      nz,pop_exec         ; HL = continue cursor; else the range
                                             ; error (n<1/n>255/n>La) falls into
@@ -1691,42 +1682,45 @@ ems_range:
 ; VARTAB, so a body there is copied into a fresh heap body (op 0) and A$ repointed;
 ; a heap body or a FIELD buffer is written in place as before. No room is 14 (the
 ; VG-8020's `midoom`: `Out of string space in 16`, the MID$ line).
-;   in: HL = (SH_DEST) = A$'s descriptor. Clobbers A, BC, DE, HL.
+;   in: HL = A$'s descriptor. Clobbers A, BC, DE, HL, IX, IY.
 mid_own:
                 ld      c,(hl)              ; C = La
                 inc     hl
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = A$'s body
+                dec     hl
+                dec     hl                  ; HL = A$ again (D-WSZERO S16: it rides
+                                            ; the stack across the nested op 0)
                 ld      a,c
                 or      a
                 ret     z
+                push    hl                  ; [A$]
                 ld      hl,(VARTAB)
                 or      a
                 sbc     hl,de
+                pop     hl                  ; HL = A$ (pop keeps the flags)
                 ret     c                   ; above VARTAB: owned
                 ret     z
-                ld      a,c
-                ld      (SH_LEN),a
-                xor     a                   ; op 0: allocate SH_LEN bytes -> SH_PTR
-                call    sh_call_op
-                ld      a,(SH_ERR)
-                or      a
+                push    hl                  ; [A$]
+                ld      l,c                 ; blk+0 = La
+                xor     a                   ; op 0 (ALLOC): HL = the fresh body
+                call    sh_go
+                pop     de                  ; DE = A$ (pop keeps the flags)
                 jr      nz,mo_oom
-                ld      hl,(SH_DEST)
+                ex      de,hl               ; HL = A$, DE = the fresh body
                 ld      c,(hl)
                 ld      b,0                 ; BC = La
                 inc     hl
-                ld      e,(hl)
+                ld      a,(hl)
                 inc     hl
-                ld      d,(hl)              ; DE = the body in the program text
-                ex      de,hl               ; HL = it; DE -> the ptr's high byte
-                push    de
-                ld      de,(SH_PTR)
-                push    de
+                push    hl                  ; [-> the ptr's high byte]
+                ld      h,(hl)
+                ld      l,a                 ; HL = the body in the program text
+                push    de                  ; [ptrhi][fresh]
                 ldir
                 pop     de                  ; DE = the fresh body
-                pop     hl
+                pop     hl                  ; HL -> the ptr's high byte
                 ld      (hl),d
                 dec     hl
                 ld      (hl),e              ; A$ -> its own heap copy
@@ -1828,8 +1822,9 @@ str_fn_radix:
                 jp      nz,str_arg_empty
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard cursor
-                ld      (SH_NUM),de
                 ld      a,c                 ; op = 6 HEX / 7 OCT / 14 BIN
+                ld      b,d
+                ld      c,e                 ; BC = the number (blk+6)
                 ; ...and FALLS THROUGH into shx_op_tail (the `jr` here was to the
                 ; very next instruction: -2 B, GA-CROSS-ROMSCAN)
 
@@ -1854,9 +1849,8 @@ str_fn_radix:
 ; INTERIOR LABEL (none): one of them carries comment lines inside the run, so a
 ; line-adjacent grep sees three.
 shx_op_tail:
-                ld      (SH_OP),a
 shx_tail:
-                call    call_strheap
+                call    sh_go               ; HL = the slot, A = ERR
                 call    shx_finish
                 jr      sfi_done            ; pop hl (the caller's cursor guard), then
                                             ; str_eval_ok -- C4 shared tail (2026-10-03)
@@ -1866,9 +1860,7 @@ shx_tail:
 ; and STR_EMPTY, else publishes SH_PTR as the new STRPTR (SH_ERR=1, heap OOM,
 ; is honoured too — FPERR=6 — though a <=6-byte alloc essentially never hits
 ; it). Clobbers A, HL.
-shx_finish:
-                ld      a,(SH_ERR)
-                or      a
+shx_finish:                                 ; A = ERR and Z from sh_go, HL = the slot
                 jp      z,shxf_ok           ; D-DUPSPAN2: widened from `jr` --
                 cp      2                   ; the alias targets are in sst_*'s
                 jp      z,shxf_overflow     ; span, out of `jr` reach from here
@@ -1906,9 +1898,8 @@ str_fn_space:
                                             ; replaces the old clamp-to-STRMAX + D-3 negative
                                             ; check (STRMAX=255 == the byte ceiling, so an
                                             ; in-range count is unchanged). A = fill count.
-                ld      (SH_LEN),a
-                ld      a,' '
-                ld      (SH_FILLBYTE),a
+                ld      l,a                 ; blk+0 = the count
+                ld      e,' '               ; blk+4 = the fill byte
                 ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up:
                                             ; the fill loop moved to the sub-ROM
                                             ; tenant (sub/strheap.asm sh_fill),
@@ -2011,14 +2002,13 @@ sfg_close:
                 push    hl
                 pop     ix                  ; IX = cursor (parked)
                 pop     af                  ; A = fill byte                    [count]
-                ld      (SH_FILLBYTE),a
+                ld      e,a                 ; blk+4 = the fill byte
                 pop     af                  ; A = clamped count                [ ]
-                ld      (SH_LEN),a
-                ld      a,8
-                ld      (SH_OP),a           ; op = 8 (FILL) -- shape-C follow-up
+                ld      l,a                 ; blk+0 = the count
+                ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up
                                             ; (same move as SPACE$ above)
                 push    ix                  ; guard the parked cursor across the call
-                jp      shx_tail            ; SH_OP already set above
+                jp      shx_tail
 sfg_reject1:
                 pop     af                  ; discard [count]
                 jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / empty
@@ -2136,16 +2126,13 @@ efi_p_ok:
                 ; (sub/strheap.asm sh_instr_search) once this low region ran
                 ; out of room for it.
                 push    hl                  ; guard the real cursor               [cursor]
-                push    ix
-                pop     hl
-                ld      (SH_SRC),hl         ; a$ temp descriptor address
                 push    iy
-                pop     hl
-                ld      (SH_DEST),hl        ; b$ temp descriptor address
-                ld      (SH_P),bc           ; p
+                pop     de                  ; DE = b$ temp descriptor address
+                push    ix
+                pop     hl                  ; HL = a$ temp descriptor address; BC = p
                 ld      a,11
-                call    sh_call_op         ; op = 11 (INSTR_SEARCH)
-                ld      de,(SH_PTR)         ; DE = result (1-based match / 0)
+                call    sh_go               ; op = 11 (INSTR_SEARCH): HL = the result
+                ex      de,hl               ; DE = result (1-based match / 0)
                 pop     ix                  ; IX = cursor (bridge back to ev_f's convention)
                 jp      flt_int_result      ; INSTR returns an int even when a float rode
                                             ; in via p or a nested STR$ arg (float.asm F1;
@@ -2250,16 +2237,10 @@ rp_yes:
 ; [len][bytes]) moved to the sub-ROM (sub/strheap.asm sh_cmp_bits) once this
 ; low region ran out of room for it.
 str_cmp_bits:
-                push    bc                  ; guard the caller's C (requested bits)
-                ld      (SH_SRC),hl
-                ld      (SH_DEST),de
-                ld      a,10
-                call    sh_call_op         ; op = 10 (CMP)
-                ld      a,(SH_LEN)          ; A = 1/2/4 relation bits (the
-                                            ; tenant reuses SH_LEN as CMP's
-                                            ; 1-byte result field)
-                pop     bc                  ; restore the caller's bits (C)
-                ret
+                ld      a,10                ; op = 10 (CMP): HL = lhs, DE = rhs. The
+                jp      sh_go               ; bits come back in A; BC (the caller's C,
+                                            ; the requested bits) comes back untouched:
+                                            ; op 10 writes no blk+6 (D-WSZERO S16)
 
 ; --- type_mismatch_set: D-2's comparator-level signal ------------------------
 ; UNCHANGED from pre-4a. A string on one side of a relational and a non-string

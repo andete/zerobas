@@ -54,19 +54,19 @@ def run():
     m.poke(SETSRC, bytes([5]))
     m.poke_w(SETSRC + 1, BODY)
     m.poke(DEST, b"\x00\x00\x00")
-    m.poke(s["SH_OP"], 12)
-    m.poke_w(s["SH_SRC"], SETSRC)
-    m.poke_w(s["SH_DEST"], DEST)
+    # D-WSZERO S16: the op's arguments travel in sh_go's stack block (HL = the
+    # source, DE = the destination), which is itself in the caller's frame
     m.cpu.sp = CALLER_SP
-    m.call("call_strheap", keep_sp=True)
+    m.call("sh_go", keep_sp=True, a=12, hl=SETSRC, de=DEST)
+    err = m.cpu.a
 
     fails = 0
     dlen = m.mem[DEST]
     ptr = m.mem[DEST + 1] | (m.mem[DEST + 2] << 8)
     body = bytes(m.mem[ptr:ptr + dlen]) if dlen else b""
-    ok = dlen == 5 and body == b"HELLO" and ptr != BODY and m.mem[s["SH_ERR"]] == 0
+    ok = dlen == 5 and body == b"HELLO" and ptr != BODY and err == 0
     print(f"  {'PASS' if ok else 'FAIL'}  op 12 into the caller's frame at ${DEST:04X}: "
-          f"len={dlen} ptr=${ptr:04X} body={body!r} SH_ERR={m.mem[s['SH_ERR']]}")
+          f"len={dlen} ptr=${ptr:04X} body={body!r} ERR={err}")
     fails += not ok
     return fails
 

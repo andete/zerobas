@@ -3642,9 +3642,78 @@ item — do **one item per session** to keep context lean.
       AF'). So on C-BIOS registers DO travel both ways; "CALSLT does not preserve
       A" is true only in the sense that the TENANT's A comes back. The plan's
       Variant B (the block) does not depend on it; Variant R could.
-      ➡️ NEXT: S16.1..3, the SH_* stack parameter block
-      ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
-      harness and a sub page 0 byte pass), then S15.
+      ✅ **S16 (2026-10-16): THE STRING-HEAP PARAMETER BLOCK LEAVES RAM -- IT IS
+      PUSHED ON THE Z80 STACK FOR THE LENGTH OF ONE OP, AS THE REFERENCE PASSES
+      ITS STRING OPERANDS. THE DISKLESS WINDOW NOW HOLDS NO ZEROBAS STATE AT ALL.**
+      (Done as one slice, not the plan's S16.1..3: a single slot map for every op
+      made the tenant conversion mechanical.) `sh_go` (`basic/str-engine.asm`,
+      replacing `sh_call_op` / `call_strheap`) pushes BC, DE, HL and a word holding
+      the op and the caller's L, passes the block's address in HL, and pops it
+      back: A = the ERR slot (Z iff 0), HL / DE / BC = the results or the caller's
+      own words. The tenant (`sub/strheap.asm`) takes the block into IY once
+      (`SHB_*` equates: +0 LEN, +1 OP/ERR, +2 SRC/PTR, +4 DEST/PTR2/FILLBYTE, +6
+      NUM/P, +10/+11 START/COUNT pushed by ops 5 and 9; VAL puts its int at +4 and
+      its type at +6, CMP its bits in the ERR slot); the three commonest 16-bit
+      accesses go through 7-byte helpers so they stay 3 bytes; `heap_alloc` and
+      INSTR save IY around their own use of it; `she_snap_slice` reads SRC before
+      writing PTR (they share a slot). Main: every site lost its stores and loads
+      (str_temp_alloc, the snapshot family, concat, slice, VAL / INPUT / READ,
+      CHR$ / SPACE$ / STRING$ / HEX$ / OCT$ / BIN$, MID$()= with its nested ALLOC,
+      INSTR, CMP, LET's VAR_STORE, FRE (its op rides in C across evsp_close), the
+      channel address, CTL_RESET); `inp_num` now returns the type in A and the int
+      in DE, and READ's exr_nan reads VAL's code from A (0 on trailing junk, never
+      a junk byte). SH_BASE..SH_ERR are deleted from `basic/sysvars.inc`, with
+      `tools/ram-width-allow.txt`'s SH_BASE line. 📌 **The pins:** the glue shrank
+      134 B in front of $3297, 19 B in front of $6CF3 and 6 B in front of $73AC
+      (measured with the pins switched off in both trees, HEAD in a worktree); each
+      was refilled exactly with whole chunks from past the pins (pin_plan's exact
+      fill): ary_engine_call + pop_lhs_and_probe + mul16x16_32 (134) at the end of
+      `basic/input.asm`, parse_lineno (12) in `basic/vars.asm` and ctl_get (7) in
+      `basic/expr.asm`, and in segment D a swap -- le_call_op (10) in after
+      fch_ctx_addr, arl_getbyte (4) out to `basic/program.asm` -- since no 6-B fill
+      existed. Pins 4/4, pad waste unchanged. **Walls: main low 87 -> 221 B free,
+      main page 1 186 -> 212, sub page 0 83 -> 29** (the tenant grew 54 B; S16.0(b)'s
+      table paid for it). 🧪 The unit harness change S16.0(a) made it visible: unit
+      tests 67/67 on the first run (`tests/test_subrom_bridge_stack.py` now drives
+      op 12 through `sh_go`). 📏 Rows: `s16sh` runs every op and sums the 18 vacated
+      bytes -- VG-8020 2970, zerobas 1129 on HEAD's ROM, 2970 after -- and twelve
+      behaviour rows (`ovcat` ERR 15, `ovslice`, `ovgc`, `ovfill`, `ovcmp`,
+      `ovinstr` ERR 5, `ovmid` ERR 5, `ovlet`, `ovval` ERR 2 / 6, `ovread` ERR 2 / 6,
+      `ovinp` ?Redo, `ovfre`): [`wszero_s16_rows.out`](scratchpad/wszero_s16_rows.out)
+      73/73 as pinned. Three first cuts of those rows diverged on HEAD's ROM too
+      ([`wszero_s16_rows_head.out`](scratchpad/wszero_s16_rows_head.out)) and are
+      filed below, not S16's. 🔪
+      [`wszero_s16_knife.py`](scratchpad/wszero_s16_knife.py) ->
+      [`wszero_s16_knife.out`](scratchpad/wszero_s16_knife.out): K-WS89 (the tenant
+      also copies its block to the old home) -> s16sh alone, HIT; K-WS90 (sh_go
+      returns A = 0) -> ovcat / ovcmp / ovval / ovread, HIT; K-WS91 (VAL's int slot
+      over its type) -> ovval / ovread (+ s16sh), HIT; K-WS92 (heap_alloc does not
+      restore IY) -> ovgc among six, HIT; K-WS93 (the snapshot reorder undone) ->
+      ovslice alone, HIT.
+      ➡️ NEXT: **S15 -- TXTMAX_NODISK to $F380, ONCE** (s14_plan.md §6's
+      checklist): `ram_map --floor-top F380` lists no untagged name now.
+
+- [ ] 🔎 **D-S16PREEXIST -- THREE DIFFERENCES THE S16 ROWS FOUND, PRESENT ON HEAD'S ROM TOO
+      (2026-10-16)**
+      🎚️ TIER 6 — provisional, until each is isolated (the first may be higher).
+      🤖 AUTONOMOUS — measure, isolate, then tier each.
+      Found by the first cuts of the S16 behaviour rows, identical before S16
+      ([`wszero_s16_rows_head.out`](scratchpad/wszero_s16_rows_head.out)), and
+      narrowed out of those rows:
+      (1) **A$ reads `DDDD` on the VG-8020 and `AQCD` on zerobas** after
+      `A$="AB"+"CD":B$=LEFT$(A$,3)+MID$(A$,2,2):C$=STRING$(3,"*")+SPACE$(2)+CHR$(65)`,
+      `D$=HEX$(255)+OCT$(8)+BIN$(5):MID$(A$,2,1)="Q":I=INSTR(A$,"C"):E=(A$<B$):F$=A$`,
+      `V=VAL("1.5"):READ N:X=FRE(""):Y=FRE(0)`, under `CLEAR 300,&HE000`, ON ERROR,
+      after a window BLOAD (the s16sh program before its narrowing). NOT
+      reproduced by five reductions -- MID$ alone, then FRE(""), with a copy
+      before or after, a literal -- which all agree on AQCD
+      ([`midfre_probe.py`](scratchpad/midfre_probe.py)): a missed prediction
+      (the shared body + GC). ➡️ Bisect the original program's statements.
+      (2) **The ERL of a READ error after `RESTORE 40`**: `READ C` refusing `12X`
+      in line 30 (ERL 30 on both), then `RESTORE 40:READ D` refusing `1E99` in line
+      40 -- VG-8020 ERL 30, zerobas 20 (the READ's line). The CF-3300 not run.
+      (3) **`FRE(0)=FRE(2)` in ONE expression is 0 on the VG-8020, -1 on zerobas**
+      (after `A$="ABC"+"D"`); split into two statements both answer 0.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10243,7 +10312,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35776 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35845 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10409,7 +10478,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15271 (T-6FE392)8 (T-529ABE)` from `TODO.md:28065 (T-529ABE)`: a
+      `TODO.md:15340 (T-6FE392)8 (T-529ABE)` from `TODO.md:28134 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16118,7 +16187,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28065 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28134 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

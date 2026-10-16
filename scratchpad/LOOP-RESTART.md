@@ -46,8 +46,11 @@ session and the loop resumes exactly where it stopped.
   now holds exactly the 13 SH_* names. **S16.0(a)** (2026-10-16): the unit
   harness runs a tenant on the caller's stack and passes BC (K-WS87).
   **S16.0(b)**: the strheap dispatch is a jump table, sub page 0 34 -> 83 B
-  free (K-WS88). NEXT: S16.1..3, the SH_* stack parameter block (scratchpad/shblk_plan.md,
-  S16.0..S16.3), then **S15 raises the ceiling ONCE, last**.
+  free (K-WS88). **S16** (2026-10-16): the SH_* parameter block is pushed on
+  the Z80 stack by `sh_go` and read through IY -- no zerobas state is left in
+  the diskless window (`ram_map --floor-top F380`: no untagged name); the pins
+  were refilled exactly (134 / 19 / 6 B); main low +134, page 1 +26, sub p0 -54;
+  K-WS89..93. **NEXT: S15 raises TXTMAX_NODISK to $F380, ONCE.**
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
   MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**

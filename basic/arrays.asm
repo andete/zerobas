@@ -549,41 +549,8 @@ apc_release:
                                             ; failed — same verdict, no shadow
                                             ; registers, 4 bytes
 
-; --- ary_engine_call: subrom_call to the array tenant (SUBROM_IDX_ARY). ----
-; The caller has already filled ARY_OP/ARY_KEY/ARY_TYPE (and ARY_NIDX/
-; ARY_IDXP, via ary_parse_call) in the param block. On return: reads
-; ARY_ERR; if nonzero, maps it to the matching FPERR code (ary_errmap below)
-; and returns NZ; if zero (ok), returns Z. CF from subrom_call itself (the
-; sub-ROM absent — never on the merged machine, which always ships it) jumps
-; straight to subrom_absent_error and never returns, the same defensive
-; convention every other subrom_call site uses (evmc_sqr, list.asm detok,
-; interp.asm tokenise). Clobbers A,IX — the caller must guard any live IX
-; (e.g. the text cursor) around this call, the same discipline evmc_sqr uses
-; across SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_SQR.
-ary_engine_call:
-                ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_ARY
-                call    sc_call             ; D-SCCALL: tenant call + absent raise
-                ld      a,(ARY_ERR)
-                or      a
-                ret     z
-                ld      hl,ary_errmap-1
-                ld      d,0
-                ld      e,a
-                add     hl,de               ; Z80 ADD HL,rr affects C/H/N only --
-                                            ; S/Z/P-V are UNCHANGED (documented Z80
-                                            ; behaviour), so the NZ this routine
-                                            ; must return is STILL the one the `or a`
-                                            ; above set (A was nonzero, else we'd
-                                            ; have taken `ret z`) and survives,
-                                            ; untouched, through every instruction
-                                            ; between here and the final `ret` below
-                                            ; (none of LD (nn),A / LD A,(HL) / LD
-                                            ; A,(nn) touch flags either) -- slice-3
-                                            ; space audit: the trailing "ensure NZ"
-                                            ; `or a` this comment replaces was
-                                            ; therefore provably redundant
-                ld      a,(hl)
-                jp      penderr_set
+; (ary_engine_call lives in basic/input.asm since D-WSZERO S16: it refills bytes the stack
+; parameter block freed in front of a pinned address)
 ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispositions)
                 db      5                   ; 1 Subscript-oor  -> 5 Subscript out of range
                 db      8                   ; 2 Illegal-fn/neg -> 8 Illegal function call

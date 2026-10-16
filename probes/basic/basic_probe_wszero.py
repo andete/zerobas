@@ -264,6 +264,21 @@ RUN_GAP["ovinpd"] = 60.0
 # on the way in shows.
 for _r in ("s14gd", "ovpt"):
     RANGES[_r] = RANGES["all"]
+# D-WSZERO S16 (2026-10-16): the string-heap tenant's 18-byte parameter block
+# (SH_OP..SH_ERR, $EFCA..$EFDB) goes on the Z80 stack for the length of one op.
+# `s16sh` runs every op once and sums the vacated bytes (VG-8020 2970); the ov*
+# rows below guard each op's behaviour over a window load (the plan's set,
+# scratchpad/shblk_plan.md §4). Three first cuts diverged on HEAD's ROM too and
+# were narrowed to what S16 changes (scratchpad/wszero_s16_rows_head.out): A$ after
+# MID$()= then FRE("") (VG-8020 DDDD, zerobas AQCD), the ERL of a READ error after
+# RESTORE (VG-8020 30, zerobas 20) and FRE(0)=FRE(2) in ONE expression (VG-8020 0) --
+# filed in TODO, not S16's.
+S16_ROWS = ("s16sh", "ovcat", "ovslice", "ovgc", "ovfill", "ovcmp", "ovinstr", "ovmid",
+            "ovlet", "ovval", "ovread", "ovinp", "ovfre")
+for _r in S16_ROWS:
+    RANGES[_r] = RANGES["all"]
+RUN_GAP["ovgc"] = 60.0
+RUN_GAP["s16sh"] = 60.0
 _S14GA_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
               ':PRINT"[S";S;A$;"]":END',
               "950 DATA 60984,60984,61117,61117,61286,61286,61295,61295,61331,61331,61334,61334,61371,61372"]
@@ -655,6 +670,69 @@ PROGRAM_OVPT = [
     '30 SCREEN 0:PRINT"[T";A;B;C"]":END',
     "RUN",
 ]
+PROGRAM_S16 = {
+    "s16sh": ["NEW",
+              '10 CLEAR 300,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+              '20 A$="AB"+"CD":B$=LEFT$(A$,3)+MID$(A$,2,2):C$=STRING$(3,"*")+SPACE$(2)+CHR$(65)',
+              '30 D$=HEX$(255)+OCT$(8)+BIN$(5):MID$(A$,2,1)="Q":I=INSTR(A$,"C"):E=(A$<B$):F$=A$',
+              '40 V=VAL("1.5"):READ N:X=FRE(""):Y=FRE(0)',
+              '50 S=0:FOR J=61386 TO 61403:S=S+PEEK(J):NEXT:PRINT"[S";S;"]":PRINT"[V";B$;C$;"]"',
+              '55 PRINT"[W";D$;I;E;N;V;"]":END',
+              "60 DATA 7",
+              '100 PRINT"[E";ERR;ERL;"]":RESUME NEXT', "RUN"],
+    "ovcat": ["NEW",
+              '10 CLEAR 1000,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+              '20 A$="A"+MID$("XY"+"Z",1,2)+"B":X$=STRING$(100,"X"):L=LEN(X$+X$)',
+              '30 PRINT"[C";A$;L;"]":Y$=X$+X$+X$:PRINT"[D";LEN(Y$);"]":END',
+              '100 PRINT"[E";ERR;ERL;"]":RESUME NEXT', "RUN"],
+    "ovslice": ["NEW",
+                '10 CLEAR 60,&HE000:BLOAD"CAS:",R:DIM Z$(2)',
+                '20 S$="HELLO":Z$(1)="WORLD":A$=LEFT$(S$,2)+RIGHT$(Z$(1),2)+MID$(S$+Z$(1),4,4)',
+                '30 PRINT"[L";A$;"]":END', "RUN"],
+    "ovgc": ["NEW",
+             '10 CLEAR 300,&HE000:BLOAD"CAS:",R:DIM A$(29)',
+             '20 FOR K=1 TO 3:FOR J=0 TO 29:A$(J)=STRING$(8,64+K):NEXT:NEXT',
+             '30 PRINT"[G";A$(29);FRE("");"]":END', "RUN"],
+    "ovfill": ["NEW",
+               '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+               '20 PRINT"[F";STRING$(3,"*");SPACE$(2);CHR$(65);HEX$(LEN(STRING$(17,"A")));OCT$(8);BIN$(5);"]":END',
+               "RUN"],
+    "ovcmp": ["NEW",
+              '10 CLEAR 100,&HE000:BLOAD"CAS:",R:A$="AB":B$="ABC"',
+              '20 X=(A$<B$)+(B$>A$)*2+("B">"AB")*4+(MID$(A$,1)="AB")+(A$=A$)+(B$<>A$)+(A$<="AB")+(B$>="A")+("A"<"B")',
+              '30 PRINT"[P";X;"]":END', "RUN"],
+    "ovinstr": ["NEW",
+                '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+                '20 PRINT"[I";INSTR(2,"ABCABC","BC");INSTR("AB","");INSTR("ABC","X");"]":X=INSTR(256,"A","A"):END',
+                '100 PRINT"[E";ERR;"]":END', "RUN"],
+    "ovmid": ["NEW",
+              '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+              '20 READ R$:MID$(R$,2,2)="QQ":PRINT"[M";R$;"]":RESTORE:READ R$:PRINT"[N";R$;"]"',
+              '30 A$="ABC":MID$(A$,4)="X":END',
+              "40 DATA HELLO",
+              '100 PRINT"[E";ERR;"]":END', "RUN"],
+    "ovlet": ["NEW",
+              '10 CLEAR 100,&HE000:BLOAD"CAS:",R:DIM Z$(1)',
+              '20 B$="ONE":A$=B$:Z$(1)=A$+"!":C$=Z$(1):D$="LIT"',
+              '30 PRINT"[T";A$;Z$(1);C$;D$;FRE("");"]":END', "RUN"],
+    "ovval": ["NEW",
+              '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+              '20 PRINT"[A";VAL("&H1F");VAL(" 1.5E2");VAL("12X");"]"',
+              '30 X=VAL("&"):X=VAL("&H1FFFF"):END',
+              '100 PRINT"[E";ERR;ERL;"]":RESUME NEXT', "RUN"],
+    "ovread": ["NEW",
+               '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+               '20 READ A,B:PRINT"[R";A;B;"]":READ C:RESTORE 40:READ D:END',
+               "30 DATA 1.5,&H10,12X",
+               "40 DATA 1E99",
+               '100 PRINT"[E";ERR;"]":RESUME NEXT', "RUN"],
+    "ovinp": ["NEW",
+              '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+              '20 INPUT A:PRINT"[Q";A;"]":END', "RUN", "@WAIT30", "1-2", "@WAIT10", "42"],
+    "ovfre": ["NEW",
+              '10 CLEAR 100,&HE000:BLOAD"CAS:",R:A$="ABC"+"D"',
+              '20 X=FRE(0):Y=FRE(2):PRINT"[R";FRE("");(X=Y);"]":END', "RUN"],
+}
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -700,7 +778,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA,
             "s14gb": PROGRAM_S14GB, "ovwsrc": PROGRAM_OVWSRC,
             "s14gc": PROGRAM_S14GC, "ovinpd": PROGRAM_OVINPD, "ovprdev": PROGRAM_OVPRDEV,
-            "ovprusg": PROGRAM_OVPRUSG, "s14gd": PROGRAM_S14GD, "ovpt": PROGRAM_OVPT}
+            "ovprusg": PROGRAM_OVPRUSG, "s14gd": PROGRAM_S14GD, "ovpt": PROGRAM_OVPT,
+            **PROGRAM_S16}
 
 
 def tape(lo, hi, fill=0xA5):

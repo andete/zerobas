@@ -1,0 +1,16 @@
+ROW s16sh $ECF8-$F37F VG=[[S 2970 ] | [VDDDDABCBC***  A] | [WFF10101 3  0  7  1.5 ]] ZB=[[S 2970 ] | [VAQCDABCBC***  A] | [WFF10101 3  0  7  1.5 ]] DIVERGES
+ROW ovcat $ECF8-$F37F VG=[[D";LEN(Y$);"]":END | [CAXYB 200 ] | [E 15  30 ] | [D 0 ]] ZB=[[D";LEN(Y$);"]":END | [CAXYB 200 ] | [E 15  30 ] | [D 0 ]] SAME
+ROW ovslice $ECF8-$F37F VG=[[LHELDLOWO]] ZB=[[LHELDLOWO]] SAME
+ROW ovgc $ECF8-$F37F VG=[[GCCCCCCCC 60 ]] ZB=[[GCCCCCCCC 60 ]] SAME
+ROW ovfill $ECF8-$F37F VG=[[F***  A1110101]] ZB=[[F***  A1110101]] SAME
+ROW ovcmp $ECF8-$F37F VG=[[P-13 ]] ZB=[[P-13 ]] SAME
+ROW ovinstr $ECF8-$F37F VG=[[I 2  1  0 ] | [E 5 ]] ZB=[[I 2  1  0 ] | [E 5 ]] SAME
+ROW ovmid $ECF8-$F37F VG=[[MHQQLO] | [NHELLO] | [E 5 ]] ZB=[[MHQQLO] | [NHELLO] | [E 5 ]] SAME
+ROW ovlet $ECF8-$F37F VG=[[TONEONE!ONE!LIT 92 ]] ZB=[[TONEONE!ONE!LIT 92 ]] SAME
+ROW ovval $ECF8-$F37F VG=[[A 31  150  12 ] | [E 2  30 ] | [E 6  30 ]] ZB=[[A 31  150  12 ] | [E 2  30 ] | [E 6  30 ]] SAME
+ROW ovread $ECF8-$F37F VG=[[R 1.5  16 ] | [E 2  30 ] | [E 6  30 ]] ZB=[[R 1.5  16 ] | [E 2  30 ] | [E 6  20 ]] DIVERGES
+ROW ovinp $ECF8-$F37F VG=[[Q 42 ]] ZB=[[Q 42 ]] SAME
+ROW ovfre $ECF8-$F37F VG=[[R 96  0 ]] ZB=[[R 96 -1 ]] DIVERGES
+
+FAIL: a load over the window, then BASIC (10/13 as pinned); unpinned divergence: s16sh, ovread, ovfre
+refcache: 0 hit, 26 miss, 26 stored

@@ -1612,64 +1612,8 @@ push_lhs_frame:
                 jp      set_factyp2         ; GA-LHSTYP2: FACTYP:=2 AFTER the
                                             ; capture above, then its ret is ours
 
-; --- pop_lhs_and_probe: shared preamble for combine_add/sub/mul/cmp -------
-; (below): pops the lhs frame (FACTYP+FAC, written by push_lhs_frame above),
-; then the lhs value (into FP_LHSVAL). TWO return addresses sit on top of
-; that frame by the time this runs, not one: this routine's own (pushed by
-; "call pop_lhs_and_probe") AND its DIRECT caller's -- combine_add/sub/mul/
-; cmp/div_float is itself reached via a plain "call" from an ev_* site made
-; AFTER push_lhs_frame already ran, so that combine_* return address is
-; ALSO sitting on top of the frame, one slot further down, for the entire
-; time combine_* is running (an earlier version of this fix only accounted
-; for one level and got the frame data wrong as a result -- caught by the
-; eval() integration tests reading back a corrupted LHS_FACTYP). Fixed by
-; stashing BOTH in RAM (PLF_RA = ours, PLF_RA2 = our caller's -- neither is
-; a register, since DE and BC must both stay live across this call for
-; various combine_* callers) before touching the frame, then restoring
-; PLF_RA2 to the stack first (so it's sitting exactly where combine_* will
-; expect its own eventual return address to be) and finally jumping to
-; PLF_RA (a "jp (hl)" is equivalent to a "ret" here but doesn't need the
-; target on the stack first). Note LD/PUSH/JP(HL) never touch flags on the
-; Z80, so the ZF the final "cp 2" sets for our caller survives this restore
-; untouched. out: ZF set iff both LHS_FACTYP and the current (rhs) FACTYP
-; are int (==2); ZF clear (and A holds the mismatching FACTYP value)
-; otherwise. Clobbers A, HL (DE, BC preserved).
-pop_lhs_and_probe:
-                pop     hl                  ; HL = our own return address
-                ld      (PLF_RA),hl
-                pop     hl                  ; HL = our direct caller's (combine_*'s
-                                            ; own) return address
-                ld      (PLF_RA2),hl
-                pop     af
-                ld      (LHS_FACTYP),a
-                pop     hl
-                ld      (LHS_FAC+0),hl
-                pop     hl
-                ld      (LHS_FAC+2),hl
-                pop     hl
-                ld      (LHS_FAC+4),hl
-                pop     hl
-                ld      (LHS_FAC+6),hl
-                pop     hl
-                ld      (FP_LHSVAL),hl
-                ; A still holds LHS_FACTYP's value here, untouched since the
-                ; "pop af" above -- none of "pop hl" / "ld (nn),hl" affect A
-                ; on the Z80, so no need to reload it from RAM
-                cp      2
-                jr      nz,plap_ret         ; NZ -> mismatch; ZF stays clear below
-                call    factyp_is2
-                                           ; ZF set iff both int
-plap_ret:
-                ld      hl,(PLF_RA2)        ; does not affect flags
-                push    hl                  ; restore our caller's (combine_*'s
-                                            ; own) return address to the stack,
-                                            ; exactly where it needs to be for
-                                            ; ITS eventual ret/tail-jump home
-                ld      hl,(PLF_RA)         ; does not affect flags
-                jp      (hl)                ; jump to OUR return address directly
-                                            ; (cheaper than push+ret); does not
-                                            ; affect flags -- ZF from the cp above
-                                            ; reaches our caller intact
+; (pop_lhs_and_probe lives in basic/input.asm since D-WSZERO S16: it refills bytes the stack
+; parameter block freed in front of a pinned address)
 
 ; --- set_factyp_int_ret: FACTYP := 2, ret. Shared tail for combine_add/sub/
 ; mul's int-fast-path success returns (the result value is already in DE).
@@ -1744,44 +1688,8 @@ abs16:
                 pop     af
                 ret
 
-; --- mul16x16_32: HL(multiplicand, unsigned) * DE(multiplier, unsigned) ----
-; -> 32-bit unsigned product in (MUL32) [low16][high16], LE. Classic shift-
-; double-and-add over 16 iterations, MSB-first on the multiplier; own-design
-; extension of expr.asm's mul16 (which only keeps the low 16 bits) to the
-; full width, needed to detect MSX-signed 16-bit multiply overflow (spec
-; §10.2 int-overflow promotion) exactly rather than by wraparound. All
-; working state in RAM except the loop counter (register pressure: operand +
-; operand + 32-bit accumulator exceeds the comfortable register budget).
-; Clobbers A, B, HL, DE.
-mul16x16_32:
-                ld      (MULCAND),hl
-                ld      (MULTPLR),de
-                ld      hl,MUL32
-                ld      b,4
-                call    zero_fill
-                ld      b,16
-m32_lp:
-                ld      hl,(MUL32)
-                add     hl,hl
-                ld      (MUL32),hl
-                ld      hl,(MUL32+2)
-                adc     hl,hl
-                ld      (MUL32+2),hl
-                ld      hl,(MULTPLR)
-                add     hl,hl
-                ld      (MULTPLR),hl
-                jr      nc,m32_skip
-                ld      hl,(MUL32)
-                ld      de,(MULCAND)
-                add     hl,de
-                ld      (MUL32),hl
-                jr      nc,m32_skip
-                ld      hl,(MUL32+2)
-                inc     hl
-                ld      (MUL32+2),hl
-m32_skip:
-                djnz    m32_lp
-                ret
+; (mul16x16_32 lives in basic/input.asm since D-WSZERO S16: it refills bytes the stack
+; parameter block freed in front of a pinned address)
 
 ; =============================================================================
 ; combine_* — expr.asm binary-operator dispatch entry points (spec §1
