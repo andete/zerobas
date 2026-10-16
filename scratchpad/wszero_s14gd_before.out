@@ -1,0 +1,5 @@
+ROW s14gd $ECF8-$F37F VG=[[T 5 S 330 ]] ZB=[[T 5 S 7 ]] DIVERGES
+ROW ovpt $ECF8-$F37F VG=[[T 5  9  300000 ]] ZB=[[T 5  9  300000 ]] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: s14gd
+refcache: 0 hit, 4 miss, 4 stored

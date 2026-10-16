@@ -154,12 +154,14 @@ ev_f_point:
                 ; (`w.pt.off`); zerobas moved GXPOS on the first two. The
                 ; comment two lines up was RIGHT about GRPAC and that is why
                 ; `v.point0` stayed green over it for the whole life of G2 --
-                ; the row read the half POINT does not touch. Byte-neutral swap
-                ; (`ld a,c`+`ld (nn),a` = `ld (nn),bc`), 2 B of RAM.
-                ld      a,c                 ; x, 0..255 (gfx_in_range passed)
-                ld      (GFX_PTX),a
-                ld      a,e                 ; y, 0..191
-                ld      (GFX_PTY),a
+                ; the row read the half POINT does not touch.
+                ; D-WSZERO S14g-d: and no cells of its own either -- x / y reach
+                ; the tenant in E / D, as the reference's POINT passes them in
+                ; registers. DE rides through gfx_tenant / sr_inl0 / subrom_call
+                ; (which pushes and restores it) / CALSLT; it is reloaded with
+                ; the result below, so nothing reads the coordinates after.
+                ld      d,e                 ; D = y, 0..191 (gfx_in_range passed)
+                ld      e,c                 ; E = x, 0..255
                 ld      a,2                 ; GFX_OP = 2 -> tenant point read
                 ld      (GFX_OP),a
                 call    gfx_tenant  ; CF=1 iff absent
@@ -177,6 +179,15 @@ pt_return:
                 push    hl
                 pop     ix                  ; restore IX = cursor for the expr evaluator
                 ret
+; REFILL (D-WSZERO S14g-d, 2026-10-16): POINT's register pass freed 6 B here, in
+; front of the $6CF3 pin, and the LE selector's (basic/list.asm) 4 B more. They
+; are refilled where they were freed, with self-contained chunks from past the
+; last pin (tools/pin_plan.py's exact fill): iv_seq here (-1 net), and
+; err_notopen_raise beside ex_list (+1 net). iv_seq is INTERVAL's keyword
+; spelling, read only through `ld de,iv_seq` (basic/program.asm, ex_interval's
+; matcher), so it works at any address.
+iv_seq:
+                db      INT_TOKEN,"ER",PEEK_PREFIX,VAL_TOKEN
 
 ; --- ex_line_gfx: graphics LINE (+ ,B / ,BF box) --- G3 -----------------------
 ; Entry (from ex_line, files.asm): HL at the first non-space char after the LINE

@@ -3579,7 +3579,34 @@ item — do **one item per session** to keep context lean.
       plan's K-WS84 used MKI$, which is Disk BASIC: the VG-8020 answers
       `Illegal function call`, so on a diskless machine NO expression writes
       STRSCR+1 -- the control moved to PRINT USING's cells.
-      ➡️ NEXT (s14g_plan.md §3): S14g-d POINT in registers; then the SH_* stack parameter block
+      ✅ **S14g-d (2026-10-16): POINT'S TARGET AND THE LINE-EDITOR OP IN REGISTERS;
+      WHAT IS LEFT IN THE WINDOW IS EXACTLY THE SH_* BLOCK.** (1) GFX_PTX / GFX_PTY
+      ($EFBF / $EFC0) are gone: `ev_f_point` (`basic/graphics.asm`) passes x / y
+      in E / D, as the reference's POINT passes coordinates in registers -- DE
+      rides through gfx_tenant / sr_inl0 / subrom_call (pushed and restored) /
+      CALSLT -- and the tenant's three load quads went (sub page 0 10 -> 34 B
+      free). (2) The plan's optional LE_OP part: the line-editor op rides in C
+      (`le_call_op` / `relink` load it, `sub/lineedit.asm`'s le_dispatch reads it)
+      and LIST / LLIST push their verb across the call instead of reading the
+      cell back; LE_OP was only an alias (of KANAST since S14g-a), so this is
+      bytes, not RAM: main page 1 171 -> 186 B free, sub page 1 +2. 📌 The pin:
+      POINT freed 6 B in front of $6CF3 and LIST 4, and NO exact 6-B fill
+      existed past the last pin (pin_plan's chunks: 5 was the closest), which is
+      why the LE part came in: 10 B = `iv_seq` (5 B of data) after POINT's `ret`
+      and `err_notopen_raise` (5 B) after LIST's `jp end_line_end`, each where
+      bytes were freed; pins 4/4, the low region unchanged. 📏 Rows `s14gd` (the 2
+      vacated bytes after a POINT: VG-8020 330; zerobas 7 before -- x 3 + y 4 --
+      330 after) and `ovpt` (x / y swapped, different colours): before
+      [`wszero_s14gd_before.out`](scratchpad/wszero_s14gd_before.out), after
+      60/60 as pinned ([`wszero_s14gd_rows.out`](scratchpad/wszero_s14gd_rows.out));
+      unit tests 66/66. 🔪 [`wszero_s14gd_knife.py`](scratchpad/wszero_s14gd_knife.py)
+      -> [`wszero_s14gd_knife.out`](scratchpad/wszero_s14gd_knife.out): K-WS85 (x
+      / y swapped on the way in) -> s14gd + ovpt, HIT; K-WS86 (the tenant reads B)
+      -> s14ga only, a MISS of the prediction "ctl too" -- and the reason the
+      prediction named: at a typed line's store B happens to hold 0, which IS the
+      store op, so `ctl` agrees for the wrong reason; s14ga's `DELETE` runs
+      another op and diverges. `ram_map --floor-top F380`: 13 names, all SH_*.
+      ➡️ NEXT: the SH_* stack parameter block
       ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
       harness and a sub page 0 byte pass), then S15.
 
@@ -10180,7 +10207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35713 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35740 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10346,7 +10373,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15208 (T-6FE392)8 (T-529ABE)` from `TODO.md:28002 (T-529ABE)`: a
+      `TODO.md:15235 (T-6FE392)8 (T-529ABE)` from `TODO.md:28029 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16055,7 +16082,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

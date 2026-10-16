@@ -483,8 +483,8 @@ gp_clear:
 
 ; ===========================================================================
 ; gfx_point — GFX_OP=2: read one pixel's colour into GFX_RES (POINT). The resident
-; stub has range-checked (off-screen -> -1 without calling us) and marshalled the
-; target into GFX_PTX/GFX_PTY. Reads the pattern bit and the group colour byte and
+; stub has range-checked (off-screen -> -1 without calling us) and passes the
+; target in E = x, D = y (D-WSZERO S14g-d; it used two RAM cells). Reads the pattern bit and the group colour byte and
 ; returns the fg nibble if the bit is set, else the bg nibble. Read-only: writes
 ; no work-area cell (POINT does not move the last-referenced point).
 ; ⚠️ D-GIRDOM: this arm used to read GXPOS/GYPOS, like GFX_OP=1 still does. It
@@ -494,11 +494,7 @@ gp_clear:
 ; w.pt.step). GFX_OP=1 keeps GXPOS/GYPOS because PSET/PRESET move the work area
 ; anyway -- the cells are the marshalling AND the contract there.
 ; ===========================================================================
-gfx_point:
-                ld      a,(GFX_PTX)
-                ld      e,a
-                ld      a,(GFX_PTY)
-                ld      d,a
+gfx_point:                                  ; E = x, D = y (gfx_is_mc keeps them)
                 ; D-SCREEN3. ⚠️ POINT HAS NO MODE GATE -- the plotting ops are gated
                 ; by gfx_point_gate, POINT is not -- so before this branch existed a
                 ; SCREEN-3 POINT read the G2 address model against MC VRAM and
@@ -507,18 +503,10 @@ gfx_point:
                 ; answer is fixed by the same branch that implements the feature.
                 call    gfx_is_mc
                 jr      nz,gpt_g2
-                ld      a,(GFX_PTX)
-                ld      e,a
-                ld      a,(GFX_PTY)
-                ld      d,a
                 call    gfx_point_mc
                 ld      (GFX_RES),a
                 ret
 gpt_g2:
-                ld      a,(GFX_PTX)
-                ld      e,a
-                ld      a,(GFX_PTY)
-                ld      d,a
                 call    gfx_calc_addr       ; HL = pattern addr, C = mask
                 call    gfx_rd_raw          ; A = pattern byte (HL/BC/DE preserved -> C=mask)
                 ld      d,a                 ; D = pattern byte

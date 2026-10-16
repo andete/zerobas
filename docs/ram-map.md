@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 88 declared addresses in this project's own workspace `$E000..$F37F` (85 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
+* **basic** — 86 declared addresses in this project's own workspace `$E000..$F37F` (83 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -191,8 +191,6 @@ second one is the question a per-component map cannot answer.
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
-| `$EFBF` | 1 B | `basic` | `GFX_PTX` | main->tenant: POINT target X, 0..255 (1) |  |
-| `$EFC0` | 1 B | `basic` | `GFX_PTY` | main->tenant: POINT target Y, 0..191 (1) |  |
 | `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
 | `$EFCB` | 1 B | `basic` | `SH_LEN` | ALLOC/TEMP_ALLOC/BUILD_CONCAT arg: |  |
 | `$EFCC` | 2 B | `basic` | `SH_SRC` | SNAPSHOT arg: source descriptor |  |
@@ -680,7 +678,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
-| `$FCAC` | 1 B | `basic` | `DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
+| `$FCAC` | 1 B | `basic` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$FCAC` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$FCAD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$FCAE` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $FCAE tenant->main: 0 ok / nonzero ERR code |  |

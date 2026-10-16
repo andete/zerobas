@@ -40,9 +40,10 @@ session and the loop resumes exactly where it stopped.
   K-WS75/79 HIT. **S14g-b** (2026-10-16): WSRC_TYP -> a register (the widen
   type in B / F), main low region +21 B, K-WS80/81. **S14g-c** (2026-10-16):
   INPUT$'s count on the stack (fixes `INPUT$(3,#VAL(INPUT$(1)))`, ERR 5 before),
-  PRDEST -> PTRFIL low, PRDEV -> BUF $F5FD, segment C net 0, K-WS82..84g. NEXT, per
-  scratchpad/s14g_plan.md: S14g-d (POINT's
-  GFX_PTX / PTY), then the SH_* stack parameter block (scratchpad/shblk_plan.md,
+  PRDEST -> PTRFIL low, PRDEV -> BUF $F5FD, segment C net 0, K-WS82..84g.
+  **S14g-d** (2026-10-16): POINT's x / y in E / D, the LE op in C (+ a 10-B
+  refill in front of $6CF3: iv_seq, err_notopen_raise), K-WS85/86. The window
+  now holds exactly the 13 SH_* names. NEXT: the SH_* stack parameter block (scratchpad/shblk_plan.md,
   S16.0..S16.3), then **S15 raises the ceiling ONCE, last**.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs

@@ -81,21 +81,22 @@
 ; difference is which sink pchar feeds, and the only new code is the two
 ; instructions that say so.
 ;
-; The verb is carried in LE_OP, which the tenant does not write, so the head
-; reads it BACK after the call rather than spending a RAM flag on it -- see
-; basic/sysvars.inc at LE_OP_LLSTRANGE.
+; The verb rides the Z80 stack across the call (D-WSZERO S14g-d; it was read
+; back from the LE_OP RAM cell), so the head knows its sink without a RAM flag
+; -- see basic/sysvars.inc at LE_OP_LLSTRANGE.
 ex_llist:
                 ld      a,LE_OP_LLSTRANGE
                 jr      exl_entry
 ex_list:
                 ld      a,LE_OP_LSTRANGE
 exl_entry:
-                ld      (LE_OP),a
+                push    af                  ; [the verb], for the sink below
                 ld      (LST_PTR),hl        ; the statement cursor, on the token
-                call    le_call             ; A = LE_STATUS, Z = ok. The ERR CODE
+                call    le_call_op          ; A = LE_STATUS, Z = ok. The ERR CODE
                                             ; ITSELF; only ever 2
                                             ; (R-LS6). LIST has NO range error --
                 jp      nz,raise_error      ; a high end naming no stored line, a
+                                            ; (raise_error resets SP: [verb] goes)
                                             ; reversed range and a range past the
                                             ; program are all ERR 0 and list
                                             ; nothing, exactly where DELETE raises 5.
@@ -104,7 +105,7 @@ exl_entry:
                 ; a program with a live `ON ERROR` would jump into the handler
                 ; with PRDEST still 1 -- and the handler's own PRINT would go to
                 ; the printer. Every exit above this point leaves PRDEST alone.
-                ld      a,(LE_OP)
+                pop     af                  ; A = the verb
                 sub     LE_OP_LSTRANGE      ; LIST -> 0 = the SCREEN sink;
                 ld      (PRDEST),a          ; LLIST -> 1 = the file-channel sink
                 jr      z,exl_walk
@@ -132,6 +133,11 @@ exl_walk:
                 ; is not a program edit, and lse-cont (whose CONT must still resume,
                 ; reading 5 like its control) is the row that gates the difference.
                 jp      end_line_end
+; REFILL (D-WSZERO S14g-d): +1 net here, with iv_seq's -1 in basic/graphics.asm --
+; see the note there. Entered only by its two `jp z` sites (files.asm, expr.asm).
+err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)
+                ld      a,59
+                jp      raise_error
 
 ; --- lst_setall / list_all: the WHOLE program ------------------------------
 ; 🔴 list_walk HAS THREE CALLERS AND A LIST RANGE MUST NOT LEAK INTO TWO OF THEM

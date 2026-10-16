@@ -474,9 +474,8 @@ oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR
 err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong way (52)
                 ld      a,52
                 jp      raise_error
-err_notopen_raise:                          ; EOF()/LOF() on a closed channel (ERR 59)
-                ld      a,59
-                jp      raise_error
+; (err_notopen_raise lives in basic/list.asm since D-WSZERO S14g-d: it refills
+; bytes freed in front of the $6CF3 pin)
 
 ; D-MSGMIGRATE: err_bad_filenum (ERR 52) and err_file_notopen (ERR 59) are gone
 ; from main -- em_bad_filenum / em_file_notopen in sub/errmsg.asm. err_bad_filenum

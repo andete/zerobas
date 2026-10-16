@@ -1322,7 +1322,7 @@ err_mem         equ     err_mem_arr
 ; 🎯 AND FOUR OF THE FIVE SET LE_OP IMMEDIATELY BEFORE IT, so `le_call_op` is a
 ; 3 B second ENTRY rather than a second body: those four drop their own
 ; `ld (LE_OP),a` for nothing. Together: **-49 B of page 1.**
-;   in:  le_call_op -- A = the LE_OP code.  le_call -- LE_OP already set.
+;   in:  A = the LE_OP_* code (passed on to the tenant in C).
 ;   out: A = LE_STATUS, Z set when it is 0 (ok). Every caller branches on exactly
 ;        that, and `ret` preserves both. Does NOT return when the sub-ROM is
 ;        absent: subrom_absent_error owns that exit.
@@ -1332,8 +1332,9 @@ err_mem         equ     err_mem_arr
 ; `call relink` sites). 7 B, declined until that contract is measured rather
 ; than assumed. [[a-shared-tail-is-not-a-decision]]
 le_call_op:
-                ld      (LE_OP),a
-le_call:
+                ld      c,a                 ; D-WSZERO S14g-d: the op rides in C (it
+                                            ; was a RAM cell, LE_OP); sc_inl1,
+                                            ; subrom_call and CALSLT pass BC
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
                 ld      a,(LE_STATUS)
@@ -1341,8 +1342,7 @@ le_call:
                 ret
 
 relink:
-                ld      a,1                 ; LE_OP_RELINK
-                ld      (LE_OP),a
+                ld      c,LE_OP_RELINK      ; in C, as le_call_op passes it
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
                 ret
@@ -3044,8 +3044,8 @@ iv_m_no:
                 pop     hl                  ; restore -- the caller still needs it
                 or      a                   ; CF = 0
                 ret
-iv_seq:
-                db      INT_TOKEN,"ER",PEEK_PREFIX,VAL_TOKEN
+; (iv_seq, the spelling above's `ld de,iv_seq` reads, lives in basic/graphics.asm
+; since D-WSZERO S14g-d: it refills bytes freed in front of the $6CF3 pin)
 
 ; --- ex_interval: INTERVAL ON | OFF | STOP -----------------------------------
 ; Entry: HL past the compound. Pure state, exactly like `STOP ON/OFF/STOP`.

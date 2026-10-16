@@ -101,7 +101,8 @@ lineedit_tenant:
                 di
                 ret
 le_dispatch:
-                ld      a,(LE_OP)
+                ld      a,c                     ; the LE_OP_* code, passed in C
+                                                ; (D-WSZERO S14g-d: was a RAM cell)
                 or      a
                 jr      z,le_store              ; LE_OP_STORE = 0
                 dec     a

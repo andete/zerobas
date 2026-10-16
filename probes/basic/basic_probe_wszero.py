@@ -257,6 +257,13 @@ TAPES["s14gc"] = lambda: tape(*RANGES["s14gc"]) + build_cas_ascii("D", "HELLO\r\
 TAPES["ovinpd"] = lambda: tape(*RANGES["ovinpd"]) + build_cas_ascii("D", "HELLO\r\n")
 RUN_GAP["s14gc"] = 60.0
 RUN_GAP["ovinpd"] = 60.0
+# D-WSZERO S14g-d (2026-10-16): POINT's target leaves RAM -- x / y reach the
+# graphics tenant in E / D, as the reference's POINT passes coordinates in
+# registers. `s14gd` sums the 2 vacated bytes after a POINT (VG-8020 330);
+# `ovpt` reads two pixels with x and y swapped and different colours, so a swap
+# on the way in shows.
+for _r in ("s14gd", "ovpt"):
+    RANGES[_r] = RANGES["all"]
 _S14GA_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
               ':PRINT"[S";S;A$;"]":END',
               "950 DATA 60984,60984,61117,61117,61286,61286,61295,61295,61331,61331,61334,61334,61371,61372"]
@@ -635,6 +642,19 @@ PROGRAM_OVPRUSG = [
     '20 OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,USING"[Q###.# &]";5.25;"AB":CLOSE#1:END',
     "RUN",
 ]
+PROGRAM_S14GD = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2:PSET(3,4),5:A=POINT(3,4):SCREEN 0:S=PEEK(61375)+PEEK(61376):PRINT"[T";A;"S";S;"]":END',
+    "RUN",
+]
+PROGRAM_OVPT = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 SCREEN 2:PSET(3,4),5:PSET(4,3),9:A=POINT(3,4):B=POINT(4,3):C=POINT(VAL("3"),4)*300*200',
+    '30 SCREEN 0:PRINT"[T";A;B;C"]":END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -680,7 +700,7 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA,
             "s14gb": PROGRAM_S14GB, "ovwsrc": PROGRAM_OVWSRC,
             "s14gc": PROGRAM_S14GC, "ovinpd": PROGRAM_OVINPD, "ovprdev": PROGRAM_OVPRDEV,
-            "ovprusg": PROGRAM_OVPRUSG}
+            "ovprusg": PROGRAM_OVPRUSG, "s14gd": PROGRAM_S14GD, "ovpt": PROGRAM_OVPT}
 
 
 def tape(lo, hi, fill=0xA5):

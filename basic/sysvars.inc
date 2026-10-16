@@ -686,8 +686,8 @@ STAR_TOKEN      equ     $F3     ; '*'
 ; the work area, so the marshalling and the contract are the same write. GFX_OP=2
 ; is POINT, a read-only FUNCTION that both references leave the work area untouched
 ; by, so the "anyway" was doing work it had not earned and the free ride shipped a
-; BASIC-VISIBLE side effect (rows w.pt.on / w.pt.step). POINT now marshals through
-; GFX_PTX/GFX_PTY below. ⚠️ Before reusing a pinned cell as a parameter, ask whether
+; BASIC-VISIBLE side effect (rows w.pt.on / w.pt.step). POINT then marshalled
+; through GFX_PTX/GFX_PTY, and since D-WSZERO S14g-d through registers E / D. ⚠️ Before reusing a pinned cell as a parameter, ask whether
 ; THIS op writes it as part of its contract -- not whether the block does.
 GFX_OP          equ     $F6F2   ; main->tenant op: 0=selftest(G1) 1=plot(PSET/PRESET) 2=point (1)
 GFX_C           equ     $F6F3   ; main->tenant: resolved plot colour 0..15 (PSET/PRESET) (1)
@@ -826,8 +826,8 @@ GFX_B           equ     $FCB2   ; border colour B, RANGE-CHECKED against the mod
 ; PRESET/LINE/PAINT, which are statements that MOVE the work area, and false for
 ; POINT, which is a read-only function. One byte each: the resident only reaches
 ; here after gfx_in_range passed, so both coordinates are 0..255.
-GFX_PTX         equ     $EFBF   ; main->tenant: POINT target X, 0..255 (1)
-GFX_PTY         equ     $EFC0   ; main->tenant: POINT target Y, 0..191 (1)
+; (GFX_PTX / GFX_PTY, POINT's target, went to registers E / D in D-WSZERO
+; S14g-d, as the reference's POINT passes them -- was $EFBF / $EFC0)
 GFX_CPHASE      equ     $F3F5   ; CIRCLE-parse co-routine phase (sub/circleparse.asm):
                                 ; which arg the tenant last requested, so it resumes at
                                 ; the right point after each resident eval-bounce
@@ -3459,7 +3459,8 @@ DISKOP_SEL_COPY                 equ 7   ; dirverb: COPY's body -- COPY_SRC -> DI
 ; ANOTHER separate value namespace (fatprim/dirverb/audio/lineedit are never
 ; in flight at once -- one subrom_call reaches exactly one tenant), aliased
 ; under line-editor-local names for readability at the call sites.
-LE_OP           equ     DISKOP_OP       ; main -> tenant: LE_OP_* selector
+; (LE_OP, the LE_OP_* selector, rides in register C since D-WSZERO S14g-d --
+; le_call_op / relink load it, the tenant's le_dispatch reads it; was DISKOP_OP)
 ; LE_STATUS: tenant -> main. D-DELETE (docs/spec-basic-delete.md §4) WIDENED
 ; this from a boolean to an ERR CODE, and the two ops read it differently only
 ; because 1 was never a BASIC error number:
@@ -3491,9 +3492,9 @@ LE_OP_LSTRANGE          equ 3   ; lineedit: LIST <lo>-<hi> -- PARSE ONLY (D-LSTR
 ; 🎯 LLIST SHARES LIST'S PARSE BYTE-FOR-BYTE. All twenty range shapes D-LSTRNG
 ; measured answer identically under LLIST (R-LL2/R-LL3, characterization §4), so
 ; op 4 routes to the SAME tenant body; it exists only so the RESIDENT head can
-; read LE_OP BACK and choose the sink. That read-back is why this is an op and
-; not a new RAM flag -- LE_OP is already marshalled and already survives the
-; call, so the sink costs ZERO cells.
+; know which verb it ran and choose the sink. That is why this is an op and not
+; a new RAM flag: the head pushes the verb across the call (D-WSZERO S14g-d; it
+; used to read the LE_OP cell back), so the sink costs ZERO cells.
 LE_OP_LLSTRANGE         equ 4   ; lineedit: LLIST <lo>-<hi> -- le_lstrange verbatim
 ; RENUM. Op 5 parses, validates and runs the reference pass; it returns
 ; LE_STATUS = 1 with RN_TGT/RN_LINE set for EACH dangling reference (R-RN9 --
