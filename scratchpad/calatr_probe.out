@@ -1,0 +1,20 @@
+atr    VG [R 1B14 14 1122 54C]               ZB [R 14 14 1122 540]                 DIFF
+pat8   VG [R 3828 28 1122 868]               ZB [R 28 28 1122 840]                 DIFF
+pat16  VG [R 38A0 A0 1122 2028]              ZB [R A0 A0 1122 2040]                DIFF
+siz    VG [R 5566 3344 1122 206D]            ZB [R 5566 3344 1122 2069]            DIFF
+rdvrm  VG [R 3F00 3344 1122 3C]              ZB [R 3F00 3344 1122 2C]              DIFF
+wrtvrm VG [R 3F00 3344 1122 5A44]            ZB [R 3F00 3344 1122 5A42]            DIFF
+filvrm VG [R 3F00 3344 0 5A44]               ZB [R 3F00 3344 0 5A42]               DIFF
+ldirvm VG [R 3F00 D204 0 44]                 ZB [R 3F00 D204 0 43]                 DIFF
+ldirmv VG [R 3F00 D204 0 44]                 ZB [R 3F00 D204 0 42]                 DIFF
+snsmat VG [R 5566 3344 1108 FF08]            ZB [R 5566 3344 1122 FF08]            DIFF
+gttrig VG [R 5566 3344 1122 42]              ZB [R 5566 3344 1122 50]              DIFF
+gttrig1 VG [R 5566 3344 1042 42]              ZB [R 5566 3344 1022 44]              DIFF
+gtstck VG [R 1252 F 1122 4]                  ZB [R 5566 0 1122 54]                 DIFF
+wrtpsg VG [R 5566 0 1122 844]                ZB [R 5566 0 1122 842]                DIFF
+dcompr VG [R 5566 3344 1122 2222]            ZB [R 5566 3344 1122 2222]            SAME
+disscr VG [R 5566 3344 1 B0A4]               ZB [R 5566 3344 1 B0A4]               SAME
+enascr VG [R 5566 3344 1 F0A4]               ZB [R 5566 3344 1 F0A4]               SAME
+clrspr VG <nothing matched>                  ZB <nothing matched>                  SAME
+calatr2 VG [R 1B14 14 1122 54C]               ZB [R 14 14 1122 540]                 DIFF
+refcache: 23 hit, 15 miss, 15 stored

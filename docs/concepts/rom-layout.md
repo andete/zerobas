@@ -102,6 +102,16 @@ C-BIOS's `$0010` returns HL past the character instead of on it; each calls
 its published hook (`H.CHRG`, `H.OUTD`) first. A proposal to point `RST $08`
 (`SYNCHR`) at a byte-saving dispatcher was rejected under the same rule.
 
+A contract is also what an entry leaves in the registers. Machine code keeps
+values in registers across BIOS calls, and five C-BIOS routines returned
+something other than what the VG-8020 returns: `CALATR` (`&H0087`) keeps `A`
+there, where C-BIOS returned 4 × `A`; `CALPAT` (`&H0084`) returns the pattern's
+offset in `DE`; `LDIRMV` (`&H0059`) returns `DE` just past the copied bytes and
+`BC` = 0; `LDIRVM` (`&H005C`) returns `BC` = 0; and `DCOMPR` (`RST &H20`)
+returns `A` = `H` − `D` (or `L` − `E`). zerobas's C-BIOS patches now give the
+VG-8020's values ([cbios-repack/](../../cbios-repack/README.md), patches 9 and
+10). Flags are not matched: neither machine documents them.
+
 ### The hooks
 
 The hook area is a run of 5-byte cells in RAM from `&HFD9A`; C-BIOS fills it
@@ -204,10 +214,30 @@ never for the code it points at. The allowed sources are listed in the
 - **SHIFT or CTRL held at power-on** is not built. On the CF-3300 they are
   expected to skip the disk ROM's start-up, or its second drive, for more RAM;
   filed as D-BOOTKEYS (TIER 4), to be measured there first.
+- **In `SCREEN 0`, `ATRBAS` and `PATBAS` read 0** (`&HF928`, `&HF926`), where
+  the VG-8020 keeps `&H1B00` and `&H3800`, so `CALATR` and `CALPAT` called in
+  text mode answer differently
+  ([`calatr_probe.out`](../../scratchpad/calatr_probe.out), rows `atr`, `pat8`).
+  Filed as D-SPRBASE0; Demonia sets its own screen mode first and is not
+  affected.
+- **Scratch registers after some BIOS calls differ.** `SNSMAT` returns `C` =
+  the row on the VG-8020; `GTSTCK`, `GTTRIG` and `CLRSPR` leave other values in
+  registers they do not document. No program is known to read them; filed as
+  D-BIOSSCRATCH.
 - **Open:** a machine layout with more ROM is ruling R4 of the [space plan](../plan-main-rom-space-2026-10.md).
 
 ## What we found, and how
 
+- **Demonia played a different game, then reset** (fixed 2026-10-16,
+  D-BIOSREGS). Once its tape entries worked (D-BASICINT2,
+  [cassette.md](cassette.md)) it loaded, byte for byte as on the VG-8020; then
+  its attract demo walked through rooms the VG-8020's never shows, and after
+  about three minutes the machine reset. Logging all of its ~8000 BIOS calls on
+  both machines, with the registers going in and coming out, showed where the
+  two parted: `CALATR` changed `A`, which the game uses as its next sprite
+  number; `LDIRMV` left `DE` where the next chunk could not follow; `DCOMPR`
+  left a different `A`. With the five contracts matched it plays the
+  VG-8020's demo ([`calatr_probe.out`](../../scratchpad/calatr_probe.out)).
 - **A BASIC-program cartridge did not run** (fixed 2026-10-12, D-BASICROM,
   reported by Vampier). A cartridge whose header's TEXT field points at a BASIC
   program in its page 2 is run at boot by the reference: the cartridge stays
@@ -288,5 +318,7 @@ that needs BASIC's evaluator calls back into slot 0 through `calbak`
   then a line through the sub-ROM; the VG-8020 as the control.
 - `make patch-freshness-check` — the shipped patch matches the sources.
 - `make hook-equate-check` — BASIC and the disk ROM agree on hook addresses.
+- `make biosregs-acceptance` — what `CALATR`, `CALPAT`, `LDIRMV`, `LDIRVM` and
+  `DCOMPR` leave in `A`, `BC`, `DE` and `HL`, against the VG-8020.
 - `make subrom-acceptance`, `make subrom-inttest` — both sub-ROM pages; interrupts under a page-0 tenant.
 - `make nodisk-acceptance` — the diskless machine, hooks unclaimed.

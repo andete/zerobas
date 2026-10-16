@@ -154,7 +154,7 @@ zerobas by `make castail-acceptance`
 
 ## Differences from the reference
 
-One measured difference is open:
+Measured differences that are open:
 
 - **`TAPION` called deep inside a file's data.** A machine-code loader that
   reads 8 bytes of a 206-byte block and then calls `TAPION` again gets the
@@ -167,6 +167,13 @@ One measured difference is open:
   threshold in `LOWLIM` (21 on the same tape) and never writes `WINWID`. A
   loader that reads them to time bits itself would see different values; none
   of the reported tapes was found doing that. No row pins it.
+- **Reading on past the end of a block through `&H72D4`.** The VG-8020 goes
+  on into the next block (a `&HFF`, then that block's bytes); zerobas raises
+  `Device I/O error`. With no tape in the deck, the VG-8020's `&H72E9` waits
+  and zerobas's raises the error at once
+  ([`basicint_tape_probe.out`](../../scratchpad/basicint_tape_probe.out), rows
+  `stop` and `notape`). Demonia reads each block after its own `&H72E9`, so it
+  is not affected. Filed as D-TAPINBLK.
 
 Not compared, or not measured:
 
@@ -192,6 +199,17 @@ Not compared, or not measured:
 
 ## What we found, and how
 
+- **Demonia read its tape through two internal entries of the BASIC ROM**
+  (supported 2026-10-16, D-BASICINT2). It stopped with `Syntax error in 50`:
+  its loader calls `&H72E9` once per block and `&H72D4` once per byte, and on
+  zerobas both addresses were in the middle of `FIELD`'s code. Measured with
+  our own code and tape on the VG-8020: `&H72E9` starts a read as `TAPION`
+  does, `&H72D4` returns the next byte in `A`, both keep `BC`, `DE` and `HL`,
+  and Ctrl-STOP or a failed read raises 19
+  ([`basicint_tape_probe.out`](../../scratchpad/basicint_tape_probe.out)).
+  Demonia now reads the same seven blocks through them as on the VG-8020,
+  then its last file through `BLOAD`; what it did next was a BIOS matter
+  ([rom-layout.md](rom-layout.md), D-BIOSREGS).
 - **zerobas kept its own tape buffers** (changed 2026-10-13, D-CASFCB). A
   write watch on the VG-8020 showed every tape transfer going through the
   channel's own buffer — channel 0's for `SAVE` and `LOAD`, the opened
@@ -302,6 +320,14 @@ channel's for `OPEN "CAS:"` (`cas_bufp_set`, [basic/cload.asm](../../basic/cload
 Reading refills that one buffer when it runs dry; the motor stops after
 every block, so the tape waits while a block's lines are crunched.
 
+Two internal addresses of the reference's BASIC ROM are tape entries that
+machine code calls, and zerobas has them at the same addresses: `&H72E9`
+(`basicint_tapst`) calls `TAPION` and `&H72D4` (`basicint_taprd`) calls
+`TAPIN`, each keeping `BC` / `DE` / `HL` and ending in `dpl_dio` on a failure.
+They sit inside `FIELD`'s code in [basic/field.asm](../../basic/field.asm),
+which is laid out around them, and `tools/pin_plan.py` checks both addresses
+on every build.
+
 ## Related pages
 
 [`CLOAD`](../keywords/CLOAD.md) · [`CSAVE`](../keywords/CSAVE.md) · [`LOAD`](../keywords/LOAD.md) · [`SAVE`](../keywords/SAVE.md) · [`MERGE`](../keywords/MERGE.md) · [`RUN`](../keywords/RUN.md) · [`BLOAD`](../keywords/BLOAD.md) · [`BSAVE`](../keywords/BSAVE.md) · [`OPEN`](../keywords/OPEN.md) · [`EOF`](../keywords/EOF.md) · [`MOTOR`](../keywords/MOTOR.md) · [`SCREEN`](../keywords/SCREEN.md)
@@ -326,6 +352,9 @@ openMSX:
   leader, and held after it broke the write.
 - `make casrbrk-acceptance` — Ctrl-STOP during a read, in the leader and in
   the data, for every read verb.
+- `make basicint-acceptance` — among the BASIC ROM's internal entries,
+  `&H72E9` and `&H72D4` read our own tape (row `tap_read`) and raise 19 on
+  Ctrl-STOP (row `tap_brk`).
 - `make tapionlead-acceptance` — a machine-code loader (our own routine) that
   calls `TAPION` again before the previous file's data has ended.
 - `make cas-ascii-acceptance`, `make eofcas-acceptance`,

@@ -88,8 +88,8 @@ pdfcb_resume equ 06DF7H
 main_fat_mount equ 06453H   ; main's fat_mount
 main_fat_find equ 06457H   ; main's fat_find
 parse_disk_fcb equ 06516H
-field_prologue equ 072C2H
-field_item equ 072F8H
+field_prologue equ 0734FH
+field_item equ 072F6H
 lrset_tgt equ 073BDH
 lrset_rhs equ 073E8H
 lrset_finish equ 073FFH

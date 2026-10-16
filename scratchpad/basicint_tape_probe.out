@@ -1,0 +1,9 @@
+read   Philips_VG_8020                [B 0  EA EA EA EA EA EA EA EA | [B 8  EA EA 44 20 20 20 20 20
+read   C-BIOS_MSX1_EU_REPACK_NODISK   [B 0  EA EA EA EA EA EA EA EA | [B 8  EA EA 44 20 20 20 20 20
+notape Philips_VG_8020                <nothing matched>
+notape C-BIOS_MSX1_EU_REPACK_NODISK   [E 19  30 ]
+stop   Philips_VG_8020                [B 0  EA EA EA EA EA EA EA EA | [B 8  EA EA 44 20 20 20 20 20 | [B 16  FF 41 42 43 44 45 46 47 | [B 24  48 D A 1A 1A 1A 1A 1A | [B 32  1A 1A 1A 1A 1A 1A 1A 1A
+stop   C-BIOS_MSX1_EU_REPACK_NODISK   [E 19  30 ]
+break  Philips_VG_8020                [E 19  30 ]
+break  C-BIOS_MSX1_EU_REPACK_NODISK   [E 19  30 ]
+refcache: 2 hit, 6 miss, 6 stored

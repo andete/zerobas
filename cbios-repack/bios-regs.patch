@@ -1,0 +1,99 @@
+diff --git a/src/main.asm b/src/main.asm
+index f6f0c93..bdde4b4 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -1567,11 +1567,14 @@ outdo:
+ ; Output   : flags influenced like CP instruction
+ ; Registers: A
+ dcompr:
++                ; zerobas repack (D-BIOSREGS): A = H - D, or L - E when H = D, as on
++                ; the VG-8020 (Demonia: H=$17 D=$18 gives A=$FF; C-BIOS left H). `sub`
++                ; sets the flags `cp` did.
+                 ld      a,h
+-                cp      d
++                sub     d
+                 ret     nz
+                 ld      a,l
+-                cp      e
++                sub     e
+                 ret
+ 
+ ;--------------------------------
+diff --git a/src/video.asm b/src/video.asm
+index 0d7d403..bb11106 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -245,7 +245,10 @@ ldirmv_new:
+                 call    nsetrd
+ ldirmv_cont:
+         ENDIF
+-                push    hl
++                ; zerobas repack (D-LDIRMV): on return HL = the VRAM start, DE = the
++                ; RAM end and BC = 0, as on the VG-8020 (scratchpad/calatr_probe.py,
++                ; row ldirmv); C-BIOS left DE at the VRAM start and BC = $0098.
++                ; Byte-neutral: the `push hl` / `pop hl` pair became the tail below.
+                 ex      de,hl
+                 dec     bc
+                 inc     c
+@@ -256,14 +259,17 @@ ldirmv_cont:
+ ldirmv_lp:
+         IF VDP = TMS99X8
+                 ; wait (at least) 29 t-states between VRAM accesses
++                ; (zerobas repack: `jr`, 2 T slower and 1 byte shorter -- the
++                ; byte CALATR below needs; still past the 29 T)
+                 ini
+-                jp nz, ldirmv_lp
++                jr      nz,ldirmv_lp
+         ELSE
+                 inir
+         ENDIF
+                 dec     a
+                 jr      nz,ldirmv_lp
+-                pop     hl
++                ld      c,b             ; B = 0 here: BC = 0
++                ex      de,hl           ; HL = the VRAM start, DE = the RAM end
+                 ret
+ 
+ ;--------------------------------
+@@ -298,8 +304,9 @@ ldirvm_cont:
+ ldirvm_lp:
+         IF VDP = TMS99X8
+                 ; wait (at least) 29 t-states between VRAM accesses
++                ; (zerobas repack: `jr`, as in LDIRMV -- pays for the `ld c,b`)
+                 outi
+-                jp nz, ldirvm_lp
++                jr      nz,ldirvm_lp
+         ELSE
+                 otir
+         ENDIF
+@@ -307,6 +314,9 @@ ldirvm_lp:
+                 jr      nz,ldirvm_lp
+                 ; Note: Without this, Quinpl shows glitches.
+                 ; TODO: Investigate why.
++                ; zerobas repack (D-BIOSREGS): BC = 0 on return, as on the VG-8020
++                ; (scratchpad/calatr_probe.py, row ldirvm; C-BIOS left $0098).
++                ld      c,b             ; B = 0 here
+                 ex      de,hl
+                 ret
+ 
+@@ -1073,11 +1083,16 @@ calpat_8:
+ ; Output:    HL = address
+ ; Changes:   AF, DE, HL
+ calatr:
+-                add     a,a
+-                add     a,a
++                ; zerobas repack (D-BIOSREGS): A is KEPT, as on the VG-8020
++                ; (scratchpad/calatr_probe.py, row atr: A=5 in, 5 out; C-BIOS
++                ; returned 4*A). DE = 4*A and HL = ATRBAS + 4*A, as before. Demonia
++                ; reuses A as its next sprite number after the call.
++                ld      l,a
++                ld      h,0
++                add     hl,hl
++                add     hl,hl
++                ex      de,hl
+                 ld      hl,(ATRBAS)
+-                ld      d,0
+-                ld      e,a
+                 add     hl,de
+                 ret
+ 

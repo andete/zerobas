@@ -297,48 +297,79 @@ fld_gate_resume:                            ; C4 shared tail (2026-10-03): LSET/
                 ld      hl,(FN_RESUME)      ; where the handler left it
                 jp      exec_stmt
 
-; --- field_prologue: call-back 1 -- the channel, its mode, and the reset -----
-; in:  FN_RESUME = the cursor, just past the FIELD token.
-; out: FLD_CHAN = the channel, FLD_CUROFF = 0, this channel's old fields dropped,
-;      FN_RESUME = the cursor past the comma that ends the channel clause.
-; May RAISE (ERR 5 / 52 / 59 / 61), which is safe from a call-back: it runs in
-; MAIN with main page 1 mapped, so the unwind discards the disk-ROM frame and
-; the handler never resumes.
-field_prologue:
-                ld      hl,(FN_RESUME)
-                call    skip_spaces
-                cp      '#'
-                jr      nz,exf_havech
-                inc     hl
-exf_havech:
-                call    eval                ; DE = channel; HL advanced
-                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
-                                            ; > MAXF -> ERR 52. All three used to be
-                                            ; stmt_error (ERR 2, `Syntax error`)
-                ld      a,e
-                ld      (FLD_CHAN),a
-                ; the channel must be open, and open RANDOM. D-NOTOPEN2: this was a
-                ; fourth hand-inlined copy of fch_mode_class -- which ALSO returns
-                ; CF = disk-vs-device, exactly the 61-vs-5 split measured below.
-                push    hl                  ; guard cursor across the classify
-                call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
-                pop     hl
-                jr      nc,exf_dev          ; device channel (LPT:/CRT:) -> ERR 5
-                cp      4
-                jr      nz,exf_bfm          ; a disk channel must be RANDOM -> ERR 61
-                ; re-FIELD replaces: drop prior fields on this channel, offset = 0.
-                push    hl
-                ld      a,(FLD_CHAN)
-                call    fld_clear_chan
-                pop     hl
-                xor     a
-                ld      (FLD_CUROFF),a
-                ld      (FLD_CUROFF+1),a
-                ; a comma separates the channel from the field list: FIELD #f , w AS v$
-                call    req_comma           ; D-NGRAM17
-                ld      (FN_RESUME),hl
-                ret
+    IF BASICINT_PINS
+; 📌 LAYOUT FOR D-BASICINT2'S PINS $72D4 / $72E9 (2026-10-16). Demonia's machine
+; code calls the reference's $72E9 once and then $72D4 per byte to read its tape
+; (Demonia stopped with `Syntax error in 50`). Both addresses fell inside FIELD.
+; tools/pin_plan.py's exact layout from here to the $73AC pin, no pad: fld_init_g
+; + exf_fits (18 B), the $72D4 body (13 B), se_pending (8 B), the $72E9 body
+; (13 B), then FIELD's call-backs in an order every `jr` reaches. fld_add went
+; past the $73E5 pin to make room, and ex_on_key back to basic/program.asm. In
+; the BASICINT_PINS=0 build the same order runs without the two bodies.
+    ENDIF
+; fld_init_g: fld_init on a machine with a disk ROM, nothing without one.
+fld_init_g:
+                call    diskslot_test
+                ret     z
+                jp      fld_init
 
+exf_fits:
+                pop     hl
+                call    skip_comma
+                jr      z,exf_comma
+                ld      (FN_RESUME),hl      ; end of the field list
+                or      a                   ; CF = 0: the handler's loop stops
+                ret
+    IF BASICINT_PINS
+; 📌 D-BASICINT2 PIN $72D4 (2026-10-16): the reference's tape-byte read, CALLED by
+; Demonia (HL is its own pointer). Black-box on the VG-8020
+; (scratchpad/basicint_tape_probe.py): A = the next byte off the tape, across
+; block boundaries; HL and B come back intact (the probe's stub loops on both);
+; a read failure raises ERR 19 (Device I/O error). BC/DE/HL are kept here because
+; this tree's TAPIN clobbers C (basic/cload.asm ctp_line).
+                ds      $72D4 - $, $00
+basicint_taprd:
+                push    bc
+                push    de
+                push    hl
+                call    TAPIN
+                pop     hl
+                pop     de
+                pop     bc
+                jp      c,dpl_dio           ; motor off, ERR 19 (basic/cload.asm)
+                ret
+    ENDIF
+; --- D-WSZERO S9 (2026-10-15): the disk-only cells, made disk-only in fact -----
+; FLD_TAB and DISKOP_ERR are the disk machine's: on a diskless one no FIELD can
+; exist and no DSKIO can fail. But a string-variable read walked the table
+; (fld_lookup, above) and NEW / RUN / CLEAR re-wrote it, and a tape INPUT # past
+; the end read the error cell -- so when the diskless ceiling rises over them
+; (S15) a program's own bytes there would be read as fields and error codes. Each
+; reader now asks diskslot_test first. (They lived past the $73E5 pin until
+; D-BASICINT2 moved them in front of $72E9 -- see the layout note below.)
+; se_pending: A = the DSKIO failure code pending, 0 without a disk ROM. Z/NZ unset.
+se_pending:
+                call    diskslot_test
+                ret     z                   ; A = 0: nothing pending
+                ld      a,(DISKOP_ERR)
+                ret
+    IF BASICINT_PINS
+; 📌 D-BASICINT2 PIN $72E9 (2026-10-16): the reference's tape start -- motor on,
+; lock onto the next block's leader, as TAPION. Demonia calls it with HL=$A000 and
+; DE=$A600 and then steps HL itself, so they are kept. Ctrl-STOP while it waits
+; raises ERR 19 on the VG-8020 (scratchpad/basicint_tape_probe.out, row break).
+                ds      $72E9 - $, $00
+basicint_tapst:
+                push    bc
+                push    de
+                push    hl
+                call    TAPION
+                pop     hl
+                pop     de
+                pop     bc
+                jp      c,dpl_dio           ; motor off, ERR 19
+                ret
+    ENDIF
 ; --- field_item: call-back 2 -- ONE `w AS v$`, parsed, added and bounds-checked
 ; in:  FN_RESUME = the cursor at a field item.
 ; out: the entry is in FLD_TAB and FLD_CUROFF is bumped; FN_RESUME = the cursor
@@ -459,13 +490,12 @@ field_item:
                                             ; (row r.ok: LEN=64, width 64 -> ` 64 `)
                 ld      a,50                ; ERR 50: FIELD overflow
                 jr      exf_raise
-exf_fits:
-                pop     hl
-                call    skip_comma
-                jr      z,exf_comma
-                ld      (FN_RESUME),hl      ; end of the field list
-                or      a                   ; CF = 0: the handler's loop stops
-                ret
+exf_bfm:
+                ld      a,61                ; bad file mode (disk, not RANDOM)
+exf_raise:
+                jp      raise_error         ; no `pop hl` -- raise_error resets SP on
+                                            ; BOTH arms (trap and abort)
+
 exf_comma:
                 inc     hl                  ; past ',' -> the next field item
                 ld      (FN_RESUME),hl
@@ -476,6 +506,48 @@ exf_comma:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 exf_syn         equ     elas_err
+; --- field_prologue: call-back 1 -- the channel, its mode, and the reset -----
+; in:  FN_RESUME = the cursor, just past the FIELD token.
+; out: FLD_CHAN = the channel, FLD_CUROFF = 0, this channel's old fields dropped,
+;      FN_RESUME = the cursor past the comma that ends the channel clause.
+; May RAISE (ERR 5 / 52 / 59 / 61), which is safe from a call-back: it runs in
+; MAIN with main page 1 mapped, so the unwind discards the disk-ROM frame and
+; the handler never resumes.
+field_prologue:
+                ld      hl,(FN_RESUME)
+                call    skip_spaces
+                cp      '#'
+                jr      nz,exf_havech
+                inc     hl
+exf_havech:
+                call    eval                ; DE = channel; HL advanced
+                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
+                                            ; > MAXF -> ERR 52. All three used to be
+                                            ; stmt_error (ERR 2, `Syntax error`)
+                ld      a,e
+                ld      (FLD_CHAN),a
+                ; the channel must be open, and open RANDOM. D-NOTOPEN2: this was a
+                ; fourth hand-inlined copy of fch_mode_class -- which ALSO returns
+                ; CF = disk-vs-device, exactly the 61-vs-5 split measured below.
+                push    hl                  ; guard cursor across the classify
+                call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
+                pop     hl
+                jr      nc,exf_dev          ; device channel (LPT:/CRT:) -> ERR 5
+                cp      4
+                jr      nz,exf_bfm          ; a disk channel must be RANDOM -> ERR 61
+                ; re-FIELD replaces: drop prior fields on this channel, offset = 0.
+                push    hl
+                ld      a,(FLD_CHAN)
+                call    fld_clear_chan
+                pop     hl
+                xor     a
+                ld      (FLD_CUROFF),a
+                ld      (FLD_CUROFF+1),a
+                ; a comma separates the channel from the field list: FIELD #f , w AS v$
+                call    req_comma           ; D-NGRAM17
+                ld      (FN_RESUME),hl
+                ret
+
 ; D-NOTOPEN2 §3.1: FIELD on an open channel that is not RANDOM. Until this slice
 ; ex_field tested only "open at all", so `OPEN "X" FOR INPUT AS #1 : FIELD #1,…`
 ; was accepted SILENTLY -- measured `0` (nothing raised) against the CF-3300's
@@ -484,53 +556,50 @@ exf_syn         equ     elas_err
 exf_dev:
                 ld      a,5                 ; illegal function call (LPT:/CRT:)
                 jr      exf_raise
-exf_bfm:
-                ld      a,61                ; bad file mode (disk, not RANDOM)
-exf_raise:
-                jp      raise_error         ; no `pop hl` -- raise_error resets SP on
-                                            ; BOTH arms (trap and abort)
-
-; fld_add — append a field entry: chan=(FLD_CHAN), key=BC, offset=(FLD_CUROFF),
-; width=E; then advance FLD_CUROFF by the width. Silently drops if the table is
-; full (documented). Clobbers A,DE,HL (BC,E preserved through the write).
-fld_add:
-                push    de                  ; preserve the width (E)
-                ld      hl,FLD_TAB
-fadd_lp:
-                ld      a,(hl)
-                or      a
-                jr      z,fadd_free
-                ld      de,FLD_ENTSZ
-                add     hl,de
-                ld      a,h
-                cp      high FLD_TABEND
-                jr      nz,fadd_lp
-                ld      a,l
-                cp      low FLD_TABEND
-                jr      nz,fadd_lp
-                pop     de                  ; table full -> drop this field
-                ret
-fadd_free:
-                pop     de                  ; E = width
-                ld      a,(FLD_CHAN)
-                ld      (hl),a              ; chan
-                inc     hl
-                ld      (hl),b              ; k0
-                inc     hl
-                ld      (hl),c              ; k1
-                inc     hl
-                ld      a,(FLD_CUROFF)
-                ld      (hl),a              ; off lo
-                inc     hl
-                ld      a,(FLD_CUROFF+1)
-                ld      (hl),a              ; off hi
-                inc     hl
-                ld      (hl),e              ; width
-                ; FLD_CUROFF += width
-                ld      hl,(FLD_CUROFF)
-                ld      d,0                 ; add the 8-bit width only
-                add     hl,de
-                ld      (FLD_CUROFF),hl
+; ===========================================================================
+; fld_lookup — READ hook for str_eval's variable path.
+; in:  BC = variable key.
+; out: CF set  -> BC is fielded; STRPTR -> the slice descriptor.
+;      CF clear -> not fielded (caller falls back to str_get_key). BC may be clobbered.
+; Clobbers A,BC,DE,HL.
+; ===========================================================================
+; --- repack: a resident stub over the SUBROM_IDX_FLDLOOK page-0 tenant ------
+; docs/decision-clearpool-funding.md §6.1 — the D-CLP funding carve. The body
+; (60 B of main page 1) moved whole to sub/fldlook.asm; this stub is 22 B, so
+; the carve returns 38 B, against D-CLP's measured 22 B requirement.
+;
+; THE SEAM IS THE TABLE LOOKUP, not the routine boundary, and that is what makes
+; the tenant legal: `fld_find` and `fch_select` are main PAGE-1 routines (fine to
+; call from a page-0 tenant in principle, but the sub-ROM has no import mechanism
+; for main page-1 addresses — sub/basic-resident-abi.inc is ceiling-checked to
+; < $4000 because it exists for the opposite direction), and the old body's third
+; callee `mk_rvdesc` is main LOW REGION, which a page-0 CALSLT switches out
+; outright. Keeping the two lookups resident costs the carve nothing: both are
+; shared services with other callers (fld_find for LSET/RSET, fch_select for the
+; whole file-channel surface), so neither could have moved anyway. What crosses
+; is the pure RAM leaf — slice copy + descriptor build — and mk_rvdesc's three
+; instructions are inlined sub-side.
+;
+; The located entry pointer rides in HL, which subrom_call passes straight
+; through CALSLT (the same path `tokenise`'s HL=src uses); nothing marshals
+; through RAM. subrom_call's CF means "sub-ROM absent", never "found", so the
+; stub asserts the found-CF itself — it is the side that ran fld_find.
+;
+; IX is clobbered here where the old body preserved it. That is safe at the one
+; call site: str_eval_one's OTHER branch on the same variable path is
+; `call str_get_key`, which reaches `ary_engine_call` and clobbers IX already.
+fld_lookup:
+                call    diskslot_test       ; D-WSZERO S9: no disk ROM, no FIELD --
+                ret     z                   ; CF=0 (the `or a`): not fielded
+                call    fld_find            ; CF set -> HL -> entry
+                ret     nc                  ; not fielded -> caller's str_get_key
+                ld      a,(hl)              ; chan
+                push    hl                  ; guard the entry across the select
+                call    fch_select          ; FSECTOR_BUF = this channel's record buffer
+                pop     hl                  ; HL = entry (the tenant's only arg)
+                call    sc_inl0             ; D-STUBINL: fills FLD_DESC/RVDESC, sets STRPTR
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK)
+                scf                         ; fielded
                 ret
 
 ; ===========================================================================
@@ -546,14 +615,6 @@ fadd_free:
 ex_lset:
                 ld      de,H_LSET           ; (left / right is the TOKEN's bit 0,
                 jr      lrset_common        ; read by lrset_tgt -- D-WSZERO S9)
-    IF BASICINT_PINS
-; D-WSZERO S9: moved here from in front of the $73E5 pin below -- the 6 B that
-; came out of this segment (the justify store) are refilled with it, so the
-; $73AC pin does not move (tools/pin_plan.py). A `jp z` target only.
-ex_on_key:
-                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
-                jp      eon_trap_in         ; (program.asm's ex_on_key has the story)
-    ENDIF
 ex_rset:
                 ld      de,H_RSET
 lrset_common:
@@ -651,7 +712,8 @@ lrset_tgt:
 ; basic/program.asm, whose copy is now the ELSE arm (Joost: no growing holes).
 ; D-WSZERO S9 (2026-10-15): the gap is now lrset_tgt's own 6 B (the justify flag
 ; read from the token), and ex_on_key moved on, in front of the $73AC pin, to
-; refill the 6 B the justify store left there.
+; refill the 6 B the justify store left there. D-BASICINT2 (2026-10-16) sent it
+; back to basic/program.asm, unconditional (the $72D4 / $72E9 layout above).
                 ds      $73E5 - $, $00
 basicint_73e5:
                 jp      basicint_play       ; basic/missing.asm: call PLAY's body, return
@@ -697,71 +759,50 @@ lrset_store:
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_LRSETST)
                 ret
 
-; ===========================================================================
-; fld_lookup — READ hook for str_eval's variable path.
-; in:  BC = variable key.
-; out: CF set  -> BC is fielded; STRPTR -> the slice descriptor.
-;      CF clear -> not fielded (caller falls back to str_get_key). BC may be clobbered.
-; Clobbers A,BC,DE,HL.
-; ===========================================================================
-; --- repack: a resident stub over the SUBROM_IDX_FLDLOOK page-0 tenant ------
-; docs/decision-clearpool-funding.md §6.1 — the D-CLP funding carve. The body
-; (60 B of main page 1) moved whole to sub/fldlook.asm; this stub is 22 B, so
-; the carve returns 38 B, against D-CLP's measured 22 B requirement.
-;
-; THE SEAM IS THE TABLE LOOKUP, not the routine boundary, and that is what makes
-; the tenant legal: `fld_find` and `fch_select` are main PAGE-1 routines (fine to
-; call from a page-0 tenant in principle, but the sub-ROM has no import mechanism
-; for main page-1 addresses — sub/basic-resident-abi.inc is ceiling-checked to
-; < $4000 because it exists for the opposite direction), and the old body's third
-; callee `mk_rvdesc` is main LOW REGION, which a page-0 CALSLT switches out
-; outright. Keeping the two lookups resident costs the carve nothing: both are
-; shared services with other callers (fld_find for LSET/RSET, fch_select for the
-; whole file-channel surface), so neither could have moved anyway. What crosses
-; is the pure RAM leaf — slice copy + descriptor build — and mk_rvdesc's three
-; instructions are inlined sub-side.
-;
-; The located entry pointer rides in HL, which subrom_call passes straight
-; through CALSLT (the same path `tokenise`'s HL=src uses); nothing marshals
-; through RAM. subrom_call's CF means "sub-ROM absent", never "found", so the
-; stub asserts the found-CF itself — it is the side that ran fld_find.
-;
-; IX is clobbered here where the old body preserved it. That is safe at the one
-; call site: str_eval_one's OTHER branch on the same variable path is
-; `call str_get_key`, which reaches `ary_engine_call` and clobbers IX already.
-fld_lookup:
-                call    diskslot_test       ; D-WSZERO S9: no disk ROM, no FIELD --
-                ret     z                   ; CF=0 (the `or a`): not fielded
-                call    fld_find            ; CF set -> HL -> entry
-                ret     nc                  ; not fielded -> caller's str_get_key
-                ld      a,(hl)              ; chan
-                push    hl                  ; guard the entry across the select
-                call    fch_select          ; FSECTOR_BUF = this channel's record buffer
-                pop     hl                  ; HL = entry (the tenant's only arg)
-                call    sc_inl0             ; D-STUBINL: fills FLD_DESC/RVDESC, sets STRPTR
-                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK)
-                scf                         ; fielded
+; (D-BASICINT2, 2026-10-16: moved here from in front of the $72D4 pin, whose
+; layout needed its 55 B elsewhere -- a `call` target only.)
+; fld_add — append a field entry: chan=(FLD_CHAN), key=BC, offset=(FLD_CUROFF),
+; width=E; then advance FLD_CUROFF by the width. Silently drops if the table is
+; full (documented). Clobbers A,DE,HL (BC,E preserved through the write).
+fld_add:
+                push    de                  ; preserve the width (E)
+                ld      hl,FLD_TAB
+fadd_lp:
+                ld      a,(hl)
+                or      a
+                jr      z,fadd_free
+                ld      de,FLD_ENTSZ
+                add     hl,de
+                ld      a,h
+                cp      high FLD_TABEND
+                jr      nz,fadd_lp
+                ld      a,l
+                cp      low FLD_TABEND
+                jr      nz,fadd_lp
+                pop     de                  ; table full -> drop this field
                 ret
-
-; --- D-WSZERO S9 (2026-10-15): the disk-only cells, made disk-only in fact -----
-; FLD_TAB and DISKOP_ERR are the disk machine's: on a diskless one no FIELD can
-; exist and no DSKIO can fail. But a string-variable read walked the table
-; (fld_lookup, above) and NEW / RUN / CLEAR re-wrote it, and a tape INPUT # past
-; the end read the error cell -- so when the diskless ceiling rises over them
-; (S15) a program's own bytes there would be read as fields and error codes. Each
-; reader now asks diskslot_test first. They live here, past the $73E5 pin: the
-; segments ahead of the pins have no free byte (tools/pin_plan.py).
-; se_pending: A = the DSKIO failure code pending, 0 without a disk ROM. Z/NZ unset.
-se_pending:
-                call    diskslot_test
-                ret     z                   ; A = 0: nothing pending
-                ld      a,(DISKOP_ERR)
+fadd_free:
+                pop     de                  ; E = width
+                ld      a,(FLD_CHAN)
+                ld      (hl),a              ; chan
+                inc     hl
+                ld      (hl),b              ; k0
+                inc     hl
+                ld      (hl),c              ; k1
+                inc     hl
+                ld      a,(FLD_CUROFF)
+                ld      (hl),a              ; off lo
+                inc     hl
+                ld      a,(FLD_CUROFF+1)
+                ld      (hl),a              ; off hi
+                inc     hl
+                ld      (hl),e              ; width
+                ; FLD_CUROFF += width
+                ld      hl,(FLD_CUROFF)
+                ld      d,0                 ; add the 8-bit width only
+                add     hl,de
+                ld      (FLD_CUROFF),hl
                 ret
-; fld_init_g: fld_init on a machine with a disk ROM, nothing without one.
-fld_init_g:
-                call    diskslot_test
-                ret     z
-                jp      fld_init
 
 ; (fat_rand_open / fat_rand_put / fat_rand_get -- the three two-instruction
 ; fatprim_bounce heads of the sub-ROM record engine, DISKOP_SEL_RAND_* 15/16/17 --

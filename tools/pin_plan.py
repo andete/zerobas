@@ -86,6 +86,11 @@ PINS = [
     # $73AC IS the RUN entry's body (basic/field.asm basicint_run), not a `jp` to
     # it: the 8 bytes checked are its address-free head -- ld hl,(VARTAB $F6C2) /
     # dec hl / dec hl / ld (PRGEND $F6E8),hl; the `jp run_prog_top` after them moves.
+    # $72D4 / $72E9 are the D-BASICINT2 tape bodies (basic/field.asm): the 6 bytes
+    # checked are their address-free head -- push bc / push de / push hl / call
+    # TAPIN ($00E4) or TAPION ($00E1); the `jp c,dpl_dio` after them moves.
+    Pin(0x72D4, 6, bytes.fromhex("C5D5E5CDE400"), None, "D-BASICINT2 tape byte read: TAPIN, ERR 19"),
+    Pin(0x72E9, 6, bytes.fromhex("C5D5E5CDE100"), None, "D-BASICINT2 tape start: TAPION, ERR 19"),
     Pin(0x73AC, 8, bytes.fromhex("2AC2F62B2B22E8F6"), None,
         "D-BASICINT RUN entry: PRGEND := VARTAB - 2, then run_prog_top"),
     Pin(0x73E5, 3, "jp", "basicint_play", "D-AVTAK PLAY body: jp basicint_play (call pl_args, return)"),

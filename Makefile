@@ -1641,6 +1641,14 @@ trapsvc-acceptance: repack-machine
 gosuboom-acceptance: repack-machine
 	python3 probes/basic/basic_probe_gosuboom.py --gate $(if $(ONLY),--only '$(ONLY)',)
 
+# biosregs-acceptance  D-BIOSREGS (2026-10-16): what CALATR / CALPAT / LDIRMV / LDIRVM
+#   / DCOMPR leave in A / BC / DE / HL (flags not compared). Demonia's call-by-call
+#   comparison found four C-BIOS contracts that were not the VG-8020's (cbios-repack
+#   patches 9 and 10). VG-8020 differential, compared as text. Repack-only;
+#   oracle-dependent.
+biosregs-acceptance: repack-machine
+	python3 probes/basic/basic_probe_biosregs.py
+
 ctllim-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctllim.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
@@ -4194,7 +4202,7 @@ clean:
         build-assert-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance \
-        gosuboom-acceptance \
+        gosuboom-acceptance biosregs-acceptance \
         ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \

@@ -67,11 +67,24 @@ PATCHES = [
     # Byte-neutral in video.asm (SCREEN 1's colour-table byte is computed once),
     # so the font pad -- and island 1 -- stay at $1AF5.
     os.path.join(REPO, "cbios-repack", "vdp-reg7.patch"),
+    # D-CALPAT: CALPAT returns DE = the pattern offset, as the VG-8020 does
+    # (scratchpad/calatr_probe.py); C-BIOS left PATBAS in DE, and Demonia reads DE
+    # after the call. 2 bytes in video.asm (`ld de,(nn)` -> `ex de,hl / ld hl,(nn)`).
+    os.path.join(REPO, "cbios-repack", "calpat-de.patch"),
+    # D-BIOSREGS: four register contracts made the VG-8020's, all measured with
+    # scratchpad/calatr_probe.py and found by Demonia's call-by-call comparison:
+    # LDIRMV returns DE = the RAM end and BC = 0 (C-BIOS: DE = the VRAM start, BC =
+    # $0098); LDIRVM BC = 0; CALATR keeps A (C-BIOS: 4*A); DCOMPR returns A = H - D
+    # (or L - E; C-BIOS: H or L). Byte-neutral overall: the two VRAM loops' `jp nz`
+    # became `jr nz` (2 T more per byte, still past the 29 T C-BIOS keeps), which
+    # pays for CALATR's extra byte and LDIRVM's `ld c,b`. Code between LDIRMV and
+    # CALATR moves down 1 byte; every pad and island stays where it was.
+    os.path.join(REPO, "cbios-repack", "bios-regs.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "373752916ff09f56e319ac63edd93d178fe31566"
+REPACKED_SHA1 = "aa4b2f35b1baafd353f653c0a40ce62963a54ff3"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

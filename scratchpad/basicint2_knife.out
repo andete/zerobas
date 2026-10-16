@@ -1,0 +1,8 @@
+K-TP1: diverging ['tap_read']; predicted ['tap_read'] -> HIT
+K-TP2: diverging ['tap_brk']; predicted ['tap_brk'] -> HIT
+K-BR1: diverging ['atr']; predicted ['atr'] -> HIT
+K-BR2: diverging ['pat8', 'pat16']; predicted ['pat8', 'pat16'] -> HIT
+K-BR3: diverging ['ldirmv']; predicted ['ldirmv'] -> HIT
+K-BR4: diverging ['ldirvm']; predicted ['ldirvm'] -> HIT
+K-BR5: diverging ['dcmp_h', 'dcmp_l']; predicted ['dcmp_h', 'dcmp_l'] -> HIT
+restored: build rc=0; SAME

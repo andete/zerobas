@@ -3298,16 +3298,13 @@ strig_done:
 ; trailing slots are untouched -- all exactly as T2. An 11th slot is ERR 2, and
 ; here NO deviation is needed: the reference raises a clean ERR 2 itself, unlike
 ; T2's 6th STRIG slot which takes the machine down.
-    IF BASICINT_PINS
-                                            ; (ex_on_key lives in basic/field.asm in the
-                                            ; shipping build: it REFILLS the gap before
-                                            ; D-AVTAK's pinned $73E5, 2026-10-15)
-    ELSE
 ex_on_key:
                 ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
                 jp      eon_trap_in         ; D-ONTRAPMERGE: STRIG's loop, whose
                                             ; index arm reverses the band for B = 10
-    ENDIF
+                                            ; (it lived in basic/field.asm as a pin
+                                            ; refill 2026-10-15..16; D-BASICINT2's
+                                            ; layout sent it home)
 
 ; --- ex_key_stmt: KEY(n) ON | OFF | STOP ------------------------------------
 ; Reached from ex_key's `(` peek (basic/screen.asm) with HL on the `(`, tested

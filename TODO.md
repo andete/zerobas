@@ -4432,6 +4432,11 @@ item — do **one item per session** to keep context lean.
       $72D4**, undocumented BASIC-ROM internals; on zerobas $72E9 is inside
       FIELD's code (`exf_havech`), which raises the Syntax error: the D-BASICINT
       class, ruled autonomous (characterise black-box, implement at the address).
+      ✅ **2026-10-16: Demonia RUNS** -- D-BASICINT2 pinned both entries, then
+      D-BIOSREGS matched five C-BIOS register contracts its game code depends on;
+      it plays the VG-8020's attract demo. Corpus (pick_martos, same list as the
+      morning): SAME 15, RESET 3 (Buzz Off, Shark Hunter, Loopy Laundry), IOERR 1,
+      no title worse.
       (D) **Head over Heels' `Out of memory in 40`** is a GOSUB refused at 671 B
       free by the 768-B frame margin, where the reference keeps ~130: filed as
       D-GOSUBOOM (TIER 1), with the reference's own behaviour after a trapped
@@ -4962,6 +4967,97 @@ item — do **one item per session** to keep context lean.
       tape load ending in Device I/O) and measured as TWO -- D-TAPELOAD class B1 /
       B2, which also corrects this item's Harry Fox premise ($8033 RETURNS through
       BLOAD,R's return address: $6CF3 on the reference, $6545 here).
+
+- [x] ✅ **D-BASICINT2 — DEMONIA READS ITS TAPE THROUGH $72E9 / $72D4, TWO MORE
+      UNDOCUMENTED BASIC-ROM ENTRIES (2026-10-16)** — ✅ **PINNED 2026-10-16.**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🤖 **AUTONOMOUS** — D-BASICINT's ruling (characterise black-box, implement at
+      the address).
+      📏 Found by D-TAPELOAD's TRANS log, game-RAM sources only: Demonia's code
+      calls $72E9 once per block and $72D4 once per byte (`Syntax error in 50` on
+      zerobas, where both addresses were inside FIELD's `exf_havech`). Black-box on
+      the VG-8020 with OUR stub and OUR tape (scratchpad/basicint_tape_probe.py):
+      $72E9 starts a read (TAPION), $72D4 returns the next byte in A, HL and B
+      survive (the stub loops on them), Ctrl-STOP inside $72E9 raises 19.
+      🔧 basic/field.asm: `basicint_tapst` / `basicint_taprd`, 13 B each (push bc /
+      de / hl, the BIOS call, pop, `jp c,dpl_dio`, ret), at $72E9 / $72D4. No pad:
+      FIELD's call-backs re-ordered so every `jr` reaches, fld_init_g + exf_fits
+      (18 B) in front of $72D4 and se_pending (8 B) between the two, fld_add went
+      past the $73E5 pin and ex_on_key back to basic/program.asm, unconditional.
+      tools/pin_plan.py checks both (the 6-byte address-free heads); pad total
+      still 4 B of 4.
+      🧪 Gate: basicint-acceptance rows `tap_read` / `tap_brk`, 13/13 SAME
+      (scratchpad/basicint2_gate.out). Knives (scratchpad/basicint2_knife.out):
+      K-TP1 (HL restored from DE's slot) -> tap_read alone, K-TP2 (the error exit
+      to Syntax error) -> tap_brk alone: both HIT.
+      🔮 Scored: "read, stop, break SAME" -- HIT read and break, MISS stop (and
+      notape): filed below as D-TAPINBLK. "Demonia then runs" -- it loaded, then
+      played another demo and reset: D-BIOSREGS.
+
+- [x] ✅ **D-BIOSREGS — FIVE C-BIOS ROUTINES RETURNED OTHER REGISTERS THAN THE
+      VG-8020: CALATR, CALPAT, LDIRMV, LDIRVM, DCOMPR (2026-10-16)** — ✅ **FIXED
+      2026-10-16** (cbios-repack/calpat-de.patch #9, bios-regs.patch #10).
+      🎚️ TIER 1 — happy path: Demonia, from tape.
+      🤖 **AUTONOMOUS** — a published BIOS entry keeps its published contract
+      (Joost, 2026-10-04); the registers it leaves are part of it.
+      📏 After D-BASICINT2 Demonia loaded byte for byte (RAM $8100-$DFFF equal),
+      then walked through other rooms and reset at t=422. Every call from game RAM
+      into the BIOS, registers in and out, on both machines (session harness,
+      outside the repo; public entry addresses and registers only): the two
+      streams of ~8000 calls name the same sites in the same order and part on
+      registers -- CALATR returned 4*A where the VG-8020 KEEPS A (Demonia reuses
+      A as its next sprite number: attributes went to the wrong sprites), LDIRMV
+      left DE at the VRAM start and BC $0098 (VG: the RAM end, 0), LDIRVM BC $0098
+      (0), DCOMPR A = H (H - D). CALPAT's DE (VG: the offset; C-BIOS PATBAS) came
+      from the black-box probe (scratchpad/calatr_probe.py). The reset was the
+      game's own `ld sp` / `ret` through never-written RAM, after state built on
+      those values -- gone with them.
+      🔧 Byte-neutral: the VRAM loops' `jp nz` became `jr nz` (2 T per byte, still
+      past C-BIOS's 29 T) to pay for CALATR's byte and LDIRVM's `ld c,b`; every pad
+      and island stays put (measured: the island ranges still zero in the new
+      C-BIOS image).
+      🧪 Gate: biosregs-acceptance, 7 rows, A / BC / DE / HL (flags not compared),
+      7/7 SAME (scratchpad/biosregs_gate.out). Knives K-BR1..5, each a patch line
+      put back line for line (scratchpad/basicint2_knife.out): each reddens its own
+      rows only -- 5/5 HIT, restore SAME.
+      📼 Demonia now plays the VG-8020's attract demo, about 1 s out of phase, no
+      reset by T600. The corpus, same pick list as the morning (pick_martos, 48):
+      SAME 14 -> 15 (Ballblazer), Demonia BASICERR -> RUNS?, Head over Heels
+      BASICERR -> RUNS? (D-GOSUBOOM); no title worse.
+      🔮 Scored: "CALPAT's DE is the cause" -- MISS (no change; A from CALATR was,
+      and the first read of the probe skipped AF); "LDIRMV's DE is" -- part HIT
+      (the demo changed, then it reset); "all contracts matched -> no reset" -- HIT.
+
+- [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
+      (2026-10-16)**
+      🎚️ TIER 6 — no title known to need it.
+      🤖 **AUTONOMOUS** — measure first.
+      📏 scratchpad/basicint_tape_probe.out: reading 40 bytes from a one-file tape
+      after one $72E9, the VG-8020 returns the 16-byte header, then `FF`, then the
+      next block's bytes; zerobas raises 19 at the block's end (row `stop`). With
+      no cassette the VG-8020's $72E9 waits (Ctrl-STOP ends it, row `break`);
+      zerobas's raises 19 at once (row `notape`). Both are zerobas's own TAPION /
+      TAPIN (tape/tape.asm) against the reference's: whether its TAPIN rides over
+      a leader, and how long its TAPION waits on silence (cassette.md already
+      lists the silence case as not compared).
+
+- [ ] 🧩 **D-SPRBASE0 — IN SCREEN 0, ATRBAS / PATBAS READ 0 (2026-10-16)**
+      🎚️ TIER 6 — CALATR / CALPAT in text mode; no title known.
+      🤖 **AUTONOMOUS** — measure first.
+      📏 scratchpad/calatr_probe.out rows atr / pat8 / calatr2: in SCREEN 0 (even
+      after a SCREEN 2) zerobas's CALATR answers $0014 for sprite 5 where the
+      VG-8020 answers $1B14 -- ATRBAS ($F928) and PATBAS ($F926) are 0 on zerobas
+      and $1B00 / $3800 on the VG-8020. ➡️ Which writes them (C-BIOS's INITXT, or
+      zerobas's SCREEN) -- read the cells around each SCREEN on both.
+
+- [ ] 🧩 **D-BIOSSCRATCH — UNDOCUMENTED REGISTERS AFTER SNSMAT / GTTRIG / GTSTCK /
+      CLRSPR (2026-10-16)**
+      🎚️ TIER 6 — no program known to read them.
+      🤖 **AUTONOMOUS** — only if a title needs it.
+      📏 scratchpad/calatr_probe.out: SNSMAT returns C = the row on the VG-8020
+      (zerobas: C unchanged); GTTRIG(1) C $42 against $22; GTSTCK(0) HL $1252 /
+      DE $000F against HL unchanged / DE 0; CLRSPR (Demonia's log) A $0F BC $0080
+      DE $570F HL $1B80 against A 0 BC 0 DE $0FD1 HL $3800. A matches everywhere.
 
 - [x] ✅ **D-OPENGRP — `OPEN "GRP:"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN
       (Joost, 2026-10-11; FIXED 2026-10-12)**
@@ -10523,7 +10619,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36056 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36152 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10689,7 +10785,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15551 (T-6FE392)8 (T-529ABE)` from `TODO.md:28345 (T-529ABE)`: a
+      `TODO.md:15647 (T-6FE392)8 (T-529ABE)` from `TODO.md:28441 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16398,7 +16494,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28345 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

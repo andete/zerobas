@@ -39,6 +39,15 @@ same `,R` return chain. Each row prints ONLY what its routine controls:
            then `CLEAR` -- FRE(0) after it minus the same with +0, per machine:
            the reference keeps the program end the ,R code set (-64); zerobas
            re-derived VARTAB from its own PRGEND and gave 0.
+  tap_read / tap_brk (D-BASICINT2, 2026-10-16): Demonia's machine code CALLs $72E9
+           once and then $72D4 per byte to read its tape. OUR stub (USR) calls
+           $72E9 and then $72D4 sixteen times, storing A through HL and counting in
+           B, from OUR one-file ASCII tape: the 16 bytes printed are the header
+           block ($EA x 10, the name), so both entries read the tape and keep HL / B
+           (tap_read). With no tape, Ctrl-STOP while $72E9 waits for a leader:
+           `[E 19 30]` on both (tap_brk). Before the pins zerobas ran FIELD's code
+           at both addresses (`Syntax error`). Reading past a block's end and an
+           empty deck differ -- filed (D-TAPINBLK), not rows here.
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`.
 Exit 0 all SAME; 1 a divergence; 2 the VG-8020 gave no reading.
 Typed BASIC in, the text screen out. VG-8020 vs zerobas NODISK.
@@ -47,7 +56,7 @@ import os, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                    # noqa: E402
-from cas_encode import build_cas                    # noqa: E402
+from cas_encode import build_cas, build_cas_ascii   # noqa: E402
 
 VARTAB, TXTTAB = 0xF6C2, 0xF676
 
@@ -100,7 +109,7 @@ LINES = {
                 "RUN"],
 }
 ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "rvt64", "pop3297",
-        "play_ok", "play_e5", "play_e13"]
+        "play_ok", "play_e5", "play_e13", "tap_read", "tap_brk"]
 PLAYTEXT = {"play_ok": [0x22, 0x41, 0x42, 0x43, 0x22, 0x00],                 # "ABC"
             "play_e5": [0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x22, 0x00],     # "HELLO"
             "play_e13": [0x18, 0x00]}                                       # 7
@@ -120,6 +129,25 @@ def play_lines(name):
             "70 DATA " + ",".join(str(b) for b in code),
             "80 DATA " + ",".join(str(b) for b in text),
             "RUN"]
+# D-BASICINT2: call $72E9, then $72D4 sixteen times -> (HL)=A, inc hl, djnz
+TAPSTUB = [0xCD, 0xE9, 0x72, 0x21, 0x00, 0xD1, 0x06, 16, 0xCD, 0xD4, 0x72, 0x77, 0x23,
+           0x10, 0xF9, 0xC9]
+
+
+def tap_lines(name):
+    lines = ["NEW",
+             "10 CLEAR 1000,&HD000:ON ERROR GOTO 100",
+             "20 FOR I=0 TO 15:READ X:POKE &HD000+I,X:POKE &HD100+I,0:NEXT",
+             "30 DEFUSR=&HD000:A=USR(0)",
+             '40 FOR J=0 TO 15 STEP 8:S$="":FOR I=J TO J+7:S$=S$+" "+HEX$(PEEK(&HD100+I)):NEXT',
+             '50 PRINT"[B";J;S$:NEXT:END',
+             "60 DATA " + ",".join(str(b) for b in TAPSTUB),
+             '100 PRINT"[E";ERR;ERL;"]":END',
+             "RUN"]
+    # tap_brk: no tape -- Ctrl-STOP while $72E9 waits for a leader
+    return lines + (["@WAIT15", "@BREAK", "@WAIT5"] if name == "tap_brk" else [])
+
+
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 
 
@@ -132,6 +160,15 @@ def screen_rows(scr):
 
 
 def run(machine, name, tmp):
+    if name in ("tap_read", "tap_brk"):
+        kw = {}
+        if name == "tap_read":
+            path = os.path.join(tmp, "tap.cas")
+            open(path, "wb").write(build_cas_ascii("D", "ABCDEFGH\r\n"))
+            kw["cassette"] = path
+        return screen_rows(omsx_repl.run_cases(machine, [("direct", tap_lines(name))], batch=False,
+                                               reset=("", "SCREEN 0:WIDTH 40"), step=3.0,
+                                               run_gap=40.0, **kw)[0])
     if name in PLAYTEXT:
         return screen_rows(omsx_repl.run_cases(machine, [("direct", play_lines(name))], batch=False,
                                                reset=("", "SCREEN 0:WIDTH 40"), step=3.0,

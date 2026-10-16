@@ -1,0 +1,19 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_biosregs.py
+ROW atr     VG=[[R 1B14 14 1122 A5]] ZB=[[R 1B14 14 1122 A5]] SAME
+ROW pat8    VG=[[R 3828 28 1122 A8]] ZB=[[R 3828 28 1122 A8]] SAME
+ROW pat16   VG=[[R 38A0 A0 1122 A20]] ZB=[[R 38A0 A0 1122 A20]] SAME
+ROW ldirvm  VG=[[R 3F00 D204 0 A0]] ZB=[[R 3F00 D204 0 A0]] SAME
+ROW ldirmv  VG=[[R 3F00 D204 0 A0]] ZB=[[R 3F00 D204 0 A0]] SAME
+ROW dcmp_h  VG=[[R 1700 1800 1122 AFF]] ZB=[[R 1700 1800 1122 AFF]] SAME
+ROW dcmp_l  VG=[[R 1812 1834 1122 ADE]] ZB=[[R 1812 1834 1122 ADE]] SAME
+
+PASS: BIOS helper registers (7/7)
+refcache: 14 hit, 0 miss

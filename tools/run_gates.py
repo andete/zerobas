@@ -117,7 +117,7 @@ logicops-acceptance lineerr-acceptance screenerr-acceptance tmfp-acceptance
 stmtpend-acceptance array-acceptance deffn-strict graphics-acceptance
 abort-acceptance interval-trap-acceptance clearpool-acceptance
 stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance
-gosuboom-acceptance
+gosuboom-acceptance biosregs-acceptance
 ramfree-acceptance txtceil-acceptance
 runline-acceptance keystr-acceptance loc-acceptance dskio-acceptance copy-acceptance screditor-acceptance nodiskerr-acceptance parennest-acceptance
 diskascii-acceptance

@@ -1,0 +1,19 @@
+diff --git a/src/video.asm b/src/video.asm
+index d87a261..0d7d403 100644
+--- a/src/video.asm
++++ b/src/video.asm
+@@ -1056,7 +1056,13 @@ calpat:
+                 jr      nc,calpat_8
+                 add     hl,hl
+                 add     hl,hl
+-calpat_8:       ld      de,(PATBAS)
++calpat_8:
++                ; zerobas repack (D-CALPAT): DE = the offset on return, as on the
++                ; VG-8020 (scratchpad/calatr_probe.py: A=5 gives DE=$0028 with 8x8
++                ; sprites, $00A0 with 16x16; C-BIOS left PATBAS in DE). Demonia
++                ; reads it after the call. Same size: ex de,hl / ld hl,(nn).
++                ex      de,hl
++                ld      hl,(PATBAS)
+                 add     hl,de
+                 ret
+ 
