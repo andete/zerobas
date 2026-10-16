@@ -1,0 +1,6 @@
+ROW edge  VG=[[OK]] ZB=[[OK]] SAME
+ROW ret   VG=[[R 7 ] | RETURN without GOSUB in 100] ZB=[[R 7 ] | RETURN without GOSUB in 100] SAME
+ROW one   VG=[[BACK]] ZB=[[BACK]] SAME
+ROW for   VG=[[F 7 ] | NEXT without FOR in 100] ZB=[[F 7 ] | NEXT without FOR in 100] SAME
+PASS
+refcache: 2 hit, 6 miss, 6 stored

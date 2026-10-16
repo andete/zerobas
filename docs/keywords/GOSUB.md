@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `GOSUB` — call a subroutine
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-16):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -92,12 +92,27 @@ gap: each open `GOSUB` uses 8 bytes of free memory on zerobas and 7 on the
 VG-8020 (`FRE(0)` read inside a running program, 2026-09-26). Joost ruled on
 2026-09-27 that zerobas should *"shrink ours only"* — never use more than the
 reference. Taking the eighth byte out turned out to need a redesign of every
-kind of stack frame, and that price is back with him. zerobas also has less
-free memory than the VG-8020 overall, so a runaway recursion reaches
-`Out of memory` at a smaller depth.
+kind of stack frame, and that price is back with him. Because of that byte, a
+runaway recursion reaches `Out of memory` at a smaller depth here (3561 calls
+against 4084 after `CLEAR 200`, [`gosubedge_after.out`](../../scratchpad/gosubedge_after.out)).
 
 ## What we found, and how
 
+- **A `GOSUB` with little memory left was `Out of memory`, and a trapped
+  overflow left its calls standing** (fixed 2026-10-16, D-GOSUBOOM). Head over
+  Heels lowers the top of memory with its own `CLEAR` and then calls a
+  subroutine with about 670 bytes free: zerobas refused, because it kept 768
+  bytes clear below every call; the VG-8020 refuses only with about 130 left.
+  Those 768 bytes existed so that, after a recursion ran out of memory and the
+  error was trapped, expressions could still run with every call still open --
+  but the VG-8020 does not keep them open: in the handler of that error, a
+  `RETURN` is `RETURN without GOSUB`, where zerobas went back into the recursion
+  and repeated the error for ever. zerobas now closes every open `GOSUB` and
+  `FOR` on that error, as the reference does, and keeps 256 bytes clear. A
+  trapped error that is not this overflow still keeps its calls on both
+  ([before](../../scratchpad/gosubedge_probe.out),
+  [after](../../scratchpad/gosubedge_after.out),
+  [`gosuboom_after.out`](../../scratchpad/gosuboom_after.out)).
 - **A jump stored as a line POINTER was a Syntax error** (fixed 2026-10-12,
   D-BASICROM). After a jump runs, the reference rewrites its operand from a line
   number into the address of the line, in the program text itself; a program
@@ -145,6 +160,8 @@ How the reference lays out its frames, read from RAM only, is in
 - `make kwsweep` — the everyday row (a subroutine that sets a variable the
   caller prints), the `ON 2 GOSUB` row, and the error rows for {2, 8}.
 - `make ctllim-acceptance` — the frame pool driven to its floor.
+- `make gosuboom-acceptance` — a call near the memory edge, and what a trapped
+  overflow leaves (`RETURN` / `NEXT` in its handler).
 - `make ramfree-acceptance` — a recursion to `Out of memory` that must not
   disturb other memory.
 - `make kwram` — the RAM-usage comparison.

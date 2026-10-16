@@ -1,0 +1,4 @@
+K-GO1: diverging ['edge']; predicted ['edge'] -> HIT
+K-GO2: diverging ['ret']; predicted ['ret', 'for'] -> MISS
+restored: build rc=0; SAME
+rc=0

@@ -56,6 +56,10 @@ session and the loop resumes exactly where it stopped.
   S15: SAME 12 -> 14, RESET 6 -> 3. **D-WSZERO is CLOSED (2026-10-16).** Next by
   tier: the TIER 1 queue (TODO's index; D-TAPELOAD's class A -- Buzz Off, Shark
   Hunter, Loopy Laundry still reset), then D-FREPLUS14 (TIER 4).
+  **D-GOSUBOOM** (2026-10-16, TIER 1): a pool overflow empties the pool as the
+  VG-8020 does, CTL_FRAME_MARGIN 768 -> 256; Head over Heels runs; new gate
+  gosuboom-acceptance. Waiting on Joost: D-TAPELOAD A1 (BIOS internals),
+  D-BASICPUB (A2), D-FREPLUS14's meaning of "the same free RAM".
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
   MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**

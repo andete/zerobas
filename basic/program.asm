@@ -1600,6 +1600,22 @@ ctl_put:
 ; parameter block freed in front of a pinned address)
 ; gosub_stk_over: shared control-stack-overflow tail (ex_gosub + eon_gosub).
 gosub_stk_over:
+                ; 🎯 D-GOSUBOOM (2026-10-16): THE REFERENCE EMPTIES ITS STACK ON THIS
+                ; OVERFLOW, so the pool goes too. Measured (scratchpad/gosubedge_probe.py):
+                ; in the handler of a trapped GOSUB overflow the VG-8020's FRE(0) reads
+                ; nearly all memory and a RETURN is `RETURN without GOSUB`; a plain
+                ; trapped ERROR inside ONE GOSUB keeps its frame on both machines. Here
+                ; the frames stood, the handler's RETURN went back into the recursion
+                ; and the program looped for ever -- and CTL_FRAME_MARGIN had to keep
+                ; 768 B clear so expressions could still run under them (D-STACKFLOOR).
+                ; ctl_reset empties the pool as RUN / CLEAR do (every GOSUB / FOR / DEF
+                ; FN frame and trap record); the word at SAVSTK -- run_prog's return,
+                ; just above this statement's own stack -- is untouched, so the trap
+                ; branch and the abort still unwind to it, and the run loop re-bases
+                ; SP on the new frontier at the handler's first line (rp_lp).
+                call    ctl_reset
+                xor     a
+                ld      (TRAPSVC),a         ; no trap in service: its record went too
                 ld      a,$CE               ; control-stack overflow landmark
 err7_mark:                                  ; D-TAILMERGE: A = the landmark; the
                                             ; out-of-memory tail above joins here

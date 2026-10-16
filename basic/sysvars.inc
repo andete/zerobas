@@ -4266,7 +4266,15 @@ STK_EVAL_RESERVE equ   128    ; see stk_guard; checked by stackcorrupt's leaf ro
 ; (scratchpad/poolexh_run.out). 768 = 16 levels + both, rounded to a PAGE so
 ; ctl_alloc's one-byte `cp high` still is the whole test. The price is ~64 GOSUB
 ; frames of depth (8 B each), against a reference that already nests ~1100 more.
-CTL_FRAME_MARGIN equ   768
+;  🎯 D-GOSUBOOM (2026-10-16): 768 -> 256. The premise above does not hold on the
+; reference: the VG-8020 EMPTIES its stack on a trapped GOSUB / FOR overflow (a RETURN
+; in the handler is `RETURN without GOSUB`), so the frames do NOT stand while the
+; handler evaluates -- and zerobas now empties the pool there too (gosub_stk_over).
+; The reference refuses a frame with ~130 B left; 768 refused Head over Heels' GOSUB
+; at 671 B free (`Out of memory in 40`). 256 is the next whole page (the one-byte
+; test below and sub/deffn.asm's copy): above STK_EDGE_RESERVE's 116 for the
+; statement stack under a frame, and the evaluator's own guard covers expressions.
+CTL_FRAME_MARGIN equ   256
     IF low CTL_FRAME_MARGIN
                 db      CTL_FRAME_MARGIN_MUST_BE_WHOLE_PAGES
     ENDIF

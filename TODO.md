@@ -3741,7 +3741,7 @@ item — do **one item per session** to keep context lean.
       owns, the ceiling is the reference's, and the loaders that crashed on it
       run. What is left is filed: D-FREPLUS14 (+14 B, TIER 4), D-S16PREEXIST.
 
-- [ ] 🧱 **D-GOSUBOOM -- A GOSUB NEAR THE MEMORY EDGE IS `Out of memory` ON zerobas: IT
+- [x] ✅ **FIXED 2026-10-16** — 🧱 **D-GOSUBOOM -- A GOSUB NEAR THE MEMORY EDGE IS `Out of memory` ON zerobas: IT
       KEEPS 768 B CLEAR BELOW EVERY FRAME, THE REFERENCE ~130 (Head over Heels, 2026-10-16)**
       🎚️ TIER 1 — happy path: loading existing software from tape (Head over Heels
       stops with `Out of memory in 40`; the VG-8020 runs it).
@@ -3777,6 +3777,30 @@ item — do **one item per session** to keep context lean.
       the trapped overflow -> ERR 3), the edge depth, Head over Heels' shape
       (CLEAR to $97FF with a ~4.8 KB program, then GOSUB); ramfree-acceptance's
       n.deep and ctllim-acceptance are the regression gates (the 768's own rows).
+      ✅ **DONE THE SAME DAY, AS PLANNED -- AND SIMPLER THAN STEP (1) FEARED:**
+      `gosub_stk_over` (every pool overflow: GOSUB, ON...GOSUB, FOR, trap records,
+      DEF FN) now calls `ctl_reset` and zeroes TRAPSVC before raising; no stack
+      has to be moved by hand, because the word at SAVSTK (run_prog's return) sits
+      just above the overflowing statement's own stack and is untouched, the trap
+      branch and the abort unwind to it, and the run loop re-bases SP on the new
+      frontier at the handler's first line (rp_lp, D-SPMERGE step 4).
+      CTL_FRAME_MARGIN 768 -> 256. The line-store's own out-of-memory ($CC) still
+      leaves the pool alone. 📏 [`gosubedge_after.out`](scratchpad/gosubedge_after.out):
+      `ret` now `RETURN without GOSUB in 100` as on the VG-8020 (it looped), the
+      depth 3497 -> 3561 (the reference 4084: 8-byte frames against 7, the GOSUB
+      frame item), the handler's FRE(0) 28736 (the reference 28718: D-FREPLUS14's
+      live-SP gap). New gate `gosuboom-acceptance`
+      (`probes/basic/basic_probe_gosuboom.py`, four rows, VG-8020 text oracle):
+      4/4 SAME ([`gosuboom_after.out`](scratchpad/gosuboom_after.out)); unit tests
+      67/67; GOSUB.md's examples PASS. 🔪
+      [`gosuboom_knife.py`](scratchpad/gosuboom_knife.py) ->
+      [`gosuboom_knife.out`](scratchpad/gosuboom_knife.out): K-GO1 (768 back) ->
+      `edge` alone, HIT; K-GO2 (no pool reset) -> `ret` only, a MISS of the
+      prediction "ret and for": the `for` row's overflow lands on a GOSUB push,
+      so NEXT answers `NEXT without FOR` whether the frames stand or not -- it
+      agrees for the wrong reason, and `ret` is the witness (the row's docstring
+      says so). 📼 **Head over Heels now runs**: line 140 on both machines at
+      T420, 107 B of VRAM apart, where it stopped with `Out of memory in 40`.
 
 - [ ] 🔎 **D-S16PREEXIST -- THREE DIFFERENCES THE S16 ROWS FOUND, PRESENT ON HEAD'S ROM TOO
       (2026-10-16)**
@@ -10483,7 +10507,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36016 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36040 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10649,7 +10673,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15511 (T-6FE392)8 (T-529ABE)` from `TODO.md:28305 (T-529ABE)`: a
+      `TODO.md:15535 (T-6FE392)8 (T-529ABE)` from `TODO.md:28329 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16358,7 +16382,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28329 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

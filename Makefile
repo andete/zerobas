@@ -1634,6 +1634,13 @@ trapsvc-acceptance: repack-machine
 # ⚠️ Slower than its siblings by design (~150 s): every A() element crosses a
 # slot here, so the budget is 180 emulated seconds -- at 45 both bulk rows read
 # blank on zerobas only, which looks exactly like the corruption this hunts.
+# gosuboom-acceptance  D-GOSUBOOM (2026-10-16): a GOSUB near the memory edge (the frame
+#   margin; Head over Heels' shape) and a trapped GOSUB / FOR overflow, which EMPTIES
+#   the stack as on the VG-8020 (RETURN / NEXT in the handler find no frame). VG-8020
+#   differential, compared as text. Repack-only; oracle-dependent.
+gosuboom-acceptance: repack-machine
+	python3 probes/basic/basic_probe_gosuboom.py --gate $(if $(ONLY),--only '$(ONLY)',)
+
 ctllim-acceptance: repack-machine
 	python3 probes/basic/basic_probe_ctllim.py --gate \
 	        --zb-machine $(REPACK_MACHINE) $(if $(ONLY),--only '$(ONLY)',)
@@ -4187,6 +4194,7 @@ clean:
         build-assert-check \
         interval-trap-acceptance \
         stackpool-acceptance trapdepth-acceptance trapsvc-acceptance ctlcross-acceptance ctllim-acceptance \
+        gosuboom-acceptance \
         ramfree-acceptance txtceil-acceptance \
         input-acceptance error-acceptance error-trap-acceptance stop-trap-acceptance strig-trap-acceptance key-trap-acceptance sprite-trap-acceptance intarg-acceptance abort-acceptance direct-ctrl-acceptance sound-acceptance play-acceptance play-trace-acceptance beep-acceptance float-acceptance math-acceptance subrom-acceptance \
         subrom-inttest subrom-abi-check subrom-closure-check \
