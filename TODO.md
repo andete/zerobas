@@ -3606,7 +3606,25 @@ item — do **one item per session** to keep context lean.
       prediction named: at a typed line's store B happens to hold 0, which IS the
       store op, so `ctl` agrees for the wrong reason; s14ga's `DELETE` runs
       another op and diverges. `ram_map --floor-top F380`: 13 names, all SH_*.
-      ➡️ NEXT: the SH_* stack parameter block
+      ✅ **S16.0(a) (2026-10-16): THE UNIT HARNESS RUNS A TENANT ON THE CALLER'S
+      STACK, AS CALSLT DOES** (first step of the SH_* block,
+      [`shblk_plan.md`](scratchpad/shblk_plan.md) §4). `tests/msxtest.py`'s
+      sub-ROM bridge ran a page-0 island on a PRIVATE stack at $F380 and copied
+      back everything except [$F300,$F380), so a tenant writing through a pointer
+      into the caller's frame -- which is where S16 puts the parameter block --
+      wrote nothing, with no error. Now both bridges run on the caller's SP, copy
+      all of [$8000,$10000) back, and pass BC in and out (CALSLT hands the tenant
+      the caller's BC and back). Witness `tests/test_subrom_bridge_stack.py` (op 12
+      writing a descriptor into a frame slot at $F370 above SP $F360): FAIL before
+      (len 0), PASS after; the unit suite 67/67 (every page-0 tenant test now on
+      the caller's stack, and none relied on the private one or on BC surviving).
+      🔪 [`wszero_s160_knife.py`](scratchpad/wszero_s160_knife.py) ->
+      [`wszero_s160_knife.out`](scratchpad/wszero_s160_knife.out): K-WS87 (the
+      private stack and the dropped band back, BC kept) -> the witness FAILS, HIT.
+      (The plan's knife names K-WS75..82 were taken by S14g; S16 counts on from
+      K-WS87.) No ROM change.
+      ➡️ NEXT: S16.0(b), the strheap tenant carve (shared result tails, a
+      jump-table dispatch -- sub page 0 has 34 B free today), then S16.1..3: the SH_* stack parameter block
       ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
       harness and a sub page 0 byte pass), then S15.
 
@@ -10207,7 +10225,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35740 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35758 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10373,7 +10391,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15235 (T-6FE392)8 (T-529ABE)` from `TODO.md:28029 (T-529ABE)`: a
+      `TODO.md:15253 (T-6FE392)8 (T-529ABE)` from `TODO.md:28047 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16082,7 +16100,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28029 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28047 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

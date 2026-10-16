@@ -43,7 +43,9 @@ session and the loop resumes exactly where it stopped.
   PRDEST -> PTRFIL low, PRDEV -> BUF $F5FD, segment C net 0, K-WS82..84g.
   **S14g-d** (2026-10-16): POINT's x / y in E / D, the LE op in C (+ a 10-B
   refill in front of $6CF3: iv_seq, err_notopen_raise), K-WS85/86. The window
-  now holds exactly the 13 SH_* names. NEXT: the SH_* stack parameter block (scratchpad/shblk_plan.md,
+  now holds exactly the 13 SH_* names. **S16.0(a)** (2026-10-16): the unit
+  harness runs a tenant on the caller's stack and passes BC (K-WS87). NEXT:
+  S16.0(b) the strheap carve, then S16.1..3, the SH_* stack parameter block (scratchpad/shblk_plan.md,
   S16.0..S16.3), then **S15 raises the ceiling ONCE, last**.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs

@@ -1,0 +1,2 @@
+K-WS87: witness rc=1 (FAIL  op 12 into the caller's frame at $F370: len=0 ptr=$0000 body=b'' SH_ERR=0); predicted FAIL -> HIT
+restored: witness rc=0 (PASS  op 12 into the caller's frame at $F370: len=5 ptr=$E365 body=b'HELLO' SH_ERR=0) -> SAME (PASS)

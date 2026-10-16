@@ -219,8 +219,8 @@ class Machine:
 
         Both directions shuttle only RAM ($8000+): the tenant reads its args and
         writes its results in page-2/3 RAM, the same in both slots on the real
-        machine. Copy that RAM in, run, copy back only the below-stack range the
-        tenant may have written. Transparent to every test that tokenises a
+        machine. Copy that RAM in, run ON THE CALLER'S OWN SP, copy ALL of it back
+        (D-WSZERO S16.0). Transparent to every test that tokenises a
         numeric literal (page 0) or reaches a page-1 tenant like fatprim/
         lineedit through a resident shim."""
         sub_bytes, _ = _build_subrom()
@@ -230,7 +230,7 @@ class Machine:
         sub0.sym = {}
         sub0.cpu = Z80(sub0.mem)
         sub0.traps = {}
-        RAM_LO, STACK = 0x8000, 0xF300         # shuttle $8000..stack; leave stacks private
+        RAM_LO = 0x8000                        # shuttle $8000..$FFFF, the shared RAM
         # 🔴 AND THE WORK AREA ABOVE THE STACK MUST COME BACK TOO -- IT DID NOT, AND
         # THAT MADE EVERY SUB-SIDE SYSVAR WRITE INVISIBLE TO THIS HARNESS.
         # The copy-back window used to be [$8000,$F300) alone, chosen to keep the
@@ -247,17 +247,28 @@ class Machine:
         # a real CALSLT does, since both slots see the same RAM.
         # ⚠️ A test that asserts a sub-tenant left a work-area cell ALONE is now
         # measuring that for real; before this it could not have failed.
-        STACK_TOP = 0xF380
+        # 🔴 D-WSZERO S16.0 (2026-10-16): AND THE 128-BYTE BAND WAS NOT "THE STACK THE
+        # TWO MACHINES MAY NOT SHARE" -- ON THE MACHINE THEY DO SHARE IT. CALSLT
+        # runs the tenant on the caller's own SP, so a tenant writing through a
+        # pointer into the caller's frame (the string-heap parameter block S16
+        # moves onto the Z80 stack) writes the caller's RAM. The island ran on a
+        # private stack at $F380 and [$F300,$F380) was never copied back: such a
+        # write vanished with no error (tests/test_subrom_bridge_stack.py, FAIL
+        # before this). Now the island runs on the CALLER'S SP -- its own frames
+        # land below it, dead stack, exactly as on the machine -- and the whole of
+        # [$8000,$10000) comes back. BC goes in and comes back too: CALSLT hands
+        # the tenant the caller's BC and the caller the tenant's (C-BIOS's
+        # CALSLT; the tenants already take DE / L as arguments the same way).
 
         def copy_back(dst, src):
-            dst[RAM_LO:STACK] = src[RAM_LO:STACK]
-            dst[STACK_TOP:0x10000] = src[STACK_TOP:0x10000]
+            dst[RAM_LO:0x10000] = src[RAM_LO:0x10000]
 
         def bridge(mach):
             cpu = mach.cpu
             if cpu.ix < 0x4000:
                 sub0.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]  # args/scratch in
-                sub0.call(cpu.ix, hl=cpu.hl, de=cpu.de)               # own stack + low mem
+                sub0.cpu.sp = cpu.sp                                  # the CALLER's stack
+                sub0.call(cpu.ix, keep_sp=True, hl=cpu.hl, de=cpu.de, bc=cpu.bc)
                 copy_back(mach.mem, sub0.mem)                         # results back
                 res = sub0.cpu
             else:
@@ -279,10 +290,11 @@ class Machine:
                 # ⚠️ ONLY the borrowed range: a trap on a $4000..$7FFF address belongs
                 # to MAIN's page 1, which is exactly what this island switches OUT.
                 sub1.traps = {a: fn for a, fn in mach.traps.items() if a < 0x4000}
-                sub1.call(cpu.ix, hl=cpu.hl, de=cpu.de)
+                sub1.cpu.sp = cpu.sp                                  # the CALLER's stack
+                sub1.call(cpu.ix, keep_sp=True, hl=cpu.hl, de=cpu.de, bc=cpu.bc)
                 copy_back(mach.mem, sub1.mem)                         # results back
                 res = sub1.cpu
-            cpu.hl, cpu.de, cpu.a = res.hl, res.de, res.a
+            cpu.hl, cpu.de, cpu.bc, cpu.a = res.hl, res.de, res.bc, res.a
             cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)
 
         self.trap("subrom_call", bridge)
