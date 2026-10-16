@@ -2645,7 +2645,7 @@ item — do **one item per session** to keep context lean.
       a VISIBLE defect in SCREEN 0. Gameplay past the first tee shot was not
       compared (it needs a scripted swing); nothing seen so far differs.
 
-- [ ] 🧨 **D-WSZERO — zerobas's OWN WORKSPACE SITS IN RAM A PROGRAM OWNS: 22 OF ~43
+- [x] ✅ **DONE 2026-10-16 (S1..S16, S15 last)** — 🧨 **D-WSZERO — zerobas's OWN WORKSPACE SITS IN RAM A PROGRAM OWNS: 22 OF ~43
       FAILING TAPES LOAD OVER IT (found 2026-10-14 by D-TAPELOAD)**
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — ruled (Joost, 2026-10-14, "Shrink to zero"): every piece
@@ -3723,10 +3723,23 @@ item — do **one item per session** to keep context lean.
       cells back) -> the census fails naming exactly the two writers, HIT. Docs:
       memory-map.md (status, the table, CLEAR, the gap -- now +14), disk.md,
       BLOAD.md. The +14 is filed as D-FREPLUS14 (TIER 4).
-      ➡️ NEXT: the real tapes (s14_plan.md §6 item 6, one-off, outside the repo):
-      the RESET class (Boulder Dash I/II, Blow Up, Exterminator, Finders Keepers,
-      Knight Tyme, Formula 1 Simulator) is the prediction to score -- then close
-      D-WSZERO or file what is left.
+      📼 **THE TAPES AFTER S15 (2026-10-16; the same 51, pick_martos, run on
+      both machines, never decoded; classified against the run after S14f):
+      SAME 12 -> 14, RESET 6 -> 3, the interrupt crash 1 -> 0.** Finders Keepers
+      RESET -> SAME; Formula 1 Simulator and Knight Tyme -> SAME; Boulder Dash II
+      RESET -> running the game on the VG-8020's line (117 B of VRAM apart);
+      Boulder Dash on the game's line too (24 B apart; it sat at the text prompt
+      before); Colony RESET -> 1 B apart; Punch & Judy's interrupt crash gone.
+      Predictions: "SAME rises" HIT, "Boulder Dash II and Finders Keepers stop
+      resetting" HIT, "Buzz Off / Colony / Shark Hunter change class" -- Colony
+      HIT, **Buzz Off and Shark Hunter MISS: still RESET**, as is Loopy Laundry;
+      those three are handed to D-TAPELOAD's class A (dated note there).
+      Ballblazer 0 -> 279 B at T420, reproduced alone -- the same reading
+      D-TAPELOAD recorded on 2026-10-15 and traced to the game's animation phase
+      at the dump, not the load.
+      🏁 **D-WSZERO is DONE**: no zerobas state lies in RAM a diskless program
+      owns, the ceiling is the reference's, and the loaders that crashed on it
+      run. What is left is filed: D-FREPLUS14 (+14 B, TIER 4), D-S16PREEXIST.
 
 - [ ] 🔎 **D-S16PREEXIST -- THREE DIFFERENCES THE S16 ROWS FOUND, PRESENT ON HEAD'S ROM TOO
       (2026-10-16)**
@@ -4277,6 +4290,13 @@ item — do **one item per session** to keep context lean.
       and ~40 that load, and the files are on this machine (outside the repo:
       run, never decoded, never copied in, never part of a gate).
       Joost: *"many .cas and .wav tapes are not loading"*.
+      📌 **2026-10-16, after D-WSZERO closed** (zerobas keeps no state in program
+      RAM, the diskless ceiling is $F380): the same 51 read SAME 14, RESET 3 --
+      **Buzz Off, Shark Hunter and Loopy Laundry still reset** (back at the boot
+      banner, T1 L65535 PC $01D8, while the VG-8020 runs them). Not the
+      workspace any more: the class-A hypothesis below (a published BASIC-ROM
+      entry point zerobas does not provide, or reference RAM state it does not
+      keep) is now the one to measure, per title.
       ➡️ Measure first, per tape, on the VG-8020 and both builds: WHERE it
       stops -- no `Found:` (the leader / header / baud detection: TAPION,
       `cas_baud`), a `Device I/O error` mid-file (TAPIN's edge timing against
@@ -10360,7 +10380,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35893 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35913 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10526,7 +10546,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15388 (T-6FE392)8 (T-529ABE)` from `TODO.md:28182 (T-529ABE)`: a
+      `TODO.md:15408 (T-6FE392)8 (T-529ABE)` from `TODO.md:28202 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16235,7 +16255,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28182 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28202 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -52,8 +52,10 @@ session and the loop resumes exactly where it stopped.
   were refilled exactly (134 / 19 / 6 B); main low +134, page 1 +26, sub p0 -54;
   K-WS89..93. **S15** (2026-10-16): TXTMAX_NODISK $F380 -- diskless FRE(0)
   28829 vs the VG-8020's 28815 (+14, filed D-FREPLUS14); the write census moved
-  DISKOP_A / HL / ERR to idle published cells; K-WS94/95. **NEXT: the real
-  tapes (s14_plan.md §6 item 6), then close D-WSZERO.**
+  DISKOP_A / HL / ERR to idle published cells; K-WS94/95. The real tapes after
+  S15: SAME 12 -> 14, RESET 6 -> 3. **D-WSZERO is CLOSED (2026-10-16).** Next by
+  tier: the TIER 1 queue (TODO's index; D-TAPELOAD's class A -- Buzz Off, Shark
+  Hunter, Loopy Laundry still reset), then D-FREPLUS14 (TIER 4).
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
   MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**
