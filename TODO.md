@@ -3867,10 +3867,11 @@ item — do **one item per session** to keep context lean.
       this program and 14 in freplus_probe's: it depends on the statement too. So
       (a) can be EQUAL only shape by shape, by reproducing the reference
       evaluator's stack use per construct (its depth is a property of its
-      recursion, not a constant). ➡️ Decide with Joost whether "the same free
-      RAM" means the start-up / top-level reading (one constant, +14 today) or
-      every expression shape (an evaluator-shape project); the measurement is
-      here either way.
+      recursion, not a constant). ✅ **RULED (Joost, 2026-10-16): "we have to
+      match reference"** -- EVERY expression shape, not only the top-level
+      reading: FRE(0) counts down to the live stack as the VG-8020's does, and the
+      evaluator's stack use per construct follows the reference's. 🤖 AUTONOMOUS,
+      TIER 4 (an evaluator-shape project; measure per construct first).
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -4836,12 +4837,14 @@ item — do **one item per session** to keep context lean.
       (below): characterise each address BLACK-BOX on the VG-8020, implement it
       at the same address.
 
-- [ ] 🙋 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
+- [ ] 🔁 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
       INTERNALS) ARE NOT AT THEIR ADDRESSES (found 2026-10-15 by D-BASICINT)**
       🎚️ TIER 1 — happy path: machine code that calls the published BASIC ROM
       (PROPOSED -- the same class Joost ruled in for the undocumented three;
       he confirms or re-tiers it in the question below).
-      🙋 **NEEDS-JOOST** — scope and tier (the question at the end).
+      🔁 **STANDING** — Joost 2026-10-16, *"maybe later, as needed for now"*: no bulk
+      layout project; an entry is built (D-BASICINT's method) when a measured
+      title calls it. ~~🙋 NEEDS-JOOST~~.
       📚 MSX2 Technical Handbook (allowed source B): App. 2 publishes ~70
       math-pack entries with their contracts ($268C DECSUB ... $383F INTEXP; DAC
       $F7F6, ARG $F847), ch. 2 eight interpreter internals for CALL-statement
@@ -4851,8 +4854,8 @@ item — do **one item per session** to keep context lean.
       project: ~80 pinned entries across $268C-$67D0, part inside the repacked
       C-BIOS region, some 1 B apart (FOUT $3425 / PUFOUT $3426), and the float
       core's format differs from DAC's BCD (D-ROMSIZE step 4 meets it).
-      🙋 **Joost: in scope, and at which tier?** It shares D-BASICINT's pin
-      mechanism, which comes first either way.
+      ✅ **RULED (Joost, 2026-10-16): "maybe later, as needed for now"** -- see the
+      STANDING line at the top. ~~🙋 Joost: in scope, and at which tier?~~
       ~~📏 A concrete case, 2026-10-16: Loopy Laundry calls ~25 BASIC-ROM
       internals~~ -- WITHDRAWN the same day: those were the reference's own hook
       returns, not game calls (D-TAPELOAD's correction note). Demonia's $72E9 /
@@ -5045,10 +5048,13 @@ item — do **one item per session** to keep context lean.
       and the first read of the probe skipped AF); "LDIRMV's DE is" -- part HIT
       (the demo changed, then it reset); "all contracts matched -> no reset" -- HIT.
 
-- [ ] 🙋 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
+- [ ] 🔧 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
       $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)**
       🎚️ TIER 1 — happy path: two of the three tapes that still reset (D-TAPELOAD).
-      🙋 **NEEDS-JOOST — scope.** D-BASICINT's ruling covers the BASIC ROM's
+      🤖 **AUTONOMOUS** — ✅ RULED (Joost, 2026-10-16): *"yes"*: characterise each
+      address black-box on the VG-8020 and put it at its address in the repacked
+      C-BIOS (a repack patch per address, no growing holes). LOOP-RESTART table.
+      ~~🙋 NEEDS-JOOST -- scope.~~ D-BASICINT's ruling covers the BASIC ROM's
       undocumented entries; this is the BIOS's (page 0, where zerobas runs the
       repacked C-BIOS). The question D-TAPELOAD raised on 2026-10-16 and withdrew
       the same day (its evidence was hook returns) now has a real case: **should
@@ -6034,8 +6040,11 @@ item — do **one item per session** to keep context lean.
       `[82][var ptr 2][step sign][kind][step 8][limit 8][line 2][text ptr 2]`
       (25 B for every variable type). RETURN/NEXT must therefore SCAN for the
       token — the walk priced above is exactly the reference's shape.
-      🙋 **BACK TO JOOST (the rung's rule: adjustments are his):** take the frame
-      redesign for 1 B per GOSUB, or state
+      ✅ **RULED: match the reference, the 7 B frame** -- 2026-09-24 ("shrink ours
+      only -> GOSUB 8 -> 7 B", LOOP-RESTART's 09-24 table) and re-confirmed
+      2026-10-16 (*"we have to match reference"*; re-asked by mistake, this 🙋 had
+      never been struck). ~~🙋 BACK TO JOOST: take the frame
+      redesign for 1 B per GOSUB, or state~~
       GOSUB's 8 vs 7 as a divergence (the "never worse" rule then holds for FOR
       and FN only). ➡️ Graphics (PAINT's stack) and file I/O (`MAXFILES`, now
       D-FCBSHAPE) are still unmeasured here. ➡️ PAINT's stack is ALREADY FILED
@@ -10666,7 +10675,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36199 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36208 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10832,7 +10841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15694 (T-6FE392)8 (T-529ABE)` from `TODO.md:28488 (T-529ABE)`: a
+      `TODO.md:15703 (T-6FE392)8 (T-529ABE)` from `TODO.md:28497 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16541,7 +16550,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28488 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28497 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
