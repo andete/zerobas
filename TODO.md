@@ -3775,6 +3775,27 @@ item — do **one item per session** to keep context lean.
       channel blocks (`MAXFILES`), the string space, the stack's own start, and the
       ~270 B the VG-8020 spends on channel 0 (docs/concepts/memory-map.md). ➡️
       Compare MEMSIZ / STKTOP / FILTAB / the boot SP on both machines.
+      📏 **MEASURED 2026-10-16** ([`freplus_probe.py`](scratchpad/freplus_probe.py)
+      -> [`freplus_probe.out`](scratchpad/freplus_probe.out), a 3-line program):
+      the VG-8020's STKTOP - STREND is $F0A0 - $80D6 = **28618 -- zerobas's FRE(0)
+      to the byte** -- and its own FRE(0) reads 28604: **the 14 B are the live
+      stack's depth while the statement runs**, because the reference's FRE(0)
+      counts down to the current SP and zerobas's to a fixed top (FRE.md says so;
+      D-DIMRESERVE's note "zerobas's FRE(0) is fixed against the pool top, the
+      reference's moves with the live SP"). The LAYOUT already agrees in total:
+      HIMEM $F380 on both, 534 B of channel blocks + 200 B of strings. 🆕 Found
+      with it: **zerobas never writes FILTAB / NULBUF / MEMSIZ** (0 on a PEEK; the
+      VG-8020 $F16A / $F177 / $F168) and its STKTOP / FRETOP read $F380 (the
+      VG-8020 $F0A0 / $F168): published cells a program may read -- the same-job
+      rule says they should hold zerobas's real boundaries. ➡️ **THE DESIGN
+      CHOICE:** (a) FRE(0) from the live SP, with every allocation checked against
+      the same expression -- equal to the reference only where the two evaluators
+      use the same stack depth (the common shapes: `PRINT FRE(0)` direct and in a
+      program, `A=FRE(0)`), different per nesting level elsewhere; or (b) keep
+      the fixed top and state the difference (today's FRE.md). (a) moves FRE(0)
+      toward "the same free RAM" (Joost's priority 1, rulings table 2026-10-16);
+      measure the per-level cost on both evaluators before choosing. The
+      published layout cells are a separate, cheaper step.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10407,7 +10428,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35940 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35961 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10573,7 +10594,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15435 (T-6FE392)8 (T-529ABE)` from `TODO.md:28229 (T-529ABE)`: a
+      `TODO.md:15456 (T-6FE392)8 (T-529ABE)` from `TODO.md:28250 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16282,7 +16303,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28229 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28250 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
