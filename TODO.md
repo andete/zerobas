@@ -217,6 +217,33 @@ item — do **one item per session** to keep context lean.
       `ex_call` matches only `"FORMAT"` and otherwise `jp nc,stmt_error`, with
       **no offer to any other extension**, which is the same gap as `ATTR$`.
 
+- [ ] ⌨️ **D-KEYOOM -- A `KEY` n,"..." LINE ANSWERED `Out of memory` ON zerobas Disk
+      BASIC (Joost's report, 2026-10-16, a screenshot)** -- the line was
+      110 KEY6,"screen0"+CHR$(13).
+      🎚️ TIER 1 — happy path (provisional): a program that defines its function
+      keys stops at the sixth.
+      🙋 **NEEDS-JOOST** — the program (or the disk) that ran: the screen showed
+      the disk banner, then the error straight away (a program that ran at boot),
+      then `LIST 110` printing that line unchanged. The rest of the program and
+      the build it ran on are not known.
+      📏 **NOT REPRODUCED, 2026-10-16, on the working tree of D-WSZERO S14g-a**:
+      the line alone, inside a ten-key program, and after `CLEAR 200` give `[OK]`
+      on zerobas DISK / NODISK, the CF-3300 and the VG-8020, and `CLEAR 0` gives
+      `Out of string space` on all four
+      ([`keyoom.py`](scratchpad/keyoom.py) -> [`keyoom.out`](scratchpad/keyoom.out));
+      eight program prefixes (CLEAR with an address, SCREEN / WIDTH / COLOR /
+      KEY OFF, a `DIM` leaving ~1 KB, GOSUB and FOR+GOSUB around the keys,
+      ON ERROR, MAXFILES) agree with the CF-3300 too
+      ([`keyoom2.py`](scratchpad/keyoom2.py) -> [`keyoom2.out`](scratchpad/keyoom2.out)).
+      🔬 zerobas raises ERR 7 from two places only: the string heap
+      (`str_heap_oom_error`, `basic/str-engine.asm`) and the evaluator's stack
+      floor (`stk_guard`, `basic/expr.asm`: SP within STK_EVAL_RESERVE of
+      CTLLIM). A full string space is ERR 14 on all four machines (`CLEAR 0`
+      above), so the report is one of those two, reached through what the
+      program did BEFORE line 110 -- or an older build. Not yet known which.
+      ➡️ NEXT: the program (or the disk) that ran, then run it on zerobas DISK
+      and the CF-3300 (a third-party program is run, never decoded or copied in).
+
 - [x] ✅ **FIXED 2026-10-10 (D-LOADDI)** — ⌨️ **THE WHOLE DISK `LOAD` RAN WITH
       INTERRUPTS OFF: `TIME` STOOD STILL AND THE KEYBOARD WAS NOT SCANNED (found
       2026-10-10 re-measuring step 9's LOAD time).**
@@ -3468,6 +3495,37 @@ item — do **one item per session** to keep context lean.
       INDLR_N the stack inside INPUT$, ERRMARK / DISKOP_OP idle singles,
       PRDEST / PRDEV the reference's PTRFIL / PRTFLG jobs, the CIRCLE cells
       BUFTX once DRAW is proven not to touch them).
+      ✅ **S14g-a (2026-10-16): THE REFUSED-S13 SET, PART 1 -- "WHAT THE REFERENCE
+      DOES", equates only, 8 window bytes.** Designed read-only
+      ([`s14g_plan.md`](scratchpad/s14g_plan.md)). FCH_RDMODE -> FLKINP $F6A6
+      (the reference's "a READ or INPUT statement is being executed": the same
+      job); AUDIO_VMASK -> PRSCNT $FB35 (the reference's PLAY parse status);
+      GFX_MODE / ASPMAJ / ARCF / SNEG / ENEG -> BUFTX+10..+14 -- the S14f hazard
+      is REFUTED: DRAW draws through gfx_draw_seg directly, GFX_MODE's only reader
+      is gfx_line_op and its only writers LINE and CIRCLE's spokes; DISKOP_OP
+      (+ FOPEN_SEL, LE_OP) -> KANAST $FCAC and ERRMARK -> KANAMD $FCAD, kana-
+      keyboard cells idle on C-BIOS (an IDLE published byte, the S11 class -- not
+      the reserved areas S13 asked for; DISKOP_OP cannot be a register: FOPEN_SEL
+      is an armed selector disk.rom disarms after use). One guard.
+      📏 Row `s14ga` (LINE INPUT # of "A,B" from tape, LINE B / BF, a CIRCLE arc
+      with spokes, three-voice PLAY, a type mismatch, a syntax error, DSKF(0);
+      the 8 vacated bytes, VG-8020 1320, and A$ printed WITH the sum -- a first
+      cut printed it before the sum's SCREEN 0, which wiped it). Before
+      ([`wszero_s14ga_before.out`](scratchpad/wszero_s14ga_before.out)): 646 vs
+      1320, DIVERGES as predicted. After: 52/52 SAME
+      ([`wszero_s14ga_rows.out`](scratchpad/wszero_s14ga_rows.out); s14ga
+      re-run with A$: [`wszero_s14ga_rows2.out`](scratchpad/wszero_s14ga_rows2.out)). 🔪
+      [`wszero_s14ga_knife.py`](scratchpad/wszero_s14ga_knife.py) ->
+      [`wszero_s14ga_knife.out`](scratchpad/wszero_s14ga_knife.out): K-WS75 (the
+      nine names back) -> s14ga, HIT; K-WS79 (FCH_RDMODE at STRSCR+0, where the
+      line reader keeps its quote state -- the negative control) -> s14ga
+      diverges (A$ cut at the comma), HIT.
+      ➡️ NEXT (s14g_plan.md §3): S14g-b WSRC_TYP -> a register (seg B -17 B),
+      S14g-c INDLR_N on the stack -- with a predicted behaviour fix,
+      `A$=INPUT$(3,#VAL(INPUT$(1)))` raising 5 today -- and PRDEST / PRDEV ->
+      PTRFIL / BUF, S14g-d POINT in registers; then the SH_* stack parameter block
+      ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
+      harness and a sub page 0 byte pass), then S15.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10066,7 +10124,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35599 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35657 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10232,7 +10290,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15094 (T-6FE392)8 (T-529ABE)` from `TODO.md:27888 (T-529ABE)`: a
+      `TODO.md:15152 (T-6FE392)8 (T-529ABE)` from `TODO.md:27946 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15941,7 +15999,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27888 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27946 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

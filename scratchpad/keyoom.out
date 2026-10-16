@@ -1,0 +1,21 @@
+direct  C-BIOS_MSX1_EU_REPACK_DISK     [OK 23961  200 ]
+direct  National_CF-3300               [OK 23430  200 ]
+direct  C-BIOS_MSX1_EU_REPACK_NODISK   [OK 27157  200 ]
+direct  Philips_VG_8020                [OK 28815  200 ]
+keys    C-BIOS_MSX1_EU_REPACK_DISK     [OK 23815  200 ]
+keys    National_CF-3300               [OK 23284  200 ]
+keys    C-BIOS_MSX1_EU_REPACK_NODISK   [OK 27011  200 ]
+keys    Philips_VG_8020                [OK 28669  200 ]
+cl200   C-BIOS_MSX1_EU_REPACK_DISK     [OK 23806  200 ]
+cl200   National_CF-3300               [OK 23275  200 ]
+cl200   C-BIOS_MSX1_EU_REPACK_NODISK   [OK 27002  200 ]
+cl200   Philips_VG_8020                [OK 28660  200 ]
+cl0     C-BIOS_MSX1_EU_REPACK_DISK     Out of string space in 100
+cl0     National_CF-3300               Out of string space in 100
+cl0     C-BIOS_MSX1_EU_REPACK_NODISK   Out of string space in 100
+cl0     Philips_VG_8020                Out of string space in 100
+fre     C-BIOS_MSX1_EU_REPACK_DISK     [F 23961  200 ]
+fre     National_CF-3300               [F 23430  200 ]
+fre     C-BIOS_MSX1_EU_REPACK_NODISK   [F 27157  200 ]
+fre     Philips_VG_8020                [F 28815  200 ]
+refcache: 0 hit, 20 miss, 20 stored

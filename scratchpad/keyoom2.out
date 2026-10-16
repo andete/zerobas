@@ -1,0 +1,17 @@
+clrC000  C-BIOS_MSX1_EU_REPACK_DISK   [OK 15397  200 ]
+clrC000  National_CF-3300             [OK 15383  200 ]
+clrD000  C-BIOS_MSX1_EU_REPACK_DISK   [OK 18692  1000 ]
+clrD000  National_CF-3300             [OK 18678  1000 ]
+scrn     C-BIOS_MSX1_EU_REPACK_DISK   [OK 23704  200 ]
+scrn     National_CF-3300             [OK 23173  200 ]
+dim      C-BIOS_MSX1_EU_REPACK_DISK   [OK 1297  200 ]
+dim      National_CF-3300             [OK 766  200 ]
+gosub    C-BIOS_MSX1_EU_REPACK_DISK   <nothing matched>
+gosub    National_CF-3300             <nothing matched>
+forgs    C-BIOS_MSX1_EU_REPACK_DISK   <nothing matched>
+forgs    National_CF-3300             <nothing matched>
+onerr    C-BIOS_MSX1_EU_REPACK_DISK   [OK 23692  200 ]
+onerr    National_CF-3300             [OK 23161  200 ]
+maxf     C-BIOS_MSX1_EU_REPACK_DISK   [OK 23183  200 ]
+maxf     National_CF-3300             [OK 22652  200 ]
+refcache: 0 hit, 16 miss, 16 stored

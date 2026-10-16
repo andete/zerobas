@@ -1,0 +1,4 @@
+ROW s14ga $ECF8-$F37F VG=[[S 1320 A,B]] ZB=[[S 1320 A,B]] SAME
+
+PASS: a load over the window, then BASIC (1/1 as pinned)
+refcache: 0 hit, 2 miss, 2 stored

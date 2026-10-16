@@ -720,7 +720,8 @@ GFX_X1          equ     $F70A   ; LINE endpoint 1 X (int16 LE) -- resident marsh
 GFX_Y1          equ     $F70C   ; LINE endpoint 1 Y (int16 LE)
 GFX_X2          equ     $F70E   ; LINE endpoint 2 X (int16 LE)
 GFX_Y2          equ     $F710   ; LINE endpoint 2 Y (int16 LE)
-GFX_MODE        equ     $EF6F   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
+GFX_MODE        equ     BUFTX + 10   ; GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1)
+                                ; D-WSZERO S14g-a: BUFTX: LINE / CIRCLE hold it across their own evaluation; DRAW never reads it (was $EF6F)
 GFX_CX          equ     $F796   ; Bresenham: current pixel X (int16, may be off-screen) (2)
 GFX_CY          equ     $F798   ; Bresenham: current pixel Y (int16) (2)
 GFX_ERR         equ     $F79A   ; Bresenham: error accumulator, in [0,DMAJ) (2)
@@ -747,9 +748,11 @@ GFX_YSTEP       equ     $F5C2   ; box fill: row step, $0001/$FFFF (2)
 GFX_CXC         equ     $F748   ; centre X (int16 LE) (2)
 GFX_CYC         equ     $F74A   ; centre Y (int16 LE) (2)
 GFX_R           equ     $F66E   ; radius (int16, >=0 -- resident guards G4-rneg) (2)
-GFX_ASPMAJ      equ     $EF93   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
+GFX_ASPMAJ      equ     BUFTX + 11   ; 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1)
+                                ; D-WSZERO S14g-a: BUFTX (CIRCLE) (was $EF93)
 GFX_ASPS        equ     $F670   ; 8.8 minor scale S, round(minor_ratio*256); 256=no scale (2)
-GFX_ARCF        equ     $EF96   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
+GFX_ARCF        equ     BUFTX + 12   ; 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1)
+                                ; D-WSZERO S14g-a: BUFTX (CIRCLE) (was $EF96)
 GFX_SVX         equ     $F5C4   ; start boundary vector X, screen-offset scaled ints (2)
 GFX_SVY         equ     $F5C6   ; start boundary vector Y (2)
 GFX_EVX         equ     $F5C8   ; end boundary vector X (2)
@@ -787,8 +790,10 @@ GFX_SOCT        equ     $F740   ; start: trunc(|a0|*4/pi), RAW/unmasked int16 (t
 GFX_SU14        equ     $F742   ; start: trunc(frac * 16384), 0..16383 (2)
 GFX_EOCT        equ     $F744   ; end: trunc(|a1|*4/pi), RAW/unmasked (2)
 GFX_EU14        equ     $F746   ; end: trunc(frac * 16384) (2)
-GFX_SNEG        equ     $EFBB   ; resident: start angle was negative -> spoke pending (1)
-GFX_ENEG        equ     $EFBC   ; resident: end angle was negative -> spoke pending (1)
+GFX_SNEG        equ     BUFTX + 13   ; resident: start angle was negative -> spoke pending (1)
+                                ; D-WSZERO S14g-a: BUFTX (CIRCLE) (was $EFBB)
+GFX_ENEG        equ     BUFTX + 14   ; resident: end angle was negative -> spoke pending (1)
+                                ; D-WSZERO S14g-a: BUFTX (CIRCLE) (was $EFBC)
 GFX_WE_P        equ     $F5E0   ; wedge END boundary: in-octant position, 0..M-1 (2)
 GFX_WE_O        equ     $F5E2   ; wedge END boundary: octant 0..7 (1)
 GFX_WRAPF       equ     $F5E3   ; wedge wraps 0: pair S > pair E lexicographically (1)
@@ -855,7 +860,8 @@ BASETAB         equ     $F3B3   ; BASE(0..19): 20 LE words, 4 groups of 5 (name,
 CURPTR          equ     $F7BC   ; current load pointer (2 bytes) -- SWPTMP+0
 ENDPTR          equ     $F7BE   ; final load address  (2 bytes) -- SWPTMP+2
 EXECPTR         equ     $F7C0   ; execution address   (2 bytes) -- SWPTMP+4
-ERRMARK         equ     $EEBD   ; error landmark marker byte (1 B)
+ERRMARK         equ     $FCAD   ; error landmark marker byte (1 B)
+                                ; D-WSZERO S14g-a: KANAMD, a kana-keyboard cell idle on C-BIOS (was $EEBD)
 ; --- Phase 2: MAXFILES multi-channel control (free $E011.. gap below CURPTR) ---
 ; The Phase-2 file verbs gained a real multi-channel table (retiring the single-
 ; channel limit). FCH_CEIL channels can be open at once. Because fat.asm keeps ONE
@@ -3169,7 +3175,8 @@ FCH_NUM         equ     $F73A   ; open channel's file number, 0 = none open (1)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EF64)
 FCH_MODE        equ     $F73B   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EF65)
-FCH_RDMODE      equ     $EF66   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+FCH_RDMODE      equ     $F6A6   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+                                ; D-WSZERO S14g-a: FLKINP, the reference's "a READ or INPUT statement is being executed" -- the same job (was $EF66)
 ; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
 ; distinct statements that never run at the same instant, and the per-sector entry
 ; index is dead outside do_files, so the byte is reused (collision-checked).
@@ -3348,7 +3355,8 @@ FWR_DIROFF      equ     $EE36   ; DISK-ONLY: byte offset of that dir entry withi
 ; primitive call clobber the caller's own live loop variables mid-walk. RAM,
 ; so visible from main (page-1 resident shims) and the sub-ROM page-1 tenant
 ; (sub/fatprim.asm) alike.
-DISKOP_OP       equ     $EE38   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+DISKOP_OP       equ     $FCAC   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+                                ; D-WSZERO S14g-a: KANAST, a kana-keyboard cell idle on C-BIOS (an armed selector: not a register) (was $EE38)
 DISKOP_STATUS   equ     $FCAE   ; tenant -> main: the disposition (1 B)
                                 ; D-WSZERO S14a: FLBMEM, idle on zerobas and C-BIOS (was $EE39)
                                 ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
@@ -3819,7 +3827,8 @@ PLAY_DEF_VOLUME equ     8
 ; Marshalling: audio and disk are never in flight together (a PLAY does no disk
 ; I/O, one subrom_call reaches one tenant), so audio reuses the DISKOP cells --
 ; the same "separate namespace, same cell" precedent as fatprim vs dirverb above.
-AUDIO_VMASK     equ     DISKOP_OP       ; $EE38 main->tenant: voices-present bitmask
+AUDIO_VMASK     equ     $FB35       ; $FB35 main->tenant: voices-present bitmask
+                                ; D-WSZERO S14g-a: PRSCNT, the reference's PLAY parse status -- the same statement's job (was DISKOP_OP)
 AUDIO_STATUS    equ     DISKOP_STATUS   ; $FCAE tenant->main: 0 ok / nonzero ERR code
 ; play_parse_tenant parse scratch -- transient, dead outside a PLAY parse. Reuses
 ; the DISKOP result cells ($E9FD-FF, audio/disk never concurrent) + the unused
@@ -5752,4 +5761,9 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
 ; --- D-WSZERO S14e (2026-10-16): the math host guard ------------------------------
     IF SQRT_POW10 + 1 != MW_HOST + MW_N || MW_HOST + MW_N > FN_PAREA_END
                 db      S14E_MATH_BLOCK_OUTSIDE_ITS_SAVED_HOST
+    ENDIF
+
+; --- D-WSZERO S14g-a (2026-10-16): the CIRCLE / LINE cells inside BUFTX ----------
+    IF GFX_ENEG + 1 > BUFTX + 57 || GFX_MODE < BUFTX + 10
+                db      S14GA_CIRCLE_CELLS_OUTSIDE_BUFTX
     ENDIF

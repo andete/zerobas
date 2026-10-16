@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 100 declared addresses in this project's own workspace `$E000..$F37F` (97 with a machine-readable width), plus **420** in the MSX standard work area at or above `$F380`.
-* **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
+* **basic** — 92 declared addresses in this project's own workspace `$E000..$F37F` (89 with a machine-readable width), plus **428** in the MSX standard work area at or above `$F380`.
+* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -148,8 +148,6 @@ second one is the question a per-component map cannot answer.
 | `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
 | `$EE36` | 2 B | `basic` | `FWR_DIROFF` | DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
 | `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
-| `$EE38` | 1 B | `basic` | `AUDIO_VMASK/DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
-| `$EE38` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
 | `$EE3A` | 1 B | `basic` | `DISKOP_A` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
 | `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | DISK-ONLY: tenant -> main: the primitive's real HL output |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
@@ -160,7 +158,6 @@ second one is the question a per-component map cannot answer.
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EEBD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$EEC0` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: running byte offset into the record buffer (2) |  |
 | `$EEC5` | 1 B | `basic` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
@@ -197,13 +194,6 @@ second one is the question a per-component map cannot answer.
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
-| `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
-| `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
-| `$EF6F` | 1 B | `basic` | `GFX_MODE` | GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1) |  |
-| `$EF93` | 1 B | `basic` | `GFX_ASPMAJ` | 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1) |  |
-| `$EF96` | 1 B | `basic` | `GFX_ARCF` | 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1) |  |
-| `$EFBB` | 1 B | `basic` | `GFX_SNEG` | resident: start angle was negative -> spoke pending (1) |  |
-| `$EFBC` | 1 B | `basic` | `GFX_ENEG` | resident: end angle was negative -> spoke pending (1) |  |
 | `$EFBF` | 1 B | `basic` | `GFX_PTX` | main->tenant: POINT target X, 0..255 (1) |  |
 | `$EFC0` | 1 B | `basic` | `GFX_PTY` | main->tenant: POINT target Y, 0..191 (1) |  |
 | `$EFCA` |  | `basic` | `SH_BASE/SH_OP` | the retired TRAPSTK's FREE-RAM run; SH_OP..SH_ERR |  |
@@ -339,7 +329,11 @@ extents the standard already fixes would be noise, not rigour.
 | `$F56E` | 1 B | `basic` | `PU_W` | current field width (1) |  |
 | `$F56F` | 1 B | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
 | `$F570` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
-| `$F573` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
+| `$F571` | 1 B | `basic` | `GFX_MODE` | GFX_OP=3 sub-mode: 0=segment 1=box outline 2=box fill (1) |  |
+| `$F572` | 1 B | `basic` | `GFX_ASPMAJ` | 0 = x-major (aspect<=1), 1 = y-major (aspect>1) (1) |  |
+| `$F573` |  | `basic` | `FOR_STEP/GFX_ARCF` | 0 = full circle (ignore S/E), 1 = arc (apply the mask) (1) |  |
+| `$F574` | 1 B | `basic` | `GFX_SNEG` | resident: start angle was negative -> spoke pending (1) |  |
+| `$F575` | 1 B | `basic` | `GFX_ENEG` | resident: end angle was negative -> spoke pending (1) |  |
 | `$F57C` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
 | `$F57E` |  | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
 | `$F57F` | 1 B | `basic` | `GFX_DFTOP` | $F57F: X-frame stack depth (1) |  |
@@ -424,6 +418,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6A1` | 2 B | `basic` | `RESTORE_LINE` | link-field a READ seeks DATA from when unpositioned (2) |  |
 | `$F6A3` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
 | `$F6A5` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
+| `$F6A6` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
+| `$F6A6` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
 | `$F6A9` | 1 B | `basic` | `RDV_MODE` | $F6A9: main -> tenant MODE (1 B), D-READVAR: |  |
 | `$F6AB` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |
@@ -652,6 +648,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$FB22` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
+| `$FB35` |  | `basic` | `AUDIO_VMASK` | $FB35 main->tenant: voices-present bitmask |  |
 | `$FB38` |  | `basic` | `VOICEN` | voice currently being parsed (0..2) |  |
 | `$FB3C` |  | `basic` | `MCLPTR` | address of the MML string being parsed (source cursor) |  |
 | `$FB3E` |  | `basic` | `QUEUEN` | active queue # scratch (0..2) |  |
@@ -685,6 +682,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
+| `$FCAC` | 1 B | `basic` | `DISKOP_OP/FOPEN_SEL/LE_OP` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
+| `$FCAC` | 1 B | `disk` | `DISKOP_OP/FOPEN_SEL` | main -> tenant: DISKOP_SEL_* primitive selector (1) |  |
+| `$FCAD` | 1 B | `basic` | `ERRMARK` | error landmark marker byte (1 B) |  |
 | `$FCAE` | 1 B | `basic` | `AUDIO_STATUS/BN_STAT/CM_STATUS/DEFT_STATUS/DISKOP_STATUS/LE_STATUS` | $FCAE tenant->main: 0 ok / nonzero ERR code |  |
 | `$FCAE` | 1 B | `disk` | `DISKOP_STATUS` | tenant -> main: the disposition (1 B) |  |
 | `$FCAF` |  | `basic` | `SCRMOD` | current screen mode (0..3) |  |

@@ -32,12 +32,15 @@ session and the loop resumes exactly where it stopped.
   **S14d** (INPUT$ into a heap temp -- also a behaviour fix --, BUFTX for FOR /
   PRINT USING / DRAW, 88 B; K-WS68..70) and **S14e** (the math block saved around
   every math tenant, 39 B; K-WS71/72) and **S14f** (the clear-cut rest, 18 B;
-  K-WS73/74). `ram_map --floor-top F380` lists what is left: EXACTLY the S13 set
-  (30 names, ~33 B) -- ⏸ 🙋 JOOST'S CALL (TODO D-WSZERO S14f's last paragraph);
-  S15 waits on it. (BUF+256
-  slot + MID$, INPUT$ into the heap, the math block), then S15 (the ceiling,
-  once). S13 (~41 B) is 🙋 Joost's call.
-  the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.
+  K-WS73/74). **S13 was REFUSED by Joost (2026-10-16, "No to S13"; rulings table
+  below)** and his rule "investigate what the references do" was applied:
+  **S14g-a** (2026-10-16) homed nine of the S13 set in the reference's same-job
+  cells or idle singles -- FCH_RDMODE -> FLKINP, the CIRCLE / LINE cells -> BUFTX,
+  AUDIO_VMASK -> PRSCNT, DISKOP_OP / ERRMARK -> KANAST / KANAMD -- 0 ROM bytes,
+  K-WS75/79 HIT. NEXT, per scratchpad/s14g_plan.md: S14g-b (WSRC_TYP -> a
+  register), S14g-c (INDLR_N on the stack, PRDEST / PRDEV), S14g-d (POINT's
+  GFX_PTX / PTY), then the SH_* stack parameter block (scratchpad/shblk_plan.md,
+  S16.0..S16.3), then **S15 raises the ceiling ONCE, last**.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,
   err_msgtab and the PLAY entry took bytes back). D-WSZERO's next phase needs
   MAIN bytes, so the next eviction is **S10.C (input side, frees main page 1)**

@@ -30,7 +30,7 @@ FLD_CHAN equ 0EEC5H   ; DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1
 LRSET_W equ 0EEC7H   ; DISK-ONLY: LSET/RSET: destination field width (1)
 LRSET_DEST equ 0EEC8H   ; DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B)
 STRPTR equ 0F954H   ; pointer to the [len][bytes] descriptor (2 bytes)
-DISKOP_OP equ 0EE38H   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
+DISKOP_OP equ 0FCACH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
 DISKOP_ERR equ 0EF06H   ; DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
 CLPTR equ 0F6EDH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0F6EFH   ; CLOAD/LOAD: saved link word of the current line
@@ -74,7 +74,7 @@ GP_FLAGS equ 0F088H   ; DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (
 GP_RECLEN equ 0F09AH   ; DISK-ONLY: active channel's record length (word), loaded per calc
 GP_SRC equ 0EE77H   ; DISK-ONLY: pass cursor into FSECTOR_BUF (2)
 GP_LEFT equ 0EE79H   ; DISK-ONLY: record bytes still to move, ends $EA3E (2 B)
-FCH_RDMODE equ 0EF66H   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
+FCH_RDMODE equ 0F6A6H   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
 STRMAX equ 000FFH   ; repack build: string heap (slice-4a §8)
 FMT_GEOMSEL equ 0EF61H   ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)

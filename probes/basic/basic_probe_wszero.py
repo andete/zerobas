@@ -226,6 +226,19 @@ TAPES["s14f"] = lambda: tape(*RANGES["s14f"]) + build_cas_ascii("D", "HELLO\r\n"
 TAPES["ovrd"] = lambda: tape(*RANGES["ovrd"]) + build_cas_ascii("D", "R" * 250 + "\r\n")
 RUN_GAP["s14f"] = 60.0
 RUN_GAP["ovrd"] = 60.0
+# D-WSZERO S14g-a (2026-10-16, after S13's refusal: "what the references do"):
+# FCH_RDMODE -> FLKINP (the reference's READ / INPUT flag), the CIRCLE / LINE cells
+# -> BUFTX+10..14, AUDIO_VMASK -> PRSCNT (PLAY's parse status), DISKOP_OP (+FOPEN_SEL,
+# LE_OP) -> KANAST, ERRMARK -> KANAMD (idle on C-BIOS). `s14ga` sums the 8 vacated
+# bytes (VG-8020 1320) after running their users.
+RANGES["s14ga"] = RANGES["all"]
+TAPES["s14ga"] = lambda: tape(*RANGES["s14ga"]) + build_cas_ascii("D", "A,B\r\n")
+RUN_GAP["s14ga"] = 60.0
+# A$ (the LINE INPUT # of "A,B") prints WITH the sum: line 50's own PRINT is
+# wiped by this line's SCREEN 0, which left the read mode unwitnessed (first cut)
+_S14GA_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+              ':PRINT"[S";S;A$;"]":END',
+              "950 DATA 60984,60984,61117,61117,61286,61286,61295,61295,61331,61331,61334,61334,61371,61372"]
 _S14F_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 61800,61800,61596,61596,61584,61588,61282,61285,61287,61287"]
@@ -549,6 +562,15 @@ PROGRAM_OVRD = [
     '20 OPEN"CAS:D"FOR INPUT AS#1:LINE INPUT#1,A$:CLOSE:PRINT"[R";LEN(A$);ASC(A$);"]":END',
     "RUN",
 ]
+PROGRAM_S14GA = [
+    "NEW",
+    '10 CLEAR 300,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 OPEN"CAS:D"FOR INPUT AS#1:LINE INPUT#1,A$:CLOSE',
+    '30 SCREEN 2:LINE(0,0)-(40,40),15,B:LINE(50,0)-(90,40),15,BF:CIRCLE(128,96),40,15,-1,-5,1.5:SCREEN 0',
+    '40 PLAY"C","","E":B$=5:C$=+:X=DSKF(0)',
+    '50 PRINT"[A";A$;"]":GOTO 900',
+    '100 PRINT"[E";ERR;"]";:RESUME NEXT',
+] + _S14GA_SUM + ["RUN"]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -591,7 +613,7 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX,
             "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM,
             "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH,
-            "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD}
+            "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA}
 
 
 def tape(lo, hi, fill=0xA5):
