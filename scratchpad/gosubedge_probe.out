@@ -1,0 +1,9 @@
+c200   C-BIOS_MSX1_EU_REPACK_NODISK   20 D=D+1:GOSUB 20 | [D 3497  768 ]
+c200   Philips_VG_8020                20 D=D+1:GOSUB 20 | [D 4084  28718 ]
+himem  C-BIOS_MSX1_EU_REPACK_NODISK   20 D=D+1:GOSUB 20 | [D 568  772 ]
+himem  Philips_VG_8020                20 D=D+1:GOSUB 20 | [D 737  5290 ]
+ret    C-BIOS_MSX1_EU_REPACK_NODISK   20 D=D+1:GOSUB 20 | [R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 | [R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 | [R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 | [R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 | [R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7 ][R 7
+ret    Philips_VG_8020                20 D=D+1:GOSUB 20 | [R 7 ] | RETURN without GOSUB in 100
+one    C-BIOS_MSX1_EU_REPACK_NODISK   20 GOSUB 50:PRINT"[BACK]":END | [BACK]
+one    Philips_VG_8020                20 GOSUB 50:PRINT"[BACK]":END | [BACK]
+refcache: 4 hit, 4 miss, 4 stored

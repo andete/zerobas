@@ -3741,6 +3741,43 @@ item — do **one item per session** to keep context lean.
       owns, the ceiling is the reference's, and the loaders that crashed on it
       run. What is left is filed: D-FREPLUS14 (+14 B, TIER 4), D-S16PREEXIST.
 
+- [ ] 🧱 **D-GOSUBOOM -- A GOSUB NEAR THE MEMORY EDGE IS `Out of memory` ON zerobas: IT
+      KEEPS 768 B CLEAR BELOW EVERY FRAME, THE REFERENCE ~130 (Head over Heels, 2026-10-16)**
+      🎚️ TIER 1 — happy path: loading existing software from tape (Head over Heels
+      stops with `Out of memory in 40`; the VG-8020 runs it).
+      🤖 AUTONOMOUS — the reference's behaviour is measured below; the fix is ours.
+      📏 **FOUND** (D-TAPELOAD's class D; tape_triage with a breakpoint on OUR
+      raise_error, registers and our own cells only): after the game's own
+      `CLEAR ...,&H97FF` the frame pool's top is $9585 (= the VG-8020's STKTOP for
+      the same totals) and its program and variables end at $92E4: 671 B free --
+      and line 40's GOSUB is refused (ERRMARK $CE, control-stack overflow) because
+      `CTL_FRAME_MARGIN` (basic/sysvars.inc, D-STACKFLOOR) keeps **768 B** clear below
+      every frame. **The reference's edge**
+      ([`gosubedge_probe.py`](scratchpad/gosubedge_probe.py) ->
+      [`gosubedge_probe.out`](scratchpad/gosubedge_probe.out)): a GOSUB recursion
+      stops with ~130 B left on the VG-8020 (4084 frames x 7 B against 28718; 737
+      x 7 against 5290 under `CLEAR 200,&H9800`), at 768 here (3497 / 568 frames).
+      🎯 **AND THE REASON FOR 768 DOES NOT HOLD ON THE REFERENCE:** D-STACKFLOOR
+      sized it so a program can go on evaluating 16 nested parentheses after a
+      TRAPPED overflow "with every frame still standing". **The VG-8020 does not
+      keep them standing**: in the handler of a trapped GOSUB overflow, FRE(0) reads
+      nearly all memory (28718) and a RETURN is `RETURN without GOSUB in 100`; here
+      the RETURN goes back into the recursion and the program LOOPS FOREVER
+      (`ret` row). A plain trapped `ERROR 5` inside one GOSUB keeps its frame on
+      both (`one` row: [BACK]) -- only the out-of-memory overflow empties the stack.
+      ➡️ **THE FIX, IN ORDER:** (1) on a control-stack overflow (gosub_stk_over /
+      err7_mark, ERRMARK $CE) EMPTY THE POOL before raising, as the reference does
+      -- CSP := CTLTOP, FNSP := 0 (sh_ctl_reset's job) -- and move the run loop's
+      own stack block up with it and re-anchor SAVSTK (the merged stack lives under
+      the frames: D-SPMERGE, interp.asm's trap branch; ctl_reloc moves it DOWN on
+      every push, this must move it UP once); (2) then lower CTL_FRAME_MARGIN to the
+      reference's edge -- 256 is the next whole page (ctl_alloc's one-byte test,
+      and sub/deffn.asm's copy), ~130 needs a 16-bit compare. 🔮 Head over Heels
+      passes line 40 at 256 already (671 B free). Rows to add: `ret` (RETURN after
+      the trapped overflow -> ERR 3), the edge depth, Head over Heels' shape
+      (CLEAR to $97FF with a ~4.8 KB program, then GOSUB); ramfree-acceptance's
+      n.deep and ctllim-acceptance are the regression gates (the 768's own rows).
+
 - [ ] 🔎 **D-S16PREEXIST -- THREE DIFFERENCES THE S16 ROWS FOUND, PRESENT ON HEAD'S ROM TOO
       (2026-10-16)**
       🎚️ TIER 6 — provisional, until each is isolated (the first may be higher).
@@ -4355,6 +4392,10 @@ item — do **one item per session** to keep context lean.
       2026-10-15 note below that **Loopy Laundry runs** was measured on
       `pick.json`'s copy (another dump, another file); pick_martos's copy has
       reset at T180 in every run since 2026-10-14 -- not a regression.
+      (D) **Head over Heels' `Out of memory in 40`** is a GOSUB refused at 671 B
+      free by the 768-B frame margin, where the reference keeps ~130: filed as
+      D-GOSUBOOM (TIER 1), with the reference's own behaviour after a trapped
+      overflow measured.
       ➡️ Measure first, per tape, on the VG-8020 and both builds: WHERE it
       stops -- no `Found:` (the leader / header / baud detection: TAPION,
       `cas_baud`), a `Device I/O error` mid-file (TAPIN's edge timing against
@@ -10442,7 +10483,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35975 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36016 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10608,7 +10649,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15470 (T-6FE392)8 (T-529ABE)` from `TODO.md:28264 (T-529ABE)`: a
+      `TODO.md:15511 (T-6FE392)8 (T-529ABE)` from `TODO.md:28305 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16317,7 +16358,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28264 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28305 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
