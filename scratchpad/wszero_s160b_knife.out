@@ -1,0 +1,2 @@
+K-WS88: test_str_fn rc=1, 8 FAIL line(s); predicted FAIL -> HIT
+restored: test_str_fn rc=0, 0 FAIL line(s) -> SAME (PASS)

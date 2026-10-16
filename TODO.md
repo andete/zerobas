@@ -3623,8 +3623,26 @@ item — do **one item per session** to keep context lean.
       private stack and the dropped band back, BC kept) -> the witness FAILS, HIT.
       (The plan's knife names K-WS75..82 were taken by S14g; S16 counts on from
       K-WS87.) No ROM change.
-      ➡️ NEXT: S16.0(b), the strheap tenant carve (shared result tails, a
-      jump-table dispatch -- sub page 0 has 34 B free today), then S16.1..3: the SH_* stack parameter block
+      ✅ **S16.0(b) (2026-10-16): THE STRHEAP TENANT DISPATCHES THROUGH A JUMP
+      TABLE.** `strheap_engine` (`sub/strheap.asm`) tested SH_OP against 0..21 in a
+      20-deep `cp n / jp z` chain; it now indexes a 22-entry `dw` table (no
+      handler reads HL / DE / BC on entry, so clobbering them is free; ops 16..21
+      exist only in the CLEARPOOL build, as before). **Sub page 0 34 -> 83 B
+      free** (`make basic-reloc`), pins 4/4, no behaviour change: unit tests
+      67/67. That already covers the plan's worst case for the tenant's growth
+      under S16 (-30 +- 40 B), so the shared-result-tail carve is not needed
+      first and was not done. 🔪
+      [`wszero_s160b_knife.py`](scratchpad/wszero_s160b_knife.py) ->
+      [`wszero_s160b_knife.out`](scratchpad/wszero_s160b_knife.out): K-WS88
+      (table entries 6 / 7 swapped) -> test_str_fn.py fails 8 cases, HIT.
+      📖 **Measured from C-BIOS's source (`src/slot.asm` `calslt` / `m_clprim`),
+      for the record the tree's lore disagrees on:** CALSLT swaps the caller's
+      BC / DE / HL into the shadow set, swaps them back before `jp (ix)`, and on
+      the way out hands the CALLER the tenant's AF / BC / DE / HL (AF through
+      AF'). So on C-BIOS registers DO travel both ways; "CALSLT does not preserve
+      A" is true only in the sense that the TENANT's A comes back. The plan's
+      Variant B (the block) does not depend on it; Variant R could.
+      ➡️ NEXT: S16.1..3, the SH_* stack parameter block
       ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
       harness and a sub page 0 byte pass), then S15.
 
@@ -10225,7 +10243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35758 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35776 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10391,7 +10409,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15253 (T-6FE392)8 (T-529ABE)` from `TODO.md:28047 (T-529ABE)`: a
+      `TODO.md:15271 (T-6FE392)8 (T-529ABE)` from `TODO.md:28065 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16100,7 +16118,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28047 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28065 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

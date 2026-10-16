@@ -108,53 +108,49 @@
 ; value; SH_ERR always 0.
 ; Clobbers everything (tenant convention).
 strheap_engine:
+                ; D-WSZERO S16.0(b) (2026-10-16): a JUMP TABLE on SH_OP, where a
+                ; 20-deep `cp n / jp z` chain stood (~106 B -> 60 B of sub page 0,
+                ; and every op reaches its handler in the same time). No handler
+                ; reads HL / DE / BC on entry -- each loads its own arguments from
+                ; SH_* -- so clobbering HL / DE here is free. Main only ever writes
+                ; ops 0..21; the table has no range check, as the chain had none
+                ; (its fall-through sent any other value to VAL, op 13).
                 ld      a,(SH_OP)
-                or      a
-                jp      z,she_alloc
-                cp      1
-                jp      z,she_gc
-                cp      2
-                jp      z,sh_append         ; op=2 (APPEND: R += Tk, in place)
-                cp      3
-                jp      z,she_temp_alloc
-                cp      4
-                jp      z,she_snapshot
-                cp      5
-                jr      z,she_slice_op
-                cp      6
-                jp      z,sh_hex_build
-                cp      7
-                jp      z,sh_oct_build
-                cp      8
-                jp      z,sh_fill
-                cp      9
-                jr      z,she_mid_store_op
-                cp      10
-                jr      z,she_cmp_op
-                cp      11
-                jr      z,she_instr_op
-                cp      12
-                jp      z,sh_var_store      ; sets SH_ERR itself (0 ok / 1 OOM)
-                cp      14
-                jp      z,sh_bin_build      ; BIN$ (op 8 is sh_fill, hence 14)
-                cp      15
-                jp      z,sh_free_gap       ; FRE
+                add     a,a
+                ld      l,a
+                ld      h,0
+                ld      de,she_table
+                add     hl,de
+                ld      a,(hl)
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                jp      (hl)
+she_table:
+                dw      she_alloc           ; 0  ALLOC
+                dw      she_gc              ; 1  GC
+                dw      sh_append           ; 2  APPEND: R += Tk, in place
+                dw      she_temp_alloc      ; 3  TEMP_ALLOC
+                dw      she_snapshot        ; 4  SNAPSHOT
+                dw      she_slice_op        ; 5  SLICE
+                dw      sh_hex_build        ; 6  HEX$
+                dw      sh_oct_build        ; 7  OCT$
+                dw      sh_fill             ; 8  FILL (STRING$ / SPACE$ / CHR$)
+                dw      sh_mid_store        ; 9  MID$()= (sets SH_ERR: 0 ok / 3 range)
+                dw      she_cmp_op          ; 10 CMP
+                dw      she_instr_op        ; 11 INSTR
+                dw      sh_var_store        ; 12 VAR_STORE (sets SH_ERR: 0 ok / 1 OOM)
+                dw      sh_val_parse        ; 13 VAL
+                dw      sh_bin_build        ; 14 BIN$ (op 8 is sh_fill, hence 14)
+                dw      sh_free_gap         ; 15 FRE
     IF CLEARPOOL
-                cp      16
-                jp      z,she_snap_keep     ; SNAPSHOT-UNLESS-ALREADY-A-TEMP (D-CLP)
-                cp      17
-                jp      z,sh_free_vars      ; FRE(n) -- free VARIABLE space (D-CLP)
-                cp      18
-                jp      z,sh_chan_addr      ; file-channel block address (D-FCH §3.2)
-                cp      19
-                jp      z,sh_val_scr        ; D-INPNUM: VAL-parse the STRSCR field
-                cp      20
-                jp      z,sh_ctl_reset      ; D-CTLPOOL: derive the pool's top
-                cp      21
-                jp      z,she_snap_slice    ; D-SLICEOOM: a slice's source
+                dw      she_snap_keep       ; 16 SNAPSHOT-UNLESS-ALREADY-A-TEMP (D-CLP)
+                dw      sh_free_vars        ; 17 FRE(n) -- free VARIABLE space (D-CLP)
+                dw      sh_chan_addr        ; 18 file-channel block address (D-FCH §3.2)
+                dw      sh_val_scr          ; 19 D-INPNUM: VAL-parse the STRSCR field
+                dw      sh_ctl_reset        ; 20 D-CTLPOOL: derive the pool's top
+                dw      she_snap_slice      ; 21 D-SLICEOOM: a slice's source
     ENDIF
-                jp      sh_val_parse        ; op==13: the only other value the
-                                            ; main-ROM glue ever writes
 she_instr_op:
                 call    sh_instr_search
                 xor     a
@@ -176,8 +172,6 @@ she_cmp_op:
                 call    sh_pop_top
                 ld      hl,(SH_SRC)
                 jp      sh_pop_top
-she_mid_store_op:
-                jp      sh_mid_store        ; sets SH_ERR itself (0 ok / 3 range)
 she_slice_op:
                 call    she_slice
                 xor     a
