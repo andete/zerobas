@@ -3235,6 +3235,39 @@ item — do **one item per session** to keep context lean.
       ARGA) and K-WS61 (VS_INT_VAL onto TKVALEND) -> the build refuses on the
       named guard, HIT, HIT; K-WS62 (VARTYPE onto TKDCOUNT, the refuted
       placement) -> `ovdac` diverges, HIT.
+      ✅ **S14b (2026-10-16): THE RENDER WINDOW AND ITS DETOK CELLS INTO BUF -- 112
+      window bytes, sub page 0 +2 B (12 -> 10).** DB_WIN -> $F600 (one page, 94 B
+      now: BUF's last 2 B are S14c's), DB_SKIP .. DB_RESPTR, DB_CUR / DB_MORE /
+      DB_RESUME (three of S13's cells, homed here without the ruling) and the
+      probe-only GFX_DJ / GFX_BAD -> $F5E8-$F5F9. The KEY-bar PAINT / BLANK are
+      dispatched BEFORE db_begin in keystr_tenant: they were the only window
+      writer reachable from an expression (INKEY$, read_line), so the window is
+      statement-only (LIST, KEY LIST / KEY n, PRINT USING, ASCII SAVE: each
+      drains it before the next evaluation). Two guards; ram_map's A14 negative
+      arm re-anchored again (on FLD_TAB, DISK-ONLY, which stays).
+      📏 Rows: `s14lst` (KEY n, KEY LIST, a 120-char PRINT USING literal, a
+      direct LIST of a 200-char line; the 112 vacated bytes, VG-8020 18480) and
+      `ovkey` (a 170-char LINE INPUT answer with the KEY bar ON -- char 163 is
+      where the window starts). Before, on S14a's build
+      ([`wszero_s14b_before.out`](scratchpad/wszero_s14b_before.out),
+      [`wszero_s14b_before2.out`](scratchpad/wszero_s14b_before2.out)): s14lst
+      8660, ovkey SAME -- but ovkey's first cut had `CLEAR 100`, too little
+      string space for the answer: `Out of string space` on BOTH machines, SAME
+      and blind; read off the full screen, CLEAR 300 now. After: 42/42 SAME
+      ([`wszero_s14b_rows.out`](scratchpad/wszero_s14b_rows.out)). 🔪
+      [`wszero_s14b_knife.py`](scratchpad/wszero_s14b_knife.py) ->
+      [`wszero_s14b_knife.out`](scratchpad/wszero_s14b_knife.out): K-WS63 (the
+      window + detok cells back) -> `s14lst` diverges, HIT. 🔮 K-WS64 (S14b's
+      addresses, keystr_tenant's OLD order) -> `ovkey` diverges: **MISS -- the
+      row is blind to it.** zb_chsns (basic/islands.asm) repaints the KEY bar
+      only when SHIFT's state CHANGES, and the harness types through KEYBUF,
+      never through the matrix: no SHIFT, no repaint, in either order. So
+      `ovkey` witnesses that a long LINE INPUT works with the window in BUF, not
+      the decoupling; the reorder stays (2 B, sound by the code: a SHIFT change
+      mid-statement repaints, and the old order wrote DB_WIN[0] = $F600 into
+      BUF). A witness needs a SHIFT toggle WHILE an expression runs -- the
+      harness's `holds` presses after the last typed line, too late; filed as
+      the residual.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9833,7 +9866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35366 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35399 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -9999,7 +10032,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14861 (T-6FE392)8 (T-529ABE)` from `TODO.md:27655 (T-529ABE)`: a
+      `TODO.md:14894 (T-6FE392)8 (T-529ABE)` from `TODO.md:27688 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15708,7 +15741,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27655 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

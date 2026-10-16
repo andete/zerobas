@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 143 declared addresses in this project's own workspace `$E000..$F37F` (138 with a machine-readable width), plus **387** in the MSX standard work area at or above `$F380`.
+* **basic** — 132 declared addresses in this project's own workspace `$E000..$F37F` (127 with a machine-readable width), plus **399** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -114,12 +114,11 @@ second one is the question a per-component map cannot answer.
 | `$E974` | 2 B | `disk` | `MBUF_PTR` | word -> the 512-byte FAT/dir METADATA buffer |  |
 | `$E976` | 1 B | `basic` | `FAT_DEFER` | DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1) |  |
 | `$E976` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
-| `$ECFC` | 1 B | `basic` | `GFX_BAD/STRENG_SPARE` | VRAM read-back mismatch count (1) |  |
+| `$ECFC` | 1 B | `basic` | `STRENG_SPARE` | $ECFC: 1 B free (was TMISMATCH) |  |
 | `$ECFD` | 2 B | `basic` | `MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
 | `$ED38` | 1 B | `basic` | `GFX_DFTOP` | $ED38: X-frame stack depth (1) |  |
 | `$ED39` | 32 B | `basic` | `GFX_DFSTK` | $ED39: saved [ptr][end] per outer frame -- |  |
 | `$ED67` | 24 B | `basic` | `GFX_DEXP` | $ED67: NUL-terminated copy of the text between |  |
-| `$ED9D` | 96 B | `basic` | `DB_WIN` | the render window, one page (96 B) |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
 | `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |
@@ -233,13 +232,8 @@ second one is the question a per-component map cannot answer.
 | `$EFD7` | 2 B | `basic` | `SH_DEST` | MID_STORE (op=9) arg: the MID$- |  |
 | `$EFD9` | 2 B | `basic` | `SH_P` | INSTR_SEARCH (op=11) arg: p (2 B) |  |
 | `$EFDB` | 1 B | `basic` | `SH_ERR` | result: 0 ok, 1 Out of memory, 2 = |  |
-| `$EFDC` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
 | `$EFDF` | 1 B | `basic` | `LOC_COL` | 1 B: LOCATE's parsed column, pre-clamp |  |
 | `$EFE0` | 1 B | `basic` | `LOC_ROW` | 1 B: LOCATE's parsed row, pre-clamp |  |
-| `$EFEC` | 2 B | `basic` | `DB_SKIP` | rendered bytes still to discard (2 B; TEMPTOP's old cell) |  |
-| `$EFEE` | 1 B | `basic` | `DB_MORE` | 1 = the render ran past the window (1 B) |  |
-| `$EFEF` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
-| `$EFF1` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |
@@ -278,12 +272,7 @@ second one is the question a per-component map cannot answer.
 | `$F09C` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F0A0` | 2 B | `basic` | `DB_SP` | the render's SP to abort to (2 B; FAC's old cell) |  |
-| `$F0A2` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
-| `$F0A4` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
-| `$F0A6` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
-| `$F123` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
 | `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F16C` | 1 B | `basic` | `LHS_VARTYPE` | ex_let (interp.asm): the LHS variable's resolved |  |
 | `$F16E` |  | `basic` | `HORNER_G/MATH_T/RND_LE/SQRT_X` | the efficiency-normalized argument x' (constant |  |
@@ -415,6 +404,18 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5E3` | 1 B | `basic` | `GFX_WRAPF` | wedge wraps 0: pair S > pair E lexicographically (1) |  |
 | `$F5E4` | 2 B | `basic` | `RN_PTR` | RENUM: the reference-pass cursor (2) |  |
 | `$F5E6` | 2 B | `basic` | `RN_OLD` | RENUM: old line to start renumbering at (2) |  |
+| `$F5E8` | 2 B | `basic` | `DB_SKIP` | rendered bytes still to discard (2 B; TEMPTOP's old cell) |  |
+| `$F5EA` | 2 B | `basic` | `DB_RESSKIP` | resume: bytes of the resume token already drained (2 B) |  |
+| `$F5EC` | 2 B | `basic` | `DB_SP` | the render's SP to abort to (2 B; FAC's old cell) |  |
+| `$F5EE` | 2 B | `basic` | `DT_TOK` | detok: the current token's start in the line (2 B) |  |
+| `$F5F0` | 2 B | `basic` | `DT_TOKN` | detok: bytes the current token has emitted (2 B) |  |
+| `$F5F2` | 2 B | `basic` | `DB_RESPTR` | resume: the token to restart at (2 B) |  |
+| `$F5F4` | 2 B | `basic` | `DB_CUR` | wave-3 detok: the DETOKBUF write cursor, held across (2 B) |  |
+| `$F5F6` | 1 B | `basic` | `DB_MORE` | 1 = the render ran past the window (1 B) |  |
+| `$F5F7` | 1 B | `basic` | `DB_RESUME` | 1 = this render may abort + resume (detok only) (1 B) |  |
+| `$F5F8` | 1 B | `basic` | `GFX_DJ` | JIFFY delta observed while drawing under EI (1) |  |
+| `$F5F9` | 1 B | `basic` | `GFX_BAD` | VRAM read-back mismatch count (1) |  |
+| `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |

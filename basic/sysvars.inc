@@ -101,8 +101,10 @@ ATRBYT          equ     $F3F2   ; current graphics attribute / plot colour (1)
 ; cells this file already documents as retired-and-free, one each:
 ;   $E220      was STOPGRACE (retired 2026-07-25, spec §12.3)
 ;   $E3E5      was STRENG_SPARE / the D-2 flag (D-PENDERR)
-GFX_DJ          equ     $EFDC   ; JIFFY delta observed while drawing under EI (1)
-GFX_BAD         equ     $ECFC   ; VRAM read-back mismatch count (1)
+GFX_DJ          equ     $F5F8   ; JIFFY delta observed while drawing under EI (1)
+                                ; D-WSZERO S14b: BUF, statement-only (was $EFDC)
+GFX_BAD         equ     $F5F9   ; VRAM read-back mismatch count (1)
+                                ; D-WSZERO S14b: BUF, statement-only (was $ECFC)
 
 ; --- Slot access BIOS entry points + work area (extension-ROM INIT scan) ----
 ; Source: MSX Assembly Page BIOS call list / MSX2 Technical Handbook. The
@@ -2508,10 +2510,14 @@ CAS_BUFP        equ     $F730   ; base of the tape buffer in use (2 B)
 ; (basic/list.asm) re-runs a re-runnable renderer (LIST, KEY LIST) with DB_SKIP
 ; advanced until DB_MORE stays clear. An ordinary line renders ONCE.
 ; Home: the 96 B the temp pool left at $E381 (it moved to TEMPST, D-ADDR29).
-DB_WIN          equ     $ED9D   ; the render window, one page (96 B)
-DB_WINSZ        equ     96      ; window size; one byte is kept for the terminator
-DB_SKIP         equ     $EFEC   ; rendered bytes still to discard (2 B; TEMPTOP's old cell)
-DB_MORE         equ     $EFEE   ; 1 = the render ran past the window (1 B)
+DB_WIN          equ     $F600   ; the render window, one page (94 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $ED9D)
+DB_WINSZ        equ     94      ; window size; one byte is kept for the terminator
+                                ; (D-WSZERO S14b: was 96 -- BUF's last 2 B, $F65E-$F65F, are S14c's)
+DB_SKIP         equ     $F5E8   ; rendered bytes still to discard (2 B; TEMPTOP's old cell)
+                                ; D-WSZERO S14b: BUF, statement-only (was $EFEC)
+DB_MORE         equ     $F5F6   ; 1 = the render ran past the window (1 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $EFEE)
 ; 🔁 RESUMPTION (D-DETOKBUF S1, second cut): re-rendering a whole line per
 ; window made LIST of a 250 x `?` line take >8 s of emulated time against the
 ; VG-8020's <1 s (linemax list-max). So LIST resumes AT A TOKEN instead: detok's
@@ -2519,12 +2525,18 @@ DB_MORE         equ     $EFEE   ; 1 = the render ran past the window (1 B)
 ; (DT_TOKN); pchar, when the window fills during a resumable render, records
 ; the resume point and ABORTS the render (SP back to DB_SP) -- the next window
 ; starts at that token, skipping only its already-drained bytes. Linear.
-DB_RESSKIP      equ     $EFEF   ; resume: bytes of the resume token already drained (2 B)
-DB_RESUME       equ     $EFF1   ; 1 = this render may abort + resume (detok only) (1 B)
-DB_SP           equ     $F0A0   ; the render's SP to abort to (2 B; FAC's old cell)
-DT_TOK          equ     $F0A2   ; detok: the current token's start in the line (2 B)
-DT_TOKN         equ     $F0A4   ; detok: bytes the current token has emitted (2 B)
-DB_RESPTR       equ     $F0A6   ; resume: the token to restart at (2 B)
+DB_RESSKIP      equ     $F5EA   ; resume: bytes of the resume token already drained (2 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $EFEF)
+DB_RESUME       equ     $F5F7   ; 1 = this render may abort + resume (detok only) (1 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $EFF1)
+DB_SP           equ     $F5EC   ; the render's SP to abort to (2 B; FAC's old cell)
+                                ; D-WSZERO S14b: BUF, statement-only (was $F0A0)
+DT_TOK          equ     $F5EE   ; detok: the current token's start in the line (2 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $F0A2)
+DT_TOKN         equ     $F5F0   ; detok: bytes the current token has emitted (2 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $F0A4)
+DB_RESPTR       equ     $F5F2   ; resume: the token to restart at (2 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $F0A6)
     IF (DB_WIN / 256) != ((DB_WIN + DB_WINSZ - 1) / 256)
                 db      DB_WIN_MUST_SIT_IN_ONE_PAGE__PCHAR_COMPARES_THE_LOW_BYTE
     ENDIF
@@ -4778,7 +4790,8 @@ PLF_RA2         equ     $F839   ; ...and for its DIRECT caller's (combine_add/ (
 ; read on every tenant call, so a load over $F106 sent the next call to a garbage slot.
 SUBSLOT         equ     $FD09   ; slot id of zerobas-sub (bit7 exp | 3-2 | 3), 1 (1 B)
 SUBSLOT_OK      equ     $FD0A   ; 1 = a CD sub-ROM was found and recorded, else 0 (1 B)
-DB_CUR          equ     $F123   ; wave-3 detok: the DETOKBUF write cursor, held across (2 B)
+DB_CUR          equ     $F5F4   ; wave-3 detok: the DETOKBUF write cursor, held across (2 B)
+                                ; D-WSZERO S14b: BUF, statement-only (was $F123)
                                 ; the whole sub-side walk (the core clobbers DE/HL, so
                                 ; the cursor cannot live in a register). Own-choice free
                                 ; RAM, the $F108.. tail of the $F01A-$F194 window (below
@@ -5658,4 +5671,13 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF RVDESC != TEMPBASE || TEMPBASE + 3 != FRETOP
                 db      S14A_RVDESC_MUST_BE_DSCTMP_AT_THE_TEMP_POOLS_TOP
+    ENDIF
+
+
+; --- D-WSZERO S14b (2026-10-16): the render window in BUF -----------------------
+    IF DB_WIN + DB_WINSZ > LINEBUF + 256
+                db      S14B_RENDER_WINDOW_OVERRAN_BUFS_FIRST_256_BYTES
+    ENDIF
+    IF GFX_BAD + 1 > DB_WIN || DB_SKIP < RN_OLD + 2
+                db      S14B_DETOK_CELLS_OVERLAP_THE_WINDOW_OR_S12S_BUF_GUESTS
     ENDIF

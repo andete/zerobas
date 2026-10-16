@@ -152,22 +152,30 @@ ksb_lp:
                 ret
 
 keystr_tenant:
-                ; Every op leaves DETOKBUF printable for the resident drain:
-                ; LIST fills it, the others leave it EMPTY (a lone NUL), so
-                ; ex_key can drain unconditionally and spend no page-1 bytes on
-                ; a branch.
-                call    db_begin            ; D-DETOKBUF: the window; DB_SKIP is the
-                                            ; resident loop's (KEY LIST re-runs)
-                ld      (de),a              ; A = 0: an empty window until an op writes
+                ; 🔁 D-WSZERO S14b (2026-10-16): the KEY-bar PAINT and BLANK are
+                ; dispatched FIRST. They write VRAM only and nothing drains the
+                ; window after them, and they are the one op reachable from an
+                ; EXPRESSION (INKEY$, read_line -> zb_chsns): with db_begin ahead
+                ; of them, every keypress wrote the render window -- which lives in
+                ; BUF now, over a LINE INPUT answer being typed.
                 ld      a,(KEYARG)
-                or      a
-                jr      z,ks_defaults
-                cp      255
-                jr      z,ks_list
                 cp      KEYOP_FNKPAINT
                 jp      z,ks_paint   ; (jp: D-KEYSHIFT's 8 B put ks_paint out of jr range)
                 cp      KEYOP_FNKBLANK
                 jr      z,ks_blank
+                ; Every other op leaves DETOKBUF printable for the resident drain:
+                ; LIST fills it, the others leave it EMPTY (a lone NUL), so
+                ; ex_key can drain unconditionally and spend no page-1 bytes on
+                ; a branch.
+                push    af
+                call    db_begin            ; D-DETOKBUF: the window; DB_SKIP is the
+                                            ; resident loop's (KEY LIST re-runs)
+                ld      (de),a              ; A = 0: an empty window until an op writes
+                pop     af
+                or      a
+                jr      z,ks_defaults
+                cp      255
+                jr      z,ks_list
                 ; --- KEY n,"str": slot address = FNKSTR + 16*(n-1) --------------
                 dec     a
                 ld      l,a

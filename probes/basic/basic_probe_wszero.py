@@ -166,6 +166,18 @@ for _r in ("s14eq", "ovdac", "ovargb"):
 _S14A_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 6:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60985,60985,61426,61428,61670,61687,61726,61726,61801,61803,61805,61805"]
+# D-WSZERO S14b (2026-10-16): the render window (LIST / KEY LIST / PRINT USING /
+# ASCII SAVE) and its detok cells move into BUF; the KEY-bar repaint -- the only
+# writer reachable from an expression (INKEY$, read_line) -- is dispatched before
+# db_begin now. `s14lst` sums the 112 vacated bytes (VG-8020 165 * 112 = 18480);
+# `ovkey` types a 170-character LINE INPUT answer with the KEY bar ON: the
+# repaint must not touch BUF (char 163 is where the window starts, $F600).
+for _r in ("s14lst", "ovkey"):
+    RANGES[_r] = RANGES["all"]
+RUN_GAP["s14lst"] = 60.0
+_S14B_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 4:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+             ':PRINT"[S";S;"]":END',
+             "950 DATA 60829,60924,61420,61425,61600,61607,61731,61732"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -402,6 +414,20 @@ PROGRAM_OVARGB = [
     '50 PRINT"[P";(1/3)\\1;"]":END',
     "RUN",
 ]
+PROGRAM_S14LST = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 KEY 1,"ABC":KEY LIST:PRINT USING"&";STRING$(120,"A"):END',
+    "30 REM " + "LISTME" * 32,
+] + _S14B_SUM + ["RUN", "@WAIT40", "LIST 30", "GOTO 900"]
+PROGRAM_OVKEY = [
+    "NEW",
+    # CLEAR 300: the first cut's 100 B of string space refused the 170-char answer
+    # with `Out of string space` on BOTH machines -- SAME, and blind
+    '10 CLEAR 300,&HE000:BLOAD"CAS:",R',
+    '20 KEY ON:LINE INPUT"[L";B$:PRINT"[B";LEN(B$);ASC(MID$(B$,163));"]":KEY LIST:END',
+    "RUN", "@WAIT40", "A" * 162 + "Q" + "B" * 7,
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -439,7 +465,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s12gfx": PROGRAM_S12GFX, "s12num": PROGRAM_S12NUM, "s12inp": PROGRAM_S12INP,
             "s12dir": PROGRAM_S12DIR, "ovbuf": PROGRAM_OVBUF, "ovfn": PROGRAM_OVFN,
             "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF,
-            "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB}
+            "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB,
+            "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY}
 
 
 def tape(lo, hi, fill=0xA5):

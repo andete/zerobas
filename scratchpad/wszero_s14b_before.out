@@ -1,0 +1,5 @@
+ROW s14lst $ECF8-$F37F VG=[[S 18480 ]] ZB=[[S 8660 ]] DIVERGES
+ROW ovkey $ECF8-$F37F VG=[[LAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA] ZB=[[LAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: s14lst
+refcache: 0 hit, 4 miss, 4 stored
