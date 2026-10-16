@@ -1,0 +1,20 @@
+floor [$E36A, $F380) on C-BIOS_MSX1_EU_REPACK_NODISK
+strings   7408 distinct writes, 6391 on the stack
+grp       4348 distinct writes, 4345 on the stack
+crt       3084 distinct writes, 3075 on the stack
+grp_errors  8767 distinct writes, 6870 on the stack
+draw      3698 distinct writes, 3698 on the stack
+   main:ef_havestep+37                   7 B  $EFD3..$EFD9
+   main:sfs_build+19                    14 B  $EFD0..$EFD0, $F078..$F078, $F110..$F110, $F17A..$F17A
+   main:sfs_cp+1                       137 B  $EFD1..$EFD1, $F041..$F043, $F079..$F079, $F0DE..$F0E0
+   sub:fhd_dev+15                        4 B  $EE95..$EE95, $EFA3..$EFA3, $F0AC..$F0AC, $F1B5..$F1B5
+   sub:fhd_dev+4                         4 B  $EE93..$EE93, $EFA1..$EFA1, $F0AA..$F0AA, $F1B3..$F1B3
+   sub:sacc_lp+1                       731 B  $F00B..$F041, $F045..$F078, $F0AD..$F0DE, $F0E2..$F110
+   sub:sate_fits+17                    647 B  $EFD2..$F008, $F044..$F077, $F07A..$F0AB, $F0E1..$F10F
+   sub:sate_fits+34                     57 B  $F009..$F00A, $F078..$F078, $F0AC..$F0AC, $F110..$F110
+   sub:sg_move_one+51                  114 B  $F30E..$F37F
+   sub:she_slice_new+43                313 B  $F1F4..$F214, $F220..$F256, $F259..$F2A0, $F2B4..$F2DA
+   sub:shf_lp+0                        100 B  $F272..$F2D5
+   sub:str_body_copy+15                381 B  $EFD4..$F00A, $F07B..$F0AC, $F113..$F13F, $F17F..$F1C3
+   sub:t_fch_hdr+17                      4 B  $EE8F..$EE8F, $EF9D..$EF9D, $F0A6..$F0A6, $F1AF..$F1AF
+PASS: every non-stack writer of the floor is a program-RAM manager

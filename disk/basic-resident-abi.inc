@@ -31,13 +31,13 @@ LRSET_W equ 0EEC7H   ; DISK-ONLY: LSET/RSET: destination field width (1)
 LRSET_DEST equ 0EEC8H   ; DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B)
 STRPTR equ 0F954H   ; pointer to the [len][bytes] descriptor (2 bytes)
 DISKOP_OP equ 0FCACH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
-DISKOP_ERR equ 0EF06H   ; DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+DISKOP_ERR equ 0FC9AH   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
 CLPTR equ 0F6EDH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0F6EFH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
 TXTMAX equ 0E36AH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
-TXTMAX_NODISK equ 0ECF8H   ; NOT-A-CELL: the diskless build's text ceiling
+TXTMAX_NODISK equ 0F380H   ; NOT-A-CELL: the diskless build's text ceiling
 PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)
 DSV_END equ 0EF5BH   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)

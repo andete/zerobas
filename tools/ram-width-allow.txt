@@ -21,7 +21,6 @@
 # to this tool entirely. Nothing here says otherwise.
 #
 # format: <component> <name>[/<alias>...] <why>
-basic BN_PTR/DISKOP_HL disputed
 basic DISK_FCB/DISK_FCB_DRV overruns
 disk BDOS_RECIDX overruns
 disk F365_STUB undeclared

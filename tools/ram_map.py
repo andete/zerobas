@@ -1227,8 +1227,12 @@ def selftest(lo, hi) -> int:
     # ...and the same thing on the REAL corpus, two-sided.
     b_joint = Map("basic", lo, hi, joint=True)
     b_flat = Map("basic", lo, hi, joint=False)
+    # (full range since D-WSZERO S15: [$E000,$F380) has no basic cell left whose width
+    # only joining finds -- DISKOP_A, the last, moved to LIMPNT)
+    _bjf = Map("basic", 0, 0x10000, joint=True)
+    _bff = Map("basic", 0, 0x10000, joint=False)
     ok["A10 on the real corpus it RAISES coverage"] = \
-        len(b_joint.width) > len(b_flat.width)
+        len(_bjf.width) > len(_bff.width)
     ok["A10 NEGATIVE: and the control reproduces the OLD coverage exactly, "
        "so the gain is the continuations and nothing else"] = \
         len(b_flat.width) == len(Map("basic", lo, hi, joint=False).width)
@@ -1456,19 +1460,19 @@ def selftest(lo, hi) -> int:
         ok["A17 a BOOT-ONLY tag is accepted" if _want else
            "A17 NEGATIVE: `BOOT ONLY` (no hyphen) is RED"] = \
             (all(n != "ZZ_FLOOR_BOOT" for n, _a in _off4) == _want)
-    # --floor-top: a PLANTED untagged cell between the diskless ceiling and $F380
-    # is listed by `--floor-top F380` and not by the default floor. (It compared
-    # the real tree's two counts until D-WSZERO S16 left nothing between them;
-    # once S15 raises TXTMAX_NODISK to $F380 the two floors coincide and this
-    # arm needs a lower plant top.)
+    # --floor-top moves the floor's top: a PLANTED untagged cell at $F37E is listed
+    # by the default floor (TXTMAX_NODISK, $F380 since D-WSZERO S15) and NOT by a
+    # lower top. (It compared the real tree's two counts until S16 left nothing
+    # between them, then a plant under $F380 against the old ceiling -- S15 made
+    # the two floors the same.)
     _raw5 = dict(_fm.raw)
     _raw5["ZZ_UNDER_F380"] = ("$F37E", "plant", 0, "an untagged cell under $F380 (1)")
     _fm5 = Map("basic", 0, 0x10000, raw=_raw5, use_sym=False)
     _offd5, _ = disk_floor(_fm5)
-    _offt5, _ = disk_floor(_fm5, top=0xF380)
-    ok["A17 --floor-top widens the floor (F380 lists a cell TXTMAX_NODISK does not)"] = \
-        any(n == "ZZ_UNDER_F380" for n, _a in _offt5) and \
-        not any(n == "ZZ_UNDER_F380" for n, _a in _offd5)
+    _offt5, _ = disk_floor(_fm5, top=0xF000)
+    ok["A17 --floor-top moves the floor (a top below $F37E omits a cell the default lists)"] = \
+        any(n == "ZZ_UNDER_F380" for n, _a in _offd5) and \
+        not any(n == "ZZ_UNDER_F380" for n, _a in _offt5)
 
     print()
     for k, v in ok.items():

@@ -115,7 +115,7 @@ saved binary to try it on).
 ## What we found, and how
 
 - **A load into the top of memory could break the BASIC that runs next**
-  (D-WSZERO, 2026-10-14 to 2026-10-15, still in progress). A diskless
+  (D-WSZERO, 2026-10-14 to 2026-10-16, done). A diskless
   VG-8020 leaves `&HECF8`–`&HF37F` to programs; zerobas kept its own state
   there, and tape loaders do `CLEAR n,&Hxxxx` and load right over it. Moving
   that state out, one group at a time, fixed in turn: the load itself
@@ -126,9 +126,13 @@ saved binary to try it on).
   back garbage when the loaded bytes happened to look like a `FIELD` entry, and
   `LSET` / `ERASE` touching the disk's field table. The test loads over the
   whole range and then runs each of these
-  ([`wszero_s10_rows.out`](../../scratchpad/wszero_s10_rows.out)). Loaders that
-  do *not* `CLEAR` first still find zerobas's stack lower than the
-  VG-8020's; that changes only when the last of the state has moved.
+  ([`wszero_s10_rows.out`](../../scratchpad/wszero_s10_rows.out)). Since
+  2026-10-16 none of zerobas's state is left there and the ceiling is
+  `&HF380`, so a loader that does *not* `CLEAR` first finds the stack where the
+  VG-8020 has it: a load at `&HE000`–`&HF07F` without `CLEAR` stopped the
+  program on zerobas and now runs as on the VG-8020
+  ([`wszero_s15_before.out`](../../scratchpad/wszero_s15_before.out),
+  [`wszero_s15_rows.out`](../../scratchpad/wszero_s15_rows.out), `noclear3`).
 - **A `,R` program that loads a BASIC program lost it to its own variables**
   (fixed 2026-10-15, D-VARTABADOPT). Some loaders' machine code loads the next
   BASIC program and sets the end-of-program pointer (`VARTAB`, `&HF6C2`)

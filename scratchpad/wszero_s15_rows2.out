@@ -1,0 +1,13 @@
+ROW chan $ECF8-$F37F VG=[[C] | [D] | [E 5  40 ] | [N]] ZB=[[C] | [D] | [E 5  40 ] | [N]] SAME
+ROW s14ga $ECF8-$F37F VG=[[S 1320 A,B]] ZB=[[S 1320 A,B]] SAME
+ROW s14gc $ECF8-$F37F VG=[[S 495 HELLO]] ZB=[[S 495 HELLO]] SAME
+ROW inpeof $0000-$0000 VG=[[E 55  20 ][HELLO]] ZB=[[E 55  20 ][HELLO]] SAME
+ROW s14f $ECF8-$F37F VG=[[S 1980 ]] ZB=[[S 1980 ]] SAME
+ROW ovprdev $ECF8-$F37F VG=[[P 0  0 ]] ZB=[[P 0  0 ]] SAME
+ROW ovprusg $ECF8-$F37F VG=[[Q  5.3 AB]] ZB=[[Q  5.3 AB]] SAME
+ROW noclear3 $E000-$F07F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW s16sh $ECF8-$F37F VG=[[S 2970 ] | [VABCBC***  A] | [WFF10101 3  0  7  1.5 ]] ZB=[[S 2970 ] | [VABCBC***  A] | [WFF10101 3  0  7  1.5 ]] SAME
+ROW ovinpd $ECF8-$F37F VG=[[IHELLO]] ZB=[[IHELLO]] SAME
+
+PASS: a load over the window, then BASIC (10/10 as pinned)
+refcache: 0 hit, 20 miss, 20 stored

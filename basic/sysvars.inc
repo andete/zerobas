@@ -2499,7 +2499,14 @@ TXTMAX          equ     $E36A   ; NOT-A-CELL: the text ceiling (= the workspace 
 ; what boot picked (interp.asm, beside the HIMEM store: a disk ROM that lowered
 ; HIMEM means the disk ceiling). Every main/sub reader loads TXTCEIL. Equal for
 ; now -- step (b) packs the disk-only tenants at the floor and raises _NODISK.
-TXTMAX_NODISK   equ     $ECF8  ; NOT-A-CELL: the diskless build's text ceiling
+; 🏁 D-WSZERO S15 (2026-10-16): THE DISKLESS CEILING IS THE REFERENCE'S, $F380 -- C-BIOS's
+; HIMEM, which boot keeps (below). S9..S16 moved every cell zerobas kept between
+; TXTMAX and here out (`python3 tools/ram_map.py --floor-top F380` lists none); what
+; still sits there is DISK-ONLY / BOOT-ONLY and is never written on a diskless
+; machine after boot (probes/basic/basic_probe_floorcensus.py, whose floor is
+; [TXTMAX, TXTMAX_NODISK)). It was $ECF8 before; the rows that load over the old
+; window keep that span frozen (probes/basic/basic_probe_wszero.py).
+TXTMAX_NODISK   equ     $F380  ; NOT-A-CELL: the diskless build's text ceiling
 TXTCEIL         equ     $F66C   ; the text ceiling boot chose: TXTMAX or TXTMAX_NODISK (2 B)
 ; 🏛️ D-CASFCB (2026-10-13): the cassette buffer is the CHANNEL's own record
 ; buffer (block + FCH_HDRSZ), as on the VG-8020 (scratchpad/casbuf_probe.out):
@@ -3337,11 +3344,20 @@ DISKOP_STATUS   equ     $FCAE   ; tenant -> main: the disposition (1 B)
                                 ; D-WSZERO S14a: FLBMEM, idle on zerobas and C-BIOS (was $EE39)
                                 ; 0 = ok (Cy=0 / Z set); nonzero = error (Cy=1)
                                 ; or no-match (NZ), per primitive
-DISKOP_A        equ     $EE3A   ; DISK-ONLY: tenant -> main: the primitive's real A output,
+; 🔴 D-WSZERO S15 (2026-10-16): DISKOP_A / DISKOP_HL / DISKOP_ERR were tagged DISK-ONLY
+; and are NOT: the FAT tenant's shared entry clears DISKOP_ERR and its shared exit
+; (fp_stash_ok) stores DISKOP_A / DISKOP_HL for EVERY op -- the device-channel ones
+; too (t_fch_hdr, t_fch_load / save on OPEN"CRT:" / "GRP:" / "CAS:") -- and the
+; BLOAD / SAVE tenants clear DISKOP_ERR on the tape path. With the diskless ceiling
+; at $F380 those 4 bytes became program RAM; floorcensus-acceptance named the two
+; writers (scratchpad/floorcensus_s15_fail.out). They take idle published cells, as
+; DISKOP_OP / DISKOP_STATUS did (S14): idle on zerobas AND on C-BIOS, zeroed at
+; boot (scratchpad/wszero_s14g_pubidle.py).
+DISKOP_A        equ     $FC17   ; tenant -> main: the primitive's real A output (LIMPNT, idle) (was $EE3A),
                                 ; if it has one (read_sector/write_sector's DSKIO
                                 ; error code); reloaded uniformly even where no
                                 ; caller currently reads it (1)
-DISKOP_HL       equ     $EE3B   ; DISK-ONLY: tenant -> main: the primitive's real HL output
+DISKOP_HL       equ     $FB36   ; tenant -> main: the primitive's real HL output (SAVSP, idle) (was $EE3B)
                                 ; (fat_alloc_cluster's allocated cluster number);
                                 ; reloaded uniformly for every primitive (2)
 ; fat_count_free's DE output (free cluster count) is NOT a new DISKOP_DE cell --
@@ -4364,7 +4380,8 @@ RL_KEY          equ     $F7AF   ; main -> tenant: the key CHGET returned (main w
 ; D-DISKERR (docs/spec-basic-diskerr.md): the MSX ERR code of the LAST DSKIO failure,
 ; mapped by dskio_calslt (2 not ready -> 70, 0 write protected -> 68, else 69), cleared
 ; by every successful DSKIO and at every disk tenant's entry; disk_error raises it.
-DISKOP_ERR      equ     $EF06   ; DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+DISKOP_ERR      equ     $FC9A   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
+                                ; D-WSZERO S15: RTYCNT, idle -- written on diskless paths too (was $EF06)
 ; D-FNPOOL (docs/spec-basic-fnpool.md): `DEF FN` frames come from the CONTROL POOL
 ; now, not from below `SP`, so a nested call's saved formals are ADDRESSABLE and
 ; the GC can walk them (the live-frame walk alone left an outer call's string

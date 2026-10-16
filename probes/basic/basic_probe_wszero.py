@@ -54,7 +54,11 @@ def sym(name):
 #     which no pin was left.
 # The rows now come from the build: what is left of the window, in quarters and
 # whole, and the RAM slice 5 handed back to programs.
-NODISK = sym("TXTMAX_NODISK")
+# 🧊 FROZEN AT D-WSZERO S15 (2026-10-16): TXTMAX_NODISK rose $ECF8 -> $F380, which
+# would empty `all` / q1..q4 (they ran up to $F37F). The pre-S15 window is now a
+# constant: every row keeps loading over the same bytes -- PROGRAM RAM since S15,
+# so a load there must be harmless, and every row must stay SAME.
+NODISK = 0xECF8                     # the pre-S15 diskless ceiling (sym, until S15)
 _q = (0xF380 - NODISK) // 4
 RANGES = {
     "ctl": (0xC000, 0xC17F),
@@ -73,9 +77,14 @@ RANGES = {
     # slice 6 (2026-10-14): the ceiling rose $EBCD -> $ECF8, so boot's stack moved
     # from ~$E8E9 to ~$EA14 -- this span held it before and must be free now.
     "noclear2": (0xE800, 0xE97F),
+    # D-WSZERO S15 (2026-10-16): with the ceiling at $F380, boot's stack moves up
+    # to where the VG-8020's is (~$F09E). A no-CLEAR loader filling RAM just under
+    # it ($E000..$F07F) clobbered zerobas's stack before S15 (SP ~$EA14) and must
+    # be harmless after.
+    "noclear3": (0xE000, 0xF07F),
 }
 # Rows that run the program without `CLEAR` (the stack stays where boot put it).
-NOCLEAR = {"noclear", "noclear2"}
+NOCLEAR = {"noclear", "noclear2", "noclear3"}
 # slice 7 (2026-10-14): an ERROR after the load, over the whole window. The run
 # loop anchors SP in SAVSTK once per RUN and the error trap reloads it -- a load
 # over that cell and then any error jumped to a garbage stack (Formula 1

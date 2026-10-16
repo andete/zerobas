@@ -1,0 +1,6 @@
+ROW noclear $E000-$E7FF VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW noclear2 $E800-$E97F VG=[[A][G] 1  2 XY]] ZB=[[A][G] 1  2 XY]] SAME
+ROW noclear3 $E000-$F07F VG=[[A][G] 1  2 XY]] ZB=[] DIVERGES
+
+FAIL: a load over the window, then BASIC (2/3 as pinned); unpinned divergence: noclear3
+refcache: 0 hit, 6 miss, 6 stored

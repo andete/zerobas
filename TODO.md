@@ -3690,8 +3690,43 @@ item — do **one item per session** to keep context lean.
       over its type) -> ovval / ovread (+ s16sh), HIT; K-WS92 (heap_alloc does not
       restore IY) -> ovgc among six, HIT; K-WS93 (the snapshot reorder undone) ->
       ovslice alone, HIT.
-      ➡️ NEXT: **S15 -- TXTMAX_NODISK to $F380, ONCE** (s14_plan.md §6's
-      checklist): `ram_map --floor-top F380` lists no untagged name now.
+      ✅ **S15 (2026-10-16): THE DISKLESS CEILING IS THE REFERENCE'S, $F380.**
+      `TXTMAX_NODISK` $ECF8 -> $F380 (`basic/sysvars.inc`); boot keeps C-BIOS's
+      HIMEM, so a diskless machine starts with HIMEM `&HF380` as the VG-8020 does.
+      **FRE(0) 27157 -> 28829, the VG-8020 28815: +14** -- exactly the 1672 B the
+      plan predicted ([`wszero_s15_fremem.out`](scratchpad/wszero_s15_fremem.out));
+      the disk machine unchanged. `CLEAR 27500` / `28000` / `28500` / `28800` all fit
+      on both, 14 B more left here
+      ([`wszero_s15_clear.out`](scratchpad/wszero_s15_clear.out)). 🔴 **The write
+      census found three mis-tagged cells:** with the floor now [TXTMAX, $F380),
+      floorcensus-acceptance named `fatprim_tenant` (DISKOP_ERR $EF06) and
+      `fp_stash_ok` (DISKOP_A / DISKOP_HL $EE3A..$EE3C) writing program RAM on a
+      diskless machine ([`floorcensus_s15_fail.out`](scratchpad/floorcensus_s15_fail.out))
+      -- the FAT tenant's shared entry and exit run for device-channel ops too, and
+      the BLOAD / SAVE tenants clear DISKOP_ERR on the tape path; tagged DISK-ONLY,
+      they were not. They take idle published cells as their DISKOP siblings did
+      in S14: DISKOP_A -> LIMPNT $FC17, DISKOP_HL (and its alias BN_PTR) -> SAVSP
+      $FB36, DISKOP_ERR -> RTYCNT $FC9A (idle on zerobas and C-BIOS, zeroed at
+      boot); the census is clean after
+      ([`floorcensus_s15.out`](scratchpad/floorcensus_s15.out)). 📏 Rows:
+      `basic_probe_wszero.py` freezes the pre-S15 window as a constant ($ECF8), so
+      every row keeps loading over the same bytes -- program RAM now -- and adds
+      `noclear3`, a no-CLEAR load at $E000..$F07F just under the VG-8020's stack:
+      zerobas printed nothing before
+      ([`wszero_s15_before.out`](scratchpad/wszero_s15_before.out)), 74/74 as
+      pinned after ([`wszero_s15_rows.out`](scratchpad/wszero_s15_rows.out),
+      [`wszero_s15_rows2.out`](scratchpad/wszero_s15_rows2.out) after the cell
+      move); unit tests 67/67. 🔪
+      [`wszero_s15_knife.py`](scratchpad/wszero_s15_knife.py) ->
+      [`wszero_s15_knife.out`](scratchpad/wszero_s15_knife.out): K-WS94
+      (TXTMAX_NODISK back at $ECF8) -> noclear3 alone, HIT; K-WS95 (the three
+      cells back) -> the census fails naming exactly the two writers, HIT. Docs:
+      memory-map.md (status, the table, CLEAR, the gap -- now +14), disk.md,
+      BLOAD.md. The +14 is filed as D-FREPLUS14 (TIER 4).
+      ➡️ NEXT: the real tapes (s14_plan.md §6 item 6, one-off, outside the repo):
+      the RESET class (Boulder Dash I/II, Blow Up, Exterminator, Finders Keepers,
+      Knight Tyme, Formula 1 Simulator) is the prediction to score -- then close
+      D-WSZERO or file what is left.
 
 - [ ] 🔎 **D-S16PREEXIST -- THREE DIFFERENCES THE S16 ROWS FOUND, PRESENT ON HEAD'S ROM TOO
       (2026-10-16)**
@@ -3714,6 +3749,19 @@ item — do **one item per session** to keep context lean.
       40 -- VG-8020 ERL 30, zerobas 20 (the READ's line). The CF-3300 not run.
       (3) **`FRE(0)=FRE(2)` in ONE expression is 0 on the VG-8020, -1 on zerobas**
       (after `A$="ABC"+"D"`); split into two statements both answer 0.
+
+- [ ] 🧮 **D-FREPLUS14 -- A DISKLESS zerobas HAS 14 BYTES MORE FRE(0) THAN THE VG-8020
+      (found 2026-10-16 by D-WSZERO S15)**
+      🎚️ TIER 4 — RAM usage: Joost's priority 1 is the SAME free RAM on the diskless
+      machine (rulings table, 2026-10-16), and "same" is equality.
+      🤖 AUTONOMOUS — measure where the 14 B come from first.
+      28829 against 28815 at start-up and after every CLEAR measured
+      ([`wszero_s15_fremem.out`](scratchpad/wszero_s15_fremem.out),
+      [`wszero_s15_clear.out`](scratchpad/wszero_s15_clear.out)): HIMEM is $F380 on
+      both, so the difference is in what sits between HIMEM and the stack -- the
+      channel blocks (`MAXFILES`), the string space, the stack's own start, and the
+      ~270 B the VG-8020 spends on channel 0 (docs/concepts/memory-map.md). ➡️
+      Compare MEMSIZ / STKTOP / FILTAB / the boot SP on both machines.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10312,7 +10360,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35845 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35893 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10478,7 +10526,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15340 (T-6FE392)8 (T-529ABE)` from `TODO.md:28134 (T-529ABE)`: a
+      `TODO.md:15388 (T-6FE392)8 (T-529ABE)` from `TODO.md:28182 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16187,7 +16235,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28134 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28182 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

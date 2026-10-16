@@ -1,0 +1,4 @@
+K-WS94: rows ['ctl', 'noclear', 'noclear2', 'noclear3'] diverging ['noclear3']; predicted ['noclear3'] -> HIT
+K-WS95: census rc=1, unlisted writers ['fatprim_tenant', 'fp_stash_ok']; predicted FAIL naming ['fatprim_tenant', 'fp_stash_ok'] -> HIT
+restored: build rc=0; rows SAME; census rc=0 
+rc=0

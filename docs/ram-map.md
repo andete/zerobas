@@ -33,8 +33,8 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 74 declared addresses in this project's own workspace `$E000..$F37F` (72 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
-* **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
+* **basic** — 71 declared addresses in this project's own workspace `$E000..$F37F` (70 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
+* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -148,8 +148,6 @@ second one is the question a per-component map cannot answer.
 | `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
 | `$EE36` | 2 B | `basic` | `FWR_DIROFF` | DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
 | `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
-| `$EE3A` | 1 B | `basic` | `DISKOP_A` | DISK-ONLY: tenant -> main: the primitive's real A output, |  |
-| `$EE3B` |  | `basic` | `BN_PTR/DISKOP_HL` | DISK-ONLY: tenant -> main: the primitive's real HL output |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE77` | 2 B | `basic` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |
@@ -172,8 +170,6 @@ second one is the question a per-component map cannot answer.
 | `$EEF9` | 2 B | `disk` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
 | `$EEFB` | 4 B | `basic` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
 | `$EEFB` | 4 B | `disk` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
-| `$EF06` | 1 B | `basic` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
-| `$EF06` | 1 B | `disk` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF42` | 1 B | `basic` | `SCAN_PRIM` | BOOT-ONLY: primary slot currently being scanned (1) |  |
 | `$EF43` | 1 B | `basic` | `SCAN_SLOT` | BOOT-ONLY: candidate slot id for RDSLT/CALSLT (1) |  |
 | `$EF44` | 2 B | `basic` | `SCAN_INIT` | BOOT-ONLY: candidate ROM's INIT entry address (2) |  |
@@ -633,6 +629,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FB21` | 1 B | `disk` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |
 | `$FB22` | 1 B | `basic` | `DISKSLOT` | disk ROM slot id for CALSLT (1) |  |
 | `$FB35` |  | `basic` | `AUDIO_VMASK` | $FB35 main->tenant: voices-present bitmask |  |
+| `$FB36` |  | `basic` | `BN_PTR/DISKOP_HL` | tenant -> main: the primitive's real HL output (SAVSP, idle) (was $EE3B) |  |
 | `$FB38` |  | `basic` | `VOICEN` | voice currently being parsed (0..2) |  |
 | `$FB3C` |  | `basic` | `MCLPTR` | address of the MML string being parsed (source cursor) |  |
 | `$FB3E` |  | `basic` | `QUEUEN` | active queue # scratch (0..2) |  |
@@ -644,6 +641,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FBB2` |  | `basic` | `LINTTB` | per-row continuation table, one byte per row: 0 = the row |  |
 | `$FBCD` | 1 B | `basic` | `FNKSWI` | function-key set shown: 1 = F1..F5 (D-ADDR29 N set) (1) |  |
 | `$FBE5` | 11 B | `basic` | `NEWKEY` | key matrix snapshot, 11 B (row 6 bit 0 = SHIFT) |  |
+| `$FC17` | 1 B | `basic` | `DISKOP_A` | tenant -> main: the primitive's real A output (LIMPNT, idle) (was $EE3A), |  |
 | `$FC4A` | 2 B | `basic` | `HIMEM` | highest RAM address BASIC may use (2 bytes) |  |
 | `$FC4A` |  | `disk` | `HIMEM` | the published BASIC ceiling (MSX2 Technical Handbook, |  |
 | `$FC4C` | 54 B | `basic` | `ZTRAP` | 18 entries * 3 B = 54 B ($FC4C..$FC81; was $EDD1..$EE06; it was |  |
@@ -662,7 +660,9 @@ extents the standard already fixes would be noise, not rigour.
 | `$FC96` | 1 B | `basic` | `GFX_DSUBLEN` | $FC96: slot 0's string length (X only) (1) |  |
 | `$FC97` | 1 B | `basic` | `GFX_DREQ` | $FC97: tenant->resident: 0 = done, 1 = resolve an |  |
 | `$FC98` | 1 B | `basic` | `GFX_DRESUME` | $FC98: resident->tenant: 1 = resuming (1) |  |
-| `$FC99` | 2 B | `basic` | `GFX_DVAL` | $FC99: the resolved int16, or a string body ptr (2) |  |
+| `$FC99` |  | `basic` | `GFX_DVAL` | $FC99: the resolved int16, or a string body ptr (2) |  |
+| `$FC9A` | 1 B | `basic` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
+| `$FC9A` | 1 B | `disk` | `DISKOP_ERR` | tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$FC9E` |  | `basic` | `JIFFY` | MSX software clock, bumped by the timer ISR (MSX2 TH work area) |  |
 | `$FCA8` | 1 B | `basic` | `INSFLG` | PUBLISHED insert-mode flag: $FF on, 0 off (D-INSMODE) (1 B) |  |
 | `$FCA9` |  | `basic` | `CSRSW` | cursor display: 0 = off, 1 = on |  |
