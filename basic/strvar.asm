@@ -265,11 +265,11 @@ str_eval_ok:
 ; emit $85 $24). Only the FILE form INPUT$(n,#f) is supported; the keyboard form
 ; INPUT$(n) (no '#') is Phase 3 -> treated as "not a string operand" (caller errors).
 ; Unlike INPUT#/LINE INPUT#, INPUT$ does NO delimiter handling — it takes n bytes
-; verbatim and the file cursor advances by n. The bytes go into the STRSCR
-; descriptor (clamped to STRMAX; a longer n is still consumed so the cursor stays
-; correct — documented). HL is the (HL-based) string-eval cursor; the numeric args
+; verbatim and the file cursor advances by n. The bytes go into a string-space
+; TEMP allocated before the first is read (D-WSZERO S14d; n <= 255, so the old
+; STRMAX clamp on the STRSCR staging was dead). HL is the (HL-based) string-eval cursor; the numeric args
 ; use `eval` (which saves/restores IX); fat_io_getbyte's CALSLT clobbers everything,
-; so the read state lives in RAM (INDLR_N target, IN_RDLEN stored count) and the
+; so the read state lives in RAM (INDLR_N, the count still to read) and the
 ; cursor is guarded on the stack. CF-3300-validated (disk_probe_inputdollar.py).
 ; --- MKI$(n): pack a 16-bit integer into a 2-byte little-endian string -----------
 ; Reached from str_eval on a $FF function token. "MKI$" crunches to $FF $AE (oracle-
@@ -458,7 +458,7 @@ str_inputd:
                 ; it fell to str_eval_no -- `A$=INPUT$(1)` answered `Syntax error`
                 ; where both references read a key. It was the ONE remaining
                 ; MISSING keyword in the whole kwsweep.
-                ; 🎯 IT REUSES THE FILE FORM'S LOOP. str_inputd_read already
+                ; 🎯 IT REUSES THE FILE FORM'S LOOP. sid_read's loop (`sidr_lp`) already
                 ; consumes INDLR_N bytes into STRSCR through the ARL_GETBYTE
                 ; vector, so the console form only has to point that vector at the
                 ; keyboard and join at sid_read. No channel, so no fch_check and
@@ -506,7 +506,7 @@ sid_fnum:
                 ; We answer ERR 55 here. The `cp 1` below is a WHITELIST OF ONE,
                 ; so mode 8 falls to the 55 tail with everything else.
                 ; ⚠️ Not a one-line widening: sid_ok's tail is fch_select +
-                ; str_inputd_read, both disk-oriented, while the cassette source
+                ; sid_read's loop, both disk-oriented, while the cassette source
                 ; is cas_in_getbyte (input_common has its own `cp CAS_IN_MODE`
                 ; arm for exactly this). Filed in TODO with the measurement;
                 ; scratchpad/casfch_probe.py --input-only is the reading.
@@ -550,44 +550,62 @@ sid_read:
                 ld      a,(INDLR_N)
                 or      a
                 jp      z,gb_illegal        ; 5
-                call    str_inputd_read     ; fill STRSCR [len][bytes] with n bytes
-                call    strscr_desc         ; RVDESC -> [len][ptr] wrapping STRSCR
-                                            ; (arrays slice-4a §10); the eval cursor is
-                                            ; restored by str_pub_ok's own `pop hl`
-                jp      str_pub_ok          ; D-PUBTAIL
-; str_inputd_read — consume INDLR_N bytes from the open channel into STRSCR
-; ([len][bytes]); store up to STRMAX, but keep consuming so the file cursor advances
-; the full count. Stops early at EOF. All loop state is in RAM (CALSLT clobbers regs).
-str_inputd_read:
-                xor     a
-                ld      (IN_RDLEN),a        ; stored count = 0
+                ; 🏗️ D-WSZERO S14d (2026-10-16): the result is a TEMP in string
+                ; space, allocated BEFORE a byte is taken -- INKEY$'s shape, and the
+                ; reference's: with no room it raises 14 and leaves the typed keys
+                ; queued (`CLEAR 10:A$=INPUT$(30)`: VG-8020 [E 14 31], this tree
+                ; read the 30 keys first -- scratchpad/inpoom_probe.out). It used to
+                ; stage the bytes in STRSCR, the one evaluation that wrote BUF past
+                ; STRSCR+8; with that gone, BUFTX ($F567-$F59F) can hold FOR's,
+                ; PRINT USING's and DRAW's statement-long cells.
+                call    str_temp_alloc      ; A = n -> HL = the temp, DE = its body
+                                            ; (0: the out-of-space code is pending)
+                ld      (STRPTR),hl
+                call    check_expr_errors   ; ...and raised NOW, before a key is taken
+                ex      de,hl               ; HL = the body
 sidr_lp:
-                ld      a,(INDLR_N)
-                or      a
-                jr      z,sidr_done         ; consumed all n
-                call    arl_getbyte         ; D-CASINP: through the vector, so a
-                                            ; CAS: channel sources from the tape
+                push    hl
+                call    arl_getbyte         ; D-CASINP: through the vector (console,
+                pop     hl                  ; a CAS: or a disk channel; CALSLT
+                                            ; clobbers every register)
                 jp      c,gp_past_eof       ; D-SEQEOF R3: the end before n bytes is
                                             ; 55, and the target keeps its old value
-                                            ; (was: stop, and return a short string)
-                ld      c,a                 ; C = the byte read
-                ld      hl,INDLR_N
-                dec     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
-                ld      a,(IN_RDLEN)
-                cp      STRMAX
-                jr      nc,sidr_lp          ; descriptor full -> consume but don't store
-                ld      e,a
-                ld      d,0
-                ld      hl,STRSCR+1
-                add     hl,de
-                ld      (hl),c              ; store the byte
-                ld      hl,IN_RDLEN
-                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
-                jr      sidr_lp
+                ld      (hl),a
+                inc     hl
+                ld      a,(INDLR_N)
+                dec     a
+                ld      (INDLR_N),a
+                jr      nz,sidr_lp
+                jp      sfi_done            ; pop the cursor, then str_eval_ok
+; sidr_done: the old STRSCR loop's tail, kept for its one remaining user --
+; read_into_strscr's `ris_done` alias (basic/files.asm, INPUT # / LINE INPUT #).
 sidr_done:
                 ld      a,(IN_RDLEN)
                 ld      (STRSCR),a          ; descriptor length
                 ret
+; REFILLED (D-WSZERO S14d, 2026-10-16): the 19 B the INPUT$ rewrite gave up are
+; filled HERE, where they were freed, by pl_exit -- PLAY's success exit (D-AVTAK,
+; its story is at basicint_play in basic/missing.asm), moved whole: entered only by
+; play.asm's `jp pl_exit`, it compares a label, so it works at any address
+; (tools/pin_plan.py's exact fill). Refilled in place, not in front of the $6CF3
+; pin: everything after this point in the segment keeps its address, so no `jr`
+; spanning the pin grows (a first cut refilled AT the pin and a `jr` from past it
+; back to oo_fail_syn went out of range). The pin's pad stays 0 (Joost: no growing
+; holes). (pin_plan --check's "pad in front 2 B" at $6CF3 is its `jr` bridge.)
+pl_exit:
+                push    hl                  ; the statement cursor
+                ld      hl,2
+                add     hl,sp               ; HL -> the word under it
+                ld      a,(hl)
+                cp      low bp_ret
+                jr      nz,ple_stmt
+                inc     hl
+                ld      a,(hl)
+                cp      high bp_ret
+ple_stmt:
+                pop     hl
+                ret     z                   ; called from basicint_play -> bp_ret
+                jp      exec_stmt           ; the PLAY statement: chain the next one
 
 ; --- print_strval: emit the descriptor at STRPTR via CHPUT ------------------
 ; Reads STRPTR (set by str_eval). CHPUT makes no register guarantees, so the

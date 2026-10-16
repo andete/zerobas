@@ -1,0 +1,5 @@
+K-WS68: rows ['ctl', 's14buf'] diverging ['s14buf']; predicted ['s14buf'] -> HIT
+K-WS69: build rc=0 ROM moved=True pin-check rc=2 -- NOT SCORED
+K-WS70: build rc=2, S14D_BUFTX_GUESTS_OUTSIDE_THEIR_57_BYTES named in the log; predicted the guard refuses -> HIT
+restored: build rc=0; SAME
+rc=0

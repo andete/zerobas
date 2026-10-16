@@ -858,7 +858,7 @@ gp_dev:
                 ld      a,58                ; sequential i/o only (LPT:/CRT:)
                 jr      gp_raise
 ; gp_past_eof -- `Input past end` (55), RAISED. GET's own use of it is disk.rom's
-; since S10.D (fat_rand_get); INPUT$ (strvar.asm str_inputd_read) and the
+; since S10.D (fat_rand_get); INPUT$ (strvar.asm sid_read) and the
 ; sequential reader's end (files.asm) still raise it here.
 gp_past_eof:
                 ld      a,55

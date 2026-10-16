@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 125 declared addresses in this project's own workspace `$E000..$F37F` (120 with a machine-readable width), plus **403** in the MSX standard work area at or above `$F380`.
+* **basic** — 113 declared addresses in this project's own workspace `$E000..$F37F` (108 with a machine-readable width), plus **411** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -115,9 +115,6 @@ second one is the question a per-component map cannot answer.
 | `$E976` | 1 B | `basic` | `FAT_DEFER` | DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1) |  |
 | `$E976` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
 | `$ECFC` | 1 B | `basic` | `STRENG_SPARE` | $ECFC: 1 B free (was TMISMATCH) |  |
-| `$ED38` | 1 B | `basic` | `GFX_DFTOP` | $ED38: X-frame stack depth (1) |  |
-| `$ED39` | 32 B | `basic` | `GFX_DFSTK` | $ED39: saved [ptr][end] per outer frame -- |  |
-| `$ED67` | 24 B | `basic` | `GFX_DEXP` | $ED67: NUL-terminated copy of the text between |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
 | `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |
@@ -182,12 +179,6 @@ second one is the question a per-component map cannot answer.
 | `$EEFB` | 4 B | `disk` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
 | `$EF06` | 1 B | `basic` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF06` | 1 B | `disk` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
-| `$EF0A` | 29 B | `basic` | `FOR_CUR` | scratch: a working copy of one FOR frame (25), and |  |
-| `$EF0D` | 9 B | `basic` | `FOR_LIM` | the limit slot [type][8] (9) |  |
-| `$EF16` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
-| `$EF1F` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
-| `$EF21` | 2 B | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
-| `$EF23` | 1 B | `basic` | `FOR_SIGN` | NEXT's scratch: the step's sign byte (1) |  |
 | `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$EF42` | 1 B | `basic` | `SCAN_PRIM` | BOOT-ONLY: primary slot currently being scanned (1) |  |
@@ -251,14 +242,11 @@ second one is the question a per-component map cannot answer.
 | `$F084` | 2 B | `disk` | `GP_PHYS` | DISK-ONLY: resolved absolute physical sector (2) |  |
 | `$F088` | 1 B | `basic` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$F088` | 1 B | `disk` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
-| `$F08D` | 3 B | `basic` | `PU_FDESC` | [len][ptr] copy for a format that cannot move (3) |  |
 | `$F090` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
 | `$F091` | 1 B | `basic` | `PU_POS` | current scan index into the format (1) |  |
 | `$F092` | 1 B | `basic` | `PU_W` | current field width (1) |  |
 | `$F093` | 1 B | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
 | `$F094` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
-| `$F095` | 1 B | `basic` | `PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
-| `$F096` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
 | `$F097` | 1 B | `basic` | `FMT_SEC` | DISK-ONLY: CALL FORMAT: current sector index being written (1) |  |
 | `$F098` | 2 B | `basic` | `FMT_DESC` | DISK-ONLY: CALL FORMAT: chosen geometry descriptor pointer (2) |  |
 | `$F09A` | 2 B | `basic` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
@@ -356,6 +344,14 @@ extents the standard already fixes would be noise, not rigour.
 | `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` |  | `basic` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` |  | `disk` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
+| `$F567` |  | `basic` | `FOR_CUR/GFX_DEXP/PU_FDESC` | scratch: a working copy of one FOR frame (25), and |  |
+| `$F56A` |  | `basic` | `FOR_LIM/PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
+| `$F56B` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
+| `$F573` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
+| `$F57C` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
+| `$F57E` |  | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
+| `$F57F` | 1 B | `basic` | `GFX_DFTOP` | $F57F: X-frame stack depth (1) |  |
+| `$F580` |  | `basic` | `FOR_SIGN/GFX_DFSTK` | $F580: saved [ptr][end] per outer frame -- |  |
 | `$F5A0` | 1 B | `basic` | `GFX_POVF` | 1 = the stack overflowed; resident raises ERR 7 (1) |  |
 | `$F5A1` | 1 B | `basic` | `GFX_PTESTX` | gfx_paint_inside/gfx_paint_plot: pixel-under-test X (1) |  |
 | `$F5A2` | 1 B | `basic` | `GFX_PTESTY` | ...Y (1) |  |

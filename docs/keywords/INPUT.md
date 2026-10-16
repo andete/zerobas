@@ -116,6 +116,14 @@ keyboard form.
 
 ## What we found, and how
 
+- **`INPUT$` with no room for its result took the keys anyway** (fixed
+  2026-10-16, D-WSZERO S14d). `CLEAR 10:A$=INPUT$(30)` with 30 keys typed:
+  the VG-8020 raises `Out of string space` before taking a key, so all 30
+  (and the Enter) are still waiting afterwards; zerobas read the 30 keys
+  first and failed at the assignment. `INPUT$` now puts its result in string
+  space before it reads, as `INKEY$` already did — which also stops it using
+  the line buffer that `FOR`, `PRINT USING` and `DRAW` now keep their working
+  state in ([`inpoom_probe.out`](../../scratchpad/inpoom_probe.out)).
 - **`INPUT #` / `LINE INPUT #` from a tape channel broken with Ctrl-STOP said
   `Input past end`** (fixed 2026-10-11, D-CASRBRK). The VG-8020 raises
   `Device I/O error` (19) in the line; zerobas took the cut read for the end

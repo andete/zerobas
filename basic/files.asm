@@ -2527,13 +2527,13 @@ diskslot_test:
 
 ; --- chget_getbyte: ARL_GETBYTE source for the CONSOLE (D-INPDCON) ---------
 ; `INPUT$(n)` with no `,#f` reads n characters from the KEYBOARD. That is the
-; same loop the file form already runs -- str_inputd_read consumes INDLR_N bytes
+; same loop the file form already runs -- sid_read's loop consumes INDLR_N bytes
 ; into STRSCR through this very vector -- so the console form is a SOURCE, not a
 ; second loop: 7 bytes here instead of a duplicate of sidr_lp.
 ; Source: CHGET $009F, the BIOS "wait for a character" entry (MSX2 Technical
 ; Handbook BIOS list); page 0, mapped throughout.
 ; ⚠️ IT NEVER REPORTS EOF. The file sources set CF at end-of-stream and
-; str_inputd_read stops early on it; the keyboard has no end, so this always
+; sid_read's loop stops early on it; the keyboard has no end, so this always
 ; returns CF clear and the loop runs exactly n times -- which is the reference's
 ; behaviour: INPUT$(n) waits for n keys.
 ; ⚠️ AND IT DOES NOT ECHO. Measured on both references (kwsweep `inputdol_b`,

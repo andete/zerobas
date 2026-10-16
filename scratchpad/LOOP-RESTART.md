@@ -28,8 +28,9 @@ session and the loop resumes exactly where it stopped.
   **S12** (89 cells overlaid on BUF / the FN slots / MULPROD / FBUFFR, 290 B,
   scratchpad/s12_plan.md; K-WS37..54), **S14a** (equates, 27 B; K-WS56..62) and
   **S14b** (render window into BUF, 112 B; K-WS63/64 -- 64 blind, filed) and
-  **S14c** (WSTX = BUF+256 for one-statement cells, 11 B, 0 ROM; K-WS65..67).
-  NEXT: S14d..e per scratchpad/s14_plan.md (BUF+256
+  **S14c** (WSTX = BUF+256 for one-statement cells, 11 B, 0 ROM; K-WS65..67) and
+  **S14d** (INPUT$ into a heap temp -- also a behaviour fix --, BUFTX for FOR /
+  PRINT USING / DRAW, 88 B; K-WS68..70). NEXT: S14e per scratchpad/s14_plan.md (BUF+256
   slot + MID$, INPUT$ into the heap, the math block), then S15 (the ceiling,
   once). S13 (~41 B) is 🙋 Joost's call.
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.

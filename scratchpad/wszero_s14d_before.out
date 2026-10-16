@@ -1,0 +1,5 @@
+ROW s14buf $ECF8-$F37F VG=[[S 14520 ]] ZB=[[S 9729 ]] DIVERGES
+ROW ovbuftx $ECF8-$F37F VG=[[F 400  41 ] | [U 8.57]] ZB=[[F 400  41 ] | [U 8.57]] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: s14buf
+refcache: 0 hit, 4 miss, 4 stored

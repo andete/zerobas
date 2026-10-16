@@ -3300,6 +3300,44 @@ item — do **one item per session** to keep context lean.
       low ($F65D, inside STRSCR's reach): K-WS66 (guards off) -> `ovstx`
       diverges, HIT; K-WS67 (guards on) -> the build refuses on the named
       guard, HIT.
+      ✅ **S14d (2026-10-16): INPUT$ INTO A STRING-SPACE TEMP, AND BUFTX FOR THE
+      CELLS FOR / PRINT USING / DRAW HOLD ACROSS THEIR OWN EVALUATION -- 88 window
+      bytes; a behaviour fix with it.** 📏 Measured first
+      ([`inpoom_probe.py`](scratchpad/inpoom_probe.py) ->
+      [`inpoom_probe.out`](scratchpad/inpoom_probe.out)): `CLEAR 10:A$=INPUT$(30)`
+      with 30 keys typed -- the VG-8020 raises 14 BEFORE taking a key (`[E 14
+      31]`: the keys stay queued), zerobas read them first (`[E 14 1]`). 🔮 HIT
+      both. INPUT$ now allocates its result with str_temp_alloc (INKEY$'s shape)
+      and raises a pending out-of-space at once (check_expr_errors), then reads
+      straight into the body; the old STRSCR loop is gone, except its 7-B tail
+      (`sidr_done`), which read_into_strscr's `ris_done` alias still uses.
+      **The pin:** the rewrite freed 19 B in front of $6CF3 (pin_plan's "pad 2 B"
+      there is its `jr` bridge -- a first reading of 21 forgot it, and the build
+      then wrote an EMPTY binary); refilled IN PLACE by pl_exit, moved whole from
+      basic/missing.asm (pin_plan's exact fill). A first cut refilled AT the pin
+      and a `jr` spanning it went out of range: refill where the bytes were
+      freed, so nothing else in the segment moves. Pad waste still 4 B; main page
+      1 152 -> 171 B (pl_exit left segment F). With no expression writing BUF past
+      STRSCR+8, BUFTX = BUF $F567-$F59F holds FOR_CUR..FOR_SIGN, PU_FDESC /
+      PU_WP / PU_COMMAS / PU_DEC, GFX_DEXP, GFX_DFTOP / GFX_DFSTK. Two guards.
+      📏 Rows: `s14buf` (FOR with STEP and a float limit, two PRINT USING forms,
+      DRAW nesting X three deep with a `=V;` substitution; the 88 vacated bytes,
+      VG-8020 14520), `ovbuftx` (FOR's limit and step from INPUT$(40) /
+      INPUT$(2), PRINT USING's item from INPUT$(60) -- the lever's witness) and
+      `inpoom` (the behaviour fix). Before, on S14c's build
+      ([`wszero_s14d_before.out`](scratchpad/wszero_s14d_before.out)): s14buf
+      9729, ovbuftx SAME. After: 47/47 SAME
+      ([`wszero_s14d_rows.out`](scratchpad/wszero_s14d_rows.out)). 🔪
+      [`wszero_s14d_knife.py`](scratchpad/wszero_s14d_knife.py): K-WS68 (BUFTX's
+      guests back) -> s14buf, HIT; K-WS70 (BUFTX one byte too low, guards on)
+      -> the build refuses on the named guard, HIT
+      ([`wszero_s14d_knife_run1.out`](scratchpad/wszero_s14d_knife_run1.out)).
+      K-WS69 (BUFTX kept, the OLD INPUT$ restored from HEAD) was first NOT
+      SCORED: pin-check runs the citation gate, which failed on a doc edit made
+      WHILE the knives ran (INPUT.md citing a not-yet-staged probe output) --
+      the touch-nothing rule, broken by me; re-run alone
+      ([`wszero_s14d_knife_k69.out`](scratchpad/wszero_s14d_knife_k69.out)):
+      `ovbuftx` and `inpoom` diverge, HIT.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9898,7 +9936,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35431 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35469 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10064,7 +10102,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14926 (T-6FE392)8 (T-529ABE)` from `TODO.md:27720 (T-529ABE)`: a
+      `TODO.md:14964 (T-6FE392)8 (T-529ABE)` from `TODO.md:27758 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15773,7 +15811,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27720 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27758 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -190,6 +190,25 @@ for _r in ("s14stx", "ovstx"):
 _S14C_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60669,60670,61051,61052,61242,61242,61277,61278,61281,61281,61407,61408,61804,61804"]
+# D-WSZERO S14d (2026-10-16): INPUT$ allocates its result in string space (as
+# INKEY$ does, and the reference: it raises 14 BEFORE taking a key --
+# scratchpad/inpoom_probe.out), so no expression writes BUF past STRSCR+8; BUFTX
+# ($F567-$F59F) then holds the cells FOR, PRINT USING and DRAW keep across their
+# own evaluation. `s14buf` sums the 88 vacated bytes (VG-8020 14520); `ovbuftx`
+# is the lever's witness: FOR's limit and step come from INPUT$(40) / INPUT$(2)
+# and PRINT USING's item from INPUT$(60) -- staged in BUF, they would overwrite
+# FOR's frame.
+for _r in ("s14buf", "ovbuftx"):
+    RANGES[_r] = RANGES["all"]
+RUN_GAP["s14buf"] = 60.0
+# `inpoom`: the INPUT$ change is also a BEHAVIOUR fix. With no string space the
+# VG-8020 raises 14 BEFORE taking a key (the typed keys stay queued: 30 + Enter);
+# zerobas read the keys into BUF first and left only the Enter
+# (scratchpad/inpoom_probe.out). No load: the tape is never read.
+RANGES["inpoom"] = (0, 0)
+_S14D_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+             ':PRINT"[S";S;"]":END',
+             "950 DATA 60728,60760,60775,60798,61194,61219,61581,61583,61589,61590"]
 KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
@@ -457,6 +476,26 @@ PROGRAM_OVSTX = [
     # typed Q line (second cut, an APPARATUS FAILURE on the VG-8020)
     "RUN", "@WAIT40", "Z" * 200, "Z" * 54,
 ]
+PROGRAM_S14BUF = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 FOR I=1 TO 2.5 STEP .5:NEXT:PRINT USING"##.##";I:PRINT USING"#,###";1234',
+    '30 SCREEN 2:A$="R2":B$="XA$;D2":C$="XB$;L2":V=3:DRAW"BM50,50XC$;U=V;":GOTO 900',
+] + _S14D_SUM + ["RUN"]
+PROGRAM_OVBUFTX = [
+    "NEW",
+    '10 CLEAR 300,&HE000:BLOAD"CAS:",R',
+    '20 FOR I=1 TO LEN(INPUT$(40)) STEP LEN(INPUT$(2)):S=S+I:NEXT',
+    '30 PRINT"[F";S;I;"]":PRINT USING"[U##.##]";LEN(INPUT$(60))/7:END',
+    # each typed line is its keys + Enter: 39+1 = 40, 1+1 = 2, 59+1 = 60
+    "RUN", "@WAIT40", "Z" * 39, "Z", "Z" * 59,
+]
+PROGRAM_INPOOM = [
+    "NEW", "10 CLEAR 10:ON ERROR GOTO 100", '20 A$=INPUT$(30):PRINT"[OK";LEN(A$);"]":END',
+    "100 T=TIME", "110 IF TIME-T<300 THEN 110", "120 N=0",
+    '130 K$=INKEY$:IF K$<>"" THEN N=N+1:GOTO 130', '140 PRINT"[E";ERR;N;"]":END',
+    "RUN", "Z" * 30,
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -496,7 +535,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "ovleaf": PROGRAM_OVLEAF, "ovfbuf": PROGRAM_OVFBUF,
             "s14eq": PROGRAM_S14EQ, "ovdac": PROGRAM_OVDAC, "ovargb": PROGRAM_OVARGB,
             "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY,
-            "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX}
+            "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX,
+            "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM}
 
 
 def tape(lo, hi, fill=0xA5):

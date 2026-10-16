@@ -786,20 +786,9 @@ basicint_play:
                 call    pl_args             ; HL = the game's "..." arguments
 bp_ret:
                 ret                         ; back to the game's `call $73E5`
-pl_exit:
-                push    hl                  ; the statement cursor
-                ld      hl,2
-                add     hl,sp               ; HL -> the word under it
-                ld      a,(hl)
-                cp      low bp_ret
-                jr      nz,ple_stmt
-                inc     hl
-                ld      a,(hl)
-                cp      high bp_ret
-ple_stmt:
-                pop     hl
-                ret     z                   ; called from basicint_play -> bp_ret
-                jp      exec_stmt           ; the PLAY statement: chain the next one
+                                            ; (pl_exit lives in basic/strvar.asm since
+                                            ; D-WSZERO S14d: it refills the bytes the
+                                            ; INPUT$ rewrite freed ahead of $6CF3)
 
 ; --- D-VARTABADOPT (2026-10-15): a ,R program that loads a BASIC program ------
 ; Harry Fox's first file is machine code that loads its BASIC program itself and

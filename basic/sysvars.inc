@@ -1951,6 +1951,13 @@ RVDESC          equ     $F698               ; [len:1][ptr:2] scratch descriptor 
 ; STRSCR's own 256 B went to program RAM: the one-page shift moved everything in
 ; [$E26A,$EF00) up by $100 and TXTMAX up with it ($E36A).
 STRSCR          equ     LINEBUF             ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
+; 🏗️ D-WSZERO S14d (2026-10-16): BUFTX, BUF $F567-$F59F (57 B). Once INPUT$ reads
+; into a string-space temp, no EXPRESSION writes BUF past STRSCR+8 (MKI$/MKS$/MKD$
+; write STRSCR+0..8, DSKI$ STRSCR+0; the render window and WSTX are above), so a
+; cell a statement holds across its OWN evaluation may live here: FOR / NEXT's
+; working frame, PRINT USING's format copy and field state, DRAW's command copy
+; and X-frame stack. Different statements, so they share the bytes.
+BUFTX           equ     LINEBUF + 9         ; NOT-A-CELL: $F567, the statement-exclusive host (57 B)
                                             ; buffer — UNCHANGED role from pre-4a,
                                             ; just widened 65->256 B (1+STRMAX).
                                             ; NOT a heap root (fixed RAM, outside
@@ -2228,9 +2235,10 @@ GFX_CS_M2       equ     GFX_CS_M1 + 4   ; $F5AD: r*r for the same compare (4)
 ; RETIRED by D-DRAWINPLACE: the frames are the strings' own bodies.)
 GFX_DPTR        equ     $FC8A           ; $FC8A: parse cursor in the current frame (2)
 GFX_DEND        equ     $FC8C           ; $FC8C: one past the current frame's last byte (2)
-GFX_DFTOP       equ     $ED38           ; $ED38: X-frame stack depth (1)
+GFX_DFTOP       equ     BUFTX + 24           ; $F57F: X-frame stack depth (1)
+                                ; D-WSZERO S14d: BUF, DRAW (was $ED38)
 GFX_DFCAP       equ     8               ; max X nesting (own-design cap, D-G6-4)
-GFX_DFSTK       equ     GFX_DFTOP + 1   ; $ED39: saved [ptr][end] per outer frame --
+GFX_DFSTK       equ     GFX_DFTOP + 1   ; $F580: saved [ptr][end] per outer frame --
                                 ; 32 B total, 4 B each * GFX_DFCAP. 🔴 THE TOTAL
                                 ; COMES FIRST ON PURPOSE (D-RAMGATE): with only
                                 ; "4 B each" the map read the WIDTH as 4 and
@@ -2246,7 +2254,8 @@ GFX_DREQ        equ     $FC97           ; $FC97: tenant->resident: 0 = done, 1 =
 GFX_DRESUME     equ     $FC98           ; $FC98: resident->tenant: 1 = resuming (1)
 GFX_DVAL        equ     $FC99           ; $FC99: the resolved int16, or a string body ptr (2)
 GFX_DVLEN       equ     $FAF7           ; $FAF7: that string's length (1)
-GFX_DEXP        equ     $ED67           ; $ED67: NUL-terminated copy of the text between
+GFX_DEXP        equ     BUFTX           ; $F567: NUL-terminated copy of the text between
+                                ; D-WSZERO S14d: BUF, statement-exclusive (DRAW) (was $ED67)
                                         ; `=`/`X` and its `;`, so the resident's eval runs
                                         ; on a BOUNDED buffer and can never walk off the
                                         ; end of a string body into the heap (24 B)
@@ -3980,7 +3989,8 @@ GP_FLAGS        equ     $F088   ; DISK-ONLY: bit0 = extend (PUT allocates; GET d
 ; entry (str_snapshot_arg), which the GC keeps current and only the next
 ; statement pops. See basic/printusing.asm pu_hold_fmt.
 PU_FMTD         equ     $FAF9   ; -> the format's [len][ptr] descriptor (2)
-PU_FDESC        equ     $F08D   ; [len][ptr] copy for a format that cannot move (3)
+PU_FDESC        equ     BUFTX   ; [len][ptr] copy for a format that cannot move (3)
+                                ; D-WSZERO S14d: BUF, statement-exclusive (PRINT USING) (was $F08D)
 ; FREE-RAM $F022..$F03C  PU_FMT's tail, given up by D-PULONG (2026-10-14)
 PU_FMTLEN       equ     $F090   ; live format length (1)
 PU_POS          equ     $F091   ; current scan index into the format (1)
@@ -3995,7 +4005,8 @@ PU_TYPE         equ     $F093   ; field type: 0 num #, 1 str &, 2 str !, 3 str \
                                 ; only bits 0-1. Every reader must therefore mask:
                                 ; `and $03` for the type, `and $04` for the flag.
 PU_FLAGS        equ     $F094   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
-PU_WP           equ     $F095   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
+PU_WP           equ     BUFTX + 3   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
+                                ; D-WSZERO S14d: BUF, PRINT USING (was $F095)
                                 ; PU_COMMAS / PU_DEC below; see the block there
 ; 🔴 THE $EED6..$EEFF GAP IS FULL: PU_WP ends at $EEFC and FMT_SEC / FMT_DESC own
 ; $EEFD..$EEFF. D-PUDOT first put PU_DEC at $EEFE saying "free byte in the same
@@ -4033,8 +4044,10 @@ PU_WP           equ     $F095   ; pu_fmt_int scratch write pointer (2) -- ALIASE
 ; PRINT USING's field is being built in the render window (DB_WIN).
 PU_NUM          equ     $F756   ; PRINT USING numeric render buffer, 0-terminated (32 B)
 PU_DIG          equ     $F776   ; D-PUEXP: flt_fmt's significant digits, point removed (32 B)
-PU_COMMAS       equ     $F095   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
-PU_DEC          equ     $F096   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
+PU_COMMAS       equ     BUFTX + 3   ; PRINT USING `,`: commas to insert (D-PUCOMMA) (1)
+                                ; D-WSZERO S14d: BUF, PRINT USING (was $F095)
+PU_DEC          equ     BUFTX + 4   ; PRINT USING `.`: decimal places requested (D-PUDOT) (1)
+                                ; D-WSZERO S14d: BUF, PRINT USING (was $F096)
 ; CALL FORMAT loop counter — the current sector being written. write_sector's CALSLT
 ; clobbers every register, so the format loop keeps its position here in RAM. One byte
 ; ($EEFD) in the gap below FLD_DESC. Repack eviction (docs/spec-evict-call-format.md):
@@ -4193,7 +4206,8 @@ FOR_FRAME       equ     25      ; FOR frame size, in bytes
 ; $E045..$E04F held FOR_CUR (11 B) until D-FORFLOAT grew it to 25.
 SEQ_EOF         equ     $F707   ; seqio tenant -> main: 1 = the TAPE channel is at its end (D-EOFCAS; S10.C) (1 B)
 ; WAS FREE-RAM $F70A..$F712 -- D-WSZERO S11: LINE's endpoints GFX_X1..GFX_Y2 now. The old 11-byte FOR_CUR, free since D-FORFLOAT moved it to $E09C [D-RAMSHIFT: was $E046..$E050; D-ARYCUR took $EB46..$EB47]
-FOR_CUR         equ     $EF0A   ; scratch: a working copy of one FOR frame (25), and
+FOR_CUR         equ     BUFTX   ; scratch: a working copy of one FOR frame (25), and
+                                ; D-WSZERO S14d: BUF, statement-exclusive (FOR / NEXT); FOR_LIM..FOR_SIGN follow (was $EF0A)
                                 ; ALSO the key a NEXT parses into before it matches
                                 ; (spec §4.3 -- nx_have only writes it after the
                                 ; match, so the two uses cannot collide). D-FORFLOAT
@@ -5705,4 +5719,12 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF TSV_CNT + 1 > DB_WIN || TSV_PTR < DB_RESUME + 1
                 db      S14C_TAPE_SAVE_CELLS_OVERLAP_THE_RENDER_WINDOW
+    ENDIF
+
+; --- D-WSZERO S14d (2026-10-16): the BUFTX guards --------------------------------
+    IF BUFTX < STRSCR + 9 || GFX_DFSTK + 4*GFX_DFCAP > GFX_POVF
+                db      S14D_BUFTX_GUESTS_OUTSIDE_THEIR_57_BYTES
+    ENDIF
+    IF FOR_SIGN + 1 > GFX_POVF || PU_DEC + 1 > GFX_POVF || GFX_DEXP + GFX_DEXP_CAP > GFX_DFTOP
+                db      S14D_BUFTX_GUEST_OVERRAN
     ENDIF
