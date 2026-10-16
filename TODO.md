@@ -3369,6 +3369,42 @@ item — do **one item per session** to keep context lean.
       [`wszero_s14e_knife.out`](scratchpad/wszero_s14e_knife.out): K-WS71 (the
       block back at $F16E) -> s14math, HIT; K-WS72 (math_wrap's restore LDIR
       replaced by NOPs -- the negative control) -> `ovmath` diverges, HIT.
+      ✅ **S14f (2026-10-16): THE CLEAR-CUT REST, equates only -- 18 window bytes.**
+      VARTYPE -> NLONLY $F87C (idle on zerobas and C-BIOS; NOT the DAC tail --
+      READ, S14a); IN_RDLEN -> WSTX+1 (INPUT # / LINE INPUT # stage at most
+      STRSCR+255 = $F65D); OO_RECLEN_CHAN -> WSTX (set after the name's
+      terminator, held across LEN=); PU_FMTLEN..PU_FLAGS -> BUFTX+5..+9, beside
+      PRINT USING's other cells; TSV_NAME -> BUFTX (a tape SAVE's name, held
+      across BSAVE's address evaluations; its declared range follows it). The
+      DISK-ONLY tags FMT_GEOMSEL / FMT_RESULT lost in S9b's fix-up are back;
+      STRENG_SPARE is NOT-A-CELL. NOT moved, by a found hazard: the CIRCLE / LINE
+      cells (GFX_MODE, ASPMAJ, ARCF, SNEG, ENEG) -- DRAW fills all 57 BUFTX bytes
+      and may drive the line engine through GFX_MODE; and POINT's GFX_PTX / PTY
+      are written inside expressions.
+      📏 Rows: `s14f` (READ, LINE INPUT # from a tape file, PRINT USING, OPEN CRT:
+      with LEN=; the 12 vacated bytes, VG-8020 1980 -- FCH_RDMODE at $EF66 stays)
+      and `ovrd` (LINE INPUT # of a 250-character line, staged up to $F65D while
+      IN_RDLEN sits at $F65F). TSV_NAME has no row: no tape write in this
+      harness. Before, on S14e's build
+      ([`wszero_s14f_before.out`](scratchpad/wszero_s14f_before.out)): s14f 923,
+      ovrd SAME -- after the preflight refused a first attempt (`git stash` had
+      made the built ROMs look stale; it was right to: rebuilt, re-run). After:
+      51/51 SAME ([`wszero_s14f_rows.out`](scratchpad/wszero_s14f_rows.out)). 🔪
+      [`wszero_s14f_knife.py`](scratchpad/wszero_s14f_knife.py) ->
+      [`wszero_s14f_knife.out`](scratchpad/wszero_s14f_knife.out): K-WS73 (the
+      group back) -> s14f, HIT; K-WS74 (IN_RDLEN at BUF+200, inside the staged
+      line -- the negative control) -> `ovrd` diverges, HIT.
+      ⏸ **WHAT IS LEFT IS THE S13 SET, 30 names ~33 B** (`ram_map --floor-top
+      F380`): SH_* (the string-heap tenant's parameter block, 18), GFX_MODE /
+      ASPMAJ / ARCF / SNEG / ENEG / PTX / PTY, WSRC_TYP, FCH_RDMODE, ERRMARK,
+      INDLR_N, PRDEST / PRDEV, the DISKOP_OP group. 🙋 **JOOST'S CALL (S13)**:
+      home them in SLTWRK's slot-0 sub-slot entries ($FD11-$FD28: unreachable
+      for any ROM while slot 0 is not expanded -- true on the repack machine,
+      unverified on the VG-8020) and PROCNM (CALL's name buffer), 0 ROM bytes;
+      or refuse, and ~21 B (SH_*, WSRC_TYP, FCH_RDMODE) need code -- a
+      stack-passed parameter block -- while the rest find BUF / idle-byte homes.
+      S15 (TXTMAX_NODISK $ECF8 -> $F380, scratchpad/s14_plan.md §6's checklist)
+      waits on it.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -9967,7 +10003,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35500 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35536 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10133,7 +10169,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:14995 (T-6FE392)8 (T-529ABE)` from `TODO.md:27789 (T-529ABE)`: a
+      `TODO.md:15031 (T-6FE392)8 (T-529ABE)` from `TODO.md:27825 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -15842,7 +15878,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27789 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27825 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

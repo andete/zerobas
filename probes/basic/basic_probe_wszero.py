@@ -215,6 +215,20 @@ RANGES["inpoom"] = (0, 0)
 for _r in ("s14math", "ovmath"):
     RANGES[_r] = RANGES["all"]
 _S14E_SUM = ['900 SCREEN 0:S=0:FOR J=61806 TO 61844:S=S+PEEK(J):NEXT:PRINT"[S";S;"]":END']
+# D-WSZERO S14f (2026-10-16): VARTYPE -> NLONLY, IN_RDLEN / OO_RECLEN_CHAN -> WSTX,
+# PRINT USING's scan state + TSV_NAME -> BUFTX. `s14f` sums the 12 vacated bytes
+# (VG-8020 1980; FCH_RDMODE at $EF66 stays); TSV_NAME has no row -- no tape write
+# in this harness. `ovrd` reads a 250-character line with LINE INPUT #, staged up
+# to $F65D while IN_RDLEN sits at $F65F.
+for _r in ("s14f", "ovrd"):
+    RANGES[_r] = RANGES["all"]
+TAPES["s14f"] = lambda: tape(*RANGES["s14f"]) + build_cas_ascii("D", "HELLO\r\n")
+TAPES["ovrd"] = lambda: tape(*RANGES["ovrd"]) + build_cas_ascii("D", "R" * 250 + "\r\n")
+RUN_GAP["s14f"] = 60.0
+RUN_GAP["ovrd"] = 60.0
+_S14F_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
+             ':PRINT"[S";S;"]":END',
+             "950 DATA 61800,61800,61596,61596,61584,61588,61282,61285,61287,61287"]
 _S14D_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60728,60760,60775,60798,61194,61219,61581,61583,61589,61590"]
@@ -521,6 +535,20 @@ PROGRAM_OVMATH = [
     '60 Z=2^FNA(1,1,1,1,1,1,1,1,1):PRINT"[A";F;X;Y(2);INT(Z);P;"]":PRINT USING"[U##.###]";SQR(2):END',
     "RUN", "@WAIT40", "1,2",
 ]
+PROGRAM_S14F = [
+    "NEW",
+    '10 CLEAR 300,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 OPEN"CAS:D"FOR INPUT AS#1:LINE INPUT#1,A$:CLOSE:READ X:PRINT USING"[U##.##]";X',
+    '30 OPEN"CRT:"FOR OUTPUT AS#2 LEN=10:CLOSE:GOTO 900',
+    '60 DATA 2.5',
+    '100 RESUME NEXT',
+] + _S14F_SUM + ["RUN"]
+PROGRAM_OVRD = [
+    "NEW",
+    '10 CLEAR 400,&HE000:BLOAD"CAS:",R',
+    '20 OPEN"CAS:D"FOR INPUT AS#1:LINE INPUT#1,A$:CLOSE:PRINT"[R";LEN(A$);ASC(A$);"]":END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -562,7 +590,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14lst": PROGRAM_S14LST, "ovkey": PROGRAM_OVKEY,
             "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX,
             "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM,
-            "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH}
+            "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH,
+            "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD}
 
 
 def tape(lo, hi, fill=0xA5):

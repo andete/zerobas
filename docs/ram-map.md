@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 108 declared addresses in this project's own workspace `$E000..$F37F` (105 with a machine-readable width), plus **414** in the MSX standard work area at or above `$F380`.
+* **basic** — 100 declared addresses in this project's own workspace `$E000..$F37F` (97 with a machine-readable width), plus **420** in the MSX standard work area at or above `$F380`.
 * **disk** — 128 declared addresses in this project's own workspace `$E000..$F37F` (119 with a machine-readable width), plus **55** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -114,7 +114,6 @@ second one is the question a per-component map cannot answer.
 | `$E974` | 2 B | `disk` | `MBUF_PTR` | word -> the 512-byte FAT/dir METADATA buffer |  |
 | `$E976` | 1 B | `basic` | `FAT_DEFER` | DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1) |  |
 | `$E976` | 1 B | `disk` | `FAT_DEFER` | (1) |  |
-| `$ECFC` | 1 B | `basic` | `STRENG_SPARE` | $ECFC: 1 B free (was TMISMATCH) |  |
 | `$EDFD` | 1 B | `basic` | `FAT_SECPERCLUS` | DISK-ONLY: sectors per cluster (byte) |  |
 | `$EDFE` | 2 B | `basic` | `FAT_FATSTART` | DISK-ONLY: first FAT sector (= reserved sectors) (word) |  |
 | `$EE00` | 2 B | `basic` | `FAT_FIRSTROOT` | DISK-ONLY: first root-directory sector (word) |  |
@@ -192,11 +191,11 @@ second one is the question a per-component map cannot answer.
 | `$EF59` | 2 B | `disk` | `DSV_PTR` | DISK-ONLY: SAVE: current source byte pointer (2) |  |
 | `$EF5B` | 2 B | `basic` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
 | `$EF5B` | 2 B | `disk` | `DSV_END` | DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2) |  |
-| `$EF61` | 1 B | `basic` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
-| `$EF61` | 1 B | `disk` | `FMT_GEOMSEL` | main -> tenant: 0 = 360k, 1 = 720k (1) |  |
-| `$EF62` | 6 B | `basic` | `FMT_RESULT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), $EF62..$EF67 |  |
-| `$EF62` | 1 B | `disk` | `FMT_RESULT` | tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
-| `$EF63` | 1 B | `basic` | `FILES_ENTIDX/IN_RDLEN` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
+| `$EF61` | 1 B | `basic` | `FMT_GEOMSEL` | DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1) |  |
+| `$EF61` | 1 B | `disk` | `FMT_GEOMSEL` | DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1) |  |
+| `$EF62` | 1 B | `basic` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
+| `$EF62` | 1 B | `disk` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
+| `$EF63` | 1 B | `basic` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF66` | 1 B | `basic` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$EF66` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
@@ -242,20 +241,13 @@ second one is the question a per-component map cannot answer.
 | `$F084` | 2 B | `disk` | `GP_PHYS` | DISK-ONLY: resolved absolute physical sector (2) |  |
 | `$F088` | 1 B | `basic` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
 | `$F088` | 1 B | `disk` | `GP_FLAGS` | DISK-ONLY: bit0 = extend (PUT allocates; GET does not) (1) |  |
-| `$F090` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
-| `$F091` | 1 B | `basic` | `PU_POS` | current scan index into the format (1) |  |
-| `$F092` | 1 B | `basic` | `PU_W` | current field width (1) |  |
-| `$F093` | 1 B | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
-| `$F094` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
 | `$F097` | 1 B | `basic` | `FMT_SEC` | DISK-ONLY: CALL FORMAT: current sector index being written (1) |  |
 | `$F098` | 2 B | `basic` | `FMT_DESC` | DISK-ONLY: CALL FORMAT: chosen geometry descriptor pointer (2) |  |
 | `$F09A` | 2 B | `basic` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
 | `$F09A` | 2 B | `disk` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
-| `$F09C` | 1 B | `basic` | `OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
-| `$F168` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
@@ -339,9 +331,14 @@ extents the standard already fixes would be noise, not rigour.
 | `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` |  | `basic` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` |  | `disk` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
-| `$F567` |  | `basic` | `FOR_CUR/GFX_DEXP/PU_FDESC` | scratch: a working copy of one FOR frame (25), and |  |
+| `$F567` | 6 B | `basic` | `FOR_CUR/GFX_DEXP/PU_FDESC/TSV_NAME` | tape save: 6-char filename buffer (space-padded), $F567..$F56C |  |
 | `$F56A` |  | `basic` | `FOR_LIM/PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
 | `$F56B` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
+| `$F56C` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
+| `$F56D` | 1 B | `basic` | `PU_POS` | current scan index into the format (1) |  |
+| `$F56E` | 1 B | `basic` | `PU_W` | current field width (1) |  |
+| `$F56F` | 1 B | `basic` | `PU_TYPE` | field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1) |  |
+| `$F570` | 1 B | `basic` | `PU_FLAGS` | bit0 = trailing separator (suppress NL); bit1 = wrapped (1) |  |
 | `$F573` | 9 B | `basic` | `FOR_STEP` | the step slot [type][8] (9) |  |
 | `$F57C` | 2 B | `basic` | `FOR_LINE` | CURLINE of the FOR (2) |  |
 | `$F57E` |  | `basic` | `FOR_BODY` | the loop body's text pointer (2) |  |
@@ -402,8 +399,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5FA` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
 | `$F5FC` | 1 B | `basic` | `TSV_CNT` | tape save: loop counter (1) |  |
 | `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
-| `$F65E` |  | `basic` | `CLR_SAVE/LHS_VARTYPE/LOC_COL/MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
-| `$F65F` |  | `basic` | `LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
+| `$F65E` |  | `basic` | `CLR_SAVE/LHS_VARTYPE/LOC_COL/MIDS_DEST/OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
+| `$F65F` |  | `basic` | `IN_RDLEN/LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
@@ -623,6 +620,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F877` |  | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) -- FILNM2+6 |  |
 | `$F878` |  | `basic` | `CAS_VERIFY` | 1 = CLOAD? compare-mode (no store) (1) -- FILNM2+7 |  |
 | `$F879` |  | `basic` | `CAS_VMIS` | sticky: 1 = a verify mismatch was seen (1) -- FILNM2+8 |  |
+| `$F87C` | 1 B | `basic` | `VARTYPE` | var_name_key: the RESOLVED type (2/4/8) of the |  |
 | `$F87D` | 2 B | `basic` | `TSV_END` | tape save: last source-byte address, inclusive (2) |  |
 | `$F87F` |  | `basic` | `FNKSTR` | measured base (D-KEYSTR scout) |  |
 | `$F91F` | 1 B | `basic` | `CGPNT` | published: the font's slot (1 B) then address (2 B) |  |

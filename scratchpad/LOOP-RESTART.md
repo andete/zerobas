@@ -31,8 +31,10 @@ session and the loop resumes exactly where it stopped.
   **S14c** (WSTX = BUF+256 for one-statement cells, 11 B, 0 ROM; K-WS65..67) and
   **S14d** (INPUT$ into a heap temp -- also a behaviour fix --, BUFTX for FOR /
   PRINT USING / DRAW, 88 B; K-WS68..70) and **S14e** (the math block saved around
-  every math tenant, 39 B; K-WS71/72). `ram_map --floor-top F380` lists what
-  is left: the S13 set (🙋 Joost) + a few singles. NEXT: (BUF+256
+  every math tenant, 39 B; K-WS71/72) and **S14f** (the clear-cut rest, 18 B;
+  K-WS73/74). `ram_map --floor-top F380` lists what is left: EXACTLY the S13 set
+  (30 names, ~33 B) -- ⏸ 🙋 JOOST'S CALL (TODO D-WSZERO S14f's last paragraph);
+  S15 waits on it. (BUF+256
   slot + MID$, INPUT$ into the heap, the math block), then S15 (the ceiling,
   once). S13 (~41 B) is 🙋 Joost's call.
   the ceiling (S15) moves ONCE, last. S13 (SLTWRK / PROCNM bytes) is 🙋 Joost's.

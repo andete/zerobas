@@ -1,0 +1,5 @@
+ROW s14f $ECF8-$F37F VG=[[S 1980 ]] ZB=[[S 923 ]] DIVERGES
+ROW ovrd $ECF8-$F37F VG=[[R 250  82 ]] ZB=[[R 250  82 ]] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: s14f
+refcache: 0 hit, 4 miss, 4 stored

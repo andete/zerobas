@@ -2086,7 +2086,7 @@ ISRCH_B         equ     ISRCH_A + 2         ; $F83D: resolved B-operand body bas
 ; LIVE cell belonging to a different subsystem (the MID$()= statement) — a real
 ; regression surface bought for nothing, since RAM is not a wall this project is
 ; anywhere near and both ROM walls are. Spend it when something needs a byte.
-STRENG_SPARE    equ     $ECFC               ; $ECFC: 1 B free (was TMISMATCH)
+STRENG_SPARE    equ     $ECFC               ; NOT-A-CELL: $ECFC: 1 B free (was TMISMATCH)
 ; (MIDS_DEST sat right above here, STRENG_SPARE+1, until D-WSZERO S14c moved it to
 ; BUF's WSTX slot.)
 ; 🏗️ D-DRAWINPLACE step 2b (2026-10-13): basic-core RAM's block -- this window,
@@ -3127,7 +3127,8 @@ TSV_END         equ     $F87D   ; tape save: last source-byte address, inclusive
                                   ; D-WSZERO S8: the reference's SAVEND (was $EF5F)
 TSV_CNT         equ     $F5FC   ; tape save: loop counter (1)
                                 ; D-WSZERO S14c: BUF (was $EF61)
-TSV_NAME        equ     $EF62   ; tape save: 6-char filename buffer (space-padded), $EF62..$EF67
+TSV_NAME        equ     BUFTX   ; tape save: 6-char filename buffer (space-padded), $F567..$F56C
+                                ; D-WSZERO S14f: BUFTX: a tape SAVE's name, held across BSAVE's address evaluations (was $EF62)
                                 ; (declared (1 B) until D-WSZERO S11: tape_parse_name writes all 6)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
 ; format.md §3/§4). ALIASED over the tape CSAVE/BSAVE write scratch just above —
@@ -3136,9 +3137,9 @@ TSV_NAME        equ     $EF62   ; tape save: 6-char filename buffer (space-padde
 ; IN_RDLEN/FILES_ENTIDX below), and RAM below DRVA_DPB ($F195) is exhausted (math
 ; pack slice 2 §11.6), so no fresh claim is available. Both are RAM, so visible
 ; from main (page-1 resident stub) and the sub-ROM page-1 tenant alike.
-FMT_GEOMSEL     equ     $EF61 ; main -> tenant: 0 = 360k, 1 = 720k (1)
+FMT_GEOMSEL     equ     $EF61 ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
                                 ; D-WSZERO S9b: a literal, was `equ TSV_CNT` (a disk-only twin)
-FMT_RESULT      equ     $EF62 ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+FMT_RESULT      equ     $EF62 ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)
                                 ; D-WSZERO S9b: a literal, was `equ TSV_NAME` (a disk-only twin)
 ; scan_stmt_end (SUBROM_IDX_SCANSTMT, sub/errtrap.asm) result -- error-
 ; handling S2b's RESUME NEXT (docs/spec-basic-error-handling-s2b-packet.md
@@ -3172,7 +3173,8 @@ FCH_RDMODE      equ     $EF66   ; current read: 0=INPUT# (stop at ','/CR), 1=LIN
 ; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
 ; distinct statements that never run at the same instant, and the per-sector entry
 ; index is dead outside do_files, so the byte is reused (collision-checked).
-IN_RDLEN        equ     $EF63   ; INPUT#/LINE INPUT#: bytes stored so far (1)
+IN_RDLEN        equ     WSTX + 1   ; INPUT#/LINE INPUT#: bytes stored so far (1)
+                                ; D-WSZERO S14f: WSTX+1: INPUT # / LINE INPUT # stage at most STRSCR+255 = $F65D (was $EF63)
 ; Disk BSAVE on-disk binary-file header (MSX-BASIC file formats, an allowed
 ; public language reference). 7 bytes, then raw
 ; data: [$FE][start:2 LE][end:2 LE][exec:2 LE]. This is the DISK format and is
@@ -3992,10 +3994,14 @@ PU_FMTD         equ     $FAF9   ; -> the format's [len][ptr] descriptor (2)
 PU_FDESC        equ     BUFTX   ; [len][ptr] copy for a format that cannot move (3)
                                 ; D-WSZERO S14d: BUF, statement-exclusive (PRINT USING) (was $F08D)
 ; FREE-RAM $F022..$F03C  PU_FMT's tail, given up by D-PULONG (2026-10-14)
-PU_FMTLEN       equ     $F090   ; live format length (1)
-PU_POS          equ     $F091   ; current scan index into the format (1)
-PU_W            equ     $F092   ; current field width (1)
-PU_TYPE         equ     $F093   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+PU_FMTLEN       equ     BUFTX + 5   ; live format length (1)
+                                ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F090)
+PU_POS          equ     BUFTX + 6   ; current scan index into the format (1)
+                                ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F091)
+PU_W            equ     BUFTX + 7   ; current field width (1)
+                                ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F092)
+PU_TYPE         equ     BUFTX + 8   ; field type: 0 num #, 1 str &, 2 str !, 3 str \..\ (1)
+                                ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F093)
                                 ; BIT2 = D-PUDOLLAR's floating `$`, a MODIFIER on
                                 ; the numeric type rather than a type of its own.
                                 ; It lives here because PU_FLAGS is FULL (bit0
@@ -4004,7 +4010,8 @@ PU_TYPE         equ     $F093   ; field type: 0 num #, 1 str &, 2 str !, 3 str \
                                 ; and D-PUEXP) while PU_TYPE's four values need
                                 ; only bits 0-1. Every reader must therefore mask:
                                 ; `and $03` for the type, `and $04` for the flag.
-PU_FLAGS        equ     $F094   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
+PU_FLAGS        equ     BUFTX + 9   ; bit0 = trailing separator (suppress NL); bit1 = wrapped (1)
+                                ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F094)
 PU_WP           equ     BUFTX + 3   ; pu_fmt_int scratch write pointer (2) -- ALIASED by
                                 ; D-WSZERO S14d: BUF, PRINT USING (was $F095)
                                 ; PU_COMMAS / PU_DEC below; see the block there
@@ -4097,7 +4104,8 @@ FCH_RECNOS      equ     $EE7D   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel re
                                 ; round-trip cells RN_PTR/RN_NEW/RN_OLD/RN_INC
                                 ; and read_line's RL_AUTO mode flag)
 GP_RECLEN       equ     $F09A   ; DISK-ONLY: active channel's record length (word), loaded per calc
-OO_RECLEN_CHAN  equ     $F09C   ; OPEN scratch: channel # stashed across the LEN= eval (1)
+OO_RECLEN_CHAN  equ     WSTX   ; OPEN scratch: channel # stashed across the LEN= eval (1)
+                                ; D-WSZERO S14f: WSTX: set after the name's terminator, held across LEN= (was $F09C)
 FILES_HASPAT    equ     $F09D   ; DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1)
 ; --- Tier-3 cassette name-matching (CLOAD"name" / LOAD"CAS:name" / RUN"CAS:" /
 ; MERGE"CAS:"): tape/docs/spec-cas-tier3-cload.md Item A. Clean high RAM above
@@ -4894,7 +4902,8 @@ RND_SEED        equ     RNDX+1  ; packed BCD, MSD-first, 7 bytes ($F858..$F85E)
 ; docs/spec-basic-float-core.md §11. Own-choice free RAM, same rationale as the
 ; F1/F2 blocks above: $F14E.. is unclaimed free RAM below DRVA_DPB ($F195,
 ; disk/init.asm) and above SUB_INT_DELTA (permanent, not transient like DB_CUR).
-VARTYPE         equ     $F168   ; var_name_key: the RESOLVED type (2/4/8) of the
+VARTYPE         equ     $F87C   ; var_name_key: the RESOLVED type (2/4/8) of the
+                                ; D-WSZERO S14f: NLONLY, idle on zerobas and C-BIOS -- NOT the DAC tail (READ, S14a) (was $F168)
                                 ; D-WSZERO S14a: NOT the DAC tail -- READ resolves its target (this
                                 ; cell) BEFORE tk_float parses the DATA item over TKDCOUNT; the
                                 ; plan's "no call between" was wrong for READ (test_control_flow)

@@ -76,8 +76,8 @@ GP_SRC equ 0EE77H   ; DISK-ONLY: pass cursor into FSECTOR_BUF (2)
 GP_LEFT equ 0EE79H   ; DISK-ONLY: record bytes still to move, ends $EA3E (2 B)
 FCH_RDMODE equ 0EF66H   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
 STRMAX equ 000FFH   ; repack build: string heap (slice-4a §8)
-FMT_GEOMSEL equ 0EF61H   ; main -> tenant: 0 = 360k, 1 = 720k (1)
-FMT_RESULT equ 0EF62H   ; tenant -> main: 0 = ok, 1 = DSKIO write error (1)
+FMT_GEOMSEL equ 0EF61H   ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
+FMT_RESULT equ 0EF62H   ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
 SUBROM_ENTRY_BASE_P1 equ 04010H   ; sub-ROM page-1 jp-table base
 SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
