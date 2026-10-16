@@ -4439,16 +4439,21 @@ item — do **one item per session** to keep context lean.
       no title worse. 📏 **Buzz Off and Shark Hunter's reset LOCATED the same day**:
       both CALL the reference BIOS's internal $0D12, which is C-BIOS's reset on
       zerobas -- D-BIOSINT, a scope question for Joost. **Loopy Laundry**
-      (pick_martos) is different: from t=20 its tape reads return to $6FA1 with
-      page 1 mapped to RAM (A8=$FC) on zerobas, where the VG-8020 is at $6FA1 with
-      page 1 on slot 0 (A8=$F0) -- the slot maps already differ during the load;
-      at t=68.46 zerobas's copy CALLs $2010 from $6FD6 (an internal address on
-      the reference) and resets, code the VG-8020 never runs. ➡️ The open question
-      is WHO maps page 1 to RAM on zerobas. Hypothesis to measure first: zerobas
-      marks slot 3 EXPANDED (EXPTBL $FCC4 = $80, scratchpad/ramad_probe.out; the
-      VG-8020 0), and a loader that branches on it takes another path. ⚠️ Measure
-      with A8 / EXPTBL reads at GAME addresses only -- not a breakpoint inside the
-      reference ROM (the $6FA1 reading above was one, registers only; not again).
+      (pick_martos) -- LOCATED the same day, and it is the same class. Its second
+      BLOAD loads $C400-$F3FF (exec $EA60; zerobas's own CURPTR / ENDPTR /
+      EXECPTR cells), over the stack: the file PLANTS a return chain there, and
+      the `ret` at the end of the load (zerobas: bl_apply_ofs, SP=$F08E) follows it
+      -- $2010, $18E8, the hook cell $FED0, $3002, ... -- reference-ROM internal
+      addresses, each presumably a short tail like D-BASICINT's $3297. On zerobas
+      $2010 / $18E8 are C-BIOS code (D-BIOSINT's scope) and $3002 is BASIC's
+      ary_engine_call (D-BASICINT's), and the machine resets at t=68.46. ⚠️ It
+      also needs zerobas's stack at that `ret` where the reference's is -- not yet
+      compared. (Corrections on the way: "page 1 mapped to RAM" was zerobas's
+      own sub-ROM BLOAD tenant in slot 3-2 -- A8=$FC with slot 3 expanded -- and
+      the EXPTBL hypothesis was refuted: nothing reads EXPTBL / SLTTBL from t=8 to
+      30 s. Two harness logs that held game bytes -- stack words after the load,
+      and AF in the load loop -- were deleted unread past the first lines; the
+      harness now blanks both.)
       (D) **Head over Heels' `Out of memory in 40`** is a GOSUB refused at 671 B
       free by the 768-B frame margin, where the reference keeps ~130: filed as
       D-GOSUBOOM (TIER 1), with the reference's own behaviour after a trapped
@@ -5052,6 +5057,8 @@ item — do **one item per session** to keep context lean.
       C-BIOS's own reset routine starts ($0000 is `di / jp $0D12`), so a repack
       patch would move that routine and put the new entry there; each further
       address is its own layout problem inside C-BIOS.
+      ➕ **Loopy Laundry joins it** (D-TAPELOAD's note, 2026-10-16): its planted
+      return chain runs through $2010 and $18E8 (and $3002, BASIC's side).
       📏 MEASURED (session harness outside the repo; PC / registers / stack words on
       zerobas, registers at GAME addresses on the VG-8020 -- no ROM byte, no game
       byte): Buzz Off's game code CALLs $0D12 from $DDFE (stack top $DE01) at
@@ -10659,7 +10666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36192 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36199 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10825,7 +10832,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15687 (T-6FE392)8 (T-529ABE)` from `TODO.md:28481 (T-529ABE)`: a
+      `TODO.md:15694 (T-6FE392)8 (T-529ABE)` from `TODO.md:28488 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16534,7 +16541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28481 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28488 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
