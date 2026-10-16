@@ -4436,7 +4436,9 @@ item — do **one item per session** to keep context lean.
       D-BIOSREGS matched five C-BIOS register contracts its game code depends on;
       it plays the VG-8020's attract demo. Corpus (pick_martos, same list as the
       morning): SAME 15, RESET 3 (Buzz Off, Shark Hunter, Loopy Laundry), IOERR 1,
-      no title worse.
+      no title worse. 📏 **Buzz Off and Shark Hunter's reset LOCATED the same day**:
+      both CALL the reference BIOS's internal $0D12, which is C-BIOS's reset on
+      zerobas -- D-BIOSINT, a scope question for Joost.
       (D) **Head over Heels' `Out of memory in 40`** is a GOSUB refused at 671 B
       free by the 768-B frame margin, where the reference keeps ~130: filed as
       D-GOSUBOOM (TIER 1), with the reference's own behaviour after a trapped
@@ -5027,6 +5029,34 @@ item — do **one item per session** to keep context lean.
       🔮 Scored: "CALPAT's DE is the cause" -- MISS (no change; A from CALATR was,
       and the first read of the probe skipped AF); "LDIRMV's DE is" -- part HIT
       (the demo changed, then it reset); "all contracts matched -> no reset" -- HIT.
+
+- [ ] 🙋 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
+      $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)**
+      🎚️ TIER 1 — happy path: two of the three tapes that still reset (D-TAPELOAD).
+      🙋 **NEEDS-JOOST — scope.** D-BASICINT's ruling covers the BASIC ROM's
+      undocumented entries; this is the BIOS's (page 0, where zerobas runs the
+      repacked C-BIOS). The question D-TAPELOAD raised on 2026-10-16 and withdrew
+      the same day (its evidence was hook returns) now has a real case: **should
+      the repacked C-BIOS provide reference-BIOS internal entry points, at their
+      addresses, characterised black-box like D-BASICINT?** Cost: $0D12 is where
+      C-BIOS's own reset routine starts ($0000 is `di / jp $0D12`), so a repack
+      patch would move that routine and put the new entry there; each further
+      address is its own layout problem inside C-BIOS.
+      📏 MEASURED (session harness outside the repo; PC / registers / stack words on
+      zerobas, registers at GAME addresses on the VG-8020 -- no ROM byte, no game
+      byte): Buzz Off's game code CALLs $0D12 from $DDFE (stack top $DE01) at
+      t=112.06 on zerobas, which enters C-BIOS's boot -- the "reset". The VG-8020
+      makes the same call, repeatedly: in A=$FE BC=$1002 DE=0 HL=$FBFE, out A=0
+      F=$42 BC=$00FF DE=$FBF0 (KEYBUF) HL=$FBFE. Shark Hunter enters $0D12 too
+      (t=156.78) with the same A=$FE / HL=$FBFE. Ruled out on the way: the RAM slot
+      cells (scratchpad/ramad_probe.out: RAMAD0-3 are power-on garbage on the
+      VG-8020 too; EXPTBL marks slot 3 expanded on zerobas, $80, and not on the
+      VG-8020 -- zerobas's machine shape, sub-ROMs in 3-2 / 3-3, not this
+      reset). Their interrupt handlers also leave the BIOS's interrupt frame by a
+      fixed SP step (Buzz Off: $F35B -> $F373) and survive it on zerobas.
+      ➡️ If yes: characterise $0D12 black-box on the VG-8020 with our own calls
+      (registers, the keyboard cells $FBE5-$FBFF and KEYBUF, PUTPNT / GETPNT),
+      then a repack patch with the entry at $0D12.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10619,7 +10649,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36152 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36182 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10785,7 +10815,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15647 (T-6FE392)8 (T-529ABE)` from `TODO.md:28441 (T-529ABE)`: a
+      `TODO.md:15677 (T-6FE392)8 (T-529ABE)` from `TODO.md:28471 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16494,7 +16524,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28441 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
