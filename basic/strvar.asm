@@ -269,8 +269,12 @@ str_eval_ok:
 ; TEMP allocated before the first is read (D-WSZERO S14d; n <= 255, so the old
 ; STRMAX clamp on the STRSCR staging was dead). HL is the (HL-based) string-eval cursor; the numeric args
 ; use `eval` (which saves/restores IX); fat_io_getbyte's CALSLT clobbers everything,
-; so the read state lives in RAM (INDLR_N, the count still to read) and the
-; cursor is guarded on the stack. CF-3300-validated (disk_probe_inputdollar.py).
+; so the count rides the Z80 stack from its eval to the read, then the temp's own
+; length byte and B (pushed around each byte), and the cursor is guarded on the
+; stack too. D-WSZERO S14g-c: the count was a RAM cell (INDLR_N), shared by every
+; INPUT$ -- one inside the channel expression, `INPUT$(3,#VAL(INPUT$(1)))`, left it
+; 0 and the outer read raised 5 where the VG-8020 reads 3 bytes. CF-3300-validated
+; (disk_probe_inputdollar.py).
 ; --- MKI$(n): pack a 16-bit integer into a 2-byte little-endian string -----------
 ; Reached from str_eval on a $FF function token. "MKI$" crunches to $FF $AE (oracle-
 ; locked). MKI$(n) returns the 2-byte string [lo][hi] of n; the inverse is CVI
@@ -448,7 +452,8 @@ str_inputd:
                 ; is looked at (`INPUT$(256,#1)` with #1 closed: 5 on the CF-3300,
                 ; not 59). Only 0 waits for the read, below.
                 call    eval_byte_checked   ; A = E = n (0..255); HL past it
-                ld      (INDLR_N),a         ; target count
+                push    af                  ; [n]: each INPUT$ keeps its own count,
+                                            ; across the channel eval below
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
@@ -459,12 +464,12 @@ str_inputd:
                 ; where both references read a key. It was the ONE remaining
                 ; MISSING keyword in the whole kwsweep.
                 ; 🎯 IT REUSES THE FILE FORM'S LOOP. sid_read's loop (`sidr_lp`) already
-                ; consumes INDLR_N bytes into STRSCR through the ARL_GETBYTE
+                ; consumes n bytes into the result through the ARL_GETBYTE
                 ; vector, so the console form only has to point that vector at the
                 ; keyboard and join at sid_read. No channel, so no fch_check and
                 ; no fch_select -- there is nothing to select.
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,sid_no
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard the eval cursor; str_pub_ok pops
                 ld      hl,chget_getbyte
@@ -484,7 +489,7 @@ sid_fnum:
                 call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_eval_no
+                jp      nz,sid_no
                 inc     hl                  ; HL past ')'
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
                                             ; `jp nc,str_eval_no` -- a PARSE-level
@@ -547,9 +552,11 @@ sid_read:
                 ; returned "". Raised HERE, at the read, because the reference
                 ; checks the channel FIRST for this one value: INPUT$(0,#1) with #1
                 ; not open is 59 on both (probes/disk/disk_probe_inputdn.py).
-                ld      a,(INDLR_N)
+                pop     de                  ; the cursor
+                pop     af                  ; A = n
+                push    de                  ; the cursor back on top, for sfi_done
                 or      a
-                jp      z,gb_illegal        ; 5
+                jp      z,gb_illegal        ; 5 (raise_error resets SP)
                 ; 🏗️ D-WSZERO S14d (2026-10-16): the result is a TEMP in string
                 ; space, allocated BEFORE a byte is taken -- INKEY$'s shape, and the
                 ; reference's: with no room it raises 14 and leaves the typed keys
@@ -562,21 +569,27 @@ sid_read:
                                             ; (0: the out-of-space code is pending)
                 ld      (STRPTR),hl
                 call    check_expr_errors   ; ...and raised NOW, before a key is taken
+                ld      b,(hl)              ; B = n, the temp's [len] (allocated, so
+                                            ; check_expr_errors kept HL)
                 ex      de,hl               ; HL = the body
 sidr_lp:
+                push    bc
                 push    hl
                 call    arl_getbyte         ; D-CASINP: through the vector (console,
                 pop     hl                  ; a CAS: or a disk channel; CALSLT
-                                            ; clobbers every register)
+                pop     bc                  ; clobbers every register)
                 jp      c,gp_past_eof       ; D-SEQEOF R3: the end before n bytes is
                                             ; 55, and the target keeps its old value
+                                            ; (a raise: raise_error resets SP)
                 ld      (hl),a
                 inc     hl
-                ld      a,(INDLR_N)
-                dec     a
-                ld      (INDLR_N),a
-                jr      nz,sidr_lp
+                djnz    sidr_lp
                 jp      sfi_done            ; pop the cursor, then str_eval_ok
+; sid_no: a decline after the count -- drop [n], then str_eval_no's exact exit
+; (A = the character, HL = the cursor; DE is dead on a decline).
+sid_no:
+                pop     de
+                jp      str_eval_no
 ; sidr_done: the old STRSCR loop's tail, kept for its one remaining user --
 ; read_into_strscr's `ris_done` alias (basic/files.asm, INPUT # / LINE INPUT #).
 sidr_done:

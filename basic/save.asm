@@ -290,13 +290,13 @@ ascii_save:
                 ; PRINT# device selector and this save never set it, so after
                 ; `OPEN"CRT:"FOR OUTPUT AS#1 : PRINT#1,"X" : CLOSE#1` the
                 ; listing went to the SCREEN and Q.BAS was 0 B, where the CF-3300
-                ; writes the file (asavedev-acceptance's `crt` row). One store
-                ; sets both: PRDEV is the byte after PRDEST.
-    IF PRDEV - PRDEST - 1
-                db      PRDEV_IS_NOT_THE_BYTE_AFTER_PRDEST
-    ENDIF
-                ld      hl,1
-                ld      (PRDEST),hl         ; PRDEST = 1 (pchar -> the file), PRDEV = 0
+                ; writes the file (asavedev-acceptance's `crt` row). Two stores
+                ; since D-WSZERO S14g-c: PRDEST is PTRFIL's low byte and PRDEV a
+                ; BUF byte, no longer adjacent.
+                xor     a
+                ld      (PRDEV),a           ; 0 = the disk sink
+                inc     a
+                ld      (PRDEST),a          ; 1 = pchar -> the file
                 call    list_all            ; number + space + detok + CRLF, each line
                                             ; ⚠️ list_ALL, not list_walk: since
                                             ; D-LSTRNG the walk honours LST_LO/LST_HI,

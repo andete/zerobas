@@ -243,6 +243,20 @@ RUN_GAP["s14ga"] = 60.0
 # `ovwsrc` checks the widened values alone.
 for _r in ("s14gb", "ovwsrc"):
     RANGES[_r] = RANGES["all"]
+# D-WSZERO S14g-c (2026-10-16): INDLR_N -> the Z80 stack (each INPUT$ keeps its own
+# count, so an INPUT$ inside another's channel expression no longer zeroes the outer
+# one's), PRDEST -> PTRFIL's low byte (the reference's "output goes to a file" test),
+# PRDEV -> BUF $F5FD. `s14gc` sums the 3 vacated bytes (VG-8020 495); `ovinpd` is
+# the nested INPUT$ (a behaviour fix); `ovprdev` reads PTRFIL after a CRT: PRINT #
+# (channel #1: MAXFILES defaults to 1, and #2 was Bad file number on the VG-8020);
+# `ovprusg` runs PRINT # USING on CRT:, whose scan cells (BUFTX) are written while
+# PRDEV is live (MKI$, the plan's first choice, is Disk BASIC: ERR 5 on the VG-8020).
+for _r in ("s14gc", "ovinpd", "ovprdev", "ovprusg"):
+    RANGES[_r] = RANGES["all"]
+TAPES["s14gc"] = lambda: tape(*RANGES["s14gc"]) + build_cas_ascii("D", "HELLO\r\n")
+TAPES["ovinpd"] = lambda: tape(*RANGES["ovinpd"]) + build_cas_ascii("D", "HELLO\r\n")
+RUN_GAP["s14gc"] = 60.0
+RUN_GAP["ovinpd"] = 60.0
 _S14GA_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
               ':PRINT"[S";S;A$;"]":END',
               "950 DATA 60984,60984,61117,61117,61286,61286,61295,61295,61331,61331,61334,61334,61371,61372"]
@@ -593,6 +607,34 @@ PROGRAM_OVWSRC = [
     '40 PRINT"[W";F;G#;H!:PRINT"[K";K#;L!:PRINT"[M";M#;I#;N!;"]":END',
     "RUN",
 ]
+PROGRAM_S14GC = [
+    "NEW",
+    '10 CLEAR 300,&HE000:BLOAD"CAS:",R',
+    '20 OPEN"CAS:D"FOR INPUT AS#1:A$=INPUT$(5,#1):CLOSE',
+    '30 OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"Z";:CLOSE#1:S=PEEK(61120)+PEEK(61240)+PEEK(61241)',
+    '40 PRINT:PRINT"[S";S;A$;"]":END',
+    "RUN",
+]
+PROGRAM_OVINPD = [
+    "NEW",
+    '10 CLEAR 300,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
+    '20 OPEN"CAS:D"FOR INPUT AS#1:A$=INPUT$(3,#VAL(INPUT$(1))):B$=INPUT$(2,#1):CLOSE',
+    '30 PRINT"[I";A$;B$;"]":END',
+    '100 PRINT"[E";ERR;ERL;"]":END',
+    "RUN", "@WAIT40", "1",
+]
+PROGRAM_OVPRDEV = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,"AB","C":CLOSE#1:PRINT"[P";PEEK(&HF864);PEEK(&HF865);"]":END',
+    "RUN",
+]
+PROGRAM_OVPRUSG = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
+    '20 OPEN"CRT:"FOR OUTPUT AS#1:PRINT#1,USING"[Q###.# &]";5.25;"AB":CLOSE#1:END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -636,7 +678,9 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM,
             "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH,
             "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA,
-            "s14gb": PROGRAM_S14GB, "ovwsrc": PROGRAM_OVWSRC}
+            "s14gb": PROGRAM_S14GB, "ovwsrc": PROGRAM_OVWSRC,
+            "s14gc": PROGRAM_S14GC, "ovinpd": PROGRAM_OVINPD, "ovprdev": PROGRAM_OVPRDEV,
+            "ovprusg": PROGRAM_OVPRUSG}
 
 
 def tape(lo, hi, fill=0xA5):

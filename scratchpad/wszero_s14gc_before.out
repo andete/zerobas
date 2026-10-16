@@ -1,0 +1,6 @@
+ROW s14gc $ECF8-$F37F VG=[[S 495 HELLO]] ZB=[[S 2 HELLO]] DIVERGES
+ROW ovinpd $ECF8-$F37F VG=[[IHELLO]] ZB=[[E 5  20 ]] DIVERGES
+ROW ovprdev $ECF8-$F37F VG=[[P 0  0 ]] ZB=[[P 0  0 ]] SAME
+
+FAIL: a load over the window, then BASIC (1/3 as pinned); unpinned divergence: s14gc, ovinpd
+refcache: 0 hit, 6 miss, 6 stored

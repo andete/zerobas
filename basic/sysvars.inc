@@ -900,7 +900,6 @@ FCH_MODES       equ     $F71C   ; 16 B ($F71C..$F72B)
 ; tokenise pass completes BEFORE any of its tokens execute, so this is dead for
 ; the entire duration of any statement's execution.
 TKLNUM          equ     $F7B6   ; tokeniser: 1 = line-number mode is armed (1)
-INDLR_N         equ     $EEC0   ; INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B)
 MRG_PTR         equ     $F7B4   ; MERGE: write cursor into LINEBUF for the current line (2)
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
@@ -1777,14 +1776,21 @@ STRPTR          equ     $F954   ; pointer to the [len][bytes] descriptor (2 byte
 ; consults this. Zeroed at cold start (init_filechan) and re-cleared at every
 ; statement boundary / the REPL prompt / stmt_error, so only PRINT#'s own item
 ; loop ever sees 1. Free byte in the $E0CB gap (NUMBUF/VALTYP/STRPTR below it).
-PRDEST          equ     $EF38   ; PRINT destination: 0=screen, 1=file channel (1)
+PRDEST          equ     $F864   ; PRINT destination: 0=screen, 1=file channel (1)
+                                ; D-WSZERO S14g-c: PTRFIL's low byte, the reference's own "output
+                                ; goes to a file" cell (C-BIOS's ISFLIO tests it); the high byte is
+                                ; never written (was $EF38)
 ; When PRDEST=1, PRDEV selects WHICH sink pchar uses: 0 = disk file (fat_io_putbyte),
 ; 1 = LPT printer (LPTOUT), 2 = CRT screen (CHPUT). Set by PRINT#'s channel classify;
 ; only read while PRDEST=1, so its staleness between statements is harmless. A "device
 ; channel" (LPT:/CRT:) stores FCH_MODES[ch]=LPT_MODE/CRT_MODE and owns no fat.asm
 ; context. OO_DEVTYPE is the transient device type stashed across the OPEN parse.
 ; Free bytes in the $E0CC gap (below CONTLINE $E0D0).
-PRDEV           equ     $EF39   ; PRINT# device sink selector (1)
+PRDEV           equ     $F5FD   ; PRINT# device sink selector (1)
+                                ; D-WSZERO S14g-c: BUF, between TSV_CNT and DB_WIN -- read only
+                                ; while PRDEST != 0, inside the statement that set it; NOT
+                                ; PTRFIL+1, where it would stay 1/2/4 after an LPRINT or a device
+                                ; PRINT # and PEEK(&HF865) would read it (was $EF39)
 OO_DEVTYPE      equ     WSTX + 1   ; OPEN device-channel type being parsed (transient, 1)
                                 ; D-WSZERO S14c: OPEN: WSTX+1, past fname_expr's terminator at $F65E (was $EF3A)
 ; ascii_read_lines' byte-source vector (files.asm D2 getbyte indirection; the
@@ -5766,4 +5772,8 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
 ; --- D-WSZERO S14g-a (2026-10-16): the CIRCLE / LINE cells inside BUFTX ----------
     IF GFX_ENEG + 1 > BUFTX + 57 || GFX_MODE < BUFTX + 10
                 db      S14GA_CIRCLE_CELLS_OUTSIDE_BUFTX
+    ENDIF
+; --- D-WSZERO S14g-c (2026-10-16): PRDEV inside BUF's gap ---------------------
+    IF PRDEV < TSV_CNT + 1 || PRDEV + 1 > DB_WIN
+                db      S14GC_PRDEV_OUTSIDE_THE_BUF_GAP
     ENDIF

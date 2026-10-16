@@ -3544,9 +3544,42 @@ item — do **one item per session** to keep context lean.
       printed .999999, but s14gb's one double-left case, `H!=1/3#+2!`, rounds to a
       single and hides the short widen, and `G#=2!+1/3#` widens a single at double
       length over zero bytes. The knife is caught; ovwsrc is its only witness.
-      ➡️ NEXT (s14g_plan.md §3): S14g-c INDLR_N on the stack -- with a predicted behaviour fix,
-      `A$=INPUT$(3,#VAL(INPUT$(1)))` raising 5 today -- and PRDEST / PRDEV ->
-      PTRFIL / BUF, S14g-d POINT in registers; then the SH_* stack parameter block
+      ✅ **S14g-c (2026-10-16): INPUT$'s COUNT ON THE STACK -- ALSO A BEHAVIOUR FIX
+      -- AND PRDEST / PRDEV INTO THE REFERENCE'S PTRFIL AND BUF.** (1) INDLR_N, the
+      count every INPUT$ shared in one RAM byte, rides the Z80 stack from its eval
+      to the read, then the temp's own length byte and B (`basic/strvar.asm`,
+      `str_inputd`; declines after the count leave through `sid_no`, which drops
+      it). 🐛 `A$=INPUT$(3,#VAL(INPUT$(1)))` -- an INPUT$ inside another's
+      channel number -- raised `Illegal function call` (the inner one left the
+      shared byte 0); the VG-8020 reads 3 bytes. Now it does too (row `ovinpd`:
+      before `[E 5 20]` / `[IHELLO]`, after `[IHELLO]` on both). (2) PRDEST ->
+      PTRFIL's low byte $F864: the reference's own "output goes to a file" cell,
+      which C-BIOS's ISFLIO tests; the high byte is never written. (3) PRDEV ->
+      BUF $F5FD, between TSV_CNT and DB_WIN (guard
+      S14GC_PRDEV_OUTSIDE_THE_BUF_GAP), and NOT PTRFIL+1: there it would stay
+      1/2/4 after an LPRINT or a device PRINT #, which PEEK(&HF865) would see.
+      `save.asm`'s one 16-bit store that set both now writes two bytes (+2 B),
+      which pays for the INPUT$ loop's -2 B: segment C nets 0 in front of the
+      $6CF3 pin, walls unchanged, pins 4/4. 📏 Rows `s14gc` (the 3 vacated
+      bytes: VG-8020 495, zerobas 2 before, 495 after), `ovinpd`, `ovprdev`
+      (`[P 0 0]` both, before and after) and `ovprusg` (PRINT # USING on CRT:):
+      before [`wszero_s14gc_before.out`](scratchpad/wszero_s14gc_before.out),
+      after 57/57 as pinned
+      ([`wszero_s14gc_rows.out`](scratchpad/wszero_s14gc_rows.out); `ovprusg`,
+      added after it, SAME alone and in the knife's restored run); unit tests
+      66/66; docs/keywords/INPUT.md's examples PASS. 🔪
+      [`wszero_s14gc_knife.py`](scratchpad/wszero_s14gc_knife.py) ->
+      [`wszero_s14gc_knife.out`](scratchpad/wszero_s14gc_knife.out): K-WS82/83
+      (strvar.asm and save.asm from HEAD, INDLR_N back, PRDEV at PTRFIL+1 --
+      PAIRED, because each revert alone moves the segment in front of the pin
+      by 2 B and cannot build; the rows still attribute) -> s14gc, ovinpd
+      `[E 5 20]`, ovprdev `[P 0 2]`, HIT; K-WS84 (PRDEV at PU_TYPE, the negative
+      control: PRINT # USING writes 0 there, the disk sink) -> ovprusg alone,
+      HIT; K-WS84g (the same with the guard on) refused by name, HIT. ⚠️ The
+      plan's K-WS84 used MKI$, which is Disk BASIC: the VG-8020 answers
+      `Illegal function call`, so on a diskless machine NO expression writes
+      STRSCR+1 -- the control moved to PRINT USING's cells.
+      ➡️ NEXT (s14g_plan.md §3): S14g-d POINT in registers; then the SH_* stack parameter block
       ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
       harness and a sub page 0 byte pass), then S15.
 
@@ -10147,7 +10180,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35680 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35713 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10313,7 +10346,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15175 (T-6FE392)8 (T-529ABE)` from `TODO.md:27969 (T-529ABE)`: a
+      `TODO.md:15208 (T-6FE392)8 (T-529ABE)` from `TODO.md:28002 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16022,7 +16055,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27969 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28002 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

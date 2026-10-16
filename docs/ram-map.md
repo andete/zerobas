@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 91 declared addresses in this project's own workspace `$E000..$F37F` (88 with a machine-readable width), plus **428** in the MSX standard work area at or above `$F380`.
+* **basic** — 88 declared addresses in this project's own workspace `$E000..$F37F` (85 with a machine-readable width), plus **430** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -158,7 +158,6 @@ second one is the question a per-component map cannot answer.
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EEC0` | 1 B | `basic` | `INDLR_N` | INPUT$(n,#f): remaining bytes to read (transient, 1) (1 B) |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: running byte offset into the record buffer (2) |  |
 | `$EEC5` | 1 B | `basic` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
 | `$EEC5` | 1 B | `disk` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
@@ -175,8 +174,6 @@ second one is the question a per-component map cannot answer.
 | `$EEFB` | 4 B | `disk` | `COPY_LEFT` | DISK-ONLY: bytes still to copy (4-byte LE) |  |
 | `$EF06` | 1 B | `basic` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
 | `$EF06` | 1 B | `disk` | `DISKOP_ERR` | DISK-ONLY: tenant -> main: ERR code of the last DSKIO failure, 0 = none (1) |  |
-| `$EF38` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
-| `$EF39` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$EF42` | 1 B | `basic` | `SCAN_PRIM` | BOOT-ONLY: primary slot currently being scanned (1) |  |
 | `$EF43` | 1 B | `basic` | `SCAN_SLOT` | BOOT-ONLY: candidate slot id for RDSLT/CALSLT (1) |  |
 | `$EF44` | 2 B | `basic` | `SCAN_INIT` | BOOT-ONLY: candidate ROM's INIT entry address (2) |  |
@@ -391,6 +388,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5F9` | 1 B | `basic` | `GFX_BAD` | VRAM read-back mismatch count (1) |  |
 | `$F5FA` | 2 B | `basic` | `SSE_OUT/TSV_PTR` | tenant -> main: next statement's start, or |  |
 | `$F5FC` | 1 B | `basic` | `TSV_CNT` | tape save: loop counter (1) |  |
+| `$F5FD` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
 | `$F65E` |  | `basic` | `CLR_SAVE/LHS_VARTYPE/LOC_COL/MIDS_DEST/OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F65F` |  | `basic` | `IN_RDLEN/LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
@@ -609,6 +607,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
+| `$F864` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
 | `$F866` |  | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) -- FILNAM+0 |  |
 | `$F86C` | 1 B | `basic` | `CAS_WANT_ON` | FILNAM+6; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1) |  |
 | `$F871` |  | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) -- FILNM2+0 |  |

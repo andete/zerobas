@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `INPUT` — read a typed line into variables
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-16):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. One
 > recorded difference: text typed after a closing quote (below).
 > Speed is deliberately left out of these docs until on-par speed is
@@ -116,6 +116,14 @@ keyboard form.
 
 ## What we found, and how
 
+- **An `INPUT$` inside another's channel number broke the outer one** (fixed
+  2026-10-16, D-WSZERO S14g-c). `A$=INPUT$(3,#VAL(INPUT$(1)))` with `1` typed
+  and a file open as #1: the VG-8020 reads 3 bytes from the file; zerobas
+  raised `Illegal function call`. Every `INPUT$` kept its count in one shared
+  RAM byte, and the inner one left it at 0. Each `INPUT$` now keeps its own
+  count on the stack, which is also what took that byte out of the memory a
+  program owns (`ovinpd` in
+  [`wszero_s14gc_rows.out`](../../scratchpad/wszero_s14gc_rows.out)).
 - **`INPUT$` with no room for its result took the keys anyway** (fixed
   2026-10-16, D-WSZERO S14d). `CLEAR 10:A$=INPUT$(30)` with 30 keys typed:
   the VG-8020 raises `Out of string space` before taking a key, so all 30
@@ -180,6 +188,8 @@ keyboard form.
   machines.
 - `make inputary-acceptance` — array elements as targets.
 - `make inputdn-acceptance` — `INPUT$`'s count rules.
+- `make wszero-acceptance` — its `ovinpd` row: an `INPUT$` inside another
+  `INPUT$`'s channel number, over a program that fills the work area.
 - `make screditor-acceptance` — editing an answer with the cursor keys.
 - `make kwsweep` — rows that type replies for each form, and `?Redo from
   start` as the common error.

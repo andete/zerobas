@@ -2527,8 +2527,8 @@ diskslot_test:
 
 ; --- chget_getbyte: ARL_GETBYTE source for the CONSOLE (D-INPDCON) ---------
 ; `INPUT$(n)` with no `,#f` reads n characters from the KEYBOARD. That is the
-; same loop the file form already runs -- sid_read's loop consumes INDLR_N bytes
-; into STRSCR through this very vector -- so the console form is a SOURCE, not a
+; same loop the file form already runs -- sid_read's loop consumes n bytes
+; into the result through this very vector -- so the console form is a SOURCE, not a
 ; second loop: 7 bytes here instead of a duplicate of sidr_lp.
 ; Source: CHGET $009F, the BIOS "wait for a character" entry (MSX2 Technical
 ; Handbook BIOS list); page 0, mapped throughout.

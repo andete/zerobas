@@ -1,0 +1,4 @@
+K-WS82/83: rows ['ctl', 's14gc', 'ovinpd', 'ovprdev', 'ovprusg'] diverging ['s14gc', 'ovinpd', 'ovprdev']; predicted ['s14gc', 'ovinpd', 'ovprdev'] -> HIT
+K-WS84: rows ['ctl', 's14gc', 'ovinpd', 'ovprdev', 'ovprusg'] diverging ['ovprusg']; predicted ['ovprusg'] -> HIT
+K-WS84g: build rc=2, S14GC_PRDEV_OUTSIDE_THE_BUF_GAP named in the log; predicted the guard refuses -> HIT
+restored: build rc=0; SAME
