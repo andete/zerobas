@@ -1432,26 +1432,27 @@ fac_to_int_strict_reset:
 ; --- widen_fac_to / widen_lhsframe_to: HL = dest FPNUM base. Two thin ------
 ; entry points sharing ONE unpack body (wsrc_common below): the FAC/FACTYP
 ; globals, or the LHS_FAC/LHS_FACTYP machine-stack-popped frame, are
-; equally-shaped [lead+mantissa byte][type byte] sources — (WSRC)/(WSRC_TYP)
-; (sysvars.inc, own scratch) hold which pair this call unpacks. Fills dest:
+; equally-shaped [lead+mantissa byte][type byte] sources — (WSRC) holds the
+; source's mantissa address, and its TYPE rides in a register, as the reference
+; passes the operand type in A (D-WSZERO S14g-b: WSRC_TYP, the type byte's
+; ADDRESS in zerobas's own workspace, read twice through it, is gone). Fills dest:
 ; sign, dexp (signed -64..63), dig[0..13] (zero-padded to 14 for a single;
 ; dig[14]=0, meaningless for a freshly-unpacked operand). A source lead byte
 ; of 0 -> canonical zero (sign=0, dexp=0, all digits 0). Own design: same
 ; nibble-split technique as flt_out/flt_to_int16 (basic/float.asm), applied
 ; to a caller-chosen destination. Clobbers A, B, C, D, E, H, L.
 widen_fac_to:
-                ld      de,FACTYP
-                ld      (WSRC_TYP),de
+                ld      a,(FACTYP)          ; A = the type (2/4/8)
                 ld      de,FAC
                 jr      wsrc_go
 widen_lhsframe_to:
-                ld      de,LHS_FACTYP
-                ld      (WSRC_TYP),de
+                ld      a,(LHS_FACTYP)
                 ld      de,LHS_FAC
 wsrc_go:
                 ld      (WSRC),de
+                ld      b,a                 ; B = the type until the mantissa count:
+                                            ; nothing below touches B before then
                 push    hl                  ; dest base
-                ld      de,(WSRC)
                 ld      a,(de)
                 or      a
                 jr      nz,wsrc_nz
@@ -1477,13 +1478,14 @@ wsrc_dexp_ok:
                 inc     hl
                 ld      (hl),d
                 inc     hl                  ; HL -> dest dig[0]
-                ld      de,(WSRC_TYP)
-                ld      a,(de)
+                ld      a,b
                 cp      8
                 ld      b,7
                 jr      z,wsrc_mbytes_ok
                 ld      b,3
 wsrc_mbytes_ok:
+                push    af                  ; Z = double, kept across the loop
+                                            ; (it makes no call)
                 ld      de,(WSRC)
                 inc     de                  ; DE -> source's mantissa byte 0
                 ld      c,$0F               ; D-NEXTCOST: the nibble mask, hoisted
@@ -1517,13 +1519,7 @@ wsrc_unpack:
                 inc     hl
                 inc     de
                 djnz    wsrc_unpack
-                push    hl                  ; save the dest write cursor across the
-                                            ; re-read below (its own indirection needs
-                                            ; HL as scratch)
-                ld      hl,(WSRC_TYP)
-                ld      a,(hl)
-                pop     hl
-                cp      8
+                pop     af                  ; Z = double
                 ld      b,9
                 jr      nz,wsrc_padcount
                 ld      b,1

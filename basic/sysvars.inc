@@ -4806,8 +4806,8 @@ MUL32           equ     $F82E   ; mul16x16_32: 32-bit unsigned product, LE
 WSRC            equ     $F84D   ; widen_fac_to/widen_lhsframe_to (shared unpack
                                 ; body): address of the source's lead+mantissa
                                 ; bytes, FAC or LHS_FAC (2)
-WSRC_TYP        equ     $F11B   ; ...and the address of its type byte, FACTYP
-                                ; or LHS_FACTYP (2)
+                                ; (D-WSZERO S14g-b: the type rides in B / F; the
+                                ; cell that held its address, $F11B, is gone)
 FP_OPMODE       equ     $F84C   ; combine_add/combine_sub shared body: 0=add,
                                 ; 1=sub (1)
 CVT_MODE        equ     $F7FE   ; domain_convert_core: 0 = the strict signed domain,

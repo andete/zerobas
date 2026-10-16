@@ -236,6 +236,13 @@ TAPES["s14ga"] = lambda: tape(*RANGES["s14ga"]) + build_cas_ascii("D", "A,B\r\n"
 RUN_GAP["s14ga"] = 60.0
 # A$ (the LINE INPUT # of "A,B") prints WITH the sum: line 50's own PRINT is
 # wiped by this line's SCREEN 0, which left the read mode unwitnessed (first cut)
+# D-WSZERO S14g-b (2026-10-16): WSRC_TYP ($F11B, 2 B) leaves RAM -- the widen body
+# takes the operand TYPE in a register, as the reference passes it in A. `s14gb`
+# runs both widen entries (FAC and the LHS frame, single and double) and sums the
+# 2 vacated bytes (VG-8020 330) with a SINGLE FOR loop, whose NEXT widens too;
+# `ovwsrc` checks the widened values alone.
+for _r in ("s14gb", "ovwsrc"):
+    RANGES[_r] = RANGES["all"]
 _S14GA_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 7:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
               ':PRINT"[S";S;A$;"]":END',
               "950 DATA 60984,60984,61117,61117,61286,61286,61295,61295,61331,61331,61334,61334,61371,61372"]
@@ -571,6 +578,21 @@ PROGRAM_S14GA = [
     '50 PRINT"[A";A$;"]":GOTO 900',
     '100 PRINT"[E";ERR;"]";:RESUME NEXT',
 ] + _S14GA_SUM + ["RUN"]
+PROGRAM_S14GB = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R:A%=3',
+    '20 F=A%+1.5:G#=2!+1/3#:H!=1/3#+2!:FOR I#=1 TO 2.5 STEP .5:NEXT',
+    '30 S=0:FOR J=61723 TO 61724:S=S+PEEK(J):NEXT:PRINT"[W";F;G#;H!:PRINT"[X";I#;"S";S;"]":END',
+    "RUN",
+]
+PROGRAM_OVWSRC = [
+    "NEW",
+    '10 CLEAR 100,&HE000:BLOAD"CAS:",R:A%=3',
+    '20 F=A%+1.5:G#=2!+1/3#:H!=1/3#+2!:K#=1/3#*3!:L!=2.5!+.25#:M#=-7!-1/7#',
+    '30 FOR I#=1 TO 2.5 STEP .5:NEXT:FOR N!=-1 TO 1 STEP 1/3#:NEXT',
+    '40 PRINT"[W";F;G#;H!:PRINT"[K";K#;L!:PRINT"[M";M#;I#;N!;"]":END',
+    "RUN",
+]
 PROGRAM_ABORT = [
     "NEW",
     '10 CLEAR 100,&HE000:BLOAD"CAS:",R',
@@ -613,7 +635,8 @@ PROGRAMS = {**{n: PROGRAM_NOCLEAR for n in NOCLEAR}, "abort": PROGRAM_ABORT,
             "s14stx": PROGRAM_S14STX, "ovstx": PROGRAM_OVSTX,
             "s14buf": PROGRAM_S14BUF, "ovbuftx": PROGRAM_OVBUFTX, "inpoom": PROGRAM_INPOOM,
             "s14math": PROGRAM_S14MATH, "ovmath": PROGRAM_OVMATH,
-            "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA}
+            "s14f": PROGRAM_S14F, "ovrd": PROGRAM_OVRD, "s14ga": PROGRAM_S14GA,
+            "s14gb": PROGRAM_S14GB, "ovwsrc": PROGRAM_OVWSRC}
 
 
 def tape(lo, hi, fill=0xA5):

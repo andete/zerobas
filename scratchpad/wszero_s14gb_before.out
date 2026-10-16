@@ -1,0 +1,5 @@
+ROW s14gb $ECF8-$F37F VG=[[W 4.5  2.3333333333333  2.33333 | [X 3 S 330 ]] ZB=[[W 4.5  2.3333333333333  2.33333 | [X 3 S 345 ]] DIVERGES
+ROW ovwsrc $ECF8-$F37F VG=[[W 4.5  2.3333333333333  2.33333 | [K .99999999999999  2.75 | [M-7.1428571428571  3  1.33333 ]] ZB=[[W 4.5  2.3333333333333  2.33333 | [K .99999999999999  2.75 | [M-7.1428571428571  3  1.33333 ]] SAME
+
+FAIL: a load over the window, then BASIC (1/2 as pinned); unpinned divergence: s14gb
+refcache: 0 hit, 4 miss, 4 stored

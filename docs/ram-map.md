@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 92 declared addresses in this project's own workspace `$E000..$F37F` (89 with a machine-readable width), plus **428** in the MSX standard work area at or above `$F380`.
+* **basic** — 91 declared addresses in this project's own workspace `$E000..$F37F` (88 with a machine-readable width), plus **428** in the MSX standard work area at or above `$F380`.
 * **disk** — 126 declared addresses in this project's own workspace `$E000..$F37F` (117 with a machine-readable width), plus **57** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -237,7 +237,6 @@ second one is the question a per-component map cannot answer.
 | `$F09A` | 2 B | `disk` | `GP_RECLEN` | DISK-ONLY: active channel's record length (word), loaded per calc |  |
 | `$F09D` | 1 B | `basic` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
 | `$F09D` | 1 B | `disk` | `FILES_HASPAT` | DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_FCB_NAME (1) |  |
-| `$F11B` | 2 B | `basic` | `WSRC_TYP` | ...and the address of its type byte, FACTYP |  |
 | `$F195` | 18 B | `disk` | `DRVA_DPB` | drive-A DPB base (id byte + 18-byte DPB, §8.30) |  |
 | `$F1AA` |  | `disk` | `W50A9_RET_DE` | DE (= IX) on return: disk work-area pointer |  |
 | `$F1C9` |  | `disk` | `RES_PRINT` | resident $-string print routine the kernel CALLs (§8.28) |  |
@@ -600,7 +599,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F849` | 2 B | `basic` | `TKDEXP` | signed dec_exp, pre-/post-round (2) |  |
 | `$F84B` |  | `basic` | `TKSRCSAVE` | (2) |  |
 | `$F84C` | 1 B | `basic` | `FP_OPMODE` | combine_add/combine_sub shared body: 0=add, |  |
-| `$F84D` | 2 B | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
+| `$F84D` |  | `basic` | `WSRC` | widen_fac_to/widen_lhsframe_to (shared unpack |  |
 | `$F84F` | 2 B | `basic` | `FP_LHSVAL` | combine_*: the LHS operand's plain int16 value, |  |
 | `$F851` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |
 | `$F853` | 1 B | `basic` | `FP_RSIGN` | signed_div_de_bc/signed_mod_de_bc: result sign (1) |  |

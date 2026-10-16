@@ -37,8 +37,9 @@ session and the loop resumes exactly where it stopped.
   **S14g-a** (2026-10-16) homed nine of the S13 set in the reference's same-job
   cells or idle singles -- FCH_RDMODE -> FLKINP, the CIRCLE / LINE cells -> BUFTX,
   AUDIO_VMASK -> PRSCNT, DISKOP_OP / ERRMARK -> KANAST / KANAMD -- 0 ROM bytes,
-  K-WS75/79 HIT. NEXT, per scratchpad/s14g_plan.md: S14g-b (WSRC_TYP -> a
-  register), S14g-c (INDLR_N on the stack, PRDEST / PRDEV), S14g-d (POINT's
+  K-WS75/79 HIT. **S14g-b** (2026-10-16): WSRC_TYP -> a register (the widen
+  type in B / F), main low region +21 B, K-WS80/81. NEXT, per
+  scratchpad/s14g_plan.md: S14g-c (INDLR_N on the stack, PRDEST / PRDEV), S14g-d (POINT's
   GFX_PTX / PTY), then the SH_* stack parameter block (scratchpad/shblk_plan.md,
   S16.0..S16.3), then **S15 raises the ceiling ONCE, last**.
 - **Main page 1 was 46 B free on 2026-10-15** (after S10.D's +131 the pins,

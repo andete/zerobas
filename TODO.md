@@ -3522,8 +3522,29 @@ item — do **one item per session** to keep context lean.
       nine names back) -> s14ga, HIT; K-WS79 (FCH_RDMODE at STRSCR+0, where the
       line reader keeps its quote state -- the negative control) -> s14ga
       diverges (A$ cut at the comma), HIT.
-      ➡️ NEXT (s14g_plan.md §3): S14g-b WSRC_TYP -> a register (seg B -17 B),
-      S14g-c INDLR_N on the stack -- with a predicted behaviour fix,
+      ✅ **S14g-b (2026-10-16): WSRC_TYP LEAVES RAM -- THE WIDEN BODY TAKES THE
+      OPERAND TYPE IN A REGISTER**, as the reference passes it in A. `widen_fac_to`
+      / `widen_lhsframe_to` (`basic/float-arith.asm`) loaded the ADDRESS of
+      FACTYP / LHS_FACTYP into a 2-byte cell at $F11B and read the type through it
+      twice; now the type is loaded once into A, kept in B to the mantissa count,
+      and its `cp 8` rides across the unpack loop as F on the stack (the loop makes
+      no call). A dead `ld de,(WSRC)` reload went too. WSRC itself stays (the DAC
+      tail; DE is clobbered by the exponent block). **Segment B -21 B: the main
+      low region 66 -> 87 B free** (`make basic-reloc`, before / after on this
+      tree); pins 4/4. 📏 Rows `s14gb` (both widen entries; sums the 2 vacated
+      bytes: VG-8020 330, zerobas 345 before -- FACTYP's address -- and 330 after)
+      and `ovwsrc` (single and double operands on either side, FOR with a double
+      STEP): before [`wszero_s14gb_before.out`](scratchpad/wszero_s14gb_before.out),
+      after 54/54 as pinned
+      ([`wszero_s14gb_rows.out`](scratchpad/wszero_s14gb_rows.out)); unit tests
+      66/66. 🔪 [`wszero_s14gb_knife.py`](scratchpad/wszero_s14gb_knife.py) ->
+      [`wszero_s14gb_knife.out`](scratchpad/wszero_s14gb_knife.out): K-WS81 (the
+      two pad counts swapped) -> s14gb + ovwsrc, HIT. K-WS80 (the LHS entry reads
+      FACTYP) -> ovwsrc only, a PARTIAL MISS of the prediction "both": `K#=1/3#*3!`
+      printed .999999, but s14gb's one double-left case, `H!=1/3#+2!`, rounds to a
+      single and hides the short widen, and `G#=2!+1/3#` widens a single at double
+      length over zero bytes. The knife is caught; ovwsrc is its only witness.
+      ➡️ NEXT (s14g_plan.md §3): S14g-c INDLR_N on the stack -- with a predicted behaviour fix,
       `A$=INPUT$(3,#VAL(INPUT$(1)))` raising 5 today -- and PRDEST / PRDEV ->
       PTRFIL / BUF, S14g-d POINT in registers; then the SH_* stack parameter block
       ([`shblk_plan.md`](scratchpad/shblk_plan.md), S16.0 first: the unit-test
@@ -10126,7 +10147,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:35659 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:35680 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10292,7 +10313,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15154 (T-6FE392)8 (T-529ABE)` from `TODO.md:27948 (T-529ABE)`: a
+      `TODO.md:15175 (T-6FE392)8 (T-529ABE)` from `TODO.md:27969 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16001,7 +16022,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:27948 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:27969 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
