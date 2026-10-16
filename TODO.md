@@ -4438,7 +4438,17 @@ item — do **one item per session** to keep context lean.
       morning): SAME 15, RESET 3 (Buzz Off, Shark Hunter, Loopy Laundry), IOERR 1,
       no title worse. 📏 **Buzz Off and Shark Hunter's reset LOCATED the same day**:
       both CALL the reference BIOS's internal $0D12, which is C-BIOS's reset on
-      zerobas -- D-BIOSINT, a scope question for Joost.
+      zerobas -- D-BIOSINT, a scope question for Joost. **Loopy Laundry**
+      (pick_martos) is different: from t=20 its tape reads return to $6FA1 with
+      page 1 mapped to RAM (A8=$FC) on zerobas, where the VG-8020 is at $6FA1 with
+      page 1 on slot 0 (A8=$F0) -- the slot maps already differ during the load;
+      at t=68.46 zerobas's copy CALLs $2010 from $6FD6 (an internal address on
+      the reference) and resets, code the VG-8020 never runs. ➡️ The open question
+      is WHO maps page 1 to RAM on zerobas. Hypothesis to measure first: zerobas
+      marks slot 3 EXPANDED (EXPTBL $FCC4 = $80, scratchpad/ramad_probe.out; the
+      VG-8020 0), and a loader that branches on it takes another path. ⚠️ Measure
+      with A8 / EXPTBL reads at GAME addresses only -- not a breakpoint inside the
+      reference ROM (the $6FA1 reading above was one, registers only; not again).
       (D) **Head over Heels' `Out of memory in 40`** is a GOSUB refused at 671 B
       free by the 768-B frame margin, where the reference keeps ~130: filed as
       D-GOSUBOOM (TIER 1), with the reference's own behaviour after a trapped
@@ -10649,7 +10659,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36182 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36192 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10815,7 +10825,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15677 (T-6FE392)8 (T-529ABE)` from `TODO.md:28471 (T-529ABE)`: a
+      `TODO.md:15687 (T-6FE392)8 (T-529ABE)` from `TODO.md:28481 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16524,7 +16534,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28471 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28481 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
