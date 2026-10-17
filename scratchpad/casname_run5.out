@@ -1,0 +1,4 @@
+ROW dot VG=[Skip :ABCD.E | Skip :ZZ] ZB=[Found:ABCD.E | [OK]] DIVERGES
+ROW dot2 VG=[Skip :AB.C | Skip :ZZ] ZB=[Found:AB.C | [OK]] DIVERGES
+ROW dotx VG=[Skip :ABCD.E | Skip :ZZ] ZB=[Found:ABCD.E | [OK]] DIVERGES
+refcache: 0 hit, 6 miss, 6 stored

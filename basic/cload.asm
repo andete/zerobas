@@ -150,7 +150,7 @@ dl_is_cas:
                 ; parsed from FN_RESUME instead, in the PROGRAM TEXT where it
                 ; actually lives (D-FNEXPR2). Empty name (LOAD"CAS:") ->
                 ; CAS_WANT_ON=0 = load next.
-                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
+                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a . ends the name (D-CASDOT)
 dl_cas_close:
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: the closing '"' lives in
                 call    pcr_load            ; the STAGED copy, so resume past the
@@ -337,7 +337,7 @@ dr_is_cas:
                 ; case-sensitive). It stops on fname_expr's appended '"'; the
                 ; statement tail is taken from FN_RESUME, exactly like do_load's
                 ; dl_is_cas.
-                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
+                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a . ends the name (D-CASDOT)
 dr_cas_close:
                 ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
                 call    pcr_load            ; (+ a harmless ,R: run is implicit)

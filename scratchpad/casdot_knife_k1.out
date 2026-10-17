@@ -1,0 +1,2 @@
+K-CD1: diverging ['bdot', 'bsv-cas-dot:name', 'odot', 'sav-cas-dot:name']; predicted ['bdot', 'bsv-cas-dot:name', 'odot', 'sav-cas-dot:name'] -> HIT
+restored: build rc=0; SAME

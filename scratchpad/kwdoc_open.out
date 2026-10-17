@@ -1,8 +1,6 @@
-=== OPEN: PASS
-
-PASS 1
-refcache: 0 hit, 2 miss, 2 stored
-110
+--- OPEN: reference National_CF-3300
+Ok
+10 ON ERROR GOTO 110
 20 OPEN "T.TXT" FOR OUTPUT AS #1
 30 PRINT #1,"ONE":PRINT #1,2;3
 40 CLOSE #1

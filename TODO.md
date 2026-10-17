@@ -4606,6 +4606,19 @@ item — do **one item per session** to keep context lean.
       ($36B2); bare `BLOAD"AB"` / `BLOAD"AB",R` match alike too
       ([`casname_run4.out`](scratchpad/casname_run4.out)). Parked: the input of
       that name is still unlocated.
+      ✅ **LOCATED AND FIXED 2026-10-17 (D-CASDOT): THE NAME HAS A DOT.** The
+      published pointer cells at lines 40-50 (a CURLIN write-watch, addresses
+      only) read VARTAB = ARYTAB = STREND on both machines -- no variables at
+      all; on zerobas a breakpoint on exec_stmt fires ONCE on line 50 (the
+      positive control) and READ / RESTORE never: line 50 is one BLOAD with a
+      literal name, the same text on both. A witness that says only WHICH of
+      FILNAM's six bytes agree (a salted non-linear hash per position, the salt
+      random per run and never printed) read `====xx`: the last two differ.
+      Our own tapes then gave the rule (casname_run5*.out): the VG-8020 ends a
+      `dev:name` name at its '.'. 🔮 "a '.' is copied raw by the reference and
+      cut by zerobas": MISS, the other way round. Harry Fox now gets past line
+      50: IOERR -> BASICERR, the program its loader RUNs next stops with
+      `Out of memory in 30` -- ➡️ D-HFOXOOM below.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -5141,6 +5154,60 @@ item — do **one item per session** to keep context lean.
       pin at $3002 inside a math routine. Is copying those glyph bytes (observable
       in VRAM, but ROM content) acceptable, or does Loopy Laundry stay a known
       difference? Until then: not autonomous.
+
+- [x] ✅ **D-CASDOT — A '.' ENDS A `dev:name` TAPE NAME, AS ON THE VG-8020
+      (FIXED 2026-10-17)** — Harry Fox's line-50 load (D-TAPELOAD B2).
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🤖 **AUTONOMOUS** — the VG-8020 settles it.
+      📏 Our own tapes (scratchpad/casname_probe.py, casname_run5..7.out;
+      probes/basic/basic_probe_cassave.py rows): on the VG-8020 `BLOAD
+      "CAS:ABCD.EF"` finds a header `ABCD` and SKIPS `ABCD.E`; bare `BLOAD
+      "AB.C"` (diskless), `OPEN`, `RUN`, `LOAD`, `MERGE "CAS:AB.C"` find `AB`;
+      `SAVE "CAS:PD.X"` and `BSAVE` write `PD` (the CF-3300 too); `CLOAD
+      "AB.C"` / `CSAVE "PE.XY"` keep the dot; `"CAS:ABCDEFGH.IJ"` is `ABCDEF`;
+      `"CAS:.AB"` is `Bad file name` before the tape moves. zerobas kept the
+      dot everywhere.
+      🔧 basic/cascut-body.inc: `cas_capture_cut` (capture, then the cut) and
+      `cas_name_cut` (56 on a leading '.', else blank CAS_WANT from the first
+      '.' on), at the main low region's END (past the $3297 pin) and in the
+      BLOAD tenant, where 56 goes through BL_STAT as bl_tape_dio's 19 does
+      (`pdf_badname` there is bl_load_error, which RETURNS). `tape_parse_cut`
+      for SAVE / BSAVE. Seven call sites change target only: main page 1 179 B
+      unchanged, low region -38 B, sub page 1 -32 B; pins 6/6.
+      🧪 casbin-acceptance + bdot / odot / blead (10/10); cassave-acceptance +
+      sav-cas-dot / bsv-cas-dot / csave-dot (40/40 against the CF-3300 too).
+      Knives (scratchpad/casdot_knife.out, casdot_knife_k1.out): K-CD1 (the
+      test blunted) -> bdot, odot, sav-cas-dot, bsv-cas-dot; K-CD2 (no
+      leading-dot check) -> blead; 3/3 HIT with K-TO1 below, restore SAME.
+      K-CD1's first cut jumped past the fill, left cnc_fill DEAD, and
+      check_dead_code refused the build: NOT SCORED until re-cut.
+      Unmeasured: what `OPEN "CAS:X.T" FOR OUTPUT` writes (zerobas: `X`).
+
+- [x] ✅ **D-TSVOVL — `SAVE"CAS:"` / `BSAVE"CAS:"` WROTE A CORRUPTED NAME OF 4+
+      LETTERS (FIXED 2026-10-17; A REGRESSION OF 2026-10-16)**
+      🎚️ TIER 1 — happy path: saving to tape.
+      📏 `SAVE"CAS:PDXY"` wrote `PDXYPD` (the VG-8020: `PDXY  `; cassave row
+      sav-cas-4). D-WSZERO S14f (277b48ee) put TSV_NAME in BUFTX = STRSCR+9 on
+      S14d's premise "no EXPRESSION writes BUF past STRSCR+8" -- but fname_expr
+      stages every file statement's name string at STRSCR+1, so
+      tape_parse_name's first store overwrote the staged closing quote and the
+      copy read its own output back. The save rows used two-letter names.
+      🔧 TSV_NAME equ CAS_WANT (FILNAM, where the reference keeps a file's
+      name); OPEN FOR OUTPUT's CAS_WANT -> TSV_NAME copy is now onto itself
+      (kept: 11 B in front of a pin). The S14d premise is corrected in place
+      above BUFTX.
+      🧪 Knife K-TO1 (TSV_NAME back in BUFTX) -> sav-cas-4, sav-cas-dot,
+      bsv-cas-dot: HIT.
+
+- [ ] 📼 **D-HFOXOOM — HARRY FOX: THE PROGRAM ITS LOADER RUNS NEXT STOPS WITH
+      `Out of memory in 30` (2026-10-17)**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🤖 **AUTONOMOUS** — measure first.
+      📏 After D-CASDOT the line-50 load works (the T60 screens are identical);
+      then zerobas shows `RUN30` / `Out of memory in 30` in text mode where the
+      VG-8020 runs the game (session harness, summary_hfx). ➡️ Which allocation
+      fails -- a CLEAR, a DIM, the stack -- and against which ceiling: compare
+      the published pointer cells at line 30 on both machines (PTRWATCH).
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10736,7 +10803,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36269 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36336 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10902,7 +10969,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15764 (T-6FE392)8 (T-529ABE)` from `TODO.md:28558 (T-529ABE)`: a
+      `TODO.md:15831 (T-6FE392)8 (T-529ABE)` from `TODO.md:28625 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16611,7 +16678,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28558 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

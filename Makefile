@@ -96,7 +96,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/missing.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
-         basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc \
+         basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc basic/cascut-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
          basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
          basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
@@ -235,7 +235,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/fldlook.asm sub/lrsetst.asm sub/deffn.asm \
-             sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc basic/cascap-body.inc \
+             sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc basic/cascap-body.inc basic/cascut-body.inc \
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
              basic/fatiocreate-body.inc basic/fatiow-body.inc \

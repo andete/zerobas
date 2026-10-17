@@ -182,7 +182,7 @@ bsv_open:
 bsv_is_cas:
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
-                call    tape_parse_name     ; fills TSV_NAME[0..5]; HL -> closing '"'
+                call    tape_parse_cut      ; fills TSV_NAME[0..5]; HL -> closing "; a . ends the name (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- ,start ------------------------------------------------
                 call    expect_comma_eval   ; DE = start
@@ -329,7 +329,7 @@ ascii_save:
 sav_is_cas:
                 ; HL now points just past "CAS:" inside the quotes.
                 ; Parse filename: up to 6 chars until '"', space-pad to 6.
-                call    tape_parse_name     ; fills TSV_NAME; HL -> closing '"'
+                call    tape_parse_cut      ; fills TSV_NAME; HL -> closing "; a . ends the name (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ; --- optional ,A -> ASCII listing save to tape; else tokenised ---
                 call    skip_comma

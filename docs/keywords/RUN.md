@@ -86,6 +86,9 @@ And **RAM usage**.
 
 ## What we found, and how
 
+- **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `RUN "CAS:AB.C"`
+  looks for `AB`, as on the VG-8020
+  ([`casname_run6.out`](../../scratchpad/casname_run6.out), row `run`).
 - **`RUN` did not close open files** (fixed 2026-09-27, D-RUNCLOSE), so the
   next program could still write to a channel the last one left open. Found
   because the keyword sweep's own disk rows, each started with a `RUN`, were

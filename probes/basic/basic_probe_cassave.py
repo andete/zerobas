@@ -107,6 +107,14 @@ CASES = [
     ("sav-cas-a",    'SAVE"CAS:PB",A'),
     ("csave",        'CSAVE"PC"'),
     ("sav-cas-bare", 'SAVE"CAS:"'),
+    # D-CASDOT (2026-10-17): a '.' in a cassette name ends the name part -- the
+    # reference reads "CAS:AB.C" as the 6-byte name "AB" (scratchpad/casname_run5b.out)
+    ("sav-cas-dot",  'SAVE"CAS:PD.X"'),
+    ("csave-dot",    'CSAVE"PE.XY"'),
+    ("sav-cas-4",    'SAVE"CAS:PDXY"'),         # the control for sav-cas-dot: four chars, no dot
+    # BSAVE of the program area: its data block carries the REM text, so :text
+    # still proves the bytes reached the tape
+    ("bsv-cas-dot",  'BSAVE"CAS:PF.X",&H8000,&H8030'),
 ]
 
 # 🟢 The positive controls. A row whose whole answer is a two-character id is

@@ -125,6 +125,7 @@ bl_tape_dio:
                 ret
 
                 include "basic/cascap-body.inc"     ; cas_capture_name (D-CASBIN)
+                include "basic/cascut-body.inc"     ; cas_capture_cut: a '.' ends the name (D-CASDOT)
 
 ; bl_notfound — the DISK not-found arm (D-BLNF). Same shape and same stack
 ; behaviour as bl_load_error above (reached by `jp`, returns into whoever called

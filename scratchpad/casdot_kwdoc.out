@@ -1,0 +1,10 @@
+=== BLOAD: PASS
+=== BSAVE: PASS
+=== LOAD: PASS
+=== MERGE: PASS
+=== OPEN: PASS
+=== RUN: PASS
+=== SAVE: PASS
+
+PASS 7
+refcache: 0 hit, 14 miss, 14 stored

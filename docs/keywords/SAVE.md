@@ -111,6 +111,12 @@ sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
+- **A tape name of four or more letters was written corrupted** (fixed
+  2026-10-17, D-TSVOVL; broken the day before): `SAVE "CAS:PDXY"` put
+  `PDXYPD` on the tape. The bytes the name was built in overlapped the copy of
+  the statement it was read from. And a `.` now ends the name, as on the
+  VG-8020 and the CF-3300: `SAVE "CAS:PD.X"` writes `PD` (D-CASDOT;
+  `cassave-acceptance` rows `sav-cas-4`, `sav-cas-dot`).
 - **A text save wrote garbage for any number with a fraction or an exponent**
   (fixed 2026-10-11, D-LISTFLT; reported by Vampier). `SAVE "…",A` writes
   what `LIST` prints, and `LIST` printed such a number's stored bytes; the

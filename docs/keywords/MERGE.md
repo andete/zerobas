@@ -95,6 +95,9 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 
 ## What we found, and how
 
+- **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `MERGE "CAS:AB.C"`
+  looks for `AB`, as on the VG-8020
+  ([`casname_run7.out`](../../scratchpad/casname_run7.out)).
 - **A tape `MERGE` broken while it read the file's first block raised error 255**
   (fixed 2026-10-11, D-CASPRIME) -- a stale disk code, on a machine with no
   disk. The VG-8020 raises `Device I/O error` (19) with no line number, and an

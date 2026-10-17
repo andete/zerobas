@@ -1,0 +1,5 @@
+K-CD1: build rc=0 ROM moved=True pin-check rc=2 -- NOT SCORED
+K-CD2: diverging ['blead']; predicted ['blead'] -> HIT
+K-TO1: diverging ['bsv-cas-dot:name', 'sav-cas-4:name', 'sav-cas-dot:name']; predicted ['bsv-cas-dot:name', 'sav-cas-4:name', 'sav-cas-dot:name'] -> HIT
+restored: build rc=0; SAME
+rc=0

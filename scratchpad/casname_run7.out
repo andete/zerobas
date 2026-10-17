@@ -1,0 +1,3 @@
+ROW load VG=[Found:AB] ZB=[Found:AB] SAME
+ROW merge VG=[Found:AB] ZB=[Found:AB] SAME
+refcache: 0 hit, 4 miss, 4 stored

@@ -188,6 +188,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `OPEN "CAS:X.T"`
+  looks for `X`, as on the VG-8020, and `"CAS:.T"` is `Bad file name` on
+  both (`casbin-acceptance` row `odot`). What `FOR OUTPUT` writes for a
+  dotted name is not measured yet.
 - **`OPEN "GRP:"` did not exist** (fixed 2026-10-12, D-OPENGRP, Joost's
   report): the name was taken for a disk file. Six rounds of measurement on
   the VG-8020 pinned the rule above; the one that decided how to build it

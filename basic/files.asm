@@ -888,7 +888,7 @@ oo_hdr_tail:
 ; and the bare form takes the next file. `merge_cas` below is the landed
 ; precedent for a files.asm caller.
 oo_dev_cas:
-                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
+                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a '.' ends the name (D-CASDOT)
                 ; D-FNEXPR: cas_capture_name scanned the STAGED copy, whose
                 ; closing '"' fname_expr wrote itself -- so the quote can no
                 ; longer be missing and the check that used to guard it is gone
@@ -977,10 +977,10 @@ oocas_do_out:
                 ; spaces), which are also the first rows in this tree ever to read
                 ; what a cassette OPEN actually WRITES. HL/DE/BC are free: both
                 ; pushes are above and oocas_mark pops them.
-                ld      hl,CAS_WANT
-                ld      de,TSV_NAME
-                ld      bc,6
-                ldir
+                ld      hl,CAS_WANT         ; 🟡 D-TSVOVL (2026-10-17): TSV_NAME IS
+                ld      de,TSV_NAME         ;  CAS_WANT now (FILNAM), so this copies
+                ld      bc,6                ;  onto itself -- kept, not removed: the
+                ldir                        ;  11 B are in front of a pin (no hole)
                 pop     hl                  ; D-CASFCB: write through channel #n's
                 pop     de                  ;  own buffer, as the VG-8020 does
                 push    de
@@ -2336,7 +2336,7 @@ mrg_ioerr:
 ; cas_open_match (case-sensitive), skipping earlier non-matching files. An empty
 ; name (MERGE"CAS:") merges the next file, unchanged.
 merge_cas:
-                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON; HL on '"'
+                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a '.' ends the name (D-CASDOT)
                 ; D-MERGEXPR: the name came from fname_expr's staged copy, which is
                 ; ALWAYS '"'-terminated by construction, so the old "unterminated
                 ; string" test here could no longer fire. The cursor resumes past

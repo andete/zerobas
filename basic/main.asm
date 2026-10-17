@@ -239,6 +239,16 @@ flt_neg:
                 ld      (FAC),a
                 ret
 
+; D-CASDOT (2026-10-17): a '.' ends a `dev:name` tape name (basic/cascut-body.inc);
+; here at the low region's end, past the $3297 pin, so main page 1 -- where the
+; seven callers are -- only changes call targets.
+                include "basic/cascut-body.inc"     ; cas_capture_cut, cas_name_cut
+; tape_parse_cut -- SAVE"CAS:" / BSAVE"CAS:": tape_parse_name, then the cut
+; (TSV_NAME is CAS_WANT). CSAVE keeps calling tape_parse_name: its name is raw.
+tape_parse_cut:
+                call    tape_parse_name
+                jp      cas_name_cut
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

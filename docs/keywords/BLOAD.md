@@ -114,6 +114,12 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A tape name with a dot found nothing** (fixed 2026-10-17, D-CASDOT). On
+  the VG-8020 a `.` ends the name: `BLOAD "CAS:AB.C"`, and a bare
+  `BLOAD "AB.C"` on a diskless machine, look for `AB`. zerobas kept the dot as
+  part of the name, so Harry Fox's loader, which asks for such a name, skipped
+  every file to the tape's end. Nothing before the dot (`"CAS:.AB"`) is
+  `Bad file name` (56) on both (`casbin-acceptance` rows `bdot`, `blead`).
 - **A load into the top of memory could break the BASIC that runs next**
   (D-WSZERO, 2026-10-14 to 2026-10-16, done). A diskless
   VG-8020 leaves `&HECF8`–`&HF37F` to programs; zerobas kept its own state

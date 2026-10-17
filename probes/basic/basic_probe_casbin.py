@@ -21,6 +21,11 @@ never reads the name: a non-binary file there is an untrappable `load error`.
   bscr   BLOAD"CAS:X" on Y + X2          -> the search's Skip : / Found: rows
   lbin   LOAD"CAS:X" on X1 + A, LIST     -> 20 STOP       (LOAD skips a binary)
   cbin   CLOAD"X" on X1 + T, LIST        -> 10 END        (CLOAD likewise)
+D-CASDOT (2026-10-17): a '.' ends the name of a `dev:name` spec, as on the VG-8020
+(scratchpad/casname_run5*.out; Harry Fox's loader asks for such a name):
+  bdot   BLOAD"CAS:X.BIN" on Y + X2      -> PEEK 34       (the name is "X")
+  odot   OPEN"CAS:X.T" FOR INPUT on A    -> Found:X
+  blead  BLOAD"CAS:.X" on Y + X2         -> Bad file name (nothing before the '.')
 
 Exit 0 all agree; 1 a divergence; 2 the reference gave no reading.
 """
@@ -48,6 +53,9 @@ CASES = {
     "bscr": (("Y", "X2"), ["NEW", 'BLOAD"CAS:X"'] + WAIT + ['PRINT"[D]"'], "rows"),
     "lbin": (("X1", "A"), ["NEW", 'LOAD"CAS:X"'] + WAIT + ["LIST"], "list"),
     "cbin": (("X1", "T"), ["NEW", 'CLOAD"X"'] + WAIT + ["LIST"], "list"),
+    "bdot": (("Y", "X2"), ["NEW", "POKE&H9000,0", 'BLOAD"CAS:X.BIN"'] + WAIT + PEEK, "peek"),
+    "odot": (("A",), ["NEW", 'OPEN"CAS:X.T" FOR INPUT AS #1'] + WAIT + ['PRINT"[D]"'], "rows"),
+    "blead": (("Y", "X2"), ["NEW", "POKE&H9000,0", 'BLOAD"CAS:.X"'] + WAIT + PEEK, "peek"),
 }
 
 
@@ -62,7 +70,7 @@ def reading(machine, name):
     raw = omsx_repl.run_cases(machine, [("direct", lines)], batch=False,
                               reset=("", "SCREEN 0"), cassette=tape(parts))[0] or ""
     flat = re.sub(r"\s+", " ", raw)
-    errs = re.findall(r"Device I/O error|load error|[A-Z][a-z]+(?: [a-z/]+)* error", flat)
+    errs = re.findall(r"Device I/O error|load error|Bad file name|[A-Z][a-z]+(?: [a-z/]+)* error", flat)
     if how == "peek":
         m = re.findall(r"\[P\s*(\d+)\s*\]", flat)
         return f"PEEK {m[-1]}" + (f" ({errs[-1]})" if errs else "") if m else (errs[-1] if errs else None)

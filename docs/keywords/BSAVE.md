@@ -100,6 +100,10 @@ rung requires. **RAM usage** is not yet proven either.
 
 ## What we found, and how
 
+- **A tape name of four or more letters was written corrupted** (fixed
+  2026-10-17, D-TSVOVL; broken the day before), as with `SAVE`. And a `.` now
+  ends the name, as on the VG-8020 and the CF-3300: `BSAVE "CAS:PF.X",…` writes
+  `PF` (D-CASDOT; `cassave-acceptance` row `bsv-cas-dot`).
 - **Ctrl-STOP could not break a tape write** (fixed 2026-10-11, D-CASWBRK).
   On the VG-8020 a `CSAVE`, `BSAVE`, `SAVE` or `PRINT #` to tape broken in its
   data raises `Device I/O error` (19) in the line, which `ON ERROR` traps;

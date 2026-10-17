@@ -88,7 +88,7 @@ is_tape:
                 ; probes/basic/basic_probe_casbin.py `bnn`). Now: the name into
                 ; CAS_WANT (cascap-body.inc, shared with main), bit 6 = binary, and
                 ; the sub-local matcher -- which leaves the tape at the DATA block.
-                call    cas_capture_name    ; HL past "CAS:" (or the bare diskless name)
+                call    cas_capture_cut     ; (D-CASDOT: a . ends the name) HL past "CAS:" (or the bare diskless name)
                 ld      hl,CAS_WANT_ON
                 set     6,(hl)              ; BLOAD wants $D0
                 call    cas_open_match      ; Found:/Skip : rows, as the reference

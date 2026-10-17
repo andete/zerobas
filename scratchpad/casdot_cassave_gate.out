@@ -1,0 +1,48 @@
+D-CASSAVE — what FORMAT each cassette SAVE verb writes   sides: cf3300, zb
+==============================================================================
+ok   sav-cas               cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas:id            cf3300='EA'  zb='EA'
+ok   sav-cas:name          cf3300='PA    '  zb='PA    '
+ok   sav-cas:text          cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas:alive         cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-a             cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-a:id          cf3300='EA'  zb='EA'
+ok   sav-cas-a:name        cf3300='PB    '  zb='PB    '
+ok   sav-cas-a:text        cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-a:alive       cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   csave                 cf3300='<nothing>'  zb='<nothing>'
+ok   csave:id              cf3300='D3'  zb='D3'
+ok   csave:name            cf3300='PC    '  zb='PC    '
+ok   csave:text            cf3300=' ZQ8 /  ZQ9'  zb=' ZQ8 /  ZQ9'   [CONTROL]
+ok   csave:alive           cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-bare          cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-bare:id       cf3300='EA'  zb='EA'
+ok   sav-cas-bare:name     cf3300='      '  zb='      '
+ok   sav-cas-bare:text     cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-bare:alive    cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-dot           cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-dot:id        cf3300='EA'  zb='EA'
+ok   sav-cas-dot:name      cf3300='PD    '  zb='PD    '
+ok   sav-cas-dot:text      cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-dot:alive     cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   csave-dot             cf3300='<nothing>'  zb='<nothing>'
+ok   csave-dot:id          cf3300='D3'  zb='D3'
+ok   csave-dot:name        cf3300='PE.XY '  zb='PE.XY '
+ok   csave-dot:text        cf3300=' ZQ8 /  ZQ9'  zb=' ZQ8 /  ZQ9'   [CONTROL]
+ok   csave-dot:alive       cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   sav-cas-4             cf3300='<nothing>'  zb='<nothing>'
+ok   sav-cas-4:id          cf3300='EA'  zb='EA'
+ok   sav-cas-4:name        cf3300='PDXY  '  zb='PDXY  '
+ok   sav-cas-4:text        cf3300='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-4:alive       cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ok   bsv-cas-dot           cf3300='<nothing>'  zb='<nothing>'
+ok   bsv-cas-dot:id        cf3300='D0'  zb='D0'
+ok   bsv-cas-dot:name      cf3300='PF    '  zb='PF    '
+ok   bsv-cas-dot:text      cf3300=' ZQ8 /  ZQ9'  zb=' ZQ8 /  ZQ9'   [CONTROL]
+ok   bsv-cas-dot:alive     cf3300='ZQ6'  zb='ZQ6'   [CONTROL]
+ROWS: 40 printed, 40 scored — 40 agree, 0 diverge
+==============================================================================
+40/40 readings agree (8 cases, 16 positive controls)
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so the VG-8020 is a full reference here
+READ OFF THE TAPE, not off the screen: every verb here prints nothing whatever it writes, so each row records to a fresh `cassetteplayer new` WAV and probes/lib/cas_decode.py decodes it
+refcache: 0 hit, 16 miss, 16 stored

@@ -110,6 +110,9 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## What we found, and how
 
+- **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `LOAD "CAS:AB.C"`
+  looks for `AB`, as on the VG-8020
+  ([`casname_run7.out`](../../scratchpad/casname_run7.out)).
 - **A line with no line number in an ASCII program printed `load error`, and a
   program went on running** (fixed 2026-10-11, D-CASDIRECT). Both references
   print `Direct statement in file` (57) with no line number, from tape and

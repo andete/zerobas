@@ -1969,6 +1969,11 @@ STRSCR          equ     LINEBUF             ; = BUF ($F55E): [len][bytes:STRMAX]
 ; cell a statement holds across its OWN evaluation may live here: FOR / NEXT's
 ; working frame, PRINT USING's format copy and field state, DRAW's command copy
 ; and X-frame stack. Different statements, so they share the bytes.
+; 🔴 D-TSVOVL (2026-10-17): "no EXPRESSION writes BUF past STRSCR+8" WAS FALSE --
+; fname_expr (basic/files.asm) stages a FILE NAME's whole string at STRSCR+1, up
+; to 255 B, for every file statement. S14f's TSV_NAME here was overwritten by its
+; own copy (SAVE"CAS:PDXY" wrote "PDXYPD"); it moved to FILNAM. A cell a FILE
+; statement holds while its staged name is still read must not live here.
 BUFTX           equ     LINEBUF + 9         ; NOT-A-CELL: $F567, the statement-exclusive host (57 B)
                                             ; buffer — UNCHANGED role from pre-4a,
                                             ; just widened 65->256 B (1+STRMAX).
@@ -3116,8 +3121,19 @@ TSV_END         equ     $F87D   ; tape save: last source-byte address, inclusive
                                   ; D-WSZERO S8: the reference's SAVEND (was $EF5F)
 TSV_CNT         equ     $F5FC   ; tape save: loop counter (1)
                                 ; D-WSZERO S14c: BUF (was $EF61)
-TSV_NAME        equ     BUFTX   ; tape save: 6-char filename buffer (space-padded), $F567..$F56C
-                                ; D-WSZERO S14f: BUFTX: a tape SAVE's name, held across BSAVE's address evaluations (was $EF62)
+TSV_NAME        equ     CAS_WANT ; tape save: 6-char filename buffer (space-padded), FILNAM $F866..$F86B
+                                ; D-WSZERO S14f put it in BUFTX ($F567, was $EF62). 🔴 D-TSVOVL
+                                ; (2026-10-17): fname_expr STAGES the whole name string at
+                                ; STRSCR+1 ($F55F..), and BUFTX = STRSCR+9 -- so for
+                                ; SAVE"CAS:" / BSAVE"CAS:" with a name of 4+ characters
+                                ; tape_parse_name's first store overwrote the staged closing
+                                ; quote and the copy read its own output back:
+                                ; SAVE"CAS:PDXY" wrote the header name "PDXYPD" (the VG-8020:
+                                ; "PDXY  "; probes/basic/basic_probe_cassave.py sav-cas-4).
+                                ; FILNAM is where the reference keeps a file's name; a tape
+                                ; SAVE never uses the read side's request (CAS_WANT, the
+                                ; same 6 B), and OPEN FOR OUTPUT's CAS_WANT -> TSV_NAME copy
+                                ; is now a copy onto itself.
                                 ; (declared (1 B) until D-WSZERO S11: tape_parse_name writes all 6)
 ; CALL FORMAT sub-ROM tenant args/result (repack eviction, docs/spec-evict-call-
 ; format.md §3/§4). ALIASED over the tape CSAVE/BSAVE write scratch just above —

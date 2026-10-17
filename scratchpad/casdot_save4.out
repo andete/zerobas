@@ -1,0 +1,13 @@
+D-CASSAVE — what FORMAT each cassette SAVE verb writes   sides: vg8020, zb
+==============================================================================
+ok   sav-cas-4             vg8020='<nothing>'  zb='<nothing>'
+ok   sav-cas-4:id          vg8020='EA'  zb='EA'
+DIFF sav-cas-4:name        vg8020='PDXY  '  zb='PDXYPD'
+ok   sav-cas-4:text        vg8020='10 REM ZQ8 / 20 REM ZQ9'  zb='10 REM ZQ8 / 20 REM ZQ9'   [CONTROL]
+ok   sav-cas-4:alive       vg8020='ZQ6'  zb='ZQ6'   [CONTROL]
+ROWS: 5 printed, 5 scored — 4 agree, 1 diverge
+==============================================================================
+4/5 readings agree (7 cases, 14 positive controls)
+SIDES: vg8020,cf3300,zb — every MSX1 has a CASSETTE PORT, so the VG-8020 is a full reference here
+READ OFF THE TAPE, not off the screen: every verb here prints nothing whatever it writes, so each row records to a fresh `cassetteplayer new` WAV and probes/lib/cas_decode.py decodes it
+refcache: 0 hit, 2 miss, 2 stored

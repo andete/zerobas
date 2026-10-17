@@ -84,8 +84,13 @@ container; it is not on the audio tape.
   does not find `RT`, on either reference.
 - **A bare name takes the next file of the right type**: `CLOAD`,
   `LOAD "CAS:"`, `BLOAD "CAS:"`, `OPEN "CAS:" FOR INPUT`.
-- **A name longer than six** is cut to six by zerobas; what the references do
-  is not measured.
+- **A name longer than six** is cut to six, on both machines.
+- **A `.` ends the name** of a `CAS:` file spec, and of a bare name on a
+  diskless machine: `BLOAD "CAS:AB.C"`, `LOAD`, `RUN`, `MERGE` and `OPEN` look
+  for `AB`, and `SAVE "CAS:PD.X"` / `BSAVE` write `PD`; what follows the dot is
+  dropped. `CLOAD` and `CSAVE` take the name as typed: `CSAVE "PE.XY"` writes
+  `PE.XY`. A name with nothing before the dot (`"CAS:.AB"`) is
+  `Bad file name` (56), before the tape moves.
 
 ### The search
 
@@ -199,6 +204,22 @@ Not compared, or not measured:
 
 ## What we found, and how
 
+- **Harry Fox asked for a tape name with a dot** (fixed 2026-10-17,
+  D-CASDOT). Its loader loaded its first files and then skipped every later
+  one to the tape's end. Line by line the two machines ran the same program,
+  with the same text and no variables, and the line that failed was a single
+  `BLOAD`; a witness that says only WHICH of the six name bytes agree (never
+  the bytes) showed the last two differing. Our own tapes then gave the rule
+  above: the VG-8020 cuts the name at the dot, zerobas kept the dot as a
+  character ([`casname_run5b.out`](../../scratchpad/casname_run5b.out)).
+  Harry Fox now gets past that load; the program it runs next stops with
+  `Out of memory`, which is being looked at.
+- **A tape save wrote a corrupted name** (fixed 2026-10-17, D-TSVOVL, broken
+  the day before). `SAVE "CAS:PDXY"` wrote the name `PDXYPD`: the six bytes
+  the name was built in overlapped the copy of the statement's text it was
+  read from, so the copy read its own output back. Names under four
+  characters were not affected, which is why the save tests (two-letter
+  names) missed it.
 - **Demonia read its tape through two internal entries of the BASIC ROM**
   (supported 2026-10-16, D-BASICINT2). It stopped with `Syntax error in 50`:
   its loader calls `&H72E9` once per block and `&H72D4` once per byte, and on
@@ -300,7 +321,10 @@ come up and return with carry set (`cas_stop`).
 
 The BASIC side shares one search. `cas_capture_name`
 ([basic/cascap-body.inc](../../basic/cascap-body.inc)) puts the wanted name
-in `CAS_WANT`, and `CAS_WANT_ON` says what to look for: bit 0 a name was
+in `CAS_WANT` (the published `FILNAM`), and for the `dev:name` verbs
+`cas_capture_cut` ([basic/cascut-body.inc](../../basic/cascut-body.inc)) then
+blanks it from the first `.` on; a save builds its name in the same six
+bytes, and `CAS_WANT_ON` says what to look for: bit 0 a name was
 given, bit 7 tokenised (`CLOAD`), bit 6 binary (`BLOAD`), neither ASCII.
 `cas_open_match` in [basic/casmatch-body.inc](../../basic/casmatch-body.inc),
 run as a sub-ROM tenant, reads each header, applies the three rules above
@@ -346,7 +370,9 @@ openMSX:
 - `make autorun-acceptance` — openMSX's tape autorun with an ASCII, a binary
   and a tokenised tape.
 - `make castype-acceptance`, `make casbin-acceptance` — the type filter and
-  binary files.
+  binary files, and a `.` in the name (`bdot`, `odot`, `blead`).
+- `make cassave-acceptance` rows `sav-cas-dot`, `bsv-cas-dot`, `csave-dot`
+  and `sav-cas-4` — the name a save writes with a dot, and with four letters.
 - `make casbrk-acceptance` — Ctrl-STOP during the search, under `ON ERROR`.
 - `make caswbrk-acceptance` — Ctrl-STOP during a write: in the data, in the
   leader, and held after it broke the write.

@@ -299,7 +299,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F421` | 1 B | `basic` | `BROM_SLOT` | 1 B: its slot id |  |
 | `$F55E` |  | `basic` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
 | `$F55E` |  | `disk` | `LINEBUF/STRSCR` | repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B) |  |
-| `$F567` | 6 B | `basic` | `FOR_CUR/GFX_DEXP/PU_FDESC/TSV_NAME` | tape save: 6-char filename buffer (space-padded), $F567..$F56C |  |
+| `$F567` |  | `basic` | `FOR_CUR/GFX_DEXP/PU_FDESC` | scratch: a working copy of one FOR frame (25), and |  |
 | `$F56A` |  | `basic` | `FOR_LIM/PU_COMMAS/PU_WP` | pu_fmt_int scratch write pointer (2) -- ALIASED by |  |
 | `$F56B` | 1 B | `basic` | `PU_DEC` | PRINT USING `.`: decimal places requested (D-PUDOT) (1) |  |
 | `$F56C` | 1 B | `basic` | `PU_FMTLEN` | live format length (1) |  |
@@ -590,7 +590,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
 | `$F85F` | 1 B | `basic` | `MAXF` | = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1) |  |
 | `$F864` | 1 B | `basic` | `PRDEST` | PRINT destination: 0=screen, 1=file channel (1) |  |
-| `$F866` |  | `basic` | `CAS_WANT` | requested 6-char tape name, space-padded (6) -- FILNAM+0 |  |
+| `$F866` | 6 B | `basic` | `CAS_WANT/TSV_NAME` | tape save: 6-char filename buffer (space-padded), FILNAM $F866..$F86B |  |
 | `$F86C` | 1 B | `basic` | `CAS_WANT_ON` | FILNAM+6; bit 0: 1 = match CAS_WANT, 0 = next file (bare form); bit 7: CLOAD = want $D3; bit 6: BLOAD = $D0 (D-CASBIN); neither = $EA (D-CASTYPE) (1) |  |
 | `$F871` |  | `basic` | `CAS_HDRNAME` | 6-char name read from the current tape header (6) -- FILNM2+0 |  |
 | `$F877` |  | `basic` | `CAS_HDRID` | file-type id byte read from the current header (1) -- FILNM2+6 |  |
