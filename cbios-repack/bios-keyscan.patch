@@ -1,0 +1,64 @@
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -645,15 +645,23 @@
+                 pop     hl
+                 ei
+                 ret
++
++; zerobas repack (D-BIOSINT): $0D12 is the reference BIOS's keyboard-scan entry,
++; which games CALL (Buzz Off, Shark Hunter); here it was the first byte of
++; chkram, so those games reset. The entry jumps to kscan (after vdp_bios), and
++; chkram's first instruction pair moved there too: everything from $0D16 on, up
++; to the font pad, stays where it was.
++                jp      kscan
++                ds      $0D16 - $
+ 
+ ; $0000 CHKRAM
+ ; Function : Tests RAM and sets RAM slot for the system
+ ; Registers: All
+ ; Remark   : After this, a jump must be made to INIT, for further initialisation.
+-chkram:
++; (zerobas repack: entered at chkram, after vdp_bios, which writes the PPI mode
++; and continues here.)
++chkram_gio:
+                 ; Initialize interface
+-                ld      a,$82
+-                out     (PPI_REGS),a
+                 ld      a,$50
+                 out     (GIO_REGS),a
+ 
+@@ -3239,6 +3247,34 @@
+ vdp_bios:
+                 db      $00,$80,$70,$81,$00,$82,$01,$84
+                 db      $F5,$87,$00,$40
++
++; zerobas repack (D-BIOSINT): chkram's head, moved from $0D12 (see there).
++chkram:
++                ld      a,$82
++                out     (PPI_REGS),a
++                jp      chkram_gio
++
++; $0D12 (reference-internal; D-BIOSINT): scan the keyboard once, then report the
++; key buffer. Measured black-box on the VG-8020 (zerobas
++; scratchpad/biosint_probe.py): a newly pressed key is queued and OLDKEY
++; updated, as the interrupt's scan does; on return A = low(PUTPNT) - low(GETPNT)
++; with the flags of that subtraction (Z: the buffer is empty), HL = GETPNT,
++; DE = KEYBUF, BC = $00FF, and IX, IY and the alternate registers kept.
++; DE and B need no load: key_in ends with its row pointer at NEWKEY+11, which
++; is KEYBUF ($FBF0), and B = 0 (its bit loop's djnz).
++kscan:
++                push    ix
++                ex      af,af'
++                push    af
++                call    key_in
++                pop     af
++                ex      af,af'
++                pop     ix
++                ld      hl,(GETPNT)
++                ld      a,(PUTPNT)
++                sub     l
++                ld      c,$FF
++                ret
+ 
+ ; zerobas repack (WS-1): statements.asm is C-BIOS's placeholder for a ROM BASIC
+ ; that this ROM does not ship (multiple/rombas/rombas_niy + the runloop/statement
