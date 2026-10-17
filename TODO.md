@@ -3944,6 +3944,37 @@ item — do **one item per session** to keep context lean.
       ADDS bytes in front of their pin (convert them then instead of moving code).
       🔮 "knife connectedness unchanged": HIT.
 
+- [ ] 🧱 **D-FLDDESC — FIELD AS THE REFERENCE DOES IT: NO TABLE, THE VARIABLE'S OWN
+      DESCRIPTOR POINTS INTO THE CHANNEL'S RECORD AT BLOCK+9 (filed 2026-10-17)**
+      🎚️ BUDGET — main page 1 (D-ROMSIZE step 1) — and TIER 5 (every string-variable
+      read on a disk machine stops paying fld_lookup).
+      🤖 **AUTONOMOUS** — 🏗️ Joost 2026-10-17: disk.rom owns the FIELD table (diskless
+      it is ERR 5), and *"if reference has a location inside the non-disk region it
+      uses, we should also use that"*.
+      📏 **MEASURED FIRST** ([`fieldram_probe.py`](scratchpad/fieldram_probe.py) ->
+      [`fieldram_run.out`](scratchpad/fieldram_run.out); BASIC VARPTR / PEEK / FRE
+      only; VARPTR is signed, so the readings show +65536): after
+      `FIELD #1,2 AS A$,3 AS B$` on the CF-3300, A$'s descriptor is [2][VARPTR(#1)+9]
+      and B$'s [3][VARPTR(#1)+11]; FIELD spends 0 B of FRE(0) and FRE(""); LSET keeps
+      the pointer and writes the bytes there; a plain `A$="Z"` moves it to string
+      space. So the reference keeps NO table: the location is the variable itself
+      plus the channel's record buffer. zerobas leaves the descriptor empty (length
+      0) and keeps FLD_TAB. 🔮 "0 B, into the channel block, 2 B apart": HIT.
+      🧭 **DESIGN (nothing in the way, checked 2026-10-17):** the string GC already
+      skips a descriptor whose pointer is outside the heap (sub/strheap.asm
+      `sg_inrange`; D-LITREF's program-text pointers live with it), and a
+      non-FIELDed LSET / RSET already writes in place into the target's own body at
+      its own length (docs/spec-basic-lrvar.md) -- which IS a fielded store once the
+      descriptor points at the record. So: FIELD writes [w][block+9+offset] into each
+      variable; LSET / RSET keep only their non-FIELDed arm; fld_lookup leaves
+      str_eval's variable path; FLD_TAB, FLD_DESC, fld_find / fld_add / fld_init and
+      the sub FLDLOOK tenant go. ⛓️ PREREQUISITE: RANDOM's record must live at
+      block+9 (today it travels through FSECTOR_BUF via t_fch_load / t_fch_save:
+      S10.E's next item), so GET / PUT and FIELD agree on one buffer.
+      ⚠️ Also seen: the channel block sits 265 B below HIMEM on the CF-3300 and 665 B
+      on zerobas (MAXFILES=1) -- a TIER-4 RAM reading for the FCH block layout, not
+      this item's.
+
 - [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL
       (2026-10-17)** — ✅ main page 1 152 -> 168 B free (`make basic-reloc`).
       🎚️ BUDGET — routes 2 and 3 of Joost's 2026-10-17 free-space review.
@@ -11034,7 +11065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36567 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36598 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11200,7 +11231,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16062 (T-6FE392)8 (T-529ABE)` from `TODO.md:28856 (T-529ABE)`: a
+      `TODO.md:16093 (T-6FE392)8 (T-529ABE)` from `TODO.md:28887 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16909,7 +16940,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28856 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
