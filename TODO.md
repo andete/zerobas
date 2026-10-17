@@ -4620,6 +4620,16 @@ item — do **one item per session** to keep context lean.
       50: IOERR -> BASICERR, the program its loader RUNs next stops with
       `Out of memory in 30` -- ➡️ D-HFOXOOM below, ✅ fixed the same day:
       **Harry Fox RUNS** (its title screen as on the VG-8020).
+      📏 **THE REAL TAPES AFTER D-BIOSINT / D-CASDOT / D-HFOXOOM (2026-10-17, the
+      one-off run outside the repo, pick_martos, 51 titles; classes only):** SAME
+      14, RUNS? 32, RESET 1 (Loopy Laundry -- D-BIOSINT's 🙋, the font), ISRCRASH 1.
+      Against the morning's run: Buzz Off, Shark Hunter RESET -> RUNS?, Harry Fox
+      IOERR -> RUNS? (🔮 HIT). Two others moved and neither is new: BMX Simulator
+      RUNS? -> ISRCRASH reads identically to the morning's up to T300 (both runs
+      leave line 50 for the prompt by then) and only its final state flips, as
+      recorded above; Ballblazer SAME -> RUNS? is a phase at the last dump (it was
+      512 B apart at T300 in the morning too). ➡️ Next by evidence: BMX Simulator
+      leaves line 50 between T180 and T300 where the VG-8020 stays on it.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -10831,7 +10841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36364 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36374 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10997,7 +11007,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15859 (T-6FE392)8 (T-529ABE)` from `TODO.md:28653 (T-529ABE)`: a
+      `TODO.md:15869 (T-6FE392)8 (T-529ABE)` from `TODO.md:28663 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16706,7 +16716,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28653 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28663 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
