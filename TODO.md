@@ -3944,8 +3944,10 @@ item — do **one item per session** to keep context lean.
       ADDS bytes in front of their pin (convert them then instead of moving code).
       🔮 "knife connectedness unchanged": HIT.
 
-- [ ] 🧱 **D-FLDDESC — FIELD AS THE REFERENCE DOES IT: NO TABLE, THE VARIABLE'S OWN
-      DESCRIPTOR POINTS INTO THE CHANNEL'S RECORD AT BLOCK+9 (filed 2026-10-17)**
+- [x] 🧱 **D-FLDDESC — FIELD AS THE REFERENCE DOES IT: NO TABLE, THE VARIABLE'S OWN
+      DESCRIPTOR POINTS INTO THE CHANNEL'S RECORD AT BLOCK+9 (filed 2026-10-17)** —
+      ✅ **BUILT 2026-10-17: main page 1 168 -> 379 B free, sub page 0 29 -> 177 B,
+      sub page 1 1104 -> 1165 B, disk.rom 2857 -> 2865 B (`make basic-reloc`).**
       🎚️ BUDGET — main page 1 (D-ROMSIZE step 1) — and TIER 5 (every string-variable
       read on a disk machine stops paying fld_lookup).
       🤖 **AUTONOMOUS** — 🏗️ Joost 2026-10-17: disk.rom owns the FIELD table (diskless
@@ -3986,6 +3988,44 @@ item — do **one item per session** to keep context lean.
       descriptor model removes it by construction. These nine rows are the slice's
       gate. ⚠️ r8 also says hk_frnd's space-fill of the record at OPEN is not the
       reference's on a RE-open; what a FRESH block holds is unmeasured.
+      📏 **ROUND 3, A FRESH BLOCK** (`FLDDESC_PROG=fresh` ->
+      [`fldfresh_run.out`](scratchpad/fldfresh_run.out)): the CF-3300 NEVER fills the
+      record -- #1 reads 159 146 and #2 255 255 right after MAXFILES (leftover RAM),
+      and after CLEAR + MAXFILES an old `QQ` is still there (81 81). 🔮 "spaces": MISS.
+      So hk_frnd's OPEN fill went too; f1 / f2 are leftover RAM on both machines and
+      not comparable, f3 is.
+      ✅ **THE SLICE.** Drafted by a subagent in its own worktree (build + unit tests
+      only), integrated and measured here:
+      - RANDOM's record LIVES at block+9: disk.rom's frnd_calc / GET's end fill use
+        `rnd_rec` (the row's cached block); sub's t_fch_load keeps only the LOF / LOC
+        mirror, t_fch_save is gone (row 21 is `fp_stash_ok`, rows keep their numbers).
+      - FIELD writes `[w][block+9+offset]` into the target (scalar or element,
+        `tgt_store_desc`), ERR 50 checked first; FLD_TAB, FLD_DESC, fld_find / fld_add
+        / fld_init / fld_init_g / fld_clear_chan / fld_lookup, the sub page-0 FLDLOOK
+        tenant (row 12 retired) and ERASE's aer_fldfix are gone; a string-variable
+        read no longer consults any table.
+      - LSET / RSET keep only the in-place arm; hk_lrset is its three call-backs.
+      - hk_frnd no longer blanks the record (round 3).
+      - Pins: the freed bytes ahead of $6CF3 / $72D4 / $73AC were refilled exactly by
+        moved code (lrset_finish / lrset_store, GET / PUT's head, ex_delete, exf_comma,
+        derive_directf, dir_line / run_kw, relink, trace_line); 6/6, waste 4 of 4;
+        `make switch-build-check` 7/7.
+      Witness: [`flddesc_run_after.out`](scratchpad/flddesc_run_after.out) r1-r9 SAME
+      on both machines (r2 was `Illegal function call`);
+      [`fieldram_run_after.out`](scratchpad/fieldram_run_after.out) [a] / [b] / [l]
+      byte-identical offsets and lengths; [`fldfresh_run_after.out`](scratchpad/fldfresh_run_after.out)
+      f3 SAME. 🔮 "r1-r7 + r9 match, r8 differs while the fill stays": HIT; after
+      the fill went, r8 SAME. Knife connectedness unchanged: HIT.
+      🏗️ **Joost 2026-10-17 reversed his 2026-09-27 "keep ours"** on a fielded variable
+      read after its channel is closed and reused: "Match the reference" -- which the
+      descriptor does for free (FIELD.md's last stated difference is closed).
+      ➡️ RESIDUALS (unmeasured on the reference; none is a regression of a gated row):
+      (a) `LSET A$=A$` on a fielded A$ -- the source shares the target's bytes and
+      is padded before it is copied; (b) whether ERR 50 leaves the overflowing
+      variable bound (ours: raised before the store); (c) the row-21 crossing in
+      fch_save_active is now a no-op that main still pays for -- dropping it means
+      re-pricing the pins; (d) scratchpad/wszero_s9_knife.py's K-WS22 / K-WS23 cut
+      code that is gone.
 
 - [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL
       (2026-10-17)** — ✅ main page 1 152 -> 168 B free (`make basic-reloc`).
@@ -11077,7 +11117,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36610 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36650 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11243,7 +11283,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16105 (T-6FE392)8 (T-529ABE)` from `TODO.md:28899 (T-529ABE)`: a
+      `TODO.md:16145 (T-6FE392)8 (T-529ABE)` from `TODO.md:28939 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16952,7 +16992,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28899 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28939 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

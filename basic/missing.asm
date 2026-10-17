@@ -651,16 +651,8 @@ tr_set:
 ; A/BC/DE/HL and uses NUMBUF, which is safe here because NUMBUF is PRINT's
 ; format scratch and this runs BETWEEN statements, before any PRINT is live.
 ; pchar preserves every register, so only HL needs guarding.
-trace_line:
-                push    hl                  ; guard the token cursor
-                ld      a,'['
-                rst     $18
-                call    cur_lineno          ; HL = the line number
-                call    ln_div_entry
-                ld      a,']'
-                rst     $18
-                pop     hl
-                ret
+; 📌 (trace_line's BODY is a PIN REFILL at the end of basic/strvar.asm since
+; D-FLDDESC, 2026-10-17, in front of $6CF3; the header above is its contract.)
 
 
 ; --- rerr_sparse2 and its three messages: DELETED (D-MSGMIGRATE) ------------

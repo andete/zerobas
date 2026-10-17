@@ -6,10 +6,8 @@ SPDX-License-Identifier: 0BSD
 
 # `FIELD` — name the parts of a random-file record
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference, by Joost's ruling: a fielded variable read after its channel was
-> closed and reused (below).
+> **Status (2026-10-17):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No known differences.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -97,18 +95,25 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A fielded variable after its channel is closed and reused.** After
-`CLOSE`, a reopen of the same channel and a new `FIELD #1,10 AS C$` filled
-with `LSET C$="ZZZZZZZZZZ"`, the CF-3300's old `A$` silently reads
-`ZZZZZZZZZZ` — another file's data — while zerobas's reads empty. The
-reference keeps a pointer in the variable; zerobas binds fields through a
-table of its own. Joost ruled on 2026-09-27: *"keep ours"* — a stated
-divergence, closed.
+None known.
 
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A fielded variable was a copy, not a window** (fixed 2026-10-17,
+  D-FLDDESC). zerobas kept fields in a table of its own and copied a field's
+  bytes out on every read, so `MID$(A$,1,1)="Q"` on a fielded `A$` was
+  `Illegal function call`, `SWAP` moved only the copy, and a variable read
+  after its channel was closed and reused read empty. The CF-3300 keeps no
+  table: `FIELD` points each variable's own descriptor into the channel's
+  record (`VARPTR(#n)+9`), at no cost in free memory, and every one of those
+  cases follows from that. zerobas does the same now; nine rows on both
+  machines read alike. The closed-and-reused case had been a recorded
+  difference by Joost's 2026-09-27 ruling *"keep ours"*; he reversed it on
+  2026-10-17 to match the reference, which the new design does for free.
+  Opening a file no longer blanks the record either: the reference never
+  does, so a field shows whatever the buffer last held until `LSET` or `GET`.
 - **`FIELD` on a sequential channel was accepted silently** (fixed
   2026-07-31, D-NOTOPEN2); the CF-3300 raises `Bad file mode`.
 - **The width was not checked at all** (fixed 2026-08-08, D-FLDWIDTH):
@@ -134,8 +139,10 @@ The one rung not yet proven is **RAM usage**.
 
 - Main ROM: `ex_field` in [basic/field.asm](../../basic/field.asm) hands the
   statement to the disk ROM through the `H_FIELD` hook; the parse of each
-  `w AS v$`, the record-length check and the field table stay in main
-  (`field_prologue`, `field_item`, `fld_add`, `fld_find`).
+  `w AS v$`, the record-length check and the store stay in main
+  (`field_prologue`, `field_item`). Since D-FLDDESC (2026-10-17) there is no
+  field table: `field_item` writes the variable's own descriptor,
+  `[w][VARPTR(#n)+9+offset]` — the channel's record, which lives in its block.
 - Disk ROM: `hk_field` in [disk/kernel.asm](../../disk/kernel.asm) decides to
   run and calls back into main for each item.
 - The width rules: [fldwidth-msx1-characterization.md](../fldwidth-msx1-characterization.md).

@@ -345,7 +345,8 @@ fwd_ok:
 ; --- S10.D: the RANDOM record reader (disk/kernel.asm hk_dget), in this fill
 ; below $4C29 (no pin in between since 2026-10-15). IX = the channel's FCB row.
 
-; fat_rand_get -- read record GP_RECNO into the record (FAT_DBUF[0..reclen)).
+; fat_rand_get -- read record GP_RECNO into the record (block+9 [0..reclen):
+; D-FLDDESC, 2026-10-17 -- it was FAT_DBUF[0..reclen) while the record travelled).
 ; 🔴 D-GETEOF: a record that STARTS at or past EOF is `Input past end` (55),
 ; raised; one that starts inside and ends past is accepted (D-GETSTRADDLE).
 ; The bound is the whole 24-bit offset against the 32-bit size: main's resident

@@ -152,10 +152,9 @@ init:
                                             ; sets it; RAM survives a reset). Here, not in
                                             ; init_ext_roms: island 1 has no room for it
                 call    init_ext_roms       ; run the boot-scan INITs C-BIOS skips
-                ; D-WSZERO S9: the FIELD table is the disk machine's, and only HERE
-                ; is DISKSLOT_OK known -- clear_vars and init_filechan above ran
-                ; fld_init_g on power-on DRVINF. A disk machine is initialised now.
-                call    fld_init_g
+                ; (D-WSZERO S9 initialised the disk machine's FIELD table HERE --
+                ; `call fld_init_g`, the one point DISKSLOT_OK is known. D-FLDDESC,
+                ; 2026-10-17: there is no table; FIELD writes variables.)
                 ; D-KEYSTR (2026-09-10): the ten function-key defaults, COLD BOOT
                 ; ONLY -- the references keep a KEY n,"str" across NEW/RUN/CLEAR.
                 ; zerobas read `0 0 0 0` at every slot before this; the image is

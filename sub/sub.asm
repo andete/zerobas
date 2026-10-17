@@ -188,18 +188,23 @@ sub_p0_table:
                 nop                             ;   zerobas-sub2 page 0 (SUB2_IDX_BEEP)
                                                 ;   to fund D-TOKOVF's crunch bound. The
                                                 ;   row keeps its 3 B so 12.. stay put.
-                jp      fld_lookup_tenant       ; index 12 (SUBROM_IDX_FLDLOOK): the
-                                                ;   FIELDed-variable READ hook's pure-RAM
-                                                ;   half (sub/fldlook.asm) -- carved out
-                                                ;   of basic/field.asm to fund D-CLP.
-                                                ;   HL = the located field-table entry.
+                ret                             ; index 12: RETIRED (D-FLDDESC,
+                nop                             ;   2026-10-17). It was the FIELDed-
+                nop                             ;   variable READ hook's pure-RAM half
+                                                ;   (sub/fldlook.asm, SUBROM_IDX_FLDLOOK,
+                                                ;   carved out of basic/field.asm to fund
+                                                ;   D-CLP). A FIELDed variable's own
+                                                ;   descriptor points at its record now,
+                                                ;   so a read is an ordinary variable
+                                                ;   read. The row keeps its 3 B so 13..
+                                                ;   stay put.
                 jp      lrset_store_tenant      ; index 13 (SUBROM_IDX_LRSETST): the
                                                 ;   LSET/RSET record-field STORE
                                                 ;   (sub/lrsetst.asm) -- carved out of
                                                 ;   basic/field.asm to fund D-FLDARY.
                                                 ;   No args, no result: every input is
                                                 ;   already a RAM cell (LRSET_DEST/W/
-                                                ;   JUST, STRPTR, FSECTOR_BUF).
+                                                ;   JUST, STRPTR).
                                                 ; ⚠️ 14 rows = $0040..$0069. This is the
                                                 ;   FIRST index past the old $0038
                                                 ;   ceiling: the table grew up into the
@@ -361,16 +366,14 @@ tokenise_ei:
                 include "readdata.asm"
 ; --- (BEEP's body, sub/beep.asm, lived here until D-TOKOVF moved it to
 ; zerobas-sub2 page 0 -- sub2/sub2.asm. Its 71 B fund the crunch bound.)
-; --- FIELDed-variable READ hook (D-CLP funding carve, docs/decision-clearpool-
-; funding.md). A pure RAM leaf: the resident stub (basic/field.asm) has already
-; located the field-table entry and selected its channel, so this side only
-; copies the record slice into FLD_DESC and builds the RVDESC descriptor. No
-; shared .inc -- there is no resident twin of this shape.
-                include "fldlook.asm"
+; --- (the FIELDed-variable READ hook, sub/fldlook.asm -- the D-CLP funding
+; carve -- lived here until D-FLDDESC, 2026-10-17: with no field table there is
+; nothing to look up; a FIELDed variable's descriptor points into its record.)
 ; --- LSET/RSET record-field STORE (D-FLDARY funding carve, docs/spec-basic-
 ; fldary.md §6.4). The other pure RAM leaf of the same FIELD layer: the resident
-; stub (basic/field.asm) has already selected the channel, so this side only
-; space-fills the field and copies the value in. No shared .inc -- there is no
+; side has already resolved the destination (since D-FLDDESC always the
+; target's own body -- for a FIELDed variable that IS its slice of the record),
+; so this side only space-fills it and copies the value in. No shared .inc -- there is no
 ; resident twin of this shape any more; pu_deref_body, its one low-region
 ; callee, is inlined here in 5 B.
                 include "lrsetst.asm"

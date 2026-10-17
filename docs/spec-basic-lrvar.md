@@ -1,5 +1,12 @@
 # D-LRVAR — `LSET` / `RSET` on a NON-FIELDed variable
 
+> 🏗️ **2026-10-17, D-FLDDESC:** the FIELD side table (`FLD_TAB`, `fld_lookup`,
+> `FLD_DESC`) this page describes is gone. A fielded variable's own descriptor now
+> points into its channel's record at `VARPTR(#n)+9`, as on the CF-3300
+> (`scratchpad/fieldram_run.out`, `scratchpad/flddesc_run.out`), so LSET / RSET use one
+> in-place path for fielded and non-fielded targets. The behaviour rules measured here
+> still hold; the mechanism below is history.
+
 *Slice D-LRVAR, 2026-08-08, on `main`, based on `76685e9` (D-FLDARY).*
 
 The last open item of the lvalue/FIELD surface.

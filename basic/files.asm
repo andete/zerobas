@@ -208,6 +208,11 @@ fopen_cross:
 
 ; chan_gate_bare -- the SAME crossing with NO channel bookkeeping, for the two
 ; verbs whose whole job is to write the live channel's record.
+; 🏗️ D-FLDDESC (2026-10-17): THE HAZARD BELOW IS GONE AND THE RULE STAYS. A
+; RANDOM record lives at its block's +9 now, not in FSECTOR_BUF, so the full
+; gate's restore would no longer undo a store -- but FIELD / LSET / RSET still do
+; no sector I/O, so they still need none of its bookkeeping, and GET / PUT still
+; make their own channel live (hk_dget). The history, as it stood:
 ; 🔴 FIELD AND LSET/RSET MUST NOT TAKE THE FULL GATE, AND FIVE SUITES SAID SO.
 ; `hk_lrset` walks main's FLD_TAB and stores the field's bytes INTO FSECTOR_BUF
 ; -- that buffer IS the channel's record. The full gate saves the record before
@@ -678,7 +683,8 @@ oo_append:
 oo_random_setup:
                 ; S10.D (2026-10-15): RANDOM is disk.rom's too (hk_frnd) -- the same
                 ; FCB-in-the-row channel, opened or created, LOC zeroed, the record
-                ; (FSECTOR_BUF, live) space-filled. It was the sub-ROM's
+                ; (FSECTOR_BUF, live, until D-FLDDESC; the block's +9 since)
+                ; space-filled. It was the sub-ROM's
                 ; fat_rand_open, through a fatprim_bounce shim; GET / PUT
                 ; (basic/field.asm) now cross H_DGET to the same ROM.
                 ld      a,FOPEN_SEL_RAND
@@ -1607,7 +1613,8 @@ ifc_zero:
                 djnz    ifc_zero
                 ld      a,1
                 ld      (MAXF),a            ; default ceiling = 1 (#1 always usable)
-                jp      fld_init_g          ; empty the random-access field table (disk only)
+                ret                         ; (D-FLDDESC: was `jp fld_init_g`, the
+                                            ; FIELD table's reset; there is no table)
 
 ; ===========================================================================
 ; Channel manager (Phase 2 MAXFILES) — the multi-channel substrate that retires
@@ -1710,6 +1717,11 @@ le_call_op:
 ; HL = the context block rides through CALSLT untouched; fch_ctx_addr's own
 ; CALSLT does not touch the engine globals, so computing it before the flush
 ; (the old order was flush, then address) changes nothing it reads.
+; 🗑️ D-FLDDESC (2026-10-17): THE SAVE HALF NOW SAVES NOTHING. Its last copy was
+; RANDOM's record (FSECTOR_BUF -> block+9), and that record lives at block+9; the
+; tenant's row 21 is `jp fp_stash_ok`. This shim and its three callers still pay
+; the crossing -- removing them is a separate, pin-priced change (they sit in
+; front of $72D4), not this slice's.
 fch_save_active:
                 ld      a,(FCH_ACTIVE)
                 or      a
@@ -2020,10 +2032,16 @@ fdcc_clear:
                 ; buffer silently rebinds it. Neither behaviour is "safe" -- this
                 ; one risks a silent wrong value in a narrow case, the old one
                 ; guaranteed a wrong value in a common one.
-                ; ⚠️ THE OTHER `fld_clear_chan` CALLER STAYS (field.asm:282): a
-                ; NEW `FIELD` on a channel still drops that channel's old
-                ; definitions, which is what keeps FLD_SLOTS (16) from filling on
+                ; ⚠️ THE OTHER `fld_clear_chan` CALLER STAYED (field_prologue): a
+                ; NEW `FIELD` on a channel dropped that channel's old
+                ; definitions, which is what kept FLD_SLOTS (16) from filling on
                 ; the ordinary OPEN/FIELD/CLOSE/OPEN/FIELD cycle.
+                ; 🏗️ D-FLDDESC (2026-10-17): BOTH ARE GONE WITH THE TABLE, and
+                ; the "live pointer" above is now ours too, literally: FIELD
+                ; writes the variable's own descriptor at block+9+offset, so after
+                ; CLOSE it still reads the channel block's bytes (row r7 of
+                ; scratchpad/flddesc_run.out: `  Z` on the CF-3300) -- and there
+                ; is no slot count to fill.
                 ld      a,(FCH_ACTIVE)      ; = the channel (fch_select made it active)
                 call    fch_modes_ptr
                 xor     a

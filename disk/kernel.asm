@@ -1616,12 +1616,17 @@ hoc_dout:
 ; S10.B FCB row -- name +1..11 (hkk_open_check), size +16..19 (LOF), DOUT_FIRST,
 ; DOUT_DIRSEC / DOUT_DIROFF (CLOSE's stamp), DOUT_BLK -- filled by hk_frnd and
 ; kept by hk_dget's engine through IX.
-; ⚠️ WHAT DID NOT MOVE: THE RECORD. FIELD, LSET / RSET, fld_lookup and GET / PUT
-; all work on the LIVE channel's record in FSECTOR_BUF (= this ROM's FAT_DBUF,
-; the merged buffer pair), saved to the block's +9 when another channel goes live
-; -- the sub-ROM's t_fch_save / t_fch_load still copy it for mode 4, and only the
-; row's engine-state copy stopped. So the engine below reads and writes FAT_DBUF
-; exactly as the sub-ROM's did, and uses FAT_MBUF for the sector it overlays.
+; ⚠️ WHAT DID NOT MOVE WITH S10.D: THE RECORD. FIELD, LSET / RSET, fld_lookup and
+; GET / PUT all worked on the LIVE channel's record in FSECTOR_BUF (= this ROM's
+; FAT_DBUF, the merged buffer pair), saved to the block's +9 when another channel
+; went live by the sub-ROM's t_fch_save / t_fch_load.
+; 🏗️ D-FLDDESC (2026-10-17): NOW IT HAS. The record LIVES at the channel's block
+; +9 (FCH_HDRSZ), as on the CF-3300 -- where FIELD points each variable's own
+; descriptor at block+9+offset (scratchpad/fieldram_run.out) -- and nothing
+; copies it on a channel switch. So the engine below reads and writes the
+; record through the row's cached block address (rnd_rec), and FAT_MBUF is still
+; the sector it overlays; FAT_DBUF is no channel's record any more, which also
+; ends every directory / FAT verb's licence to clobber a RANDOM record there.
 ; The reference's contract at $FE80 (scratchpad/dget_run*.out, CF-3300): main has
 ; done the "File not OPEN" check and nothing else; the RECORD NUMBER IS PARSED
 ; HERE (record 0 -> 5, past EOF / -1 -> 55 are raised by the disk side). Ours
@@ -1632,8 +1637,14 @@ hoc_dout:
 ; FCH_ACTIVE is the channel being opened (fch_claim), DISK_FCB_NAME the parsed
 ; 8.3 name. The sub-ROM's fat_rand_open, moved: LOC := 0 (D-LOC: the CF-3300
 ; reads 0 before any GET / PUT), find the file -- or create it (no truncation:
-; RANDOM keeps an existing file) -- and space-fill the record (fld_fill_record's
-; 512 B). hk_fmake's tail: status 0 open; 1 with the code pending.
+; RANDOM keeps an existing file). The record (block+9) is NOT touched.
+; 📏 D-FLDDESC (2026-10-17): this space-filled the record (fld_fill_record's 512 B,
+; then the block's FCH_RECMAX), and the CF-3300 never does -- a fielded B$ still
+; reads `  Z` after CLOSE and a re-OPEN (scratchpad/flddesc_run.out r8), a FRESH
+; block reads whatever RAM held (159 146 on #1, 255 255 on #2), and CLEAR +
+; MAXFILES leave an old `QQ` in place (scratchpad/fldfresh_run.out f1-f3). So the
+; fill is gone; a PUT before any LSET writes those bytes, as the reference does.
+; hk_fmake's tail: status 0 open; 1 with the code pending.
 hk_frnd:
                 ei
                 call    dout_open           ; IX = the row: the name, the block, mounted
@@ -1658,16 +1669,13 @@ hk_frnd:
                 ld      hl, FAT_FILESIZE
                 ld      bc, 4
                 ldir                        ; the whole 32-bit size (D-PUTU32)
-                jr      hfr_fill
+                jp      hfm_ok              ; the entry's place, LOF, status 0
 hfr_make:
                 push    ix
                 pop     hl
                 inc     hl                  ; HL = the FCB's name
                 call    fat_dir_create      ; a new, empty entry (dout_open zeroed the
                 jp      c, hfm_fail         ; first cluster and the size)
-hfr_fill:
-                ld      hl, FAT_DBUF
-                call    fill_sec            ; the record (the live channel's) = spaces
                 jp      hfm_ok              ; the entry's place, LOF, status 0
 
 ; hk_dget -- GET / PUT (H_DGET, $FE80). Main (basic/field.asm gp_common) has
@@ -1680,7 +1688,10 @@ hfr_fill:
 ; ⚠️ THE CHANNEL IS MADE LIVE AFTER THE EVALUATOR, NOT BEFORE: the record is an
 ; EXPRESSION, and `GET #1,LOF(2)` or a FIELDed variable of another channel in it
 ; runs fch_select on THAT channel. Main used to parse first and select second for
-; the same reason; the order survives the move.
+; the same reason; the order survives the move. (D-FLDDESC, 2026-10-17: a FIELDed
+; variable no longer selects anything when read -- its descriptor points into
+; its own block -- so `GET #1,LOF(2)` is the case left, and the order still
+; matters for it.)
 hk_dget:
                 ei                          ; D-HOOKDI: the hook arrives DI
                 ld      b, a
@@ -1714,7 +1725,9 @@ hdg_have:
                 push    bc
                 ld      a, c
                 ld      ix, fch_select
-                call    calbak              ; the channel live: FSECTOR_BUF its record
+                call    calbak              ; the channel live (FCH_ACTIVE, its LOF /
+                                            ; LOC mirror). D-FLDDESC: its record
+                                            ; does not move -- it is block+9
                 call    dout_live           ; IX = its row
                 pop     bc
                 ld      a, b
@@ -1762,6 +1775,7 @@ rnd_loc:
 ; offset in it): offset = (recno - 1) * reclen, 24 bits (D-PUTU32), reclen =
 ; FCH_RECLENS[FCH_ACTIVE] (OPEN's LEN=, 1..256) into GP_RECLEN -- and arm
 ; D-STRADDLE's pass cursor: GP_SRC := the record, GP_LEFT := its length.
+; D-FLDDESC: the record is the block's +9 (rnd_rec), not FAT_DBUF. IX = the row.
 ;   out: A:HL = the offset (GET's EOF bound reads it). Clobbers BC, DE.
 frnd_calc:
                 ld      a, (FCH_ACTIVE)
@@ -1772,8 +1786,8 @@ frnd_calc:
                 ld      d, (hl)
                 ld      (GP_RECLEN), de
                 ld      (GP_LEFT), de       ; the pass cursor: all of the record...
-                ld      hl, FAT_DBUF
-                ld      (GP_SRC), hl        ; ...from its first byte
+                call    rnd_rec
+                ld      (GP_SRC), hl        ; ...from its first byte (block+9)
                 ld      hl, (GP_RECNO)
                 dec     hl                  ; k = recno - 1 (0..65534)
                 call    mul_reclen          ; A:HL = k * reclen
@@ -2373,7 +2387,8 @@ csb_p0_back:
 ; (no canonical entry inside; hk_dget and its helpers are in the fill above
 ; `ds $5FE5 - $`). IX = the channel's FCB row throughout.
 
-; fat_rand_put -- write the record (FAT_DBUF[0..reclen)) as record GP_RECNO: a
+; fat_rand_put -- write the record (block+9 [0..reclen), D-FLDDESC; it was
+; FAT_DBUF[0..reclen) while the record travelled) as record GP_RECNO: a
 ; read-modify-write of each sector it touches, the chain extended as needed, the
 ; size grown to recno * reclen. 🔴 D-PUTDIR: NO DIRECTORY WRITE -- the CF-3300
 ; leaves the entry alone until CLOSE (hk_chclose stamps it, once).
@@ -2459,7 +2474,8 @@ rnd_step:
                 ret
 
 ; fill_sec -- 512 bytes at HL := spaces. fill_sp -- BC+1 bytes at HL := spaces.
-; CF = 0. Clobbers BC, DE, HL.
+; CF = 0. Clobbers BC, DE, HL. (fill_rec, the record's own fill, is beside
+; hk_lrset: this fill has no room before the $607B veneer.)
 fill_sec:
                 ld      bc, 511
 fill_sp:
@@ -4000,22 +4016,27 @@ hkm_copy:
 ;   out  the statement is DONE; FN_RESUME = the resume cursor
 ;        CF = 1 (claimed), which is what chan_gate tests
 ;
-; ⚠️ THE FLD_TAB ENTRY LAYOUT IS READ HERE AND WRITTEN NOWHERE ELSE IN THIS ROM:
-; [chan][key:2][off:2][width]. It is main's table in main's RAM -- this body
-; walks it, it does not own it -- so a change to that shape is a change to TWO
-; files. basic/field.asm builds it.
+; 🏗️ D-FLDDESC (2026-10-17): THE FIELD-ENTRY WALK IS GONE, AND WITH IT THE LAST
+; DISK WORK IN THIS BODY. It read main's FLD_TAB entry -- [chan][key:2][off:2]
+; [width] -- and pointed LRSET_DEST into FSECTOR_BUF. There is no table now:
+; FIELD writes each variable's OWN descriptor as [width][block+9+offset], as the
+; CF-3300 does (scratchpad/fieldram_run.out), so a FIELDed LSET IS the non-
+; FIELDed one -- the target's own body at the target's own length -- and main's
+; three bundles do all of it. What stays here is the DECISION to run: the hook
+; cell, so a diskless LSET / RSET is still ERR 5 at main's gate.
 ; --- hk_field: FIELD's body, RUNNING IN THE DISK ROM -----------------------
 ; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
 ; §7.3-§7.5 for the slice. D-FIELDMOVE, the last member of the channel trio.
 ;
 ; 🎯 THIS IS THE THINNEST HANDLER IN THE ROM AND THAT IS THE FINDING, NOT A
-; DEFECT. FIELD is a parse, a channel classify and a write into main's FLD_TAB;
+; DEFECT. FIELD is a parse, a channel classify and a write into each variable's
+; own descriptor (main's FLD_TAB until D-FLDDESC, 2026-10-17);
 ; none of it is disk work, so what moves is the DECISION to run rather than any
 ; body. It is here because the alternative -- main gating on H_FIELD and then
 ; doing the job anyway -- discards the answer of any ROM that claims the cell.
 ;
 ; 🔑 THE LOOP IS THE REASON THE ITEM BUNDLE RETURNS A CARRY. main's field_item
-; parses ONE `w AS v$`, adds it, checks the ERR 50 bound and reports whether a
+; parses ONE `w AS v$`, checks the ERR 50 bound, stores it and reports whether a
 ; comma followed; the crossings therefore scale with the ITEM COUNT (1 + N),
 ; unlike LSET/RSET's fixed three. A four-field FIELD is five crossings.
 ;
@@ -4023,12 +4044,13 @@ hkm_copy:
 ;   out  the statement is DONE; FN_RESUME = the resume cursor
 ;        CF = 1 (claimed), which is what chan_gate tests
 ;
-; ⚠️ FLD_TAB IS NEITHER READ NOR WRITTEN HERE. Joost's rule: main owns the
-; table, so FLD_ENTSZ and FLD_TABEND never need hand-mirroring in this ROM --
-; the hazard disk/equates.inc's FSECTOR_BUF mirror actually caused (D-LRSETMOVE).
+; ⚠️ NO FIELD LAYOUT IS KNOWN HERE -- FLD_TAB's was main's, and since D-FLDDESC
+; the layout is the variable descriptor's, which is main's too -- so nothing
+; needs hand-mirroring in this ROM, the hazard disk/equates.inc's FSECTOR_BUF
+; mirror actually caused (D-LRSETMOVE).
 hk_field:
                 ld      ix,field_prologue
-                call    calbak              ; channel, mode class, table reset
+                call    calbak              ; channel, mode class, the record's span
 hkf_item:
                 ld      ix,field_item
                 call    calbak              ; one `w AS v$`; CF=1 -> another follows
@@ -4038,29 +4060,33 @@ hkf_item:
 
 hk_lrset:
                 ld      ix,lrset_tgt
-                call    calbak              ; CF=1 -> HL = the FLD_TAB entry;
-                jr      nc,hklr_rhs         ; CF=0 -> not fielded, main set up
-                ld      a,(hl)              ; chan
-                ld      (FLD_CHAN),a        ; non-zero: fld_find never returns a free
-                inc     hl
-                inc     hl
-                inc     hl                  ; -> off lo
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = off
-                inc     hl
-                ld      a,(hl)              ; width
-                ld      (LRSET_W),a
-                ld      hl,FSECTOR_BUF
-                add     hl,de
-                ld      (LRSET_DEST),hl     ; = the field's first byte
-hklr_rhs:
+                call    calbak              ; the target: its descriptor's address
                 ld      ix,lrset_rhs
                 call    calbak              ; the `=` and the RHS expression
                 ld      ix,lrset_finish
                 call    calbak              ; destination, then the store
                 scf
                 ret
+
+; rnd_rec -- D-FLDDESC (2026-10-17): HL = the channel's RECORD, its block's +9
+; (FCH_HDRSZ) -- where the CF-3300 keeps it and where FIELD points a variable's
+; descriptor. IX = the row (its cached DOUT_BLK). Clobbers nothing else.
+; Sited here, in the bytes hk_lrset's field-entry walk left, because the record
+; engine's own fills (before the $607B and $77B8 veneers) have no room.
+rnd_rec:
+                call    dout_pos            ; HL = block+6
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = block+9
+                ret
+
+; fill_rec -- the record (rnd_rec, FCH_RECMAX bytes) := spaces, CF = 0 (fill_sp).
+; IX = the row. Clobbers BC, DE, HL. GET's clean end (hk_frnd's OPEN fill went
+; with D-FLDDESC: the reference never clears the record).
+fill_rec:
+                call    rnd_rec
+                ld      bc, FCH_RECMAX-1
+                jp      fill_sp
 
 ; --- hk_dskf: DSKF's body, RUNNING IN THE DISK ROM --------------------------
 ; docs/spec-basic-nodisk.md §9 for the hook, and D-DSKFDRV
@@ -5542,7 +5568,8 @@ frl_alloc:
                 ret     z
                 jp      fat_alloc_cluster
 ; frnd_next -- HL = the cluster after HL. The FAT sector goes into FAT_MBUF, never
-; FAT_DBUF, which holds the record: fat_read_fat_sector + fac_entry_from_wbuf,
+; FAT_DBUF, which held the record until D-FLDDESC (it is the block's +9 now; the
+; choice stands): fat_read_fat_sector + fac_entry_from_wbuf,
 ; the two halves this ROM's allocator already uses (the sub-ROM carried a private
 ; 75 B copy of them). CF = 1 the read failed.
 frnd_next:
@@ -5923,10 +5950,11 @@ frg_eofchk:
                 or      a
                 scf
                 ret     nz                  ; a read failure
-                ld      hl, FAT_DBUF
-                jp      fill_sec            ; a clean end: the record is spaces, CF = 0
-                                            ; (the whole 512: hk_frnd's own fill; only
-                                            ; the first 256 are ever a record)
+                jp      fill_rec            ; a clean end: the record is spaces, CF = 0
+                                            ; (all FCH_RECMAX of it: hk_frnd's own
+                                            ; fill. It was FAT_DBUF's whole 512 until
+                                            ; D-FLDDESC -- at block+9 a 512 B fill
+                                            ; would run into the next block)
                 ds      $77B8 - $, $00
                 jp      k_77B8          ; $77B8
 ; --- S10.D: the RANDOM record engine's chain walk, in the free region between the

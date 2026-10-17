@@ -1129,25 +1129,23 @@ str_eval_arr:
                 ld      a,1                 ; type = 1 (string, always)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
-                jp      z,sea_fld           ; success: DE already = elem_addr, the
-                                            ; [len][bytes] descriptor itself
-                                            ; (zero-copy). D-FLDARY: the FIELDed-read
-                                            ; hook (basic/strvar.asm, PAGE 1 -- this
-                                            ; file is the LOW region and had 7 B)
-                                            ; publishes STRPTR and joins str_eval_ok.
-                                            ; The two arms stopped sharing a tail for
-                                            ; that ONE byte (`jr` -> `jp`), which is
-                                            ; the whole low-region cost of the slice.
+                jr      z,sea_have          ; success: DE already = elem_addr, the
+                                            ; [len][ptr] descriptor itself
+                                            ; (zero-copy). D-FLDARY sent this arm to
+                                            ; a FIELDed-read hook in page 1 (sea_fld,
+                                            ; `jp`); D-FLDDESC (2026-10-17) brought
+                                            ; it back -- a FIELDed element's own
+                                            ; descriptor points into its record, so
+                                            ; the two arms share one tail again.
                 ld      de,STR_EMPTY        ; deferred error: DE, not HL (HL still
                                             ; holds the cursor, untouched since
                                             ; ary_op0_resolve's own NZ return, which
                                             ; str_eval_ok needs) -- STR_EMPTY so a
                                             ; pre-FPERR-check read (if any) can't
-                                            ; see garbage. ⚠️ This arm deliberately
-                                            ; does NOT consult FLD_TAB: there is no
-                                            ; element, and a lookup keyed on a
-                                            ; garbage offset is the wild read the
-                                            ; arm exists to prevent.
+                                            ; see garbage. (Until D-FLDDESC this arm
+                                            ; also deliberately skipped the FLD_TAB
+                                            ; lookup: there is no element.)
+sea_have:
                 ld      (STRPTR),de
                 jp      str_eval_ok
 

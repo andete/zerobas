@@ -6,6 +6,8 @@ FIELD DESCRIPTOR (the reference's model, scratchpad/fieldram_run.out) would read
 differently -- MID$ on a fielded variable, SWAP with one, a copy taken before LSET,
 reading after CLOSE and after a re-OPEN. CF-3300 and zerobas, screen output only.
 Each value prints between < and >, so a blank-padded field shows its blanks.
+FLDDESC_PROG=fresh runs round 3: what a FRESH channel block reads before any LSET
+or GET -- on #1 and #2 after MAXFILES, and on #1 after CLEAR re-allocates the blocks.
 """
 import os, re, shutil, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,6 +31,16 @@ PROG = ["NEW", "5 CLEAR 400:MAXFILES=2",
         '130 GET #1,1:PRINT"[r9<";B$;">]"',
         '140 CLOSE:KILL"FD.DAT":PRINT"[end]"', "RUN"]
 TAGS = ("r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "end")
+# fresh blocks: the codes of the first two record bytes, on #1 right after MAXFILES=2
+# (f1), on #2 (f2), and on #1 again after CLEAR re-allocates the blocks (f3)
+FRESH = ["NEW", "5 CLEAR 400:MAXFILES=2", '10 A$="":B$=""',
+         '20 OPEN"F1.DAT" AS #1 LEN=8:FIELD #1,2 AS A$:PRINT"[f1";ASC(A$);ASC(MID$(A$,2));"]"',
+         '30 OPEN"F2.DAT" AS #2 LEN=8:FIELD #2,2 AS B$:PRINT"[f2";ASC(B$);ASC(MID$(B$,2));"]"',
+         '40 LSET A$="QQ":CLOSE:CLEAR 400:MAXFILES=2:A$=""',
+         '50 OPEN"F1.DAT" AS #1 LEN=8:FIELD #1,2 AS A$:PRINT"[f3";ASC(A$);ASC(MID$(A$,2));"]"',
+         '60 CLOSE:KILL"F1.DAT":KILL"F2.DAT":PRINT"[end]"', "RUN"]
+if os.environ.get("FLDDESC_PROG") == "fresh":
+    PROG, TAGS = FRESH, ("f1", "f2", "f3", "end")
 
 
 def main():

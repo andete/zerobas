@@ -126,7 +126,9 @@ the CF-3300 accepts record numbers up to 65535, and reads −1 as 65535. See
 `ex_get` in [basic/field.asm](../../basic/field.asm) parses `#n` and checks
 the channel; the record number and the record engine are the disk ROM's
 (`hk_dget` in [disk/kernel.asm](../../disk/kernel.asm), since S10.D), as on
-the CF-3300, whose disk ROM parses the record number itself.
+the CF-3300, whose disk ROM parses the record number itself. The record is
+read into the channel's own block, at `VARPTR(#n)+9`, where `FIELD`'s
+variables point (D-FLDDESC, 2026-10-17).
 
 ## Related concepts
 

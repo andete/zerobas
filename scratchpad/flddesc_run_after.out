@@ -1,0 +1,23 @@
+== CF-3300
+   [r1] <XY  Z>
+   [r2] <QY>
+   [r3] <XY>
+   [r4] <XYMN>
+   [r5] <XYMN>
+   [r6] <XYXY>
+   [r7] <  Z>
+   [r8] <  Z>
+   [r9] <  Z>
+   [end] 
+== OURS
+   [r1] <XY  Z>
+   [r2] <QY>
+   [r3] <XY>
+   [r4] <XYMN>
+   [r5] <XYMN>
+   [r6] <XYXY>
+   [r7] <  Z>
+   [r8] <  Z>
+   [r9] <  Z>
+   [end] 
+refcache: 0 hit, 2 miss, 2 stored

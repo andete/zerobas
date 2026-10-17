@@ -521,7 +521,8 @@ CSRSW           equ     $FCA9   ; cursor display: 0 = off, 1 = on
 ; --- D-CLP: the CLEAR string-pool partition (docs/spec-basic-clearpool.md) ---
 ; ✅ ON. Funded by promoting fld_lookup to a page-0 sub-ROM tenant (sub/fldlook.asm,
 ; docs/decision-clearpool-funding.md §6.1), which returned 38 B of main page 1
-; (3 B free -> 41 B) against this slice's measured 22 B requirement.
+; (3 B free -> 41 B) against this slice's measured 22 B requirement. (Both the
+; stub and the tenant are gone since D-FLDDESC, 2026-10-17: no field table.)
 ; What the flag gates, main-ROM side:
 ;     basic/clear.asm   the CLEAR <n> domain check + the POOLSIZE store
 ;     basic/interp.asm  the cold-boot default of 200, and err_msgtab entry 14
@@ -904,8 +905,13 @@ MRG_PTR         equ     $F7B4   ; MERGE: write cursor into LINEBUF for the curre
 ; Random-access (FIELD/LSET/RSET) transient parse/store scratch (Phase 2c slice 1).
 ; All dead outside a single FIELD or LSET/RSET statement. Free $E019.. gap below
 ; CURPTR ($E020). See basic/field.asm + PROVENANCE.md §random-access records.
-FLD_CUROFF      equ     $EEC3   ; DISK-ONLY: FIELD: running byte offset into the record buffer (2)
-FLD_CHAN        equ     $EEC5   ; DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1)
+FLD_CUROFF      equ     $EEC3   ; DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2)
+                                ; D-FLDDESC (2026-10-17): an ADDRESS now, which
+                                ; FIELD writes into each variable's descriptor; it
+                                ; was an offset into FSECTOR_BUF, which FLD_TAB kept.
+                                ; (FLD_CHAN, $EEC5, the channel being fielded, went
+                                ; with FLD_TAB: FIELD bounds the list by FLD_END and
+                                ; LSET / RSET no longer have a FIELDed arm to flag.)
 LRSET_JUST      equ     $EEC6   ; DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1)
 LRSET_W         equ     $EEC7   ; DISK-ONLY: LSET/RSET: destination field width (1)
 LRSET_DEST      equ     $EEC8   ; DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B)
@@ -3249,7 +3255,8 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 ; (basic/files.asm), which saves the live channel before the crossing and
 ; re-stages its sector and engine state after it; LSET/RSET take
 ; `chan_gate_bare` because they write the record on purpose and do no sector
-; I/O. The audit is on the TODO item (`scratchpad/bufaudit.py`). ⚠️ A NEW
+; I/O. (D-FLDDESC, 2026-10-17: no channel's record is in FSECTOR_BUF any more --
+; RANDOM's lives at its block's +9, like every other mode's.) The audit is on the TODO item (`scratchpad/bufaudit.py`). ⚠️ A NEW
 ; crossing that can reach a buffer MUST take the full gate. ⚠️ BDOS ($F37D)
 ; and PHYDIO called from a user's machine code while a file is open are not
 ; bracketed and are outside the contract (ruled 2026-09-24).
@@ -3955,6 +3962,13 @@ FCH_CTXSZ       equ     FCH_BLKSZ + 2               ; 267: what MAXFILES charges
 ; below it are ordinary RAM that nothing here reads or writes.
 DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 (row 0, unreserved); 750 B reserved from $DD12
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
+; 🏗️ D-FLDDESC (2026-10-17): THE TABLE AND THE READ SCRATCH ARE GONE, AND THE
+; PREMISE BELOW WAS ALREADY FALSE WHEN THEY WENT. Arrays slice-4c made every string
+; variable a [len][ptr] descriptor, which IS the MS-BASIC shape -- and the CF-3300
+; was measured pointing a FIELDed variable's own descriptor at block+9+offset with
+; 0 B of FRE spent (scratchpad/fieldram_run.out). So FIELD writes the descriptor,
+; a read is an ordinary variable read, and LSET / RSET write through it in place.
+; What is left of this section is FLD_END, below. The history, as it stood:
 ; zerobas stores string vars INLINE in STRTAB ([name0][name1][len][bytes:32]); a
 ; MS-BASIC-style descriptor pointing into a record buffer does not exist. So a
 ; FIELDed variable is recorded HERE instead: a side table maps a var key to a slice
@@ -3970,14 +3984,14 @@ DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 
 ; anyway). `LINEBUF $EB00` and `TOKBUF $EC00` sit inside the span it claimed,
 ; which is proof enough on its own. It cost a reader a wrong attribution on
 ; 2026-09-21; $EE40..$EE63 is simply UNCLAIMED, which is not the same as free.
-FLD_ENTSZ       equ     6       ; field entry = [chan:1][k0:1][k1:1][off:2][wid:1]
-FLD_SLOTS       equ     16      ; max simultaneously-defined fields (own choice)
-FLD_TAB         equ     $F019   ; DISK-ONLY: field table base ($F019..$F078, 96 bytes)
-FLD_TABEND      equ     FLD_TAB + FLD_SLOTS*FLD_ENTSZ   ; NOT-A-CELL: $F079
+; (FLD_ENTSZ 6 / FLD_SLOTS 16 / FLD_TAB $F019..$F078 / FLD_TABEND: deleted. The
+; first two bytes of the old table carry FLD_END; $F01B..$F078, 94 B, are free.)
+FLD_END         equ     $F019   ; DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2)
 ; --- Phase 2c slice 2: GET/PUT random-record I/O scratch -------------------
 ; Transient (dead outside a single GET/PUT statement; one statement runs at a time,
 ; so not per-channel). The disk-position walk survives read_sector/CALSLT clobbers
-; by keeping its loop state here in RAM. Free gap above FLD_TAB, below FLD_DESC
+; by keeping its loop state here in RAM. Free gap above FLD_TAB (FLD_END's
+; since D-FLDDESC), below FLD_DESC (gone with D-FLDDESC)
 ; ($EEC4..$EEFF = 60 bytes). See basic/field.asm §GET/PUT.
 ; 🧭 S10.D (2026-10-15): MAIN NO LONGER READS OR WRITES THESE. The record engine
 ; runs in disk.rom (hk_dget), which reaches them through the generated
@@ -4080,7 +4094,9 @@ PU_DEC          equ     BUFTX + 4   ; PRINT USING `.`: decimal places requested 
 ; They are RAM, always visible. See basic/format.asm / basic/format-body.inc / sub/format.asm.
 FMT_SEC         equ     $F097   ; DISK-ONLY: CALL FORMAT: current sector index being written (1)
 FMT_DESC        equ     $F098   ; DISK-ONLY: CALL FORMAT: chosen geometry descriptor pointer (2)
-FLD_DESC        equ     $E36A   ; DISK-ONLY: transient fielded-read descriptor [len][bytes:255] (256 B)
+; (FLD_DESC, $E36A, the transient fielded-read descriptor [len][bytes:255]: deleted
+; with D-FLDDESC, 2026-10-17 -- a FIELDed read takes no copy now. Its 256 B on the
+; diskless floor are unclaimed.)
 ; --- Phase 2c: random-record LEN= (OPEN..AS #n LEN=r) ----------------------
 ; The random record length, per channel. GET/PUT geometry (basic/field.asm) uses
 ; it in place of the old hard-wired 256: a record of r bytes tiles the 512-byte
@@ -5444,20 +5460,12 @@ SUBROM_IDX_READVAL   equ 10     ; readdata_tenant (sub/readdata.asm): the READ/D
                                 ; Result rides back in RDV_ST/RDV_VAL.
                                 ; (page-0 index 11 is RETIRED: BEEP's body moved to
                                 ; zerobas-sub2 page 0, SUB2_IDX_BEEP -- D-TOKOVF.)
-SUBROM_IDX_FLDLOOK   equ 12     ; fld_lookup_tenant (sub/fldlook.asm): the FIELDed-
-                                ; variable READ hook's pure-RAM half (record-slice
-                                ; copy out of FSECTOR_BUF into FLD_DESC + the RVDESC
-                                ; wrap), carved out of basic/field.asm to fund D-CLP's
-                                ; 22 B of main page 1 (docs/decision-clearpool-
-                                ; funding.md). PAGE-0 table index 12 -- IX =
-                                ; SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_FLDLOOK. The
-                                ; located field-table entry rides in HL (subrom_call
-                                ; passes it through CALSLT); the result is STRPTR, so
-                                ; nothing marshals through a param block.
-                                ; ⚠️ Used to be the LAST index that fits before the
-                                ; $0038 vector; D-P0BASE moved the table base to
-                                ; $0040, above it, and index 13 below is that note
-                                ; being cashed.
+                                ; (page-0 index 12 is RETIRED: fld_lookup_tenant,
+                                ; sub/fldlook.asm, SUBROM_IDX_FLDLOOK -- the FIELDed-
+                                ; variable READ hook's record-slice copy into
+                                ; FLD_DESC, the D-CLP funding carve. D-FLDDESC,
+                                ; 2026-10-17: a FIELDed variable's own descriptor
+                                ; points into its record, so nothing is looked up.)
 SUBROM_IDX_LRSETST   equ 13     ; lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET
 SUBROM_IDX_DEFFN     equ 14     ; deffn_tenant (sub/deffn.asm): DEF FN's
                                 ; parse -- name resolve, the two lists

@@ -122,7 +122,14 @@ FILL = {"prm": 0x00}
 # the diskless statement that still touched it. `fldread` fills the FIELD table
 # with $41 so EVERY entry names `AA$` -- a $A5 key matches no variable, which is
 # why `rich2` (ERASE + string reads) never saw the table.
-FT, FTE = sym("FLD_TAB"), sym("FLD_TABEND")
+# 🏗️ D-FLDDESC (2026-10-17): FLD_TAB IS GONE -- FIELD writes each variable's own
+# descriptor into its channel's record -- and FLD_END holds the table's first two
+# bytes ($F019). The three rows keep the old 96 B span: what they assert is that
+# a DISKLESS machine neither reads nor writes it, which stays true and stays worth
+# a row while the ceiling may rise over it (S15). `fldread` now reads an ordinary
+# variable; its fill can no longer name a field, so it is a plain negative.
+FT = sym("FLD_END")
+FTE = FT + 96               # FLD_TAB + FLD_SLOTS(16) * FLD_ENTSZ(6), as it was
 RANGES["fldread"] = (FT - 1, FTE - 1)
 RANGES["fldclr"] = (FT - 1, FTE - 1)
 RANGES["flderase"] = (FT - 1, FTE - 1)
@@ -407,7 +414,9 @@ PROGRAM_LSET = [
     "NEW",
     '10 CLEAR 100,&HE000:ON ERROR GOTO 100:BLOAD"CAS:",R',
     '20 LSET A$="X":RSET A$="X":FIELD#1,2 AS A$',
-    f'30 PRINT"[";PEEK(&H{sym("LRSET_JUST"):04X});PEEK(&H{sym("FLD_CHAN"):04X});"]":END',
+    # D-FLDDESC: FLD_CHAN ($EEC5) is gone; FLD_CUROFF is FIELD's disk-only cell
+    # now (field_prologue, a disk.rom call-back a diskless FIELD never reaches).
+    f'30 PRINT"[";PEEK(&H{sym("LRSET_JUST"):04X});PEEK(&H{sym("FLD_CUROFF"):04X});"]":END',
     '100 PRINT"[E";ERR;"]";:RESUME NEXT',
     "RUN",
 ]

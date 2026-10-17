@@ -1,0 +1,11 @@
+== CF-3300
+   [f1]  159  146 
+   [f2]  255  255 
+   [f3]  81  81 
+   [end] 
+== OURS
+   [f1]  32  32 
+   [f2]  32  32 
+   [f3]  32  32 
+   [end] 
+refcache: 0 hit, 2 miss, 2 stored

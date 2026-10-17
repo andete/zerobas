@@ -11,7 +11,8 @@
 ; every string descriptor everywhere is now a uniform 3-byte [len:1][ptr:2]
 ; triple; `ptr` -> a body in the string HEAP (a compacting allocator in the
 ; sub-ROM tenant, sub/strheap.asm) OR somewhere stable outside it (a token-
-; stream literal, STRSCR, STR_EMPTY, FLD_DESC). The old fixed N=3 STRTMP ring
+; stream literal, STRSCR, STR_EMPTY, a channel's record for a FIELDed variable
+; -- D-FLDDESC, 2026-10-17; FLD_DESC until then). The old fixed N=3 STRTMP ring
 ; + STRCAT_R global accumulator are GONE, replaced by a temp-descriptor STACK
 ; (§6) whose entries own real heap bodies; the concat spine (§7) evaluates
 ; every operand into an owned temp BEFORE allocating the final result once,
@@ -419,7 +420,7 @@ pu_deref_body:
 
 ; --- mk_rvdesc: A = len, HL = body address -> RVDESC := [len][ptr(=body)];
 ; returns HL = RVDESC. The shared "wrap a fixed RAM buffer as a [len][ptr]
-; rvalue descriptor" builder (STRSCR/FLD_DESC producers). Safe as ONE shared
+; rvalue descriptor" builder (STRSCR producers; FLD_DESC's went with D-FLDDESC). Safe as ONE shared
 ; RVDESC cell only because each producer's value is consumed immediately
 ; (copied into a heap temp / a var's heap body) before the next string sub-
 ; expression reuses it. Clobbers A? no — preserves A. Clobbers nothing but the

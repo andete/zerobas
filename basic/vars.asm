@@ -288,7 +288,9 @@ vst_yes:
 ;   (input.asm) console INPUT numeric · inpc_vstr (input.asm) console INPUT
 ;   string · inpc_line (input.asm) LINE INPUT · ex_mid_stmt (str-engine.asm)
 ;   MID$()= · inp_readvar (files.asm) INPUT #n · tgt_parse_fld (field.asm) ->
-;   FIELD..AS and LSET/RSET.
+;   FIELD..AS and LSET/RSET. (D-FLDDESC, 2026-10-17: tgt_parse_fld is gone;
+;   field_item and lrset_tgt call tgt_parse_req -- still through this routine,
+;   so still nine surfaces.)
 ; A rule changed here changes what a target MEANS at all nine
 ; ([[a-shared-engine-fix-must-measure-its-other-callers]]).
 tgt_parse:
@@ -1248,7 +1250,10 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
                 ; invokes itself, AFTER establishing PRGEND -- the §13a-F1
                 ; invariant documented above). The STRTAB pool this loop
                 ; used to wipe no longer exists -- nothing to do here.
-                jp      fld_init_g          ; also reset the random-access field table (disk only)
+                ; (D-FLDDESC, 2026-10-17: nor is there a FIELD table to reset --
+                ; this tail was `jp fld_init_g`. A FIELDed variable is an
+                ; ordinary variable now, cleared with the rest by vars_reset.)
+                ret
 
 ; --- RND_S0_PACKED: math pack slice 2e (repack build only, docs/spec-basic- -
 ; mathpack-slice2.md §15.1/§15.3). S0's 7-byte packed-BCD encoding (2
@@ -1256,6 +1261,6 @@ cv_deftbl:                                  ; (RUN clears here first, then the p
 ; FAC-mantissa packing) of S0=40649651372358, the RND generator's power-on/
 ; reset seed (black-box recovered from the VG-8020, §15.1). Pure data, used
 ; ONLY by clear_vars above (via `ld hl,RND_S0_PACKED`) -- not reached by
-; fallthrough, since clear_vars's own tail `jp fld_init` ends the routine
-; before this point.
+; fallthrough, since clear_vars's own tail (`ret` since D-FLDDESC; `jp fld_init`
+; before) ends the routine before this point.
 RND_S0_PACKED:  db      $40,$64,$96,$51,$37,$23,$58

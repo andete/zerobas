@@ -19,11 +19,17 @@
 ; [len:1][ptr:2] triple: a `$`-var STRTAB slot's tail, a string array
 ; element, a temp-descriptor-stack entry. `ptr` -> a body in the heap
 ; ([FRETOP,C)) OR somewhere else entirely (a token-stream literal, STRSCR,
-; STR_EMPTY, FLD_DESC) — a body is only a GC ROOT candidate when its ptr lies
+; STR_EMPTY, FLD_DESC until D-FLDDESC, and since D-FLDDESC (2026-10-17) a
+; FIELDed variable's slice of its channel's record at block+9 -- the channel
+; blocks sit BELOW the pool's floor, so never in [FRETOP,C)) — a body is only a
+; GC ROOT candidate when its ptr lies
 ; inside [FRETOP,C); anything else is definitionally stable and untouched by
 ; GC (spec §5.2). A LENGTH-0 descriptor's ptr is BY CONVENTION always 0 (never
 ; a real heap address), so the len==0 check alone excludes it from root
 ; consideration everywhere below — no separate "ptr==0" test is needed.
+; (One exception to the convention, and it is harmless for the same reason:
+; `FIELD #1,0 AS A$` keeps A$'s record pointer at length 0 -- never a heap
+; address, and the len==0 check never reads it.)
 ;
 ; --- WHY THIS IS A SUB-ROM TENANT (spec §9, SIGNED OFF 2026-07-16) ---------
 ; heap_alloc + GC (root enumeration, compaction) are pure-RAM pointer/memory
@@ -863,8 +869,9 @@ shc_have:
 ; aliasing — str_set_key/aeng_copy_str/snapshot all copy), the root ptrs are
 ; DISTINCT, so a single address-ordered sweep moves each body exactly once
 ; (no re-scan, unlike the reference). A non-heap ptr (literal/STR_EMPTY/
-; RVDESC-over-STRSCR/FLD_DESC) sits OUTSIDE [OLD_FRETOP,C) and is skipped by
-; the range test, so it is never a root (§5.2).
+; RVDESC-over-STRSCR/FLD_DESC, and since D-FLDDESC a FIELDed variable's pointer
+; into its channel block, below the pool) sits OUTSIDE [OLD_FRETOP,C) and is
+; skipped by the range test, so it is never a root (§5.2).
 ;
 ; Own scratch frame on the STACK (IX-addressed, 22 bytes); the 2n descriptor-
 ; address sort buffer is in DETOKBUF (fixed, NOT on the stack):

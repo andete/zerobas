@@ -744,20 +744,9 @@ end_line_end:
 ; CONSTANT: forcing DIRECTF := 0 fixes the first and breaks the second, and
 ; forcing 1 does the reverse. Both readings were predicted before the fix was
 ; measured (docs/spec-basic-onerr0.md §7).
-derive_directf:
-                ld      a,(CURLINE+1)
-                cp      dir_line >> 8
-                ld      a,0                 ; (xor a would clobber the flags)
-                jr      nz,dd_mode
-                inc     a
-dd_mode:
-                ld      (DIRECTF),a
-                ; 🏗️ D-CURLIN (Joost, 2026-09-24): publish CURLIN ($F41C) as the
-                ; reference does. Every line entry and mid-line resume passes
-                ; rp_exec, which calls this; both callers save HL or have spent it.
-                ; The body is in the LOW region (str-engine.asm): inline it did not
-                ; fit page 1 (14 B free, it needed ~23).
-                jp      curlin_pub          ; A = DIRECTF
+; 📌 (derive_directf's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
+; 2026-10-17, in front of the $73AC pin; this header still describes it. It is
+; entered only by `call`, from rp_exec.)
 rp_break:
                 ld      a,(DIRECTF)         ; direct mode: no trap machinery (see
                 or      a                   ; rp_trapchk) -> always the classic break,
@@ -1332,11 +1321,9 @@ err_mem         equ     err_mem_arr
 ; last thing in this block or it does not guard the bytes after it.
 ; 📌 arl_getbyte's 4 B body is a PIN REFILL in basic/files.asm since D-FCHNUM
 ; (2026-10-17), ahead of oo_fail_syn.
-relink:
-                ld      c,LE_OP_RELINK      ; in C, as le_call_op passes it
-                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
-                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
-                ret
+; 📌 (relink's 7 B BODY is a PIN REFILL at the end of basic/strvar.asm since
+; D-FLDDESC, 2026-10-17, in front of $6CF3: `ld c,LE_OP_RELINK` + the lineedit
+; tenant call, entered only by `call`.)
 
 ; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
 ; docs/spec-basic-delete.md, measured in docs/delete-msx1-characterization.md.
@@ -1359,29 +1346,9 @@ relink:
 ; and is never marshalled back. `DELETE 20:B=9` leaves B at 0 with ERR 0 on both
 ; references (dlt-tail, against dlt-tailctl's 9), which is what says the ':' is
 ; ACCEPTED and then abandoned rather than rejected.
-ex_delete:
-                ld      (SL_DELPTR),hl      ; the statement cursor, on the token
-                ld      a,LE_OP_DELRANGE
-                ; LE_STATUS carries the ERR CODE ITSELF for this op (basic/
-                ; sysvars.inc): 0 = ok, 2 = R-D6 trailing junk, 5 = R-D2 (the high
-                ; end names no stored line) or R-D4 (lo > hi). One compare, no
-                ; second table.
-                call    le_call_op          ; A = LE_STATUS, Z = ok
-                jp      nz,raise_error
-                ; R-D7: a SUCCEEDING delete is a program EDIT. The tenant has
-                ; already run relink + vars_reset (its own tail, exactly as
-                ; store_line's op does); CONTVALID is the resident half, and it is
-                ; cleared HERE and only here -- a FAILING delete must leave the
-                ; CONT point alone, which dlt-contbad is the row for (its CONT
-                ; still resumes, reading 5 like its control).
-                xor     a
-                ld      (CONTVALID),a
-                ; R-D8: and then the run stops. Same mechanism as ex_end -- the
-                ; run loop tests ENDFLAG immediately after `exec` returns
-                ; (rp_run, above) and BEFORE it dereferences CURLINE, which
-                ; matters here more than it does for END: the text this statement
-                ; just memmoved is where CURLINE points.
-                jp      end_line_end        ; -> 1, and the run stops
+; 📌 (ex_delete's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
+; 2026-10-17, in front of the $72D4 pin; the header above is its contract. It is
+; entered only through the statement table.)
 
 ; --- ex_renum: RENUM [<new>][,[<old>][,<inc>]] (D-EDITVERB) -------------------
 ; docs/spec-basic-editverb.md §3.2, measured in

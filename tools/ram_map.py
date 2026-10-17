@@ -1351,15 +1351,17 @@ def selftest(lo, hi) -> int:
     ok["A14 a disk cell INSIDE basic's FWBUF names that buffer"] = \
         any("FWBUF" in n for _c, n, _o
             in byaddr14[d_all.vals["WRBLK_MULACC"]][1])
-    # (FLD_TAB: a DISK-ONLY cell that stays below $F380 for good. TKLNUM (until
-    # D-WSZERO S12) and DB_WIN (until S14b) each left [$E000,$F380), which this
-    # map does not cover -- the arm then read a KeyError, not a verdict)
+    # (FLD_END: a DISK-ONLY cell that stays below $F380 for good -- FLD_TAB's
+    # first two bytes, the same $F019, since D-FLDDESC deleted the table (2026-10-17;
+    # this arm read FLD_TAB until then). TKLNUM (until D-WSZERO S12) and DB_WIN
+    # (until S14b) each left [$E000,$F380), which this map does not cover -- the
+    # arm then read a KeyError, not a verdict)
     ok["A14 NEGATIVE: an address outside every foreign buffer names none"] = \
-        byaddr14[b_all.vals["FLD_TAB"]][1] == []
+        byaddr14[b_all.vals["FLD_END"]][1] == []
     # SH_SRC's width lived on its continuation line ("address (2 B)"), which is
     # exactly why joining exists -- and exactly why the PURPOSE must not join.
     # Since D-WSZERO S16 deleted SH_*, the arm reads FAT_TOTCLUS: a DISK-ONLY cell
-    # with a multi-line comment that stays below $F380 for good, as FLD_TAB above.
+    # with a multi-line comment that stays below $F380 for good, as FLD_END above.
     flat14 = Map("basic", lo, hi, joint=False)
     a_src = b_all.vals["FAT_TOTCLUS"]
     ok["A14 the purpose is the DECLARATION line, not the joined block -- the "

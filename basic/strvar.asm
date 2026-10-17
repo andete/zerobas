@@ -132,11 +132,13 @@ str_eval_one:
                                             ; numeric array check already relies
                                             ; on
                 push    hl                  ; guard cursor across the lookup
-                call    fld_lookup          ; FIELDed var? -> STRPTR=FLD_DESC slice, CF set
-                jr      c,sev_have          ; fielded -> STRPTR already set
-                call    str_get_key         ; HL -> [len][bytes] descriptor
+                ; 🏗️ D-FLDDESC (2026-10-17): no `call fld_lookup` first any more.
+                ; A FIELDed variable's own descriptor points into its channel's
+                ; record (block+9+offset, written by FIELD as on the CF-3300), so
+                ; this one read serves both -- and every string-variable read on a
+                ; disk machine stops paying the FLD_TAB walk.
+                call    str_get_key         ; HL -> [len][ptr] descriptor
                 ld      (STRPTR),hl
-sev_have:
                 pop     hl
                 jr      str_eval_ok
 ; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
@@ -215,44 +217,13 @@ str_eval_no:
                 or      a                   ; CF clear -> not a string operand
                 ret
 
-; --- sea_fld: the FIELDed-READ hook for an ARRAY ELEMENT --------------------
-; D-FLDARY (docs/spec-basic-fldary.md §4.3). 🔴 THE READ PATH IS A THIRD SITE AND
-; NOBODY HAD LISTED IT. A fielded variable behaves only because the SCALAR path
-; above calls fld_lookup; str_eval_arr (basic/arrays.asm) points STRPTR straight
-; at the element and never consults FLD_TAB, so before this hook `LSET A$(1)`
-; could not be read back whatever FIELD recorded -- and a fix that taught only
-; the two PARSE sites about subscripts would have turned `d.ary` green for the
-; wrong reason and left `s.fldary` red (spec §5.2).
-;
-; ⚠️ SITED IN PAGE 1 ON PURPOSE. str_eval_arr's own file is the LOW region, which
-; had 7 B; carve_scout reports basic/arrays.asm as 0 of 46 labels in page 1. So
-; the low side pays ONE byte for `jr z` -> `jp z` and the hook lives here, beside
-; the scalar twin it mirrors. Placed between str_eval_no and str_eval_ok so the
-; tail FALLS THROUGH (worth 3 B).
-;
-; 🎯 PUBLISHING STRPTR FIRST IS WHAT MAKES THIS 10 B INSTEAD OF 14. fld_lookup is
-; `call fld_find` / `ret nc`: on a miss it touches nothing. So write the element
-; address first and let a hit overwrite it -- the whole not-found branch goes.
-;
-; in:  DE = the resolved element address (str_eval_arr's success arm only -- the
-;      deferred-error arm keeps its own STR_EMPTY tail and deliberately does NOT
-;      look up: there is no element, and a lookup on a garbage offset is exactly
-;      the wild read that arm exists to prevent).
-;
-; ⚠️ HL IS THE LIVE TEXT CURSOR HERE AND fld_lookup CLOBBERS IT. str_eval_one's
-; SCALAR arm above guards it with its own push/pop for exactly this reason, and
-; the array arm has no such guard of its own -- str_eval_arr advances HL past the
-; subscripts and str_eval_ok returns it. Omitting these two bytes made every
-; FIELDed array-element read return a wrecked cursor; the gate read `<NO OUTPUT>`
-; on all six s.*/r.* rows while every d.* row stayed green, which is what pointed
-; at the READ hook rather than at the parse sites.
-sea_fld:
-                ld      (STRPTR),de         ; default: the element itself, verbatim
-                push    hl                  ; the text cursor -- see above
-                call    fld_key_de          ; BC = the ARYTAB-relative element key
-                call    fld_lookup          ; FIELDed? -> STRPTR = FLD_DESC slice
-                pop     hl
-                                            ; fall through into str_eval_ok
+; --- (sea_fld, D-FLDARY's FIELDed-READ hook for an ARRAY ELEMENT, lived here
+; until D-FLDDESC, 2026-10-17. It was the THIRD site a FIELDed element needed --
+; str_eval_arr pointed STRPTR at the element and never consulted FLD_TAB -- and
+; it published the element and let fld_lookup overwrite it. With no table there
+; is nothing to overwrite: a FIELDed element's own descriptor points into the
+; record, so str_eval_arr (basic/arrays.asm) publishes it and joins str_eval_ok
+; on both of its arms again, as before D-FLDARY.)
 str_eval_ok:
                 ld      a,1                 ; (VALTYP's store went in D-WSZERO S9:
                                             ; nothing read it, in any image)
@@ -648,3 +619,29 @@ str_dski:
                 xor     a
                 ld      (STRSCR),a          ; length 0: the empty string
                 jp      str_mkf_desc
+
+; 📌 PIN REFILL (D-FLDDESC, 2026-10-17): 22 B moved here from past the $73E5 pin
+; to take back what D-FLDDESC freed in this file (fld_lookup's call, sea_fld),
+; vars.asm (clear_vars's `jp fld_init_g`) and interp.asm (`call fld_init_g`),
+; all ahead of $6CF3. Sited HERE, at a file edge after every byte freed and
+; before files.asm, because the OPEN arms' `jr`s reach ACROSS the $6CF3 pad in
+; both directions (oo_storemode -> oo_hdr_tail forward, the CAS: arm -> oo_fail_syn
+; back), so everything in files.asm must keep its address. Both are whole and
+; entered only by label (tools/pin_plan.py chunks()); headers at their old homes.
+; relink: basic/program.asm (D-WSZERO S16's note there). trace_line:
+; basic/missing.asm.
+relink:
+                ld      c,LE_OP_RELINK      ; in C, as le_call_op passes it
+                call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
+                db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT)
+                ret
+trace_line:
+                push    hl                  ; guard the token cursor
+                ld      a,'['
+                rst     $18
+                call    cur_lineno          ; HL = the line number
+                call    ln_div_entry
+                ld      a,']'
+                rst     $18
+                pop     hl
+                ret

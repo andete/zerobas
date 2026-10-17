@@ -26,9 +26,6 @@ FPERR equ 0F7B9H   ; runtime numeric-error flag: 0 none / 1 overflow / (1 B)
 FACTYP equ 0F663H   ; 2=int / 4=single / 8=double (1)
 FSECTOR_BUF equ 0E46AH   ; DISK-ONLY: file data / read sector buffer ($E46A..$E669)
 FWBUF equ 0E66AH   ; DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869)
-FLD_CHAN equ 0EEC5H   ; DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1)
-LRSET_W equ 0EEC7H   ; DISK-ONLY: LSET/RSET: destination field width (1)
-LRSET_DEST equ 0EEC8H   ; DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B)
 STRPTR equ 0F954H   ; pointer to the [len][bytes] descriptor (2 bytes)
 DISKOP_OP equ 0FCACH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
 DISKOP_ERR equ 0FC9AH   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
@@ -56,6 +53,7 @@ FCH_CEIL equ 0000FH   ; repack: the MEASURED reference ceiling (§3, exactly
 LPT_MODE equ 00005H   ; FCH_MODES value: channel open to the LPT: printer device
 DOUT_MODE equ 00003H   ; FCH_MODES value: disk OUTPUT through disk.rom's FCB
 DOUT_BLK equ 00025H   ; its row: +0..36 the FCB, +37..38 the channel's
+FCH_RECMAX equ 00100H   ; the largest record (the OPEN LEN= domain is 1..256)
 DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
 DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
@@ -88,15 +86,15 @@ pdfcb_resume equ 06DF7H
 main_fat_mount equ 06451H   ; main's fat_mount
 main_fat_find equ 06455H   ; main's fat_find
 parse_disk_fcb equ 06514H
-field_prologue equ 0734FH
+field_prologue equ 07348H
 field_item equ 072F6H
-lrset_tgt equ 073BDH
+lrset_tgt equ 073C5H
 lrset_rhs equ 073E8H
-lrset_finish equ 073FFH
-fch_ctx_addr equ 06F7FH
+lrset_finish equ 07258H
+fch_ctx_addr equ 06F7DH
 disk_error equ 06B96H
-read_line equ 045FEH
-fch_close_all equ 0706EH
-eval_int16_checked equ 0454DH
-fch_select equ 06FB4H
-raise_error equ 04329H
+read_line equ 045FBH
+fch_close_all equ 0706CH
+eval_int16_checked equ 0454AH
+fch_select equ 06FB2H
+raise_error equ 04326H

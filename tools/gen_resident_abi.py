@@ -123,17 +123,18 @@ REQUIRED_DISK_RAM = [
     "FPERR",                    # D-DSKFSLOW: the evaluator's DEFERRED error;
                                 # hk_dskf counts nothing while one is pending
     "FACTYP",                   # 2 / 4 / 8
-    # D-LRSETMOVE: hk_lrset walks main's FLD_TAB entry and fills the three
-    # cells the sub-ROM store tenant reads. It WALKS the table; main OWNS it.
-    "FSECTOR_BUF",              # the shared record buffer the offset indexes
+    # D-LRSETMOVE: hk_lrset walked main's FLD_TAB entry and filled the three
+    # cells the sub-ROM store tenant reads (FLD_CHAN, LRSET_W, LRSET_DEST, all
+    # gone from this list with D-FLDDESC, 2026-10-17: there is no table, a
+    # FIELDed variable's descriptor points at its record, and main's lrset_*
+    # bundles fill the cells). FSECTOR_BUF stays: disk/disk.asm asserts that
+    # this ROM's SECTOR_BUF IS main's buffer (D-BUFMERGE).
+    "FSECTOR_BUF",              # main's data sector buffer = this ROM's SECTOR_BUF
     # D-ALIASWCELL: install_basic_hooks publishes the DSKI$/DSKO$ raw-sector
     # buffer through DSKBUF_PTR ($F351), and it has to be the DIRECTORY/RAW
     # tier -- FSECTOR_BUF is the open channel's staged data sector, and sharing
     # it let `DSKO$` write an open file's records over the sector it was given.
     "FWBUF",                    # the FAT/dir metadata sector buffer
-    "FLD_CHAN",                 # 0 = not fielded (D-LRVAR)
-    "LRSET_W",                  # the field width
-    "LRSET_DEST",               # the field's first byte
     "STRPTR",                   # D-CVMOVE: the evaluator's string DESCRIPTOR
                                 # pointer, which hk_cv derefs (see pu_deref_body
                                 # above); read-only from the disk side
@@ -232,6 +233,9 @@ REQUIRED_DISK_RAM = [
     # agree on one layout.
     "DOUT_MODE",                # ⚠️ a CONSTANT: FCH_MODES value of such a channel
     "DOUT_BLK",                 # ⚠️ a CONSTANT: row offset of the cached block address
+    "FCH_RECMAX",               # ⚠️ a CONSTANT: the record's size at block+9 --
+                                # D-FLDDESC: RANDOM's record lives there, and
+                                # hk_frnd / GET's clean end space-fill all of it
     "DOUT_FLG",                 # ⚠️ a CONSTANT: row offset of the flags byte
     "DOUT_RFULL",               # ⚠️ a CONSTANT: flag bit, a full record awaits its write
     "DOUT_DEAD",                # ⚠️ a CONSTANT: flag bit, a CLOSE failed
@@ -332,9 +336,9 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # crossings. All three may RAISE, which is safe from a call-back.
     # D-FIELDMOVE: FIELD's TWO bundles. field_item returns a CARRY for "another
     # item follows", so the handler's crossings scale with the item count.
-    "field_prologue",           # channel + mode class + FLD_TAB reset
+    "field_prologue",           # channel + mode class + the record's span
     "field_item",               # one `w AS v$`; CF=1 -> another follows
-    "lrset_tgt",                # CF=1: HL = FLD_TAB entry; CF=0: not fielded
+    "lrset_tgt",                # the target's descriptor (D-FLDDESC: no table)
     "lrset_rhs",                # STRPTR = the RHS descriptor
     "lrset_finish",             # destination, then the sub-ROM store
     # D-KILLOPEN: KILL refuses a file that is OPEN (64), which needs every

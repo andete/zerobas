@@ -214,11 +214,9 @@ SUB_SRC   := sub/sub.asm
 # D-FUND-1, the TIME+T5 funding carve): the tenant body, its five carved engine
 # bodies (the lean cart's inline copies, basic/save.asm) and the two shared
 # copies the tenant needs sub-locally -- same staleness hazard, same fix.
-# sub/fldlook.asm (the FIELDed-variable READ hook's pure-RAM half, docs/
-# decision-clearpool-funding.md -- the D-CLP funding carve): a self-contained
-# tenant (no shared .inc; the retired lean cart had kept its own
-# differently-shaped inline copy in basic/field.asm) -- same staleness hazard,
-# same fix.
+# (sub/fldlook.asm, the FIELDed-variable READ hook's pure-RAM half -- the D-CLP
+# funding carve -- is GONE since D-FLDDESC, 2026-10-17: a FIELDed variable's own
+# descriptor points into its record, so there is nothing to look up.)
 # sub/fcbname.asm + basic/fcbname-body.inc (disk 8.3-FCB-name builder
 # build_83_name, docs/spec-basic-interrupt-traps.md §10.4, the interrupt-traps
 # T1 funding carve): the tenant body + its shared .inc file (the lean cart's
@@ -234,7 +232,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
-             sub/fldlook.asm sub/lrsetst.asm sub/deffn.asm \
+             sub/lrsetst.asm sub/deffn.asm \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc basic/cascap-body.inc basic/cascut-body.inc \
              sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc \
              basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \

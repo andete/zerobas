@@ -2923,6 +2923,13 @@ at TAPION mid-BLOAD, read KBUF), **not** from any disassembly:
 the zerobas side by `basic_probe_crunch.py`. GET=$B2 / PUT=$B3 were captured too but
 belong to slice 2.
 
+> 🏗️ **SUPERSEDED 2026-10-17 (D-FLDDESC).** zerobas has had 3-byte `[len][ptr]`
+> descriptors since arrays slice 4c, and its string GC skips any pointer outside the
+> string heap, so the premise below no longer holds. FIELD now does what the reference
+> does, measured on the CF-3300 (`scratchpad/fieldram_run.out`): it points each
+> variable's own descriptor into the channel's record at `VARPTR(#n)+9`; `FLD_TAB`,
+> `fld_lookup` and `FLD_DESC` are gone. The paragraph is kept as the history.
+
 **Why a side table (own design, forced by zerobas's inline string store).** In MS-
 BASIC a string variable holds a 3-byte *descriptor* `[len][ptr]`, and FIELD simply
 points that descriptor into the record buffer. zerobas has no such descriptor: string

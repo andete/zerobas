@@ -224,6 +224,10 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; (SUBROM_IDX_BEEP: defined in basic/sysvars.inc -- D-PASMO053)
 
 ; --- D-CLP funding carve (page-0 tenant; docs/decision-clearpool-funding.md) --
+; 🗑️ RETIRED by D-FLDDESC (2026-10-17): the row is `ret / nop / nop` and
+; sub/fldlook.asm is gone -- FIELD writes each variable's own descriptor into its
+; channel's record (block+9), as the CF-3300 does, so there is no table to look
+; up and no slice to copy. The history, as it stood:
 ; index 12 = fld_lookup_tenant (sub/fldlook.asm): the FIELDed-variable READ
 ; hook's pure-RAM half -- copy the record slice out of FSECTOR_BUF into FLD_DESC
 ; and wrap it as an RVDESC rvalue descriptor. Carved out of basic/field.asm to
@@ -237,7 +241,7 @@ SUB_PING_P1             equ     $C1     ; written by the page-1 ping
 ; (docs/spec-rom-region-p0base.md) relocated the base to $0040, above the
 ; vector. INDEX 13 IS FREE and the table has no cap -- appending a row is now
 ; just another line, on either island.
-; (SUBROM_IDX_FLDLOOK: defined in basic/sysvars.inc -- D-PASMO053)
+; (SUBROM_IDX_FLDLOOK: deleted from basic/sysvars.inc with the row's body.)
 
 ; --- D-FLDARY funding carve (page-0 tenant; docs/spec-basic-fldary.md §6.4) ---
 ; index 13 = lrset_store_tenant (sub/lrsetst.asm): the LSET/RSET record-field

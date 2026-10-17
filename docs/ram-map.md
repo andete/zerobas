@@ -33,14 +33,13 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 71 declared addresses in this project's own workspace `$E000..$F37F` (70 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
-* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
+* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
+* **disk** — 122 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
-| `$E36A` | 256 B | `basic` | `FLD_DESC` | DISK-ONLY: transient fielded-read descriptor [len][bytes:255] (256 B) |  |
 | `$E46A` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E46A..$E669) |  |
 | `$E46A` | 512 B | `disk` | `FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E46A..$E669) |  |
 | `$E66A` | 512 B | `basic` | `FAT_MBUF/FWBUF` | DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869) |  |
@@ -156,14 +155,10 @@ second one is the question a per-component map cannot answer.
 | `$EE79` | 2 B | `disk` | `GP_LEFT` | DISK-ONLY: record bytes still to move, ends $EA3E (2 B) |  |
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
-| `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: running byte offset into the record buffer (2) |  |
-| `$EEC5` | 1 B | `basic` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
-| `$EEC5` | 1 B | `disk` | `FLD_CHAN` | DISK-ONLY: FIELD/LSET/RSET: the channel being fielded (1) |  |
+| `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
 | `$EEC7` | 1 B | `basic` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
-| `$EEC7` | 1 B | `disk` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
 | `$EEC8` | 2 B | `basic` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
-| `$EEC8` | 2 B | `disk` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EEEE` | 11 B | `basic` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
 | `$EEEE` | 11 B | `disk` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
 | `$EEF9` | 2 B | `basic` | `COPY_CLUS` | DISK-ONLY: the source's first cluster (word) |  |
@@ -193,7 +188,7 @@ second one is the question a per-component map cannot answer.
 | `$EFFB` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) |  |
 | `$EFFD` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) |  |
 | `$EFFE` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
-| `$F019` | 96 B | `basic` | `FLD_TAB` | DISK-ONLY: field table base ($F019..$F078, 96 bytes) |  |
+| `$F019` | 2 B | `basic` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F079` | 2 B | `disk` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F07B` | 2 B | `basic` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |

@@ -118,7 +118,12 @@ fp_table:
 ; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
 ; fch_save_active/fch_load_ctx bodies moved here so the block layout lives in
 ; one ROM. HL = the context block on entry to both.
-                jp      t_fch_save              ; 21 DISKOP_SEL_FCH_SAVE
+; 🗑️ D-FLDDESC (2026-10-17): row 21 has NOTHING LEFT TO SAVE. Its last copy was
+; RANDOM's record, FSECTOR_BUF -> block+9, and that record lives at block+9 now
+; (t_fch_load's note). The row keeps its 3 B and its sender (main's
+; fch_save_active) so 22.. stay put; it reports success, as t_fch_save did for
+; every mode once D-MODE2DEAD dropped the flush.
+                jp      fp_stash_ok             ; 21 DISKOP_SEL_FCH_SAVE (a no-op)
                 jp      t_fch_load              ; 22 DISKOP_SEL_FCH_LOAD
 ; SBH-3 (2026-10-03) made the sequential WRITE cursor's open/close rows 23/24;
 ; S10 increment 3 (D-ASAVEDOUT, 2026-10-08) retired both -- main's stubs over
@@ -233,53 +238,32 @@ t_fat_delete:
 ; alone (mode 2 is never stored, D-MODE2DEAD) and is gone with the re-stage
 ; (fat_restage_channel); an INPUT channel's record -- its read-ahead -- lives in
 ; its block's +9, which hk_chin fills, so nothing travels.
-t_fch_load:
-                push    hl                  ; the block
-                call    fch_engrow          ; HL = the channel's engine row; CF = none
-                jr      c,tfl_dev           ; a device channel: no engine state, no record
-                cp      4-1
-                jr      nz,tfl_dout         ; INPUT / OUTPUT / APPEND: the mirror only
-                                            ; (S10.D: RANDOM's record travels, below)
-                pop     de
-                push    de                  ; DE = the block (tfl_rec pops it)
-                call    tfl_mirror
-tfl_rec:
-                pop     hl
-                ld      de,FCH_HDRSZ
-                add     hl,de               ; the record, after the FCB header
-                ld      de,FSECTOR_BUF      ; D-FIELDFIX: and this channel's record
-                ld      bc,FCH_RECMAX
-                ldir
-                jp      fp_stash_ok
-; 🔴 D-FLOORREC (2026-10-13): a DEVICE channel (GRP:, CAS:, CRT:, LPT:) took the
-; record copy above too, and it has no business there: FIELD's record is a disk
-; file's. On a DISKLESS machine FSECTOR_BUF has been program RAM since D-FATFLOOR,
-; so every channel switch wrote 256 B over the program's strings and channel
-; blocks at $E36A.. (opengrp-acceptance's `errors` row read the GRP channel's FCB
-; header as 255 255 -- scratchpad/drawcompact_census2.out: tfl_rec, 256 B). And on
-; the DISK build a tape channel's live data has been its block's record since
-; D-CASFCB, which t_fch_save's copy back would have overwritten with a stale one.
-tfl_dev:
-                pop     hl
-                jp      fp_stash_ok
+; 🏗️ D-FLDDESC (2026-10-17): AND NOW NO MODE'S RECORD TRAVELS. RANDOM (4) was the
+; last: its record went FSECTOR_BUF <-> block+9 here (`tfl_rec`, 256 B per switch)
+; because FIELD / LSET / RSET / fld_lookup and GET / PUT all worked on the LIVE
+; channel's copy. The record LIVES at block+9 now -- disk.rom's hk_dget engine
+; addresses it through the row's DOUT_BLK, and FIELD points each variable's own
+; descriptor into it, as the CF-3300 does -- so every disk mode takes the mirror
+; alone, and a device channel nothing.
+; 🔴 D-FLOORREC (2026-10-13), KEPT AS THE REASON THE DEVICE ARM IS EMPTY: a
+; DEVICE channel (GRP:, CAS:, CRT:, LPT:) once took the record copy too. On a
+; DISKLESS machine FSECTOR_BUF has been program RAM since D-FATFLOOR, so every
+; channel switch wrote 256 B over the program's strings and channel blocks at
+; $E36A.. (opengrp-acceptance's `errors` row read the GRP channel's FCB header as
+; 255 255 -- scratchpad/drawcompact_census2.out: tfl_rec, 256 B).
 ; S10.B: a DOUT_MODE row is an MSX-DOS FCB (+16..19 its size, +37..38 the cached
 ; block address). The block cannot move while the channel is open -- CLEAR and
 ; MAXFILES close every file first (D-CLEARCLOSE) -- but every load re-caches it
 ; anyway, the cost of one store. LOF reads FAT_FILESIZE: the FCB's size, i.e.
 ; the bytes committed in whole records, as on the CF-3300 (spec-diskcode-
-; eviction.md, S10.B DESIGN INPUT 2). No record copy and no re-stage: the record
-; lives in the block, and FSECTOR_BUF is not this channel's.
-; 🧭 S10.D (2026-10-15): a RANDOM channel (mode 4) is the same FCB row, filled by
-; disk.rom's hk_frnd / hk_dget -- so the mirror below is its LOF too (the size,
-; +16) -- BUT ITS RECORD STILL TRAVELS: FIELD / LSET / RSET / fld_lookup and
-; GET / PUT all work on the live channel's record in FSECTOR_BUF, as before. So
-; mode 4 takes the mirror, then tfl_rec's copy (t_fch_load above; S10.C dropped
-; the re-stage that followed, a no-op for it).
-; 🧭 S10.C: an INPUT channel takes tfl_dout too -- LOF its size (+16); LOC stays
-; LOF's for it on main's side (expr.asm ev_ff_loc, D-LOCSEM's 26,26,26).
-tfl_dout:
-                pop     de                  ; DE = the block
-                call    tfl_mirror
+; eviction.md, S10.B DESIGN INPUT 2). S10.C / S10.D: INPUT and RANDOM rows are
+; the same FCB, so the mirror is their LOF too; LOC stays LOF's for INPUT on
+; main's side (expr.asm ev_ff_loc, D-LOCSEM's 26,26,26).
+t_fch_load:
+                push    hl                  ; the block
+                call    fch_engrow          ; HL = the channel's engine row; CF = none
+                pop     de                  ; DE = the block (pop keeps CF)
+                call    nc,tfl_mirror       ; a disk channel, any mode: DOUT_BLK, LOF, LOC
                 jp      fp_stash_ok
 ; tfl_mirror -- HL = the row, DE = the block: cache the block at DOUT_BLK, then
 ; LOF := the FCB's size (+16) and LOC := its random record (+33). Clobbers A,BC,DE,HL.
@@ -303,8 +287,9 @@ tfl_mirror:
                 ld      (de),a
                 ret
 
-; t_fch_save (D-FCBSHAPE S0): the engine globals -> channel context block at
-; HL. Was main's fch_save_active body, moved whole.
+; t_fch_save (D-FCBSHAPE S0, GONE since D-FLDDESC -- see its note below): the
+; engine globals -> channel context block at HL. Was main's fch_save_active
+; body, moved whole.
 ; 🗑️ D-MODE2DEAD (2026-10-07): IT USED TO FLUSH FIRST (fat_detach_channel) and
 ; report the flush's Cy/A/HL as its own result. Only a mode-2 channel -- OUTPUT
 ; through main's engine -- could be dirty, and none has been stored since S10.B
@@ -354,35 +339,10 @@ fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
                 db      2,$FC               ; 9 GRP: (D-OPENGRP: VARPTR(#1)+0 = 2,
                                             ; +4 = 252 on the VG-8020, round 5)
 
-t_fch_save:
-                ; D-MODE2DEAD (2026-10-07): no flush first any more -- only a mode-2
-                ; channel could be dirty, and none is stored. Nothing here can fail;
-                ; fch_save_active's three callers read no result.
-                ; S10.C (2026-10-15): nor any engine state -- every disk mode's row
-                ; is disk.rom's FCB now (INPUT was the last to keep main's globals),
-                ; so only RANDOM's record travels and the globals -> row LDIR is gone.
-                push    hl                  ; the block
-                call    fch_engrow          ; HL = the engine row; CF = no disk channel
-                jr      c,tfs_dout          ; D-FLOORREC: a device channel keeps no record here
-                cp      4-1
-                jr      nz,tfs_dout         ; INPUT / OUTPUT / APPEND: nothing of main's
-                                            ; S10.D: RANDOM's record travels (t_fch_load)
-tfs_rec:
-                pop     hl                  ; the block
-                ld      de,FCH_HDRSZ
-                add     hl,de
-                ex      de,hl               ; DE = the record, after the FCB header
-                ld      hl,FSECTOR_BUF      ; D-FIELDFIX: the record travels too
-                ld      bc,FCH_RECMAX
-                ldir
-                jr      tfs_end
-tfs_dout:
-                ; S10.B: a DOUT_MODE channel's state is all disk.rom's (the FCB in
-                ; the row, the record in the block). Copying main's globals over
-                ; the row, or FSECTOR_BUF over the record, would destroy both.
-                pop     hl                  ; the block
-tfs_end:
-                jp      fp_stash_ok
+; (t_fch_save -- GONE with D-FLDDESC, 2026-10-17; row 21 is `jp fp_stash_ok`.
+; D-MODE2DEAD had dropped its flush, S10.C its engine-state LDIR, and the last
+; thing it did -- RANDOM's record, FSECTOR_BUF -> block+9 -- has no source now:
+; the record lives in the block.)
 
 ; fch_engrow (D-FCBSHAPE S2): -> HL = DSK_ENGTAB + ch*FCH_STATESZ for the channel
 ; in FCH_ACTIVE, CF clear -- or CF set when that channel is not a DISK file (mode

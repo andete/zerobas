@@ -1,0 +1,20 @@
+== CF-3300
+   [f] 0 0
+   [d] 65801
+   [a] 65545 2
+   [b] 65547 3
+   [l] 65545 88
+   [u] 42064
+   [end] 
+== OURS
+   [f] 0 0
+   [d] 66201
+   [a] 65545 2
+   [b] 65547 3
+   [l] 65545 88
+   [u] 41947
+   [end] 
+   [f] FRE(0) and FRE("") spent by FIELD   [d] HIMEM - VARPTR(#1)
+   [a]/[b] descriptor pointer - VARPTR(#1), and its length byte
+   [l] after LSET: pointer - VARPTR(#1), first byte there   [u] after A$="Z"
+refcache: 0 hit, 2 miss, 2 stored

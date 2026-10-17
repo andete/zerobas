@@ -37,6 +37,12 @@ come with it, and the rows are unchanged by both: the file's size is the
 channel's FCB row (+16..19, IX), not main's FWR_BYTES; and GP_FLAGS is set by
 hk_dget, not by the engine (frnd_locate is trapped here, so nothing reads it).
 
+🏗️ D-FLDDESC (2026-10-17): THE RECORD IS THE CHANNEL BLOCK'S +9 NOW, not
+FSECTOR_BUF -- the engine reaches it through the row's cached block address
+(ROW + DOUT_BLK, rnd_rec), as the CF-3300 keeps it and as FIELD points a
+variable's descriptor into it. So the fixture plants a block (BLK) in the row and
+seeds / reads the record at BLK + FCH_HDRSZ; the sector images are unchanged.
+
 Clean-room: our own routines (disk/kernel.asm, disk/fat.asm), public FAT sector
 geometry.
 """
@@ -58,6 +64,8 @@ SECSIZE = 512
 DISK_ROM, DISK_SYM = tp("rand_straddle_disk.rom"), tp("rand_straddle_disk.sym")
 PHYS0 = 100                     # GP_PHYS = PHYS0 + GP_SEC, under the trap
 ROW = 0xD000                    # the channel's FCB row (IX): +16..19 = the size
+BLK = 0xC000                    # the channel's 265 B block (ROW + DOUT_BLK caches it)
+REC = BLK + 9                   # its record, block + FCH_HDRSZ (D-FLDDESC)
 
 
 def build():
@@ -116,6 +124,9 @@ def make_machine(disk):
     m.trap("fatprim_write_sector", write_sector)
     # the directory stamp is a separate concern with its own tests
     m.trap("fat_dir_update", lambda mm: mm.cpu.__setattr__("f", mm.cpu.f & ~0x01))
+    # D-FLDDESC: the row caches the channel's block; the record is its +9
+    m.poke_w(ROW + m.sym["DOUT_BLK"], BLK)
+    assert m.sym["FCH_RECMAX"] == 256 and REC - BLK == 9
     return m
 
 
@@ -150,7 +161,7 @@ def run():
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
         m.poke_w(s["GP_RECNO"], recno)
         set_size(m, 0)
-        m.poke(s["FSECTOR_BUF"], rec_bytes(recno, reclen))
+        m.poke(REC, rec_bytes(recno, reclen))
         model_put(want, recno, reclen)
 
         m.call("fat_rand_put", ix=ROW)
@@ -197,7 +208,7 @@ def run():
     set_size(m, 0)
     for recno in (5, 7, 6):
         m.poke_w(s["GP_RECNO"], recno)
-        m.poke(s["FSECTOR_BUF"], rec_bytes(recno, 100))
+        m.poke(REC, rec_bytes(recno, 100))
         m.call("fat_rand_put", ix=ROW)
         model_put(want, recno, 100)
     for sec, exp in sorted(want.items()):
@@ -230,9 +241,9 @@ def run():
         m.poke_w(s["FCH_RECLENS"] + CHAN * 2, reclen)
         m.poke_w(s["GP_RECNO"], recno)
         set_size(m, 0xFFFF)                       # far past the record: never EOF
-        m.poke(s["FSECTOR_BUF"], b"\x00" * reclen)
+        m.poke(REC, b"\x00" * reclen)
         m.call("fat_rand_get", ix=ROW)
-        got = bytes(m.peek(s["FSECTOR_BUF"], reclen))
+        got = bytes(m.peek(REC, reclen))
         exp = rec_bytes(recno, reclen)
         bad = [i for i in range(reclen) if got[i] != exp[i]]
         straddle = " [STRADDLE]" if ((recno - 1) * reclen) // SECSIZE \

@@ -42,16 +42,22 @@
 ; COLD ENOUGH. This runs once per LSET/RSET statement -- already downstream of
 ; the resident side's fch_select, which LDIRs a 512-byte record buffer whenever
 ; the channel changes. One CALSLT round trip (~100 T) is noise against that.
+; (D-FLDDESC, 2026-10-17: LSET no longer selects a channel at all -- a FIELDed
+; target's own descriptor points at its record -- so the round trip is now most
+; of the statement's fixed cost, and still cold: once per statement.)
 ;
 ; PAGE-0 CLEAN: RAM only. No BIOS call, no low-region call, no main page-1 call,
 ; no DATA target outside this file.
 
 ; --- lrset_store_tenant ----------------------------------------------------
-; in:  (LRSET_DEST)= the destination ADDRESS -- FSECTOR_BUF + the field's offset on
-;                    the FIELDed arm, the target variable's own heap body on the
-;                    non-FIELDed one (D-LRVAR, docs/spec-basic-lrvar.md §4.1)
-;      (LRSET_W)   = the destination width, 0..255. On the non-FIELDed arm this is
-;                    the target's CURRENT length, and a width of 0 is what makes an
+; in:  (LRSET_DEST)= the destination ADDRESS -- the target variable's own body
+;                    (D-LRVAR, docs/spec-basic-lrvar.md §4.1). Until D-FLDDESC
+;                    (2026-10-17) a FIELDed target had its own arm, FSECTOR_BUF +
+;                    the field's offset; now its descriptor points at its slice
+;                    of the record (block+9+offset), so its "own body" IS that.
+;      (LRSET_W)   = the destination width, 0..255 -- the target's CURRENT
+;                    length (a FIELDed one's is its field width), and a width
+;                    of 0 is what makes an
 ;                    UNSET target a NO-OP rather than a wild write through a body
 ;                    pointer that points at nothing (spec §4.3) -- the `jr z` and
 ;                    the `ret z` below are both load-bearing for that.
