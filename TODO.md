@@ -4629,7 +4629,8 @@ item — do **one item per session** to keep context lean.
       leave line 50 for the prompt by then) and only its final state flips, as
       recorded above; Ballblazer SAME -> RUNS? is a phase at the last dump (it was
       512 B apart at T300 in the morning too). ➡️ Next by evidence: BMX Simulator
-      leaves line 50 between T180 and T300 where the VG-8020 stays on it.
+      leaves line 50 between T180 and T300 where the VG-8020 stays on it -- 📏
+      LOCATED the same day: D-SLOT3EXP below (🙋, the machine's slot shape).
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -5246,6 +5247,30 @@ item — do **one item per session** to keep context lean.
       VG-8020 runs the game (session harness, summary_hfx). ➡️ Which allocation
       fails -- a CLEAR, a DIM, the stack -- and against which ceiling: compare
       the published pointer cells at line 30 on both machines (PTRWATCH).
+
+- [ ] 🙋 **D-SLOT3EXP — AN ALL-RAM GAME WRITES $FFFF, WHICH ON ZEROBAS IS SLOT 3's
+      SUB-SLOT REGISTER (BMX Simulator, 2026-10-17)**
+      🎚️ TIER 1 — happy path: loading existing software from tape.
+      🙋 **NEEDS-JOOST** — the machine's slot layout (a hardware-shape decision).
+      📏 Session harness (PCs, SP, A8, slot state, write ADDRESSES; never data):
+      BMX's line 50 BLOADs a 24 KB code file (EXECPTR $9000, no `,R` -- every
+      `,R` spelling behaves alike on both machines, scratchpad/blrform_run.out),
+      and by T300 the VG-8020 runs the game with A8 = $FF: all four pages on
+      slot 3, its RAM. zerobas returns to the prompt at 212 s and then sits in
+      its interrupt trampoline (SUB_INT_RAM, $F92D) re-entered on every
+      interrupt, the stack walking down through the hook area. At that point
+      A8 = $FF and $FFFF reads $00: slot 3's SUB-SLOT REGISTER is $FF, every
+      page on 3-3 (zerobas-sub2), so page 0 is our sub-ROM, not RAM. On the
+      VG-8020 slot 3 is NOT expanded and $FFFF is plain RAM; zerobas expands
+      slot 3 to host its sub-ROMs (3-2, 3-3), so a program that maps RAM
+      everywhere and then writes $FFFF -- a stack at the top, a memory fill --
+      rewrites the sub-slot register under itself.
+      ❓ The question: is a layout that keeps slot 3 an UNEXPANDED 64 KB RAM, as
+      the VG-8020 has it (the sub-ROMs moved -- e.g. slot 0 expanded instead,
+      with the BIOS / BASIC in 0-0), on the table? Space plan R4 asked about
+      a layout change for ROM space; this is the compatibility side of the same
+      shape. Until then: BMX Simulator stays a known difference, and any game
+      that sets A8 = $FF and writes $FFFF fails the same way.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10841,7 +10866,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36374 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36399 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11007,7 +11032,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15869 (T-6FE392)8 (T-529ABE)` from `TODO.md:28663 (T-529ABE)`: a
+      `TODO.md:15894 (T-6FE392)8 (T-529ABE)` from `TODO.md:28688 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16716,7 +16741,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28663 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

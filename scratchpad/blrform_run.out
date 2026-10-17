@@ -1,0 +1,10 @@
+ROW r       VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rlow    VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rsp     VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rsp2    VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rcolon  VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rnamed  VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rbare   VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW rofs    VG=[[ 90 ]] ZB=[[ 90 ]] SAME
+ROW plain   VG=[[ 0 ]] ZB=[[ 0 ]] SAME
+refcache: 0 hit, 18 miss, 18 stored
