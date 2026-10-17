@@ -5052,7 +5052,8 @@ item — do **one item per session** to keep context lean.
 - [ ] 🔧 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
       $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)** — ✅ **$0D12
       DONE 2026-10-17** (cbios-repack/bios-keyscan.patch #11); OPEN for Loopy
-      Laundry's $2010 / $18E8.
+      Laundry's $2010 / $18E8 -- 🙋 **NEEDS-JOOST (2026-10-17): $2010 IS FONT DATA**
+      (see the end of this block).
       🎚️ TIER 1 — happy path: two of the three tapes that still reset (D-TAPELOAD).
       🤖 **AUTONOMOUS** — ✅ RULED (Joost, 2026-10-16): *"yes"*: characterise each
       address black-box on the VG-8020 and put it at its address in the repacked
@@ -5111,6 +5112,35 @@ item — do **one item per session** to keep context lean.
       number of keys, wrapped" -- MISS (unwrapped low-byte difference); "zerobas
       also writes REPCNT" -- MISS (no cell differs); "both titles stop resetting"
       -- HIT.
+      🙋 **LOOPY LAUNDRY (2026-10-17) -- NEEDS JOOST: its chain EXECUTES THE FONT.**
+      📏 Measured (scratchpad/biosint2_probe.py: each address entered by a `ret`,
+      sixteen stack words all pointing at our landing code; session harness for
+      the tape, addresses / SP / registers and equality maps only):
+      - The planted chain is not a copy of the reference's own stack: the
+        VG-8020's live words at $F070-$F0BF mid-load and what the file leaves
+        there differ everywhere (equality map). Both machines `ret` into it from
+        SP $F08E (the VG-8020's SP throughout the load is $F08E).
+      - On the VG-8020 it ends at the BLOAD exec address: PC $EA60 at t=67.9 with
+        SP $F098, HL $EA60, BC 0, DE 7 -- so $2010, $18E8 and the hook cell $FED0
+        (a RET on both machines) each take one word, and $3002 pops the next
+        word into HL and jumps through it.
+      - **$2010 is inside the font**: CGPNT is slot 0 / $1BBF on both machines,
+        so $2010 is character 138's glyph, row 1. The VG-8020 runs the
+        reference's glyph bytes as code; entered by `ret` they take one word and
+        leave A = 0, B = 0, D = 0, L = 0, F = $54, E and C kept, and H = $01, or
+        kept when B = 2 (12 samples). zerobas's font is C-BIOS's: other bytes.
+      - $18E8 (BIOS code, one byte before C-BIOS's keyint at $18E9) takes one
+        word, enables interrupts (JIFFY +2 during it) and writes CLOC $0020 /
+        CMASK $0F, whatever the input; HL $0008, BC $0001, DE kept, F $41.
+      - $3002 is inside a math-pack routine (it touches DAC): it pops 3 or 4
+        words depending on its inputs and flags.
+      ❓ The question: matching Loopy Laundry needs the bytes the VG-8020 executes
+      at $2010 -- the reference's glyph for character 138 (at least the rows the
+      chain runs through), which zerobas's font would then have to carry (it would
+      also change how character 138 looks), plus an entry at $18E8 and a BASIC
+      pin at $3002 inside a math routine. Is copying those glyph bytes (observable
+      in VRAM, but ROM content) acceptable, or does Loopy Laundry stay a known
+      difference? Until then: not autonomous.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10706,7 +10736,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36239 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36269 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10872,7 +10902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15734 (T-6FE392)8 (T-529ABE)` from `TODO.md:28528 (T-529ABE)`: a
+      `TODO.md:15764 (T-6FE392)8 (T-529ABE)` from `TODO.md:28558 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16581,7 +16611,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28528 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28558 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

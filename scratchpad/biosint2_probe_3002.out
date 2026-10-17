@@ -1,0 +1,4 @@
+x3002  Philips_VG_8 [R 0 FFFF 0 700 0 D3F8 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x3002b Philips_VG_8 [R 0 D036 2 D036 0 D3F8 7788 99AA] F7F6:43>42 [N 1 ] Ok color   auto    goto    list    run
+x3002c Philips_VG_8 [R D036 44 0 D036 0 D3F6 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+refcache: 0 hit, 3 miss, 3 stored
