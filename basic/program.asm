@@ -820,7 +820,11 @@ rp_brk_run:
                 pop     hl                  ; HL = resume stmt ptr, intact
                 jp      rp_trapchk          ; dispatch now (do NOT break) -- `jp`:
                                             ; D-CURLIN's 16 B in derive_directf put
-                                            ; the backward span past -128 (+1 B)
+                                            ; the backward span past -128 (+1 B).
+                                            ; The shipping build is back in reach
+                                            ; (scratchpad/jr_mapper.py proposes it),
+                                            ; but with any switch off it is not:
+                                            ; `make switch-build-check` (D-JRSLICE3)
 rp_real_break:
                 ; 🔴 D-STOPEDGE (2026-09-16): THE BREAK IS EDGE-TRIGGERED ON THIS
                 ; PATH TOO. Measured against the VG-8020 with a 2 s hold
@@ -1086,7 +1090,7 @@ ex_stop:
                 rst    $10                ; past STOP token
                 call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
                 jr      c,es_set
-                jp      do_break            ; bare STOP -> record + "Break in <line>"
+                jr      do_break            ; bare STOP -> record + "Break in <line>"
 es_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state

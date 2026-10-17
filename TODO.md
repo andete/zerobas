@@ -3928,6 +3928,22 @@ item — do **one item per session** to keep context lean.
       argument), and the statement bases of IF / ON / PRINT # / INPUT / LOCATE /
       PSET-style argument lists.
 
+- [x] 💰 **D-JRSLICE3 — `jp` -> `jr` BEHIND THE LAST PINS (2026-10-17)** — ✅ main low
+      +2 B, page 1 +1 B (`make basic-reloc`).
+      🎚️ BUDGET — route 3 of the 2026-10-17 free-space review Joost asked for
+      ("another look at main rom page 0 and 1 free space").
+      `scratchpad/jr_mapper.py` proposed 11 sites. A byte saved BEHIND the last pin
+      of its region is free space; IN FRONT of a pin it only widens that pin's `ds`
+      pad (budget 4 B), and `tools/pin_plan.py` found no refill chunk of the right
+      size -- the four ahead of $6CF3 also pushed OPEN "CAS:"'s existing
+      `jr nz,oo_fail_syn` across the pad out of range. Taken: float-arith.asm
+      (widen_int_to), main.asm (cas_name_cut), program.asm ex_stop. 🔴 program.asm
+      rp_brk_run's `jp rp_trapchk` is in reach in the shipping build only: every
+      switched-off build failed `make switch-build-check`; it stays `jp` and its
+      comment says why. ➡️ The 8 front-of-pin sites become usable the day a change
+      ADDS bytes in front of their pin (convert them then instead of moving code).
+      🔮 "knife connectedness unchanged": HIT.
+
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -10998,7 +11014,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36531 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36547 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11164,7 +11180,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16026 (T-6FE392)8 (T-529ABE)` from `TODO.md:28820 (T-529ABE)`: a
+      `TODO.md:16042 (T-6FE392)8 (T-529ABE)` from `TODO.md:28836 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16873,7 +16889,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28820 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

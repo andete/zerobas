@@ -247,7 +247,7 @@ flt_neg:
 ; (TSV_NAME is CAS_WANT). CSAVE keeps calling tape_parse_name: its name is raw.
 tape_parse_cut:
                 call    tape_parse_name
-                jp      cas_name_cut
+                jr      cas_name_cut
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

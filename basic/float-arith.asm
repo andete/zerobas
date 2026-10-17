@@ -1713,7 +1713,7 @@ caddsub_widen_both:
                 call    widen_int_to
                 ld      hl,ARGB
                 ld      de,(FP_TMP_B)
-                jp      widen_int_to        ; tail call
+                jr      widen_int_to        ; tail call
 
 ; --- combine_add / combine_sub: ev_e's '+'/'-' sites. Two thin entry points
 ; sharing one body (FP_OPMODE, own scratch, 0=add/1=sub) — the int fast path
