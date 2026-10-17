@@ -5373,6 +5373,8 @@ item — do **one item per session** to keep context lean.
       pin at $3002 inside a math routine. Is copying those glyph bytes (observable
       in VRAM, but ROM content) acceptable, or does Loopy Laundry stay a known
       difference? Until then: not autonomous.
+      🅿️ **PARKED (Joost, 2026-10-17): "park for now as well, I need to think about
+      that".** Do not re-ask; it re-opens when Joost does.
 
 - [x] ✅ **D-CASDOT — A '.' ENDS A `dev:name` TAPE NAME, AS ON THE VG-8020
       (FIXED 2026-10-17)** — Harry Fox's line-50 load (D-TAPELOAD B2).
@@ -5498,6 +5500,18 @@ item — do **one item per session** to keep context lean.
       a layout change for ROM space; this is the compatibility side of the same
       shape. Until then: BMX Simulator stays a known difference, and any game
       that sets A8 = $FF and writes $FFFF fails the same way.
+      📏 **REAL MSX2s WITH AN EXPANDED SLOT 3 FAIL THESE TOO (2026-10-17, Joost asked
+      "how come these games work on an MSX2?")** -- the session tape harness, the
+      same tapes, openMSX's stock Philips NMS 8250 (MSX2: slot 3 expanded, sub-ROM
+      3-0, RAM mapper 3-2, disk 3-3; PCs, SP, A8 and $FFFF only): both load, then
+      BMX Simulator sits by T180 with A8 = $00 and SP walking down ($609C at T180,
+      $4B14 at T300, PC $0C48), Chuckie Egg in the interrupt entry ($0038, A8 $7D,
+      SP wandering) -- where the VG-8020 runs BMX's game by T300. 🔮 "they fail on a
+      real expanded-slot-3 MSX2 as on zerobas": HIT. So this is the known class of
+      MSX1 titles that only run where the RAM slot is NOT expanded, not a zerobas
+      defect as such; matching the VG-8020 needs its slot shape. The Panasonic
+      FS-A1 (RAM 3-0, zerobas's own shape) was not measured: it boots into its
+      firmware menu, not BASIC.
       📏 **Chuckie Egg is the same class** (2026-10-17, the slot state at each dump
       of ten divergent titles; on zerobas $FFFF reads the inverted register): its
       sub-slot register goes $8B / $B2 from T180 -- pages 2 and 3 off RAM -- and it
@@ -11121,7 +11135,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36654 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36668 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11287,7 +11301,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16149 (T-6FE392)8 (T-529ABE)` from `TODO.md:28943 (T-529ABE)`: a
+      `TODO.md:16163 (T-6FE392)8 (T-529ABE)` from `TODO.md:28957 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16996,7 +17010,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28943 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28957 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -32909,7 +32923,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       fill) SHIPPED 2026-09-28; ~~only the multi-match ruling (➡️ at the end) is left.~~
       🙋 **NEEDS-JOOST** — PARKED BY RULING (Joost, 2026-10-09: "stay error 5 for now"): the
       multi-match case keeps raising 5; nothing autonomous is left. Re-opens only
-      when Joost revisits it.
+      when Joost revisits it. 🅿️ Re-confirmed 2026-10-17: "copy to can remain parked".
       📏 **MEASURED 2026-09-28** ([`scratchpad/copywild_probe.py`](scratchpad/copywild_probe.py)):
       • ONE match — `COPY "A1.*" TO "E1.*"` copies A1.TXT to E1.TXT on the CF-3300
         (`[X1|OK]`, [`copywild_run.out`](scratchpad/copywild_run.out)); zerobas: 5.
