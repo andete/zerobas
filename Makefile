@@ -1090,6 +1090,14 @@ temp-root-check:
 	python3 tools/check_temp_root.py --selftest
 	python3 tools/check_temp_root.py
 
+# D-UNTRACKED (2026-10-17): every file the build reads -- each repack patch in
+# PATCHES, each `include` of a tracked source -- is tracked by git. cdaff14a
+# registered a new patch without committing it: every local gate was green (they
+# build the working tree) and CI, a fresh checkout, was red for eight commits.
+tracked-inputs-check:
+	python3 tools/check_tracked_inputs.py --selftest
+	python3 tools/check_tracked_inputs.py
+
 # --- shared-body-check: every `.inc` under basic/ and sub/ must be ASSEMBLED --
 # D-TRUNCLOAD's follow-up sweep. `deadcode-check` reasons about labels in an
 # assembled image, so an UNASSEMBLED source contributes none and is invisible to
@@ -4244,7 +4252,7 @@ clean:
         badfnum-characterize badfnum-acceptance \
         deffn-acceptance deffn-selftest probe-sides-selftest deffn-strict switch-build-check \
         msgexact-gate msgexact-relock preflight-check latch-check injector-check \
-        omsx-diag-teeth temp-root-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
+        omsx-diag-teeth temp-root-check tracked-inputs-check shared-body-check probe-reach-check citation-check todo-citation-check todo-marker-check deferral-pin-check error-alphabet-check filed-pin-check disk-mount-check \
         chokepoint-check banner-acceptance wall-literal-check hook-equate-check \
         patch-freshness-check tiers-md tiers-md-check gates clean
 
