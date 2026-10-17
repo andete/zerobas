@@ -4646,6 +4646,20 @@ item — do **one item per session** to keep context lean.
       against every VG dump); its T420 split was a transient at a screen change,
       the other way round at T445 -- not a defect by this reading. Elite and
       Space Shuttle write $FFFF from game code: D-SLOT3EXP candidates.
+      📏 **AND THE ONSETS ARE MOSTLY PHASE (2026-10-17):** Klax writes its three
+      diverging cells from the same PCs every frame on both machines, but zerobas
+      runs 40 ms (two frames) BEHIND -- the "same PC at T300 / T320" was the frame
+      loop coinciding -- and the frame-timed attract demo then parts (🔮 "a code
+      path differs": MISS); it never touches $FFFF after its loader's slot scan
+      (a read watch). Ninja 2 tracks at ~1070 B to T380, then from T400 shows a
+      screen 12 KB from every VG-8020 dump, in the SAME loop (PC $40DF / $40E2,
+      SP, VDP registers all equal): the demo's state moved on differently --
+      likely the same load-timing phase, unproven. Elite holds a steady ~3150 B
+      from T300 (and writes $FFFF: D-SLOT3EXP). **So D-TAPELOAD's corpus now holds
+      no located functional divergence that is not waiting on Joost** (D-BIOSINT's
+      font, D-SLOT3EXP's slot shape): what remains is load timing (zerobas's tape
+      load ends a few frames off the VG-8020's), steady SCREEN 1 font-sized gaps,
+      and titles that track.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -10916,7 +10930,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36449 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36463 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11082,7 +11096,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15944 (T-6FE392)8 (T-529ABE)` from `TODO.md:28738 (T-529ABE)`: a
+      `TODO.md:15958 (T-6FE392)8 (T-529ABE)` from `TODO.md:28752 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16791,7 +16805,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28738 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28752 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
