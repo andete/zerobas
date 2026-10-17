@@ -24,12 +24,29 @@ session and the loop resumes exactly where it stopped.
 - **D-TAPELOAD's corpus holds no located functional divergence that is not waiting on
   Joost**: the rest is load-timing phase (Klax two frames behind on identical code),
   SCREEN 1 font-sized gaps, titles that track (TODO D-TAPELOAD, 2026-10-17 notes).
-- **NEXT, by tier:** TIER 4, both ruled "match reference" and both REDESIGNS, not
-  shrinks -- the GOSUB frame 8 -> 7 B (self-describing frames with a type token,
-  RETURN walks the pool, as docs/reference-stack-frames.md measured) and
-  D-FREPLUS14 (FRE(0) from the live stack, the evaluator's stack use per construct
-  as the reference's: 6 B / paren level, 10 B / `1+` operand, ... -- measure every
-  construct first). Then TIER 5 / 6 by the table (`python3 tools/tier_table.py --all`).
+- **Landed 2026-10-17 later (each gated and pushed):** the GOSUB frame 8 -> 7 B
+  (8f8b9f39; NOT a redesign: prevGSP is a 1-B distance above prevFSP); D-FREPLUS14's
+  measurement + spec + Python model (all 44 depths); then **Joost's free-space review**
+  ("another look at main rom page 0 and 1 free space", then "do those 3 things"):
+  D-JRSLICE3 (6af7538d), D-FCHNUM (8e5222b3: dead stores + front-of-pin jr + a 16 B
+  refill), and **D-FLDDESC (31b05c91): FIELD points the variable's own descriptor into
+  the channel's record at block+9, as the CF-3300 does -- no table; main page 1
+  151 -> 379 B free over the day, sub page 0 29 -> 177 B.** Route 1 (cold code into
+  sub2) MEASURED THIN: the scout's closures were fall-through artefacts, and page-1
+  tenants cannot reach page-1 core nor page-0 tenants the low region.
+- **NEW RULINGS 2026-10-17 (Joost):** disk.rom owns FIELD; "if reference has a
+  location inside the non-disk region it uses, we should also use that"; and the
+  2026-09-27 "keep ours" on a fielded variable after its channel is closed and reused
+  is REVERSED to "Match the reference".
+- **PIN LESSONS (D-FCHNUM / D-FLDDESC):** bytes freed IN FRONT of a pin only widen its
+  pad -- refill them with pin_plan.py chunks from past $73E5, sited BEFORE any code
+  whose `jr`s reach back across the pad; $6CF3's "2 B pad" is the `jr` bridge, not a
+  `ds`. `make switch-build-check` catches a jr that only reaches in the shipping build.
+- **NEXT, by tier:** TIER 4 D-FREPLUS14 -- port scratchpad/frelive_model.py to a sub2
+  page-1 tenant (the spec: docs/spec-basic-frelive.md); main page 1 has room now.
+  S10.E residuals (TODO D-FCHNUM's NEXT line: AUTOEXEC into disk.rom + NAME, the
+  row-21 no-op crossing) are BUDGET. Then TIER 5 / 6 by the table
+  (`python3 tools/tier_table.py --all`).
 - **Lessons of the day (memory):** a new build input must be git-added BY NAME, and
   `gh run list` after a push (a-new-build-input-must-be-git-added); a knife whose cut
   leaves code dead is refused by check_dead_code (NOT SCORED -- blunt the test
