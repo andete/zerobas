@@ -1,0 +1,46 @@
+ok   (FRE(0))                     model   6 measured   6
+ok   ((FRE(0)))                   model  12 measured  12
+ok   (((FRE(0))))                 model  18 measured  18
+ok   0+FRE(0)                     model  10 measured  10
+ok   FRE(0)+0                     model   0 measured   0
+ok   1*FRE(0)                     model  10 measured  10
+ok   FRE(0)*1                     model   0 measured   0
+ok   0+1*FRE(0)                   model  20 measured  20
+ok   0+0+FRE(0)                   model  10 measured  10
+ok   0+(0+(0+FRE(0)))             model  42 measured  42
+ok   -(-FRE(0))                   model  18 measured  18
+ok   1-(1-FRE(0))                 model  26 measured  26
+ok   0 OR FRE(0)                  model   8 measured   8
+ok   (0=0)*0+FRE(0)               model  10 measured  10
+ok   ABS(FRE(0))                  model  10 measured  10
+ok   INT(ABS(FRE(0)))             model  20 measured  20
+ok   VAL(STR$(FRE(0)))            model  20 measured  20
+ok   2*FRE(0)/2                   model  10 measured  10
+ok   I%+FRE(0)-I%                 model  10 measured  10
+ok   S!+FRE(0)-S!                 model  12 measured  12
+ok   D#+FRE(0)-D#                 model  16 measured  16
+ok   E#*FRE(0)                    model  16 measured  16
+ok   A-K<FRE(0)                   model  18 measured  18
+ok   (A-K<FRE(0))=(0=0)           model  24 measured  24
+ok   -1 AND (A-K<FRE(0))          model  32 measured  32
+ok   0 XOR (A-K<FRE(0))           model  32 measured  32
+ok   (A-K<FRE(0)) MOD 2           model  24 measured  24
+ok   (A-K<FRE(0))\1               model  24 measured  24
+ok   (A-K<FRE(0))^1               model  24 measured  24
+ok   NOT(A-K<FRE(0))              model  30 measured  30
+ok   8 MOD ((A-K<FRE(0))-2)       model  38 measured  38
+ok   8\((A-K<FRE(0))-2)           model  38 measured  38
+ok   2^(A-K<FRE(0))               model  34 measured  34
+ok   1/((A-K<FRE(0))-2)           model  40 measured  40
+ok   0 EQV (A-K<FRE(0))           model  32 measured  32
+ok   -1 IMP (A-K<FRE(0))          model  32 measured  32
+ok   0=(A-K<FRE(0))               model  36 measured  36
+ok   0<>(A-K<FRE(0))              model  36 measured  36
+ok   -1>=(A-K<FRE(0))             model  36 measured  36
+ok   0<=(A-K<FRE(0))              model  36 measured  36
+ok   0>(A-K<FRE(0))               model  36 measured  36
+ok   R((A-K<FRE(0))+1)            model  42 measured  42
+ok   A%-K%<FRE(0)                 model  12 measured  12
+ok   VAL(""+STR$(FRE(0)))         model  22 measured  22
+
+44/44 rows match the model
