@@ -141,6 +141,14 @@ CASES = [
     # number be read: before the pool, zerobas had TWO candidate caps in that
     # program (TRAPSTK_MAX=6 and GOSUB_DEPTH=8) and "ERR 7 / Out of memory" was
     # the answer to both. This one measures the second on its own.
+    # 🎯 GOSUB 8 -> 7 B (2026-10-17): a GOSUB frame pushed INSIDE a handler is the
+    # only one whose gdelta is 3 (its trap's service record sits between FSP and
+    # GSP); the inner RETURN must bring GSP back to the handler's own frame, or
+    # the handler's RETURN neither pops its record nor re-enables the trap (C=0).
+    # Knives K-GS1 / K-GS2 (scratchpad/gosub7_knife.py) were MISSED by the whole
+    # trap battery until this row.
+    ("int.nest", twowindow("GOSUB720", "RESUME50") + ["720 RETURN"],
+     "a GOSUB nested inside the handler, then the handler RETURNs"),
     ("gos.leak", ["10 ONERRORGOTO800",
                   "20 N=0:E=0",
                   "30 GOSUB100",
@@ -163,6 +171,7 @@ PINNED = {
     "int.goto":    "1 0",
     "int.six":     "9 18",
     "gos.leak":    "12 0",
+    "int.nest":    "1 1",
 }
 # The rows whose FIRST number is the "the trap fired at all" guard. `int.six`
 # and `gos.leak` count something else in that column and are excluded by name,

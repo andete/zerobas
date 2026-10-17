@@ -802,7 +802,9 @@ agree on them either (4080 vs 3311). What is gated is the model.
 2. **D-FORRET's field survives under a new name.** The frame is
    `[CURLINE][resume][prevGSP][prevFSP]`; restoring `prevFSP` discards every
    `FOR` opened since the GOSUB. `prevGSP` is new and unavoidable — the GOSUB
-   frames are no longer contiguous.
+   frames are no longer contiguous. *(2026-10-17: `prevGSP` is now a one-byte
+   distance above `prevFSP` -- 0, or 3 under a trap record -- and the frame is
+   7 B, the reference's size; `basic/sysvars.inc` `GOSUB_FRAME`.)*
 3. **The trap record loses its `gsp` key.** It is pushed *after* its GOSUB frame,
    so it sits immediately below it and `TSP + TRAP_FRAME == GSP` *is* the match.
    `ret_frame`'s single `CSP := GSP + GOSUB_FRAME` then frees the frame, the

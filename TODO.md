@@ -6295,6 +6295,19 @@ item — do **one item per session** to keep context lean.
       `[82][var ptr 2][step sign][kind][step 8][limit 8][line 2][text ptr 2]`
       (25 B for every variable type). RETURN/NEXT must therefore SCAN for the
       token — the walk priced above is exactly the reference's shape.
+      ✅ **DONE 2026-10-17: THE GOSUB FRAME IS 7 B** -- not the priced redesign:
+      [CURLINE:2][resume:2][prevFSP:2][gdelta:1], prevGSP = prevFSP + gdelta.
+      FSP <= GSP always, and the only thing between them is ONE trap service
+      record (a trap pushes it right under its own GOSUB frame and moves FSP to
+      it), so gdelta is 0 or 3 -- "neither is derivable from the other" was true
+      of the words, not of their distance. basic/program.asm gosub_push (+5 B) /
+      ret_frame; fremops: GOSUB 7 / 14 on both (scratchpad/gosub7_fremops.out);
+      recursion depth 3561 -> 4069 against the VG-8020's 4084, the rest is the
+      frame margin (scratchpad/gosubedge_7b.out). 🔴 Knives K-GS1 / K-GS2 (gdelta
+      stored 0 / ignored) were MISSED by the whole trap battery
+      (scratchpad/gosub7_knife_run1.out); new trapsvc row `int.nest` (a GOSUB
+      inside the handler, then the handler's RETURN) reads 1 1 on all three, and
+      both knives redden it alone: 2/2 HIT (scratchpad/gosub7_knife.out).
       ✅ **RULED: match the reference, the 7 B frame** -- 2026-09-24 ("shrink ours
       only -> GOSUB 8 -> 7 B", LOOP-RESTART's 09-24 table) and re-confirmed
       2026-10-16 (*"we have to match reference"*; re-asked by mistake, this 🙋 had
@@ -10930,7 +10943,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36463 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36476 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11096,7 +11109,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15958 (T-6FE392)8 (T-529ABE)` from `TODO.md:28752 (T-529ABE)`: a
+      `TODO.md:15971 (T-6FE392)8 (T-529ABE)` from `TODO.md:28765 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16805,7 +16818,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28752 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28765 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

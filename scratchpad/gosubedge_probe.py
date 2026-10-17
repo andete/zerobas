@@ -27,7 +27,7 @@ CASES = {
 for name, prog in CASES.items():
     for m in ("C-BIOS_MSX1_EU_REPACK_NODISK", "Philips_VG_8020"):
         scr = omsx_repl.run_cases(m, [("direct", prog)], batch=False,
-                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0, run_gap=30.0)[0]
+                                  reset=("", "SCREEN 0:WIDTH 40"), step=3.0, run_gap=60.0)[0]  # 30 s ran out at ~4000 frames (2026-10-17)
         r = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)] if scr else ["<NO OUTPUT>"]
         keep = [x for x in r if x.startswith("[") or "rror" in x or "memory" in x or "GOSUB" in x]
         print(f"{name:6} {m:30} {' | '.join(keep) or '<nothing matched>'}", flush=True)

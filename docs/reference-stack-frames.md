@@ -87,14 +87,13 @@ stored.**
 zerobas keeps frames in its control pool (merged with the stack since
 D-SPMERGE) and links them instead of tagging them:
 
-- **GOSUB = 8 B:** `[CURLINE:2][resume:2][prevGSP:2][prevFSP:2]`
-  (`basic/sysvars.inc` `GOSUB_FRAME`). The two chain words replace the
-  reference's token and trap pointer; the trap service record lives separately
-  (`TRAP_FRAME`, 3 B).
-- **FOR = 11 B.** It stores values at the variable's own width instead of a
-  fixed 8 + 8.
+- **GOSUB = 7 B** (since 2026-10-17; 8 B before):
+  `[CURLINE:2][resume:2][prevFSP:2][gdelta:1]` (`basic/sysvars.inc`
+  `GOSUB_FRAME`). The previous GOSUB frame is `prevFSP + gdelta`; the trap
+  service record lives separately (`TRAP_FRAME`, 3 B).
+- **FOR = 25 B**, the reference's size (D-FORFLOAT).
 
-Matching GOSUB's 7 B therefore means adopting the reference's shape: a type
-byte instead of `prevGSP`, RETURN/NEXT walking the frames as above, and every
-frame kind (FOR, GOSUB, trap, FN) carrying its tag. The layout above is that
-shape, measured.
+This section used to conclude that matching GOSUB's 7 B meant adopting the
+reference's tagged, walked shape. It did not: the old frame's two chain words
+(`prevGSP`, `prevFSP`) are never more than one trap record (3 B) apart, so one of
+them became a one-byte distance from the other, and the linked design stays.

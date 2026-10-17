@@ -4344,13 +4344,22 @@ CTLLIM          equ     $F718   ; the pool's collision FLOOR = ARYEND+2 (2). Wri
 ; argues. 🔴 §14 measured that `MAXFILES` moves the reference's stack top too, so
 ; the dependency is faithful rather than an artefact -- but a `MAXFILES` with
 ; frames already live is a staleness window this cell does not close.
-GOSUB_FRAME     equ     8       ; [CURLINE:2][resume:2][prevGSP:2][prevFSP:2].
-                                ; prevGSP chains the GOSUB frames (they are no
-                                ; longer contiguous -- FOR frames interleave), and
-                                ; prevFSP is D-FORRET's field under its new name:
-                                ; restoring it discards every FOR opened since the
-                                ; GOSUB (docs/spec-basic-forret.md §4). Both are
-                                ; needed; neither is derivable from the other.
+GOSUB_FRAME     equ     7       ; [CURLINE:2][resume:2][prevFSP:2][gdelta:1].
+                                ; prevFSP is D-FORRET's field: restoring it
+                                ; discards every FOR opened since the GOSUB
+                                ; (docs/spec-basic-forret.md §4). The previous
+                                ; GOSUB frame (the chain -- FOR frames interleave)
+                                ; is prevFSP + gdelta: FSP <= GSP always, and the
+                                ; only thing that can sit between them is ONE trap
+                                ; service record (3 B), because a trap pushes its
+                                ; record right under its own GOSUB frame and moves
+                                ; FSP to it (basic/traps.asm) -- so gdelta is 0 or 3.
+                                ; 🎯 GOSUB 8 -> 7 B (2026-10-17, ruled "match the
+                                ; reference"): the reference's GOSUB frame is 7 B
+                                ; (docs/reference-stack-frames.md). It was 8 with a
+                                ; full prevGSP word, whose comment said "neither is
+                                ; derivable from the other" -- true of the WORDS,
+                                ; but the distance between them is one byte.
 TRAP_FRAME      equ     3       ; [prevTSP:2][idx:1] -- see TRAPSTK's retirement above
 SL_CEIL         equ     $F71A   ; store_line: the ceiling a store stays below (2 B)
 ; 🏗️ D-WSZERO S10 (2026-10-15): $F71C..$F73F is the PERSISTENT diskless set --

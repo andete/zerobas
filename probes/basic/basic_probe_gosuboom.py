@@ -53,7 +53,10 @@ ROWS = {
 
 def read(machine, prog):
     scr = omsx_repl.run_cases(machine, [("direct", prog)], batch=False,
-                              reset=("", "SCREEN 0:WIDTH 40"), step=3.0, run_gap=30.0)[0]
+                              reset=("", "SCREEN 0:WIDTH 40"), step=3.0, run_gap=60.0)[0]
+    # 30 -> 60 s (2026-10-17): with the 7-byte GOSUB frame `ret` recurses to ~4070
+    # frames before Out of memory, and zerobas had not printed by 30 s (an empty
+    # reading, not a divergence: scratchpad/gosubedge_7b.out reads it at 60 s).
     if not scr:
         return None
     lines = [scr[i:i + 40].strip() for i in range(0, len(scr), 40)]

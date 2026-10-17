@@ -1,0 +1,9 @@
+
+row            vg8020    cf3300        zb   what it asks
+int.nest          1 1       1 1       1 1   a GOSUB nested inside the handler, then the handler RETURNs
+
+int.nest     ok   all three '1 1'
+
+rows 1  pinned 8  red 0
+TRAPSVC: PASS
+refcache: 0 hit, 3 miss, 3 stored

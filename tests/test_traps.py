@@ -205,10 +205,16 @@ def t_check_traps_fire(fails):
     # the pushed GOSUB frame carries resume == STMT (bytes 2-3 of the frame)
     frame = m.peek(new_gsp, gframe)
     fails = check(fails, "frame resume ptr = STMT", frame[2] | (frame[3] << 8), STMT)
-    # D-FORRET under its new name: bytes 6-7 carry the FOR run's floor at push
+    # D-FORRET under its new name: bytes 4-5 carry the FOR run's floor at push
     # time, so the handler's RETURN discards whatever FOR frames it opened.
-    fails = check(fails, "frame records prevGSP", frame[4] | (frame[5] << 8), POOL_TOP)
-    fails = check(fails, "frame records prevFSP", frame[6] | (frame[7] << 8), seeded_fsp)
+    # 🎯 GOSUB 8 -> 7 B (2026-10-17): byte 6 is gdelta, and the previous GOSUB
+    # frame is prevFSP + gdelta. This test seeds GSP and FSP 25 B apart (a state a
+    # real run never reaches -- there the gap is 0 or one 3-B trap record), which
+    # still fits the byte, so the chain must come back exactly: POOL_TOP.
+    fails = check(fails, "frame records prevFSP", frame[4] | (frame[5] << 8), seeded_fsp)
+    fails = check(fails, "frame records gdelta", frame[6], POOL_TOP - seeded_fsp)
+    fails = check(fails, "prevFSP + gdelta = prevGSP",
+                  (frame[4] | (frame[5] << 8)) + frame[6], POOL_TOP)
     return fails
 
 

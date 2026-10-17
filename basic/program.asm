@@ -1536,7 +1536,9 @@ exa_stop:
                 jp      end_line_end        ; R-AU9: AUTO ends the line and the run
 
 ; --- gosub_push: push a bounds-checked GOSUB return frame (repack golf) -------
-; D-CTLPOOL: the 8-byte frame is [CURLINE:2][resume-ptr:2][prevGSP:2][prevFSP:2],
+; D-CTLPOOL: the frame is [CURLINE:2][resume-ptr:2][prevFSP:2][gdelta:1] -- 7 B as
+; the reference's (sysvars.inc GOSUB_FRAME: the previous GOSUB frame is prevFSP +
+; gdelta; it was an 8-byte [..][prevGSP:2][prevFSP:2] until 2026-10-17),
 ; taken from the control pool rather than a fixed array; resume = the token
 ; position to run when RETURN pops it. prevGSP chains the GOSUB frames (they are
 ; no longer contiguous -- FOR frames interleave with them), and prevFSP is
@@ -1559,10 +1561,16 @@ gosub_push:
                 call    ctl_put             ; [0..1] the line to resume in
                 pop     hl                  ; HL = resume ptr
                 call    ctl_put             ; [2..3] where in it
-                ld      hl,(GSP)
-                call    ctl_put             ; [4..5] prevGSP -- the frame chain
                 ld      hl,(FSP)
-                call    ctl_put             ; [6..7] prevFSP -- D-FORRET's field
+                call    ctl_put             ; [4..5] prevFSP -- D-FORRET's field
+                ex      de,hl               ; HL = the cursor, DE = FSP
+                push    hl
+                ld      hl,(GSP)
+                or      a
+                sbc     hl,de               ; GSP - FSP: 0, or 3 under a trap record
+                ld      a,l
+                pop     hl
+                ld      (hl),a              ; [6] gdelta -- the frame chain
                 ; 🎯 GSP AND FSP BOTH BECOME THE FRAME'S BASE, and the second one
                 ; is what D-CTLCROSS needs: FSP is the FOR run's FLOOR, so every
                 ; FOR frame opened BEFORE this GOSUB is now below it and invisible
@@ -1753,21 +1761,25 @@ ret_frame:
                 push    hl                  ; [saved CURLINE]
                 call    ctl_get
                 push    hl                  ; [resume ptr]
-                call    ctl_get
-                push    hl                  ; [prevGSP]
-                call    ctl_get
+                call    ctl_get             ; HL = prevFSP
                 ; D-FORRET, unchanged in meaning: restoring the FOR run's floor is
                 ; what discards the frames opened since this GOSUB. `RETURN <line>`
                 ; discards the same ones as a bare RETURN (row lnrt-forgline,
                 ; measured on both references), which is why BOTH arms pop here.
                 ld      (FSP),hl            ; prevFSP
+                ld      a,(de)              ; [6] gdelta
+                inc     de
                 ; 🎯 ONE STORE FREES THE WHOLE SUBTREE. DE has walked to
                 ; base+GOSUB_FRAME exactly, so this drops the frame, every FOR
                 ; opened since it, AND a trap service record if this RETURN is a
                 ; handler's -- all of them sit at lower addresses than DE.
                 ld      (CSP),de
-                pop     hl
-                ld      (GSP),hl            ; prevGSP -- the chain, not an offset
+                add     a,l                 ; prevGSP = prevFSP + gdelta (7-B frame)
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a
+                ld      (GSP),hl
                 pop     bc                  ; BC = resume ptr
                 pop     de                  ; DE = saved CURLINE
                 ret

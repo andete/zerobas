@@ -87,16 +87,23 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 None known in behaviour.
 
-The one rung not yet proven is **RAM usage**, and here there is a measured
-gap: each open `GOSUB` uses 8 bytes of free memory on zerobas and 7 on the
-VG-8020 (`FRE(0)` read inside a running program, 2026-09-26). Joost ruled on
-2026-09-27 that zerobas should *"shrink ours only"* — never use more than the
-reference. Taking the eighth byte out turned out to need a redesign of every
-kind of stack frame, and that price is back with him. Because of that byte, a
-runaway recursion reaches `Out of memory` at a smaller depth here (3561 calls
-against 4084 after `CLEAR 200`, [`gosubedge_after.out`](../../scratchpad/gosubedge_after.out)).
+The one rung not yet proven is **RAM usage**. Each open `GOSUB` now uses 7
+bytes of free memory, as on the VG-8020 (since 2026-10-17; it was 8). A
+runaway recursion still stops a little sooner here -- 4069 calls against 4084
+after `CLEAR 200` ([`gosubedge_7b.out`](../../scratchpad/gosubedge_7b.out)) --
+because zerobas keeps a slightly larger reserve for its own stack before it
+refuses a frame (256 bytes, the reference about 130).
 
 ## What we found, and how
+
+- **A `GOSUB` cost one byte more than on the reference** (fixed 2026-10-17).
+  zerobas's frame kept two pointers: the previous `FOR` floor and the previous
+  `GOSUB` frame. Between those two there is never more than one trap record
+  (3 bytes), so the second pointer became a one-byte distance from the first,
+  and the frame is 7 bytes. A runaway recursion now reaches 4069 calls instead
+  of 3561. The check that a `GOSUB` inside an `ON INTERVAL` handler still
+  returns correctly is the trap gate's `int.nest` row; the existing trap tests
+  did not notice when that one byte was cut.
 
 - **A `GOSUB` with little memory left was `Out of memory`, and a trapped
   overflow left its calls standing** (fixed 2026-10-16, D-GOSUBOOM). Head over

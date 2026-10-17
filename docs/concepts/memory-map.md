@@ -68,12 +68,14 @@ does (ceiling − file blocks − string space). The frames differ in size:
 
 | frame | VG-8020 | zerobas |
 |---|---|---|
-| one `FOR` | 25 bytes | 11 bytes |
-| one `GOSUB` | 7 bytes | 8 bytes |
+| one `FOR` | 25 bytes | 25 bytes |
+| one `GOSUB` | 7 bytes | 7 bytes |
 | inside a `DEF FN` call | 14 bytes | 13 bytes |
 
-([`fremops_run.out`](../../scratchpad/fremops_run.out), 2026-09-26.) So a
-program near the end of memory runs out at a different depth.
+([`gosub7_fremops.out`](../../scratchpad/gosub7_fremops.out), 2026-10-17; the
+`GOSUB` frame was 8 bytes until that day.) A program near the end of memory
+still runs out a few frames sooner here, because zerobas keeps a larger
+reserve for its own stack before it refuses a frame.
 
 ### What moves the boundaries
 

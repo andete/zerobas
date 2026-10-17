@@ -1,0 +1,12 @@
+op        ref A-B   zb A-B
+SAME for1           25       25
+SAME for2           50       50
+SAME gosub1          7        7
+SAME gosub2         14       14
+DIFF deffn          14       13
+SAME onerr           0        0
+SAME dimstr         41       41
+SAME dimdbl         96       96
+
+DIFF: 1/8
+refcache: 0 hit, 2 miss, 2 stored
