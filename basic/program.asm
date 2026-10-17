@@ -293,8 +293,7 @@ dl_ovf_report:
 ; only two readers of CURLINE+2 in this build and both take their DIRECTF branch
 ; first. Its value is 0 regardless, so even a missed gate could only print
 ; "in 0" rather than garbage.
-dir_line:       dw      dir_line + 2        ; [link] -> the word below
-                dw      0                   ; [lineno] = 0 == the $0000 end marker
+; 📌 dir_line's 4 B is a PIN REFILL in basic/field.asm since D-FCHNUM (2026-10-17).
 ; --- dl_bare: is the REPL keyword at (HL) FOLLOWED BY AN ARGUMENT? ------------
 ; 🔴 D-RUNARG. `is_cmd` matches when the next input byte is a DELIMITER -- end,
 ; SPACE or ':' -- which is exactly right for telling `RUN` from `RUNNER` and
@@ -370,7 +369,7 @@ ic_yes:
                 scf
                 ret
 
-run_kw:         db      "RUN",0
+; 📌 run_kw's 4 B is a PIN REFILL in basic/field.asm since D-FCHNUM (2026-10-17).
 
 ; (parse_lineno lives in basic/vars.asm since D-WSZERO S16: it refills bytes the stack
 ; parameter block freed in front of a pinned address)
@@ -1331,10 +1330,8 @@ err_mem         equ     err_mem_arr
 ; and no `jr`/`djnz` crosses its boundary. `ascii_read_lines`, its only caller,
 ; reaches it absolutely. Sited ABOVE the overflow guard, which has to stay the
 ; last thing in this block or it does not guard the bytes after it.
-arl_getbyte:
-                ld      hl,(ARL_GETBYTE)
-                jp      (hl)
-
+; 📌 arl_getbyte's 4 B body is a PIN REFILL in basic/files.asm since D-FCHNUM
+; (2026-10-17), ahead of oo_fail_syn.
 relink:
                 ld      c,LE_OP_RELINK      ; in C, as le_call_op passes it
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise

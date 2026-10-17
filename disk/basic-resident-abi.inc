@@ -85,18 +85,18 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-main_fat_mount equ 06453H   ; main's fat_mount
-main_fat_find equ 06457H   ; main's fat_find
-parse_disk_fcb equ 06516H
+main_fat_mount equ 06451H   ; main's fat_mount
+main_fat_find equ 06455H   ; main's fat_find
+parse_disk_fcb equ 06514H
 field_prologue equ 0734FH
 field_item equ 072F6H
 lrset_tgt equ 073BDH
 lrset_rhs equ 073E8H
 lrset_finish equ 073FFH
-fch_ctx_addr equ 06F82H
-disk_error equ 06B9AH
+fch_ctx_addr equ 06F7FH
+disk_error equ 06B96H
 read_line equ 045FEH
-fch_close_all equ 07074H
+fch_close_all equ 0706EH
 eval_int16_checked equ 0454DH
-fch_select equ 06FBAH
+fch_select equ 06FB4H
 raise_error equ 04329H

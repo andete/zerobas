@@ -3944,6 +3944,26 @@ item — do **one item per session** to keep context lean.
       ADDS bytes in front of their pin (convert them then instead of moving code).
       🔮 "knife connectedness unchanged": HIT.
 
+- [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL
+      (2026-10-17)** — ✅ main page 1 152 -> 168 B free (`make basic-reloc`).
+      🎚️ BUDGET — routes 2 and 3 of Joost's 2026-10-17 free-space review.
+      FCH_NUM ($F73A) had three stores in basic/files.asm and no reader anywhere
+      (basic/, sub/, sub2/, disk/, tools/, tests/, probes/; by name and address):
+      gone, 10 B. D-JRSLICE3's six front-of-pin `jr` sites taken, 6 B. Bytes freed in
+      front of a pin only widen its pad, so 8 B ahead of $6CF3 and 8 B ahead of $72D4
+      were REFILLED with chunks from past $73E5 (`tools/pin_plan.py` chunks():
+      basicint_play + arl_getbyte before oo_fail_syn; dir_line + run_kw after
+      fld_init_g's `jr`), each sited BEFORE the code whose `jr`s reach back across
+      the pad. 🔴 $6CF3's "2 B pad" in `pin_plan --check` is the `jr` bridge over the
+      pin, not a `ds` -- a 10 B fill made the `ds` negative. Pins 6/6, waste 4 of 4;
+      `make switch-build-check` 7/7. 🔮 "knife connectedness unchanged": HIT.
+      ➡️ NEXT on this route (the read-only S10.E map, 2026-10-17): RANDOM's record at
+      block+9 with LOF/LOC from the FCB row (~85 B page 1 + 133 B sub, est.), AUTOEXEC
+      into disk.rom + NAME on disk.rom's own fat_find (~51 B), then the FIELD table
+      into disk.rom -- 🏗️ Joost 2026-10-17: disk.rom OWNS it (diskless it is ERR 5),
+      and "if reference has a location inside the non-disk region it uses, we should
+      also use that": MEASURE the CF-3300's RAM around OPEN / FIELD / LSET / GET first.
+
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -11014,7 +11034,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36547 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36567 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11180,7 +11200,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16042 (T-6FE392)8 (T-529ABE)` from `TODO.md:28836 (T-529ABE)`: a
+      `TODO.md:16062 (T-6FE392)8 (T-529ABE)` from `TODO.md:28856 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16889,7 +16909,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28856 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

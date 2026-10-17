@@ -782,13 +782,11 @@ ERR_MSGTAB_N    equ     ($ - err_msgtab) / 2    ; codes 1..N are in the table
 ; it always did. No flag in RAM: an error raised mid-PLAY unwinds the stack and
 ; leaves nothing behind. Placed here, past every pin, so PLAY's 0-byte change
 ; ahead of them moves nothing (the first cut grew play.asm 2 B and broke them).
-basicint_play:
-                call    pl_args             ; HL = the game's "..." arguments
-bp_ret:
-                ret                         ; back to the game's `call $73E5`
-                                            ; (pl_exit lives in basic/strvar.asm since
-                                            ; D-WSZERO S14d: it refills the bytes the
-                                            ; INPUT$ rewrite freed ahead of $6CF3)
+; 📌 Its 4 B body (with bp_ret) is a PIN REFILL in basic/files.asm since D-FCHNUM
+; (2026-10-17), ahead of oo_fail_syn: still a fixed size, and still entered only
+; by the pinned `jp` and left by `ret`, so where it sits changes nothing it does.
+; (pl_exit lives in basic/strvar.asm since D-WSZERO S14d: it refills the bytes
+; the INPUT$ rewrite freed ahead of $6CF3.)
 
 ; --- D-VARTABADOPT (2026-10-15): a ,R program that loads a BASIC program ------
 ; Harry Fox's first file is machine code that loads its BASIC program itself and

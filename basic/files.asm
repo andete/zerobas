@@ -695,8 +695,6 @@ oo_done:
                 ; main's own channel engine, is no longer stored). The FCH_MODES
                 ; address math uses HL, so guard the text cursor (HL) that
                 ; exec_stmt needs to continue the line.
-                ld      a,e
-                ld      (FCH_NUM),a
                 ld      a,(FCH_MODE)
                 cp      2
                 jr      c,oo_storemode      ; 1 INPUT
@@ -730,6 +728,21 @@ oo_fail:
                 ; reading is disk.rom's: it parks 53 in DISKOP_ERR (hk_finp /
                 ; hk_fapp), and a mount / DSKIO fault parks its own code.
                 jp      disk_error
+; 📌 PIN REFILL (D-FCHNUM, 2026-10-17): 8 B moved here from past the $73E5 pin
+; (basic/missing.asm, basic/program.asm) to take back the 8 B D-FCHNUM and
+; D-JRSLICE3's front-of-pin `jr`s freed ahead of $6CF3. (Its "2 B pad" in
+; `pin_plan --check` is the `jr` bridge over the pin, not a `ds`: not refillable.)
+; Sited HERE, before oo_fail_syn,
+; not at the pad: the OPEN "CAS:" arm's `jr`s reach back across the pad to
+; oo_fail_syn / oo_fail_bfname, so its address must not move. Both are whole and
+; entered only by label (tools/pin_plan.py chunks()).
+basicint_play:                              ; the pinned $73E5's target (header:
+                call    pl_args             ; basic/missing.asm)
+bp_ret:
+                ret                         ; back to the game's `call $73E5`
+arl_getbyte:
+                ld      hl,(ARL_GETBYTE)
+                jp      (hl)
 oo_fail_syn:
                 xor     a
                 ld      (FCH_MODE),a
@@ -1564,7 +1577,6 @@ dc_all:
 ; the banner is printed.
 init_filechan:
                 xor     a
-                ld      (FCH_NUM),a
                 ld      (FCH_MODE),a
                 ld      (PRDEST),a
                 ld      (PRDEV),a           ; default PRINT# sink = disk file
@@ -1718,10 +1730,11 @@ fch_load_ctx:
                 ld      a,DISKOP_SEL_FCH_LOAD
                 jp      fatprim_bounce      ; ctx -> globals + record, re-stage
 
-; fch_sync_mirror — FCH_NUM = FCH_ACTIVE, FCH_MODE = FCH_MODES[FCH_ACTIVE].
+; fch_sync_mirror — FCH_MODE = FCH_MODES[FCH_ACTIVE]. (D-FCHNUM, 2026-10-17: it
+; also mirrored FCH_ACTIVE into FCH_NUM, a cell nothing has read since the
+; channel table replaced the single channel; the three stores are gone.)
 fch_sync_mirror:
                 ld      a,(FCH_ACTIVE)
-                ld      (FCH_NUM),a
                 call    fch_modes_ptr
                 ld      a,(hl)
                 ld      (FCH_MODE),a
@@ -2485,7 +2498,7 @@ dag_eof:
 dsk_ascii_drive:
                 ld      hl,dsk_agetbyte
                 ld      (ARL_GETBYTE),hl
-                jp      ascii_read_lines
+                jr      ascii_read_lines
 
     IF BASICINT_PINS
 ; 📌 REFILL FOR D-BASICINT'S $73AC PIN (S10.C, 2026-10-15). S10.C took 23 B out of

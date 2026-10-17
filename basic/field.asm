@@ -311,7 +311,15 @@ fld_gate_resume:                            ; C4 shared tail (2026-10-03): LSET/
 fld_init_g:
                 call    diskslot_test
                 ret     z
-                jp      fld_init
+                jr      fld_init
+; 📌 PIN REFILL (D-FCHNUM, 2026-10-17): 8 B of data moved here from basic/program.asm,
+; past the $73E5 pin, to take back what D-FCHNUM and D-JRSLICE3 freed ahead of
+; $72D4. Never executed (the `jr` above is unconditional); sited before exf_fits
+; because exf_fits's `jr z,exf_comma` reaches across the pad. dir_line's link is
+; self-relative, so it holds anywhere (header: basic/program.asm).
+dir_line:       dw      dir_line + 2        ; [link] -> the word below
+                dw      0                   ; [lineno] = 0 == the $0000 end marker
+run_kw:         db      "RUN",0
 
 exf_fits:
                 pop     hl

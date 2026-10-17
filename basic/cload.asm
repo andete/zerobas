@@ -855,7 +855,7 @@ cas_ascii_drive:
                 cp      3                   ; CF <=> not marked
                 ccf                         ; (the first cut returned THAT carry:
                 ret     nc                  ; every clean LOAD read `load error`)
-                jp      dpl_dio
+                jr      dpl_dio
 ; cal_gb_past -- cal_getbyte asked at the latched terminal EOF: answered here, no
 ; crossing, and MARKED (2 -> 3+): a reader that asks PAST the end never met the
 ; file's Ctrl-Z (cas_in_getbyte stops at it too), so the data stopped early.
@@ -909,7 +909,7 @@ cas_in_getbyte:
                 ; in the LINE INPUT # line; this read it as the end, 55
                 ; (basic_probe_casrbrk's ib8). arl_set_src re-installs this hook
                 ; at every INPUT #, so raising from here strands nothing.
-                jp      c,dpl_dio
+                jr      c,dpl_dio
                 cp      $1A
                 jr      z,cig_eof           ; Ctrl-Z -> end of file
                 or      a                   ; CF clear = valid byte (A = the byte)

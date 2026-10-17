@@ -469,7 +469,7 @@ str_inputd:
                 ; keyboard and join at sid_read. No channel, so no fch_check and
                 ; no fch_select -- there is nothing to select.
                 cp      ')'
-                jp      nz,sid_no
+                jr      nz,sid_no
                 inc     hl                  ; HL past ')'
                 push    hl                  ; guard the eval cursor; str_pub_ok pops
                 ld      hl,chget_getbyte
@@ -489,7 +489,7 @@ sid_fnum:
                 call    eval                ; DE = channel f; HL advanced
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,sid_no
+                jr      nz,sid_no
                 inc     hl                  ; HL past ')'
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
                                             ; `jp nc,str_eval_no` -- a PARSE-level
