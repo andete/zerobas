@@ -3872,6 +3872,41 @@ item — do **one item per session** to keep context lean.
       reading: FRE(0) counts down to the live stack as the VG-8020's does, and the
       evaluator's stack use per construct follows the reference's. 🤖 AUTONOMOUS,
       TIER 4 (an evaluator-shape project; measure per construct first).
+      📏 **PER-CONSTRUCT TABLE, MEASURED 2026-10-17**
+      ([`freshape_probe.py`](scratchpad/freshape_probe.py) ->
+      [`freshape_run.out`](scratchpad/freshape_run.out); every reading against a
+      plain `A=FRE(0)` in the same program, variables pre-created; zerobas reads 0
+      for every row but FN's 13). The reference's depth is ADDITIVE over what is
+      PENDING when FRE runs:
+      | construct | VG-8020 |
+      |---|---|
+      | each open `(` | 6 B |
+      | a pending arithmetic operator (`+ - * /`) | 10 B |
+      | a pending `OR` / `AND` / `XOR` | 8 B |
+      | a pending relational (`<`; `=` via `rel_eq`) | 18 B |
+      | `NOT`, unary minus | 6 B |
+      | an enclosing function call (ABS, INT, VAL, STR$ ...) | 10 B |
+      | a DEF FN call | 14 B (zerobas 13) |
+      | an operator already REDUCED (`FRE(0)+0`, `0+0+FRE(0)`) | 0 |
+      Checks: `0+(0+(0+FRE(0)))` = 3x10 + 2x6 = 42 ✓; `1-(1-FRE(0))` 26 ✓;
+      `-1 AND (A-K<FRE(0))` 8 + 6 + 18 = 32 ✓. The relational / logical rows use a
+      THRESHOLD reading (inside a FOR, a 25-B frame on both: B=(A-K<FRE(0)) flips
+      at K = 26 + depth), because their value is not FRE(0) itself. 🎯 **The
+      statement matters too: a PRINT reads 4 B MORE free than a LET (the LET holds
+      its target), a FOR start 2 B less** -- which is the old "18 B in one program,
+      14 in another" puzzle: the VG-8020 reads 18 below zerobas in a LET and 14 in
+      a PRINT.
+      ➡️ **DESIGN, from the table:** keep the hot evaluator untouched (a counter
+      there is a T5 cost on every expression) -- FRE(0) instead computes the
+      reference's depth AT THE CALL: a sub-ROM tenant re-scans the current
+      statement from its start to the FRE token, simulating the reference's
+      precedence (which operators, parens, functions are pending), and subtracts
+      the table's costs plus the statement's base. Still to measure first:
+      MOD / `\` / `^` / EQV / IMP / the other relationals as PENDING (right side),
+      string concatenation and string relationals, array subscripts
+      (`R(FRE(0))`-shaped contexts), multi-argument functions (MID$'s 2nd / 3rd
+      argument), and the statement bases of IF / ON / PRINT # / INPUT / LOCATE /
+      PSET-style argument lists.
 
 - [ ] 🧱 **D-ROMSIZE — BRING THE ROM FOOTPRINT TOWARD THE REFERENCE: ~2.2x ITS BASIC
       TODAY (Joost, 2026-10-14)**
@@ -10943,7 +10978,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36476 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36511 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11109,7 +11144,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15971 (T-6FE392)8 (T-529ABE)` from `TODO.md:28765 (T-529ABE)`: a
+      `TODO.md:16006 (T-6FE392)8 (T-529ABE)` from `TODO.md:28800 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16818,7 +16853,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28765 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28800 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
