@@ -1,0 +1,7 @@
+a00   Philips_VG_8 [R FC09 FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+aff   Philips_VG_8 [R FC0B FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+b01   Philips_VG_8 [R FC0A FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+c00   Philips_VG_8 [R FC0B FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+de    Philips_VG_8 [R FC0D FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+hl    Philips_VG_8 [R FC09 FBF0 FF 42] [N 0 ] Ok color   auto    goto    list    run
+refcache: 0 hit, 6 miss, 6 stored

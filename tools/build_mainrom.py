@@ -44,7 +44,7 @@ def sym_value(sym_path: str, label: str) -> int:
             return int(parts[-1].rstrip("Hh"), 16)
     raise SystemExit(f"label {label!r} not found in {sym_path}")
 
-BASIC_BASE = 0x2765   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
+BASIC_BASE = 0x2781   # relocated BASIC low boundary (BASIC_ORG in basic/main.asm)
 TOP = 0x8000
 TAPE_BIN_BASE = 0x00A5
 LPTOUT_VEC = (0x00A5, 0x00A8)      # C3 JP vector, target repointed to LPTOUT body

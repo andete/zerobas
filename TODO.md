@@ -4437,7 +4437,8 @@ item — do **one item per session** to keep context lean.
       D-BIOSREGS matched five C-BIOS register contracts its game code depends on;
       it plays the VG-8020's attract demo. Corpus (pick_martos, same list as the
       morning): SAME 15, RESET 3 (Buzz Off, Shark Hunter, Loopy Laundry), IOERR 1,
-      no title worse. 📏 **Buzz Off and Shark Hunter's reset LOCATED the same day**:
+      no title worse. ✅ **2026-10-17: Buzz Off and Shark Hunter RUN** (D-BIOSINT,
+      $0D12). 📏 **Buzz Off and Shark Hunter's reset LOCATED the same day**:
       both CALL the reference BIOS's internal $0D12, which is C-BIOS's reset on
       zerobas -- D-BIOSINT, a scope question for Joost. **Loopy Laundry**
       (pick_martos) -- LOCATED the same day, and it is the same class. Its second
@@ -5049,7 +5050,9 @@ item — do **one item per session** to keep context lean.
       (the demo changed, then it reset); "all contracts matched -> no reset" -- HIT.
 
 - [ ] 🔧 **D-BIOSINT — BUZZ OFF AND SHARK HUNTER CALL THE REFERENCE BIOS'S INTERNAL
-      $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)**
+      $0D12; ON ZEROBAS THAT ADDRESS IS C-BIOS'S RESET (2026-10-16)** — ✅ **$0D12
+      DONE 2026-10-17** (cbios-repack/bios-keyscan.patch #11); OPEN for Loopy
+      Laundry's $2010 / $18E8.
       🎚️ TIER 1 — happy path: two of the three tapes that still reset (D-TAPELOAD).
       🤖 **AUTONOMOUS** — ✅ RULED (Joost, 2026-10-16): *"yes"*: characterise each
       address black-box on the VG-8020 and put it at its address in the repacked
@@ -5080,6 +5083,34 @@ item — do **one item per session** to keep context lean.
       ➡️ If yes: characterise $0D12 black-box on the VG-8020 with our own calls
       (registers, the keyboard cells $FBE5-$FBFF and KEYBUF, PUTPNT / GETPNT),
       then a repack patch with the entry at $0D12.
+      ✅ **$0D12 DONE (2026-10-17).** 📏 Black-box (scratchpad/biosint_probe.py, our
+      stub under DI, the work area $F380-$FFFF diffed around the call): it is a
+      keyboard scan -- with 'A' held and OLDKEY row 2 set to "up" it queues `a`
+      at PUTPNT, advances PUTPNT and writes OLDKEY row 2 $BF, and changes no other
+      cell -- that returns A = low(PUTPNT) - low(GETPNT), UNWRAPPED ($DD for
+      GETPNT $FC15 / PUTPNT $FBF2), with the flags of that `sub`; HL = GETPNT;
+      DE = KEYBUF; BC = $00FF; IX, IY, BC' / DE' / HL' / AF' kept. HL is NOT HL
+      in + 13 (the first reading's coincidence: it follows GETPNT).
+      🔧 cbios-repack/bios-keyscan.patch: $0D12 `jp kscan` (+1 pad byte),
+      chkram's first instruction pair and `kscan` (push ix / save AF' / key_in /
+      ld hl,(GETPNT) / ld a,(PUTPNT) / sub l / ld c,$FF; key_in already ends
+      with DE = NEWKEY+11 = KEYBUF and B = 0) after vdp_bios. Nothing from $0D16
+      to the font pad moves; C-BIOS ends 28 B later, BASIC_ORG $2765 -> $2781 (the
+      constant swept through tools/ and tests/), and msg_redo (17 B, input.asm) +
+      flt_neg (11 B, float.asm) moved past the $3297 pin, whose pad stays 0
+      (pin_plan --check 6/6, 4 B of 4).
+      🧪 biosregs-acceptance + rows kscan / kscan3 / kscanw (A / BC / DE / HL /
+      IX), 10/10 SAME (scratchpad/biosint_gate.out). Knives K-KS1..5
+      (scratchpad/biosint_knife.out): IX not kept, A without the `sub`, C = 0,
+      $0D12 the reset again -- each reddens the three kscan rows only; HL =
+      PUTPNT reddens kscan3 / kscanw only (the empty row has GETPNT = PUTPNT):
+      5/5 HIT, restore SAME.
+      📼 Buzz Off and Shark Hunter: RESET -> RUNS?, both in the VG-8020's
+      attract demo at T300 (session harness).
+      🔮 Scored: "it is a key scan" -- HIT (from BC=$00FF and DE=KEYBUF); "A = the
+      number of keys, wrapped" -- MISS (unwrapped low-byte difference); "zerobas
+      also writes REPCNT" -- MISS (no cell differs); "both titles stop resetting"
+      -- HIT.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10675,7 +10706,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36208 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36239 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10841,7 +10872,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15703 (T-6FE392)8 (T-529ABE)` from `TODO.md:28497 (T-529ABE)`: a
+      `TODO.md:15734 (T-6FE392)8 (T-529ABE)` from `TODO.md:28528 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16550,7 +16581,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28497 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28528 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

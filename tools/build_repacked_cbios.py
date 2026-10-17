@@ -80,11 +80,19 @@ PATCHES = [
     # pays for CALATR's extra byte and LDIRVM's `ld c,b`. Code between LDIRMV and
     # CALATR moves down 1 byte; every pad and island stays where it was.
     os.path.join(REPO, "cbios-repack", "bios-regs.patch"),
+    # D-BIOSINT: $0D12 is the reference BIOS's keyboard-scan entry, which Buzz Off
+    # and Shark Hunter CALL; here it was chkram's first byte (the reset). $0D12
+    # becomes `jp kscan`; kscan (a key_in scan, then A = low PUTPNT - low GETPNT,
+    # HL = GETPNT, DE = KEYBUF, BC = $00FF, IX and AF' kept -- the VG-8020's
+    # answer, scratchpad/biosint_probe.py) and chkram's first instruction pair go
+    # after vdp_bios. Nothing from $0D16 to the font pad moves; C-BIOS ends 28 B
+    # later, at $2781, and BASIC_ORG / BASIC_BASE follow it.
+    os.path.join(REPO, "cbios-repack", "bios-keyscan.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "aa4b2f35b1baafd353f653c0a40ce62963a54ff3"
+REPACKED_SHA1 = "6cee0d67b9ccbf7c66ad7fd0018c35129b99c01a"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

@@ -13,7 +13,7 @@
 # tools/build_patches.py auto-detects openMSX's bundled copy or takes STOCK=<path>.
 #
 # THE SHIPPED BASIC IS zerobas-main-eu.ips/.bps -- the merged repack main ROM
-# (repacked C-BIOS EU + relocated BASIC $2765-$7FFF + tape), tracked at the repo root.
+# (repacked C-BIOS EU + relocated BASIC $2781-$7FFF + tape), tracked at the repo root.
 # It is NOT in `all` because REGENERATING it needs a C-BIOS source checkout
 # (CBIOS=<path>); `make release` does that, and is the maintainer's step before
 # committing the pair. APPLYING it needs no checkout at all -- the pristine ROM the
@@ -268,7 +268,7 @@ $(BUILD):
 # NOTE: there is no `build/basic.rom` rule any more. It built the lean 16 KB
 # page-1-only cartridge, retired in full on 2026-07-29 (RETIRE THE LEAN 16 KB
 # CART, docs/spec-lean-retire-s3-gates.md) together with the 284 `IF ROM_BASE`
-# gates that selected it. $(SRC) now assembles the one $2765-based image.
+# gates that selected it. $(SRC) now assembles the one $2781-based image.
 
 $(DISK_ROM): $(DISK_SRC) $(DISK_PARTS) disk/basic-resident-abi.inc | $(BUILD)
 	$(PASMO) -I disk --bin $(DISK_SRC) $(DISK_ROM) $(DISK_SYM)
@@ -387,7 +387,7 @@ subrom-abi-check: sub/basic-resident-abi.inc $(RELOC_SYM)
 # PAGE-0 (--page0): a page-0 tenant (detok/arrays/strheap/printusing) runs with
 # slot-0 page 0 (BIOS + low region + ISR) switched OUT, so it must reach only
 # sub-local page-0 code / main page-1 / RAM -- never the main low region
-# ($2765-$3FFF), the BIOS, or the sub's own page 1. PAGE-1 TENANT WALK
+# ($2781-$3FFF), the BIOS, or the sub's own page 1. PAGE-1 TENANT WALK
 # (--page1, added for the CALL FORMAT eviction, docs/spec-evict-call-format.md
 # §6): the mirror of --page0 -- walks the SUB call graph from sub_p1_table
 # (fp_sqrt..fp_rnd, format_tenant) and fails on a callee that is main-BASIC
@@ -401,7 +401,7 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 
-# Assemble the $2765-based image ($(SRC)) and prove it lands the "AB" header at
+# Assemble the $2781-based image ($(SRC)) and prove it lands the "AB" header at
 # $4000 and spans the region it claims. This is a proof/staging target only --
 # deliberately NOT in `all`; the merged main-ROM splice that ships it is WS-3 (S4).
 # See docs/cbios-repack-ws2-audit.md.
@@ -726,7 +726,7 @@ diskdep-selftest:
 	python3 tools/check_disk_deps.py --selftest
 
 # --- Merged repack main ROM (WS-3 / D4) ---------------------------------------
-# The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2765-$7FFF) +
+# The 32 KB slot-0 "main ROM": repacked C-BIOS + relocated BASIC ($2781-$7FFF) +
 # tape, built reproducibly from the user's C-BIOS checkout (CBIOS=<path>; no
 # C-BIOS bytes in-repo). NOT in `all` -- it needs that external checkout. The
 # patch pair diffs the merged image vs the pristine stock from the same pinned tag.
@@ -922,7 +922,7 @@ bdos-acceptance: $(DISK_ROM)
 # No coverage was lost -- all 34 already passed on repack (S1 §5). The alias below keeps
 # the old target name working for one arc.
 #
-# The merged repack ROM (build/zerobas-main-eu.rom — relocated BASIC $2765-$7FFF,
+# The merged repack ROM (build/zerobas-main-eu.rom — relocated BASIC $2781-$7FFF,
 # STRMAX=64, concat-aware str_eval, relocated kwtable) runs against the SAME CF-3300
 # oracle. Mechanism: an EXTRA machine file (repack-machine) plus the probes' MANDATORY
 # machine name — every probe's zerobas-BASIC machine reads $ZEROBAS_BASIC_MACHINE and has

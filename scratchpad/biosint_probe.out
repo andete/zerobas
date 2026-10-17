@@ -1,0 +1,11 @@
+game  Philips_VG_8 [R FBF6 FBF0 FF 42 7788 99AA E1E2 D1D2 B 1B2 A55A] [N 0 ] [PFBF6FBF6] 310D52554E0D31372C3132382C3232322C312C31 32382C31322C3233372C3137362C3235312C3230 Ok color   auto    goto    list    run
+game  C-BIOS_MSX1_ [R FBF6 FBF0 FF 42 7788 99AA E1E2 D1D2 B 1B2 A55A] color   auto    goto    list    run
+keyA  Philips_VG_8 [R FBFA FBF0 FF 102 7788 99AA E1E2 D1D2 B1B2 A55A] F3F8:FA>FB FBDC:FF>BF FBFA:D>61 [N 3 ] [PFBFAFBFA] 2C3230310D52554E0D610D313038204441544120 312C3132382C31322C3233372C3137362C323531 Ok aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaa color   auto    goto    list    run
+keyA  C-BIOS_MSX1_ [R FBFA FBF0 FF 102 7788 99AA E1E2 D1D2 B1B2 A55A] F3F8:FA>FB color   auto    goto    list    run
+buf3  Philips_VG_8 [R FBF0 FBF0 FF 302 7788 99AA E1E2 D1D2 B1B2 A55A] [N 0 ] [PFBF3FBF0] 33372C3137362C3235312C3230310D52554E0D38 2044415441203232322C312C3132382C31322C32 Ok 37, color   auto    goto    list    run
+buf3  C-BIOS_MSX1_ [R FBF0 FBF0 FF 302 7788 99AA E1E2 D1D2 B1B2 A55A] color   auto    goto    list    run
+bufwrap Philips_VG_8 [R FC15 FBF0 FF DD9A 7788 99AA E1E2 D1D2 B1B2 A55A] [N 0 ] [PFBF2FC15] 372C3137362C3235312C3230310D52554E0D3820 44415441203232322C312C3132382C31322C3233 Ok ,237, color   auto    goto    list    run
+bufwrap C-BIOS_MSX1_ [R FC15 FBF0 FF DD9A 7788 99AA E1E2 D1D2 B1B2 A55A] color   auto    goto    list    run
+buffull Philips_VG_8 [R FBF5 FBF0 FF FFBB 7788 99AA E1E2 D1D2 B1B2 A55A] [N 0 ] [PFBF4FBF5] 33372C3137362C3235312C3230310D52554E0D38 2044415441203232322C312C3132382C31322C32 Ok 6,251,201 RUN Syntax error in 6 Ok 8 DATA 222,1,128,12,237,1 color   auto    goto    list    run
+buffull C-BIOS_MSX1_ [R FBF5 FBF0 FF FFBB 7788 99AA E1E2 D1D2 B1B2 A55A] color   auto    goto    list    run
+refcache: 2 hit, 8 miss, 8 stored

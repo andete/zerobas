@@ -13,7 +13,7 @@
 widen_rhs_operand equ 0380EH
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
-pu_deref_body equ 02853H
+pu_deref_body equ 0286FH
 subrom_call equ 03ABBH
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)

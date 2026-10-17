@@ -97,8 +97,8 @@ PINS = [
 ]
 
 SRC = "basic/main.asm"
-BASE, TOP = 0x2765, 0x8000
-REGIONS = (("low", 0x2765, 0x4000, "__MEAS_LOW_END"),
+BASE, TOP = 0x2781, 0x8000
+REGIONS = (("low", 0x2781, 0x4000, "__MEAS_LOW_END"),
            ("page1", 0x4000, 0x8000, "__MEAS_PAGE1_END"))
 SHARING_TREES = ("sub", "sub2", "disk")
 

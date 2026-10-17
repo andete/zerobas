@@ -35,7 +35,7 @@ sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
 
-BASIC_BASE = 0x2765
+BASIC_BASE = 0x2781
 ROM = tp("zb_ctlreloc.rom")
 SYM = tp("zb_ctlreloc.sym")
 

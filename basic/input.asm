@@ -456,7 +456,11 @@ inp_store:                                  ; A = the type (inp_num / inu_got)
 
 ; D-MSGENC (§4.2): no phrase hit in either, but both shed the baked CRLF, which
 ; print_msg now emits. Their two print sites below move to print_msg with them.
-msg_redo:       db      "?Redo from start",0    ; 19 B -> 17 B
+; msg_redo -- MOVED to the end of the low region (basic/main.asm, D-BIOSINT
+; 2026-10-17): the repacked C-BIOS grew 28 B ($0D12's keyboard-scan entry),
+; BASIC_ORG followed it to $2781, and these 17 B of data -- read only by the
+; absolute `ld hl` above -- went past the $3297 pin with float.asm's flt_neg
+; (11 B), so its pad stays 0 (tools/pin_plan.py's exact fill).
 msg_extra:      db      "?Extra ignored",0      ; 17 B -> 15 B
 
 ; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/arrays.asm, whole and

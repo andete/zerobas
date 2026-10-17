@@ -30,7 +30,7 @@ from msxtest import Machine  # noqa: E402
 
 ROM = tp("zb_bridgestack.rom")
 SYM = tp("zb_bridgestack.sym")
-RELOC_BASE = 0x2765
+RELOC_BASE = 0x2781
 SETSRC = 0xC300     # source descriptor [len][ptr]
 BODY = 0xC500       # its body
 CALLER_SP = 0xF360  # the caller's stack pointer at the call

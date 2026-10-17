@@ -38,7 +38,7 @@
 ; Defined BEFORE sysvars.inc, which sites the string-engine RAM layout (STRMAX /
 ; STRSCR / the temp ring — see sysvars.inc "string-variable store" and
 ; docs/spec-basic-string-engine.md §5).
-BASIC_ORG:      equ     $2765
+BASIC_ORG:      equ     $2781
 
 ; SUB_BUILD distinguishes this main-ROM assembly from sub/sub.asm, which shares
 ; several body .inc files with it (bload-body.inc's ,R handoff differs by side).
@@ -220,6 +220,23 @@ clr_prep:
 clr_commit:
                 ld      hl,(CLR_SAVE)
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
+                ret
+
+; From in front of the $3297 pin (D-BIOSINT, 2026-10-17): the repacked C-BIOS
+; grew 28 B ($0D12's keyboard-scan entry) and BASIC_ORG with it, so exactly
+; 28 B had to leave that stretch -- tools/pin_plan.py's exact fill, two whole
+; chunks entered only by label, with no `jr` across their edges.
+; msg_redo, from basic/input.asm: data, read by `ld hl,msg_redo` only.
+msg_redo:       db      "?Redo from start",0    ; 19 B -> 17 B
+
+; --- flt_neg (from basic/float.asm): flip FAC's sign bit (value-0 lead byte is
+; exempt) -----------------------------------------------------------------------
+flt_neg:
+                ld      a,(FAC)
+                or      a
+                ret     z
+                xor     $80
+                ld      (FAC),a
                 ret
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.

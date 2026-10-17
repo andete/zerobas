@@ -376,14 +376,9 @@ flt_to_int16:
                 ld      (CVT_MODE),a
                 jp      domain_convert_core
 
-; --- flt_neg: flip FAC's sign bit (value-0 lead byte is exempt) -----------
-flt_neg:
-                ld      a,(FAC)
-                or      a
-                ret     z
-                xor     $80
-                ld      (FAC),a
-                ret
+; flt_neg -- MOVED to the end of the low region (basic/main.asm, D-BIOSINT
+; 2026-10-17), with input.asm's msg_redo: 28 B left the stretch in front of the
+; $3297 pin when the repacked C-BIOS grew 28 B and BASIC_ORG with it.
 
 ; --- flt_int_result: FACTYP := 2 (int). Clobbers A only. -------------------
 ; Called at the tail of every FUNCTION factor that returns an int after its

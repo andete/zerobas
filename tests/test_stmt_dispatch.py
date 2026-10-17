@@ -250,7 +250,7 @@ EXPECTED = [
 
 
 BUF = 0xC000            # the statement buffer exec_stmt is pointed at
-RELOC_BASE = 0x2765
+RELOC_BASE = 0x2781
 
 
 def build(src_name, rom, sym):

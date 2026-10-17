@@ -1,0 +1,7 @@
+K-KS1: diverging ['kscan', 'kscan3', 'kscanw']; predicted ['kscan', 'kscan3', 'kscanw'] -> HIT
+K-KS2: diverging ['kscan', 'kscan3', 'kscanw']; predicted ['kscan', 'kscan3', 'kscanw'] -> HIT
+K-KS3: diverging ['kscan', 'kscan3', 'kscanw']; predicted ['kscan', 'kscan3', 'kscanw'] -> HIT
+K-KS4: diverging ['kscan3', 'kscanw']; predicted ['kscan3', 'kscanw'] -> HIT
+K-KS5: diverging ['kscan', 'kscan3', 'kscanw']; predicted ['kscan', 'kscan3', 'kscanw'] -> HIT
+restored: build rc=0; SAME
+rc=0

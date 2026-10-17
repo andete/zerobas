@@ -50,7 +50,7 @@ from msxtest import Machine, carry, zero  # noqa: E402
 
 ROM = tp("zb_input.rom")
 SYM = tp("zb_input.sym")
-RELOC_BASE = 0x2765
+RELOC_BASE = 0x2781
 
 
 def build():

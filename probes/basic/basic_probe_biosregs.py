@@ -17,6 +17,14 @@ and cbios-repack/bios-regs.patch:
                   -- a chunked VRAM -> RAM copy wrote every chunk to one place
   LDIRVM ($005C)  BC = 0; C-BIOS $0098
   DCOMPR ($0020)  A = H - D, or L - E when H = D; C-BIOS left H (or L)
+  $0D12           (D-BIOSINT, 2026-10-17) the reference BIOS's internal keyboard
+                  scan, which Buzz Off and Shark Hunter CALL; C-BIOS had its reset
+                  there (cbios-repack/bios-keyscan.patch). It scans the matrix, then
+                  returns A = low(PUTPNT) - low(GETPNT) (unwrapped), HL = GETPNT,
+                  DE = KEYBUF, BC = $00FF, and keeps IX (scratchpad/biosint_probe.py
+                  also has a held key, IY and the alternate set). The kscan rows set
+                  GETPNT / PUTPNT under DI just before the call, print IX as well, and
+                  empty the buffer afterwards so BASIC reads no stray characters.
 
 Each row is OUR stub: BC/DE/HL/A loaded, the entry called, then HL/DE/BC/A stored
 and printed. F is not compared: neither machine's flags after these calls are a
@@ -38,24 +46,34 @@ import omsx_repl  # noqa: E402
 MACHINES = (("VG", "Philips_VG_8020"), ("ZB", "C-BIOS_MSX1_EU_REPACK_NODISK"))
 
 
-def stub(addr, a, bc, de, hl):
+def stub(addr, a, bc, de, hl, buf=None):
     # ld bc / ld de / ld hl / ld a / call addr / ld ($D100),hl / ld ($D102),de /
     # ld ($D104),bc / ld ($D106),a / ret
-    return [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
+    body = [0x01, bc & 255, bc >> 8, 0x11, de & 255, de >> 8, 0x21, hl & 255, hl >> 8,
             0x3E, a, 0xCD, addr & 255, addr >> 8,
             0x22, 0x00, 0xD1, 0xED, 0x53, 0x02, 0xD1, 0xED, 0x43, 0x04, 0xD1,
-            0x32, 0x06, 0xD1, 0xC9]
+            0x32, 0x06, 0xD1]
+    if buf is None:
+        return body + [0xC9]
+    get, put = buf
+    # di / GETPNT ($F3FA) and PUTPNT ($F3F8) set / ld ix,$7788 / <body> /
+    # ld ($D108),ix / PUTPNT := GETPNT (the buffer emptied) / ei / ret
+    return ([0xF3, 0x21, get & 255, get >> 8, 0x22, 0xFA, 0xF3,
+             0x21, put & 255, put >> 8, 0x22, 0xF8, 0xF3, 0xDD, 0x21, 0x88, 0x77] + body
+            + [0xDD, 0x22, 0x08, 0xD1, 0x2A, 0xFA, 0xF3, 0x22, 0xF8, 0xF3, 0xFB, 0xC9])
 
 
-def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after=""):
-    s = stub(addr, a, bc, de, hl)
+def prog(addr, a=0, bc=0x1122, de=0x3344, hl=0x5566, before="", after="", buf=None):
+    s = stub(addr, a, bc, de, hl, buf)
+    ix = ';" IX";HEX$(PEEK(&HD109)*256+PEEK(&HD108))' if buf else ""
     return ["NEW",
             "10 CLEAR 200,&HCFFF" + (":" + before if before else ""),
             f"20 FOR I=0 TO {len(s) - 1}:READ X:POKE &HD000+I,X:NEXT",
             "30 DEFUSR=&HD000:Q=USR(0)" + (":" + after if after else ""),
             '40 S$="":FOR I=0 TO 2:S$=S$+" "+HEX$(PEEK(&HD101+2*I)*256+PEEK(&HD100+2*I)):NEXT',
-            '50 PRINT"[R";S$;" A";HEX$(PEEK(&HD106));"]"',
-            "60 DATA " + ",".join(str(b) for b in s),
+            '50 PRINT"[R";S$;" A";HEX$(PEEK(&HD106))' + ix + ';"]"',
+            "60 DATA " + ",".join(str(b) for b in s[:40]),
+            *(["70 DATA " + ",".join(str(b) for b in s[40:])] if len(s) > 40 else []),
             "RUN"]
 
 
@@ -69,6 +87,10 @@ ROWS = {
     "ldirmv": prog(0x0059, 0, bc=4, de=0xD200, hl=0x3F00),
     "dcmp_h": prog(0x0020, 0, de=0x1800, hl=0x1700),               # H != D: A = H - D
     "dcmp_l": prog(0x0020, 0, de=0x1834, hl=0x1812),               # H = D: A = L - E
+    # $0D12 with Buzz Off's registers (A=$FE BC=$1002 DE=0 HL=$FBFE); GETPNT, PUTPNT:
+    "kscan": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFBF6, 0xFBF6)),  # empty
+    "kscan3": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFBF0, 0xFBF3)),
+    "kscanw": prog(0x0D12, 0xFE, bc=0x1002, de=0, hl=0xFBFE, buf=(0xFC15, 0xFBF2)),  # wrapped
 }
 
 

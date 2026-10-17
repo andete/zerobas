@@ -220,8 +220,8 @@ Windows install locations), or pass `STOCK=<path>`. ROMs land in the gitignored
 On a real machine BASIC sits in **slot 0 page 1 (`$4000-$7FFF`), right next to the
 BIOS in page 0**, as one ROM. C-BIOS has no BASIC, so it leaves that space free —
 which is exactly the space zerobas is built for, and then some: zerobas also
-reclaims `$2765-$3FFF` from C-BIOS's page 0, so the shipped image spans
-`$2765-$7FFF`. Code that does not fit there lives in a **sub-ROM** in slot 3-2
+reclaims `$2781-$3FFF` from C-BIOS's page 0, so the shipped image spans
+`$2781-$7FFF`. Code that does not fit there lives in a **sub-ROM** in slot 3-2
 ([`sub/`](sub/)), and Disk BASIC in its own **disk ROM** in slot 3-1
 ([`disk/`](disk/)) — the same places a real MSX keeps them.
 

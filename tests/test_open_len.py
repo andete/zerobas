@@ -51,7 +51,7 @@ from msxtest import Machine  # noqa: E402
 # test pokes are the very addresses the ROM reads.
 # The two halves live in DIFFERENT ROMs, so this test builds both.
 DISK_BASE = 0x4000    # disk.rom is mapped at $4000
-BASIC_BASE = 0x2765   # the shipped BASIC image's org
+BASIC_BASE = 0x2781   # the shipped BASIC image's org
 
 DISK_ROM = tp("zb_openlen_disk.rom")
 DISK_SYM = tp("zb_openlen_disk.sym")

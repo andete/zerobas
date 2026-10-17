@@ -68,14 +68,15 @@ is where a real MSX keeps BASIC. zerobas ships as a patch against a stock
 C-BIOS ROM (`zerobas-main-eu.ips` / `.bps`), never as a copy of it, so the two
 stay separate trees ([README](../../README.md), *How it runs*). The patch:
 
-- puts the interpreter at `$2765`–`$7FFF`. The part below `$4000` was C-BIOS's
+- puts the interpreter at `$2781`–`$7FFF`. The part below `$4000` was C-BIOS's
   own, freed by removing its placeholder BASIC code and two boot messages
   zerobas can never print;
 - puts more BASIC code into four runs of padding inside C-BIOS ("islands",
   [basic/islands.asm](../../basic/islands.asm));
 - changes C-BIOS in a few places: small source patches in
   [cbios-repack/](../../cbios-repack/README.md) (the INS, DEL, HOME and CTRL
-  keys, a scroll fix, one new hook), and a few bytes overwritten directly
+  keys, a scroll fix, one new hook, the registers five BIOS routines return,
+  the reference's keyboard-scan entry at `&H0D12`), and a few bytes overwritten directly
   (the `RST $10` and `RST $18` vectors, and the cursor column `TTYPOS`, which
   C-BIOS kept one higher than the VG-8020 does).
 
@@ -111,6 +112,20 @@ offset in `DE`; `LDIRMV` (`&H0059`) returns `DE` just past the copied bytes and
 returns `A` = `H` − `D` (or `L` − `E`). zerobas's C-BIOS patches now give the
 VG-8020's values ([cbios-repack/](../../cbios-repack/README.md), patches 9 and
 10). Flags are not matched: neither machine documents them.
+
+Some programs also call addresses inside the reference BIOS that no document
+publishes. Joost's ruling of 2026-10-16: zerobas provides such an entry at its
+address, with what it does measured from outside on the VG-8020 -- registers
+in, registers and work-area RAM out, never the ROM's bytes. Buzz Off and Shark
+Hunter call **`&H0D12`**, which scans the keyboard once (a newly pressed key
+goes into the key buffer, as the interrupt's scan does) and returns `A` = the
+low byte of `PUTPNT` minus that of `GETPNT` (0, with Z set, when the buffer is
+empty), `HL` = `GETPNT`, `DE` = `KEYBUF` and `BC` = `&H00FF`, keeping `IX`,
+`IY` and the alternate registers. C-BIOS had the start of its reset routine
+there. It is patch 11: `&H0D12` jumps to the new routine, placed after C-BIOS's
+last code, and nothing between `&H0D16` and the font moves. C-BIOS already
+answered at two addresses just before it, `&H0D02` and `&H0D0E`, for the same
+reason (the games Hacker and Star Force).
 
 ### The hooks
 
@@ -171,7 +186,7 @@ so its free space lies in holes between them
 ### The byte budget, and the walls
 
 A real MSX1 fits BIOS and BASIC into 32 KB. zerobas's part of slot 0 is the
-`$2765`–`$7FFF` image plus the islands, bounded by the `"AB"` header pinned at
+`$2781`–`$7FFF` image plus the islands, bounded by the `"AB"` header pinned at
 `$4000` and the end of page 1 at `$8000`. The parts below and above `$4000`
 are mapped together, so a routine can move between them and their free bytes
 form one budget — except that a routine must stay below `$4000` when a page-1
@@ -228,6 +243,14 @@ never for the code it points at. The allowed sources are listed in the
 
 ## What we found, and how
 
+- **Buzz Off and Shark Hunter reset the machine** (fixed 2026-10-17,
+  D-BIOSINT). Both loaded completely, then the machine went back to its boot
+  screen. Logging their calls into the BIOS showed both calling `&H0D12`, an
+  address no document lists; on zerobas it was the first byte of C-BIOS's
+  reset. Our own test program called it on the VG-8020 with chosen registers
+  and buffer contents, with and without a key held
+  ([`biosint_probe.out`](../../scratchpad/biosint_probe.out)), and zerobas now
+  answers the same. Both games play the VG-8020's attract demo.
 - **Demonia played a different game, then reset** (fixed 2026-10-16,
   D-BIOSREGS). Once its tape entries worked (D-BASICINT2,
   [cassette.md](cassette.md)) it loaded, byte for byte as on the VG-8020; then
@@ -318,7 +341,8 @@ that needs BASIC's evaluator calls back into slot 0 through `calbak`
   then a line through the sub-ROM; the VG-8020 as the control.
 - `make patch-freshness-check` — the shipped patch matches the sources.
 - `make hook-equate-check` — BASIC and the disk ROM agree on hook addresses.
-- `make biosregs-acceptance` — what `CALATR`, `CALPAT`, `LDIRMV`, `LDIRVM` and
-  `DCOMPR` leave in `A`, `BC`, `DE` and `HL`, against the VG-8020.
+- `make biosregs-acceptance` — what `CALATR`, `CALPAT`, `LDIRMV`, `LDIRVM`,
+  `DCOMPR` and the keyboard-scan entry `&H0D12` leave in `A`, `BC`, `DE` and
+  `HL` (and `IX`, for `&H0D12`), against the VG-8020.
 - `make subrom-acceptance`, `make subrom-inttest` — both sub-ROM pages; interrupts under a page-0 tenant.
 - `make nodisk-acceptance` — the diskless machine, hooks unclaimed.

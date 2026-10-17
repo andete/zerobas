@@ -19,10 +19,10 @@ dig15_iszero equ 03226H
 arga_pack_fac equ 0331CH
 widen_fac_to equ 03779H
 widen_uint_to equ 03A26H
-flt_to_int16 equ 031D3H
+flt_to_int16 equ 031DEH
 vars_reset equ 03C88H
-penderr_set equ 0281FH
-flt_fmt equ 03079H
+penderr_set equ 0283BH
+flt_fmt equ 03084H
 rl_vpeek equ 03B62H
 rl_vpoke equ 03B6DH
 rl_vaddr equ 03B7AH
