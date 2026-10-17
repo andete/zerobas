@@ -4639,7 +4639,13 @@ item — do **one item per session** to keep context lean.
       chase, in that order. Blagger, Lazer Bykes and 737 Flight (all SCREEN 1)
       keep a steady 2800-4300 B from the start, the size of a font difference
       (zerobas draws C-BIOS's) -- probably not a defect, unconfirmed. Chuckie Egg:
-      D-SLOT3EXP. ➡️ Next: Klax between T300 and T420.
+      D-SLOT3EXP. ➡️ Next: Klax between T300 and T420. 📏 Narrowed the same
+      day: Klax parts between T320 and T340, and never writes $FFFF (see
+      D-SLOT3EXP's notes: its RAM already differs at T320 in three game cells).
+      Manic Miner TRACKS the VG-8020 at ~700 B from T400 to T540 (zerobas's dump
+      against every VG dump); its T420 split was a transient at a screen change,
+      the other way round at T445 -- not a defect by this reading. Elite and
+      Space Shuttle write $FFFF from game code: D-SLOT3EXP candidates.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -5286,6 +5292,15 @@ item — do **one item per session** to keep context lean.
       ends in the interrupt loop at $18EA. Elite, Klax and Space Shuttle also map
       RAM everywhere (A8 = $FF) but leave the register at 0 (all RAM) on zerobas:
       their differences are something else.
+      📏 **Writes to $FFFF on zerobas** (2026-10-17, a write watch, PC and time
+      only): Elite's game code writes it ($8102), and Space Shuttle's ($80B8,
+      $810D, $8119) -- both map RAM everywhere, so both are candidates for this
+      class (their VRAM parts from the VG-8020's by T300 / T420). Ninja 2's
+      writes come only from C-BIOS's own slot routines ($2506 / $2529), as they
+      should. Klax writes $FFFF NEVER -- 🔮 "Klax is this class" MISS: it runs in
+      lockstep with the VG-8020 to T320 (the same PC at T300 and T320), and at
+      T320 the RAM $8000-$FFFF already differs in three game cells and the stack
+      top (an equality map); what feeds them is unlocated.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10881,7 +10896,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36414 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36429 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11047,7 +11062,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15909 (T-6FE392)8 (T-529ABE)` from `TODO.md:28703 (T-529ABE)`: a
+      `TODO.md:15924 (T-6FE392)8 (T-529ABE)` from `TODO.md:28718 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16756,7 +16771,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28703 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28718 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
