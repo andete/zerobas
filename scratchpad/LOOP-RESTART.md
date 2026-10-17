@@ -1,10 +1,41 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-15)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-17)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-15 — THE CURRENT ONE. JOOST'S RULINGS: THE 2026-10-09 TABLE (2026-10-16 ROWS: reference-BIOS internals YES, published BASIC entries AS NEEDED, FRE(0) and GOSUB frame MATCH REFERENCE; ROWS 10-15: undocumented BASIC internals, disk evictions first, pins without growing holes, FILL THE GATE WAIT -- amended with the worktree rule) AND THE 2026-09-24 SECTION.
+## 🟢 STATE AS OF 2026-10-17 — THE CURRENT ONE (the 2026-10-15 section below is history; the rulings tables there and in the 2026-09-24 section still hold).
+
+- **Landed 2026-10-17 (each gated and pushed; CI green on all four jobs from 8a683d69):**
+  D-BIOSINT $0D12 -- the reference BIOS's keyboard-scan entry, cbios-repack patch #11,
+  BASIC_ORG $2765 -> $2781 (cdaff14a; Buzz Off, Shark Hunter run); D-CASDOT + D-TSVOVL
+  -- a '.' ends a `dev:name` tape name, and a tape SAVE no longer corrupts 4+-letter
+  names, a 10-16 regression (ebc7b7cc); D-HFOXOOM -- BLOAD,R code that moves VARTAB
+  empties the variable chain there (23f2dde2; Harry Fox runs); D-UNTRACKED -- the
+  new patch had never been committed, CI was red 8 commits; fixed (8a683d69) and
+  gated, `make tracked-inputs-check` (26a8e4c1). Corpus (pick_martos, 51): SAME 14,
+  RUNS? 32, RESET 1, ISRCRASH 1.
+- **WAITING ON JOOST (open each item's block for its latest ruling before carrying
+  this line):** D-BIOSINT's Loopy Laundry -- its chain executes the FONT ($2010 =
+  character 138's glyph; copy reference glyph bytes?); D-SLOT3EXP -- all-RAM games
+  write $FFFF, which is slot 3's sub-slot register on zerobas (BMX, Chuckie Egg;
+  Elite, Space Shuttle candidates): keep slot 3 unexpanded as the VG-8020 does?;
+  KEY (Vampier's report); COPY TO (TIER 3).
+- **D-TAPELOAD's corpus holds no located functional divergence that is not waiting on
+  Joost**: the rest is load-timing phase (Klax two frames behind on identical code),
+  SCREEN 1 font-sized gaps, titles that track (TODO D-TAPELOAD, 2026-10-17 notes).
+- **NEXT, by tier:** TIER 4, both ruled "match reference" and both REDESIGNS, not
+  shrinks -- the GOSUB frame 8 -> 7 B (self-describing frames with a type token,
+  RETURN walks the pool, as docs/reference-stack-frames.md measured) and
+  D-FREPLUS14 (FRE(0) from the live stack, the evaluator's stack use per construct
+  as the reference's: 6 B / paren level, 10 B / `1+` operand, ... -- measure every
+  construct first). Then TIER 5 / 6 by the table (`python3 tools/tier_table.py --all`).
+- **Lessons of the day (memory):** a new build input must be git-added BY NAME, and
+  `gh run list` after a push (a-new-build-input-must-be-git-added); a knife whose cut
+  leaves code dead is refused by check_dead_code (NOT SCORED -- blunt the test
+  instead); a knife row can be blind for its geometry (D-HFOXOOM's $FF-only row).
+
+## 🟡 STATE AS OF 2026-10-15 (history). JOOST'S RULINGS: THE 2026-10-09 TABLE (2026-10-16 ROWS: reference-BIOS internals YES, published BASIC entries AS NEEDED, FRE(0) and GOSUB frame MATCH REFERENCE; ROWS 10-15: undocumented BASIC internals, disk evictions first, pins without growing holes, FILL THE GATE WAIT -- amended with the worktree rule) AND THE 2026-09-24 SECTION.
 
 - **Landed 2026-10-15 (each gated and pushed):** D-DSKLOCAL (DSKI$ / DSKO$ in
   disk.rom, 347452e0); S10.D's H.DGET measurement (57b4558a); tools/pin_plan.py
