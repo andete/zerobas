@@ -4631,6 +4631,15 @@ item — do **one item per session** to keep context lean.
       512 B apart at T300 in the morning too). ➡️ Next by evidence: BMX Simulator
       leaves line 50 between T180 and T300 where the VG-8020 stays on it -- 📏
       LOCATED the same day: D-SLOT3EXP below (🙋, the machine's slot shape).
+      📏 **WHERE THE OTHER BIG DIFFERENCES START (2026-10-17; ten RUNS? titles,
+      zerobas's VRAM at each dump against EVERY VG-8020 dump of the same run --
+      counts of differing bytes only):** Klax is IDENTICAL to T300 (0 B) and apart
+      by T420; Elite identical at T180, apart by T300; Ninja 2 and Manic Miner
+      near (1074 / 712 B) to T300, apart by T420 -- a real divergence onset to
+      chase, in that order. Blagger, Lazer Bykes and 737 Flight (all SCREEN 1)
+      keep a steady 2800-4300 B from the start, the size of a font difference
+      (zerobas draws C-BIOS's) -- probably not a defect, unconfirmed. Chuckie Egg:
+      D-SLOT3EXP. ➡️ Next: Klax between T300 and T420.
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -5271,6 +5280,12 @@ item — do **one item per session** to keep context lean.
       a layout change for ROM space; this is the compatibility side of the same
       shape. Until then: BMX Simulator stays a known difference, and any game
       that sets A8 = $FF and writes $FFFF fails the same way.
+      📏 **Chuckie Egg is the same class** (2026-10-17, the slot state at each dump
+      of ten divergent titles; on zerobas $FFFF reads the inverted register): its
+      sub-slot register goes $8B / $B2 from T180 -- pages 2 and 3 off RAM -- and it
+      ends in the interrupt loop at $18EA. Elite, Klax and Space Shuttle also map
+      RAM everywhere (A8 = $FF) but leave the register at 0 (all RAM) on zerobas:
+      their differences are something else.
 
 - [ ] 📼 **D-TAPINBLK — $72D4 PAST A BLOCK'S END, AND $72E9 WITH NO TAPE
       (2026-10-16)**
@@ -10866,7 +10881,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36399 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36414 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11032,7 +11047,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15894 (T-6FE392)8 (T-529ABE)` from `TODO.md:28688 (T-529ABE)`: a
+      `TODO.md:15909 (T-6FE392)8 (T-529ABE)` from `TODO.md:28703 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16741,7 +16756,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28688 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28703 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
