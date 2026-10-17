@@ -796,8 +796,9 @@ bp_ret:
 ; it (VARTAB IS the reference's program end). zerobas keeps the end in PRGEND and
 ; DERIVES VARTAB = PRGEND + 2 (vars_reset), so the next variable reset put VARTAB
 ; back at an EMPTY program's end ($8003, measured: VARTAB - TXTTAB = 2), and the
-; program's own variables were then stored over its text -- line 50's file name
-; among them, so its tape search asked for a different file. The fix adopts a
+; program's own variables were then stored over its text. (This block said line
+; 50's file NAME was among them; it was not -- that name has a '.', which the
+; reference cuts and zerobas did not: D-CASDOT, 2026-10-17.) The fix adopts a
 ; VARTAB the ,R code MOVED: lh_runr syncs VARTAB := PRGEND + 2 before the code
 ; runs, lh_adopt sets PRGEND := VARTAB - 2 after it -- a no-op unless the code
 ; changed VARTAB, so a VARTAB stale from any other path cannot leak in. Placed
@@ -813,8 +814,29 @@ lh_runr:                                    ; HL = the exec address; the caller 
                 jp      lh_jphl             ; bload.asm's `jp (hl)`: run it; its `ret` lands
                                             ; on lh_back (kept there, not deleted: a byte
                                             ; removed ahead of the pins would shift them)
+; 🔴 D-HFOXOOM (2026-10-17): adopting the program end was not enough. Harry Fox's
+; second loader moves VARTAB $8517 -> $8848 and then types `RUN30`; ARYTAB (and
+; the array chain's $0000 terminator) stayed at the OLD end, now INSIDE the new
+; program's text, and RUN's first ctl_reset (clear_vars) walked the array chain
+; from there -- strides read out of program bytes -- to a stray zero at $BACD:
+; STREND $BACD, CTLLIM $BACF, `Out of memory in 30` (session harness: the writes
+; to VARTAB / ARYTAB / STREND / PRGEND / CTLLIM with their PC, pointer values
+; only). On the VG-8020 the variables are unusable after such a move too (its
+; ARYTAB is then below VARTAB) until the RUN resets them. So when the code MOVED
+; VARTAB, the variable chain starts EMPTY there; a ,R that leaves VARTAB alone
+; keeps its variables exactly as before. DE is free here (exec_stmt takes HL).
 lh_adopt:                                   ; HL = the statement cursor
                 push    hl
+                ld      hl,(PRGEND)
+                inc     hl
+                inc     hl                  ; HL = the VARTAB lh_runr synced
+                ld      de,(VARTAB)
+                or      a
+                sbc     hl,de
+                jr      z,lha_kept          ; the code left VARTAB where it was
+                ld      (ARYTAB),de         ; it moved: no variables, no arrays,
+                call    ary_reset           ;  the $0000 terminator at the new ARYTAB
+lha_kept:
                 ld      hl,(VARTAB)
                 dec     hl
                 dec     hl

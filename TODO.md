@@ -4618,7 +4618,8 @@ item — do **one item per session** to keep context lean.
       `dev:name` name at its '.'. 🔮 "a '.' is copied raw by the reference and
       cut by zerobas": MISS, the other way round. Harry Fox now gets past line
       50: IOERR -> BASICERR, the program its loader RUNs next stops with
-      `Out of memory in 30` -- ➡️ D-HFOXOOM below.
+      `Out of memory in 30` -- ➡️ D-HFOXOOM below, ✅ fixed the same day:
+      **Harry Fox RUNS** (its title screen as on the VG-8020).
       🆕 Found on the way (OUR tape): a named BLOAD whose file is NOT on the tape
       -- the VG-8020 keeps waiting at the end; zerobas raises `Device I/O error`
       after ~5 s of silence (TAPION's CAS_FLATMAX budget). 🎚️ TIER 6, unfiled
@@ -5199,10 +5200,37 @@ item — do **one item per session** to keep context lean.
       🧪 Knife K-TO1 (TSV_NAME back in BUFTX) -> sav-cas-4, sav-cas-dot,
       bsv-cas-dot: HIT.
 
-- [ ] 📼 **D-HFOXOOM — HARRY FOX: THE PROGRAM ITS LOADER RUNS NEXT STOPS WITH
-      `Out of memory in 30` (2026-10-17)**
+- [x] ✅ **D-HFOXOOM — HARRY FOX: THE PROGRAM ITS LOADER RUNS NEXT STOPS WITH
+      `Out of memory in 30` (2026-10-17)** — ✅ **FIXED 2026-10-17: Harry Fox
+      RUNS** (BASICERR -> RUNS?, its title screen as on the VG-8020).
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — measure first.
+      📏 Session harness (pointer values, PCs, line numbers, address-only write
+      watches; never data): both machines run the same lines; the program `RUN30`
+      starts is the same text (hash 0426, 2119 B). The writes, in order: lh_runr
+      VARTAB := $8517, the game's code at $800B VARTAB := $8848, lh_adopt PRGEND
+      := $8846 -- then the string-heap tenant (strheap_ctllim, from RUN's first
+      ctl_reset in clear_vars) STREND := $BACD, CTLLIM := $BACF: it walked the
+      array chain from the OLD ARYTAB $8551, now inside the new program's text,
+      reading strides out of program bytes; with HIMEM $8FFF that is above SP,
+      and `Out of memory in 30`. (The VG-8020's program text changes at line 310
+      -- three bytes written by its BASIC ROM, the shape of a line-number
+      reference becoming a pointer; zerobas does not do that and need not: a
+      red herring. Lines 150-310 run PLAY, DRAW and an IF / ON loop on zerobas
+      (handler breakpoints) and take ~1.3 s a line on the VG-8020, a fraction
+      of that here: why is UNMEASURED, and the game reaches the same screen.)
+      🔧 basic/missing.asm lh_adopt: when the ,R code MOVED VARTAB, ARYTAB :=
+      the new VARTAB and ary_reset (the $0000 terminator); unmoved, nothing
+      changes. +21 B main page 1 (past every pin).
+      🧪 basicint-acceptance row `rvtarr` (after CLEAR 200,&H9000, our ,R code
+      plants an array-entry-shaped head with stride $3000 past VARTAB and moves
+      VARTAB over it; RUN; FRE minus the control's): -64 on both. Knife K-HO1
+      (`jr z` -> `jr c`, the reset skipped for an upward move) -> rvtarr only:
+      HIT (scratchpad/hfoxoom_knife.out). The row's FIRST cut ($FF filler only)
+      was BLIND -- the stray walk ended below SP and the knife read SAME
+      (hfoxoom_knife_run1.out).
+      🔮 Scored: "a CLEAR / DIM sizes from memory that differs" -- MISS; "the
+      second program differs" -- MISS (identical); "Harry Fox then runs" -- HIT.
       📏 After D-CASDOT the line-50 load works (the T60 screens are identical);
       then zerobas shows `RUN30` / `Out of memory in 30` in text mode where the
       VG-8020 runs the game (session harness, summary_hfx). ➡️ Which allocation
@@ -10803,7 +10831,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36336 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36364 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -10969,7 +10997,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:15831 (T-6FE392)8 (T-529ABE)` from `TODO.md:28625 (T-529ABE)`: a
+      `TODO.md:15859 (T-6FE392)8 (T-529ABE)` from `TODO.md:28653 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16678,7 +16706,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28625 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28653 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

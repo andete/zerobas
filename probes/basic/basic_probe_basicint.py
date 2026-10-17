@@ -39,6 +39,16 @@ same `,R` return chain. Each row prints ONLY what its routine controls:
            then `CLEAR` -- FRE(0) after it minus the same with +0, per machine:
            the reference keeps the program end the ,R code set (-64); zerobas
            re-derived VARTAB from its own PRGEND and gave 0.
+  rvtarr   (D-HFOXOOM, 2026-10-17) after `CLEAR 200,&H9000` (Harry Fox's HIMEM),
+           OUR ,R code fills the 64 bytes past VARTAB -- as a loaded program would
+           -- with an array-entry-shaped head (stride $3000, a terminator there)
+           and $FF, and moves VARTAB over them; then `RUN` runs `10 DIM A(10)`
+           and prints FRE(0); the row is that FRE minus the same program's with a
+           ,R code that only returns (rvtarr0). A first cut filled $FF only: the
+           stray walk then ended below SP and the knife read the row SAME (blind). Harry Fox's loader
+           does this and then types RUN30: zerobas's variable chain stayed below
+           the new VARTAB, RUN's first array walk read strides out of those bytes,
+           and line 30 stopped with `Out of memory`.
   tap_read / tap_brk (D-BASICINT2, 2026-10-16): Demonia's machine code CALLs $72E9
            once and then $72D4 per byte to read its tape. OUR stub (USR) calls
            $72E9 and then $72D4 sixteen times, storing A through HL and counting in
@@ -83,6 +93,14 @@ CODE = {
     # ld hl,(VARTAB) / ld de,K / add hl,de / ld (VARTAB),hl / ret  -- through BLOAD,R's continuation
     "rvt64": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 64, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB), 0xC9],
     "rvt0": [0x2A, lo(VARTAB), hi(VARTAB), 0x11, 0, 0, 0x19, 0x22, lo(VARTAB), hi(VARTAB), 0xC9],
+    # ld hl,(VARTAB) / push hl / ld de,$3000 / add hl,de / ld (hl),0 / inc hl /
+    # ld (hl),0 / pop hl / then 64 bytes from VARTAB: $41 0 0 0 $00 $30 (an
+    # array-entry-shaped head: name, stride $3000) and 58 x $FF / ld (VARTAB),hl / ret
+    "rvtarr": ([0x2A, lo(VARTAB), hi(VARTAB), 0xE5, 0x11, 0x00, 0x30, 0x19,
+                0x36, 0x00, 0x23, 0x36, 0x00, 0xE1]
+               + [b for v in (0x41, 0, 0, 0, 0x00, 0x30) for b in (0x36, v, 0x23)]
+               + [0x06, 58, 0x36, 0xFF, 0x23, 0x10, 0xFB, 0x22, lo(VARTAB), hi(VARTAB), 0xC9]),
+    "rvtarr0": [0xC9],                                  # the control: a ,R code that only returns
     # ld hl,$D020 / push hl / ld hl,$ABCD / push hl / ld hl,0 / ld de,$1111 /
     # ld bc,$2222 / jp $3297; at $D020: ld ($D180),hl / ld ($D182),bc /
     # ld ($D184),de / ret
@@ -103,12 +121,14 @@ LINES = {
     "vt0": ["NEW", '10 PRINT"[";FRE(0);"]":END', TAIL],
     "rvt64": ["NEW", 'BLOAD"CAS:",R:CLEAR:PRINT"[";FRE(0);"]"'],
     "rvt0": ["NEW", 'BLOAD"CAS:",R:CLEAR:PRINT"[";FRE(0);"]"'],
+    "rvtarr": ["NEW", "CLEAR 200,&H9000", '10 DIM A(10):PRINT"[";FRE(0);"]":END', 'BLOAD"CAS:",R:RUN'],
+    "rvtarr0": ["NEW", "CLEAR 200,&H9000", '10 DIM A(10):PRINT"[";FRE(0);"]":END', 'BLOAD"CAS:",R:RUN'],
     "pop3297": ["NEW", "10 FOR I=&HD180 TO &HD185:POKE I,0:NEXT",
                 '20 BLOAD"CAS:",R',
                 '30 P$="[":FOR I=&HD180 TO &HD185:P$=P$+RIGHT$("0"+HEX$(PEEK(I)),2):NEXT:PRINT P$;"]":END',
                 "RUN"],
 }
-ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "rvt64", "pop3297",
+ROWS = ["run_vt", "run_0", "run_link", "run_data", "cont", "vt64", "rvt64", "rvtarr", "pop3297",
         "play_ok", "play_e5", "play_e13", "tap_read", "tap_brk"]
 PLAYTEXT = {"play_ok": [0x22, 0x41, 0x42, 0x43, 0x22, 0x00],                 # "ABC"
             "play_e5": [0x22, 0x48, 0x45, 0x4C, 0x4C, 0x4F, 0x22, 0x00],     # "HELLO"
@@ -180,6 +200,9 @@ def run(machine, name, tmp):
                                            run_gap=30.0, cassette=path)[0])
 
 
+PAIRS = {"vt64": "vt0", "rvt64": "rvt0", "rvtarr": "rvtarr0"}   # row -> its control
+
+
 def fre(text):
     try:
         return int(text.strip("[] ").split()[0])
@@ -194,8 +217,8 @@ def main():
     for name in only:
         got = {}
         for side, m in MACHINES:
-            if name in ("vt64", "rvt64"):
-                a, b = fre(run(m, name, tmp)), fre(run(m, name.replace("64", "0"), tmp))
+            if name in PAIRS:
+                a, b = fre(run(m, name, tmp)), fre(run(m, PAIRS[name], tmp))
                 got[side] = None if a is None or b is None else f"{a - b}"
             else:
                 got[side] = run(m, name, tmp)

@@ -212,8 +212,9 @@ Not compared, or not measured:
   the bytes) showed the last two differing. Our own tapes then gave the rule
   above: the VG-8020 cuts the name at the dot, zerobas kept the dot as a
   character ([`casname_run5b.out`](../../scratchpad/casname_run5b.out)).
-  Harry Fox now gets past that load; the program it runs next stops with
-  `Out of memory`, which is being looked at.
+  With that, and the variable chain following a moved program end
+  ([BLOAD](../keywords/BLOAD.md), D-HFOXOOM), Harry Fox reaches its title
+  screen as on the VG-8020.
 - **A tape save wrote a corrupted name** (fixed 2026-10-17, D-TSVOVL, broken
   the day before). `SAVE "CAS:PDXY"` wrote the name `PDXYPD`: the six bytes
   the name was built in overlapped the copy of the statement's text it was

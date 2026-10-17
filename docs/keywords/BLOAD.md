@@ -114,6 +114,14 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A `,R` program that loads a bigger BASIC program left the variables
+  behind** (fixed 2026-10-17, D-HFOXOOM). Harry Fox's loader moves the
+  program end (`VARTAB`) and then types `RUN30`; zerobas took the new end
+  but kept its variable chain where the old program ended, now inside the
+  new program's text, and `RUN` read that as arrays: `Out of memory in 30`.
+  When the code moves `VARTAB`, the variables now start empty at the new end;
+  on the VG-8020 they are unusable then too, until the `RUN`
+  (`basicint-acceptance` row `rvtarr`).
 - **A tape name with a dot found nothing** (fixed 2026-10-17, D-CASDOT). On
   the VG-8020 a `.` ends the name: `BLOAD "CAS:AB.C"`, and a bare
   `BLOAD "AB.C"` on a diskless machine, look for `AB`. zerobas kept the dot as
