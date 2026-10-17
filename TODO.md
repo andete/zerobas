@@ -3974,6 +3974,18 @@ item — do **one item per session** to keep context lean.
       ⚠️ Also seen: the channel block sits 265 B below HIMEM on the CF-3300 and 665 B
       on zerobas (MAXFILES=1) -- a TIER-4 RAM reading for the FCH block layout, not
       this item's.
+      📏 **ROUND 2, THE ROWS THE TWO MODELS READ DIFFERENTLY** ([`flddesc_probe.py`](scratchpad/flddesc_probe.py)
+      -> [`flddesc_run.out`](scratchpad/flddesc_run.out), LEN=8, A$ 2 B and B$ 3 B
+      fielded): the CF-3300 reads r1 `XY  Z` (LSET / RSET), r2 `QY` (MID$ writes the
+      record), r3 `XY` (GET re-reads it), r4 `XYMN` (a copy taken before LSET is its
+      own), r5 `XYMN` and r6 `XYXY` (SWAP exchanges the DESCRIPTORS: C$ is fielded
+      after it), r7 `  Z` (the buffer survives CLOSE), r8 `  Z` (and a re-OPEN does NOT
+      clear it), r9 `  Z`. 🔮 r1-r7 and r9 as predicted: HIT; r8 was unpredicted.
+      🔴 **zerobas stops at r2 with `Illegal function call in 60`**: MID$ on a fielded
+      variable finds its own (empty) descriptor -- a real divergence today, and the
+      descriptor model removes it by construction. These nine rows are the slice's
+      gate. ⚠️ r8 also says hk_frnd's space-fill of the record at OPEN is not the
+      reference's on a RE-open; what a FRESH block holds is unmeasured.
 
 - [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL
       (2026-10-17)** — ✅ main page 1 152 -> 168 B free (`make basic-reloc`).
@@ -11065,7 +11077,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36598 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36610 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11231,7 +11243,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16093 (T-6FE392)8 (T-529ABE)` from `TODO.md:28887 (T-529ABE)`: a
+      `TODO.md:16105 (T-6FE392)8 (T-529ABE)` from `TODO.md:28899 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -16940,7 +16952,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:28899 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
