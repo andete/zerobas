@@ -42,7 +42,25 @@ session and the loop resumes exactly where it stopped.
   pad -- refill them with pin_plan.py chunks from past $73E5, sited BEFORE any code
   whose `jr`s reach back across the pad; $6CF3's "2 B pad" is the `jr` bridge, not a
   `ds`. `make switch-build-check` catches a jr that only reaches in the shipping build.
-- **NEXT, by tier:** TIER 4 D-FREPLUS14 -- port scratchpad/frelive_model.py to a sub2
+- **Landed 2026-10-18/19 (each gated and pushed):** D-FREPLUS14 (14428e41: FRE(0) on the
+  reference's live-stack depth; DIM edge to the byte, STK_EDGE_RESERVE 131); D-ROMSIZE step
+  (1) nearly done -- S10.E (5d04cbf6: LOF/LOC from disk.rom), AUTOEXEC + NAME (6f9fc727),
+  BSAVE (21f76704), BLOAD (b9ab333d: the sub-ROM has NO FAT engine); D-CASOFS2X (428b897c,
+  tape BLOAD offset twice); D-LETNEWFIRST (91f212e4: LET / FOR create a new target first,
+  the store path faster); D-DISKHIMEM (a072b166: disk HIMEM = $DE77, +517 B gone, gate
+  diskfre-acceptance). Walls on 2026-10-19: main page 1 ~452 B, sub page 1 ~3950 B --
+  RECOUNT, never quote. Joost on 10-18/19: COPY TO stays parked; Loopy's glyph bytes
+  PARKED ("I need to think"); D-KEYOOM closed (Vampier: works again); slot shape
+  (D-SLOT3EXP) open -- BMX / Chuckie Egg only, they crash on a real NMS 8250 too.
+- **METHOD that worked all day:** a subagent drafts each slice in a worktree (build + unit
+  tests only, a precise brief with the pin rules), the loop integrates (`git diff HEAD
+  --binary` of the worktree, `git apply`), MEASURES on the emulator, re-pins knives, runs
+  FULL, commits, removes the worktree. A FULL battery's daily sweeps re-render
+  docs/tier-status.md after staging: re-run `make tiers-md`, check, stage it.
+- **NEXT, by tier (2026-10-19):** TIER 4 -- the DIM item's deep-expression guard SPEC,
+  D-BOOTKEYS's CTRL (needs D-DSKIB) and $F347; then TIER 5 by the table. D-ROMSIZE step (1)
+  leftovers: disk.rom veneers + the step-14 gate. The 2026-10-17 line below is history:
+- **NEXT, by tier (2026-10-17, history):** TIER 4 D-FREPLUS14 -- port scratchpad/frelive_model.py to a sub2
   page-1 tenant (the spec: docs/spec-basic-frelive.md); main page 1 has room now.
   S10.E residuals (TODO D-FCHNUM's NEXT line: AUTOEXEC into disk.rom + NAME, the
   row-21 no-op crossing) are BUDGET. Then TIER 5 / 6 by the table

@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36872 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36880 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31863,6 +31863,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       as `sst_overflow` does), never a stale one -- the per-op audit the item
       priced, with a spec. ➡️ The loop took the TIER 5 queue next (2026-10-12),
       as on 2026-10-10: what is left is that spec.
+      ✅ **THE TOP-LEVEL EDGE MATCHES TO THE BYTE (2026-10-19, D-FREPLUS14):** with FRE(0)
+      on the reference's live-stack depth, `X=0:X=INT((FRE(0)-K)/8):DIM A(X)` fits from
+      K=109 on both machines, and the 2-byte form at both FRE(0) parities
+      (scratchpad/dimedge_scan_131e.out / _131o.out) -- STK_EDGE_RESERVE 131;
+      dimedge-acceptance 10/10, its pins gone. The "~130 vs ~256" this item opened with
+      was largely FRE(0)'s. ➡️ What remains is only the DEEP-EXPRESSION economy above
+      (zerobas refuses a few nesting levels earlier near the edge): the per-site guard
+      spec.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
