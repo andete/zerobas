@@ -538,8 +538,10 @@ sub_p1_table:
                                                 ;   🗑️ 2026-10-19: one live row
                                                 ;   left, 23 (OPEN's FCB header
                                                 ;   stamp); the primitive rows are
-                                                ;   retired, their bodies kept for
-                                                ;   BLOAD (sub/fatprim.asm). Was:
+                                                ;   retired, and their bodies left
+                                                ;   with BLOAD's disk load, the
+                                                ;   last user (2026-10-19,
+                                                ;   disk.rom hk_dpbload). Was:
                                                 ;   the FAT12 primitive/sector
                                                 ;   layer (docs/spec-evict-
                                                 ;   diskfile-cluster.md §11,
@@ -620,19 +622,21 @@ sub_p1_table:
                                                 ;   trap arc. Reaches the low-region float
                                                 ;   pack (fp_sqrt pattern); bounces
                                                 ;   eval/parse_coord to ex_circle.
-                jp      bload_tenant            ; index 20 (SUBROM_IDX_BLOAD): the whole
+                jp      bload_tenant            ; index 20 (SUBROM_IDX_BLOAD): the
                                                 ;   BLOAD verb body -- device dispatch,
-                                                ;   the cassette load loop and the disk
-                                                ;   load loop (docs/spec-traps-t3-key.md
-                                                ;   §7.6), evicted from main page 1 to
-                                                ;   fund interrupt-traps T3. PAGE 1 on
-                                                ;   purpose: it sits beside fatprim and
-                                                ;   calls fat_mount/fat_find/fat_open/
-                                                ;   fat_read_file_sector SUB-LOCALLY,
-                                                ;   which is what makes the carve
-                                                ;   possible. Main-ROM stub is
-                                                ;   basic/bload.asm `do_bload`; the ,R
-                                                ;   handoff stays resident there.
+                                                ;   the cassette load loop and a disk
+                                                ;   file's 8.3 name (docs/spec-traps-
+                                                ;   t3-key.md §7.6), evicted from main
+                                                ;   page 1 to fund interrupt-traps T3.
+                                                ;   🏗️ 2026-10-19: the DISK load loop
+                                                ;   is disk.rom's hk_dpbload (H_FOPEN,
+                                                ;   FOPEN_SEL_BLOAD) -- it was this
+                                                ;   tenant's, over fatprim's FAT
+                                                ;   engine called sub-locally, and was
+                                                ;   that engine's last user. Main-ROM
+                                                ;   stub is basic/bload.asm `do_bload`;
+                                                ;   the crossing and the ,R handoff
+                                                ;   are resident there.
                 jp      save_tenant             ; index 21 (SUBROM_IDX_SAVE): the
                                                 ;   two TAPE write engines since
                                                 ;   2026-10-19 (BSAVE "CAS:", and
@@ -850,11 +854,12 @@ sub_p1_ping:
 ; low-region, the fp_sqrt pattern). Bounces eval/parse_coord back to ex_circle.
                 include "circleparse.asm"
 
-; BLOAD verb body (index 20 = bload_tenant, sub/bload.asm): the whole verb --
-; device dispatch, the cassette load loop, the disk load loop -- evicted from
-; main page 1 to fund interrupt-traps T3 (docs/spec-traps-t3-key.md §7.6). PAGE 1
-; so it can call fatprim's fat_mount/fat_find/fat_open/fat_read_file_sector
-; sub-locally; must therefore follow fatprim.asm and fcbname.asm here.
+; BLOAD verb body (index 20 = bload_tenant, sub/bload.asm): device dispatch, the
+; cassette load loop and a disk file's 8.3 name -- evicted from main page 1 to
+; fund interrupt-traps T3 (docs/spec-traps-t3-key.md §7.6). PAGE 1 so it could
+; call fatprim's fat_mount/fat_find/fat_open/fat_read_file_sector sub-locally --
+; until 2026-10-19, when the disk load moved to disk.rom (hk_dpbload) and that
+; engine left this ROM; build_83_name (fcbname.asm) is still a page-1 callee.
                 include "bload.asm"
 
 ; SAVE-family write engines (index 21 = save_tenant, sub/save.asm): since

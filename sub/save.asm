@@ -116,8 +116,9 @@ sv_tape_err:
 ; longer included: their last caller here was BSAVE's disk engine, which is
 ; disk.rom's now, and disk.rom includes its own copies. The cursor bound to
 ; sub/fatprim.asm's fat_dir_create / fat_flush_data_sector / fat_dir_update, the
-; WRITE half of this ROM's FAT engine, which nothing here calls any more; BLOAD's
-; disk read path (sub/bload.asm) still uses the read half.)
+; WRITE half of this ROM's FAT engine, which nothing here calls any more. BLOAD's
+; disk read path (sub/bload.asm) used the read half until later the same day, when
+; it moved to disk.rom too and the engine left this ROM -- sub/fatprim.asm.)
 ; (t_fat_io_create / t_fat_io_close, fatprim rows 23/24 since SBH-3, are gone:
 ; S10 increment 3, D-ASAVEDOUT, 2026-10-08.)
 

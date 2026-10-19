@@ -1,0 +1,10 @@
+BLOAD"A:PROG.BIN",R
+  [PASS] data bytes [C000..C031] match the BSAVE body
+  [PASS] ,R handoff: PC=$C010 (expect $C010 JR$ landmark)
+  [PASS] exec ran: ($D000)=$5A (expect $5A, sentinel was $A5)
+
+BLOAD"A:PROG.BIN"  (no ,R)
+  [PASS] data bytes [C000..C031] match the BSAVE body
+  [PASS] NO exec: ($D000)=$A5 (expect untouched sentinel $A5)
+
+ALL PASS -- disk BLOAD loads bytes; ,R execs, plain does not

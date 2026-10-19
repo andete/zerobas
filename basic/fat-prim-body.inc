@@ -41,12 +41,12 @@
 ;     write_sector alone — here the primitive/sector layer BEING MOVED
 ;     already starts at dskio_calslt).
 ;
-; 🗑️ 2026-10-19 (D-ROMSIZE step 1): the sub-ROM half of that story is BLOAD's
-; alone. Every fatprim row that reached a primitive is retired (sub/fatprim.asm),
-; and the sub build assembles only the READ half below -- what sub/bload.asm's
-; disk path calls locally; the WRITE half is `IF DISK_BUILD` (the note above
-; fat_read_fat_sector). The whole body leaves the sub-ROM when BLOAD from disk
-; moves to disk.rom.
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): THE SUB-ROM HALF OF THAT STORY IS OVER. Every
+; fatprim row that reached a primitive is retired (sub/fatprim.asm); BSAVE's disk
+; write, then BLOAD's disk load -- the last two callers -- moved to disk.rom, and
+; sub/fatprim.asm no longer includes this file. Its ONE home is disk.rom
+; (disk/kernel.asm, D-FATENG Option 2), so the `IF DISK_BUILD` / `IF SUB_BUILD`
+; gates it carried are gone and every line below is disk.rom's.
 ;
 ; Clean-room: our own code, extracted verbatim from basic/fat.asm (see that
 ; file's header for the full FAT12/DSKIO provenance / oracle citations).
@@ -81,34 +81,20 @@
 ; instead of raising ERR 70, because main's `disk_error` raises what is in
 ; DISKOP_ERR and nothing had put anything there. One `l.load` row went red
 ; against twelve green siblings.
-    IF DISK_BUILD
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): disk.rom is this file's ONLY home now, so the
+; `IF DISK_BUILD` / `ELSE` around the next routine is gone with its ELSE arm --
+; the CROSS-SLOT dskio_calslt (CALSLT to DISKSLOT's $4010 through SCAN_IY, with
+; D-BLDI's "give a caller that ran with interrupts on its EI back after each
+; sector": scratchpad/verbclock_run.out). Its last callers were the sub-ROM BLOAD
+; tenant's disk reads, which disk.rom's hk_dpbload does now -- with `ei` at its
+; entry and the driver keeping the caller's state per sector (fdc_di_save), the
+; same TIME behaviour by another road (D-LOADDI).
 dskio_calslt:
                 call    dskio               ; LOCAL: no slot to cross, and the
                                             ; inter-slot call disappears with it
-                jr      dc_result
-    ELSE
-; 🔴 D-BLDI: CALSLT RETURNS DI, AND THE DRIVER KEEPS THE CALLER'S STATE PER SECTOR
-; (fdc_di_save), so after the FIRST sector a caller that runs with interrupts on --
-; bload_tenant / save_tenant enable them for the whole verb -- ran the rest masked:
-; `TIME` kept 0 % of an 8 KB BLOAD or BSAVE here, 48 / 30 % on the CF-3300
-; (scratchpad/verbclock_run.out). The caller's state is read first and given back;
-; a masked caller stays masked.
-dskio_calslt:
-                push    af                  ; preserve the direction CY across IY setup
-                ld      a,i                 ; P/V = IFF2: were interrupts on?
-                ld      a,(DISKSLOT)        ; (no LD below touches the flags)
-                ld      (SCAN_IY+1),a       ; IYh = disk ROM slot id
-                ld      iy,(SCAN_IY)
-                ld      ix,DSKIO_ENTRY      ; standard DSKIO entry ($4010)
-                jp      po,dc_masked        ; they were off: leave them off
-                pop     af                  ; restore A=drive and the direction CY
-                call    CALSLT              ; cross-slot DSKIO; returns DSKIO's CY/A/B
-                ei                          ; ...under DI: give the caller its EI back
-                jr      dc_result
-dc_masked:
-                pop     af
-                call    CALSLT
-    ENDIF
+                jr      dc_result           ; (a jump to the next line: kept so the
+                                            ; gate's removal left disk.rom byte-
+                                            ; identical; 2 B a later carve may take)
 dc_result:
                 ; D-DISKERR (docs/spec-basic-diskerr.md): DSKIO's error byte (published:
                 ; 0 write protected, 2 not ready, 4 CRC, 6 seek, 8 record not found,
@@ -146,8 +132,9 @@ dc_map:
 ; disk.rom the primitive reaches its OWN DSKIO by a plain local call; assembled
 ; into sub.rom (or main) it must CALSLT across to whatever disk ROM holds the
 ; slot. Everything else in this file is identical on both sides, which is what
-; makes one source possible at all. (2026-10-19: and the sub build now assembles
-; only the READ half -- the gate note above fat_read_fat_sector.)
+; makes one source possible at all. (2026-10-19: there is one home left, disk.rom
+; -- BLOAD's disk load followed BSAVE's write there and the sub-ROM's copy went --
+; so the difference, and dskio_calslt's gate, are gone.)
 ; ⚠️ ONE LABEL, CONDITIONAL ONLY ON THE DIFFERING INSTRUCTION. The first cut
 ; put a whole `read_sector:` in each arm, and `check_dead_code` does not read
 ; `IF/ELSE` -- it kept one arm's span, lost `dskio_calslt`'s only reacher, and
@@ -178,16 +165,14 @@ read_sector:
 ; is unaffected; the repack build's resident shim (basic/fat.asm) is
 ; independently named `write_sector` already (a different code path, no
 ; collision there). Zero-byte rename either way (EQU never emits bytes).
-; (fatprim_write_sector: disk.rom only since 2026-10-19 -- nothing in the sub
-; build writes a sector any more; see the gate note above fat_read_fat_sector.)
-    IF DISK_BUILD
+; (fatprim_write_sector: disk.rom only since 2026-10-19, and the name still
+; matters there -- disk/kernel.asm has a `write_sector` of its own.)
 fatprim_write_sector:
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte (ignored, single drive)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio_calslt    ; tail-call, as read_sector above
-    ENDIF
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).
@@ -275,7 +260,6 @@ fm_divdone:
                 ld      (FAT_TOTCLUS), de
                 xor     a
                 ld      (FAT_DEFER), a      ; D-WCACHE W3a: no FAT write deferred
-    IF DISK_BUILD
                 ; 🔴 M30's hint RESET, and it must live here once the swap lands.
                 ; It currently sits in fat_mount_tail (disk/kernel.asm) -- which a
                 ; call-graph walk shows the swap ORPHANS, because the body's
@@ -290,7 +274,6 @@ fm_divdone:
                 ; (tier2-m30-alloc-hint-spec.md §2/§3.2).
                 ld      hl, 2
                 ld      (FAT_ALLOCHINT), hl
-    ENDIF
                 or      a                   ; Cy = 0 success
                 ret
 fat_mount_bad:
@@ -593,19 +576,17 @@ frs_eof:
 ; data sector.
 ; ===========================================================================
 
-; 🗑️ 2026-10-19 (D-ROMSIZE step 1): FROM HERE TO fat_total_clusters, AND FROM
-; fat_count_free TO THE END OF THE FILE, disk.rom ALONE. The sub-ROM's only writer
-; through this half was BSAVE's disk engine (sub/save.asm), which left for disk.rom
-; the same day, and its only DSKF / KILL users went earlier (D-DSKFLOCAL,
-; D-KILLLOCAL): `make basic-reloc`'s dead-code gate found 888 B of this half
-; unreachable in the sub build. What the sub build still assembles is the READ half
-; BLOAD's disk path calls (sub/bload.asm): read_sector, fat_mount, fat_find /
-; name_cmp, fat_open / fat_advance / fat_next_cluster / fat_read_file_sector, and
-; fat_dir_start / fat_rootsecs. The `IF SUB_BUILD` arms this half carried (the
-; sub's own fat_write_fat_entry_hot and fat_write_buf_allfats -- disk.rom's are in
-; disk/fat.asm's $47C1 fill -- ffds_full's D-ASAVEFULLSTAMP stamp, the fixed 0821h
-; date) are deleted with it; disk.rom's arms are what remain, unconditional.
-    IF DISK_BUILD
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): THIS WRITE HALF WAS `IF DISK_BUILD` FOR A FEW
+; HOURS, and is plain again because disk.rom is the file's only home. The sub-ROM's
+; only writer through it was BSAVE's disk engine (sub/save.asm), which left for
+; disk.rom that day, and its only DSKF / KILL users went earlier (D-DSKFLOCAL,
+; D-KILLLOCAL): `make basic-reloc`'s dead-code gate found 888 B of it unreachable
+; in the sub build. The READ half followed with BLOAD's disk load (disk.rom
+; hk_dpbload), and sub/fatprim.asm's include went. The `IF SUB_BUILD` arms this
+; half carried (the sub's own fat_write_fat_entry_hot and fat_write_buf_allfats --
+; disk.rom's are in disk/fat.asm's $47C1 fill -- ffds_full's D-ASAVEFULLSTAMP
+; stamp, the fixed 0821h date) went with the write half; so did the sub's own
+; fat_dir_start / fat_rootsecs (below) with the read half.
 ; fat_read_fat_sector — read FAT-copy-0 sector that holds cluster N's entry.
 ;   in:  HL = cluster number
 ;   out: FAT_MBUF holds that FAT sector; (FAT_FATSEC) = its absolute sector;
@@ -995,31 +976,11 @@ fat_total_clusters:
                 ld      de, (FAT_TOTCLUS)
                 or      a
                 ret
-    ENDIF
 
-    IF SUB_BUILD
-; fat_dir_start -- FAT_DIRSEC := the first root sector, FAT_DIRREM := how many
-; there are: the start of every root-directory scan. Clobbers DE, F.
-fat_dir_start:
-                ld      hl, (FAT_FIRSTROOT)
-                ld      (FAT_DIRSEC), hl
-                call    fat_rootsecs
-                ld      (FAT_DIRREM), hl
-                ret
+; (fat_dir_start / fat_rootsecs: disk.rom's are in disk/fat.asm's $47C1 fill. The
+; sub build's own copies stood here under `IF SUB_BUILD` and went on 2026-10-19
+; with the sub-ROM's last reader, BLOAD's disk load.)
 
-; fat_rootsecs -- HL := root-directory sectors = FAT_FIRSTDATA - FAT_FIRSTROOT
-; (fat_mount's own sum, undone; the cell that held it holds FAT_TOTCLUS now).
-; Clobbers DE, F.
-fat_rootsecs:
-                ld      hl, (FAT_FIRSTDATA)
-                ld      de, (FAT_FIRSTROOT)
-                or      a
-                sbc     hl, de
-                ret
-    ENDIF
-                ; (disk.rom: fat_dir_start / fat_rootsecs are in disk/fat.asm's $47C1 fill)
-
-    IF DISK_BUILD                      ; to the end of the file: see above fat_read_fat_sector
 ; fat_count_free — count free clusters (FAT entries == 0) over the data range
 ; [2, total). Mounts first. Used by DSKF.
 ;   out: DE = free cluster count (0 on mount error).
@@ -1422,4 +1383,3 @@ fat_dir_update:
                 ret     c
                 or      a                   ; Cy = 0 success
                 ret
-    ENDIF

@@ -224,6 +224,114 @@ hk_dpbsave:
                 jp      hkds_go             ; hk_dpsave's prologue, unwind and tail
                 include "basic/sv-bsvdisk.inc"       ; disk_putword, bsv_open .. bsv_full
 
+; --- hk_dpbload: BLOAD from disk, in the disk ROM (D-ROMSIZE step 1, 2026-10-19) ---
+; Reached through H_FOPEN's dispatcher (hk_dpload) with FOPEN_SEL = FOPEN_SEL_BLOAD.
+; MEASURED on the CF-3300 (disk/docs/spec-diskcode-eviction.md §6.6ab / §6.6v /
+; §8.2): BLOAD enters $FE5D once with DE = $0001 (INPUT) and HL = the program-verb
+; buffer, as LOAD and MERGE do; it never enters $FE76 (tokenised LOAD's) and no
+; claimed cell per byte -- so the whole load is one crossing, and this is it.
+; Main parses the tail first (pcr_bload: `,R` / `,S` / `,offset` -- the CF-3300
+; parses it before the lookup, D-BLOADOFS); the sub-ROM BLOAD tenant decides the
+; device and builds DISK_FCB_NAME (62 / 56 for a bad drive / name, before this
+; hook), then main crosses. Main keeps the `,R` hand-off (basic/bload.asm
+; load_handoff / lh_back, the $6CF3 pin's continuation, D-BLOADRTAIL,
+; D-VARTABADOPT / D-HFOXOOM): it reads EXECPTR after this returns.
+; UNTIL THIS DATE the tenant read the file itself (basic/bload-body.inc's
+; do_disk_bload, over the sub-ROM's copy of basic/fat-prim-body.inc's read half and
+; of basic/fatio-body.inc) -- the last disk verb on that ROM's FAT engine, which is
+; gone with it. This is that loop, over THIS ROM's fat_mount / fat_io_find /
+; fat_io_getbyte, with the same exits in the same order.
+; Clean-room: our own code (moved) over our own FAT12 engine; the BSAVE binary
+; layout is the public one (basic/PROVENANCE.md); the hook contract is a black-box
+; measurement of entry counts and registers -- no reference ROM byte read.
+;   in   FOPEN_SEL = FOPEN_SEL_BLOAD; DISK_FCB_NAME = the 8.3 name; BL_OFS = the
+;        `,offset` (0 = none); VRAM_FLAG = 1 for `,S`
+;   out  CF = 1 claimed; DISKOP_STATUS = 0 loaded / 1 no volume, I-O, or a file
+;        that ends early (DISKOP_ERR carries a DSKIO failure's code, 70 for an
+;        empty drive; with none main PRINTS `load error`) / 53 not found (D-BLNF) /
+;        61 not a BSAVE file (D-BLMODE) -- BL_STAT's code, which main decodes;
+;        CURPTR = ENDPTR, EXECPTR = the header's + the offset
+hk_dpbload:
+                ei                          ; D-LOADDI: the hook arrives DI (CALSLT); the
+                                            ; tenant ran this load with interrupts ON, and
+                                            ; the driver keeps the caller's state per sector
+                xor     a
+                ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
+                call    fat_mount
+                jr      c,hbl_err           ; no volume / I-O: 1 (70 pending if empty)
+                call    fat_io_find
+                ld      a,53                ; mounted, and the 8.3 name is not there
+                jr      c,hbl_answer
+                call    fat_io_getbyte      ; header byte 0: the BSAVE disk marker
+                jr      c,hbl_err           ; an empty file: the safe default, as before
+                cp      BSAVE_DISK_ID
+                ld      a,61                ; the file EXISTS and is not a BSAVE binary
+                jr      nz,hbl_answer       ; (PROG.BAS and a non-$FE TEST.BIN alike)
+                ld      hl,CURPTR           ; header bytes 1..6 -- start, end, exec (LE)
+hbl_hdr:                                    ; -- into CURPTR / ENDPTR / EXECPTR, six
+                push    hl                  ; contiguous bytes, the tape path's loop
+                call    fat_io_getbyte      ; (CALSLT-free here, but a sector refill
+                pop     hl                  ; clobbers every register)
+                jr      c,hbl_err
+                ld      (hl),a
+                inc     hl
+                ld      a,l
+                cp      low (EXECPTR + 2)
+                jr      nz,hbl_hdr
+                ld      de,(BL_OFS)         ; D-BLOADOFS: + the `,offset` to start, end
+                ld      hl,CURPTR           ; AND exec, wrapping at 16 bits, as the
+                ld      b,3                 ; CF-3300 does (the tenant's bl_apply_ofs)
+hbl_ofs:
+                ld      a,(hl)
+                add     a,e
+                ld      (hl),a
+                inc     hl
+                ld      a,(hl)
+                adc     a,d
+                ld      (hl),a
+                inc     hl
+                djnz    hbl_ofs
+                ; the data, into [start..end] inclusive -- RAM, or with `,S` VRAM
+                ; through WRTVRM (the header words are VRAM addresses then)
+hbl_data:
+                call    fat_io_getbyte
+                jr      c,hbl_err           ; ran out before the end: 1, as before
+                ld      hl,(CURPTR)
+                ld      c,a
+                ld      a,(VRAM_FLAG)
+                or      a
+                ld      a,c
+                jr      z,hbl_ram
+                call    WRTVRM              ; HL = the VRAM address, A = the byte
+                jr      hbl_adv
+hbl_ram:
+                ; 🔴 PAGE 1 IS THIS ROM NOW. The tenant stored with the sub-ROM in
+                ; page 1 (and main's ROM before it), so a byte aimed at $4000-$7FFF
+                ; went nowhere. Here it would reach disk.rom's slot -- its FDC
+                ; window included -- so it is dropped, exactly as a ROM dropped it.
+                ld      a,h
+                sub     $40
+                cp      $40                 ; CF iff $40 <= H < $80
+                jr      c,hbl_adv
+                ld      (hl),c
+hbl_adv:
+                ld      hl,(CURPTR)
+                ld      de,(ENDPTR)
+                or      a
+                sbc     hl,de
+                jr      z,hbl_ok            ; cur == end: the last byte is stored
+                add     hl,de
+                inc     hl
+                ld      (CURPTR),hl
+                jr      hbl_data
+hbl_ok:
+                xor     a                   ; 0: loaded
+                jr      hbl_answer
+hbl_err:
+                ld      a,1                 ; 1: main's disk_error -- the pending code,
+hbl_answer:                                 ;    else a PRINTED `load error`
+                jp      hdl_answer          ; DISKOP_STATUS := A, FOPEN_SEL disarmed, CF = 1
+
 ; --- MSX-DOS-1 kernel CONOUT-worker entry: $53A7 (M22b; tier2-m22b-conout53a7-spec.md) --
 ; The relocated kernel CALLs this page-1 disk-ROM entry for EVERY BDOS CONOUT
 ; ($02) character (ret=$D88A, B=$A7 fingerprint, C=$02, char in E — the same
@@ -4621,6 +4729,9 @@ hk_dpload:
                 cp      FOPEN_SEL_BSAVE
                 jp      z,hk_dpbsave        ; BSAVE to disk (2026-10-19) -- far: in
                                             ; the hole after $50E0, with its engine
+                cp      FOPEN_SEL_BLOAD
+                jp      z,hk_dpbload        ; BLOAD from disk (2026-10-19) -- far:
+                                            ; beside hk_dpbsave, same hole
                 cp      FOPEN_SEL_AOPEN
                 jp      z,hk_aopen          ; step 11 (D-MERGEPORT) -- far: D-SAVEFULLSTAMP moved it
                 cp      FOPEN_SEL_GETB

@@ -209,11 +209,17 @@ saved binary to try it on).
 
 - Main ROM: `do_bload` and `pcr_bload` in
   [basic/bload.asm](../../basic/bload.asm) evaluate the name and parse the
-  whole tail (`,R`, `,S`, offset), then call the sub-ROM; the `,R` jump into
-  the loaded code is made here, because it never returns.
-- Sub-ROM: the load itself is [basic/bload-body.inc](../../basic/bload-body.inc),
-  run from the BLOAD tenant in [sub/bload.asm](../../sub/bload.asm): the disk
-  read, the tape read, and `bl_apply_ofs` for the offset.
+  whole tail (`,R`, `,S`, offset), then call the sub-ROM. For a disk file main
+  then hands the load to the disk ROM through the `$FE5D` hook, the one the
+  CF-3300's BLOAD uses too. The `,R` call into the loaded code is made here,
+  after either load.
+- Sub-ROM: [basic/bload-body.inc](../../basic/bload-body.inc), run from the
+  BLOAD tenant in [sub/bload.asm](../../sub/bload.asm), decides between tape
+  and disk, reads the tape (with `bl_apply_ofs` for the offset), and for a disk
+  file builds its 8.3 name.
+- Disk ROM: `hk_dpbload` in [disk/kernel.asm](../../disk/kernel.asm) reads a
+  disk file (since 2026-10-19; the sub-ROM did this before): the `&HFE` header,
+  the offset, and the bytes into RAM, or into VRAM for `,S`.
 - The tape search: `cas_capture_name` in
   [basic/cascap-body.inc](../../basic/cascap-body.inc) and the matcher in
   [basic/casmatch-body.inc](../../basic/casmatch-body.inc).

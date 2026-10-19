@@ -7,7 +7,7 @@ Two pure pieces underpin FILES "pattern" and KILL "pattern":
   * build_83_name (bload.asm) turns a source filename into the 11-byte 8.3 field,
     now expanding '*' to fill the rest of the name/ext field with '?' (CP/M FCB
     semantics) -- so "*.BAS" -> "????????BAS", "A*.*" -> "A??????????".
-  * name_cmp (basic/fat-prim-body.inc) compares an 11-byte pattern (DE) against a
+  * name_cmp (basic/fat-prim-body.inc, disk.rom) compares an 11-byte pattern (DE) against a
     directory entry (HL), treating '?' in the pattern as "match any char"
     (Z=match).
 
@@ -28,8 +28,12 @@ test calling the label by NAME through msxtest's sub-ROM bridge is not a `call`
 site and matched nothing ([[a-hand-listed-denominator-is-a-scope-claim]]). `make
 unit-test` is what found it, which is the argument for running the whole corpus
 rather than the gates a slice thinks it touched. The test now drives the body
-where the body lives -- a $0000-based sub.rom image -- so it exercises the code
-every real caller reaches instead of a marshalling layer that no longer exists.
+where the body lives, so it exercises the code every real caller reaches instead
+of a marshalling layer that no longer exists.
+🏗️ 2026-10-19 (D-ROMSIZE step 1): AND THE BODY MOVED AGAIN. The sub-ROM's copy of
+basic/fat-prim-body.inc went with its last caller, BLOAD's disk load (disk.rom
+hk_dpbload now), so `name_cmp` is disk.rom's alone -- the copy fat_find, FILES,
+KILL and the open-file checks reach. The second machine is a $4000-based disk.rom.
 """
 
 import os
@@ -48,22 +52,21 @@ from msxtest import Machine, zero  # noqa: E402
 # cart's org, so a BASIC test that omitted it silently tested the lean
 # build (docs/spec-lean-retire-s3-gates.md §5, F-U).
 BASIC_BASE = 0x2781
-# The sub-ROM is a flat $0000-based 32 KB image spanning BOTH pages, so a symbol
-# in it is already at the address a real CALSLT would map it to (test_msgsub.py's
-# note). `name_cmp` is inside the page-1 fatprim tenant, i.e. $4000+.
-SUB_BASE = 0x0000
+# `name_cmp` lives in disk.rom alone since 2026-10-19 (the docstring), a 16 KB
+# page-1 image at $4000.
+DISK_BASE = 0x4000
 
 ROM = tp("zb_wildcard.rom")
 SYM = tp("zb_wildcard.sym")
-SUB_ROM = tp("zb_wildcard_sub.rom")
-SUB_SYM = tp("zb_wildcard_sub.sym")
+DISK_ROM = tp("zb_wildcard_disk.rom")
+DISK_SYM = tp("zb_wildcard_disk.sym")
 SRC = 0xC400   # scratch source filename buffer
 
 
 def build():
     src = os.path.join(ROOT, "basic", "main.asm")
     subprocess.run(["pasmo", "--bin", src, ROM, SYM], check=True, capture_output=True)
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB_ROM, SUB_SYM],
+    subprocess.run(["pasmo", "-I", "disk", "--bin", "disk/disk.asm", DISK_ROM, DISK_SYM],
                    check=True, capture_output=True, cwd=ROOT)
 
 
@@ -102,11 +105,12 @@ def run():
     report("expand ??.BAS",   expand("??.BAS"),   "??      BAS")   # literal '?' kept
 
     # name_cmp wildcard matching: DE = pattern, HL = entry; Z = match.
-    # ⚠️ A SECOND MACHINE, ON THE SUB IMAGE. See the module docstring: the main
-    # ROM has no `name_cmp` since D-LFILES, and asserting against a shim that
-    # only marshalled the result was always a weaker reading than driving the
-    # body. Both buffers are RAM ($8000+), which both images address identically.
-    ms = Machine(SUB_ROM, SUB_SYM, rom_base=SUB_BASE)
+    # ⚠️ A SECOND MACHINE, ON THE DISK IMAGE (the sub image's until 2026-10-19).
+    # See the module docstring: the main ROM has no `name_cmp` since D-LFILES,
+    # and asserting against a shim that only marshalled the result was always a
+    # weaker reading than driving the body. Both buffers are RAM ($8000+), which
+    # both images address identically.
+    ms = Machine(DISK_ROM, DISK_SYM, rom_base=DISK_BASE)
     PAT = 0xC500
     ENT = 0xC520
 

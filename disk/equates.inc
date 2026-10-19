@@ -33,7 +33,10 @@ LPTOUT          equ     $00A5   ; MSX BIOS: send the character in A to the list
 RDVRM           equ     $004A   ; MSX BIOS: read VRAM at HL -> A -- BSAVE ,S streams
                                 ; its data from VRAM through it (2026-10-19; the
                                 ; same address basic/sysvars.inc declares)
-CSRX            equ     $F3DD   ; cursor column, 1-based (MSX standard work area;
+WRTVRM          equ     $004D   ; MSX BIOS: write A to VRAM at HL -- BLOAD ,S streams
+                                ; its data INTO VRAM through it (2026-10-19, hk_dpbload;
+                                ; the same address basic/sysvars.inc declares)
+CSRX           equ     $F3DD   ; cursor column, 1-based (MSX standard work area;
                                 ; same address basic/sysvars.inc declares)
 LINLEN          equ     $F3B0   ; current line length = the active width (ditto)
 ; --- D-DISKVERB: the call-back route out of this ROM into main PAGE 1 -------
@@ -217,6 +220,13 @@ FOPEN_SEL_BSAVE equ     $42     ; D-ROMSIZE step 1 (2026-10-19): BSAVE to disk
                                 ; (hk_dpbsave) -- the 7-byte header + data. The
                                 ; CF-3300's BSAVE enters $FE5D exactly once
                                 ; (scratchpad/bsave_hook_run.out)
+FOPEN_SEL_BLOAD equ     $5A     ; D-ROMSIZE step 1 (2026-10-19): BLOAD from disk
+                                ; (hk_dpbload) -- the $FE header, the offset, the
+                                ; data into RAM or (`,S`) VRAM. The CF-3300's
+                                ; BLOAD enters $FE5D once with DE = 1, HL = the
+                                ; program-verb buffer, like LOAD / MERGE, never
+                                ; $FE76, no claimed cell per byte
+                                ; (spec-diskcode-eviction.md §6.6ab / §6.6v / §8.2)
 H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC
                                 ; (hk_chin) -- A = 0 / 2 / 4; out A = the byte,
                                 ; CF = the end. The CF-3300 enters $FE8A once per

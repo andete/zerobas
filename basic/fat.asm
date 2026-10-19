@@ -246,8 +246,9 @@ fatprim_bounce:
 ; (files.asm `call fat_io_open`), and an INPUT channel is disk.rom's FCB now
 ; (hk_finp / hk_chin, disk/fat.asm). The ARL_GETBYTE default and the two
 ; restores that named fat_io_getbyte were dead stores (files.asm init_filechan).
-; The body stays shared by sub/bload.asm (BLOAD's tenant) and disk/kernel.asm
-; (LOAD / MERGE), byte-identical in both.
+; The body stayed shared by sub/bload.asm (BLOAD's tenant) and disk/kernel.asm
+; (LOAD / MERGE) until 2026-10-19, when BLOAD's disk load moved to disk.rom
+; (hk_dpbload) too: disk/kernel.asm is its one home now.
 
     IF BASICINT_PINS
 ; 📌 REFILL FOR D-BASICINT'S $6CF3 PIN (S10.C, 2026-10-15). S10.C took 128 B out

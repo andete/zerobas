@@ -1,0 +1,15 @@
+AUTOEXEC.BAS BSAVE"A:SV.SC",&H1000,&H1010,S  ->  BLOAD"A:SV.SC",S  (VRAM round-trip, cold-boot auto-run, zero typed input)
+pattern: byte[i] = (i*3+7) & 0xFF, i=0..16 -> 070a0d101316191c1f2225282b2e313437
+
+[ours: C-BIOS_MSX1_EU_REPACK_DISK]
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+  [PASS] done-guard: ($D0FF)=$99 (expect $99 -- program ran to completion, poisoned $11 pre-boot)
+  [PASS] VRAM [1000..1010] after BLOAD",S" = the saved pattern (via VPEEK mirror at $C000)
+  [PASS] on-disk SV.SC BSAVE",S" payload (start=$1000 end=$1010) matches the VRAM pattern
+
+[STOCK reference: National_CF-3300] (CF-3300 differential)
+  [PASS] done-guard: ($D0FF)=$99 (expect $99 -- program ran to completion, poisoned $11 pre-boot)
+  [PASS] VRAM [1000..1010] after BLOAD",S" = the saved pattern (via VPEEK mirror at $C000)
+  [PASS] on-disk SV.SC BSAVE",S" payload (start=$1000 end=$1010) matches the VRAM pattern
+
+ALL PASS -- BSAVE",S"/BLOAD",S" VRAM round-trip via .bas-on-disk auto-run matches the National_CF-3300 stock reference (VRAM load-path AND on-disk save-path both fidelity-checked)

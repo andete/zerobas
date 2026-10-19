@@ -1243,7 +1243,7 @@ for the transport.
 | Surface | Verb | On-disk format / marker | Reaches disk ROM via | Detail section |
 |---------|------|-------------------------|----------------------|----------------|
 | Filename → 8.3 parse | `BLOAD"A:name"` (shared by all) | n/a (parses `"A:"`/`"B:"`/bare → `DISK_FCB_NAME`) | — (parse only) | §disk-BLOAD scratch FCB |
-| Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | standard DSKIO $4010 + loader FAT12 (`fat_io_open`/`fat_io_getbyte`) | §disk DSKIO host engine, §disk BLOAD execute |
+| Binary image load | `BLOAD"A:name"[,R]` | BSAVE binary, `$FE` header | standard DSKIO $4010 + loader FAT12 (`fat_io_open`/`fat_io_getbyte`); since 2026-10-19 H_FOPEN → disk.rom `hk_dpbload` over its own FAT (§BSAVE to disk's sibling paragraph, "BLOAD from disk is disk.rom's") | §disk DSKIO host engine, §disk BLOAD execute |
 | Tokenised program load | `LOAD"A:name"[,R]` | tokenised BASIC, `$FF` marker | same DSKIO/FAT12 read path; streams line-link image | §disk DSKIO host engine, §disk LOAD |
 | Load-then-run | `RUN"A:name"` | tokenised BASIC, `$FF` marker | reuses `disk_prog_load` (§disk LOAD); runs iff the load SUCCEEDED (D-RUNTAIL — "always runs" was this table's own wrong claim, §disk RUN) | §disk RUN |
 | Binary / tokenised SAVE | `SAVE"A:name"` / `BSAVE"A:name",s,e[,x]` | `$FF` / `$FE` markers | standard DSKIO $4010 + loader FAT12 (`fat_io_create`/`fat_io_putbyte`/`fat_io_close`) | §disk DSKIO host engine |
@@ -1356,7 +1356,10 @@ more than 8 name chars, more than 3 ext chars, a second `.`, or an empty name
 next section). It hands the FCB at `DISK_FCB` to the disk ROM's `bdos_entry`
 (C=`BDOS_OPEN`, DE=`DISK_FCB`) across slots. The `,R` (RUNFLAG) parse is shared
 between the tape and disk paths via `parse_close_run`, and the exec handoff via
-`load_handoff`.
+`load_handoff`. (2026-10-19: `do_disk_bload` is gone -- the disk read is disk.rom's
+`hk_dpbload`, reached through H_FOPEN; the sub-ROM tenant still builds this FCB
+name, and its drive / name rejects are 62 / 56, raised by main. See "BLOAD from
+disk is disk.rom's" below.)
 
 **Functional validation (openMSX, `disk_probe_bload_fcb.py`).**
 On `C-BIOS_MSX1_BASIC` (the parse path is pure interpreter code that never touches
@@ -1956,6 +1959,25 @@ mid-stream takes disk.rom's `ffds_undefer` rather than the tenant's
 D-ASAVEFULLSTAMP stamp (BSAVE refuses a too-large image before the data, so the
 fit verdict, not that arm, answers 66). Own code throughout; unit test
 `tests/test_hk_dpbsave.py`.
+
+**BLOAD from disk is disk.rom's (D-ROMSIZE step 1, 2026-10-19).** Measured on the
+CF-3300 by the same black-box method (entry counts per hook cell and guarded
+register logs, `disk/docs/spec-diskcode-eviction.md` §6.6ab / §6.6v / §8.2; no ROM
+byte read): BLOAD enters `$FE5D` once with DE = `$0001` (INPUT) and HL = the
+program-verb buffer, as LOAD and MERGE do; it never enters `$FE76` and no claimed
+cell per byte. So main keeps the tail parse (`pcr_bload`, before the lookup as
+D-BLOADOFS measured) and the `,R` hand-off; the sub-ROM BLOAD tenant keeps the
+device dispatch and the 8.3 name, and answers `BL_STAT = FOPEN_SEL_BLOAD` ($5A)
+for a disk file; main crosses H_FOPEN with that selector and disk.rom's
+`hk_dpbload` runs the loop the tenant ran (`do_disk_bload`) over its own
+`fat_mount` / `fat_io_find` / `fat_io_getbyte`: the `$FE` marker (61 without it),
+53 after a good mount, the six header bytes, `BL_OFS` added to start, end and
+exec, the data into RAM or through WRTVRM, 1 (`load error`, or the pending DSKIO
+code such as 70) for a mount failure or a file that ends early. A byte aimed at
+page 1 is dropped, as it was under the tenant (page 1 is disk.rom while the hook
+runs). It was the sub-ROM FAT engine's last user: `fat-prim-body.inc` and
+`fatio-body.inc` have disk.rom as their one home. Own code throughout; unit test
+`tests/test_hk_dpbload.py`.
 
 
 **A write error reaches BASIC (D-WPROTECT / D-SAVEOPEN, 2026-09-28).** Measured on

@@ -1,0 +1,4 @@
+PASS bload"a:nosuch.bin"    drive=1 name=b'NOSUCH  BIN'
+PASS bload"nosuch.bin"      drive=0 name=b'NOSUCH  BIN'
+PASS bload"b:no.txt"        drive=2 name=b'NO      TXT'
+refcache: 1 hit, 0 miss

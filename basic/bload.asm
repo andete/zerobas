@@ -31,10 +31,18 @@ bl_upcase       equ     upcase
 bl_load_error   equ     load_error
 
 ; --- do_bload: resident marshalling stub (repack build) ---------------------
-; The whole verb body (do_bload..disk_load_fin) moved to sub/bload.asm, a PAGE-1
-; tenant co-resident with fatprim (docs/spec-traps-t3-key.md §7.6). Marshal the
-; one input (HL = token cursor) and the one output (BL_STAT) through RAM:
+; The verb body (device dispatch, the 8.3 name, the cassette load) is the sub-ROM
+; PAGE-1 tenant sub/bload.asm (docs/spec-traps-t3-key.md §7.6). Marshal the one
+; input (HL = token cursor) and the one output (BL_STAT) through RAM:
 ; subrom_call clobbers every register and forces CF=0 on return.
+; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE DISK LOAD IS disk.rom's (hk_dpbload),
+; through H_FOPEN -- the cell the CF-3300's BLOAD enters, once, like LOAD / MERGE
+; (disk/docs/spec-diskcode-eviction.md §6.6ab / §6.6v / §8.2: DE = 1, HL = the
+; program-verb buffer; never $FE76, no per-byte cell). The tenant still decides
+; the device and parses the name into DISK_FCB_NAME; for a disk file it answers
+; BL_STAT = FOPEN_SEL_BLOAD and main makes the crossing. Until this date the
+; tenant read the file itself, over the sub-ROM's second FAT engine (its READ
+; half and a fatio-body copy, the last users of either -- both gone).
 ;
 ; The `,R` handoff CANNOT move: it ends in `jp (hl)` into the loaded program and
 ; never returns, so running it inside the tenant's CALSLT would leave main page 1
@@ -56,10 +64,13 @@ do_bload:
                 ld      (BL_PTR),hl         ; staged name ptr -> tenant
                 call    pcr_bload           ; D-BLOADOFS: the whole tail, HERE
                 call    fch_park            ; D-ASAVECHAN2 (2026-10-03): park the live
-                                            ; channel -- the tenant's disk read reuses its
+                                            ; channel -- the tenant's disk read reused its
                                             ; engine globals, and an open INPUT file lost
                                             ; its place, an OUTPUT one its bytes
-                                            ; (scratchpad/chanside_probe.py)
+                                            ; (scratchpad/chanside_probe.py). Kept when
+                                            ; the read moved to disk.rom (2026-10-19),
+                                            ; as BSAVE kept it: FCH_ACTIVE = 0 after a
+                                            ; BLOAD is what every measured row saw
                 xor     a                   ; D-CASFCB: a tape BLOAD's search skips
                 call    cas_bufp_set        ;  other files through channel #0's buffer
                                             ;  -- the tenant calls the SUB-side
@@ -68,32 +79,38 @@ do_bload:
                                             ;  read PEEK 0 without it)
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD)
-                ; D-BLNF: BL_STAT is now THREE-VALUED, and the third value is why
-                ; BLOAD could not be fixed by D-LOADERR-FIX's DISKOP_OP test. The
-                ; tenant calls the REAL sub-side fat_find as a plain in-page call,
-                ; so nothing writes DISKOP_OP and df_or_loaderr (basic/files.asm)
-                ; is blind to this verb. The tenant tells the two apart at its own
-                ; mount/find boundary instead and files WHICH it was.
+                ; D-BLNF: BL_STAT is THREE-VALUED -- and since 2026-10-19 the
+                ; disk load answers in the SAME code through DISKOP_STATUS:
                 ;   0 -> loaded
-                ;   1 -> `load error`, PRINTED, program runs on
+                ;   1 -> `load error`, PRINTED, program runs on -- unless a DSKIO
+                ;        failure is pending, which disk_error RAISES (70, ...)
                 ;   n -> RAISE MSX ERR n, program stops
                 ; 🎯 D-BLMODE MADE THE THIRD VALUE A **CODE** RATHER THAN ADDING A
-                ; FOURTH INDEX, and that is the whole main-side cost of the new face:
-                ; `cp 1` for `dec a` is one byte, and `jp raise_error` costs the same
-                ; three `jp df_notfound` did, because A is already the code the
-                ; tenant filed. A fourth enumerated value would have been six.
-                ; 53 = `File not found` (D-BLNF), 61 = `Bad file mode` (D-BLMODE).
-                ; ⚠️ 1 STILL COVERS THE CASSETTE, the parse rejects and a failed
-                ; mount. Only an arm that PROVED the volume mounted files a code.
+                ; FOURTH INDEX: `cp 1` for `dec a` is one byte, and `jp raise_error`
+                ; costs the same three `jp df_notfound` did, because A is already
+                ; the code. 53 = `File not found` (D-BLNF), 61 = `Bad file mode`
+                ; (D-BLMODE) -- both disk.rom's now; the tenant files 19 (tape
+                ; I/O, D-CASBIN), 56 / 62 (a bad name or drive) and 1.
+                ; ⚠️ 1 COVERS THE CASSETTE, a failed mount and a short file. Only
+                ; an arm that PROVED the volume mounted files 53 / 61.
                 ; ⚠️ AND SO BLOAD CANNOT RAISE ERR 1 THROUGH THIS CELL -- see
                 ; sub/bload.asm, where the hazard is written down beside the arms.
+                ; 🏗️ 2026-10-19: FOPEN_SEL_BLOAD ($5A, not an MSX error code, so
+                ; never one the tenant files) means "a DISK file, its name is in
+                ; DISK_FCB_NAME": the selector is ALREADY in A for fopen_cross,
+                ; which crosses H_FOPEN to disk.rom's hk_dpbload and comes back
+                ; with A = DISKOP_STATUS in this same code -- 5 B of main page 1
+                ; for the whole move. Unclaimed (a foreign disk ROM): ERR 5, as
+                ; LOAD / SAVE / BSAVE answer there.
                 ld      a,(BL_STAT)
+                cp      FOPEN_SEL_BLOAD
+                call    z,fopen_cross       ; disk.rom loads it; A = its status
                 or      a
                 jr      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
                 cp      1
-                jp      z,disk_error        ; the tenant hit load_error: ERR 70 on an empty drive
-                                            ; (D-DISKERR), else `load error` -- the tape path has
-                                            ; no DSKIO and keeps its face
+                jp      z,disk_error        ; a load error: ERR 70 on an empty drive (D-DISKERR,
+                                            ; disk.rom's mount), else `load error` -- the tape
+                                            ; path has no DSKIO and keeps its face
                 jp      raise_error         ; A = the tenant's ERR code — never returns
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
@@ -294,9 +311,9 @@ pcr_load:
                 jp      nz,stmt_error       ; ,S
                 ret
 
-; device name accepted by this build. Source: spec-bload-r.md §5 ("CAS:").
-dev_cas:
-                db      "CAS:",0
+; (dev_cas, the "CAS:" device name, moved past the $73E5 pin on 2026-10-19 --
+; basic/field.asm, after lrset_rhs: its 5 B pay for do_bload's FOPEN_SEL_BLOAD
+; crossing above, so nothing in front of $6CF3 changes size.)
 
 ; --- error path: stop the tape, drop a marker, report, return to the prompt -
 ; Reached when a cassette BIOS call fails (CF set), the file is not binary, or

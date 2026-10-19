@@ -42,6 +42,8 @@ DISKSLOT_OK equ 0FB21H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
 CURPTR equ 0F7BCH   ; current load pointer (2 bytes) -- SWPTMP+0
 EXECPTR equ 0F7C0H   ; execution address   (2 bytes) -- SWPTMP+4
 VRAM_FLAG equ 0F664H   ; 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6)
+ENDPTR equ 0F7BEH   ; final load address  (2 bytes) -- SWPTMP+2
+BL_OFS equ 0F69FH   ; 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's)
 COPY_SRC equ 0EEEEH   ; DISK-ONLY: the source's 11-byte 8.3 name field
 COPY_CLUS equ 0EEF9H   ; DISK-ONLY: the source's first cluster (word)
 COPY_LEFT equ 0EEFBH   ; DISK-ONLY: bytes still to copy (4-byte LE)
@@ -82,7 +84,7 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-parse_disk_fcb equ 064FEH
+parse_disk_fcb equ 06503H
 field_prologue equ 07348H
 field_item equ 072F6H
 lrset_tgt equ 073C5H

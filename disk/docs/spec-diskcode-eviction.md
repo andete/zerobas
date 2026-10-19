@@ -4229,7 +4229,8 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      scratch (the `FCH_STATE0` span) serves BLOAD / BSAVE's tenant and
      `autoexec_run`, which are not channels -- the BSAVE-to-disk item's.
      (2026-10-19: `autoexec_run` and BSAVE have left it -- the note below and
-     §6.6bd; the span now serves BLOAD's sub-ROM tenant alone.)
+     §6.6bd; the span now serves BLOAD's sub-ROM tenant alone. Later that day
+     BLOAD's disk load left too, §6.6be: no code names the span.)
      🟡 **2026-10-19, the next pieces (drafted in a worktree, build / pins /
      unit tests only):** AUTOEXEC.BAS's boot probe is `disk.rom`'s `hk_auto`
      (H_FOPEN, `FOPEN_SEL_AUTO` = `$58`: stage the name, mount, find, the size
@@ -4524,7 +4525,77 @@ sharing SAVE's tail, `sv_tenant`'s disk decode -4 B -- the tenant can only answe
   `fat_read_file_sector`, `fat_dir_start` / `fat_rootsecs` locally. That is the
   last disk verb on the sub-ROM's engine; moving it (H_FOPEN, a BLOAD selector,
   `disk.rom` already has `fatio-body.inc` and LOAD's loop) would retire
-  `fat-prim-body.inc` from the sub build altogether.
+  `fat-prim-body.inc` from the sub build altogether. ✅ Done the same day: §6.6be.
+
+### 6.6be 🟢 `BLOAD` FROM DISK RUNS IN `disk.rom`; THE SUB-ROM HAS NO FAT ENGINE LEFT (D-ROMSIZE step 1, 2026-10-19)
+
+Drafted in a worktree: build, pins and unit tests only; the emulator suites are
+the integrator's.
+
+**The measurement it rests on** is already in this document: `BLOAD` enters
+`$FE5D` with `DE` = `$0001` (INPUT) and `HL` = the program-verb buffer, exactly as
+`LOAD` and `MERGE` do (§6.6ab, §8.2); it does not enter `$FE76` (§6.6v's table);
+and there is no claimed cell per byte. So the whole disk load is one crossing.
+
+**The shape -- BSAVE's (§6.6bd), with the sub-ROM tenant kept for the tape.**
+- Main (`basic/bload.asm` `do_bload`) is unchanged up to the tenant call: the
+  name expression, the whole tail (`pcr_bload`: `,R` / `,S` / `,offset`, parsed
+  BEFORE the lookup as D-BLOADOFS measured), `fch_park`, the tape buffer. Then
+  `ld a,(BL_STAT) / cp FOPEN_SEL_BLOAD / call z,fopen_cross` -- 5 B -- and the
+  same three-way decode (0 hand-off, 1 `disk_error`, else `raise_error`), now fed
+  by DISKOP_STATUS for a disk file. The `,R` hand-off (`load_handoff` / `lh_back`,
+  the `$6CF3` pin's continuation, D-BLOADRTAIL, D-VARTABADOPT / D-HFOXOOM) is
+  untouched.
+- The sub-ROM tenant (`sub/bload.asm` over `basic/bload-body.inc`) keeps the
+  device dispatch, the diskless 56 and the tape load. For a disk name it builds
+  `DISK_FCB_NAME` and answers `BL_STAT` = `FOPEN_SEL_BLOAD` = `$5A` (90: not an
+  MSX error code, so never one the tenant files). Its `pdf_baddrive` /
+  `pdf_badname` file 62 / 56 and `isd_disk` then loads nothing.
+- `disk.rom`'s `hk_dpload` sends `$5A` to `hk_dpbload` (`disk/kernel.asm`, in the
+  hole after `hk_dpbsave`): `ei` (D-LOADDI), `DISKOP_ERR` := 0, `fat_mount` (fail
+  -> 1, with 70 pending on an empty drive), `fat_io_find` (fail -> 53), the `$FE`
+  marker (else 61), the six header bytes into CURPTR / ENDPTR / EXECPTR, `BL_OFS`
+  added to all three, the data into RAM or through WRTVRM (`,S`), EOF before the
+  end -> 1. Out through `hdl_answer` (DISKOP_STATUS, FOPEN_SEL disarmed, CF = 1).
+  ENDPTR and BL_OFS join the generated ABI; WRTVRM joins `disk/equates.inc`.
+- **Page 1 is `disk.rom` while the hook runs.** The tenant stored with the
+  sub-ROM there, so a byte aimed at `$4000-$7FFF` went nowhere; here it would
+  reach `disk.rom`'s slot, FDC window included. `hk_dpbload` drops it -- the same
+  observable as before (`tests/test_hk_dpbload.py` row "page 1").
+
+**Behaviour changes, all read from the source, none measured on the reference:**
+- `BLOAD "Q:X"` / a malformed name: 62 / 56 RAISED, nothing loaded. Before, the
+  tenant's rejects were `bl_load_error`, which RETURNED into `isd_disk`, which
+  fell on into the load with `DISK_FCB_NAME` as the previous verb left it (or
+  half-built): 53, or a load of THAT file followed by a printed `load error`.
+  62 / 56 are what OPEN / KILL / SAVE / FILES / RUN (and BSAVE before `$FE5D`)
+  answer on the CF-3300; BLOAD's own face is unmeasured.
+- A foreign disk ROM that does not claim `$FE5D` now answers ERR 5 (as LOAD /
+  SAVE / BSAVE already did); the tenant read any standard DSKIO.
+- The read cursor is `disk.rom`'s FREAD_* (on RDBLK scratch) and its FAT scratch,
+  not main's `$EE06..` span; a BLOAD whose range covers either RAM now behaves
+  differently mid-load (it did before, with the other cells).
+
+**What it freed, `make basic-reloc`:** main page 1 530 -> 525 B (the 5 B decode;
+`dev_cas`, 5 B of data, moved from `basic/bload.asm` to past `$73E5` so nothing in
+front of `$6CF3` changed size: `pin_plan --check` 6/6, waste 4 of 4); main low 156
+unchanged; sub page 0 184 unchanged; sub page 1 3085 -> 3953 B (+868: the disk
+loop, `bl_notfound` / `bl_badmode`, `fatio-body.inc` and the read half of
+`fat-prim-body.inc`); `disk.rom` 2711 -> 2586 B free (`hk_dpbload` 120 B + the
+5 B dispatch arm), largest hole 574 B at `$5169` -> 454 B at `$51E1`.
+
+**And the shared FAT bodies:** `basic/fat-prim-body.inc` and
+`basic/fatio-body.inc` have ONE home, `disk.rom`; the former's `IF DISK_BUILD` /
+`IF SUB_BUILD` gates (the sub's cross-slot `dskio_calslt` with D-BLDI's EI
+restore, its `fat_dir_start` / `fat_rootsecs`) are deleted -- `disk.rom` was
+byte-identical across that step. `sub/fatprim.asm` keeps row 23 (`t_fch_hdr`)
+and the retired rows. `tests/test_wildcard.py`'s `name_cmp` half drives
+`disk.rom`'s copy now. Main's own FAT scratch span (`FCH_STATE0`, `$EE06..`) is
+named by no code in main or sub any more -- a TIER 4 RAM lead, not reclaimed.
+
+**Read, not changed:** the TAPE path adds `BL_OFS` twice when the load ends
+(`load_done` falls into `bl_apply_ofs`), so a tape `BLOAD"CAS:X",R,ofs` hands
+`,R` exec + 2 x ofs. The disk path never did.
 
 ## 7. The channel trio, and the wall that is not one
 

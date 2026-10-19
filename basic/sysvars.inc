@@ -1490,14 +1490,19 @@ TRAPSVC         equ     $FC87   ; 1 B: count of live SERVICING entries == depth 
 ; output ride through RAM -- the fatprim/fcbname pattern. These need their OWN
 ; cells rather than aliasing DISKOP_HL/DISKOP_STATUS: unlike fcbname (which runs
 ; strictly in the PARSE phase, before any fat_io_* primitive), the BLOAD tenant
-; holds its status ACROSS the whole load, during which the fatprim cells are live
-; on every getbyte.
+; held its status ACROSS the whole load, during which the fatprim cells were live
+; on every getbyte. 🏗️ 2026-10-19 (D-ROMSIZE step 1): the DISK load is disk.rom's
+; (hk_dpbload) -- the tenant answers BL_STAT = FOPEN_SEL_BLOAD for a disk name and
+; main crosses H_FOPEN, whose answer (DISKOP_STATUS) is decoded in BL_STAT's code.
 BL_PTR          equ     $F6A7   ; 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO)
 BL_STAT         equ     $F69D   ; 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO)
                                 ; error` PRINTED, and ANY OTHER VALUE IS THE MSX
                                 ; ERR CODE THE RESIDENT STUB RAISES (D-BLMODE,
                                 ; 2026-08-21): 53 `File not found` (D-BLNF),
-                                ; 61 `Bad file mode`. Carrying the CODE rather
+                                ; 61 `Bad file mode` (both disk.rom's since
+                                ; 2026-10-19), 19, 56, 62; and FOPEN_SEL_BLOAD
+                                ; ($5A) = "a disk file, main loads it through
+                                ; disk.rom". Carrying the CODE rather
                                 ; than a fourth index is what makes a new BLOAD
                                 ; error face cost ONE byte of main page 1.
                                 ; ⚠️ 1 is taken, so BLOAD can never raise ERR 1
@@ -3350,8 +3355,10 @@ FAT_DIRREM      equ     $EE1D   ; DISK-ONLY: root-dir sectors remaining to scan 
 FAT_WRTMP       equ     $EE1F   ; DISK-ONLY: transient scratch for the FAT12 write helpers (word)
 FAT_WRTMP2      equ     $EE21   ; DISK-ONLY: second transient (free-cluster scan cached sector) (2 B)
 ; Read byte-stream state (fat_io_open / fat_io_getbyte) -- since S10.C (2026-10-15)
-; only the sub-ROM BLOAD tenant's copy of basic/fatio-body.inc uses these; an
-; INPUT channel reads its own FCB row in disk.rom.
+; only the sub-ROM BLOAD tenant's copy of basic/fatio-body.inc used these, and since
+; 2026-10-19 nothing in main or sub does: BLOAD's disk load is disk.rom's, over its
+; own FREAD_* (aliased onto RDBLK scratch, disk/init.asm). An INPUT channel reads
+; its own FCB row in disk.rom.
 FREAD_OFF       equ     $EE23   ; DISK-ONLY: next byte index within FSECTOR_BUF (0..512) (word)
 FREAD_LEFT      equ     $EE25   ; DISK-ONLY: bytes of the open file still undelivered (4-byte LE)
 ; Write byte-stream state (fat_io_create / fat_io_putbyte / fat_io_close).
@@ -3795,6 +3802,13 @@ FOPEN_SEL_AUTO  equ     $58         ; 2026-10-19: AUTOEXEC.BAS's cold-start prob
 FOPEN_SEL_BSAVE equ     $42         ; 2026-10-19: BSAVE to disk (disk.rom
                                     ; hk_dpbsave) -- the header + data; the
                                     ; CF-3300's BSAVE enters $FE5D exactly once
+FOPEN_SEL_BLOAD equ     $5A         ; 2026-10-19: BLOAD from disk (disk.rom
+                                    ; hk_dpbload) -- header, offset, data / `,S`;
+                                    ; the CF-3300's BLOAD enters $FE5D once, as
+                                    ; LOAD does. ALSO a BL_STAT value: the sub-ROM
+                                    ; tenant's "a disk file, DISK_FCB_NAME is
+                                    ; built" (basic/bload.asm) -- 90 is no MSX
+                                    ; error code, so the tenant never files it
 ; S10.C (2026-10-15): the INPUT side's byte cell. The CF-3300's main ROM enters
 ; $FE8A once per byte an INPUT# / LINE INPUT# / INPUT$ reads (TODO D-ROMSIZE,
 ; S10.C STEP C0: scratchpad/s10c_hook_run.out), and EOF / the numeric item / INPUT$
@@ -3946,9 +3960,10 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; fch_load_ctx and the sub-ROM's t_fch_load, whose last job was mirroring the
 ; FCB's LOF / LOC into FAT_FILESIZE / FWR_BYTES (LOF / LOC ask disk.rom now).
 ; FCH_STATESZ survives as the ROW's size -- the stride every ROM derives the row
-; from -- and the span's cells are main's own FAT scratch (BLOAD's tenant; and
-; autoexec_run's probe until 2026-10-19, which runs on disk.rom's own FAT now),
-; shared, not per channel.
+; from -- and the span's cells are main's own FAT scratch (BLOAD's tenant, and
+; autoexec_run's probe, until 2026-10-19 -- both run on disk.rom's own FAT now, so
+; no code in main or sub names a cell of the span; read from the sources, a RAM
+; lead for TIER 4, not reclaimed), shared, not per channel.
 FCH_STATE0      equ     FAT_CURCLUS         ; $EE06 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly
@@ -5580,16 +5595,17 @@ SUBROM_IDX_CIRCLEPARSE equ 19  ; circleparse_tenant (sub/circleparse.asm): CIRCL
                                 ; eval/parse_coord back to the resident ex_circle servicer
                                 ; via GFX_DREQ/GFX_DPTR. IX = SUBROM_ENTRY_BASE_P1 +
                                 ; 3*SUBROM_IDX_CIRCLEPARSE.
-SUBROM_IDX_BLOAD     equ 20     ; bload_tenant (sub/bload.asm): the whole BLOAD verb
-                                ; body -- device dispatch, the cassette load loop and
-                                ; the disk load loop -- evicted from main page 1 to fund
+SUBROM_IDX_BLOAD     equ 20     ; bload_tenant (sub/bload.asm): the BLOAD verb body --
+                                ; device dispatch, the cassette load loop and a disk
+                                ; file's 8.3 name -- evicted from main page 1 to fund
                                 ; interrupt-traps T3 (docs/spec-traps-t3-key.md §7.6).
-                                ; A PAGE-1 tenant specifically so it sits beside
-                                ; fatprim_tenant and calls fat_mount/fat_find/fat_open/
-                                ; fat_read_file_sector SUB-LOCALLY -- which is what makes
-                                ; the carve possible at all. Input BL_PTR, output BL_STAT;
-                                ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD. The ,R
-                                ; handoff stays RESIDENT (basic/bload-body.inc).
+                                ; A PAGE-1 tenant so it sat beside fatprim_tenant and
+                                ; called fat_mount/fat_find/fat_open/fat_read_file_sector
+                                ; SUB-LOCALLY -- until 2026-10-19, when the disk load
+                                ; moved to disk.rom (hk_dpbload, FOPEN_SEL_BLOAD). Input
+                                ; BL_PTR, output BL_STAT; IX = SUBROM_ENTRY_BASE_P1 +
+                                ; 3*SUBROM_IDX_BLOAD. The ,R handoff stays RESIDENT
+                                ; (basic/bload.asm load_handoff).
 SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): since 2026-10-19 the two
                                 ; TAPE write engines only (SV_OP_BSV_CAS / _SAV_CAS);
                                 ; BSAVE / SAVE to disk are disk.rom's. Was: BLOAD's

@@ -8,9 +8,9 @@
 ; basic/fat.asm that sent them are all gone, and the last sub-ROM writer through
 ; this engine -- BSAVE's disk engine in the save tenant -- moved to disk.rom. The
 ; tenant's one live row is 23 (t_fch_hdr, OPEN's FCB header stamp, a pure RAM
-; leaf). The included body is now BLOAD's: sub/bload.asm's disk path calls its
-; READ half locally, and the sub build assembles only that half
-; (basic/fat-prim-body.inc's gate note).
+; leaf). And the FAT engine it once carried is gone from this ROM: BLOAD's disk
+; load, the last sub-ROM caller of its READ half, moved to disk.rom (hk_dpbload)
+; later the same day, and the include went with it (the note at the end).
 ; The FAT12 primitive/sector layer, evicted from the repack main ROM's
 ; basic/fat.asm into sub-ROM PAGE 1 (docs/spec-evict-diskfile-cluster.md §11,
 ; Phase 1 of the disk/file cluster eviction), to free page-1 window space
@@ -93,11 +93,10 @@ fp_table:
 ; (basic/fat.asm), and the last of those (fat_mount / fat_find) went earlier the
 ; same day. Main's ONLY sender left is fatprim_op <- fatprim_bounce <- OPEN's
 ; header stamp (basic/files.asm oo_hdr_tail, A = DISKOP_SEL_FCH_HDR, row 23);
-; disk.rom and sub2 never call SUBROM_IDX_FATPRIM. The primitive BODIES stay
-; (basic/fat-prim-body.inc, below): BLOAD's disk read path (sub/bload.asm, over
-; basic/fatio-body.inc) calls fat_mount / fat_find / fat_open /
-; fat_read_file_sector LOCALLY, not through this table. Each row keeps its 3 B so
-; 23 stays put (the table is append-only; the numbering is published).
+; disk.rom and sub2 never call SUBROM_IDX_FATPRIM. (The primitive BODIES stayed
+; for BLOAD's disk read path, which called them LOCALLY, not through this table,
+; until that path moved to disk.rom too -- the note at the end.) Each row keeps
+; its 3 B so 23 stays put (the table is append-only; the numbering is published).
                 jp      fp_stash_ok             ; 0  retired (was DISKOP_SEL_READ_SECTOR)
                 jp      fp_stash_ok             ; 1  retired (was DISKOP_SEL_WRITE_SECTOR)
 ; (rows 2-3 retired earlier on 2026-10-19: AUTOEXEC.BAS's probe is disk.rom's
@@ -264,19 +263,13 @@ fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
 ; (t_fat_rand_open / get / put -- the wrappers over sub/randio.asm's record
 ; engine -- are GONE with it: S10.D, 2026-10-15, disk.rom runs RANDOM files.)
 
-; The shared primitive bodies (dskio_calslt/read_sector/write_sector through
-; fat_dir_update, then fat_delete). Included here WHOLESALE -- this file's
-; own copies of dskio_calslt/read_sector/write_sector (inside fat-prim-
-; body.inc) ARE the tenant's sub-local CALSLT path (see header).
-; 🔎 2026-10-19: WHAT KEEPS THIS BODY ALIVE IS BLOAD ALONE. sub/bload.asm's disk
-; path (basic/bload-body.inc over basic/fatio-body.inc) mounts, finds, opens and
-; reads through fat_mount / fat_find / name_cmp / fat_open / fat_read_file_sector
-; / fat_next_cluster / read_sector here. The WRITE half (fat_alloc_cluster,
-; fat_write_fat_entry, fat_dir_create, fat_dir_update, fat_flush_data_sector,
-; fatprim_write_sector, fat_count_free) has no caller in this ROM since BSAVE left
-; the save tenant; it rides the shared include until BLOAD moves to disk.rom too
-; and the whole body can go (TODO D-ROMSIZE).
-                include "basic/fat-prim-body.inc"
-; (basic/fatfits-body.inc and basic/fat-delete-body.inc are no longer included
-; here, 2026-10-19: fat_fits's last caller in this ROM was BSAVE's disk engine,
-; and fat_delete's was row 14's wrapper. disk.rom includes both.)
+; (The shared primitive bodies -- `include "basic/fat-prim-body.inc"`, the
+; tenant's sub-local dskio_calslt / read_sector and the FAT12 layers over it,
+; included here WHOLESALE since Phase 1 -- are GONE from the sub-ROM, 2026-10-19
+; (D-ROMSIZE step 1). The last caller was BLOAD's disk path (sub/bload.asm over
+; basic/fatio-body.inc: fat_mount / fat_find / name_cmp / fat_open /
+; fat_next_cluster / fat_read_file_sector / fat_dir_start / read_sector), and the
+; disk load is disk.rom's hk_dpbload now. The write half went earlier the same
+; day with BSAVE's disk engine, and fatfits-body.inc / fat-delete-body.inc with
+; it. disk.rom is the body's one home; sub/format.asm keeps its own write_sector,
+; as it always did.)

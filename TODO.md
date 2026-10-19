@@ -3931,10 +3931,33 @@ item — do **one item per session** to keep context lean.
       ALL PASS; tests/test_hk_dpbsave.py new. 🔮 "the disk probes pass", "knife
       connectedness unchanged": HIT. ⚠️ Unmeasured: BSAVE with the target file open
       (no 54 / 64 check, before or now); the date is now the DOS date (equal at boot).
-      ➡️ LEFT OF STEP (1): **BLOAD from disk** -- the LAST user of the sub-ROM's FAT
-      read half (~635 B) + its fatio copy (sub/bload.asm:190); est. ~150-200 B of
-      disk.rom for ~900 B of sub; measure its hook on the CF-3300 first. Then the
-      vestigial veneers and the step-14 gate.
+      ✅ **BLOAD FROM DISK, 2026-10-19 (sub page 1 3085 -> 3953 B, main page 1 530 ->
+      525, disk.rom 2711 -> 2586): THE SUB-ROM HAS NO FAT ENGINE ANY MORE.**
+      hk_dpbload (FOPEN_SEL_BLOAD $5A through hk_dpload) loads header, offset, data
+      or ,S; the sub tenant keeps the device dispatch, the diskless 56 and tape; the
+      fatio copy and fat-prim-body's read half are gone from sub. Its hook was already
+      measured (§6.6ab: $FE5D, DE $0001, HL $DC65; no $FE76). 🔴 BEHAVIOUR, toward the
+      reference ([`bloaderr_run.out`](scratchpad/bloaderr_run.out), both machines):
+      `BLOAD"Q:X.BIN"` 62, `BLOAD""` 56, missing 53, `"."` 56, `"A:"` 56 -- all SAME;
+      the old tenant fell through both rejects into a load with a stale 8.3 name.
+      Witness: [`bloadmove_disk_probe_bload_disk.out`](scratchpad/bloadmove_disk_probe_bload_disk.out),
+      `_save`, `_vram_saveload` (,S vs the CF-3300), `_fat_error_disposition`,
+      `_option_hygiene`: ALL PASS; disk_probe_bload_fcb's default-drive row now
+      expects 0 (zerobas's own scratch FCB; disk.rom resolves the default). 🔮 "62 /
+      56 / 53 on both", "knife connectedness unchanged": HIT.
+      ➡️ LEFT OF STEP (1): the vestigial veneers / orphan `ret`s and the step-14 gate.
+- [ ] 📼 **D-CASOFS2X -- TAPE `BLOAD"CAS:X",R,offset` ADDS THE OFFSET TWICE (found
+      2026-10-19, by reading)**
+      🎚️ TIER 3 — provisional: an offset BLOAD from tape runs exec + 2 x offset.
+      🤖 **AUTONOMOUS** — measure first (the VG-8020, a synthetic tape of our own
+      code): basic/bload-body.inc's load_done falls into bl_apply_ofs on the tape
+      path, after the offset was already applied. The disk path never had it.
+- [ ] 🧮 **D-FATSCRATCH -- MAIN'S FAT SCRATCH SPAN (FCH_STATE0, $EE06..) IS NAMED BY NO
+      CODE ANY MORE (found 2026-10-19)**
+      🎚️ TIER 4 — RAM the reference may keep free; only the FCH_STATESZ stride
+      constant still derives from its labels.
+      🤖 **AUTONOMOUS** — check every reader (all ROMs, tests, tools/ram_map.py), then
+      reclaim it or re-site it under the RAM map's rules.
 
 - [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
       THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
@@ -11261,7 +11284,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36794 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36817 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11427,7 +11450,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16289 (T-6FE392)8 (T-529ABE)` from `TODO.md:29083 (T-529ABE)`: a
+      `TODO.md:16312 (T-6FE392)8 (T-529ABE)` from `TODO.md:29106 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17136,7 +17159,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29083 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29106 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

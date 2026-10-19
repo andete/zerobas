@@ -178,6 +178,14 @@ REQUIRED_DISK_RAM = [
     "CURPTR",                   # BSAVE: start, then the data walk's cursor
     "EXECPTR",                  # BSAVE: the exec address (header bytes 5-6)
     "VRAM_FLAG",                # BSAVE: 1 = `,S`, the data comes from VRAM
+    # D-ROMSIZE step 1 (2026-10-19): BLOAD from disk runs in disk.rom
+    # (hk_dpbload) -- the LAST user of the sub-ROM's FAT engine. It reads the
+    # $FE header into CURPTR / ENDPTR / EXECPTR (contiguous: the tape path's
+    # layout, sysvars.inc), adds main's parsed `,offset` to all three and, with
+    # VRAM_FLAG (above) set, stores through WRTVRM. Main's ,R hand-off reads
+    # EXECPTR after the crossing.
+    "ENDPTR",                   # BLOAD: the header's end address (inclusive)
+    "BL_OFS",                   # BLOAD: the `,offset` main's pcr_bload parsed
     # (main_FWR_DIRSEC / main_FWR_DIROFF -- ALIASED imports of main's FWR_DIRSEC /
     # FWR_DIROFF for D-NAMESTAMP's stamp, because disk.rom declares cells of those
     # names itself -- are gone, 2026-10-19: hk_name finds the old entry with

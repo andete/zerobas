@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
-* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **61** in the MSX standard work area at or above `$F380`.
+* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **63** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -386,6 +386,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F69B` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$F69D` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO) |  |
 | `$F69F` | 2 B | `basic` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
+| `$F69F` | 2 B | `disk` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
 | `$F6A1` | 2 B | `basic` | `RESTORE_LINE` | link-field a READ seeks DATA from when unpositioned (2) |  |
 | `$F6A3` | 2 B | `basic` | `DATALINE` | link-field of the line holding DATAPTR (2) |  |
 | `$F6A5` | 1 B | `basic` | `DATASTATE` | 0 = unpositioned (RESTORE), 1 = ready, 2 = exhausted (1 B) |  |
@@ -525,7 +526,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7BC` | 2 B | `basic` | `CURPTR/SW_ADDR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BC` | 2 B | `disk` | `CURPTR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BE` |  | `basic` | `ENDPTR/SW_TYPE` | 1 B: its type (1 = string, 2/4/8 numeric) |  |
-| `$F7BF` |  | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse |  |
+| `$F7BE` | 2 B | `disk` | `ENDPTR` | final load address (2 bytes) -- SWPTMP+2 |  |
+| `$F7BF` |  | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse | `disk` ENDPTR |
 | `$F7C0` |  | `basic` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
 | `$F7C0` | 2 B | `disk` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
 | `$F7C1` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type | `disk` EXECPTR |

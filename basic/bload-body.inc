@@ -1,46 +1,42 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; bload-body.inc — the BLOAD verb body (parse + dispatch + tape load + disk load).
+; bload-body.inc — the BLOAD verb body (dispatch + tape load + the disk name).
 ; ===========================================================================
 ; Home:
 ;   * the sub-ROM PAGE-1 tenant (sub/bload.asm, SUBROM_IDX_BLOAD) — evicted there
 ;     in the repack build to free main page-1 space (docs/spec-traps-t3-key.md
-;     §7.6). The fcbname-body.inc precedent, one level larger.
+;     §7.6). The fcbname-body.inc precedent, one level larger. That is its only
+;     home: no other ROM includes this file.
+; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE DISK LOAD LEFT FOR disk.rom (hk_dpbload,
+; disk/kernel.asm), reached through H_FOPEN with FOPEN_SEL_BLOAD -- the cell the
+; CF-3300's BLOAD enters. For a disk name this body builds DISK_FCB_NAME and
+; answers BL_STAT = FOPEN_SEL_BLOAD; main (basic/bload.asm) makes the crossing.
+; With it went this body's calls into the sub-ROM's FAT engine, its last users.
 ;
-; WHY THE BODY PORTS UNCHANGED. Every name it calls resolves correctly on BOTH
-; sides without editing a single line:
-;   parse_disk_fcb / parse_close_run / bl_upcase — sub-local
-;     (D-FNEXPR2 retired this body's only `bl_skip_spaces` call with the opening
-;     quote gate; the tenant's own parse_close_run still uses it, so the clone
-;     stays for that caller and not for this one)
-;     clones co-located in sub/bload.asm for the
-;     tenant (the resident originals must STAY resident regardless: they have
-;     61/9/6 external callers between them, so they are not evicted, only copied).
-;   fat_io_open / fat_io_getbyte — in the sub-ROM these bind to sub-local bodies whose fat_mount /
-;     fat_find / fat_open / fat_read_file_sector are the REAL implementations
-;     (sub/fatprim.asm), so the marshalling round-trip disappears entirely.
-;   bl_load_error — sub-local in the tenant, where it does TAPIOF + ERRMARK + sets BL_STAT
-;     and rets, with the SAME stack behaviour, so control flow is unchanged and
-;     the resident stub does the reporting once on the way out.
-;   bl_notfound / bl_badmode — its two siblings, for the failures that are not a
-;     `load error`. bl_notfound: the volume mounted and the 8.3 name is not in
-;     the directory (D-BLNF). bl_badmode: the name WAS found and header byte 0 is
-;     not the $FE BSAVE marker (D-BLMODE). Each files its own MSX ERR code in
-;     BL_STAT — 53 and 61 — and rets the same way; the resident stub RAISES it.
-;     Neither drops bl_load_error's ERRMARK landmark — these are raised errors,
-;     not printed ones, and the landmark names the printed one.
-;   load_handoff — the ,R exec jump. RESIDENT ON BOTH SIDES: it ends in `jp (hl)`
-;     into the loaded program and never returns, so it must NOT run inside the
-;     tenant's CALSLT — that would leave main page 1 switched out forever. The
-;     tenant returns normally and the resident stub performs the handoff.
+; Every name it calls resolves on the tenant's side:
+;   parse_disk_fcb / bl_upcase — sub-local clones co-located in sub/bload.asm
+;     (the resident originals must STAY resident regardless: they have external
+;     callers, so they are not evicted, only copied). The tenant binds
+;     parse_disk_fcb's two rejects, pdf_baddrive and pdf_badname, to 62 / 56 in
+;     BL_STAT (sub/bload.asm), which main raises -- the resident copy's codes.
+;   bl_load_error — sub-local in the tenant, where it does TAPIOF + ERRMARK + sets
+;     BL_STAT and rets, with the SAME stack behaviour, so control flow is unchanged
+;     and the resident stub does the reporting once on the way out.
+;   bl_tape_dio — 19 for a failed tape search / read (D-CASBIN, D-CASRBRK).
+;   (bl_notfound / bl_badmode -- 53 / 61, the disk path's raised codes -- are
+;     disk.rom's since 2026-10-19: hk_dpbload answers them in DISKOP_STATUS.)
+;   The ,R exec jump is MAIN's (basic/bload.asm load_handoff): it CALLs into the
+;     loaded program, so it must NOT run inside the tenant's CALSLT -- that would
+;     leave main page 1 switched out. The tenant returns normally.
 ;
-; TAPIN/TAPION/TAPIOF/WRTVRM are BIOS calls; main page 0 stays mapped while a
-; page-1 tenant runs, so they are reachable from both sides unchanged.
+; TAPIN/TAPION/TAPIOF are BIOS calls; main page 0 stays mapped while a page-1
+; tenant runs, so they are reachable from both sides unchanged.
 ;
 ; CLEAN-ROOM: extracted verbatim from our own basic/bload.asm; provenance for the
-; BSAVE formats and the DSKIO/FAT12 engine is unchanged (basic/PROVENANCE.md).
+; BSAVE formats is unchanged (basic/PROVENANCE.md).
 ; ===========================================================================
+
 
 do_bload:
                 ; --- parse: <name expression> [ ,R ] -----------------------
@@ -139,11 +135,15 @@ load_next:
 
 load_done:
                 call    TAPIOF              ; motor off
-                ; fall through to the shared ,R handoff tail.
+                ; falls into bl_apply_ofs, whose `ret` ends the tape load.
+                ; ⚠️ AND SO THE TAPE PATH ADDS BL_OFS A SECOND TIME, AFTER THE DATA
+                ; (to CURPTR, ENDPTR and EXECPTR): a tape `BLOAD"CAS:X",R,ofs`
+                ; with ofs <> 0 hands main's ,R EXECPTR = exec + 2 x ofs. Read
+                ; 2026-10-19 while the disk path left this file, not measured and
+                ; NOT changed here (the slice kept the tape untouched); the disk
+                ; path never had it (it ended `jp load_handoff`), and disk.rom's
+                ; hk_dpbload adds the offset once.
 
-; load_handoff — shared ,R exec handoff (cassette + disk paths). spec-bload-r.md
-; §3 / disk BLOAD: plain BLOAD returns; ,R jumps to the exec address (RUNFLAG was
-; set by the parser; CURPTR/ENDPTR/EXECPTR are filled by whichever load ran).
 ; bl_apply_ofs -- D-BLOADOFS: add BL_OFS (main's pcr_bload) to the header's
 ; start, end and exec, wrapping at 16 bits, as the CF-3300 does to all three.
 bl_apply_ofs:
@@ -159,26 +159,15 @@ bl_apply_ofs:
                 ld      (EXECPTR),hl
                 ret
 
-load_handoff:
-    IF SUB_BUILD
-                ; TENANT: do nothing. This tail ends in `jp (hl)` INTO THE LOADED
-                ; PROGRAM and never returns -- inside the tenant's CALSLT that would
-                ; leave main page 1 switched out forever. Return normally instead and
-                ; let the resident stub (basic/bload.asm) perform the handoff; RUNFLAG
-                ; and EXECPTR are already in RAM for it.
-                ret
-    ELSE
-                ld      a,(RUNFLAG)
-                or      a
-                ret     z                   ; plain BLOAD: return to caller
-                ld      hl,(EXECPTR)
-                jp      (hl)
-    ENDIF
+; (load_handoff -- the tenant's do-nothing `ret` for the ,R tail, with a resident
+; `jp (hl)` arm from the lean-cart days -- is GONE, 2026-10-19: its one caller was
+; the disk path's `jp load_handoff`, which left with the disk load. The ,R hand-off
+; was always main's (basic/bload.asm load_handoff / lh_back, the $6CF3 pin's
+; continuation); RUNFLAG and EXECPTR reach it in RAM.)
 
 ; ===========================================================================
-; Disk path: parse a disk filename into the scratch FCB, then route to the
-; placeholder. This item is PARSE-ONLY — do_disk_bload deliberately falls
-; through to bl_load_error; the NEXT TODO item ("Disk BLOAD execute") fills it in.
+; Disk path: build the 8.3 name, then hand the load to MAIN, which crosses to
+; disk.rom.
 ;
 ; On entry to is_disk: the top of the stack holds the filename start (the
 ; char after the opening quote), and HL points partway through the prefix
@@ -212,116 +201,28 @@ isd_tape:
                 push    hl                  ; is_tape drops the saved name start
                 jp      is_tape
 isd_disk:
-                call    parse_disk_fcb      ; build DISK_FCB; HL -> closing '"'
-                ; (the tail was parsed by main's pcr_bload -- D-BLOADOFS)
-                ; FCB is fully built (DISK_FCB_DRV + DISK_FCB_NAME) and RUNFLAG
-                ; is set. Hand off to the disk loader.
-                jr      do_disk_bload
+                ; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE LOAD IS disk.rom's NOW. This
+                ; was `jr do_disk_bload` -- mount, find, the $FE header, the offset
+                ; and the data loop, here, over the sub-ROM's own copies of
+                ; fat-prim-body.inc's read half and fatio-body.inc: the LAST disk
+                ; verb on this ROM's FAT engine. The CF-3300's BLOAD enters $FE5D
+                ; once, as LOAD does (disk/docs/spec-diskcode-eviction.md §6.6ab /
+                ; §8.2), so the tenant builds the name and answers BL_STAT =
+                ; FOPEN_SEL_BLOAD; main crosses H_FOPEN with it (basic/bload.asm)
+                ; and disk.rom's hk_dpbload runs that loop over its own FAT.
+                ; The tail was parsed by main's pcr_bload (D-BLOADOFS).
+                call    parse_disk_fcb      ; DISK_FCB_DRV + DISK_FCB_NAME; a bad drive
+                                            ; or name files 62 / 56 and returns HERE
+                ld      hl,BL_STAT
+                ld      a,(hl)
+                or      a
+                ret     nz                  ; 62 / 56: main raises it; nothing is read
+                ld      (hl),FOPEN_SEL_BLOAD ; a disk file, its name built: main loads
+                ret                         ;  it through disk.rom
 
                 include "basic/pdfcb-body.inc"
 
-; do_disk_bload — real disk load via the loader-side FAT12 engine over DSKIO.
-;
-; The FCB name at DISK_FCB_NAME is fully built (8.3 name) and RUNFLAG is set. We
-; reach the file through the STANDARD $4010 DSKIO physical-sector entry of whatever
-; disk ROM is in the slot (CALSLT cross-slot; slot id = DISKSLOT, recorded by the
-; INIT scan) and own the FAT12/directory logic ourselves (basic/fat.asm) — NOT the
-; private bdos_entry. This makes the loader disk-ROM-independent (own ROM or a
-; foreign standard ROM both work). The flow:
-;   fat_io_open    -> mount BPB, find the 8.3 name, prime the sequential reader.
-;   fat_io_getbyte -> the file's byte stream; the first 7 bytes are the on-disk
-;                     BSAVE header [$FE][start:2 LE][end:2 LE][exec:2 LE], the rest
-;                     is data loaded into [start..end] inclusive.
-; Then share the ,R handoff tail with the cassette path. (No Close needed on the
-; read side — there is no dirty state.)
-;
-; Sources: DSKIO register convention + $4010 offset — MSX2 TH §5 / black-box
-; CF-3300 observation (disk/docs/expansion-protocol.md); FAT12 — Microsoft FAT
-; spec (ported from disk/disk.asm); disk BSAVE header — MSX-BASIC file formats
-; (public MSX-BASIC file-format reference). See basic/PROVENANCE.md §disk DSKIO host engine.
-do_disk_bload:
-                ; (1) disk ROM slot must have been recorded by the INIT scan.
-                ld      a,(DISKSLOT_OK)
-                or      a
-                jp      z,bl_load_error
-                ; (2) open the file via the FAT12 engine (mount + find + prime).
-                ; D-BLNF: unrolled across fat_io_open's OWN mount/find boundary so
-                ; the two failures can be told apart. A carry out of fat_mount is a
-                ; missing/unreadable volume -> the unchanged `load error`; a carry
-                ; out of fat_io_find is "mounted fine, the name is not there" ->
-                ; ERR 53 `File not found`, which is what both references raise
-                ; (docs/loaderr-msx1-characterization.md). This is the SAME
-                ; distinction df_or_loaderr makes on the resident side; it cannot
-                ; use that test because here fat_find is the REAL sub-side
-                ; primitive and nothing writes DISKOP_OP (see this file's header).
-                call    fat_mount
-                jp      c,bl_load_error        ; no volume / I-O error
-                call    fat_io_find            ; find + prime the sequential reader
-                jp      c,bl_notfound          ; the 8.3 name is not in the directory
-                ; (3a) header byte 0 must be the BSAVE disk marker $FE.
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                cp      BSAVE_DISK_ID
-                jp      nz,bl_badmode          ; D-BLMODE: the file EXISTS and is
-                                               ; not a BSAVE binary -- a DIFFERENT
-                                               ; error from both `load error` and
-                                               ; `File not found`, and the ONLY arm
-                                               ; retargeted here. The `jp c` above
-                                               ; is an I/O failure on the very
-                                               ; first byte, whose reference face
-                                               ; is unmeasured, so it keeps the
-                                               ; shared tail's safe default.
-                ; header bytes 1..6: start(LE), end(LE), exec(LE) into the same
-                ; CURPTR/ENDPTR/EXECPTR vars the tape path uses.
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (CURPTR),a          ; start low
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (CURPTR+1),a        ; start high
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (ENDPTR),a          ; end low
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (ENDPTR+1),a        ; end high
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (EXECPTR),a         ; exec low
-                call    fat_io_getbyte
-                jp      c,bl_load_error
-                ld      (EXECPTR+1),a       ; exec high
-                call    bl_apply_ofs        ; D-BLOADOFS: + BLOAD's ,offset
-                ; (3b) stream data bytes into [start..end] inclusive. With ",S"
-                ; (VRAM_FLAG) the start/end/exec header words are VRAM addresses
-                ; and each byte is stored via WRTVRM ($004D) instead of a RAM
-                ; write; the loop shape is otherwise identical.
-disk_load_loop:
-                call    fat_io_getbyte
-                jp      c,bl_load_error        ; ran out before reaching end -> error
-                ld      hl,(CURPTR)
-                ld      b,a                 ; save the byte across the flag test
-                ld      a,(VRAM_FLAG)
-                or      a
-                ld      a,b                 ; A = byte again (ld leaves Z intact)
-                jr      z,dll_ram
-                call    WRTVRM              ; HL=CURPTR (VRAM addr), A=byte
-                jr      dll_adv
-dll_ram:
-                ld      (hl),a              ; HL=CURPTR (RAM addr)
-dll_adv:
-                ld      hl,(CURPTR)         ; reload (WRTVRM makes no reg guarantees)
-                ld      de,(ENDPTR)
-                ld      a,h
-                cp      d
-                jr      nz,disk_load_next   ; high bytes differ -> more to do
-                ld      a,l
-                cp      e
-                jr      z,disk_load_fin     ; cur == end -> last byte stored
-disk_load_next:
-                inc     hl
-                ld      (CURPTR),hl
-                jr      disk_load_loop
-disk_load_fin:
-                ; (4) shared ,R handoff tail (no Close: read has no dirty state).
-                jp      load_handoff
+; (do_disk_bload .. disk_load_fin -- the disk load: mount, find, the $FE marker,
+; the six header bytes, the offset, the data into RAM or through WRTVRM, with
+; bl_notfound's 53 and bl_badmode's 61 -- MOVED to disk.rom on 2026-10-19 as
+; hk_dpbload (disk/kernel.asm), the same exits in the same order.)

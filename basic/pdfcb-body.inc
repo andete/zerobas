@@ -16,8 +16,11 @@
 ;   * bload-body.inc, at its original position;
 ;   * basic/bload.asm's repack branch -- the resident copy those nine keep calling;
 ;   * transitively into sub/bload.asm (via bload-body.inc) -- the tenant's copy.
-; The resident and tenant copies differ only in what `build_83_name` binds to:
-; the marshalling shim resident, the real sub-local body in the tenant.
+; The resident and tenant copies differ in what `build_83_name` binds to -- the
+; marshalling shim resident, the real sub-local body in the tenant -- and in
+; pdf_baddrive / pdf_badname: resident they RAISE 62 / 56; in the tenant they file
+; 62 / 56 in BL_STAT and return to isd_disk, which then loads nothing (2026-10-19,
+; with the disk load's move to disk.rom; they were bl_load_error until then).
 ; ===========================================================================
 
 ; parse_disk_fcb — parse a disk filename into the scratch FCB at DISK_FCB.
@@ -28,8 +31,9 @@
 ;   out: DISK_FCB_DRV = drive code (1=A, 2=B; default A when no prefix);
 ;        DISK_FCB_NAME = the 11-byte space-padded upper-case 8.3 field;
 ;        HL -> the closing '"' (so parse_close_run resumes there).
-; On a malformed drive spec, jumps to bl_load_error (does not return). On a
-; structurally malformed 8.3 name, RAISES `Bad file name` (ERR 56). Clobbers A, B, C, DE, HL.
+; A drive past B: goes to pdf_baddrive (ERR 62) and a structurally malformed 8.3
+; name to pdf_badname (ERR 56): RAISED resident; in the BLOAD tenant filed in
+; BL_STAT, returning to the caller (see above). Clobbers A, B, C, DE, HL.
 parse_disk_fcb:
                 ; --- detect an optional drive letter "X:" -------------------
                 ; "A:" / "B:" (case-insensitive). Default drive = A when absent.
@@ -79,9 +83,10 @@ build_name:
                 ; reference, which is why one site serves all eleven callers.
                 ; ✅ The DRIVE-LETTER reject above is measured now (D-DRVNAME,
                 ; scratchpad/drvname_run.out) and raises 62 through pdf_baddrive.
-                ; ⚠️ `pdf_badname` BINDS PER BUILD, like bl_load_error does: the
-                ; RESIDENT copy raises ERR 56, the TENANT copy (reached only by
-                ; do_bload inside sub/bload.asm) keeps bl_load_error's file-and-
-                ; return, because BLOAD's answer to a malformed name is
-                ; UNMEASURED and this slice does not move an unmeasured verb.
+                ; ⚠️ `pdf_badname` BINDS PER BUILD: the RESIDENT copy raises
+                ; ERR 56, the TENANT copy (reached only by do_bload inside
+                ; sub/bload.asm) files 56 in BL_STAT and returns, and main raises
+                ; it (2026-10-19; it kept bl_load_error's file-and-return before,
+                ; which fell on into the disk load -- sub/bload.asm's note).
+                ; BLOAD's own answer on the reference is still unmeasured.
                 jp      pdf_badname

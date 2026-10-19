@@ -788,6 +788,16 @@ lrset_rhs:
                 ld      (FN_RESUME),hl
                 ret
 
+; dev_cas -- the device name the "CAS:" tests compare against (dev_cmp's 0-terminated
+; prefix: BLOAD, LOAD, RUN, SAVE, BSAVE, OPEN). Source: spec-bload-r.md §5.
+; 📌 MOVED HERE FROM basic/bload.asm ON 2026-10-19 (D-ROMSIZE step 1, BLOAD from
+; disk into disk.rom): do_bload grew the 5 B of its FOPEN_SEL_BLOAD crossing in
+; front of the pinned $6CF3, whose pad is 0 (a `jr` bridge), and these 5 B of
+; data are the exact refill out -- past every pin, where a size change moves
+; nothing fixed. Read by absolute address only (`ld de,dev_cas`).
+dev_cas:
+                db      "CAS:",0
+
 
 ; (fld_add -- the FLD_TAB append, here since D-BASICINT2 -- is GONE with the
 ; table, D-FLDDESC 2026-10-17: field_item writes the variable's descriptor.)

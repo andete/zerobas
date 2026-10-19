@@ -23,12 +23,12 @@ is echo-paced -- event-synced by construction, docs/dev-workflow.md), and
 capture ("mem_abs", [(DISK_FCB, 12)]) once the line has run.
 
 The scratch FCB (basic/sysvars.inc):
-  +0       drive code (0=default->1 effective, 1=A, 2=B)
+  +0       drive code (0=default -- resolved disk-side since 2026-10-19, 1=A, 2=B)
   +1..+11  11-byte 8.3 name field (8 name + 3 ext, space-padded, upper-cased)
 
 Cases (unchanged from the original -- the expectations were never the rot):
   BLOAD"A:NOSUCH.BIN" -> drive 1 (A), name "NOSUCH  BIN"
-  BLOAD"NOSUCH.BIN"   -> drive 1 (A, default), name "NOSUCH  BIN"
+  BLOAD"NOSUCH.BIN"   -> drive 0 (default, resolved disk-side), name "NOSUCH  BIN"
   BLOAD"B:NO.TXT"     -> drive 2 (B), name "NO      TXT"
 (Names changed to files NOT on test720.dsk so the load FAILS cleanly after the
 parse and no fixture bytes move; the original TEST.BIN/HI.TXT would LOAD on
@@ -66,7 +66,12 @@ if not MACHINE:
 
 CASES = [
     ('bload"a:nosuch.bin"', 1, b"NOSUCH  BIN"),
-    ('bload"nosuch.bin"',   1, b"NOSUCH  BIN"),
+    # 2026-10-19 (BLOAD to disk.rom): the default drive STAYS 0 in the scratch FCB.
+    # The sub-ROM loader rewrote 0 -> 1 while it loaded; disk.rom's hk_dpbload
+    # resolves the default drive itself (its default-drive load and the missing
+    # file's 53 agree with the CF-3300: scratchpad/bloaderr_run.out,
+    # disk_probe_bload_disk.py). The byte is zerobas's own cell, not the reference's.
+    ('bload"nosuch.bin"',   0, b"NOSUCH  BIN"),
     ('bload"b:no.txt"',     2, b"NO      TXT"),
 ]
 

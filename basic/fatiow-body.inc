@@ -11,7 +11,8 @@
 ; Extracted VERBATIM from basic/fat.asm so the sub-ROM SAVE tenant
 ; (sub/save.asm, SUBROM_IDX_SAVE) gets a byte-identical SUB-LOCAL copy instead
 ; of a second hand-maintained one. This is the WRITE mirror of fatio-body.inc,
-; which does the same for the read cursor and sub/bload.asm.
+; which did the same for the read cursor and sub/bload.asm (until 2026-10-19:
+; BLOAD's disk load is disk.rom's, and so is fatio-body.inc's one home).
 ;
 ; ~~fat_io_putbyte and fwr_bytes_inc STAY resident -- the per-byte hot path of
 ; PRINT # and the ASCII SAVE.~~ 🏗️ S10 increment 3 (D-ASAVEDOUT, 2026-10-08):

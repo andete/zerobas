@@ -3,34 +3,34 @@
 
 ; zerobas-sub — bload.asm  (the BLOAD verb tenant)
 ; ===========================================================================
-; The whole BLOAD verb body — device dispatch, the cassette load loop and the
-; disk load loop — evicted from main page 1 into sub-ROM PAGE 1
+; The BLOAD verb body — device dispatch, the cassette load loop and the disk
+; file's 8.3 name — evicted from main page 1 into sub-ROM PAGE 1
 ; (docs/spec-traps-t3-key.md §7.6) to fund the interrupt-traps T3 slice. This is
 ; the fcbname/casmatch eviction pattern one level larger: the moved code is
-; VERBATIM, shared through basic/bload-body.inc, and
-; includes at its original position so that ROM stays byte-identical.
+; VERBATIM, shared through basic/bload-body.inc.
 ;
-; WHY PAGE 1, AND WHY THAT IS THE WHOLE POINT. A page-1 tenant runs with main
-; page 1 switched out but the sub-ROM's own page 1 mapped — so it sits beside
-; `fatprim_tenant` and calls `fat_mount` / `fat_find` / `fat_open` /
-; `fat_read_file_sector` **sub-locally**, as ordinary in-page calls. In main page
-; 1 those same four names are marshalling stubs that CALSLT into this very ROM.
-; That round trip is exactly what made BLOAD look un-evictable (`do_disk_bload ->
-; fat_io_open -> fat_find -> subrom_call`, a low-region call that is paged out
-; while a tenant runs — and a nested sub-ROM call besides). Moving the caller to
-; the callee's side dissolves it. Same for `build_83_name`, already resident here
-; as a page-1 tenant body (sub/fcbname.asm): the resident marshalling shim
-; disappears for our path.
+; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE DISK LOAD LOOP IS disk.rom's (hk_dpbload,
+; disk/kernel.asm), reached through H_FOPEN -- the cell the CF-3300's BLOAD
+; enters once, like LOAD's. For a disk name this tenant builds DISK_FCB_NAME and
+; answers BL_STAT = FOPEN_SEL_BLOAD; main (basic/bload.asm) crosses. WHY PAGE 1
+; WAS "THE WHOLE POINT" UNTIL THEN: a page-1 tenant sat beside `fatprim_tenant`
+; and called `fat_mount` / `fat_find` / `fat_open` / `fat_read_file_sector`
+; sub-locally (basic/fatio-body.inc over the sub's copy of fat-prim-body.inc),
+; which dissolved the `do_disk_bload -> fat_io_open -> fat_find -> subrom_call`
+; round trip that made BLOAD look un-evictable. This was the LAST sub-ROM user of
+; that engine; both includes are gone from this ROM. Page 1 still serves the
+; tape path (TAPIN / TAPION are BIOS, and cas_open_match is sub-local), and
+; `build_83_name` is still a sub-local page-1 body (sub/fcbname.asm).
 ;
 ; WHAT STAYS RESIDENT, and why each one has to:
-;   * `load_handoff` — the `,R` tail ends in `jp (hl)` INTO THE LOADED PROGRAM and
-;     never returns. Run inside this tenant's CALSLT it would leave main page 1
-;     switched out forever. The tenant returns normally; the resident stub does
-;     the handoff (basic/bload.asm).
+;   * `load_handoff` — the `,R` tail CALLs INTO THE LOADED PROGRAM (D-BLOADRTAIL).
+;     Run inside this tenant's CALSLT it would leave main page 1 switched out.
+;     The tenant returns normally; the resident stub does the handoff
+;     (basic/bload.asm), after disk.rom's load as after the tape's.
 ;   * `load_error` / `print_string` — the reporter, 61 external callers.
-;   * `parse_disk_fcb` (9 external callers) and `parse_close_run` (6) — shared
-;     service routines that merely LIVED in bload.asm. They are COPIED here, not
-;     moved: a duplicate in the sub-ROM costs zero main page-1 bytes.
+;   * `parse_disk_fcb` (9 external callers) — a shared service routine that
+;     merely LIVED in bload.asm. It is COPIED here, not moved: a duplicate in the
+;     sub-ROM costs zero main page-1 bytes.
 ;
 ; INTERRUPTS. The cassette path holds the CPU for the length of a tape read.
 ; subrom_call enters DI, so this tenant re-enables interrupts at entry and
@@ -39,14 +39,17 @@
 ; throughout a page-1 tenant, and `htimi_guard` (basic/subromcall.asm) sees that
 ; page 1 is not main-ROM and skips the PLAY/trap seam for that frame. Without
 ; that guard this would be a wild jump — it is the same hazard
-; docs/spec-traps-t1-htimi-page1-safety.md was written for.
+; docs/spec-traps-t1-htimi-page1-safety.md was written for. (disk.rom's
+; hk_dpbload enables them for the disk load the same way, D-LOADDI.)
 ;
-; MARSHALLING: BL_PTR in (the token cursor after the BLOAD token), BL_STAT out
-; (0 = loaded, 1 = load_error, 2 = file not found — D-BLNF). subrom_call clobbers every register and forces
+; MARSHALLING: BL_PTR in (the staged filename), BL_STAT out (0 = loaded, 1 =
+; load_error, FOPEN_SEL_BLOAD = a disk file for main to hand disk.rom, else an
+; ERR code -- D-BLNF / D-BLMODE). subrom_call clobbers every register and forces
 ; CF=0 on return, so neither the cursor nor a carry can ride in registers — the
-; fatprim/fcbname pattern. Unlike fcbname these need cells of their OWN rather
-; than aliasing DISKOP_HL/DISKOP_STATUS: the status is held ACROSS the whole
-; load, during which the fatprim cells are live on every getbyte.
+; fatprim/fcbname pattern. Cells of their OWN rather than aliasing
+; DISKOP_HL/DISKOP_STATUS: the status was held ACROSS the whole load while the
+; fatprim cells were live on every getbyte (history since 2026-10-19; the tape
+; load still holds it across a CALSLT-free loop).
 ;
 ; CLEAN-ROOM: original code, extracted verbatim from our own basic/bload.asm and
 ; basic/fat.asm. Provenance for the BSAVE tape/disk formats, the DSKIO contract
@@ -90,22 +93,14 @@ bl_upcase:
 
 ; load_error — sub-local reporter. Deliberately MIRRORS the resident routine's
 ; shape (TAPIOF, ERRMARK, then `ret`) instead of aborting, because the body
-; reaches it by `jp` from several stack depths — including from inside
-; parse_disk_fcb, where the `ret` lands back in the CALLER (a known nested-reject
-; hazard, [[load-error-is-not-abort]]). Changing the stack behaviour here would
+; reaches it by `jp` from several stack depths (the tape path's; until 2026-10-19
+; also from inside parse_disk_fcb, where the `ret` landed back in the CALLER -- a
+; known nested-reject hazard, [[load-error-is-not-abort]], and the reason
+; pdf_baddrive / pdf_badname below are no longer this). Changing the stack behaviour here would
 ; silently change control flow on the error path, so it is preserved exactly; the
 ; only difference is that the message is not printed here. The resident stub sees
 ; BL_STAT and reports once, which also removes the double-report the resident
 ; path could produce.
-; D-FSPEC: the TENANT's binding for parse_disk_fcb's malformed-name exit. The
-; RESIDENT copy raises ERR 56 `Bad file name` (basic/str-engine.asm); here it
-; keeps the file-and-return shape, because the only caller of this copy is
-; do_bload below and BLOAD's answer to a malformed name is UNMEASURED. Moving an
-; unmeasured verb on a reading taken for five others is exactly what D-DSKMSG
-; declined to do for NAME.
-pdf_badname     equ     bl_load_error
-pdf_baddrive    equ     bl_load_error   ; D-DRVNAME: the same, for a drive past B:
-
 bl_load_error:
                 call    TAPIOF
                 ld      a,$EE
@@ -127,49 +122,44 @@ bl_tape_dio:
                 include "basic/cascap-body.inc"     ; cas_capture_name (D-CASBIN)
                 include "basic/cascut-body.inc"     ; cas_capture_cut: a '.' ends the name (D-CASDOT)
 
-; bl_notfound — the DISK not-found arm (D-BLNF). Same shape and same stack
-; behaviour as bl_load_error above (reached by `jp`, returns into whoever called
-; the tenant body), but it files BL_STAT = 2 instead of 1 and the resident stub
-; turns that into a RAISED ERR 53 `File not found` — which is what both
-; references answer (docs/loaderr-msx1-characterization.md §4).
+; pdf_baddrive / pdf_badname -- the TENANT's bindings for parse_disk_fcb's two
+; rejects: a drive past B: and a structurally malformed 8.3 name. Each files its
+; MSX ERR code in BL_STAT -- 62 `Bad drive name`, 56 `Bad file name`, the codes
+; the RESIDENT copy raises (basic/str-engine.asm) -- and `ret`s. Reached by `jp`
+; from parse_disk_fcb's own level, so the `ret` lands in isd_disk
+; (basic/bload-body.inc), which sees BL_STAT set and returns without a load.
+; 🔴 CHANGED 2026-10-19 (D-ROMSIZE step 1), FROM A REAL HOLE. Both were
+; `equ bl_load_error` (D-FSPEC / D-DRVNAME kept BLOAD's answer unmeasured), and
+; bl_load_error RETURNS -- into isd_disk, which then fell into the disk load with
+; DISK_FCB_NAME as the previous disk verb left it (a bad drive is rejected before
+; the name is built) or half-built (a bad name): it searched for THAT, and either
+; answered 53 or loaded it and then printed `load error` (BL_STAT stayed 1) --
+; read from the source, never measured. That fall-through cannot exist now
+; (isd_disk tests BL_STAT), and the codes are the ones every
+; other disk verb raises: 62 measured on the CF-3300 for OPEN / KILL / SAVE /
+; FILES / RUN and BEFORE $FE5D for BSAVE (scratchpad/drvname_run.out,
+; bsave_hook_run.out), 56 for KILL / LOAD / SAVE / OPEN / FILES (D-FSPEC).
+; ⚠️ BLOAD's OWN face for either is still unmeasured on the reference.
+; ⚠️ NO TAPIOF AND NO ERRMARK: no tape runs on the disk path, and `$EE` at
+; ERRMARK is the landmark of the PRINTED `load error`, which these are not.
 ;
-; ⚠️ NO TAPIOF AND NO ERRMARK, ON PURPOSE, AND NEITHER IS AN OVERSIGHT. This arm
-; is reachable ONLY from do_disk_bload after a SUCCESSFUL fat_mount, so no tape
-; is running to stop; and `$EE` at ERRMARK is the landmark for the PRINTED `load
-; error` (basic/bload.asm), which this is not. Dropping it here would make a
-; raised error indistinguishable from a printed one to every probe that reads
-; that cell.
-;
-; 🔴 AND THIS IS WHY THE TAPE ARM IS UNTOUCHED. D-LOADERR-FIX broke the cassette
-; by guarding one instance of a shared tail instead of the class; the answer was
-; to keep the SHARED tail's default the safe one and make the not-found reading
-; opt-in. Same discipline here: bl_load_error still serves every cassette
-; failure, every parse failure and every mount failure, and only a call site
-; that has PROVED the volume mounted may come here.
-;
-; 🔴 D-BLMODE (2026-08-21): THE CELL NOW CARRIES AN **ERR CODE**, NOT AN INDEX.
-; BL_STAT is 0 = loaded, 1 = `load error` PRINTED, and **anything else is the MSX
+; 🔴 D-BLMODE (2026-08-21): BL_STAT CARRIES AN **ERR CODE**, NOT AN INDEX.
+; BL_STAT is 0 = loaded, 1 = `load error` PRINTED, FOPEN_SEL_BLOAD = a disk file
+; for main to load through disk.rom (2026-10-19), and **anything else is the MSX
 ; ERR code the resident stub must RAISE**. That is one byte of main page 1 for
 ; the whole family (`cp 1` instead of `dec a`, then `jp raise_error` with A
 ; already right) where a fourth enumerated value would have cost six.
 ; ⚠️ THE HAZARD, NAMED RATHER THAN DISCOVERED: **BLOAD can never raise ERR 1**
-; (`NEXT without FOR`) through this cell, because 1 is taken. That is not a
-; restriction anything could want, but it is a real one and it is written down
-; here so the next arm does not find it by measuring.
-bl_badmode:
-                ld      a,61                ; ERR 61 `Bad file mode` -- the file
-                                            ; EXISTS and is not a BSAVE binary.
-                                            ; MEASURED 2026-08-21: the CF-3300
-                                            ; RAISES this and STOPS the program,
-                                            ; for `PROG.BAS` (tokenised BASIC)
-                                            ; AND for `TEST.BIN` (data with a
-                                            ; .BIN name) alike -- so the rule is
-                                            ; about the $FE MARKER, not the
-                                            ; extension.
+; (`NEXT without FOR`) -- nor ERR 90 -- through this cell: 1 and $5A are taken.
+; (bl_notfound / bl_badmode -- 53 after a successful mount, 61 for a file with no
+; $FE marker, measured on the CF-3300 2026-08-21 for PROG.BAS and a .BIN of data
+; alike -- MOVED to disk.rom with the disk load, 2026-10-19: hk_dpbload answers
+; them in DISKOP_STATUS in this same code.)
+pdf_baddrive:
+                ld      a,62                ; Bad drive name (D-DRVNAME)
                 jr      bl_stat_raise
-bl_notfound:
-                ld      a,53                ; ERR 53 `File not found` -- mounted,
-                                            ; name not in the directory (D-BLNF)
+pdf_badname:
+                ld      a,56                ; Bad file name (D-FSPEC)
 bl_stat_raise:
                 ld      (BL_STAT),a
                 ret
@@ -183,11 +173,11 @@ bl_stat_raise:
 dev_cas:
                 db      "CAS:",0
 
-; The sequential FAT12 read layer. Identical source to the resident copy, but
-; here fat_mount/fat_find/fat_open/fat_read_file_sector bind to sub/fatprim.asm's
-; REAL implementations instead of the marshalling stubs -- the whole reason this
-; tenant is affordable.
-                include "basic/fatio-body.inc"       ; fat_io_find + fat_io_getbyte
+; (The sequential FAT12 read layer -- `include "basic/fatio-body.inc"`, whose
+; fat_mount / fat_find / fat_open / fat_read_file_sector bound to sub/fatprim.asm's
+; copy of basic/fat-prim-body.inc -- is GONE, 2026-10-19: the disk load is
+; disk.rom's hk_dpbload, over that ROM's own copies of both bodies. This tenant was
+; the last sub-ROM user of either.)
 
 ; --- seqio_tenant: EOF() on a NON-DISK channel (SUBROM_IDX_SEQIO) -----------------
 ; 🗑️ S10.C (D-ROMSIZE, 2026-10-15): THIS TENANT USED TO READ DISK TEXT FILES.
@@ -271,4 +261,4 @@ sq_end:                                     ; at the end
                 ret
 
 ; The verb body itself, shared with the resident side.
-                include "basic/bload-body.inc"       ; do_bload .. disk_load_fin
+                include "basic/bload-body.inc"       ; do_bload .. isd_disk (+ parse_disk_fcb)

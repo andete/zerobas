@@ -3,11 +3,12 @@
 
 ; fatio-body.inc — the sequential FAT12 READ layer (fat_io_open + fat_io_getbyte).
 ; ===========================================================================
-; Shared, byte-identically, between the sub-ROM PAGE-1 BLOAD tenant (sub/bload.asm,
-; docs/spec-traps-t3-key.md §7.6), where fat_mount/fat_find/fat_open/
-; fat_read_file_sector bind to the REAL implementations sitting right there in
-; sub/fatprim.asm, and disk.rom (disk/kernel.asm, LOAD / MERGE), where they bind
-; to its own FAT engine.
+; ONE home since 2026-10-19: disk.rom (disk/kernel.asm -- LOAD, MERGE and, since
+; that date, BLOAD's hk_dpbload), where fat_mount/fat_find/fat_open/
+; fat_read_file_sector bind to its own FAT engine. It was shared, byte-identically,
+; with the sub-ROM PAGE-1 BLOAD tenant (sub/bload.asm, docs/spec-traps-t3-key.md
+; §7.6), whose copy bound them to sub/fatprim.asm's; that disk path moved to
+; disk.rom (D-ROMSIZE step 1) and the sub-ROM include went with it.
 ; 🗑️ S10.C (2026-10-15): THE RESIDENT MAIN COPY IS GONE. This header said "The
 ; resident copy must stay — do_load, ex_merge and the file verbs all use it";
 ; do_load and ex_merge moved to disk.rom with steps 9 / 11, and OPEN FOR INPUT,
@@ -20,7 +21,7 @@
 
 ; 🗑️ fat_io_open -- `call fat_mount / ret c` falling into fat_io_find, the
 ; combined open -- IS GONE (S10.C, 2026-10-15). Main was its only caller (OPEN FOR
-; INPUT); both ROMs that still include this body mount SEPARATELY and enter
+; INPUT); both ROMs that then included this body mount SEPARATELY and enter
 ; below, which is D-BLNF's whole point, so its 4 B were dead in each and
 ; allowlisted as "load-bearing in main" (tools/deadcode-allow.txt). That reason
 ; left with main's copy, and so did the two allowlist lines.
@@ -28,9 +29,9 @@
 ; caller that has already mounted and wants the find's carry BY ITSELF. Cy out
 ; of here means precisely "the volume mounted and the 8.3 name is NOT in the
 ; directory" — the tail below cannot set it (it ends `or a`). D-BLNF: that is how
-; the BLOAD tenant tells NOT FOUND from a mount/I-O fault without a DISKOP_OP it
-; never writes (sub/bload.asm, basic/bload-body.inc), and how disk.rom's
-; hk_dpload / hk_aopen do (disk/kernel.asm). Primes the read iterator, seeds the
+; disk.rom's hk_dpload / hk_aopen / hk_dpbload tell NOT FOUND from a mount/I-O
+; fault (disk/kernel.asm) -- hk_dpbload since 2026-10-19, when it took the BLOAD
+; tenant's disk path, which told them apart the same way. Primes the read iterator, seeds the
 ; bytes-remaining counter from the true file size, and marks the sector buffer
 ; empty so the first fat_io_getbyte refills it.
 fat_io_find:
