@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36880 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36904 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31589,6 +31589,30 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and compare per pass. Inside T2's 10×; kwtime's negative arm had to
       re-price its delay pad (3000 → 2000 iterations) for the same reason.
 
+- [ ] 💥 **D-DEEPEXPR -- NEAR THE MEMORY EDGE A DEEP EXPRESSION OVERWRITES THE ARRAYS OR
+      CRASHES WHERE THE VG-8020 REFUSES WITH ERR 7 (found 2026-10-19 by reading, MEASURED
+      2026-10-20)**
+      🎚️ TIER 1 — memory corruption: a program that runs close to the end of memory
+      silently loses array data or hangs.
+      🤖 **AUTONOMOUS** — the design is [docs/spec-basic-deepexpr-guard.md](docs/spec-basic-deepexpr-guard.md)
+      (drafted 2026-10-19 by a subagent, read-only; its live-bug list LB1-LB4).
+      📏 [`deepexpr_probe.py`](scratchpad/deepexpr_probe.py) -> [`deepexpr_run.out`](scratchpad/deepexpr_run.out)
+      (a canary `A(X)=12345` as the last array element, ~200 B left, the expression
+      trapped, `[err canary]`):
+      | row | VG-8020 | zerobas |
+      |---|---|---|
+      | lb1 `B=` 40 x `(` .. `1` .. `)` | 7 12345 | 7 **8.0415E+40 (canary overwritten)** |
+      | lb2 `B=` 120 x unary `+` `1` | 0 12345 | **no reading (crash)** |
+      | lb3 20 nested `LEFT$` | 7 12345 | **no reading** |
+      | lb4 a first-touch `Z#(1,1)` inside 15 `(`, ~1150 B left | 7 12345 | **no reading** |
+      | ctl `B=1` | 0 12345 | 0 12345 |
+      🔮 the spec's predictions, every row: HIT. Causes (spec §2): the string probe
+      `str_eval_paren` recurses per `(` with no stack test (basic/strvar.asm),
+      `str_eval_plus` per unary `+` (basic/str-engine.asm), nested LEFT$/RIGHT$/MID$
+      sources, and an auto-DIM that checks the pool top, never the live SP
+      (sub/arrays.asm). ➡️ Build the spec's guards (stk_room, the recursion arms, the
+      guarded heap gateway, sp_ceil), these five rows as the gate.
+
 - [ ] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to
       ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows; 256 B
@@ -31870,7 +31894,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       dimedge-acceptance 10/10, its pins gone. The "~130 vs ~256" this item opened with
       was largely FRE(0)'s. ➡️ What remains is only the DEEP-EXPRESSION economy above
       (zerobas refuses a few nesting levels earlier near the edge): the per-site guard
-      spec.
+      spec. Spec: [docs/spec-basic-deepexpr-guard.md](docs/spec-basic-deepexpr-guard.md) (drafted 2026-10-19).
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
