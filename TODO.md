@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36865 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36872 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -35650,6 +35650,13 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       3/3 on the DSKF face; 🔪 [`bootkeys_knives.out`](scratchpad/bootkeys_knives.out):
       K-BK1 (init_gate always inits) -> shift, exactly. **CTRL stays open**: one
       drive and +1558 B on the CF-3300, after D-DSKIB.
+      📏 **RE-MEASURED 2026-10-19** ([`bootkeys_1019.out`](scratchpad/bootkeys_1019.out),
+      bootkeys_probe.py): **plain** now IDENTICAL (FRE 23320, HIMEM $DE77, 2 drives,
+      DSKF 706 -- D-DISKHIMEM); **SHIFT** FRE 28705 and HIMEM $F380 IDENTICAL (since
+      D-WSZERO's $F380 ceiling), DSKF ERR 5 on both. 🔮 "plain and SHIFT match, CTRL
+      differs": HIT. Residual (priority 3/4, an address): after a SHIFT boot the
+      drive-count cell $F347 reads 255 (untouched) on the CF-3300 and 201 ($C9) here
+      -- who writes $C9 there is unmeasured. CTRL still open (D-DSKIB).
 
 - [x] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
