@@ -4391,6 +4391,25 @@ CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this si
 ; 131 puts the edge on the reference's at both parities (dimedge_scan_131e.out /
 ; _131o.out), and keeps 39 B over the editor's 92.
 STK_EDGE_RESERVE equ    131
+; --- STK_ALLOC_RESERVE: an allocation's own stack, under the LIVE SP (D-DEEPEXPR)
+; 2026-10-20 (docs/spec-basic-deepexpr-guard.md §4.5). STK_EDGE_RESERVE is right
+; at statement level, where SP is within it of the pool top; MID-EXPRESSION SP can
+; be hundreds of bytes lower, and a first-touch `Z#(1,1)` auto-DIMs 968 B. With
+; ~1150 B left inside 15 parentheses that array was laid over the live stack -- the
+; tenant's own frames included -- and zerobas read NO OUTPUT where the VG-8020
+; answers Out of memory (scratchpad/deepexpr_run.out, row lb4). So both variable
+; ceilings (sub/arrays.asm scv_ceil_try, aal_ceil_try) are also capped at
+; SP - STK_ALLOC_RESERVE (sp_ceil). It only has to cover the arrays tenant's own
+; stack BELOW that test, to the end of the allocation (DI throughout): by reading,
+; one call into elsize_from_type, the [STRIDE] / data-start words, and
+; strheap_ctllim's walk after the frame is dropped -- a few bytes. 24 is the
+; spec's upper prediction; Q10 (a write watchpoint across an auto-DIM) measures it.
+; It need NOT cover the rest of the expression: the next factor's stk_guard runs
+; against the NEW CTLLIM. 🎯 And it must not move the TOP-LEVEL edges: there the
+; tenant sits ~75 B under the pool top (spec §4.5, by reading), so SP - 24 is
+; still above the top - 131 that STK_EDGE_RESERVE sets, and that static ceiling
+; keeps binding (dimedge-acceptance's 108 refused / 109 fitted is the guard).
+STK_ALLOC_RESERVE equ   24
 ; --- STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRESERVE S3) ----------
 ; Measured to the REFERENCE's own edge, which is safe because it is above
 ; STK_EDGE_RESERVE: after lnblank's crf shrink (`CLEAR 300,TXTTAB+1000`, then

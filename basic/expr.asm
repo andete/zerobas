@@ -1487,7 +1487,9 @@ ev_ff_varptrch:
                 call    nz,fch_check_nz     ; address on both references (fcb0_run.out),
                                             ; so only #1.. take the 52 range test
                 push    ix
-                call    fch_ctx_addr        ; HL = channel A's block
+                call    fch_ctx_g           ; HL = channel A's block (D-DEEPEXPR H10:
+                                            ; fch_ctx_addr behind stk_room, main.asm;
+                                            ; a refusal reads 0 with ERR 7 deferred)
                 pop     ix
                 ex      de,hl               ; DE = the address; FACTYP is already
                 ret                         ; int (ev_ff_ckdone's flt_int_result)

@@ -2427,6 +2427,13 @@ bloadrtail-acceptance: repack-machine
 diskfre-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_diskfre.py
 
+# --- deepexpr-acceptance: deep expressions at the memory edge (D-DEEPEXPR) ----------
+# A canary array element last in memory, ~200 B left: 40 parens, 120 unary +, 20 nested
+# LEFT$, a first-touch array inside parens -- the VG-8020 refuses (7) or completes with
+# the canary intact; zerobas overwrote it or crashed until the 2026-10-20 guards.
+deepexpr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_deepexpr.py
+
 # --- tapionlead-acceptance: TAPION called while data is playing (D-TAPLEAD) ------
 # A machine-code loader re-calls TAPION before the previous file's data has ended;
 # it must wait for a real leader (our own synthetic two-file tape + our own routine).

@@ -5,12 +5,17 @@ SPDX-License-Identifier: 0BSD
 
 # Stack room inside an expression, per site (D-DEEPEXPR)
 
-Status: **draft spec, 2026-10-19, nothing built.** This is the design pass that
-TODO.md's D-DIMRESERVE item asked for ("the per-op audit the item priced, with a
-spec"). It was drafted by reading the source at `b7de9904`, plus `make basic-reloc`
-for the addresses and the walls. No emulator, probe or gate was run for it.
-Everything below marked **by reading** is an inference from the source that a probe
-row still has to confirm. §9 lists those rows.
+Status: **BUILT 2026-10-20 (D-DEEPEXPR): §10 steps 1 and 2 -- `stk_room`, R1-R3,
+R5, `sh_go_g` with P1-P3, `sp_ceil` -- with `STK_EVAL_RESERVE` still 128. Host
+unit tests green; the emulator rows (§8.1, `scratchpad/deepexpr_probe.py`) NOT yet
+run. §11 records what was built where it differs from the design below.** Steps 3-4
+(re-measure, lower R, the climber and FN-margin items) remain open.
+Drafted 2026-10-19 as the design pass that TODO.md's D-DIMRESERVE item asked for
+("the per-op audit the item priced, with a spec"), by reading the source at
+`b7de9904`, plus `make basic-reloc` for the addresses and the walls. Everything
+below marked **by reading** is an inference from the source that a probe row still
+has to confirm. §9 lists those rows. Addresses and line numbers in §2-§7 are the
+2026-10-19 ones.
 
 🔴 **The audit found live defects (§2).** The string evaluator recurses with **no
 stack test at all**. A numeric `B=(((((…1…)))))` makes that recursion go 6 B
@@ -622,9 +627,85 @@ One test per failure-publish rule:
 
 ## 10. Build order
 
-1. LB1–LB3 + LB4, as a TIER 1 slice: `stk_room`, R1–R3, R5, `sp_ceil`, the §8.1
-   rows, K-DX1–4 and K-DX8. R stays 128.
-2. `sh_go_g` + P1–P3: the H sites, U2/U3, K-DX5–7. R is still 128, so behaviour
-   cannot change yet.
+1. ✅ BUILT 2026-10-20 (code and unit tests; the §8.1 emulator rows and the
+   emulator knives still to run). LB1–LB3 + LB4, as a TIER 1 slice: `stk_room`,
+   R1–R3, R5, `sp_ceil`, the §8.1 rows, K-DX1–4 and K-DX8. R stays 128.
+2. ✅ BUILT 2026-10-20, in the same slice. `sh_go_g` + P1–P3: the H sites, U2/U3,
+   K-DX5–7. ~~R is still 128, so behaviour cannot change yet.~~ 🔴 That was wrong:
+   see §11.4 -- every `sh_go_g` test sits deeper than the factor guard that used to
+   cover its op, and P2 changes what a store does with a fault pending.
 3. Re-measure (§5.2), lower R, K-DX9, `deepexpr-acceptance`, full battery.
 4. File the per-level climber item (§5.3) and the FN-margin item (Q6).
+
+---
+
+## 11. As built (2026-10-20)
+
+### 11.1 Where each piece went, and its cost
+
+The six pins forced the shape. Every byte added in front of `$3297` (low) or
+`$6CF3` (page 1) must be refilled to the byte, so each page-1 site is reached by a
+call that *replaces a call of the same size* there, and the bodies sit past the
+pins. Nothing in front of a pin moved; `pin_plan.py --check --budget 4` reads 6/6,
+4 B waste, as before. No existing label moved either (the resident ABI files did
+not change).
+
+| site | as built | inline bytes | T-states added (its own path, success) |
+|---|---|---|---|
+| `stk_room` | as §4.1, the RAM-free variant (`ld hl,(CTLLIM)` + `add`). Low region's end (`basic/main.asm`) | — | 122 incl. call/ret |
+| R1 `str_eval_paren` | `call str_eval` → `call sep_eval` (`call stk_room` / `jp c,str_eval` / `ret`), page 1 past the pins. The `jp` keeps the level at 6 B | 0 | 132 per probed `(` |
+| R2 `str_eval_plus` | a loop, as §4.2; the body moved to the low region's end (its old 7 B in `str-engine.asm` pay for R3 + H7) | −7 | saves the re-dispatch per extra `+` |
+| R3 `str_arg_open` | `call stk_room` / `jr nc,sao_empty`, inline | +5 | 129 per LEFT$/RIGHT$/MID$ |
+| R5 `str_ev_fn` | `call fn_call` → `call sef_fn` (test, `jp c,fn_call`; refusal drops str_ev_fn's return and jumps to `str_eval_no`) | 0 | 132 per string FN |
+| `sh_go_g` | `call stk_room` / `jp c,sh_go` / the §4.3 skip. NOT a fall-through into `sh_go`: that would put 13 B in front of `$3297` | — | 132 per heap op |
+| H sites | `str_temp_alloc`, `sst_op`, `sct_go`, `str_temp_slice`, `ev_ff_val`, `shx_tail`, INSTR, `str_cmp_bits`, both `fre_go` ops → `sh_go_g` | 0 | (in `sh_go_g`) |
+| H7 INSTR P3 | `jr nz,efi_skipped` over the `ex de,hl` | +2 | 7 |
+| H9 `fre_go` P3 | as §4.3 (`frg_pool` / `fre_zero`), past the pins | +7 | FRE(n) 139, FRE(s$) ~160 |
+| H10 VARPTR(#n) | `call fch_ctx_addr` → `call fch_ctx_g` (test, `jp c,fch_ctx_addr`, else HL = 0) | 0 | 132 |
+| H11 P2 | `call sh_go` → `call ssk_go`: `ld b,a` / `ld a,(FPERR)` / `or a` / `ld a,b` / `jp z,sh_go_g` / `ret` (op 12 reads no blk+6, so B is free) | 0 | 35 + `sh_go_g`'s 132 |
+| A `sp_ceil` | as §4.5 but without the DE save (both callers reload DE next): 13 B + 2 calls. CLEARPOOL arm only, as the static ceiling is | — | ~100 per allocation |
+
+Per-factor path (`stk_guard`, `ev_f`, the climber, `ev_rel`'s numeric path):
+**0 T added.** Walls (`make basic-reloc`): low 156 → **109 B**, main page 1 452 →
+**408 B**, sub page 0 184 → **165 B**.
+
+`STK_ALLOC_RESERVE` = **24** (`basic/sysvars.inc`), the spec's upper prediction.
+The host test (`tests/test_deepexpr_guard.py` U6) sweeps a real `ary_alloc` of
+`Z#(10,10)` upward in SP from just above the array: every SP refuses or fits with
+the data intact and the stack above the array; the tenant's deepest write there was
+24 B below its call site (Q10's harness half; the machine half is still open).
+
+### 11.2 Not built
+
+* The stored floor cell (§6 option (a)): it needs a 2 B RAM cell, which is
+  Joost's call (D-WSZERO). `stk_room` is the variant that needs none.
+* `stk_room_h` (§4.1): no second reserve until Q8 asks for one.
+* The non-CLEARPOOL arm of `ev_fre_close` keeps a raw `call sh_go` (a scaffold
+  build, a different machine).
+
+### 11.3 Unit tests and knives (host)
+
+`tests/test_deepexpr_guard.py` (U1-U6 of §8.3, 29 rows). U1 finds `stk_room`'s and
+`stk_guard`'s refusal thresholds by sweep and requires the SAME byte. U4/U5 track
+the lowest main-side SP and require it to stay above CTLLIM for the 40-deep string
+paren, the 20-deep LEFT$ nest and 120 unary `+`. U3's INSTR / VAL / LEN / FRE("")
+rows sweep CTLLIM from tight to loose: the right value with nothing pending, or ERR
+7 pending and never 18648 (STR_EMPTY's address). Each of K-DX1, -2, -3, -6, -7, -8
+and the INSTR P3 knife, planted in the source, reddens this file. Three older
+tests' `set_var` helpers now clear FPERR first (a statement boundary): P2 had sent
+their stores down the raise funnel on a fault a previous case armed on purpose.
+
+### 11.4 Behaviour that DOES change at R = 128 (§10's old claim corrected)
+
+1. **Statement-level string ops at the very edge.** `sh_go_g` asks for R below the
+   op itself, a few frames under where the factor guard used to answer for it. A
+   string LET or INPUT has no factor guard at all (`A$=B$`, `INPUT A$`), so at the
+   DIM edge such a statement can now refuse with ERR 7 where it completed. A flat
+   numeric expression already refuses there (§5.3), so this widens an existing
+   economy gap; lowering R (step 3) narrows both.
+2. **P2 is visible.** A string store with ANY fault pending (`A$=B$+5`'s type
+   mismatch, `A$=X$+X$` over 255, a pending division by zero) now stores nothing
+   and raises at the store, as the reference's eager error does. Before, the
+   variable took the value and the error was raised after. Trapped rows that read
+   the variable afterwards will move toward the reference.
+

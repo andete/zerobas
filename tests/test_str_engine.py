@@ -120,6 +120,13 @@ def run():
         m.poke(BODY, value)
         m.poke(SETSRC, bytes([len(value)]))
         m.poke_w(SETSRC + 1, BODY)
+        # D-DEEPEXPR P2 (2026-10-20): a string store no longer writes while a
+        # fault is PENDING -- it raises it, as the reference's eager error does
+        # (basic/main.asm ssk_go). set_var stands for a statement of its own,
+        # and exec_stmt clears FPERR at every statement boundary; a case above
+        # that deliberately ARMED it would otherwise leak into this store and
+        # send it down the raise funnel (SAVSTK = 0 in this harness).
+        m.poke(m.sym["FPERR"], 0)
         m.call("str_set_key", b=ord(name), c=0, de=SETSRC)
 
     def eval_expr(text):

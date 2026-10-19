@@ -1,0 +1,20 @@
+   K stmt          VG         ZB
+ 112 num   NO READING NO READING  SAME
+ 112 copy  NO READING NO READING  SAME
+ 112 lit   NO READING NO READING  SAME
+ 120 num   NO READING NO READING  SAME
+ 120 copy  NO READING NO READING  SAME
+ 120 lit   NO READING NO READING  SAME
+ 136 num      0 12345 NO READING  DIFF
+ 136 copy     0 12345 NO READING  DIFF
+ 136 lit      0 12345 NO READING  DIFF
+ 160 num      0 12345    0 12345  SAME
+ 160 copy     0 12345    0 12345  SAME
+ 160 lit      0 12345    0 12345  SAME
+ 200 num      0 12345    0 12345  SAME
+ 200 copy     0 12345    0 12345  SAME
+ 200 lit      0 12345    0 12345  SAME
+ 260 num      0 12345    0 12345  SAME
+ 260 copy     0 12345    0 12345  SAME
+ 260 lit      0 12345    0 12345  SAME
+refcache: 1 hit, 1 miss, 1 stored

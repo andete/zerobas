@@ -71,6 +71,12 @@ arga_dig_iszero:
 ; The block is pushed here, its address rides to the tenant in HL (subrom_call
 ; and CALSLT pass HL), and the tenant addresses it through IY. Clobbers IX, IY.
 ; Raises (sc_call) only if the sub ROM is absent.
+; 🧭 D-DEEPEXPR (2026-10-20): every EXPRESSION-time op now enters through
+; `sh_go_g` (basic/main.asm, at the low region's end past the $3297 pin), which
+; tests the stack first and on a refusal publishes only STR_EMPTY / DE = 0. The
+; raw entry here keeps its statement-time users, whose depth STK_EDGE_RESERVE
+; covers: MID$()= and mid_own, INPUT's inp_val, ctl_reset, fch_ctx_addr's
+; statement callers.
 sh_go:
                 push    bc                  ; blk+6
                 push    de                  ; blk+4
@@ -480,18 +486,20 @@ strscr_desc:
 ; way, which is exactly what makes it the wrong thing to reason from
 ; [[two-rules-that-coincide-on-every-row-you-have]].
 ;
-; ⚠️ Consequently this RECURSES where the numeric arm loops: `++A$` costs one
+; ~~⚠️ Consequently this RECURSES where the numeric arm loops: `++A$` costs one
 ; frame per `+`. That is a real asymmetry with `ev_f_pos` and it is deliberate --
-; the loop shape cannot restore the cursor.
-;   in:  HL on the PLUS_TOKEN.
-;   out: as str_eval_one -- CF set and HL past `+ operand` on success; CF clear
-;        and HL back ON the `+` when the operand is not a string form.
-str_eval_plus:
-                inc     hl                  ; past the '+'
-                call    str_eval_one        ; the operand itself
-                ret     c                   ; a string operand -> HL is already past it
-                dec     hl                  ; declined: the cursor goes back ON the '+'
-                ret                         ; CF clear, exactly as str_eval_one left it
+; the loop shape cannot restore the cursor.~~
+; 🔴 D-DEEPEXPR (2026-10-20): THAT RECURSION WAS A MEMORY-SAFETY HOLE, and the
+; premise under it was wrong. It ran with NO stack test, 2 B per `+`, inside
+; ev_rel's string probe -- BEFORE any stk_guard of the statement -- so `B=` + 120
+; unary `+` + `1` with ~200 B left wrote return addresses into the arrays and the
+; machine read NO OUTPUT where the VG-8020 completes (scratchpad/deepexpr_run.out,
+; row lb2). A loop CAN restore the cursor: it saves the FIRST `+` once and puts it
+; back on a decline. So the body is now a loop at constant depth -- what the
+; numeric arm (`ev_f_pos`, `jp ev_f`) already costs -- and it MOVED to
+; basic/main.asm, at the low region's end past the $3297 pin, because the loop
+; is 7 B longer and this file sits in FRONT of that pin (its 7 B here refill the
+; R3 test in str_arg_open and INSTR's P3 below, exactly).
 
 ; --- str_eval_lit (repack): a '"'-quoted literal -> a [len][ptr] rvalue -----
 ; descriptor over the literal's bytes IN PLACE in the tokenised line (§3:
@@ -639,7 +647,10 @@ skipsp_test:
 str_temp_alloc:
                 ld      l,a                 ; blk+0 = the length
                 ld      a,3
-                call    sh_go               ; op 3 (TEMP_ALLOC): HL = the slot, DE =
+                call    sh_go_g             ; op 3 (TEMP_ALLOC): HL = the slot, DE =
+                                            ; (D-DEEPEXPR: the guarded gateway -- a
+                                            ; skip lands in the OOM arm below with
+                                            ; HL = STR_EMPTY, and ret_de0's DE = 0)
                 ret     z                   ; its body; A = ERR (Z: ok)
                 cp      2
                 jr      z,sta_overflow
@@ -717,7 +728,9 @@ str_snapshot_to_temp:
                 ld      a,4                 ; op = 4 (SNAPSHOT)
 sst_op:
                 ld      hl,(STRPTR)         ; source descriptor address (stable)
-                call    sh_go               ; HL = the owned slot, A = ERR
+                call    sh_go_g             ; HL = the owned slot, A = ERR. D-DEEPEXPR:
+                                            ; guarded -- a skip publishes STR_EMPTY
+                                            ; below, never the SOURCE (P1)
                 jr      z,sst_ok
                 cp      2
                 jr      z,sst_overflow
@@ -797,7 +810,10 @@ sct_loop:
                 push    bc                  ; [R][cursor]
                 ld      hl,(STRPTR)         ; HL = the operand (any stable descriptor)
                 ld      a,2
-                call    sh_go               ; op 2 (APPEND): A = ERR
+                call    sh_go_g             ; op 2 (APPEND): A = ERR (D-DEEPEXPR:
+                                            ; a skip's 6 maps to STRLONG below and
+                                            ; loses to the 7 already pending; R
+                                            ; is untouched)
                 jr      nz,sct_append_err   ; heap OOM / overflow -> [R][cursor]
 sct_cont:
                 pop     hl                  ; HL = cursor            [R]
@@ -935,7 +951,9 @@ str_temp_slice:
                 ld      b,e
                 push    bc                  ; blk+10 = start, blk+11 = count
                 ld      a,5
-                call    sh_go               ; op 5 (SLICE)
+                call    sh_go_g             ; op 5 (SLICE). D-DEEPEXPR: a skip leaves
+                                            ; the temp unsliced and still valid; the
+                                            ; pushed 4th word is ours to pop either way
                 pop     bc
                 ret
 
@@ -1099,7 +1117,9 @@ ev_ff_val:
                 ; byte-full. Thin glue mirrors str_temp_alloc.
                 ld      a,13                ; op 13 (VAL_PARSE)
                 push    ix                  ; the CALSLT in sh_go clobbers IX -- guard
-                call    sh_go               ; the token cursor ev_f needs back. A = ERR,
+                call    sh_go_g             ; the token cursor ev_f needs back. A = ERR,
+                                            ; (D-DEEPEXPR: a skip's A = 6 -> E = 4 below,
+                                            ; which loses to the 7 already pending)
                 pop     ix                  ; DE = the int, C = the type
                 ; D-VALBASE: the base-literal scan can REFUSE, and VAL's usual
                 ; "never raises, returns 0" does not cover it -- both references
@@ -1369,7 +1389,20 @@ str_arg_empty:
 ; [[a-guard-witnessed-only-by-a-deferred-error]]
 ; Contrast sas_decline below, whose pop IS witnessed -- a DECLINE is not an
 ; error; the caller RETRIES the operand numerically, and that retry is visible.
+; 🔴 D-DEEPEXPR R3 (2026-10-20): A SOURCE NEST HAD NO STACK TEST. A LEFT$/RIGHT$/
+; MID$ source is a string expression, so `LEFT$(LEFT$(...` recurses through here
+; (str_arg_snap -> str_eval -> str_eval_one -> str_func_ff -> back), 8 B per level,
+; and the count argument -- `eval`, which is guarded -- only runs AFTER the inner
+; level returns. 20 nested LEFT$ with ~200 B left read NO OUTPUT where the VG-8020
+; answers Out of memory (scratchpad/deepexpr_run.out, row lb3). So each level asks
+; stk_room first (basic/main.asm: stk_guard's threshold, non-dropping) and a
+; refusal is the malformed-call exit every caller already takes: CF clear -> its
+; `jr nc,str_arg_empty` -> FPERR 4 (which LOSES to the 6 stk_room deferred,
+; first-error-wins) -> str_eval_no. +5 B, +129 T per LEFT$/RIGHT$/MID$ (each
+; already costs a snapshot and a slice, well over 1500 T).
 str_arg_open:
+                call    stk_room            ; D-DEEPEXPR R3: room for one more level?
+                jr      nc,sao_empty        ; no -> ERR 7 deferred, decline as malformed
                 call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
@@ -1873,7 +1906,8 @@ str_fn_radix:
 ; line-adjacent grep sees three.
 shx_op_tail:
 shx_tail:
-                call    sh_go               ; HL = the slot, A = ERR
+                call    sh_go_g             ; HL = the slot, A = ERR (D-DEEPEXPR: a skip
+                                            ; publishes STR_EMPTY through shx_finish)
                 call    shx_finish
                 jr      sfi_done            ; pop hl (the caller's cursor guard), then
                                             ; str_eval_ok -- C4 shared tail (2026-10-03)
@@ -2154,8 +2188,14 @@ efi_p_ok:
                 push    ix
                 pop     hl                  ; HL = a$ temp descriptor address; BC = p
                 ld      a,11
-                call    sh_go               ; op = 11 (INSTR_SEARCH): HL = the result
+                call    sh_go_g             ; op = 11 (INSTR_SEARCH): HL = the result
+                ; 🎯 D-DEEPEXPR P3 (2026-10-20): a SKIPPED search must read 0, not
+                ; STR_EMPTY's address -- `ex de,hl` would hand back 18648, a
+                ; plausible position, with ERR 7 pending behind it. The skip leaves
+                ; DE = 0 already, so it only has to step over the exchange. +2 B.
+                jr      nz,efi_skipped      ; (the op itself never reports an ERR)
                 ex      de,hl               ; DE = result (1-based match / 0)
+efi_skipped:
                 pop     ix                  ; IX = cursor (bridge back to ev_f's convention)
                 jp      flt_int_result      ; INSTR returns an int even when a float rode
                                             ; in via p or a nested STR$ arg (float.asm F1;
@@ -2261,9 +2301,13 @@ rp_yes:
 ; low region ran out of room for it.
 str_cmp_bits:
                 ld      a,10                ; op = 10 (CMP): HL = lhs, DE = rhs. The
-                jp      sh_go               ; bits come back in A; BC (the caller's C,
+                jp      sh_go_g             ; bits come back in A; BC (the caller's C,
                                             ; the requested bits) comes back untouched:
-                                            ; op 10 writes no blk+6 (D-WSZERO S16)
+                                            ; op 10 writes no blk+6 (D-WSZERO S16).
+                                            ; D-DEEPEXPR: guarded -- a skip's A = 6
+                                            ; reads as -1/0 at the caller's `and c`,
+                                            ; with ERR 7 pending; no consumer raises
+                                            ; on a relational value (P3)
 
 ; --- type_mismatch_set: D-2's comparator-level signal ------------------------
 ; UNCHANGED from pre-4a. A string on one side of a relational and a non-string

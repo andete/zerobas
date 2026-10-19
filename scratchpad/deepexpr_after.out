@@ -1,0 +1,6 @@
+lb1  VG=[7 12345] ZB=[7 12345] SAME
+lb2  VG=[0 12345] ZB=[0 12345] SAME
+lb3  VG=[7 12345] ZB=[7 12345] SAME
+lb4  VG=[7 12345] ZB=[7 12345] SAME
+ctl  VG=[0 12345] ZB=[0 12345] SAME
+refcache: 1 hit, 1 miss, 1 stored

@@ -164,8 +164,20 @@ str_eval_one:
 ; ⚠️ THE RECURSION IS `str_eval`, NOT `str_eval_one`, and that is what makes
 ; `(A$+"Z")` work: the `+` tail is `str_concat_tail`'s and it belongs INSIDE the
 ; parentheses. `((A$))` then falls out for free -- the inner call re-enters here.
-; The Z80 stack cost is 2 bytes of return address per nesting level; BASIC's own
-; line length bounds the depth long before that matters.
+; ~~The Z80 stack cost is 2 bytes of return address per nesting level; BASIC's own
+; line length bounds the depth long before that matters.~~
+; 🔴 D-DEEPEXPR R1 (2026-10-20): IT MATTERED, AND IT WAS 6 B, NOT 2. A level is
+; `push hl` + the call into str_eval + str_eval's call of str_eval_one, and ev_rel
+; offers EVERY operand to this probe before the statement's first stk_guard has
+; run -- so `B=` + 40 `(` + `1` + 40 `)` with ~200 B left wrote return addresses
+; into the arrays (the canary read 8.04E+40 where the VG-8020 keeps it and answers
+; ERR 7; scratchpad/deepexpr_run.out, row lb1). Each level now asks stk_room first,
+; through sep_eval (basic/main.asm, past the pins: 0 B here, so no pin moved), and a
+; refusal is the ordinary DECLINE below with ERR 7 deferred. The numeric re-drive
+; then refuses on its own: below every `(` this probe tests, the numeric descent
+; reaches a guard deeper than the probe's (12 B a level against 6, spec §4.2 -- by
+; reading, sep_eval's own return address included), so a numeric expression the
+; numeric path would finish is never refused here.
 ;
 ; ⚠️ A `(` HERE IS UNAMBIGUOUSLY A SUBEXPRESSION, never a subscript. `A$(1)`
 ; reaches the variable arm below via `is_letter`, which consumes the name first
@@ -178,7 +190,9 @@ str_eval_one:
 str_eval_paren:
                 push    hl                  ; the '(' -- restored if we decline
                 inc     hl
-                call    str_eval            ; full string expression, `+` tail and all
+                call    sep_eval            ; full string expression, `+` tail and all
+                                            ; (D-DEEPEXPR R1: str_eval behind stk_room;
+                                            ; CF clear on a refusal, ERR 7 deferred)
                 jr      nc,sep_decline      ; not a string inside -> hand it back
                 call    skip_spaces
                 cp      ')'

@@ -252,6 +252,117 @@ tape_parse_cut:
                 call    tape_parse_name
                 jr      cas_name_cut
 
+; ===========================================================================
+; D-DEEPEXPR (2026-10-20): STACK ROOM INSIDE AN EXPRESSION, PER SITE
+; (docs/spec-basic-deepexpr-guard.md). Near the memory edge a deep expression
+; overwrote the arrays or crashed where the VG-8020 refuses with Out of memory
+; (scratchpad/deepexpr_probe.py -> deepexpr_run.out, rows lb1-lb4): the string
+; evaluator recursed with no stack test at all, BEFORE the statement's first
+; stk_guard, and the heap ops ran below a guard several frames up. The three
+; routines below are the low-region half of the fix (the page-1 half is beside
+; fre_go, at the end of this file); their callers are named at each one.
+; 📌 SITED HERE, AT THE LOW REGION'S END AND NOT IN str-engine.asm, ON PURPOSE:
+; that file lies in FRONT of the $3297 pin, and every byte added there must be
+; refilled to the byte (Joost: no growing holes). The only bytes added ahead of the
+; pin are the two inline sites (str_arg_open's test +5, INSTR's P3 +2), and the old
+; recursive str_eval_plus body (7 B) that left str-engine.asm pays for them
+; exactly. LAST in the region (as cascut-body above) so that no existing label
+; moves either -- subrom_call, vars_reset and the rl_* entries keep the addresses
+; sub/ and disk/ import. Low region, not page 1: str_temp_alloc and friends are
+; low-region code a sub page-1 tenant may reach, and sh_go_g must be mapped
+; wherever they are.
+; ===========================================================================
+
+; --- stk_room: stk_guard's test, NON-DROPPING (D-DEEPEXPR §4.1) --------------
+; out: CF set iff (the call site's SP - 2) > CTLLIM + STK_EVAL_RESERVE -- the very
+;      threshold stk_guard (basic/expr.asm) tests, so a recursion arm and a factor
+;      refuse at the same byte. On a refusal FPERR_OOM is deferred (first error
+;      wins, penderr_set) and it returns CF clear, A = FPERR_OOM (Z is NOT
+;      defined: callers that need NZ set it themselves).
+;      Preserves BC, DE, HL; A on success. IX / IY untouched.
+; 🎯 WHY NOT stk_guard ITSELF: stk_guard DROPS its caller's frame and leaves as a
+; failed factor (DE = 0, ev_f_defer) -- right for ev_f, wrong for a string arm,
+; which must DECLINE (CF clear, cursor restored) through its own exit. And it is
+; NOT a call added to stk_guard, which runs on every factor (TIER 5: the per-factor
+; path gains 0 T from this slice).
+; The -2 in the constant: inside stk_guard the `sbc` sees the site's SP-2 (its
+; return address); in here it sees SP-4 (the return plus our pushed HL). Loading
+; R-2 makes both tests mean exactly "site SP - 2 > CTLLIM + R".
+; T-states on success: 129 with the site's `jr nc` (call 17, push 11+11, ld 10,
+; ld 16, add 11, pop 10, sbc 15, pop 10, ret c 11, jr 7).
+; 💰 THE FASTER SHAPE IS PARKED, NOT FORGOTTEN: a STORED floor cell
+; (STKFLOOR = CTLLIM + R, written by strheap_ctllim beside CTLLIM) makes this a
+; 42 T inline test and lets stk_guard lose 34 T on every factor -- but it is a new
+; 2 B RAM cell, which D-WSZERO's zero-work-area rule puts behind a ruling from
+; Joost. Spec §6 option (a).
+stk_room:
+                push    hl
+                push    bc
+                ld      bc,STK_EVAL_RESERVE-2   ; -2: our own pushed HL (above)
+                ld      hl,(CTLLIM)
+                add     hl,bc               ; CF = 0: CTLLIM is far below $FF80
+                pop     bc                  ; (POP touches no flag)
+                sbc     hl,sp               ; CF iff SP is above it: room to recurse
+                pop     hl
+                ret     c
+                ld      a,FPERR_OOM         ; -> ERR 7 at the statement boundary
+                jp      penderr_set         ; returns OUR flags (CF clear), A = 6
+
+; --- sh_go_g: sh_go behind stk_room, with a SAFE skip (D-DEEPEXPR §4.3) -------
+; The guarded entry of the string-heap gateway, for every op reached from an
+; EXPRESSION: str_temp_alloc, sst_op (all four snapshot entries), sct_go's APPEND,
+; str_temp_slice, ev_ff_val, shx_tail, INSTR, str_cmp_bits, ssk_store (through
+; ssk_go, basic/main.asm) and both of fre_go's ops. In and out exactly as sh_go,
+; plus the skip:
+;   skip: A = 6 (FPERR_OOM, already deferred), NZ, CF clear, HL = STR_EMPTY,
+;         DE = 0, BC and a caller-pushed 4th word untouched; the tenant is NOT
+;         entered.
+; 🔴 P1, THE RULE THE 2026-10-12 PLAN TRIPPED ON: a skip publishes ONLY STR_EMPTY
+; and DE = 0, never the caller's own registers. A naive skip left HL = the SOURCE
+; descriptor, sst_op published it as STRPTR, and a later slice or append wrote
+; through it. STR_EMPTY is main page-1 ROM ($48D8, mapped while a page-0 tenant
+; runs), so a later op that writes through it writes ROM and is ignored.
+; 🎯 THE ERROR IS 7, NOT 14: each caller's own OOM arm then defers FPERR_STROOM
+; (ERR 14 under CLEARPOOL), and that LOSES to the FPERR_OOM stk_room deferred
+; first. Spec §1.1's correction to the 2026-10-12 plan.
+; T-states added on an op's success path: 132 (stk_room 122 + `jp c` 10), against
+; >= ~700 T for any heap op (block, CALSLT, dispatch, body).
+sh_go_g:
+                call    stk_room            ; A (the op) is kept on success
+                jp      c,sh_go
+                ld      hl,STR_EMPTY        ; P1: the ONLY descriptor a skip publishes
+                ld      de,0                ; P1: "no body to fill" / a numeric 0
+                or      a                   ; A = 6: NZ, CF clear -- a failed op
+                ret
+
+; --- str_eval_plus (D-UPSTR; a LOOP since D-DEEPEXPR R2) -----------------------
+; A leading `+` on a string operand is the IDENTITY on both references (`B$=+A$`
+; reads `X`). str_eval_one (basic/strvar.asm) jumps here on PLUS_TOKEN; the
+; history and the cursor contract are at the old site in str-engine.asm.
+;   in:  HL on the PLUS_TOKEN.
+;   out: as str_eval_one -- CF set and HL past `+...+ operand` on success; CF clear
+;        and HL back ON THE FIRST `+` when the operand is not a string form.
+;        Clobbers DE (the saved cursor), as every other str_eval_one arm may.
+; 🔴 IT RECURSED, 2 B PER `+`, WITH NO STACK TEST (row lb2: 120 unary `+` with
+; ~200 B left crashed zerobas where the VG-8020 completes). The loop keeps the
+; first `+` once and restores it on a decline, so `+++5` still hands its callers
+; (PAINT's colour arm, time.asm, str_concat_tail) the cursor they had -- and the
+; depth is CONSTANT in the count, which is what ev_f_pos already costs. No test is
+; needed: the operand's own arm is guarded where it can recurse. Each further `+`
+; SAVES the str_eval_one re-dispatch (~140 T).
+str_eval_plus:
+                push    hl                  ; the first '+' -- restored on a decline
+seu_lp:
+                inc     hl                  ; past a '+'
+                ld      a,(hl)
+                cp      PLUS_TOKEN
+                jr      z,seu_lp            ; `+++A$`: every '+' is the identity
+                call    str_eval_one        ; the operand itself
+                pop     de                  ; DE = the first '+' (pop keeps CF)
+                ret     c                   ; a string operand -> HL is already past it
+                ex      de,hl               ; declined: the cursor goes back ON it
+                ret                         ; CF clear, exactly as str_eval_one left it
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean
@@ -523,13 +634,20 @@ __MEAS_LOW_END:
 ; Without zerobas-sub2 the result word stays 0 and FRE(n) reads the fixed value.
 ; Placed here, the image's last code, so the 0-byte call site ahead of the pins
 ; moves nothing and no existing label moves either.
+; 🎯 D-DEEPEXPR P3 (2026-10-20): both ops go through the GUARDED gateway, and a
+; skipped op reads 0 -- not STR_EMPTY's address (18648, a plausible FRE), with ERR 7
+; pending behind it -- and FRE(n) then skips the sub2 CALSLT too, which would
+; otherwise run with less than the reserve free. +7 B, past the pins.
+; T-states added: FRE(n) 139 (sh_go_g 132 + the untaken `jr nz`), FRE(s$) ~160
+; (its tail is a call and `ret z` now, where it was a bare `jp`).
     IF CLEARPOOL
 fre_go:
                 cp      17
-                jp      nz,sh_go            ; FRE(s$): exactly as before
+                jr      nz,frg_pool         ; FRE(s$)
                 push    ix                  ; the mark (sh_go clobbers IX)
-                call    sh_go               ; HL = the free variable space
-                pop     de                  ; DE = the mark
+                call    sh_go_g             ; HL = the free variable space
+                pop     de                  ; DE = the mark (pop keeps the flags)
+                jr      nz,fre_zero         ; P3: skipped -> 0, and no sub2 call
                 push    hl
                 ld      hl,0
                 push    hl                  ; the tenant's result word, 0 = none
@@ -541,9 +659,78 @@ fre_go:
                 or      a
                 sbc     hl,de
                 ret     nc
+fre_zero:
                 ld      hl,0                ; (a near-full machine: never negative)
                 ret
+frg_pool:
+                call    sh_go_g             ; FRE(s$): the string pool, no stack in it
+                ret     z
+                jr      fre_zero            ; P3: a skipped op reads 0
     ENDIF
+
+; ===========================================================================
+; D-DEEPEXPR (2026-10-20): the PAGE-1 half of the per-site stack tests
+; (docs/spec-basic-deepexpr-guard.md; the low half -- stk_room, sh_go_g, the
+; str_eval_plus loop -- is at the low region's end, above __MEAS_LOW_END). Each of the four
+; sites below is in main page 1 AHEAD of the $6CF3 pin, so each is reached by a
+; call that REPLACES a call of the same size there: 0 B moved in front of any
+; pin, and the bodies live here, past the last one, beside fre_go.
+; ===========================================================================
+
+; --- sep_eval: str_eval_paren's recursion, behind stk_room (R1) ---------------
+; in/out: as str_eval, except that a refusal returns CF clear (the paren arm's
+; own decline) with ERR 7 deferred. The `jp` keeps str_eval's frame where the
+; `call str_eval` it replaces put it: still 6 B a level.
+; T-states added per probed `(`: 132 (stk_room 122 + `jp c` 10).
+sep_eval:
+                call    stk_room
+                jp      c,str_eval
+                ret                         ; CF clear: decline, HL kept
+
+; --- sef_fn: str_ev_fn's fn_call, behind stk_room (R5) ------------------------
+; A string FN level costs a pool frame and ~10 B of stack; fnf_save's own
+; CTL_FRAME_MARGIN (256, below SP) already refuses long before this does, so this
+; test is the floor's second line, not its first (K-DX4 is expected INERT while
+; that margin binds -- said in advance). A refusal discards str_ev_fn's return
+; (its `jp str_eval_ok`) and declines to ITS caller, HL on the FN token: the
+; numeric re-drive then defers Type mismatch, which loses to the 7.
+; T-states added per string FN call: 132.
+sef_fn:
+                call    stk_room
+                jp      c,fn_call
+                pop     af                  ; drop str_ev_fn's return address
+                jp      str_eval_no         ; CF clear, HL = the FN token
+
+; --- fch_ctx_g: VARPTR(#n)'s fch_ctx_addr, behind stk_room (H10) ---------------
+; fch_ctx_addr serves statement callers too (FIELD, file I/O, CLOAD, boot,
+; disk.rom), so the test is at the one EXPRESSION caller instead of in it. A
+; refusal reads 0 (P3) with ERR 7 deferred; A (the channel) is kept on success.
+; T-states added per VARPTR(#n): 132.
+fch_ctx_g:
+                call    stk_room
+                jp      c,fch_ctx_addr
+                ld      hl,0                ; P3: a skipped address reads 0
+                ret
+
+; --- ssk_go: ssk_store's op 12, with nothing stored while a fault is pending (P2)
+; in: A = 12, HL = the source, DE = the destination descriptor (op 12 reads no
+; blk+6, so B is free to hold the op). out: as sh_go_g; NZ WITHOUT entering it when
+; FPERR is already set -- ssk_store's tail (`ret z` / `jp str_heap_oom_error`) then
+; raises the PENDING code eagerly (penderr_set keeps it over STROOM), and the
+; variable keeps its old value, as on the reference, whose error is eager.
+; 🔴 WHY THIS IS NEEDED ONCE THE GATEWAY IS GUARDED: str_set_at's / str_set_key's
+; snapshot runs 2-4 B DEEPER than this store, so a skipped snapshot (STR_EMPTY)
+; could be followed by a store that passes its own test and writes "" into the
+; variable before ERR 7 is raised. It also closes the same shape for a heap OOM in
+; LET's own snapshot, which stored the neutralised "" before ERR 14 (spec Q9).
+; T-states added per copying string store: 35, plus sh_go_g's 132.
+ssk_go:
+                ld      b,a                 ; the op, across the test
+                ld      a,(FPERR)
+                or      a
+                ld      a,b                 ; (ld keeps the flags)
+                jp      z,sh_go_g
+                ret                         ; NZ: pending -- the caller raises it
 
 ; D-MSGMIGRATE: err_bad_filenum (ERR 52) and err_file_notopen (ERR 59) are gone
 ; from main -- em_bad_filenum / em_file_notopen in sub/errmsg.asm. err_bad_filenum

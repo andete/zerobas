@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36904 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36932 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31589,9 +31589,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       and compare per pass. Inside T2's 10×; kwtime's negative arm had to
       re-price its delay pad (3000 → 2000 iterations) for the same reason.
 
-- [ ] 💥 **D-DEEPEXPR -- NEAR THE MEMORY EDGE A DEEP EXPRESSION OVERWRITES THE ARRAYS OR
+- [x] 💥 **D-DEEPEXPR -- NEAR THE MEMORY EDGE A DEEP EXPRESSION OVERWRITES THE ARRAYS OR
       CRASHES WHERE THE VG-8020 REFUSES WITH ERR 7 (found 2026-10-19 by reading, MEASURED
-      2026-10-20)**
+      2026-10-20)** — ✅ **FIXED 2026-10-20** (the spec built, its §11 "As built"):
+      stk_room (no RAM cell) at the recursion arms, str_eval_plus a loop, the guarded heap
+      gateway sh_go_g (skips publish STR_EMPTY / 0 and defer ERR 7), no string store while
+      an error is pending, sp_ceil bounding array growth below the live SP;
+      STK_EVAL_RESERVE unchanged (128); nothing on the per-factor path. Walls: low 156 ->
+      109, page 1 452 -> 408, sub page 0 184 -> 165. Drafted by a subagent in its own
+      worktree, integrated and measured here.
+      Witness: [`deepexpr_after.out`](scratchpad/deepexpr_after.out) -- all five rows
+      SAME (lb1 / lb3 / lb4 `7 12345`, lb2 / ctl `0 12345`). 🔮 every row: HIT.
+      GATED: deepexpr-acceptance (probes/basic/basic_probe_deepexpr.py).
+      dimedge-acceptance 10/10 (the top-level edge did not move). Risk 1 (statement-level
+      string ops refusing earlier) NOT seen at K = 136..260
+      ([`edgestr_new.out`](scratchpad/edgestr_new.out)): the one difference there is the
+      same on the build without the change ([`edgestr_head.out`](scratchpad/edgestr_head.out))
+      -- filed as D-EDGEONERR below.
       🎚️ TIER 1 — memory corruption: a program that runs close to the end of memory
       silently loses array data or hangs.
       🤖 **AUTONOMOUS** — the design is [docs/spec-basic-deepexpr-guard.md](docs/spec-basic-deepexpr-guard.md)
@@ -31612,6 +31626,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       sources, and an auto-DIM that checks the pool top, never the live SP
       (sub/arrays.asm). ➡️ Build the spec's guards (stk_room, the recursion arms, the
       guarded heap gateway, sp_ceil), these five rows as the gate.
+
+- [ ] 🧮 **D-EDGEONERR -- WITH AN ERROR HANDLER AND STRINGS SET UP, A DIM ~136 B FROM THE
+      EDGE FAILS ON zerobas AND FITS ON THE VG-8020 (found 2026-10-20, pre-existing)**
+      🎚️ TIER 4 — RAM usage: economy at the memory edge.
+      🤖 **AUTONOMOUS** — measure first.
+      📏 [`edgestr_probe.py`](scratchpad/edgestr_probe.py): `CLEAR 200:X=0:E=0:B=0:A$="":
+      B$="HELLO":ON ERROR GOTO 100` then `X=INT((FRE(0)-K)/8):DIM A(X):A(X)=12345` and one
+      flat statement: at K=136 the VG-8020 completes all three statements (`0 12345`),
+      zerobas gives no reading for all three (B=1 included); from K=160 SAME. The same on
+      the build before D-DEEPEXPR ([`edgestr_head.out`](scratchpad/edgestr_head.out)), and
+      dimedge-acceptance's plainer rows (no handler, no strings) agree at 108 / 109 -- so
+      the handler or the string setup moves zerobas's edge ~25 B. ➡️ Bisect K, then which
+      of ON ERROR / the strings does it; then why no reading (the DIM's 7 trapped, then
+      the handler's `A(X)` re-erroring?).
 
 - [ ] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to

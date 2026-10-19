@@ -676,6 +676,7 @@ scv_ceil_try:
                 ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
                 ld      de,-STK_EDGE_RESERVE
                 add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
+                call    sp_ceil             ; D-DEEPEXPR: and below the LIVE SP
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF
@@ -1123,6 +1124,7 @@ aal_ceil_try:
                 ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
                 ld      de,-STK_EDGE_RESERVE
                 add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
+                call    sp_ceil             ; D-DEEPEXPR: and below the LIVE SP
     ELSE
                 ld      hl,(FRETOP)         ; ceiling
     ENDIF
@@ -1288,6 +1290,36 @@ aal_unframe:
                 inc     sp                  ; deallocate the 10-byte frame
                 or      a                   ; CF clear
                 ret
+
+    IF CLEARPOOL
+; --- sp_ceil: HL = min(HL, the call site's SP - STK_ALLOC_RESERVE) (D-DEEPEXPR) --
+; 2026-10-20, docs/spec-basic-deepexpr-guard.md §4.5. Both variable ceilings above
+; (scv_ceil_try, aal_ceil_try) are `strheap_varceil - STK_EDGE_RESERVE`: the pool
+; top less a STATEMENT's stack. That is the live stack's floor only at statement
+; level. Inside an expression SP is lower by everything the evaluator holds open,
+; and a first-touch array is auto-DIMmed right there -- `B=` + 15 `(` + `Z#(1,1)`
+; with ~1150 B left laid 968 B over the live stack, this tenant's own frames
+; included, and the machine read NO OUTPUT where the VG-8020 answers Out of memory
+; (scratchpad/deepexpr_run.out, row lb4; basic/sysvars.inc STK_ALLOC_RESERVE).
+; So the ceiling is ALSO the live SP less this tenant's own remaining depth. A
+; refusal is the ordinary OOM exit (ERR 7, deferred by ary_engine_call); a fit
+; leaves the next factor's stk_guard to test against the NEW CTLLIM.
+; 🎯 At statement level SP - 24 lies above the static ceiling, which keeps binding:
+; the TOP-LEVEL DIM / new-scalar edges do not move.
+;   in:  HL = the static ceiling.  out: HL = the lower of the two.
+;   Clobbers DE and F -- both callers reload DE (CEND) next. ~100 T per allocation.
+sp_ceil:
+                ex      de,hl               ; DE = the static ceiling
+                ld      hl,2-STK_ALLOC_RESERVE  ; +2: our own return address
+                add     hl,sp               ; HL = the call site's SP - the reserve
+                push    hl
+                or      a
+                sbc     hl,de               ; CF iff the SP ceiling is the lower
+                pop     hl
+                ret     c                   ; HL = the SP ceiling
+                ex      de,hl               ; HL = the static ceiling
+                ret
+    ENDIF
 
 ; --- ary_resolve: BC=key, A=type; (ARY_NIDX)/(ARY_IDXP) prefilled by -------
 ; the caller (basic/arrays.asm's ary_parse_subs, main-ROM side). Out:

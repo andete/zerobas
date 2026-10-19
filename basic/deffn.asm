@@ -155,7 +155,10 @@ str_ev_fn:
                 jp      z,str_eval_no       ; numeric FN -> hand the operand back
                 push    hl
                 pop     ix
-                call    fn_call
+                call    sef_fn              ; fn_call behind stk_room (D-DEEPEXPR R5,
+                                            ; basic/main.asm): a refusal does NOT
+                                            ; return here -- it declines to OUR caller
+                                            ; with HL on the FN token, ERR 7 deferred
                 jp      str_eval_ok         ; VALTYP=1 + CF set
 
 ; --- fn_call: evaluate FN<name>[(<args>)] ----------------------------------

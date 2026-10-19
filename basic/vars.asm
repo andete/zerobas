@@ -1117,7 +1117,10 @@ str_set_key:
 ssk_store:                                  ; D-LETNEWFIRST: str_set_at (str-engine.asm,
                                             ; LET's lookup-free copy) joins here
                 ld      a,12                ; op = 12 (VAR_STORE) -- the sub-side
-                call    sh_go               ; body copy; A = ERR
+                call    ssk_go              ; body copy; A = ERR. D-DEEPEXPR P2
+                                            ; (basic/main.asm): sh_go_g, but NOTHING
+                                            ; is stored while a fault is pending --
+                                            ; NZ then, and the tail below raises it
                 pop     hl                  ; [SAVED_TEMPPT] (pop and ld keep the flags)
                 ld      (TEMPPT),hl        ; release the H1 snapshot
                 ret     z
