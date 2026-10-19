@@ -187,31 +187,53 @@ dit_no:
                 or      1                   ; NZ
                 ret
 
-; --- let_ref: a scalar LET whose RHS lies in the program text (D-LITREF) -----
-; in:  BC = key, (STRPTR) = the RHS descriptor.
-; out: Z -- stored BY REFERENCE (a no-room error is pending in FPERR, raised by
-;      the caller's fp_stmt_done); NZ -- not in the text, BC intact: the caller
-;      copies it (str_set_key), as before.
-; The VG-8020 charges `A$="<40 chars>"` in a program nothing (FRE 200, ours was
-; 160), and 9 of them into A$() ran out of string space here only
-; (probes/basic/basic_probe_litref.py). Same mechanism as tgt_store_ref above.
+; --- let_ref: a scalar string LET's whole store (D-LITREF, D-LETNEWFIRST) -----
+; in:  HL = the target's ENTRY (ex_let_str created-or-found it BEFORE the right
+;      side, D-LETNEWFIRST), (STRPTR) = the RHS descriptor.
+; out: the target holds the RHS; an error is pending in FPERR (no room for the
+;      copy, or the snapshot's overflow), raised by the caller's fp_stmt_done.
+; A RHS whose bytes lie in the program text is stored BY REFERENCE: the VG-8020
+; charges `A$="<40 chars>"` in a program nothing (FRE 200, ours was 160), and 9
+; of them into A$() ran out of string space here only
+; (probes/basic/basic_probe_litref.py). Same mechanism as tgt_store_ref.
+; Anything else is COPIED by str_set_at below.
+; 🧮 D-LETNEWFIRST (2026-10-19): this took the KEY and looked the target up
+; again -- tgt_store_desc's var_alloc_or_find on the by-reference arm, str_set_key's
+; on the copy arm -- after the right side. The entry now arrives in HL from the
+; one lookup ex_let_str made before it, so neither arm looks anything up. Same
+; 33 B as before, in front of the $3297 pin.
 let_ref:
-                push    bc
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL = the target's descriptor (entry+3)
+                push    hl                  ; [dest]
                 ld      hl,(STRPTR)
-                call    desc_in_text
-                pop     bc
-                ret     nz
-                ld      hl,(STRPTR)
-                ld      de,RVDESC
-                push    bc
+                push    hl                  ; [dest][the RHS]
+                call    desc_in_text        ; Z: the bytes are in the program text
+                pop     hl                  ; HL = the RHS descriptor
+                pop     de                  ; DE = the target's descriptor
+                jr      nz,str_set_at       ; anywhere else -> a copy
                 ld      bc,3
-                ldir                        ; RVDESC = the RHS descriptor itself
-                pop     bc
-                ld      hl,0
-                ld      (TGT_ADDR),hl       ; a scalar target
-                call    tgt_store_desc
-                xor     a                   ; Z: no copy, either way
+                ldir                        ; the target := the RHS descriptor itself
                 ret
+; --- str_set_at: DE = a target descriptor, (STRPTR) = the source -> a copy ---
+; str_set_key's store (basic/vars.asm) without its lookup: the H1 snapshot first,
+; exactly as there -- it is what keeps an RVDESC / array-element source a fixed,
+; GC-rooted descriptor across sh_var_store's own heap_alloc (and its GC) -- then
+; the shared tail ssk_store with DE = dest, HL = the snapshot, [SAVED_TEMPPT].
+; The target is an existing entry's descriptor, which neither a GC nor an array
+; shift moves (ex_let's header has the argument).
+str_set_at:
+                ld      hl,(TEMPPT)
+                push    hl                  ; [SAVED_TEMPPT] -- str_set_key's exact restore
+                push    de                  ; [dest] across the snapshot (CALSLT)
+    IF CLEARPOOL
+                call    str_snapshot_keep   ; HL = the source, as str_set_key takes it
+    ELSE
+                call    str_snapshot_to_temp
+    ENDIF
+                pop     de                  ; DE = dest              [SAVED_TEMPPT]
+                jp      ssk_store           ; op 12, release the snapshot, return
 
 ; --- ary_let_ref: the array LET's twin (D-LITREF) ----------------------------
 ; in:  (STRPTR) = the RHS, (ARY_ADDR) = the element's descriptor. HL preserved.

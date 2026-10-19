@@ -860,8 +860,13 @@ asw_wb_int:
 ; low-region bytes back.
 ;
 ; §13a FIX (docs/spec-basic-arrays-slice4b-scalar-reloc.md §13a, 2026-07-17):
-; the RHS `eval` below can itself allocate a numeric SCALAR (VARPTR(newvar) is
-; the only eval-time scalar allocator — a plain variable read is find-only).
+; the RHS `eval` below could itself allocate a numeric SCALAR (VARPTR(newvar) was
+; then the only eval-time scalar allocator — a plain variable read is find-only).
+; 🧭 Since D-VPTRDOM VARPTR only FINDS (a new name is Illegal function call, as on
+; the VG-8020), so no expression allocates a scalar any more; and since
+; D-LETNEWFIRST (2026-10-19) LET / FOR create their scalar target BEFORE the right
+; side. The delta correction below stays: it is cheap, and it keeps the element
+; address right if an eval-time allocator ever returns.
 ; Slice-4b's insert-and-shift (§3a) means a scalar allocation shifts the
 ; WHOLE array region up by the entry's stride — so the element address
 ; resolved above goes STALE the instant `eval` allocates one. Documented

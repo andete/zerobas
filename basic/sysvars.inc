@@ -5032,14 +5032,10 @@ VS_INT_VAL      equ     $F801   ; var_store_fac (vars.asm): the coerced int16 va
                                 ; var_alloc_or_find call that CLOBBERS DE for its
                                 ; own room-check arithmetic, so the int write-back
                                 ; sees the value and not leftover VAREND (2)
-LHS_VARTYPE     equ     WSTX   ; ex_let (interp.asm): the LHS variable's resolved
-                                ; D-WSZERO S14c: held across LET's RHS: WSTX (was $F16C)
-                                ; type, latched from (VARTYPE) BEFORE eval -- every
-                                ; RHS variable factor re-runs var_name_key, which
-                                ; overwrites the GLOBAL (VARTYPE), so a cross-type
-                                ; assignment (A%=A#) must read this latched copy for
-                                ; the var_store_fac target, not the clobbered global
-                                ; (1 B)
+; (LHS_VARTYPE, WSTX, is GONE -- D-LETNEWFIRST 2026-10-19: ex_let latched the LHS's
+; resolved type here across the RHS, because every RHS variable factor re-runs
+; var_name_key and overwrites the global VARTYPE. LET now creates its target BEFORE
+; the RHS and stores through the entry, whose own type byte is the latch.)
 ; --- Math float pack, slice F3 S3b RAM (repack build only) ------------------
 ; docs/spec-basic-float-core.md §11.1. The per-letter DEFtbl: a 26-byte map
 ; (index name0-'A', A..Z) holding the resolved default type of an UNSUFFIXED

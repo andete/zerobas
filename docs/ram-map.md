@@ -363,7 +363,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5FC` | 1 B | `basic` | `TSV_CNT` | tape save: loop counter (1) |  |
 | `$F5FD` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
-| `$F65E` |  | `basic` | `CLR_SAVE/LHS_VARTYPE/LOC_COL/MIDS_DEST/OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
+| `$F65E` |  | `basic` | `CLR_SAVE/LOC_COL/MIDS_DEST/OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
 | `$F65F` |  | `basic` | `IN_RDLEN/LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |

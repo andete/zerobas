@@ -46,6 +46,9 @@ FOR <variable>=<start> TO <limit> [STEP <step>]
   truncated (`FOR A%=1.7 TO 3` starts at 1) and so is the step — so
   `FOR A%=1 TO 3 STEP .5` has a step of 0 and never ends, on the VG-8020 too.
   Stepping past 32767 is `Overflow` (error 6), raised on the `NEXT` line.
+- **A new loop variable is created before the start value is worked out**, as
+  `LET` does: `FOR I=FRE(0) TO 9` with no `I` yet reads `FRE(0)` with I's
+  11 bytes already spent, on both machines.
 - **After the loop, the variable is one step past the limit**: after
   `FOR I=1 TO 3` it is 4, after `FOR A=.5 TO 3` it is 3.5.
 - **The body may change the variable**, and the loop counts on from the new
@@ -99,6 +102,11 @@ the cell-by-cell RAM comparison has not yet proven the rung.
 
 ## What we found, and how
 
+- **A new loop variable was created after its start value** (fixed
+  2026-10-19, D-LETNEWFIRST, with `LET`'s identical case). `FOR I=FRE(0) TO
+  ...` with no `I` yet read 11 bytes more than on the VG-8020
+  ([`letnew_run.out`](../../scratchpad/letnew_run.out)). `FOR` now creates the
+  variable first and stores the start value straight into it.
 - **Every loop was integer arithmetic** (fixed 2026-09-27, D-FORFLOAT).
   `FOR A=0 TO 1 STEP .25` printed 0 for ever, `FOR A=.5 TO 3` counted 0, 1, 2,
   3, and `FOR A=56700 TO 56702` printed negative numbers: 4 of 15 measured

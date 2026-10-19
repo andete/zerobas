@@ -1,0 +1,11 @@
+row      stmt                       VG       ZB
+varptr   X=VARPTR(X)               0 1      0 1  SAME
+divz     X=1/0                    11 1     11 1  SAME
+tmint    A%="X"                   13 1     13 1  SAME
+tmstr    A$=1                     13 1     13 1  SAME
+ovf      A%=40000                  6 1      6 1  SAME
+noeq     LET X                     2 1      2 1  SAME
+noeq2    X 5                       2 0      2 0  SAME
+forstr   FOR I="A" TO 2           13 1     13 1  SAME
+forok    FOR I=1 TO 0:NEXT         0 1      0 1  SAME
+refcache: 0 hit, 2 miss, 2 stored

@@ -129,6 +129,16 @@ prints an absolute `FRE(0)`.
   `FRE(0)` must match the reference in every shape, so zerobas now works out
   at each `FRE(0)` what the reference's evaluator would be holding there
   ([spec-basic-frelive.md](../spec-basic-frelive.md)).
+- **An assignment to a new variable read the variable's size too much**
+  (fixed 2026-10-19, D-LETNEWFIRST). With D-FREPLUS14 in place, `X=FRE(0)`
+  still read 11 bytes more than the VG-8020 when `X` did not exist yet, and
+  exactly the same when it did
+  ([`freabs_run.out`](../../scratchpad/freabs_run.out)): the reference creates
+  the target of `LET` and `FOR` before it evaluates the right-hand side, and
+  zerobas created it afterwards. Measured per type (double 11, `%` 5, `!` 7,
+  `$` 6, a `FOR` variable 11; an array element 0:
+  [`letnew_run.out`](../../scratchpad/letnew_run.out)); zerobas now creates
+  first, as [`LET`](LET.md) records.
 
 ## Where it lives
 

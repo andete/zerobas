@@ -116,6 +116,11 @@ STREND (&HF6C6) -> free memory ...
   because the arrays sit above the simple variables. An address from
   [`VARPTR`](../keywords/VARPTR.md) is therefore only good until the next new
   variable — the example shows it. Creating a variable can be `Out of memory`.
+- **An assignment creates its variable before it works out the value** — `LET`
+  (with or without the word) and `FOR` alike, on both machines: `X=FRE(0)`
+  with `X` new already counts X's entry, and an error in the right-hand side
+  leaves the new variable behind, at 0. Merely *reading* a variable that does
+  not exist creates nothing (D-LETNEWFIRST, 2026-10-19).
 
 The order of the bytes *inside* an entry, and the code that marks a string
 entry, are zerobas's own; `VARPTR` points at the value (or the string

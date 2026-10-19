@@ -192,6 +192,66 @@ def run():
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
 
+    # --- LET / FOR create their SCALAR target BEFORE the right side ----------
+    # 🧮 D-LETNEWFIRST (2026-10-19). Measured on the VG-8020
+    # (scratchpad/letnew_probe.py -> scratchpad/letnew_run.out): FRE(0) inside
+    # `X=...FRE(0)...` with X new reads the new entry already spent -- 11 B for a
+    # double, 5 int, 7 single, 6 for a string's entry, 11 for `FOR I=FRE(0)`, 0 on
+    # every `.pre` twin. This harness has no sub2 (FRE(0)'s live-stack tenant), so
+    # the witness is VARPTR, which FINDS and never creates (D-VPTRDOM): VARPTR(X)
+    # inside X's own right side is Illegal function call unless X already exists.
+    # Before this slice every row below printed `Illegal function call in 10`.
+    def run1(lines):
+        m1 = Machine(ROM, SYM, rom_base=BASIC_BASE)
+        m1.poke_w(m1.sym["POOLSIZE"], 200)    # the cold-boot string space (init)
+        return run_prog_cap(m1, lines)
+
+    check("LET X (double) exists before its RHS",
+          run1([(10, "X=VARPTR(X):PRINT X=VARPTR(X)")]), b"-1 \r\n")
+    check("LET X% exists before its RHS",
+          run1([(10, "X%=VARPTR(X%):PRINT X%=VARPTR(X%)")]), b"-1 \r\n")
+    check("LET X! exists before its RHS",
+          run1([(10, "X!=VARPTR(X!):PRINT X!=VARPTR(X!)")]), b"-1 \r\n")
+    check("the LET keyword, X#",
+          run1([(10, "LET X#=VARPTR(X#):PRINT X#=VARPTR(X#)")]), b"-1 \r\n")
+    check("LET A$ exists (empty) before its RHS",
+          run1([(10, 'A$=STR$(VARPTR(A$))+MID$(A$,1):PRINT VAL(A$)=VARPTR(A$)')]),
+          b"-1 \r\n")
+    # Both arms of the string store, on a new and on an existing target: a
+    # program literal by REFERENCE (D-LITREF), a computed RHS by COPY.
+    check("string LET: by reference and by copy, new and existing",
+          run1([(10, 'A$="AB":A$=A$+"C":B$="Q":B$=B$+B$:PRINT A$;B$;LEN(A$)')]),
+          b"ABCQQ 3 \r\n")
+    check("FOR I exists before its start expression",
+          run1([(10, "FOR I=0*VARPTR(I) TO 0:NEXT:PRINT I")]), b" 1 \r\n")
+    check("FOR I% exists before its start expression",
+          run1([(10, "FOR I%=0*VARPTR(I%) TO 0:NEXT:PRINT I%")]), b" 1 \r\n")
+
+    # The consequence the reference's order implies (inferred, not a measured row):
+    # an error RAISED by the right side leaves the target created, at zero.
+    check("an erroring RHS leaves the new target standing at 0",
+          run1([(10, "ON ERROR GOTO 30"), (20, "Z=1/0"),
+                (30, "PRINT Z;VARPTR(Z)<>0:END")]),
+          b" 0 -1 \r\n")
+
+    # An EXISTING target is untouched by the move: same entry, same address, the
+    # store lands in it, and the chain holds exactly one entry per name in
+    # creation order (X then P, 11 B each), never a second X.
+    m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    out = run_prog_cap(m, [(10, "X=5:P=VARPTR(X):X=X+1:X%=2:X%=X%*3"),
+                           (20, "PRINT X;VARPTR(X)=P;X%")])
+    check("existing targets: value, address, int", out, b" 6 -1  6 \r\n")
+    base = m.mem[m.sym["PRGEND"]] | (m.mem[m.sym["PRGEND"] + 1] << 8)
+    base += 2
+    end = m.mem[m.sym["ARYTAB"]] | (m.mem[m.sym["ARYTAB"] + 1] << 8)
+    chain, a = [], base
+    while a < end:
+        t = m.mem[a + 2]
+        chain.append((chr(m.mem[a]) + (chr(m.mem[a + 1]) if m.mem[a + 1] else ""), t))
+        a += 3 + (3 if t == 1 else t)
+    check("existing targets: the chain is X, P, X% -- one entry each",
+          chain, [("X", 8), ("P", 8), ("X", 2)])
+
     print()
     print("ALL PASS — PRINT/GOTO/CLEAR/WIDTH match documented statement behaviour"
           if not fails else f"{fails} CHECK(S) FAILED")

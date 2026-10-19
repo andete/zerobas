@@ -907,6 +907,38 @@ ex_out:
 ; `$`-suffixed name (A$) is a string variable: the RHS is a string operand (a
 ; "literal" or another string variable) — see ex_let_str. Numeric vars keep the
 ; integer path.
+; 🧮 D-LETNEWFIRST (2026-10-19): THE TARGET IS CREATED BEFORE THE RIGHT SIDE IS
+; EVALUATED, AS ON THE VG-8020. Measured there (scratchpad/letnew_probe.py ->
+; scratchpad/letnew_run.out, absolute FRE(0) inside the statement, each row with a
+; `.pre` twin whose target already exists): `X=FRE(0)` with X new read 11 B less
+; than here -- a double's whole entry -- `X%=` 5, `X!=` 7, `X$=STR$(FRE(0))` 6 (the
+; entry, not a body), `FOR I=FRE(0) TO` 11, and every `.pre` twin 0. zerobas looked
+; the target up only at the STORE, after the right side, so FRE(0), VARPTR(X)
+; inside X's own right side (Illegal function call here until now: D-VPTRDOM's
+; VARPTR finds, never creates) and the state an erroring right side leaves all
+; read the old order.
+; 🎯 THE ONE LOOKUP MOVED, NOTHING WAS ADDED. var_alloc_or_find (find-or-create)
+; ran inside var_store_fac after eval; it runs here now, before eval, and its
+; ENTRY POINTER rides the stack across the right side in the slot the key used to
+; occupy, so the store is var_store_at's direct write and never looks again.
+; Counted on the existing-target path, from the type read to the store's `ret`
+; (var_alloc_or_find, eval and the coercion routines are the same calls on both
+; sides and inside neither count): an int store 286 -> 193 T, single 373 -> 291,
+; a double from a double 472 -> 414, a double from an int 479 -> 409. A NEW target
+; adds scv_alloc's insert to both sides alike.
+; 🔴 WHY THE POINTER STAYS VALID ACROSS THE RIGHT SIDE. A scalar entry's address
+; moves only if something is inserted BELOW it or the region's base moves:
+; scv_alloc (sub/arrays.asm) inserts only AT ARYTAB, the scalar region's END, and
+; entries are never deleted; the base is PRGEND + 2, which no expression moves.
+; Nothing in an expression inserts a scalar at all any more -- VARPTR finds
+; (D-VPTRDOM), a variable read finds, an FN call's formals live in FN_PAREA
+; (fn_shadow_find), and the only CREATORS are statements (LET, FOR, READ/INPUT
+; targets, SWAP, DEF FN). An auto-DIM grows the ARRAY region above ARYTAB, and the
+; string GC moves bodies, never entries. (ex_let_arr's element is a different
+; animal -- it sits above ARYTAB and keeps its §13a offset correction.)
+; ⚠️ AND NOTHING UNDOES THE EARLY CREATE: an error raised by the right side
+; (raise_error resets SP and FN_FEND, never ARYTAB) leaves the target standing
+; with its zero value, which is what creating first means on the reference too.
 ex_let:
                 call    var_str_type        ; A=1 if the name carries a `$` suffix
                 or      a
@@ -918,21 +950,26 @@ ex_let:
                 jp      z,ex_let_arr        ; array-element lvalue (arrays slice-1,
                                             ; docs/spec-basic-arrays.md §9.4/§10,
                                             ; basic/arrays.asm)
-                ld      a,(VARTYPE)         ; F3: latch the LHS type NOW -- eval below
-                ld      (LHS_VARTYPE),a     ; re-runs var_name_key for every RHS variable
-                                            ; factor, clobbering the global (VARTYPE)
-                                            ; (e.g. A%=A#: the A# factor would leave
-                                            ; VARTYPE=8, mis-storing A% as double)
-                push    bc                  ; save key across '=' + eval
+                ld      a,(VARTYPE)         ; the LHS's resolved type, read before eval
+                push    hl                  ; [cursor]
+                call    var_alloc_or_find   ; D-LETNEWFIRST: HL = the target's entry,
+                                            ; created zero-valued if new -- the LET's
+                                            ; ONE lookup. (Its type byte is what the
+                                            ; store reads back, so the F3 latch of
+                                            ; (VARTYPE) across eval, LHS_VARTYPE, is
+                                            ; gone: A%=A# can no longer mis-type it.)
+                jp      nc,fp_runtime_error ; Out of memory: FPERR already set, and
+                                            ; raise_error resets SP
+                ex      (sp),hl             ; HL = cursor, [entry] across '=' + eval
                 call    skip_eq             ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
                 call    inc_eval            ; DE = value, HL = cursor (BC clobbered)
                 call    check_expr_errors_popbc  ; D-2/D-F2-1 (below): discards the
-                pop     bc                  ; BC = key
-                push    hl                  ; guard cursor across the store
-                ld      a,(LHS_VARTYPE)     ; F3 §11.2: coerce DE/FAC into the LHS's
-                call    var_store_fac       ; LATCHED resolved type and store (vars.asm);
-                                            ; may set FPERR on a coercion-time Overflow
+                                            ; saved [entry] on an abort
+                ex      (sp),hl             ; HL = entry, [cursor] across the store
+                call    var_store_at        ; coerce DE/FAC into the ENTRY's own type and
+                                            ; write it (basic/program.asm); may set
+                                            ; FPERR on a coercion-time Overflow
                 ; 🎯 D-CARVE3: canonical "statement done, unless FPERR is sticky"
                 ; tail. The DECISION -- whether an FP fault happened -- is the
                 ; cell, read here; both callers just arrive.
@@ -949,8 +986,12 @@ ex_let_err:
 
 ; --- ex_let_str: string-variable assignment  A$ = <string operand> -----------
 ; HL is on the name's first letter (var_str_type did not advance it). Parse the
-; name + `$` for the destination key, the '=' token, then evaluate the RHS
-; string operand into STRPTR and copy it into the variable's slot.
+; name + `$`, create-or-find the target (D-LETNEWFIRST, as ex_let above: the
+; VG-8020 charges `X$=STR$(FRE(0))` its 6 B entry before the right side), the '='
+; token, then evaluate the RHS string operand into STRPTR and store it through
+; the entry the lookup returned. A fresh entry's descriptor is zero-filled by
+; scv_alloc -- length 0, the empty string -- so a GC inside the right side sees a
+; whole, valid descriptor there and never a half-built one.
 ex_let_str:
                 call    var_name_key        ; BC = dest key, HL past name + `$`
                 ld      a,(hl)
@@ -961,7 +1002,12 @@ ex_let_str:
                                             ; basic/arrays.asm) — the string
                                             ; sibling of ex_let's own numeric
                                             ; '(' peek right above
-                push    bc                  ; save key across '=' + str_eval
+                push    hl                  ; [cursor]
+                ld      a,1                 ; type 1 -- the `$` unifier
+                call    var_alloc_or_find   ; D-LETNEWFIRST: HL = the entry (created
+                                            ; empty if new), the ONE lookup
+                jp      nc,fp_runtime_error ; Out of memory, FPERR already set
+                ex      (sp),hl             ; HL = cursor, [entry] across '=' + str_eval
                 call    skip_eq             ; '=' -> $EF
                 jr      nz,ex_let_err
                 call    str_eval_next       ; D-NGRAM11: past '=', STRPTR -> RHS
@@ -976,13 +1022,15 @@ ex_let_str:
                                             ; argument conversion, fac_to_int_addr) --
                                             ; enters check_expr_errors_popbc's FPERR-only
                                             ; half directly (str_eval already owns D-2)
-                pop     bc                  ; BC = dest key
-                push    hl                  ; guard cursor across str_set_key
+                ex      (sp),hl             ; HL = entry, [cursor] across the store
                 call    let_ref             ; D-LITREF: a RHS in the program text is
-                jr      z,fp_stmt_done      ; stored by reference, as on the VG-8020
-                ld      de,(STRPTR)         ; DE -> source descriptor
-                call    str_set_key         ; A$[key] := descriptor (clamped)
-                jr      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1)
+                                            ; stored by reference, as on the VG-8020;
+                                            ; anything else is copied (str_set_at)
+                jp      fp_stmt_done        ; D-CARVE3 (-7 B, main page 1). `jp`, not
+                                            ; `jr` (D-LETNEWFIRST): 2 T faster, and its
+                                            ; byte keeps this stretch in front of the
+                                            ; $6CF3 pin net zero (ex_for +8, vars.asm's
+                                            ; for_set -8, this routine -1 without it)
 
 ; --- sc_call: MOVED to basic/subromcall.asm (the LOW region) by space plan B-11
 ; (D-STUBINL, 2026-10-05), beside the inline-index stubs that fall into it. Its
@@ -1788,7 +1836,9 @@ check_fperr_only:
                 ret
 
 ; --- check_expr_errors_popbc: the same check for drivers that must POP a --
-; saved key (BC) off the stack before erroring (ex_let; ex_let_
+; saved word off the stack before erroring (ex_let -- since D-LETNEWFIRST,
+; 2026-10-19, the word is the target's ENTRY, created before the RHS, where it
+; was the key; the pop discards it either way, so nothing here changed; ex_let_
 ; str enters at cepb_fp directly — str_eval already handles its own D-2
 ; case via its own `jr nc` to `ex_let_err`, e.g. `A$=HEX$(65536.)`).
 ; Falls through (returns, BC untouched) if clear. Same

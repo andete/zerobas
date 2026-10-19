@@ -956,10 +956,10 @@ elas_err        equ     ems_err_pop1
 ; is what a repeated idiom looks like before anyone counts it.
 elas_abort_fp   equ     cee_abort_fp
 
-; --- for_get / for_set: the FOR frame's loop variable ------------------------
+; --- for_get / for_set_typed: the FOR frame's loop variable ------------------
 ; D-FORVAR (docs/spec-basic-forvar.md §4.5). in: FOR_CUR[0..2] = the frame's key
 ; (name0, name1, resolved type), exactly as for_name (basic/program.asm) parsed
-; it or as nx_have's ldir copied it back down. for_set preserves DE (the value).
+; it or as nx_have's ldir copied it back down.
 ;
 ; These were `var_get`/`var_set`, "single-letter compatibility shims" that took
 ; ONE upcased char in A, keyed it as (name, 0) and asked deftbl_num_type for the
@@ -970,23 +970,27 @@ elas_abort_fp   equ     cee_abort_fp
 ; where row f.defstr says both references put it.
 ;
 ; D-FORFLOAT (docs/spec-basic-forfloat.md): the loop math is the EVALUATOR's now,
-; so a value reaches the variable at its own type. Two entries:
+; so a value reaches the variable at its own type. Two stores:
 ;   for_set_typed -- NEXT's store: the live FACTYP/FAC/DE as combine_add left it,
 ;       coerced by var_store_fac, whose FPERR on an int16 overflow is the
 ;       reference's ERR 6 for a `%` loop (row edgeint).
-;   for_set -- FOR's initial value: the same, EXCEPT that a `%` loop variable
-;       still takes eval's int16 tail (FACTYP forced to 2). That tail is what
-;       `FOR A%=1.7 TO 3` starting at 2 on both references rests on (row
-;       intinit); var_store_fac's own int coercion truncates, and would give 1.
-;       A non-`%` variable takes the value whole (`FOR A=.5` starts at .5).
+;   FOR's initial value -- the same, EXCEPT that a `%` loop variable still takes
+;       eval's int16 tail (FACTYP forced to 2). That tail is what `FOR A%=1.7 TO
+;       3` starting at 2 on both references rests on (row intinit); the int
+;       coercion truncates, and would give 1. A non-`%` variable takes the value
+;       whole (`FOR A=.5` starts at .5). This was the `for_set` entry here; since
+;       D-LETNEWFIRST (2026-10-19) ex_for creates the variable BEFORE the start
+;       expression and stores through the entry pointer: for_set_at, which
+;       falls into var_store_at (basic/program.asm), as LET does.
 for_get:
                 ld      bc,(FOR_CUR)        ; name0, name1
                 ld      a,(FOR_CUR+2)       ; the resolved type -- var_find_typed keys on
                 jp      var_load_fac        ; all three (FAC/FACTYP=type, DE=int16 tail)
-for_set:
-                ld      a,(FOR_CUR+2)
-                cp      2
-                call    z,set_factyp2       ; a `%` loop keeps eval's int16 tail
+; 🧮 D-LETNEWFIRST (2026-10-19): `for_set`, FOR's own entry, stood on top of
+; for_set_typed here and is gone: FOR creates its variable BEFORE the start
+; expression now (the VG-8020's `FOR I=FRE(0)` reads 11 B less with I new), and
+; stores through the entry that one lookup returned -- for_set_at, basic/program.asm,
+; which carries the `%` loop's int16-tail rule this entry carried.
 for_set_typed:
                 ld      bc,(FOR_CUR)
                 ld      a,(FOR_CUR+2)
@@ -1110,6 +1114,8 @@ str_set_key:
                 inc     hl                  ; HL -> dest descriptor (entry+3)
                 ex      de,hl               ; DE = the dest descriptor (blk+4)
                 pop     hl                  ; HL = the source (blk+2)  [SAVED_TEMPPT]
+ssk_store:                                  ; D-LETNEWFIRST: str_set_at (str-engine.asm,
+                                            ; LET's lookup-free copy) joins here
                 ld      a,12                ; op = 12 (VAR_STORE) -- the sub-side
                 call    sh_go               ; body copy; A = ERR
                 pop     hl                  ; [SAVED_TEMPPT] (pop and ld keep the flags)

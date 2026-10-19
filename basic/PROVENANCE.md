@@ -5325,3 +5325,26 @@ would turn a terminator into a reject.
 
 `namspc-acceptance` owns the surface; the sweep re-run after the fix reports
 **0 of 45 bytes diverging**.
+
+## D-LETNEWFIRST (2026-10-19) — `LET` and `FOR` create their scalar target BEFORE the right side
+
+**Behaviour source: black-box measurement only.** Typed BASIC in, the text screen
+out, VG-8020 vs zerobas NODISK, boot per row
+([`letnew_probe.py`](../scratchpad/letnew_probe.py) ->
+[`letnew_run.out`](../scratchpad/letnew_run.out)): an absolute `FRE(0)` inside the
+statement, each row with a `.pre` twin whose target already exists. With the
+target new, zerobas read more by exactly the new entry's size -- `X=` 11, `X%=` 5,
+`X!=` 7, `X$=STR$(FRE(0))` 6, `FOR I=FRE(0)` 11 -- and every `.pre` twin read 0;
+an array element target read 0 (both machines make the array at the element).
+That is the whole claim taken from the reference: WHEN the target exists. No
+reference ROM byte was read, hashed or disassembled.
+
+**Code: own design.** `ex_let` / `ex_let_str` (basic/interp.asm) and `ex_for`
+(basic/fat.asm, and its ELSE twin in basic/program.asm) call `var_alloc_or_find`
+before the right side instead of after it -- the same single lookup, moved -- and
+store through the entry it returned: `var_store_at` / `for_set_at`
+(basic/program.asm) for numbers, `let_ref` / `str_set_at` (basic/str-engine.asm,
+the same 33 B in front of the $3297 pin) for strings. `for_set` (basic/vars.asm)
+and `LHS_VARTYPE` (basic/sysvars.inc) are gone. The pointer stays valid across the
+right side because scalars are only ever inserted at the scalar region's END
+(`scv_alloc`) and no expression inserts one (ex_let's header).

@@ -226,7 +226,7 @@ def run():
     print(f"{'PASS' if ok_abs else 'FAIL'}  var_str_type 'AB$' → A={cpu_abs.a}, CF={int(carry(cpu_abs))}")
 
     # ==================================================================
-    # Case 8: for_name / for_get / for_set — the FOR frame's loop variable.
+    # Case 8: for_name / for_get / for_set_at — the FOR frame's loop variable.
     # These were var_get/var_set, single-letter shims taking ONE upcased char in
     # A. D-FORVAR (docs/spec-basic-forvar.md §4.3/§4.5) retired the shim: both
     # references match a NEXT on the loop variable's WHOLE identity -- both
@@ -273,20 +273,29 @@ def run():
     # Round-trip through the frame key, single-char name at the DEFtbl default.
     reset_tables()
     for_key(ord("A"), 0, 8)                    # clear_vars leaves every letter DOUBLE
-    # D-FORFLOAT: for_set now stores the value AS eval LEFT IT -- FACTYP
+    # D-FORFLOAT: FOR's store keeps the value AS eval LEFT IT -- FACTYP
     # included -- and forces int16 only for a `%` loop variable. Every value
     # below is an int literal, which eval leaves with FACTYP = 2; say so,
     # rather than inheriting whatever an earlier case left in FACTYP (the
     # first run read 0x7777 for BOTH names off a stale FAC).
+    # D-LETNEWFIRST (2026-10-19): `for_set` (keyed, a lookup AFTER the start
+    # expression) is gone; ex_for creates the variable FIRST with
+    # var_alloc_or_find and stores through the entry with for_set_at. This
+    # helper does exactly those two steps, keyed from FOR_CUR as ex_for's
+    # for_name leaves BC and A.
     def for_set_int(de):
         m.poke(s["FACTYP"], 2)
-        return m.call("for_set", de=de)
+        key = m.peek(s["FOR_CUR"], 3)
+        ent = m.call("var_alloc_or_find", b=key[1], c=key[0], a=key[2])
+        assert carry(ent), "var_alloc_or_find: out of memory in the harness"
+        m.poke(s["FACTYP"], 2)
+        return m.call("for_set_at", hl=ent.hl, de=de)
 
     for_set_int(0x7777)
     cpu_g = m.call("for_get")
     ok_shim = (cpu_g.de == 0x7777)
     fails += not ok_shim
-    print(f"{'PASS' if ok_shim else 'FAIL'}  for_set/for_get round-trip "
+    print(f"{'PASS' if ok_shim else 'FAIL'}  for_set_at/for_get round-trip "
           f"'A'=0x7777: DE={cpu_g.de:#06x}")
 
     # A 2-CHARACTER loop variable is a different cell from its first letter --

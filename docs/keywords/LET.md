@@ -43,9 +43,16 @@ The variable may be a plain name (`A`, `NAME$`), a typed name (`A%`, `A!`,
   - to double precision exactly.
 
   Note the asymmetry: integers truncate, single precision rounds.
+- **A new variable is created before the right-hand side is worked out.**
+  `X=FRE(0)` with no `X` yet reads `FRE(0)` with X's 11 bytes already spent
+  (5 for `X%`, 7 for `X!`, 6 for `X$`, whose characters come later), and
+  `X=VARPTR(X)` gives X's own address. A variable that already exists is
+  simply overwritten.
 - **A string into a number variable, or a number into a string variable**, is
-  `Type mismatch` (error 13), and nothing is stored: `LET A="X"`, `A$=5`,
-  `A$=1+1`, `Q$(0)=1`.
+  `Type mismatch` (error 13), and the value is not stored: `LET A="X"`, `A$=5`,
+  `A$=1+1`, `Q$(0)=1`. A variable that did not exist yet has been created by
+  then, holding 0 (or `""`) — the same holds when the right-hand side raises any
+  other error.
 - **The target must be a variable.** `LET 5=1`, `LET "A"=1` and `LET TIME=5`
   are `Syntax error` (error 2). (`TIME=5` *without* `LET` is legal: it is the
   `TIME` statement, which sets the clock.)
@@ -91,10 +98,24 @@ None known.
 The one rung not yet proven is **RAM usage**: `LET` uses the same amount of free
 memory on both machines, but the two machines write different work-area cells
 along the way — the VG-8020 some that zerobas does not, and zerobas a few the
-VG-8020 does not. Nothing a program can observe through `FRE` differs.
+VG-8020 does not. Until 2026-10-19 a `FRE(0)` inside the right-hand side of an
+assignment to a *new* variable did differ (below); nothing else a program can
+observe through `FRE` is known to.
 
 ## What we found, and how
 
+- **A new variable was created after its value, not before** (fixed
+  2026-10-19, D-LETNEWFIRST). `X=FRE(0)` with no `X` yet read 11 bytes more on
+  zerobas than on the VG-8020 — the size of the double the reference has
+  already made — and 5, 7 and 6 for `X%`, `X!` and `X$`; with the variable
+  already there, both read the same
+  ([`letnew_run.out`](../../scratchpad/letnew_run.out), from
+  [`letnew_probe.py`](../../scratchpad/letnew_probe.py)). An array element
+  agreed already: the array is made when the element is reached, on both. Found
+  while sizing a `DIM` to the edge of memory with `FRE(0)` (D-FREPLUS14).
+  zerobas now looks the variable up — creating it if it is new — before it
+  reads the right-hand side, and stores through what that one look-up found,
+  so a variable that exists costs no more than before (fewer steps, in fact).
 - **`LET 5=1` corrupted the screen and could restart the machine** (fixed
   2026-09-27, D-LETNUM). The VG-8020 answers `Syntax error`. zerobas's
   assignment code assumed the target started with a letter, which was only

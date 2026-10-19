@@ -264,6 +264,10 @@ fatprim_bounce:
 ; program.asm's copies are the ELSE arms (a switch-off build is a different
 ; machine with no pinned addresses to keep, [[a-scaffolded-build-is-a-different-machine]]).
 ; Their stories stay at the original sites.
+; 🧮 D-LETNEWFIRST (2026-10-19): ex_for is 110 B now (+8: it creates the loop
+; variable before the start expression). The pad does not move: vars.asm's `for_set`
+; (-8) and ex_let_str (+1 -1, interp.asm) sit in the same stretch ahead of $6CF3,
+; so its net is zero and `pin_plan.py --check` reads what it read before.
 ex_for:
                 inc     hl                  ; past the FOR token
                 call    req_letter          ; D-NGRAM: FOR needs a loop variable
@@ -273,11 +277,18 @@ ex_for:
                                             ; f.defstr, both references). The test is on
                                             ; the RESOLVED type, not on the `$` char,
                                             ; because f.defstr says the rule is.
+                push    hl                  ; [cursor]
+                call    var_alloc_or_find   ; D-LETNEWFIRST: A = the type, BC = the key
+                                            ; (for_name's out) -> HL = the variable's
+                                            ; entry, created zero-valued if new, BEFORE
+                                            ; the start expression -- FOR's ONE lookup
+                jp      nc,fp_runtime_error ; Out of memory, FPERR already set
+                ex      (sp),hl             ; HL = cursor, [entry] across '=' + eval
                 call    skip_eq             ; '=' -> $EF
                 jp      nz,stmt_error
                 call    inc_eval            ; DE = initial value, HL advanced
-                push    hl                  ; guard cursor across for_set
-                call    for_set             ; var := initial value
+                ex      (sp),hl             ; HL = entry, [cursor]
+                call    for_set_at          ; var := initial value, through the entry
                 pop     hl
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9

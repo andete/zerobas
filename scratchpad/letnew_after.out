@@ -1,0 +1,15 @@
+row                    VG             ZB  ZB-VG
+dbl                 28771          28771  0
+dbl.pre             28767          28767  0
+int                 28775          28775  0
+int.pre             28770          28770  0
+sng                 28773          28773  0
+str                 28760          28760  0
+str.pre             28754          28754  0
+ary                 28680          28680  0
+ary.pre             28672          28672  0
+for                 28752          28752  0
+for.pre             28748          28748  0
+order          NO READING     NO READING  SAME
+order2         NO READING     NO READING  SAME
+refcache: 1 hit, 1 miss, 1 stored

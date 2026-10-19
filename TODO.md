@@ -4067,8 +4067,17 @@ item — do **one item per session** to keep context lean.
       argument), and the statement bases of IF / ON / PRINT # / INPUT / LOCATE /
       PSET-style argument lists.
 
-- [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
-      THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
+- [x] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
+      THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)** — ✅ **FIXED 2026-10-19.**
+      LET / string LET / FOR create a new scalar target before the right side with the
+      ONE lookup, its pointer reused for the store (var_store_at, str_set_at,
+      for_set_at); the existing-target store path got FASTER (e.g. int 286 -> 193 T,
+      string by-reference 435 -> 254). Main page 1 525 -> 452 B. Witness:
+      [`letnew_after.out`](scratchpad/letnew_after.out) every row ZB-VG 0;
+      [`letedge_run.out`](scratchpad/letedge_run.out) (letedge_probe.py) nine error edges
+      -- the error code and whether the target exists after -- all SAME, `X 5` (no
+      `=`) creating X on neither machine. 🔮 "every row 0": HIT; the edges 8 of 9 (MISS:
+      `X 5`). Knife connectedness unchanged: HIT.
       🎚️ TIER 4 — RAM usage: FRE(0) inside `X=...FRE(0)...` with X new reads 11 B more
       here (a double's whole entry); VARPTR order and the variable chain's order are
       the same fact seen elsewhere.
@@ -11304,7 +11313,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36837 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36846 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11470,7 +11479,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16332 (T-6FE392)8 (T-529ABE)` from `TODO.md:29126 (T-529ABE)`: a
+      `TODO.md:16341 (T-6FE392)8 (T-529ABE)` from `TODO.md:29135 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17179,7 +17188,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29126 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29135 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

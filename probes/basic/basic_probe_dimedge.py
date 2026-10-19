@@ -10,7 +10,9 @@ DIM and a line store may reach, VG-8020 vs zerobas.
             (scratchpad/dimedge_scan_pre.out, K one by one). X EXISTS FIRST since
             2026-10-17: a LET whose target is new reads FRE(0) 11 B lower on the
             VG-8020, which creates the target before the right side
-            (scratchpad/freabs_run.out) -- a separate difference, not the edge.
+            (scratchpad/freabs_run.out) -- a separate difference, not the edge,
+            and closed by D-LETNEWFIRST (2026-10-19: zerobas creates first too);
+            X=0 stays first so the rows read the edge alone.
             ("fits from 110" stood here until then; it was stale.)
   store-n   after `CLEAR 300,TXTTAB+1000` and `99 REM Z`, is `20 REM` + n B
             stored (LIST)? The VG-8020 stores n=13 and refuses n=14.

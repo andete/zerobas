@@ -1705,14 +1705,16 @@ ex_ret_under:
 ; --- for_name: parse a FOR/NEXT loop variable into the frame key -------------
 ; D-FORVAR (docs/spec-basic-forvar.md §4.3), shared by ex_for and ex_next.
 ; in:  HL = cursor at the name's first letter (the caller has run is_letter).
-; out: FOR_CUR[0..2] = the frame's KEY; A = the resolved type; HL advanced past
-;      the whole name AND its type suffix.
+; out: FOR_CUR[0..2] = the frame's KEY; A = the resolved type; BC = the key
+;      (var_name_key's, untouched by for_key -- ex_for hands A and BC straight to
+;      var_alloc_or_find, D-LETNEWFIRST); HL advanced past the whole name AND its
+;      type suffix.
 ; Clobbers A, BC, DE, HL (var_name_key's own contract).
 ;
 ; 🔴 THE KEY IS [name1][name0][type], NOT [name0][name1][type], AND THE ORDER IS
 ; LOAD-BEARING RATHER THAN ARBITRARY. `LD (nn),BC` writes C first, and
 ; var_name_key returns B = name0 / C = name1 -- so this IS the layout, and
-; for_get/for_set read it straight back with `ld bc,(FOR_CUR)`. Getting a byte
+; for_get/for_set_typed read it straight back with `ld bc,(FOR_CUR)`. Getting a byte
 ; order for free is worth more than a tidier one for 4 bytes.
 ; ⚠️ Which means name0 lives at FOR_CUR+1, and every reader below says +1
 ; DELIBERATELY. The first draft of this slice put the bare-NEXT sentinel on
@@ -1737,6 +1739,86 @@ for_key:                                    ; (VARTYPE) = the resolved type (F3/
                 ld      (FOR_CUR),bc        ; the suffix, or the DEFtbl default for
                 ld      a,(VARTYPE)         ; name0 when there is none)
                 ld      (FOR_CUR+2),a
+                ret
+
+; --- for_set_at: FOR's start value -> the loop variable's ENTRY --------------
+; in:  HL = the entry ex_for created-or-found BEFORE the start expression
+;      (D-LETNEWFIRST), the value live as eval left it, FOR_CUR[2] = the type.
+; A `%` loop variable keeps eval's int16 tail (FACTYP forced to 2): that is what
+; `FOR A%=1.7 TO 3` starting at 2 on both references rests on (row intinit) --
+; the int coercion truncates, and would give 1. Any other type takes the value
+; whole (`FOR A=.5` starts at .5). This is the rule vars.asm's `for_set` carried
+; until D-LETNEWFIRST (2026-10-19), when FOR's store stopped looking the variable
+; up after the start expression; it FALLS INTO var_store_at.
+; 🧮 The VG-8020's `FOR I=FRE(0) TO ...` with I new reads 11 B less than here did
+; (scratchpad/letnew_run.out): it has made I's 11 B double before the start
+; expression runs. ex_for's header (basic/fat.asm, and its ELSE twin in this file)
+; has the order; ex_let's (basic/interp.asm) has the pointer-validity argument.
+for_set_at:
+                ld      a,(FOR_CUR+2)
+                cp      2
+                call    z,set_factyp2       ; a `%` loop keeps eval's int16 tail;
+                                            ; set_factyp2 touches A and FACTYP only
+; --- var_store_at: HL = a scalar's ENTRY -> coerce the live RHS into it ------
+; in:  HL = the entry ([name0][name1][type][value]), DE valid iff (FACTYP) == 2,
+;      else FAC/FACTYP hold the RHS's own float value -- var_store_fac's RHS
+;      contract exactly.
+; out: the value field holds the RHS coerced into the ENTRY's own type, by
+;      var_store_fac's rules (§11.2): int TRUNCATES in the strict int16 domain
+;      (fac_to_int_strict), single ROUNDS to 6 digits, a double already in FAC is
+;      written as it stands (D-FORFAST) and anything else is widened and packed.
+;      A coercion-time Overflow sets FPERR and writes NOTHING -- the caller's
+;      fp_stmt_done raises it. Clobbers A, B, C, D, E, H, L.
+; 🧮 D-LETNEWFIRST (2026-10-19): var_store_fac's store with its lookup taken out.
+; LET and FOR now find-or-create the target BEFORE the right side and hand the
+; entry here, so the existing-target path makes one lookup, as it always did, and
+; skips everything var_store_fac spends carrying the KEY and the TYPE across the
+; coercion (the key push, the two VS_TARGET_TYPE reloads, the VS_INT_VAL round
+; trip). The type comes from the entry's own type byte, which is also why LET no
+; longer latches (VARTYPE) across eval. var_store_fac stays for its keyed callers
+; (NEXT, READ / INPUT targets, an FN call's formals).
+var_store_at:
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; A = the entry's own type (2/4/8)
+                inc     hl                  ; HL = its value field
+                push    hl                  ; [value] across the coercion
+                cp      2
+                jr      z,vsa_int
+                cp      4
+                jr      z,vsa_single
+                ld      a,(FACTYP)          ; 🐌 D-FORFAST: a double already in FAC is
+                cp      8                   ; already packed and rounded
+                jr      z,vsa_dbl
+                call    arga_widen          ; D-ARGAWIDEN
+                call    round_and_finalize  ; exact widen + pack as double
+vsa_dbl:
+                ld      a,8                 ; the byte count
+                jr      vsa_copy
+vsa_single:
+                call    arga_widen          ; D-ARGAWIDEN
+                call    round_single_and_pack ; 6-digit half-up round + pack
+                ld      a,4
+vsa_copy:
+                pop     de                  ; DE = the value field
+                ld      c,a                 ; C = the byte count
+                ld      a,(FPERR)
+                or      a
+                ret     nz                  ; coercion Overflow -> nothing written
+                ld      b,a                 ; B = 0
+                ld      hl,FAC
+                ldir                        ; FAC -> value field, verbatim
+                ret
+vsa_int:
+                call    fac_to_int_strict   ; DE = the value (truncated, strict int16);
+                                            ; FPERR on overflow
+                pop     hl                  ; HL = the value field
+                ld      a,(FPERR)
+                or      a
+                ret     nz                  ; Overflow -> nothing written
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
                 ret
 
 ; --- slot_store / slot_load: a FOR frame's typed limit/step slot (D-FORFLOAT) --
@@ -1799,7 +1881,7 @@ sld_fac:
                 ret
 
 ; --- ex_for: FOR <var> = <init> TO <limit> [STEP <step>] ---------------------
-; Assign init to the loop variable, then push a frame
+; Create-or-find the loop variable, assign init to it, then push a frame
 ; [name1][name0][type][limit slot:9][step slot:9][CURLINE:2][resume-ptr:2] (25 B,
 ; the reference's size -- D-FORFLOAT, sysvars.inc FOR_FRAME) and fall through to
 ; run the loop body (the statements following FOR). NEXT consults the top frame.
@@ -1820,6 +1902,13 @@ sld_fac:
 ; all three. One field then serves both the match and the store: var_find_typed
 ; keys on exactly that triple.
 ;
+; 🧮 D-LETNEWFIRST (2026-10-19): THE VARIABLE EXISTS BEFORE THE START EXPRESSION
+; RUNS. The VG-8020's `FOR I=FRE(0) TO ...` with I new reads 11 B less than zerobas
+; did -- I's whole double entry (scratchpad/letnew_run.out) -- so the lookup that
+; for_set made after inc_eval moved in front of it, and the store goes through the
+; entry (for_set_at). Still ONE lookup; `FOR A$=` is refused before it, so a string
+; name is never created here (whether the reference creates A$ before its Type
+; mismatch is unmeasured).
 ; 🔴 `FOR A(1)=` STAYS A SYNTAX ERROR (row f.ary, both references). var_name_key
 ; walks a name and a suffix and never a subscript, so it leaves HL on the `(`
 ; and the EQ_TOKEN test below rejects it -- this is a NAME residual, not an
@@ -1839,11 +1928,18 @@ ex_for:
                                             ; f.defstr, both references). The test is on
                                             ; the RESOLVED type, not on the `$` char,
                                             ; because f.defstr says the rule is.
+                push    hl                  ; [cursor]
+                call    var_alloc_or_find   ; D-LETNEWFIRST: A = the type, BC = the key
+                                            ; (for_name's out) -> HL = the variable's
+                                            ; entry, created zero-valued if new, BEFORE
+                                            ; the start expression -- FOR's ONE lookup
+                jp      nc,fp_runtime_error ; Out of memory, FPERR already set
+                ex      (sp),hl             ; HL = cursor, [entry] across '=' + eval
                 call    skip_eq             ; '=' -> $EF
                 jp      nz,stmt_error
                 call    inc_eval            ; DE = initial value, HL advanced
-                push    hl                  ; guard cursor across for_set
-                call    for_set             ; var := initial value
+                ex      (sp),hl             ; HL = entry, [cursor]
+                call    for_set_at          ; var := initial value, through the entry
                 pop     hl
                 call    skip_spaces
                 cp      TO_TOKEN           ; TO -> $D9
