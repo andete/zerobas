@@ -4441,8 +4441,20 @@ install_basic_hooks:
                 ; rows 1..FCH_CEIL only. The base (DSK_ENGTAB) stays where it is, one
                 ; unreserved row below HIMEM, and the disk machine's boot FRE(0) is
                 ; 50 B higher (scratchpad/engrow0_run.out).
-                ld      hl, TXTMAX-FCH_CEIL*FCH_STATESZ
+                ; 🎯 D-DISKHIMEM (2026-10-19): HIMEM IS THE CF-3300'S $DE77, NOT A
+                ; FUNCTION OF TXTMAX. This was TXTMAX-FCH_CEIL*FCH_STATESZ, and when
+                ; D-WSZERO raised TXTMAX ($E000 -> $E36A) the disk machine's boot HIMEM
+                ; rose with it to $E07C: 517 B MORE free RAM than the CF-3300 in every
+                ; shape (scratchpad/diskfre_probe.py -> diskfre_run.out: boot, MAXFILES
+                ; 0 / 2, CLEAR 200, HIMEM). Joost's RAM priorities (2026-10-16): 2. the
+                ; disk machine has the SAME free RAM, 4. the same addresses -- $DE77
+                ; serves both. The engine table rows stay above it (asserted below);
+                ; the RAM between is reserved, as the reference's disk work area is.
+                ld      hl, DISK_HIMEM
                 ld      (HIMEM), hl
+    IF DISK_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
+                db      DISK_HIMEM_ABOVE_THE_ENGINE_TABLE   ; rows 1..FCH_CEIL must stay reserved
+    ENDIF
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)
                 ld      hl, hook_tab

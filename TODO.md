@@ -3958,8 +3958,27 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — measure first (the VG-8020, a synthetic tape of our own
       code): basic/bload-body.inc's load_done falls into bl_apply_ofs on the tape
       path, after the offset was already applied. The disk path never had it.
-- [ ] 🧮 **D-FATSCRATCH -- MAIN'S FAT SCRATCH SPAN (FCH_STATE0, $EE06..) IS NAMED BY NO
-      CODE ANY MORE (found 2026-10-19)**
+- [x] 🧮 **D-DISKHIMEM -- THE DISK MACHINE GAVE 517 B MORE FREE RAM THAN THE CF-3300
+      (found and fixed 2026-10-19, measuring D-FATSCRATCH)** — ✅ **FIXED.**
+      🎚️ TIER 4 — Joost's RAM priority 2 (2026-10-16): "disk machine has the same free
+      RAM".
+      📏 [`diskfre_run.out`](scratchpad/diskfre_run.out) (diskfre_probe.py, boot per row):
+      FRE(0) at boot, after MAXFILES=2 / 0, after CLEAR 200, and HIMEM -- zerobas +517
+      in every row. Cause: disk.rom's boot HIMEM was TXTMAX - 15 x 50, and D-WSZERO
+      raised TXTMAX ($E000 -> $E36A), so HIMEM rose to $E07C (2026-10-10 it read $DD12,
+      76 B BELOW the CF-3300). Fix: disk/kernel.asm sets DISK_HIMEM = $DE77, the
+      CF-3300's own (priority 4, the same address, comes with it), asserted to stay below
+      the engine table. [`diskfre_after.out`](scratchpad/diskfre_after.out): all five rows
+      equal. 🔮 "equal after the fix": HIT. GATED: diskfre-acceptance
+      (probes/disk/disk_probe_diskfre.py). docs/concepts/memory-map.md updated.
+- [x] 🧮 **D-FATSCRATCH -- MAIN'S FAT SCRATCH SPAN (FCH_STATE0, $EE06..) IS NAMED BY NO
+      CODE ANY MORE (found 2026-10-19)** — ✅ **CLOSED 2026-10-19: no free RAM is at
+      stake.** The span ($EE06..) is DISK-ONLY scratch: on the disk machine it lies above
+      HIMEM in the reserved work area, and FRE(0) there now equals the CF-3300's
+      (D-DISKHIMEM, above); on the diskless machine no disk channel exists, so the cells
+      are never written and the RAM is ordinary program RAM below $F380. Reclaiming it
+      would only add free RAM the reference does not have. Its equates stay as the
+      FCH_STATESZ stride's source.
       🎚️ TIER 4 — RAM the reference may keep free; only the FCH_STATESZ stride
       constant still derives from its labels.
       🤖 **AUTONOMOUS** — check every reader (all ROMs, tests, tools/ram_map.py), then
@@ -11313,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36846 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36865 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11479,7 +11498,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16341 (T-6FE392)8 (T-529ABE)` from `TODO.md:29135 (T-529ABE)`: a
+      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29154 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17188,7 +17207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29135 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29154 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

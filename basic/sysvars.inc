@@ -4008,7 +4008,10 @@ FCH_CTXSZ       equ     FCH_BLKSZ + 2               ; 267: what MAXFILES charges
 ; is still DSK_ENGTAB + ch*FCH_STATESZ, but the disk ROM's init sets HIMEM to
 ; row 1 (TXTMAX - FCH_CEIL*FCH_STATESZ): the reserve is 750 B, and the 50 B
 ; below it are ordinary RAM that nothing here reads or writes.
-DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: $DCE0 (row 0, unreserved); 750 B reserved from $DD12
+DSK_ENGTAB      equ     TXTMAX - (FCH_CEIL+1)*FCH_STATESZ   ; NOT-A-CELL: row 0 unreserved; rows 1..FCH_CEIL end at TXTMAX
+; ⚠️ D-DISKHIMEM (2026-10-19): the "HIMEM = row 1" above is HISTORY. The disk ROM now
+; sets HIMEM to the CF-3300's $DE77 (DISK_HIMEM, disk/equates.inc), below the table,
+; which stays reserved; the RAM between is reserved too, as the reference's work area.
 ; --- Phase 2c slice 1: random-access FIELD table + fielded-read scratch -----
 ; 🏗️ D-FLDDESC (2026-10-17): THE TABLE AND THE READ SCRATCH ARE GONE, AND THE
 ; PREMISE BELOW WAS ALREADY FALSE WHEN THEY WENT. Arrays slice-4c made every string

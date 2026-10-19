@@ -147,7 +147,7 @@ recauto-acceptance ampb-acceptance pulong-acceptance rg7-acceptance bloadrtail-a
 filesbare-acceptance callsystem-acceptance bootkey-acceptance
 resnext-acceptance readerl-acceptance
 dosmode-acceptance bootkeys-acceptance
-fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
+diskfre-acceptance fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
 resetboot-acceptance keyshift-acceptance sub2-acceptance

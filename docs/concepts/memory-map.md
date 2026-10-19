@@ -107,7 +107,15 @@ one.
 keeps no state there, and the ceiling is `$F380`
 ([`wszero_s15_clear.out`](../../scratchpad/wszero_s15_clear.out): `CLEAR 28800`
 fits on both, 14 bytes more left here). The VG-8020 in turn spends about 270
-bytes on channel 0, which zerobas does not reserve yet. Inside one program, `FRE(0)` also depends on how deep the expression is that
+bytes on channel 0, which zerobas does not reserve yet.
+
+With a disk the gap went the other way for a while: once zerobas's workspace
+moved up, its disk ROM's start-up `HIMEM` followed it to `$E07C`, 517 bytes
+**more** free memory than the CF-3300 in every shape. Since 2026-10-19 the
+disk ROM sets the CF-3300's own `$DE77`, and `FRE(0)` at start-up, after
+`MAXFILES` and after `CLEAR` reads the same on both
+([`diskfre_after.out`](../../scratchpad/diskfre_after.out), gated by
+`diskfre-acceptance`). Inside one program, `FRE(0)` also depends on how deep the expression is that
 reads it — on the VG-8020 each level of nesting costs a few bytes — so compare
 readings taken by the same statement shape (see [`FRE`](../keywords/FRE.md)).
 

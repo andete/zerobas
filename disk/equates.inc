@@ -606,3 +606,6 @@ CMD_READ        equ     $80     ; read sector, single record
 CMD_WRITE       equ     $A0     ; write sector, single record (Type II, $A0 base)
 ; ($D0 = force interrupt / abort — unused: no command is ever aborted mid-flight.)
 
+; D-DISKHIMEM (2026-10-19): the disk machine's boot HIMEM -- the CF-3300's
+; (scratchpad/clearmax_run.out, diskfre_run.out). disk/kernel.asm install_basic_hooks.
+DISK_HIMEM      equ     $DE77

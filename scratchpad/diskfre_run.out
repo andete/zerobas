@@ -1,0 +1,7 @@
+row       CF-3300       OURS  OURS-CF
+boot        23415      23932  517
+mf2         23148      23665  517
+mf0         23682      24199  517
+himem       56951      57468  517
+clear       23415      23932  517
+refcache: 0 hit, 10 miss, 10 stored

@@ -2420,6 +2420,13 @@ rg7-acceptance: repack-machine
 bloadrtail-acceptance: repack-machine
 	python3 probes/basic/basic_probe_bloadrtail.py
 
+# --- diskfre-acceptance: the disk machine's free RAM is the CF-3300's (D-DISKHIMEM) ---
+# Joost's RAM priority 2 (2026-10-16). FRE(0) at boot / MAXFILES 0 and 2 / CLEAR 200,
+# and HIMEM, on the CF-3300 and zerobas DISK; zerobas had 517 B more until its boot
+# HIMEM stopped following TXTMAX (disk/kernel.asm install_basic_hooks).
+diskfre-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_diskfre.py
+
 # --- tapionlead-acceptance: TAPION called while data is playing (D-TAPLEAD) ------
 # A machine-code loader re-calls TAPION before the previous file's data has ended;
 # it must wait for a real leader (our own synthetic two-file tape + our own routine).
