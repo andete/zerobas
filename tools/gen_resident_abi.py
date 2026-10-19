@@ -171,20 +171,18 @@ REQUIRED_DISK_RAM = [
                                 # IS the disk ROM, but the body is shared and the
                                 # cell is main's -- reading it costs nothing and
                                 # keeps the source identical in all three builds
-    # D-NAMESTAMP (spec-diskcode-eviction.md §6.6aw): NAME's dir-entry stamp runs
-    # in disk.rom now instead of calling back to the sub-ROM tenant. It needs the
-    # entry location that main's fat_find recorded -- and these are ALIASED for
-    # the same reason main_fat_mount/main_fat_find are: disk.rom HAS cells of
-    # these names ($E552/$E554) and they are its OWN FAT's scratch, a DIFFERENT
-    # address from main's ($E9F7/$E9F9). 🔴 Reading the wrong one would have been
-    # silent -- the stamp would write a valid sector at the wrong offset.
-    "main_FWR_DIRSEC=FWR_DIRSEC",   # sector holding the located dir entry
-    "main_FWR_DIROFF=FWR_DIROFF",   # byte offset of the entry within it
+    # (main_FWR_DIRSEC / main_FWR_DIROFF -- ALIASED imports of main's FWR_DIRSEC /
+    # FWR_DIROFF for D-NAMESTAMP's stamp, because disk.rom declares cells of those
+    # names itself -- are gone, 2026-10-19: hk_name finds the old entry with
+    # disk.rom's OWN fat_find now, so the position is in disk.rom's own cells and
+    # the stamp reads them by their bare names. Reading the wrong pair would have
+    # been silent -- a valid sector written at the wrong offset -- which is why
+    # the alias existed while the lookup was main's.)
     # D-COPYLOCAL (spec-diskcode-eviction.md §6.6az): COPY's body runs in
     # disk.rom now instead of calling back twice to the sub-ROM tenant.
     # 🎯 THESE THREE ARE **NOT** ALIASED, AND THE DIFFERENCE IS THE POINT.
-    # FWR_DIRSEC above had to be, because disk.rom declares a cell of that name
-    # itself. COPY_SRC/COPY_CLUS/COPY_LEFT have exactly ONE consumer in the whole
+    # FWR_DIRSEC had to be (while it was imported), because disk.rom declares a
+    # cell of that name itself. COPY_SRC/COPY_CLUS/COPY_LEFT have exactly ONE consumer in the whole
     # tree -- the body being moved -- and no disk-side twin, so the same address
     # serves both sides and there is nothing to reconcile. The declaration stays
     # in basic/sysvars.inc and arrives here generated, which is what keeps it
@@ -212,11 +210,12 @@ REQUIRED_DISK_RAM = [
     "LPTPOS",                   # printer head column: LFILES zeroes it at the end
                                 # of a listing that emitted something (D-DFEND)
     # D-KILLOPEN: KILL walks the channel table to refuse an OPEN file (64). Read
-    # only. FCH_STATESZ is published so the offset of FWR_DIRSEC inside a saved
-    # context block is DERIVED rather than written down as 46: sysvars.inc
-    # defines FCH_STATESZ = FWR_DIROFF+2-FCH_STATE0, so the span base is
-    # main_FWR_DIROFF+2-FCH_STATESZ, and a context-layout change moves both or
-    # neither. (Publishing FCH_STATE0 itself failed ram-map-check: it names a
+    # only. FCH_STATESZ was published so the offset of FWR_DIRSEC inside a saved
+    # context block was DERIVED rather than written down as 46: sysvars.inc
+    # defines FCH_STATESZ = FWR_DIROFF+2-FCH_STATE0, so the span base was
+    # main_FWR_DIROFF+2-FCH_STATESZ. (That arm went with S10.C, and the
+    # main_FWR_* import on 2026-10-19; FCH_STATESZ stays for the row stride,
+    # below.) (Publishing FCH_STATE0 itself failed ram-map-check: it names a
     # span's BASE, not a cell, and has no width of its own.)
     "FCH_ACTIVE",               # channel live in the engine globals, 0 = none
     "FCH_MODES",                # [ch] = 0 closed / 1..4 disk / 5.. device, cassette
@@ -318,14 +317,13 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # sector I/O itself in hk_dsk, and no handler calls back for it any more.)
     # D-DISKVERB2 phase 3 (NAME). CF now crosses too -- measured two-sided, a
     # callee that SETS it comes back set and one that CLEARS it comes back clear
-    # (scratchpad/xslot_abi.py leg 4) -- so these two may be read for their carry.
-    # ⚠️ ALIASED, because disk.rom HAS ITS OWN fat_mount/fat_find for MSX-DOS.
-    # NAME calls MAIN's deliberately: main's fat_find writes the entry location
-    # that the dirverb NAME_STAMP tenant then reads, and the disk-local FAT
-    # writes its own scratch instead. Which FAT a disk-ROM verb should use is
-    # phase 4's question, and this does not pre-empt it.
-    "main_fat_mount=fat_mount",   # CF=1: no disk / bad BPB
-    "main_fat_find=fat_find",     # HL = 8.3 name; CF=1: not found
+    # (scratchpad/xslot_abi.py leg 4) -- so a call-back may be read for its carry.
+    # (main_fat_mount / main_fat_find -- ALIASED imports of main's two FAT shims,
+    # because disk.rom has its own fat_mount / fat_find -- are gone, 2026-10-19,
+    # and the shims with them: NAME mounts and finds with disk.rom's OWN FAT, as
+    # KILL and COPY already did, and AUTOEXEC.BAS's probe moved to disk.rom's
+    # hk_auto. Phase 4's "which FAT a disk-ROM verb should use" is answered for
+    # every verb here: its own.)
     "parse_disk_fcb",           # HL = [len]name text -> DISK_FCB_NAME
     # (D-DSKFLOCAL, 2026-09-29: `fat_count_free` is no longer a callback --
     # disk.rom assembles the body itself and hk_dskf calls it locally.)
@@ -339,10 +337,11 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "lrset_tgt",                # the target's descriptor (D-FLDDESC: no table)
     "lrset_rhs",                # STRPTR = the RHS descriptor
     "lrset_finish",             # destination, then the sub-ROM store
-    # D-KILLOPEN: KILL refuses a file that is OPEN (64), which needs every
-    # open channel's directory position. The live channel's is in the engine
-    # globals (main_FWR_DIRSEC above); a saved one is in its context block,
-    # whose address only main can compute (the sub-ROM strheap op 18).
+    # D-KILLOPEN: KILL refuses a file that is OPEN (64), which needed every
+    # open channel's directory position -- the live channel's in the engine
+    # globals (main_FWR_DIRSEC, an import gone 2026-10-19), a saved one in its
+    # context block, whose address only main can compute (the sub-ROM strheap
+    # op 18). Since S10.C the walk compares the FCB rows' names (hoc_dout).
     "fch_ctx_addr",             # A = channel -> HL = its context block
     # S10.B: a record write that fails (66 disk full, or a DSKIO code) RAISES
     # from inside H_CHOUT / H_CHCLOSE, as hk_kill's call-backs may: the code is
@@ -451,7 +450,8 @@ def generate(sym_path: str, out_path: str, write: bool = True,
 
     # 🔴 THE ALIAS SPLIT HAPPENS ONCE, HERE, BEFORE ANY CHECK RUNS. An entry may
     # be written "local=symbol" when the importing ROM already defines that name
-    # itself (disk.rom has its own fat_mount/fat_find). A first cut split it only
+    # itself (disk.rom has its own fat_mount/fat_find; main_fat_* were the case
+    # until 2026-10-19, and none is declared today). A first cut split it only
     # in the EMIT loop, so `missing` looked the whole "local=symbol" string up in
     # the symbol table and refused the build -- the checks must see the SYMBOL
     # half, or an alias could smuggle an unresolvable or mis-classed import past

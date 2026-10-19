@@ -81,8 +81,14 @@ fatprim_tenant:
 fp_table:
                 jp      t_read_sector           ; 0  DISKOP_SEL_READ_SECTOR
                 jp      t_write_sector          ; 1  DISKOP_SEL_WRITE_SECTOR
-                jp      t_fat_mount             ; 2  DISKOP_SEL_FAT_MOUNT
-                jp      t_fat_find              ; 3  DISKOP_SEL_FAT_FIND
+; --- rows 2-3: RETIRED 2026-10-19 (D-ROMSIZE step 1). Main's fat_mount / fat_find
+; shims were their last senders, and both shims went: AUTOEXEC.BAS's boot probe
+; is disk.rom's hk_auto, and NAME (disk.rom hk_name) mounts and finds with that
+; ROM's own FAT instead of calling back into main for them. The bodies stay --
+; this ROM's own BLOAD / BSAVE bodies and fat_delete call them locally.
+; Each row keeps its 3 B so 4.. stay put (the table is append-only).
+                jp      fp_stash_ok             ; 2  retired (was DISKOP_SEL_FAT_MOUNT)
+                jp      fp_stash_ok             ; 3  retired (was DISKOP_SEL_FAT_FIND)
                 jp      t_name_cmp              ; 4  DISKOP_SEL_NAME_CMP
                 jp      t_fat_open              ; 5  DISKOP_SEL_FAT_OPEN
                 jp      t_fat_read_fat_sector   ; 6  DISKOP_SEL_FAT_READ_FAT_SECTOR
@@ -164,14 +170,8 @@ t_write_sector:
                 call    fatprim_write_sector
                 jr      c,fp_stash_err
                 jr      fp_stash_ok
-t_fat_mount:
-                call    fat_mount
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_find:
-                call    fat_find
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
+; (t_fat_mount / t_fat_find, rows 2 / 3's wrappers, went 2026-10-19 with their
+; last sender -- the table's note.)
 ; t_name_cmp — Z, not Cy: STATUS doubles as the Z surrogate (0 = match/Z,
 ; nonzero = no-match/NZ), same polarity as the Cy convention elsewhere.
 t_name_cmp:

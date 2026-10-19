@@ -582,8 +582,9 @@ def disk_abi_seeds(spans):
                  f"{DISK_ABI} -- the disk ROM's call-back surface is undeclared, "
                  f"so a main routine callable only from disk.rom would read DEAD")
     # 🔴 THE SAME ALIAS SPLIT THE GENERATOR DOES, AND FOR THE SAME REASON. An
-    # import written "local=symbol" is EMITTED under `local` (disk.rom has its
-    # own fat_mount/fat_find, so main's are imported as main_fat_*), but it is
+    # import written "local=symbol" is EMITTED under `local` (disk.rom had its
+    # own fat_mount/fat_find, so main's were imported as main_fat_* until
+    # 2026-10-19; no alias is declared today, the split stays for the next), but it is
     # the SYMBOL half that must resolve to a main label. Comparing the two
     # halves against the wrong side is what this arm caught on itself the first
     # time an alias existed: drift on four names that were really two.

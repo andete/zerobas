@@ -169,6 +169,9 @@ for _lbl, _line in [
 # reader of FCH_MODE is preceded by fch_select, which re-stamps the mirror. If
 # that argument is wrong, a TRAPPED `PRINT #2` sitting between an OPEN and a write
 # on a DIFFERENT, legitimately-open channel corrupts the second write.
+# 🗑️ 2026-10-19 (D-ROMSIZE step 1): the clear is GONE, and so is the mirror --
+# fch_select hands the mode back in A and nothing outside OPEN reads FCH_MODE.
+# The pair still pins what it always measured (the other channel's write lands).
 #
 # ⚠️ THE VERDICT IS THE ON-DISK DIRECTORY, NOT A SCREEN READING -- and it needs
 # BOTH columns. The first cut of this row read DIR=7 on subject and control alike

@@ -39,8 +39,6 @@ PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)
 DSV_END equ 0EF5BH   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)
 DISKSLOT_OK equ 0FB21H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
-main_FWR_DIRSEC equ 0EE34H   ; main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word)
-main_FWR_DIROFF equ 0EE36H   ; main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word)
 COPY_SRC equ 0EEEEH   ; DISK-ONLY: the source's 11-byte 8.3 name field
 COPY_CLUS equ 0EEF9H   ; DISK-ONLY: the source's first cluster (word)
 COPY_LEFT equ 0EEFBH   ; DISK-ONLY: bytes still to copy (4-byte LE)
@@ -81,16 +79,14 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-main_fat_mount equ 06448H   ; main's fat_mount
-main_fat_find equ 0644CH   ; main's fat_find
-parse_disk_fcb equ 0650BH
+parse_disk_fcb equ 064FEH
 field_prologue equ 07348H
 field_item equ 072F6H
 lrset_tgt equ 073C5H
 lrset_rhs equ 073E8H
 lrset_finish equ 07258H
-fch_ctx_addr equ 06F7DH
-disk_error equ 06B6CH
+fch_ctx_addr equ 06F77H
+disk_error equ 06B77H
 read_line equ 045FBH
 fch_close_all equ 0706CH
 eval_int16_checked equ 0454AH

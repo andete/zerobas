@@ -1,0 +1,13 @@
+[ours: C-BIOS_MSX1_EU_REPACK_DISK] AUTOEXEC.BAS present -> cold-boot auto-run
+  [PASS] ($D005)=$A5 (expect $A5; poisoned $11 pre-boot)
+
+[STOCK reference: National_CF-3300] AUTOEXEC.BAS present -> cold-boot auto-run (CF-3300 differential)
+  [PASS] ($D005)=$A5 (expect $A5 -- ours matches the documented stock behaviour)
+
+[ours: C-BIOS_MSX1_EU_REPACK_DISK] no AUTOEXEC.BAS (decoy AUTOEXEC.BIN only) -> normal silent boot
+  [PASS] ($D005)=$11 (expect unperturbed poison $11 -- no spurious run)
+
+[ours: C-BIOS_MSX1_EU_REPACK_DISK] empty (0-byte) AUTOEXEC.BAS -> silent skip (no run, no error)
+  [PASS] ($D005)=$11 (expect unperturbed poison $11 -- empty file skipped silently)
+
+ALL PASS -- AUTOEXEC.BAS auto-runs at Disk-BASIC cold start, matching the National_CF-3300 stock reference, with no false trigger when absent

@@ -542,7 +542,12 @@ oo_input:
 oo_random:
                 ld      a,4                 ; mode = RANDOM (no FOR clause)
 oo_setmode:
-                ld      (FCH_MODE),a        ; provisional; cleared on any failure
+                ld      (FCH_MODE),a        ; provisional: read below and at oo_done
+                                            ; only. 🗑️ 2026-10-19: the clears on
+                                            ; OPEN's failure tails, CLOSE and cold
+                                            ; start went, with fch_select's store:
+                                            ; nothing outside OPEN reads the cell,
+                                            ; and OPEN writes it first
                 call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
                 ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
                 ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
@@ -734,7 +739,6 @@ oo_fail:
                 call    fch_modes_ptr
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0
-                ld      (FCH_MODE),a
                 ld      (FCH_ACTIVE),a      ; no channel live (don't save the garbage)
                 ; D-LOADERR: AFTER the channel cleanup, never before -- a raise
                 ; here would leave the slot claimed.
@@ -760,23 +764,20 @@ bp_ret:
 arl_getbyte:
                 ld      hl,(ARL_GETBYTE)
                 jp      (hl)
-oo_fail_syn:
-                xor     a
-                ld      (FCH_MODE),a
+oo_fail_syn:                                ; `jr` reach for the CAS: arm past the pin
                 jp      stmt_error
 oo_fail_bfname:                             ; the cassette arm's RANDOM / APPEND
                 ld      e,56                ; refusal (D-NODISKOPEN): Bad file name
                 jr      oo_fail_e
 
 ; --- oo_fail_ifc: OPEN's ILLEGAL FUNCTION CALL reject (D-RECLEN2, ERR 5) -----
-; Same channel-state cleanup as oo_fail_syn, different face. Measured: the
+; oo_fail_syn's sibling with a different face (neither clears FCH_MODE any more,
+; 2026-10-19: nothing outside OPEN reads it). Measured: the
 ; CF-3300 answers ERR 5 to `LEN=0`, `LEN=257` and `LEN=512`, and accepts
 ; everything in 1..256.
 oo_fail_ifc:
                 ld      e,5                 ; Illegal function call
 oo_fail_e:                                  ; E = the ERR code (D-OPENBUSY shares it)
-                xor     a
-                ld      (FCH_MODE),a
                 ld      a,e
                 jp      raise_error
 
@@ -1249,7 +1250,7 @@ opr_have:
                 ; reached the range test here and read Illegal function call (5)
                 ; (scratchpad/t6enum_b8_zb_1006.out). Only the RANGE is 5.
                 cp      EQ_TOKEN            ; '='
-                jp      nz,oo_fail_syn      ; no `=`: 2 (clears the provisional mode)
+                jp      nz,oo_fail_syn      ; no `=`: 2
                 inc     hl
                 call    eval_int16_checked  ; DE = record length; a string is 13
                 ld      a,d
@@ -1334,7 +1335,7 @@ input_common:
                 ; classify the channel by FCH_MODES[ch] WITHOUT fch_select (a cassette
                 ; channel owns no fat.asm ctx — selecting it would LDIR garbage over
                 ; the globals). CAS_IN reads via cas_in_getbyte; a disk channel keeps
-                ; the fch_select + FCH_MODE==1 path. read_into_strscr sources bytes
+                ; the fch_select + mode==1 path. read_into_strscr sources bytes
                 ; through the ARL_GETBYTE vector, set here per channel type.
                 ; D-NOTOPEN (docs/spec-basic-chan-notopen-err59.md): this arm serves
                 ; INPUT# *and* LINE INPUT# (both reach input_common), and it used to
@@ -1352,11 +1353,11 @@ input_common:
                 cp      CAS_IN_MODE
                 jr      z,inp_setsrc        ; cassette: A = CAS_IN_MODE already, and
                                             ; NO fch_select (see above)
-                push    hl                  ; guard text cursor (fch_select uses LDIR)
+                push    hl                  ; guard text cursor
                 ld      a,e
-                call    fch_select          ; make channel e live; FCH_MODE = its mode
-                pop     hl
-                ld      a,(FCH_MODE)
+                call    fch_select          ; make channel e live; A = its mode
+                pop     hl                  ; (2026-10-19: the `ld a,(FCH_MODE)`
+                                            ; reload here was dead since S10.E)
                 ; D-CHDIR (2026-10-06): as PRINT#'s -- 61 on a RANDOM channel, 52
                 ; on one open FOR OUTPUT / APPEND, both trappable on the CF-3300
                 ; (scratchpad/chdir_run.out); load_error printed and went on.
@@ -1593,9 +1594,8 @@ dc_all:
 ; OPEN #1 works with no MAXFILES on the real CF-3300). Called from `init` before
 ; the banner is printed.
 init_filechan:
-                xor     a
-                ld      (FCH_MODE),a
-                ld      (PRDEST),a
+                xor     a                   ; (no FCH_MODE store since 2026-10-19:
+                ld      (PRDEST),a          ; OPEN writes it before its only reads)
                 ld      (PRDEV),a           ; default PRINT# sink = disk file
                 ; 🔴 D-LPTVERB: THE PRINTER COLUMN MUST BE COLD-STARTED, and the
                 ; CONTROL row is what caught this. LPTPOS is plain RAM, so at
@@ -1636,8 +1636,9 @@ ifc_zero:
 ; channel is an MSX-DOS FCB in its own DSK_ENGTAB row, owned by disk.rom from
 ; OPEN, its record the block's +9; LOF / LOC read that FCB through H_CHIN ops
 ; 6 / 8. So "making a channel live" is FCH_ACTIVE := ch (the cell disk.rom's
-; hooks find the row by) plus the FCH_MODE mirror three statement drivers read
-; -- fch_select below -- and nothing is saved or loaded.
+; hooks find the row by) -- fch_select below, which hands back the mode in A
+; -- and nothing is saved or loaded. (Its FCH_MODE mirror store went too,
+; 2026-10-19: the three statement drivers that re-read it take A.)
 ; 📜 HISTORY: fat.asm kept ONE global set of streaming state (FSECTOR_BUF +
 ; FCH_STATE0..). Each open channel owned a context block (FCH_CTX[ch] =
 ; [state:FCH_STATESZ][512]) holding a saved copy; the globals always held the
@@ -1706,9 +1707,11 @@ le_call_op:
                 ret
 
 ; fch_select — make channel A the live one: FCH_ACTIVE := A (disk.rom's hooks
-; find the channel's FCB row through it), FCH_MODE := FCH_MODES[A], the mirror
-; input_common, PRINT# and CLOSE read next. A = channel (range-validated, or 0
-; from fch_park: "nothing live"). out A = the mode. Clobbers A, HL; keeps BC, DE,
+; find the channel's FCB row through it). A = channel (range-validated, or 0
+; from fch_park: "nothing live"). out A = FCH_MODES[A], the mode -- what
+; input_common, PRINT# and CLOSE test next. 🗑️ 2026-10-19: it also stored the
+; mode in FCH_MODE, and those three re-read the cell (`ld a,(FCH_MODE)`, 9 B);
+; both are gone -- FCH_MODE is OPEN's provisional cell only. Clobbers A, HL; keeps BC, DE,
 ; IX (no CALSLT). No longer a disk.rom call-back: hk_dget stores FCH_ACTIVE
 ; itself since S10.E (tools/gen_resident_abi.py).
 ; 🗑️ S10.E (2026-10-19): IT WAS A CONTEXT SWITCH. With a different channel live it
@@ -1723,9 +1726,8 @@ le_call_op:
 fch_select:
                 ld      (FCH_ACTIVE),a
                 call    fch_modes_ptr
-                ld      a,(hl)
-                ld      (FCH_MODE),a        ; (D-FCHNUM, 2026-10-17: FCH_NUM's mirror
-                ret                         ; store is gone; nothing read it)
+                ld      a,(hl)              ; A = the mode
+                ret
 
 ; 📌 PIN REFILL (S10.E, 2026-10-19): 64 B moved here from past the $73E5 pin
 ; (basic/program.asm) to take back the 64 B the channel switch above freed in
@@ -1843,33 +1845,63 @@ oo_fail_54:                                 ; D-OPENSAME joins here too
                 ld      e,54                ; `File already open`
                 jp      oo_fail_e
 
-; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
+; 📌 PIN REFILL (2026-10-19): 24 B moved here from past the $73E5 pin
+; (basic/program.asm) to take back what this hole and FCH_MODE's dead stores
+; freed in front of $72D4: fch_modes_ptr (9 B, moved IN FRONT of $6CF3 -- to
+; basic/cload.asm, after autoexec_run -- to fit the sizes the tail offers),
+; fch_select's FCH_MODE store, the re-reads in input_common and fdcc_disk, and
+; the clears in init_filechan and fdcc_clear (3 B each). Sited AT the hole;
+; whole, entered only by label, no `jr` across its edges (tools/pin_plan.py
+; chunks()).
+; --- onoff_decode: the shared ON | OFF | STOP sub-keyword decode -------------
+; Six statements in this tree decode the same three sub-keywords into the same
+; three ZTRAP states, and each one had spelled it out: `STOP ON|OFF|STOP`,
+; `INTERVAL ...`, `STRIG(n) ...`, `KEY(n) ...`, `SPRITE ...`, and now `MOTOR`.
+; ~19-23 B apiece for a decode that is character-for-character the same.
 ;
-; D-NOTOPEN2 §2d(a): the index math was hand-inlined at TEN sites (three spelled
-; with BC, five with DE, one inside fch_mode_class itself).
-; The 8-bit page-local form costs 1 byte more than the obvious
-; `ld e,a / ld d,0 / ld hl,FCH_MODES / add hl,de`, and buys DE preservation.
-; ⚠️ I JUSTIFIED THAT BYTE WITH A CLAIM THAT MEASUREMENT REFUTED. The claim was
-; that the DE-clobbering form BREAKS the two callers which read E after the index
-; (fch_do_close_ch's fdcc_disk `ld a,e`, and the CLOSE arm). It does not: every
-; call site passes the channel in **A**, so the naive form's `ld e,a` puts the
-; same channel straight back into E. Built and gated (K0', 2026-07-31):
-; diskbasic-acceptance 34/34 and the 41-case lof battery both GREEN, at 8 bytes.
-; The form is KEPT anyway, and the honest reason is the smaller one: with the
-; naive helper those two callers are correct only BY LUCK -- they depend on
-; A == E holding at every present and future call site, which nothing enforces
-; (cf. cont-depth-slice, where one exit was clean by luck and the next slice paid
-; for it). One byte for a contract that does not rest on a coincidence.
-; See `refactor-inherits-clobber-contracts` -- the failure mode is real, this
-; particular instance of it was not.
-; Relies on FCH_MODES not straddling a page boundary -- the same assumption
-; fch_mode_class (basic/expr.asm) already documented and relied on.
-fch_modes_ptr:
-                add     a,FCH_MODES & $FF
-                ld      l,a
-                ld      a,FCH_MODES >> 8
-                adc     a,0
-                ld      h,a
+; The share was proposed as a DEFERRED funding lever (spec-traps-t5-interval
+; §4.3, and again as spec-basic-missing-class §6.3) and taken instead as the
+; FIRST step of the MISSING slice (S-MC-4, overridden). The reason is worth
+; keeping: a reserve lever only ever gets pulled mid-overrun, when the budget is
+; already spent and the only acceptable outcome is "it fits" -- which is the
+; worst condition under which to restructure six live call sites.
+;
+;   IN:  A  = the token byte under the cursor (callers have already skipped
+;             spaces; HL is left pointing AT the token, not past it -- every
+;             caller consumes it itself, because each has its own guard-the-
+;             cursor dance around set_state).
+;   OUT: CF=1 -> matched; A = ZTS_OFF(0) / ZTS_ON(1) / ZTS_STOP(2), which is the
+;                set_state argument directly (sysvars.inc: the ZTS_ values ARE
+;                0/1/2, so there is no second mapping step at any call site).
+;        CF=0 -> not one of the three; A = the original token, so a caller can
+;                still test it (ex_stop's bare-`STOP` path needs exactly that).
+;   Clobbers A, B, F. **Preserves HL and DE** -- non-negotiable: HL is the token
+;   cursor at every site, and ex_strig_stmt/ex_key_stmt hold the ZTRAP entry
+;   pointer in DE across this call.
+;
+; ⚠️ It returns "which one", NOT "is this allowed". Acceptance stays with the
+; caller, which is what lets a 2-way site share a 3-way decoder: `MOTOR STOP` is
+; a Syntax error (measured, spec §3.5) and that is MOTOR's own one-line `cp
+; ZTS_STOP` -- not a variant of this routine. `SCF` preserves Z on the Z80, which
+; is what lets each arm be cp/scf/ld/ret-z with no branch.
+onoff_decode:
+                ld      b,a                 ; keep the token: A is about to be the answer
+                cp      OFF_TOKEN
+                ld      a,ZTS_OFF
+                scf
+                ret     z
+                ld      a,b
+                cp      ON_TOKEN
+                ld      a,ZTS_ON
+                scf
+                ret     z
+                ld      a,b
+                cp      STOP_TOKEN
+                ld      a,ZTS_STOP
+                scf
+                ret     z
+                ld      a,b                 ; no match: hand the token back...
+                or      a                   ; ...with CF=0
                 ret
 
 ; --- fch_check — a REJECTED channel number, dispositioned as the reference ---
@@ -1949,11 +1981,9 @@ fch_check_nz:
                 ld      b,a
                 ld      a,(MAXF)
                 cp      b                   ; CF set iff ch > MAXF
-                jp      c,oo_fail_bfn       ; -> ERR 52. Its FCH_MODE clear is
-                                            ; harmless for the eight non-OPEN
-                                            ; callers: every reader of FCH_MODE is
-                                            ; immediately preceded by fch_select,
-                                            ; which re-stamps the mirror (§3)
+                jp      c,oo_fail_bfn       ; -> ERR 52 (no FCH_MODE clear there
+                                            ; since 2026-10-19: only OPEN reads
+                                            ; the cell, after setting it)
                 ld      a,b
                 ret
 
@@ -1992,8 +2022,7 @@ fdcc_cas_in:
                 jr      fdcc_motor_off      ; motor off (input channel: nothing to flush)
 fdcc_disk:
                 ld      a,e
-                call    fch_select          ; load the channel; FCH_MODE = its mode
-                ld      a,(FCH_MODE)
+                call    fch_select          ; make the channel live; A = its mode
                 ; 🧭 S10.C (2026-10-15): EVERY disk mode crosses H_CHCLOSE now --
                 ; INPUT too, which the CF-3300 does ($FE62 at an INPUT channel's
                 ; CLOSE, s10c_hook_run.out). Its row is disk.rom's FCB since OPEN
@@ -2010,8 +2039,8 @@ fdcc_disk:
                 ; there (66) and leaves the channel open, marked so that the next
                 ; CLOSE frees it silently -- D-DISKFULL's face, kept.
                 ; 🧭 S10.D (2026-10-15): a RANDOM channel crosses the SAME cell.
-                ; ⚠️ A = THE MODE AT THE CALL (FCH_MODE, untouched by the two `cp`s
-                ; above), AND disk.rom READS IT: hk_chclose_e keeps it in B, and
+                ; ⚠️ A = THE MODE AT THE CALL (fch_select's answer, untouched by the
+                ; two `cp`s once above), AND disk.rom READS IT: hk_chclose_e keeps it in B, and
                 ; mode 4 takes only the directory stamp -- D-PUTDIR's once-at-CLOSE
                 ; entry (first cluster, size, date) from the channel's FCB row,
                 ; where hk_dget keeps them. It was fdcc_rnd here: the sub-ROM's
@@ -2048,9 +2077,9 @@ fdcc_clear:
                 call    fch_modes_ptr
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0 (closed)
-                ld      (FCH_MODE),a        ; mirror
                 ld      (FCH_ACTIVE),a      ; globals no longer hold a valid channel
-                ret
+                ret                         ; (FCH_MODE's clear went 2026-10-19:
+                                            ; only OPEN reads it, after setting it)
 ; fch_close_all — close every open channel (flushing OUTPUT ones). Used by bare
 ; CLOSE and by MAXFILES (which reinitialises the channel table). Guard HL caller-
 ; side (CALSLT). Clobbers everything.

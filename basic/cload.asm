@@ -1135,47 +1135,168 @@ ascii_load:
 ; National_CF-3300; see disk/docs/autoexec-bas-spec.md §2).
 ;
 ; This is the do_run disk pattern (do_run, above) minus the command parser, plus
-; a SILENT presence probe up front: disk_prog_load's own not-found path is the
-; noisy load_error (right for a typed RUN"missing", wrong for a boot-time probe
-; that must stay quiet on the common no-AUTOEXEC.BAS case). So we fat_mount +
-; fat_find ourselves first and ret quietly on "no disk" / "not found" / "empty",
-; only reaching disk_prog_load once a non-empty file is confirmed present.
+; a SILENT presence probe up front: disk_prog_load's own not-found path RAISES
+; (right for a typed RUN"missing", wrong for a boot-time probe that must stay
+; quiet on the common no-AUTOEXEC.BAS case). The probe answers "no disk" / "not
+; found" / "empty" quietly, and only a confirmed non-empty file reaches
+; disk_prog_load.
+; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE PROBE IS disk.rom's NOW (hk_auto, through
+; H_FOPEN with FOPEN_SEL_AUTO): it stages "AUTOEXECBAS" in DISK_FCB_NAME, mounts,
+; finds and tests the size with that ROM's own FAT, where the CF-3300 keeps its
+; disk BASIC. It was 43 B here -- the name from a main island, main's fat_mount /
+; fat_find shims into the sub-ROM's FAT tenant, the four-byte size test -- and
+; those shims went with it (basic/fat.asm). What stays is what must: the gate
+; (diskslot_test first, so a diskless machine never meets chan_gate's ERR 5 for
+; an unclaimed cell), and the load + RUN through main's own loader.
 autoexec_run:
-                ; (1) no disk ROM recorded by the INIT scan -> silent skip (same
-                ; gate disk_prog_load uses).
-                call    diskslot_test
-                ret     z
-                ; (2) stage the upcased 11-byte 8.3 name at DISK_FCB_NAME.
-                ld      hl,autoexec_name
-                ld      de,DISK_FCB_NAME
-                ld      bc,11
-                ldir
-                ; (3) silent presence probe: mount, then search the root dir.
-                call    fat_mount
-                ret     c                   ; no / bad disk -> silent skip
-                ld      hl,DISK_FCB_NAME
-                call    fat_find
-                ret     c                   ; not found -> silent skip
-                ; (4) empty file (size == 0, all 4 LE bytes) -> silent skip,
-                ; matching stock's silent behaviour on a 0-byte AUTOEXEC.BAS.
-                ld      hl,FAT_FILESIZE
-                ld      a,(hl)
-                inc     hl
-                or      (hl)
-                inc     hl
-                or      (hl)
-                inc     hl
-                or      (hl)                ; Z iff size == 0 (all 4 bytes)
-                ret     z
-                ; (5) found & non-empty -> load the tokenised program, then RUN
-                ; it (clear_vars + control-flow reset), and fall through to the
-                ; caller's `jp repl`. disk_prog_load re-opens via fat_io_open
-                ; (mount+find+prime again) -- cheap, reuses the whole loader; a
-                ; load failure lands in disk_prog_load's load_error (prints +
-                ; leaves an empty store), so the trailing run_prog is then a
-                ; harmless no-op (error-then-Ok, per spec §3 point 5).
+                call    diskslot_test       ; no disk ROM: silent skip (the same
+                ret     z                   ; gate disk_prog_load uses)
+                ld      a,FOPEN_SEL_AUTO
+                call    fopen_cross         ; A = disk.rom's verdict, Z iff "run it"
+                ret     nz                  ; absent / empty / no disk: silent
+                ; found & non-empty -> load the tokenised program, then RUN it
+                ; (clear_vars + control-flow reset), and fall through to the
+                ; caller's `jp repl`. disk_prog_load opens it again on the disk
+                ; side (hk_dpload: mount + find + the byte loop). A load failure
+                ; is reported in there exactly as for RUN "file"; when it RETURNS
+                ; (CF set) the trailing run_prog still runs, as it always did
+                ; (spec §3 point 5) -- unchanged by the move.
                 call    disk_prog_load
                 jp      run_prog
 
-; autoexec_name -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
-; read only by absolute `ld` from main; now in the $0160 island.
+; 📌 PIN REFILL (2026-10-19): 51 B moved here to take back the 51 B freed in
+; front of the $6CF3 pin -- this probe's move to disk.rom (27), the fat_mount /
+; fat_find shims (basic/fat.asm, 8), the push / pop af round INPUT$'s
+; fch_select (basic/strvar.asm, 2), PRINT#'s FCH_MODE re-read (basic/print.asm,
+; 3) and OPEN's three FCH_MODE clears (basic/files.asm oo_fail / oo_fail_syn /
+; oo_fail_e, 11). Every byte removed ahead of a pinned address grows its pad
+; (`ds $6CF3 - $` / the `jr` bridge), and Joost: no growing holes. Sited HERE,
+; before OPEN: oo_storemode's `jr oo_hdr_tail` reaches forward across the pad
+; and must not lengthen (it shortens by OPEN's 11), and the CAS: arm's `jr`s back
+; to oo_fail_syn / oo_fail_bfname only get shorter. ctl_reloc (42 B) came from
+; past $73E5 (basic/program.asm); fch_modes_ptr (9 B) from in front of $72D4
+; (basic/files.asm), whose hole onoff_decode refills -- the tail has no chunk
+; set that fills 51 and 15 B apart. Both are whole and entered only by label,
+; with no `jr` across their edges (tools/pin_plan.py chunks()).
+; fch_modes_ptr — HL = &FCH_MODES[A]. A = channel. Clobbers A and HL ONLY.
+;
+; D-NOTOPEN2 §2d(a): the index math was hand-inlined at TEN sites (three spelled
+; with BC, five with DE, one inside fch_mode_class itself).
+; The 8-bit page-local form costs 1 byte more than the obvious
+; `ld e,a / ld d,0 / ld hl,FCH_MODES / add hl,de`, and buys DE preservation.
+; ⚠️ I JUSTIFIED THAT BYTE WITH A CLAIM THAT MEASUREMENT REFUTED. The claim was
+; that the DE-clobbering form BREAKS the two callers which read E after the index
+; (fch_do_close_ch's fdcc_disk `ld a,e`, and the CLOSE arm). It does not: every
+; call site passes the channel in **A**, so the naive form's `ld e,a` puts the
+; same channel straight back into E. Built and gated (K0', 2026-07-31):
+; diskbasic-acceptance 34/34 and the 41-case lof battery both GREEN, at 8 bytes.
+; The form is KEPT anyway, and the honest reason is the smaller one: with the
+; naive helper those two callers are correct only BY LUCK -- they depend on
+; A == E holding at every present and future call site, which nothing enforces
+; (cf. cont-depth-slice, where one exit was clean by luck and the next slice paid
+; for it). One byte for a contract that does not rest on a coincidence.
+; See `refactor-inherits-clobber-contracts` -- the failure mode is real, this
+; particular instance of it was not.
+; Relies on FCH_MODES not straddling a page boundary -- the same assumption
+; fch_mode_class (basic/expr.asm) already documented and relied on.
+fch_modes_ptr:
+                add     a,FCH_MODES & $FF
+                ld      l,a
+                ld      a,FCH_MODES >> 8
+                adc     a,0
+                ld      h,a
+                ret
+
+; --- ctl_reloc: move the live block out of the new frame's way --------------
+; D-SPMERGE cut 2 (docs/spec-basic-spmerge.md §9), reached by a TAIL jump from
+; ctl_alloc (basic/str-engine.asm), which has already set CSP to the frame's base.
+;   in:  HL = the base (== the new frontier), DE = the frame size
+;   out: HL = the base, CF = 0, and `ret` goes to ctl_alloc's OWN caller
+;
+; Once `SP` lives in this region a frame would otherwise land BELOW whatever return
+; addresses are in flight, and the next `ret` would pop the frame. So the block
+; between `SP` and the frontier moves down by `size` and the frame takes the space
+; it vacated: nothing that can `ret` is left above the frame.
+;
+; 🎯 THE BLOCK IS SMALL, AND THAT IS THE WHOLE ARGUMENT. Frames are only ever
+; pushed at a STATEMENT BOUNDARY, where the expression evaluator has already
+; unwound -- so this is the statement handler's own chain (gosub_push's `push bc`
+; / `push hl`, a return address or two), about ten bytes, and it does NOT grow as
+; expressions get deeper. §9.3 records that the first reading of this called it an
+; O(depth) copy of the whole stack, and that reading was wrong.
+;
+; 🔴 SITED IN PAGE 1, NOT BESIDE ctl_alloc. The low region had 4 B free and this is
+; ~40; page 1 had 48. The two regions share one budget but have SEPARATE ceilings,
+; and the split costs one `jp` because the jump is a TAIL -- a `call` here would
+; put a return address on the very stack this routine relocates.
+ctl_reloc:
+                add     hl,de               ; HL = the OLD frontier
+                ld      b,h
+                ld      c,l
+                ld      hl,0
+                add     hl,sp               ; HL = SP
+                ld      a,c
+                sub     l
+                ld      c,a
+                ld      a,b
+                sbc     a,h
+                ld      b,a                 ; BC = frontier - SP = the block length
+                jr      c,ctr_done          ; 🔴 SP is ABOVE the frontier: the machine
+                                            ; stack and the pool are still disjoint, so
+                                            ; there is nothing between them to move.
+                                            ; TRUE FOR EVERY CALL until the `SP`
+                                            ; relocation lands (§9.4 step 3) -- which is
+                                            ; what makes this step behaviour-identical,
+                                            ; and why it needs a unit test rather than
+                                            ; the battery to be witnessed at all.
+                ; 🎯 NO EMPTY-BLOCK TEST, AND IT IS NOT AN OMISSION. `ldir` with BC=0
+                ; copies 65536 bytes, so a zero length would be fatal -- but it cannot
+                ; occur: ctl_alloc is always CALLED, so its caller's return address is
+                ; already on the stack BELOW the frontier, which makes the block at
+                ; least two bytes. The four bytes that test went to the anchor fix.
+                or      a
+                sbc     hl,de               ; HL = SP - size = where the block goes
+                di                          ; 🔴 SP MOVES BEFORE THE COPY, so an
+                                            ; interrupt landing between the two would
+                                            ; push INTO the block being copied. Closed
+                                            ; here, now that the branch is reachable.
+                                            ; A bare `ei` below is correct because every
+                                            ; ctl_alloc caller runs with interrupts ON:
+                                            ; gosub_push and the FOR push are statement
+                                            ; level, and the trap record runs from
+                                            ; check_traps, which rp_trapchk calls from
+                                            ; the run loop -- the ISR itself only sets
+                                            ; TRAPPEND and never allocates.
+                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY.
+                ; 🔴 SAVSTK POINTS INTO THE BLOCK, SO IT MOVES WITH IT (§3 hazard 3).
+                ; It is a saved SP -- the depth an abort or RESUME unwinds to, and the
+                ; word AT it is the return address the abort's tail `ret` consumes. The
+                ; block slides down by `size`, so an unadjusted SAVSTK addresses the
+                ; byte that USED to be there and the `ret` takes a wrong word.
+                ; MEASURED before this line existed: an untrapped error at top level
+                ; printed correctly, and the same error inside a GOSUB -- one live
+                ; frame, so one relocation -- REBOOTED the machine. That pair is what
+                ; separates "the abort path is broken" from "the anchor went stale",
+                ; and only the second is true.
+                ld      hl,(SAVSTK)
+                sbc     hl,de               ; CF is already clear -- the `sbc` that made
+                                            ; the destination cannot borrow (SP > size)
+                ld      (SAVSTK),hl
+                ld      hl,0
+                add     hl,sp               ; HL = the destination again `ld sp,de`
+                                            ; is not a Z80 instruction (HL/IX/IY only),
+                                            ; so the destination has to be in HL here.
+                                            ; `ldir` never touches SP; the window this
+                                            ; opens is §9's DI note, for step 3.
+                ex      de,hl               ; DE = destination
+                add     hl,de               ; HL = source (destination + size == SP)
+                ldir                        ; forward copy; destination < source, so the
+                                            ; overlap runs the safe way
+                ei
+ctr_done:
+                ld      hl,(CSP)            ; the frame's base
+                or      a                   ; CF = 0
+                ret
+
+; autoexec_name -- GONE (2026-10-19): it was the $0160 island's copy of the name
+; (D-ISLDATA2); disk.rom's hk_auto stages its own (hka_name).

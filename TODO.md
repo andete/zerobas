@@ -3902,10 +3902,24 @@ item — do **one item per session** to keep context lean.
       and a failing KILL / NAME with a channel open no longer has DISKOP_ERR cleared by
       the old restore crossing (a stale code can survive a successful verb, as it
       already could with nothing open).
-      ➡️ LEFT OF STEP (1): AUTOEXEC into disk.rom + NAME on disk.rom's own fat_find
-      (~51 B main), fch_select's three now-redundant `ld a,(FCH_MODE)` reads (9 B),
-      BSAVE-to-disk (sub only; then sub's second FAT engine), the vestigial veneers,
-      the step-14 gate.
+      ✅ **AND THE NEXT THREE, 2026-10-19 (main page 1 455 -> 525 B, sub page 1 1237 ->
+      1251, disk.rom 2886 -> 2851):** AUTOEXEC's decision + find run in disk.rom
+      (hk_auto, selector FOPEN_SEL_AUTO $58; main's autoexec_run 43 -> 16 B, island 2's
+      autoexec_name gone); NAME mounts once and finds with disk.rom's own fat_find,
+      stamping from its own FWR_DIRSEC / FWR_DIROFF (main's fat_mount / fat_find shims,
+      four ABI imports and sub fatprim rows 2-3 retired); FCH_MODE's reloads, store and
+      clears go (OPEN writes it before reading it; no other reader). Pins: ctl_reloc +
+      fch_modes_ptr ahead of $6CF3, onoff_decode ahead of $72D4; 6/6, waste 4 of 4.
+      [`autoexec_move_probe.out`](scratchpad/autoexec_move_probe.out): AUTOEXEC present /
+      decoy .BIN / empty -- ALL PASS, the CF-3300 alike; tests/test_hk_auto_name.py new.
+      🔮 "every AUTOEXEC row passes", "knife connectedness unchanged": HIT.
+      ⚠️ Read, not measured: NAME keeps the old entry's directory position in
+      disk.rom's cells ($E91C) while main evaluates the new name (no expression-level
+      disk path writes them; a USR routine could). 🆕 hk_dpload's header claims CF=0 for
+      an unhandled selector; true only above $4C (an idle 0 returns CF=1; no arm runs
+      either way) -- TIER 6, comment-level.
+      ➡️ LEFT OF STEP (1): BSAVE-to-disk (sub only; then sub's second FAT engine), the
+      vestigial veneers, the step-14 gate.
 
 - [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
       THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
@@ -11232,7 +11246,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36765 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36779 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11398,7 +11412,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16260 (T-6FE392)8 (T-529ABE)` from `TODO.md:29054 (T-529ABE)`: a
+      `TODO.md:16274 (T-6FE392)8 (T-529ABE)` from `TODO.md:29068 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17107,7 +17121,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29068 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

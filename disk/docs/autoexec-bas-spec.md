@@ -45,6 +45,15 @@ committed — not in the repo, so this reading cannot be re-run from it.
 
 ## 3. Design (all reused routines verified)
 
+> 🏗️ **WHERE IT LIVES NOW (2026-10-19, D-ROMSIZE step 1).** The design below is
+> the one built first, all in main. Since 2026-10-19 the silent presence probe
+> (steps 2-3 and the empty-file test) runs in the disk ROM: `hk_auto` in
+> [disk/kernel.asm](../kernel.asm), reached through the `H_FOPEN` hook with
+> `FOPEN_SEL_AUTO`, with the disk ROM's own FAT code and its own copy of the
+> name. Main's `autoexec_run` ([basic/cload.asm](../../basic/cload.asm)) keeps
+> step 1 (the diskless gate), asks the hook, and on "run it" does step 4
+> (`disk_prog_load` + `run_prog`) as before. The contract in §2 is unchanged.
+
 **Hook:** [basic/interp.asm:99](../../basic/interp.asm#L26), a single `call autoexec_run`
 inserted between `call show_title` and `jp repl`. By then `clear_vars`/`new_prog`/
 `init_filechan` have run and `init_ext_roms` has recorded `DISKSLOT_OK` — banner→run→`Ok`

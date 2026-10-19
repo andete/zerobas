@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
-* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
+* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -142,9 +142,7 @@ second one is the question a per-component map cannot answer.
 | `$EE2E` | 2 B | `basic` | `FWR_BUFLEN` | DISK-ONLY: bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
 | `$EE30` | 4 B | `basic` | `FWR_BYTES` | DISK-ONLY: total bytes written so far = final file size (4-byte LE) |  |
 | `$EE34` | 2 B | `basic` | `FWR_DIRSEC` | DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
-| `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
 | `$EE36` | 2 B | `basic` | `FWR_DIROFF` | DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
-| `$EE36` | 2 B | `disk` | `main_FWR_DIROFF` | main's FWR_DIROFF -- DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
 | `$EE4D` | 32 B | `basic` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE4D` | 32 B | `disk` | `FCH_RECLENS` | DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~ |  |
 | `$EE77` | 2 B | `basic` | `GP_SRC` | DISK-ONLY: pass cursor into FSECTOR_BUF (2) |  |

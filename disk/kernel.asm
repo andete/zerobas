@@ -4601,6 +4601,8 @@ hk_dpload:
                 jp      z,hk_frnd           ; S10.D: OPEN RANDOM
                 cp      FOPEN_SEL_INP
                 jp      z,hk_finp           ; S10.C: OPEN FOR INPUT (disk/fat.asm)
+                cp      FOPEN_SEL_AUTO
+                jp      z,hk_auto           ; AUTOEXEC.BAS's boot probe (2026-10-19)
                 cp      FOPEN_SEL_LOAD
                 ret     nz                  ; CF=0: not mine. Step 10 (OPEN) adds
                                             ; its arm right here.
@@ -4961,22 +4963,24 @@ hkn_a:
                 ld      (FN_RESUME),hl      ; the NEW name's text starts here
                 ; 🔴 D-COPYNAMEOPEN (2026-09-28): an OPEN old file is 64, and it
                 ; outranks the new name's 65 -- measured on the CF-3300
-                ; (scratchpad/killopen_probe.py n_oldin/n_oldout/n_both). It must run
-                ; HERE, before main_fat_find below: that call rewrites main's
-                ; FWR_DIRSEC/DIROFF, which are the live channel's own position and
-                ; exactly what hkk_open_check reads for it. The LOCAL mount primes
-                ; this ROM's read_sector; if it fails, main's mount reports it.
+                ; (scratchpad/killopen_probe.py n_oldin/n_oldout/n_both).
+                ; 🏗️ D-ROMSIZE step 1 (2026-10-19): MOUNT AND FIND ARE THIS ROM'S
+                ; OWN NOW, as KILL's and COPY's already were. This used to mount
+                ; locally for the open check and then mount AGAIN and find through
+                ; call-backs into main's fat_mount / fat_find shims (the sub-ROM's
+                ; FAT tenant), because the stamp below read the entry's position
+                ; from MAIN's FWR_DIRSEC / DIROFF. A failed local mount went on to
+                ; main's, which then reported it; now the one mount reports it --
+                ; the same DSKIO read, the same DISKOP_ERR mapping (one engine
+                ; body, basic/fat-prim-body.inc), one attempt instead of two. The
+                ; open check reads only the channel rows' FCB names (hoc_dout), so
+                ; its order against the find no longer matters either.
                 call    fat_mount
-                jr      c,hkn_nolocal
+                jr      c,hkn_io            ; no disk / bad BPB
                 call    hkk_open_check      ; CF=1: the OLD name is open
                 jr      c,hkn_open
-hkn_nolocal:
-                ld      ix,main_fat_mount
-                call    calbak
-                jr      c,hkn_io            ; no disk / bad BPB
                 ld      hl,DISK_FCB_NAME
-                ld      ix,main_fat_find
-                call    calbak              ; locate the OLD file
+                call    fat_find            ; locate the OLD file: FWR_DIRSEC / DIROFF
                 jr      c,hkn_nf
                 ld      hl,(FN_RESUME)
                 ld      ix,fname_expr
@@ -4991,18 +4995,20 @@ hkn_nolocal:
                 ; "N2.TXT"` with both present). Look the new name up with the same
                 ; fat_find -- but it records its hit in FWR_DIRSEC/DIROFF, which is
                 ; exactly where hkn_stamp is about to write, so the OLD file's
-                ; location is kept across it and put back.
-                ld      hl,(main_FWR_DIRSEC)
+                ; location is kept across it and put back. (This ROM's own cells
+                ; since 2026-10-19, BDOS_DIRSEC / BDOS_DIROFF; the two call-backs
+                ; above touch neither, as COPY_CLUS's note in the ABI says of
+                ; COPY's.)
+                ld      hl,(FWR_DIRSEC)
                 push    hl
-                ld      hl,(main_FWR_DIROFF)
+                ld      hl,(FWR_DIROFF)
                 push    hl
                 ld      hl,DISK_FCB_NAME
-                ld      ix,main_fat_find
-                call    calbak              ; CF clear = the new name is taken
+                call    fat_find            ; CF clear = the new name is taken
                 pop     hl                  ; (POP and LD (nn),HL touch no flag)
-                ld      (main_FWR_DIROFF),hl
+                ld      (FWR_DIROFF),hl
                 pop     hl
-                ld      (main_FWR_DIRSEC),hl
+                ld      (FWR_DIRSEC),hl
                 jr      nc,hkn_exists
                 call    hkn_stamp           ; LOCAL now -- no call-back, no sub-ROM
                 jr      c,hkn_io
@@ -5027,8 +5033,9 @@ hkn_noas:
                 ; name up FIRST -- `NAME "NOPE.TXT"` is 53 there, `NAME "HI.TXT"` 2
                 ; (scratchpad/noasto_run.out). This read 2 for both.
                 ; D-NOASTOFOLD: the same lookup COPY's no-TO path makes -- one
-                ; helper, LOCAL FAT (nothing is stamped on this path, so main's
-                ; entry-location record that NAME's rename needs is not wanted).
+                ; helper, LOCAL FAT. (Written when the rename path still found
+                ; through main's FAT for its entry-location record; since
+                ; 2026-10-19 both paths are this ROM's.)
                 ld      hl,DISK_FCB_NAME
                 call    hk_srcfind
                 jr      c,hkn_done          ; A = 2 (I/O) or 0 (missing -> 53)
@@ -5037,9 +5044,10 @@ hkn_syn:
 hkn_done:
                 ; 🔴 DISKOP_STATUS IS WRITTEN ONCE, HERE, AFTER EVERY CALL-BACK.
                 ; The first cut PRE-SET it to 2 and let the later paths overwrite
-                ; it -- which cannot work, because main's fat_mount and fat_find
-                ; are `ld a,DISKOP_SEL_* / jr fatprim_bounce` shims that marshal
-                ; their own disposition THROUGH THIS SAME CELL (basic/fat.asm).
+                ; it -- which could not work, because main's fat_mount and fat_find
+                ; were `ld a,DISKOP_SEL_* / jr fatprim_bounce` shims that marshalled
+                ; their own disposition THROUGH THIS SAME CELL (basic/fat.asm; both
+                ; gone 2026-10-19 -- the rule stands for the call-backs left).
                 ; So a failed mount wrote the FAT primitive's status over mine and
                 ; main decoded whatever that happened to be: measured, `NAME "A.BAS"
                 ; AS "B.BAS"` at an EMPTY DRIVE answered `Syntax error` instead of
@@ -5081,32 +5089,35 @@ hk_claim_status:
 ; write_sector take DE = logical sector, HL = buffer (basic/fat-prim-body.inc).
 ; Clean-room: our own FAT12 engine throughout; no reference ROM byte is read.
 ;
-;   in : main_FWR_DIRSEC / main_FWR_DIROFF -- where main's fat_find found the OLD
-;        entry; DISK_FCB_NAME -- the NEW 8.3 name
+;   in : FWR_DIRSEC / FWR_DIROFF -- where THIS ROM's fat_find found the OLD
+;        entry (hk_name); DISK_FCB_NAME -- the NEW 8.3 name
 ;   out: CF = 0 stamped, CF = 1 a DSKIO failure (DISKOP_ERR carries the code)
-; 🔴 THE `main_` PREFIX IS LOAD-BEARING. disk.rom declares FWR_DIRSEC/FWR_DIROFF
-; ITSELF, at $E552/$E554 -- its own FAT's scratch, a DIFFERENT address from
-; main's $E9F7/$E9F9. Spelling the bare name here would have assembled cleanly
-; and written a valid sector at the WRONG OFFSET, which is exactly the class that
-; cost step 12 a day (§6.6ao). The aliased import is generated, so it cannot
-; drift.
+; 🔴 THE BARE NAMES ARE RIGHT NOW, AND UNTIL 2026-10-19 THEY WOULD HAVE BEEN THE
+; BUG. disk.rom declares FWR_DIRSEC/FWR_DIROFF itself (BDOS_DIRSEC / BDOS_DIROFF,
+; disk/equates.inc) -- its own FAT's scratch, a DIFFERENT address from main's.
+; While hk_name found the old entry with MAIN's fat_find, this read the aliased
+; import main_FWR_DIRSEC / main_FWR_DIROFF, and the bare spelling would have
+; assembled cleanly and written a valid sector at the WRONG OFFSET -- the class
+; that cost step 12 a day (§6.6ao). hk_name's lookups are this ROM's own now, so
+; the position is in this ROM's cells, and the import is gone from the ABI
+; (tools/gen_resident_abi.py).
 ; 🔴 AND `FAT_DBUF`, NEVER `FSECTOR_BUF`: the sub-ROM body this replaces spells
 ; `FSECTOR_BUF`, which in THIS ROM is main's buffer at $E5C0 rather than ours at
 ; $E2A0. Copying it verbatim is the bug it would have been. (D-BUFMERGE made
 ; them one address on 2026-09-24; the neutral spelling stays right either way.)
 hkn_stamp:
-                ld      de,(main_FWR_DIRSEC)
+                ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_DBUF
                 call    read_sector
                 ret     c
                 ld      hl,FAT_DBUF
-                ld      de,(main_FWR_DIROFF)
+                ld      de,(FWR_DIROFF)
                 add     hl,de               ; HL -> the entry in the buffer
                 ex      de,hl               ; DE -> its 11-byte name field
                 ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name
                 ld      bc,11
                 ldir
-                ld      de,(main_FWR_DIRSEC)
+                ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_DBUF
                 jp      write_sector        ; tail-call: its CF is our answer
 
@@ -5244,6 +5255,46 @@ hk_srcfind:
                 call    fat_find
                 ld      a,0                 ; (flags kept) 0 = not found -> 53
                 ret
+
+; --- hk_auto: AUTOEXEC.BAS's silent presence probe (H_FOPEN, FOPEN_SEL_AUTO) ---
+; D-ROMSIZE step 1 (2026-10-19). Main's cold start (basic/cload.asm autoexec_run)
+; asks here, after the banner and before the REPL, whether to RUN AUTOEXEC.BAS;
+; it then loads it the way RUN "file" does (disk_prog_load -> hk_dpload) and
+; runs it. The probe was main's -- name staged from a main island, mount and
+; find through main's fat_mount / fat_find shims into the sub-ROM's FAT tenant
+; -- and is this ROM's own FAT now, where the CF-3300 keeps it. The contract is
+; disk/docs/autoexec-bas-spec.md §2: absent, empty (all four size bytes 0) or no
+; disk / a bad boot sector are SILENT; only a present, non-empty file runs.
+; DISK_FCB_NAME is left holding the name, which is what disk_prog_load opens.
+; No `ei`: the old probe ran DI too (a sub-ROM tenant behind CALSLT), and
+; cg_back gives main its EI back on the way out.
+;   out  DISKOP_STATUS = 0 run it / nonzero skip; CF = 1 (claimed)
+hk_auto:
+                ld      hl,hka_name
+                ld      de,DISK_FCB_NAME
+                push    de
+                ld      bc,11
+                ldir                        ; DISK_FCB_NAME = "AUTOEXECBAS"
+                pop     hl
+                call    hk_srcfind          ; CF: no disk / bad BPB / not found
+                ld      a,1                 ; (flags kept) 1 = skip, silently
+                jr      c,hka_done
+                ld      hl,FAT_FILESIZE
+                ld      a,(hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)
+                inc     hl
+                or      (hl)                ; A = 0 iff the file is empty
+                sub     1                   ; CF iff empty
+                sbc     a,a                 ; $FF = empty: skip; 0 = run it
+hka_done:
+                jp      hk_claim_status
+; The upcased 11-byte 8.3 dirent name, no padding needed: "AUTOEXEC" (8) + "BAS"
+; (3) -- disk/docs/autoexec-bas-spec.md §2. (Main's island copy, autoexec_name,
+; went with the probe.)
+hka_name:       db      "AUTOEXECBAS"
 
 
 

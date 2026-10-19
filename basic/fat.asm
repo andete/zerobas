@@ -104,7 +104,10 @@
 ; fat_count_free (DE, not Cy -- rides back over FAT_WRTMP2 instead of a new
 ; RAM cell, see that cell's sysvars.inc comment).
 
-; --- the UNIFORM shims (nine contiguous + fat_delete) --------------------
+; --- the UNIFORM shims (nine contiguous + fat_delete) -- ALL GONE -----------
+; 🗑️ 2026-10-19: the last two (fat_mount / fat_find) left with AUTOEXEC.BAS's
+; probe and NAME's lookup (note below the block); this header is the layer's
+; history. fatprim_bounce stays for its one non-shim caller (oo_hdr_tail).
 ; Every one of these was, until 2026-07-27, an independent 34-byte copy of the
 ; SAME body: load a selector, bounce to the tenant, marshal Cy+HL+A back. Only
 ; the DISKOP_SEL_* immediate differed. Thirteen copies (the twelve there were
@@ -140,21 +143,20 @@
 ; sub/basic-resident-abi.inc. docs/spec-deadcode-gate.md §11.
 
 
-; fat_mount — see basic/fat-prim-body.inc for the full contract.
-fat_mount:
-                ld      a,DISKOP_SEL_FAT_MOUNT
-                jr      fatprim_bounce
-
-; fat_find — see basic/fat-prim-body.inc for the full contract.
-fat_find:
-                ld      a,DISKOP_SEL_FAT_FIND
-                jr      fatprim_bounce
+; (D-ROMSIZE step 1, 2026-10-19: the fat_mount / fat_find shims are gone too --
+; 8 B, and with them the last uniform shim. Their two callers left main the same
+; day: autoexec_run's presence probe is disk.rom's hk_auto, and NAME's handler
+; (disk.rom hk_name), which called BACK into these two through the resident ABI
+; (main_fat_mount / main_fat_find), uses that ROM's own fat_mount / fat_find.
+; Both ran the sub-ROM tenant's rows 2 / 3, which have no sender now; they stay
+; in the table (sub/fatprim.asm): the numbering is published.
+; fatprim_bounce, below, keeps one caller: OPEN's header stamp (files.asm
+; oo_hdr_tail, row 23).)
 
 ; (S10.C, 2026-10-15: the fat_open and fat_read_file_sector shims are gone --
 ; 8 B. Their only main callers were fat_io_open / fat_io_getbyte, main's resident
 ; copy of basic/fatio-body.inc, which left with OPEN FOR INPUT (hk_finp in
-; disk.rom). Selectors 2/3 and their tenant rows stay: the numbering is published.
-; fat_find, above, now ends the block with `jr fatprim_bounce` in its place.)
+; disk.rom). Selectors 2/3 and their tenant rows stay: the numbering is published.)
 
 ; (D-FCBSHAPE S0, 2026-09-29: the fch_restage / fch_flush_active shims are gone.
 ; Their only callers were fch_load_ctx / fch_save_active, whose bodies moved into
@@ -177,7 +179,8 @@ fat_find:
 ; field.asm frp_overlay tail-call the old comment here named had already moved
 ; into the tenant with the fat_rand_* engine.)
 
-; fatprim_bounce — the ONE body the thirteen uniform shims share.
+; fatprim_bounce — the ONE body the thirteen uniform shims shared (none is left
+; since 2026-10-19; OPEN's header stamp, files.asm oo_hdr_tail, calls it direct).
 ;   in:  A = DISKOP_SEL_* selector; the primitive's own register inputs are
 ;        already marshalled in the DISKOP block by the caller's contract.
 ;   out: exactly the pre-collapse contract — Cy=1 + HL/A reloaded on a tenant

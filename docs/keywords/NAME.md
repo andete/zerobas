@@ -128,7 +128,8 @@ The one rung not yet proven is **RAM usage**.
   `verb_run` and the `H_NAME` hook.
 - Disk ROM: `hk_name` in [disk/kernel.asm](../../disk/kernel.asm) looks the
   old file up, checks the open files and the new name, and rewrites the
-  directory entry.
+  directory entry — all with the disk ROM's own FAT code (since 2026-10-19;
+  the two look-ups used to call back into the main ROM's).
 
 ## Related concepts
 

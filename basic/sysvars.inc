@@ -3186,6 +3186,9 @@ FCH_NUM         equ     $F73A   ; open channel's file number, 0 = none open (1)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EF64)
 FCH_MODE        equ     $F73B   ; open mode: 0=none, 1=INPUT, 2=OUTPUT (1)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EF65)
+                                ; 2026-10-19: OPEN's provisional mode ONLY --
+                                ; written at oo_setmode before every read; no
+                                ; mirror, no clears (files.asm oo_setmode)
 FCH_RDMODE      equ     $F6A6   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
                                 ; D-WSZERO S14g-a: FLKINP, the reference's "a READ or INPUT statement is being executed" -- the same job (was $EF66)
 ; The read-length counter overlays FILES_ENTIDX ($E0FC): FILES and a file read are
@@ -3779,6 +3782,8 @@ FOPEN_SEL_RAND  equ     $52         ; S10.D: OPEN ... AS #n with no FOR -- RANDO
 FOPEN_SEL_INP   equ     $49         ; S10.C: OPEN FOR INPUT (disk.rom hk_finp) --
                                     ; the file must exist: 53 after the crossing,
                                     ; as the CF-3300 raises it after $FE5D
+FOPEN_SEL_AUTO  equ     $58         ; 2026-10-19: AUTOEXEC.BAS's cold-start probe
+                                    ; (disk.rom hk_auto); status 0 = load and RUN it
 ; S10.C (2026-10-15): the INPUT side's byte cell. The CF-3300's main ROM enters
 ; $FE8A once per byte an INPUT# / LINE INPUT# / INPUT$ reads (TODO D-ROMSIZE,
 ; S10.C STEP C0: scratchpad/s10c_hook_run.out), and EOF / the numeric item / INPUT$
@@ -3930,8 +3935,9 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; fch_load_ctx and the sub-ROM's t_fch_load, whose last job was mirroring the
 ; FCB's LOF / LOC into FAT_FILESIZE / FWR_BYTES (LOF / LOC ask disk.rom now).
 ; FCH_STATESZ survives as the ROW's size -- the stride every ROM derives the row
-; from -- and the span's cells are main's own FAT scratch (autoexec_run, BLOAD's
-; tenant), shared, not per channel.
+; from -- and the span's cells are main's own FAT scratch (BLOAD's tenant; and
+; autoexec_run's probe until 2026-10-19, which runs on disk.rom's own FAT now),
+; shared, not per channel.
 FCH_STATE0      equ     FAT_CURCLUS         ; $EE06 — base of the per-channel state span
 FCH_STATESZ     equ     FWR_DIROFF+2-FCH_STATE0     ; $E9C9..$E9FA inclusive = 50 bytes
 FCH_CEIL        equ     15      ; repack: the MEASURED reference ceiling (§3, exactly

@@ -1898,96 +1898,11 @@ ef_havestep:
 ; The NAME and every call site survive; un-alias here for a distinct face.
 ef_over         equ     gosub_stk_over
 
-; --- ctl_reloc: move the live block out of the new frame's way --------------
-; D-SPMERGE cut 2 (docs/spec-basic-spmerge.md §9), reached by a TAIL jump from
-; ctl_alloc (basic/str-engine.asm), which has already set CSP to the frame's base.
-;   in:  HL = the base (== the new frontier), DE = the frame size
-;   out: HL = the base, CF = 0, and `ret` goes to ctl_alloc's OWN caller
-;
-; Once `SP` lives in this region a frame would otherwise land BELOW whatever return
-; addresses are in flight, and the next `ret` would pop the frame. So the block
-; between `SP` and the frontier moves down by `size` and the frame takes the space
-; it vacated: nothing that can `ret` is left above the frame.
-;
-; 🎯 THE BLOCK IS SMALL, AND THAT IS THE WHOLE ARGUMENT. Frames are only ever
-; pushed at a STATEMENT BOUNDARY, where the expression evaluator has already
-; unwound -- so this is the statement handler's own chain (gosub_push's `push bc`
-; / `push hl`, a return address or two), about ten bytes, and it does NOT grow as
-; expressions get deeper. §9.3 records that the first reading of this called it an
-; O(depth) copy of the whole stack, and that reading was wrong.
-;
-; 🔴 SITED IN PAGE 1, NOT BESIDE ctl_alloc. The low region had 4 B free and this is
-; ~40; page 1 had 48. The two regions share one budget but have SEPARATE ceilings,
-; and the split costs one `jp` because the jump is a TAIL -- a `call` here would
-; put a return address on the very stack this routine relocates.
-ctl_reloc:
-                add     hl,de               ; HL = the OLD frontier
-                ld      b,h
-                ld      c,l
-                ld      hl,0
-                add     hl,sp               ; HL = SP
-                ld      a,c
-                sub     l
-                ld      c,a
-                ld      a,b
-                sbc     a,h
-                ld      b,a                 ; BC = frontier - SP = the block length
-                jr      c,ctr_done          ; 🔴 SP is ABOVE the frontier: the machine
-                                            ; stack and the pool are still disjoint, so
-                                            ; there is nothing between them to move.
-                                            ; TRUE FOR EVERY CALL until the `SP`
-                                            ; relocation lands (§9.4 step 3) -- which is
-                                            ; what makes this step behaviour-identical,
-                                            ; and why it needs a unit test rather than
-                                            ; the battery to be witnessed at all.
-                ; 🎯 NO EMPTY-BLOCK TEST, AND IT IS NOT AN OMISSION. `ldir` with BC=0
-                ; copies 65536 bytes, so a zero length would be fatal -- but it cannot
-                ; occur: ctl_alloc is always CALLED, so its caller's return address is
-                ; already on the stack BELOW the frontier, which makes the block at
-                ; least two bytes. The four bytes that test went to the anchor fix.
-                or      a
-                sbc     hl,de               ; HL = SP - size = where the block goes
-                di                          ; 🔴 SP MOVES BEFORE THE COPY, so an
-                                            ; interrupt landing between the two would
-                                            ; push INTO the block being copied. Closed
-                                            ; here, now that the branch is reachable.
-                                            ; A bare `ei` below is correct because every
-                                            ; ctl_alloc caller runs with interrupts ON:
-                                            ; gosub_push and the FOR push are statement
-                                            ; level, and the trap record runs from
-                                            ; check_traps, which rp_trapchk calls from
-                                            ; the run loop -- the ISR itself only sets
-                                            ; TRAPPEND and never allocates.
-                ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY.
-                ; 🔴 SAVSTK POINTS INTO THE BLOCK, SO IT MOVES WITH IT (§3 hazard 3).
-                ; It is a saved SP -- the depth an abort or RESUME unwinds to, and the
-                ; word AT it is the return address the abort's tail `ret` consumes. The
-                ; block slides down by `size`, so an unadjusted SAVSTK addresses the
-                ; byte that USED to be there and the `ret` takes a wrong word.
-                ; MEASURED before this line existed: an untrapped error at top level
-                ; printed correctly, and the same error inside a GOSUB -- one live
-                ; frame, so one relocation -- REBOOTED the machine. That pair is what
-                ; separates "the abort path is broken" from "the anchor went stale",
-                ; and only the second is true.
-                ld      hl,(SAVSTK)
-                sbc     hl,de               ; CF is already clear -- the `sbc` that made
-                                            ; the destination cannot borrow (SP > size)
-                ld      (SAVSTK),hl
-                ld      hl,0
-                add     hl,sp               ; HL = the destination again `ld sp,de`
-                                            ; is not a Z80 instruction (HL/IX/IY only),
-                                            ; so the destination has to be in HL here.
-                                            ; `ldir` never touches SP; the window this
-                                            ; opens is §9's DI note, for step 3.
-                ex      de,hl               ; DE = destination
-                add     hl,de               ; HL = source (destination + size == SP)
-                ldir                        ; forward copy; destination < source, so the
-                                            ; overlap runs the safe way
-                ei
-ctr_done:
-                ld      hl,(CSP)            ; the frame's base
-                or      a                   ; CF = 0
-                ret
+; --- ctl_reloc: MOVED to basic/cload.asm (after autoexec_run), 2026-10-19 -------
+; 📌 A PIN REFILL: its 42 B, with fch_modes_ptr's 9, take back the 51 B that
+; AUTOEXEC.BAS's probe leaving for disk.rom, NAME's fat_mount / fat_find shims
+; and FCH_MODE's dead stores freed in front of the $6CF3 pin. Its header and
+; every note travelled with it; still page 1, still a TAIL jump from ctl_alloc.
 
 ; --- ex_next: NEXT [<var>] ---------------------------------------------------
 ; Step the loop variable of the matching FOR frame, test against the limit, and
@@ -2847,56 +2762,10 @@ eos_store:
 ; call site survive; un-alias here for a distinct face and nothing moves.
 trap_syntax     equ     pl_syntax   ; ERR 2 (malformed trap statement)
 
-; --- onoff_decode: the shared ON | OFF | STOP sub-keyword decode -------------
-; Six statements in this tree decode the same three sub-keywords into the same
-; three ZTRAP states, and each one had spelled it out: `STOP ON|OFF|STOP`,
-; `INTERVAL ...`, `STRIG(n) ...`, `KEY(n) ...`, `SPRITE ...`, and now `MOTOR`.
-; ~19-23 B apiece for a decode that is character-for-character the same.
-;
-; The share was proposed as a DEFERRED funding lever (spec-traps-t5-interval
-; §4.3, and again as spec-basic-missing-class §6.3) and taken instead as the
-; FIRST step of the MISSING slice (S-MC-4, overridden). The reason is worth
-; keeping: a reserve lever only ever gets pulled mid-overrun, when the budget is
-; already spent and the only acceptable outcome is "it fits" -- which is the
-; worst condition under which to restructure six live call sites.
-;
-;   IN:  A  = the token byte under the cursor (callers have already skipped
-;             spaces; HL is left pointing AT the token, not past it -- every
-;             caller consumes it itself, because each has its own guard-the-
-;             cursor dance around set_state).
-;   OUT: CF=1 -> matched; A = ZTS_OFF(0) / ZTS_ON(1) / ZTS_STOP(2), which is the
-;                set_state argument directly (sysvars.inc: the ZTS_ values ARE
-;                0/1/2, so there is no second mapping step at any call site).
-;        CF=0 -> not one of the three; A = the original token, so a caller can
-;                still test it (ex_stop's bare-`STOP` path needs exactly that).
-;   Clobbers A, B, F. **Preserves HL and DE** -- non-negotiable: HL is the token
-;   cursor at every site, and ex_strig_stmt/ex_key_stmt hold the ZTRAP entry
-;   pointer in DE across this call.
-;
-; ⚠️ It returns "which one", NOT "is this allowed". Acceptance stays with the
-; caller, which is what lets a 2-way site share a 3-way decoder: `MOTOR STOP` is
-; a Syntax error (measured, spec §3.5) and that is MOTOR's own one-line `cp
-; ZTS_STOP` -- not a variant of this routine. `SCF` preserves Z on the Z80, which
-; is what lets each arm be cp/scf/ld/ret-z with no branch.
-onoff_decode:
-                ld      b,a                 ; keep the token: A is about to be the answer
-                cp      OFF_TOKEN
-                ld      a,ZTS_OFF
-                scf
-                ret     z
-                ld      a,b
-                cp      ON_TOKEN
-                ld      a,ZTS_ON
-                scf
-                ret     z
-                ld      a,b
-                cp      STOP_TOKEN
-                ld      a,ZTS_STOP
-                scf
-                ret     z
-                ld      a,b                 ; no match: hand the token back...
-                or      a                   ; ...with CF=0
-                ret
+; --- onoff_decode: MOVED to basic/files.asm (where fch_modes_ptr was), 2026-10-19
+; 📌 A PIN REFILL: its 24 B take back what fch_modes_ptr's move and FCH_MODE's
+; dead stores / re-reads freed in front of the $72D4 pin. Header and contract
+; travelled with it.
 
 ; --- trap_line_link: resolve an OPTIONAL `$0E,lo,hi` line reference ----------
 ; The shared handler-line resolver for the whole `ON <event> GOSUB` family: one

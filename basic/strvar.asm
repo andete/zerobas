@@ -509,10 +509,8 @@ sid_cas:
                 call    arl_set_src         ; A = CAS_IN_MODE -> cas_in_getbyte
                 jr      sid_read
 sid_ok:
-                push    af                  ; the mode -- fch_select does not preserve it
-                ld      a,e
-                call    fch_select          ; make channel f live; FCH_MODE = its mode
-                pop     af
+                ld      a,e                 ; (2026-10-19: no push / pop af round it --
+                call    fch_select          ; it hands back the mode, the 1 we had)
                 call    arl_set_src         ; A = 1 -> fat_io_seqbyte (S10.C: disk.rom's
                                             ; H_CHIN, raw by the FCH_RDMODE 2 below)
                 ld      a,2                 ; D-SEQEOF: INPUT$ reads RAW -- the CR-LF

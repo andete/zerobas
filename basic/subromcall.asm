@@ -380,6 +380,5 @@ sub_int_template_end:
 ; room, and a `call` here is a byte cheaper than the inline pair at each site.
 fch_park:
                 xor     a
-                jp      fch_select          ; FCH_ACTIVE := 0 (and FCH_MODE := FCH_MODES[0],
-                                            ; harmless: every FCH_MODE reader outside
-                                            ; OPEN runs fch_select first)
+                jp      fch_select          ; FCH_ACTIVE := 0 (A := FCH_MODES[0],
+                                            ; which no caller reads)

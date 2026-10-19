@@ -2586,7 +2586,9 @@ sub-ROM `t_fch_load` mirroring the FCB's LOF / LOC into `FAT_FILESIZE` /
 `FWR_BYTES`, and LOF / LOC now ask disk.rom (`H_CHIN` ops 6 / 8). So
 `fch_select(ch)` is `FCH_ACTIVE := ch` plus the `FCH_MODE` mirror, `fch_claim`,
 `fch_save_active`, `fch_load_ctx` and `chan_gate`'s restore are deleted, and the
-paragraphs below are the design as it stood before S10.B.
+paragraphs below are the design as it stood before S10.B. (2026-10-19: the
+mirror went too -- `fch_select` hands the mode back in A, and `FCH_MODE` is
+OPEN's provisional cell only.)
 The per-channel state span `FCH_STATE0..+FCH_STATESZ` (`$E9C9..$E9FA`, 50 bytes)
 covers every value that must persist between statements for an open channel — the
 read iterator, file meta (`FAT_FILESIZE` for LOF), the read stream, and the whole

@@ -116,11 +116,10 @@ ex_print:
                 ; INPUT# from a tape OUTPUT channel already said 52 on both.
                 jp      z,err_badfnum_raise ; (never fch_select it: no fat ctx exists)
                 ; --- disk file channel (unchanged) ---
-                push    hl                  ; guard text cursor (fch_select uses LDIR)
+                push    hl                  ; guard text cursor
                 ld      a,e
-                call    fch_select          ; make channel e live; FCH_MODE = its mode
-                pop     hl
-                ld      a,(FCH_MODE)
+                call    fch_select          ; make channel e live; A = its mode
+                pop     hl                  ; (2026-10-19: no FCH_MODE re-read)
                 ; 🔴 D-CHDIR (2026-10-06): the CF-3300 RAISES here, trappably --
                 ; PRINT# to a channel open FOR INPUT is 52, to a RANDOM one 61
                 ; (scratchpad/chdir_run.out). load_error printed and went on, so

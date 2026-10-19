@@ -300,10 +300,8 @@ evmc_total_tab:
                 ; positive, consumed as mant14 when negative) -- nothing here
                 ; interprets it, so RND collapses with the other four.
                 db      RND_TOKEN, (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_RND) & $FF
-; --- autoexec_name: the upcased 11-byte 8.3 name we probe for on cold start ---
-; "AUTOEXEC" (8) + "BAS" (3) = exactly 11 non-space characters -- no padding
-; needed (see disk/docs/autoexec-bas-spec.md §3 point 2).
-autoexec_name:  db      "AUTOEXECBAS"
+; (autoexec_name, the 11-byte "AUTOEXECBAS", left this island 2026-10-19: the
+; AUTOEXEC.BAS probe is disk.rom's hk_auto now, which stages its own copy.)
 fmt_name:       db      "FORMAT"
 prompt_text:
                 db      "ZB",13,10,0

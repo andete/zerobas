@@ -207,6 +207,9 @@ FOPEN_SEL_MAKE  equ     $4D     ; S10.B (2026-10-06): OPEN FOR OUTPUT -- create
 FOPEN_SEL_APND  equ     $50     ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)
 FOPEN_SEL_RAND  equ     $52     ; S10.D (2026-10-15): OPEN ... AS #n, RANDOM (hk_frnd)
 FOPEN_SEL_INP   equ     $49     ; S10.C (2026-10-15): OPEN FOR INPUT (hk_finp)
+FOPEN_SEL_AUTO  equ     $58     ; D-ROMSIZE step 1 (2026-10-19): AUTOEXEC.BAS's boot
+                                ; probe (hk_auto) -- stage the name, mount, find,
+                                ; test the size; main loads and RUNs on status 0
 H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC
                                 ; (hk_chin) -- A = 0 / 2 / 4; out A = the byte,
                                 ; CF = the end. The CF-3300 enters $FE8A once per

@@ -3591,6 +3591,24 @@ which `nameord-acceptance` exists to pin. So the mount and find stay as
 call-backs, main's `$E9F7` stays the hand-off, and nothing new has to survive
 anything. **Read that as the remaining work, not as a solved problem.**
 
+✅ **DONE 2026-10-19 (D-ROMSIZE step 1), AND NOT BY THE REORDERING.** `hk_name`
+mounts and finds with `disk.rom`'s own `fat_mount` / `fat_find` and the stamp
+reads `disk.rom`'s own `FWR_DIRSEC` / `FWR_DIROFF` (`BDOS_DIRSEC` /
+`BDOS_DIROFF`, `$E91C` / `$E91E`); `main_fat_mount`, `main_fat_find`,
+`main_FWR_DIRSEC` and `main_FWR_DIROFF` left the generated ABI, and main's two
+FAT shims went with their last other caller (AUTOEXEC.BAS's probe, now
+`hk_auto`). The ORDER of evaluation and errors is unchanged, so
+`nameord-acceptance` has nothing new to pin. §6.6av's blocker was an ADDRESS:
+`$E552` sat in main's `GFX_D*` block. D-FATFLOOR moved this ROM's FAT cells to
+`$E86A..$E9AB`, and `docs/ram-map.md` shows no main cell there, so the position
+survives the `fname_expr` / `parse_disk_fcb` call-backs for the NEW name the way
+`COPY`'s source state already does. ⚠️ What that rests on, checked by reading
+rather than measured: of the expression-level disk paths main can run inside
+that call-back (`INPUT$`, `EOF`, `LOF`, `LOC`, `DSKF`, `DSKI$`), none calls
+`fat_find` or writes `FWR_DIRSEC` / `FWR_DIROFF` (`din_fill`'s `k47b2_seek`
+mounts only when the geometry is unset; `hk_dskf` mounts and counts). A
+`USR` routine can of course write anything.
+
 🔬 **VERIFIED BY NAME:** `diskbasic-acceptance` 34/34 with its `NAME` row PASS,
 `nameord-acceptance` and `namegate-acceptance` green, and `nodiskerr-acceptance`
 13 rows / 0 divergences — including the face that broke here before,
@@ -4210,6 +4228,16 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      int, as before. TODO.md D-ROMSIZE carries the record. LEFT: main's own FAT
      scratch (the `FCH_STATE0` span) serves BLOAD / BSAVE's tenant and
      `autoexec_run`, which are not channels -- the BSAVE-to-disk item's.
+     🟡 **2026-10-19, the next pieces (drafted in a worktree, build / pins /
+     unit tests only):** AUTOEXEC.BAS's boot probe is `disk.rom`'s `hk_auto`
+     (H_FOPEN, `FOPEN_SEL_AUTO` = `$58`: stage the name, mount, find, the size
+     test; main keeps the gate and the load + RUN), so `autoexec_run` no longer
+     touches main's FAT scratch; `NAME` finds with `disk.rom`'s own FAT (§6.6aw's
+     ✅ note); main's `fat_mount` / `fat_find` shims and fatprim rows 2 / 3 are
+     retired. `fch_select` is now `FCH_ACTIVE := ch`, A = the mode: its
+     `FCH_MODE` store and the three re-reads after it went, with OPEN's failure
+     clears and CLOSE's / cold start's -- `FCH_MODE` is OPEN's provisional cell
+     only, written before every read.
 - S10.A is the prerequisite and can be built and gated on its own, with no
   BASIC-visible change.
 - 🔴 **AND THE "SINGLE-FILE" PREMISE ABOVE WAS HALF WRONG, CORRECTED THE SAME

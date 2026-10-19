@@ -495,9 +495,9 @@ __MEAS_LOW_END:
 ; page. The genuine low region is the include block near the top of this file,
 ; above __MEAS_LOW_END, which is where mxf_require_end went instead.
 oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
-                xor     a                   ; -- same FCH_MODE clear oo_fail_syn does
-                ld      (FCH_MODE),a        ; (the provisional mode must not survive
-                                            ; a failed OPEN)
+                                            ; (2026-10-19: its FCH_MODE clear is gone,
+                                            ; as oo_fail_syn's is -- only OPEN reads
+                                            ; the cell, after writing it)
 err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong way (52)
                 ld      a,52
                 jp      raise_error
