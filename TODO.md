@@ -3965,16 +3965,6 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — check every reader (all ROMs, tests, tools/ram_map.py), then
       reclaim it or re-site it under the RAM map's rules.
 
-- [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
-      THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
-      🎚️ TIER 4 — RAM usage: FRE(0) inside `X=...FRE(0)...` with X new reads 11 B more
-      here (a double's whole entry); VARPTR order and the variable chain's order are
-      the same fact seen elsewhere.
-      🤖 **AUTONOMOUS** — measure first: which statements create their target first
-      on the reference (LET, FOR's variable, INPUT / READ targets, an array element's
-      array, a string target -- its entry, not its body), and whether `A=B` with both
-      new creates A before B ([`freabs_probe.py`](scratchpad/freabs_probe.py) is the
-      template: absolute readings, boot per row).
       🎚️ TIER 4 — RAM usage: Joost's priority 1 is the SAME free RAM on the diskless
       machine (rulings table, 2026-10-16), and "same" is equality.
       🤖 AUTONOMOUS — measure where the 14 B come from first.
@@ -4077,6 +4067,30 @@ item — do **one item per session** to keep context lean.
       argument), and the statement bases of IF / ON / PRINT # / INPUT / LOCATE /
       PSET-style argument lists.
 
+- [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
+      THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
+      🎚️ TIER 4 — RAM usage: FRE(0) inside `X=...FRE(0)...` with X new reads 11 B more
+      here (a double's whole entry); VARPTR order and the variable chain's order are
+      the same fact seen elsewhere.
+      🤖 **AUTONOMOUS** — measure first: which statements create their target first
+      on the reference (LET, FOR's variable, INPUT / READ targets, an array element's
+      array, a string target -- its entry, not its body), and whether `A=B` with both
+      new creates A before B ([`freabs_probe.py`](scratchpad/freabs_probe.py) is the
+      template: absolute readings, boot per row).
+      📏 **MEASURED 2026-10-19** ([`letnew_probe.py`](scratchpad/letnew_probe.py) ->
+      [`letnew_run.out`](scratchpad/letnew_run.out), absolute FRE(0) inside the line,
+      zerobas minus VG-8020, boot per row): a NEW scalar target is already created on
+      the VG-8020 when the right side runs -- `X=` 11, `X%=` 5, `X!=` 7, `X$=` 6 (the
+      entry), `FOR I=` 11 -- and every `.pre` twin (target existing) reads 0. An
+      auto-dimensioned array target `X(1)=` reads 0: the array is made at the same
+      moment on both. Reading an undefined variable creates NOTHING on either machine
+      (`A=B:...VARPTR(B)` is Illegal function call on both), so only the TARGET's time
+      matters. 🔮 the scalar rows: HIT; "the array row ~95": MISS (0). ➡️ Drafting:
+      create a new scalar target before the right side, ONE lookup reused for the
+      store (LET is the hottest statement -- the existing-target path must not slow).
+      🔧 2026-10-19: this item's ten lines had been filed INSIDE D-FREPLUS14's block
+      (2026-10-17), which left that block's own tier / marker / history under this
+      heading; moved here, below it.
 - [x] 💰 **D-JRSLICE3 — `jp` -> `jr` BEHIND THE LAST PINS (2026-10-17)** — ✅ main low
       +2 B, page 1 +1 B (`make basic-reloc`).
       🎚️ BUDGET — route 3 of the 2026-10-17 free-space review Joost asked for
@@ -11290,7 +11304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36823 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36837 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11456,7 +11470,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16318 (T-6FE392)8 (T-529ABE)` from `TODO.md:29112 (T-529ABE)`: a
+      `TODO.md:16332 (T-6FE392)8 (T-529ABE)` from `TODO.md:29126 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17165,7 +17179,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29112 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29126 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
