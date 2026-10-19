@@ -5567,6 +5567,16 @@ item — do **one item per session** to keep context lean.
       defect as such; matching the VG-8020 needs its slot shape. The Panasonic
       FS-A1 (RAM 3-0, zerobas's own shape) was not measured: it boots into its
       firmware menu, not BASIC.
+      📏 **ELITE AND SPACE SHUTTLE RUN ON THE NMS 8250 (2026-10-18), so they are NOT
+      this class** (Joost: "I would be surprised if Elite didn't work"): by T300 both
+      have A8 = $FF with $FFFF reading $55 (the register holds $AA: every page on 3-2,
+      the RAM) and a steady stack (Elite $A7B1-$A7C5, Space Shuttle $9E59-$9E5F) in game
+      code. On zerobas they also keep the register on RAM (the note above); their
+      differences are elsewhere (Elite: a steady font-sized VRAM gap). The class is
+      BMX Simulator and Chuckie Egg. 🔮 Joost's "Elite works": HIT. The FS-A1 in
+      openMSX is the JAPANESE model with Desk Pac; no single key (held through boot or
+      pressed at the menu: ESC, SPACE, RETURN, F1-F5, STOP, SELECT, SHIFT, CTRL,
+      GRAPH) nor cursor + RETURN / SPACE reached BASIC within 20 s -- not pursued.
       📏 **Chuckie Egg is the same class** (2026-10-17, the slot state at each dump
       of ten divergent titles; on zerobas $FFFF reads the inverted register): its
       sub-slot register goes $8B / $B2 from T180 -- pages 2 and 3 off RAM -- and it
@@ -11190,7 +11200,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36723 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36733 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11356,7 +11366,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16218 (T-6FE392)8 (T-529ABE)` from `TODO.md:29012 (T-529ABE)`: a
+      `TODO.md:16228 (T-6FE392)8 (T-529ABE)` from `TODO.md:29022 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17065,7 +17075,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
