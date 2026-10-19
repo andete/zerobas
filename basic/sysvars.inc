@@ -1504,9 +1504,12 @@ BL_STAT         equ     $F69D   ; 1 B: tenant -> main. 0 = loaded, 1 = `load -- 
                                 ; through this cell. Named here and beside both
                                 ; arms in sub/bload.asm.
 ; --- SAVE-family tenant marshalling (docs/decision-fund-time-and-t5.md) ------
-; BLOAD's mirror: the SAVE / BSAVE / CSAVE WRITE ENGINES live in a sub-ROM PAGE-1
-; tenant (sub/save.asm) beside fatprim, so the fat_io_* write cursor they drive
-; is an in-page call instead of a cross-slot round trip. Unlike BLOAD, the parse
+; BLOAD's mirror: the SAVE / BSAVE / CSAVE WRITE ENGINES lived in a sub-ROM PAGE-1
+; tenant (sub/save.asm) beside fatprim, so the fat_io_* write cursor they drove
+; was an in-page call instead of a cross-slot round trip. 🏗️ The DISK engines left
+; it: tokenised SAVE for disk.rom in step 12 (D-SAVEPORT), BSAVE on 2026-10-19
+; (D-ROMSIZE step 1, H_FOPEN selector FOPEN_SEL_BSAVE) -- the tenant runs the two
+; TAPE engines only, and their selectors kept their values. Unlike BLOAD, the parse
 ; stays RESIDENT -- it calls `eval`, which is main page 1 and switched out while
 ; a page-1 tenant runs -- so the tenant needs no cursor: by the time it is called
 ; every argument is already in its RAM home (DISK_FCB_NAME / TSV_NAME / CURPTR /
@@ -1521,9 +1524,10 @@ BL_STAT         equ     $F69D   ; 1 B: tenant -> main. 0 = loaded, 1 = `load -- 
 BL_OFS          equ     $F69F   ; 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's)
 SV_OP           equ     $F7A7   ; 1 B: main -> tenant, SV_OP_* engine selector
 SV_STAT         equ     $F7A8   ; 1 B: tenant -> main, 0 = written, 1 = load_error
-SV_OP_BSV_DISK  equ     0       ; BSAVE to disk   (bsv_open ..  bsv_fin)
+; (0 SV_OP_BSV_DISK and 2 SV_OP_SAV_DISK are gone: disk.rom writes both files,
+; through H_FOPEN -- FOPEN_SEL_BSAVE / FOPEN_SEL_SAVE. The two tape values stay
+; put, so a knife keyed on their `ld a,n` bytes still finds them.)
 SV_OP_BSV_CAS   equ     1       ; BSAVE to tape   (bsv_cas_open .. bsv_cas_fin)
-SV_OP_SAV_DISK  equ     2       ; SAVE to disk, tokenised (sav_disk_write .. sav_fin)
 SV_OP_SAV_CAS   equ     3       ; SAVE"CAS:" / CSAVE, tokenised (tape_save_basic ..)
 ; --- TRON/TROFF (docs/spec-basic-missing-class.md §3.4) ---------------------
 ; 1 B in the free $E226..$E23F window (between SV_STAT and the retired STRTAB
@@ -3405,6 +3409,9 @@ DISKOP_HL       equ     $FB36   ; tenant -> main: the primitive's real HL output
 ; 15-routine "danger list" + the plain Cy-only primitives), in basic/fat.asm's
 ; original routine order. Never renumber (both basic/fat.asm's shims and
 ; sub/fatprim.asm's dispatch table key off these numerically).
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): 0..14 and 18 are ALL RETIRED -- no shim in
+; main and no sender anywhere (disk.rom and sub2 never call the tenant); their
+; rows are `jp fp_stash_ok`. The equates stay so the numbering reads as it was.
 DISKOP_SEL_READ_SECTOR          equ 0
 DISKOP_SEL_WRITE_SECTOR         equ 1
 DISKOP_SEL_FAT_MOUNT            equ 2
@@ -3428,7 +3435,8 @@ DISKOP_SEL_FAT_DELETE           equ 14
 ; DISKOP_SEL_FIA_WALKED (docs/spec-eviction-g7-space.md, carve 2): fat_io_append's
 ; "chain already walked" tail -- pure FAT_*/FWR_*/FSECTOR_BUF arithmetic, evicted
 ; whole to free page-1 tail for G7's sprite statements.
-DISKOP_SEL_FIA_WALKED           equ 18
+DISKOP_SEL_FIA_WALKED           equ 18  ; RETIRED 2026-10-19: no sender since S10.B moved
+                                        ; APPEND (hk_fapp); sub/fiawalk.asm deleted
 ; DISKOP_SEL_FCH_RESTAGE (D-FCH S-FCH-1, docs/spec-basic-filechan-alloc.md §3.1):
 ; re-read into FSECTOR_BUF whatever the just-loaded channel had staged there, so
 ; the per-channel 512-byte save copy can go away. Sited in the SUB-ROM because
@@ -3784,6 +3792,9 @@ FOPEN_SEL_INP   equ     $49         ; S10.C: OPEN FOR INPUT (disk.rom hk_finp) -
                                     ; as the CF-3300 raises it after $FE5D
 FOPEN_SEL_AUTO  equ     $58         ; 2026-10-19: AUTOEXEC.BAS's cold-start probe
                                     ; (disk.rom hk_auto); status 0 = load and RUN it
+FOPEN_SEL_BSAVE equ     $42         ; 2026-10-19: BSAVE to disk (disk.rom
+                                    ; hk_dpbsave) -- the header + data; the
+                                    ; CF-3300's BSAVE enters $FE5D exactly once
 ; S10.C (2026-10-15): the INPUT side's byte cell. The CF-3300's main ROM enters
 ; $FE8A once per byte an INPUT# / LINE INPUT# / INPUT$ reads (TODO D-ROMSIZE,
 ; S10.C STEP C0: scratchpad/s10c_hook_run.out), and EOF / the numeric item / INPUT$
@@ -5419,7 +5430,10 @@ SUBROM_IDX_SCANSTMT  equ 11     ; scan_stmt_end tenant (error-handling S2b
                                 ; §3A: walks only tokenised program RAM text,
                                 ; calls nothing in main). Main-ROM stub is
                                 ; basic/interp.asm `ex_resume`'s res_next arm.
-SUBROM_IDX_FATPRIM   equ 12     ; fatprim_tenant (sub/fatprim.asm): the FAT12
+SUBROM_IDX_FATPRIM   equ 12     ; fatprim_tenant (sub/fatprim.asm). 🗑️ 2026-10-19:
+                                ; ONE live row, 23 (OPEN's FCB header stamp, via
+                                ; fatprim_bounce); every primitive row is retired
+                                ; and every resident shim is gone. Was: the FAT12
                                 ; primitive/sector layer (docs/spec-evict-
                                 ; diskfile-cluster.md §11, Phase 1) -- a SINGLE
                                 ; selector-dispatched tenant (one index for
@@ -5576,9 +5590,11 @@ SUBROM_IDX_BLOAD     equ 20     ; bload_tenant (sub/bload.asm): the whole BLOAD 
                                 ; the carve possible at all. Input BL_PTR, output BL_STAT;
                                 ; IX = SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD. The ,R
                                 ; handoff stays RESIDENT (basic/bload-body.inc).
-SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): BLOAD's mirror -- the
-                                ; SAVE / BSAVE / CSAVE WRITE ENGINES (four SV_OP_*
-                                ; selectors), evicted from main page 1 to fund `TIME`
+SUBROM_IDX_SAVE      equ 21     ; save_tenant (sub/save.asm): since 2026-10-19 the two
+                                ; TAPE write engines only (SV_OP_BSV_CAS / _SAV_CAS);
+                                ; BSAVE / SAVE to disk are disk.rom's. Was: BLOAD's
+                                ; mirror -- the SAVE / BSAVE / CSAVE WRITE ENGINES
+                                ; (four SV_OP_* selectors), evicted from main page 1 to fund `TIME`
                                 ; and interrupt-traps T5 together (docs/decision-fund-
                                 ; time-and-t5.md, D-FUND-1). PAGE 1 beside fatprim for
                                 ; the same reason BLOAD is: the fat_io_* WRITE cursor

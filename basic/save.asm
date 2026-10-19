@@ -55,6 +55,12 @@
 ; tape/tape.asm (our own code). No disassembly. See basic/PROVENANCE.md.
 
 ; ===========================================================================
+; 🏗️ 2026-10-19 (D-ROMSIZE step 1): ONLY THE TWO TAPE ENGINES ARE STILL THE
+; SUB-ROM'S. Tokenised SAVE to disk left the tenant for disk.rom in step 12
+; (D-SAVEPORT, FOPEN_SEL_SAVE) and BSAVE to disk followed (FOPEN_SEL_BSAVE ->
+; disk.rom hk_dpbsave): both cross H_FOPEN through one tail (sv_cross). The
+; carve's account below is the history of all four; its parse argument holds
+; unchanged for the disk ones -- they cross with every value in RAM.
 ; THE CARVE (docs/decision-fund-time-and-t5.md, D-FUND-1). The four WRITE
 ; ENGINES below — BSAVE/disk, BSAVE/tape, SAVE/disk and the shared cassette
 ; tokenised writer — live in a sub-ROM PAGE-1 tenant (sub/save.asm,
@@ -160,23 +166,36 @@ bsv_is_disk:
 bsv_set_exec:
                 ld      (EXECPTR),de
 bsv_open:
-                ; D-SAVECOLON: `jp sv_tenant` returned from the HANDLER, which ends
+                ; 🔴 2026-10-19: THE PARSE COMPLETES BEFORE THE OPEN. Junk after the
+                ; arguments (`BSAVE "X",&HD000,&HD0FF 5`, and `,SX` -- which
+                ; bsave_opt4 already refused) is a Syntax error with NO file
+                ; written on the CF-3300 (scratchpad/bsave_hook_run.out). This
+                ; read "junk now meets exec_stmt: ERR 2, but AFTER the write -- the
+                ; reference's order for BSAVE is unmeasured", and it was true:
+                ; the file was written, THEN the line raised 2. Now the end of the
+                ; statement is required first, as SAVE does (sav_is_disk). 3 B:
+                ; MAXFILES's own end test (basic/main.asm), whose `dec hl` suits
+                ; every exit of bsave_opt4.
+                call    mxf_require_end     ; HL on the 0 / ':'; else ERR 2 raised
+                ; D-SAVECOLON: `jp sv_tenant` returned from the HANDLER, which ended
                 ; the line -- `BSAVE "X.BIN",&HC000,&HC010:PRINT 1` never printed
-                ; (the CF-3300 does; scratchpad/colon_probe.py). HL is the cursor
-                ; past the last argument; sv_tenant raises on failure (SP reset),
-                ; so only the success path comes back to the pop.
-                ; ⚠️ Junk after the arguments now meets exec_stmt: ERR 2, but AFTER
-                ; the write -- the reference's order for BSAVE is unmeasured.
+                ; (the CF-3300 does; scratchpad/colon_probe.py). The cursor rides
+                ; the stack to the shared tail's pop.
                 push    hl
-                ; 🔴 D-ASAVECHAN (2026-10-03): PARK THE LIVE CHANNEL FIRST. The tenant
-                ; streams through the SAME engine globals an OUTPUT channel lives in,
-                ; so an open `PRINT#1` file lost every byte and its bytes landed in
-                ; this file (scratchpad/asavechan_probe.py). fch_park saves the
-                ; live channel and leaves the globals to nobody.
+                ; 🔴 D-ASAVECHAN (2026-10-03): PARK THE LIVE CHANNEL FIRST. The
+                ; sub-ROM tenant streamed through the SAME engine globals an OUTPUT
+                ; channel lived in, so an open `PRINT#1` file lost every byte and
+                ; its bytes landed in this file (scratchpad/asavechan_probe.py).
+                ; Kept when the write moved to disk.rom (2026-10-19): its channels
+                ; are FCBs of their own and tokenised SAVE does not park, but
+                ; BSAVE leaving FCH_ACTIVE at 0 is what every measured row saw.
                 call    fch_park
-                ld      a,SV_OP_BSV_DISK
-                call    sv_tenant           ; BSAVE -> disk: the write engine is a tenant
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt (B4)
+                ; 🏗️ D-ROMSIZE step 1 (2026-10-19): BSAVE -> disk is disk.rom's
+                ; hk_dpbsave, through H_FOPEN -- the cell the CF-3300's BSAVE
+                ; enters exactly once (scratchpad/bsave_hook_run.out) -- not the
+                ; sub-ROM save tenant's second FAT engine. Same exit as SAVE.
+                ld      a,FOPEN_SEL_BSAVE
+                jr      sv_cross            ; do_save's tail: the crossing + decode
 
 ; --- tape BSAVE path ---
 bsv_is_cas:
@@ -253,6 +272,7 @@ sav_is_disk:
                 ; disk.rom recorded one in DISKOP_ERR and prints `load error`
                 ; when it did not.
                 ld      a,FOPEN_SEL_SAVE
+sv_cross:                                   ; BSAVE's disk arm joins here (2026-10-19)
                 call    fopen_cross         ; unclaimed -> ERR 5; claimed -> it ran;
                                             ; A = DISKOP_STATUS, Z iff 0 (D-CARVEFO)
                 pop     hl                  ; flags survive the pop
@@ -784,20 +804,37 @@ expect_comma_eval:
 ; sub-ROM save tenant and disk.rom include their own copies.)
 
 ; ===========================================================================
-; sv_tenant — the one marshalling stub every carved engine jumps to (repack).
-; Entered by `jp`, never `call`, so the stack top is do_bsave/do_save/do_csave's
-; OWN return address: exactly what the un-carved `bsv_fin: jp disk_write_end` /
-; `jp load_error` tails had, so success and failure both return where they used
-; to (the statement dispatcher) with the stack at the same depth.
+; sv_tenant — the one marshalling stub the carved TAPE engines are reached through
+; (repack). Entered by `jp` from do_csave and the tape BSAVE, so the stack top is
+; the handler's OWN return address: success and failure both return where they
+; used to (the statement dispatcher) with the stack at the same depth.
 ;   in: A = SV_OP_* engine selector. Everything else is already in RAM.
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): THE DISK DECODE IS GONE WITH THE LAST DISK
+; ENGINE. SV_STAT was 0 / 1 (the tenant's sv_load_error: `jr nz,disk_error`,
+; ERR 70 on an empty drive, else `load error`) / 19; BSAVE's disk write is
+; disk.rom's now (bsv_open -> sv_cross), and the tape engines' only failure is
+; sv_tape_err's 19 (sub/save.asm). So a nonzero status IS the code: `cp 19 /
+; jp z / or a / jr nz,disk_error` became `or a / ret z / jp raise_error`, the
+; same answer for every value the tenant can leave, 4 B shorter -- refilled in
+; front of the $6CF3 pin by the chunk below.
 sv_tenant:
                 ld      (SV_OP),a
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SAVE)
-                ld      a,(SV_STAT)         ; D-DISKERR: a DSKIO failure raises its code below
-                cp      19                  ; D-CASWBRK: a tape write broken with
-                jp      z,raise_error       ; Ctrl-STOP -- Device I/O error (motor off)
-                or      a
-                jr      nz,disk_error       ; the tenant hit sv_load_error: report ONCE --
-                                            ; ERR 70 on an empty drive (D-DISKERR), else `load error`
-                ret
+                ld      a,(SV_STAT)         ; 0 = written; 19 = a tape write broken
+                or      a                   ; with Ctrl-STOP (D-CASWBRK)
+                ret     z
+                jp      raise_error         ; Device I/O error (motor off)
+
+; 📌 PIN REFILL (2026-10-19): 5 B moved here from past the $73E5 pin
+; (basic/main.asm) to take back the 5 B this slice freed in front of $6CF3 --
+; BSAVE's disk arm sharing do_save's tail (1) and sv_tenant's decode above (4).
+; Every byte removed ahead of a pinned address grows its pad (files.asm's
+; `ds $6CF3 - $` behind the `jr` bridge), and Joost: no growing holes. Whole and
+; entered only by label (`jp` / `jp cc` from files.asm and the channel checks),
+; with no `jr` across its edges (tools/pin_plan.py chunks()); sited after
+; sv_tenant's `jp`, so nothing falls into it. Its notes stay in basic/main.asm.
+oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
+err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong way (52)
+                ld      a,52
+                jp      raise_error

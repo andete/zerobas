@@ -4228,6 +4228,8 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      int, as before. TODO.md D-ROMSIZE carries the record. LEFT: main's own FAT
      scratch (the `FCH_STATE0` span) serves BLOAD / BSAVE's tenant and
      `autoexec_run`, which are not channels -- the BSAVE-to-disk item's.
+     (2026-10-19: `autoexec_run` and BSAVE have left it -- the note below and
+     §6.6bd; the span now serves BLOAD's sub-ROM tenant alone.)
      🟡 **2026-10-19, the next pieces (drafted in a worktree, build / pins /
      unit tests only):** AUTOEXEC.BAS's boot probe is `disk.rom`'s `hk_auto`
      (H_FOPEN, `FOPEN_SEL_AUTO` = `$58`: stage the name, mount, find, the size
@@ -4456,6 +4458,73 @@ the program slower than the 4 s window.
   completed. So D-CFWSTALL is about THIS program or harness: the PEEK/HEX$
   loop between transfers, or the capture timing. It is not "the CF-3300
   cannot cross a record".
+
+### 6.6bd 🟢 `BSAVE` TO DISK RUNS IN `disk.rom`; THE SUB-ROM's FAT ENGINE IS BLOAD's ALONE (D-ROMSIZE step 1, 2026-10-19)
+
+Drafted in a worktree: build, pins and unit tests only; the emulator suites are
+the integrator's.
+
+**The measurement it rests on** (CF-3300, 2026-10-15,
+[`bsave_hook_probe.py`](../../scratchpad/bsave_hook_probe.py) ->
+[`bsave_hook_run.out`](../../scratchpad/bsave_hook_run.out)): `BSAVE` enters
+`$FE5D` exactly once, never `$FE71`, and no claimed cell per byte; the exec and
+`,S` forms enter like the plain one; a bad drive is 62 BEFORE `$FE5D`, no disk 70
+after it; junk after the arguments is `Syntax error` with NO file written.
+
+**The shape -- step 12's, one selector more.**
+- Main (`basic/save.asm` `do_bsave`) keeps the parse: the name (62 for a bad
+  drive, in `parse_disk_fcb`), start, end, exec / `,S`, and now the end of the
+  statement BEFORE the crossing (`mxf_require_end`). Until this slice the junk
+  was found AFTER the write -- the file existed, then the line raised 2.
+- It parks the channel (`fch_park`, kept from D-ASAVECHAN) and crosses H_FOPEN
+  with `FOPEN_SEL_BSAVE` = `$42` through tokenised SAVE's tail (`sv_cross`:
+  `fopen_cross`, the status decode, `exec_stmt`).
+- `disk.rom`'s `hk_dpload` sends `$42` to `hk_dpbsave` (`disk/kernel.asm`, in
+  the hole after the pinned `$50E0` entry), which enters `hk_dpsave`'s prologue
+  at `hkds_go` with HL = `bsv_open`; `hkds_run` now ends `jp (hl)`. The engine is
+  `basic/sv-bsvdisk.inc`, VERBATIM, plus `disk_putword` (moved there from
+  `sv-diskwr.inc`'s `IF SUB_BUILD`), over `disk.rom`'s own `fat_io_create` /
+  `fat_io_putbyte` / `fat_io_close` / `fat_fits`. CURPTR, EXECPTR and VRAM_FLAG
+  join the generated ABI (DSV_END, DSV_PTR, DISKSLOT_OK were there for SAVE).
+- Status 0 / 3, the code in DISKOP_ERR: 70, 66 (the D-DISKFULLSTAMP refusal:
+  header + Ctrl-Z, size 8), 68 -- `tests/test_hk_dpbsave.py`.
+
+**Two engine differences come with disk.rom's arms of the shared FAT body**, and
+neither changes a measured row: the directory date is the DOS date (`DATE_DAYS`,
+0821h from boot -- the value the tenant stamped -- until a DOS date is set), and
+a disk filling MID-stream takes `ffds_undefer`, not the tenant's
+D-ASAVEFULLSTAMP stamp (BSAVE refuses an image that cannot fit before its data,
+so the fit verdict, not that arm, answers 66).
+
+**What it freed, `make basic-reloc`:** main page 1 525 -> 530 B (BSAVE's arm -1 B
+sharing SAVE's tail, `sv_tenant`'s disk decode -4 B -- the tenant can only answer
+0 or 19 now -- refilled in front of `$6CF3` with `oo_fail_bfn`, 5 B from past
+`$73E5`); sub page 1 1251 -> 3085 B; `disk.rom` 2851 -> 2711 B free.
+
+**And the sub-ROM's second FAT engine, surveyed after the move:**
+- `sub/save.asm` is the two TAPE engines only: `sv-bsvdisk.inc`, `sv-diskwr.inc`,
+  `fatiocreate-body.inc`, `fatiow-body.inc` left the sub build, and with them
+  `sv_load_error` and the tenant's SV_OP 0 dispatch.
+- `fp_table` (`sub/fatprim.asm`): main's ONLY sender is `fatprim_op` <-
+  `fatprim_bounce` <- OPEN's header stamp (`oo_hdr_tail`, row 23); `disk.rom` and
+  sub2 never call the tenant. Rows 0..14 and 18 are `jp fp_stash_ok`; the twelve
+  `t_*` wrappers and `fp_stash_err` are deleted. Row 18's tenant
+  (`sub/fiawalk.asm` + `basic/fiawalked-body.inc`) had had no sender since S10.B
+  moved APPEND; both files are deleted. `fatfits-body.inc` and
+  `fat-delete-body.inc` left the sub build.
+- `basic/fat-prim-body.inc`: the dead-code gate then found its WRITE half
+  unreachable in sub (888 B); `fatprim_write_sector`, `fat_read_fat_sector` ..
+  `fat_total_clusters` and `fat_count_free` .. `fat_dir_update` are `IF
+  DISK_BUILD`, and the `IF SUB_BUILD` arms inside them (the sub's own
+  `fat_write_fat_entry_hot` / `fat_write_buf_allfats`, `ffds_full`, the fixed
+  date) are gone. `disk.rom` was byte-identical across that step.
+- **What keeps the rest alive is BLOAD from disk.** `sub/bload.asm`'s disk path
+  (`basic/bload-body.inc` over `basic/fatio-body.inc`) calls `read_sector`,
+  `fat_mount`, `fat_find` / `name_cmp`, `fat_open` / `fat_next_cluster` /
+  `fat_read_file_sector`, `fat_dir_start` / `fat_rootsecs` locally. That is the
+  last disk verb on the sub-ROM's engine; moving it (H_FOPEN, a BLOAD selector,
+  `disk.rom` already has `fatio-body.inc` and LOAD's loop) would retire
+  `fat-prim-body.inc` from the sub build altogether.
 
 ## 7. The channel trio, and the wall that is not one
 

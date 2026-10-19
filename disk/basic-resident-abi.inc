@@ -39,6 +39,9 @@ PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)
 DSV_END equ 0EF5BH   ; DISK-ONLY: SAVE/BSAVE: last source byte addr, inclusive (2)
 DISKSLOT_OK equ 0FB21H   ; 1 = DISKSLOT holds a valid disk-ROM slot id (1 B)
+CURPTR equ 0F7BCH   ; current load pointer (2 bytes) -- SWPTMP+0
+EXECPTR equ 0F7C0H   ; execution address   (2 bytes) -- SWPTMP+4
+VRAM_FLAG equ 0F664H   ; 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6)
 COPY_SRC equ 0EEEEH   ; DISK-ONLY: the source's 11-byte 8.3 name field
 COPY_CLUS equ 0EEF9H   ; DISK-ONLY: the source's first cluster (word)
 COPY_LEFT equ 0EEFBH   ; DISK-ONLY: bytes still to copy (4-byte LE)

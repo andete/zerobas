@@ -3,6 +3,14 @@
 
 ; zerobas-sub — fatprim.asm  (FAT12 primitive/sector-layer tenant)
 ; ===========================================================================
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): WHAT FOLLOWS IS MOSTLY HISTORY. Every row
+; that reached a primitive is retired (fp_table, below): the resident shims in
+; basic/fat.asm that sent them are all gone, and the last sub-ROM writer through
+; this engine -- BSAVE's disk engine in the save tenant -- moved to disk.rom. The
+; tenant's one live row is 23 (t_fch_hdr, OPEN's FCB header stamp, a pure RAM
+; leaf). The included body is now BLOAD's: sub/bload.asm's disk path calls its
+; READ half locally, and the sub build assembles only that half
+; (basic/fat-prim-body.inc's gate note).
 ; The FAT12 primitive/sector layer, evicted from the repack main ROM's
 ; basic/fat.asm into sub-ROM PAGE 1 (docs/spec-evict-diskfile-cluster.md §11,
 ; Phase 1 of the disk/file cluster eviction), to free page-1 window space
@@ -79,28 +87,37 @@ fatprim_tenant:
                 jp      (ix)
 
 fp_table:
-                jp      t_read_sector           ; 0  DISKOP_SEL_READ_SECTOR
-                jp      t_write_sector          ; 1  DISKOP_SEL_WRITE_SECTOR
-; --- rows 2-3: RETIRED 2026-10-19 (D-ROMSIZE step 1). Main's fat_mount / fat_find
-; shims were their last senders, and both shims went: AUTOEXEC.BAS's boot probe
-; is disk.rom's hk_auto, and NAME (disk.rom hk_name) mounts and finds with that
-; ROM's own FAT instead of calling back into main for them. The bodies stay --
-; this ROM's own BLOAD / BSAVE bodies and fat_delete call them locally.
-; Each row keeps its 3 B so 4.. stay put (the table is append-only).
+; --- 2026-10-19 (D-ROMSIZE step 1): EVERY PRIMITIVE ROW IS RETIRED. BSAVE's disk
+; write left the sub-ROM save tenant for disk.rom (hk_dpbsave), and with it went
+; the last reason to keep these rows: their senders were main's resident shims
+; (basic/fat.asm), and the last of those (fat_mount / fat_find) went earlier the
+; same day. Main's ONLY sender left is fatprim_op <- fatprim_bounce <- OPEN's
+; header stamp (basic/files.asm oo_hdr_tail, A = DISKOP_SEL_FCH_HDR, row 23);
+; disk.rom and sub2 never call SUBROM_IDX_FATPRIM. The primitive BODIES stay
+; (basic/fat-prim-body.inc, below): BLOAD's disk read path (sub/bload.asm, over
+; basic/fatio-body.inc) calls fat_mount / fat_find / fat_open /
+; fat_read_file_sector LOCALLY, not through this table. Each row keeps its 3 B so
+; 23 stays put (the table is append-only; the numbering is published).
+                jp      fp_stash_ok             ; 0  retired (was DISKOP_SEL_READ_SECTOR)
+                jp      fp_stash_ok             ; 1  retired (was DISKOP_SEL_WRITE_SECTOR)
+; (rows 2-3 retired earlier on 2026-10-19: AUTOEXEC.BAS's probe is disk.rom's
+; hk_auto, and NAME finds with that ROM's own FAT.)
                 jp      fp_stash_ok             ; 2  retired (was DISKOP_SEL_FAT_MOUNT)
                 jp      fp_stash_ok             ; 3  retired (was DISKOP_SEL_FAT_FIND)
-                jp      t_name_cmp              ; 4  DISKOP_SEL_NAME_CMP
-                jp      t_fat_open              ; 5  DISKOP_SEL_FAT_OPEN
-                jp      t_fat_read_fat_sector   ; 6  DISKOP_SEL_FAT_READ_FAT_SECTOR
-                jp      t_fat_read_file_sector  ; 7  DISKOP_SEL_FAT_READ_FILE_SECTOR
-                jp      t_fat_alloc_cluster     ; 8  DISKOP_SEL_FAT_ALLOC_CLUSTER
-                jp      t_fat_write_fat_entry   ; 9  DISKOP_SEL_FAT_WRITE_FAT_ENTRY
-                jp      t_fat_count_free        ; 10 DISKOP_SEL_FAT_COUNT_FREE
+                jp      fp_stash_ok             ; 4  retired (was DISKOP_SEL_NAME_CMP)
+                jp      fp_stash_ok             ; 5  retired (was DISKOP_SEL_FAT_OPEN)
+                jp      fp_stash_ok             ; 6  retired (was DISKOP_SEL_FAT_READ_FAT_SECTOR)
+                jp      fp_stash_ok             ; 7  retired (was DISKOP_SEL_FAT_READ_FILE_SECTOR)
+                jp      fp_stash_ok             ; 8  retired (was DISKOP_SEL_FAT_ALLOC_CLUSTER)
+                jp      fp_stash_ok             ; 9  retired (was DISKOP_SEL_FAT_WRITE_FAT_ENTRY)
+                jp      fp_stash_ok             ; 10 retired (was DISKOP_SEL_FAT_COUNT_FREE;
+                                                ; D-DSKFLOCAL: DSKF counts in disk.rom)
                 jp      fp_stash_ok             ; 11 retired (D-ASAVEDOUT: no sender;
                                                 ; main's flush stub went with SAVE ,A)
-                jp      t_fat_dir_create        ; 12 DISKOP_SEL_FAT_DIR_CREATE
-                jp      t_fat_dir_update        ; 13 DISKOP_SEL_FAT_DIR_UPDATE
-                jp      t_fat_delete            ; 14 DISKOP_SEL_FAT_DELETE
+                jp      fp_stash_ok             ; 12 retired (was DISKOP_SEL_FAT_DIR_CREATE)
+                jp      fp_stash_ok             ; 13 retired (was DISKOP_SEL_FAT_DIR_UPDATE)
+                jp      fp_stash_ok             ; 14 retired (was DISKOP_SEL_FAT_DELETE;
+                                                ; KILL deletes in disk.rom, D-KILLLOCAL)
 ; --- rows 15-17: RETIRED by S10.D (2026-10-15). They were the fat_rand_*
 ; random-access record engine (docs/spec-eviction-g4-space.md §3, carve #1:
 ; DISKOP_SEL_RAND_OPEN / GET / PUT, bodies in sub/randio.asm). RANDOM OPEN / GET
@@ -109,9 +126,12 @@ fp_table:
                 jp      fp_stash_ok             ; 15 retired (was DISKOP_SEL_RAND_OPEN)
                 jp      fp_stash_ok             ; 16 retired (was DISKOP_SEL_RAND_GET)
                 jp      fp_stash_ok             ; 17 retired (was DISKOP_SEL_RAND_PUT)
-; --- row 18: fat_io_append's resume-point tail (docs/spec-eviction-g7-space.md,
-; carve 2). Body in sub/fiawalk.asm, included after this file in sub/sub.asm.
-                jp      t_fia_walked            ; 18 DISKOP_SEL_FIA_WALKED
+; --- row 18: RETIRED 2026-10-19. It was fat_io_append's resume-point tail
+; (docs/spec-eviction-g7-space.md, carve 2; sub/fiawalk.asm over
+; basic/fiawalked-body.inc, 148 B). Its sender was main's fat_io_append, which
+; went with S10.B increment 2 (2026-10-06: APPEND is disk.rom's hk_fapp); the
+; row had no sender since, and the tenant and its body are deleted.
+                jp      fp_stash_ok             ; 18 retired (was DISKOP_SEL_FIA_WALKED)
 ; --- row 19: the file-channel re-stage (D-FCH S-FCH-1, docs/spec-basic-
 ; filechan-alloc.md §3.1) -- RETIRED by S10.C (2026-10-15). Its body,
 ; fat_restage_channel, re-read an INPUT channel's staged sector (no other mode
@@ -151,80 +171,18 @@ fp_stash_ok:
                 xor     a
                 ld      (DISKOP_STATUS),a
                 ret
-fp_stash_err:
-                ld      (DISKOP_HL),hl
-                ld      (DISKOP_A),a
-                ld      a,1
-                ld      (DISKOP_STATUS),a
-                ret
+; (fp_stash_err -- STATUS = 1 -- went 2026-10-19 with the last primitive wrapper
+; that could fail; t_fch_hdr, the one live row, always succeeds.)
 
-; --- per-primitive wrappers: call the shared body, marshal the result ------
-t_read_sector:
-                call    read_sector
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-; t_write_sector — the shared body names its copy `fatprim_write_sector`, not
-; `write_sector` (sub/format.asm already owns that name for its OWN private
-; write path in this same sub.rom assembly; see fat-prim-body.inc's header).
-t_write_sector:
-                call    fatprim_write_sector
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-; (t_fat_mount / t_fat_find, rows 2 / 3's wrappers, went 2026-10-19 with their
-; last sender -- the table's note.)
-; t_name_cmp — Z, not Cy: STATUS doubles as the Z surrogate (0 = match/Z,
-; nonzero = no-match/NZ), same polarity as the Cy convention elsewhere.
-t_name_cmp:
-                call    name_cmp
-                jr      z,fp_stash_ok
-                jr      fp_stash_err
-t_fat_open:
-                call    fat_open
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_read_fat_sector:
-                call    fat_read_fat_sector
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_read_file_sector:
-                call    fat_read_file_sector
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-; t_fat_alloc_cluster — HL is fat_alloc_cluster's real output (the allocated
-; cluster number, read by field.asm:576/599 via the resident shim); covered
-; by the uniform fp_stash_ok/err reload, no bespoke tail needed.
-t_fat_alloc_cluster:
-                call    fat_alloc_cluster
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_write_fat_entry:
-                call    fat_write_fat_entry
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-; t_fat_count_free — DE, not Cy/HL: mirror DE into FAT_WRTMP2 (fat_count_
-; free's OWN scratch, already RAM-visible from the resident side) on EVERY
-; exit path, so the resident shim can just `ld de,(FAT_WRTMP2)`. Harmless on
-; the normal fcf_done path (DE already == FAT_WRTMP2 there); corrective on
-; the fcf_zero/mount-failure path, which sets DE=0 directly without touching
-; FAT_WRTMP2 (see basic/sysvars.inc's DISKOP block comment). No Cy to
-; marshal either: the original never guaranteed one (its only caller,
-; expr.asm ev_ff_dskf, reads DE only).
-t_fat_count_free:
-                call    fat_count_free
-                ld      (FAT_WRTMP2),de
-                ret
-t_fat_dir_create:
-                call    fat_dir_create
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_dir_update:
-                call    fat_dir_update
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
-t_fat_delete:
-                call    fat_delete
-                jr      c,fp_stash_err
-                jr      fp_stash_ok
+; --- per-primitive wrappers -- ALL GONE (2026-10-19) ------------------------
+; t_read_sector, t_write_sector, t_name_cmp, t_fat_open, t_fat_read_fat_sector,
+; t_fat_read_file_sector, t_fat_alloc_cluster, t_fat_write_fat_entry,
+; t_fat_count_free, t_fat_dir_create, t_fat_dir_update and t_fat_delete each
+; called a shared body and marshalled Cy / HL / A (or Z, or DE through
+; FAT_WRTMP2) into the DISKOP block for a main-side shim. Every shim is gone
+; (basic/fat.asm's history block), so nothing reached a wrapper; the rows above
+; are `jp fp_stash_ok`. The marshalling convention they implemented is still
+; t_fch_hdr's exit and still fatprim_bounce's decode.
 
 ; (t_fch_restage, row 19's wrapper over fat_restage_channel, is gone with it:
 ; S10.C, 2026-10-15 -- see the row.)
@@ -310,6 +268,15 @@ fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
 ; fat_dir_update, then fat_delete). Included here WHOLESALE -- this file's
 ; own copies of dskio_calslt/read_sector/write_sector (inside fat-prim-
 ; body.inc) ARE the tenant's sub-local CALSLT path (see header).
+; 🔎 2026-10-19: WHAT KEEPS THIS BODY ALIVE IS BLOAD ALONE. sub/bload.asm's disk
+; path (basic/bload-body.inc over basic/fatio-body.inc) mounts, finds, opens and
+; reads through fat_mount / fat_find / name_cmp / fat_open / fat_read_file_sector
+; / fat_next_cluster / read_sector here. The WRITE half (fat_alloc_cluster,
+; fat_write_fat_entry, fat_dir_create, fat_dir_update, fat_flush_data_sector,
+; fatprim_write_sector, fat_count_free) has no caller in this ROM since BSAVE left
+; the save tenant; it rides the shared include until BLOAD moves to disk.rom too
+; and the whole body can go (TODO D-ROMSIZE).
                 include "basic/fat-prim-body.inc"
-                include "basic/fatfits-body.inc"     ; fat_fits (D-SAVEFULLSTAMP)
-                include "basic/fat-delete-body.inc"
+; (basic/fatfits-body.inc and basic/fat-delete-body.inc are no longer included
+; here, 2026-10-19: fat_fits's last caller in this ROM was BSAVE's disk engine,
+; and fat_delete's was row 14's wrapper. disk.rom includes both.)

@@ -3,6 +3,11 @@
 
 ; fatiow-body.inc -- fat_io_putbyte + fwr_bytes_inc + fat_io_close.
 ; ===========================================================================
+; 🏗️ 2026-10-19 (D-ROMSIZE step 1): DISK.ROM IS THE ONLY BUILD THAT ASSEMBLES THIS
+; BODY. The sub-ROM save tenant stopped including it when BSAVE's disk engine --
+; its last writer -- moved to disk.rom (hk_dpbsave); main includes it at its
+; original position and assembles nothing (the gate below). The history that
+; follows describes the sub-ROM copy as it was.
 ; Extracted VERBATIM from basic/fat.asm so the sub-ROM SAVE tenant
 ; (sub/save.asm, SUBROM_IDX_SAVE) gets a byte-identical SUB-LOCAL copy instead
 ; of a second hand-maintained one. This is the WRITE mirror of fatio-body.inc,

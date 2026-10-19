@@ -41,6 +41,13 @@
 ;     write_sector alone — here the primitive/sector layer BEING MOVED
 ;     already starts at dskio_calslt).
 ;
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): the sub-ROM half of that story is BLOAD's
+; alone. Every fatprim row that reached a primitive is retired (sub/fatprim.asm),
+; and the sub build assembles only the READ half below -- what sub/bload.asm's
+; disk path calls locally; the WRITE half is `IF DISK_BUILD` (the note above
+; fat_read_fat_sector). The whole body leaves the sub-ROM when BLOAD from disk
+; moves to disk.rom.
+;
 ; Clean-room: our own code, extracted verbatim from basic/fat.asm (see that
 ; file's header for the full FAT12/DSKIO provenance / oracle citations).
 
@@ -139,7 +146,8 @@ dc_map:
 ; disk.rom the primitive reaches its OWN DSKIO by a plain local call; assembled
 ; into sub.rom (or main) it must CALSLT across to whatever disk ROM holds the
 ; slot. Everything else in this file is identical on both sides, which is what
-; makes one source possible at all. Same shape as sv-diskwr.inc's `IF SUB_BUILD`.
+; makes one source possible at all. (2026-10-19: and the sub build now assembles
+; only the READ half -- the gate note above fat_read_fat_sector.)
 ; ⚠️ ONE LABEL, CONDITIONAL ONLY ON THE DIFFERING INSTRUCTION. The first cut
 ; put a whole `read_sector:` in each arm, and `check_dead_code` does not read
 ; `IF/ELSE` -- it kept one arm's span, lost `dskio_calslt`'s only reacher, and
@@ -170,12 +178,16 @@ read_sector:
 ; is unaffected; the repack build's resident shim (basic/fat.asm) is
 ; independently named `write_sector` already (a different code path, no
 ; collision there). Zero-byte rename either way (EQU never emits bytes).
+; (fatprim_write_sector: disk.rom only since 2026-10-19 -- nothing in the sub
+; build writes a sector any more; see the gate note above fat_read_fat_sector.)
+    IF DISK_BUILD
 fatprim_write_sector:
                 ld      b, 1            ; one sector
                 ld      c, $F9          ; media byte (ignored, single drive)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio_calslt    ; tail-call, as read_sector above
+    ENDIF
 
 ; ===========================================================================
 ; FAT12 READ layer (ported verbatim from disk.asm §FAT12 layer).
@@ -581,6 +593,19 @@ frs_eof:
 ; data sector.
 ; ===========================================================================
 
+; 🗑️ 2026-10-19 (D-ROMSIZE step 1): FROM HERE TO fat_total_clusters, AND FROM
+; fat_count_free TO THE END OF THE FILE, disk.rom ALONE. The sub-ROM's only writer
+; through this half was BSAVE's disk engine (sub/save.asm), which left for disk.rom
+; the same day, and its only DSKF / KILL users went earlier (D-DSKFLOCAL,
+; D-KILLLOCAL): `make basic-reloc`'s dead-code gate found 888 B of this half
+; unreachable in the sub build. What the sub build still assembles is the READ half
+; BLOAD's disk path calls (sub/bload.asm): read_sector, fat_mount, fat_find /
+; name_cmp, fat_open / fat_advance / fat_next_cluster / fat_read_file_sector, and
+; fat_dir_start / fat_rootsecs. The `IF SUB_BUILD` arms this half carried (the
+; sub's own fat_write_fat_entry_hot and fat_write_buf_allfats -- disk.rom's are in
+; disk/fat.asm's $47C1 fill -- ffds_full's D-ASAVEFULLSTAMP stamp, the fixed 0821h
+; date) are deleted with it; disk.rom's arms are what remain, unconditional.
+    IF DISK_BUILD
 ; fat_read_fat_sector — read FAT-copy-0 sector that holds cluster N's entry.
 ;   in:  HL = cluster number
 ;   out: FAT_MBUF holds that FAT sector; (FAT_FATSEC) = its absolute sector;
@@ -639,11 +664,7 @@ fat_alloc_cluster:
                 ; disk/kernel.asm, which survives the swap -- a RAM write nothing
                 ; reads, which no dead-code sweep reports because it is not an
                 ; unreachable routine.
-    IF DISK_BUILD
                 ld      hl, (FAT_ALLOCHINT) ; first candidate cluster
-    ELSE
-                ld      hl, 2               ; first data cluster
-    ENDIF
 fac_loop:
                 ld      de, (FAT_WRTMP)
                 push    hl
@@ -707,14 +728,12 @@ fac_found:
                                             ; scan just loaded its sector)
                 pop     hl
                 ret     c                   ; write error propagates (Cy set)
-    IF DISK_BUILD
                 ; M30: advance the scan hint past this claimed cluster WITHOUT
                 ; disturbing HL, which must return as the allocated cluster.
                 push    hl
                 inc     hl
                 ld      (FAT_ALLOCHINT), hl
                 pop     hl
-    ENDIF
                 or      a                   ; Cy = 0 success, HL = cluster
                 ret
 fac_full:
@@ -801,46 +820,6 @@ fac_e_odd:
 ; must take the plain entry. Two such callers: fac_found (straight after its
 ; scan) and ffds_alloc's link (straight after the allocation). It was 3 reads of
 ; one FAT sector per allocated cluster (scratchpad/fdcseq_w1.out).
-    IF SUB_BUILD
-fat_write_fat_entry_hot:
-                ld      (FAT_WRTMP), de     ; save the value
-                push    hl                  ; save cluster
-                ld      a, l                ; fat_read_fat_sector's arithmetic, copied
-                and     1                   ; so that routine stays byte-identical
-                ld      (FAT_PARITY), a
-                ld      e, l
-                ld      d, h
-                srl     d
-                rr      e                   ; DE = cluster >> 1
-                add     hl, de              ; HL = fatofs = cluster * 3/2
-                ld      a, l
-                ld      (FAT_BYTEIDX), a
-                ld      a, h
-                and     1
-                ld      (FAT_BYTEIDX + 1), a    ; byteidx = fatofs & $1FF
-                ld      a, h
-                srl     a                   ; fatofs >> 9 = FAT sector offset
-                ld      e, a
-                ld      d, 0
-                ld      hl, (FAT_FATSTART)
-                add     hl, de              ; HL = the entry's FAT sector
-                push    hl                  ; the entry's sector
-                ld      de, (FAT_FATSEC)    ; the sector FAT_MBUF holds now
-                or      a
-                sbc     hl, de
-                pop     hl
-                jr      z, fwe_have         ; already loaded: no read
-                push    hl
-                ld      a, (FAT_DEFER)      ; D-WCACHE W3a: a deferred write of the
-                cp      2                   ; sector we are about to replace goes
-                call    z, fat_write_buf_allfats    ; out FIRST (it clears the flag)
-                pop     hl
-                ld      (FAT_FATSEC), hl
-                ex      de, hl
-                ld      hl, FAT_MBUF
-                call    read_sector
-                jr      fwe_have
-    ENDIF
                 ; (disk.rom's copy sits in disk/fat.asm's $47C1 fill: this region,
                 ; pinned at $75A5, had no room for it -- the first build assembled EMPTY.)
 fat_write_fat_entry:
@@ -1003,46 +982,20 @@ fwe_err:
                 scf                         ; report the I/O error
                 ret
 
-; fat_write_buf_allfats — write FAT_MBUF back to (FAT_FATSEC) in every FAT copy.
-;   in:  FAT_MBUF holds the sector; FAT_FATSEC = its sector in FAT copy 0
-;   out: Cy = 0 ok, Cy = 1 error
-; (Microsoft FAT spec §3.1: NumFATs identical copies; §3.2: same packing.)
-    IF SUB_BUILD
-fat_write_buf_allfats:
-                xor     a
-                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the buffer is clean after this
-                ld      a, (FAT_NUMFATS)
-                ld      b, a                ; B = copies to write
-                ld      hl, (FAT_FATSEC)    ; copy-0 target sector
-fwba_loop:
-                push    bc
-                push    hl
-                ex      de, hl              ; DE = target sector
-                ld      hl, FAT_MBUF
-                call    fatprim_write_sector
-                pop     hl
-                pop     bc
-                ret     c                   ; write error
-                ; advance to the same sector in the next FAT copy.
-                ld      de, (FAT_SECPERFAT)
-                add     hl, de
-                djnz    fwba_loop
-                or      a                   ; Cy = 0 success
-                ret
+; (fat_write_buf_allfats -- FAT_MBUF back to (FAT_FATSEC) in every FAT copy -- and
+; the fat_write_fat_entry_hot entry above are disk.rom's in disk/fat.asm's $47C1
+; fill. The sub build's own copies stood here under `IF SUB_BUILD` and went on
+; 2026-10-19 with the sub-ROM's last writer, BSAVE's disk engine.)
 
 ; fat_total_clusters — total cluster count of the volume (2 + data clusters).
-;   out: DE = total clusters; preserves HL
-; (Microsoft FAT spec §3.3.) Re-reads the boot sector into FAT_MBUF (NOT FAT_DBUF,
-; which may hold in-flight write data).
-    ENDIF
-                ; (disk.rom: fat_write_buf_allfats is in disk/fat.asm's $47C1 fill)
-
+;   out: DE = total clusters; preserves HL (Microsoft FAT spec §3.3).
 fat_total_clusters:
                 ; D-WCACHE W1: fat_mount computed it; no boot-sector read, so no
                 ; failure either (Cy = 0, which every caller's `ret c` expects).
                 ld      de, (FAT_TOTCLUS)
                 or      a
                 ret
+    ENDIF
 
     IF SUB_BUILD
 ; fat_dir_start -- FAT_DIRSEC := the first root sector, FAT_DIRREM := how many
@@ -1066,6 +1019,7 @@ fat_rootsecs:
     ENDIF
                 ; (disk.rom: fat_dir_start / fat_rootsecs are in disk/fat.asm's $47C1 fill)
 
+    IF DISK_BUILD                      ; to the end of the file: see above fat_read_fat_sector
 ; fat_count_free — count free clusters (FAT entries == 0) over the data range
 ; [2, total). Mounts first. Used by DSKF.
 ;   out: DE = free cluster count (0 on mount error).
@@ -1259,11 +1213,7 @@ ffds_nopad:
 ffds_alloc:
                 ; allocate a new cluster (first one, or chain extension).
                 call    fat_alloc_cluster
-    IF SUB_BUILD
-                jr      c, ffds_full        ; disk full: D-ASAVEFULLSTAMP, below
-    ELSE
                 jr      c, ffds_undefer     ; disk full / I/O: nothing may stay deferred
-    ENDIF
                 ; HL = new cluster. Link it: if a previous cluster exists, point it
                 ; at HL; else record HL as the file's first cluster.
                 ld      de, (FWR_CLUS)
@@ -1313,51 +1263,12 @@ ffds_mul:
                 ld      (FWR_SECIDX), a
                 or      a                   ; Cy = 0 success
                 ret
-    IF SUB_BUILD
-; ffds_full -- D-ASAVEFULLSTAMP (2026-10-02): a sequential write that fills the
-; disk keeps what is ALREADY ON IT. MEASURED (scratchpad/savefull_run.out): the
-; CF-3300's `SAVE ,A` of a ~2 KB listing onto one free cluster stamps SA.BAS
-; with the first 1024 B; ours raised 66 with the entry at 0/0 and the cluster
-; allocated -- LOST. So stamp the bytes on disk (FWR_BYTES less the buffer that
-; could not be placed) before the failure goes back up.
-; ⚠️ ONLY when no CHANNEL is active: PRINT#+CLOSE is the opposite answer on the
-; CF-3300 (it commits nothing, D-PRINTFULLSTAMP, to settle with S10.B), and only
-; for 66 (a disk-full, not an I/O fault). Sub-ROM only: its own writers (BSAVE's
-; tenant) reach it; disk.rom's copy serves the BDOS, whose DOS semantics are not
-; this. 🏗️ SAVE ,A, which reached it through main's fatprim stub, is disk.rom's
-; since S10 increment 3 (D-ASAVEDOUT) -- the same rule is in hco_asav there.
-ffds_full:
-                xor     a
-                ld      (FAT_DEFER), a      ; D-WCACHE W3a: the request dies with the failure
-                ld      a, (FCH_ACTIVE)
-                or      a
-                jr      nz, ffds_full_x     ; a channel: not this rule
-                ld      a, (DISKOP_ERR)
-                cp      66
-                jr      nz, ffds_full_x     ; an I/O fault: leave it
-                ld      hl, (FWR_BYTES)
-                ld      de, (FWR_BUFLEN)
-                or      a
-                sbc     hl, de
-                ld      (FWR_BYTES), hl
-                ld      hl, (FWR_BYTES + 2)
-                ld      de, 0
-                sbc     hl, de              ; the borrow into the high word
-                ld      (FWR_BYTES + 2), hl
-                call    fat_dir_update      ; size + first cluster, as close does
-                ld      a, 66               ; its successful DSKIO cleared the code
-                ld      (DISKOP_ERR), a
-ffds_full_x:
-                scf                         ; still a failure
-                ret
-    ELSE
 ffds_undefer:
                 push    af                  ; the failure (Cy, A)
                 xor     a
                 ld      (FAT_DEFER), a      ; D-WCACHE W3a: the request dies with it
                 pop     af
                 ret
-    ENDIF
 
 ; fat_dir_create — find/make a root-directory slot for an 8.3 name and write a
 ; fresh entry; record the slot's sector + offset in FWR_DIRSEC/FWR_DIROFF.
@@ -1457,13 +1368,9 @@ fdcr_full:
 ;   in: HL = the entry; out: HL kept; trashes A, BC, DE
 dir_stamp_date:
                 push    hl
-    IF DISK_BUILD
                 call    date_fat_word       ; DE = the DOS date (trashes AF, BC, HL)
                 pop     hl
                 push    hl
-    ELSE
-                ld      de, $0821
-    ENDIF
                 ld      bc, 22
                 add     hl, bc
                 xor     a
@@ -1515,3 +1422,4 @@ fat_dir_update:
                 ret     c
                 or      a                   ; Cy = 0 success
                 ret
+    ENDIF

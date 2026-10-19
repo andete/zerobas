@@ -200,6 +200,30 @@ seldsk_drv:
 conin:
                 jp      conin_line_body ; -> free-tail buffered-line CHGET loop (M13)
 
+; --- hk_dpbsave: BSAVE to disk, in the disk ROM (D-ROMSIZE step 1, 2026-10-19) ---
+; Reached through H_FOPEN's dispatcher (hk_dpload) with FOPEN_SEL = FOPEN_SEL_BSAVE.
+; The CF-3300's BSAVE enters $FE5D exactly once, never $FE71, and no claimed cell
+; per byte; a bad drive is 62 BEFORE it, no disk 70 after it; trailing junk is a
+; Syntax error with no file written (scratchpad/bsave_hook_probe.py ->
+; bsave_hook_run.out). Main does the 62 (parse_disk_fcb) and the junk (do_bsave's
+; mxf_require_end) before it crosses; the 70 is this ROM's mount, as for SAVE.
+; Until this date the engine ran in the SUB-ROM save tenant over that ROM's second
+; FAT engine (sub/save.asm, SV_OP_BSV_DISK) and reached no hook at all.
+; Clean-room: own code (the engine moved verbatim from our sub-ROM tenant) over
+; our own FAT12 engine; the hook contract is a black-box measurement of entry
+; counts and registers -- no reference ROM byte read.
+; SITED HERE, IN THE $50E3 HOLE (708 B the day it moved; `make basic-reloc`
+; reads it), because hk_dpsave's region before $75A5 had 45 B: only the 5 B
+; dispatch arm and hk_dpsave's 1 B `ld hl` / `jp (hl)` rework went there.
+;   in   FOPEN_SEL = FOPEN_SEL_BSAVE; DISK_FCB_NAME = the 8.3 name; CURPTR =
+;        start, DSV_END = end (inclusive), EXECPTR = exec, VRAM_FLAG = 1 for `,S`
+;   out  CF = 1 claimed; DISKOP_STATUS = 0 written / 3 mount, create, disk full
+;        or I-O (DISKOP_ERR carries the mapped code: 70, 66, 68, ...)
+hk_dpbsave:
+                ld      hl,bsv_open         ; the engine, for hkds_run's `jp (hl)`
+                jp      hkds_go             ; hk_dpsave's prologue, unwind and tail
+                include "basic/sv-bsvdisk.inc"       ; disk_putword, bsv_open .. bsv_full
+
 ; --- MSX-DOS-1 kernel CONOUT-worker entry: $53A7 (M22b; tier2-m22b-conout53a7-spec.md) --
 ; The relocated kernel CALLs this page-1 disk-ROM entry for EVERY BDOS CONOUT
 ; ($02) character (ret=$D88A, B=$A7 fingerprint, C=$02, char in E — the same
@@ -4513,7 +4537,14 @@ fat_bufinit:
 ;
 ;   in   FOPEN_SEL = FOPEN_SEL_SAVE; DISK_FCB_NAME = the 8.3 name main parsed
 ;   out  CF = 1 claimed; DISKOP_STATUS = 0 written / 3 mount, disk-full or I-O
+; 🆕 2026-10-19 (D-ROMSIZE step 1): BSAVE to disk shares this prologue and unwind.
+; Its engine (basic/sv-bsvdisk.inc) sits in the hole after the pinned $50E0 entry
+; -- this region (to $75A5) had 45 B -- and hk_dpbsave there enters at hkds_go
+; with HL = bsv_open; SAVE loads HL = sav_disk_write here. hkds_run's `jp (hl)`
+; replaced its `jp sav_disk_write`.
 hk_dpsave:
+                ld      hl,sav_disk_write   ; the engine hkds_run jumps to
+hkds_go:                                    ; hk_dpbsave enters here, HL = bsv_open
                 ei                          ; D-HOOKDI: the hook arrives DI (CALSLT),
                                             ; and the whole save follows
                 xor     a
@@ -4533,7 +4564,7 @@ hk_dpsave:
 ; is disk_error and raises; here it now unwinds to hk_dpsave the same way.
 hkds_run:
                 ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
-                jp      sav_disk_write
+                jp      (hl)                ; sav_disk_write, or BSAVE's bsv_open
 ; (sited here, beside its unwind point, since D-SAVEFULLSTAMP grew the engine
 ; above past the shared `disk_write_end`'s `jr c,sv_load_error` reach)
 sv_load_error:
@@ -4587,6 +4618,9 @@ hk_dpload:
                 ld      a,(FOPEN_SEL)
                 cp      FOPEN_SEL_SAVE
                 jr      z,hk_dpsave         ; step 12 (D-SAVEPORT)
+                cp      FOPEN_SEL_BSAVE
+                jp      z,hk_dpbsave        ; BSAVE to disk (2026-10-19) -- far: in
+                                            ; the hole after $50E0, with its engine
                 cp      FOPEN_SEL_AOPEN
                 jp      z,hk_aopen          ; step 11 (D-MERGEPORT) -- far: D-SAVEFULLSTAMP moved it
                 cp      FOPEN_SEL_GETB

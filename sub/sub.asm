@@ -535,6 +535,11 @@ sub_p1_table:
                                                 ;   stub is basic/interp.asm
                                                 ;   `ex_resume`'s res_next arm.
                 jp      fatprim_tenant          ; index 12 (SUBROM_IDX_FATPRIM):
+                                                ;   🗑️ 2026-10-19: one live row
+                                                ;   left, 23 (OPEN's FCB header
+                                                ;   stamp); the primitive rows are
+                                                ;   retired, their bodies kept for
+                                                ;   BLOAD (sub/fatprim.asm). Was:
                                                 ;   the FAT12 primitive/sector
                                                 ;   layer (docs/spec-evict-
                                                 ;   diskfile-cluster.md §11,
@@ -628,7 +633,12 @@ sub_p1_table:
                                                 ;   possible. Main-ROM stub is
                                                 ;   basic/bload.asm `do_bload`; the ,R
                                                 ;   handoff stays resident there.
-                jp      save_tenant             ; index 21 (SUBROM_IDX_SAVE): BLOAD's
+                jp      save_tenant             ; index 21 (SUBROM_IDX_SAVE): the
+                                                ;   two TAPE write engines since
+                                                ;   2026-10-19 (BSAVE "CAS:", and
+                                                ;   SAVE"CAS:" / CSAVE's tokenised
+                                                ;   writer); BSAVE / SAVE to disk are
+                                                ;   disk.rom's. Was: BLOAD's
                                                 ;   MIRROR -- the four SAVE-family WRITE
                                                 ;   engines (BSAVE/disk, BSAVE/tape,
                                                 ;   SAVE/disk, and the shared cassette
@@ -798,7 +808,11 @@ sub_p1_ping:
 ; (randio.asm -- the fat_rand_* random-access record engine behind fp_table rows
 ; 15-17, docs/spec-eviction-g4-space.md §3 -- was deleted by S10.D, 2026-10-15:
 ; RANDOM files run in disk.rom, hk_frnd / hk_dget.)
-                include "fiawalk.asm"
+
+; (fiawalk.asm -- fp_table row 18, fat_io_append's resume-point tail over
+; basic/fiawalked-body.inc, 148 B -- was deleted on 2026-10-19: its sender, main's
+; fat_io_append, went with S10.B increment 2 (APPEND is disk.rom's hk_fapp), and
+; the row had no sender since.)
 
 ; play_parse_tenant (audio Slice 2a MML parser, docs/spec-basic-audio-play-
 ; slice2a.md). A pure RAM leaf: reads the marshalled per-voice MML (ptr,len) from
@@ -843,14 +857,13 @@ sub_p1_ping:
 ; sub-locally; must therefore follow fatprim.asm and fcbname.asm here.
                 include "bload.asm"
 
-; SAVE-family write engines (index 21 = save_tenant, sub/save.asm): BLOAD's
-; mirror -- BSAVE/disk, BSAVE/tape, SAVE/disk and the shared cassette tokenised
-; writer, evicted from main page 1 to fund `TIME` and interrupt-traps T5 from
-; one carve (docs/decision-fund-time-and-t5.md, D-FUND-1). PAGE 1 for the same
-; reason BLOAD is: it calls fatprim's fat_mount/fat_dir_create/
-; fat_flush_data_sector/fat_dir_update sub-locally, so it must follow
-; fatprim.asm here. Unlike BLOAD the PARSE stays resident (it uses `eval`), so
-; nothing rides but SV_OP/SV_STAT.
+; SAVE-family write engines (index 21 = save_tenant, sub/save.asm): since
+; 2026-10-19 the two TAPE engines only -- BSAVE "CAS:" and the shared cassette
+; tokenised writer -- evicted from main page 1 to fund `TIME` and interrupt-traps
+; T5 from one carve (docs/decision-fund-time-and-t5.md, D-FUND-1). The disk
+; engines (BSAVE, tokenised SAVE) are disk.rom's, and with them went this
+; tenant's calls into fatprim's write primitives. Unlike BLOAD the PARSE stays
+; resident (it uses `eval`), so nothing rides but SV_OP/SV_STAT.
                 include "save.asm"
 
 ; Error-message host (index 22 = errmsg_tenant, sub/errmsg.asm), D-MSGSUB: the

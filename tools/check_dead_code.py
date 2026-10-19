@@ -50,7 +50,9 @@ only by the assembler:
   (4) "DEAD" IS PER-BUILD. Each build is walked separately with its own include
       closure and its own seeds. `disk_putword` is defined in the SHARED
       basic/sv-diskwr.inc and called only from basic/sv-bsvdisk.inc, which ONLY
-      sub/save.asm includes -- outside basic/main.asm's closure entirely. It is dead
+      sub/save.asm included -- outside basic/main.asm's closure entirely. (Since
+      2026-10-19 both the routine and its caller are disk.rom's alone, and the
+      routine lives in sv-bsvdisk.inc; the lesson stands.) It is dead
       in main and live in sub; deleting it broke the build. The fix for that shape is
       `IF SUB_BUILD`, not deletion.
 

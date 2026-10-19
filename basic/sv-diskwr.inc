@@ -36,42 +36,13 @@ disk_write_begin:
                 jp      c,sv_load_error        ; disk full / dir full / write protect / I-O
                 ret
 
-; disk_putword — write the 16-bit little-endian word stored at RAM address HL out
-; through disk_putbyte (low byte then high byte). disk_putbyte clobbers HL (and
-; everything else), so the source address is kept in a RAM slot (DSV_PTR, which is
-; otherwise only used by do_save's own loop and is free during the BSAVE header)
-; and reloaded for the high byte rather than trusted in a register.
-;   in:  HL = address of a 2-byte LE word in page-3 RAM.
-;   out: both bytes appended to the write stream. Clobbers all (via disk_putbyte).
-;
-; ⚠️ SUB-SIDE ONLY, and this gate is the second `IF SUB_BUILD` in the tree
-; (sub/sub.asm: "it gates body .inc files that genuinely differ by side").
-; This file is shared by both ROMs, but disk_putword's ONLY caller is
-; basic/sv-bsvdisk.inc's BSAVE header emitter, and that body is included by
-; sub/save.asm alone — the whole BSAVE/SAVE write engine is a sub-ROM page-1
-; tenant (SUBROM_IDX_SAVE). So the main ROM assembled 16 bytes it could never
-; reach. Gated, not deleted, by the ROM REGION STRUCTURE REVIEW's R1 carve
-; (docs/spec-rom-region-rebalance-r1.md A3): 16 B off main PAGE 1, sub.rom
-; byte-identical.
-;
-; 🔴 IT WAS THE BUILD THAT CAUGHT THIS, NOT THE REVIEW. R1's transitive dead-code
-; sweep walked only main.asm's include closure, which does not contain
-; sv-bsvdisk.inc, so the caller was INVISIBLE and the routine read as plain dead
-; code. Deleting it outright failed the assembly with a clean undefined-symbol
-; ERROR. Lesson for the next sweep over a SHARED body: "dead" is per-BUILD, and a
-; file included by both ROMs has two answers (docs/rom-region-structure-review.md
-; §0.1, §4).
-    IF SUB_BUILD
-disk_putword:
-                ld      (DSV_PTR),hl        ; remember the word's address
-                ld      a,(hl)              ; low byte
-                call    disk_putbyte
-                ld      hl,(DSV_PTR)        ; reload (disk_putbyte clobbered HL)
-                inc     hl
-                ld      a,(hl)              ; high byte
-                call    disk_putbyte
-                ret
-    ENDIF
+; (disk_putword -- the BSAVE header's word writer -- lives in basic/sv-bsvdisk.inc
+; since 2026-10-19, beside its only caller. It sat here under `IF SUB_BUILD`
+; because this file was shared by main, sub and disk while its one caller was the
+; sub-ROM's alone (the R1 carve, docs/spec-rom-region-rebalance-r1.md A3: 16 B of
+; main page 1, and "dead is per-BUILD" -- docs/rom-region-structure-review.md
+; §0.1, §4). BSAVE's disk engine runs in disk.rom now, and only disk.rom includes
+; sv-bsvdisk.inc, so the routine went with it and the gate has nothing to gate.)
 
 ; disk_putbyte — append the byte in A to the open-for-write file via the FAT12
 ; engine (which buffers into a 512-byte sector and flushes whole sectors as they

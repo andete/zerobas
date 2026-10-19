@@ -345,16 +345,18 @@ ctl_put:
     ENDIF
 
 
-                include "basic/fatiocreate-body.inc"   ; fat_io_create: body under SUB_BUILD/DISK_BUILD only; main's stub is in the shim block above (SBH-3)
+                include "basic/fatiocreate-body.inc"   ; fat_io_create: body under SUB_BUILD/DISK_BUILD only -- and only disk.rom includes it since 2026-10-19 (BSAVE left the sub-ROM); nothing assembles here
 
 ; 🔴 S10.B increment 2 (2026-10-06): `fat_io_append` (main's APPEND open -- the
 ; chain walk, the Ctrl-Z resume, the refusal of a missing file) IS GONE. APPEND is
 ; disk.rom's hk_fapp now, on the same 256 B record writer as OUTPUT; its rules
 ; moved with it (disk/kernel.asm). The fatprim tenant row 18 it called
-; (sub/fiawalk.asm) keeps its table slot: the rows are numbered.
+; (sub/fiawalk.asm) keeps its table slot: the rows are numbered. (2026-10-19: the
+; row is `jp fp_stash_ok` and sub/fiawalk.asm + basic/fiawalked-body.inc are
+; deleted -- nothing had sent row 18 since this append left.)
 
 
-                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close: SUB_BUILD/DISK_BUILD only since D-ASAVEDOUT -- nothing assembles here
+                include "basic/fatiow-body.inc"        ; fat_io_putbyte/fwr_bytes_inc/fat_io_close: SUB_BUILD/DISK_BUILD only since D-ASAVEDOUT -- nothing assembles here; disk.rom its only home since 2026-10-19
 
 ; fat_delete — RESIDENT SHIM DELETED FROM THIS BUILD (D-ENDIFWALK, 5 B).
 ; It was the thirteenth uniform shim (`ld a,DISKOP_SEL_FAT_DELETE / jp

@@ -1931,10 +1931,31 @@ raised before anything is written. zerobas read the `:` as trailing junk
 returns to `exec_stmt`'s caller, not to the next statement. SAVE now requires end
 of statement (`stmt_bare_end`, else `stmt_error`) and all three continue through
 `exec_stmt` with the cursor past their arguments; BLOAD's comes back from its
-sub-ROM tenant in `FN_RESUME` (`pcr_ok`). ⚠️ Junk after BSAVE's arguments now
-raises `Syntax error` AFTER the write; the reference's order there is unmeasured.
+sub-ROM tenant in `FN_RESUME` (`pcr_ok`). ~~⚠️ Junk after BSAVE's arguments now
+raises `Syntax error` AFTER the write; the reference's order there is unmeasured.~~
+🔴 MEASURED 2026-10-15 and FIXED 2026-10-19 (next paragraph): the CF-3300 raises
+it with NO file written.
 Funded by four carves (`jr` for `jp` in `cas_ascii_load`, `str_lr_count` for
 LEFT$/RIGHT$, `cpow_tail` for `evmc_dispatch`, `dl_loaded` for LOAD's tape arm).
+
+**BSAVE to disk is disk.rom's (D-ROMSIZE step 1, 2026-10-19).** Measured on the
+CF-3300 by entry counts on every hook cell and a guarded register log
+(`scratchpad/bsave_hook_probe.py` → `scratchpad/bsave_hook_run.out`, no ROM byte
+read): BSAVE enters `$FE5D` (H.NULO, our H_FOPEN) exactly once, never `$FE71`, no
+claimed cell per byte, the exec / `,S` forms like the plain one; a bad drive is 62
+BEFORE `$FE5D`, no disk 70 after it; junk after the arguments (`...,&HD0FF 5`,
+`,SX`) is `Syntax error` with no file written. So `do_bsave` keeps the parse, now
+requires the end of the statement BEFORE the crossing (`mxf_require_end`), and
+crosses H_FOPEN once with `FOPEN_SEL_BSAVE`; disk.rom's `hk_dpbsave` runs the
+engine that was the sub-ROM save tenant's (`basic/sv-bsvdisk.inc`, verbatim) over
+its own FAT engine and shares tokenised SAVE's prologue, unwind and status
+(`hk_dpsave`). The file is the same bytes; two engine differences come with
+disk.rom's arms of the shared FAT body: the date stamp is the DOS date (0821h
+from boot, the tenant's fixed value, until a DOS date is set) and a disk-full
+mid-stream takes disk.rom's `ffds_undefer` rather than the tenant's
+D-ASAVEFULLSTAMP stamp (BSAVE refuses a too-large image before the data, so the
+fit verdict, not that arm, answers 66). Own code throughout; unit test
+`tests/test_hk_dpbsave.py`.
 
 
 **A write error reaches BASIC (D-WPROTECT / D-SAVEOPEN, 2026-09-28).** Measured on

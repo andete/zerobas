@@ -171,6 +171,13 @@ REQUIRED_DISK_RAM = [
                                 # IS the disk ROM, but the body is shared and the
                                 # cell is main's -- reading it costs nothing and
                                 # keeps the source identical in all three builds
+    # D-ROMSIZE step 1 (2026-10-19): BSAVE's disk write engine
+    # (basic/sv-bsvdisk.inc) runs in disk.rom now, not in the sub-ROM save
+    # tenant. Main's do_bsave parses into these cells (DSV_END, above, is the
+    # end) and crosses H_FOPEN once; the engine reads them, and walks CURPTR.
+    "CURPTR",                   # BSAVE: start, then the data walk's cursor
+    "EXECPTR",                  # BSAVE: the exec address (header bytes 5-6)
+    "VRAM_FLAG",                # BSAVE: 1 = `,S`, the data comes from VRAM
     # (main_FWR_DIRSEC / main_FWR_DIROFF -- ALIASED imports of main's FWR_DIRSEC /
     # FWR_DIROFF for D-NAMESTAMP's stamp, because disk.rom declares cells of those
     # names itself -- are gone, 2026-10-19: hk_name finds the old entry with

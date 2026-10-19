@@ -30,6 +30,9 @@ EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = e
 ; has to page the BIOS in (disk/kernel.asm) -- do not read one for the other.
 LPTOUT          equ     $00A5   ; MSX BIOS: send the character in A to the list
                                 ; device (MSX2 TH; same class as CHPUT $00A2)
+RDVRM           equ     $004A   ; MSX BIOS: read VRAM at HL -> A -- BSAVE ,S streams
+                                ; its data from VRAM through it (2026-10-19; the
+                                ; same address basic/sysvars.inc declares)
 CSRX            equ     $F3DD   ; cursor column, 1-based (MSX standard work area;
                                 ; same address basic/sysvars.inc declares)
 LINLEN          equ     $F3B0   ; current line length = the active width (ditto)
@@ -210,6 +213,10 @@ FOPEN_SEL_INP   equ     $49     ; S10.C (2026-10-15): OPEN FOR INPUT (hk_finp)
 FOPEN_SEL_AUTO  equ     $58     ; D-ROMSIZE step 1 (2026-10-19): AUTOEXEC.BAS's boot
                                 ; probe (hk_auto) -- stage the name, mount, find,
                                 ; test the size; main loads and RUNs on status 0
+FOPEN_SEL_BSAVE equ     $42     ; D-ROMSIZE step 1 (2026-10-19): BSAVE to disk
+                                ; (hk_dpbsave) -- the 7-byte header + data. The
+                                ; CF-3300's BSAVE enters $FE5D exactly once
+                                ; (scratchpad/bsave_hook_run.out)
 H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC
                                 ; (hk_chin) -- A = 0 / 2 / 4; out A = the byte,
                                 ; CF = the end. The CF-3300 enters $FE8A once per
@@ -242,6 +249,10 @@ FOPEN_SEL_LOAD  equ     $4C     ; 🔴 NOT 0, AND THE REASON IS MEASURED. This
 ; cannot drift with a repack the way TXTBASE/TXTMAX can (those go through the
 ; GENERATED basic-resident-abi.inc instead, and for exactly that reason).
 BASIC_DISK_ID   equ     $FF
+; The on-disk BSAVE marker, under the same rule (basic/sysvars.inc declares the
+; same value): BSAVE's write engine (basic/sv-bsvdisk.inc) runs in this ROM since
+; 2026-10-19.
+BSAVE_DISK_ID   equ     $FE
 ; 1..3 are reserved for steps 10-12 (OPEN, MERGE, SAVE): the ruling says they
 ; route to this same cell and add selector values rather than claiming cells of
 ; their own. An unrecognised selector returns CF=0 -- "not mine" -- and main

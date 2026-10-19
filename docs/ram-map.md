@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
-* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
+* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **61** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -370,6 +370,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |
 | `$F663` | 1 B | `disk` | `FACTYP` | 2=int / 4=single / 8=double (1) |  |
 | `$F664` |  | `basic` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6) |  |
+| `$F664` |  | `disk` | `VRAM_FLAG` | 1 = ",S" VRAM save/load (1) -- published DORES, idle (D-WSZERO s6) |  |
 | `$F665` | 2 B | `basic` | `GFX_G8V` | $F665: written value (int16 LE) (2) |  |
 | `$F667` | 2 B | `basic` | `TGT_ADDR` | $F667: element address, or 0 = scalar (2) |  |
 | `$F669` | 1 B | `basic` | `GFX_SSIZE` | $F669: SCREEN's sprite-size argument while a mode |  |
@@ -522,10 +523,12 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7B9` | 1 B | `disk` | `FPERR` | runtime numeric-error flag: 0 none / 1 overflow / (1 B) |  |
 | `$F7BA` | 2 B | `basic` | `GFX_DDY` | $F7BA: ...dy (2) |  |
 | `$F7BC` | 2 B | `basic` | `CURPTR/SW_ADDR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
+| `$F7BC` | 2 B | `disk` | `CURPTR` | current load pointer (2 bytes) -- SWPTMP+0 |  |
 | `$F7BE` |  | `basic` | `ENDPTR/SW_TYPE` | 1 B: its type (1 = string, 2/4/8 numeric) |  |
 | `$F7BF` |  | `basic` | `SW_ADDR1` | 2 B: operand 1, held across operand 2's parse |  |
 | `$F7C0` |  | `basic` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
-| `$F7C1` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type |  |
+| `$F7C0` | 2 B | `disk` | `EXECPTR` | execution address (2 bytes) -- SWPTMP+4 |  |
+| `$F7C1` | 1 B | `basic` | `SW_TYPE1` | 1 B: operand 1's type | `disk` EXECPTR |
 | `$F7C2` |  | `basic` | `SVT_SP/SW_MODE` | 2 B: the sub-ROM SAVE tenant's SP at dispatch, so its |  |
 | `$F7C4` | 1 B | `basic` | `TRACEFLAG` | = TRCFLG: TRON state, 175 = TRON / 0 = TROFF (1 B) |  |
 | `$F7C5` |  | `basic` | `FBUFFR/TKOVF` | published: number-conversion buffer (43 B) |  |

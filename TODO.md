@@ -3918,8 +3918,23 @@ item — do **one item per session** to keep context lean.
       disk path writes them; a USR routine could). 🆕 hk_dpload's header claims CF=0 for
       an unhandled selector; true only above $4C (an idle 0 returns CF=1; no arm runs
       either way) -- TIER 6, comment-level.
-      ➡️ LEFT OF STEP (1): BSAVE-to-disk (sub only; then sub's second FAT engine), the
-      vestigial veneers, the step-14 gate.
+      ✅ **BSAVE TO DISK, 2026-10-19 (sub page 1 1251 -> 3085 B, main page 1 525 -> 530,
+      disk.rom 2851 -> 2711):** hk_dpbsave (FOPEN_SEL_BSAVE $42) runs the shared
+      sv-bsvdisk.inc engine in disk.rom; sub/save.asm keeps tape only; the FAT tenant's
+      rows 0-14 / 18 retire, t_fia_walked (sub/fiawalk.asm, fiawalked-body.inc) is
+      deleted, fat-prim-body's write half is gated IF DISK_BUILD. 🔴 BEHAVIOUR, toward
+      the reference: trailing junk after BSAVE's arguments now raises 2 with NO file
+      written (the CF-3300's order, bsave_hook_run.out); zerobas wrote first. Witness:
+      [`bsavemove_disk_probe_save.out`](scratchpad/bsavemove_disk_probe_save.out),
+      [`bsavemove_disk_probe_vram_saveload.out`](scratchpad/bsavemove_disk_probe_vram_saveload.out),
+      [`bsavemove_disk_probe_bload_disk.out`](scratchpad/bsavemove_disk_probe_bload_disk.out):
+      ALL PASS; tests/test_hk_dpbsave.py new. 🔮 "the disk probes pass", "knife
+      connectedness unchanged": HIT. ⚠️ Unmeasured: BSAVE with the target file open
+      (no 54 / 64 check, before or now); the date is now the DOS date (equal at boot).
+      ➡️ LEFT OF STEP (1): **BLOAD from disk** -- the LAST user of the sub-ROM's FAT
+      read half (~635 B) + its fatio copy (sub/bload.asm:190); est. ~150-200 B of
+      disk.rom for ~900 B of sub; measure its hook on the CF-3300 first. Then the
+      vestigial veneers and the step-14 gate.
 
 - [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
       THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
@@ -11246,7 +11261,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36779 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36794 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11412,7 +11427,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16274 (T-6FE392)8 (T-529ABE)` from `TODO.md:29068 (T-529ABE)`: a
+      `TODO.md:16289 (T-6FE392)8 (T-529ABE)` from `TODO.md:29083 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17121,7 +17136,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29068 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29083 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

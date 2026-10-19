@@ -1,0 +1,12 @@
+BSAVE"A:SV.BIN",&HC000,&HC010  ->  BLOAD"A:SV.BIN"
+  [PASS] [C000..C010] reloaded byte-identical to the saved pattern
+
+BSAVE"A:SV2.BIN",&HC000,&HC010  ->  BLOAD"A:SV2.BIN",R
+  [PASS] ,R handoff: PC=$C010 (expect $C010 JR$ landmark; exec defaulted to start)
+  [PASS] exec ran: ($D000)=$5A (expect $5A, sentinel was $A5)
+
+SAVE"A:SV.BAS"  ->  NEW  ->  RUN"A:SV.BAS"
+  [PASS] store at $8001 matches the relinked line-link image
+  [PASS] reloaded program ran: ($D002)=$7B (expect $7B)
+
+ALL PASS -- SAVE/BSAVE write files that round-trip through BLOAD/LOAD/RUN

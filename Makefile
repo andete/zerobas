@@ -104,7 +104,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/readdata-body.inc basic/tokskip-body.inc \
          basic/deffn.asm basic/keytrap.asm basic/playsvc.asm basic/subrom-boot.asm \
          basic/pdfcb-body.inc basic/title-body.inc basic/sprtrap-body.inc \
-         basic/fiawalked-body.inc basic/kwtable.inc \
+         basic/kwtable.inc \
          basic/sysvars.inc basic/aliases-early.inc
 
 # zerobas-disk: a standalone 16 KB disk-interface ROM (not an IPS patch). Lives
@@ -120,7 +120,7 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               basic/fat-prim-body.inc basic/fat-delete-body.inc basic/fatfits-body.inc \
               basic/fatio-body.inc \
               basic/fatiocreate-body.inc basic/fatiow-body.inc \
-              basic/sv-diskwr.inc basic/sv-savdisk.inc
+              basic/sv-diskwr.inc basic/sv-savdisk.inc basic/sv-bsvdisk.inc
 # A bare `make` builds `all`, wherever that rule sits: it moved below SUB2_ROM's
 # definition (2026-10-13), and the first rule in the file would otherwise win.
 .DEFAULT_GOAL := all
@@ -209,11 +209,13 @@ SUB_SRC   := sub/sub.asm
 # space.md, the G5-space eviction slice): the tenant body + its two shared
 # .inc files (the lean cart's inline copies, basic/cload.asm) -- same
 # staleness hazard, same fix ([[makefile-subparts-stale-tenant]]).
-# sub/save.asm + basic/sv-*.inc + basic/fatiocreate-body.inc + basic/fatiow-body.inc
-# (the SAVE/BSAVE/CSAVE WRITE engines, docs/decision-fund-time-and-t5.md
-# D-FUND-1, the TIME+T5 funding carve): the tenant body, its five carved engine
-# bodies (the lean cart's inline copies, basic/save.asm) and the two shared
-# copies the tenant needs sub-locally -- same staleness hazard, same fix.
+# sub/save.asm + basic/sv-*.inc (the SAVE/BSAVE/CSAVE WRITE engines,
+# docs/decision-fund-time-and-t5.md D-FUND-1, the TIME+T5 funding carve): the
+# tenant body and its TAPE engine bodies -- same staleness hazard, same fix.
+# (2026-10-19: BSAVE's disk engine, sv-bsvdisk.inc, and the write cursor it drove,
+# sv-diskwr.inc / fatiocreate-body.inc / fatiow-body.inc, are disk.rom's alone --
+# DISK_PARTS; fiawalk.asm + fiawalked-body.inc, fatfits-body.inc and
+# fat-delete-body.inc left the sub build the same day.)
 # (sub/fldlook.asm, the FIELDed-variable READ hook's pure-RAM half -- the D-CLP
 # funding carve -- is GONE since D-FLDDESC, 2026-10-17: a FIELDed variable's own
 # descriptor points into its record, so there is nothing to look up.)
@@ -227,16 +229,14 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/printusing.asm basic/pu-render.inc sub/punum.asm \
              sub/format.asm basic/format-body.inc \
              sub/errtrap.asm \
-             sub/fatprim.asm basic/fat-prim-body.inc basic/fat-delete-body.inc basic/fatfits-body.inc \
-             sub/fiawalk.asm basic/fiawalked-body.inc \
+             sub/fatprim.asm basic/fat-prim-body.inc \
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/lrsetst.asm sub/deffn.asm \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc basic/cascap-body.inc basic/cascut-body.inc \
-             sub/save.asm basic/sv-bsvdisk.inc basic/sv-bsvcas.inc \
-             basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
-             basic/fatiocreate-body.inc basic/fatiow-body.inc \
+             sub/save.asm basic/sv-bsvcas.inc \
+             basic/sv-tsb.inc basic/sv-tputw.inc basic/sv-tne.inc \
              sub/circleparse.asm sub/errmsg.asm sub/lineno.asm sub/readline.asm sub/cursor.asm \
              sub/readdata.asm basic/readdata-body.inc basic/tokskip-body.inc \
              sub/lofu32.asm sub/keystr.asm sub/title.asm basic/title-body.inc \

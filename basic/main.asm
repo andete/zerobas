@@ -165,6 +165,9 @@ DISK_BUILD      equ     0
 ; opening advance rather than following it — so the `dec hl` cancels that and
 ; leaves HL where eval_byte_arg left it. On the Z path HL has been walked past any
 ; spaces onto the ':' or the $00, which is what exec_stmt wants anyway.
+; 🆕 2026-10-19: a SECOND caller, BSAVE's disk arm (basic/save.asm bsv_open), which
+; must refuse trailing junk BEFORE disk.rom opens the file -- the CF-3300's order
+; (scratchpad/bsave_hook_run.out). The name is MAXFILES's; the job is generic.
 mxf_require_end:
                 dec     hl
                 call    stmt_bare_end       ; Z iff the statement ends here
@@ -494,13 +497,11 @@ __MEAS_LOW_END:
 ; cost a build: a body appended here on the strength of it landed in the scarce
 ; page. The genuine low region is the include block near the top of this file,
 ; above __MEAS_LOW_END, which is where mxf_require_end went instead.
-oo_fail_bfn:                                ; OPEN's bad-file-number reject (ERR 52)
-                                            ; (2026-10-19: its FCH_MODE clear is gone,
-                                            ; as oo_fail_syn's is -- only OPEN reads
-                                            ; the cell, after writing it)
-err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong way (52)
-                ld      a,52
-                jp      raise_error
+; 📌 oo_fail_bfn / err_badfnum_raise (OPEN's bad-file-number reject and D-CHDIR's
+; PRINT# / INPUT# the wrong way, both ERR 52; 2026-10-19: its FCH_MODE clear is
+; gone, as oo_fail_syn's is -- only OPEN reads the cell, after writing it) MOVED
+; to basic/save.asm on 2026-10-19: a pin refill in front of $6CF3 (the note
+; there).
 ; (err_notopen_raise lives in basic/list.asm since D-WSZERO S14g-d: it refills
 ; bytes freed in front of the $6CF3 pin)
 

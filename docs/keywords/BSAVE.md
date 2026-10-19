@@ -47,6 +47,9 @@ as `&HC800` is the usual way to write them.
 - **The exec is checked like an address**: `70000` is `Overflow` (6) and
   `"A"` is `Type mismatch` (13), and on disk the file is then not created.
 - **The rest of the line runs**: `BSAVE "X.BIN",A,B:PRINT "saved"` prints.
+- **Junk after the arguments is `Syntax error`, and no file is written**
+  (`BSAVE "X.BIN",&HD000,&HD0FF 5`): the whole statement is read before the
+  file is opened.
 - **An open output file is left alone**: a `BSAVE` between two `PRINT #1`s
   does not disturb the file being written on channel 1.
 - **On a diskless machine** a name with no device goes to the cassette, and
@@ -100,6 +103,12 @@ rung requires. **RAM usage** is not yet proven either.
 
 ## What we found, and how
 
+- **Junk after the arguments wrote the file first** (changed 2026-10-19,
+  D-ROMSIZE step 1): `BSAVE "X.BIN",&HD000,&HD0FF 5` saved X.BIN and only then
+  raised `Syntax error`; on the CF-3300 the same line is `Syntax error` with no
+  file written ([`bsave_hook_run.out`](../../scratchpad/bsave_hook_run.out),
+  from [`bsave_hook_probe.py`](../../scratchpad/bsave_hook_probe.py)). The end
+  of the statement is now required before the open, as `SAVE` already did.
 - **A tape name of four or more letters was written corrupted** (fixed
   2026-10-17, D-TSVOVL; broken the day before), as with `SAVE`. And a `.` now
   ends the name, as on the VG-8020 and the CF-3300: `BSAVE "CAS:PF.X",…` writes
@@ -138,11 +147,17 @@ rung requires. **RAM usage** is not yet proven either.
 ## Where it lives
 
 - `do_bsave`, `bsave_opt4` (the disk fourth argument) and `bsave_opt4_cas`
-  (the tape one) in [basic/save.asm](../../basic/save.asm), which hands the
-  write to the sub-ROM's save tenant through `sv_tenant`.
-- The write itself: [basic/sv-bsvdisk.inc](../../basic/sv-bsvdisk.inc) (disk)
-  and [basic/sv-bsvcas.inc](../../basic/sv-bsvcas.inc) (tape), assembled into
-  [sub/save.asm](../../sub/save.asm).
+  (the tape one) in [basic/save.asm](../../basic/save.asm): the whole parse,
+  including the end of the statement, and the device choice.
+- **Disk** (since 2026-10-19): main crosses the `$FE5D` hook once — the cell
+  the CF-3300's `BSAVE` enters exactly once — and the disk ROM writes the file:
+  `hk_dpbsave` in [disk/kernel.asm](../../disk/kernel.asm) over the engine in
+  [basic/sv-bsvdisk.inc](../../basic/sv-bsvdisk.inc), on the disk ROM's own
+  FAT code. Until then the write ran in the sub-ROM's save tenant, over a
+  second copy of the FAT code.
+- **Tape**: `sv_tenant` hands the write to the sub-ROM's save tenant
+  ([sub/save.asm](../../sub/save.asm)), which runs
+  [basic/sv-bsvcas.inc](../../basic/sv-bsvcas.inc).
 
 ## Related concepts
 

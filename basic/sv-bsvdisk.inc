@@ -1,29 +1,55 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
 
-; sv-bsvdisk.inc -- BSAVE's DISK write engine (bsv_open .. bsv_fin).
+; sv-bsvdisk.inc -- BSAVE's DISK write engine (bsv_open .. bsv_fin, disk_putword).
 ; ===========================================================================
-; One of the five SAVE-family WRITE ENGINES evicted from main page 1 into the
-; sub-ROM PAGE-1 tenant sub/save.asm (SUBROM_IDX_SAVE) to fund `TIME` and
-; interrupt-traps T5 together -- docs/decision-fund-time-and-t5.md, D-FUND-1.
-; BLOAD's mirror, and the same mechanism: beside fatprim_tenant the FAT12 write
-; primitives are in-page calls instead of cross-slot round trips.
+; 🏗️ D-ROMSIZE step 1 (2026-10-19): INCLUDED BY disk.rom ALONE (disk/kernel.asm,
+; in the hole after the pinned $50E0 CONIN entry), reached through H_FOPEN with
+; FOPEN_SEL_BSAVE -> hk_dpload -> hk_dpbsave, which shares hk_dpsave's prologue
+; and unwind. The CF-3300's BSAVE enters $FE5D exactly once, never $FE71, and no
+; claimed cell per byte (scratchpad/bsave_hook_run.out), so the whole write --
+; create, the fit verdict, the 7-byte header, the data, the close -- is one
+; crossing. Main keeps the parse (basic/save.asm do_bsave: the name, start, end,
+; exec / `,S`, and the end of the statement BEFORE the open) and the diskless /
+; device dispatch; every value crosses in its RAM home (DISK_FCB_NAME, CURPTR,
+; DSV_END, EXECPTR, VRAM_FLAG -- published to this ROM by tools/gen_resident_abi.py).
 ;
-; The text is VERBATIM. basic/save.asm leaves a tenant-call stub under the SAME
-; entry label as the body it replaced, which is why the
-; `jr`/fall-through reaching it from the resident PARSE needs no edit.
+; HISTORY. One of the five SAVE-family WRITE ENGINES evicted from main page 1 into
+; the sub-ROM PAGE-1 tenant sub/save.asm (SUBROM_IDX_SAVE) to fund `TIME` and
+; interrupt-traps T5 (docs/decision-fund-time-and-t5.md, D-FUND-1), over the
+; sub-ROM's own copy of the FAT engine (sub/fatprim.asm). Tokenised SAVE left that
+; tenant for disk.rom in step 12 (D-SAVEPORT); this body followed on 2026-10-19,
+; VERBATIM, over disk.rom's own fat_io_create / fat_io_putbyte / fat_io_close and
+; fat_fits -- the same four bodies hk_dpsave already uses -- so the file on the
+; disk is byte-for-byte what the tenant wrote.
 ;
-; `sv_load_error` is the one rebound name: resident it is a zero-byte EQU onto
-; `load_error`; in the tenant it is the
-; sub-local reporter that sets SV_STAT and lets the resident stub report ONCE.
-; ~~Its `ret`-not-abort shape is preserved exactly~~ -- 🔴 NOT ANY MORE: since
-; D-DISKFULLRETRY (2026-10-02) it ABORTS to save_tenant from any depth, because
-; the resume retried a failed flush on every remaining byte
-; ([[load-error-is-not-abort]], sub/save.asm's ERROR PATH note).
+; `sv_load_error` is disk.rom's: DISKOP_STATUS := 3 and an unwind to hk_dpsave's
+; frame from any depth (D-DISKFULL / D-DISKFULLRETRY), so the FIRST failure ends
+; the write and main's disk_error raises the mapped code once. The tenant's copy
+; also called TAPIOF and set ERRMARK; a disk write never armed the tape.
 ;
 ; CLEAN-ROOM: our own code, moved. Cassette/disk format provenance unchanged
 ; (basic/PROVENANCE.md).
 ; ===========================================================================
+
+; disk_putword -- write the 16-bit little-endian word stored at RAM address HL out
+; through disk_putbyte (low byte then high byte). disk_putbyte clobbers HL (and
+; everything else), so the source address is kept in a RAM slot (DSV_PTR, which is
+; otherwise only used by tokenised SAVE's own loop and is free during the BSAVE
+; header) and reloaded for the high byte rather than trusted in a register.
+;   in:  HL = address of a 2-byte LE word in page-3 RAM.
+;   out: both bytes appended to the write stream. Clobbers all (via disk_putbyte).
+; (It lived in basic/sv-diskwr.inc under `IF SUB_BUILD` until 2026-10-19 -- see
+; the note there; this file is its only caller and disk.rom its only home.)
+disk_putword:
+                ld      (DSV_PTR),hl        ; remember the word's address
+                ld      a,(hl)              ; low byte
+                call    disk_putbyte
+                ld      hl,(DSV_PTR)        ; reload (disk_putbyte clobbered HL)
+                inc     hl
+                ld      a,(hl)              ; high byte
+                call    disk_putbyte
+                ret
 
 bsv_open:
                 ; --- create the file and set the DTA -----------------------
