@@ -134,15 +134,14 @@ load_next:
                 jr      load_loop
 
 load_done:
-                call    TAPIOF              ; motor off
-                ; falls into bl_apply_ofs, whose `ret` ends the tape load.
-                ; ⚠️ AND SO THE TAPE PATH ADDS BL_OFS A SECOND TIME, AFTER THE DATA
-                ; (to CURPTR, ENDPTR and EXECPTR): a tape `BLOAD"CAS:X",R,ofs`
-                ; with ofs <> 0 hands main's ,R EXECPTR = exec + 2 x ofs. Read
-                ; 2026-10-19 while the disk path left this file, not measured and
-                ; NOT changed here (the slice kept the tape untouched); the disk
-                ; path never had it (it ended `jp load_handoff`), and disk.rom's
-                ; hk_dpbload adds the offset once.
+                jp      TAPIOF              ; motor off; its `ret` ends the tape load
+                ; ✅ D-CASOFS2X (2026-10-19): this was `call TAPIOF` and FELL INTO
+                ; bl_apply_ofs, adding BL_OFS a SECOND time after the data (to
+                ; CURPTR, ENDPTR and EXECPTR), so `BLOAD"CAS:X",R,ofs` ran exec +
+                ; 2 x ofs. Measured (scratchpad/casofs_probe.py, our own tape): the
+                ; VG-8020 runs exec + ofs. The tail call is the same 3 bytes; the
+                ; header's single bl_apply_ofs above is the only add now, as on the
+                ; disk path (disk.rom's hk_dpbload).
 
 ; bl_apply_ofs -- D-BLOADOFS: add BL_OFS (main's pcr_bload) to the header's
 ; start, end and exec, wrapping at 16 bits, as the CF-3300 does to all three.

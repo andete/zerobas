@@ -14,6 +14,10 @@ The tapes are OUR OWN, built per run with cas_encode: `ret` (a bare `ret`),
 `clob` (HL/DE/BC zeroed, then `ret`), `ran` (stores 42 at &HD100, so the row
 proves the code ran), and a two-file tape for `chain` (two `,R` loads in one
 line, the multi-part loader shape).
+`ofs` (D-CASOFS2X, 2026-10-19): `,R,&H100` -- the routine (start = exec = &HD000)
+stores 42 in &HD3F0 and lands at &HD100; a DECOY POKEd at &HD200 stores 99, so exec +
+2 x offset (zerobas until then) reads 99 and the VG-8020's exec + offset reads 42
+(scratchpad/casofs_probe.py).
 
 Each row prints `ROW <name> VG=[...] ZB=[...] <verdict>`.
 Exit 0 all agree; 1 a divergence; 2 the VG-8020 gave no reading.
@@ -28,11 +32,15 @@ from cas_encode import build_cas                    # noqa: E402
 RET = bytes([0xC9])
 CLOB = bytes([0x21, 0, 0, 0x11, 0, 0, 0x01, 0, 0, 0xC9])
 RAN = bytes([0x3E, 42, 0x32, 0x00, 0xD1, 0xC9])      # ld a,42 / ld (&HD100),a / ret
+OFS = bytes([0x3E, 42, 0x32, 0xF0, 0xD3, 0xC9])      # ld a,42 / ld (&HD3F0),a / ret
+DECOY = ("POKE &HD3F0,0:FOR I=0 TO 5:POKE &HD200+I,"
+         "VAL(MID$(\"062099050240211201\",I*3+1,3)):NEXT")   # the same, storing 99
 
 TAPES = {"ret": build_cas("T", 0xD000, 0xD000, RET),
          "clob": build_cas("T", 0xD000, 0xD000, CLOB),
          "ran": build_cas("T", 0xD000, 0xD000, RAN),
-         "chain": build_cas("A", 0xD000, 0xD000, RET) + build_cas("B", 0xD000, 0xD000, RAN)}
+         "chain": build_cas("A", 0xD000, 0xD000, RET) + build_cas("B", 0xD000, 0xD000, RAN),
+         "ofs": build_cas("T", 0xD000, 0xD000, OFS)}
 
 CASES = {
     "ret": ("ret", ['BLOAD"CAS:T",R:PRINT"[OK]"']),
@@ -40,6 +48,7 @@ CASES = {
     "prog": ("clob", ["NEW", '10 BLOAD"CAS:T",R:PRINT"[OK]"', '20 PRINT"[L20]"', "RUN"]),
     "ran": ("ran", ['POKE&HD100,0:BLOAD"CAS:T",R:PRINT"[";PEEK(&HD100);"]"']),
     "chain": ("chain", ['POKE&HD100,0:BLOAD"CAS:A",R:BLOAD"CAS:B",R:PRINT"[";PEEK(&HD100);"]"']),
+    "ofs": ("ofs", [DECOY, 'BLOAD"CAS:T",R,&H100:PRINT"[";PEEK(&HD3F0);"]"']),
 }
 
 

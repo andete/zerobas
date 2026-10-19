@@ -3946,8 +3946,14 @@ item — do **one item per session** to keep context lean.
       expects 0 (zerobas's own scratch FCB; disk.rom resolves the default). 🔮 "62 /
       56 / 53 on both", "knife connectedness unchanged": HIT.
       ➡️ LEFT OF STEP (1): the vestigial veneers / orphan `ret`s and the step-14 gate.
-- [ ] 📼 **D-CASOFS2X -- TAPE `BLOAD"CAS:X",R,offset` ADDS THE OFFSET TWICE (found
-      2026-10-19, by reading)**
+- [x] 📼 **D-CASOFS2X -- TAPE `BLOAD"CAS:X",R,offset` ADDS THE OFFSET TWICE (found
+      2026-10-19, by reading)** — ✅ **FIXED 2026-10-19.** 📏 [`casofs_run.out`](scratchpad/casofs_run.out)
+      (our own tape; a decoy at exec + 2 x offset): the VG-8020 runs exec + offset (42),
+      zerobas ran the decoy (99); the data landed at start + offset on both. 🔮
+      "VG 42, ZB 99": HIT. Fix: load_done's `call TAPIOF` became `jp TAPIOF` (same
+      3 B), so the load no longer falls into a second bl_apply_ofs.
+      [`casofs_after.out`](scratchpad/casofs_after.out): all three rows SAME. GATED:
+      bloadrtail-acceptance row `ofs`.
       🎚️ TIER 3 — provisional: an offset BLOAD from tape runs exec + 2 x offset.
       🤖 **AUTONOMOUS** — measure first (the VG-8020, a synthetic tape of our own
       code): basic/bload-body.inc's load_done falls into bl_apply_ofs on the tape
@@ -11284,7 +11290,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36817 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36823 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11450,7 +11456,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16312 (T-6FE392)8 (T-529ABE)` from `TODO.md:29106 (T-529ABE)`: a
+      `TODO.md:16318 (T-6FE392)8 (T-529ABE)` from `TODO.md:29112 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17159,7 +17165,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29106 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29112 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

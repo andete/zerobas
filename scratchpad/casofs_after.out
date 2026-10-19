@@ -1,0 +1,4 @@
+ROW plain VG=[[ 42 ]] ZB=[[ 42 ]] SAME
+ROW ofsr VG=[[ 42 ]] ZB=[[ 42 ]] SAME
+ROW ofsdat VG=[[ 62  0 ]] ZB=[[ 62  0 ]] SAME
+refcache: 0 hit, 6 miss, 6 stored

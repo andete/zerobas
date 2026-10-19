@@ -114,6 +114,17 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A tape `BLOAD"CAS:…",R,offset` jumped to the wrong address** (fixed
+  2026-10-19, D-CASOFS2X). The bytes landed at start + offset, as on the
+  reference, but the tape path added the offset a second time after the data,
+  so `,R` ran exec + 2 × offset. Our own tape of a few bytes of code, with a
+  decoy where the doubled address pointed, showed it: the VG-8020 runs the
+  loaded code and zerobas ran the decoy. A disk `BLOAD` never had it. Found
+  by reading the code while the disk path moved into the disk ROM.
+- **A bad drive or file name now gives the reference's error** (fixed
+  2026-10-19, with the disk load's move into the disk ROM): `BLOAD"Q:X.BIN"`
+  is `Bad drive name`, `BLOAD""` and `BLOAD"A:"` are `Bad file name`, as on
+  the CF-3300. zerobas used to carry on with a stale file name.
 - **A `,R` program that loads a bigger BASIC program left the variables
   behind** (fixed 2026-10-17, D-HFOXOOM). Harry Fox's loader moves the
   program end (`VARTAB`) and then types `RUN30`; zerobas took the new end
