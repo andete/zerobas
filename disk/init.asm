@@ -234,8 +234,9 @@ RDBLK_DST       equ     $E940   ; current DTA write pointer (word; from BDOS_DTA
 ; the DSKIO CALSLT (which clobbers every register). It cannot borrow main's
 ; FREAD_OFF/FREAD_LEFT at $E9E6/$E9E8: those sit INSIDE the per-channel context
 ; block FCH_STATE0..+FCH_STATESZ ($E9C9..$E9FA) that fch_save_active/fch_load_ctx
-; stage in and out, so writing them from this slot would reach into main's
-; channel staging.
+; staged in and out, so writing them from this slot would have reached into main's
+; channel staging (no channel stages there since S10.C, and the save / load
+; itself is gone since S10.E, 2026-10-19; the aliasing stands on its own).
 ;
 ; 🔴 THE NON-OVERLAP CLAIM IS THE BLOCK COMMENT ABOVE, NOT A NEW ONE: "Only the
 ; DOS-boot path (on a real-BIOS host) calls $27, so this never collides with the

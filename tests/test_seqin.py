@@ -25,6 +25,10 @@ refills), a number straddling 255/256, a file that is an exact multiple of 256
 Python model laid down by OFFSET, never by the ROM, so a mis-placed byte or a
 lost one is visible.
 
+🏗️ S10.E (2026-10-19) added ops 6 LOF / 8 LOC to the same cell: a pure read of
+the live channel's FCB row (+16..19 / +33..35) in DE:HL, for every disk mode --
+they replace main's LOF / LOC mirror. Their rows are at the end.
+
 read_sector serves the model (contiguous chain: fat_next_cluster is cluster + 1);
 everything between -- hk_chin, din_peek / din_take / din_fill, k47b2_seek,
 k47b2_nextbyte, rdblk_getbyte, fat_read_file_sector, fat_advance -- runs for real.
@@ -277,6 +281,54 @@ def run():
     report("live channel RANDOM: the end, no sector read, block untouched",
            end and not r.reads and bytes(r.m.peek(BLOCK, 265)) == before,
            f"end={end} reads={r.reads}")
+
+    # --- S10.E: ops 6 LOF / 8 LOC answer from the FCB row, any disk mode -------
+    # 🎯 WHAT THESE ROWS PIN. LOF / LOC read a MIRROR in main until S10.E
+    # (FAT_FILESIZE / FWR_BYTES, kept by disk.rom's dout_mirror and the sub-ROM's
+    # t_fch_load); now main asks H_CHIN and gets DE:HL. So: the row's own +16..19
+    # (LOF, all 32 bits) and +33..35 (LOC, high byte 0 -- +36 is poisoned, the
+    # FCB's fourth random-record byte must not leak in), in every disk mode; the
+    # row is FCH_ACTIVE's (two channels, different values); and the op is a pure
+    # read -- no sector, no DISKOP_ERR clear (it is not a read's code), row and
+    # record untouched. The DOUT value is the case the mirror got WRONG in main:
+    # an APPEND channel on a 300 B file has LOF 300, LOC 256 (the last record's
+    # start), and main's tenant read LOC's digits from FAT_FILESIZE.
+    # modes: 1 INPUT, 3 DOUT_MODE (OUTPUT / APPEND), 4 RANDOM
+    for mode, size, rr in ((1, 26, 0x0100), (3, 300, 256),
+                           (4, 0x01_2C_00_00 + 76800, 0x0004_57),
+                           (3, 0, 0)):
+        r = Rig(b"", mode=mode)
+        sym = r.s
+        r.m.poke(r.row + 16, size.to_bytes(4, "little"))
+        r.m.poke(r.row + 33, rr.to_bytes(3, "little"))
+        r.m.poke(r.row + 36, 0xFF)                 # poison: not part of LOC
+        # a SECOND channel, live instead: its row must be the one read
+        r2 = row_addr(sym, 2)
+        r.m.poke(r2, bytes(sym["FCH_STATESZ"]))
+        r.m.poke(r2 + 16, (12345).to_bytes(4, "little"))
+        r.m.poke(r2 + 33, (777).to_bytes(3, "little"))
+        r.m.poke(sym["FCH_MODES"] + 2, mode)
+        before = bytes(r.m.peek(r.row, sym["FCH_STATESZ"])) + bytes(r.m.peek(BLOCK, 265))
+        vals = {}
+        for op in (6, 8):
+            cpu = r.m.call("hk_chin", a=op)
+            vals[op] = (cpu.de << 16) | cpu.hl
+        after = bytes(r.m.peek(r.row, sym["FCH_STATESZ"])) + bytes(r.m.peek(BLOCK, 265))
+        tag = f"mode {mode}, size {size}, RR {rr}"
+        report(f"op 6 LOF ({tag}): the row's +16..19, 32 bits", vals[6] == size,
+               f"got {vals[6]}")
+        report(f"op 8 LOC ({tag}): the row's +33..35, high byte 0", vals[8] == rr,
+               f"got {vals[8]:#x}")
+        report(f"... a pure read: no sector, DISKOP_ERR kept, row + record unchanged",
+               not r.reads and r.m.mem[sym["DISKOP_ERR"]] == 0x99 and after == before,
+               f"reads={r.reads} DISKOP_ERR={r.m.mem[sym['DISKOP_ERR']]:#x}")
+        r.m.poke(sym["FCH_ACTIVE"], 2)
+        two = []
+        for op in (6, 8):
+            cpu = r.m.call("hk_chin", a=op)     # (the CPU object is reused: read now)
+            two.append((cpu.de << 16) | cpu.hl)
+        report(f"... FCH_ACTIVE picks the row: #2 answers its own 12345 / 777",
+               two == [12345, 777], f"got {two}")
 
     print()
     print("ALL PASS -- the INPUT reader keeps its text rules across every refill"

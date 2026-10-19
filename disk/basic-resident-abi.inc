@@ -57,8 +57,6 @@ FCH_RECMAX equ 00100H   ; the largest record (the OPEN LEN= domain is 1..256)
 DOUT_FLG equ 00027H   ; 265 B block, +39 flags (DOUT_RFULL / DOUT_DEAD)
 DOUT_RFULL equ 00000H   ; bit: the record is full and not yet written
 DOUT_DEAD equ 00001H   ; bit: a CLOSE failed; the next CLOSE frees it
-main_FAT_FILESIZE equ 0EE0BH   ; main's FAT_FILESIZE -- DISK-ONLY: file size in bytes (4-byte LE)
-main_FWR_BYTES equ 0EE30H   ; main's FWR_BYTES -- DISK-ONLY: total bytes written so far = final file size (4-byte LE)
 FCH_RECLENS equ 0EE4DH   ; DISK-ONLY: 32 B ($EE4D..$EE6C). ~~$EA92..$EAFF free (110 B)~~
 FCH_RECNOS equ 0EE7DH   ; DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number
 GP_RECNO equ 0F079H   ; DISK-ONLY: record number, 1-based (2 B)
@@ -83,18 +81,17 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-main_fat_mount equ 06451H   ; main's fat_mount
-main_fat_find equ 06455H   ; main's fat_find
-parse_disk_fcb equ 06514H
+main_fat_mount equ 06448H   ; main's fat_mount
+main_fat_find equ 0644CH   ; main's fat_find
+parse_disk_fcb equ 0650BH
 field_prologue equ 07348H
 field_item equ 072F6H
 lrset_tgt equ 073C5H
 lrset_rhs equ 073E8H
 lrset_finish equ 07258H
 fch_ctx_addr equ 06F7DH
-disk_error equ 06B96H
+disk_error equ 06B6CH
 read_line equ 045FBH
 fch_close_all equ 0706CH
 eval_int16_checked equ 0454AH
-fch_select equ 06FB2H
 raise_error equ 04326H

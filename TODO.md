@@ -3875,6 +3875,38 @@ item — do **one item per session** to keep context lean.
       🔮 "zerobas's edge sits 2-8 below" (the first scan): HIT on its face, wrong cause;
       "one constant offset in all four absolute rows": MISS (11 only for a new target);
       "121 matches": MISS; "131 matches at both parities": HIT.
+- [x] 🧱 **S10.E -- DISK.ROM ANSWERS LOF / LOC; MAIN'S CHANNEL-SWITCH MACHINERY AND THE
+      SUB-ROM'S MIRROR GO (2026-10-19)** — ✅ main page 1 345 -> 455 B free, sub page 0
+      177 -> 184, sub page 1 1165 -> 1237, disk.rom 2865 -> 2886 (`make basic-reloc`).
+      🎚️ BUDGET — D-ROMSIZE step (1), Joost's order; "Continue" (2026-10-19).
+      After D-FLDDESC the only reason main saved / loaded channel context on every
+      switch was sub's t_fch_load MIRROR of the live channel's LOF / LOC into
+      FAT_FILESIZE / FWR_BYTES. Now hk_chin answers op 6 LOF (FCB +16..19) and op 8 LOC
+      (FCB +33..35) in DE:HL (disk/fat.asm din_lofloc); RANDOM's LOC stays
+      FCH_RECNOS[ch]. Gone: main's chan_gate flush arm, chan_restore(_st),
+      fch_save_active, fch_load_ctx, fch_sync_mirror, fch_claim; sub's t_fch_load /
+      tfl_mirror / fch_engrow (row 22 -> fp_stash_ok); disk.rom's dout_mirror.
+      fch_select is FCH_ACTIVE := A plus the FCH_MODE mirror (FCH_ACTIVE keeps its
+      cross-ROM meaning); fch_park stays. Pins refilled exactly (new_prog + store_line
+      ahead of $6CF3, ret_frame + read_one_value + dl_bare ahead of $72D4); 6/6, waste
+      4 of 4; switch-build-check 7/7. Drafted by a subagent in its own worktree,
+      integrated and measured here.
+      📏 [`applof_s10e.out`](scratchpad/applof_s10e.out) (applof_probe.py + a 300 B start):
+      APPEND to 6 / 256 / 300 B files, LOF / LOC after OPEN, +10 B, +300 B, size
+      reopened -- all IDENTICAL to the CF-3300. The 300 B row's LOC reads 256 where the
+      old code printed LOF's 300 (the LOFU32 tenant always read FAT_FILESIZE): a latent
+      divergence, fixed. 🔮 "LOC 0 / LOF 256 for that row": MISS twice. Knife
+      connectedness unchanged: HIT.
+      ⚠️ CHANGED, NOT MEASURED ON THE REFERENCE: GET / PUT's disk I/O now runs with
+      interrupts ENABLED on both record paths (an `ei` in hk_dget; it was DI on both),
+      and a failing KILL / NAME with a channel open no longer has DISKOP_ERR cleared by
+      the old restore crossing (a stale code can survive a successful verb, as it
+      already could with nothing open).
+      ➡️ LEFT OF STEP (1): AUTOEXEC into disk.rom + NAME on disk.rom's own fat_find
+      (~51 B main), fch_select's three now-redundant `ld a,(FCH_MODE)` reads (9 B),
+      BSAVE-to-disk (sub only; then sub's second FAT engine), the vestigial veneers,
+      the step-14 gate.
+
 - [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
       THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
       🎚️ TIER 4 — RAM usage: FRE(0) inside `X=...FRE(0)...` with X new reads 11 B more
@@ -4081,9 +4113,9 @@ item — do **one item per session** to keep context lean.
       ➡️ RESIDUALS (unmeasured on the reference; none is a regression of a gated row):
       (a) `LSET A$=A$` on a fielded A$ -- the source shares the target's bytes and
       is padded before it is copied; (b) whether ERR 50 leaves the overflowing
-      variable bound (ours: raised before the store); (c) the row-21 crossing in
-      fch_save_active is now a no-op that main still pays for -- dropping it means
-      re-pricing the pins; (d) scratchpad/wszero_s9_knife.py's K-WS22 / K-WS23 cut
+      variable bound (ours: raised before the store); ~~(c) the row-21 crossing in
+      fch_save_active is now a no-op that main still pays for~~ -- ✅ gone with S10.E
+      (2026-10-19); (d) scratchpad/wszero_s9_knife.py's K-WS22 / K-WS23 cut
       code that is gone.
 
 - [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL
@@ -11200,7 +11232,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36733 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36765 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11366,7 +11398,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16228 (T-6FE392)8 (T-529ABE)` from `TODO.md:29022 (T-529ABE)`: a
+      `TODO.md:16260 (T-6FE392)8 (T-529ABE)` from `TODO.md:29054 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17075,7 +17107,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29054 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

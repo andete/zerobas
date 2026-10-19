@@ -2579,6 +2579,14 @@ channel manager (basic/files.asm) is the cache:
   using the same channel back-to-back (the common case) copies nothing.
 * `fch_claim(ch)` (used by OPEN) makes `ch` active without loading its about-to-be-
   overwritten ctx, saving any other active channel first.
+🏗️ **S10.E (2026-10-19): the cache above is GONE.** Every disk channel is an
+MSX-DOS FCB in its own row, owned by disk.rom from OPEN (S10.B / S10.C / S10.D),
+its record the block's `+9` (D-FLDDESC); the last thing the switch did was the
+sub-ROM `t_fch_load` mirroring the FCB's LOF / LOC into `FAT_FILESIZE` /
+`FWR_BYTES`, and LOF / LOC now ask disk.rom (`H_CHIN` ops 6 / 8). So
+`fch_select(ch)` is `FCH_ACTIVE := ch` plus the `FCH_MODE` mirror, `fch_claim`,
+`fch_save_active`, `fch_load_ctx` and `chan_gate`'s restore are deleted, and the
+paragraphs below are the design as it stood before S10.B.
 The per-channel state span `FCH_STATE0..+FCH_STATESZ` (`$E9C9..$E9FA`, 50 bytes)
 covers every value that must persist between statements for an open channel — the
 read iterator, file meta (`FAT_FILESIZE` for LOF), the read stream, and the whole
@@ -2629,7 +2637,8 @@ all. That contract is honoured by **one** `push ix` hoisted into `fch_select` �
 the single door every `IX`-critical caller enters through; `fch_claim`'s only
 caller (`do_open`) keeps its cursor in `HL` and already guards for CALSLT. Any
 NEW caller of `fch_ctx_addr`/`fch_save_active`/`fch_load_ctx` must be checked
-against this. The first cut of OPEN's success
+against this. *(S10.E: `fch_select` holds no CALSLT any more; `fch_ctx_addr`'s
+callers guard IX themselves.)* The first cut of OPEN's success
 path computed the `FCH_MODES[ch]` address into `HL`, clobbering the text cursor
 before `jp exec_stmt` — so OPEN opened the file yet then executed from garbage
 (a spurious "syntax error"); the fix guards `HL` across the table write.

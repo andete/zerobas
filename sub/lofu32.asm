@@ -17,15 +17,16 @@
 ; subrom_call, arga_pack_fac and the FACTYP/DE tail -- the shape every other
 ; funding carve in this table has.
 ;
-; CONTRACT. in: FAT_FILESIZE (4-byte LE, page-3 RAM, already selected to the
-; channel by fch_select) is NON-ZERO -- the caller handles 0 itself, because
+; CONTRACT. in: DE:HL = the value, unsigned 32-bit (D = the high byte), passed
+; through subrom_call / CALSLT untouched, and NON-ZERO -- the caller handles 0
+; itself, because
 ; the FPNUM zero form is `zero_fill 18` and that routine is main LOW REGION,
 ; which a page-0 tenant may not call (closure rule). out: ARGA = the unpacked
 ; FPNUM of the size: sign 0, DEXP = the digit count, dig[0..n-1] the decimal
 ; digits most-significant first, dig[n..14] zero (guard included). The caller
 ; packs it (arga_pack_fac). Clobbers everything (tenant convention).
 ;
-; PAGE-0 CLEAN, transitively: RAM in, RAM out, no BIOS, no low region -- the
+; PAGE-0 CLEAN, transitively: registers in, RAM out, no BIOS, no low region -- the
 ; digit array is cleared by its own loop for exactly that reason.
 ;
 ; HOW. Peel decimal digits, least significant first, into ARGA's digit array
@@ -34,9 +35,15 @@
 ; small for ten digits) and no reversal loop, unlike basic/float-arith.asm's
 ; widen_uint_to. Then one LDIR slides them to dig[0..n-1] (dest below source,
 ; so the overlap is safe) and the tail is cleared.
+; 🏗️ S10.E (2026-10-19): THE VALUE ARRIVES IN DE:HL, NOT IN FAT_FILESIZE. That
+; cell was main's MIRROR of the live channel's FCB size, kept current by disk.rom
+; (dout_mirror) and by the FAT tenant on every channel switch (t_fch_load); both
+; are gone, and LOF / LOC get the FCB's value from disk.rom in DE:HL (H_CHIN ops
+; 6 / 8), which main hands straight on. It also ends a quiet mismatch: LOC on an
+; OUTPUT / APPEND channel tested FWR_BYTES for 0 but had its digits read here from
+; FAT_FILESIZE -- LOF's value -- so an APPEND channel on a file over 256 B
+; answered LOF for LOC until its first record was written.
 lofu32_tenant:
-                ld      hl,(FAT_FILESIZE)   ; DE:HL = the size, unsigned 32-bit
-                ld      de,(FAT_FILESIZE+2)
                 ld      bc,ARGA+FPNUM_DIG+14 ; BC = descending write pointer
 lu32_peel:
                 push    bc                  ; div10_32 counts in B

@@ -173,11 +173,13 @@ def run():
         # FWBUF+512 (offsets 51 and 14) — the first cut of this guard reported "8
         # of 64 clobbered" on rows with no straddle at all, which is an instrument
         # result read as a machine one [[an-unnamed-outcome-reads-as-no-outcome]].
-        # Since S10.D it writes the FCB row and dout_mirror's two MAIN cells;
-        # every one of them is excluded by address, wherever it falls.
+        # Since S10.D it writes the FCB row (and, until S10.E, dout_mirror's two
+        # MAIN cells, main_FAT_FILESIZE / main_FWR_BYTES -- gone with the mirror:
+        # LOF / LOC read the row through H_CHIN ops 6 / 8, so those cells are no
+        # longer excluded and a write to them is now a clobber this guard reports).
+        # Every legitimate target is excluded by address, wherever it falls.
         legit = set()
-        for name, width in (("main_FAT_FILESIZE", 4), ("main_FWR_BYTES", 4),
-                            ("FCH_RECNOS", 32)):
+        for name, width in (("FCH_RECNOS", 32),):
             for k in range(width):
                 legit.add(s[name] - (fwbuf + SECSIZE) + k)
         for k in range(50):

@@ -4194,7 +4194,22 @@ With a real RUN→capture budget (`run_gap`), both directions read cleanly
      CF-3300 enters H.DGET with the record still unevaluated. TODO.md
      D-ROMSIZE ("S10.D BUILT") is the current record.
   5. **S10.E** — retire main's engine globals and the FAT tenant's channel
-     half.
+     half. 🟡 **Channel half BUILT 2026-10-19** (drafted in a worktree: build,
+     pins and unit tests only, the emulator suites not yet run): LOF and LOC of
+     a disk channel, every mode, are answered by `disk.rom` from the channel's
+     FCB row through `H_CHIN` ops 6 / 8 (`din_lofloc`, `disk/fat.asm`; the
+     reference's `$FE9E` / `$FE99`, kept on one cell like S10.C's EOF), out in
+     DE:HL. With main's LOF / LOC mirror (`FAT_FILESIZE` / `FWR_BYTES`, kept by
+     `dout_mirror` and the sub-ROM's `t_fch_load`) gone, so is the channel
+     switch it was the last job of: `fch_save_active`, `fch_load_ctx`,
+     `fch_claim`, `chan_gate`'s flush arm, `chan_restore` / `chan_restore_st`,
+     fatprim row 22 (now `fp_stash_ok`), and `hk_claim_status`'s
+     FCH_ACTIVE-zeroing dodge. `fch_select` is `FCH_ACTIVE := ch` plus the
+     `FCH_MODE` mirror; `FCH_ACTIVE` keeps its cross-ROM meaning (0 = SAVE ,A
+     / BSAVE's stream, `fch_park`). RANDOM's LOC stays main's `FCH_RECNOS[ch]`
+     int, as before. TODO.md D-ROMSIZE carries the record. LEFT: main's own FAT
+     scratch (the `FCH_STATE0` span) serves BLOAD / BSAVE's tenant and
+     `autoexec_run`, which are not channels -- the BSAVE-to-disk item's.
 - S10.A is the prerequisite and can be built and gated on its own, with no
   BASIC-visible change.
 - 🔴 **AND THE "SINGLE-FILE" PREMISE ABOVE WAS HALF WRONG, CORRECTED THE SAME

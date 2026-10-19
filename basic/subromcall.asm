@@ -366,14 +366,20 @@ sub_int_template_end:
     ENDIF
 
 ; --- fch_park (D-ASAVECHAN, 2026-10-03): park the live file channel --------
-; Saves the active channel's engine state into its context and hands the engine
-; globals to nobody (fch_claim with A = 0), so the next statement that names the
-; channel reloads it. For the verbs that stream through those SAME globals
-; without chan_gate's bracket -- SAVE ,A (ascii_save), the BSAVE and BLOAD
-; tenants: an open OUTPUT file lost every byte beside them, an INPUT one its
-; place (scratchpad/asavechan_probe.py, chanside_probe.py).
+; FCH_ACTIVE := 0, "no channel live", for the verbs that stream a file of their
+; own -- SAVE ,A (ascii_save), the BSAVE and BLOAD tenants. Born to save the
+; active channel's engine state first (an open OUTPUT file lost every byte beside
+; them, an INPUT one its place: scratchpad/asavechan_probe.py, chanside_probe.py).
+; 🏗️ S10.E (2026-10-19): there is no state to save any more -- every disk channel
+; is disk.rom's FCB in its own row -- and the 0 IS the contract now: disk.rom's
+; hk_fmake / hk_chout / hk_chclose read FCH_ACTIVE = 0 as SAVE ,A's stream, not an
+; OPEN's, and the sub-ROM's ffds_full stamps a disk-full BSAVE only when no
+; channel is live. The next statement that names a channel makes it live again
+; (fch_select). Was `xor a / jp fch_claim`; fch_claim went with the switch.
 ; Sited in the LOW region on purpose: its three callers are page 1, which had no
 ; room, and a `call` here is a byte cheaper than the inline pair at each site.
 fch_park:
                 xor     a
-                jp      fch_claim
+                jp      fch_select          ; FCH_ACTIVE := 0 (and FCH_MODE := FCH_MODES[0],
+                                            ; harmless: every FCH_MODE reader outside
+                                            ; OPEN runs fch_select first)

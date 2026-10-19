@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""S10.B increment 2 design input: LOF and LOC on an APPEND channel.
+"""S10.B increment 2 design input: LOF and LOC on an APPEND channel. (S10.E, 2026-10-19:
+re-run with a 300 B start, where LOC and LOF read different FCB fields.)
 
 APPEND will move onto disk.rom's 256 B record writer, which resumes at the last
 WHOLE record -- so what LOF/LOC answer right after OPEN ... FOR APPEND, and after
@@ -16,7 +17,10 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                   # noqa: E402
 import probe_tmp                                   # noqa: E402
 
-START = {"6B": 'PRINT#1,"OLD"', "256B": 'PRINT#1,STRING$(255,"A");'}
+START = {"6B": 'PRINT#1,"OLD"', "256B": 'PRINT#1,STRING$(255,"A");',
+         # 2026-10-19 (S10.E): a file of 300 B -- past one whole record, so LOC's
+         # source (the FCB's record position) and LOF's (its size) can differ
+         "300B": 'PRINT#1,STRING$(255,"A");STRING$(44,"B");'}
 
 
 def prog(first):

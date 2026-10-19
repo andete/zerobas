@@ -82,6 +82,7 @@
 ; One helper rather than three inline gates: 6 B per verb instead of 12, which
 ; matters at 75 B of page 1 (2026-09-03).
 ;
+; 📜 HISTORY from here to S10.E's note below, which retired the bookkeeping.
 ; 🔴 D-ALIASBITE (2026-09-23, Joost: *"go with the bookkeeping fix"*): THE
 ; CROSSING IS ALSO A CHANNEL SWITCH, AND IT HAS TO BE BOOKKEPT LIKE ONE.
 ; `FAT_DBUF` ($E5C0) holds the OPEN channel's staged sector, and a disk-ROM verb
@@ -126,38 +127,32 @@
 ; instead was priced and REFUSED: main leaves no 512 B span anywhere in
 ; [$E000,$F380) -- 1325 B free but the largest hole is 444 B
 ; (`scratchpad/disjoint_mainonly.out`).
-; ⚠️ BOTH HALVES RETURN AT ONCE WHEN NOTHING IS LIVE (`FCH_ACTIVE` = 0), so the
-; common no-file-open path pays one `ld a,(nn)` and a branch, not a crossing.
-; ⚠️ THE FLUSH'S Cy IS DISCARDED ON PURPOSE. A write error here (disk full) is
-; re-raised by the channel's own `CLOSE`, which still has to flush; raising from
-; inside the gate would give every verb a new error path it never had.
+; 🗑️ S10.E (2026-10-19): AND THE BOOKKEEPING IS GONE, BECAUSE WHAT IT KEPT IS.
+; One by one the things a verb could wreck left main: the staged sector (S10.C:
+; an INPUT channel reads its block's +9 in disk.rom), the engine cursors (S10.B /
+; S10.C / S10.D: every disk channel is disk.rom's FCB in its own row), RANDOM's
+; record (D-FLDDESC: it lives at block+9). What the save / restore pair still
+; carried at the end was the sub-ROM's t_fch_load MIRRORING the live channel's
+; LOF / LOC into FAT_FILESIZE / FWR_BYTES -- and LOF / LOC read the FCB through
+; disk.rom now (H_CHIN ops 6 / 8). So the flush arm before the crossing
+; (fch_save_active) and the restore after it (chan_restore_st -> fch_load_ctx)
+; are deleted, and so is disk.rom's D-ERRKEEP dodge (hk_claim_status zeroing
+; FCH_ACTIVE) that kept a pending code alive past the restore. Every cell a verb
+; can touch is the verb's own or disk.rom's; nothing of a channel's is in main.
 ; 🎯 GA-VERBRUN (2026-10-03): THE CLAIMED PATH RETURNS A = DISKOP_STATUS, AND
-; THAT IS LOAD-BEARING. chan_gate's only claimed-path exit is chan_restore_st,
-; whose last instruction before its `ret` is `ld (DISKOP_STATUS),a`, so A IS the
-; status when the caller gets control: verb_run, fopen_cross and kill_status
-; decode A directly and no longer reload the cell (3 B each). A future second
+; THAT IS LOAD-BEARING: verb_run, fopen_cross and kill_status decode A directly
+; and do not reload the cell (3 B each). It was the last instruction of
+; chan_restore_st; since S10.E cg_back loads it itself. A future second
 ; claimed-path exit must hand A back the same way. The unclaimed path raises
 ; ERR 5 and never returns.
 ; ⚠️ NO CALLER TESTS Cy AFTER `chan_gate` -- checked at every call site, each
 ; one loads `FN_RESUME` next or decodes A with `or a`/`cp` -- so the claimed
-; path is free to end in a `jp` instead of the old `ret c`.
+; path may return with Cy as the crossing left it.
 chan_gate:
-                push    af                  ; ⚠️ KEEPS THE CALLER'S A ACROSS THE
-                ld      a,(FCH_ACTIVE)      ; GATE, which the original code did by
-                or      a                   ; never touching it. NOT what fixed the
-                jr      z,cg_noflush        ; ERR 53 -- that was DISKOP_STATUS
-                push    hl                  ; below, and AF was the FIRST suspect
-                call    fch_save_active     ; and changed nothing. Kept because
-                pop     hl                  ; restoring the old contract exactly is
-                                            ; worth 2 B, not because it is a fix.
-cg_noflush:
-                pop     af
                 ld      (FOPEN_SEL),a       ; D-SAVEOPEN: the caller's A is fopen_cross's
-                                            ; selector, stored AFTER the flush above
-                                            ; (which marshals through this very cell).
-                                            ; Every other gate's hook ignores it:
-                                            ; FILES sets its own, DSKI$/DSKO$'s
-                                            ; dirverb_op and main's primitives too.
+                                            ; selector. Every other gate's hook
+                                            ; ignores it: FILES sets its own,
+                                            ; DSKI$/DSKO$ pass theirs in A again.
 cg_cross:
                 ld      de,cg_back          ; call THROUGH HL: the cell is
                 push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
@@ -171,15 +166,13 @@ cg_back:
                 ; for diskbasic-acceptance's lost keys and MEASURED not to cure them
                 ; (the WRBLK record writer's sector count was the cause, TODO S10.B).
                 ei
-                jr      nc,cg_unclaimed     ; claimed -> the verb may have refilled
-                ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- WRITE IT ONCE, LAST.
-                ; The re-stage is itself a DISKOP and lands its own result there,
-                ; ON TOP of the verb's, before the verb's caller decodes it. The
-                ; first cut just fell through to the re-stage and `KILL`/`NAME`
-                ; came back `File not found` (ERR 53) -- `kill_status` was reading
-                ; the RE-STAGE's 0, not KILL's. Measured twice: clobbering A was
-                ; the first suspect and restoring AF changed nothing.
-                jr      chan_restore_st
+                ; 🔴 `DISKOP_STATUS` IS A SHARED CHANNEL -- the verb writes it LAST
+                ; (disk.rom hk_claim_status) and nothing may run between that and
+                ; this read. Until S10.E the restore ran here and was itself a
+                ; DISKOP; the first cut of D-ALIASBITE let it land its own result
+                ; on top of the verb's and `KILL`/`NAME` came back `File not found`.
+                ld      a,(DISKOP_STATUS)   ; `ld` keeps Cy: the crossing's answer
+                ret     c                   ; claimed -> A = the verb's status
 cg_unclaimed:
                 jp      gb_illegal          ; Illegal function call -- TRAPPABLE,
                                             ; which is what the reference gives
@@ -193,21 +186,27 @@ cg_unclaimed:
 ; dsk_aopen, dsk_agetbyte); one body + four calls = 26 B of main page 1, carved
 ; for D-CLEARFIT. chan_gate keeps its own return point (cg_back) and inspects no
 ; caller frame, so one more call level changes nothing on the main side.
-; 🔴 D-SAVEOPEN (2026-09-28): THE SELECTOR IS STORED BY chan_gate NOW, AFTER ITS
+; 🔴 D-SAVEOPEN (2026-09-28): THE SELECTOR IS STORED BY chan_gate, AFTER ITS
 ; FLUSH, NOT HERE BEFORE IT. FOPEN_SEL aliases DISKOP_OP, and with a channel LIVE
-; chan_gate first flushes it -- fch_save_active -> a FAT primitive marshalled
+; chan_gate first flushed it -- fch_save_active -> a FAT primitive marshalled
 ; through DISKOP_OP -- which overwrote the selector, so disk.rom's H_FOPEN
 ; dispatcher saw no verb and did nothing: `SAVE` with a file open wrote NOTHING
 ; and answered OK (the CF-3300 saves; scratchpad/errkeep2_probe.py sv_openrw read
-; 255 there and 53 here). chan_gate already carried A across the flush.
+; 255 there and 53 here). S10.E (2026-10-19) deleted the flush; the store stays in
+; chan_gate, the last thing before the crossing, which is still the safe place.
 fopen_cross:
                 ld      hl,H_FOPEN
-                call    chan_gate           ; A = the selector: stored after the flush;
+                call    chan_gate           ; A = the selector, stored by the gate;
                 or      a                   ; back with A = DISKOP_STATUS (GA-VERBRUN)
                 ret
 
 ; chan_gate_bare -- the SAME crossing with NO channel bookkeeping, for the two
 ; verbs whose whole job is to write the live channel's record.
+; 🏗️ S10.E (2026-10-19): THE FULL GATE HAS NO BOOKKEEPING LEFT EITHER (chan_gate's
+; note), so the two differ only in what they hand back: chan_gate stores A as
+; FOPEN_SEL and returns A = DISKOP_STATUS; this one passes A / BC to the hook
+; untouched (GET / PUT's op and channel, DSKI$ / DSKO$'s selector and sector) and
+; returns what the hook returned. The rule below is history, kept for its reason.
 ; 🏗️ D-FLDDESC (2026-10-17): THE HAZARD BELOW IS GONE AND THE RULE STAYS. A
 ; RANDOM record lives at its block's +9 now, not in FSECTOR_BUF, so the full
 ; gate's restore would no longer undo a store -- but FIELD / LSET / RSET still do
@@ -234,7 +233,8 @@ fopen_cross:
 ; back `fch_select` on the GET's own channel after parsing `, recno`, which saves
 ; whatever was live and loads this channel, exactly as main's GET used to. A verb
 ; that does sector I/O here WITHOUT making its own channel live first is the
-; D-ALIASBITE bug.
+; D-ALIASBITE bug. (S10.E: hk_dget stores FCH_ACTIVE itself now -- there is
+; nothing left to save or load -- and the rule stands: make the channel live.)
 chan_gate_bare:
                 ld      de,cgb_back
                 push    de
@@ -244,37 +244,12 @@ cgb_back:
                 ret     c                   ; claimed -> back to the caller
                 jr      cg_unclaimed        ; ERR 5, same face as the full gate
 
-; chan_restore -- reload the live channel's context: the 50-byte FCH_STATE0
-; state block AND (via fch_load_ctx's closing `jp fch_restage`) the sector it
-; addresses. No-op when no channel is live. Clobbers A/BC/DE/HL, and IX as every
-; CALSLT on this path already does.
-;
-; ⚠️ SHARED WITH dsk_core (basic/str-engine.asm) AND THAT IS THE POINT.
-; DSKI$/DSKO$ cross their hook TWICE (the presence gate before the parse, the
-; sector I/O after it, D-DSKLOCAL), so the gate's own restore runs too early for
-; them; dsk_core restores again after the I/O. (Until D-DSKLOCAL the I/O was the
-; sub-ROM dirverb tenant with the sector poked into FWR_DIRSEC, and without this
-; second restore they were the last two verbs still committing a wrecked file,
-; D-ALIASWCELL, 2026-09-23.)
-chan_restore:
-                ld      a,(FCH_ACTIVE)
-                or      a
-                ret     z                   ; nothing live -> nothing staged
-                jp      fch_load_ctx
-
-; chan_restore_st -- chan_restore with DISKOP_STATUS held across it, which is
-; the form BOTH callers need and neither may skip.
-; ⚠️ CLOBBERS A/BC/DE/HL AND IX. dsk_core keeps its cursor in HL and the
-; evaluator keeps a token cursor in IX, so it calls this INSIDE its own
-; push hl / push ix guards -- the first cut put it after the pops and DSKI$
-; returned to a wrecked cursor instead of to its caller.
-chan_restore_st:
-                ld      a,(DISKOP_STATUS)
-                push    af
-                call    chan_restore
-                pop     af
-                ld      (DISKOP_STATUS),a   ; hand the VERB's status back
-                ret
+; (chan_restore / chan_restore_st -- GONE with S10.E, 2026-10-19. They reloaded
+; the live channel after a crossing -- the FCH_STATE0 span and its staged sector
+; once, at the end only the sub-ROM t_fch_load's LOF / LOC mirror -- with
+; DISKOP_STATUS held across it; chan_gate's claimed path and dsk_core's second
+; crossing (basic/str-engine.asm) were the two callers. Both read DISKOP_STATUS
+; directly now. LOF / LOC ask disk.rom for the FCB's own value: H_CHIN ops 6 / 8.)
 
 ; (dirverb_op -- `ld (DISKOP_OP),a` + the sub-ROM dirverb tenant -- is GONE since
 ; D-DSKLOCAL, 2026-10-15: DSKI$ / DSKO$, its last callers, cross their hook to
@@ -630,9 +605,12 @@ oo_endok:
                 pop     hl
                 pop     de
                 jp      nz,oo_fail_54
-                ; claim the channel's slot (saving any OTHER active channel) so the
-                ; engine globals belong to this channel before fat_io_* fills them.
-                ; 🔴 D-OPEN2FIX: HL IS GUARDED HERE, NOT ONE CALL LATER.
+                ; claim the channel: FCH_ACTIVE = e, the row disk.rom's open handler
+                ; builds the FCB in (dout_live). 🗑️ S10.E (2026-10-19): a STORE --
+                ; fch_claim, which saved any OTHER live channel first, is gone with
+                ; the save (nothing of a channel's lives in main any more), and so
+                ; is the HL / DE guard the paragraph below put around it.
+                ; 📜 HISTORY: D-OPEN2FIX: HL IS GUARDED HERE, NOT ONE CALL LATER.
                 ; `fch_claim` documents "Clobbers regs", and when it claims a
                 ; SECOND channel it runs fch_save_active -> fch_ctx_addr, an
                 ; op-18 CALSLT that clobbers HL like every other. The guard
@@ -648,12 +626,8 @@ oo_endok:
                 ; raises `Syntax error` AFTER the OPEN has completed -- which is
                 ; why the channel table showed both channels correctly open.
                 ; [[a-scratch-register-that-was-the-callers-value]]
-                push    de
-                push    hl
                 ld      a,e
-                call    fch_claim           ; FCH_ACTIVE = e (no stale load)
-                pop     hl
-                pop     de
+                ld      (FCH_ACTIVE),a      ; this channel is the live one
                 push    hl                  ; guard the text cursor — CALSLT (inside
                 push    de                  ; fat_io_*) clobbers HL + regs
                 ld      a,(FCH_MODE)        ; action: 1 INPUT/2 OUTPUT/3 APPEND/4 RANDOM
@@ -672,6 +646,43 @@ oo_endok:
                 ; raises it after $FE5D (s10c_hook_run.out).
                 ld      a,FOPEN_SEL_INP
                 jr      oo_cross
+; 📌 PIN REFILL (S10.E, 2026-10-19): 46 B moved here from past the $73E5 pin
+; (basic/program.asm) to take back the 46 B S10.E freed in front of $6CF3 --
+; chan_gate's flush arm and the chan_restore pair (33), OPEN's fch_claim call
+; just above (4), and LOF / LOC's mirror reads (basic/expr.asm, 9). Every byte
+; removed ahead of a pinned address grows its pad (`ds $6CF3 - $` below, the
+; `jr` bridge), and Joost: no growing holes. Sited HERE -- after the last of
+; those deletions and BEFORE oo_fail_syn, as D-FCHNUM's refill is: the OPEN
+; "CAS:" arm past the pin reaches back to oo_fail_syn / oo_fail_bfname with
+; `jr`s, and oo_storemode's `jr oo_hdr_tail` reaches forward across the pad, so
+; neither end may move. Both are whole and entered only by label, with no `jr`
+; across their edges (tools/pin_plan.py chunks()); their notes stay behind.
+; --- new_prog: clear the stored program (NEW) --------------------------------
+; Empty program = a $0000 link word at the text base. Clobbers A, HL.
+new_prog:
+                xor     a
+                ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
+                ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON
+                ld      hl,TXTBASE
+                ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
+                ld      (PRGEND),hl         ; end marker sits at the base
+                ld      hl,0
+                ld      (TXTBASE),hl        ; $0000 end marker at the base
+                jp      vars_reset          ; rebase the scalar and array regions
+; --- store_line: the line STORE's resident marshalling shim (the lineedit tenant
+; does the store / delete, relink and vars_reset; basic/program.asm's header) ---
+store_line:
+                xor     a
+                ld      (CONTVALID),a       ; editing the program invalidates CONT
+                ld      (SL_NUM),bc
+                ld      (SL_TOK),hl
+                xor     a                   ; LE_OP_STORE = 0
+                call    le_call_op          ; A = LE_STATUS, Z = ok
+                ret     z                   ; ok (tenant already relinked +
+                                            ; vars_reset)
+                ld      a,$CC               ; out-of-memory landmark (distinct byte)
+                jp      err7_mark           ; D-TAILMERGE: ERRMARK := A, then ERR 7 --
+                                            ; gosub_stk_over's own tail, verbatim
 oo_create:
                 ; S10.B: OUTPUT and APPEND are disk.rom's -- the channel is an
                 ; MSX-DOS FCB in the channel's engine row (hk_fmake / hk_fapp)
@@ -779,8 +790,8 @@ oo_fail_e:                                  ; E = the ERR code (D-OPENBUSY share
 
 ; --- OPEN "LPT:"/"CRT:" device channel --------------------------------------
 ; A character-device channel: PRINT#n streams to the printer (LPTOUT) or the
-; screen (CHPUT) via pchar's PRDEV dispatch. It owns NO fat.asm context (no
-; fch_claim / fat_io_open), so it must never be fch_select'd; it is marked in
+; screen (CHPUT) via pchar's PRDEV dispatch. It owns NO FCB row (no disk.rom
+; open), so it must never be fch_select'd; it is marked in
 ; FCH_MODES with the device value LPT_MODE/CRT_MODE and its channel number is
 ; classified straight from that array by PRINT#/CLOSE. Only FOR OUTPUT is valid
 ; (INPUT from LPT:/CRT: is an error); LEN= is rejected. Sinks are the already-
@@ -1620,18 +1631,25 @@ ifc_zero:
 ; Channel manager (Phase 2 MAXFILES) — the multi-channel substrate that retires
 ; the single-channel limit, WITHOUT touching the oracle-validated fat.asm engine.
 ;
-; fat.asm keeps ONE global set of streaming state (FSECTOR_BUF + FCH_STATE0..).
-; Each open channel owns a context block (FCH_CTX[ch] = [state:FCH_STATESZ][512])
-; holding a saved copy; the globals always hold the "active" channel's LIVE state.
-; This is a write-back cache: FCH_ACTIVE names the live channel; switching to a
-; different channel SAVES the globals to the old channel's ctx and LOADS the new
-; one's. Re-using the same channel back-to-back (the common case) copies nothing.
-; FCH_MODE/FCH_NUM mirror the active channel so the existing read/write/PRINT#
-; code (which reads those + the globals) works unchanged.
+; 🏗️ S10.E (2026-10-19): THERE IS NO SWITCH ANY MORE. What follows the next
+; paragraph's first sentence is the design S10.B-S10.E dismantled: every disk
+; channel is an MSX-DOS FCB in its own DSK_ENGTAB row, owned by disk.rom from
+; OPEN, its record the block's +9; LOF / LOC read that FCB through H_CHIN ops
+; 6 / 8. So "making a channel live" is FCH_ACTIVE := ch (the cell disk.rom's
+; hooks find the row by) plus the FCH_MODE mirror three statement drivers read
+; -- fch_select below -- and nothing is saved or loaded.
+; 📜 HISTORY: fat.asm kept ONE global set of streaming state (FSECTOR_BUF +
+; FCH_STATE0..). Each open channel owned a context block (FCH_CTX[ch] =
+; [state:FCH_STATESZ][512]) holding a saved copy; the globals always held the
+; "active" channel's LIVE state. A write-back cache: FCH_ACTIVE named the live
+; channel; switching to a different channel SAVED the globals to the old
+; channel's ctx and LOADED the new one's. FCH_MODE/FCH_NUM mirrored the active
+; channel so the read/write/PRINT# code (which read those + the globals) worked
+; unchanged.
 ;
-; Register discipline: these routines move state with LDIR, so they clobber
-; A/BC/DE/HL but NOT IX/IY (no CALSLT). Statement callers guard their HL text
-; cursor; the EOF/LOF function callers rely on IX (the token cursor) surviving.
+; Register discipline: fch_select is a store and a table read -- A and HL
+; clobbered, BC / DE / IX / IY kept, no CALSLT. Statement callers still guard
+; their HL text cursor.
 ; ===========================================================================
 
 ; fch_ctx_addr — HL = base of channel A's context block (A = 1..FCH_CEIL).
@@ -1647,10 +1665,9 @@ ifc_zero:
 ; ALREADY sub-ROM, so a resident copy of the arithmetic would have bought
 ; nothing and cost real page-1 bytes. Resident, this is the same three stores
 ; and a call the old stride loop was.
-; ⚠️ IX: call_strheap is a CALSLT. Both callers (fch_save_active/fch_load_ctx)
-; already contain CALSLTs on the repack path and are covered by the ONE IX guard
-; hoisted into fch_select; fch_claim's caller keeps its cursor in HL. No new
-; hazard — but any NEW caller must be checked against that contract.
+; ⚠️ IX: call_strheap is a CALSLT, so every caller guards IX itself if it needs
+; it (ev_ff_varptrch does; S10.E retired fch_save_active / fch_load_ctx, whose
+; guard sat in fch_select). Any NEW caller must be checked against that contract.
 ; Clobbers A, BC, DE, IX.
 fch_ctx_addr:
                 ld      l,a                 ; blk+0 = the channel number (1-based)
@@ -1688,101 +1705,86 @@ le_call_op:
                 or      a
                 ret
 
-; D-FCH S-FCH-1 (docs/spec-basic-filechan-alloc.md §3.1): the two halves of the
-; write-back cache that REPLACED the per-channel 512-byte save copy both live in
-; the sub-ROM — fat_detach_channel (flush the dirty partial sector in place) and
-; fat_restage_channel (read it back), in basic/fat-prim-body.inc, reached through
-; the fch_flush_active / fch_restage shims in basic/fat.asm.
-;
-; ⚠️ Sited there for space, and the number is MEASURED not guessed: as resident
-; code the detach half alone cost 43 B of main page 1 against 6 B free. That is
-; precisely why S-FCH-1 said build it before scouting a carve.
-;
-; fch_save_active — save the engine globals to the active channel's context block.
-; No-op when no channel is active. Clobbers A/BC/DE/HL.
-;
-; ⚠️ The flush comes FIRST, while the globals still hold the live state: it
-; updates FWR_SECIDX (and FWR_CLUS/FWR_FIRST if it allocates), all of which live
-; INSIDE the saved span. Flushing after the LDIR would persist a stale iterator.
-; ⚠️ IX: the flush is a CALSLT, which this routine never used to contain. Its
-; header contract says IX/IY survive because the EOF/LOF function callers rely on
-; the token cursor — so guard it here rather than at nine call sites.
-;
-; 🏗️ D-FCBSHAPE S0 (2026-09-29): BOTH BODIES NOW LIVE IN THE FAT TENANT
-; (sub/fatprim.asm t_fch_save / t_fch_load), and these are shims. The flush-
-; then-copy order, the record travelling with the state (D-FIELDFIX) and the
-; flush's result being what a save reports are all kept there, in words. The
-; point is D-FCBSHAPE's: the block's LAYOUT is now known in one ROM, the one
-; its later slices change -- and main page 1 got the difference back.
-; HL = the context block rides through CALSLT untouched; fch_ctx_addr's own
-; CALSLT does not touch the engine globals, so computing it before the flush
-; (the old order was flush, then address) changes nothing it reads.
-; 🗑️ D-FLDDESC (2026-10-17): THE SAVE HALF NOW SAVES NOTHING. Its last copy was
-; RANDOM's record (FSECTOR_BUF -> block+9), and that record lives at block+9; the
-; tenant's row 21 is `jp fp_stash_ok`. This shim and its three callers still pay
-; the crossing -- removing them is a separate, pin-priced change (they sit in
-; front of $72D4), not this slice's.
-fch_save_active:
-                ld      a,(FCH_ACTIVE)
-                or      a
-                ret     z                   ; nothing live -> nothing to save
-                call    fch_ctx_addr        ; HL = ctx[active]
-                ld      a,DISKOP_SEL_FCH_SAVE
-                jp      fatprim_bounce      ; flush, then globals + record -> ctx
-
-; fch_load_ctx — load channel A's context block into the engine globals and make
-; it the active channel (FCH_ACTIVE = A). Clobbers A/BC/DE/HL.
-;
-; ⚠️ IX guarded for the same reason as fch_save_active: the tenant is a CALSLT.
-fch_load_ctx:
-                push    af                  ; keep the channel number
-                call    fch_ctx_addr        ; HL = ctx[A]
-                pop     af
-                ld      (FCH_ACTIVE),a      ; the re-stage reads it
-                ld      a,DISKOP_SEL_FCH_LOAD
-                jp      fatprim_bounce      ; ctx -> globals + record, re-stage
-
-; fch_sync_mirror — FCH_MODE = FCH_MODES[FCH_ACTIVE]. (D-FCHNUM, 2026-10-17: it
-; also mirrored FCH_ACTIVE into FCH_NUM, a cell nothing has read since the
-; channel table replaced the single channel; the three stores are gone.)
-fch_sync_mirror:
-                ld      a,(FCH_ACTIVE)
+; fch_select — make channel A the live one: FCH_ACTIVE := A (disk.rom's hooks
+; find the channel's FCB row through it), FCH_MODE := FCH_MODES[A], the mirror
+; input_common, PRINT# and CLOSE read next. A = channel (range-validated, or 0
+; from fch_park: "nothing live"). out A = the mode. Clobbers A, HL; keeps BC, DE,
+; IX (no CALSLT). No longer a disk.rom call-back: hk_dget stores FCH_ACTIVE
+; itself since S10.E (tools/gen_resident_abi.py).
+; 🗑️ S10.E (2026-10-19): IT WAS A CONTEXT SWITCH. With a different channel live it
+; ran fch_save_active (the sub-ROM's t_fch_save: nothing left to save since
+; D-FLDDESC) and fch_load_ctx (t_fch_load: re-cache the block's address, then
+; MIRROR the FCB's LOF / LOC into FAT_FILESIZE / FWR_BYTES), each a CALSLT under
+; one IX guard; fch_claim was OPEN's no-load half and fch_sync_mirror the
+; same-channel half. LOF / LOC ask disk.rom for the FCB's value now (H_CHIN ops
+; 6 / 8), so all five are this one body. (D-FCH S-FCH-1's write-back cache --
+; fch_flush_active / fch_restage over fat_detach_channel / fat_restage_channel
+; in basic/fat-prim-body.inc -- had already gone with D-MODE2DEAD and S10.C.)
+fch_select:
+                ld      (FCH_ACTIVE),a
                 call    fch_modes_ptr
                 ld      a,(hl)
-                ld      (FCH_MODE),a
+                ld      (FCH_MODE),a        ; (D-FCHNUM, 2026-10-17: FCH_NUM's mirror
+                ret                         ; store is gone; nothing read it)
+
+; 📌 PIN REFILL (S10.E, 2026-10-19): 64 B moved here from past the $73E5 pin
+; (basic/program.asm) to take back the 64 B the channel switch above freed in
+; front of $72D4 -- every byte removed ahead of a pinned address grows its `ds`
+; pad (basic/field.asm `ds $72D4 - $`), and Joost: no growing holes. Sited AT the
+; hole, so every `jr` that spans it keeps its old reach. All three are whole and
+; entered only by label, with no `jr` across their edges (tools/pin_plan.py
+; chunks()); their stories stay where they were.
+; ret_frame: pop the top GOSUB frame. out: DE = its saved CURLINE, BC = its resume
+; pointer, GSP -= GOSUB_FRAME, HL = the new GSP, and FSP is truncated back to the
+; frame's recorded depth. The caller has ALREADY established that the stack is
+; non-empty (R-T1). (basic/program.asm, ex_return's two arms, D-RETLN / D-FORRET.)
+ret_frame:
+                ld      de,(GSP)            ; DE = the read cursor
+                call    ctl_get
+                push    hl                  ; [saved CURLINE]
+                call    ctl_get
+                push    hl                  ; [resume ptr]
+                call    ctl_get             ; HL = prevFSP
+                ld      (FSP),hl            ; prevFSP: discards the FOR frames opened
+                                            ; since this GOSUB (D-FORRET)
+                ld      a,(de)              ; [6] gdelta
+                inc     de
+                ld      (CSP),de            ; ONE STORE FREES THE WHOLE SUBTREE
+                add     a,l                 ; prevGSP = prevFSP + gdelta (7-B frame)
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a
+                ld      (GSP),hl
+                pop     bc                  ; BC = resume ptr
+                pop     de                  ; DE = saved CURLINE
                 ret
-
-; fch_select — make channel A live in the engine globals (loading its context if a
-; different channel is currently active) and refresh the FCH_MODE/FCH_NUM mirror.
-; A = channel (assumed already range-validated). Clobbers A/BC/DE/HL; preserves IX.
-fch_select:
-                ld      b,a
-                ld      a,(FCH_ACTIVE)
-                cp      b
-                jr      z,fsel_sync         ; already live -> just refresh the mirror
-                push    ix                  ; ⚠️ ONE guard covering BOTH CALSLTs
-                push    bc                  ; here rather than duplicated inside
-                call    fch_save_active     ; save/load because every IX-critical
-                pop     bc                  ; caller -- expr.asm's EOF/LOF and
-                ld      a,b                 ; strvar.asm's INPUT$, whose token
-                call    fch_load_ctx        ; cursor IS IX -- enters through HERE.
-                pop     ix                  ; its cursor in HL and already guards
-fsel_sync:
-                jr      fch_sync_mirror
-
-; fch_claim — make channel A the active slot WITHOUT loading its (about-to-be-
-; overwritten) context, used by OPEN before fat_io_open/create fills the globals.
-; Any OTHER currently-active channel is saved first. A = channel. Clobbers regs.
-fch_claim:
-                ld      b,a
-                ld      a,(FCH_ACTIVE)
-                cp      b
-                ret     z                   ; A already owns the globals
-                push    bc
-                call    fch_save_active     ; preserve the other channel's state
-                pop     bc
-                ld      a,b
-                ld      (FCH_ACTIVE),a      ; A claims the globals (no load)
+; read_one_value: the READ/DATA value engine's resident stub (basic/program.asm):
+; CALSLT the PAGE-0 tenant, then rebuild the (A, DE) contract from RDV_ST/RDV_VAL.
+; out: A = 0 out of data / 1 item read / 2 not a number (D-READVAR); DE = the value.
+read_one_value:
+                call    sr_inl0             ; D-STUBINL: CF=1 iff the sub-ROM is absent
+                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_READVAL)
+                ld      de,(RDV_VAL)
+                ld      a,0                 ; NOT `xor a` -- subrom_call's CF is the
+                ret     c                   ; test below and xor would clear it.
+                ld      a,(RDV_ST)
+                ret
+; dl_bare: is the RUN at (HL) BARE -- nothing but ':' or the end after the 3-letter
+; keyword? CF set iff so; HL preserved (basic/program.asm, the REPL's fast path).
+dl_bare:
+                push    hl
+                inc     hl
+                inc     hl
+                rst    $10                ; past the 3-letter keyword
+                pop     hl
+                or      a
+                scf
+                ret     z                   ; end of line -> bare
+                cp      COLON
+                scf
+                ret     z                   ; `RUN : ...` -> bare
+                or      a                   ; anything else -> an ARGUMENT: crunch it
                 ret
 
 ; oo_parse_as_chan — the "AS [#]n" clause shared by EVERY form of OPEN.

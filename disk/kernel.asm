@@ -894,8 +894,10 @@ cr_err:
 ;   row  = DSK_ENGTAB + ch * FCH_STATESZ, main's per-channel engine row, which a
 ;          DOUT_MODE channel does not otherwise use. +0..36 the FCB (RS = 1, so
 ;          the random record +33..35 is the committed byte count), +DOUT_BLK
-;          the block's address (main's fch_ctx_addr, cached; t_fch_load
-;          re-caches it on every switch), +DOUT_FLG the flags.
+;          the block's address (main's fch_ctx_addr, cached once by
+;          dout_open: the block cannot move while the channel is open; the
+;          sub-ROM's t_fch_load re-cached it on every switch until S10.E),
+;          +DOUT_FLG the flags.
 ;   block+6 = the position in the record; block+9.. = the record.
 ; A full record is written AT ONCE, so the FCB's size -- LOF -- moves at byte
 ; 256, 512, ... as on the CF-3300 (S10.B DESIGN INPUT 2), and a full disk fails
@@ -1009,33 +1011,18 @@ dout_dirpos:
                 ld      (ix+DOUT_DIROFF+1), h
                 ret
 
-; dout_mirror -- main's view of the FCB: FAT_FILESIZE := the size (+16, LOF)
-; and FWR_BYTES := the random record (+33, LOC), as the CF-3300's LOF and LOC
-; read its FCB (scratchpad/applof_run.out: after OPEN FOR APPEND on a 6 B file
-; LOF 6, LOC 0; once a record is written, 256 and 256). Main's engine globals
-; are not otherwise this channel's. IX = the row.
-dout_mirror:
-                push    ix
-                pop     hl
-                ld      de, 16
-                add     hl, de
-                ld      de, main_FAT_FILESIZE
-                ld      bc, 4
-                ldir                        ; the size
-                ld      de, 33-20
-                add     hl, de
-                ld      de, main_FWR_BYTES
-                ld      bc, 3
-                ldir                        ; the random record
-                xor     a
-                ld      (de), a
-                ret
+; (dout_mirror -- GONE with S10.E, 2026-10-19. It copied the FCB's size (+16)
+; and random record (+33) into main's FAT_FILESIZE / FWR_BYTES after every OPEN
+; and record write, as the CF-3300's LOF and LOC read its FCB (scratchpad/
+; applof_run.out: after OPEN FOR APPEND on a 6 B file LOF 6, LOC 0; once a record
+; is written, 256 and 256). LOF and LOC now read the FCB itself, through H_CHIN
+; ops 6 / 8 (disk/fat.asm din_lofloc), so nothing in main has to be kept current.)
 
 ; hk_fmake -- OPEN FOR OUTPUT (H_FOPEN, FOPEN_SEL_MAKE). FCH_ACTIVE is the
-; channel being opened (fch_claim); DISK_FCB_NAME the parsed 8.3 name. Creates
+; channel being opened (OPEN stores it); DISK_FCB_NAME the parsed 8.3 name. Creates
 ; (or truncates) the file through the same fat_dir_create main's fat_io_create
-; used. Status 0 = open; otherwise the code is pending in DISKOP_ERR and
-; hk_claim_status keeps it from the restore (main's oo_fail raises it).
+; used. Status 0 = open; otherwise the code is pending in DISKOP_ERR (main's
+; oo_fail raises it).
 hk_fmake:
                 ei
                 ld      a, (FCH_ACTIVE)
@@ -1049,15 +1036,14 @@ hk_fmake:
                 call    fat_dir_create      ; HL = the 8.3 name; make or truncate
                 jr      c, hfm_fail
 hfm_ok:
-                call    dout_dirpos
-                call    dout_mirror         ; LOF / LOC as the FCB says
-                xor     a
+                call    dout_dirpos         ; (S10.E: no LOF / LOC mirror -- they
+                xor     a                   ; read the FCB, din_lofloc)
                 jp      hdl_answer          ; status 0, selector disarmed, claimed
 hfm_fail:
                 xor     a
                 ld      (FOPEN_SEL), a      ; disarm, as hdl_answer does
                 inc     a
-                jp      hk_claim_status     ; status 1; a pending code survives
+                jp      hk_claim_status     ; status 1, the code pending
 
 ; hk_asav -- SAVE"name",A's create, S10 increment 3 (D-ASAVEDOUT). It arrives
 ; as an OPEN FOR OUTPUT (FOPEN_SEL_MAKE) with NO channel live: main parked the
@@ -1357,8 +1343,9 @@ dout_put:
 ; needed and writes FAT_DBUF; a first half is written padded and the cursor
 ; stepped BACK onto its sector (as fat_detach_channel does), so the second
 ; half re-reads it and completes it. On success: random record += HL, size :=
-; max(size, random record) -- WRBLK's own rule, and the CF-3300's LOF -- main's
-; LOF/LOC mirrors follow (dout_mirror), DOUT_RFULL clears. On failure raise what is pending --
+; max(size, random record) -- WRBLK's own rule, and the CF-3300's LOF, which
+; H_CHIN op 6 reads from here (S10.E: no mirror in main any more) -- and
+; DOUT_RFULL clears; out A = 0, CF = 0. On failure raise what is pending --
 ; 66 from fac_full, or a DSKIO code -- through main's disk_error, the row as
 ; it was. IX = the row (kept).
 dout_write:
@@ -1424,7 +1411,8 @@ dwr_keep:
                 ld      (ix+17), d          ; size := the random record
 dwr_lof:
                 res     DOUT_RFULL, (ix+DOUT_FLG)
-                jp      dout_mirror
+                xor     a                   ; A = 0, CF = 0: dout_mirror's old exit
+                ret                         ; (S10.E), which no caller reads
 
 ; dout_secread -- FAT_DBUF := the sector at (FWR_CLUS, FWR_SECIDX). Cy = I/O.
 ; S10.D: its address arithmetic is clus_sec now, shared with the RANDOM record
@@ -1634,7 +1622,7 @@ hoc_dout:
 ; pointer -- own-design ABI, the reference's split.
 
 ; hk_frnd -- OPEN "f" AS #n (no FOR clause: RANDOM) -- H_FOPEN, FOPEN_SEL_RAND.
-; FCH_ACTIVE is the channel being opened (fch_claim), DISK_FCB_NAME the parsed
+; FCH_ACTIVE is the channel being opened (OPEN stores it), DISK_FCB_NAME the parsed
 ; 8.3 name. The sub-ROM's fat_rand_open, moved: LOC := 0 (D-LOC: the CF-3300
 ; reads 0 before any GET / PUT), find the file -- or create it (no truncation:
 ; RANDOM keeps an existing file). The record (block+9) is NOT touched.
@@ -1687,7 +1675,8 @@ hfr_make:
 ;        GET at or past EOF, a pending DSKIO / disk-full code (disk_error)
 ; ⚠️ THE CHANNEL IS MADE LIVE AFTER THE EVALUATOR, NOT BEFORE: the record is an
 ; EXPRESSION, and `GET #1,LOF(2)` or a FIELDed variable of another channel in it
-; runs fch_select on THAT channel. Main used to parse first and select second for
+; makes THAT channel live (LOF sets FCH_ACTIVE for H_CHIN's op 6 since S10.E; it
+; ran fch_select before). Main used to parse first and select second for
 ; the same reason; the order survives the move. (D-FLDDESC, 2026-10-17: a FIELDed
 ; variable no longer selects anything when read -- its descriptor points into
 ; its own block -- so `GET #1,LOF(2)` is the case left, and the order still
@@ -1724,10 +1713,17 @@ hdg_have:
                 pop     bc
                 push    bc
                 ld      a, c
-                ld      ix, fch_select
-                call    calbak              ; the channel live (FCH_ACTIVE, its LOF /
-                                            ; LOC mirror). D-FLDDESC: its record
-                                            ; does not move -- it is block+9
+                ld      (FCH_ACTIVE), a     ; the channel live. S10.E (2026-10-19):
+                                            ; a STORE, not a call-back to main's
+                                            ; fch_select -- the switch it ran
+                                            ; (t_fch_load's LOF / LOC mirror) is
+                                            ; gone, and FCH_ACTIVE is what this ROM
+                                            ; reads. D-FLDDESC: the record does not
+                                            ; move -- it is block+9
+                ei                          ; the record's I/O runs unmasked on BOTH
+                                            ; paths: the call-back's CALSLT returned
+                                            ; DI (dout_open's note), and `, recno`'s
+                                            ; evaluator call-back above still does
                 call    dout_live           ; IX = its row
                 pop     bc
                 ld      a, b
@@ -2438,8 +2434,9 @@ frp_overlay:
                 ; FALLS INTO frnd_update_size
 
 ; frnd_update_size -- size := max(size, recno * reclen), 32 bits, in the row
-; (+16..19); then main's LOF mirror (dout_mirror): D-LOF §4c, a RANDOM PUT moves
-; LOF live, before the directory knows. CF = 0.
+; (+16..19), where H_CHIN op 6 reads LOF (S10.E; main's mirror of it, dout_mirror,
+; is gone): D-LOF §4c, a RANDOM PUT moves LOF live, before the directory knows.
+; CF = 0.
 frnd_update_size:
                 ld      hl, (GP_RECNO)
                 call    mul_reclen          ; A:HL = recno * reclen
@@ -2451,7 +2448,8 @@ frnd_update_size:
                 ld      (ix+17), h
                 ld      (ix+18), a
                 ld      (ix+19), 0
-                jp      dout_mirror         ; (ends `xor a / ld (de),a / ret`: CF = 0)
+                xor     a                   ; CF = 0 (and A = 0, as dout_mirror's
+                ret                         ; tail left them)
 
 ; rnd_rd -- FAT_MBUF := sector GP_PHYS. CF = the read failed.
 rnd_rd:
@@ -5047,42 +5045,27 @@ hkn_done:
                 ; AS "B.BAS"` at an EMPTY DRIVE answered `Syntax error` instead of
                 ; `Disk offline`, because the cell held 4. The cell is a SHARED
                 ; channel, not ours; the only safe time to write it is last.
-                ; D-ERRKEEP: through the tail KILL shares, which also keeps a
-                ; status-2 ERR code alive past chan_gate's restore (header below).
+                ; D-ERRKEEP: through the tail KILL shares (header below).
                 ; FALLS THROUGH into it.
 
 ; --- hk_claim_status: the claimed-hook tail KILL and NAME share (D-ERRKEEP) -----
-; A = the verb's DISKOP_STATUS. Stores it, returns CF=1 (claimed) -- and on status
-; 2 first marks NO channel live (FCH_ACTIVE = 0). Our own design; the reason is
-; measured (scratchpad/killopen_probe.py, n_open and the k_* rows): with a file
-; OPEN, a status-2 code reached main as 0 and fell to load_error's print-and-
-; continue -- the handler saw `ERR 0 ERL 0` where the CF-3300 traps 64 / 65.
-; 🔴 THE WIPE IS MAIN'S RESTORE, NOT THIS ROM. chan_gate saves the live channel
-; before the crossing and, after it, reloads that channel and RE-STAGES its sector
-; (chan_restore_st -> fch_load_ctx -> fch_restage). That re-stage is a sector
-; read, and every successful read writes DISKOP_ERR = 0 (basic/fat-prim-body.inc,
-; "no code pending"). chan_restore_st keeps DISKOP_STATUS across it, not the code.
-; 🎯 Why FCH_ACTIVE = 0 is exact rather than a dodge: the save chan_gate did before
-; crossing left the channel's context block current, so "nothing live" is true,
-; chan_restore returns at its `ret z`, and the channel's next use goes through
-; fch_select, which reloads that same block and re-stages the same sector --
-; the restore, deferred to when it is needed. Only status 2 does this: success
-; keeps the eager restore it always had. The main-side fix (hold DISKOP_ERR in
-; chan_restore_st too) is 8 B of main page 1, which had 3 on 2026-09-28.
-; ⚠️ Every OTHER hook that reports status 2 has the same hole until it ends here.
+; A = the verb's DISKOP_STATUS. Stores it, returns CF=1 (claimed). Our own design;
+; its history was measured (scratchpad/killopen_probe.py, n_open and the k_* rows).
+; 🗑️ S10.E (2026-10-19): IT NO LONGER MARKS "NO CHANNEL LIVE" ON A PENDING CODE.
+; That arm (D-ERRKEEP / D-ERRKEEP2, 2026-09-28) existed for MAIN'S RESTORE: with
+; a file OPEN, chan_gate reloaded the live channel after the crossing
+; (chan_restore_st -> fch_load_ctx -> the sub-ROM's t_fch_load), and that
+; crossing's fatprim dispatch zeroed DISKOP_ERR, so a status-2 code reached main
+; as 0 and fell to load_error's print-and-continue -- the handler saw `ERR 0
+; ERL 0` where the CF-3300 traps 64 / 65. FCH_ACTIVE = 0 made chan_restore
+; return at its `ret z`. The
+; restore existed only to bring back main's LOF / LOC mirror, which S10.E
+; retired (LOF / LOC read the FCB: disk/fat.asm din_lofloc), and chan_gate's
+; claimed path now reads DISKOP_STATUS and returns -- nothing runs between this
+; tail and main's decode, so the pending code survives with the channel left
+; live, as it is on the CF-3300.
 hk_claim_status:
                 ld      (DISKOP_STATUS),a
-                ; D-ERRKEEP2 (2026-09-28): keyed on a PENDING CODE, not on status 2.
-                ; The hooks do not share one status encoding -- SAVE's failure is
-                ; status 3 -- but every one leaves its code in DISKOP_ERR, and a
-                ; successful transfer clears that cell, so "a code is pending" is
-                ; exactly the case the restore would wipe.
-                ld      a,(DISKOP_ERR)
-                or      a
-                jr      z,hcs_claim
-                xor     a
-                ld      (FCH_ACTIVE),a      ; no channel live: see above
-hcs_claim:
                 scf                         ; CF=1: the hook is claimed
                 ret
 ; --- hkn_stamp: overwrite the located dir entry's 8.3 name, IN THIS ROM ------
@@ -5227,8 +5210,7 @@ hkc_done:
                 ; rather than storing it, for the same reason: the tenant it
                 ; replaces wrote the cell itself, and two writers on one channel
                 ; is what §6.6aw's empty-drive `Syntax error` was.
-                jp      hk_claim_status     ; D-ERRKEEP: stores it, and a status 2
-                                            ; keeps its code past chan_gate's restore
+                jp      hk_claim_status     ; D-ERRKEEP: stores it, CF = 1
 
 ; hkc_swap -- exchange the 11-byte names in DISK_FCB_NAME and COPY_SRC
 ; (D-COPYNAMEOPEN). Clobbers A, BC, DE, HL.

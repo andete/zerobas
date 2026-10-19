@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
-* **disk** — 122 declared addresses in this project's own workspace `$E000..$F37F` (113 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
+* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **58** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -122,7 +122,6 @@ second one is the question a per-component map cannot answer.
 | `$EE08` | 1 B | `basic` | `FAT_CLUSSEC` | DISK-ONLY: sector index within current cluster (byte) |  |
 | `$EE09` | 2 B | `basic` | `FAT_FIRSTCLUS` | DISK-ONLY: first cluster of the found file (word) |  |
 | `$EE0B` | 4 B | `basic` | `FAT_FILESIZE` | DISK-ONLY: file size in bytes (4-byte LE) |  |
-| `$EE0B` | 4 B | `disk` | `main_FAT_FILESIZE` | main's FAT_FILESIZE -- DISK-ONLY: file size in bytes (4-byte LE) |  |
 | `$EE0F` | 1 B | `basic` | `FAT_NUMFATS` | DISK-ONLY: number of FAT copies (byte; from BPB +16) (1 B) |  |
 | `$EE10` | 2 B | `basic` | `FAT_SECPERFAT` | DISK-ONLY: sectors per FAT copy (word; from BPB +22) |  |
 | `$EE12` | 1 B | `basic` | `FAT_PARITY` | DISK-ONLY: 1 = odd cluster, 0 = even (FAT12 nibble pack) (1 B) |  |
@@ -142,7 +141,6 @@ second one is the question a per-component map cannot answer.
 | `$EE2D` | 1 B | `basic` | `FWR_SECIDX` | DISK-ONLY: sector index within the current cluster (byte) |  |
 | `$EE2E` | 2 B | `basic` | `FWR_BUFLEN` | DISK-ONLY: bytes currently buffered in FSECTOR_BUF (word, 0..512) |  |
 | `$EE30` | 4 B | `basic` | `FWR_BYTES` | DISK-ONLY: total bytes written so far = final file size (4-byte LE) |  |
-| `$EE30` | 4 B | `disk` | `main_FWR_BYTES` | main's FWR_BYTES -- DISK-ONLY: total bytes written so far = final file size (4-byte LE) |  |
 | `$EE34` | 2 B | `basic` | `FWR_DIRSEC` | DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
 | `$EE34` | 2 B | `disk` | `main_FWR_DIRSEC` | main's FWR_DIRSEC -- DISK-ONLY: logical sector holding the open file's dir entry (word) |  |
 | `$EE36` | 2 B | `basic` | `FWR_DIROFF` | DISK-ONLY: byte offset of that dir entry within its sector (word) |  |
@@ -727,8 +725,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE80` |  | `disk` | `H_DGET` | S10.D: GET / PUT (hk_dget) -- A = 0 GET / 1 PUT, |  |
 | `$FE85` |  | `basic` | `H_CHOUT` |  |  |
 | `$FE85` |  | `disk` | `H_CHOUT` | S10.B: one byte out of an OUTPUT channel (A) |  |
-| `$FE8A` |  | `basic` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item (disk.rom hk_chin) |  |
-| `$FE8A` |  | `disk` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item |  |
+| `$FE8A` |  | `basic` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC (disk.rom hk_chin) |  |
+| `$FE8A` |  | `disk` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |

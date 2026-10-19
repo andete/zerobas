@@ -314,6 +314,9 @@ ass_store:
 ; operation in A (sysvars.inc says why one and not the reference's four).
 ; A CALLF returns DI (cg_back's note), hence the `ei`.
 ; ASCII LOAD / MERGE keep their own source (files.asm dsk_agetbyte).
+; 🏗️ S10.E (2026-10-19): din_call is also LOF / LOC's crossing (basic/expr.asm
+; ev_ff_field, A = 6 / 8, any disk mode): disk.rom answers from the FCB in DE:HL,
+; which the CALLF and this body pass back untouched (D-XSLOTABI's both-ways ABI).
 fat_io_eof:
                 ld      a,2
                 jr      din_call

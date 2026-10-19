@@ -229,8 +229,8 @@ REQUIRED_DISK_RAM = [
                                 # cannot drift from fch_mode_class's `cp LPT_MODE`
     # S10.B: an OUTPUT channel is an MSX-DOS FCB disk.rom keeps in the channel's
     # engine row. The mode and the row's layout are main's declarations (the
-    # sub-ROM's t_fch_save/t_fch_load read them too), published so three ROMs
-    # agree on one layout.
+    # sub-ROM's t_fch_load read them too until S10.E retired it), published so
+    # the ROMs agree on one layout.
     "DOUT_MODE",                # ⚠️ a CONSTANT: FCH_MODES value of such a channel
     "DOUT_BLK",                 # ⚠️ a CONSTANT: row offset of the cached block address
     "FCH_RECMAX",               # ⚠️ a CONSTANT: the record's size at block+9 --
@@ -239,13 +239,11 @@ REQUIRED_DISK_RAM = [
     "DOUT_FLG",                 # ⚠️ a CONSTANT: row offset of the flags byte
     "DOUT_RFULL",               # ⚠️ a CONSTANT: flag bit, a full record awaits its write
     "DOUT_DEAD",                # ⚠️ a CONSTANT: flag bit, a CLOSE failed
-    # ⚠️ ALIASED: disk.rom has its own FAT_FILESIZE ($E4AE, its FAT's scratch).
-    # LOF on a live OUTPUT channel reads MAIN's, which disk.rom keeps at the
-    # FCB's size after every record it writes.
-    "main_FAT_FILESIZE=FAT_FILESIZE",
-    # ⚠️ ALIASED likewise (disk.rom's FWR_BYTES is BDOS_WRBYTES): LOC on such a
-    # channel reads MAIN's, which disk.rom keeps at the FCB's random record.
-    "main_FWR_BYTES=FWR_BYTES",
+    # (main_FAT_FILESIZE / main_FWR_BYTES -- GONE with S10.E, 2026-10-19. disk.rom
+    # kept main's two cells at the FCB's size and random record after every record
+    # it wrote (dout_mirror), because LOF / LOC read them; LOF / LOC now ask disk.rom
+    # through H_CHIN ops 6 / 8 and get the FCB's value in DE:HL, so no main cell is
+    # written from this ROM.)
     # S10.D (2026-10-15): RANDOM files -- OPEN / GET / PUT / CLOSE -- run in
     # disk.rom (hk_frnd / hk_dget). The per-channel tables stay MAIN's (OPEN's
     # LEN= parse writes FCH_RECLENS, LOC reads FCH_RECNOS) and the record engine's
@@ -363,9 +361,10 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # disk ROM parses it (scratchpad/dget_run*.out) -- HL = the cursor in, DE = the
     # record and HL past it out; it may RAISE (13, 6), which is safe from here.
     "eval_int16_checked",
-    # ...then the channel is made live: A = the channel. AFTER the evaluator,
-    # whose expression may itself select another channel (`GET #1,LOF(2)`).
-    "fch_select",
+    # (fch_select -- no longer a call-back since S10.E, 2026-10-19: hk_dget makes
+    # its channel live with a plain store to FCH_ACTIVE, still AFTER the
+    # evaluator, whose expression may itself select another (`GET #1,LOF(2)`).
+    # The switch the call-back ran -- t_fch_load's LOF / LOC mirror -- is gone.)
     # ...and the record's own refusals (5 record 0, 55 past EOF) are raised with
     # their code in A. disk_error would need the code parked in DISKOP_ERR, where
     # a later verb's `disk_error` could find it stale.

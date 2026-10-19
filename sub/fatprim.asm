@@ -116,15 +116,17 @@ fp_table:
                 jp      fp_stash_ok             ; 20 retired (D-MODE2DEAD: no sender;
                                                 ; the detach flushed mode 2 only)
 ; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
-; fch_save_active/fch_load_ctx bodies moved here so the block layout lives in
-; one ROM. HL = the context block on entry to both.
-; 🗑️ D-FLDDESC (2026-10-17): row 21 has NOTHING LEFT TO SAVE. Its last copy was
-; RANDOM's record, FSECTOR_BUF -> block+9, and that record lives at block+9 now
-; (t_fch_load's note). The row keeps its 3 B and its sender (main's
-; fch_save_active) so 22.. stay put; it reports success, as t_fch_save did for
-; every mode once D-MODE2DEAD dropped the flush.
-                jp      fp_stash_ok             ; 21 DISKOP_SEL_FCH_SAVE (a no-op)
-                jp      t_fch_load              ; 22 DISKOP_SEL_FCH_LOAD
+; fch_save_active/fch_load_ctx bodies moved here so the block layout lived in
+; one ROM. RETIRED, both: row 21 by D-FLDDESC (2026-10-17) -- its last copy was
+; RANDOM's record, FSECTOR_BUF -> block+9, and that record lives at block+9 --
+; and row 22 by S10.E (2026-10-19): t_fch_load's last job was MIRRORING the live
+; channel's LOF / LOC (the FCB's +16 size and +33 random record) into main's
+; FAT_FILESIZE / FWR_BYTES on every channel switch, and LOF / LOC now ask
+; disk.rom for the FCB's own value (H_CHIN ops 6 / 8, disk/fat.asm din_lofloc).
+; main's fch_save_active / fch_load_ctx, their only senders, went with it. Each
+; row keeps its 3 B so 23.. stay put (the table is append-only).
+                jp      fp_stash_ok             ; 21 retired (was DISKOP_SEL_FCH_SAVE)
+                jp      fp_stash_ok             ; 22 retired (was DISKOP_SEL_FCH_LOAD)
 ; SBH-3 (2026-10-03) made the sequential WRITE cursor's open/close rows 23/24;
 ; S10 increment 3 (D-ASAVEDOUT, 2026-10-08) retired both -- main's stubs over
 ; them were SAVE ,A's, and disk.rom writes that file now.
@@ -227,65 +229,19 @@ t_fat_delete:
 ; (t_fch_restage, row 19's wrapper over fat_restage_channel, is gone with it:
 ; S10.C, 2026-10-15 -- see the row.)
 
-; t_fch_load (D-FCBSHAPE S0): channel context block -> the engine globals, then
-; the re-stage. HL = the block (main's fch_ctx_addr, passed through CALSLT
-; untouched); FCH_ACTIVE is already the new channel, which the re-stage reads.
-; This was main's fch_load_ctx body, moved whole: the block's LAYOUT is now
-; known in one ROM only, the one D-FCBSHAPE's later slices change.
-; 🏗️ S10.C (2026-10-15): EVERY DISK CHANNEL'S ROW IS NOW disk.rom's FCB -- INPUT
-; (1) joined OUTPUT / APPEND (DOUT_MODE) and RANDOM (4). The arm that LDIR'd the
-; row into the FCH_STATE0 globals and re-staged the input sector served mode 1
-; alone (mode 2 is never stored, D-MODE2DEAD) and is gone with the re-stage
-; (fat_restage_channel); an INPUT channel's record -- its read-ahead -- lives in
-; its block's +9, which hk_chin fills, so nothing travels.
-; 🏗️ D-FLDDESC (2026-10-17): AND NOW NO MODE'S RECORD TRAVELS. RANDOM (4) was the
-; last: its record went FSECTOR_BUF <-> block+9 here (`tfl_rec`, 256 B per switch)
-; because FIELD / LSET / RSET / fld_lookup and GET / PUT all worked on the LIVE
-; channel's copy. The record LIVES at block+9 now -- disk.rom's hk_dget engine
-; addresses it through the row's DOUT_BLK, and FIELD points each variable's own
-; descriptor into it, as the CF-3300 does -- so every disk mode takes the mirror
-; alone, and a device channel nothing.
-; 🔴 D-FLOORREC (2026-10-13), KEPT AS THE REASON THE DEVICE ARM IS EMPTY: a
-; DEVICE channel (GRP:, CAS:, CRT:, LPT:) once took the record copy too. On a
-; DISKLESS machine FSECTOR_BUF has been program RAM since D-FATFLOOR, so every
-; channel switch wrote 256 B over the program's strings and channel blocks at
-; $E36A.. (opengrp-acceptance's `errors` row read the GRP channel's FCB header as
-; 255 255 -- scratchpad/drawcompact_census2.out: tfl_rec, 256 B).
-; S10.B: a DOUT_MODE row is an MSX-DOS FCB (+16..19 its size, +37..38 the cached
-; block address). The block cannot move while the channel is open -- CLEAR and
-; MAXFILES close every file first (D-CLEARCLOSE) -- but every load re-caches it
-; anyway, the cost of one store. LOF reads FAT_FILESIZE: the FCB's size, i.e.
-; the bytes committed in whole records, as on the CF-3300 (spec-diskcode-
-; eviction.md, S10.B DESIGN INPUT 2). S10.C / S10.D: INPUT and RANDOM rows are
-; the same FCB, so the mirror is their LOF too; LOC stays LOF's for INPUT on
-; main's side (expr.asm ev_ff_loc, D-LOCSEM's 26,26,26).
-t_fch_load:
-                push    hl                  ; the block
-                call    fch_engrow          ; HL = the channel's engine row; CF = none
-                pop     de                  ; DE = the block (pop keeps CF)
-                call    nc,tfl_mirror       ; a disk channel, any mode: DOUT_BLK, LOF, LOC
-                jp      fp_stash_ok
-; tfl_mirror -- HL = the row, DE = the block: cache the block at DOUT_BLK, then
-; LOF := the FCB's size (+16) and LOC := its random record (+33). Clobbers A,BC,DE,HL.
-tfl_mirror:
-                ld      bc,DOUT_BLK
-                add     hl,bc
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                ld      bc,16-DOUT_BLK-1
-                add     hl,bc               ; HL = FCB +16, the size
-                ld      de,FAT_FILESIZE
-                ld      bc,4
-                ldir                        ; LOF
-                ld      bc,33-20
-                add     hl,bc               ; HL = FCB +33, the random record
-                ld      de,FWR_BYTES
-                ld      bc,3
-                ldir                        ; LOC (S10.B increment 2: on an APPEND
-                xor     a                   ; channel it is not LOF)
-                ld      (de),a
-                ret
+; (t_fch_load (D-FCBSHAPE S0) -- GONE with S10.E, 2026-10-19; row 22 is
+; `jp fp_stash_ok`. It was main's fch_load_ctx body, moved here whole so the
+; block's layout was known in one ROM, and it shrank slice by slice: S10.C took
+; the arm that LDIR'd an INPUT row into the FCH_STATE0 globals and re-staged its
+; sector (every disk channel's row is disk.rom's FCB since then), D-FLDDESC the
+; RANDOM record's copy (the record lives at block+9). What was left -- re-caching
+; the block address at DOUT_BLK and MIRRORING the FCB's size (+16, LOF) and random
+; record (+33, LOC) into main's FAT_FILESIZE / FWR_BYTES -- served LOF and LOC
+; alone, and they read the FCB through disk.rom now (H_CHIN ops 6 / 8). The block
+; cannot move while its channel is open -- CLEAR and MAXFILES close every file
+; first (D-CLEARCLOSE) -- so dout_open's one store at OPEN is the cache. Its
+; D-FLOORREC lesson stays true of whatever replaces it: a DEVICE channel's switch
+; must write nothing, since on a diskless machine FSECTOR_BUF is program RAM.)
 
 ; t_fch_save (D-FCBSHAPE S0, GONE since D-FLDDESC -- see its note below): the
 ; engine globals -> channel context block at HL. Was main's fch_save_active
@@ -344,29 +300,8 @@ fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
 ; thing it did -- RANDOM's record, FSECTOR_BUF -> block+9 -- has no source now:
 ; the record lives in the block.)
 
-; fch_engrow (D-FCBSHAPE S2): -> HL = DSK_ENGTAB + ch*FCH_STATESZ for the channel
-; in FCH_ACTIVE, CF clear -- or CF set when that channel is not a DISK file (mode
-; 0 or >= LPT_MODE): a device or cassette channel keeps no engine state, and on a
-; diskless machine the table is not reserved at all. Clobbers A,B,C,D,E.
-fch_engrow:
-                ld      a,(FCH_ACTIVE)
-                ld      c,a
-                ld      b,0
-                ld      hl,FCH_MODES
-                add     hl,bc
-                ld      a,(hl)
-                dec     a                   ; disk modes 1..LPT_MODE-1 -> 0..LPT_MODE-2
-                cp      LPT_MODE-1
-                ccf
-                ret     c                   ; closed, device or cassette
-                ld      hl,DSK_ENGTAB
-                ld      de,FCH_STATESZ
-                ld      b,c
-feng_lp:
-                add     hl,de               ; row ch (row 0 unused); no carry below $E000
-                djnz    feng_lp
-                ret
-
+; (fch_engrow (D-FCBSHAPE S2) -- GONE with t_fch_load, its only caller: S10.E,
+; 2026-10-19. disk.rom's dout_row is the one copy of that arithmetic.)
 
 ; (t_fat_rand_open / get / put -- the wrappers over sub/randio.asm's record
 ; engine -- are GONE with it: S10.D, 2026-10-15, disk.rom runs RANDOM files.)

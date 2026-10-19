@@ -405,12 +405,13 @@ DIN_LEFT        equ     DOUT_FLG+1      ; word: the record's unread bytes (0..25
     ENDIF
 
 ; hk_finp -- OPEN FOR INPUT (H_FOPEN, FOPEN_SEL_INP). FCH_ACTIVE is the channel
-; being opened (fch_claim), DISK_FCB_NAME the parsed 8.3 name. The FCB is
+; being opened (OPEN stores it), DISK_FCB_NAME the parsed 8.3 name. The FCB is
 ; dout_open's (name, RS = 1, everything else 0: random record 0, nothing loaded,
 ; position 0) plus the file's first cluster (+26, where k47b2_seek walks from)
 ; and its 32-bit size (+16). A missing file is refused with 53 pending -- hk_fapp's
 ; own tail -- which main raises after the crossing, as the CF-3300 raises it after
-; $FE5D. Status 0 open, LOF mirrored (hfm_ok); 1 with the code pending.
+; $FE5D. Status 0 open (hfm_ok); 1 with the code pending. LOF / LOC read the
+; row (H_CHIN ops 6 / 8, din_lofloc -- S10.E; hfm_ok mirrored them until then).
 hk_finp:
                 ei                          ; D-HOOKDI: the hook arrives DI
                 call    dout_open           ; IX = the row: the name, the block, mounted
@@ -429,13 +430,51 @@ hk_finp:
                 ld      hl, FAT_FILESIZE
                 ld      bc, 4
                 ldir                        ; the whole 32-bit size
-                jp      hfm_ok              ; LOF / LOC mirrored, status 0
+                jp      hfm_ok              ; status 0
+
+; din_lofloc -- A = C = 6 LOF / 8 LOC (S10.E, 2026-10-19): the live channel's
+; value straight from its FCB row, for a DISK channel in any mode -- INPUT,
+; DOUT_MODE (OUTPUT / APPEND) and RANDOM all keep the S10.B FCB there.
+;   out  DE:HL = the value, unsigned 32-bit (main's ev_ff_field turns it into
+;        LOF's double, or its int 0): op 6 the size, +16..19 -- the bytes committed
+;        in whole records, which dout_write / frnd_update_size move as they write
+;        (S10.B DESIGN INPUT 2; D-LOF §4c: a RANDOM PUT moves LOF before the
+;        directory knows); op 8 the random record, +33..35, high byte 0.
+; Main sends op 8 for a DOUT_MODE channel ONLY: an INPUT channel's LOC is its LOF
+; (D-LOCSEM's 26,26,26 -- its +33 is the read-ahead's offset, not a LOC) and a
+; RANDOM channel's is FCH_RECNOS[ch], main's int (basic/expr.asm ev_ff_loc).
+; 🏗️ UNTIL S10.E THIS WAS A MIRROR: dout_mirror (disk/kernel.asm) copied +16 and
+; +33 into main's FAT_FILESIZE / FWR_BYTES after every OPEN and record write, and
+; the sub-ROM's t_fch_load copied them again on every channel switch, so main's
+; channel-switch machinery (fch_save_active / fch_load_ctx, chan_gate's restore)
+; existed to keep two cells current that only LOF and LOC read. The CF-3300
+; reaches $FE9E (LOF) / $FE99 (LOC) here; ours ride H_CHIN with an op, as S10.C's
+; EOF does (the kept one-cell divergence, basic/sysvars.inc H_CHIN).
+; Neither op reads, refills or clears DISKOP_ERR. Clobbers A, BC, IX. Sited
+; BEFORE hk_chin: din_num's `jr`s back to din_ok leave no room between them.
+din_lofloc:
+                call    dout_live           ; IX = the row (C survives)
+                bit     1, c                ; 6 = %0110 LOF, 8 = %1000 LOC
+                jr      z, dll_loc
+                ld      l, (ix+16)
+                ld      h, (ix+17)
+                ld      e, (ix+18)
+                ld      d, (ix+19)          ; DE:HL = the size
+                ret
+dll_loc:
+                ld      l, (ix+33)
+                ld      h, (ix+34)
+                ld      e, (ix+35)
+                ld      d, 0                ; DE:HL = the random record
+                ret
 
 ; hk_chin -- H_CHIN ($FE8A): the live INPUT channel's text, the reference's way.
 ;   in   A = 0 the next byte -- FCH_RDMODE 2 (INPUT$) raw, else INPUT# / LINE
 ;            INPUT#'s line rule: a CR swallows the LF after it (D-SEQEOF R2);
 ;        A = 2 EOF()'s test, nothing consumed;
 ;        A = 4 one numeric INPUT # item into STRSCR (D-CHANSWITCH);
+;        A = 6 LOF() / 8 LOC() of a DISK channel in ANY mode (S10.E, din_lofloc
+;            below: DE:HL = the value, nothing else read or moved);
 ;        the live channel (FCH_ACTIVE) is the one main selected.
 ;   out  A = the byte, CF clear; CF set = the end: nothing left, a Ctrl-Z next (the
 ;        soft end, never consumed -- R1), or a failed read, whose code is pending
@@ -452,6 +491,8 @@ hk_finp:
 hk_chin:
                 ei                          ; D-HOOKDI: a refill is sector I/O
                 ld      c, a                ; C = the operation
+                cp      6
+                jr      nc, din_lofloc      ; S10.E: 6 LOF / 8 LOC, any disk mode
                 xor     a
                 ld      (DISKOP_ERR), a     ; only THIS read's failure is pending
                 ld      a, (FCH_ACTIVE)

@@ -2461,8 +2461,9 @@ ex_dsko:
 ; It used to poke the sector into FWR_DIRSEC and run the sub-ROM dirverb tenant;
 ; FWR_DIRSEC is also an open OUTPUT channel's directory pointer, which is what
 ; D-ALIASWCELL (2026-09-23) had to restore around. The sector crosses in BC now,
-; so nothing the channel owns is touched. The restore after the I/O stays: the
-; raw read may have used the buffer main's staged sector lives in.
+; so nothing the channel owns is touched. 🗑️ S10.E (2026-10-19): and the restore
+; after the I/O (chan_restore_st) is gone -- no channel stages anything in main
+; any more, and its last job, the LOF / LOC mirror, is disk.rom's FCB read now.
 dsk_core:
                 push    af                  ; the selector, across the parse
                 push    de                  ; the hook cell, for the second crossing
@@ -2489,11 +2490,11 @@ dsk_drv_ok:
                 call    chan_gate_bare      ; disk.rom moves the sector (claimed: the
                                             ; presence crossing above proved it)
                 ei                          ; a CALLF returns with interrupts OFF
-                call    chan_restore_st     ; main's staged sector may be stale now;
-                                            ; clobbers HL / IX, hence the guards
-                pop     ix
-                pop     hl                  ; A = DISKOP_STATUS, handed back by
-                or      a                   ; chan_restore_st (the pops keep it)
+                ld      a,(DISKOP_STATUS)   ; hk_dsk's disposition (S10.E: it was
+                                            ; chan_restore_st's, which reloaded it)
+                pop     ix                  ; the CALLF clobbered IX, the hook HL
+                pop     hl
+                or      a                   ; (the pops keep A)
                 ret     z
                 jp      disk_error          ; DSKIO error -> its code (D-DISKERR)
 

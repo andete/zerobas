@@ -313,20 +313,8 @@ dl_ovf_report:
 ; already handled.
 ;   in: HL -> the keyword.  out: CF set iff nothing but ':' or end follows.
 ;   HL is preserved; the caller still needs it.
-dl_bare:
-                push    hl
-                inc     hl
-                inc     hl
-                rst    $10                ; past the 3-letter keyword
-                pop     hl
-                or      a
-                scf
-                ret     z                   ; end of line -> bare
-                cp      COLON
-                scf
-                ret     z                   ; `RUN : ...` -> bare
-                or      a                   ; anything else -> an ARGUMENT: crunch it
-                ret
+; 📌 dl_bare's body is a PIN REFILL in basic/files.asm (beside fch_select) since
+; S10.E (2026-10-19): it refills bytes the channel switch freed in front of $72D4.
 
 dl_run:
                 jr      run_prog
@@ -376,24 +364,13 @@ ic_yes:
 
 ; --- new_prog: clear the stored program (NEW) --------------------------------
 ; Empty program = a $0000 link word at the text base. Clobbers A, HL.
-new_prog:
-                xor     a
-                ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
-                ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON.
-                                            ; RUN does not reset it, END does not clear
-                                            ; it, and a line carrying TROFF is itself
-                                            ; traced -- all measured (spec §3.4). A is
-                                            ; still 0 from the xor above.
-                ld      hl,TXTBASE
-                ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
-                ld      (PRGEND),hl         ; end marker sits at the base
-                ld      hl,0
-                ld      (TXTBASE),hl        ; $0000 end marker at the base
-                jp      vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
-                                            ; rebase BOTH the scalar region (ARYTAB=
-                                            ; PRGEND+2) and the array area's "no
-                                            ; arrays" sentinel to the new PRGEND+2
-                                            ; (tail call; vars_reset/ary_reset just ret)
+; 📌 new_prog's BODY is a PIN REFILL in basic/files.asm (OPEN's mode dispatch)
+; since S10.E (2026-10-19): it refills bytes S10.E freed in front of $6CF3. Its
+; notes, which belong to the body: NEW is the ONLY thing that clears TRON (RUN
+; does not reset it, END does not clear it, and a line carrying TROFF is itself
+; traced -- all measured, spec §3.4); the tail `jp vars_reset` rebases BOTH the
+; scalar region (ARYTAB = PRGEND+2) and the array area's "no arrays" sentinel
+; (arrays slice-1 §9.6 + slice-4b §3b).
 
 ; --- run_prog: execute the stored program (RUN) ------------------------------
 ; Clears variables and the control stacks, then runs lines from CURLINE. A
@@ -1263,18 +1240,8 @@ flb_no:
 ; actual err_mem RAISE stays here (raise_error is main page-1 resident,
 ; unreachable from a page-1 tenant). `relink` itself stays as a thin shim
 ; too, for cload.asm's 2 plain `call relink` sites (own header, same file).
-store_line:
-                xor     a
-                ld      (CONTVALID),a       ; editing the program invalidates CONT
-                ld      (SL_NUM),bc
-                ld      (SL_TOK),hl
-                xor     a                   ; LE_OP_STORE = 0
-                call    le_call_op          ; A = LE_STATUS, Z = ok
-                ret     z                   ; ok (tenant already relinked +
-                                            ; vars_reset)
-                ld      a,$CC               ; out-of-memory landmark (distinct byte)
-                jp      err7_mark           ; D-TAILMERGE: ERRMARK := A, then ERR 7 --
-                                            ; gosub_stk_over's own tail, verbatim
+; 📌 store_line's BODY is a PIN REFILL in basic/files.asm (OPEN's mode dispatch)
+; since S10.E (2026-10-19): it refills bytes S10.E freed in front of $6CF3.
 ; 🎯 err_mem IS NOW AN ALIAS, NOT A STRING. It was the lowercase twin of arrays'
 ; capitalised err_mem_arr ("o" vs "O" + MSGESC_UTOF + "memory"); D-MSGEXACT made
 ; both the reference's `Out of memory`, so they became byte-identical and this
@@ -1723,34 +1690,17 @@ ex_ret_under:
 ; subroutine now because the two arms want different halves of it -- the bare arm
 ; needs the contents, the `RETURN <line>` arm needs only the GSP decrement and
 ; must NOT let the contents reach CURLINE.
-ret_frame:
-                ld      de,(GSP)            ; DE = the read cursor
-                call    ctl_get
-                push    hl                  ; [saved CURLINE]
-                call    ctl_get
-                push    hl                  ; [resume ptr]
-                call    ctl_get             ; HL = prevFSP
-                ; D-FORRET, unchanged in meaning: restoring the FOR run's floor is
-                ; what discards the frames opened since this GOSUB. `RETURN <line>`
-                ; discards the same ones as a bare RETURN (row lnrt-forgline,
-                ; measured on both references), which is why BOTH arms pop here.
-                ld      (FSP),hl            ; prevFSP
-                ld      a,(de)              ; [6] gdelta
-                inc     de
-                ; 🎯 ONE STORE FREES THE WHOLE SUBTREE. DE has walked to
-                ; base+GOSUB_FRAME exactly, so this drops the frame, every FOR
-                ; opened since it, AND a trap service record if this RETURN is a
-                ; handler's -- all of them sit at lower addresses than DE.
-                ld      (CSP),de
-                add     a,l                 ; prevGSP = prevFSP + gdelta (7-B frame)
-                ld      l,a
-                adc     a,h
-                sub     l
-                ld      h,a
-                ld      (GSP),hl
-                pop     bc                  ; BC = resume ptr
-                pop     de                  ; DE = saved CURLINE
-                ret
+; 📌 ret_frame's BODY is a PIN REFILL in basic/files.asm (beside fch_select) since
+; S10.E (2026-10-19): it refills bytes the channel switch freed in front of $72D4.
+; Its two notes, which belong to the body:
+;   * D-FORRET, unchanged in meaning: restoring the FOR run's floor (the
+;     `ld (FSP),hl` of prevFSP) is what discards the frames opened since this
+;     GOSUB. `RETURN <line>` discards the same ones as a bare RETURN (row
+;     lnrt-forgline, measured on both references), which is why BOTH arms pop.
+;   * 🎯 ONE STORE FREES THE WHOLE SUBTREE. DE has walked to base+GOSUB_FRAME
+;     exactly, so `ld (CSP),de` drops the frame, every FOR opened since it, AND a
+;     trap service record if this RETURN is a handler's -- all of them sit at
+;     lower addresses than DE.
 
 ; --- for_name: parse a FOR/NEXT loop variable into the frame key -------------
 ; D-FORVAR (docs/spec-basic-forvar.md §4.3), shared by ex_for and ex_next.
@@ -2462,15 +2412,10 @@ ers_undef:
 ; in:  (RDV_MODE) 0 = numeric / 1 = string (the caller sets it).
 ; out: A = 0 out of data / 1 item read / 2 the item is not a number (D-READVAR);
 ;      DE = the value in numeric mode, STRSCR = [len][bytes] in string mode.
-read_one_value:
-                call    sr_inl0             ; D-STUBINL: CF=1 iff the sub-ROM is absent
-                db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_READVAL)
-                ld      de,(RDV_VAL)
-                ld      a,0                 ; NOT `xor a` -- subrom_call's CF is the
-                ret     c                   ; test below and xor would clear it.
-                                            ; Defensive: no tenant -> out of data
-                ld      a,(RDV_ST)
-                ret
+; 📌 read_one_value's body is a PIN REFILL in basic/files.asm (beside fch_select)
+; since S10.E (2026-10-19): it refills bytes the channel switch freed in front of
+; $72D4. (Its `ld a,0`, not `xor a`, keeps subrom_call's CF: defensive -- no
+; tenant -> out of data.)
 
 ; --- ex_on: ON <expr> GOTO/GOSUB <line>[,<line>...] -------------------------
 ; Evaluates expr (1-based index N). Finds the Nth branch target in the

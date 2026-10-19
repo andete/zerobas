@@ -882,6 +882,12 @@ ERRMARK         equ     $FCAD   ; error landmark marker byte (1 B)
 MAXF            equ     $F85F   ; = MAXFIL: current MAXFILES ceiling (0..FCH_CEIL); default 1 (1)
 FCH_ACTIVE      equ     $F733   ; channel live in the engine globals, 0 = none (1)
                                 ; D-WSZERO S10: PARM1's unattributed tail (was $EEBE)
+                                ; 🏗️ S10.E (2026-10-19): the paragraph above is history --
+                                ; no state is swapped any more. FCH_ACTIVE is the
+                                ; CROSS-ROM name of the live channel: disk.rom's hooks
+                                ; find its FCB row through it (dout_live), 0 tells SAVE
+                                ; ,A / BSAVE's stream from an OPEN's PRINT# (fch_park),
+                                ; and fch_select / OPEN / hk_dget just store it.
 ; FCH_MODES — per-channel mode array [0..FCH_CEIL]; [0] unused, [ch] = 0 closed /
 ; 1 INPUT / 2 OUTPUT / 5-6 LPT-CRT / 7-8 CAS (FCH_CEIL+1 bytes).
 ; ⚠️ D-FCH §3.2: the repack build's FCH_CEIL is 15, so this array is 16 B and no
@@ -3434,8 +3440,10 @@ DISKOP_SEL_FCH_DETACH           equ 20  ; RETIRED 2026-10-07 (D-MODE2DEAD; it ne
 ; D-FCBSHAPE S0 (2026-09-29): the channel context save/load, main's
 ; fch_save_active/fch_load_ctx bodies moved into the tenant so the block's
 ; layout is known in ONE ROM. HL = the context block (fch_ctx_addr).
-DISKOP_SEL_FCH_SAVE             equ 21  ; flush, then globals + record -> block
-DISKOP_SEL_FCH_LOAD             equ 22  ; block -> globals + record, then re-stage
+DISKOP_SEL_FCH_SAVE             equ 21  ; RETIRED by D-FLDDESC (2026-10-17): nothing to save;
+                                        ; its sender went with S10.E, row is `jp fp_stash_ok`
+DISKOP_SEL_FCH_LOAD             equ 22  ; RETIRED by S10.E (2026-10-19): its last job was the
+                                        ; LOF / LOC mirror; no sender, row is `jp fp_stash_ok`
 ; DISKOP_SEL_FAT_IO_CREATE / _CLOSE (SBH-3, 2026-10-03): the sequential WRITE
 ; cursor's open and close (basic/fatiocreate-body.inc, basic/fatiow-body.inc)
 ; as fatprim rows -- main keeps two stubs in basic/fat.asm's shim block; the
@@ -3781,7 +3789,12 @@ FOPEN_SEL_INP   equ     $49         ; S10.C: OPEN FOR INPUT (disk.rom hk_finp) -
 ; per-function cells would cost a helper or a cell address per site. Out: A = the
 ; byte, CF = the end. Claimed only by disk.rom; a diskless machine cannot open a
 ; disk file FOR INPUT (OPEN goes to the cassette), so it never enters it.
-H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item (disk.rom hk_chin)
+; S10.E (2026-10-19): ops 6 LOF / 8 LOC join them, for a disk channel in ANY mode
+; (out DE:HL = the FCB's value) -- the CF-3300's $FE9E / $FE99, the same kept
+; one-cell divergence. They replace main's LOF / LOC mirror (FAT_FILESIZE /
+; FWR_BYTES, kept by disk.rom and the sub-ROM's t_fch_load); a diskless machine
+; cannot open a disk channel, so it never asks either.
+H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC (disk.rom hk_chin)
 ; S10.B: the CF-3300's per-byte and per-CLOSE channel cells (spec-diskcode-
 ; eviction.md §6.6bb: PRINT# enters $FE85 once a byte, CLOSE $FE62 once).
 ; Our contract, not the reference's: A = the byte, the live channel is
@@ -3913,6 +3926,9 @@ PLAY_OP_END     equ     $FF     ; end of this voice's queue
 ; RANDOM (S10.D) and now INPUT (S10.C) each keep an MSX-DOS FCB in the channel's
 ; DSK_ENGTAB row, owned by disk.rom; the sub-ROM's t_fch_save / t_fch_load no
 ; longer copy the span at all, and the re-stage (fat_restage_channel) is gone.
+; S10.E (2026-10-19): and the switch itself is gone -- fch_save_active /
+; fch_load_ctx and the sub-ROM's t_fch_load, whose last job was mirroring the
+; FCB's LOF / LOC into FAT_FILESIZE / FWR_BYTES (LOF / LOC ask disk.rom now).
 ; FCH_STATESZ survives as the ROW's size -- the stride every ROM derives the row
 ; from -- and the span's cells are main's own FAT scratch (autoexec_run, BLOAD's
 ; tenant), shared, not per channel.
@@ -5432,10 +5448,10 @@ SUBROM_IDX_KEYSTR    equ 18     ; keystr_tenant (sub/keystr.asm): KEY n,"str",
                                 ; defaults at cold boot (D-KEYSTR). PAGE 0: RAM
                                 ; in, RAM out; its only calls, pchar and
                                 ; print_crlf, are main page 1. Op in KEYARG.
-SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's 32-bit
-                                ; FAT_FILESIZE -> ARGA as an unpacked FPNUM, for
-                                ; ev_ff_lof to pack as a double (D-LOFU32). PAGE
-                                ; 0: RAM in, RAM out, nothing to marshal.
+SUBROM_IDX_LOFU32    equ 17     ; lofu32_tenant (sub/lofu32.asm): LOF's / LOC's
+                                ; 32-bit DE:HL (S10.E: was FAT_FILESIZE) -> ARGA as
+                                ; an unpacked FPNUM, for ev_ff_lof to pack as a
+                                ; double (D-LOFU32). PAGE 0: registers in, RAM out.
 SUBROM_IDX_PUEMIT    equ 16     ; pu_emit_tenant (sub/printusing.asm): PRINT USING's
                                 ; numeric PAD + EMIT, built into DETOKBUF for the
                                 ; resident stub to drain (D-PUEMIT). PAGE-0 index

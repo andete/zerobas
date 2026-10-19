@@ -207,10 +207,12 @@ FOPEN_SEL_MAKE  equ     $4D     ; S10.B (2026-10-06): OPEN FOR OUTPUT -- create
 FOPEN_SEL_APND  equ     $50     ; S10.B increment 2: OPEN FOR APPEND (hk_fapp)
 FOPEN_SEL_RAND  equ     $52     ; S10.D (2026-10-15): OPEN ... AS #n, RANDOM (hk_frnd)
 FOPEN_SEL_INP   equ     $49     ; S10.C (2026-10-15): OPEN FOR INPUT (hk_finp)
-H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item
+H_CHIN          equ     $FE8A   ; S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC
                                 ; (hk_chin) -- A = 0 / 2 / 4; out A = the byte,
                                 ; CF = the end. The CF-3300 enters $FE8A once per
-                                ; byte read (scratchpad/s10c_hook_run.out)
+                                ; byte read (scratchpad/s10c_hook_run.out). S10.E
+                                ; (2026-10-19): A = 6 LOF / 8 LOC of any disk
+                                ; channel, out DE:HL (din_lofloc)
 H_DGET          equ     $FE80   ; S10.D: GET / PUT (hk_dget) -- A = 0 GET / 1 PUT,
                                 ; C = the channel, FN_RESUME = the cursor past `#n`
 H_CHOUT         equ     $FE85   ; S10.B: one byte out of an OUTPUT channel (A)

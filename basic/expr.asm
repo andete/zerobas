@@ -1307,10 +1307,11 @@ ev_ret_e:                                   ; D-RETTAIL: the shared `DE = A` ret
                 ld      d,0                 ; INP yields 0..255
                 ret
 ev_ff_eof:                                  ; EOF(n): -1 at end of the input file n
-                ; Select channel n (DE = arg) so FREAD_LEFT belongs to it, then test
-                ; whether every file byte has been delivered (4-byte LE == 0). fch_select
-                ; uses LDIR only (no CALSLT), so IX — the evaluator's token cursor —
-                ; survives; it does clobber HL/BC/A (the factor caller tolerates that,
+                ; Make channel n (DE = arg) the live one, then ask disk.rom whether
+                ; its next byte is the end (fat_io_eof, H_CHIN op 2). fch_select is a
+                ; store and a table read since S10.E (2026-10-19: no context switch,
+                ; no CALSLT), and fat_io_eof guards IX -- the evaluator's token
+                ; cursor; HL/BC/A are clobbered (the factor caller tolerates that,
                 ; like PEEK). A bad channel number is a function error.
                 call    fch_check           ; D-BADFNUM: 5 / 59 / 52. Was
                                             ; `jp nc,ev_f_err`, which set ERRMARK and
@@ -1338,7 +1339,8 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ; CAS: input channel peeks the tape, any other keeps ev_f_ifc's
                 ; answer (the tenant sets the same deferred FPERR=3, first error
                 ; wins, and EOF reads 0). Never fch_select one: a cassette channel
-                ; owns no fat.asm ctx, and its record copy would land on CAL_BUF.
+                ; owns no FCB row for disk.rom to read (until S10.E the switch also
+                ; copied a record, which would have landed on CAL_BUF).
                 jr      nc,eof_dev
                 ; 🔴 D-EOFMODE (2026-09-30): a DISK channel answers EOF only when it
                 ; is open FOR INPUT. OUTPUT, APPEND and RANDOM are all `Bad file
@@ -1365,8 +1367,14 @@ eof_answer:
                 dec     de                  ; all delivered -> EOF -> -1 ($FFFF)
                 ret
 ev_ff_lof:                                  ; LOF(n): length of open input file n
-                ; Select channel n so FAT_FILESIZE (set by fat_find at OPEN, part of
-                ; the per-channel state span) belongs to it.
+                ; 🏗️ S10.E (2026-10-19): disk.rom ANSWERS IT from the channel's FCB
+                ; row (H_CHIN op 6, disk/fat.asm din_lofloc: the size, +16..19) in
+                ; DE:HL -- every disk mode alike. Until S10.E main read a MIRROR,
+                ; FAT_FILESIZE, which disk.rom refreshed after each record it wrote
+                ; and the sub-ROM's t_fch_load on every channel switch -- and keeping
+                ; that one cell current was the last job of main's whole channel-
+                ; switch machinery (fch_save_active / fch_load_ctx, chan_gate's
+                ; restore), all retired with it.
                 ; 🔴 D-LOFU32 (2026-09-10): THE RESULT IS A DOUBLE CARRYING THE
                 ; WHOLE 32-BIT SIZE, NOT "its low 16 bits". `ld de,(FAT_FILESIZE) /
                 ; ret` handed the size back as an INTEGER, so a 65280-byte file read
@@ -1384,23 +1392,19 @@ ev_ff_lof:                                  ; LOF(n): length of open input file 
                                             ; above, including why channel 0 never
                                             ; reaches the class test
 ev_ff_lof_checked:                          ; D-LOC joins here for a sequential channel
-                ld      bc,FAT_FILESIZE
-ev_ff_field:                                ; S10.B: BC = the 4-byte field to answer
+                ld      c,6                 ; H_CHIN op 6: LOF
+ev_ff_field:                                ; S10.B: C = the H_CHIN op to answer (S10.E;
+                                            ; it was BC = a 4-byte mirror cell)
                 call    fch_mode_class      ; device/cassette channels have no length
                 jp      nc,ev_f_ifc         ; D-EVFERR: ERR 5, as ev_ff_eof above
-                ld      a,e
-                push    bc
-                call    fch_select
-                pop     hl
-                ld      c,(hl)
-                inc     hl
-                ld      b,(hl)
-                inc     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                ld      h,b
-                ld      l,c                 ; DE:HL = the value, unsigned 32-bit
+                ld      a,e                 ; (fch_mode_class keeps C)
+                ld      (FCH_ACTIVE),a      ; the channel live: disk.rom reads it -- and
+                                            ; it STAYS live, as fch_select left it, so
+                                            ; `INPUT #1,A$(LOF(2))` still meets #2
+                                            ; (disk/fat.asm hk_chin's header)
+                ld      a,c
+                call    din_call            ; DE:HL = the value, unsigned 32-bit;
+                                            ; IX kept (basic/input.asm)
                 ld      a,h
                 or      l
                 or      d
@@ -1412,6 +1416,8 @@ lof_nz:
                 ; The digit work is the SUBROM_IDX_LOFU32 tenant (sub/lofu32.asm):
                 ; the resident form of it cost 98 B of page 1 (129 -> 31 B free,
                 ; measured), so only the call, the pack and the tail stay here.
+                ; S10.E: DE:HL ride into it untouched (sr_inl0 parks HL, subrom_call
+                ; and CALSLT pass both) -- it read FAT_FILESIZE before.
                 ; 🔴 IX IS THE EVALUATOR'S TOKEN POINTER HERE (fn_call: "in: IX ->
                 ; the FN token"), and subrom_call takes the entry address IN IX and
                 ; CALSLT clobbers it. The first tenant cut left IX pointing at the
@@ -1446,12 +1452,14 @@ ev_ff_loc:                                  ; LOC(n): D-LOC (2026-09-10)
                 ; S10.B increment 2: a disk OUTPUT/APPEND channel (DOUT_MODE) is
                 ; the CF-3300's FCB, and LOC is its random record -- the bytes in
                 ; whole records written -- which is NOT LOF on an APPEND channel
-                ; (6 B file: LOF 6, LOC 0; scratchpad/applof_run.out). disk.rom
-                ; keeps it in FWR_BYTES, an engine global the channel has no
-                ; other use for.
+                ; (6 B file: LOF 6, LOC 0; scratchpad/applof_run.out). S10.E
+                ; (2026-10-19): disk.rom reads it from the FCB (H_CHIN op 8, +33..35)
+                ; where main read its mirror, FWR_BYTES -- and the digits come from
+                ; that value now: the tenant used to take them from FAT_FILESIZE,
+                ; LOF's cell, whatever this arm had tested (sub/lofu32.asm).
                 cp      DOUT_MODE
                 jr      nz,ev_ff_lof_checked ; sequential/device: LOC == LOF
-                ld      bc,FWR_BYTES
+                ld      c,8                 ; H_CHIN op 8: LOC
                 jr      ev_ff_field
 loc_rand:
                 ld      hl,FCH_RECNOS
@@ -1510,8 +1518,9 @@ eof_dev:                                    ; D-EOFCAS: A = FCH_MODES[E], not di
 ;
 ; ⚠️ FOUR CALLERS, in THREE files — not the two this comment used to claim:
 ;   * ev_ff_eof / ev_ff_lof (below): CF clear -> function error, so EOF()/LOF()
-;     reject device+cassette channels (which own no fat.asm ctx and would corrupt
-;     the engine globals if fch_select'd).
+;     reject device+cassette channels (which own no FCB row: disk.rom's H_CHIN
+;     ops must never be asked about one -- until S10.E, selecting one also
+;     corrupted the engine globals).
 ;   * ex_print's `PRINT #n` arm (basic/print.asm) and input_common's `#n` arm
 ;     (basic/files.asm, INPUT# *and* LINE INPUT#): they ignore CF and dispatch on
 ;     A themselves, but they want the `or a` raise. D-NOTOPEN (docs/spec-basic-
