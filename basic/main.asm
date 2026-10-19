@@ -504,6 +504,46 @@ err_badfnum_raise:                          ; D-CHDIR: PRINT#/INPUT# the wrong w
 ; (err_notopen_raise lives in basic/list.asm since D-WSZERO S14g-d: it refills
 ; bytes freed in front of the $6CF3 pin)
 
+; --- fre_go: FRE's free-space op, with the reference's LIVE depth (D-FREPLUS14) ---
+; Joost ruled 2026-10-16 that FRE(0) reads what the VG-8020 reads in EVERY
+; expression shape. The reference counts FRE(0) down to the live Z80 stack, so
+; whatever its evaluator holds open when FRE runs -- a `(`, a pending operator
+; with its left operand, a function, a subscript -- is missing from it; zerobas's
+; value is fixed against the control pool's frontier. So FRE(n) asks zerobas-sub2's
+; frelive_tenant (sub2/frelive.asm) what the reference holds HERE: it re-scans the
+; current statement (SAVTXT) up to this FRE's own `)` and sums the measured costs
+; (docs/spec-basic-frelive.md; scratchpad/freshape_run3.out), plus the
+; statement's base -- 18 B below the fixed value in a LET, 14 in a PRINT or an IF
+; condition, 20 in a FOR. The hot evaluator is untouched: only FRE(n) pays (T5).
+;   in:  A = the op (15 = FRE(s$), the string pool; 17 = FRE(n), the variable
+;        space), IX = one past FRE's `)` -- the mark the tenant stops at.
+;   out: HL = the free bytes (never below 0). Clobbers as sh_go.
+; FRE(s$) is sh_go untouched: the string pool has no stack in it.
+; Without zerobas-sub2 the result word stays 0 and FRE(n) reads the fixed value.
+; Placed here, the image's last code, so the 0-byte call site ahead of the pins
+; moves nothing and no existing label moves either.
+    IF CLEARPOOL
+fre_go:
+                cp      17
+                jp      nz,sh_go            ; FRE(s$): exactly as before
+                push    ix                  ; the mark (sh_go clobbers IX)
+                call    sh_go               ; HL = the free variable space
+                pop     de                  ; DE = the mark
+                push    hl
+                ld      hl,0
+                push    hl                  ; the tenant's result word, 0 = none
+                add     hl,sp               ; HL = its address (CALSLT passes HL, DE)
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUB2_IDX_FRELIVE
+                call    subrom2_call        ; writes the bytes the reference holds
+                pop     de                  ; DE = them
+                pop     hl                  ; HL = the free space
+                or      a
+                sbc     hl,de
+                ret     nc
+                ld      hl,0                ; (a near-full machine: never negative)
+                ret
+    ENDIF
+
 ; D-MSGMIGRATE: err_bad_filenum (ERR 52) and err_file_notopen (ERR 59) are gone
 ; from main -- em_bad_filenum / em_file_notopen in sub/errmsg.asm. err_bad_filenum
 ; was one of MSGESC_FILE's two users; err_bad_filemode (basic/missing.asm) was the

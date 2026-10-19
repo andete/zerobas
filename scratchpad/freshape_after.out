@@ -1,0 +1,56 @@
+shape          VG     ZB        own (VG depth - the known parts)
+paren           6      6  SAME
+paren2         12     12  SAME
+paren3         18     18  SAME
+add_l          10     10  SAME
+add_r           0      0  SAME
+mul_l          10     10  SAME
+mul_r           0      0  SAME
+addmul         20     20  SAME
+addadd         10     10  SAME
+addpar3        42     42  SAME
+neg2           18     18  SAME
+sub2           26     26  SAME
+or_l            8      8  SAME
+rel_l          10     10  SAME
+abs            10     10  SAME
+intabs         20     20  SAME
+valstr         20     20  SAME
+muldiv         10     10  SAME
+add_i          10     10  SAME
+add_s          12     12  SAME
+add_d          16     16  SAME
+mul_d          16     16  SAME
+rel_lt         18     18  SAME
+rel_eq         24     24  SAME
+and_l          32     32  SAME
+xor_l          32     32  SAME
+mod_l          24     24  SAME
+idiv_l         24     24  SAME
+pow_l          24     24  SAME
+not            30     30  SAME
+mod_r          38     38  SAME  own    8
+idiv_r         38     38  SAME  own    8
+pow_r          34     34  SAME  own   10
+div_r          40     40  SAME  own   10
+eqv_r          32     32  SAME  own    8
+imp_r          32     32  SAME  own    8
+eq_r           36     36  SAME  own   12
+ne_r           36     36  SAME  own   12
+ge_r           36     36  SAME  own   12
+le_r           36     36  SAME  own   12
+gt_r           36     36  SAME  own   12
+ary            42     42  SAME  own   18
+rel_i          12     12  SAME
+mid2          -26     54  DIFF  own  -70
+ifcond         20     20  SAME  own   -4
+print          -4     -4  SAME
+print2         -4     -4  SAME
+arytgt          0      0  SAME
+forstart        2      2  SAME
+fn             14     13  DIFF
+gosub           7      7  SAME
+letstr         10     10  SAME
+concat         22     22  SAME
+again           0      0  SAME
+refcache: 6 hit, 6 miss, 6 stored

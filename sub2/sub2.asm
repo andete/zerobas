@@ -107,6 +107,9 @@ sub2_p1_table:
                 jp      edctrl_tenant           ; index 2 (SUB2_IDX_EDCTRL): the
                                                 ;   editor's CTRL-B/E/F/N/U (D-EDCTRL,
                                                 ;   moved from main: D-EDCARVE)
+                jp      frelive_tenant          ; index 3 (SUB2_IDX_FRELIVE): FRE(n)'s
+                                                ;   live-stack depth, the reference's
+                                                ;   evaluator re-scanned (D-FREPLUS14)
 
 sub2_p1_ping:
                 ld      a,SUB2_PING_P1
@@ -116,6 +119,7 @@ sub2_p1_ping:
                 include "sub2/grpprt.asm"
                 include "basic-resident-abi.inc"   ; main-low: rl_vpeek / rl_vpoke / rl_lastrow
                 include "sub2/edctrl.asm"
+                include "sub2/frelive.asm"
 
 ; __MEAS_SUB2_P1_END: page-1 free space is $8000 - __MEAS_SUB2_P1_END.
 __MEAS_SUB2_P1_END:

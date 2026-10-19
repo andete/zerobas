@@ -3,19 +3,27 @@
 """D-DIMRESERVE S3 (gate: dimedge-acceptance): how close to the end of memory a
 DIM and a line store may reach, VG-8020 vs zerobas.
 
-  dim-K     `CLEAR 200:X=INT((FRE(0)-K)/8):DIM A(X)` -- REFUSED (`Out of memory
-            in 10`) or FITTED (anything after line 10: the next statement may
-            itself run out, as on the reference, which is why no row reads a
-            value at the edge). The VG-8020 fits from K=110, refuses at 108.
+  dim-K     `CLEAR 200:X=0:X=INT((FRE(0)-K)/8):DIM A(X)` -- REFUSED (`Out of
+            memory in 10`) or FITTED (anything after line 10: the next statement
+            may itself run out, as on the reference, which is why no row reads a
+            value at the edge). The VG-8020 fits from K=109 and refuses at 108
+            (scratchpad/dimedge_scan_pre.out, K one by one). X EXISTS FIRST since
+            2026-10-17: a LET whose target is new reads FRE(0) 11 B lower on the
+            VG-8020, which creates the target before the right side
+            (scratchpad/freabs_run.out) -- a separate difference, not the edge.
+            ("fits from 110" stood here until then; it was stale.)
   store-n   after `CLEAR 300,TXTTAB+1000` and `99 REM Z`, is `20 REM` + n B
             stored (LIST)? The VG-8020 stores n=13 and refuses n=14.
 
-The reserves are basic/sysvars.inc's STK_EDGE_RESERVE (DIM, a new scalar: 116,
-the floor zerobas's own unguarded stack sets, measured by
+The reserves are basic/sysvars.inc's STK_EDGE_RESERVE (DIM, a new scalar: 131 --
+116 was the floor zerobas's own unguarded stack sets, measured by
 scratchpad/lowpoint_probe.py and scratchpad/edgesafe_probe.py) and
 STK_STORE_RESERVE (the line store: 141, the reference's edge to the byte). The
-DIM edge still differs by ~30 B -- zerobas's statement stack is deeper than the
-reference's -- and those rows are KNOWN_DIVERGE, pinned to their exact value.
+DIM edge differed by ~30 B until D-FREPLUS14 (2026-10-17): that gap was FRE(0)'s
+(zerobas read it against the pool top, the reference against the live SP). With
+FRE(0) on the reference's depth the edge sat 15 B past the reference's, and
+STK_EDGE_RESERVE 131 (was 116) puts it on the reference's to the byte
+(scratchpad/dimedge_scan_131e.out / _131o.out: both FRE(0) parities, 2-B elements).
 
 Prints `ROW <name> VG=[...] ZB=[...] <verdict>`; exit 0 all agree (or match
 their pin), 1 a divergence, 2 the VG-8020 gave no reading.
@@ -30,7 +38,7 @@ REF, ZB = "Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK"
 
 
 def dim_case(k):
-    return ["NEW", f"10 CLEAR 200:X=INT((FRE(0)-{k})/8):DIM A(X)",
+    return ["NEW", f"10 CLEAR 200:X=0:X=INT((FRE(0)-{k})/8):DIM A(X)",
             '20 PRINT"[";"FIT";"]":END', "RUN"]
 
 
@@ -40,14 +48,16 @@ def store_case(n):
 
 
 CASES = [("dim-100", dim_case(100)), ("dim-108", dim_case(108)),
-         ("dim-120", dim_case(120)), ("dim-136", dim_case(136)),
+         ("dim-109", dim_case(109)), ("dim-120", dim_case(120)),
          ("dim-144", dim_case(144)), ("dim-200", dim_case(200)),
          ("store-12", store_case(12)), ("store-13", store_case(13)),
          ("store-14", store_case(14)), ("store-26", store_case(26))]
 
-# The DIM edge's residual (D-DIMRESERVE): the VG-8020 fits these, zerobas
-# refuses them. A pin that stops describing zerobas is a failure too.
-KNOWN_DIVERGE = {"dim-120": "REFUSED", "dim-136": "REFUSED"}
+# The DIM edge's residual (D-DIMRESERVE) -- dim-120 / dim-136, which the VG-8020
+# fitted and zerobas refused -- closed with D-FREPLUS14 (2026-10-17): the edge rows
+# above (108 refused, 109 fitted) agree to the byte. A pin that stops describing
+# zerobas is a failure too, so the dictionary stays, empty.
+KNOWN_DIVERGE = {}
 
 
 def rows(raw):

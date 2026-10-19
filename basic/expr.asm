@@ -1734,6 +1734,9 @@ cvi_tmm:
 ; D-BF-A(c): the reference reports TWO independent pools; zerobas has ONE free
 ; gap and CLEAR's string-space argument is discarded, so BOTH forms answer with
 ; that gap. Computed sub-side (op 15) because the array-region walk lives there.
+; D-FREPLUS14 (2026-10-17): FRE(n) then takes off what the VG-8020's evaluator
+; holds open at this FRE (ev_fre_close -> fre_go, basic/main.asm; the
+; re-scan is sub2/frelive.asm). FRE(s$) is unchanged.
 ev_ff_fre:
                 call    ixsp_paren_req     ; D-IXSP
                                            ; bare FRE -> deferred syntax error
@@ -1776,10 +1779,18 @@ ev_fre_close:
                 ld      a,c                 ; the op chosen above, in C -- which
                                             ; POOL to report is decided by the
                                             ; ARGUMENT'S TYPE, not here
+                ; D-FREPLUS14 (2026-10-17): FRE(n) reads what the VG-8020 reads
+                ; in EVERY expression shape (Joost, 2026-10-16) -- its free
+                ; space less the stack the reference's evaluator holds at this
+                ; FRE. fre_go (basic/main.asm, past the last pin) is sh_go
+                ; for FRE(s$) and sh_go + that depth for FRE(n); IX (one past
+                ; FRE's `)`) is its mark. Same 3 B as the `call sh_go` it
+                ; replaces, so nothing ahead of the pins moved.
+                call    fre_go              ; HL = the free bytes
     ELSE
                 ld      a,15                ; op = 15 (FREE_GAP)
-    ENDIF
                 call    sh_go               ; HL = the free bytes
+    ENDIF
                 pop     ix
                 call    flt_int_result      ; an int result even when the argument
                 ex      de,hl               ;  was a float or a string (A only):

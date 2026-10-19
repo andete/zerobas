@@ -4304,7 +4304,7 @@ STK_EVAL_RESERVE equ   128    ; see stk_guard; checked by stackcorrupt's leaf ro
 ; handler evaluates -- and zerobas now empties the pool there too (gosub_stk_over).
 ; The reference refuses a frame with ~130 B left; 768 refused Head over Heels' GOSUB
 ; at 671 B free (`Out of memory in 40`). 256 is the next whole page (the one-byte
-; test below and sub/deffn.asm's copy): above STK_EDGE_RESERVE's 116 for the
+; test below and sub/deffn.asm's copy): above STK_EDGE_RESERVE's 131 for the
 ; statement stack under a frame, and the evaluator's own guard covers expressions.
 CTL_FRAME_MARGIN equ   256
     IF low CTL_FRAME_MARGIN
@@ -4326,11 +4326,20 @@ CTL_STACK_MARGIN equ    256    ; MEASURED: ctllim-acceptance is green at this si
 ; both machines (scratchpad/lowpoint_probe.py -> lowpoint_disk2.out, _dm.out):
 ; the deepest path no guard covers is the line editor in direct mode, 92 B
 ; below the pool top; KEY LIST 84, LIST and FILES 82, CLS 62, NEXT 61, a trap
-; dispatch 60. 116 keeps 24 B over the editor. It was 256 (CTL_STACK_MARGIN),
+; dispatch 60. 116 kept 24 B over the editor. It was 256 (CTL_STACK_MARGIN),
 ; which put zerobas's DIM edge ~170 B above the VG-8020's (scratchpad/
-; dimedge_run.out); the ~29 B still left is zerobas's deeper statement stack
-; (the reference's FRE(0) is read against the live SP, ours against the top).
-STK_EDGE_RESERVE equ    116
+; dimedge_run.out); the ~29 B then left was FRE(0)'s, not the edge's: the
+; reference reads FRE(0) against the live SP, zerobas read it against the top.
+; 📏 D-FREPLUS14 (2026-10-17): with FRE(0) on the reference's depth, and X created
+; BEFORE the measured line (scratchpad/freabs_run.out: a LET whose target is new
+; reads 11 B less on the VG-8020, which creates the target first),
+; `X=INT((FRE(0)-K)/2):DIM A%(X)` fits from K=92 here and K=108 on the VG-8020
+; (scratchpad/dimedge_scan.py -> dimedge_scan_int.out; the 8-byte form: 93 / 109):
+; zerobas let a DIM come 15 B closer to the end than the reference (16 at these
+; K, 15 to the byte: 132 left the odd-parity edge 2 K high, dimedge_scan_132o.out).
+; 131 puts the edge on the reference's at both parities (dimedge_scan_131e.out /
+; _131o.out), and keeps 39 B over the editor's 92.
+STK_EDGE_RESERVE equ    131
 ; --- STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRESERVE S3) ----------
 ; Measured to the REFERENCE's own edge, which is safe because it is above
 ; STK_EDGE_RESERVE: after lnblank's crf shrink (`CLEAR 300,TXTTAB+1000`, then
@@ -4918,6 +4927,8 @@ GRP_HDR         equ     $F953   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
 SUB2_IDX_GRPPRT equ     1       ; zerobas-sub2 page-1 index: grpprt_tenant (D-OPENGRP)
 SUB2_IDX_EDCTRL equ     2       ; zerobas-sub2 page-1 index: edctrl_tenant (D-EDCARVE)
+SUB2_IDX_FRELIVE equ    3       ; zerobas-sub2 page-1 index: frelive_tenant -- FRE(n)'s
+                                ; live-stack depth (D-FREPLUS14, sub2/frelive.asm)
 SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
                                 ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
                                 ; no result, cannot fail, so nothing marshals.

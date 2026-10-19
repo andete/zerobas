@@ -6,9 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # `FRE` — how much memory is free
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No known divergence in
-> how `FRE` counts; the amount of memory there is to count differs (below).
+> **Status (2026-10-17):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. Since 2026-10-17
+> `FRE(0)` also counts what the expression around it holds open, as the
+> VG-8020 does (built; not yet confirmed on the machines). The amount of memory
+> there is to count differs (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -43,10 +45,13 @@ Only the *type* of the argument matters.
 - **What things cost, as `FRE(0)` sees it** (the same on both machines):
   a numeric variable 11 bytes; `DIM A(n)` 8 bytes per element plus 8.
 - **Read both values at the same point.** `FRE(0)` counts down to the stack,
-  so `FRE(0)-FRE(0)` is not 0 on the VG-8020: each extra level of expression
-  nesting costs it a few bytes. To measure what something costs, create the
-  variables you will store the readings in first, and read both readings
-  with the same statement shape, as the example does.
+  so `FRE(0)-FRE(0)` is not 0: what the expression still has open when `FRE`
+  runs costs memory — 6 bytes for each open parenthesis, 10 for an enclosing
+  function, 8 plus the left operand's size for a pending `+` or `*`, and so on
+  — and the statement matters too (`PRINT FRE(0)` reads 4 more than
+  `A=FRE(0)`). To measure what something costs, create the variables you will
+  store the readings in first, and read both readings with the same statement
+  shape, as the example does.
 - **Errors:** `FRE`, `FRE()`, `FRE(0,1)` and `FRE("","")` are `Syntax error`
   (error 2) — the only error either form raises, on both machines.
 
@@ -78,15 +83,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None known in how `FRE` counts.
+None known in how `FRE` counts, in the expression shapes that were measured
+(below). Not measured yet, so zerobas follows the same rule as a best guess: a
+`FRE(0)` in the second or third argument of `MID$`, `INSTR` or `STRING$`, in a
+string comparison, in an `FN` call's argument or in the `TO` / `STEP` part of
+`FOR`, and in any statement other than `LET`, `PRINT`, `IF` and `FOR`. A
+`FRE(0)` inside a `DEF FN` definition reads the calling statement's own
+amount, without what the call site holds open.
 
 **The absolute `FRE(0)` figure is not the VG-8020's.** zerobas has its own
 working storage in RAM (`$E000`–`$F37F`) and its own memory ceiling for BASIC,
 so a freshly started zerobas reports a different amount of free memory. That
 is the RAM-usage (TIER 4) question, and it is why no example on these pages
-prints an absolute `FRE(0)`. How much `FRE(0)` shrinks per level of expression
-nesting is a property of each machine's evaluator and is recorded, not
-compared.
+prints an absolute `FRE(0)`.
 
 ## What we found, and how
 
@@ -108,11 +117,27 @@ compared.
   free for BASIC; `FRE(0)` rose by 8192 at no ROM cost
   ([spec-fre-gap.md](../spec-fre-gap.md), [spec-reclaim.md](../spec-reclaim.md)).
 
+- **`FRE(0)` read the same in every expression** (built 2026-10-17,
+  D-FREPLUS14). The VG-8020's `FRE(0)` counts down to its live stack, so it
+  reads less inside parentheses, under a pending operator or inside a
+  function; zerobas's read the same everywhere, and 18 bytes more than the
+  VG-8020's at the top of an assignment. Measured shape by shape on the
+  VG-8020 (44 shapes: [`freshape_run3.out`](../../scratchpad/freshape_run3.out),
+  from [`freshape_probe.py`](../../scratchpad/freshape_probe.py)), the costs
+  add up over what is still open; a pending operator keeps its left operand
+  at its own size (integer 2, single 4, double 8 bytes). Joost ruled that
+  `FRE(0)` must match the reference in every shape, so zerobas now works out
+  at each `FRE(0)` what the reference's evaluator would be holding there
+  ([spec-basic-frelive.md](../spec-basic-frelive.md)).
+
 ## Where it lives
 
 `ev_ff_fre` in [basic/expr.asm](../../basic/expr.asm) picks the form from the
 argument's type (`ev_fre_num` for a number); the string-heap code in
-[sub/strheap.asm](../../sub/strheap.asm) answers the two pools' sizes.
+[sub/strheap.asm](../../sub/strheap.asm) answers the two pools' sizes. For
+`FRE(0)`, `fre_go` in [basic/main.asm](../../basic/main.asm) takes off
+what [sub2/frelive.asm](../../sub2/frelive.asm) works out the reference would
+be holding at that point of the statement.
 
 ## Related concepts
 
@@ -128,3 +153,6 @@ argument's type (`ev_fre_num` for a number); the string-heap code in
 - `make kwsweep` — the everyday row, a `DIM` cost row, a string cost row and
   the error rows for both forms.
 - `make kwram` — the RAM-usage comparison.
+- [`tests/test_frelive.py`](../../tests/test_frelive.py) (`make unit-test`) —
+  the amount taken off `FRE(0)` for each measured expression shape and
+  statement.

@@ -1,0 +1,4 @@
+Philips_VG_8020                104:R 105:R 106:R 107:R 108:R 109:R 110:R 111:R 112:R 113:F 114:F
+C-BIOS_MSX1_EU_REPACK_NODISK   104:R 105:R 106:R 107:R 108:F 109:F 110:F 111:F 112:F 113:F 114:F
+F = FITTED, R = REFUSED, ? = no reading
+refcache: 0 hit, 2 miss, 2 stored

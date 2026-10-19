@@ -3828,8 +3828,63 @@ item — do **one item per session** to keep context lean.
       (3) **`FRE(0)=FRE(2)` in ONE expression is 0 on the VG-8020, -1 on zerobas**
       (after `A$="ABC"+"D"`); split into two statements both answer 0.
 
-- [ ] 🧮 **D-FREPLUS14 -- A DISKLESS zerobas HAS 14 BYTES MORE FRE(0) THAN THE VG-8020
-      (found 2026-10-16 by D-WSZERO S15)**
+- [x] 🧮 **D-FREPLUS14 -- A DISKLESS zerobas HAS 14 BYTES MORE FRE(0) THAN THE VG-8020
+      (found 2026-10-16 by D-WSZERO S15)** — ✅ **BUILT 2026-10-17: FRE(0) reads the
+      reference's live-stack depth in every measured shape.**
+      ✅ **THE SLICE (docs/spec-basic-frelive.md "How zerobas computes it").** Drafted by
+      a subagent in its own worktree (build + unit tests only), integrated and measured
+      here. ev_fre_close calls `fre_go` (basic/main.asm, past every pin: 34 B of main
+      page 1, 379 -> 345 B free); FRE(n) asks a new zerobas-sub2 page-1 tenant
+      (sub2/frelive.asm, SUB2_IDX_FRELIVE 3, ~950 B) for the depth -- a shunting-yard
+      over the CURRENT statement's tokens (SAVTXT, which exec_stmt writes at every
+      statement head) up to the FRE being closed -- and subtracts it, with the statement
+      base (LET 18, PRINT / IF 14, FOR 20). FRE("") is untouched; the hot evaluator is
+      unchanged. One deviation from scratchpad/frelive_model.py: FRE's own result is a
+      SINGLE (docs/binfre-vg8020-characterization.md §3.1: `FRE(0)-FRE(0)` reads 12 =
+      8 + 4), the model's double never having been measured. Degrades to the base alone
+      (never a hang, never a read past the statement) on an unclassifiable token, a scan
+      that misses its FRE (a DEF FN body: phase 2), or a push within 48 B of CTLLIM.
+      Witness: [`freshape_after.out`](scratchpad/freshape_after.out) -- 52 of 54 rows SAME
+      on the VG-8020 and zerobas (parens, every operator class and width, functions,
+      arrays, unary, concatenation, the PRINT / IF / FOR / GOSUB / string-LET bases);
+      `fn` 13 vs 14 (zerobas's DEF FN frame, smaller is allowed) and `mid2` (the VG-8020
+      never flipped within K <= 80: a bad row, MID$'s later arguments stay unmeasured).
+      🔮 "all SAME but fn and mid2": HIT. tests/test_frelive.py runs the tenant over
+      zerobas-crunched statements (the 44 model rows, the bases, DEFINT, two FREs,
+      multi-statement lines, the degrade rows); 68/68 unit files. Knife connectedness
+      unchanged: HIT.
+      ➡️ RESIDUALS: MID$ / INSTR / STRING$ later arguments, string relationals, FN calls,
+      TAB( / SPC(, PRINT #, the bases of other statements (LPRINT ...) and a FRE inside a
+      DEF FN body are scanned by the model's rule but UNMEASURED; the 48 B CTLLIM margin
+      is reasoned, not measured.
+      📏 **THE FULL GATE FOUND THE DIM EDGE (2026-10-17): dimedge-acceptance went red**,
+      its rows sizing `DIM A(X)` from `X=INT((FRE(0)-K)/8)`. Measured K by K
+      ([`dimedge_scan.py`](scratchpad/dimedge_scan.py)), it turned out to be TWO things:
+      (1) [`freabs_run.out`](scratchpad/freabs_run.out) -- zerobas's ABSOLUTE FRE(0)
+      equals the VG-8020's when the statement's variables exist (PRINT 0, LET 0), but a
+      LET whose TARGET IS NEW reads 11 B higher here: the VG-8020 creates the target (a
+      double: 11 B) BEFORE the right side, zerobas after -- filed as D-LETNEWFIRST below;
+      (2) with X created first ([`dimedge_scan_pre.out`](scratchpad/dimedge_scan_pre.out),
+      [`dimedge_scan_int.out`](scratchpad/dimedge_scan_int.out)) zerobas's DIM edge sat
+      15 B past the reference's -- the ~30 B "zerobas is stingier" of D-DIMRESERVE was
+      FRE(0)'s all along. STK_EDGE_RESERVE 116 -> 131 puts it on the reference's to the
+      byte at both FRE(0) parities ([`dimedge_scan_131e.out`](scratchpad/dimedge_scan_131e.out),
+      [`dimedge_scan_131o.out`](scratchpad/dimedge_scan_131o.out); 132 left the odd parity
+      2 K high). dimedge-acceptance's DIM rows now create X first and bracket the edge
+      (108 refused / 109 fitted, both machines); its two KNOWN_DIVERGE pins are gone.
+      🔮 "zerobas's edge sits 2-8 below" (the first scan): HIT on its face, wrong cause;
+      "one constant offset in all four absolute rows": MISS (11 only for a new target);
+      "121 matches": MISS; "131 matches at both parities": HIT.
+- [ ] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON
+      THE VG-8020, AFTER IT ON zerobas (found 2026-10-17)**
+      🎚️ TIER 4 — RAM usage: FRE(0) inside `X=...FRE(0)...` with X new reads 11 B more
+      here (a double's whole entry); VARPTR order and the variable chain's order are
+      the same fact seen elsewhere.
+      🤖 **AUTONOMOUS** — measure first: which statements create their target first
+      on the reference (LET, FOR's variable, INPUT / READ targets, an array element's
+      array, a string target -- its entry, not its body), and whether `A=B` with both
+      new creates A before B ([`freabs_probe.py`](scratchpad/freabs_probe.py) is the
+      template: absolute readings, boot per row).
       🎚️ TIER 4 — RAM usage: Joost's priority 1 is the SAME free RAM on the diskless
       machine (rulings table, 2026-10-16), and "same" is equality.
       🤖 AUTONOMOUS — measure where the 14 B come from first.
@@ -11135,7 +11190,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36668 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36723 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11301,7 +11356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16163 (T-6FE392)8 (T-529ABE)` from `TODO.md:28957 (T-529ABE)`: a
+      `TODO.md:16218 (T-6FE392)8 (T-529ABE)` from `TODO.md:29012 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17010,7 +17065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:28957 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

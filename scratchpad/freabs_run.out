@@ -1,0 +1,6 @@
+row              VG       ZB  ZB-VG
+dimshape      28745    28756  11
+let           28771    28782  11
+print         28775    28775  0
+let2          28767    28767  0
+refcache: 0 hit, 2 miss, 2 stored

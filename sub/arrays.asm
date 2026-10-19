@@ -672,7 +672,7 @@ scv_ceil_try:
                 ; >= $8000, and a zero CSP left the clamp standing down.
                 ; MEASURED without it: `DIM Z(1857)` + 26 scalars read NO OUTPUT AT
                 ; ALL, where a clean tree raises `Out of memory` with 27 B spare.
-                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (116, measured -- see
+                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (131 since D-FREPLUS14; measured -- see
                 ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
                 ld      de,-STK_EDGE_RESERVE
                 add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
@@ -1119,7 +1119,7 @@ aal_ceil_try:
                 ; >= $8000, and a zero CSP left the clamp standing down.
                 ; MEASURED without it: `DIM Z(1857)` + 26 scalars read NO OUTPUT AT
                 ; ALL, where a clean tree raises `Out of memory` with 27 B spare.
-                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (116, measured -- see
+                ; D-DIMRESERVE S3: STK_EDGE_RESERVE (131 since D-FREPLUS14; measured -- see
                 ; basic/sysvars.inc), not the 256 B page it was; DE is loaded next.
                 ld      de,-STK_EDGE_RESERVE
                 add     hl,de               ; keep STK_EDGE_RESERVE below the ceiling
