@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37199 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37226 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31651,6 +31651,33 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       int16 arm (lookup, add with overflow to the general path, store in place,
       `cmp16_bits`) saves ~3500 T a pass (~40 → ~23 ticks), ~15-20 B page 1; main page 1 was 28 B free on 2026-10-20 (after D-FORFAST), so a fix
       that adds bytes there needs a carve.
+      ⏸ **BUILT 2026-10-20, MEASURED, PARKED -- IT EXPOSES A STOP-TRAP DOUBLE FIRE.** The
+      draft ([`forint_parked.patch`](scratchpad/forint_parked.patch), `git apply` it on
+      508043a2): `nx_fast` gains a `%` arm (`bit 1,b` on the entry's type; load, the shared
+      `adc` with overflow to the general path, store in place), `nx_demote` returns at once
+      for `%`, `slot_store` stores a `%` loop's exact-int16 float limit / step as int16.
+      `FOR I%=1 TO 300:NEXT` 39 → 23 ticks (VG 8; [`forint_time.out`](scratchpad/forint_time.out));
+      291 programs identical to 508043a2 on the host (tests/test_forint.py, in the patch);
+      forvar / nxlist green, FRE identical. 🔴 **But the FULL battery's stop-trap-acceptance
+      `C_handler_baseline` read flag=2 (VG-8020 1): one 100 ms Ctrl-STOP tap fired the
+      counting handler TWICE**, deterministic, in a program with no `%` variable at all.
+      Tap-start sweeps with [`stoptrap_phase_probe.py`](scratchpad/stoptrap_phase_probe.py):
+      the draft double-fires for starts 0.297-0.3005 s and fires once from 0.301 on
+      ([`stoptrap_fine_new.out`](scratchpad/stoptrap_fine_new.out)); 508043a2 fires once at
+      every start tried -- 0.280-0.340 s in 4 ms steps and 0.297-0.303 s in 0.5 ms steps
+      ([`stoptrap_phase_head_wide.out`](scratchpad/stoptrap_phase_head_wide.out),
+      [`stoptrap_fine_head.out`](scratchpad/stoptrap_fine_head.out)); the VG-8020 once
+      everywhere. For a default-type loop the draft's NEXT differs from 508043a2 only by
+      two `bit 1,b` tests (~20 T a pass; the handler's `FOR K=1 TO 4000` runs all 4001
+      passes), and adding two POKEs to the handler to record `I` at each fire moved the
+      window away ([`stoptrap_firewhere.out`](scratchpad/stoptrap_firewhere.out): both
+      fires deep in the loop, I ≈ 48-50). 🔮 "a latent edge bug, shifted by under 1 ms":
+      not shown -- no HEAD phase double-fires. ➡️ Find the mechanism WITHOUT changing the
+      program's timing: an openMSX write watchpoint on the STOP entry of `ZTRAP` /
+      `TRAPPEND` / the handler's flag cell, logging emulated time and our own PC
+      (`rp_exec`'s `BREAKX` poll, `rp_break`, `check_traps`), at start 0.299 on the draft
+      and on 508043a2. Then land the draft only with the trap explained (and fixed if it
+      is ours).
 
 - [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
       `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM
