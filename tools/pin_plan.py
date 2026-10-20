@@ -846,9 +846,22 @@ def main() -> int:
     for p in pins:
         if region_of(p.addr) is None or region_of(p.addr + p.length - 1) != region_of(p.addr):
             sys.exit(f"pin_plan: ${p.addr:04X} len {p.length} is not inside one main region")
+    if a.holes:
+        # The wall readout runs in `make basic-reloc`, which CI's Linux job runs
+        # with the DISTRIBUTION pasmo 0.5.3 (D-PASMO053), whose `-d` listing has no
+        # pass boundaries this parser can find (CI red on 3f20c0b4, 2026-10-20). A
+        # readout must not break the build it reports on: say NOT MEASURED, loudly,
+        # and leave the strict answer to `make pin-check`.
+        try:
+            im = load_image()
+        except SystemExit as e:
+            print(f"    measure: pin pads               = NOT MEASURED -- {e} "
+                  f"(this pasmo's -d listing; `make pin-check` is the strict gate)")
+            return 0
+        return check(im, pins, a.rom, a.budget, holes=True)
     im = load_image()
-    if a.check or a.holes:
-        return check(im, pins, a.rom, a.budget, holes=a.holes)
+    if a.check:
+        return check(im, pins, a.rom, a.budget)
     return plan(im, pins, a.top)
 
 
