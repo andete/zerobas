@@ -2152,8 +2152,8 @@ nx_have:
                 ld      bc,FOR_FRAME
                 ldir
                 ; D-FORFLOAT: `var := var + step`, then `var : limit`, BOTH through the
-                ; evaluator's own operators and its fixed LHS-frame protocol (`push
-                ; de` / push_lhs_frame, then the rhs as a factor leaves it). Each has
+                ; evaluator's own operators and its LHS-frame protocol (push_lhs_frame
+                ; with DE = the lhs, then the rhs as a factor leaves it). Each has
                 ; an int16 fast path that PROMOTES to BCD on overflow and a BCD path
                 ; for anything fractional or past int16 -- so `STEP .25`, `FOR A=
                 ; 56700 TO 56702`, `FOR A=1 TO 32767 STEP 16384` (A ends at 32769) and
@@ -2161,8 +2161,7 @@ nx_have:
                 ; (scratchpad/forfloat_probe.py). The int16 `add hl,de` this replaced
                 ; wrapped every one of them, and four never ended.
                 call    for_get             ; the variable, at its OWN type
-                push    de
-                call    push_lhs_frame
+                call    push_lhs_frame      ; (DE = an int16 variable's value)
                 ld      hl,FOR_STEP
                 call    slot_load           ; the step as the rhs; A = its sign byte
                 ld      (FOR_SIGN),a
@@ -2172,7 +2171,6 @@ nx_have:
                                             ; the NEXT line (row edgeint) -- not at the
                                             ; body's first statement, which is where
                                             ; D-STMTPEND's boundary would report it
-                push    de
                 call    push_lhs_frame
                 ld      hl,FOR_LIM
                 call    slot_load

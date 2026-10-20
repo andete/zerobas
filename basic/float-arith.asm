@@ -1543,74 +1543,73 @@ widen_int_to:
 ; LHS machine-stack frame (spec §1 bullet 4) + operand dispatch helpers
 ; =============================================================================
 
-; --- push_lhs_frame: push FACTYP + FAC (10 bytes, as 5 word-pushes) onto the
-; Z80 machine stack, where they must STAY (as a persistent frame for the
-; matching combine_* to pop later) even though this routine itself needs to
-; return. A bare "ret" at the end would be wrong: by the time it runs, the
-; 5 words just pushed sit ON TOP of the "call push_lhs_frame" return address
-; (pushes grow downward), so a plain "ret" would pop OUR OWN FIRST-PUSHED
-; word and treat it as a jump target instead of returning to the caller.
-; Fixed by popping the return address off FIRST (out of the way of the
-; frame pushes), then pushing it back on top right before the final ret --
-; own design, the standard "preserve a persistent stack frame across a call
-; boundary" idiom. Uses DE as the stash (safe here because at all 6 call
-; sites -- evr_rhs, ev_e_add, ev_e_sub, ev_t_mul, ev_t_div, ev_pw_lp -- the very
-; next thing the caller does after this call is invoke the rhs sub-evaluator,
-; which overwrites DE with the rhs value before DE is ever read again; the
-; lhs value this DE might have held was already pushed to the stack by the
-; caller BEFORE this call). The matching pop side (pop_lhs_and_probe,
-; below) can't use this same trick -- ITS callers need DE preserved -- so
-; it avoids the whole hazard a different way: see its own header comment.
-; Called right after the caller has already pushed the LHS's plain DE
-; value, so the two together form one fixed-size frame the matching
-; combine_* pops in the opposite order. Clobbers A, DE, HL.
-; ⛔ AND THAT IS ALSO WHY `push de / call push_lhs_frame / call
-; set_factyp_int_ret` MUST STAY OPEN-CODED AT ALL SIX SITES. It is the
-; top-ranked live candidate in `ngram_sweep --main` (6 sites x 7 B) and it is
-; DECLINED, 2026-08-29, for a structural reason rather than a measured one:
-;   * The run is a FIXED-SIZE FRAME PROTOCOL. The caller's `push de` and this
-;     routine's five word-pushes must end up CONTIGUOUS, because the matching
-;     combine_* pops them as one frame. Put the run behind a `call` and that
-;     helper's own return address is pushed BETWEEN the two -- it lands INSIDE
-;     the frame. Exactly the D-NGRAM8 hazard, one level up.
-;   * The one arrangement that avoids it is a helper that re-pushes its return
-;     address under the frame and TAIL-JUMPS here (`pop hl / push de / push hl /
-;     jp push_lhs_frame`), so this routine's own ret lands back in the original
-;     caller. That works -- and it cannot carry the `set_factyp_int_ret` half,
-;     because THIS ROUTINE CAPTURES (FACTYP) INTO THE FRAME (`ld a,(FACTYP) /
-;     push af` below) and the reset to 2 must therefore happen AFTER it. Reduced
-;     to just the frame half, the helper saves 1 B per site and costs 6, i.e.
-;     ZERO.
-;   * Stashing the return address in a register instead is blocked at the
-;     largest site: `evr` (basic/expr.asm) holds the relation bits in BC across
-;     this call and pushes them immediately after.
-; 🎯 So the sweep will keep ranking it, and the answer will keep being no.
-; [[a-shared-tail-is-not-a-decision]]
-; GA-LHSTYP2 (2026-10-03) INVERTS THE SECOND HALF ONLY: the FRAME half (`push
-; de / call push_lhs_frame`) stays open-coded for exactly the reasons above,
-; but the `call set_factyp_int_ret` that followed it at all six sites is gone
-; -- THIS routine does the reset itself, AFTER its `push af` capture, by
-; ending in `jp set_factyp2` instead of `ret` (set_factyp2's own ret pops the
-; return address we re-pushed). No extra call frame, so the frame stays
-; contiguous. FOR's two sites (program.asm) get the store for free: their
-; very next call is slot_load, whose FIRST store is FACTYP.
+; --- push_lhs_frame: DE = the lhs -> push the lhs frame, sized by its TYPE --
+; (D-EVALSLOPE's typed-frame step, 2026-10-20) and FACTYP := 2. The frame the
+; matching combine_* pops (pop_lhs_and_probe, basic/input.asm) is, top first:
+;
+;     [FACTYP]  then  int16 (2): the lhs DE                       -> 4 B
+;                     single (4, or 3: < 5): FAC+0, FAC+2          -> 6 B
+;                     double (8: > 5): FAC+0, +2, +4, +6           -> 10 B
+;
+; It used to be ONE fixed 12-byte shape for every type -- the caller's `push de`
+; under FACTYP + all eight FAC bytes -- so a pending `1+(` held 20 B a level
+; where the VG-8020 holds 16 (spec-basic-deepexpr-guard.md §5.3: 8 + the
+; operand's width), and an arithmetic nest near the memory edge refused levels
+; earlier than the reference (scratchpad/arithnest_run.out: depth 13 against 16
+; with 400 B left). Each type now keeps only what its readers read:
+;   * an int16 lhs is its DE -- FP_LHSVAL, the only cell combine_*'s int paths and
+;     widen_lhs_operand read for it; LHS_FAC is never read when LHS_FACTYP = 2;
+;   * a float lhs is its FAC bytes. Its DE was never read (FP_LHSVAL is read only
+;     under LHS_FACTYP = 2: widen_lhs_operand, and the int paths after
+;     pop_lhs_and_probe's Z), so it is no longer pushed at all;
+;   * a single needs FAC+0..3 alone: widen_lhsframe_to (wsrc_go) reads the lead
+;     byte and 3 mantissa bytes for ANY type but 8, and 7 for 8. The split is
+;     `cp 5` on both sides, so 3 (and 0..4) take the short frame and 8 the long
+;     one, exactly as wsrc_go reads them. No type is 5 (2 3 4 8 are the only
+;     values FACTYP ever holds): pop_lhs_and_probe's NZ relies on it.
+; So `1+(` holds 6 + 6 = 12 B a level, `1.5+(` 6 + 8 = 14 and `1#+(` 6 + 12 = 18
+; (the climber's [entry] word included) -- the VG-8020's 16 / 18 / 22, or less.
+;
+; THE RETURN ADDRESS is popped into HL first, because the frame must stay ON the
+; stack after this routine returns (it is the persistent frame combine_* pops
+; later): pushes made on top of our own return address would bury it. The int
+; path returns with `jp (hl)` (FACTYP is already 2); the float path moves the
+; return address to DE (the float lhs's DE is dead, above), pushes the FAC words
+; through HL, and resets FACTYP inline -- a `push de / jp set_factyp2` tail costs
+; 23 T more, which the double path cannot pay (TIER 5: no path slower).
+; ⛔ THE CALL ITSELF MUST STAY OPEN-CODED (`call push_lhs_frame`) at all four
+; sites (the climber's two shifts, basic/expr.asm; NEXT's two, basic/program.asm):
+; a helper wrapping it would land its own return address INSIDE the frame (the
+; D-NGRAM8 hazard). Clobbers A, DE, HL; BC is kept (the climber's relational
+; shift holds the relation bits in C across this call). Returns A = 2.
+; GA-LHSTYP2 (2026-10-03): the reset to FACTYP 2 happens HERE, after the capture;
+; FOR's two sites get the store for free (their very next call is slot_load).
 push_lhs_frame:
-                pop     de                  ; DE = our own return address (taken
-                                            ; off the stack so it's not in the way)
+                pop     hl                  ; HL = our own return address
+                ld      a,(FACTYP)
+                cp      2
+                jr      nz,plf_fac
+                push    de                  ; an int16 lhs: its value ...
+                push    af                  ; ... under [FACTYP]
+                jp      (hl)                ; FACTYP is already 2
+plf_fac:
+                ex      de,hl               ; DE = the return address
+                cp      5
+                jr      c,plf_sgl           ; single: FAC+0..3 only
                 ld      hl,(FAC+6)
                 push    hl
                 ld      hl,(FAC+4)
                 push    hl
+plf_sgl:
                 ld      hl,(FAC+2)
                 push    hl
                 ld      hl,(FAC+0)
                 push    hl
-                ld      a,(FACTYP)
-                push    af
-                push    de                  ; return address back on top of the
-                                            ; frame we just pushed
-                jp      set_factyp2         ; GA-LHSTYP2: FACTYP:=2 AFTER the
-                                            ; capture above, then its ret is ours
+                push    af                  ; [FACTYP] on top
+                ld      a,2
+                ld      (FACTYP),a          ; FACTYP := 2 AFTER the capture
+                ex      de,hl
+                jp      (hl)
 
 ; (pop_lhs_and_probe lives in basic/input.asm since D-WSZERO S16: it refills bytes the stack
 ; parameter block freed in front of a pinned address)
@@ -1695,10 +1694,11 @@ abs16:
 ; combine_* — expr.asm binary-operator dispatch entry points (spec §1
 ; bullet 4)
 ; =============================================================================
-; Called with: the LHS frame (FACTYP+FAC) already pushed via push_lhs_frame,
-; the LHS's plain DE value pushed BEFORE that (so the stack, top to bottom,
-; is [frame][lhs value][...caller's own frame]), and DE/FACTYP/FAC holding
-; the just-evaluated RHS. Each pops the LHS frame + value, decides int-fast-
+; Called with: the LHS frame already pushed via push_lhs_frame -- [FACTYP] on
+; top, then the lhs DE (an int16 lhs) or its 4 / 8 FAC bytes (a single / a
+; double), sized by the type since D-EVALSLOPE's typed-frame step -- and
+; DE/FACTYP/FAC holding the just-evaluated RHS. Each pops the frame (into
+; LHS_FACTYP and FP_LHSVAL or LHS_FAC: pop_lhs_and_probe), decides int-fast-
 ; path vs BCD-widen-and-combine, and returns DE=result with FACTYP set
 ; (2 for the int paths, 8 — via round_and_finalize — for any float path).
 
@@ -1713,7 +1713,21 @@ caddsub_widen_both:
                 call    widen_int_to
                 ld      hl,ARGB
                 ld      de,(FP_TMP_B)
-                jr      widen_int_to        ; tail call
+                jp      widen_int_to        ; tail call (`jp`: push_lhs_frame's typed
+                                            ; frame put widen_int_to out of `jr` reach)
+
+; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
+; 💰 The pair stood at SEVEN sites, 6 B each against 3 for a call. dig15_iszero
+; preserves HL, so the caller sees HL = ARGA+FPNUM_DIG and Z exactly as the
+; open-coded pair left them. Low region, not page 1: two of the sites are in the
+; resident closure sub page-1 tenants reach (check_tenant_closure).
+; MOVED HERE (D-EVALSLOPE's typed-frame step, 2026-10-20) from basic/str-engine.asm,
+; whole and self-contained (entered only by label, ends in a `jp`): it was in front
+; of the $3297 pin, and pop_lhs_and_probe (basic/input.asm, also in front) grew by
+; exactly its 6 B -- tools/pin_plan.py's exact fill, no pad change.
+arga_dig_iszero:
+                ld      hl,ARGA+FPNUM_DIG
+                jp      dig15_iszero
 
 ; --- combine_add / combine_sub: ev_e's '+'/'-' sites. Two thin entry points
 ; sharing one body (FP_OPMODE, own scratch, 0=add/1=sub) — the int fast path

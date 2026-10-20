@@ -1,0 +1,10 @@
+row       VG-8020  [A(X) S$ B FRE | ERR]         zerobas
+  k2000p20  12345 SENTINEL 21 2000                 12345 SENTINEL 21 2000
+  k280p0    12345 SENTINEL 1 280                   12345 SENTINEL 1 280
+  k300p0    12345 SENTINEL 1 296                   12345 SENTINEL 1 296
+  k300p8    12345 SENTINEL 9 296                   12345 SENTINEL 9 296
+  k300p20   12345 SENTINEL 21 296                  12345 SENTINEL 21 296
+  k300a24   ERR 7 20 12345 SENTINEL                ERR 7 20 12345 SENTINEL
+  k600p20   12345 SENTINEL 21 600                  12345 SENTINEL 21 600
+  k900p32   12345 SENTINEL 33 896                  12345 SENTINEL 33 896
+refcache: 1 hit, 1 miss, 1 stored

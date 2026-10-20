@@ -493,13 +493,30 @@ a pending `+ − * / ^` or relational 14 (entry 2 + FACTYP+FAC 10 + lhs 2); a pe
 (`call ev_pw` 2 + sentinel 2 + `call ev_f` 2). A plain factor reaches 18 B under
 `eval`'s entry where it reached 20.
 
-**Where it is still above the reference: the typed frame.** A pending `+ − * / ^`
-or relational keeps the lhs as DE plus a fixed 10-byte FACTYP+FAC copy, 14 B for
-any type, where the VG-8020 keeps 8 + its own width (10 for an integer, 12 single,
-16 double). The fixed frame is `push_lhs_frame` / `pop_lhs_and_probe`'s protocol,
-shared with NEXT (`basic/program.asm`) and sited in the low region in front of the
-`$3297` pin; a width-sized frame (an integer lhs needs only its DE and the type) is
-the remaining lever, and it would take the integer case BELOW the reference (6 B).
+**The typed frame (built 2026-10-20, host-measured; the machine battery is still
+to run).** A pending `+ − * / ^` or relational kept the lhs as DE plus a fixed
+10-byte FACTYP+FAC copy, 14 B for any type, where the VG-8020 keeps 8 + its own
+width (10 for an integer, 12 single, 16 double). `push_lhs_frame` now sizes the
+frame by the lhs's type -- [FACTYP] over the lhs DE (int16), FAC+0..3 (single) or
+FAC+0..7 (double) -- and `pop_lhs_and_probe` pops it by the same `cp 2` / `cp 5`
+split; each type keeps exactly what its readers read (FP_LHSVAL only under
+LHS_FACTYP = 2, `widen_lhsframe_to` 4 bytes for any type but 8). Per pending
+typed operator: 6 B (int16), 8 (single), 12 (double), the [entry] word included
+([`evalslope_typed_before.out`](../scratchpad/evalslope_typed_before.out) →
+[`evalslope_typed.out`](../scratchpad/evalslope_typed.out)):
+
+| shape, per level | fixed frame | typed frame | VG-8020 |
+|---|---|---|---|
+| `1+(`, `1*(`, `1/(` | 20 | **12** | 16 |
+| `1<(`, `1=(` | 20 | **12** | 18 |
+| `1.5+(`, `1.5*(`, `1.5<(` | 20 | **14** | 18 |
+| `1#+(`, `1#*(`, `1#/(`, `1#<(` | 20 | **18** | 22 |
+
+So every typed nest is now at or below the reference -- more lenient, never
+stricter. Every path is as fast or faster (a typed op on an int16 lhs −230 T,
+single −112, double −16; the logical ops −2 from two `jr` → `jp`), and 185 outcome
+rows (DE, FACTYP, FPERR, ERRMARK, cursor and all 8 FAC bytes) are identical
+between the builds. NEXT shares the protocol and needed only its `push de` gone.
 **Where it is below:** the strict-int operators and NOT (4 and 2 against 8 and 6),
 which keep only the converted lhs. Near the edge zerobas can now complete a richly
 nested logical expression the VG-8020 refuses -- the opposite direction from the

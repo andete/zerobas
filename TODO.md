@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37039 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37062 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31664,7 +31664,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       of ON ERROR / the strings does it; then why no reading (the DIM's 7 trapped, then
       the handler's `A(X)` re-erroring?).
 
-- [ ] 🧮 **D-EVALSLOPE -- zerobas'S EVALUATOR HOLDS MORE STACK PER PENDING CONSTRUCT THAN THE
+- [x] 🧮 **D-EVALSLOPE -- zerobas'S EVALUATOR HOLDS MORE STACK PER PENDING CONSTRUCT THAN THE
       VG-8020, SO RICHER STATEMENTS NEAR THE MEMORY EDGE REFUSE EARLIER (filed 2026-10-20)**
       🎚️ TIER 4 — RAM usage: economy at the memory edge.
       🤖 **AUTONOMOUS** — the spec's §5.3: per `(` 12 B here against 6, a pending
@@ -31724,11 +31724,34 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       R = 116 each redden exactly one of them
       ([`dimedge_eval_knife114.out`](scratchpad/dimedge_eval_knife114.out),
       [`dimedge_eval_knife116.out`](scratchpad/dimedge_eval_knife116.out)).
-      ➡️ **LEFT:** the typed frame (`+ − * / ^` and the relationals: 14 B against 8 +
-      width, so `1+(` nests hold 20 B a level against 16 -- a deep ARITHMETIC nest can
-      still refuse before the reference does); a PRINT of numeric items, 4 B over the
-      reference (why R is 115 and not 119); the strict-int operators and NOT, now BELOW
-      the reference (more lenient there).
+      🏁 **CLOSED 2026-10-20: no pending construct holds more stack than the VG-8020's
+      any more** (the typed frame, below), so a richer statement no longer refuses
+      first. What remains is the LENIENT side, which the never-stricter policy accepts:
+      `(` matches; typed operators, the strict-int ones and NOT hold LESS than the
+      reference (a deep nest completes here a little past where it refuses); a PRINT of
+      numeric items holds 4 B more, absorbed by R = 115 and pinned by dimedge's eval
+      rows. Matching the lenient side exactly would mean holding stack on purpose --
+      not filed.
+      ✅ **THE TYPED FRAME, BUILT AND MEASURED 2026-10-20.** push_lhs_frame sizes the pending lhs by its type ([FACTYP] over
+      DE / FAC+0..3 / FAC+0..7), pop_lhs_and_probe pops it the same way; NEXT lost its
+      `push de`. Per level, fixed → typed (VG-8020): `1+(` 20 → **12** (16); `1<(` 20 →
+      **12** (18); `1.5+(` 20 → **14** (18); `1#+(` 20 → **18** (22) -- at or below the
+      reference everywhere ([`evalslope_typed.out`](scratchpad/evalslope_typed.out),
+      before: [`evalslope_typed_before.out`](scratchpad/evalslope_typed_before.out);
+      docs/spec-basic-deepexpr-guard.md §5.3.1). Every path as fast or faster (int16
+      lhs −230 T an op, single −112, double −16); 185 outcome rows identical, FAC
+      included. Walls: low 109 → 87, page 1 384 → 386; pins 6/6, waste 4
+      (arga_dig_iszero moved past $3297 to pay pop_lhs_and_probe's +6 B; two hot
+      `jr cl_after` → `jp` pay the climber's −2 B in front of $6CF3). ON THE MACHINE:
+      [`arithnest_probe.py`](scratchpad/arithnest_probe.py) -- `B=1+(1+(…))` after an edge
+      DIM, the deepest that completes -- was VG 16 / ZB 13 at 400 B left and 35 / 28 at
+      700 B ([`arithnest_run.out`](scratchpad/arithnest_run.out)); now ZB **22 / 47**
+      ([`arithnest_typed.out`](scratchpad/arithnest_typed.out)): never stricter.
+      stackcorrupt 8/8 SAME and its leaf sweep OK
+      ([`typed_sc.out`](scratchpad/typed_sc.out),
+      [`typed_scleaf.out`](scratchpad/typed_scleaf.out)); deepexpr 6/6, dimedge 14/14
+      ([`typed_deep.out`](scratchpad/typed_deep.out),
+      [`typed_dimedge.out`](scratchpad/typed_dimedge.out)).
 
 - [x] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to

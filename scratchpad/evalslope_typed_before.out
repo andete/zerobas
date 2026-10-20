@@ -1,0 +1,261 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# evalslope_probe before: basic/main.asm from --root (another tree)
+# --- T-states and depth per construct (whole `call eval`) ---
+ok  factor: digit            '1'              DE=0001 T=  1481 depth=  18 FPERR=0 end=1
+ok  factor: byte const       '100'            DE=0064 T=  1419 depth=  18 FPERR=0 end=2
+ok  factor: word const       '1000'           DE=03E8 T=  1416 depth=  18 FPERR=0 end=3
+ok  factor: single const     '1.5'            DE=0001 T=  2958 depth=  18 FPERR=0 end=5
+ok  factor: variable         'A'              DE=0000 T=  3435 depth=  24 FPERR=0 end=1
+ok  paren                    '(1)'            DE=0001 T=  2763 depth=  24 FPERR=0 end=3
+ok  paren x2                 '((1))'          DE=0001 T=  4318 depth=  30 FPERR=0 end=5
+ok  +                        '1+2'            DE=0003 T=  3380 depth=  26 FPERR=0 end=3
+ok  -                        '5-2'            DE=0003 T=  3364 depth=  26 FPERR=0 end=3
+ok  *                        '2*3'            DE=0006 T=  6483 depth=  26 FPERR=0 end=3
+ok  /                        '6/3'            DE=0002 T= 25836 depth=  26 FPERR=0 end=3
+ok  MOD                      '7MOD3'          DE=0001 T=  4837 depth=  18 FPERR=0 end=3
+ok  \                        '7\\2'           DE=0003 T=  4900 depth=  18 FPERR=0 end=3
+ok  AND                      '6AND3'          DE=0002 T=  3658 depth=  22 FPERR=0 end=3
+ok  OR                       '6OR3'           DE=0007 T=  3658 depth=  22 FPERR=0 end=3
+ok  XOR                      '6XOR3'          DE=0005 T=  3658 depth=  22 FPERR=0 end=3
+ok  EQV                      '6EQV3'          DE=FFFA T=  3666 depth=  22 FPERR=0 end=3
+ok  IMP                      '6IMP3'          DE=FFFB T=  3666 depth=  22 FPERR=0 end=3
+ok  unary minus              '-2'             DE=FFFE T=  2072 depth=  18 FPERR=0 end=2
+ok  NOT                      'NOT0'           DE=FFFF T=  1814 depth=  20 FPERR=0 end=2
+ok  relational =             '1=1'            DE=FFFF T=  3993 depth=  26 FPERR=0 end=3
+ok  relational <             '1<2'            DE=FFFF T=  4023 depth=  26 FPERR=0 end=3
+ok  relational <=            '2<=1'           DE=0000 T=  4037 depth=  26 FPERR=0 end=4
+ok  relational <>            '1<>2'           DE=FFFF T=  4052 depth=  26 FPERR=0 end=4
+ok  function ABS             'ABS(-3)'        DE=0003 T=  4003 depth=  30 FPERR=0 end=6
+ok  function PEEK            'PEEK(0)'        DE=0000 T=  3379 depth=  26 FPERR=0 end=5
+ok  mixed 1+2*3-4            '1+2*3-4'        DE=0003 T= 10319 depth=  40 FPERR=0 end=7
+ok  mixed 2*3+4*5            '2*3+4*5'        DE=001A T= 13411 depth=  40 FPERR=0 end=7
+ok  mixed 1<2 AND 3>2        '1<2AND3>2'      DE=FFFF T=  8809 depth=  30 FPERR=0 end=7
+ok  mixed NOT 1=2 OR 0       'NOT1=2OR0'      DE=FFFF T=  6561 depth=  28 FPERR=0 end=6
+ok  mixed 1+(2*(3+4))        '1+(2*(3+4))'    DE=000F T= 12369 depth=  66 FPERR=0 end=11
+ok  single +                 '1.5+2.5'        DE=0004 T= 11991 depth=  26 FPERR=0 end=11
+ok  single *                 '1.5*2.5'        DE=0003 T= 21446 depth=  26 FPERR=0 end=11
+ok  single <                 '1.5<2.5'        DE=FFFF T=  9238 depth=  26 FPERR=0 end=11
+ok  double +                 '1#+2#'          DE=0003 T= 12965 depth=  26 FPERR=0 end=19
+ok  double *                 '1#*2#'          DE=0002 T= 18426 depth=  26 FPERR=0 end=19
+ok  double <                 '1#<2#'          DE=FFFF T= 10226 depth=  26 FPERR=0 end=19
+ok  int+single               '1+2.5'          DE=0003 T= 11405 depth=  26 FPERR=0 end=7
+ok  single+int               '2.5+1'          DE=0003 T= 11329 depth=  26 FPERR=0 end=7
+ok  int+double               '1+2#'           DE=0003 T= 11899 depth=  26 FPERR=0 end=11
+ok  double+int               '2#+1'           DE=0003 T= 11823 depth=  26 FPERR=0 end=11
+ok  int overflow +           '32767+1'        DE=8000 T= 15769 depth=  26 FPERR=0 end=5
+ok  string <                 '"A"<"B"'        DE=FFFF T=  2799 depth=  26 FPERR=0 end=7
+# --- slope: bytes per extra PENDING level (depth(N+1) - depth(N)) ---
+slope (           6 B/level  (  6)  T/level=  2374  depth@4=  42  DE@4=0001
+slope +          20 B/level  ( 20)  T/level=  2908  depth@4=  98  DE@4=0005
+slope -          20 B/level  ( 20)  T/level=  2892  depth@4=  98  DE@4=0001
+slope *          20 B/level  ( 20)  T/level=  5941  depth@4=  98  DE@4=0001
+slope /          20 B/level  ( 20)  T/level= 24214  depth@4=  98  DE@4=0001
+slope MOD        10 B/level  ( 10)  T/level=  4317  depth@4=  58  DE@4=005A
+slope \          10 B/level  ( 10)  T/level=  4442  depth@4=  58  DE@4=0001
+slope AND        10 B/level  ( 10)  T/level=  3459  depth@4=  58  DE@4=0001
+slope OR         10 B/level  ( 10)  T/level=  3459  depth@4=  58  DE@4=0001
+slope XOR        10 B/level  ( 10)  T/level=  3459  depth@4=  58  DE@4=0001
+slope EQV        10 B/level  ( 10)  T/level=  3467  depth@4=  58  DE@4=0001
+slope IMP        10 B/level  ( 10)  T/level=  3467  depth@4=  58  DE@4=FFFF
+slope =          20 B/level  ( 20)  T/level=  3837  depth@4=  98  DE@4=0000
+slope <          20 B/level  ( 20)  T/level=  3823  depth@4=  98  DE@4=0000
+slope neg        12 B/level  ( 12)  T/level=  1600  depth@4=  66  DE@4=0001
+slope NOT         2 B/level  (  2)  T/level=   333  depth@4=  26  DE@4=0000
+slope NOT(        8 B/level  (  8)  T/level=  1641  depth@4=  50  DE@4=0000
+slope ABS        12 B/level  ( 12)  T/level=  1846  depth@4=  66  DE@4=0001
+slope L:1.5+     20 B/level  ( 20)  T/level= 10152  depth@4=  98  DE@4=0007
+slope L:1#+      20 B/level  ( 20)  T/level= 10646  depth@4=  98  DE@4=0005
+slope L:1.5*     20 B/level  ( 20)  T/level= 20434  depth@4=  98  DE@4=0005
+slope L:1#*      20 B/level  ( 20)  T/level= 16079  depth@4=  98  DE@4=0001
+slope L:1.5<     20 B/level  ( 20)  T/level=  7636  depth@4=  98  DE@4=0000
+slope L:1#<      20 B/level  ( 20)  T/level=  8130  depth@4=  98  DE@4=0000
+slope L:1.5AND   10 B/level  ( 10)  T/level=  6204  depth@4=  58  DE@4=0001
+slope L:1#/      20 B/level  ( 20)  T/level= 25280  depth@4=  98  DE@4=0001
+slope L:1/       20 B/level  ( 20)  T/level= 24214  depth@4=  98  DE@4=0001
+# --- outcomes (diff these lines between builds) ---
+diff '1+2*3'                      DE=0007 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4110000000000000
+diff '2*3+1'                      DE=0007 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4110000000000000
+diff '7-2-1'                      DE=0004 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4110000000000000
+diff '8/2/2'                      DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '-2*3'                       DE=FFFA FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '2*-3'                       DE=FFFA FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '--2'                        DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=4120000000000000
+diff '-+2'                        DE=FFFE FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=4120000000000000
+diff '+-2'                        DE=FFFE FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=4120000000000000
+diff '7MOD4MOD3'                  DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7\\2\\2'                    DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7\\2MOD3'                   DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7MOD3\\2'                   DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1+7MOD3'                    DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7MOD3+1'                    DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '2*7MOD4'                    DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7MOD4*2'                    DE=0007 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1+7\\2'                     DE=0004 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '7\\2*2'                     DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1<2<3'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '3<2<1'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1=1=1'                      DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1=0=0'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1+1=2'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '2=1+1'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1<2=-1'                     DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=6 FAC=4120000000000000
+diff '1<>2<>3'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4120000000000000
+diff '1>=1'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1=<1'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1=>1'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1><2'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1<<2'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1==1'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff 'NOT1'                       DE=FFFE FACTYP=2 FPERR=0 ERRMARK=00 end=2 FAC=4120000000000000
+diff 'NOTNOT1'                    DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=4120000000000000
+diff 'NOT1=2'                     DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff 'NOT1AND0'                   DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff 'NOT0OR1'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff '1ANDNOT0'                   DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff 'NOT-1'                      DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=4120000000000000
+diff 'NOT1+1'                     DE=FFFD FACTYP=2 FPERR=0 ERRMARK=00 end=4 FAC=4120000000000000
+diff 'NOT(1)+1'                   DE=FFFD FACTYP=2 FPERR=0 ERRMARK=00 end=6 FAC=4120000000000000
+diff '1=NOT0'                     DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4120000000000000
+diff '1+NOT0'                     DE=0001 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4120000000000000
+diff '-NOT0'                      DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=1 FAC=4120000000000000
+diff '6AND3OR8'                   DE=000A FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '8OR6AND3'                   DE=000A FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '6XOR3AND1'                  DE=0007 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1OR2XOR3'                   DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '5EQV3XOR1'                  DE=FFF8 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '5XOR3EQV1'                  DE=FFF8 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1IMP0OR1'                   DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1OR0IMP0'                   DE=FFFE FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '5EQV3IMP0'                  DE=0006 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '0IMP5EQV3'                  DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1AND2=2'                    DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '2=2AND1'                    DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=5 FAC=4120000000000000
+diff '1<2AND3<4'                  DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4120000000000000
+diff '1<2OR3<4AND0'               DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=4120000000000000
+diff 'NOT1<2OR1'                  DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=6 FAC=4120000000000000
+diff '1.5+1'                      DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4125000000000000
+diff '1.5*2'                      DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4130000000000000
+diff '3/2'                        DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=3 FAC=4115000000000000
+diff '2.5AND3'                    DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4125000000000000
+diff '3AND2.5'                    DE=0002 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4125000000000000
+diff '40000=40000!'               DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4540000000000000
+diff '1.5<1.4'                    DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4114000000000000
+diff '1.5=1.5'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4115000000000000
+diff 'NOT1.5'                     DE=FFFE FACTYP=2 FPERR=0 ERRMARK=00 end=6 FAC=4115000000000000
+diff '-1.5'                       DE=FFFF FACTYP=4 FPERR=0 ERRMARK=00 end=6 FAC=c115000000000000
+diff '32767+1'                    DE=8000 FACTYP=8 FPERR=0 ERRMARK=00 end=5 FAC=4532768000000000
+diff '-32768-1'                   DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=8 FAC=c532769000000000
+diff '32767*2'                    DE=FFFE FACTYP=8 FPERR=0 ERRMARK=00 end=5 FAC=4565534000000000
+diff '-32768\\-1'                 DE=8000 FACTYP=8 FPERR=0 ERRMARK=00 end=9 FAC=4532768000000000
+diff '7MOD0'                      DE=0000 FACTYP=2 FPERR=2 ERRMARK=00 end=3 FAC=4532768000000000
+diff '1/0'                        DE=0000 FACTYP=8 FPERR=2 ERRMARK=00 end=3 FAC=0000000000000000
+diff '1\\0'                       DE=0000 FACTYP=2 FPERR=2 ERRMARK=00 end=3 FAC=0000000000000000
+diff '65536AND1'                  DE=0000 FACTYP=2 FPERR=1 ERRMARK=00 end=7 FAC=4565536000000000
+diff '1AND65536'                  DE=0000 FACTYP=2 FPERR=1 ERRMARK=00 end=7 FAC=4565536000000000
+diff 'NOT65536'                   DE=FFFF FACTYP=2 FPERR=1 ERRMARK=00 end=6 FAC=4565536000000000
+diff '(1+2)*3'                    DE=0009 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4565536000000000
+diff '((((1))))'                  DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=4565536000000000
+diff '(1'                         DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4565536000000000
+diff '1+'                         DE=0001 FACTYP=2 FPERR=12 ERRMARK=DD end=2 FAC=4565536000000000
+diff '1+)'                        DE=0001 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4565536000000000
+diff '()'                         DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4565536000000000
+diff '1 + 2 * 3'                  DE=0007 FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=4565536000000000
+diff ' ( 1 + 2 ) '                DE=0003 FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4565536000000000
+diff '1AND'                       DE=0000 FACTYP=2 FPERR=12 ERRMARK=DD end=2 FAC=4565536000000000
+diff 'NOT'                        DE=FFFF FACTYP=2 FPERR=12 ERRMARK=DD end=1 FAC=4565536000000000
+diff '1<'                         DE=0000 FACTYP=2 FPERR=12 ERRMARK=DD end=2 FAC=4565536000000000
+diff '1<>'                        DE=FFFF FACTYP=2 FPERR=12 ERRMARK=DD end=3 FAC=4565536000000000
+diff '*2'                         DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=2 FAC=4565536000000000
+diff '1**2'                       DE=0000 FACTYP=2 FPERR=4 ERRMARK=DD end=4 FAC=4565536000000000
+diff '1+*2'                       DE=0001 FACTYP=2 FPERR=4 ERRMARK=DD end=4 FAC=4565536000000000
+diff 'A'                          DE=0000 FACTYP=0 FPERR=0 ERRMARK=00 end=1 FAC=0065536000000000
+diff 'A+1'                        DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=3 FAC=4110000000000000
+diff 'A=0'                        DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=3 FAC=0010000000000000
+diff 'NOTA'                       DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=2 FAC=0010000000000000
+diff '"A"="A"'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"<"B"'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"="B"'                    DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"="A"=-1'                 DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=10 FAC=0010000000000000
+diff '"A"="B"=0'                  DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=0010000000000000
+diff '"A"="B"-1'                  DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"="B"*2'                  DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"="B"MOD2'                DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff '"A"="B"AND1'                DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=0010000000000000
+diff '"A"="A"OR0'                 DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=0010000000000000
+diff 'NOT"A"="B"'                 DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=8 FAC=0010000000000000
+diff '("A"="A")'                  DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=0010000000000000
+diff '1AND"A"="A"'                DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=9 FAC=0010000000000000
+diff '"A"="A"AND"B"="B"'          DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=15 FAC=0010000000000000
+diff '1="A"'                      DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=2 FAC=0010000000000000
+diff '1<"A"+"B"'                  DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=2 FAC=0010000000000000
+diff '1=+"A"'                     DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=2 FAC=0010000000000000
+diff '"A"'                        DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=3 FAC=0010000000000000
+diff '"A"+"B"="AB"'               DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=12 FAC=0010000000000000
+diff '1=1="A"'                    DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=4 FAC=0010000000000000
+diff '1+"A"'                      DE=0001 FACTYP=2 FPERR=10 ERRMARK=DD end=2 FAC=0010000000000000
+diff '"A"=1'                      DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=4 FAC=0010000000000000
+diff 'NOT"A"'                     DE=FFFF FACTYP=2 FPERR=10 ERRMARK=DD end=4 FAC=0010000000000000
+diff '-"A"'                       DE=0000 FACTYP=2 FPERR=10 ERRMARK=DD end=1 FAC=0010000000000000
+diff 'ABS(-3)+1'                  DE=0004 FACTYP=2 FPERR=0 ERRMARK=00 end=8 FAC=0010000000000000
+diff 'ABS(-3)*2'                  DE=0006 FACTYP=2 FPERR=0 ERRMARK=00 end=8 FAC=0010000000000000
+diff '-ABS(3)'                    DE=FFFD FACTYP=2 FPERR=0 ERRMARK=00 end=6 FAC=0010000000000000
+diff 'PEEK(0)+1'                  DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=0010000000000000
+diff 'LEN("AB")+1'                DE=0003 FACTYP=2 FPERR=0 ERRMARK=00 end=10 FAC=0010000000000000
+diff 'LEN("AB")=2'                DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=10 FAC=0010000000000000
+diff 'VAL("12")*2'                DE=0018 FACTYP=2 FPERR=0 ERRMARK=00 end=10 FAC=0010000000000000
+diff 'ASC("A")=65'                DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=10 FAC=0010000000000000
+diff 'INSTR("ABC","C")+1'         DE=0004 FACTYP=2 FPERR=0 ERRMARK=00 end=14 FAC=0010000000000000
+diff '1.5+2.5'                    DE=0004 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4140000000000000
+diff '1#+2#'                      DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=19 FAC=4130000000000000
+diff '1.5*2.5'                    DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4137500000000000
+diff '1#*2#'                      DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=19 FAC=4120000000000000
+diff '1.5-2.5'                    DE=FFFF FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=c110000000000000
+diff '1#-2#'                      DE=FFFF FACTYP=8 FPERR=0 ERRMARK=00 end=19 FAC=c110000000000000
+diff '1.5/4'                      DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4037500000000000
+diff '1#/3'                       DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4033333333333333
+diff '1.5<2.5'                    DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4125000033333333
+diff '2.5<1.5'                    DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=11 FAC=4115000033333333
+diff '1#=1#'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=19 FAC=4110000000000000
+diff '1#<>1'                      DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=12 FAC=4110000000000000
+diff '1.5=1.5#'                   DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=15 FAC=4115000000000000
+diff '1+2.5'                      DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4135000000000000
+diff '2.5+1'                      DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4135000000000000
+diff '1+2#'                       DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4130000000000000
+diff '2#+1'                       DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4130000000000000
+diff '1.5+1#'                     DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=15 FAC=4125000000000000
+diff '1#+1.5'                     DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=15 FAC=4125000000000000
+diff '1.5*2#'                     DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=15 FAC=4130000000000000
+diff '2#*1.5'                     DE=0003 FACTYP=8 FPERR=0 ERRMARK=00 end=15 FAC=4130000000000000
+diff '3/2#'                       DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4115000000000000
+diff '3#/2'                       DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4115000000000000
+diff '1.5>1'                      DE=FFFF FACTYP=2 FPERR=0 ERRMARK=00 end=7 FAC=4115000000000000
+diff '1+(1.5+(1#+(2)))'           DE=0005 FACTYP=8 FPERR=0 ERRMARK=00 end=25 FAC=4155000000000000
+diff '1#+(1+(1.5+2))'             DE=0005 FACTYP=8 FPERR=0 ERRMARK=00 end=23 FAC=4155000000000000
+diff '1.5+(1+(1#+3))'             DE=0006 FACTYP=8 FPERR=0 ERRMARK=00 end=23 FAC=4165000000000000
+diff '3/(2+(1.5*(1#-2)))'         DE=0006 FACTYP=8 FPERR=0 ERRMARK=00 end=27 FAC=4160000000000000
+diff '1.5<(2#=(1+1))'             DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=23 FAC=4120000000000000
+diff '(1.5+1)*(2#-1)'             DE=0002 FACTYP=8 FPERR=0 ERRMARK=00 end=23 FAC=4125000000000000
+diff '1+(2*(3.5-(4#/(5+(6.25*(7-1#))))))' DE=0007 FACTYP=8 FPERR=0 ERRMARK=00 end=51 FAC=4178117647058824
+diff '1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+1.1))))))))' DE=000B FACTYP=8 FPERR=0 ERRMARK=00 end=75 FAC=4211000000000000
+diff '1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+1.1#))))))))' DE=000B FACTYP=8 FPERR=0 ERRMARK=00 end=115 FAC=4211000000000000
+diff '32767+(1+(1))'              DE=8001 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4532769000000000
+diff '1+(32767+(1))'              DE=8001 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4532769000000000
+diff '-32768-(1-(0))'             DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=14 FAC=c532769000000000
+diff '200*(200*(1))'              DE=9C40 FACTYP=8 FPERR=0 ERRMARK=00 end=11 FAC=4540000000000000
+diff '2.5MOD(1.5+(1))'            DE=0000 FACTYP=2 FPERR=0 ERRMARK=00 end=17 FAC=4125000000000000
+diff '1.5AND(2#+(1))'             DE=0001 FACTYP=2 FPERR=0 ERRMARK=00 end=21 FAC=4130000000000000
+diff 'NOT(1.5+(1#))'              DE=FFFD FACTYP=2 FPERR=0 ERRMARK=00 end=20 FAC=4125000000000000
+diff '-(1.5+(-(1#*2)))'           DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=25 FAC=4050000000000000
+diff 'ABS(-1.5+(ABS(-2#)))'       DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=27 FAC=4050000000000000
+diff '1+A'                        DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=3 FAC=4110000000000000
+diff 'A+1.5'                      DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=7 FAC=4115000000000000
+diff 'A#+(A!+(A%+1))'             DE=0001 FACTYP=8 FPERR=0 ERRMARK=00 end=14 FAC=4110000000000000
+diff '1E10+(1E10)'                DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=13 FAC=4b20000000000000
+diff '1D20*(1D20)'                DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=21 FAC=6910000000000000
+diff '1E38*(10)'                  DE=0000 FACTYP=8 FPERR=0 ERRMARK=00 end=10 FAC=6810000000000000
+diff '1/(0+(0.0))'                DE=0000 FACTYP=8 FPERR=2 ERRMARK=00 end=13 FAC=0000000000000000
+diff '1#/(1-(1))'                 DE=0000 FACTYP=8 FPERR=2 ERRMARK=00 end=17 FAC=0000000000000000
+diff '2^(1+(1))'                  HOST-CORE-STOP opcode 0xd9 at PC 0x40a1
+diff '2.5^(2#-(1))'               HOST-CORE-STOP opcode 0xd9 at PC 0x40a1
+diff '1.5+(2^(0.5+(0.5)))'        HOST-CORE-STOP opcode 0xd9 at PC 0x40a1
+# 0 BAD row(s)

@@ -104,8 +104,11 @@ eval:
 ; (token - GT_TOKEN, 3..14, the index into cl_leaf); NOT 15; a relational
 ; $10 | its requested relation bits (1 <, 2 =, 4 >).
 ; PER PENDING CONSTRUCT, MEASURED (scratchpad/evalslope_after.out): `(` 6 B (the
-; VG-8020's 6); + - * / ^ and a relational 14 (the entry, FACTYP+FAC 10, the
-; lhs); AND OR XOR EQV IMP MOD \ 4 (the entry, the lhs); NOT 2.
+; VG-8020's 6); AND OR XOR EQV IMP MOD \ 4 (the entry, the lhs); NOT 2; + - * / ^
+; and a relational the entry plus the TYPED frame push_lhs_frame sizes by the
+; lhs's type (D-EVALSLOPE's typed-frame step, scratchpad/evalslope_typed.out):
+; 6 for an int16 lhs, 8 a single, 12 a double, where the fixed FACTYP+FAC+lhs
+; frame held 14 for all three (the VG-8020: 8 + the width, 10 / 12 / 16).
 CL_IMP          equ     2                   ; the codes, 2 x the level (loosest 1)
 CL_EQV          equ     4
 CL_XOR          equ     6
@@ -239,7 +242,10 @@ cl_cmp:                                     ; B = the incoming code, C = its id
                 inc     hl
                 ld      b,(hl)              ; BC = combine_*
                 call    lg_go               ; DE / FAC = lhs OP rhs
-                jr      cl_after
+                jp      cl_after            ; `jp`, not `jr`: 2 T faster taken, and
+                                            ; its byte refills the `push de` the
+                                            ; typed-frame step took from in front
+                                            ; of the $6CF3 pin (with cl_red_int's)
 cl_red_rel:                                 ; L = $10 | the requested bits
                 ld      c,l
                 call    combine_cmp         ; pops the frame + lhs; A = the actual
@@ -270,7 +276,7 @@ cl_red_int:                                 ; A = L: 8..14 AND..\, 15 NOT
                 jr      nc,cl_red_div
                 pop     hl                  ; HL = lhs (already int16, at the shift)
                 call    lg_apply            ; DE = lhs OP rhs
-                jr      cl_after
+                jp      cl_after            ; `jp`: see the typed reduce's
 cl_red_div:                                 ; MOD / \: DE = dividend, BC = divisor
                 ld      h,b
                 ld      l,c                 ; HL = signed_mod_de_bc / signed_div_de_bc
@@ -308,8 +314,8 @@ cl_shift:
                 ; + - * / ^: the lhs and its typed frame, contiguous (combine_*
                 ; pop them as ONE frame), the entry above them
                 inc     ix                  ; past the operator
-                push    de                  ; lhs ...
-                call    push_lhs_frame      ; ... and FACTYP+FAC; FACTYP := 2 (BC kept)
+                call    push_lhs_frame      ; the lhs frame, sized by its type
+                                            ; (DE / FAC); FACTYP := 2 (BC kept)
                 push    bc                  ; [entry]
                 jp      cl_opnd_hi
 cl_sh_int:
@@ -356,8 +362,7 @@ cl_rel_rhs:
                 pop     de
                 pop     bc
                 jr      c,cl_rel_mm         ; rhs a string, lhs numeric -> D-2
-                push    de                  ; lhs ...
-                call    push_lhs_frame      ; ... and its frame (FACTYP := 2)
+                call    push_lhs_frame      ; the lhs frame (FACTYP := 2)
                 ld      b,CL_REL
                 set     4,c                 ; L = $10 | the bits
                 push    bc                  ; [entry]

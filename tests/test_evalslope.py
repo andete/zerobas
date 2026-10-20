@@ -13,9 +13,15 @@ guard.md §5.3). This file pins what that must and must not change:
       against each other and have no row here);
   E2  every construct nested deep (each level PENDING while the next is parsed)
       still evaluates right -- the frames come back off the stack in order;
-  E3  the stack each pending construct holds, as built: `(` 6 B, `1+(` 20,
-      `1 AND (` 10, `1<(` 20, `-(` 12, `NOT` 2, `NOT(` 8, `ABS(` 12 (the
-      VG-8020's, spec-basic-frelive.md: 6, 16, 14, 18, 12, 6, 12, 16);
+  E3  the stack each pending construct holds, as built: `(` 6 B, `1+(` 12,
+      `1 AND (` 10, `1<(` 12, `-(` 12, `NOT` 2, `NOT(` 8, `ABS(` 12 (the
+      VG-8020's, spec-basic-frelive.md: 6, 16, 14, 18, 12, 6, 12, 16) -- and,
+      since the typed-frame step (push_lhs_frame sizes the pending lhs by its
+      type), `1.5+(` 14 and `1#+(` 18 (the VG-8020's 8 + width + `(`: 18, 22);
+  E2f the typed frame at depth: every typed operator (+ - * / and the
+      relationals) nested with an int, a single, a double and a MIXED lhs
+      (int16 lhs over a double rhs and back, int overflow promoting at depth),
+      each value exact in BCD, read back from FAC whole;
   E4  the NOT prefix's own stack test (cl_not) refuses exactly where stk_guard
       would at the same SP, and a NOT chain at the edge defers ERR 7 without the
       stack ever reaching CTLLIM;
@@ -41,6 +47,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
 from msxtest import Machine  # noqa: E402
+from decimal import Decimal as D  # noqa: E402
 
 ROM = tp("zb_evalslope.rom")
 SYM = tp("zb_evalslope.sym")
@@ -112,6 +119,17 @@ def run():
         nonlocal fails
         fails += not ok
         print(f"{'PASS' if ok else 'FAIL'}  {label}" + (f"  [{detail}]" if detail and not ok else ""))
+
+    def fac_value():
+        """FAC/FACTYP -> exact Decimal (tests/test_float.py's decode_fac)."""
+        fac = s["FAC"]
+        lead = m.peek(fac)[0]
+        if lead == 0:
+            return D(0)
+        n = 7 if m.peek(s["FACTYP"])[0] == 8 else 3
+        digits = "".join(f"{b >> 4}{b & 15}" for b in m.peek(fac + 1, n))
+        sign = -1 if lead & 0x80 else 1
+        return sign * D(int(digits)) * (D(10) ** ((lead & 0x7F) - 64 - len(digits)))
 
     def ev(text, ctllim=LOOSE):
         m.poke(SRC, text.encode("ascii") + b"\x00")
@@ -186,14 +204,68 @@ def run():
           f"DE={de:04X}")
 
     # ------------------------------------------------------------------
+    print("# --- E2f the typed frame at depth: int / single / double / mixed lhs ---")
+    FT = s["FACTYP"]
+
+    def nestx(n, op, lhs, inner):
+        return (f"{lhs}{op}(" * n) + inner + ")" * n
+
+    def foldd(n, f, inner):
+        v = D(inner)
+        for _ in range(n):
+            v = f(v)
+        return v
+
+    rel = lambda c: D(-1) if c else D(0)  # noqa: E731
+    E2F = [
+        # (text, expected exact value) -- every operand and partial result exact
+        # in 14 BCD digits, so no rounding question can hide in the comparison
+        (nestx(20, "+", "1.5", "2.5"), D("32.5")),
+        (nestx(21, "-", "1.5", ".5"), foldd(21, lambda v: D("1.5") - v, ".5")),
+        (nestx(10, "*", "1.5", "1"), D("1.5") ** 10),
+        (nestx(11, "/", "1.5", "2"), foldd(11, lambda v: D("1.5") / v, "2")),
+        (nestx(20, "<", ".5", "1"), foldd(20, lambda v: rel(D(".5") < v), "1")),
+        (nestx(20, "=", "0!", "0"), foldd(20, lambda v: rel(v == 0), "0")),
+        (nestx(20, "+", "1.25#", "1"), D("26")),
+        (nestx(21, "-", "2.5#", "1#"), foldd(21, lambda v: D("2.5") - v, "1")),
+        (nestx(10, "*", "1.5#", "1#"), D("1.5") ** 10),
+        (nestx(11, "/", "3#", "4#"), foldd(11, lambda v: D(3) / v, "4")),
+        (nestx(20, ">", "0#", "1#"), foldd(20, lambda v: rel(D(0) > v), "1")),
+        (nestx(20, "<>", ".5#", "1"), foldd(20, lambda v: rel(D(".5") != v), "1")),
+        # mixed: an int16 lhs over a double rhs (promotion at every level) ...
+        (nestx(30, "+", "1", "1#"), D(31)),
+        (nestx(20, "*", "2", ".5#"), D(2) ** 20 * D(".5")),
+        (nestx(20, "-", "1", "2.5"), foldd(20, lambda v: 1 - v, "2.5")),
+        # ... a double / single lhs over an int16 rhs ...
+        (nestx(30, "+", "1#", "1"), D(31)),
+        (nestx(20, "*", ".5", "1024"), D(".5") ** 20 * 1024),
+        # ... int16 overflow promoting to double at depth, and alternating types
+        (nestx(20, "+", "32767", "1"), D(32767 * 20 + 1)),
+        ("1+(1#+(1.5+(2+(2.5#+(3+(3.5+(4#+(4.5+(5)))))))))", D("28")),
+        ("1#*(2*(1.5*(2#*(.5*(4*(1.25#*(8)))))))", D(120)),
+        ("1<(1#+(1.5<(2#=(1+(1)))))", D(0)),
+    ]
+    for text, want in E2F:
+        de, fe, _, _ = ev(text)
+        got = D(w16(de) - (0x10000 if de & 0x8000 else 0)) if m.peek(FT)[0] == 2 else fac_value()
+        check(f"{text[:34]}{'...' if len(text) > 34 else ''} = {want}",
+              got == want and fe == 0, f"got={got} FACTYP={m.peek(FT)[0]} FPERR={fe}")
+
+    # ------------------------------------------------------------------
     print("# --- E3 the stack per pending construct, as built ---")
     SHAPES = [
         ("(",       lambda n: "(" * n + "1" + ")" * n,                 6),
-        ("1+(",     lambda n: "1+(" * n + "1" + ")" * n,              20),
-        ("1*(",     lambda n: "1*(" * n + "1" + ")" * n,              20),
+        ("1+(",     lambda n: "1+(" * n + "1" + ")" * n,              12),
+        ("1*(",     lambda n: "1*(" * n + "1" + ")" * n,              12),
+        ("1.5+(",   lambda n: "1.5+(" * n + "1" + ")" * n,            14),
+        ("1#+(",    lambda n: "1#+(" * n + "1" + ")" * n,             18),
+        ("1.5*(",   lambda n: "1.5*(" * n + "1" + ")" * n,            14),
+        ("1#/(",    lambda n: "1#/(" * n + "1" + ")" * n,             18),
         ("1AND(",   lambda n: "1AND(" * n + "1" + ")" * n,            10),
         ("1MOD(",   mod_nest,                                         10),
-        ("1<(",     lambda n: "1<(" * n + "1" + ")" * n,              20),
+        ("1<(",     lambda n: "1<(" * n + "1" + ")" * n,              12),
+        ("1.5<(",   lambda n: "1.5<(" * n + "1" + ")" * n,            14),
+        ("1#<(",    lambda n: "1#<(" * n + "1" + ")" * n,             18),
         ("-(",      lambda n: "-(" * n + "1" + ")" * n,               12),
         ("NOT",     lambda n: "NOT" * n + "0",                         2),
         ("NOT(",    lambda n: "NOT(" * n + "0" + ")" * n,              8),

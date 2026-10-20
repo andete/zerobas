@@ -255,6 +255,19 @@ TROWS = [
     ("mixed 1<2 AND 3>2",        "1<2AND3>2",      0xFFFF),
     ("mixed NOT 1=2 OR 0",       "NOT1=2OR0",      0xFFFF),
     ("mixed 1+(2*(3+4))",        "1+(2*(3+4))",    15),
+    # the typed frame at every width (D-EVALSLOPE's typed-frame step)
+    ("single +",                 "1.5+2.5",        None),
+    ("single *",                 "1.5*2.5",        None),
+    ("single <",                 "1.5<2.5",        0xFFFF),
+    ("double +",                 "1#+2#",          None),
+    ("double *",                 "1#*2#",          None),
+    ("double <",                 "1#<2#",          0xFFFF),
+    ("int+single",               "1+2.5",          None),
+    ("single+int",               "2.5+1",          None),
+    ("int+double",               "1+2#",           None),
+    ("double+int",               "2#+1",           None),
+    ("int overflow +",           "32767+1",        None),
+    ("string <",                 '"A"<"B"',        0xFFFF),
 ]
 
 
@@ -276,6 +289,8 @@ def nest(kind, n):
         return "NOT(" * n + "0" + ")" * n
     if kind == "ABS":
         return "ABS(" * n + "1" + ")" * n
+    if kind.startswith("L:"):              # "L:<lhs><op>": (lhs op ( )^n
+        return (kind[2:] + "(") * n + "1" + ")" * n
     raise KeyError(kind)
 
 
@@ -307,10 +322,26 @@ DIFF = [
     '1+"A"', '"A"=1', 'NOT"A"', '-"A"',
     'ABS(-3)+1', 'ABS(-3)*2', '-ABS(3)', 'PEEK(0)+1', 'LEN("AB")+1',
     'LEN("AB")=2', 'VAL("12")*2', 'ASC("A")=65', 'INSTR("ABC","C")+1',
+    # the typed frame at every width, nested (D-EVALSLOPE's typed-frame step);
+    # the `diff` line carries FAC's 8 bytes, so a float result is compared whole
+    "1.5+2.5", "1#+2#", "1.5*2.5", "1#*2#", "1.5-2.5", "1#-2#", "1.5/4", "1#/3",
+    "1.5<2.5", "2.5<1.5", "1#=1#", "1#<>1", "1.5=1.5#", "1+2.5", "2.5+1", "1+2#",
+    "2#+1", "1.5+1#", "1#+1.5", "1.5*2#", "2#*1.5", "3/2#", "3#/2", "1.5>1",
+    "1+(1.5+(1#+(2)))", "1#+(1+(1.5+2))", "1.5+(1+(1#+3))", "3/(2+(1.5*(1#-2)))",
+    "1.5<(2#=(1+1))", "(1.5+1)*(2#-1)", "1+(2*(3.5-(4#/(5+(6.25*(7-1#))))))",
+    "1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+(1.1+1.1))))))))",
+    "1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+(1.1#+1.1#))))))))",
+    "32767+(1+(1))", "1+(32767+(1))", "-32768-(1-(0))", "200*(200*(1))",
+    "2.5MOD(1.5+(1))", "1.5AND(2#+(1))", "NOT(1.5+(1#))", "-(1.5+(-(1#*2)))",
+    "ABS(-1.5+(ABS(-2#)))", "1+A", "A+1.5", "A#+(A!+(A%+1))",
+    "1E10+(1E10)", "1D20*(1D20)", "1E38*(10)", "1/(0+(0.0))", "1#/(1-(1))",
+    "2^(1+(1))", "2.5^(2#-(1))", "1.5+(2^(0.5+(0.5)))",
 ]
 
 SLOPES = ["(", "+", "-", "*", "/", "MOD", "\\", "AND", "OR", "XOR", "EQV",
-          "IMP", "=", "<", "neg", "NOT", "NOT(", "ABS"]
+          "IMP", "=", "<", "neg", "NOT", "NOT(", "ABS",
+          "L:1.5+", "L:1#+", "L:1.5*", "L:1#*", "L:1.5<", "L:1#<", "L:1.5AND",
+          "L:1#/", "L:1/"]
 
 
 def main():
@@ -340,13 +371,20 @@ def main():
         sl2 = ds[2][0] - ds[1][0]
         tsl = ds[1][1] - ds[0][1]
         flag = "" if sl == sl2 and all(f == 0 for *_, f in ds) else "  ⚠️ irregular/FPERR"
-        print(f"slope {k:5s} {sl:3d} B/level  ({sl2:3d})  T/level={tsl:6d}  "
+        print(f"slope {k:9s} {sl:3d} B/level  ({sl2:3d})  T/level={tsl:6d}  "
               f"depth@4={ds[0][0]:4d}  DE@4={ds[0][2]:04X}{flag}")
     print("# --- outcomes (diff these lines between builds) ---")
     for text in DIFF:
-        de, depth, t, fperr, end = run_expr(m, st, text)
+        try:
+            de, depth, t, fperr, end = run_expr(m, st, text)
+        except NotImplementedError as e:   # a sub-ROM tenant the host core cannot run
+            print(f"diff {text!r:28s} HOST-CORE-STOP {e}")
+            m = setup(a.root)
+            st = instrument(m)
+            continue
+        fac = bytes(m.mem[m.sym["FAC"]:m.sym["FAC"] + 8]).hex()
         print(f"diff {text!r:28s} DE={de:04X} FACTYP={m.mem[m.sym['FACTYP']]} "
-              f"FPERR={fperr} ERRMARK={m.mem[m.sym['ERRMARK']]:02X} end={end}")
+              f"FPERR={fperr} ERRMARK={m.mem[m.sym['ERRMARK']]:02X} end={end} FAC={fac}")
     print(f"# {bad} BAD row(s)")
     return 1 if bad else 0
 

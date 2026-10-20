@@ -1,0 +1,22 @@
+leaf sweep, zerobas: OK = every depth fitted; ERR 7 DEPTH d = the guard refused at d with A(X) intact; CORRUPT / NO READING = a leaf ran below it
+  K=280 sin  OK
+  K=280 log  OK
+  K=280 val  OK
+  K=280 str  OK
+  K=290 sin  OK
+  K=290 log  OK
+  K=290 val  OK
+  K=290 str  OK
+  K=300 sin  OK
+  K=300 log  OK
+  K=300 val  OK
+  K=300 str  OK
+  K=310 sin  OK
+  K=310 log  OK
+  K=310 val  OK
+  K=310 str  OK
+  K=320 sin  OK
+  K=320 log  OK
+  K=320 val  OK
+  K=320 str  OK
+refcache: 0 hit, 1 miss, 1 stored

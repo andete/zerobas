@@ -509,9 +509,14 @@ ary_engine_call:
 ; self-contained (entered only by label), to refill bytes the stack parameter
 ; block freed in front of the $3297 pin -- tools/pin_plan.py's exact fill.
 ; --- pop_lhs_and_probe: shared preamble for combine_add/sub/mul/cmp -------
-; (below): pops the lhs frame (FACTYP+FAC, written by push_lhs_frame above),
-; then the lhs value (into FP_LHSVAL). TWO return addresses sit on top of
-; that frame by the time this runs, not one: this routine's own (pushed by
+; (below): pops the lhs frame push_lhs_frame wrote (basic/float-arith.asm): its
+; [FACTYP] into LHS_FACTYP, then -- by that type, as push_lhs_frame sized it --
+; the lhs DE into FP_LHSVAL (2), FAC+0..3 into LHS_FAC (< 5: a single), or
+; FAC+0..7 (> 5: a double). D-EVALSLOPE's typed-frame step, 2026-10-20: the
+; frame was a fixed 12 B for every type; see push_lhs_frame's header for what
+; each type's readers read, and why no other cell is needed.
+; TWO return addresses sit on top of that frame by the time this runs, not
+; one: this routine's own (pushed by
 ; "call pop_lhs_and_probe") AND its DIRECT caller's -- combine_add/sub/mul/
 ; cmp/div_float is itself reached via a plain "call" from an ev_* site made
 ; AFTER push_lhs_frame already ran, so that combine_* return address is
@@ -528,8 +533,11 @@ ary_engine_call:
 ; target on the stack first). Note LD/PUSH/JP(HL) never touch flags on the
 ; Z80, so the ZF the final "cp 2" sets for our caller survives this restore
 ; untouched. out: ZF set iff both LHS_FACTYP and the current (rhs) FACTYP
-; are int (==2); ZF clear (and A holds the mismatching FACTYP value)
-; otherwise. Clobbers A, HL (DE, BC preserved).
+; are int (==2); ZF clear otherwise (no caller reads A after a NZ: each one
+; branches to its float path). Clobbers A, HL (DE, BC preserved).
+; 🎯 THE NZ OF A FLOAT LHS IS `cp 5`'s: A < 5 (a single) jumps with NZ, A > 5 (a
+; double) falls through with it, and nothing below touches the flags. It
+; holds because no type is 5 (push_lhs_frame's header).
 pop_lhs_and_probe:
                 pop     hl                  ; HL = our own return address
                 ld      (PLF_RA),hl
@@ -538,23 +546,18 @@ pop_lhs_and_probe:
                 ld      (PLF_RA2),hl
                 pop     af
                 ld      (LHS_FACTYP),a
+                cp      2
+                jr      z,plap_int          ; an int16 lhs: only its DE is there
                 pop     hl
                 ld      (LHS_FAC+0),hl
                 pop     hl
                 ld      (LHS_FAC+2),hl
+                cp      5
+                jr      c,plap_ret          ; a single: done, NZ
                 pop     hl
                 ld      (LHS_FAC+4),hl
                 pop     hl
-                ld      (LHS_FAC+6),hl
-                pop     hl
-                ld      (FP_LHSVAL),hl
-                ; A still holds LHS_FACTYP's value here, untouched since the
-                ; "pop af" above -- none of "pop hl" / "ld (nn),hl" affect A
-                ; on the Z80, so no need to reload it from RAM
-                cp      2
-                jr      nz,plap_ret         ; NZ -> mismatch; ZF stays clear below
-                call    factyp_is2
-                                           ; ZF set iff both int
+                ld      (LHS_FAC+6),hl      ; a double: NZ (A > 5)
 plap_ret:
                 ld      hl,(PLF_RA2)        ; does not affect flags
                 push    hl                  ; restore our caller's (combine_*'s
@@ -566,6 +569,11 @@ plap_ret:
                                             ; (cheaper than push+ret); does not
                                             ; affect flags -- ZF from the cp above
                                             ; reaches our caller intact
+plap_int:
+                pop     hl
+                ld      (FP_LHSVAL),hl
+                call    factyp_is2          ; ZF set iff the rhs is int16 too
+                jr      plap_ret
 
 ; REFILL (D-WSZERO S16, 2026-10-16): moved here from basic/float-arith.asm, whole and
 ; self-contained (entered only by label), to refill bytes the stack parameter

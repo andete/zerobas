@@ -47,14 +47,9 @@ ixsp_unwind:                                ; C4 shared tail (2026-10-03): expr.
                 inc     sp                  ; error, one copy (low: visible to both)
                 jp      ev_f_empty
 
-; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
-; 💰 The pair stood at SEVEN sites, 6 B each against 3 for a call. dig15_iszero
-; preserves HL, so the caller sees HL = ARGA+FPNUM_DIG and Z exactly as the
-; open-coded pair left them. Low region, not page 1: two of the sites are in the
-; resident closure sub page-1 tenants reach (check_tenant_closure).
-arga_dig_iszero:
-                ld      hl,ARGA+FPNUM_DIG
-                jp      dig15_iszero
+; (arga_dig_iszero lives in basic/float-arith.asm, past the $3297 pin, since
+; D-EVALSLOPE's typed-frame step: its 6 B make room for pop_lhs_and_probe's growth
+; in front of that pin, basic/input.asm -- tools/pin_plan.py's exact fill.)
 
 ; --- sh_go: run string-heap op A on a Z80-STACK PARAMETER BLOCK (D-WSZERO S16) --
 ; The tenant's arguments and results used to live in an 18-byte RAM block
