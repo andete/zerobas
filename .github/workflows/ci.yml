@@ -61,6 +61,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: tests/test_fpdiv_fast.py builds the pre-D-DIVPACK image
+          # from git (1f6e53a3) to run old and new side by side; a shallow clone
+          # has no such object and the test failed before testing anything
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -107,6 +112,11 @@ jobs:
         shell: msys2 {0}     # Unix shell so the Makefile recipes work unchanged
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: tests/test_fpdiv_fast.py builds the pre-D-DIVPACK image
+          # from git (1f6e53a3) to run old and new side by side; a shallow clone
+          # has no such object and the test failed before testing anything
+          fetch-depth: 0
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -196,6 +206,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # full history: tests/test_fpdiv_fast.py builds the pre-D-DIVPACK image
+          # from git (1f6e53a3) to run old and new side by side; a shallow clone
+          # has no such object and the test failed before testing anything
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
