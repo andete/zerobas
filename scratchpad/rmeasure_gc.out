@@ -1,0 +1,8 @@
+statement: B$=STRING$(150,"*")+STR$(K)
+deepest below the last passing guard: 68 B (guard SP $F07B, SP $F037), PC $15E2 sub:sg_visit+0
+statement: A$=LEFT$(A$+"XYZ",100):B$=MID$(A$,2)+STR$(K)
+deepest below the last passing guard: 76 B (guard SP $F073, SP $F027), PC $1633 sub:sg_inrange+4
+statement: B$=STRING$(90,"*"):C$=STRING$(90,"#")+B$
+deepest below the last passing guard: 70 B (guard SP $F07B, SP $F035), PC $1633 sub:sg_inrange+4
+statement: IF STRING$(120,"A")<STRING$(120,"B")+STR$(K) THEN B=1
+deepest below the last passing guard: 68 B (guard SP $F06D, SP $F029), PC $156D sub:sgw_sc_go+4

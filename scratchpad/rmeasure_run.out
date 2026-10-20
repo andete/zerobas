@@ -1,0 +1,20 @@
+statement: B=1
+deepest below the last passing guard: 62 B (guard SP $F08E, SP $F050), PC $139B main:cbios_chput_ttypos+460 | sub:strheap_ceiling+7
+statement: IF "AB"+A$<"AC"+LEFT$(A$,1) THEN B=1
+deepest below the last passing guard: 52 B (guard SP $F06D, SP $F039), PC $5C51 main:psv_loop+4 | sub:ldr_done+4
+statement: B$=MID$("HELLO",2,3)+STR$(K)
+deepest below the last passing guard: 76 B (guard SP $F075, SP $F029), PC $1633 sub:sg_inrange+4
+statement: B=INSTR("HELLO WORLD","WO")
+deepest below the last passing guard: 70 B (guard SP $F06B, SP $F025), PC $156D sub:sgw_sc_go+4
+statement: B=VAL("123.5")+LEN(STR$(K))
+deepest below the last passing guard: 62 B (guard SP $F08E, SP $F050), PC $139B main:cbios_chput_ttypos+460 | sub:strheap_ceiling+7
+statement: B=FNA(K)+Z(1)
+deepest below the last passing guard: 63 B (guard SP $F073, SP $F034), PC $5C51 main:psv_loop+4 | sub:ldr_done+4
+statement: Z(2)=SIN(K)*COS(K)+SQR(K)
+deepest below the last passing guard: 46 B (guard SP $F04B, SP $F01D), PC $5C51 main:psv_loop+4 | sub:ldr_done+4
+statement: B$=LEFT$(RIGHT$("ABCDEF",4),2)+CHR$(65)
+deepest below the last passing guard: 62 B (guard SP $F08E, SP $F050), PC $139B main:cbios_chput_ttypos+460 | sub:strheap_ceiling+7
+statement: B=((((K+1)*2)-3)/4)
+deepest below the last passing guard: 62 B (guard SP $F08E, SP $F050), PC $139B main:cbios_chput_ttypos+460 | sub:strheap_ceiling+7
+statement: B$=STRING$(5,"*")+A$
+deepest below the last passing guard: 62 B (guard SP $F08E, SP $F050), PC $139B main:cbios_chput_ttypos+460 | sub:strheap_ceiling+7

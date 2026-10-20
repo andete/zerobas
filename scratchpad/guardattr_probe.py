@@ -11,6 +11,9 @@ tables (main, sub; a page-1 word is ambiguous between them, both printed).
 
     python3 -u scratchpad/guardattr_probe.py 'IF "AB"+A$<"AC"+LEFT$(A$,1) THEN B=1'
     (GA_PLAY=1: PLAY running in the background, so an interrupt can land there)
+    (GA_LABELS=stk_guard,stk_room,sh_go_g: the TEST POINTS whose SP counts as "the last
+     passing test" -- D-DEEPEXPR's spec §5.2, 2026-10-20; default stk_guard alone. A failing
+     test raises, and raise_error resets SP high, so it cannot inflate the reading.)
 """
 import bisect, os, re, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,7 +53,7 @@ proc ::ln {} { expr {[peek 0xF41C] + 256*[peek 0xF41D]} }
 proc ::onguard {} {
   if {!$::armed} {
     set ::armed 1
-    set c [expr {[peek 0xE050] + 256*[peek 0xE051]}]
+    set c [expr {[peek CSPADDR] + 256*[peek [expr {CSPADDR+1}]]}]
     debug set_watchpoint write_mem [list [expr {$c - 1500}] [expr {$c - 1}]] {} ::onwrite
   }
   if {[::ln] != 30} return
@@ -67,20 +70,34 @@ proc ::onwrite {} {
   for {set x $sp} {$x < $::g} {incr x 2} { lappend w [expr {[peek $x] + 256*[peek [expr {$x+1}]]}] }
   set f [open {OUT} w]; puts $f "$b [reg pc] $sp $::g $w"; close $f
 }
-debug set_bp GUARD {[pc_in_slot 0]} ::onguard
+GUARDS
 """
 
 
 def main():
     stmt = sys.argv[1] if len(sys.argv) > 1 else 'IF "AB"+A$<"AC"+LEFT$(A$,1) THEN B=1'
-    g = [a for a, n in TABLES["main"] if n == "stk_guard"][0]
+    labels = os.environ.get("GA_LABELS", "stk_guard").split(",")
+    gs = []
+    for lab in labels:
+        hit = [a for a, n in TABLES["main"] if n == lab]
+        if len(hit) != 1:
+            raise SystemExit(f"REFUSE: label {lab!r} found {len(hit)} times in basic-reloc.sym")
+        gs.append(hit[0])
     out = tempfile.mktemp(prefix="zb_guardattr_")
     open(out, "w").close()
     play = '10 PLAY "L64T255CDEFGABCDEFGAB","L64T255CDEFGAB"' if os.environ.get("GA_PLAY") \
         else "10 REM"
     prog = ["NEW", "5 DEF FNA(X)=X*2+1:DIM Z(3)", play,
             f"30 FOR K=1 TO 30:{stmt}:NEXT", '40 PRINT CHR$(91);"DONE";CHR$(93):END', "RUN"]
-    tcl = TCL.replace("{OUT}", "{" + out + "}").replace("GUARD", f"0x{g:04X}")
+    bps = "\n".join(f"debug set_bp 0x{g:04X} {{[pc_in_slot 0]}} ::onguard" for g in gs)
+    # 2026-10-20: the pool frontier is CSP, read from the sym -- this read a hard-coded
+    # $E050 (GOSUB_STK's old home, retired by D-CTLPOOL / D-WSZERO), so every run since
+    # REFUSED "no write below a passing guard": an instrument gone stale, not a result.
+    csp = {n: a for a, n in [(a, n) for a, n in TABLES["main"]]}.get("CSP")
+    if csp is None:
+        csp = int([l.split()[2] for l in open(os.path.join(REPO, "build", "basic-reloc.sym"))
+                   if l.split()[:1] == ["CSP"]][0].rstrip("H"), 16)
+    tcl = TCL.replace("{OUT}", "{" + out + "}").replace("GUARDS", bps).replace("CSPADDR", f"0x{csp:04X}")
     omsx_repl.run_cases(ZB, [("direct", prog)], batch=False, reset=("CLS",), boot=8.0,
                         step=3.0, run_gap=60.0, capture="screen", prologue=(tcl,))
     txt = open(out).read().split()

@@ -25,6 +25,9 @@ ROWS = [
     ("lb3", 200, "LEN(" + "LEFT$(" * 20 + '"ABC"' + ",3)" * 20 + ")"),
     ("lb4", 1150, "(" * 15 + "Z#(1,1)" + ")" * 15),
     ("ctl", 200, "1"),                               # positive control: plain, completes
+    # D-EDGEONERR (2026-10-20): a FLAT statement closer to the edge -- refused (no reading,
+    # the trap re-erroring) at STK_EVAL_RESERVE 128 where the VG-8020 completes; 84 since
+    ("edge136", 136, "1"),
 ]
 
 

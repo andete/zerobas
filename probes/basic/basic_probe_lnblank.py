@@ -3157,8 +3157,11 @@ KNOWN_DIVERGE = {
     # DIFFERENT reason: with ~139 B left, the `PRINT`'s first factor needs its guard
     # depth + STK_EVAL_RESERVE (128) and refuses, where the references evaluate it.
     # That reserve is D-DIMRESERVE's next lever.
-    "crf-oomctl":   "<none: aborted mid-PRINT>",
-    "crf-oom":      "<none: aborted mid-PRINT>",
+    # ✅ `crf-oomctl` / `crf-oom` RETIRED 2026-10-20 (D-EDGEONERR): STK_EVAL_RESERVE
+    # 128 -> 84, measured (the deepest write below any passing test, +8, once
+    # D-DEEPEXPR guarded every expression-time site) -- the PRINT now evaluates, and
+    # both rows agree on all three sides (scratchpad/lnblanksay_r84.out). Deleted, the
+    # stricter move.
     # ✅ `dlt-dot` / `dlt-dotedit` RETIRED 2026-08-02 BY D-DOTLINE, and DELETED
     # rather than edited (the ninth cohort to go that way). They were pinned at
     # zerobas' ` 15  2 ` -- R-D6's trailing-junk rule answering a `$2E` the verb

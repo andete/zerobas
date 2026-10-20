@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36932 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36967 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31627,8 +31627,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (sub/arrays.asm). ➡️ Build the spec's guards (stk_room, the recursion arms, the
       guarded heap gateway, sp_ceil), these five rows as the gate.
 
-- [ ] 🧮 **D-EDGEONERR -- WITH AN ERROR HANDLER AND STRINGS SET UP, A DIM ~136 B FROM THE
-      EDGE FAILS ON zerobas AND FITS ON THE VG-8020 (found 2026-10-20, pre-existing)**
+- [x] 🧮 **D-EDGEONERR -- WITH AN ERROR HANDLER AND STRINGS SET UP, A DIM ~136 B FROM THE
+      EDGE FAILS ON zerobas AND FITS ON THE VG-8020 (found 2026-10-20, pre-existing)** —
+      ✅ **FIXED 2026-10-20: neither the handler nor the strings -- the evaluator's flat
+      reserve.** [`edgeonerr_run.out`](scratchpad/edgeonerr_run.out): the DIM edge is the
+      VG-8020's in all four shapes (plain / strings / ON ERROR / both: 112 / 114 / 110 /
+      114 on both). What failed was the FIRST EXPRESSION after the DIM (`A(X)=12345`,
+      then PRINT): STK_EVAL_RESERVE 128 refused it within 128 B of the arrays. With
+      D-DEEPEXPR's guards in, R was MEASURED (guardattr_probe.py extended to all three
+      test points; [`rmeasure_run.out`](scratchpad/rmeasure_run.out),
+      [`rmeasure_gc.out`](scratchpad/rmeasure_gc.out): max 76 B, the string GC) -> 84.
+      No constant R matches the reference's point in every shape
+      ([`flatedge_r84.out`](scratchpad/flatedge_r84.out), `_rscan`, `_edgeprint_r109`,
+      [`edgestr_r109.out`](scratchpad/edgestr_r109.out): `A%(X)=12345` wants 113, `PRINT
+      E;A(X)` <= 109, `PRINT"[";E;A(X);"]"` less), so tier 1 decides: never refuse what
+      the VG-8020 completes -- 84 does on every shape measured
+      ([`edgestr_r84final.out`](scratchpad/edgestr_r84final.out)), simple shapes a few
+      bytes more lenient. Safety: [`stackcorrupt_r84.out`](scratchpad/stackcorrupt_r84.out)
+      and [`stackcorrupt_leaf_r84.out`](scratchpad/stackcorrupt_leaf_r84.out) -- no
+      corruption anywhere. 🔮 "the strings move the edge": MISS; "R ~ 56 +- 8": MISS (76
+      measured); "R ~ 107-113 matches": HIT for one shape, and that is what showed no
+      constant can. GATED: deepexpr-acceptance row `edge136`.
+      ➕ And lnblank-say-acceptance's two last allowlisted divergences, `crf-oomctl` /
+      `crf-oom` (a PRINT aborting ~139 B from the edge under the 128 reserve), now agree
+      on all three machines and are retired: 208/208, 0 allowlisted
+      ([`lnblanksay_r84b.out`](scratchpad/lnblanksay_r84b.out)).
       🎚️ TIER 4 — RAM usage: economy at the memory edge.
       🤖 **AUTONOMOUS** — measure first.
       📏 [`edgestr_probe.py`](scratchpad/edgestr_probe.py): `CLEAR 200:X=0:E=0:B=0:A$="":
@@ -31640,6 +31663,18 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the handler or the string setup moves zerobas's edge ~25 B. ➡️ Bisect K, then which
       of ON ERROR / the strings does it; then why no reading (the DIM's 7 trapped, then
       the handler's `A(X)` re-erroring?).
+
+- [ ] 🧮 **D-EVALSLOPE -- zerobas'S EVALUATOR HOLDS MORE STACK PER PENDING CONSTRUCT THAN THE
+      VG-8020, SO RICHER STATEMENTS NEAR THE MEMORY EDGE REFUSE EARLIER (filed 2026-10-20)**
+      🎚️ TIER 4 — RAM usage: economy at the memory edge.
+      🤖 **AUTONOMOUS** — the spec's §5.3: per `(` 12 B here against 6, a pending
+      arithmetic operator 20 against 8 + width, AND/OR 16 against 8.
+      📏 [`stackcorrupt_r84.out`](scratchpad/stackcorrupt_r84.out) row `k300p20`: 20 nested
+      parens with ~300 B left complete on the VG-8020 and refuse (ERR 7, data intact) here;
+      and no constant STK_EVAL_RESERVE matches the reference's refusal point across
+      statement shapes (D-EDGEONERR's notes). ➡️ Cheaper climber frames (drop the two [min]
+      words and the ev_not / ev_e calls per `(` -- the S1/S2 work one step further), then
+      re-bisect R. TIER 5 interplay: fewer calls per factor is also faster.
 
 - [ ] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to

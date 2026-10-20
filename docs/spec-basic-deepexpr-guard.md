@@ -386,6 +386,13 @@ still binds there, and `dimedge-acceptance` (10/10) is the regression guard.
 
 ## 5. Lowering `STK_EVAL_RESERVE`
 
+> **Done 2026-10-20: R = 84, measured** (max 76 B below any passing test, in the string
+> GC, + 8; `scratchpad/rmeasure_run.out`, `rmeasure_gc.out`). Matching the reference's
+> refusal POINT with a constant turned out impossible (each statement shape wants a
+> different R -- TODO D-EDGEONERR), so R stays at the safety floor, which never refuses
+> where the VG-8020 completes on the shapes measured; the remainder is the slope
+> (§5.3), TODO D-EVALSLOPE.
+
 ### 5.1 What R must cover once §4 is in
 
 R must cover the deepest stack write below **any passing test** (`stk_guard`,

@@ -4338,7 +4338,23 @@ CSP             equ     $F712   ; the pool's allocation frontier, descending (2)
 ; margin, every expression at the DIM edge refused, flat `B=1` included: a DIM may
 ; leave ~258 B and the statement already sits below the frontier
 ; (scratchpad/stackcorrupt_run.out, the first guarded run).
-STK_EVAL_RESERVE equ   128    ; see stk_guard; checked by stackcorrupt's leaf rows
+; 📏 D-DEEPEXPR step 3 (2026-10-20): 128 -> 84, THE MEASURED SAFETY FLOOR. With every
+; expression-time site guarded (docs/spec-basic-deepexpr-guard.md §4, daf3f208), R only
+; has to hold the deepest write below ANY passing test (stk_guard, stk_room, sh_go_g)
+; before the next one -- scratchpad/guardattr_probe.py (GA_LABELS = all three, PLAY
+; running), 14 statements incl. GC-forcing ones: max 76 B, in the string GC
+; (sub:sg_inrange; rmeasure_run.out, rmeasure_gc.out). R = max + 8 (the spec's rule).
+; ⚖️ WHY NOT HIGHER, TO MATCH THE REFERENCE'S POINT: no constant can. Right after an edge
+; DIM (scratchpad/flatedge_probe.py) the VG-8020's first fitting K is 121 / 122 for
+; `A%(X)=12345` and 133 for `B=1:PRINT E;A(X)`; zerobas matched the first at R = 113
+; and the second at R <= 109, and `PRINT"[";E;A(X);"]"` needs less still (edgestr_r109.out)
+; -- zerobas holds a little more stack per construct than the reference (the spec's
+; §5.3 "slope"), so each richer statement wants a smaller R. Tier 1 first: never refuse
+; what the VG-8020 completes. 84 does that on every shape measured (edgestr_r84.out,
+; flatedge_r84.out), and simple shapes are then a few bytes MORE lenient. Matching the
+; point exactly is the climber-frame item (D-EVALSLOPE), not this constant. 128 had
+; refused even `A(X)=12345` after an edge DIM where the VG-8020 completes (D-EDGEONERR).
+STK_EVAL_RESERVE equ   84     ; see stk_guard; checked by stackcorrupt's leaf rows
 ; D-STACKFLOOR: a FRAME push (ctl_alloc, DEF FN's fn_frame) keeps MORE than DIM
 ; does, because a program whose GOSUB/FOR recursion ran out of memory goes on
 ; evaluating expressions WITH EVERY FRAME STILL STANDING (a trapped Out of memory,
