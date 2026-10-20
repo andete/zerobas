@@ -1,0 +1,4 @@
+⚠️  ZEROBAS_PREFLIGHT=off -- openMSX preflight DISABLED; a missing or stale ROM will be measured as a code result.
+C-BIOS_MSX1_EU_REPACK_DISK: [81] ticks
+C-BIOS_MSX1_EU_REPACK_DISK: [81] ticks
+refcache: 0 hit, 1 miss, 1 stored

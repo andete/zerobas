@@ -58,95 +58,320 @@ eval:
                 pop     ix
                 ret
 
-; --- logical / bitwise layers (lowest precedence, left-assoc) --------------
-; MSX-BASIC precedence below the relationals, MEASURED against the VG-8020 by
-; probes/basic/basic_probe_logicops.py (every ordered pair, three lines each --
-; the bare form plus BOTH explicit parenthesisations, verdict from which control
-; the bare form matched):
+; --- the precedence climber: ONE loop for every binary level ----------------
+; MSX-BASIC precedence, tightest first (the arithmetic half from the language
+; reference, §13.3; the logical half MEASURED against the VG-8020 by
+; probes/basic/basic_probe_logicops.py -- every ordered pair, three lines each,
+; the bare form plus BOTH explicit parenthesisations):
 ;
-;     NOT (unary)  >  AND  >  OR  >  XOR == EQV  >  IMP
+;     ^  >  unary -  >  * /  >  \  >  MOD  >  + -  >  relational  >  NOT
+;        >  AND  >  OR  >  XOR == EQV  >  IMP
 ;
-; XOR and EQV are UNOBSERVABLE against each other -- they are mutually
-; associative, so no operand triple can order them and the implementation is
-; free to pick. All six are 16-bit bitwise; they also implement logical tests on
-; the -1/0 results the relationals produce. Tokens: AND $F6, OR $F7, XOR $F8,
-; EQV $F9, IMP $FA, NOT $E0.
+; All binary levels are left-associative. XOR and EQV are UNOBSERVABLE against
+; each other (mutually associative), so the order between them is a free choice:
+; EQV sits looser, as it always has here. Relationals CHAIN, left-associatively
+; (`1 = 0 = 0` is `(1 = 0) = 0` = -1, docs/logicops-vg8020-characterization.md
+; §6). AND OR XOR EQV IMP MOD \ are strict int16 on both sides (spec §10.3/
+; §10.4); + - * / ^ and the relationals keep the typed-operand frame (spec §1).
 ;
-; A TABLE-DRIVEN LAYER, which fits SIX levels into less space than the original
-; hand-rolled THREE-level chain it replaced (that chain survived until 2026-07-29
-; only because the retired lean 16 KB cart was byte-frozen and shipped no EQV/IMP).
-; --- table-driven logical layer (repack build) -----------------------------
-; `ev_and_lp`/`ev_or_lp`/`ev_xor_lp` were byte-for-byte uniform at 31 B each and
-; differed only in a token compare and a 6-byte apply block (clone_scout: 5 x 31 B).
-; Adding EQV and IMP as two more copies would have cost +68 B; one generic layer
-; walking a precedence table costs LESS than the three copies it replaces.
-;
-; The level is a POINTER into logtab, carried in HL and pushed across recursion,
-; so no index arithmetic is needed: the next-tighter level is simply the next
-; 3-byte entry, and the $00 terminator is what drops through to unary NOT.
-; 🔁 D-DIMRESERVE S1 (2026-10-10): A PRECEDENCE CLIMBER, NOT A DESCENT. This
-; walked every logtab level on every expression -- `push hl` + a call per level,
-; 20 B of stack whether or not any logical operator was there (the 36 B
-; precedence chain of scratchpad/stackattr_run.out; the reference runs the same
-; statement in 79 B to our 147). Now the operand is parsed once and the table is
-; searched only from the loosest level the caller still accepts (`evc_min`'s HL);
-; an operator found there parses its right operand with the next-TIGHTER entry
-; as the minimum, so it binds what binds tighter and stops at what does not --
-; the same groupings, left-associative, in the table's own order (so EQV stays
-; looser than XOR, as before; the two are unobservable against each other).
-; A plain operand costs 4 B here instead of 20.
+; 🔁 D-EVALSLOPE (2026-10-20): ONE LOOP, AN OPERATOR STACK ON THE MACHINE STACK.
+; D-DIMRESERVE S1/S2 made the logical and the arithmetic layers climbers, but
+; they stayed THREE layers -- ev_logic -> ev_not -> ev_rel -> ev_e -> ev_f -- so
+; every `(` still cost 12 B (`call ev_logic` + [min] + `call ev_not` + `call ev_e`
+; + [min] + `call ev_f`) where the VG-8020 holds 6, a pending `+` 20 against
+; 8 + width, AND/OR 16 against 8 (docs/spec-basic-deepexpr-guard.md §5.3), and
+; near the memory edge richer expressions refused earlier than on the reference
+; (scratchpad/stackcorrupt_r84.out row k300p20). Now there is one loop and one
+; table lookup per operand:
+;   * the caller pushes a SENTINEL whose code says the loosest level it accepts,
+;     then the loop parses an operand (`call ev_f`) and looks the next token up
+;     in cl_lvtab -- one indexed read, where the three layers scanned three
+;     tables and re-read the token three times after EVERY operand;
+;   * an operator that binds tighter than the entry on top is SHIFTED: its left
+;     operand (and, for the typed ops, the FAC frame) goes on the stack under a
+;     one-word entry [code | id], and the loop parses the next operand;
+;   * otherwise the top is REDUCED (its leaf applied to the frame below it and
+;     the operand in hand) and the same token is looked at again; at the
+;     sentinel the operator -- or the end -- is the caller's, and the loop
+;     returns.
+; Operator-precedence parsing builds the same tree as the climbers it replaces
+; and applies the leaves in the same order, so every grouping, every coercion
+; and every deferred error comes out as before.
+; THE CODE BYTE: 2 x the level, so the comparison is one `cp`; a sentinel's is
+; ODD (2 x the level below the loosest it accepts, + 1), so no operator at or
+; below it ever reduces it, and `rra` tells it from an operator.
+; THE ENTRY's low byte (L): + - * / ^ AND OR XOR EQV IMP MOD \ their id
+; (token - GT_TOKEN, 3..14, the index into cl_leaf); NOT 15; a relational
+; $10 | its requested relation bits (1 <, 2 =, 4 >).
+; PER PENDING CONSTRUCT, MEASURED (scratchpad/evalslope_after.out): `(` 6 B (the
+; VG-8020's 6); + - * / ^ and a relational 14 (the entry, FACTYP+FAC 10, the
+; lhs); AND OR XOR EQV IMP MOD \ 4 (the entry, the lhs); NOT 2.
+CL_IMP          equ     2                   ; the codes, 2 x the level (loosest 1)
+CL_EQV          equ     4
+CL_XOR          equ     6
+CL_OR           equ     8
+CL_AND          equ     10
+CL_NOT          equ     12                  ; a prefix: never looked up, only pushed
+CL_REL          equ     14
+CL_ADD          equ     16
+CL_MOD          equ     18
+CL_IDIV         equ     20
+CL_MUL          equ     22
+CL_POW          equ     26                  ; (24 is unary minus's level: ev_pw)
+CL_ID_NOT       equ     15                  ; NOT's entry id
+
+; --- NOT: a prefix, an entry and no frame -----------------------------------
+; A NOT chain grows the stack with no ev_f in between (2 B a NOT), so it tests
+; the room itself, as ev_not_do's `call stk_guard` did (D-STACKFLOOR) -- inline,
+; because the guard leaves by dropping its OWN return address into whoever
+; called it, and nothing calls this. The floor is stk_guard's to the byte: it
+; tests 2 B under its call site, hence the +2 (tests/test_evalslope.py). On a
+; refusal the NOT leaves as a failed factor would: FPERR_OOM deferred (first
+; error wins), DE = 0, the $DD landmark, IX still on the NOT.
+cl_not:
+                ld      hl,(CTLLIM)
+                ld      bc,STK_EVAL_RESERVE+2
+                add     hl,bc               ; CF = 0: CTLLIM is far below $FF80
+                sbc     hl,sp               ; CF iff SP is above the floor + reserve
+                jr      nc,cl_not_oom
+                inc     ix
+                ld      hl,CL_NOT*256+CL_ID_NOT
+                push    hl                  ; [entry]
+                jr      cl_opnd_lo          ; unary, right-assoc (NOT NOT x)
+cl_not_oom:
+                ld      e,FPERR_OOM
+                call    ev_f_defer          ; ERR 7 deferred, DE = 0, $DD
+                jr      cl_after
+
+; --- a string comparison: ev_rel_str (str-engine.asm) -----------------------
+; Its result is a NUMBER, so the chain goes on -- `"A" = "A" = -1` is -1
+; (MEASURED) -- but only at the relational level and looser: an arithmetic
+; operator after it is not ours (`"A"="B"-1` ends the expression at the `-`, as
+; the old ev_rel's return did). Both of its exits come back HERE: the D-2 arm
+; returns, and the success tail's `jp evr_scan` lands on the `ret` below.
+cl_str:
+                pop     af                  ; drop the [guard]
+                call    ev_rel_str          ; DE = -1 / 0 (or 0, ERR 13 deferred)
+cl_after_rel:                               ; ... the relational level and looser
+                call    ev_sp
+                cp      PLUS_TOKEN
+                jr      c,cl_after_tok      ; a relop, or no operator
+                cp      AND_TOKEN
+                jr      c,cl_rel_none       ; + - * / ^
+                cp      MOD_TOKEN
+                jr      c,cl_after_tok      ; AND OR XOR EQV IMP
+cl_rel_none:                                ; MOD \ (and $FD+: no operator anyway)
+                xor     a                   ; a token that is no operator
+                jr      cl_after_tok
+evr_scan:                                   ; ev_rel_str's success tail jumps here
+                ret                         ; -> cl_after_rel, via its own call
+
+; --- entry points: push the sentinel, then the operand ----------------------
+; ev_logic: a full expression. ev_e: the arithmetic levels only (str-engine's
+; numeric argument). ev_pw: `^` only -- unary minus's operand, so -2^2 = -4 and
+; 2^-3^2 = 2^-(3^2) fall out.
+ev_pw:
+                ld      h,CL_POW-1          ; only `^` joins
+                jr      cl_hi
+ev_e:
+                ld      h,CL_ADD-1          ; + - and tighter join
+cl_hi:
+                push    hl                  ; [sentinel]
+                jr      cl_opnd_hi
 ev_logic:
-                ld      hl,logtab           ; any level may join this operand
-evc_min:                                    ; in: HL = the loosest entry allowed
-                push    hl                  ; [min]
-                call    ev_not              ; DE / FAC = the operand (NOT / relational)
-evc_lp:                                     ; (sp) = min
+                ld      h,1                 ; every level joins (IMP is 2)
+                push    hl                  ; [sentinel]
+; An operand where NOT and a string comparison may begin: expression start, a
+; logical operator's right side, NOT's own operand.
+cl_opnd_lo:
+                call    ev_sp
+                cp      NOT_TOKEN
+                jr      z,cl_not
+                ; string-compare S2: probe the operand for a string before
+                ; committing to the numeric parse. BUG C (Fable, 2026-07-17): a
+                ; slice-4a str_eval sub-path can CALSLT (which loads IX) and then
+                ; return NC -- str_fn_left/right/mid on a missing ','/')',
+                ; str_concat_tail on a malformed trailing operand, str_fn_string --
+                ; and a numeric parse from that garbage IX read from nowhere
+                ; (PRINT LEFT$("AB") -> " 0"). So GUARD IX across the probe and
+                ; RESTORE it on the NC (numeric) fallthrough; the CF (string) path
+                ; drops the guard, since ev_rel_str re-derives IX from HL.
+                push    ix                  ; [guard]
+                call    str_eval_ix         ; CF: a string; STRPTR -> its descriptor
+                jr      c,cl_str
+                pop     ix
+; An operand where neither may: after + - * / ^ MOD \ and a relational.
+cl_opnd_hi:
+                call    ev_f                ; DE / FAC = the operand
+cl_after:
                 call    ev_sp               ; A = the next token
-                pop     hl
-                push    hl                  ; HL = min, still on the stack
-evc_find:
-                ld      c,(hl)
-                inc     c
-                dec     c
-                jr      z,evc_done          ; past the tightest entry: no operator joins
-                cp      c
-                jr      z,evc_hit
-                inc     hl
-                inc     hl
-                inc     hl                  ; -> the next-tighter entry
-                jr      evc_find
-evc_done:
-                pop     hl                  ; drop [min]; DE / FAC untouched
-                ret
-evc_hit:                                    ; HL = this operator's entry
-                ; The entry must be SAVED BEFORE the conversion call:
-                ; fac_to_int_strict_reset clobbers HL ("clobbers as
-                ; fac_to_int_strict, +A", float-arith.asm). Missing it derails the
-                ; interpreter on EVERY float operand (`2.7 AND 0`) while every
-                ; integer operand keeps working -- found the first time this layer
-                ; carried its level in a register.
-                push    hl                  ; [entry]
-                ; spec §10.3 "strict int16 domain": convert the operand NOW and
-                ; reset FACTYP=2 so a float does not leak into the rhs eval.
-                call    fac_to_int_strict_reset
-                inc     ix                  ; past the operator token
-                pop     hl
-                push    hl                  ; [entry]
-                push    de                  ; [lhs]
-                inc     hl
-                inc     hl
-                inc     hl                  ; the rhs takes only TIGHTER operators
-                call    evc_min             ; DE = rhs
-                call    fac_to_int_strict_reset
-                pop     hl                  ; HL = lhs
-                ex      (sp),hl             ; HL = entry, (sp) = lhs
-                inc     hl
+cl_after_tok:
+                ld      b,0                 ; B = its code; 0: not an operator
+                sub     GT_TOKEN            ; every binary operator is $EE..$FC
+                cp      IDIV_TOKEN-GT_TOKEN+1
+                jr      nc,cl_cmp
+                ld      c,a                 ; C = its id
+                ld      hl,cl_lvtab
+                add     hl,bc
+                ld      b,(hl)
+cl_cmp:                                     ; B = the incoming code, C = its id
+                pop     hl                  ; HL = the top entry
+                ld      a,h
+                cp      b
+                jr      c,cl_shift          ; the top binds looser: shift
+                rra
+                ret     c                   ; the sentinel: the token is our caller's
+; --- reduce the top entry: its left operand is under it, the right is in hand
+                ld      a,l
+                cp      $10
+                jr      nc,cl_red_rel
+                cp      8
+                jr      nc,cl_red_int
+                ; + - * / ^: the typed frame is on top, as combine_* want it
+                ; (push_lhs_frame's header) -- reached by a direct call, so the
+                ; frame sits under exactly the two return addresses they expect.
+                add     a,a
+                ld      c,a
+                ld      b,0
+                ld      hl,cl_leaf-6
+                add     hl,bc
                 ld      c,(hl)
                 inc     hl
-                ld      b,(hl)              ; BC = this level's apply leaf
-                pop     hl                  ; HL = lhs
+                ld      b,(hl)              ; BC = combine_*
+                call    lg_go               ; DE / FAC = lhs OP rhs
+                jr      cl_after
+cl_red_rel:                                 ; L = $10 | the requested bits
+                ld      c,l
+                call    combine_cmp         ; pops the frame + lhs; A = the actual
+                                            ; relation bit (1/2/4); FACTYP := 2;
+                                            ; BC kept
+                ld      de,0                ; false = 0
+                and     c                   ; requested AND actual (bit 4 is never
+                                            ; in A)
+                jr      z,cl_after
+                dec     de                  ; true = -1
+                jr      cl_after
+cl_red_int:                                 ; A = L: 8..14 AND..\, 15 NOT
+                cp      CL_ID_NOT
+                jr      z,cl_red_not
+                push    hl                  ; [entry]: the conversion clobbers HL, C
+                call    fac_to_int_strict_reset ; the rhs -> int16, FACTYP := 2
+                pop     hl
+                ld      a,l
+                add     a,a
+                ld      c,a
+                ld      b,0
+                ld      hl,cl_leaf-6
+                add     hl,bc
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)              ; BC = the leaf
+                cp      2*(MOD_TOKEN-GT_TOKEN)
+                jr      nc,cl_red_div
+                pop     hl                  ; HL = lhs (already int16, at the shift)
                 call    lg_apply            ; DE = lhs OP rhs
-                jr      evc_lp              ; left-assoc: look again from min
+                jr      cl_after
+cl_red_div:                                 ; MOD / \: DE = dividend, BC = divisor
+                ld      h,b
+                ld      l,c                 ; HL = signed_mod_de_bc / signed_div_de_bc
+                ld      b,d
+                ld      c,e
+                pop     de
+                call    cl_jphl
+                jr      cl_after
+cl_red_not:                                 ; no frame: the incoming token is kept
+                ld      a,(FACTYP)          ; (B, C) across the conversion, and the
+                cp      2                   ; loop goes straight back to cl_cmp -- a
+                jr      z,cl_not_int        ; NOT chain re-reads nothing. An int16
+                push    bc                  ; operand (every NOT of a chain but the
+                call    fac_to_int_strict_reset ; innermost) skips the conversion,
+                pop     bc                  ; whose only effect on one is its own
+cl_not_int:                                 ; CVT_MODE scratch write.
+                ld      a,e
+                cpl
+                ld      e,a
+                ld      a,d
+                cpl
+                ld      d,a                 ; DE = ~DE (ones complement)
+                jr      cl_cmp
+cl_jphl:
+                jp      (hl)
+
+; --- shift: B = the incoming code, C = its id, HL = the top (it goes back) --
+cl_shift:
+                push    hl
+                ld      a,c
+                cp      AND_TOKEN-GT_TOKEN
+                jr      nc,cl_sh_int
+                cp      PLUS_TOKEN-GT_TOKEN
+                jr      c,cl_sh_rel
+                ; + - * / ^: the lhs and its typed frame, contiguous (combine_*
+                ; pop them as ONE frame), the entry above them
+                inc     ix                  ; past the operator
+                push    de                  ; lhs ...
+                call    push_lhs_frame      ; ... and FACTYP+FAC; FACTYP := 2 (BC kept)
+                push    bc                  ; [entry]
+                jp      cl_opnd_hi
+cl_sh_int:
+                ; AND OR XOR EQV IMP MOD \: spec §10.3/§10.4 strict int16 -- the
+                ; lhs is converted NOW and FACTYP reset, so a float does not leak
+                ; into the rhs.
+                push    bc                  ; the conversion clobbers HL and C
+                call    fac_to_int_strict_reset
+                pop     bc
+                inc     ix                  ; past the operator
+                push    de                  ; [lhs]
+                push    bc                  ; [entry]
+                ld      a,b
+                cp      CL_NOT
+                jp      c,cl_opnd_lo        ; a logical rhs may start with NOT / a string
+                jp      cl_opnd_hi          ; MOD / \ (integer division)
+cl_sh_rel:
+                ; rel := arith { relop arith }; the compound forms (<=, >=, <>)
+                ; arrive as two relop tokens and are merged. A comparison yields
+                ; -1 / 0, a signed compare for int16, a float compare after
+                ; widening for any float (spec §10.1: `40000=40000!` is -1).
+                ld      a,c
+                add     a,GT_TOKEN          ; A = the relop again
+                call    relop_bit           ; B = its bit
+                ld      c,b
+                call    ixsp                ; D-IXSP
+                call    relop_bit           ; a second relop?
+                jr      nc,cl_rel_rhs
+                ld      a,c
+                or      b
+                ld      c,a                 ; merge the two relation bits
+                inc     ix
+cl_rel_rhs:
+                ; D-2 symmetric case (`5 < A$`): the lhs is numeric (a string lhs
+                ; took cl_str), so probe the rhs for a string BEFORE the numeric
+                ; parse reads it -- ev_f_var would otherwise silently read A$'s
+                ; name-keyed numeric shadow cell instead of erroring. BUG C: the
+                ; same IX guard as the lhs probe, restored on BOTH exits.
+                push    bc
+                push    de
+                push    ix                  ; [bc][de][guard]
+                call    str_eval_ix
+                pop     ix
+                pop     de
+                pop     bc
+                jr      c,cl_rel_mm         ; rhs a string, lhs numeric -> D-2
+                push    de                  ; lhs ...
+                call    push_lhs_frame      ; ... and its frame (FACTYP := 2)
+                ld      b,CL_REL
+                set     4,c                 ; L = $10 | the bits
+                push    bc                  ; [entry]
+                jp      cl_opnd_hi          ; rel's rhs is arithmetic
+cl_rel_mm:
+                call    type_mismatch_set   ; DE = 0, the deferred ERR 13 (str-engine.asm)
+                jp      cl_after_rel        ; ...and the relational level is over
+
+; (cl_lvtab, the code of each binary operator by token - GT_TOKEN, is pure data
+; read only by `ld hl,cl_lvtab`: it lives in basic/islands.asm, in logtab's old slot.)
+; (cl_leaf, each operator's leaf by id, is pure data read only by `ld hl,cl_leaf-6`:
+; it lives past every pin, in basic/field.asm after dev_cas -- the exact 24 B this
+; climber grew by in front of the pinned $6CF3, refilled out where a size change
+; moves nothing fixed. Its token-order assertion went with it.)
 
 ; lg_apply: HL = lhs, DE = rhs, BC = apply leaf -> DE = result.
 ; The byte loop is shared; each leaf is the 2-3 byte ALU core that actually
@@ -177,115 +402,6 @@ lg_eqv:         xor     e
 lg_imp:         cpl
                 or      e                   ; IMP = (NOT a) OR b    [MEASURED]
                 ret
-
-; logtab -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
-; read only by absolute `ld` from main; now in the $0160 island.
-ev_not:
-                call    ev_sp
-                cp      NOT_TOKEN
-                jr      z,ev_not_do
-                jr      ev_rel              ; no NOT -> drop to the relational layer
-ev_not_do:
-                call    stk_guard           ; D-STACKFLOOR: a NOT chain recurses HERE,
-                                            ; never through ev_f
-                inc     ix
-                call    ev_not              ; unary, right-assoc (NOT NOT x)
-                call    fac_to_int_strict_reset
-                ld      a,e
-                cpl
-                ld      e,a
-                ld      a,d
-                cpl
-                ld      d,a                 ; DE = ~DE (ones complement)
-                ret
-
-; --- ev_rel: relational layer ----------------------------------------------
-; rel := arith [ relop arith ]   (relop is one or two of  <  =  > ).
-; A comparison yields -1 (true) or 0 (false), per MSX-BASIC, using a signed
-; 16-bit compare. Relop tokens: '<' $F0, '=' $EF, '>' $EE (Table 2.20); the
-; compound forms (<=, >=, <>) arrive as two operator tokens and are merged.
-ev_rel:
-                ; string-compare S2 (repack build only): probe the LHS for a
-                ; string operand before committing to the numeric ev_e below.
-                ; BUG C (Fable, 2026-07-17): the old "NC => IX intact" invariant
-                ; DIED with slice-4a. str_eval sub-paths now CALSLT (which loads
-                ; IX before the ROM call) and then return NC -- str_fn_left/right/
-                ; mid on a missing ','/')' , str_concat_tail on a malformed
-                ; trailing operand, str_fn_string. Falling into ev_e with that
-                ; garbage IX parsed from nowhere (PRINT LEFT$("AB") -> " 0"). So
-                ; GUARD IX across the probe and RESTORE it on the NC (numeric)
-                ; fallthrough; the CF (string) path discards the guard, since
-                ; ev_rel_str re-derives IX from the returned HL. (The string-ARRAY
-                ; path str_eval_arr also clobbers IX but always returns CF -> it
-                ; only reaches evr_lhs_str, never the NC restore.)
-                push    ix                  ; [guard] the cursor across str_eval
-                call    str_eval_ix         ; CF set -> LHS is a string; STRPTR->desc
-                jr      c,evr_lhs_str       ; string LHS -> discard guard, str path
-                pop     ix                  ; NC: restore the cursor str_eval trashed
-                call    ev_e                ; DE = lhs (arithmetic)
-evr_scan:
-                ; MEASURED (docs/logicops-vg8020-characterization.md §6): MSX-BASIC
-                ; CHAINS relationals, left-associatively -- `1 = 0 = 0` is
-                ; `(1 = 0) = 0` = -1, NOT a syntax error and NOT two values. Every
-                ; comparison loops back here with its own -1/0 result as the next
-                ; LHS, which is always numeric, so the LHS string probe above is
-                ; correctly outside the loop while the RHS probe at evr_rhs is
-                ; inside it (`1 = 1 = "A"` -> Type mismatch, as the reference does).
-                call    ev_sp
-                call    relop_bit
-                ret     nc                  ; no relational operator -> plain value
-                ld      c,b                 ; C = requested relation bits
-                call    ixsp                ; D-IXSP
-                call    relop_bit           ; a second relop? (<=, >=, <>)
-                jr      nc,evr_rhs
-                ld      a,c
-                or      b
-                ld      c,a                 ; merge the two relation bits
-                inc     ix
-evr_rhs:
-                ; D-2 symmetric case (`5 < A$`): the LHS was just confirmed numeric (we
-                ; only reach evr_rhs via the unchanged ev_e call above), so probe the RHS
-                ; cursor for a string operand BEFORE ev_e reads it as a number -- ev_f_var
-                ; would otherwise silently read A$'s name-keyed numeric shadow cell instead
-                ; of erroring. BUG C (Fable, 2026-07-17): as with the LHS probe,
-                ; a slice-4a str_eval sub-path can CALSLT then return NC, trashing
-                ; IX -- so GUARD IX across the probe and restore it before both the
-                ; NC fallthrough (ev_e reads IX) and the CF exit (evr_mismatch's
-                ; deferred error wants a coherent cursor, not CALSLT garbage).
-                push    bc
-                push    de
-                push    ix                  ; [bc][de][guard]
-                call    str_eval_ix
-                pop     ix                  ; restore the cursor str_eval may have trashed
-                pop     de
-                pop     bc
-                jr      c,evr_mismatch      ; RHS is a string, LHS was numeric -> D-2
-                push    de                  ; lhs
-                ; spec §10.1: relationals over any float operand compare AS
-                ; floats after widening (never int-converted, `40000=40000!`
-                ; -> -1, no Overflow). Save the LHS's FACTYP+FAC on the
-                ; machine stack (same fixed-size frame protocol as the ev_e/
-                ; ev_t double-arithmetic sites) before the rhs eval clobbers
-                ; FAC, then reset FACTYP=2 for the rhs eval.
-                call    push_lhs_frame      ; ...and FACTYP:=2 for the rhs eval
-                                            ; (GA-LHSTYP2: its own tail)
-                push    bc                  ; relation bits (in C)
-                call    ev_e                ; DE = rhs
-                pop     bc                  ; C = bits
-                call    combine_cmp         ; pops the lhs frame + value; A =
-                                            ; relation bit (1/2/4); FACTYP:=2
-                ld      de,0                ; false = 0
-                and     c                   ; intersect requested with actual
-                jr      z,evr_chain
-                dec     de                  ; true = -1 ($FFFF)
-evr_chain:
-                jr      evr_scan            ; and look for the NEXT relop (left-assoc)
-evr_lhs_str:
-                pop     af                  ; BUG C: drop the LHS-probe IX guard
-                                            ; (ev_rel_str re-derives IX from HL)
-                jp      ev_rel_str
-evr_mismatch:
-                jp      type_mismatch_set   ; sets ERRMARK+TMISMATCH, DE=0, ret (str-engine.asm)
 
 ; --- relop_bit: A = token -> CF set & B = relation bit, else CF clear -------
 ; '<' -> 1 (less), '=' -> 2 (equal), '>' -> 4 (greater).
@@ -345,122 +461,6 @@ ev_sp:
                 ret     nz
                 inc     ix
                 jr      ev_sp
-
-; --- ev_e / ev_pw: the arithmetic levels, a PRECEDENCE CLIMBER --------------
-; 🔁 D-DIMRESERVE S2 (2026-10-10), after S1 did the logical layer. MSX precedence,
-; loosest first: + - (1), MOD (2), \ (3), * / (4), ^ (5) -- all left-assoc (§13.3).
-; This was five hand-written levels, each calling the next on every operand
-; (5 calls deep whether or not an operator was there); now ONE loop parses the
-; operand and looks the next token up in arithtab, accepting it only at or above
-; the caller's level C, and parses its right operand with C = level+1 -- so it
-; binds what binds tighter and stops at its own level and looser: the same
-; groupings, left-associative. A LEVEL NUMBER, not S1's table position, because
-; two levels hold two operators each (`A+B-C` must stay (A+B)-C: A+(B-C) can
-; differ in the last digit).
-; Two operator shapes, as before:
-;   * + - * / ^ keep the typed-operand FRAME: `push de / call push_lhs_frame` is
-;     contiguous (the combine_* pop it as ONE frame -- push_lhs_frame's header),
-;     so the entry pointer goes BELOW it and is read back at SP+12 (frame 10 +
-;     lhs 2) after the right operand;
-;   * MOD and \ are strict int16 (§10.4): both sides converted, the leaf takes
-;     DE = dividend, BC = divisor.
-; Entry points: ev_e (every level; ev_rel and str-engine), ev_pw (`^` only --
-; unary minus's operand, so -2^2 = -4 and 2^-3^2 = 2^-(3^2) still fall out).
-ev_pw:
-                ld      c,5                 ; only `^` may join
-                jr      evk_min
-ev_e:
-                ld      c,1                 ; every arithmetic level
-evk_min:                                    ; C = the loosest level allowed
-                push    bc                  ; [min]
-                call    ev_f                ; DE / FAC = the operand
-evk_lp:
-                call    ev_sp               ; A = the next token
-                ld      hl,arithtab
-evk_find:
-                ld      b,(hl)
-                inc     b
-                dec     b
-                jr      z,evk_done          ; no arithmetic operator follows
-                cp      b
-                jr      z,evk_tok
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                jr      evk_find
-evk_tok:
-                inc     hl                  ; HL -> level | int-style bit
-                pop     bc
-                push    bc                  ; C = min
-                ld      a,(hl)
-                and     $7F                 ; A = this operator's level
-                cp      c
-                jr      c,evk_done          ; looser than allowed: the caller's to take
-                inc     ix                  ; past the operator
-                inc     a
-                ld      c,a                 ; C = the rhs's minimum: TIGHTER only
-                bit     7,(hl)
-                jr      nz,evk_int
-                push    hl                  ; [entry] -- BELOW the frame
-                push    de                  ; lhs ...
-                call    push_lhs_frame      ; ... and its frame, contiguous
-                call    evk_min             ; DE = rhs
-                ld      hl,12               ; past the frame (10) and the lhs (2)
-                add     hl,sp
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a                 ; HL = [entry]
-                call    evk_call            ; combine_*: frame on top, as a direct call
-                pop     hl                  ; drop [entry]
-                jr      evk_lp
-evk_int:
-                push    hl                  ; [entry]
-                call    fac_to_int_strict_reset ; lhs -> int16 (clobbers HL and C)
-                pop     hl
-                push    hl                  ; [entry]
-                push    de                  ; [lhs = the dividend]
-                ld      a,(hl)
-                and     $7F
-                inc     a
-                ld      c,a                 ; C = the rhs's minimum (again)
-                call    evk_min             ; DE = rhs (the divisor)
-                call    fac_to_int_strict_reset
-                ld      b,d
-                ld      c,e                 ; BC = divisor
-                pop     de                  ; DE = dividend
-                pop     hl                  ; HL = [entry]
-                push    hl
-                call    evk_call            ; signed_mod_de_bc / signed_div_de_bc
-                pop     hl
-                jr      evk_lp
-evk_done:
-                pop     bc                  ; drop [min]; DE / FAC untouched
-                ret
-evk_call:                                   ; HL = an entry's level byte -> its leaf
-                inc     hl
-                ld      a,(hl)
-                inc     hl
-                ld      h,(hl)
-                ld      l,a
-                jp      (hl)                ; the leaf's ret returns to our caller
-arithtab:                                   ; token, level | $80 = int style, leaf
-                db      PLUS_TOKEN, 1
-                dw      combine_add
-                db      MINUS_TOKEN, 1
-                dw      combine_sub
-                db      MOD_TOKEN, $82
-                dw      signed_mod_de_bc
-                db      IDIV_TOKEN, $83
-                dw      signed_div_de_bc
-                db      STAR_TOKEN, 4
-                dw      combine_mul
-                db      DIV_TOKEN, 4
-                dw      combine_div_float   ; ALWAYS float (spec §10.1)
-                db      POW_TOKEN, 5
-                dw      combine_pow
-                db      0
 
 ; --- ev_f: factor ----------------------------------------------------------
 ; Decodes the crunched tokens (spec §3): constant tokens carry their binary
@@ -595,6 +595,7 @@ ev_f_var:
                 ; D-DEFSTR (docs/spec-basic-deftbl-strcode.md §4 F3): a DEFSTR'd
                 ; unsuffixed name is a STRING, and reaching a numeric factor with
                 ; one is ERR 13 on both references. ev_rel's own str_eval probe
+                ; (the climber's cl_opnd_lo since D-EVALSLOPE)
                 ; catches this only at the TOP of an operand, so `B=S` errored and
                 ; `B=1+S` silently read 0 -- measured, spec §3.1. Placed BEFORE the
                 ; '(' dispatch so it covers ev_f_arr too. Clobbers A only.
@@ -863,9 +864,13 @@ ev_f_digit:                                 ; $11..$1A -> value 0..9
 ; ⚠️ SITED AFTER ev_f_digit, NOT beside ev_f_defer: 15 B between ev_f's dispatch
 ; and ev_f_digit put that `jr c,ev_f_digit` out of range. Its own `jr` reaches
 ; back to ev_f_defer from here.
-; Called as the FIRST instruction of ev_f and of ev_not_do -- the two places every
-; unbounded expression recursion passes through (a parenthesis, a function
-; argument, a unary minus: ev_f; a `NOT NOT ...` chain: ev_not_do).
+; Called as the FIRST instruction of ev_f -- the place every unbounded expression
+; recursion passes through (a parenthesis, a function argument, a unary minus,
+; every operand after a pending operator). The other place the stack grows with
+; no factor in between, a `NOT NOT ...` chain, tests the same floor inline in the
+; climber's cl_not since D-EVALSLOPE (2026-10-20); it was ev_not_do's first
+; `call stk_guard` before -- a call this guard's dropping exit needs, and the
+; one loop no longer makes.
 ; in: nothing. out: returns (CF set) while SP is more than STK_EVAL_RESERVE above
 ; CTLLIM (= ARYEND+2, the arrays' first free byte). Clobbers HL and F only.
 ;
@@ -883,7 +888,7 @@ ev_f_digit:                                 ; $11..$1A -> value 0..9
 ; mid-expression abort (fp_runtime_error's header); every factor that fails
 ; defers an FPERR and yields 0, and the statement boundary raises it. So the
 ; guard drops ITS OWN return address -- the word under it is the return point of
-; whoever entered ev_f / ev_not_do -- and leaves as a failed factor would:
+; whoever entered ev_f (the climber's cl_after) -- and leaves as a failed factor would:
 ; FPERR_OOM deferred (first error wins, penderr_set), DE = 0, no deeper call.
 ; The levels above it then unwind normally, each seeing a cursor it cannot
 ; consume, and their own deferrals lose to the first.

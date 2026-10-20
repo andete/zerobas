@@ -47,9 +47,9 @@ which comes in three parts:
   ([`guardattr_strcmp.out`](../scratchpad/guardattr_strcmp.out),
   [`guardattr_strcmp_play.out`](../scratchpad/guardattr_strcmp_play.out)).
 * **The safety holes.** These are paths whose descent has no test at all (§2).
-* **The per-level cost.** One `(` costs 12 B here and 6 B on the VG-8020 (§5.3).
-  Lowering the reserve closes only the *constant* term. The slope is a separate
-  item, and this spec names it but does not take it on.
+* **The per-level cost.** One `(` cost 12 B here and 6 B on the VG-8020 (§5.3).
+  Lowering the reserve closes only the *constant* term. The slope was a separate
+  item, D-EVALSLOPE: since 2026-10-20 one `(` costs 6 B here too (§5.3, as built).
 
 The measurement history this rests on, in TODO.md order:
 
@@ -429,7 +429,7 @@ At the DIM edge the first factor of a top-level statement has about
 With 128 a flat `PRINT 1` there refuses here and completes on the VG-8020: TODO's
 "(a)", measured before D-FREPLUS14 (re-measure, Q1). With R ≈ 56 it completes.
 
-The **slope** stays. Per pending construct, zerobas and the VG-8020 cost:
+The **slope** was the rest. Per pending construct, zerobas and the VG-8020 cost:
 
 | construct | zerobas (from the source, after S1/S2) | VG-8020 (frelive) |
 |---|---|---|
@@ -445,10 +445,71 @@ The **slope** stays. Per pending construct, zerobas and the VG-8020 cost:
 
 So at a gap G, N nested parentheses fit here when base + 12N + R ≤ G, against
 base′ + 6N + X ≤ G on the reference. R can match the intercept (once X is measured,
-Q1). Only a cheaper climber frame can match the slope. Concretely: drop the two
-[min] words and the `ev_not`/`ev_e` calls per `(`, which is the S1/S2 work carried
-one step further. That is **a separate TIER 4 item to file**. Until it lands,
-"same point" holds for flat and shallow expressions only.
+Q1). Only a cheaper climber frame can match the slope.
+
+### 5.3.1 As built: one climber (D-EVALSLOPE, 2026-10-20)
+
+The three precedence layers (`ev_logic` → `ev_not` → `ev_rel` → `ev_e` → `ev_f`)
+are ONE loop in `basic/expr.asm` with an operator stack on the machine stack: the
+caller pushes a sentinel word whose code is the loosest level it accepts, the loop
+calls `ev_f` for an operand and looks the next token up in `cl_lvtab` (one indexed
+read, `basic/islands.asm`), then shifts (the lhs, for `+ − * / ^` and the
+relationals its FACTYP+FAC frame, under a one-word entry) or reduces (the leaf from
+`cl_leaf`, `basic/field.asm`) until the sentinel says the operator is the caller's.
+NOT is a prefix entry with its own inline stack test (`cl_not`, stk_guard's floor
+to the byte); a string comparison (`ev_rel_str`, unchanged) is called and the
+chain goes on at the relational level and looser.
+
+MEASURED on the host Z80 ([`evalslope_before.out`](../scratchpad/evalslope_before.out)
+/ [`evalslope_after.out`](../scratchpad/evalslope_after.out),
+[`evalslope_probe.py`](../scratchpad/evalslope_probe.py)): bytes per extra nesting
+level of each shape, each level pending while the next is parsed (the VG-8020's
+column is frelive's per-construct costs summed for the same shape, integer
+operands):
+
+| shape, per level | before | as built | VG-8020 |
+|---|---|---|---|
+| `(` | 12 | **6** | 6 |
+| `1+(`, `1*(`, `1/(` (pending `+ − * /`, `^` the same frame) | 30 | **20** | 16 (10 + `(`) |
+| `1<(`, `1=(` (pending relational) | 26 | **20** | 18 (12 + `(`) |
+| `1AND(` … `1IMP(` | 20 | **10** | 14 (8 + `(`) |
+| `1MOD(`, `1\(` | 20 | **10** | 14 |
+| `-(` (unary minus) | 18 | **12** | 12 |
+| `NOT NOT …` | 2 | **2** | 6 |
+| `NOT(` | 14 | **8** | 12 |
+| `ABS(` (a function call) | 18 | **12** | 16 |
+
+Per construct, as built: `(` 6 (`call ev_logic` 2 + sentinel 2 + `call ev_f` 2);
+a pending `+ − * / ^` or relational 14 (entry 2 + FACTYP+FAC 10 + lhs 2); a pending
+`AND OR XOR EQV IMP MOD \` 4 (entry 2 + lhs 2); `NOT` 2 (its entry); unary minus 6
+(`call ev_pw` 2 + sentinel 2 + `call ev_f` 2). A plain factor reaches 18 B under
+`eval`'s entry where it reached 20.
+
+**Where it is still above the reference: the typed frame.** A pending `+ − * / ^`
+or relational keeps the lhs as DE plus a fixed 10-byte FACTYP+FAC copy, 14 B for
+any type, where the VG-8020 keeps 8 + its own width (10 for an integer, 12 single,
+16 double). The fixed frame is `push_lhs_frame` / `pop_lhs_and_probe`'s protocol,
+shared with NEXT (`basic/program.asm`) and sited in the low region in front of the
+`$3297` pin; a width-sized frame (an integer lhs needs only its DE and the type) is
+the remaining lever, and it would take the integer case BELOW the reference (6 B).
+**Where it is below:** the strict-int operators and NOT (4 and 2 against 8 and 6),
+which keep only the converted lhs. Near the edge zerobas can now complete a richly
+nested logical expression the VG-8020 refuses -- the opposite direction from the
+item this closes; the FRE(0) tenant models the reference's costs and is untouched.
+
+**Speed (TIER 5).** Every construct got faster, because the three layers re-read
+the token and scanned three tables after EVERY operand (the arithmetic table to
+its end on any operand not followed by `+`); the loop does one indexed read. Whole
+`call eval`, T-states, before → after: a constant 2590 → 1481; `(1)` 4981 → 2763;
+`1+2` 4954 → 3380; `2*3` 8333 → 6483; `7MOD3` 6486 → 4837; `6AND3` 5685 → 3658;
+`-2` 3636 → 2072; `NOT0` 2974 → 1814; `1=1` 5424 → 3993; `ABS(-3)` 6676 → 4003;
+`PEEK(0)` 5597 → 3379. Per extra nested level every shape is cheaper too, the NOT
+chain included (384 → 333 T a NOT: an int16 operand skips the conversion, and the
+reduce goes straight back to the comparison).
+
+`R` is unchanged (84). Its measurement (§5.1, the deepest write below a passing
+test) is a property of the leaves, not of the climber, but a re-bisect on the
+machine is what says so.
 
 `CTL_FRAME_MARGIN` 256 as applied to FN frames mid-expression (R5) is a second
 intercept to bring down later. Its reference counterpart is Q6.
@@ -681,6 +742,19 @@ The host test (`tests/test_deepexpr_guard.py` U6) sweeps a real `ary_alloc` of
 `Z#(10,10)` upward in SP from just above the array: every SP refuses or fits with
 the data intact and the stack above the array; the tenant's deepest write there was
 24 B below its call site (Q10's harness half; the machine half is still open).
+
+**Q5 answered, and `STK_ALLOC_RESERVE` = 88 (D-EVALSLOPE, 2026-10-20).** Once a `(`
+cost 6 B here as on the VG-8020 (§5.3.1), row LB4 fitted here and refused there.
+Bisected with `scratchpad/autodim_edge_probe.py`: the VG-8020's auto-DIM edge is
+K = 1106 + 6 B per paren (P = 0 / 5 / 15 / 30 → 1106 / 1136 / 1196 / 1286), so its
+array growth is bounded by the live stack at every depth. At 24, zerobas read
+1090 / 1132 for P = 0 / 15. At 88 all four depths match the VG-8020 exactly
+([`autodim_edge_r88.out`](../scratchpad/autodim_edge_r88.out),
+[`autodim_edge_r88b.out`](../scratchpad/autodim_edge_r88b.out)). The statement-level
+edges did not move, because the static ceiling still binds there:
+`dimedge-acceptance` 10/10, and the four D-EDGEONERR shapes SAME
+([`allocres88_edgeonerr.out`](../scratchpad/allocres88_edgeonerr.out)). The
+tenant's own 24 B is inside the 88.
 
 ### 11.2 Not built
 

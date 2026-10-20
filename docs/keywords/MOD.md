@@ -111,7 +111,8 @@ zerobas does not.
 
 ## Where it lives
 
-`ev_mod` / `ev_mod_lp` in [basic/expr.asm](../../basic/expr.asm); the
+The operator-precedence loop in [basic/expr.asm](../../basic/expr.asm) looks
+the token up in `cl_lvtab` ([basic/islands.asm](../../basic/islands.asm)); the
 remainder is `signed_mod_de_bc` and the integer conversion
 `fac_to_int_strict_reset`, both in
 [basic/float-arith.asm](../../basic/float-arith.asm).

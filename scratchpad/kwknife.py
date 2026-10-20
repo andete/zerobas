@@ -743,31 +743,32 @@ def plant_cp_named(tok, kw):
 
 
 def plant_logtab(tok):
-    """🔪 THE SEVENTH: the LOGICAL-OPERATOR precedence table (D-KWOPCUT).
+    """🔪 THE SEVENTH: the BINARY-OPERATOR level table (D-KWOPCUT; D-EVALSLOPE).
 
-    `logtab` (basic/expr.asm) is `db token, dw leaf`, $00-terminated, loosest
-    first: IMP, EQV, XOR, OR, AND. The operators are not reached by a `cp` chain
-    at all -- the parser WALKS this table -- so the cut is the row's token byte,
-    the same "patch what the comparison reads" idea as every other shape here.
-    ⚠️ STRIDE 3, and the walk stops at a $00 token, so DEADTOK ($FE) is a safe
-    poison: it terminates nothing and matches nothing."""
-    st = syms().get("logtab")
+    Since D-EVALSLOPE (2026-10-20) the evaluator is ONE climber, and every binary
+    operator ($EE `>` .. $FC `\\`) is found by an INDEXED read of `cl_lvtab`
+    (basic/islands.asm): one byte per token, `token - $EE`, holding the operator's
+    precedence code; 0 means "not an operator", so the expression ENDS at the
+    token. That byte is what the parser reads, so it is the cut -- the same "patch
+    what the comparison reads" idea as every other shape here. (Until then it was
+    `logtab`, `db token, dw leaf`, walked loosest first; IMP EQV XOR OR AND only.
+    MOD was a `cp`/`ret nz` the named-cp shape cut; it is a table row now.)
+    ⚠️ A row that is ALREADY 0 is no operator: refused, never "cut"."""
+    st = syms().get("cl_lvtab")
     if st is None:
-        return None, "no logtab symbol"
+        return None, "no cl_lvtab symbol"
+    idx = tok - 0xEE
+    if not 0 <= idx < 15:
+        return None, "not a binary-operator token"
     rom = bytearray(io.open(ROM, "rb").read())
-    where, i = [], 0
-    while i < 64 and rom[st + i] != 0x00:
-        if rom[st + i] == tok:
-            where.append(st + i)
-        i += 3
-    if len(where) != 1:
-        return None, f"{len(where)} row(s) in logtab — refusing"
-    off = where[0]
+    off = st + idx
+    if rom[off] == 0:
+        return None, "cl_lvtab row already 0 -- refusing"
     orig = bytes(rom[off:off + 1])
-    rom[off] = DEADTOK
+    rom[off] = 0
     io.open(ROM, "wb").write(bytes(rom))
-    if io.open(ROM, "rb").read()[off] != DEADTOK:
-        sys.exit("knife: the logtab plant did NOT take — nothing was measured")
+    if io.open(ROM, "rb").read()[off] != 0:
+        sys.exit("knife: the cl_lvtab plant did NOT take — nothing was measured")
     return (off, orig), None
 
 

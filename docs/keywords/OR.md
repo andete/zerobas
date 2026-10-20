@@ -91,8 +91,8 @@ the [`AND`](AND.md#what-we-found-and-how) page. In short:
 
 ## Where it lives
 
-`ev_logic` / `ev_lg` in [basic/expr.asm](../../basic/expr.asm) walk the table
-`logtab` in [basic/islands.asm](../../basic/islands.asm); the leaf `lg_or` does
+The operator-precedence loop in [basic/expr.asm](../../basic/expr.asm) looks
+the token up in `cl_lvtab` ([basic/islands.asm](../../basic/islands.asm)); the leaf `lg_or` does
 the work.
 
 ## Related concepts

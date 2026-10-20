@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36971 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37009 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31675,6 +31675,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       statement shapes (D-EDGEONERR's notes). ➡️ Cheaper climber frames (drop the two [min]
       words and the ev_not / ev_e calls per `(` -- the S1/S2 work one step further), then
       re-bisect R. TIER 5 interplay: fewer calls per factor is also faster.
+      📏 **BUILT 2026-10-20, HOST-MEASURED; the machine battery is still to run.** The
+      three layers are ONE climber with an operator stack on the machine stack
+      (basic/expr.asm; spec §5.3.1 has the table). Per level, before → after (VG-8020):
+      `(` 12 → **6** (6); `1+(` 30 → 20 (16); `1<(` 26 → 20 (18); `1AND(` 20 → 10 (14);
+      `-(` 18 → 12 (12); `NOT(` 14 → 8 (12); `ABS(` 18 → 12 (16)
+      ([`evalslope_after.out`](scratchpad/evalslope_after.out)). Every construct is
+      FASTER (a constant 2590 → 1481 T: the three table scans per operand are one
+      indexed read); 132 outcome rows identical between the builds; walls low 109 /
+      page 1 384 (−24); pins 6/6, waste 4. Left: the typed frame (`+ − * / ^` and the
+      relationals keep 14 B where the reference keeps 8 + width) -- and the strict-int
+      operators and NOT are now BELOW the reference (4 / 2 against 8 / 6).
+      ✅ **ON THE MACHINE (2026-10-20):** stackcorrupt 8/8 SAME -- `k300p20`, this item's
+      witness, now completes as on the VG-8020
+      ([`evalslope_sc.out`](scratchpad/evalslope_sc.out)); its leaf sweep all OK
+      ([`evalslope_scleaf.out`](scratchpad/evalslope_scleaf.out)); freshape identical
+      to the build before ([`evalslope_fresh.out`](scratchpad/evalslope_fresh.out));
+      dimedge 10/10. 🔴 **AND deepexpr row lb4 CAME APART** (a first-touch `Z#(1,1)`
+      inside 15 parens fitted here, the VG-8020 refuses): its old agreement was the old
+      12 B paren landing near the reference by accident. Bisected
+      ([`autodim_edge_probe.py`](scratchpad/autodim_edge_probe.py)): the reference's
+      auto-DIM edge is K = 1106 + 6 per paren at P = 0 / 5 / 15 / 30, bounded by the
+      LIVE stack; zerobas read 1090 / 1132 at P = 0 / 15. STK_ALLOC_RESERVE 24 → **88**
+      puts all four depths on the reference's to the byte
+      ([`autodim_edge_r88.out`](scratchpad/autodim_edge_r88.out),
+      [`autodim_edge_r88b.out`](scratchpad/autodim_edge_r88b.out)) and moves no
+      statement-level edge (dimedge 10/10; the four D-EDGEONERR shapes SAME,
+      [`allocres88_edgeonerr.out`](scratchpad/allocres88_edgeonerr.out)); deepexpr 6/6
+      ([`allocres88_deep.out`](scratchpad/allocres88_deep.out)).
+      🔴 **AND THE FULL BATTERY'S ONE RED WAS THE APPARATUS:** input-devices phase C's `up`
+      case read MIS-ECHOED (`RUN` → ` UN`) on every run. The `R` was never lost: the held
+      key's auto-repeat walked the cursor over it at the dump instant, and the faster
+      loop shifted that walk. The echo guard now tells a live cell from a swallowed
+      blank (D-ECHOCURSOR, docs/spec-probe-echo.md §4bis.5;
+      [`upcase_cell_new.out`](scratchpad/upcase_cell_new.out)).
+      ➡️ **LEFT:** re-bisect STK_EVAL_RESERVE per statement shape
+      ([`flatedge_probe.py`](scratchpad/flatedge_probe.py)), now that a `(` matches; then
+      the typed frame (`+ − * / ^` and the relationals: 14 B against 8 + width) -- and
+      the strict-int operators and NOT, now BELOW the reference (more lenient there).
 
 - [x] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to

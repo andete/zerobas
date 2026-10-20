@@ -798,6 +798,30 @@ lrset_rhs:
 dev_cas:
                 db      "CAS:",0
 
+; cl_leaf -- the evaluator's leaf for each binary operator, by id (token -
+; GT_TOKEN, 3..14), read only by basic/expr.asm's climber (`ld hl,cl_leaf-6`).
+; 📌 HERE, PAST EVERY PIN, SINCE D-EVALSLOPE (2026-10-20): the one climber that
+; replaced the three precedence layers came out 24 B larger in front of the
+; pinned $6CF3, whose pad is 0 (a `jr` bridge), and this table is that exact 24 B,
+; moved out the way dev_cas above was. Pure data: nothing falls into it, no `jr`
+; reaches it.
+cl_leaf:
+                dw      combine_add         ; + (combine_*: the typed frame)
+                dw      combine_sub         ; -
+                dw      combine_mul         ; *
+                dw      combine_div_float   ; /  ALWAYS float (spec §10.1)
+                dw      combine_pow         ; ^
+                dw      lg_and              ; AND (lg_apply's byte cores)
+                dw      lg_or
+                dw      lg_xor
+                dw      lg_eqv
+                dw      lg_imp
+                dw      signed_mod_de_bc    ; MOD (DE = dividend, BC = divisor)
+                dw      signed_div_de_bc    ; \ (integer division)
+    IF (PLUS_TOKEN-GT_TOKEN != 3) || (AND_TOKEN-GT_TOKEN != 8) || (MOD_TOKEN-GT_TOKEN != 13) || (IDIV_TOKEN-GT_TOKEN != 14) || (EQ_TOKEN != GT_TOKEN+1) || (LT_TOKEN != GT_TOKEN+2) || (POW_TOKEN != PLUS_TOKEN+4) || (IMP_TOKEN != AND_TOKEN+4)
+                db      CL_TOKEN_ORDER_CHANGED  ; cl_lvtab / cl_leaf / the id tests assume it
+    ENDIF
+
 
 ; (fld_add -- the FLD_TAB append, here since D-BASICINT2 -- is GONE with the
 ; table, D-FLDDESC 2026-10-17: field_item writes the variable's descriptor.)

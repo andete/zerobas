@@ -137,6 +137,7 @@ verdict is:
 | `BLIND/rewrote` | the screen lost content — cleared, or scrolled — or the previous slot was blind so there is no baseline |
 | `BLIND/noecho` | nothing resembling a truncated echo is there |
 | `BLIND/unprintable` | the payload holds a character the screen cannot spell back (a tab, which the ROM *renders*) |
+| `BLIND/cursor` | the typed text **is** there except for one cell that holds a live, non-printing byte: the cursor standing on the echo (§4bis.5) |
 | `NODUMP` | no dump arrived (apparatus) |
 
 The paired control is the **suffix**, and it comes from §2.5's measured
@@ -300,6 +301,30 @@ and openMSX dropped the callback without a word. The emission was present, the
 call site was present, every slot was recorded — and the oracle reported nothing.
 That is the **K2 shape occurring by accident**, on the first run, and the thing
 that caught it was §3.5's `ORACLES DISAGREE` line, not any gate.
+
+### 4bis.5 🔴 The cursor standing on the echo met all three conditions (D-ECHOCURSOR, 2026-10-20)
+
+`input-devices-acceptance` phase C holds a cursor key for 8 s across a sampling
+`RUN`. Once the program ends, the key's auto-repeat walks the cursor up the
+screen. After D-EVALSLOPE made the loop faster, the dump caught the cursor on
+column 0 of the `RUN` row. The decoded row read ` UN`: a proper suffix, on a
+screen that had lost nothing. All three of MANGLED's conditions held, on a line
+that had been delivered whole. The suite went exit 2 on every run, and the
+build before passed.
+
+At the capture the same row read `RUN`, with the cursor (`$FF`) at the top left
+(`scratchpad/upcase_cell_probe.py` → `upcase_cell_new.out`). The loop still ran
+about 1.5 s on both builds (`stickloop_time_head.out` 81 ticks,
+`stickloop_time_new.out` 73), so the program had not ended early. Only the
+cursor's walk shifted.
+
+A swallowed head leaves a **blank** where the text was; the cursor leaves a
+**live cell**. The decoded text cannot tell them apart, so the parser now keeps
+which cells held a non-printing byte. A would-be MANGLED that reads whole with
+one such cell standing in for one character is `BLIND/cursor`.
+`tests/test_echo_oracle.py` §4b pins three rows: the case itself, the same
+screen with no live cell (still MANGLED), and a live cell that explains nothing
+(still MANGLED).
 
 ## 5. Does the stored-mode oracle stay?
 

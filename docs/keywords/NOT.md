@@ -108,8 +108,8 @@ zerobas does not.
 
 ## Where it lives
 
-`ev_not` / `ev_not_do` in [basic/expr.asm](../../basic/expr.asm), between the
-logical layer and the comparisons; the integer conversion is
+`cl_not` in [basic/expr.asm](../../basic/expr.asm): a prefix of the
+operator-precedence loop, between the logical operators and the comparisons; the integer conversion is
 `fac_to_int_strict_reset` in
 [basic/float-arith.asm](../../basic/float-arith.asm).
 

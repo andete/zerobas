@@ -1,0 +1,14 @@
+⚠️  ZEROBAS_ECHOGUARD=off -- the delivery echo guard is DISABLED; a mangled line will be reported as a value.
+row  0 '  .B'                                       head=2020ff42
+row  1 '  10 A=0:C=0'                               head=20203130
+row  2 '  20 FOR I=1 TO 60'                         head=20203230
+row  3 '  30 B=STICK(0):IF B<>0 THEN A=B'           head=20203330
+row  4 '  40 D=STRIG(0):IF D<>0 THEN C=D'           head=20203430
+row  5 '  50 NEXT'                                  head=20203530
+row  6 '  60 PRINT"Z";A;C'                          head=20203630
+row  7 '  RUN'                                      head=20205255
+row  8 '  Z 1  0'                                   head=20205a20
+row  9 '  ZB'                                       head=20205a42
+row 23 '  color  auto   goto   list   run'          head=2020636f
+CSRY/CSRX raw: '0101'
+refcache: 0 hit, 2 miss, 2 stored

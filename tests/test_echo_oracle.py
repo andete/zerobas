@@ -172,6 +172,28 @@ check("a blank screen is not MANGLED",
                [(0, ZEROBAS, ["ZB"]), (0, ZEROBAS, [])]),
       ["BLIND/rewrote", "BLIND/rewrote"])
 
+# --- 4b. D-ECHOCURSOR: the cursor standing on the echo is not a swallow -----
+# input-devices phase C (2026-10-20): a held cursor key walked the cursor up over
+# the `RUN` row; the dump read ` UN` with the cursor's LIVE cell at column 0.
+_g = ZEROBAS
+_run = screen(["ZB", " UN", "Z 1  0", "ZB"], **_g)
+_r_cell = 1 * COLS + _g["margin"]
+_base = (0, _g["linlen"], screen(["ZB"], **_g))
+check("cursor on the echo's first cell is BLIND/cursor",
+      [t[3] for t in omsx_repl.echo_verdicts(
+          [(0, "CLS"), (0, "RUN")],
+          {0: _base, 1: (0, _g["linlen"], _run, frozenset({_r_cell}))})],
+      ["BLIND/rewrote", "BLIND/cursor"])
+check("the same screen with no live cell stays MANGLED",
+      [t[3] for t in omsx_repl.echo_verdicts(
+          [(0, "CLS"), (0, "RUN")], {0: _base, 1: (0, _g["linlen"], _run)})],
+      ["BLIND/rewrote", "MANGLED"])
+check("a live cell that explains nothing stays MANGLED",
+      [t[3] for t in omsx_repl.echo_verdicts(
+          [(0, "CLS"), (0, "RUN")],
+          {0: _base, 1: (0, _g["linlen"], _run, frozenset({3 * COLS + _g["margin"]}))})],
+      ["BLIND/rewrote", "MANGLED"])
+
 # --- 5. mis_echoed reports only MANGLED, and names the case -----------------
 e = {0: (0, 39, screen(["ZB"], **ZEROBAS)),
      1: (0, 39, screen(["ZBN ERROR GOTO 40", "Syntax error", "ZB"], **ZEROBAS))}

@@ -2016,7 +2016,8 @@ cpow_tail:
 ; relational always yields an int -1/0), and the relation bit is returned in
 ; A the same way cmp16_bits' caller (ev_rel, expr.asm) already expects.
 ; PRESERVES BC: ev_rel still holds the REQUESTED relation bits in C across
-; this call (its `and c` intersect comes right after) — cmp16_bits leaves BC
+; this call (its `and c` intersect comes right after; since D-EVALSLOPE that
+; caller is expr.asm's cl_red_rel) — cmp16_bits leaves BC
 ; alone so the int path is safe as-is, but the float path's widen/BCD core
 ; clobbers everything, so it must save/restore BC itself. (Found in F2
 ; review by the full differential gate: with C trashed to a constant that

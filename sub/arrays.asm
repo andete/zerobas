@@ -1305,7 +1305,8 @@ aal_unframe:
 ; refusal is the ordinary OOM exit (ERR 7, deferred by ary_engine_call); a fit
 ; leaves the next factor's stk_guard to test against the NEW CTLLIM.
 ; 🎯 At statement level SP - 24 lies above the static ceiling, which keeps binding:
-; the TOP-LEVEL DIM / new-scalar edges do not move.
+; the TOP-LEVEL DIM / new-scalar edges do not move. The reserve is the VG-8020's
+; own, measured (D-EVALSLOPE: its auto-DIM edge follows the live stack, 88 B).
 ;   in:  HL = the static ceiling.  out: HL = the lower of the two.
 ;   Clobbers DE and F -- both callers reload DE (CEND) next. ~100 T per allocation.
 sp_ceil:

@@ -1,0 +1,11 @@
+=== PHASE C: LIVE key matrix -- STICK(0)/STRIG(0) actually read ===
+  PASS idle      nothing held  ref='Z 0 0' zb='Z 0 0'
+  PASS space     row8 $01      ref='Z 0 -1' zb='Z 0 -1'
+  PASS left      row8 $10      ref='Z 7 0' zb='Z 7 0'
+  PASS up        row8 $20      ref='Z 1 0' zb='Z 1 0'
+  PASS down      row8 $40      ref='Z 5 0' zb='Z 5 0'
+  PASS right     row8 $80      ref='Z 3 0' zb='Z 3 0'
+  PASS up_down   row8 $60      ref='Z 0 0' zb='Z 0 0'
+
+ALL PASS (7 cases) — STICK/STRIG/PDL/PAD match the VG-8020
+refcache: 1 hit, 1 miss, 1 stored

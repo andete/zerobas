@@ -251,21 +251,27 @@ ttypos_col:
 ; still carries; none is a `jr` target, none is fallen into, nothing in sub/ or
 ; disk/ names any of them, and no test decodes them by image offset. Order here
 ; is free. The `IF $ > $0200` guard below is what refuses an overrun.
-; The precedence table: LOOSEST first, `db token, dw leaf`, $00-terminated.
-; EQV sits looser than XOR only because something had to; the two are measurably
-; indistinguishable (see the header), so this is a free choice, not a claim.
-logtab:
-                db      IMP_TOKEN
-                dw      lg_imp
-                db      EQV_TOKEN
-                dw      lg_eqv
-                db      XOR_TOKEN
-                dw      lg_xor
-                db      OR_TOKEN
-                dw      lg_or
-                db      AND_TOKEN
-                dw      lg_and
-                db      0                   ; terminator -> drop to ev_not
+; cl_lvtab: the evaluator's precedence CODE of each binary operator, indexed by
+; token - GT_TOKEN ($EE..$FC). D-EVALSLOPE (2026-10-20): the one climber in
+; basic/expr.asm reads it once per operand with an absolute `ld hl,cl_lvtab`; it
+; took the slot of logtab, the logical layer's own table, which that climber
+; replaced. The codes (CL_*) and what they mean are at expr.asm's climber.
+cl_lvtab:
+                db      CL_REL              ; $EE >
+                db      CL_REL              ; $EF =
+                db      CL_REL              ; $F0 <
+                db      CL_ADD              ; $F1 +
+                db      CL_ADD              ; $F2 -
+                db      CL_MUL              ; $F3 *
+                db      CL_MUL              ; $F4 /
+                db      CL_POW              ; $F5 ^
+                db      CL_AND              ; $F6 AND
+                db      CL_OR               ; $F7 OR
+                db      CL_XOR              ; $F8 XOR
+                db      CL_EQV              ; $F9 EQV
+                db      CL_IMP              ; $FA IMP
+                db      CL_MOD              ; $FB MOD
+                db      CL_IDIV             ; $FC integer division
 ; The single-numeric-argument $FF selectors, for the cpir set test above. Order is
 ; free. Repack-only, like the scan that reads it.
 ev_ff_argtab:

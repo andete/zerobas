@@ -1410,7 +1410,10 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                     raw = bytes.fromhex(e.group(4))
                     echoes[int(e.group(1))] = (
                         int(e.group(2)), int(e.group(3)),
-                        "".join(chr(b) if 32 <= b < 127 else " " for b in raw))
+                        "".join(chr(b) if 32 <= b < 127 else " " for b in raw),
+                        # D-ECHOCURSOR: WHICH blanks were live cells, for the
+                        # one question the decoded text cannot answer.
+                        frozenset(i for i, b in enumerate(raw) if not 32 <= b < 127))
                     continue
                 m = re.match(r"case\.(\d+)=([0-9a-f]*)", ln.strip())
                 # An EMPTY capture is DATA, not a missing one. `__hex_line` returns ""
@@ -1530,6 +1533,8 @@ def echo_verdicts(slots: list[tuple[int, str]],
        BLIND/rewrote  the screen lost content, so the echo may have been erased
                       rather than never written
        BLIND/noecho   nothing resembling a truncated echo is on the screen
+       BLIND/cursor   the line IS on screen but for one cell a live (non-printing)
+                      byte holds -- the cursor standing on the echo, not a swallow
        NODUMP         no dump arrived for this slot
 
     🔴 A MANGLED VERDICT CARRIES ITS OWN CONTROL, AND IT HAS TO. "The typed text
@@ -1602,7 +1607,8 @@ def echo_verdicts(slots: list[tuple[int, str]],
             prev = [r for r in (got[2][i * COLS:(i + 1) * COLS].strip()
                                 for i in range(ROWS)) if r]
             continue
-        scrmod, linlen, txt = got
+        scrmod, linlen, txt = got[:3]
+        live = got[3] if len(got) > 3 else frozenset()
         if scrmod != 0:
             # a mode change makes the screens incomparable ACROSS this slot, not
             # merely unreadable AT it -- hence the baseline goes too.
@@ -1619,11 +1625,35 @@ def echo_verdicts(slots: list[tuple[int, str]],
             verdict = "BLIND/rewrote"
         elif echoed_suffix(typed, stream) is None:
             verdict = "BLIND/noecho"
+        elif _covered_by_live_cell(typed, txt, linlen, live):
+            verdict = "BLIND/cursor"
         else:
             verdict = "MANGLED"
         out.append((k, case_idx, typed, verdict, rows))
         prev = rows
     return out
+
+
+def _covered_by_live_cell(typed: str, txt: str, linlen: int, live) -> bool:
+    """True when `typed` IS on the screen except for ONE character whose cell holds a
+    non-printing byte -- the CURSOR, standing on the echo (D-ECHOCURSOR, 2026-10-20).
+
+    🔴 MEASURED FALSE POSITIVE: input-devices-acceptance phase C holds a cursor key
+    for 8 s across a sampling RUN. When the program ends, the key's auto-repeat walks
+    the cursor UP the screen, and the dump caught it on column 0 of the `RUN` row:
+    `RUN` decoded as ` UN`, a proper suffix with the screen having lost nothing --
+    all three of MANGLED's conditions, on a line that was delivered whole. At the
+    capture the same row read `RUN` and the cursor ($FF) stood at the top
+    (scratchpad/upcase_cell_probe.py -> upcase_cell_new.out). A swallowed head
+    leaves a BLANK where the text was; a cursor leaves a LIVE CELL, and only the raw
+    byte tells them apart, so the parser keeps which cells were live."""
+    if not live:
+        return False
+    marked = "".join("\x7f" if i in live else c for i, c in enumerate(txt))
+    stream = screen_stream(marked, linlen)
+    if stream is None:
+        return False
+    return any(typed[:j] + "\x7f" + typed[j + 1:] in stream for j in range(len(typed)))
 
 
 # The shortest suffix worth believing. A 1-character suffix matches almost any

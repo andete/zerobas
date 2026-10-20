@@ -237,7 +237,12 @@ def run():
         pending, or ERR 7 is pending and the value is NOT STR_EMPTY's address."""
         seen_ok = seen_oom = False
         bad = []
-        for c in range(SP_SITE - 360, SP_SITE - 100, 3):
+        # D-EVALSLOPE (2026-10-20): the window reaches to SP_SITE - 40. The one
+        # climber reaches its first factor ~10 B shallower than the old three
+        # layers did, so at SP_SITE - 100 `VAL("12")` already had room and this
+        # sweep saw no refusal at all -- a geometry that could no longer reach
+        # the case it is about, not a change in the case.
+        for c in range(SP_SITE - 360, SP_SITE - 40, 3):
             v = num_eval(text, c)
             e = m.mem[FPERR]
             if e == 0:
@@ -356,7 +361,7 @@ def run():
     ulo = track_min_sp(u)
     fit_sps, refused = [], 0
     bad = []
-    for spsite in range(data_end, data_end + 80):
+    for spsite in range(data_end, data_end + RA + 56):   # past the reserve, whatever it is
         u.poke(ARYBASE, b"\x00\x00")                 # no arrays yet
         u.mem[ARYBASE + 2:data_end + 2] = b"\xA5" * (data_end - ARYBASE)
         u.poke(t["ARY_NIDX"], 2)

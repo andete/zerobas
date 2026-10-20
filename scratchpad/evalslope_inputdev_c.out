@@ -1,0 +1,4 @@
+omsx_repl: APPARATUS FAILURE -- boot-per-case delivery was mangled; nothing was measured.
+  MIS-ECHOED case 0 on C-BIOS_MSX1_EU_REPACK_DISK (slot 8): typed 'RUN', machine echoed 'UN' -- 1 leading char(s) swallowed, and the screen lost nothing, so no clear or scroll erased them. The line was delivered mangled (docs/spec-probe-echo.md). Body: ['A=0:C=0', 'FOR I=1 TO 60', 'B=STICK(0):IF B<>0 THEN A=B', 'D=STRIG(0):IF D<>0 THEN C=D', 'NEXT', 'PRINT"Z";A;C']
+            screen: ['ZB', '10 A=0:C=0', '20 FOR I=1 TO 60', '30 B=STICK(0):IF B<>0 THEN A=B', '40 D=STRIG(0):IF D<>0 THEN C=D', '50 NEXT', '60 PRINT"Z";A;C', 'UN', 'Z 1  0', 'ZB', 'color  auto   goto   list   run']
+refcache: 1 hit, 0 miss

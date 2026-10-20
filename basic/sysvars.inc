@@ -4419,13 +4419,26 @@ STK_EDGE_RESERVE equ    131
 ; stack BELOW that test, to the end of the allocation (DI throughout): by reading,
 ; one call into elsize_from_type, the [STRIDE] / data-start words, and
 ; strheap_ctllim's walk after the frame is dropped -- a few bytes. 24 is the
-; spec's upper prediction; Q10 (a write watchpoint across an auto-DIM) measures it.
+; spec's upper prediction (the tenant's own need, by reading).
 ; It need NOT cover the rest of the expression: the next factor's stk_guard runs
 ; against the NEW CTLLIM. 🎯 And it must not move the TOP-LEVEL edges: there the
 ; tenant sits ~75 B under the pool top (spec §4.5, by reading), so SP - 24 is
 ; still above the top - 131 that STK_EDGE_RESERVE sets, and that static ceiling
 ; keeps binding (dimedge-acceptance's 108 refused / 109 fitted is the guard).
-STK_ALLOC_RESERVE equ   24
+; 🔁 D-EVALSLOPE (2026-10-20): 24 -> 88, MEASURED TO THE REFERENCE'S EDGE. Once
+; a `(` cost 6 B here as on the VG-8020 (the one-loop climber), deepexpr-acceptance
+; row lb4 came apart: a first-touch `Z#(1,1)` inside 15 parens fitted here where
+; the reference refuses. Bisected (scratchpad/autodim_edge_probe.py): the VG-8020's
+; auto-DIM edge is K = 1106 + 6 B per paren (P = 0 / 5 / 15 / 30: 1106 / 1136 /
+; 1196 / 1286) -- its array growth is bounded by the LIVE stack at every depth.
+; At 24 zerobas read 1090 / 1132 (P = 0 / 15): the static ceiling bound the
+; shallow cases and SP - 24 only the deep ones, so the old lb4 agreement was the
+; old 12 B paren landing near the reference by accident. At 88 all four depths
+; are the VG-8020's to the byte (autodim_edge_r88.out, autodim_edge_r88b.out), and
+; the statement-level edges did not move: dimedge-acceptance 10/10 and the four
+; D-EDGEONERR shapes SAME (allocres88_edgeonerr.out) -- there the static ceiling
+; still binds. 88 also covers the tenant's own stack (24, above) with room over.
+STK_ALLOC_RESERVE equ   88
 ; --- STK_STORE_RESERVE: what the LINE STORE leaves (D-DIMRESERVE S3) ----------
 ; Measured to the REFERENCE's own edge, which is safe because it is above
 ; STK_EDGE_RESERVE: after lnblank's crf shrink (`CLEAR 300,TXTTAB+1000`, then

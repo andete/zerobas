@@ -468,10 +468,10 @@ preserved or the crunch probe regresses:
 
 ## Layout cheat-sheet
 
-- **Expression precedence ladder** (`basic/expr.asm`, lowest binds last):
-  `eval → ev_xor → ev_or → ev_and → ev_not → ev_rel → ev_e (+ -) →
-  ev_mod → ev_idiv (\) → ev_t (* /) → ev_f`. Factors live in `ev_f`; add a new
-  function/literal there. Cursor in `IX`, value out in `DE`; `eval` bridges
+- **Expression precedence** (`basic/expr.asm`): ONE operator-precedence loop
+  (`ev_logic`, D-EVALSLOPE). A binary operator's level is one byte in `cl_lvtab`
+  (indexed by token), its leaf a word in `cl_leaf`; `NOT` is a prefix (`cl_not`).
+  Factors live in `ev_f`; add a new function/literal there. Cursor in `IX`, value out in `DE`; `eval` bridges
   `HL ↔ IX`.
 - **Variables** (`basic/vars.asm`): 2-significant-char keys. LEAN build:
   4-byte entries `[name0][name1][value:2]` at `VARTAB ($E1C0)`, via

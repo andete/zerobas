@@ -2411,6 +2411,10 @@ type_mismatch_set:
 ; Reached from expr.asm's ev_rel (a near-zero-byte gated hook there) when the LHS
 ; of a relational probes as a string operand (str_eval succeeded). Entered with
 ; HL = cursor past the LHS operand, STRPTR -> the LHS descriptor.
+; 🔁 D-EVALSLOPE (2026-10-20): ev_rel is gone; the one climber (expr.asm cl_str)
+; now CALLS this, and both exits come back to that call -- the D-2 arm's `ret`
+; directly, the success tail's `jp evr_scan` through the `ret` that label now
+; names. Not a byte of this routine changed (it sits in front of the $3297 pin).
 ;
 ; Snapshots the LHS into an OWNED temp (str_snapshot_to_temp — was str_dup_temp
 ; pre-4a, same calling convention) so evaluating the RHS can't clobber it via
@@ -2480,6 +2484,8 @@ ers_done:
                 ; with strings continues in the numeric loop: `"A" = "A" = -1` is
                 ; `("A" = "A") = -1` = -1 (MEASURED). IX is the advanced cursor and
                 ; flt_int_result preserves it, which is exactly what evr_scan wants.
+                ; (evr_scan is a bare `ret` back to expr.asm's cl_str since
+                ; D-EVALSLOPE, which goes on at the relational level and looser.)
                 jp      evr_scan
 ers_rhs_mismatch:
                 pop     ix                  ; BUG C lesser: RESTORE the cursor (the RHS

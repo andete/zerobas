@@ -111,8 +111,8 @@ zerobas does not.
 
 ## Where it lives
 
-`ev_logic` / `ev_lg` in [basic/expr.asm](../../basic/expr.asm) walk the table
-`logtab` in [basic/islands.asm](../../basic/islands.asm); the leaf `lg_eqv`
+The operator-precedence loop in [basic/expr.asm](../../basic/expr.asm) looks
+the token up in `cl_lvtab` ([basic/islands.asm](../../basic/islands.asm)); the leaf `lg_eqv`
 (`xor`, then complement) does the work.
 
 ## Related concepts

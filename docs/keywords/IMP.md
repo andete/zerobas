@@ -113,9 +113,9 @@ zerobas does not.
 
 ## Where it lives
 
-`ev_logic` / `ev_lg` in [basic/expr.asm](../../basic/expr.asm) walk the table
-`logtab` in [basic/islands.asm](../../basic/islands.asm), where `IMP` is the
-first (loosest) entry; the leaf `lg_imp` (complement, then `or`) does the work.
+The operator-precedence loop in [basic/expr.asm](../../basic/expr.asm) looks
+the token up in `cl_lvtab` ([basic/islands.asm](../../basic/islands.asm)), where
+`IMP` has the loosest level; the leaf `lg_imp` (complement, then `or`) does the work.
 
 ## Related concepts
 

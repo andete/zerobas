@@ -136,8 +136,8 @@ zerobas does not. Nothing a program can observe through `FRE` differs.
 
 ## Where it lives
 
-`ev_logic` / `ev_lg` in [basic/expr.asm](../../basic/expr.asm) walk the
-precedence table `logtab` in [basic/islands.asm](../../basic/islands.asm);
+The operator-precedence loop in [basic/expr.asm](../../basic/expr.asm) looks
+the token up in `cl_lvtab` ([basic/islands.asm](../../basic/islands.asm));
 `lg_apply` and the one-instruction leaf `lg_and` do the work. The integer
 conversion is `fac_to_int_strict_reset` in
 [basic/float-arith.asm](../../basic/float-arith.asm), shared with `\` and
