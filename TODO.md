@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37009 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37025 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31709,10 +31709,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       loop shifted that walk. The echo guard now tells a live cell from a swallowed
       blank (D-ECHOCURSOR, docs/spec-probe-echo.md §4bis.5;
       [`upcase_cell_new.out`](scratchpad/upcase_cell_new.out)).
-      ➡️ **LEFT:** re-bisect STK_EVAL_RESERVE per statement shape
-      ([`flatedge_probe.py`](scratchpad/flatedge_probe.py)), now that a `(` matches; then
-      the typed frame (`+ − * / ^` and the relationals: 14 B against 8 + width) -- and
-      the strict-int operators and NOT, now BELOW the reference (more lenient there).
+      ✅ **R RE-BISECTED (2026-10-20): STK_EVAL_RESERVE 84 → 115, TO THE BYTE.** An
+      8-byte-element shape reads K + (0..7) by FRE(0)'s phase, so a single program can
+      hide up to 7 B: [`deepctl_edge_probe.py`](scratchpad/deepctl_edge_probe.py) walks
+      all eight phases. At 119 a plain store and a PRINT of string literals were the
+      VG-8020's in every phase, but a PRINT of numeric items needed 4 B more
+      ([`deepctl_edge_r119.out`](scratchpad/deepctl_edge_r119.out),
+      [`edgeprint_phase_r119.out`](scratchpad/edgeprint_phase_r119.out)); deepexpr's
+      `edge136` refused. 115 matches the PRINT shapes in every phase
+      ([`deepctl_phase_r115.out`](scratchpad/deepctl_phase_r115.out),
+      [`edgeprint_phase_r115.out`](scratchpad/edgeprint_phase_r115.out)) and is 4 B more
+      lenient on the simple ones ([`edgestr_phase_r115.out`](scratchpad/edgestr_phase_r115.out)).
+      Gated: dimedge-acceptance rows `eval-p4-126/127`, `eval-p5-133/134`; R = 114 and
+      R = 116 each redden exactly one of them
+      ([`dimedge_eval_knife114.out`](scratchpad/dimedge_eval_knife114.out),
+      [`dimedge_eval_knife116.out`](scratchpad/dimedge_eval_knife116.out)).
+      ➡️ **LEFT:** the typed frame (`+ − * / ^` and the relationals: 14 B against 8 +
+      width, so `1+(` nests hold 20 B a level against 16 -- a deep ARITHMETIC nest can
+      still refuse before the reference does); a PRINT of numeric items, 4 B over the
+      reference (why R is 115 and not 119); the strict-int operators and NOT, now BELOW
+      the reference (more lenient there).
 
 - [x] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to

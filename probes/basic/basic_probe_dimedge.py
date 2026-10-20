@@ -14,6 +14,9 @@ DIM and a line store may reach, VG-8020 vs zerobas.
             and closed by D-LETNEWFIRST (2026-10-19: zerobas creates first too);
             X=0 stays first so the rows read the edge alone.
             ("fits from 110" stood here until then; it was stale.)
+  eval-pP-K deepexpr-acceptance's flat `B=1` / `PRINT"[";E;A(X);"]"` after an edge
+            DIM (8-byte elements), phase P (`:` pads): FITTED or REFUSED. Pins
+            STK_EVAL_RESERVE (115) to the byte from both sides (D-EVALSLOPE).
   store-n   after `CLEAR 300,TXTTAB+1000` and `99 REM Z`, is `20 REM` + n B
             stored (LIST)? The VG-8020 stores n=13 and refuses n=14.
 
@@ -44,6 +47,19 @@ def dim_case(k):
             '20 PRINT"[";"FIT";"]":END', "RUN"]
 
 
+def eval_case(k, pad):
+    """D-EVALSLOPE (2026-10-20): deepexpr-acceptance's own flat statement after an edge
+    DIM, `B=1` then `PRINT"[";E;A(X);"]"`, trapped -- scratchpad/deepctl_edge_probe.py's
+    program, byte for byte. The room left is K + (0..7) by FRE(0)'s phase; `pad` extra `:`
+    pick the phase. A 1-byte change of STK_EVAL_RESERVE moves the edge in ONE phase only:
+    pad 5 (the VG-8020 fits from 134) is where a smaller R would fit at 133, pad 4 (fits
+    from 127) where a larger one would refuse 127 -- so these four rows pin R to the byte
+    in both directions (deepctl_phase_r115.out)."""
+    return ["NEW", "10 CLEAR 200:X=0:E=0:B=0:ON ERROR GOTO 100",
+            f"20 X=INT((FRE(0)-{k})/8):DIM A(X):A(X)=12345", "30 B=1" + ":" * pad,
+            '40 PRINT"[";E;A(X);"]":PRINT"[";"OK";"]":END', "100 E=ERR:RESUME 40", "RUN"]
+
+
 def store_case(n):
     return ["A=PEEK(&HF676)+256*PEEK(&HF677)", "CLEAR 300,A+1000", "99 REM Z",
             "20 REM " + "B" * n, "LIST"]
@@ -53,7 +69,9 @@ CASES = [("dim-100", dim_case(100)), ("dim-108", dim_case(108)),
          ("dim-109", dim_case(109)), ("dim-120", dim_case(120)),
          ("dim-144", dim_case(144)), ("dim-200", dim_case(200)),
          ("store-12", store_case(12)), ("store-13", store_case(13)),
-         ("store-14", store_case(14)), ("store-26", store_case(26))]
+         ("store-14", store_case(14)), ("store-26", store_case(26)),
+         ("eval-p4-126", eval_case(126, 4)), ("eval-p4-127", eval_case(127, 4)),
+         ("eval-p5-133", eval_case(133, 5)), ("eval-p5-134", eval_case(134, 5))]
 
 # The DIM edge's residual (D-DIMRESERVE) -- dim-120 / dim-136, which the VG-8020
 # fitted and zerobas refused -- closed with D-FREPLUS14 (2026-10-17): the edge rows
@@ -76,6 +94,16 @@ def dim_reading(raw):
     return "FITTED"
 
 
+def eval_reading(raw):
+    """FITTED when the statement after the edge DIM printed `[OK]`; REFUSED when the
+    program ran (its `RUN` is on screen) and never got there -- the trapped ERR 7 loops
+    on its own RESUME, as on the reference."""
+    r = rows(raw)
+    if not any(x == "RUN" for x in r):
+        return None
+    return "FITTED" if "[OK]" in (raw or "").replace(" ", "") else "REFUSED"
+
+
 def store_reading(raw):
     r = rows(raw)
     i = max((k for k, x in enumerate(r) if x == "LIST"), default=None)
@@ -89,7 +117,8 @@ def main():
     for side, m in (("VG", REF), ("ZB", ZB)):
         out = omsx_repl.run_cases(m, [("direct", c) for _n, c in CASES], batch=False,
                                   reset=("CLS",), boot=8.0, capture="screen")
-        got[side] = [(dim_reading if n.startswith("dim") else store_reading)(o)
+        got[side] = [(dim_reading if n.startswith("dim") else
+                      eval_reading if n.startswith("eval") else store_reading)(o)
                      for (n, _c), o in zip(CASES, out)]
     bad, blind = [], []
     for i, (name, _c) in enumerate(CASES):

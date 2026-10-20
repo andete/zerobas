@@ -392,6 +392,14 @@ still binds there, and `dimedge-acceptance` (10/10) is the regression guard.
 > different R -- TODO D-EDGEONERR), so R stays at the safety floor, which never refuses
 > where the VG-8020 completes on the shapes measured; the remainder is the slope
 > (§5.3), TODO D-EVALSLOPE.
+>
+> **Then R = 115, matched (D-EVALSLOPE, 2026-10-20).** With the one-loop climber
+> (§5.3.1) the shapes nearly agree, and reading each 8-byte-element shape in all eight
+> FRE(0) phases (`scratchpad/deepctl_edge_probe.py`) put the remaining spread at 4 B:
+> a plain store and a PRINT of string literals are the VG-8020's at 119, while a PRINT
+> of numeric items needs 4 B more. 115 matches the PRINT shapes in every phase and is
+> 4 B more lenient on the simple ones; `dimedge-acceptance` rows `eval-p4-*` /
+> `eval-p5-*` pin it to the byte (R = 114 and R = 116 each redden exactly one row).
 
 ### 5.1 What R must cover once §4 is in
 

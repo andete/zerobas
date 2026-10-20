@@ -1,0 +1,9 @@
+pad 0: Philips_ 126  C-BIOS_M 118  DIFF
+pad 1: Philips_ 125  C-BIOS_M 117  DIFF
+pad 2: Philips_ 124  C-BIOS_M 124  SAME
+pad 3: Philips_ 123  C-BIOS_M 123  SAME
+pad 4: Philips_ 122  C-BIOS_M 122  SAME
+pad 5: Philips_ 121  C-BIOS_M 121  SAME
+pad 6: Philips_ 128  C-BIOS_M 120  DIFF
+pad 7: Philips_ 127  C-BIOS_M 119  DIFF
+refcache: 61 hit, 62 miss, 62 stored

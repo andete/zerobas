@@ -26,7 +26,8 @@ ROWS = [
     ("lb4", 1150, "(" * 15 + "Z#(1,1)" + ")" * 15),
     ("ctl", 200, "1"),                               # positive control: plain, completes
     # D-EDGEONERR (2026-10-20): a FLAT statement closer to the edge -- refused (no reading,
-    # the trap re-erroring) at STK_EVAL_RESERVE 128 where the VG-8020 completes; 84 since
+    # the trap re-erroring) at STK_EVAL_RESERVE 128 where the VG-8020 completes; 84 since,
+    # then 115 (D-EVALSLOPE) -- this row is the shape that SETS 115: 119 refused it here
     ("edge136", 136, "1"),
 ]
 

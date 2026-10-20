@@ -23,6 +23,13 @@ def prog(k):
         return ["NEW", '10 CLEAR 200:X=0:E=0:B=0:A$="":B$="HELLO":ON ERROR GOTO 100',
                 f"20 X=INT((FRE(0)-{k})/8):DIM A(X):A(X)=12345", "30 B=1",
                 '40 PRINT E;A(X):PRINT"[";"OK";"]":END', "100 END", "RUN"]
+    if os.environ.get("FE_SHAPE") == "deepctl":   # deepexpr-acceptance's own program, B=1
+        # PAD=n lengthens line 30 by n bytes: the room left is K + (0..7) by FRE(0)'s phase
+        # mod 8, so the 8 pads together read the edge to the byte.
+        pad = int(os.environ.get("PAD", "0"))
+        return ["NEW", "10 CLEAR 200:X=0:E=0:B=0:ON ERROR GOTO 100",
+                f"20 X=INT((FRE(0)-{k})/8):DIM A(X):A(X)=12345", "30 B=1" + ":" * pad,
+                '40 PRINT"[";E;A(X);"]":PRINT"[";"OK";"]":END', "100 E=ERR:RESUME 40", "RUN"]
     if os.environ.get("FE_SHAPE") == "edgestr":
         return ["NEW", '10 CLEAR 200:X=0:E=0:B=0:A$="":B$="HELLO":ON ERROR GOTO 100',
                 f"20 X=INT((FRE(0)-{k})/8):DIM A(X):A(X)=12345", '30 PRINT"[";"OK";"]":END',

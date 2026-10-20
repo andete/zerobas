@@ -4352,9 +4352,23 @@ CSP             equ     $F712   ; the pool's allocation frontier, descending (2)
 ; §5.3 "slope"), so each richer statement wants a smaller R. Tier 1 first: never refuse
 ; what the VG-8020 completes. 84 does that on every shape measured (edgestr_r84.out,
 ; flatedge_r84.out), and simple shapes are then a few bytes MORE lenient. Matching the
-; point exactly is the climber-frame item (D-EVALSLOPE), not this constant. 128 had
+; point exactly was the climber-frame item (D-EVALSLOPE) -- done, below. 128 had
 ; refused even `A(X)=12345` after an edge DIM where the VG-8020 completes (D-EDGEONERR).
-STK_EVAL_RESERVE equ   84     ; see stk_guard; checked by stackcorrupt's leaf rows
+; ⚖️ D-EVALSLOPE (2026-10-20): 84 -> 115, MATCHED TO THE REFERENCE'S POINT. 84 was the
+; floor because no constant matched every shape: the old climber held more stack per
+; construct than the VG-8020, so each richer statement wanted a smaller R. With one loop
+; (a `(` 6 B as on the reference) the shapes nearly agree, and the edges were re-read TO
+; THE BYTE: an 8-byte-element shape reads K + (0..7) by FRE(0)'s phase, so one program
+; sees one phase, and scratchpad/deepctl_edge_probe.py walks all eight with `:` pads.
+; At 119: `A%(X)=12345` (2-byte elements) and `PRINT"[";"OK";"]"` (edgestr) are the
+; VG-8020's in every phase; `B=1:PRINT E;A(X)` and the gate's own `PRINT"[";E;A(X);"]"`
+; need 4 B MORE here (deepctl_edge_r119.out, edgeprint_phase_r119.out) -- a PRINT of
+; numeric items is the residual slope. Tier 1 first, never refuse what the VG-8020
+; completes: 115 matches those two in every phase and leaves the simple shapes 4 B
+; more lenient (deepctl_phase_r115.out, edgeprint_phase_r115.out, edgestr_phase_r115.out). GATED to
+; the byte: dimedge-acceptance rows eval-p4-* / eval-p5-* (114 and 116 each redden one).
+; The safety floor (76 B below any passing test + 8, above) is well inside it.
+STK_EVAL_RESERVE equ   115    ; see stk_guard; checked by stackcorrupt's leaf rows
 ; D-STACKFLOOR: a FRAME push (ctl_alloc, DEF FN's fn_frame) keeps MORE than DIM
 ; does, because a program whose GOSUB/FOR recursion ran out of memory goes on
 ; evaluating expressions WITH EVERY FRAME STILL STANDING (a trapped Out of memory,
