@@ -2210,7 +2210,9 @@ gfx_pstk_reset:
 
 ; gfx_pstk_push -- IN: A=y, B=xL, C=xR. Pushes one entry; if it would cross the
 ; floor, sets GFX_POVF=1 and drops it (the flood aborts, the resident raises
-; ERR 7). Clobbers A/DE/HL; B/C preserved.
+; ERR 7). OUT: CF=1 iff it was dropped (the floor test's own borrow, which
+; nothing after it touches -- gpsr_push reads it). Clobbers A/DE/HL; B/C
+; preserved.
 gfx_pstk_push:
                 ld      hl,(GFX_PSP)
                 dec     hl
@@ -2410,6 +2412,11 @@ gprd_g2:
 ; ⚠️ `gfx_paint_passable` leaves B = the pixel's colour and never touches it
 ; again, which is what lets the `already C` test here run without re-reading
 ; VRAM -- the VDP traffic is unchanged, one gfx_paint_read per call as before.
+; 🏎️ D-PAINTCELL: in SCREEN 2 the scan no longer calls this -- gfx_paint_cell
+; answers the same question for a whole cell, and its header shows why there
+; the rule reduces to "colour != C". Its only caller is now MULTICOLOUR's
+; per-column scan, plus the OLD side tests/test_paintcell.py forces through it.
+; A change to the SCREEN-2 meaning of "inside" must change BOTH.
 gfx_paint_inside:
                 call    gfx_paint_passable  ; CF=0 iff a DRAWN==B border; B = colour
                 ret     nc
@@ -2470,16 +2477,14 @@ gfx_paint_passable:
                 ; the same mode split `gfx_paint_read` already carries, and for
                 ; the same reason: in MC a cell IS its colour, so the whole
                 ; drawn/undrawn distinction R-FLOOD lives inside does not exist.
+                ; D-PAINTCELL: 24 B -> 18 B, the same three outcomes -- A = B is
+                ; loaded once for both modes (`ld` leaves gfx_is_mc's Zf alone).
                 call    gfx_is_mc           ; Zf=1 iff multicolour (clobbers A only)
-                jr      z,gpsb_btest        ; MC -> the plain DRAWN==B border test
-                ld      a,(GFX_C)
-                ld      hl,GFX_B
-                cp      (hl)                ; C == B ?
-                ld      a,(hl)              ; A = B; `ld` leaves the flags alone
-                jr      nz,gpsb_ok          ; C != B -> nothing bounds this walk
-                jr      gpsb_cmp            ; A is already B
-gpsb_btest:
                 ld      a,(GFX_B)
+                jr      z,gpsb_cmp          ; MC -> the plain DRAWN==B border test
+                ld      hl,GFX_C
+                cp      (hl)                ; B == C ?
+                jr      nz,gpsb_ok          ; C != B -> nothing bounds this walk
 gpsb_cmp:
                 cp      b
                 ret     z                   ; drawn AND == B -> CF=0 (border, blocked)
@@ -2870,9 +2875,20 @@ gpp_paint_lp:
 ; gfx_paint_inside clobbers everything) + GFX_PSCX (scan cursor, reused from
 ; gfx_paint_process's paint pass above -- dead by this point) + GFX_PSPA
 ; (pending sub-span's start column). Clobbers everything.
+;
+; 🏎️ D-PAINTCELL: SCREEN 2 NO LONGER COMES THROUGH HERE -- it takes gpsr_cells
+; below, which tests a CELL (eight columns, one pattern/colour pair) per VDP
+; visit instead of a column per gfx_paint_inside call. What stays on this
+; per-column loop is MULTICOLOUR (pitch 4, no colour table, and a different
+; border rule). tests/test_paintcell.py forces SCREEN 2 back through it, so the
+; loop below is also the cell path's standing OLD side.
 ; ---------------------------------------------------------------------------
 gfx_paint_scan_row:
                 ld      (GFX_PSCY),a
+                ld      d,a                 ; D = y (gpsr_cells keeps it for the row)
+                call    gfx_is_mc           ; Zf=1 iff MULTICOLOUR (clobbers A only)
+                jr      nz,gpsr_cells       ; SCREEN 2 -> a cell at a time
+gpsr_columns:
                 ld      a,(GFX_PXL)
                 ld      (GFX_PSCX),a
 gpsr_loop:
@@ -2927,6 +2943,195 @@ gpsr_advance:
                 ld      (GFX_PSCX),a
                 jr      gpsr_loop
 gpsr_ret:
+                ret
+
+; ---------------------------------------------------------------------------
+; gpsr_cells -- D-PAINTCELL: gfx_paint_scan_row's SCREEN-2 body. The unit of
+; work is a CELL, not a column: eight horizontally adjacent pixels share one
+; pattern byte and one colour byte, so gfx_paint_cell fetches the pair ONCE and
+; answers all eight "inside?" questions as one byte, and the walk below reads
+; the answers out of a register with `sla c` -- no gfx_paint_inside call, no
+; GFX_PTESTX/GFX_PTESTY round trip and no gfx_calc_addr per column.
+;
+; 🎯 WHY THIS AND NOT THE READ CACHE. D-PAINTSCAN (docs/spec-basic-paintscan.md)
+; built a one-entry cache under gfx_paint_read, removed ~85 % of the scan's VDP
+; reads, and bought 12 %: PAINT is Z80-LOOP-BOUND, and the cache kept every
+; per-column call, RAM load and address computation. This removes those; the
+; read saving comes with it.
+;
+; THE PUSHES ARE THE PER-COLUMN LOOP'S, ONE FOR ONE. That loop pushes every
+; maximal run of inside columns in [xL,xR], left to right, and returns at the
+; first push that overflows; so does this. Two states, each its own copy of the
+; bit walk, so the state is the program counter and not a flag:
+;   SEEK  (no run open)  -- `sla c` until a 1 (inside): the run opens at E.
+;   RUN   (open at PSPA) -- `sla c` until a 0: push (PSPA, E-1), back to SEEK.
+; Running off xR in RUN pushes (PSPA, xR) and ends the row -- the per-column
+; loop's own last push. Its re-test of the column that closed a run (it reads
+; that column again on the way round) is not repeated here; the answer was the
+; same byte both times, since nothing in a scan writes VRAM.
+; B counts the columns still to walk in this cell, clipped at xR by gpsr_fetch,
+; so the bits `sla` shifts in from the right are never read. A cell with no
+; transition in it (C == $00 in SEEK, $FF in RUN) is stepped over whole.
+;
+; Registers for the whole row: D = y, E = the column under test, C = the
+; cell's inside mask with E's bit at bit 7, B = columns left. 256 wraps E to 0,
+; which is exactly xR+1 when xR = 255, so `xR+1 == E` is the one end test.
+; ---------------------------------------------------------------------------
+gpsr_cells:
+                ld      a,(GFX_PXL)
+                ld      e,a                 ; E = xL, the first column to test
+                call    gpsr_fetch          ; C = inside mask, B = columns to walk
+                ld      a,e
+                and     7
+                jr      z,gpsr_seek_cell    ; xL cell-aligned -> bit 7 is xL already
+gpsr_align:
+                sla     c                   ; drop the cell's columns left of xL
+                dec     a
+                jr      nz,gpsr_align
+; --- SEEK: no sub-span open ---
+gpsr_seek_cell:
+                ld      a,c
+                or      a
+                jr      z,gpsr_seek_next    ; nothing inside in the rest of this cell
+gpsr_seek:
+                sla     c
+                jr      c,gpsr_open         ; column E is inside -> a sub-span opens
+gpsr_seek_step:
+                inc     e
+                djnz    gpsr_seek           ; (B = 0 out of here: gpsr_next adds nothing)
+gpsr_seek_next:
+                call    gpsr_next
+                ret     c                   ; past xR -> row scanned, nothing open
+                jr      gpsr_seek_cell
+; --- RUN: a sub-span is open from GFX_PSPA ---
+gpsr_open:
+                ld      a,e
+                ld      (GFX_PSPA),a        ; span start = column E
+                jr      gpsr_run_step       ; (E itself is consumed: step past it)
+gpsr_run_cell:
+                ld      a,c
+                inc     a
+                jr      z,gpsr_run_next     ; every column inside -> step over them all
+gpsr_run:
+                sla     c
+                jr      nc,gpsr_close       ; column E not inside -> close at E-1
+gpsr_run_step:
+                inc     e
+                djnz    gpsr_run
+gpsr_run_next:
+                call    gpsr_next
+                jr      nc,gpsr_run_cell
+                jr      gpsr_push           ; ran off xR -> close at E-1 = xR; its ret is ours
+gpsr_close:
+                call    gpsr_push
+                ret     c                   ; overflow -> unwind, the flood aborts
+                jr      gpsr_seek_step      ; E (not inside) is consumed: step past it
+
+; gpsr_push -- push the sub-span (GFX_PSPA, E-1) on row D. OUT: CF=1 iff the
+; span stack overflowed -- gfx_pstk_push's own CF, which is GFX_POVF's value:
+; a refused push leaves GFX_PSP where it was, so once one is refused every
+; later one is too, and the per-column loop's `ld a,(GFX_POVF) : or a` and this
+; carry can never disagree. Preserves BC/DE; clobbers A/HL.
+gpsr_push:
+                push    bc
+                push    de
+                ld      c,e
+                dec     c                   ; C = xR of the sub-span
+                ld      a,(GFX_PSPA)
+                ld      b,a                 ; B = its xL
+                ld      a,d                 ; A = y
+                call    gfx_pstk_push       ; A=y,B=xL,C=xR; CF=1 iff refused
+                pop     de
+                pop     bc
+                ret
+
+; gpsr_next -- IN: D = y, E = the column after the last one walked, B = the
+; columns still to step over (0 after a walk ran out, the whole count when a
+; cell was stepped over without one). OUT: E += B; then CF=1 iff E == xR+1 (the
+; row is scanned; 256 wraps to 0 on both sides, so xR = 255 needs no case of
+; its own); else CF=0 and gpsr_fetch's C/B for E's cell. ⚠️ That CF=0 is
+; gfx_paint_cell's closing `xor` -- an XOR always clears carry -- so the flag
+; is part of that leaf's contract, not an accident of it.
+; gpsr_fetch -- the same without the end test (the row's first cell: xL = 0
+; with xR = 255 would read as "already past"). OUT: C = gfx_paint_cell's inside
+; mask; B = the columns to walk from E -- to the cell's end, or to xR if it
+; falls first (1..8). Both preserve DE; clobber A/HL.
+gpsr_next:
+                ld      a,e
+                add     a,b
+                ld      e,a                 ; step over what the walk did not
+                ld      a,(GFX_PXR)
+                inc     a
+                cp      e
+                scf                         ; CF=1: "past xR" (Zf from the cp kept)
+                ret     z
+gpsr_fetch:
+                ld      a,e
+                and     7
+                xor     7
+                ld      b,a                 ; B = 7 - (x & 7): the cell's columns right of E
+                ld      a,(GFX_PXR)
+                sub     e                   ; xR - x, never negative
+                cp      b
+                jr      nc,gpf_count
+                ld      b,a                 ; xR is inside this cell -> stop there
+gpf_count:
+                inc     b                   ; ...and E itself (gfx_paint_cell keeps B)
+; ---------------------------------------------------------------------------
+; gfx_paint_cell -- IN: D = y, E = x (SCREEN 2). OUT: C = the INSIDE MASK of
+; x's cell: bit 7-k set iff column (x & $F8)+k "needs fill" -- gfx_paint_inside's
+; answer, column for column. Reads the pattern/colour pair once (di-guarded, as
+; gfx_paint_read). OUT also CF=0 (gpsr_next's "more"). Preserves B/DE;
+; clobbers A/HL.
+;
+; 🎯 IN SCREEN 2 gfx_paint_inside IS JUST "EFFECTIVE COLOUR != C". Read off its
+; two bodies: inside = passable AND colour != C, and passable fails only for a
+; DRAWN pixel when C == B and colour == B -- i.e. when colour == C, which the
+; second clause already refuses. So the border colour drops out entirely, and
+; each nibble of the colour byte answers for every column whose pattern bit
+; picks it. With F/G = $FF iff the fg/bg nibble != C (else $00):
+;     mask = (P AND F) OR (~P AND G)  =  G XOR (P AND (F XOR G))
+; i.e. $FF, P, ~P or $00. (MULTICOLOUR is different -- a cell IS its colour and
+; B does bound there -- which is why it keeps the per-column loop.)
+; tests/test_graphics.py traps this leaf with that same rule;
+; tests/test_paintcell.py runs it against real VRAM bytes.
+; ⚠️ It relies on gfx_calc_addr leaving B alone (it does since T5's mask table;
+; its header's "clobbers A/B" is the older djnz loop's) -- test_paintcell's
+; corpus would go wrong at once if that changed.
+; ---------------------------------------------------------------------------
+gfx_paint_cell:
+                call    gfx_calc_addr       ; HL = pattern addr (C = pixel mask, unused)
+                di
+                call    gfx_rd_raw          ; A = pattern byte P
+                ld      c,a
+                ld      a,h                 ; colour addr = pattern addr + $2000
+                add     a,$20
+                ld      h,a
+                call    gfx_rd_raw          ; A = colour byte (fg:bg)
+                ei
+                ld      h,a                 ; H = colour byte
+                ld      a,(GFX_C)
+                ld      l,a                 ; L = C
+                ld      a,h
+                and     $0F
+                sub     l
+                neg                         ; CF=1 iff bg != C
+                sbc     a,a                 ; A = G
+                push    af
+                ld      a,h
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
+                sub     l
+                neg                         ; CF=1 iff fg != C
+                sbc     a,a                 ; A = F
+                pop     hl                  ; H = G
+                xor     h
+                and     c
+                xor     h                   ; A = G XOR (P AND (F XOR G)); CF=0
+                ld      c,a
                 ret
 
 ; ===========================================================================

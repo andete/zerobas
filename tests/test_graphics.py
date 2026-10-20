@@ -560,6 +560,26 @@ def run_asm_paint(m, screen, seed, C, B):
         mm.cpu.f = 0x00 if drawn else 0x40   # Zf=1 iff bit CLEAR (background)
     m.trap("gfx_paint_read", do_read)
 
+    # 🔴 D-PAINTCELL: THE SCREEN-2 NEIGHBOUR-ROW SCAN NO LONGER CALLS
+    # gfx_paint_read. It asks gfx_paint_cell for a whole cell's eight answers at
+    # once (C = the inside mask, bit 7 = column x&$F8), so that leaf is trapped
+    # too, against the same virtual screen and the SAME rule gfx_paint_read's
+    # trap feeds gfx_paint_inside: in SCREEN 2 "inside" is just "effective colour
+    # != C" (gfx_paint_cell's header derives it), an undrawn pixel reading 0.
+    # Without this trap the cell path reads the harness's idle bus ($FF) and the
+    # first case runs away. The leaf's REAL byte logic is
+    # tests/test_paintcell.py's subject (real VRAM bytes, old path vs new).
+    def do_cell(mm):
+        c = mm.peek(mm.addr("GFX_C"))[0]
+        x0, y = mm.cpu.e & 0xF8, mm.cpu.d
+        mask = 0
+        for k in range(8):
+            if screen.get((x0 + k, y), 0) != c:
+                mask |= 0x80 >> k
+        mm.cpu.c = mask
+        mm.cpu.f &= ~0x01                    # CF=0: gpsr_next's "more"
+    m.trap("gfx_paint_cell", do_cell)
+
     def do_plot(mm):
         x = mm.peek(mm.addr("GFX_PTESTX"))[0]
         y = mm.peek(mm.addr("GFX_PTESTY"))[0]

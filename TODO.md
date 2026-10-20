@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37062 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37086 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11498,7 +11498,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29154 (T-529ABE)`: a
+      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29178 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17207,7 +17207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29154 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29178 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -18717,7 +18717,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so
       being 🤖 makes it pickable, not next.
 
-- [ ] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
+- [x] 🐌 **`PAINT` IS STILL 1.9–2.0× SLOWER THAN BOTH REFERENCES — HALVED BY
       D-PAINTVRAM, NOT CLOSED.** Was 2.4–3.4× (filed 2026-08-24 out of the budget
       instrument, [`docs/spec-probe-budget.md`](docs/spec-probe-budget.md), this
       project's first per-operation performance differential against the two real
@@ -18858,6 +18858,30 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎯 **RULED (Joost, 2026-09-10): *"follow the scheme"* — TIER 4, so it is picked only
       once TIERS 1–3 are clean; then it is autonomous.
       🤖 AUTONOMOUS — after TIERS 1–3 (ruled 2026-09-10); the references settle the target.
+      🏁 **CLOSED 2026-10-20 (D-PAINTCELL): `PAINT` IS NOW FASTER THAN BOTH REFERENCES —
+      flood 28.81 → 3.60 s (8.0×; now 0.24× the VG-8020), bounded by a circle 7.18 → 1.45 s
+      (4.9×; 0.37×)** -- before = HEAD the same day
+      ([`paint_stopwatch_head.out`](scratchpad/paint_stopwatch_head.out)).
+      The successor this item asked for, built: in SCREEN 2 `gfx_paint_scan_row`
+      (sub/graphics.asm) walks the neighbour row a CELL at a time -- `gfx_paint_cell`
+      reads the pattern / colour pair once (one di/ei) and returns an 8-bit inside mask
+      (SCREEN 2's "effective colour != C" is `G XOR (P AND (F XOR G))`), and a cell
+      with no state change is skipped whole; span-end partials and MULTICOLOUR keep the
+      per-column path (`gpsr_columns`). Same spans, same push order, same overflow.
+      Drafted by a subagent (host only); `tests/test_paintcell.py` (new) runs the REAL
+      `gfx_paint_op` over a modelled VDP with nothing trapped, old path against new in
+      the same ROM: 24 cases (flood, circle, box, rings, a 733-push comb, borders at
+      every x mod 8, x = 0 / 255 spans, seed on a border, C ≠ B walls, mixed fg/bg
+      noise, the span-stack overflow) -- all VRAM, the ordered pushes and GFX_POVF
+      identical; host T 8.2× (flood) / 5.6× (circle). A planted mask bug diverged
+      three cases and ran away on the fourth. On the machine
+      ([`paint_stopwatch_cell.out`](scratchpad/paint_stopwatch_cell.out)): the
+      numbers above; [`paint_vramfid_cell.out`](scratchpad/paint_vramfid_cell.out) 0
+      cases differing from both references; graphics-acceptance + the floor gate PASS
+      (EI under draw kept, [`paint_gfx_cell.out`](scratchpad/paint_gfx_cell.out)).
+      `perf-pin-check` re-pinned to the new readings (tools/check_perf_pins.py).
+      💰 Sub page 0 165 → 15 B free: the island must be page 0 (EI under the RAM
+      trampoline), so the next page-0 tenant change prices against that.
 - [ ] 🔬 **THE HARNESS'S WALL TIME HAS A ~5.7 s PERIODIC STALL THAT COSTS ~50 % OF
       AN EMULATOR GATE — AND IT MUST BE RE-MEASURED ON AN IDLE HOST BEFORE ANYONE
       ACTS ON IT.** Measured 2026-08-25, `scratchpad/harness_walltime.py`

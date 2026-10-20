@@ -51,13 +51,14 @@ MARGIN = 0.03
 
 # label: (pinned zb seconds, when, why this number)
 PINS = {
-    "paint.flood":  (30.922748, "2026-09-16", "post-D-PAINTSCAN-revert, re-pinned "
-                                "after a +4.0% drift from 29.742824 (2026-08-25) "
-                                "went unnoticed"),
-    "paint.circle": (7.708053,  "2026-09-16", "same run; 7.403163 on 2026-08-25"),
-    "circle":       (0.254279,  "2026-09-16", "faster than both references; pinned "
-                                "so it cannot quietly stop being"),
-    "line":         (0.123786,  "2026-09-16", "faster than both references"),
+    "paint.flood":  (3.595617,  "2026-10-20", "D-PAINTCELL: the neighbour-row scan answers a "
+                                "whole cell from one pattern/colour read; was 30.922748 "
+                                "(2026-09-16), 2.10x the VG-8020 -> 0.24x"),
+    "paint.circle": (1.454911,  "2026-10-20", "same run; was 7.708053, 1.98x -> 0.37x"),
+    "circle":       (0.241185,  "2026-10-20", "faster than both references; pinned "
+                                "so it cannot quietly stop being (was 0.254279: the "
+                                "drift since 09-16 is other slices' speed work)"),
+    "line":         (0.114851,  "2026-10-20", "faster than both references (was 0.123786)"),
 }
 
 
@@ -110,8 +111,8 @@ def main() -> int:
         return 1
     print("perf pins: every operation held within "
           f"{MARGIN:.0%} of its pinned baseline.")
-    print("  (the reference columns are context — `PAINT` is a filed, open "
-          "on-par-speed item at ~2x and this check is not about that)")
+    print("  (the reference columns are context, never the gate: this check "
+          "fires only on getting slower than the pin)")
     return 0
 
 
