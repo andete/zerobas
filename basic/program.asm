@@ -1853,11 +1853,16 @@ vsa_int:
 ; it WIDENS the int16 slots for good (nx_demote) into exactly the packed double
 ; this routine wrote before -- the widen-once of the first D-FORFAST step, moved
 ; from FOR to that NEXT, so the BCD path still never widens per pass. Anything
-; else (a fraction, past int16, a `%` loop's slots) is stored as it stands.
+; else (a fraction, past int16) is stored as it stands.
+; 🐌 D-FORINT (2026-10-20): A `%` LOOP'S SLOTS TAKE THE SAME RULE NOW (-7 B: the
+; `%` test that kept them "as given" is gone). `N=300:FOR I%=1 TO N` has a double
+; limit; kept as one it sent every NEXT down the general path, converted it is an
+; int16 slot and the loop takes nx_fast's `%` arm. The general path, which a `%`
+; loop with a fractional slot still runs, gives the same answers either way: an
+; exact int16 compares and adds the same as the double holding it, and an add past
+; int16 is ERR 6 at the int store whichever operand type promoted it. nx_demote
+; never widens a `%` loop's int16 slot back.
 slot_store:
-                ld      a,(FOR_CUR+2)
-                cp      2
-                jr      z,sst_go            ; a `%` loop: slots stay as given
                 ld      a,(FACTYP)
                 ld      b,a                 ; B = the type = the byte count (4 / 8)
                 and     3                   ; 2 = an int16 (kept); 3 = a string --
@@ -2187,13 +2192,14 @@ nx_have:
                 ld      de,FOR_CUR          ; work on a copy of the frame
                 ld      bc,FOR_FRAME
                 ldir
-                ; 🐌 D-FORFAST: WHICH PATH. A `%` loop goes straight to the general
-                ; path (its int16 slots ARE its arithmetic, unchanged). A float loop
-                ; whose two slots are int16 tries nx_fast; one with exactly one int16
-                ; slot (`FOR A=1 TO 9 STEP .5`) widens it for good first.
-                ld      a,(FOR_CUR+2)
-                cp      2
-                jr      z,nx_slow           ; a `%` loop
+                ; 🐌 D-FORFAST: WHICH PATH. A loop whose two slots are int16 tries
+                ; nx_fast; a FLOAT loop with exactly one int16 slot (`FOR A=1 TO 9
+                ; STEP .5`) widens it for good first.
+                ; 🐌 D-FORINT (2026-10-20): a `%` loop takes nx_fast too now -- its own
+                ; arm there, int16 add and store -- so the `%` test that stood here
+                ; (and sent every `%` loop to the general path) moved into nx_demote,
+                ; which a `%` loop's mixed slots (`FOR I%=1 TO 3.7`, `STEP .5`) still
+                ; reach and must not widen: they run the general path as before.
                 ld      a,(FOR_LIM)
                 cp      2
                 ld      a,(FOR_STEP)        ; (ld: the flags are the limit's)
@@ -2270,7 +2276,8 @@ nx_end:
                 jp      z,nx_comma
                 jp      exec_stmt           ; run on past NEXT
 
-; --- nx_fast: NEXT of a float loop whose limit and step are int16 (D-FORFAST) --
+; --- nx_fast: NEXT of a loop whose limit and step are int16 (D-FORFAST) ---------
+; (A float loop here; a `%` loop takes the `%` arm below, nx_fint -- D-FORINT.)
 ; 🐌 TIER 5. Since D-FORFLOAT a single/double loop variable went through a BCD
 ; add, a BCD compare and two variable lookups every pass: an empty `FOR I=1 TO
 ; 300:NEXT` was 100 TIME ticks against the VG-8020's 24. When the limit and the
@@ -2297,8 +2304,11 @@ nx_fast:
                 ld      b,(hl)              ; B = the entry's type = its byte count
                 inc     hl                  ; HL = its value field
                 push    hl                  ; [value field]
+                bit     1,b                 ; D-FORINT: type 2 is a `%` loop (4 / 8
+                jr      nz,nx_fint          ; have bit 1 clear)
                 call    nx_pki              ; NC: DE = the variable, an exact int16
-                jr      c,nx_fbail
+                jr      c,nx_fbail          ; (and B = 0: nx_pki counts it down)
+nx_fadd:
                 ld      hl,(FOR_STEP+1)
                 ld      a,h
                 ld      (FOR_SIGN),a        ; the step's sign byte, as slot_load gives it
@@ -2306,7 +2316,10 @@ nx_fast:
                 jp      pe,nx_fbail         ; x.edge: the BCD path promotes past 32767
                 pop     de                  ; DE = the value field
                 push    hl                  ; [the new value]
+                bit     1,b                 ; still 2 on the `%` arm, 0 after nx_pki
+                jr      nz,nx_fput
                 call    nx_pack             ; written in place, the BCD path's bytes
+nx_fcmp:
                 pop     hl
                 ld      de,(FOR_LIM+1)
                 call    cmp16_bits          ; A = 1 <, 2 =, 4 > -- combine_cmp's code
@@ -2316,8 +2329,33 @@ nx_fast:
 nx_fbail:
                 pop     hl                  ; drop [value field]
 nx_fslow:
-                call    nx_demote
+                call    nx_demote           ; (a `%` loop: nx_demote returns at once)
                 jp      nx_slow
+; 🐌 D-FORINT (2026-10-20): THE `%` ARM. A `%` loop's variable IS an int16 and its
+; two slots are int16 (an int16 limit / step, or an exact-int16 single / double
+; that slot_store converted), so the general path's `var + step` is combine_add's
+; int path or -- on a converted slot -- the BCD add of the same exact operands (the
+; same sum; D-INTFAST even computes it the same way), and its store is
+; var_store_fac's vsf_int: two bytes, low first. `adc hl,de` sets P/V the same
+; either operand order. So this reads the two bytes, adds, and writes them
+; back in place: ONE lookup where for_get + for_set_typed made two, and none of the
+; operator plumbing. An overflow (`FOR I%=32760 TO 32767 STEP 5`) leaves through
+; nx_fbail with nothing written, and the general path runs this NEXT from the start:
+; its combine_add promotes, for_set_typed's strict int store sets FPERR, and
+; check_expr_errors raises ERR 6 on the NEXT line exactly as before. FACTYP and the
+; compare are nx_fast's own (combine_cmp's int path is cmp16_bits + set_factyp2).
+nx_fint:
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the variable
+                or      a                   ; CF = 0 for the adc (var_find_typed set it)
+                jr      nx_fadd
+nx_fput:
+                ex      de,hl               ; HL = the value field, DE = the new value
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                jr      nx_fcmp
 
 ; --- nx_demote: widen a float loop's int16 slots for good -----------------------
 ; FOR_CUR's int16 slot(s) become the packed double slot_store wrote before
@@ -2325,7 +2363,13 @@ nx_fslow:
 ; slots are written back into the frame in the pool, so the BCD path never widens
 ; per pass. In: the frame base is the word under our return address (nx_have's
 ; push). Clobbers A, BC, DE, HL.
+; 🐌 D-FORINT: a `%` loop is NEVER widened -- its slots stay as FOR left them and
+; the general path runs on them as it always did -- and this is where that is
+; decided: nx_have's mixed-slot arms and nx_fast's bail all reach a `%` loop here.
 nx_demote:
+                ld      a,(FOR_CUR+2)
+                cp      2
+                ret     z                   ; a `%` loop: nothing to widen
                 ld      hl,FOR_LIM
                 call    nxd_slot
                 ld      hl,FOR_STEP

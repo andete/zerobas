@@ -357,9 +357,10 @@ def run():
     must_take = {"empty", "named", "bang", "hash", "defdbl", "defsng", "neg",
                  "negb", "edge", "edgeb", "bodyint", "bodyset", "exprs",
                  "floatvar", "floatsng", "floatdbl", "limitsng", "stepsng",
-                 "nested", "nextlist", "onerr", "gosubin", "zerocross", "zero"}
-    must_not = {"pct", "defint", "half", "tenth", "fracinit", "fraclim",
-                "huge", "big", "edgepct", "floatfr", "mixstep", "mix48"}
+                 "nested", "nextlist", "onerr", "gosubin", "zerocross", "zero",
+                 "pct", "defint", "edgepct"}   # D-FORINT: `%` loops take it too
+    must_not = {"half", "tenth", "fracinit", "fraclim",
+                "huge", "big", "floatfr", "mixstep", "mix48"}
     for name, lines in corpus.items():
         o_out = old.run(lines)
         o_snaps = old.snaps

@@ -97,6 +97,10 @@ D-SPMERGE) and links them instead of tagging them:
   both slots as int16 (`[2][lo][hi]` + 6 unused bytes, the shape a `%` loop's slots
   always had) so NEXT can take an int16 path; the first NEXT that cannot widens
   them for good to the packed double they used to hold. Same 25 B either way.
+  Since D-FORINT (2026-10-20) a `%` loop's limit or step that FOR evaluated as an
+  exact-int16 single/double (`N=300:FOR I%=1 TO N`) is stored as an int16 slot too,
+  so the `%` loop takes the same int16 NEXT arm; a `%` loop is never widened (a
+  fractional limit or step keeps its packed slot and runs the general path).
 
 This section used to conclude that matching GOSUB's 7 B meant adopting the
 reference's tagged, walked shape. It did not: the old frame's two chain words

@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37262 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37265 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31668,7 +31668,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 Harness trap found on the way: an unseeded `FN_FEND` makes every host scalar
       lookup walk a 256-byte page (~9000 T); tests/test_forfast.py's F4 now seeds it.
 
-- [ ] 🐌 **D-FORINT — AN INTEGER `FOR I%` LOOP IS 4.9× THE VG-8020, NOW SLOWER THAN A
+- [x] ✅ **FIXED 2026-10-20** — 🐌 **D-FORINT — AN INTEGER `FOR I%` LOOP IS 4.9× THE VG-8020, NOW SLOWER THAN A
       DEFAULT-TYPE ONE (found 2026-10-20 by D-FORFAST's timing)**
       🎚️ TIER 5 — on-par speed.
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -31712,8 +31712,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ✅ **EXPLAINED AND FIXED THE SAME EVENING -- D-STOPTEAR (below): a torn BREAKX read,
       latent on 508043a2, exposed by the draft's timing.** With the fix the draft's window
       reads flag=1 at every phase ([`stoptear_fine_fixdraft.out`](scratchpad/stoptear_fine_fixdraft.out))
-      and stop-trap-acceptance is green. ➡️ Re-apply the patch on top of D-STOPTEAR, gate,
-      commit.
+      and stop-trap-acceptance is green. ✅ **LANDED 2026-10-20 on top of D-STOPTEAR** (a7ff1389): the patch applied
+      unchanged; `FOR I%=1 TO 300:NEXT` 39 → 23 ticks (VG-8020 8), measured on the draft
+      ([`forint_time.out`](scratchpad/forint_time.out); NEXT's code is the same here, D-STOPTEAR
+      touched only `rp_exec`) -- still 2.9× the reference, the remaining gap is the statement loop's own (D-LOOPPROF). 💰 Main page 1
+      13 → 1 B free (`make basic-reloc`): the next TIER 5 lever must carve first.
 
 - [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
       `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM
