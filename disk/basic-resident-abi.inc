@@ -10,11 +10,11 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_rhs_operand equ 0381DH
+widen_rhs_operand equ 03843H
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
 pu_deref_body equ 02869H
-subrom_call equ 03AD0H
+subrom_call equ 03AF6H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)

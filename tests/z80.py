@@ -30,6 +30,8 @@ class Z80:
         self.a = self.f = 0
         self.b = self.c = self.d = self.e = self.h = self.l = 0
         self.ix = self.iy = 0
+        self.alt = [0, 0, 0]               # BC' DE' HL' (EXX; D-DIVPACK lets the
+                                           # math_wrap tenants run on the host)
         self.sp = 0xF380
         self.pc = 0
         self.halted = False
@@ -205,6 +207,9 @@ class Z80:
         lo = op & 0x0F
         if op == 0x00:                         # NOP
             return
+        if op == 0xD9:                         # EXX
+            self.alt, (self.bc, self.de, self.hl) = [self.bc, self.de, self.hl], self.alt
+            return
         if op == 0x08:                         # EX AF,AF' (no shadow set needed)
             return
         if op == 0xEB:                         # EX DE,HL
@@ -287,6 +292,23 @@ class Z80:
             nc = self.a & 1
             self.a = ((self.a >> 1) | (c << 7)) & 0xFF
             self.f = (self.f & (S|Z|PV)) | (self.a & (Y|X)) | (C if nc else 0); return
+        if op == 0x27:                         # DAA (D-DIVPACK: fp_div's packed BCD)
+            # The documented algorithm: the correction comes from the H and C
+            # flags and the nibble ranges; N picks add or subtract; C only sets.
+            a, f = self.a, self.f
+            corr, c = 0, f & C
+            if f & H or (a & 0x0F) > 9:
+                corr |= 0x06
+            if c or a > 0x99:
+                corr |= 0x60; c = C
+            if f & N:
+                hf = H if (f & H and (a & 0x0F) < 6) else 0
+                self.a = (a - corr) & 0xFF
+            else:
+                hf = H if (a & 0x0F) > 9 else 0
+                self.a = (a + corr) & 0xFF
+            self.f = self._szyx(self.a) | PARITY[self.a] | (f & N) | hf | c
+            return
         if op == 0x2F:                         # CPL
             self.a ^= 0xFF
             self.f = (self.f & (S|Z|PV|C)) | H | N | (self.a & (Y|X)); return
@@ -428,6 +450,16 @@ class Z80:
             self.f = (self.f & ~Z) | (Z if r == 0 else 0)
             if op in (0xB1, 0xB9) and self.bc and r != 0:
                 self.pc = (self.pc - 2) & 0xFFFF       # repeat
+            return
+        if op in (0x6F, 0x67):                 # RLD / RRD (D-DIVPACK)
+            t = self.rb(self.hl)
+            if op == 0x6F:
+                self.wb(self.hl, ((t << 4) | (self.a & 0x0F)) & 0xFF)
+                self.a = (self.a & 0xF0) | (t >> 4)
+            else:
+                self.wb(self.hl, ((self.a & 0x0F) << 4) | (t >> 4))
+                self.a = (self.a & 0xF0) | (t & 0x0F)
+            self.f = (self.f & C) | self._szyx(self.a) | PARITY[self.a]
             return
         if op in (0x46, 0x56, 0x5E, 0x4E, 0x66, 0x6E, 0x76, 0x7E):  # IM n
             return

@@ -21,7 +21,10 @@
 ; FPNUM_SIGN/FPNUM_DEXP/FPNUM_DIG field offsets, sysvars.inc). Working over
 ; plain one-digit-per-byte arrays (rather than packed nibbles) lets add/sub/
 ; mul/div be expressed as ordinary byte arithmetic, with Z80 LDIR/LDDR doing
-; every alignment/normalisation shift as a straight memmove.
+; every alignment/normalisation shift as a straight memmove. ⚠️ fp_div is the
+; exception since D-DIVPACK (2026-10-20): its remainder and divisor are PACKED
+; inside the divide (two digits a byte, `sbc`+`daa`, an `rld` for *10) -- its
+; inputs and its ARGA answer are the same digit arrays as everyone else's.
 ;
 ; ARGA doubles as the answer: every op (fp_add/fp_sub/fp_mul/fp_div) ends by
 ; leaving its result in ARGA (sign/dexp/dig), then round_and_finalize packs
@@ -245,8 +248,10 @@ dsi_lp:
                 add     a,10                ; A was $F6..$FF: +10 always carries
                                             ; out, so CF=1 IS the borrow
 dsi_st:
-                ; 🏎️ T5 (2026-09-26): this loop is fp_div's inner loop and ~50% of
-                ; a SQR's time (PC samples). It carried an `or a` on the no-borrow
+                ; 🏎️ T5 (2026-09-26): this loop WAS fp_div's inner loop and ~50% of
+                ; a SQR's time (PC samples) -- until D-DIVPACK (2026-10-20) gave
+                ; fp_div its own packed-BCD loop; fp_add/fp_sub are the callers
+                ; now. It carried an `or a` on the no-borrow
                 ; path and `scf` + `jr` on the borrow path that set a carry the
                 ; `sbc` / `add a,10` had ALREADY set -- 4 bytes, and 70/84 T a
                 ; digit down to 66/68. dec/dec/djnz leave CF alone.
@@ -306,8 +311,9 @@ dshr_allzero:
 
 ; --- dig15_shl: shift the 15-byte digit array at (HL) left by -------------
 ; (FP_SHIFTAMT) positions, zero-filling the vacated high end (used by the
-; leading-zero normalise after subtract-cancellation, and by fp_div's
-; "remainder *= 10" step). HL NOT preserved (same rationale as dig15_shr).
+; leading-zero normalise after subtract-cancellation; fp_div's "remainder
+; *= 10" used it too until D-DIVPACK's nibble rotate). HL NOT preserved (same
+; rationale as dig15_shr).
 ; Clobbers A, B, C, D, E, H, L.
 dig15_shl:
                 ld      a,(FP_SHIFTAMT)
@@ -1009,38 +1015,73 @@ fpm_norm_go:
 ; =============================================================================
 ; fp_div — double BCD divide (spec §10.2)
 ; =============================================================================
-
-; --- fpd_trial_digit: repeatedly subtract DIVPAD from DIVREM while it fits, -
-; counting iterations (0..9). out: A = the digit found. Clobbers A, B, C, D,
-; E, H, L, and (MUL_CARRY) as a transient counter (fp_mul never runs
-; concurrently with fp_div, so sharing the cell is safe — same reasoning as
-; every other cross-routine scratch reuse in this file).
-fpd_trial_digit:
+; --- fpd_pack: HL -> a 14-digit unpacked array (MSD first), DE -> 8 bytes ---
+; (no page crossing). Writes the digits PACKED, one nibble each, at nibbles
+; 1..14 of the 16: (0,d0)(d1,d2)..(d11,d12)(d13,0). Reads d0..d13 only (the
+; guard digit d14 is ignored, as the unpacked divide always ignored it).
+; out: C = low byte of the address of the LAST nonzero packed byte (the
+; first byte's own if all are zero). Clobbers A, B, C, E, HL.
+fpd_pack:
+                ld      c,e
+                ld      b,7
                 xor     a
-                ld      (MUL_CARRY),a
-fpdtd_lp:
-                ld      hl,DIVREM
-                ld      de,DIVPAD
-                ld      b,15
-                call    dig15_cmp
-                cp      1
-                jr      z,fpdtd_done
-                ld      hl,DIVREM+14
-                ld      de,DIVPAD+14
-                call    dig15_sub_inplace
-                ld      hl,MUL_CARRY
-                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
-                jr      fpdtd_lp
-fpdtd_done:
-                ld      a,(MUL_CARRY)
+fpk_lp:
+                or      (hl)                ; A = (d[2i-1] << 4) | d[2i]
+                inc     hl
+                ld      (de),a
+                jr      z,fpk_z
+                ld      c,e
+fpk_z:
+                inc     e
+                ld      a,(hl)
+                inc     hl
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a
+                djnz    fpk_lp
+                ld      (de),a              ; byte 7 = (d13,0)
+                or      a
+                ret     z
+                ld      c,e
                 ret
 
 ; --- fp_div: ARGA / ARGB -> ARGA -> round_and_finalize. Divisor 0 ---------
 ; -> Division-by-zero (FPERR=2). Overflow PRE-CHECK on stored dec_exps: e(a)-
 ; e(b)+1 > 63 -> Overflow (even when the true quotient would fit, spec
 ; §10.2); < -63 -> silent 0. Long division producing 15 quotient digits
-; (14 + guard) via the classic "zero-pad, trial-subtract, append a 0 digit"
-; method over 15-digit-wide arrays (own design). Clobbers A, B, C, D, E, H, L.
+; (14 + guard): per digit, remainder *= 10, then count how many times the
+; divisor still goes in, subtracting it each time (own design: the classic
+; restoring long division). Clobbers A, B, C, D, E, H, L.
+;
+; 🏎️ D-DIVPACK (2026-10-20, TIER 5): THE SAME COUNTS, FOUND OVER PACKED BCD.
+; Division was 3.7x the VG-8020 (`A=I/7` x300: 614 TIME ticks vs 163), and a
+; PC-sample profile had ~50% of a SQR in the unpacked digit-subtract loop. The
+; remainder R (DIVREM) and the divisor B (DIVPAD) now hold two digits a byte,
+; at nibbles 1..14 of 16 (fpd_pack): a trial subtract is `sbc`+`daa` per BYTE,
+; *10 is one `rld` per byte, and both run only over the bytes that can matter --
+; the subtract over 0..LB (B's last nonzero byte: B is 0 past it, so no borrow
+; reaches past it), the *10 over 0..max(LA,LB) (R is 0 past both, always). The
+; compare still runs over all 8 bytes, MSB first, early out -- past LB it reads
+; B's zeros, which decide R >= B exactly as stopping there would.
+; A ONE-DIGIT DIVISOR (LB = 0: B = (0,b0) -- I/7, X/2 in SQR, /10) takes
+; fpd_one instead: the digit is R's byte 0 read as 0..99, divided by b0 in
+; binary (the bytes past it are a fraction below 1 and cannot change it).
+; WHY IT IS THE SAME ANSWER: every digit is the same integer count of the same
+; two integers -- R and B are the unpacked arrays' values (the *10 drops a top
+; nibble that is 0 because R < B), the count is the same 8-bit C the old
+; MUL_CARRY was, and the dividend < divisor decision (one less exponent, digit 0
+; after a shift) is still dig15_cmp over the UNPACKED 14 digits, so even an
+; unnormalised operand (a POKEd variable; counts above 9 can happen) divides as
+; it did. tests/test_fpdiv_fast.py runs the old image against this one: FAC,
+; FACTYP, FPERR, ARGA, ARGB, registers and all RAM but this routine's own
+; scratch, over 200000 random pairs + the walls, and through SQR/LOG/ATN/TAN/^.
+; Host T-states: 300/7 110837 -> 12101, a 14-digit divisor ~2.2-2.5x.
+; Scratch: DIVREM+0..7, DIVPAD+0..7, FPD_PB/FPD_SH/FPD_SLOT in DIVREM's spare
+; bytes -- all inside the blocks the unpacked divide already owned; it no
+; longer writes MUL_CARRY, FP_LHSVAL, FP_SHIFTAMT or FP_RSIGN (each is written
+; by its every reader first). The sign goes straight to ARGA (xor_sign has
+; read it; nothing reads ARGA's sign again before round_and_finalize).
 fp_div:
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
@@ -1057,62 +1098,125 @@ fpd_go:
                 ld      (FP_TMP_B),hl
                 call    check_preexp_bounds ; shared with fp_mul (above)
                 call    xor_sign
-                ld      (FP_RSIGN),a
-                xor     a
-                ld      (DIVPAD),a
-                ld      hl,ARGB+FPNUM_DIG
-                ld      de,DIVPAD+1
-                ld      bc,14
-                ldir
-                xor     a
-                ld      (DIVREM),a
-                ld      hl,ARGA+FPNUM_DIG
-                ld      de,DIVREM+1
-                ld      bc,14
-                ldir
-                ld      hl,DIVREM
-                ld      de,DIVPAD
-                ld      b,15
-                call    dig15_cmp
-                cp      1
-                jr      z,fpd_k0
-                ld      hl,(FP_TMP_B)
-                ld      (ARGA+FPNUM_DEXP),hl
-                call    fpd_trial_digit
-                ld      (ARGA+FPNUM_DIG),a
-                ld      a,1
-                ld      (FP_LHSVAL),a       ; next quotient slot index (reused; the
-                                            ; combine_* int-value stash is dead here)
-                jr      fpd_loop
-fpd_k0:
-                ld      hl,(FP_TMP_B)
-                dec     hl
-                ld      (ARGA+FPNUM_DEXP),hl
-                xor     a
-                ld      (FP_LHSVAL),a
-fpd_loop:
-                ld      a,(FP_LHSVAL)
-                cp      15
-                jr      nc,fpd_loop_done
-                ld      a,1
-                ld      (FP_SHIFTAMT),a
-                ld      hl,DIVREM
-                call    dig15_shl
-                call    fpd_trial_digit     ; A = next quotient digit (0..9)
-                ld      c,a                 ; C = digit (survives the reload below)
-                ld      a,(FP_LHSVAL)
-                ld      hl,ARGA+FPNUM_DIG
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; HL = ARGA_DIG + slot
-                ld      (hl),c              ; QDIG[slot] = digit
-                ld      hl,FP_LHSVAL
-                inc     (hl)                ; D-PEEPHOLE: -3 B (7 B -> 4 B)
-                jr      fpd_loop
-fpd_loop_done:
-                ld      a,(FP_RSIGN)
                 ld      (ARGA+FPNUM_SIGN),a
+                ld      hl,ARGA+FPNUM_DIG
+                ld      de,DIVREM
+                call    fpd_pack            ; C = low (DIVREM + LA)
+                ld      a,c
+                ld      (FPD_SH),a
+                ld      hl,ARGB+FPNUM_DIG
+                ld      de,DIVPAD
+                call    fpd_pack            ; C = low (DIVPAD + LB)
+                ld      l,c
+                ld      h,high DIVPAD
+                ld      (FPD_PB),hl
+                ld      a,c
+                add     a,(low DIVREM) - (low DIVPAD)
+                ld      hl,FPD_SH
+                cp      (hl)
+                jr      c,fpd_shok
+                ld      (hl),a              ; FPD_SH = low (DIVREM + max(LA,LB))
+fpd_shok:
+                ld      hl,ARGA+FPNUM_DIG
+                ld      de,ARGB+FPNUM_DIG
+                ld      b,14
+                call    dig15_cmp           ; A = 1 iff dividend < divisor
+                ld      hl,(FP_TMP_B)
+                dec     a
+                jr      nz,fpd_ge
+                dec     hl                  ; quotient < 1: one less, digit 0 shifts
+fpd_ge:
+                ld      (ARGA+FPNUM_DEXP),hl
+                ld      a,low (ARGA+FPNUM_DIG)
+                ld      (FPD_SLOT),a
+                jr      nz,fpd_trial        ; (flags still from the `dec a`)
+fpd_digit:
+                ld      a,(FPD_SH)          ; R *= 10: one nibble left over bytes
+                ld      l,a                 ; 0..max(LA,LB) -- past both, R is 0
+                ld      h,high DIVREM
+                sub     (low DIVREM) - 1
+                ld      b,a
+                xor     a
+fps_lp:
+                rld
+                dec     l
+                djnz    fps_lp
+fpd_trial:
+                ld      h,high DIVPAD
+                ld      a,(FPD_PB)
+                cp      low DIVPAD
+                jr      z,fpd_one           ; a one-digit divisor: one binary divide
+                ld      d,high DIVREM
+                ld      c,0
+ftr_lp:
+                ld      l,low DIVPAD
+                ld      e,low DIVREM
+                ld      b,8
+ftr_cmp:
+                ld      a,(de)
+                cp      (hl)                ; R - B, MSB first
+                jr      c,ftr_done          ; R < B
+                jr      nz,ftr_sub          ; R > B
+                inc     l
+                inc     e
+                djnz    ftr_cmp             ; all equal: R = B, subtract
+ftr_sub:
+                ld      hl,(FPD_PB)
+                ld      a,l
+                add     a,(low DIVREM) - (low DIVPAD)
+                ld      e,a
+                sub     (low DIVREM) - 1    ; B = LB+1, and no borrow: CF = 0
+                ld      b,a
+ftr_slp:
+                ld      a,(de)
+                sbc     a,(hl)
+                daa
+                ld      (de),a
+                dec     l
+                dec     e
+                djnz    ftr_slp
+                inc     c
+                jr      ftr_lp
+fpd_one:
+                ; B = (0,b0), b0 = 1..9, and R < 10*B: the digit is (R's byte 0,
+                ; read as the number 0..99) / b0 -- the bytes past it are a
+                ; fraction below 1 and cannot change the quotient -- and the
+                ; remainder (< b0 <= 9) is that byte's new value, already BCD.
+                ld      a,(DIVREM)
+                ld      c,a
+                and     $F0                 ; 16 * hi
+                rrca
+                ld      b,a                 ; 8 * hi
+                rrca
+                rrca
+                add     a,b                 ; 10 * hi
+                ld      b,a
+                ld      a,c
+                and     $0F
+                add     a,b                 ; byte 0 as a binary number
+                ld      l,low DIVPAD        ; (HL) = b0
+                ld      c,$FF
+fpo_lp:
+                inc     c
+                sub     (hl)
+                jr      nc,fpo_lp
+                add     a,(hl)
+                ld      (DIVREM),a
+ftr_done:
+                ld      a,(FPD_SLOT)
+                ld      l,a                 ; H = high DIVPAD = high ARGA (guarded)
+                ld      (hl),c
+                inc     a
+                ld      (FPD_SLOT),a
+                cp      low (ARGA+FPNUM_DIG+15)
+                jr      nz,fpd_digit
                 jp      round_and_finalize
+    IF (high DIVPAD) != (high (ARGA+FPNUM_DIG)) || (high DIVPAD) != (high (ARGA+FPNUM_DIG+14))
+                db      FPD_SLOT_NOT_IN_DIVPADS_PAGE
+    ENDIF
+    IF (high DIVPAD) != (high (DIVPAD+7)) || (high DIVREM) != (high (DIVREM+7))
+                db      FPD_PACKED_ARRAY_CROSSES_A_PAGE
+    ENDIF
 
 ; =============================================================================
 ; fp_cmp — double compare (spec §10.1: "compare AS floats after widening")

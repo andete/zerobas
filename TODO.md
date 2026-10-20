@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37125 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37144 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11498,7 +11498,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29178 (T-529ABE)`: a
+      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29197 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17207,7 +17207,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29178 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29197 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -18712,6 +18712,25 @@ list. **When a slice lands, grep this list for what it just shipped.**
       (−3.5%; predicted ~600, a smaller hit), −4 B of the low region (clean build 2026-09-26), 63/63 unit
       files green. The real lever is structural (packed BCD, as the reference's
       mathpack) and is not started.
+      🏎️ **DIVISION ON PAR (D-DIVPACK, 2026-10-20): `fp_div` works in PACKED BCD.** The
+      remainder and the divisor are packed two digits a byte in the existing `DIVREM` /
+      `DIVPAD` scratch; each quotient digit is still the same count of the same
+      subtractions (`sbc` + `daa`, only over the divisor's nonzero bytes; ×10 an `rld`
+      chain), so every digit is the old one by construction, and a one-digit divisor
+      (`I/7`, SQR's `/2`) divides the remainder's top byte in binary. Drafted by a
+      subagent (host only), measured here. `tests/test_fpdiv_fast.py` (new) runs the old
+      image beside the new: 200 000 random pairs (198 819 also against the exact quotient)
+      + ~2 700 hand / edge rows (exponent walls, rounding carry, guard digit,
+      unnormalised) + `eval` of `X/Y` in all nine type pairings and SQR / EXP / LOG / SIN /
+      COS / TAN / ATN / `^` -- FAC, FACTYP, FPERR, registers and every RAM byte outside
+      fp_div's scratch identical. (`tests/z80.py` gained DAA / RLD / RRD / EXX; EXX lets the
+      math tenants run on the host for the first time.) Outside the domain: mantissas with
+      A–F nibbles (only a POKE makes one) differ, and neither side's answer means anything.
+      ON THE MACHINE ([`divpack_before.out`](scratchpad/divpack_before.out) →
+      [`divpack_after.out`](scratchpad/divpack_after.out), TIME ticks): `A=I/7` ×300
+      **547 → 168 against the VG-8020's 163**; `A=I/3.14159` ×100 201 → 87 (71); SQR ×30
+      42 → 41 (174). float / math / tmfp / intarg acceptance green
+      ([`divpack_math.out`](scratchpad/divpack_math.out)). Low region 87 → 49 B free.
       🤖 AUTONOMOUS — the charter half is ANSWERED (the STANDING sequencing of
       2026-09-02: speed is a real defect), so what remains under it is measurable work.
       ⚠️ **RANKED LAST BY THAT SAME RULING** — every open DIVERGENCE outranks it, so

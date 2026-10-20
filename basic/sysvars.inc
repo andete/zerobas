@@ -4930,8 +4930,14 @@ FPERR           equ     $F7B9   ; runtime numeric-error flag: 0 none / 1 overflo
 ARGA            equ     $F806   ; operand A / working result, FPNUM record (18)
 ARGB            equ     $F818   ; operand B, FPNUM record (18)
 MULPROD         equ     $F82A   ; fp_mul: 28-digit product (14x14), MSD first (28)
-DIVPAD          equ     $F83E   ; fp_div: divisor zero-padded to 15 digits (15)
-DIVREM          equ     $F7DE   ; fp_div: running remainder, 15 digits (15)
+DIVPAD          equ     $F83E   ; fp_div: the divisor, packed BCD at nibbles 1..14 (8)
+                                ; (D-DIVPACK; it was 15 unpacked digits -- the old
+                                ; 15-byte block keeps its overlay guests, below)
+DIVREM          equ     $F7DE   ; fp_div: the running remainder, packed BCD (8)
+                                ; (D-DIVPACK; the old 15-byte block also hosts FPD_*)
+FPD_PB          equ     DIVREM+8 ; fp_div: address of the packed divisor's last nonzero byte (2)
+FPD_SH          equ     DIVREM+10 ; fp_div: low byte of the remainder's last byte that can be nonzero (1)
+FPD_SLOT        equ     DIVREM+11 ; fp_div: low byte of the next quotient digit's ARGA slot (1)
 CVT             equ     ARGB   ; fac_to_int_strict/addr + flt_to_int16 (float.asm)
                                 ; D-WSZERO S14a: ARGB is dead at every domain_convert_core (s14_plan.md §2.1) (was $F0E6)
                                 ; shared unpack scratch, FPNUM-shaped (18)
@@ -4960,9 +4966,9 @@ MUL_I           equ     $F846   ; fp_mul: outer-loop digit index i, 13 downto 0;
                                 ; widen_int_to: digit count N, 0..5 (shared, dead
                                 ; between uses) (1)
 MUL_ADIG        equ     $F854   ; fp_mul: A[i], the current outer-loop digit (1)
-MUL_CARRY       equ     $F855   ; fp_mul: running carry within one outer pass;
-                                ; fp_div's fpd_trial_digit: trial-subtract count
-                                ; (shared, dead between uses) (1)
+MUL_CARRY       equ     $F855   ; fp_mul: running carry within one outer pass
+                                ; (fp_div's old fpd_trial_digit shared it as its
+                                ; trial-subtract count; D-DIVPACK counts in C) (1)
 MUL_PP          equ     $F847   ; fp_mul: MULPROD write-cursor for the inner loop (2)
 MULCAND         equ     $F82A   ; mul16x16_32: multiplicand operand (2)
 MULTPLR         equ     $F82C   ; mul16x16_32: multiplier operand, shifted in place (2)
@@ -5235,7 +5241,7 @@ SQRT_R          equ     FOUTBUF ; final-correction high-precision residual scrat
                                 ; like STR$(SQR(x)) still finishes SQR(x) -- and
                                 ; releases this scratch -- before STR$'s own
                                 ; flt_out runs). Same reuse discipline as
-                                ; MUL_CARRY/fpd_trial_digit above (two routines
+                                ; MUL_CARRY/fpd_trial_digit had (two routines
                                 ; that provably never run concurrently sharing a
                                 ; cell) -- avoids a second SQRT_* RAM claim when
                                 ; the $F194..$F195(DRVA_DPB) gap has only 1 free
@@ -5869,6 +5875,9 @@ MSGESC_SUB      equ     6       ; body = this byte alone -> the sub-ROM tenant
     ENDIF
     IF DIVREM + 15 > LHS_FAC
                 db      S12_DIVREM_ON_LHS_FAC
+    ENDIF
+    IF FPD_PB < DIVREM + 8 || FPD_SLOT + 1 > DIVREM + 15
+                db      DIVPACK_FPD_CELLS_OUTSIDE_DIVREMS_SPARE_BYTES
     ENDIF
     IF LHS_FAC + 8 > LHS_FACTYP
                 db      S12_LHS_FAC_ON_LHS_FACTYP

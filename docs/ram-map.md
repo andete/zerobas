@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **433** in the MSX standard work area at or above `$F380`.
+* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **436** in the MSX standard work area at or above `$F380`.
 * **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **63** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -537,7 +537,10 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7C6` |  | `basic` | `FOUTBUF/HORNER_ACC/MATH_R/SQRT_R` | final-correction high-precision residual scratch |  |
 | `$F7D8` | 1 B | `basic` | `HORNER_CNT` | fp_poly_horner's own remaining-term loop |  |
 | `$F7D9` | 2 B | `basic` | `HORNER_PTR` | fp_poly_horner's own advancing coeff- |  |
-| `$F7DE` | 15 B | `basic` | `DIVREM` | fp_div: running remainder, 15 digits (15) |  |
+| `$F7DE` | 8 B | `basic` | `DIVREM` | fp_div: the running remainder, packed BCD (8) |  |
+| `$F7E6` | 2 B | `basic` | `FPD_PB` | fp_div: address of the packed divisor's last nonzero byte (2) |  |
+| `$F7E8` | 1 B | `basic` | `FPD_SH` | fp_div: low byte of the remainder's last byte that can be nonzero (1) |  |
+| `$F7E9` | 1 B | `basic` | `FPD_SLOT` | fp_div: low byte of the next quotient digit's ARGA slot (1) |  |
 | `$F7ED` | 8 B | `basic` | `LHS_FAC` | ...and the LHS operand's raw FAC bytes (8) |  |
 | `$F7F5` | 1 B | `basic` | `LHS_FACTYP` | ev_e/ev_t binary-op sites: the LHS operand's FACTYP, |  |
 | `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
@@ -564,7 +567,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F83B` |  | `basic` | `ISRCH_A/RND_AJ` | multiply-add loop: A_LE[j], stashed |  |
 | `$F83C` | 1 B | `basic` | `RND_CARRY` | multiply-add loop: running BCD carry, |  |
 | `$F83D` |  | `basic` | `ISRCH_B/RND_K` | $F83D: resolved B-operand body base (2 B) |  |
-| `$F83E` |  | `basic` | `DIVPAD` | fp_div: divisor zero-padded to 15 digits (15) |  |
+| `$F83E` |  | `basic` | `DIVPAD` | fp_div: the divisor, packed BCD at nibbles 1..14 (8) |  |
 | `$F842` | 1 B | `basic` | `TKPOS` | running digit-position counter (1) |  |
 | `$F843` | 1 B | `basic` | `TKINTLEN` | integer-part digit count = P (1) |  |
 | `$F844` | 1 B | `basic` | `TKHAVESIG` | 1 once the first nonzero digit is seen (1) |  |
@@ -580,7 +583,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F851` | 2 B | `basic` | `FP_TMP_B` | combine_*: the RHS operand's plain int16 value, |  |
 | `$F853` | 1 B | `basic` | `FP_RSIGN` | signed_div_de_bc/signed_mod_de_bc: result sign (1) |  |
 | `$F854` | 1 B | `basic` | `MUL_ADIG` | fp_mul: A[i], the current outer-loop digit (1) |  |
-| `$F855` | 1 B | `basic` | `MUL_CARRY` | fp_mul: running carry within one outer pass; |  |
+| `$F855` | 1 B | `basic` | `MUL_CARRY` | fp_mul: running carry within one outer pass |  |
 | `$F856` | 1 B | `basic` | `KEYARG` | D-KEYSTR: main -> keystr_tenant op/slot (0 = |  |
 | `$F857` |  | `basic` | `RNDX` | PUBLISHED 8 B seed; byte 0 reads 00 (1) |  |
 | `$F858` | 7 B | `basic` | `RND_SEED` | packed BCD, MSD-first, 7 bytes ($F858..$F85E) |  |
