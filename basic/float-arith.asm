@@ -1728,26 +1728,23 @@ set_factyp_int_ret equ set_factyp2
 ; --- widen_lhs_operand: HL = dest FPNUM base. Dispatches on LHS_FACTYP to --
 ; either widen_int_to(FP_LHSVAL) or widen_lhsframe_to. Clobbers as whichever
 ; it calls.
+; D-INTFAST (2026-10-20) carve: the `push hl` / `pop hl` that bracketed the type
+; test here and in widen_rhs_operand guarded nothing -- `ld a,(nn)`, `cp n` and
+; factyp_is2 (`ld a,(FACTYP)` / `cp 2`) never write HL -- and the `jr nz` to a
+; `jp` is one `jp nz`. -6 B, the same registers out.
 widen_lhs_operand:
-                push    hl
                 ld      a,(LHS_FACTYP)
                 cp      2
-                pop     hl
-                jr      nz,wlo_float
+                jp      nz,widen_lhsframe_to
                 ld      de,(FP_LHSVAL)
                 jr      widen_int_to
-wlo_float:
-                jp      widen_lhsframe_to
 
 ; --- widen_rhs_operand: HL = dest FPNUM base, DE = the RHS's plain int -----
 ; value (used iff FACTYP==2). Dispatches on the CURRENT (live) FACTYP.
 ; Clobbers as whichever it calls.
 widen_rhs_operand:
-                push    hl
                 call    factyp_is2
-                pop     hl
                 jr      z,widen_int_to
-wro_float:
                 jp      widen_fac_to
 
 ; --- widen_both_operands: DE = the rhs's plain int value -> stash into ----
@@ -1806,19 +1803,13 @@ abs16:
 ; path vs BCD-widen-and-combine, and returns DE=result with FACTYP set
 ; (2 for the int paths, 8 — via round_and_finalize — for any float path).
 
-; --- caddsub_widen_both: widen FP_LHSVAL -> ARGA and FP_TMP_B -> ARGB (both
-; plain int16 values) to double. Shared int-overflow-promotion prelude for
-; combine_add/combine_sub AND combine_mul (below) — every "the int fast path
-; overflowed, redo it in BCD" tail starts here, differing only in which BCD
-; op the caller goes on to call. Clobbers A, B, C, D, E, H, L.
-caddsub_widen_both:
-                ld      hl,ARGA
-                ld      de,(FP_LHSVAL)
-                call    widen_int_to
-                ld      hl,ARGB
-                ld      de,(FP_TMP_B)
-                jp      widen_int_to        ; tail call (`jp`: push_lhs_frame's typed
-                                            ; frame put widen_int_to out of `jr` reach)
+; (caddsub_widen_both -- widen FP_LHSVAL / FP_TMP_B to ARGA / ARGB, the int
+; paths' overflow prelude -- is GONE, D-INTFAST 2026-10-20: an int path that
+; overflows now widens through widen_both_operands, which for two int16
+; operands does exactly the same two widen_int_to calls (LHS_FACTYP = FACTYP = 2,
+; FP_LHSVAL = the lhs, DE = the rhs), and which for the float path's exact-int16
+; detour below widens the ORIGINAL float operands -- the old float path to the
+; byte. -20 B, and the overflow tails shrank with it.)
 
 ; --- arga_dig_iszero: HL := ARGA+FPNUM_DIG, then dig15_iszero (D-PAIRCARVE2) ----
 ; 💰 The pair stood at SEVEN sites, 6 B each against 3 for a call. dig15_iszero
@@ -1832,6 +1823,46 @@ caddsub_widen_both:
 arga_dig_iszero:
                 ld      hl,ARGA+FPNUM_DIG
                 jp      dig15_iszero
+
+; 🏎️ D-INTFAST (D-LOOPPROF lever 1, 2026-10-20, TIER 5): A FLOAT `+ - *` WHOSE
+; OPERANDS BOTH HOLD EXACT INT16 VALUES RUNS ON THE INT PATH. `A=I+7` with I a
+; default-type (double) loop counter is a BCD add -- widen both (~3100 T), fp_add
+; (~5100 T) -- of two integers, and `A=I*7`'s fp_mul alone was ~14 100 T
+; (scratchpad/loopprof_host.out). The float arms below (caddsub_float, cmul_float)
+; first ask fx_cvt whether each operand is an exact int16 (nx_pki over its packed
+; bytes; an int16 operand is one already); if both are, they CALL the int path
+; (caddsub_int / cmul_int) on those values and fx_tail turns its answer into what
+; the BCD path would have left:
+;   * the int path's own exact answer (FACTYP = 2, DE): a nonzero one is packed by
+;     nx_pack into FAC+0..3 over a zeroed FAC+1..7 -- the bytes round_and_finalize's
+;     arga_pack_fac writes for an exact integer of at most five digits (guard digit
+;     0, no rounding) -- and leaves through fac_dbl_int16, the BCD path's own tail,
+;     so FACTYP = 8, CVT_MODE / CVT / WSRC and every register come out of the same
+;     flt_to_int16 over the same FAC. A ZERO answer leaves through raf_zero_ok, the
+;     BCD path's zero tail, with C = 0 -- the C every int-valued zero reaches it with
+;     (dig15_cmp / dig15_add_inplace end on digit 14 = 0, fp_mul's ldir on BC = 0);
+;   * an int path that OVERFLOWED has already run the BCD op itself, through
+;     widen_both_operands on the original operands (FACTYP = 8): the old float
+;     path to the byte, which fx_tail hands back as it stands.
+; Never taken: a fraction, past int16, -32768 as a float (nx_pki), a zero lead byte
+; over a nonzero mantissa or a "negative zero" ($80 lead), and an int16 rhs of
+; $8000 -- for '-' the int path keeps that one int16 (the measured no-promotion
+; quirk), which a float operand must not inherit. Then the float arm runs as it
+; always did; the cost of asking is fx_cvt's (an nx_pki per float operand).
+; ⚠️ CANONICAL OPERANDS ONLY, AS FOR nx_fast: a mantissa with a leading 0 digit
+; ($42 $05 = 5) or a nibble above 9 -- which no producer here makes; only POKE or
+; CVS / CVD of foreign bytes can -- is read by nx_pki as the integer its digits
+; spell and gets the canonical answer, where the BCD add could keep the odd form
+; (`0+CVS(CHR$(&H42)+CHR$(5)+...)`: $42 $05 before, $41 $50 now). Guarding the
+; lead digit is +9 B; the nibble is not guardable cheaply.
+; Page 1 is mapped here: combine_* are reached only from main page-1 code (the
+; climber's cl_leaf, NEXT), never from a tenant, and they already call
+; set_factyp2 / factyp_is2 there.
+; tests/test_intfast.py holds old image against new: FAC, FACTYP, FPERR, DE, A/F/
+; BC/HL and all RAM but the float scratch, over every type pairing, the int16
+; walls, a seeded random corpus and whole statements through the interpreter.
+; Host profile (scratchpad/loopprof_host.py, machine model T a pass): `A=I+7`
+; 29116 -> 24999, `A=I*7` 38033 -> 28696.
 
 ; --- combine_add / combine_sub: ev_e's '+'/'-' sites. Two thin entry points
 ; sharing one body (FP_OPMODE, own scratch, 0=add/1=sub) — the int fast path
@@ -1847,9 +1878,10 @@ caddsub_go:
                 ld      (FP_OPMODE),a
                 call    pop_lhs_and_probe
                 jr      nz,caddsub_float
-                ld      (FP_TMP_B),de
                 ld      hl,(FP_LHSVAL)
-                ld      a,(FP_OPMODE)
+caddsub_int:                                ; D-INTFAST: HL = the lhs, DE = the rhs
+                ld      a,(FP_OPMODE)       ; (the `ld (FP_TMP_B),de` that stood here
+                                            ; fed caddsub_widen_both only)
                 or      a                   ; CF=0 (needed by adc/sbc) + tests the mode
                 jr      nz,caddsub_int_sub
                 adc     hl,de
@@ -1872,20 +1904,21 @@ caddsub_int_check:
                 ; is why the operation mode is tested and not just DE.
                 or      a                   ; A still holds FP_OPMODE — nothing
                                             ; between its load and here touches A
-                jr      z,caddsub_ovf       ; '+' -> always promote
+                jr      z,caddsub_old       ; '+' -> always promote
                 ld      a,d
                 xor     $80
                 or      e
-                jr      z,caddsub_ok        ; '-' with RHS $8000 -> stay int
-caddsub_ovf:
-                call    caddsub_widen_both
-                jr      caddsub_disp        ; the same 10-byte dispatch as the float
-                                            ; arm's (D-SEQEOF funding carve, -8 B)
+                jr      nz,caddsub_old      ; '-' promotes, unless the RHS is $8000
 caddsub_ok:
                 ex      de,hl
                 jp      set_factyp_int_ret
 caddsub_float:
-                call    widen_both_operands
+                call    fx_cvt              ; NC: HL = the lhs, DE = the rhs, both
+                jr      c,caddsub_old       ; exact int16s (D-INTFAST, above)
+                call    caddsub_int
+                jr      fx_tail
+caddsub_old:                                ; the float path, and the int path's
+                call    widen_both_operands ; promotion (DE = the rhs either way)
 caddsub_disp:
                 ld      a,(FP_OPMODE)
                 or      a
@@ -1899,20 +1932,18 @@ caddsub_disp:
 combine_mul:
                 call    pop_lhs_and_probe
                 jr      nz,cmul_float
-                ld      (FP_TMP_B),de
                 ld      hl,(FP_LHSVAL)
+cmul_int:                                   ; D-INTFAST: HL = the lhs, DE = the rhs
+                ld      (FP_TMP_B),de
                 call    abs16               ; HL=|lhs|, A=lhs sign (0/$80)
                 ld      (FP_RSIGN),a
                 push    hl                  ; |lhs|
                 ld      hl,(FP_TMP_B)
                 call    abs16               ; HL=|rhs|, A=rhs sign
-                or      a
-                jr      z,cmul_rmag_ok
-                ld      a,(FP_RSIGN)
-                xor     $80
-                ld      (FP_RSIGN),a
-cmul_rmag_ok:
                 ex      de,hl               ; DE = |rhs|
+                ld      hl,FP_RSIGN         ; D-INTFAST carve: the product's sign is
+                xor     (hl)                ; lhs XOR rhs -- one `xor (hl)` where an
+                ld      (hl),a              ; `or a` / `jr z` / flip took 11 B (-6)
                 pop     hl                  ; HL = |lhs|
                 call    mul16x16_32         ; -> MUL32 (32-bit unsigned product)
                 ld      hl,(MUL32+2)
@@ -1922,11 +1953,10 @@ cmul_rmag_ok:
                 ld      hl,(MUL32)
                 ld      a,(FP_RSIGN)
                 ld      de,32768
-                or      a
-                jr      nz,cmul_boundcmp    ; negative -> bound stays 32768
-                dec     de                  ; positive -> bound 32767
+                or      a                   ; (and CF = 0 for the sbc below: the
+                jr      nz,cmul_boundcmp    ; second `or a` that stood there was
+                dec     de                  ; redundant, D-INTFAST carve -1 B)
 cmul_boundcmp:
-                or      a
                 sbc     hl,de               ; unsigned compare (a signed cmp16_bits
                                             ; would misread the 32768 bound as negative)
                 jr      z,cmul_inrange
@@ -1940,11 +1970,71 @@ cmul_inrange:
 cmul_int_ok:
                 jp      set_factyp_int_ret
 cmul_overflow:
-                call    caddsub_widen_both
-                jp      fp_mul
-cmul_float:
+                ld      de,(FP_TMP_B)       ; DE = the rhs, as widen_both_operands
+cmul_old:                                   ; wants it (the float path's is live)
                 call    widen_both_operands
                 jp      fp_mul
+cmul_float:
+                call    fx_cvt              ; NC: HL = the lhs, DE = the rhs, both
+                jr      c,cmul_old          ; exact int16s (D-INTFAST)
+                call    cmul_int
+; --- fx_tail: the int path came back from a float arm's exact-int16 detour ------
+; (D-INTFAST, above). FACTYP = 2: DE is its exact answer -> the BCD path's FAC and
+; tail. Otherwise it overflowed into the BCD op, whose answer -- FAC, DE and every
+; register -- is final: AF, the one pair the test below takes, is put back. (Re-
+; running the idempotent flt_to_int16 tail instead is 4 B smaller and ~1700 T
+; dearer on every overflow.)
+fx_tail:
+                push    af
+                call    factyp_is2
+                jr      z,fxt_int
+                pop     af
+                ret
+fxt_int:
+                pop     hl                  ; (the int path's AF: dead)
+                push    de
+                xor     a
+                call    fac_zero_mantissa   ; FAC+1..7 := 0 (A = 0)
+                pop     hl                  ; HL = the answer
+                ld      a,h
+                or      l
+                ld      c,a                 ; a zero: C = 0, as the BCD path's
+                jp      z,raf_zero_ok       ; zero tail is reached with it
+                ld      de,FAC
+                call    nx_pack             ; FAC+0..3: lead + three BCD pairs
+                jp      fac_dbl_int16       ; FACTYP := 8, DE := flt_to_int16
+
+; --- fx_cvt: are both operands of a float `+ - *` exact int16s? (D-INTFAST) ------
+; In: the popped lhs (LHS_FACTYP; FP_LHSVAL or LHS_FAC), the rhs (FACTYP; DE or
+; FAC). Out: NC, HL = the lhs, DE = the rhs; or CF (one is not, or the rhs is the
+; int16 $8000), DE then still the rhs's own DE when that rhs is an int16 -- the
+; only case widen_rhs_operand reads it. Clobbers A, BC, HL (and DE on a float
+; rhs, whose DE nothing reads: widen_both_operands only parks it in FP_TMP_B).
+fx_cvt:
+                call    factyp_is2
+                jr      z,fxc_rint          ; an int16 rhs is its DE
+                ld      b,a                 ; B = the type = the byte count (4 / 8)
+                ld      hl,FAC
+                call    nx_pki              ; NC: DE = its exact value
+                ret     c
+fxc_rint:
+                ld      a,d
+                xor     $80
+                or      e
+                scf
+                ret     z                   ; $8000 (only an int16 can be): the int path's
+                                            ; '-' would keep it int16, the BCD path not
+                ld      hl,(FP_LHSVAL)
+                ld      a,(LHS_FACTYP)
+                cp      2
+                ret     z                   ; NC: an int16 lhs is FP_LHSVAL
+                push    de
+                ld      b,a
+                ld      hl,LHS_FAC
+                call    nx_pki              ; NC: DE = the lhs's exact value
+                ex      de,hl
+                pop     de
+                ret
 
 ; --- combine_div_float: ev_t's '/' site. ALWAYS float ----------------------
 ; (spec §10.1: "'/' is always real division, always double").

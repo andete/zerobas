@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37179 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37199 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31602,6 +31602,26 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
          in `A=I+7` (23 %), ~14 900 in `A=I*7` (39 %). Costs ~35-45 B (estimated 2026-10-20), LOW region, hooked in
          `combine_*` -- `fp_add` / `fp_mul` / `flt_to_int16` / `arga_pack_fac` are
          resident-ABI roots and run with page 1 switched out.
+         ✅ **BUILT 2026-10-20 (D-INTFAST):** `caddsub_float` / `cmul_float` first ask
+         `fx_cvt` whether both operands are exact int16 (`nx_pki` on a float operand);
+         if so the existing int path computes, and an in-range answer is packed by
+         `nx_pack` and finished through the BCD path's own tail (`fac_dbl_int16`), so
+         FACTYP, DE and every register come from the same `flt_to_int16` over the same
+         FAC; an overflow runs today's float path. Paid for in part by carves
+         (`caddsub_widen_both` gone, redundant pushes / `or a` / a dead store): low
+         region 49 → 6 B free on 2026-10-20 (+43 net), page 1 unchanged. Drafted by a
+         subagent, measured here. `tests/test_intfast.py` (new): 160 116 leaf calls (every
+         type pairing at the int16 walls, products / sums across them, fractions, rhs
+         `$8000`, pre-set FPERR; 120 000 random) and 425 programs, all identical to the
+         old image. ON THE MACHINE ([`intfast_before.out`](scratchpad/intfast_before.out)
+         → [`intfast_after.out`](scratchpad/intfast_after.out), ×300 ticks): `A=I+7`
+         137 → 120 (VG 70), `A=I*7` 192 → 136 (98), `A=I-J` 210 → 198 (93); **slower:**
+         `A=1.5+I` 135 → 142 (the exactness test) and an exact product that overflows
+         int16, `A=I*4682`, 210 → 230. float / math / tmfp / intarg acceptance green.
+         ⚠️ A NON-CANONICAL operand (a leading-zero mantissa or an A-F nibble -- only
+         POKE or CVS / CVD of foreign bytes make one) is read as the integer its digits
+         spell and the result packed canonically, where the BCD add could keep the odd
+         form; D-FORFAST's NEXT has the same exposure. Same value, different bytes.
       2. **no CALSLT per scalar reference** (every lookup crosses into the sub-ROM's
          `scv_find`): ~1375 a reference -- a resident walk in main (~45-55 B, needs a
          carve), or for NEXT only the variable's entry address cached in the FOR frame's
