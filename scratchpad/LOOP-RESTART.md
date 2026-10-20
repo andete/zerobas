@@ -1,10 +1,41 @@
-# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-17)
+# Loop restart — paste-ready state (written 2026-09-12; current section 2026-10-20)
 
 A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-17 — THE CURRENT ONE (the 2026-10-15 section below is history; the rulings tables there and in the 2026-09-24 section still hold).
+## 🟢 STATE AS OF 2026-10-20 — THE CURRENT ONE (the 2026-10-17 section below is history; the rulings tables in the 2026-10-15 and 2026-09-24 sections still hold).
+
+- **Landed 2026-10-20 (each gated and pushed):** D-DEEPEXPR + D-EDGEONERR (the deep-expression
+  guards, the evaluator reserve measured); **D-EVALSLOPE CLOSED** in three steps -- the
+  evaluator is ONE operator-precedence loop, a `(` holds 6 B as on the VG-8020 (de3a0e50;
+  with it STK_ALLOC_RESERVE 24 -> 88, the auto-DIM's edge the reference's at four depths);
+  STK_EVAL_RESERVE 84 -> 115, matched to the byte and gated from both sides by
+  dimedge-acceptance's `eval-p4-*` / `eval-p5-*` rows (9e8b2447); a pending typed operator
+  holds its lhs by type, 6 / 8 / 12 B, so a deep `1+(` nest no longer refuses first
+  (bd3fe40a). D-BOOTKEYS's $F347 settled TIER 6 (0f0accdf: C-BIOS's own "Disk work" fill,
+  load-bearing for disk/init.asm's RAMAD gate). **D-PAINTCELL (1f41ee03): PAINT is faster
+  than both references** (flood 0.24x, bounded 0.37x; sub page 0 now 15 B free -- the
+  graphics island must stay in page 0).
+- **Apparatus fixed on the way:** the echo guard took a cursor parked on an echoed line for
+  a swallowed head (D-ECHOCURSOR, probes/lib/omsx_repl.py: `BLIND/cursor`); kwknife's
+  operator cut follows `cl_lvtab`; perf pins re-pinned.
+- **LESSONS (memory):** an 8-byte-element edge hides up to 7 B in ONE program -- walk the
+  FRE(0) phases (scratchpad/deepctl_edge_probe.py); a case that agreed for the wrong reason
+  (deepexpr lb4) came apart when an unrelated cost was halved; and for the THIRD time an
+  ad-hoc stored-mode probe without `run_gap` read "slow" as "hung".
+- **IN FLIGHT at this writing:** D-FORFAST (TIER 5) drafted by a subagent in a worktree --
+  an empty `FOR I=1 TO 300:NEXT` is 100 ticks here against 24 on the VG-8020 (4.2x, the
+  widest per-construct gap; scratchpad/divtime_1020.out). If the session died, the worktree
+  is under .claude/worktrees/; re-brief from TODO D-FORFAST.
+- **NEXT, by tier:** TIER 1's open entries are standing bars and items waiting on Joost
+  (open each block before carrying that claim); TIER 3 COPY TO parked; TIER 4 D-BOOTKEYS's
+  CTRL needs D-DSKIB. TIER 5: D-FORFAST (in flight); division (`I/7` 3.7x, `fp_div`'s
+  restoring long division over unpacked BCD -- results must stay bit-identical, a host
+  differential over a random corpus is the safety net); LOAD per sector; PUT;
+  D-BLKIOPERCALL's W3b/W4 (parked until speed or D-FDCDI asks).
+
+## 🟢 STATE AS OF 2026-10-17 — history (its rulings rows still hold).
 
 - **Landed 2026-10-17 (each gated and pushed; CI green on all four jobs from 8a683d69):**
   D-BIOSINT $0D12 -- the reference BIOS's keyboard-scan entry, cbios-repack patch #11,
