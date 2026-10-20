@@ -24,15 +24,21 @@ session and the loop resumes exactly where it stopped.
   FRE(0) phases (scratchpad/deepctl_edge_probe.py); a case that agreed for the wrong reason
   (deepexpr lb4) came apart when an unrelated cost was halved; and for the THIRD time an
   ad-hoc stored-mode probe without `run_gap` read "slow" as "hung".
-- **IN FLIGHT at this writing:** D-FORFAST (TIER 5) drafted by a subagent in a worktree --
-  an empty `FOR I=1 TO 300:NEXT` is 100 ticks here against 24 on the VG-8020 (4.2x, the
-  widest per-construct gap; scratchpad/divtime_1020.out). If the session died, the worktree
-  is under .claude/worktrees/; re-brief from TODO D-FORFAST.
+- **Landed later on 2026-10-20:** **D-FORFAST** (1f6e53a3): an int-valued FOR loop's NEXT
+  takes an int16 fast path -- an empty `FOR I=1 TO 300:NEXT` 100 -> 32 ticks against the
+  VG-8020's 24; same 25 B frame; 358 B of main page 1 (386 -> 28 B free); kwtime's
+  negative-control pad is priced in TIME now. **D-DIVPACK** (f49abd6b): `fp_div` in packed
+  BCD, every quotient bit-identical (200 000 random pairs + edges on the host) -- `A=I/7`
+  x300 547 -> 168 against 163; low region 87 -> 49 B free. D-FORINT filed (an `I%` loop
+  39 vs 8 ticks, the untouched `%` NEXT).
+- **WALLS after 2026-10-20 (RECOUNT, never quote):** main page 1 ~28 B, low region ~49 B,
+  sub page 0 ~15 B, sub page 1 ~3950 B, sub2 lots. The next MAIN-ROM slice needs a carve
+  or a move into a sub ROM first.
 - **NEXT, by tier:** TIER 1's open entries are standing bars and items waiting on Joost
   (open each block before carrying that claim); TIER 3 COPY TO parked; TIER 4 D-BOOTKEYS's
-  CTRL needs D-DSKIB. TIER 5: D-FORFAST (in flight); division (`I/7` 3.7x, `fp_div`'s
-  restoring long division over unpacked BCD -- results must stay bit-identical, a host
-  differential over a random corpus is the safety net); LOAD per sector; PUT;
+  CTRL needs D-DSKIB. TIER 5: a host profile of `A=I+7` / `A=I*7` / the `%` NEXT /
+  the fast NEXT was in flight at this writing (the general interpreter gap: `A=I+7` ~137 vs
+  70 ticks) -- pick the next lever from it; D-FORINT; LOAD per sector; PUT;
   D-BLKIOPERCALL's W3b/W4 (parked until speed or D-FDCDI asks).
 
 ## 🟢 STATE AS OF 2026-10-17 — history (its rulings rows still hold).
