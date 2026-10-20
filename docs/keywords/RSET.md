@@ -99,7 +99,8 @@ The one rung not yet proven is **RAM usage**.
 - Main ROM: `ex_rset` and `lrset_common` in
   [basic/field.asm](../../basic/field.asm), through the `H_RSET` hook.
 - Disk ROM: `hk_lrset` in [disk/kernel.asm](../../disk/kernel.asm), shared
-  with `LSET`. A fielded variable's own bytes are its channel's record
+  with `LSET`, parses the statement itself (since 2026-10-20) and calls back into
+  the main ROM for the variable and the value. A fielded variable's own bytes are its channel's record
   (D-FLDDESC, 2026-10-17), so no field lookup is involved.
 - The store, with its right-justification, is `lrset_store_tenant` in
   [sub/lrsetst.asm](../../sub/lrsetst.asm).

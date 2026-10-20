@@ -4572,6 +4572,29 @@ item — do **one item per session** to keep context lean.
       1. S-LRFUSE: `hk_lrset`'s three call-backs (`lrset_tgt`, `lrset_rhs`,
          `lrset_finish`) become one; the `LRSET_JUST` store moves into disk.rom. Main
          ~-14 B, two crossings fewer.
+         🔀 **REPLACED BY S-LRMOVE, DONE 2026-10-20.** Reading the code showed that since
+         D-FLDDESC `hk_lrset` made ONLY the three call-backs -- all of LSET ran in main
+         -- so fusing saves ~14 B while MOVING the parse saves ~55 B, and is where Joost
+         ruled LSET belongs (2026-09-17: *"cut it anyway, it is the correct place for
+         it"*). `hk_lrset` now parses LSET / RSET itself and calls back one helper at a
+         time (`req_letter`, `var_str_type`, `tgt_parse_req`, `tgt_desc`, `skip_eq`,
+         `req_operand`, `str_eval`; `type_mismatch_error` / `stmt_error` to raise),
+         then `lrset_finish`: 8 crossings where there were 3. Z does not cross a
+         `calbak`, so `=` is compared on the A that does. main's `lrset_tgt` /
+         `lrset_rhs` are gone. 📌 `hk_lrset` moved to the hole in front of disk.rom's
+         pinned $53A7 (its old region, up to $75A5, had no room: the first build was
+         an EMPTY disk.rom from a negative `ds`). `check_dead_code.py` gains PIN_ROOTS
+         (fix 15): `basicint_73e5` had read as live only by falling through lrset_tgt's
+         pad, and `basicint_play` with it.
+         📏 Walls (`make basic-reloc`, 2026-10-20): main page 1 1 -> 24 B free at the
+         tail + 32 B free in front of the $73E5 pin (🔮 ~24 + ~26: HIT / near); low
+         unchanged (6); disk.rom free 2586 -> 2510 B (🔮 ~-70: HIT).
+         Witness: lrvar-acceptance 27/27 agree with the CF-3300
+         ([`lrmove_lrvar.out`](scratchpad/lrmove_lrvar.out)); nodisk-acceptance PASS,
+         pinned-divergent 0. 🔪 K-LR1 (`and $FE` before the LRSET_JUST store: every verb
+         reads as LSET): exactly the two RSET rows r.ctl / r.ary diverge, `HI   ` for the
+         CF-3300's `   HI` ([`lrmove_knife_lr1.out`](scratchpad/lrmove_knife_lr1.out));
+         disk.rom hashed around the plant (ac62e61a -> 92194eac -> ac62e61a). 🔮 HIT.
       2. S-MKWIDEN: the `MKS$`/`MKD$` widen moves into `hk_mkfloat` (low-region
          `widen_int_to` / `widen_fac_to`, no crossing). Main ~-12 B. Watch the rows the
          same move once broke: `MKS$(0)`, `MKS$(1)`, `MKD$(7)`, `MKS$(3%)`.
@@ -11406,7 +11429,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37339 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37362 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11572,7 +11595,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16434 (T-6FE392)8 (T-529ABE)` from `TODO.md:29271 (T-529ABE)`: a
+      `TODO.md:16457 (T-6FE392)8 (T-529ABE)` from `TODO.md:29294 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17281,7 +17304,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29294 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

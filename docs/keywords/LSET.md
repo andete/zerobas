@@ -110,7 +110,9 @@ The one rung not yet proven is **RAM usage**.
   [basic/field.asm](../../basic/field.asm) hand the statement to the disk ROM
   through the `H_LSET` hook.
 - Disk ROM: `hk_lrset` in [disk/kernel.asm](../../disk/kernel.asm), shared
-  with `RSET`, calls back for the target and the value. There is no field
+  with `RSET`, parses the statement itself (since 2026-10-20), calling back into
+  the main ROM for each step it needs from BASIC: the variable, the `=`, the
+  value. There is no field
   lookup: since D-FLDDESC (2026-10-17) a fielded variable's descriptor points
   into its channel's record, so storing into the variable's own bytes IS
   storing into the record, as on the CF-3300.

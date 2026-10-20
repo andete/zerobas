@@ -288,6 +288,11 @@ REQUIRED_DISK_RAM = [
                                 # else INPUT# / LINE INPUT# (the CR eats its LF)
     "STRMAX",                   # ⚠️ a CONSTANT: the longest string -- a numeric
                                 # item's bytes past it are read and dropped
+    # D-DISKREST slice 1: hk_lrset stores the justify flag and the target's
+    # descriptor itself, and compares the `=` token.
+    "LRSET_JUST",               # the verb's token: bit 0 = RSET
+    "MIDS_DEST",                # the target's descriptor, for lrset_finish
+    "EQ_TOKEN",                 # ⚠️ a CONSTANT: the `=` token
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
@@ -351,8 +356,17 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # item follows", so the handler's crossings scale with the item count.
     "field_prologue",           # channel + mode class + the record's span
     "field_item",               # one `w AS v$`; CF=1 -> another follows
-    "lrset_tgt",                # the target's descriptor (D-FLDDESC: no table)
-    "lrset_rhs",                # STRPTR = the RHS descriptor
+    # D-DISKREST slice 1 (2026-10-20): lrset_tgt / lrset_rhs are gone -- hk_lrset
+    # parses LSET / RSET itself and calls back ONE HELPER at a time:
+    "req_letter",               # the target must be a name (ERR 2)
+    "var_str_type",             # A = 1 for a string target
+    "tgt_parse_req",            # BC = key, (TGT_ADDR), HL past the reference
+    "tgt_desc",                 # HL = the target's descriptor / element offset
+    "skip_eq",                  # A = the next non-space byte (Z does not cross)
+    "req_operand",              # `LSET A$=` -> ERR 24
+    "str_eval",                 # STRPTR = the RHS descriptor; CF = string
+    "type_mismatch_error",      # ERR 13, raised from a call-back
+    "stmt_error",               # ERR 2, likewise
     "lrset_finish",             # destination, then the sub-ROM store
     # D-KILLOPEN: KILL refuses a file that is OPEN (64), which needed every
     # open channel's directory position -- the live channel's in the engine

@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **436** in the MSX standard work area at or above `$F380`.
-* **disk** — 118 declared addresses in this project's own workspace `$E000..$F37F` (109 with a machine-readable width), plus **63** in the MSX standard work area at or above `$F380`.
+* **disk** — 119 declared addresses in this project's own workspace `$E000..$F37F` (110 with a machine-readable width), plus **64** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -153,6 +153,7 @@ second one is the question a per-component map cannot answer.
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
+| `$EEC6` | 1 B | `disk` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
 | `$EEC7` | 1 B | `basic` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
 | `$EEC8` | 2 B | `basic` | `LRSET_DEST` | DISK-ONLY: LSET/RSET: destination ADDRESS of the store (2). (2 B) |  |
 | `$EEEE` | 11 B | `basic` | `COPY_SRC` | DISK-ONLY: the source's 11-byte 8.3 name field |  |
@@ -364,7 +365,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F5FD` | 1 B | `basic` | `PRDEV` | PRINT# device sink selector (1) |  |
 | `$F600` | 94 B | `basic` | `DB_WIN` | the render window, one page (94 B) |  |
 | `$F65E` |  | `basic` | `CLR_SAVE/LOC_COL/MIDS_DEST/OO_RECLEN_CHAN` | OPEN scratch: channel # stashed across the LEN= eval (1) |  |
-| `$F65F` |  | `basic` | `IN_RDLEN/LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) |  |
+| `$F65E` | 2 B | `disk` | `MIDS_DEST` | MID$ statement: the target descriptor's address (2 B) |  |
+| `$F65F` |  | `basic` | `IN_RDLEN/LOC_ROW/OO_DEVTYPE` | OPEN device-channel type being parsed (transient, 1) | `disk` MIDS_DEST |
 | `$F661` | 1 B | `basic` | `TTYPOS` | BASIC's 0-based print column (D-ADDR29 N set) (1) |  |
 | `$F662` | 1 B | `basic` | `GFX_SARGN` | $F662: how many extra SCREEN arguments have been |  |
 | `$F663` | 1 B | `basic` | `FACTYP/VALTYP_PUB` | PUBLISHED value type: 2 int / 4 single / 8 double (1) |  |

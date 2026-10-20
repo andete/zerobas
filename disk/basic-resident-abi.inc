@@ -74,6 +74,9 @@ GP_SRC equ 0EE77H   ; DISK-ONLY: pass cursor into FSECTOR_BUF (2)
 GP_LEFT equ 0EE79H   ; DISK-ONLY: record bytes still to move, ends $EA3E (2 B)
 FCH_RDMODE equ 0F6A6H   ; current read: 0=INPUT# (stop at ','/CR), 1=LINE (1)
 STRMAX equ 000FFH   ; repack build: string heap (slice-4a §8)
+LRSET_JUST equ 0EEC6H   ; DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1)
+MIDS_DEST equ 0F65EH   ; MID$ statement: the target descriptor's address (2 B)
+EQ_TOKEN equ 000EFH   ; '='
 FMT_GEOMSEL equ 0EF61H   ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
@@ -86,8 +89,15 @@ pdfcb_resume equ 06DF7H
 parse_disk_fcb equ 06503H
 field_prologue equ 07348H
 field_item equ 072F6H
-lrset_tgt equ 073C5H
-lrset_rhs equ 073E8H
+req_letter equ 040DDH
+var_str_type equ 046E0H
+tgt_parse_req equ 05299H
+tgt_desc equ 04795H
+skip_eq equ 042E0H
+req_operand equ 04120H
+str_eval equ 0493EH
+type_mismatch_error equ 04314H
+stmt_error equ 04306H
 lrset_finish equ 07258H
 fch_ctx_addr equ 06F77H
 disk_error equ 06B77H

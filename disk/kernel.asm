@@ -346,6 +346,64 @@ hbl_answer:                                 ;    else a PRINTED `load error`
 ; de-facto page-1 kernel-ABI address (class of $4010/$5454), pinned by
 ; call-target + register observation only (400/400 region-entry samples);
 ; body = conout_body, the proven $5454 implementation (M8/M10).
+; hk_lrset -- LSET / RSET v$ = s$, PARSED HERE (D-DISKREST slice 1, 2026-10-20).
+; 📌 SITED IN FRONT OF THE PINNED $53A7 ENTRY: the largest hole in this ROM; the
+; region it used to sit in (up to $75A5) had no room for the parse.
+; Until then this handler only called three main-side BUNDLES (lrset_tgt,
+; lrset_rhs, lrset_finish), so all of LSET ran in main page 1 -- ~49 B of it --
+; while Joost had ruled on 2026-09-17 that disk.rom is "the correct place for
+; it". The parse now runs here and calls back one HELPER at a time, as a disk
+; ROM reaches BASIC through CALBAS; main keeps the gate (a diskless machine's
+; ERR 5 comes before any of this) and lrset_finish, whose store dispatches a
+; sub-ROM tenant -- a disk -> sub nesting this tree has never made.
+; 💰 The price is crossings: 8 where there were 3 (~0.17 ms each, D-XSLOTPRICE).
+; A / HL / DE / BC and CF cross both ways (D-XSLOTABI); Z does NOT, so every test
+; here re-derives its flag from A or CF after the call-back. Each helper may
+; RAISE, which is safe from a call-back (main page 1 is mapped; the unwind resets
+; SP and discards this frame) -- the precedent is hk_dget's eval_int16_checked.
+;   in   FN_RESUME = the cursor just past the LSET / RSET token
+;   out  FN_RESUME = the resume cursor; CF = 1 (claimed)
+hk_lrset:
+                ld      hl,(FN_RESUME)
+                dec     hl
+                ld      a,(hl)              ; the verb's own token: bit 0 = RSET
+                inc     hl                  ; (main asserts LSET even, RSET = LSET+1)
+                ld      (LRSET_JUST),a      ; a diskless machine never gets here
+                ld      ix,req_letter
+                call    calbak              ; a target must be a name, else ERR 2
+                ld      ix,var_str_type
+                call    calbak              ; A = 1 if `$` (or DEFSTR)
+                or      a
+                jr      z,hklr_tm           ; a numeric target -> ERR 13
+                ld      ix,tgt_parse_req
+                call    calbak              ; BC = key, (TGT_ADDR); HL past it all
+                push    hl
+                ld      ix,tgt_desc
+                call    calbak              ; HL = the descriptor / element offset
+                ld      (MIDS_DEST),hl
+                pop     hl
+                ld      ix,skip_eq
+                call    calbak              ; A = the next non-space byte
+                cp      EQ_TOKEN
+                jr      nz,hklr_syn         ; no `=` -> ERR 2
+                inc     hl
+                ld      ix,req_operand
+                call    calbak              ; `LSET A$=` / `= :` -> ERR 24
+                ld      ix,str_eval
+                call    calbak              ; STRPTR -> [len][ptr]; HL advanced
+                jr      nc,hklr_tm          ; a non-string RHS -> ERR 13
+                ld      (FN_RESUME),hl
+                ld      ix,lrset_finish
+                call    calbak              ; destination, then the store
+                scf
+                ret
+hklr_tm:
+                ld      ix,type_mismatch_error
+                jp      calbak              ; raises; never returns
+hklr_syn:
+                ld      ix,stmt_error
+                jp      calbak              ; raises; never returns
+
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -4188,15 +4246,8 @@ hkf_item:
                 scf
                 ret
 
-hk_lrset:
-                ld      ix,lrset_tgt
-                call    calbak              ; the target: its descriptor's address
-                ld      ix,lrset_rhs
-                call    calbak              ; the `=` and the RHS expression
-                ld      ix,lrset_finish
-                call    calbak              ; destination, then the store
-                scf
-                ret
+; (hk_lrset -- LSET / RSET's handler -- moved to the hole in front of the pinned
+; $53A7 entry when D-DISKREST slice 1 made it parse: ~60 B more than this region had.)
 
 ; rnd_rec -- D-FLDDESC (2026-10-17): HL = the channel's RECORD, its block's +9
 ; (FCH_HDRSZ) -- where the CF-3300 keeps it and where FIELD points a variable's

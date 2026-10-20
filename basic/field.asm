@@ -653,13 +653,18 @@ dd_mode:
 ; and `RSET A$="X"`, where this tree simply RAN them.
 ex_lset:
                 ld      de,H_LSET           ; (left / right is the TOKEN's bit 0,
-                jr      lrset_common        ; read by lrset_tgt -- D-WSZERO S9)
+                jr      lrset_common        ; read by disk.rom's hk_lrset -- D-WSZERO S9)
+    IF (LSET_TOKEN & 1) != 0 || RSET_TOKEN != LSET_TOKEN + 1
+                db      LRSET_JUST_BIT0_RULE_NEEDS_LSET_EVEN_AND_RSET_LSET_PLUS_1
+    ENDIF
 ex_rset:
                 ld      de,H_RSET
 lrset_common:
                 ; 🏗️ D-LRSETMOVE (Joost, 2026-09-17). The body is in disk.rom as
                 ; `hk_lrset`; what is left here is the hand-off, the gate and the
-                ; resume — and THREE BUNDLES the handler calls back into.
+                ; resume -- and, since D-DISKREST slice 1 (2026-10-20), ONE bundle
+                ; the handler calls back into (lrset_finish). Until then there
+                ; were three, and the paragraphs below are why.
                 ; 🎚️ HE RULED THIS AFTER BEING SHOWN THE PRICE AND ARGUING THE
                 ; OTHER WAY: only ~25 B of the old 122 B body is disk work (the
                 ; field-entry walk); the rest is PARSE, so the move buys ~15 B and
@@ -671,12 +676,19 @@ lrset_common:
                 ; + tgt_parse_fld + fld_find — FIVE calls for ONE logical act. A
                 ; bundle per act (target, RHS, finish) is what keeps LSET at
                 ; ~1.94 ms against the CF-3300's measured 2.59 ms.
+                ; 🔁 REVERSED 2026-10-20 (D-DISKREST slice 1): the bundles saved
+                ; crossings but kept ~49 B of PARSE in main page 1, which then had
+                ; 1 B free; Joost had just ruled ROM space before speed. hk_lrset
+                ; now parses and calls back one helper at a time -- 8 crossings
+                ; where there were 3, the price this paragraph named.
                 ; 🏗️ D-FLDDESC (2026-10-17): the field-entry walk that was the
                 ; handler's only disk work is gone (no table; a FIELDed target's
                 ; own descriptor points at the record), so ALL of LSET is these
                 ; three bundles and disk.rom keeps only the decision to run.
-                ; ⚠️ THE CURSOR CROSSES IN FN_RESUME, NOT IN HL. Every bundle
-                ; reads it and writes it back, so the handler never threads it —
+                ; ⚠️ THE CURSOR CROSSES IN FN_RESUME, NOT IN HL: the handler reads
+                ; it there and leaves the resume cursor there (since slice 1 it
+                ; threads HL between its own call-backs, which carry HL both ways).
+                ; Before slice 1 every bundle read it and wrote it back --
                 ; and the two `push hl`/`pop hl` pairs the old body used to guard
                 ; it across fld_find and the store are GONE rather than moved,
                 ; which matters because a push that straddles a calbak straddles
@@ -726,40 +738,12 @@ dir_line:       dw      dir_line + 2        ; [link] -> the word below
                 dw      0                   ; [lineno] = 0 == the $0000 end marker
 run_kw:         db      "RUN",0
 
-; --- lrset_tgt: call-back 1 -- the whole target parse ---------------------------
-; out: MIDS_DEST = the target's descriptor (tgt_desc: a scalar's address, an
-;      element's ARYTAB offset); FN_RESUME = the cursor past the reference. May
-;      RAISE (ERR 13 on a non-string target), which is safe from a call-back: it
-;      runs in MAIN with main page 1 mapped, so the unwind discards the disk-ROM
-;      frame and the handler never resumes.
-; 🏗️ D-FLDDESC (2026-10-17): it also looked the target up in FLD_TAB and
-; returned CF=1 + the entry for a FIELDed one, CF=0 + FLD_CHAN=0 for the D-LRVAR
-; arm. There is ONE arm now: a FIELDed variable's descriptor points at its record
-; slice, so D-LRVAR's "the target's own body at its own length" IS the fielded
-; store (docs/spec-basic-lrvar.md). No carry is returned and none is read.
-lrset_tgt:
-                ld      hl,(FN_RESUME)
-                ; D-WSZERO S9: the justify flag is the verb's own token (FN_RESUME
-                ; = token + 1, from lrset_common): bit 0 is 0 for LSET, 1 for RSET.
-                ; Stored HERE, a disk.rom call-back, so a diskless machine -- whose
-                ; LSET / RSET end at the gate with ERR 5 -- never writes the cell.
-                dec     hl
-                ld      a,(hl)
-                inc     hl
-                ld      (LRSET_JUST),a
-    IF (LSET_TOKEN & 1) != 0 || RSET_TOKEN != LSET_TOKEN + 1
-                db      LRSET_JUST_BIT0_RULE_NEEDS_LSET_EVEN_AND_RSET_LSET_PLUS_1
-    ENDIF
-                call    req_letter          ; D-NGRAM: a FIELD target must be a name
-                call    var_str_type        ; A=1 if `$`
-                or      a
-                jp      z,type_mismatch_error
-                call    tgt_parse_req       ; BC = key, (TGT_ADDR) = element or 0
-                ld      (FN_RESUME),hl      ; past the whole reference
-                ; D-LRVAR: the variable's own storage (D-FLDDESC: FIELDed or not)
-                call    tgt_desc            ; HL = the descriptor / element offset
-                ld      (MIDS_DEST),hl
-                ret
+; (lrset_tgt -- LSET / RSET's target parse, call-back 1 -- and lrset_rhs below
+; are GONE, D-DISKREST slice 1, 2026-10-20: disk.rom's hk_lrset parses both
+; itself, calling back one helper at a time. Their bytes here are free space in
+; front of the $73E5 pin (Joost 2026-10-20: a pin pad is free space, `make
+; basic-reloc` lists it). hk_lrset still reads the justify flag as the token's
+; bit 0; the rule it rests on is asserted beside ex_lset.)
     IF BASICINT_PINS
 ; 📌 D-AVTAK PIN $73E5 (2026-10-15): the reference's PLAY body, which A View to a
 ; Kill CALLs with HL at its own "..." arguments (scratchpad/basicint_73e5_probe.py).
@@ -774,19 +758,6 @@ lrset_tgt:
 basicint_73e5:
                 jp      basicint_play       ; basic/missing.asm: call PLAY's body, return
     ENDIF
-
-; --- lrset_rhs: call-back 2 -- the `=` and the RHS string expression ---------
-; out: STRPTR -> [len][ptr]; FN_RESUME = cursor past the RHS. May RAISE.
-lrset_rhs:
-                ld      hl,(FN_RESUME)
-                call    skip_eq             ; '='
-                jp      nz,stmt_error
-                inc     hl                  ; past '='
-                call    req_operand         ; `LSET A$=` / `= :` -> ERR 24
-                call    str_eval            ; STRPTR -> [len][ptr]; HL advanced
-                jp      nc,type_mismatch_error  ; a non-string RHS -> ERR 13
-                ld      (FN_RESUME),hl
-                ret
 
 ; dev_cas -- the device name the "CAS:" tests compare against (dev_cmp's 0-terminated
 ; prefix: BLOAD, LOAD, RUN, SAVE, BSAVE, OPEN). Source: spec-bload-r.md §5.

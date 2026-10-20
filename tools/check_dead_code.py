@@ -632,6 +632,16 @@ def disk_abi_seeds(spans):
 
 # fix (14): labels on the stubs basic/islands.asm patches INTO C-BIOS's code
 PATCH_ROOTS = ('cbios_chput_ttypos',)
+# (15) PINNED ENTRIES (D-DISKREST slice 1, 2026-10-20): the labels at
+# tools/pin_plan.py's fixed addresses are entered by OTHER PEOPLE'S code -- a
+# program that CALLs $73E5 or jumps to $3297 because the reference has an entry
+# there (D-BASICINT, D-AVTAK) -- so no main label reaches them, and none should.
+# Until slice 1 removed lrset_tgt, `basicint_73e5` read as live only because
+# lrset_tgt's span FELL THROUGH the `ds` pad into it, and `basicint_play` behind
+# it with it; the tools/ arm then caught the drop ("CARRYING WEIGHT"). Declared
+# roots, asserted to resolve, as C-BIOS's patch roots are.
+PIN_ROOTS = ('basicint_3297', 'basicint_6cf3', 'basicint_taprd',
+             'basicint_tapst', 'basicint_run', 'basicint_73e5')
 
 
 def _assert_disk_resolves_locally(m, abi):
@@ -800,7 +810,11 @@ def main(argv):
         if _root not in m.nodes:
             sys.exit(f"FAIL: patch root {_root!r} is not a main label -- a rename "
                      f"would silently drop what C-BIOS enters (fix 14)")
-    abi = abi | set(PATCH_ROOTS)
+    for _root in PIN_ROOTS:
+        if _root not in m.nodes:
+            sys.exit(f"FAIL: pin root {_root!r} is not a main label -- a rename "
+                     f"would silently drop a pinned entry (fix 15)")
+    abi = abi | set(PATCH_ROOTS) | set(PIN_ROOTS)
     m_seeds = {'init'} | abi | dabi | tools_arm
     m_seeds |= {n for n in m.nodes if n.startswith(PROLOGUE)}
     _without = ({'init'} | abi | dabi
