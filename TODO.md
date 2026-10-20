@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37025 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37039 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -35810,6 +35810,20 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       differs": HIT. Residual (priority 3/4, an address): after a SHIFT boot the
       drive-count cell $F347 reads 255 (untouched) on the CF-3300 and 201 ($C9) here
       -- who writes $C9 there is unmeasured. CTRL still open (D-DSKIB).
+      📏 **$F347 SETTLED 2026-10-20 -- C-BIOS's own fill, kept; the residual is TIER 6.**
+      C-BIOS's `init_ram` fills $F300..$F37F ("Disk work") with $C9 on every boot (its own
+      source, `src/main.asm`, the repack's base). The references leave that range alone:
+      the VG-8020's reads as the emulator's power-on pattern -- [C9 FF 00 other] =
+      [0 60 61 7] against zerobas NODISK's [128 0 0 0]
+      ([`diskwork_fill_run.out`](scratchpad/diskwork_fill_run.out),
+      [`diskwork_fill_probe.py`](scratchpad/diskwork_fill_probe.py)); the CF-3300's 255 is
+      the same untouched RAM. On real hardware that is UNDEFINED power-on content, so no
+      program can depend on it. Matching = dropping the fill (a cbios-repack patch), and
+      the price is not bytes: disk/init.asm's RAMAD `$FF` gate KEYS ON this $C9 (C-BIOS
+      hosts skip re-deriving RAMAD because RAMAD0 reads $C9), so it would flip the
+      MSX-DOS boot path on every C-BIOS host -- a tier2 DOS-boot battery, for a value no
+      program can observe. 🎚️ The `$F347` residual is TIER 6; CTRL (above) stays the
+      item's TIER 4 face.
 
 - [x] 🔴 **THE T6 ERROR SETS IN `tools/kwerrset.py` MISS CODES THE REFERENCE RAISES —
       A ✓ ON "EVERY ERROR" CAN REST ON A NARROWER SET (D-KWERRSETGAP, found
