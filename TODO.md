@@ -4532,6 +4532,72 @@ item — do **one item per session** to keep context lean.
       The cheap sub-ROM table wins in the report (packed constants -600..-700 B,
       keyword table -160..-320 B, KEY defaults -90 B) Joost "cares about less".
 
+- [ ] 🧱 **D-DISKREST — THE DISK-ONLY CODE STILL IN MAIN GOES TO disk.rom (Joost
+      2026-10-20: "that needs to go first")**
+      🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
+      🤖 **AUTONOMOUS** — Joost ruled the order on 2026-10-20: speed (TIER 5) is
+      PAUSED after D-FORINT; ROM space first, INTERLEAVING slices that move code out of
+      main with slices that shrink the total; this one goes FIRST.
+      📏 **WHAT IS LEFT (a read-only study of 2026-10-20, from `build/basic-reloc.sym`
+      and the sources; no build, no emulator).** D-ROMSIZE step 1 moved the ENGINE;
+      the BASIC-facing halves stayed in main. Much less than a first estimate of ~1 KB:
+      (a) `VARPTR(#n)` is NOT disk-only -- the diskless VG-8020 answers it for CRT: /
+      LPT: / CAS: ([`VARPTR.md`](docs/keywords/VARPTR.md)); it stays.
+      (b) `MKI$` / `MKS$` / `MKD$` / `CV*`: the PARSE is the reference's main-side work
+      -- the diskless VG-8020 answers `MKI$(1,1)` 2 and `MKI$("A")` 5
+      ([`MKI$.md`](docs/keywords/MKI$.md)); the conversions already run in disk.rom
+      (`hk_mki`, `hk_mkfloat`, `hk_cv`). Only `MKS$`/`MKD$`'s widen (~12 B) can move.
+      (c) [`field.asm`](basic/field.asm) is 475 B but ~275 B of it is FIELD / LSET /
+      RSET; the rest is pin-refill code from other verbs.
+      (d) `DSKI$` / `DSKO$`: `dsk_core` + `ex_dsko` + `str_dski`, ~92 B.
+      🔧 **NO NEW CALL-BACK BUNDLE IS NEEDED** (D-ROMSIZE priced ~20 B on 2026-10-14):
+      `eval_byte_arg`, `eval_int16_checked`, `eval`, `fch_check`, `tgt_store_desc`,
+      `stmt_error` are all PAGE 1 now, so each is a plain `calbak` target -- a name in
+      `tools/gen_resident_abi.py`'s call-back list, 0 B of main. ⚠️ A LOW-region routine
+      whose callees reach page 1 (`req_comma` -> `skip_comma`) must NOT be called
+      directly from disk.rom; nothing checks that today, and `widen_rhs_operand` is
+      such an import already (unused).
+      ➡️ **SLICES, smallest risk first, each gated alone** (estimates, 2026-10-20):
+      0. tooling: a closure check on disk.rom's direct low-region imports (reuse
+         `check_tenant_closure.py`); drop the stale `widen_rhs_operand` import; a byte-
+         level gate for `MKI$`/`MKS$`/`MKD$` (none today).
+      1. S-LRFUSE: `hk_lrset`'s three call-backs (`lrset_tgt`, `lrset_rhs`,
+         `lrset_finish`) become one; the `LRSET_JUST` store moves into disk.rom. Main
+         ~-14 B, two crossings fewer.
+      2. S-MKWIDEN: the `MKS$`/`MKD$` widen moves into `hk_mkfloat` (low-region
+         `widen_int_to` / `widen_fac_to`, no crossing). Main ~-12 B. Watch the rows the
+         same move once broke: `MKS$(0)`, `MKS$(1)`, `MKD$(7)`, `MKS$(3%)`.
+      3. S-DSKPARSE: `DSKI$`/`DSKO$`'s parse into `hk_dsk` (the CF-3300 answers `DSKO$
+         0` 2 where the diskless VG-8020 says 5: the parse is the disk ROM's). One
+         crossing, cursor in BC; restore IX/IY (DSKI$ runs inside the evaluator).
+         Main ~-30 B (low region; estimated 2026-10-20).
+      4. S-FLDPRO: FIELD's prologue (`field_prologue`, `exf_dev`, `exf_bfm`) into
+         disk.rom; error order 5/52/59, 5/61, 2 unchanged. Main ~-70 B.
+      5. S-FLDITEM (only if FIELD's time allows -- one more crossing per item): ~-45 B.
+      Freed bytes in front of a pin stay as FREE SPACE (Joost 2026-10-20, below); the
+      walls readout lists them.
+      🏗️ **Joost 2026-10-20 on pin pads:** *"I don't think we have to fill holes before
+      pins exactly every time, but we do need to consider them free space we probably
+      want to use again eventually."* `make pin-check` now fails only on a wrong pin;
+      `make basic-reloc` prints the free bytes in front of the pins per hole
+      (`tools/pin_plan.py --holes`).
+      Witnesses: lrvar / lvfix / tgtspc / fldary / stmtpend / fldwidth / recauto /
+      dskio / nodisk (PINNED must stay empty) acceptance, diskrom-abi-check,
+      pin-check, check_disk_walls; plus per-slice rows and a knife.
+
+- [ ] ⌨️ **D-FLDEI — FIELD / LSET / RSET (AND FORMAT?) RETURN FROM disk.rom WITH
+      INTERRUPTS OFF (found 2026-10-20 by reading, D-DISKREST's study)**
+      🎚️ TIER 3 — common errors (provisional: D-HOOKDI's class; measure how long the
+      clock stops before re-tiering).
+      🤖 **AUTONOMOUS** — the reference settles it.
+      `fld_gate_resume` ([`field.asm`](basic/field.asm), shared by FIELD / LSET /
+      RSET) calls `chan_gate_bare` and goes straight on to `exec_stmt`; a claimed hook
+      returns through CALSLT with interrupts OFF, and every other caller re-enables
+      (`ei` after `chan_gate_bare` in GET / PUT's `gp_common` and in `dsk_core`;
+      D-HOOKDI). `format.asm`'s crossing looks the same. ➡️ Measure with
+      [`verbclock_probe.py`](scratchpad/verbclock_probe.py)'s method (a loop of LSETs
+      against TIME, CF-3300 beside it), then 1 B per site and a knife.
+
 - [x] 📼 **D-BLOADRTAIL — AFTER `BLOAD"CAS:",R` THE REST OF THE LINE WAS DROPPED;
       THE VG-8020 RUNS IT** — ✅ **FIXED 2026-10-14.**
       🎚️ TIER 1 — happy path: tape loaders of the shape `BLOAD"CAS:",R` followed
@@ -11332,7 +11398,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37265 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37331 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11498,7 +11564,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16360 (T-6FE392)8 (T-529ABE)` from `TODO.md:29197 (T-529ABE)`: a
+      `TODO.md:16426 (T-6FE392)8 (T-529ABE)` from `TODO.md:29263 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17207,7 +17273,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29197 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29263 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

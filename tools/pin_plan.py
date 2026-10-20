@@ -22,10 +22,17 @@ and the `ds` goes negative. Hence the two modes:
   bridge" fallback (`jr` over the pin from any instruction boundary); and REFILL
   candidates -- self-contained chunks that could be moved into the pad.
 
-  --check. The future gate: on a BUILT image, verify the expected bytes sit at
-  each pin and that the total pad (`ds`/org gap, plus any jr bridge) directly in
-  front of the pins is <= --budget (default 4 B). Exit 1 otherwise; exit 2 when
-  the built ROM is not what the current sources assemble to (stale build).
+  --check. The gate: on a BUILT image, verify the expected bytes sit at each pin.
+  Exit 1 when one does not; exit 2 when the built ROM is not what the current
+  sources assemble to (stale build). The pad directly in front of each pin is
+  REPORTED, split into FREE bytes (`ds`/org gap) and `jr` BRIDGE bytes; it is no
+  longer a failure (Joost 2026-10-20: "I don't think we have to fill holes before
+  pins exactly every time, but we do need to consider them free space we probably
+  want to use again eventually"). --budget N restores the old limit on the total.
+
+  --holes. The same measurement as two `measure:` lines for `make basic-reloc`'s
+  wall readout -- free bytes in front of the pins, per region and per hole -- so a
+  pad is counted as free space instead of disappearing behind a pin.
 
 WHERE THE INSTRUCTION BOUNDARIES COME FROM. `pasmo -d` prints, for every pass,
 a listing of every emitted item: `ADDR:HEX<TAB>MNEMONIC`, `ADDR:<TAB>label X`,
@@ -51,7 +58,8 @@ there would be assembled into that ROM too). NOT checked: the tree's own
 
     python3 tools/pin_plan.py                      # plan for the PINS table
     python3 tools/pin_plan.py --pin 0x3297:E1C9    # plan one ad-hoc pin
-    python3 tools/pin_plan.py --check [--rom build/basic-reloc.rom] [--budget 4]
+    python3 tools/pin_plan.py --check [--rom build/basic-reloc.rom] [--budget N]
+    python3 tools/pin_plan.py --holes [--rom build/basic-reloc.rom]
 """
 from __future__ import annotations
 
@@ -740,7 +748,8 @@ def plan(im: Image, pins: list[Pin], top: int) -> int:
 # ---------------------------------------------------------------------------
 # CHECK
 # ---------------------------------------------------------------------------
-def check(im: Image, pins: list[Pin], rom_path: str, budget: int) -> int:
+def check(im: Image, pins: list[Pin], rom_path: str, budget: int | None,
+          holes: bool = False) -> int:
     rom = open(rom_path, "rb").read()
     want = im.full[BASE - (TOP - len(im.full)):]
     if rom != want:
@@ -752,7 +761,7 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int) -> int:
     sym_by_addr = {}
     for n, a in im.sym.items():
         sym_by_addr.setdefault(a, n)
-    fails, waste = 0, 0
+    fails, waste, free_tot, rows = 0, 0, 0, []
     for pin in pins:
         got = rom[pin.addr - BASE: pin.addr - BASE + pin.length]
         ok, what = True, got.hex(" ").upper()
@@ -769,7 +778,7 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int) -> int:
                 what += f" (jp ${tgt:04X} {sym_by_addr.get(tgt, '?')})"
         # pad directly in front of the pin: address gaps + DEFS items + a jr bridge
         before = [it for it in im.code if it.addr < pin.addr]
-        pad, j = 0, len(before) - 1
+        pad, bridge, j = 0, 0, len(before) - 1
         end = pin.addr
         while j >= 0:
             it = before[j]
@@ -785,15 +794,31 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int) -> int:
             # bytes only) is longer than pin.length -- any forward jr from right
             # before the pin that lands past its start is skipping it.
             if it.kind == "instr" and it.hexb[:1] == b"\x18" and (jr_target(it) or 0) >= pin.addr + pin.length:
-                pad += 2
+                bridge = 2
             break
-        waste += pad
+        waste += pad + bridge
+        free_tot += pad
+        rows.append((pin.addr, pad))
         st = "OK  " if ok else "FAIL"
         fails += not ok
-        print(f"  {st} ${pin.addr:04X}: {what:30s} want {exp}; pad in front {pad} B  -- {pin.note}")
-    verdict = "OK" if not fails and waste <= budget else "FAIL"
-    print(f"pin_plan --check: {verdict}: {len(pins) - fails}/{len(pins)} pins present, "
-          f"total pad waste {waste} B (budget {budget} B)")
+        if not holes:
+            print(f"  {st} ${pin.addr:04X}: {what:30s} want {exp}; in front: {pad} B free"
+                  f"{f' + {bridge} B jr bridge' if bridge else ''}  -- {pin.note}")
+    if holes:
+        # the wall readout's view: free bytes per region, each hole named, so a pad
+        # is counted as free space and its fragmentation stays visible
+        for name, lo, hi in (("low region", 0, BASE), ("page-1", BASE, TOP)):
+            hs = [(a, n) for a, n in rows if lo <= a < hi and n]
+            print(f"    measure: {name + ' pin pads':23s}= {sum(n for _, n in hs)} B free "
+                  f"in front of pins ({', '.join(f'{n} B at ${a:04X}' for a, n in hs) or 'none'})")
+        if fails:
+            print(f"FAIL: {fails} pin(s) wrong -- run `make pin-check`", file=sys.stderr)
+        return 1 if fails else 0
+    verdict = "OK" if not fails and (budget is None or waste <= budget) else "FAIL"
+    print(f"pin_plan --check: {verdict}: {len(pins) - fails}/{len(pins)} pins present; "
+          f"{free_tot} B free in front of them (free space -- refill when convenient), "
+          f"{waste - free_tot} B of jr bridge"
+          + (f"; total {waste} B against --budget {budget} B" if budget is not None else ""))
     return 0 if verdict == "OK" else 1
 
 
@@ -813,7 +838,8 @@ def main() -> int:
     ap.add_argument("--pin", action="append", help="ADDR:HEXBYTES or ADDR:jp[:SYM] (replaces the table)")
     ap.add_argument("--check", action="store_true", help="gate a built image")
     ap.add_argument("--rom", default=os.path.join(ROOT, "build", "basic-reloc.rom"))
-    ap.add_argument("--budget", type=int, default=4, help="max total pad waste in B (--check)")
+    ap.add_argument("--holes", action="store_true", help="wall-readout lines: free bytes in front of the pins")
+    ap.add_argument("--budget", type=int, default=None, help="max total pad + bridge in B (--check; default: no limit)")
     ap.add_argument("--top", type=int, default=5, help="candidates per list (plan)")
     a = ap.parse_args()
     pins = [parse_pin(p) for p in a.pin] if a.pin else PINS
@@ -821,8 +847,8 @@ def main() -> int:
         if region_of(p.addr) is None or region_of(p.addr + p.length - 1) != region_of(p.addr):
             sys.exit(f"pin_plan: ${p.addr:04X} len {p.length} is not inside one main region")
     im = load_image()
-    if a.check:
-        return check(im, pins, a.rom, a.budget)
+    if a.check or a.holes:
+        return check(im, pins, a.rom, a.budget, holes=a.holes)
     return plan(im, pins, a.top)
 
 

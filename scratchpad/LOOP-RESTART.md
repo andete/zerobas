@@ -6,6 +6,19 @@ session and the loop resumes exactly where it stopped.
 
 ## 🟢 STATE AS OF 2026-10-20 — THE CURRENT ONE (the 2026-10-17 section below is history; the rulings tables in the 2026-10-15 and 2026-09-24 sections still hold).
 
+- 🏗️ **JOOST'S RULINGS, 2026-10-20 EVENING -- READ BEFORE PICKING ANYTHING:**
+  | ruling | words | what it means |
+  |---|---|---|
+  | speed PAUSED | *"lets pause working on speed and work on rom space first, it'll also have speed impact"* / *"finish the FOR I% first though"* | D-FORINT landed (4b03009f); NO new TIER 5 slice until Joost says otherwise |
+  | interleave | asked "free main first / shrink total first / interleave": **"Interleave both"** | alternate a slice that MOVES code out of main (cold statements -> sub2 page 0, which can call main page 1's evaluator) with one that SHRINKS the total (D-ROMSIZE order: string GC, graphics, float format, dedupe) |
+  | disk code first | on ~disk-only code still in main: *"that needs to go first."* | **D-DISKREST** (TODO.md) is the FIRST slice series; its real size is ~135-180 B of main, not 1 KB |
+  | pin pads | *"I don't think we have to fill holes before pins exactly every time, but we do need to consider them free space we probably want to use again eventually."* | `make pin-check` fails only on a wrong pin; `make basic-reloc` lists the free bytes in front of the pins per hole |
+- **Landed 2026-10-20 evening:** D-STOPTEAR (a7ff1389, a torn BREAKX read fired ON STOP twice),
+  D-FORINT (4b03009f, `FOR I%` 39 -> 23 ticks). Main page 1 is at **1 B** (read the wall).
+- **A fresh ROM-size measurement (2026-10-20) lives only in that session's scratchpad**: the four
+  code ROMs 66.7 KB of content (-1.6 KB since 10-14), BASIC ~2.3x the reference's (E);
+  `scratchpad/romsize_report.md` (10-14) predates the disk eviction -- re-measure before quoting.
+
 - **Landed 2026-10-20 (each gated and pushed):** D-DEEPEXPR + D-EDGEONERR (the deep-expression
   guards, the evaluator reserve measured); **D-EVALSLOPE CLOSED** in three steps -- the
   evaluator is ONE operator-precedence loop, a `(` holds 6 B as on the VG-8020 (de3a0e50;
