@@ -1,0 +1,38 @@
+
+row                               cf3300                            zb   verdict
+c.mkilen                               2                             2   SAME
+c.mkibytes                           2 1                           2 1   SAME
+c.cvi                                258                           258   SAME
+c.stored                       65 21 0 0                     65 21 0 0   SAME
+s.len                                  4                             4   SAME
+d.len                                  8                             8   SAME
+s.lenint                               4                             4   SAME
+d.lenint                               8                             8   SAME
+b.mks                          65 21 0 0                     65 21 0 0   SAME
+b.mkd                  65 21 0 0 0 0 0 0             65 21 0 0 0 0 0 0   SAME
+b.mksneg                      193 21 0 0                    193 21 0 0   SAME
+b.mkszero                        0 0 0 0                       0 0 0 0   SAME
+b.mksint                       65 16 0 0                     65 16 0 0   SAME
+r.cvs                                1.5                           1.5   SAME
+r.cvd                                1.5                           1.5   SAME
+r.cvsneg                            -1.5                          -1.5   SAME
+r.cvszero                              0                             0   SAME
+r.third                  .33333333333333               .33333333333333   SAME
+a.mksdbl                         1.23457                       1.23457   SAME
+a.mkdint                               7                             7   SAME
+a.mkspct                               3                             3   SAME
+x.cvimks                            5441                          5441   SAME
+x.cvdmks                     ERR 5 AT 60                   ERR 5 AT 60   SAME
+x.cvsshort                   ERR 5 AT 60                   ERR 5 AT 60   SAME
+x.cvslong                        4.24344                       4.24344   SAME
+x.cvsempty                   ERR 5 AT 60                   ERR 5 AT 60   SAME
+e.mksstr                    ERR 13 AT 60                  ERR 13 AT 60   SAME
+e.cvsnum                    ERR 13 AT 60                  ERR 13 AT 60   SAME
+e.mksnoarg                   ERR 2 AT 60                   ERR 2 AT 60   SAME
+e.mksempty                   ERR 2 AT 60                   ERR 2 AT 60   SAME
+v.big                              1E+30                         1E+30   SAME
+v.small                            1E-30                         1E-30   SAME
+
+DIFF (cf3300 vs zb): 0/32  
+done
+refcache: 0 hit, 64 miss, 64 stored

@@ -104,10 +104,10 @@ cells while doing it.
 ## Where it lives
 
 - Main ROM: `str_mkd` / `str_mkf` in [basic/strvar.asm](../../basic/strvar.asm)
-  parse and widen the argument and offer it to the disk ROM through the
-  `MKD$` hook; an unclaimed hook is error 5.
-- Disk ROM: `hk_mkfloat` in [disk/kernel.asm](../../disk/kernel.asm), shared
-  with `MKS$`.
+  parse the argument and offer it to the disk ROM through the `MKD$` hook; an
+  unclaimed hook is error 5.
+- Disk ROM: `hk_mkfloat` in [disk/kernel.asm](../../disk/kernel.asm) widens the
+  argument (since 2026-10-20) and packs it, shared with `MKS$`.
 
 ## Related concepts
 

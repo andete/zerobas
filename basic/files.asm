@@ -764,6 +764,29 @@ bp_ret:
 arl_getbyte:
                 ld      hl,(ARL_GETBYTE)
                 jp      (hl)
+; 📌 REFILL, D-DISKREST slice 2 (2026-10-20): MKS$ / MKD$'s widen (12 B) moved
+; from basic/strvar.asm to disk.rom's hk_mkfloat, AHEAD of the $6CF3 pin. A pad is
+; free space now (Joost 2026-10-20), but here it cannot be left: the OPEN "CAS:"
+; arm past the pin `jr`s back to oo_fail_syn / oo_fail_bfname below, and the
+; 12 B pushed them out of reach (and `jp`s there cost bytes the $6CF3..$72D4
+; stretch does not have). So the two chunks below -- whole, entered only by
+; label, no `jr` in or out (tools/pin_plan.py chunks()) -- came from past the last
+; pin, where the move shifts nothing fixed.
+; --- sep_eval: str_eval_paren's recursion, behind stk_room (R1, D-DEEPEXPR) ----
+; in/out: as str_eval, except that a refusal returns CF clear (the paren arm's
+; own decline) with ERR 7 deferred. The `jp` keeps str_eval's frame where the
+; `call str_eval` it replaces put it: still 6 B a level.
+; T-states added per probed `(`: 132 (stk_room 122 + `jp c` 10).
+sep_eval:
+                call    stk_room
+                jp      c,str_eval
+                ret                         ; CF clear: decline, HL kept
+; dev_cas -- the device name the "CAS:" tests compare against (dev_cmp's 0-terminated
+; prefix: BLOAD, LOAD, RUN, SAVE, BSAVE, OPEN). Source: spec-bload-r.md §5. Read by
+; absolute address only (`ld de,dev_cas`). (bload.asm until 2026-10-19, then past
+; the $73E5 pin in basic/field.asm, then here.)
+dev_cas:
+                db      "CAS:",0
 oo_fail_syn:                                ; `jr` reach for the CAS: arm past the pin
                 jp      stmt_error
 oo_fail_bfname:                             ; the cassette arm's RANDOM / APPEND

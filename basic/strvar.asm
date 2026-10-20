@@ -352,21 +352,15 @@ str_mkf:
                 ; is therefore SELECTED HERE from the width, which STRSCR already
                 ; holds -- no new RAM cell, and the three widths 2/4/8 are exactly
                 ; the three verbs.
-                ; 🔴 THE WIDEN RUNS FIRST, AND BEFORE HL IS LOADED.
-                ; `widen_rhs_operand` reads the LIVE RHS, which for an INTEGER
-                ; argument is **DE** -- a register CALSLT does not preserve. So it
-                ; cannot live in the disk-ROM body: moving it there broke MKS$(0),
-                ; MKS$(1), MKD$(7) and MKS$(3%) while every FLOAT argument stayed
-                ; green, because only the int path reads a register (mksd_probe,
-                ; 5 DIFF). ⚠️ And it must run BEFORE the hook address is selected:
-                ; putting it after cost HL, which by then holds the hook cell --
-                ; 24 DIFF including the controls, on the very next measurement.
-                cp      2
-                jr      z,mkf_sel           ; MKI$ needs no widen; DE is its value
-                push    de
-                call    arga_widen          ; D-ARGAWIDEN
-                pop     de
-                ld      a,(STRSCR)          ; the widen clobbered A
+                ; 🔁 THE WIDEN IS disk.rom's NOW (D-DISKREST slice 2, 2026-10-20).
+                ; It once could not be: `widen_rhs_operand` reads the LIVE RHS,
+                ; which for an INTEGER argument is DE -- a register CALSLT does not
+                ; preserve -- and moving it broke MKS$(0), MKS$(1), MKD$(7) and
+                ; MKS$(3%) while every FLOAT argument stayed green (mksd_probe,
+                ; 5 DIFF). D-MKINT's unconditional `ld (STRSCR+1),de` above is
+                ; what changed that: the int value now crosses in RAM, so
+                ; hk_mkfloat reloads DE from STRSCR+1 and widens there with the
+                ; low-region widen_int_to / widen_fac_to. A is still the width.
 mkf_sel:
                 ; The hook address cannot be carried in a register from the entry
                 ; stub -- `eval` above owns IX as its token cursor -- so it is

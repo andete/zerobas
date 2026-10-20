@@ -677,15 +677,9 @@ frg_pool:
 ; pin, and the bodies live here, past the last one, beside fre_go.
 ; ===========================================================================
 
-; --- sep_eval: str_eval_paren's recursion, behind stk_room (R1) ---------------
-; in/out: as str_eval, except that a refusal returns CF clear (the paren arm's
-; own decline) with ERR 7 deferred. The `jp` keeps str_eval's frame where the
-; `call str_eval` it replaces put it: still 6 B a level.
-; T-states added per probed `(`: 132 (stk_room 122 + `jp c` 10).
-sep_eval:
-                call    stk_room
-                jp      c,str_eval
-                ret                         ; CF clear: decline, HL kept
+; (sep_eval -- str_eval_paren's recursion behind stk_room (R1) -- moved to
+; basic/files.asm in front of oo_fail_syn, D-DISKREST slice 2 (2026-10-20): a
+; refill for the 12 B that slice took out ahead of the $6CF3 pin.)
 
 ; --- sef_fn: str_ev_fn's fn_call, behind stk_room (R5) ------------------------
 ; A string FN level costs a pool frame and ~10 B of stack; fnf_save's own

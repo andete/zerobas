@@ -759,15 +759,9 @@ basicint_73e5:
                 jp      basicint_play       ; basic/missing.asm: call PLAY's body, return
     ENDIF
 
-; dev_cas -- the device name the "CAS:" tests compare against (dev_cmp's 0-terminated
-; prefix: BLOAD, LOAD, RUN, SAVE, BSAVE, OPEN). Source: spec-bload-r.md §5.
-; 📌 MOVED HERE FROM basic/bload.asm ON 2026-10-19 (D-ROMSIZE step 1, BLOAD from
-; disk into disk.rom): do_bload grew the 5 B of its FOPEN_SEL_BLOAD crossing in
-; front of the pinned $6CF3, whose pad is 0 (a `jr` bridge), and these 5 B of
-; data are the exact refill out -- past every pin, where a size change moves
-; nothing fixed. Read by absolute address only (`ld de,dev_cas`).
-dev_cas:
-                db      "CAS:",0
+; (dev_cas -- the "CAS:" device name -- moved back in front of the $6CF3 pin,
+; basic/files.asm before oo_fail_syn, D-DISKREST slice 2 (2026-10-20): with
+; sep_eval, the exact 12 B refill for what that slice took out ahead of it.)
 
 ; cl_leaf -- the evaluator's leaf for each binary operator, by id (token -
 ; GT_TOKEN, 3..14), read only by basic/expr.asm's climber (`ld hl,cl_leaf-6`).

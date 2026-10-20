@@ -346,6 +346,14 @@ hbl_answer:                                 ;    else a PRINTED `load error`
 ; de-facto page-1 kernel-ABI address (class of $4010/$5454), pinned by
 ; call-target + register observation only (400/400 region-entry samples);
 ; body = conout_body, the proven $5454 implementation (M8/M10).
+; --- hk_lrset: LSET/RSET's body, RUNNING IN THE DISK ROM --------------------
+; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
+; §7.3-§7.5 for the first slice. D-LRSETMOVE, Joost 2026-09-17: *"cut it anyway,
+; it is the correct place for it"*. HISTORY, condensed from the header that
+; stood with the old handler: at D-LRSETMOVE only the field-entry walk (~25 B of
+; a 122 B body) moved here and the PARSE stayed in main behind three bundled
+; call-backs; D-FLDDESC (2026-10-17) removed the walk, leaving only the decision
+; to run; D-DISKREST slice 1 (below) moved the parse.
 ; hk_lrset -- LSET / RSET v$ = s$, PARSED HERE (D-DISKREST slice 1, 2026-10-20).
 ; 📌 SITED IN FRONT OF THE PINNED $53A7 ENTRY: the largest hole in this ROM; the
 ; region it used to sit in (up to $75A5) had no room for the parse.
@@ -4166,11 +4174,25 @@ hkd_st:
 ;   in   STRSCR = the width (4 or 8); FAC/FACTYP = the evaluated argument
 ;   out  STRSCR+1.. = the packed bytes; CF set (handled)
 hk_mkfloat:
-                ; ⚠️ THE WIDEN IS NOT HERE, AND THAT IS NOT AN OVERSIGHT.
-                ; `widen_rhs_operand` reads the live RHS, which for an INTEGER
-                ; argument is DE -- a register CALSLT does not preserve. It runs
-                ; main-side; by the time we are entered, ARGA already holds the
-                ; widened value and everything we touch is RAM.
+                ; 🔁 THE WIDEN IS HERE SINCE D-DISKREST slice 2 (2026-10-20). It
+                ; used to run main-side because `widen_rhs_operand` reads the live
+                ; RHS, which for an INTEGER argument is DE, and CALSLT does not
+                ; preserve DE. But main stores DE at STRSCR+1 unconditionally
+                ; (D-MKINT), so the int value crosses in RAM: reload it, dispatch
+                ; on FACTYP as widen_rhs_operand does (which we cannot call -- its
+                ; factyp_is2 is page 1), and widen into ARGA with the low-region
+                ; bodies. For a float argument DE is junk and widen_fac_to ignores
+                ; it, as before.
+                ld      de, (STRSCR+1)
+                ld      hl, ARGA
+                ld      a, (FACTYP)
+                cp      2
+                jr      nz, hkm_wfac
+                call    widen_int_to
+                jr      hkm_wide
+hkm_wfac:
+                call    widen_fac_to
+hkm_wide:
                 ld      a, (STRSCR)
                 cp      4
                 jr      nz, hkm_dbl
@@ -4188,30 +4210,6 @@ hkm_copy:
                 scf
                 ret
 
-; --- hk_lrset: LSET/RSET's body, RUNNING IN THE DISK ROM --------------------
-; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
-; §7.3-§7.5 for the slice. D-LRSETMOVE, Joost 2026-09-17: *"cut it anyway, it is
-; the correct place for it"*.
-;
-; 🎯 WHAT IS ACTUALLY HERE IS THE FIELD-ENTRY WALK, AND THAT IS THE WHOLE POINT
-; OF THE ACCOUNTING IN THE SPEC: of the old 122 B body, ~25 B is disk work and
-; the rest is PARSE, which stays in main behind three bundled call-backs. A verb
-; that is mostly parse moves almost nothing however the crossings are arranged.
-;
-;   in   FN_RESUME = the statement cursor, just past the LSET/RSET token
-;        LRSET_JUST = the LSET / RSET token (bit 0 = right), set by main's
-;        lrset_tgt call-back (D-WSZERO S9: never written on a diskless machine)
-;   out  the statement is DONE; FN_RESUME = the resume cursor
-;        CF = 1 (claimed), which is what chan_gate tests
-;
-; 🏗️ D-FLDDESC (2026-10-17): THE FIELD-ENTRY WALK IS GONE, AND WITH IT THE LAST
-; DISK WORK IN THIS BODY. It read main's FLD_TAB entry -- [chan][key:2][off:2]
-; [width] -- and pointed LRSET_DEST into FSECTOR_BUF. There is no table now:
-; FIELD writes each variable's OWN descriptor as [width][block+9+offset], as the
-; CF-3300 does (scratchpad/fieldram_run.out), so a FIELDed LSET IS the non-
-; FIELDed one -- the target's own body at the target's own length -- and main's
-; three bundles do all of it. What stays here is the DECISION to run: the hook
-; cell, so a diskless LSET / RSET is still ERR 5 at main's gate.
 ; --- hk_field: FIELD's body, RUNNING IN THE DISK ROM -----------------------
 ; docs/spec-basic-nodisk.md §9 for the hook; disk/docs/spec-diskcode-eviction.md
 ; §7.3-§7.5 for the slice. D-FIELDMOVE, the last member of the channel trio.

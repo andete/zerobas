@@ -90,6 +90,8 @@ REQUIRED_DISK_CODE = [
     # (`widen_rhs_operand` stood here until 2026-10-20: unused by disk.rom -- hk_mkfloat
     # names it in a comment only -- and NOT low-closed, its callee `factyp_is2` is
     # page 1. `check_tenant_closure.py --disk` found it; D-DISKREST slice 0.)
+    "widen_int_to",             # MKS$/MKD$ (D-DISKREST slice 2): an int argument
+    "widen_fac_to",             # ...or a float one, widened into ARGA here
     "round_single_and_pack",    # MKS$/MKD$: pack ARGA as single
     "round_and_finalize",       # ...or as double
     "pu_deref_body",            # D-CVMOVE: hk_cv turns the evaluator's string

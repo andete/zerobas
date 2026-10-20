@@ -10,6 +10,8 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
+widen_int_to equ 037FFH
+widen_fac_to equ 0379FH
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
 pu_deref_body equ 02869H
@@ -86,12 +88,12 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
-parse_disk_fcb equ 06503H
+parse_disk_fcb equ 064F7H
 field_prologue equ 07348H
 field_item equ 072F6H
 req_letter equ 040DDH
 var_str_type equ 046E0H
-tgt_parse_req equ 05299H
+tgt_parse_req equ 0528DH
 tgt_desc equ 04795H
 skip_eq equ 042E0H
 req_operand equ 04120H
@@ -100,7 +102,7 @@ type_mismatch_error equ 04314H
 stmt_error equ 04306H
 lrset_finish equ 07258H
 fch_ctx_addr equ 06F77H
-disk_error equ 06B77H
+disk_error equ 06B6BH
 read_line equ 045FBH
 fch_close_all equ 0706CH
 eval_int16_checked equ 0454AH

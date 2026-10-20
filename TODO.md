@@ -4598,6 +4598,28 @@ item — do **one item per session** to keep context lean.
       2. S-MKWIDEN: the `MKS$`/`MKD$` widen moves into `hk_mkfloat` (low-region
          `widen_int_to` / `widen_fac_to`, no crossing). Main ~-12 B. Watch the rows the
          same move once broke: `MKS$(0)`, `MKS$(1)`, `MKD$(7)`, `MKS$(3%)`.
+         ✅ **DONE 2026-10-20.** `hk_mkfloat` reloads the int value from STRSCR+1 (main
+         stores DE there unconditionally since D-MKINT -- what makes the move possible
+         now when it broke four rows before), dispatches on FACTYP and widens into ARGA
+         with the low-region bodies; main loses `cp 2 / jr z / push de / call
+         arga_widen / pop de / ld a,(STRSCR)`. 📌 The 12 B were ahead of the $6CF3 pin,
+         and leaving that pad open pushed `oo_fail_syn` / `oo_fail_bfname` out of the
+         OPEN "CAS:" arm's `jr` reach -- and `jp`s there overran the $72D4 pin (the
+         $6CF3..$72D4 stretch has 0 B). So this pad was REFILLED: `sep_eval` (7 B) and
+         `dev_cas` (5 B), whole chunks from past the last pin (`pin_plan.chunks()`, no
+         `jr` links), now in front of `oo_fail_syn`. A pad is free space (Joost
+         2026-10-20) only where no `jr` spans it.
+         📏 Walls: main page 1 tail 24 -> 36 B, $73E5 pad 32 B unchanged, low 6 B;
+         disk.rom free 2510 -> 2488 B; `check_tenant_closure.py --disk` OK, 6 seeds.
+         Witness: [`mksd_probe.py`](scratchpad/mksd_probe.py) against the CF-3300, 0/32
+         DIFF before ([`mkwiden_before.out`](scratchpad/mkwiden_before.out)) and after
+         ([`mkwiden_after.out`](scratchpad/mkwiden_after.out)). 🔪 K-MW1 (always the
+         float arm): 3/32 DIFF -- `b.mksint`, `a.mkdint`, `a.mkspct`
+         ([`mkwiden_knife_mw1.out`](scratchpad/mkwiden_knife_mw1.out)); disk.rom hashed
+         1a9f2022 -> db61a308 -> 1a9f2022. 🔮 "the five int rows" PARTIAL: `b.mkszero`
+         and `r.cvszero` stayed SAME -- an int 0 argument's leftover FAC packs to the
+         same bytes, so those two rows cannot see which arm ran (rows that agree for
+         a second reason; the int-arm witness is the other three).
       3. S-DSKPARSE: `DSKI$`/`DSKO$`'s parse into `hk_dsk` (the CF-3300 answers `DSKO$
          0` 2 where the diskless VG-8020 says 5: the parse is the disk ROM's). One
          crossing, cursor in BC; restore IX/IY (DSKI$ runs inside the evaluator).
@@ -11429,7 +11451,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37362 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37384 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11595,7 +11617,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16457 (T-6FE392)8 (T-529ABE)` from `TODO.md:29294 (T-529ABE)`: a
+      `TODO.md:16479 (T-6FE392)8 (T-529ABE)` from `TODO.md:29316 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17304,7 +17326,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29294 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
