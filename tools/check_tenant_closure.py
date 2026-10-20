@@ -358,13 +358,31 @@ def page1_seeds(sub_asm):
     return _table_seeds(sub_asm, 'sub_p1_table')
 
 
-def check_page1(argv) -> int:
+def disk_code_seeds():
+    """--disk (D-DISKREST slice 0, 2026-10-20): disk.rom is a PAGE-1 ROM, so while
+    it runs main page 1 is switched OUT exactly as under a sub-ROM page-1 tenant.
+    The main routines it calls by ABSOLUTE address -- `tools/gen_resident_abi.py`'s
+    REQUIRED_DISK_CODE -- must therefore close entirely below $4000. The default
+    mode cannot be pointed at disk/basic-resident-abi.inc: that file also carries
+    the RAM cells and the `calbak` targets, which are page 1 ON PURPOSE (reached
+    by an inter-slot call, not a `call`). Seeding from the code list alone is the
+    question. 🔴 Nothing asked it before: `widen_rhs_operand` sat in the list,
+    unused, while its callee `factyp_is2` was page 1 -- a crash waiting for a
+    caller (found by reading, 2026-10-20)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gen_resident_abi                        # noqa: E402
+    return list(gen_resident_abi.REQUIRED_DISK_CODE)
+
+
+def check_page1(argv, seeds=None) -> int:
     syms = load_syms(argv[0])
     files = sorted(glob.glob("basic/*.asm"))
     graph = build_callgraph(files)
-    seeds = seeds_from_inc(argv[1])
+    if seeds is None:
+        seeds = seeds_from_inc(argv[1])
     if not seeds:
-        print(f"FAIL: no seed symbols in {argv[1]}", file=sys.stderr)
+        print(f"FAIL: no seed symbols in {argv[1:] or 'the disk code list'}",
+              file=sys.stderr)
         return 1
 
     seen = set()
@@ -710,6 +728,8 @@ def main() -> int:
         if len(args) != 3:
             sys.exit(__doc__)
         return check_page0(args[1:])
+    if args and args[0] == "--disk":
+        return check_page1(args[1:], seeds=disk_code_seeds())
     if args and args[0] == "--page1":
         if len(args) != 3:
             sys.exit(__doc__)

@@ -417,6 +417,7 @@ basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(SUB2_ROM) $(DISK_ROM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
 	python3 tools/check_resident_abi.py $(RELOC_SYM) disk/basic-resident-abi.inc
 	python3 tools/check_tenant_closure.py $(RELOC_SYM) sub/basic-resident-abi.inc
+	python3 tools/check_tenant_closure.py --disk $(RELOC_SYM)
 	python3 tools/check_tenant_closure.py --page0 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_tenant_closure.py --page1 $(SUB_SYM) sub/sub.asm
 	python3 tools/check_dead_code.py $(RELOC_SYM) $(SUB_SYM) $(DISK_SYM)

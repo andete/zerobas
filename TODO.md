@@ -4561,6 +4561,14 @@ item — do **one item per session** to keep context lean.
       0. tooling: a closure check on disk.rom's direct low-region imports (reuse
          `check_tenant_closure.py`); drop the stale `widen_rhs_operand` import; a byte-
          level gate for `MKI$`/`MKS$`/`MKD$` (none today).
+         ✅ **CLOSURE CHECK DONE 2026-10-20:** `check_tenant_closure.py --disk` seeds
+         from `gen_resident_abi.py`'s REQUIRED_DISK_CODE and walks main's call graph
+         (`rst` targets included); `make basic-reloc` runs it. First run, before the
+         fix: FAIL, `factyp_is2 = 52AC <- called` -- through `widen_rhs_operand`, the
+         one escape predicted (🔮 HIT; that run is the knife). The import is gone
+         (unused: disk.rom names it in a comment only); after: OK, 73 routines from 4
+         seeds, all < $4000; disk.rom and main byte-identical (🔮 HIT). ➡️ The
+         `MKS$`/`MKD$` byte gate is built WITH slice 2, which it witnesses.
       1. S-LRFUSE: `hk_lrset`'s three call-backs (`lrset_tgt`, `lrset_rhs`,
          `lrset_finish`) become one; the `LRSET_JUST` store moves into disk.rom. Main
          ~-14 B, two crossings fewer.
@@ -11398,7 +11406,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37331 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37339 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11564,7 +11572,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16426 (T-6FE392)8 (T-529ABE)` from `TODO.md:29263 (T-529ABE)`: a
+      `TODO.md:16434 (T-6FE392)8 (T-529ABE)` from `TODO.md:29271 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17273,7 +17281,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29263 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29271 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

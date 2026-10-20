@@ -87,8 +87,10 @@ REQUIRED_SUB = [
 #
 # CODE: ceiling-checked, exactly as the sub list is.
 REQUIRED_DISK_CODE = [
-    "widen_rhs_operand",        # MKS$/MKD$: widen the live RHS into ARGA
-    "round_single_and_pack",    # ...then pack it as single
+    # (`widen_rhs_operand` stood here until 2026-10-20: unused by disk.rom -- hk_mkfloat
+    # names it in a comment only -- and NOT low-closed, its callee `factyp_is2` is
+    # page 1. `check_tenant_closure.py --disk` found it; D-DISKREST slice 0.)
+    "round_single_and_pack",    # MKS$/MKD$: pack ARGA as single
     "round_and_finalize",       # ...or as double
     "pu_deref_body",            # D-CVMOVE: hk_cv turns the evaluator's string
                                 # DESCRIPTOR into a body pointer itself, rather
