@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:36967 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:36971 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31676,7 +31676,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       words and the ev_not / ev_e calls per `(` -- the S1/S2 work one step further), then
       re-bisect R. TIER 5 interplay: fewer calls per factor is also faster.
 
-- [ ] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
+- [x] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM
       leaving ~260 B free was `Out of memory` here and fits on the VG-8020 down to
       ~145 B (D-DIMRESERVE, found 2026-09-27 by D-PAINTSP's tight rows; 256 B
       until S3, 116 since — the residual is at the END of this block).**
@@ -31958,6 +31958,10 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       was largely FRE(0)'s. ➡️ What remains is only the DEEP-EXPRESSION economy above
       (zerobas refuses a few nesting levels earlier near the edge): the per-site guard
       spec. Spec: [docs/spec-basic-deepexpr-guard.md](docs/spec-basic-deepexpr-guard.md) (drafted 2026-10-19).
+      ✅ **CLOSED 2026-10-20.** The spec is built (D-DEEPEXPR, daf3f208) and the reserve
+      measured and lowered (D-EDGEONERR, 50cc4868: STK_EVAL_RESERVE 84); the top-level DIM
+      edge matches to the byte (D-FREPLUS14). What is left is the per-construct SLOPE --
+      one item, D-EVALSLOPE, not two.
 
 - [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
