@@ -528,6 +528,12 @@ def negative(zb_machine):
     # 3000 at ~4.9 ms each; D-FORFLOAT (2026-09-27) made a default-type loop
     # float arithmetic, ~7 ms a pass (`nextkw` 1.64x -> 2.37x the VG-8020), and
     # 3000 then read HANG. 2000 is the same ~14 s.
+    # 🔴 AND IT MOVED AGAIN (D-FORFAST, 2026-10-20): an int-valued NEXT takes an int16
+    # fast path, ~2 ms a pass, and 2000 became ~4 s -- `lof` read 3.7x, OK, and this
+    # arm went RED. So the pad is priced in TIME now, not iterations: wait until TIME
+    # has advanced 700 ticks (14 s at the EU machines' 50 Hz) whatever NEXT costs.
+    # Q7 is -1 while waiting (NEXT steps it to 0, <= 0, continue) and 0 once the
+    # time is up (NEXT steps it to 1, past the limit, exit).
     drow = select_rows({"lof"})
     if len(drow) != 1 or GROUP.get("lof") != "disk":
         print("kwtime --negative: expected the disk control row `lof`")
@@ -535,7 +541,8 @@ def negative(zb_machine):
     rows = rows + drow
     ref += [p[0] for p in measure(DISK_REF, drow,
                                   extra=group_kwargs("disk", DISK_REF))]
-    zb += [p[0] for p in measure(zb_machine, drow, pad="FOR Q9=1 TO 2000:NEXT",
+    zb += [p[0] for p in measure(zb_machine, drow,
+                                 pad="Q9=TIME:FOR Q7=0 TO 0:Q7=(TIME-Q9<700):NEXT",
                                  extra=group_kwargs("disk", zb_machine))]
     bad = 0
     for (key, _l, _m, _w), r, z in zip(rows, ref, zb):

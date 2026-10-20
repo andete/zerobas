@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37086 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37125 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31502,7 +31502,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       battery; the knife is the before-state itself — the same code without the
       call failed assertion 4 on two builds.
 
-- [ ] 🐌 **A DEFAULT-TYPE `FOR` LOOP IS 44 % SLOWER SINCE D-FORFLOAT — `NEXT`
+- [x] 🐌 **A DEFAULT-TYPE `FOR` LOOP IS 44 % SLOWER SINCE D-FORFLOAT — `NEXT`
       2.37× THE VG-8020, WAS 1.64× (D-FORFAST, filed 2026-09-27).**
       🎚️ TIER 5 — on-par speed: correctness came first (D-FORFLOAT, TIER 1);
       this is its measured price, not a defect.
@@ -31538,6 +31538,45 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `dexp`): the value is an exact int16 iff dexp ≤ 5 and digits dexp..14 are
       zero — ~20 B, against main page 1's 5 B read 2026-09-27 after the two speedups. It needs
       a carve first.
+      🏁 **CLOSED 2026-10-20 — THE FAST PATH, BUILT: an empty `FOR I=1 TO 300:NEXT` reads 32
+      ticks here against the VG-8020's 24 (1.3×; was 100, 4.2× --
+      [`divtime_1020.out`](scratchpad/divtime_1020.out) →
+      [`forfast_time.out`](scratchpad/forfast_time.out)).** Drafted by a subagent (host
+      only), integrated and measured here. Simpler than the proposal: NO proof state --
+      NEXT asks the variable's OWN packed bytes whether they hold an exact int16
+      (`nx_pki`: canonical BCD, 1-5 digits, the rest zero, |v| ≤ 32767), so a body
+      writing an integer stays fast. `slot_store` keeps a single/double loop's limit and
+      step as int16 slots when they are exact int16 (a float holding one included);
+      `nx_fast`: one lookup, `nx_pki`, an int16 add with overflow checked, `nx_pack` in
+      place, `cmp16_bits`, the existing direction tail. Anything else -- a fraction in the
+      body (x.body), int16 overflow (x.edge), one non-int16 slot (`STEP .5`) -- demotes
+      the slots to the packed doubles D-FORFLOAT stored, for good, and runs the old path:
+      +98 T on ~18000. **The frame is the same 25 B** (int16 slots are a `%` loop's own
+      shape), FRE depth identical ([`forfast_fresh.out`](scratchpad/forfast_fresh.out)).
+      Host NEXT 18021 → 4686 T. `tests/test_forfast.py` (new): every scalar's packed bytes
+      and type, CSP, CURLINE and the output at every statement boundary, 565 programs
+      (70 hand rows: every type / DEF / STEP form, the edges, bodies writing int /
+      fraction / past int16, nested, bare and listed NEXT, ON ERROR / RESUME and GOSUB
+      inside; 500 random) identical to HEAD
+      ([`forfast_vs_head.out`](scratchpad/forfast_vs_head.out)); FACTYP after a FOR is 2
+      where HEAD left 8 (the step widened into FAC) -- no statement reads it before
+      evaluating its own. forvar-acceptance 43/43 on both references, nxlist green
+      ([`forfast_forvar.out`](scratchpad/forfast_forvar.out),
+      [`forfast_nxlist.out`](scratchpad/forfast_nxlist.out)). 💰 **358 B of main page 1:
+      386 → 28 B free** -- the week's carves spent on the widest per-construct gap
+      measured; the next page-1 slice needs a carve first.
+
+- [ ] 🐌 **D-FORINT — AN INTEGER `FOR I%` LOOP IS 4.9× THE VG-8020, NOW SLOWER THAN A
+      DEFAULT-TYPE ONE (found 2026-10-20 by D-FORFAST's timing)**
+      🎚️ TIER 5 — on-par speed.
+      🤖 **AUTONOMOUS** — the reference settles it.
+      📏 [`forfast_time.out`](scratchpad/forfast_time.out), 300 passes in TIME ticks:
+      `FOR I%=1 TO 300:NEXT` **39 here, 8 on the VG-8020**; the default-type loop, after
+      D-FORFAST, 32 vs 24. The `%` path is the untouched old NEXT (host ~5400 T against
+      the fast path's ~4700): two sub-ROM calls a NEXT where the fast path makes one.
+      ➡️ Profile the `%` NEXT (calls per pass, as `nextcost_counts.py` did) before
+      designing; main page 1 was 28 B free on 2026-10-20 (after D-FORFAST), so a fix
+      that adds bytes there needs a carve.
 
 - [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
       `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM

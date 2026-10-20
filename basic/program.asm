@@ -1826,25 +1826,32 @@ vsa_int:
 ; job is to hand NEXT the value exactly as the factor that FOR evaluated left it,
 ; so combine_add / combine_cmp see the same operand an expression would.
 ; slot_store: HL = slot, the value live (FACTYP + DE or FAC). Clobbers A,BC,DE,HL.
-; 🐌 D-FORFAST: A FLOAT LOOP'S int16 LIMIT/STEP IS WIDENED ONCE, HERE. Stored as
-; an int16, `FOR I=1 TO 400` made every NEXT widen both through widen_int_to
-; (div10 and all): 42 BCD unpacks per NEXT against 14 before D-FORFLOAT
-; (scratchpad/nextcost_counts.py). The reference keeps a float loop's STEP and
-; limit as 8-byte BCD too (docs/reference-stack-frames.md §2). A `%` loop keeps
-; int16 slots, which is what keeps its arithmetic on the int fast path.
+; 🐌 D-FORFAST (2026-10-20): A NON-`%` LOOP'S EXACT-INT16 LIMIT/STEP IS KEPT AS AN
+; INT16 SLOT -- an int16 as eval left it, and a single/double that holds an exact
+; int16 (`TO N` with N = 300) converted to one (nx_pki). Both slots int16 is what
+; sends NEXT down its int path (nx_fast, below); the first NEXT that cannot take
+; it WIDENS the int16 slots for good (nx_demote) into exactly the packed double
+; this routine wrote before -- the widen-once of the first D-FORFAST step, moved
+; from FOR to that NEXT, so the BCD path still never widens per pass. Anything
+; else (a fraction, past int16, a `%` loop's slots) is stored as it stands.
 slot_store:
                 ld      a,(FOR_CUR+2)
                 cp      2
                 jr      z,sst_go            ; a `%` loop: slots stay as given
                 ld      a,(FACTYP)
-                cp      2
-                jr      nz,sst_go           ; already BCD
+                ld      b,a                 ; B = the type = the byte count (4 / 8)
+                and     3                   ; 2 = an int16 (kept); 3 = a string --
+                jr      nz,sst_go           ; neither is a float to test
                 push    hl
-                call    arga_widen          ; int16 -> a packed double, FACTYP = 8
-                call    round_and_finalize
+                ld      hl,FAC
+                call    nx_pki              ; an exact int16 in a single/double?
                 pop     hl
+                jr      c,sst_go            ; no: stored as it stands
+                ld      a,2                 ; yes: an int16 slot, DE = the value
+                jr      sst_typ
 sst_go:
                 ld      a,(FACTYP)
+sst_typ:
                 ld      (hl),a
                 inc     hl
                 cp      2
@@ -2083,6 +2090,15 @@ nx_head:
                 jr      z,nx_find           ; a scalar keeps its real key
                 ld      (FOR_CUR+1),a
                 jr      nx_find
+; (nx_nofor sits HERE, ahead of nx_find, since D-FORFAST: nx_have's path gate put
+; its old site past nx_bound's `jr z` reach, and a `jp z` there would cost every
+; NEXT 3 T. Entered only by that `jr`; nothing falls into it.)
+nx_nofor:
+                pop     hl                  ; discard the saved cursor
+                ld      a,$CB               ; "next without for" landmark
+                ld      (ERRMARK),a
+                ld      a,1                 ; ERR 1: next without for (error-handling S2a)
+                jp      raise_error
 nx_notletter:
                 ; `NEXT 1` is ERR 2 on the reference, not "next without for" -- only a
                 ; statement TERMINATOR is a variable-less NEXT. D-NXLIST: this one test
@@ -2151,6 +2167,25 @@ nx_have:
                 ld      de,FOR_CUR          ; work on a copy of the frame
                 ld      bc,FOR_FRAME
                 ldir
+                ; 🐌 D-FORFAST: WHICH PATH. A `%` loop goes straight to the general
+                ; path (its int16 slots ARE its arithmetic, unchanged). A float loop
+                ; whose two slots are int16 tries nx_fast; one with exactly one int16
+                ; slot (`FOR A=1 TO 9 STEP .5`) widens it for good first.
+                ld      a,(FOR_CUR+2)
+                cp      2
+                jr      z,nx_slow           ; a `%` loop
+                ld      a,(FOR_LIM)
+                cp      2
+                ld      a,(FOR_STEP)        ; (ld: the flags are the limit's)
+                jr      nz,nx_lnoint
+                cp      2
+                jr      z,nx_fast           ; both int16: the int path
+                call    nx_demote           ; int16 limit, BCD step
+                jr      nx_slow
+nx_lnoint:
+                cp      2
+                call    z,nx_demote         ; BCD limit, int16 step
+nx_slow:
                 ; D-FORFLOAT: `var := var + step`, then `var : limit`, BOTH through the
                 ; evaluator's own operators and its LHS-frame protocol (push_lhs_frame
                 ; with DE = the lhs, then the rhs as a factor leaves it). Each has
@@ -2179,6 +2214,7 @@ nx_have:
                 ; the loop. Row m.step (`FOR A=3 TO 1 STEP -1` inside a list) guards
                 ; the negative arm in THIS battery.
                 ld      b,a
+nx_cmpd:                                    ; (nx_fast joins here: B = its verdict)
                 ld      a,(FOR_SIGN)
                 rla                         ; CF = the step is negative
                 ld      a,4                 ; step >= 0: end when value > limit
@@ -2213,12 +2249,267 @@ nx_end:
                 call    skip_comma
                 jp      z,nx_comma
                 jp      exec_stmt           ; run on past NEXT
-nx_nofor:
-                pop     hl                  ; discard the saved cursor
-                ld      a,$CB               ; "next without for" landmark
-                ld      (ERRMARK),a
-                ld      a,1                 ; ERR 1: next without for (error-handling S2a)
-                jp      raise_error
+
+; --- nx_fast: NEXT of a float loop whose limit and step are int16 (D-FORFAST) --
+; 🐌 TIER 5. Since D-FORFLOAT a single/double loop variable went through a BCD
+; add, a BCD compare and two variable lookups every pass: an empty `FOR I=1 TO
+; 300:NEXT` was 100 TIME ticks against the VG-8020's 24. When the limit and the
+; step are exact int16 (slot_store) and the variable's OWN BYTES say it holds an
+; exact int16 now, `var + step` and `var : limit` are int16 arithmetic with the
+; same answers the BCD path gives -- an exact sum, packed canonically -- so this
+; does them on int16s with ONE lookup and writes the packed sum in place.
+; 🎯 THE PROOF IS THE VARIABLE ITSELF, NOT A COPY OF IT. The item proposed keeping
+; the last stored value in the frame and comparing; reading the variable's packed
+; bytes (nx_pki) needs no frame byte at all, and a body that writes an INTEGER
+; (`A=A+1`, `A=5`) stays on this path. A body that writes a fraction or a value
+; past int16 (row x.body), and a sum that overflows int16 (row x.edge, A = 32769),
+; leave through nx_fbail: the slots are widened for good (nx_demote) and the
+; general path runs this NEXT from the start -- nothing was written yet.
+; The frame is unchanged in size: an int16 slot is [2][lo][hi] + 6 unused bytes,
+; the same 9 B a `%` loop's slots always were.
+nx_fast:
+                ld      bc,(FOR_CUR)
+                ld      a,(FOR_CUR+2)
+                call    var_find_typed      ; HL = the entry (FOR created it)
+                jr      nc,nx_fslow         ; (not found: let the general path say so)
+                inc     hl
+                inc     hl
+                ld      b,(hl)              ; B = the entry's type = its byte count
+                inc     hl                  ; HL = its value field
+                push    hl                  ; [value field]
+                call    nx_pki              ; NC: DE = the variable, an exact int16
+                jr      c,nx_fbail
+                ld      hl,(FOR_STEP+1)
+                ld      a,h
+                ld      (FOR_SIGN),a        ; the step's sign byte, as slot_load gives it
+                adc     hl,de               ; CF = 0 from nx_pki; P/V = int16 overflow
+                jp      pe,nx_fbail         ; x.edge: the BCD path promotes past 32767
+                pop     de                  ; DE = the value field
+                push    hl                  ; [the new value]
+                call    nx_pack             ; written in place, the BCD path's bytes
+                pop     hl
+                ld      de,(FOR_LIM+1)
+                call    cmp16_bits          ; A = 1 <, 2 =, 4 > -- combine_cmp's code
+                ld      b,a
+                call    set_factyp2         ; as combine_cmp leaves FACTYP
+                jr      nx_cmpd
+nx_fbail:
+                pop     hl                  ; drop [value field]
+nx_fslow:
+                call    nx_demote
+                jp      nx_slow
+
+; --- nx_demote: widen a float loop's int16 slots for good -----------------------
+; FOR_CUR's int16 slot(s) become the packed double slot_store wrote before
+; D-FORFAST's second step (arga_widen + round_and_finalize, type 8), and both
+; slots are written back into the frame in the pool, so the BCD path never widens
+; per pass. In: the frame base is the word under our return address (nx_have's
+; push). Clobbers A, BC, DE, HL.
+nx_demote:
+                ld      hl,FOR_LIM
+                call    nxd_slot
+                ld      hl,FOR_STEP
+                call    nxd_slot
+                pop     bc                  ; our return address
+                pop     hl                  ; HL = the frame base
+                push    hl
+                push    bc
+                ld      de,FOR_LIM - FOR_CUR
+                add     hl,de
+                ex      de,hl               ; DE = the frame's limit slot
+                ld      hl,FOR_LIM
+                ld      bc,FOR_LINE - FOR_LIM ; both slots, 18 B
+                ldir
+                ret
+nxd_slot:
+                ld      a,(hl)
+                cp      2
+                ret     nz                  ; already BCD (or not a number)
+                push    hl
+                call    slot_load           ; FACTYP = 2, DE = the int16
+                call    arga_widen          ; -> a packed double, FACTYP = 8
+                call    round_and_finalize
+                pop     hl
+                jp      sst_go              ; [8][FAC] into the slot
+
+; --- nx_pki: HL = a packed single/double, B = its byte count (4 / 8) ----------
+; -> NC and DE = its value iff it is an EXACT int16 in -32767..32767 (and every
+; digit past the point zero, to the last byte); CF otherwise. Read straight off
+; the packed bytes -- [sign + exponent $40 + digits][BCD pairs] -- so no unpack
+; into a 15-digit array. -32768 answers CF (the general path handles it).
+; Clobbers A, BC, DE, HL.
+nx_pki:
+                ld      a,(hl)
+                ex      de,hl               ; DE -> the lead byte
+                ld      hl,0                ; the magnitude
+                dec     b                   ; B = the mantissa bytes left to check
+                push    af                  ; [lead] -- its bit 7 is the sign
+                or      a
+                jr      z,npi_tail          ; zero: every mantissa byte must be 0
+                and     $7F
+                sub     $41                 ; A = digits before the point - 1
+                cp      5
+                jr      nc,npi_no           ; |x| < 1 or >= 100000
+                ld      c,a                 ; C = digits still to take - 1
+                cp      4
+                jr      nz,npi_byte
+                inc     de                  ; five digits: the first must be <= 3, so
+                ld      a,(de)              ; the magnitude stays below 40000 and
+                dec     de                  ; never wraps 16 bits
+                cp      $40
+                jr      nc,npi_no
+npi_byte:
+                inc     de
+                dec     b
+                ld      a,(de)
+                rrca
+                rrca
+                rrca
+                rrca
+                call    npi_x10             ; the high digit
+                dec     c
+                jp      m,npi_lowz          ; that was the last: the low one must be 0
+                ld      a,(de)
+                call    npi_x10             ; the low digit
+                dec     c
+                jp      p,npi_byte
+                jr      npi_tail
+npi_lowz:
+                ld      a,(de)
+                and     $0F
+                jr      nz,npi_no
+npi_tail:
+                inc     b
+                dec     b
+                jr      z,npi_end
+npi_tlp:
+                inc     de
+                ld      a,(de)
+                or      a
+                jr      nz,npi_no
+                djnz    npi_tlp
+npi_end:
+                bit     7,h
+                jr      nz,npi_no           ; 32768..39999: not an int16
+                ex      de,hl               ; DE = the magnitude
+                pop     af
+                rla                         ; CF = the sign
+                call    c,neg_de
+                or      a                   ; NC: exact
+                ret
+npi_no:
+                pop     af
+                scf
+                ret
+; HL = HL * 10 + (A & 15). Keeps BC, DE.
+npi_x10:
+                and     $0F
+                push    de
+                ld      d,h
+                ld      e,l
+                add     hl,hl
+                add     hl,hl
+                add     hl,de
+                add     hl,hl
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                pop     de
+                ret
+
+; --- nx_pack: HL = an int16, DE -> a variable's value field -------------------
+; Writes [lead][3 BCD pairs] -- what round_and_finalize / round_single_and_pack
+; pack for the same exact value, single or double alike (an int16 has at most
+; five digits; a double's last four bytes are already 0, nx_pki said so).
+; Clobbers A, BC, DE, HL.
+nx_pack:
+                ld      a,h
+                or      l
+                jr      z,npk_zero
+                push    de                  ; [dest]
+                ld      a,h
+                and     $80
+                push    af                  ; [sign]
+                jr      z,npk_pos
+                ex      de,hl
+                call    neg_de_hl           ; HL = |value| (32768 stays 32768)
+npk_pos:
+                ld      de,-10000
+                call    npk_sub
+                ld      c,a                 ; C = d4
+                ld      de,-1000
+                call    npk_sub
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a
+                ld      b,a
+                ld      de,-100
+                call    npk_sub
+                or      b
+                ld      b,a                 ; B = d3 d2
+                ld      de,-10
+                call    npk_sub
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a
+                or      l                   ; A = d1 d0
+                ld      e,$46               ; $40 + six nibbles: 0 d4 d3 d2 d1 d0
+npk_byte:
+                inc     c
+                dec     c
+                jr      nz,npk_nib
+                ld      c,b                 ; a zero byte in front: shift by a byte
+                ld      b,a
+                xor     a
+                dec     e
+                dec     e
+                jr      npk_byte
+npk_nib:
+                ld      d,a
+                ld      a,c
+                cp      $10
+                ld      a,d
+                jr      nc,npk_put          ; the leading digit is in the high nibble
+                ld      d,4                 ; else shift by a nibble
+npk_shl:
+                add     a,a
+                rl      b
+                rl      c
+                dec     d
+                jr      nz,npk_shl
+                dec     e
+npk_put:
+                ld      d,a                 ; D = the third pair
+                pop     af                  ; A = the sign
+                or      e                   ; the lead byte
+                pop     hl                  ; HL = dest
+                ld      (hl),a
+                inc     hl
+                ld      (hl),c
+                inc     hl
+                ld      (hl),b
+                inc     hl
+                ld      (hl),d
+                ret
+npk_zero:
+                ex      de,hl               ; A = 0: the canonical zero, all four bytes
+                ld      b,4
+npkz_lp:
+                ld      (hl),a
+                inc     hl
+                djnz    npkz_lp
+                ret
+; A = how many times -DE fits in HL (one decimal digit); HL reduced. Keeps BC.
+npk_sub:
+                ld      a,-1
+npks_lp:
+                inc     a
+                add     hl,de
+                jr      c,npks_lp
+                sbc     hl,de               ; CF = 0 here: undo the last add
+                ret
 
 err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-2
                                             ; self-funding — the string bytes are

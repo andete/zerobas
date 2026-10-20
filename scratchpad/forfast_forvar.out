@@ -1,0 +1,62 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_forvar.py --gate \
+	         
+D-FORVAR — what a FOR/NEXT loop variable may BE   sides: vg8020, cf3300, zb
+==============================================================================
+ok   c.for      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '   [POSITIVE CONTROL]
+ok   c.next     vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '   [POSITIVE CONTROL]
+ok   c.let      vg8020=' 7 '  cf3300=' 7 '  zb=' 7 '   [POSITIVE CONTROL]
+ok   f.two      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.long     vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.dig      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.alias    vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.pct      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.bang     vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.hash     vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.twopct   vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.str      vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   n.xtype    vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'
+ok   n.two      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   n.pct      vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   n.prefix   vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'
+ok   n.wrong    vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'
+ok   n.samen1   vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'
+ok   n.strnx    vg8020='<NEXT without FOR>'  cf3300='<NEXT without FOR>'  zb='<NEXT without FOR>'
+ok   n.multi    vg8020=' 3  3 '  cf3300=' 3  3 '  zb=' 3  3 '
+ok   n.multi1   vg8020=' 3  3 '  cf3300=' 3  3 '  zb=' 3  3 '
+ok   x.numstr   vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   x.strtop   vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   n.nest     vg8020=' 3  3 '  cf3300=' 3  3 '  zb=' 3  3 '
+ok   n.close    vg8020=' 3  1 '  cf3300=' 3  1 '  zb=' 3  1 '
+ok   n.mixnx    vg8020=' 3  3 '  cf3300=' 3  3 '  zb=' 3  3 '
+ok   f.dep8     vg8020='OK'  cf3300='OK'  zb='OK'
+ok   f.coll     vg8020=' 9  4 '  cf3300=' 9  4 '  zb=' 9  4 '
+ok   f.colls    vg8020=' 4 X'  cf3300=' 4 X'  zb=' 4 X'
+ok   f.defint   vg8020=' 4 '  cf3300=' 4 '  zb=' 4 '
+ok   f.defstr   vg8020='<Type mismatch>'  cf3300='<Type mismatch>'  zb='<Type mismatch>'
+ok   f.step     vg8020='-2 '  cf3300='-2 '  zb='-2 '
+ok   f.ary      vg8020='<Syntax error>'  cf3300='<Syntax error>'  zb='<Syntax error>'   [NEGATIVE CONTROL — both references REFUSE this]
+ok   x.step25   vg8020=' 1.25  2.5  5 '  cf3300=' 1.25  2.5  5 '  zb=' 1.25  2.5  5 '
+ok   x.half     vg8020=' 3.5  4.5  3 '  cf3300=' 3.5  4.5  3 '  zb=' 3.5  4.5  3 '
+ok   x.big      vg8020=' 56703  3 '  cf3300=' 56703  3 '  zb=' 56703  3 '
+ok   x.neg      vg8020='-39998  2 '  cf3300='-39998  2 '  zb='-39998  2 '
+ok   x.edge     vg8020=' 32769  2 '  cf3300=' 32769  2 '  zb=' 32769  2 '
+ok   x.hstep    vg8020=' 120000  3 '  cf3300=' 120000  3 '  zb=' 120000  3 '
+ok   x.negfr    vg8020='-.5  1.5  3 '  cf3300='-.5  1.5  3 '  zb='-.5  1.5  3 '
+ok   x.single   vg8020=' 1.1  11 '  cf3300=' 1.1  11 '  zb=' 1.1  11 '
+ok   x.double   vg8020=' 1.1  11 '  cf3300=' 1.1  11 '  zb=' 1.1  11 '
+ok   x.body     vg8020=' 4  2 '  cf3300=' 4  2 '  zb=' 4  2 '
+ROWS: 43 printed, 43 scored — 43 agree, 0 diverge, 0 deferred (not scored)
+==============================================================================
+43/43 readings agree (43 cases, 3 positive controls, 1 negative control, 0 row(s) with no oracle, 0 DEFERRED row(s) measured but not scored)
+SIDES: vg8020,cf3300,zb — FOR/NEXT is core BASIC, present on every MSX1, so BOTH references are legitimate oracles for every row here
+DENOMINATOR: (NAME FORM: 1-char / 2-char / 3+-char / letter+digit) x (TYPE SUFFIX: none / % / ! / # / $) x (NEXT FORM: bare / named / mismatched / multi-variable), plus whether NEXT matches on the TYPE, plus nesting and a named NEXT that CLOSES an inner frame, plus the nesting DEPTH a wider frame could silently buy its key with, plus the A / A% / A$ identity, plus the DEFtbl that supplies the type when there is no suffix, plus the array form both references REFUSE
+refcache: 0 hit, 3 miss, 3 stored
+rc=0

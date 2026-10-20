@@ -1,0 +1,21 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# F1 against an external image: <a build of HEAD 1f41ee03, outside the repo>/old.rom
+# --- F1/F2 differential: int path vs the general path ---
+      (empty loop prints '31'; 64 statement boundaries compared)
+PASS? F1 565/565 programs identical at every statement boundary; int path taken in 146
+      (vs the external image: 325 differ ONLY in FACTYP at statement boundaries -- FOR's int16 STEP; variables, output, CSP, CURLINE identical)
+# --- F3 nx_pki / nx_pack against Python ---
+PASS  F3 nx_pack over 25538 int16s
+PASS  F3 nx_pki over 1766 packed values
+# --- F4 T-states of an empty NEXT (host: tenant steps in, CALSLT out) ---
+      (a) FOR I=1 TO 300 (default type)            old   18021 T (2 sub calls)  new    4686 T (1 sub calls)   -13335
+      (a') FOR I=1 TO N, N=300 double              old   18409 T (2 sub calls)  new    4880 T (1 sub calls)   -13529
+      (b) STEP .5                                  old   18188 T (2 sub calls)  new   18286 T (2 sub calls)      +98
+      (c) FOR I#=.5 TO 12 (double, fractional)     old   17840 T (2 sub calls)  new   17938 T (2 sub calls)      +98
+      (c') FOR I#=1 TO 12 (double, int-valued)     old   18021 T (2 sub calls)  new    4686 T (1 sub calls)   -13335
+      (d) FOR I%=1 TO 12                           old    5403 T (2 sub calls)  new    5438 T (2 sub calls)      +35
+      (e) body A=A+.5                              old   18295 T (2 sub calls)  new   18393 T (2 sub calls)      +98
+      (f) FOR I!=1 TO 12 (single)                  old   20810 T (2 sub calls)  new    4518 T (1 sub calls)   -16292
+      (g) FOR I=30000 TO 30012                     old   20288 T (2 sub calls)  new    5366 T (1 sub calls)   -14922
+
+ALL PASS

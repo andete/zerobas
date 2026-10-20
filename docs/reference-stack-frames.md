@@ -91,7 +91,12 @@ D-SPMERGE) and links them instead of tagging them:
   `[CURLINE:2][resume:2][prevFSP:2][gdelta:1]` (`basic/sysvars.inc`
   `GOSUB_FRAME`). The previous GOSUB frame is `prevFSP + gdelta`; the trap
   service record lives separately (`TRAP_FRAME`, 3 B).
-- **FOR = 25 B**, the reference's size (D-FORFLOAT).
+- **FOR = 25 B**, the reference's size (D-FORFLOAT):
+  `[name1][name0][type][limit: type + 8][step: type + 8][CURLINE:2][resume:2]`.
+  Since D-FORFAST a single/double loop whose limit and step are exact int16 keeps
+  both slots as int16 (`[2][lo][hi]` + 6 unused bytes, the shape a `%` loop's slots
+  always had) so NEXT can take an int16 path; the first NEXT that cannot widens
+  them for good to the packed double they used to hold. Same 25 B either way.
 
 This section used to conclude that matching GOSUB's 7 B meant adopting the
 reference's tagged, walked shape. It did not: the old frame's two chain words
