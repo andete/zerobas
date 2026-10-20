@@ -1,0 +1,273 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+
+=== (a) A=I+7 body: `FOR I=1 TO 40:A=I+7:NEXT` ===
+T per pass (M1 incl.): mean 25842, min 25678, max 25918 over 20 passes  [program printed '']
+  by region: main 24023, subp0 1808, hook 11
+  sub-ROM crossings per pass: 3  -> + 3189 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 29116 T (host 25842 + crossings + BREAKX); -> 139 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 ary_engine: 3/pass
+  trapped calls per pass (0 T on the host): {'subrom_call': 3.0, 'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+         2127 T   8.2%  wsrc_unpack
+          864 T   3.3%  ev_f
+          853 T   3.3%  is_letter
+          720 T   2.8%  dai_lp
+          699 T   2.7%  nx_have
+          683 T   2.6%  exec_stmt
+          608 T   2.4%  d10_lp
+          574 T   2.2%  zf_lp
+          570 T   2.2%  apf_lp
+          563 T   2.2%  dtw_lp
+          546 T   2.1%  dai_st
+          456 T   1.8%  deftbl_lookup
+          412 T   1.6%  is_ident_cont
+          402 T   1.6%  dig15_shr
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2495 T   9.7%  exec_stmt  (1 calls/pass)
+         2144 T   8.3%  widen_fac_to  (2 calls/pass)
+         1984 T   7.7%  ev_f  (2 calls/pass)
+         1883 T   7.3%  ev_logic  (1 calls/pass)
+         1372 T   5.3%  dig15_add_inplace  (1 calls/pass)
+         1128 T   4.4%  widen_lhs_operand  (1 calls/pass)
+          988 T   3.8%  is_letter  (11 calls/pass)
+          879 T   3.4%  SUB:scv_find  (3 calls/pass)
+          851 T   3.3%  div10  (1 calls/pass)
+          698 T   2.7%  arga_pack_fac  (1 calls/pass)
+          672 T   2.6%  SUB:ary_engine  (0 calls/pass)
+          656 T   2.5%  widen_both_operands  (1 calls/pass)
+          617 T   2.4%  dig_to_word  (2 calls/pass)
+          564 T   2.2%  nx_pki  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        25842 T 100.0%  run_prog  (0 calls/pass)
+        25074 T  97.0%  exec_stmt  (1 calls/pass)
+        16553 T  64.1%  inc_eval  (1 calls/pass)
+        16377 T  63.4%  ev_logic  (1 calls/pass)
+         5202 T  20.1%  ev_f  (2 calls/pass)
+         3139 T  12.1%  widen_both_operands  (1 calls/pass)
+         2144 T   8.3%  widen_fac_to  (2 calls/pass)
+         2114 T   8.2%  ary_engine_call  (3 calls/pass)
+         1919 T   7.4%  sc_call  (3 calls/pass)
+         1910 T   7.4%  var_str_type  (2 calls/pass)
+         1808 T   7.0%  TRAP:subrom_call  (3 calls/pass)
+         1808 T   7.0%  SUB:ary_engine  (0 calls/pass)
+         1576 T   6.1%  var_find_typed  (2 calls/pass)
+         1405 T   5.4%  str_eval_ix  (1 calls/pass)
+         1374 T   5.3%  is_ident_cont  (6 calls/pass)
+         1372 T   5.3%  dig15_add_inplace  (1 calls/pass)
+         1334 T   5.2%  str_eval_one  (1 calls/pass)
+         1264 T   4.9%  is_letter  (11 calls/pass)
+  -- calls per pass, caller -> callee --
+      is_letter->upcase 11, is_ident_cont->skip_spaces 6, is_ident_cont->is_letter 6, nx_pack->npk_sub 4, exec_stmt->check_fperr_only 4, exec_stmt->skipsp_test 4, skipsp_test->skip_spaces 4, var_str_type->is_ident_cont 4, ev_logic->ev_sp 4, ary_engine_call->sc_call 3, sc_call->TRAP:subrom_call 3, SUB:scv_find->SUB:fn_shadow_find 3, var_find_typed->ary_engine_call 2, SUB:ary_engine->SUB:scv_find 2, var_str_type->upcase 2, var_str_type->is_letter 2, var_str_type->deftbl_lookup 2, var_name_key->upcase 2, var_name_key->is_ident_cont 2, var_name_key->deftbl_lookup 2, ev_logic->ev_f 2, ev_f->stk_guard 2, ev_f->ev_sp 2, check_preexp_bounds->cmp16_bits 2, nx_pki->npi_x10 1.75, island$0010->hook$FF48 1, run_prog->derive_directf 1, run_prog->TRAP:BREAKX 1, run_prog->exec_stmt 1, exec_stmt->var_str_type 1, exec_stmt->var_name_key 1, exec_stmt->var_alloc_or_find 1, var_alloc_or_find->ary_engine_call 1, SUB:ary_engine->SUB:scv_alloc 1, SUB:scv_alloc->SUB:scv_find 1, SUB:scv_find->SUB:elsize_from_type 1, exec_stmt->skip_eq 1, skip_eq->skip_spaces 1, exec_stmt->inc_eval 1, inc_eval->set_factyp2 1, inc_eval->ev_logic 1, ev_logic->str_eval_ix 1, str_eval_ix->str_eval_one 1, str_eval_one->is_letter 1, str_eval_one->var_str_type 1, ev_f->is_letter 1, ev_f->var_name_key 1, ev_f->check_vartype_num 1, ev_f->var_find_typed 1, ev_f->widen_fac_to 1, ev_f->dig15_iszero 1, ev_f->dig_to_word 1, ev_logic->push_lhs_frame 1, ev_logic->lg_go 1, lg_go->pop_lhs_and_probe 1, ev_logic->widen_both_operands 1, widen_both_operands->widen_lhs_operand 1, widen_both_operands->factyp_is2 1, widen_both_operands->abs16 1, widen_both_operands->div10 1, widen_both_operands->zero_fill 1, ev_logic->dig15_shr 1, ev_logic->dig15_add_inplace 1, ev_logic->arga_dig_iszero 1, ev_logic->check_preexp_bounds 1, ev_logic->arga_pack_fac 1, ev_logic->widen_fac_to 1, ev_logic->dig15_iszero 1, ev_logic->dig_to_word 1, exec_stmt->check_expr_errors_popbc 1, exec_stmt->var_store_at 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->var_find_typed 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95
+  -- spans (inclusive from reaching the label until it returns; per pass) --
+         5133 T  19.9%  fp_add  (1x)
+         4152 T  16.1%  ex_next  (1x)
+         3461 T  13.4%  flt_to_int16  (2x)
+         3139 T  12.1%  widen_both_operands  (1x)
+         3019 T  11.7%  round_and_finalize  (1x)
+         2929 T  11.3%  nx_fast  (1x)
+         2851 T  11.0%  var_load_fac  (1x)
+         1910 T   7.4%  var_str_type  (2x)
+         1405 T   5.4%  str_eval_ix  (1x)
+         1154 T   4.5%  var_name_key  (2x)
+
+=== (b) A=I*7 body: `FOR I=1 TO 40:A=I*7:NEXT` ===
+T per pass (M1 incl.): mean 34759, min 31448, max 36294 over 20 passes  [program printed '']
+  by region: main 32940, subp0 1808, hook 11
+  sub-ROM crossings per pass: 3  -> + 3189 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 38033 T (host 34759 + crossings + BREAKX); -> 181 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 ary_engine: 3/pass
+  trapped calls per pass (0 T on the host): {'subrom_call': 3.0, 'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+         2713 T   7.8%  fpm_inner
+         2127 T   6.1%  wsrc_unpack
+         2044 T   5.9%  fpm_reduce_done
+         1364 T   3.9%  zf_lp
+         1232 T   3.5%  fpm_outer
+         1204 T   3.5%  digit_mul
+          864 T   2.5%  ev_f
+          853 T   2.5%  is_letter
+          799 T   2.3%  fpm_outer_next
+          699 T   2.0%  nx_have
+          683 T   2.0%  exec_stmt
+          643 T   1.8%  dtw_lp
+          636 T   1.8%  fpm_reduce
+          608 T   1.7%  d10_lp
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         9829 T  28.3%  ev_logic  (1 calls/pass)
+         2495 T   7.2%  exec_stmt  (1 calls/pass)
+         2144 T   6.2%  widen_fac_to  (2 calls/pass)
+         1984 T   5.7%  ev_f  (2 calls/pass)
+         1615 T   4.6%  digit_mul  (23.8 calls/pass)
+         1269 T   3.7%  zero_fill  (2 calls/pass)
+         1128 T   3.2%  widen_lhs_operand  (1 calls/pass)
+          988 T   2.8%  is_letter  (11 calls/pass)
+          879 T   2.5%  SUB:scv_find  (3 calls/pass)
+          851 T   2.4%  div10  (1 calls/pass)
+          698 T   2.0%  arga_pack_fac  (1 calls/pass)
+          697 T   2.0%  dig_to_word  (2 calls/pass)
+          672 T   1.9%  SUB:ary_engine  (0 calls/pass)
+          656 T   1.9%  widen_both_operands  (1 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+        34759 T 100.0%  run_prog  (0 calls/pass)
+        33990 T  97.8%  exec_stmt  (1 calls/pass)
+        25470 T  73.3%  inc_eval  (1 calls/pass)
+        25294 T  72.8%  ev_logic  (1 calls/pass)
+         5202 T  15.0%  ev_f  (2 calls/pass)
+         3139 T   9.0%  widen_both_operands  (1 calls/pass)
+         2144 T   6.2%  widen_fac_to  (2 calls/pass)
+         2114 T   6.1%  ary_engine_call  (3 calls/pass)
+         1919 T   5.5%  sc_call  (3 calls/pass)
+         1910 T   5.5%  var_str_type  (2 calls/pass)
+         1808 T   5.2%  TRAP:subrom_call  (3 calls/pass)
+         1808 T   5.2%  SUB:ary_engine  (0 calls/pass)
+         1615 T   4.6%  digit_mul  (23.8 calls/pass)
+         1576 T   4.5%  var_find_typed  (2 calls/pass)
+         1405 T   4.0%  str_eval_ix  (1 calls/pass)
+         1374 T   4.0%  is_ident_cont  (6 calls/pass)
+         1334 T   3.8%  str_eval_one  (1 calls/pass)
+         1269 T   3.7%  zero_fill  (2 calls/pass)
+  -- calls per pass, caller -> callee --
+      ev_logic->digit_mul 23.8, is_letter->upcase 11, is_ident_cont->skip_spaces 6, is_ident_cont->is_letter 6, nx_pack->npk_sub 4, exec_stmt->check_fperr_only 4, exec_stmt->skipsp_test 4, skipsp_test->skip_spaces 4, var_str_type->is_ident_cont 4, ev_logic->ev_sp 4, check_preexp_bounds->cmp16_bits 4, ary_engine_call->sc_call 3, sc_call->TRAP:subrom_call 3, SUB:scv_find->SUB:fn_shadow_find 3, var_find_typed->ary_engine_call 2, SUB:ary_engine->SUB:scv_find 2, var_str_type->upcase 2, var_str_type->is_letter 2, var_str_type->deftbl_lookup 2, var_name_key->upcase 2, var_name_key->is_ident_cont 2, var_name_key->deftbl_lookup 2, ev_logic->ev_f 2, ev_f->stk_guard 2, ev_f->ev_sp 2, ev_logic->check_preexp_bounds 2, nx_pki->npi_x10 1.75, island$0010->hook$FF48 1, run_prog->derive_directf 1, run_prog->TRAP:BREAKX 1, run_prog->exec_stmt 1, exec_stmt->var_str_type 1, exec_stmt->var_name_key 1, exec_stmt->var_alloc_or_find 1, var_alloc_or_find->ary_engine_call 1, SUB:ary_engine->SUB:scv_alloc 1, SUB:scv_alloc->SUB:scv_find 1, SUB:scv_find->SUB:elsize_from_type 1, exec_stmt->skip_eq 1, skip_eq->skip_spaces 1, exec_stmt->inc_eval 1, inc_eval->set_factyp2 1, inc_eval->ev_logic 1, ev_logic->str_eval_ix 1, str_eval_ix->str_eval_one 1, str_eval_one->is_letter 1, str_eval_one->var_str_type 1, ev_f->is_letter 1, ev_f->var_name_key 1, ev_f->check_vartype_num 1, ev_f->var_find_typed 1, ev_f->widen_fac_to 1, ev_f->dig15_iszero 1, ev_f->dig_to_word 1, ev_logic->push_lhs_frame 1, ev_logic->lg_go 1, lg_go->pop_lhs_and_probe 1, ev_logic->widen_both_operands 1, widen_both_operands->widen_lhs_operand 1, widen_both_operands->factyp_is2 1, widen_both_operands->abs16 1, widen_both_operands->div10 1, widen_both_operands->zero_fill 1, ev_logic->xor_sign 1, ev_logic->zero_fill 1, ev_logic->arga_dig_iszero 1, ev_logic->arga_pack_fac 1, ev_logic->widen_fac_to 1, ev_logic->dig15_iszero 1, ev_logic->dig_to_word 1, exec_stmt->check_expr_errors_popbc 1, exec_stmt->var_store_at 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->var_find_typed 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95
+  -- spans (inclusive from reaching the label until it returns; per pass) --
+        14101 T  40.6%  fp_mul  (1x)
+         4152 T  11.9%  ex_next  (1x)
+         3541 T  10.2%  flt_to_int16  (2x)
+         3139 T   9.0%  widen_both_operands  (1x)
+         3099 T   8.9%  round_and_finalize  (1x)
+         2929 T   8.4%  nx_fast  (1x)
+         2851 T   8.2%  var_load_fac  (1x)
+         1910 T   5.5%  var_str_type  (2x)
+         1405 T   4.0%  str_eval_ix  (1x)
+         1154 T   3.3%  var_name_key  (2x)
+
+=== (c) empty I% loop: `FOR I%=1 TO 40:NEXT` ===
+T per pass (M1 incl.): mean 6155, min 6155, max 6155 over 20 passes  [program printed '']
+  by region: main 5056, subp0 1088, hook 11
+  sub-ROM crossings per pass: 2  -> + 2126 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 8366 T (host 6155 + crossings + BREAKX); -> 40 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 ary_engine: 2/pass
+  trapped calls per pass (0 T on the host): {'subrom_call': 2.0, 'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+          639 T  10.4%  nx_have
+          356 T   5.8%  exec_stmt
+          242 T   3.9%  SUB:scvf_go
+          205 T   3.3%  SUB:ary_engine
+          204 T   3.3%  pop_lhs_and_probe
+          203 T   3.3%  nx_slow
+          168 T   2.7%  slot_load
+          160 T   2.6%  var_find_typed
+          150 T   2.4%  var_alloc_or_find
+          140 T   2.3%  push_lhs_frame
+          138 T   2.2%  es_idx
+          136 T   2.2%  caddsub_go
+          130 T   2.1%  ary_engine_call
+          128 T   2.1%  vsf_coerced
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         2427 T  39.4%  exec_stmt  (1 calls/pass)
+          481 T   7.8%  run_prog  (0 calls/pass)
+          470 T   7.6%  SUB:scv_find  (2 calls/pass)
+          450 T   7.3%  SUB:ary_engine  (0 calls/pass)
+          318 T   5.2%  for_set_typed  (1 calls/pass)
+          191 T   3.1%  for_get  (1 calls/pass)
+          181 T   2.9%  derive_directf  (1 calls/pass)
+          168 T   2.7%  slot_load  (2 calls/pass)
+          160 T   2.6%  var_find_typed  (1 calls/pass)
+          150 T   2.4%  var_alloc_or_find  (1 calls/pass)
+          138 T   2.2%  SUB:fn_shadow_find  (2 calls/pass)
+          130 T   2.1%  ary_engine_call  (2 calls/pass)
+          114 T   1.9%  check_fperr_only  (3 calls/pass)
+           99 T   1.6%  factyp_is2  (3 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+         6155 T 100.0%  run_prog  (0 calls/pass)
+         5350 T  86.9%  exec_stmt  (1 calls/pass)
+         1292 T  21.0%  ary_engine_call  (2 calls/pass)
+         1214 T  19.7%  for_set_typed  (1 calls/pass)
+         1162 T  18.9%  sc_call  (2 calls/pass)
+         1088 T  17.7%  TRAP:subrom_call  (2 calls/pass)
+         1088 T  17.7%  SUB:ary_engine  (0 calls/pass)
+          979 T  15.9%  for_get  (1 calls/pass)
+          814 T  13.2%  var_alloc_or_find  (1 calls/pass)
+          788 T  12.8%  var_find_typed  (1 calls/pass)
+          608 T   9.9%  SUB:scv_find  (2 calls/pass)
+          334 T   5.4%  SUB:scv_alloc  (1 calls/pass)
+          181 T   2.9%  derive_directf  (1 calls/pass)
+          168 T   2.7%  slot_load  (2 calls/pass)
+          138 T   2.2%  SUB:fn_shadow_find  (2 calls/pass)
+          124 T   2.0%  skipsp_test  (2 calls/pass)
+          114 T   1.9%  check_fperr_only  (3 calls/pass)
+          102 T   1.7%  island$0010  (1 calls/pass)
+  -- calls per pass, caller -> callee --
+      exec_stmt->check_fperr_only 2.95, ary_engine_call->sc_call 2, sc_call->TRAP:subrom_call 2, SUB:scv_find->SUB:fn_shadow_find 2, exec_stmt->skipsp_test 2, skipsp_test->skip_spaces 2, exec_stmt->push_lhs_frame 1.9, exec_stmt->slot_load 1.9, exec_stmt->factyp_is2 1.9, island$0010->hook$FF48 1, is_letter->upcase 1, for_get->var_find_typed 1, var_find_typed->ary_engine_call 1, SUB:ary_engine->SUB:scv_find 1, combine_add->pop_lhs_and_probe 1, for_set_typed->fac_to_int_strict 1, fac_to_int_strict->factyp_is2 1, for_set_typed->var_alloc_or_find 1, var_alloc_or_find->ary_engine_call 1, SUB:ary_engine->SUB:scv_alloc 1, SUB:scv_alloc->SUB:scv_find 1, combine_cmp->pop_lhs_and_probe 1, run_prog->derive_directf 1, run_prog->TRAP:BREAKX 1, run_prog->exec_stmt 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->for_get 0.95, exec_stmt->combine_add 0.95, exec_stmt->for_set_typed 0.95, exec_stmt->combine_cmp 0.95, exec_stmt->set_factyp2 0.95
+  -- spans (inclusive from reaching the label until it returns; per pass) --
+         4882 T  79.3%  ex_next  (1x)
+         1214 T  19.7%  for_set_typed  (1x)
+          979 T  15.9%  for_get  (1x)
+          932 T  15.1%  var_load_fac  (1x)
+
+=== (d) empty default-type loop: `FOR I=1 TO 40:NEXT` ===
+T per pass (M1 incl.): mean 5425, min 5270, max 5456 over 20 passes  [program printed '']
+  by region: main 4888, subp0 526, hook 11
+  sub-ROM crossings per pass: 1  -> + 1063 T subrom_call body + CALSLT round trip(s) not executed
+  MACHINE MODEL per pass: 6573 T (host 5425 + crossings + BREAKX); -> 31 TIME ticks per 300 passes at 63000 usable T/tick
+      p0 ary_engine: 1/pass
+  trapped calls per pass (0 T on the host): {'subrom_call': 1.0, 'BREAKX': 1.0}
+  -- top by EXCLUSIVE T, per label --
+          699 T  12.9%  nx_have
+          356 T   6.6%  exec_stmt
+          321 T   5.9%  nx_fast
+          247 T   4.6%  npi_tlp
+          245 T   4.5%  npks_lp
+          219 T   4.0%  npi_x10
+          189 T   3.5%  npk_pos
+          160 T   2.9%  var_find_typed
+          138 T   2.5%  es_idx
+          135 T   2.5%  npk_byte
+          123 T   2.3%  nx_again
+          121 T   2.2%  SUB:scvf_go
+          115 T   2.1%  npi_byte
+          112 T   2.1%  nx_pki
+  -- top by EXCLUSIVE T, per call target (locals folded) --
+         1850 T  34.1%  exec_stmt  (1 calls/pass)
+          564 T  10.4%  nx_pki  (1 calls/pass)
+          559 T  10.3%  nx_pack  (1 calls/pass)
+          450 T   8.3%  run_prog  (0 calls/pass)
+          277 T   5.1%  npk_sub  (4 calls/pass)
+          235 T   4.3%  SUB:scv_find  (1 calls/pass)
+          222 T   4.1%  SUB:ary_engine  (0 calls/pass)
+          219 T   4.0%  npi_x10  (1.75 calls/pass)
+          181 T   3.3%  derive_directf  (1 calls/pass)
+          160 T   2.9%  var_find_typed  (1 calls/pass)
+          104 T   1.9%  cmp16_bits  (1 calls/pass)
+           91 T   1.7%  island$0010  (1 calls/pass)
+           78 T   1.4%  is_letter  (1 calls/pass)
+           76 T   1.4%  check_fperr_only  (2 calls/pass)
+  -- top by INCLUSIVE T, per call target --
+         5425 T 100.0%  run_prog  (0 calls/pass)
+         4657 T  85.8%  exec_stmt  (1 calls/pass)
+          836 T  15.4%  nx_pack  (1 calls/pass)
+          788 T  14.5%  var_find_typed  (1 calls/pass)
+          783 T  14.4%  nx_pki  (1 calls/pass)
+          628 T  11.6%  ary_engine_call  (1 calls/pass)
+          563 T  10.4%  sc_call  (1 calls/pass)
+          526 T   9.7%  TRAP:subrom_call  (1 calls/pass)
+          526 T   9.7%  SUB:ary_engine  (0 calls/pass)
+          304 T   5.6%  SUB:scv_find  (1 calls/pass)
+          277 T   5.1%  npk_sub  (4 calls/pass)
+          219 T   4.0%  npi_x10  (1.75 calls/pass)
+          181 T   3.3%  derive_directf  (1 calls/pass)
+          124 T   2.3%  skipsp_test  (2 calls/pass)
+          104 T   1.9%  cmp16_bits  (1 calls/pass)
+          102 T   1.9%  island$0010  (1 calls/pass)
+           98 T   1.8%  is_letter  (1 calls/pass)
+           76 T   1.4%  check_fperr_only  (2 calls/pass)
+  -- calls per pass, caller -> callee --
+      nx_pack->npk_sub 4, exec_stmt->check_fperr_only 2, exec_stmt->skipsp_test 2, skipsp_test->skip_spaces 2, nx_pki->npi_x10 1.75, island$0010->hook$FF48 1, is_letter->upcase 1, var_find_typed->ary_engine_call 1, ary_engine_call->sc_call 1, sc_call->TRAP:subrom_call 1, SUB:ary_engine->SUB:scv_find 1, SUB:scv_find->SUB:fn_shadow_find 1, run_prog->derive_directf 1, run_prog->TRAP:BREAKX 1, run_prog->exec_stmt 1, exec_stmt->island$0010 0.95, exec_stmt->is_letter 0.95, exec_stmt->var_find_typed 0.95, exec_stmt->nx_pki 0.95, exec_stmt->nx_pack 0.95, exec_stmt->cmp16_bits 0.95, exec_stmt->set_factyp2 0.95
+  -- spans (inclusive from reaching the label until it returns; per pass) --
+         4152 T  76.5%  ex_next  (1x)
+         2929 T  54.0%  nx_fast  (1x)
+
+=== summary: modelled machine T/pass vs the measured TIME ticks per 300 passes ===
+  (a) model  29116 T/pass ->   139 ticks; measured zb 137 (implies 63759 usable T/tick); VG-8020 70 ticks = ~14700 T/pass
+  (b) model  38033 T/pass ->   181 ticks; measured zb ? (zb ticks not measured); VG-8020 98 ticks = ~20580 T/pass
+  (c) model   8366 T/pass ->    40 ticks; measured zb 39 (implies 64354 usable T/tick); VG-8020 8 ticks = ~1680 T/pass
+  (d) model   6573 T/pass ->    31 ticks; measured zb 32 (implies 61622 usable T/tick); VG-8020 24 ticks = ~5040 T/pass

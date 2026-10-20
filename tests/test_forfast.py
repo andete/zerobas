@@ -92,6 +92,12 @@ class Runner:
         for cell, cold in (("CSRX", 1), ("LINLEN", 40)):
             if cell in s:
                 m.poke(s[cell], cold)
+        # 🔴 FN_FEND as cold boot's clear_usrtab leaves it (scratchpad/loopprof_host.py,
+        # 2026-10-20). Unseeded it is 0, and every scalar lookup's fn_shadow_find then
+        # walks a 256-byte page (~9000 T): F4's figures were sane only because an earlier
+        # corpus row reached raise_error, which resets it -- run F4 alone and it inflated.
+        if "FN_FEND" in s and "FN_PAREA" in s:
+            m.poke(s["FN_FEND"], s["FN_PAREA"] & 0xFF)
         self.exec_pc = s["exec_stmt"]
         self.next_pc = s["ex_next"]
         self.fast_pc = s.get("nx_fast")

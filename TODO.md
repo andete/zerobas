@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37144 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37179 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31585,6 +31585,38 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       386 → 28 B free** -- the week's carves spent on the widest per-construct gap
       measured; the next page-1 slice needs a carve first.
 
+- [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
+      2026-10-20 from a host profile)**
+      🎚️ TIER 5 — on-par speed: `A=I+7` ×300 is ~137 ticks here against 70.
+      🤖 **AUTONOMOUS** — each lever is a slice; results must stay byte-identical.
+      📏 [`loopprof_host.py`](scratchpad/loopprof_host.py) →
+      [`loopprof_host.out`](scratchpad/loopprof_host.out): per-routine T on the host Z80
+      plus the costs the host skips (1063 T a sub-ROM crossing: `subrom_call` 152 +
+      C-BIOS's CALSLT into expanded 3-2 911; BREAKX ~85) models the machine to ±3 %
+      (`A=I+7` 139 modelled vs 137 measured; `I%` 40 vs 39; default 31 vs 32). Per pass:
+      `A=I+7` 29.1k T (VG ≈ 14.7k), `A=I*7` 38.0k (≈ 20.6k), the `%` NEXT loop 8.4k
+      (≈ 1.7k), the default fast NEXT loop 6.6k (≈ 5.0k).
+      Levers, ranked (machine T a pass):
+      1. **an exact-int fast path for float `+ − *`** (both operands exact int16 -> the
+         int16 path, the result packed as the BCD path would; overflow falls back): ~6600
+         in `A=I+7` (23 %), ~14 900 in `A=I*7` (39 %). Costs ~35-45 B (estimated 2026-10-20), LOW region, hooked in
+         `combine_*` -- `fp_add` / `fp_mul` / `flt_to_int16` / `arga_pack_fac` are
+         resident-ABI roots and run with page 1 switched out.
+      2. **no CALSLT per scalar reference** (every lookup crosses into the sub-ROM's
+         `scv_find`): ~1375 a reference -- a resident walk in main (~45-55 B, needs a
+         carve), or for NEXT only the variable's entry address cached in the FOR frame's
+         spare bytes (~15-20 B of page 1, estimated 2026-10-20).
+      3. **an int16 arm in NEXT for `%` loops** -> D-FORINT below.
+      4. **the fast NEXT's BCD round trip** (`nx_pki` + `nx_pack` ~1600 a pass): keep the
+         int16 counter and the last-written packed bytes in the frame's spare bytes, a
+         4-byte compare proves the body left the variable alone; ~1350, ~25-35 B of page 1 (estimated 2026-10-20).
+      5. smaller: `nx_have` copies the whole 25 B frame (~400); `flt_to_int16` runs twice a
+         pass in `A=I+7` producing a DE nobody reads (~1700 each); each name is walked
+         twice (`var_str_type`, then `var_name_key`); a one-digit literal widens by a
+         16-step `div10` + a 15-byte `zero_fill` (~1300).
+      🔴 Harness trap found on the way: an unseeded `FN_FEND` makes every host scalar
+      lookup walk a 256-byte page (~9000 T); tests/test_forfast.py's F4 now seeds it.
+
 - [ ] 🐌 **D-FORINT — AN INTEGER `FOR I%` LOOP IS 4.9× THE VG-8020, NOW SLOWER THAN A
       DEFAULT-TYPE ONE (found 2026-10-20 by D-FORFAST's timing)**
       🎚️ TIER 5 — on-par speed.
@@ -31593,8 +31625,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       `FOR I%=1 TO 300:NEXT` **39 here, 8 on the VG-8020**; the default-type loop, after
       D-FORFAST, 32 vs 24. The `%` path is the untouched old NEXT (host ~5400 T against
       the fast path's ~4700): two sub-ROM calls a NEXT where the fast path makes one.
-      ➡️ Profile the `%` NEXT (calls per pass, as `nextcost_counts.py` did) before
-      designing; main page 1 was 28 B free on 2026-10-20 (after D-FORFAST), so a fix
+      📏 PROFILED 2026-10-20 (D-LOOPPROF above): the `%` NEXT is 4882 host T -- `for_get`
+      979 (a lookup), `for_set_typed` 1214 (it looks the SAME variable up again), the
+      general operator plumbing ~1450, `nx_have`'s 25 B LDIR ~570. ➡️ An `nx_fast`-shaped
+      int16 arm (lookup, add with overflow to the general path, store in place,
+      `cmp16_bits`) saves ~3500 T a pass (~40 → ~23 ticks), ~15-20 B page 1; main page 1 was 28 B free on 2026-10-20 (after D-FORFAST), so a fix
       that adds bytes there needs a carve.
 
 - [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,

@@ -1,0 +1,19 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+# --- F1/F2 differential: int path vs the general path ---
+      (empty loop prints '31'; 64 statement boundaries compared)
+PASS? F1 95/95 programs identical at every statement boundary; int path taken in 48
+# --- F3 nx_pki / nx_pack against Python ---
+PASS  F3 nx_pack over 25538 int16s
+PASS  F3 nx_pki over 1766 packed values
+# --- F4 T-states of an empty NEXT (host: tenant steps in, CALSLT out) ---
+      (a) FOR I=1 TO 300 (default type)            old   18119 T (2 sub calls)  new    4686 T (1 sub calls)   -13433
+      (a') FOR I=1 TO N, N=300 double              old   18507 T (2 sub calls)  new    4880 T (1 sub calls)   -13627
+      (b) STEP .5                                  old   18286 T (2 sub calls)  new   18286 T (2 sub calls)       +0
+      (c) FOR I#=.5 TO 12 (double, fractional)     old   17938 T (2 sub calls)  new   17938 T (2 sub calls)       +0
+      (c') FOR I#=1 TO 12 (double, int-valued)     old   18119 T (2 sub calls)  new    4686 T (1 sub calls)   -13433
+      (d) FOR I%=1 TO 12                           old    5438 T (2 sub calls)  new    5438 T (2 sub calls)       +0
+      (e) body A=A+.5                              old   18393 T (2 sub calls)  new   18393 T (2 sub calls)       +0
+      (f) FOR I!=1 TO 12 (single)                  old   20908 T (2 sub calls)  new    4518 T (1 sub calls)   -16390
+      (g) FOR I=30000 TO 30012                     old   20386 T (2 sub calls)  new    5366 T (1 sub calls)   -15020
+
+ALL PASS
