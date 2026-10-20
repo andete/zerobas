@@ -592,6 +592,25 @@ rp_exec:
                 ; down, so without it the shadow would latch on forever after the first
                 ; press and every later press would be ignored. (ep_strig gets the same
                 ; observation for free: it polls GTTRIG every frame, pressed or not.)
+                ; 🔴 D-STOPTEAR (2026-10-20): CONFIRM BEFORE RELEASING. C-BIOS's BREAKX
+                ; selects keyboard row 7 / 6 through PPI port C and then reads it, with
+                ; interrupts ON; a keyboard ISR landing between the `out` and the `in`
+                ; leaves another row selected and BREAKX reads a HELD Ctrl-STOP as up.
+                ; One such torn read released the shadow mid-tap and the next poll took
+                ; the same tap as a fresh press: stop-trap-acceptance's counting handler
+                ; fired TWICE on one 100 ms tap (watchpoint trace: the shadow cleared at
+                ; 41.3475 s with the key held to 41.399, re-latched 2 ms later --
+                ; scratchpad/stoptrap_wp_draft.out). So a release is read twice: two
+                ; BREAKX calls ~100 T apart cannot both straddle one 20 ms interrupt.
+                ; Only while the shadow is SET (a press was seen): the common boundary
+                ; with no recent press pays one `bit` and skips the store.
+                ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
+                bit     6,a                 ; ZTS_SHADOW set?
+                jr      z,rp_trapchk        ; no: nothing to release
+                push    hl
+                call    BREAKX              ; the confirming read
+                pop     hl
+                jr      c,rp_trapchk        ; still held: the first read was torn
                 ld      a,(ZTRAP+ZTI_STOP*ZTRAP_ENTSZ)
                 res     6,a                 ; ZTS_SHADOW — the level follows the key
                 ld      (ZTRAP+ZTI_STOP*ZTRAP_ENTSZ),a
@@ -631,7 +650,8 @@ rp_run:
                 ld      d,(hl)
                 ex      de,hl               ; HL = link (next line)
                 ld      (CURLINE),hl
-                jr      rp_lp
+                jp      rp_lp               ; (`jp`: D-STOPTEAR's confirm read put rp_lp
+                                            ; out of `jr` reach; 2 T faster anyway)
 rp_goto:
                 xor     a
                 ld      (GOTOFLAG),a

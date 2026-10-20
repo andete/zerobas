@@ -11332,7 +11332,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37226 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37262 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -31585,6 +31585,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       386 → 28 B free** -- the week's carves spent on the widest per-construct gap
       measured; the next page-1 slice needs a carve first.
 
+- [x] 🔴 **D-STOPTEAR — ONE CTRL-STOP TAP COULD FIRE `ON STOP GOSUB` TWICE: A TORN `BREAKX`
+      READ RELEASED THE TRAP'S EDGE SHADOW WHILE THE KEY WAS STILL HELD (found and fixed
+      2026-10-20, exposed by the parked D-FORINT draft's timing)**
+      🎚️ TIER 3 — common errors: a trapped Ctrl-STOP running its handler twice.
+      🤖 **AUTONOMOUS** — the VG-8020 fires once at every tap phase tried.
+      📏 The draft's FULL battery read stop-trap-acceptance `C_handler_baseline` flag=2
+      (VG 1). Openmsx write watchpoints on the STOP trap's state byte, TRAPPEND and the
+      handler's counter, logging emulated time and our own PC -- an instrument that does
+      not change the program's timing, where editing the program had moved the window --
+      ([`stoptrap_wp_probe.py`](scratchpad/stoptrap_wp_probe.py)): on 508043a2 the shadow
+      is released at 41.3997 s, when the 100 ms tap ends
+      ([`stoptrap_wp_head.out`](scratchpad/stoptrap_wp_head.out)); on the draft
+      `rp_exec`'s poll released it at **41.3475 s with the key held to 41.399**, and the
+      next poll, 2 ms later, latched the same tap as a fresh press
+      ([`stoptrap_wp_draft.out`](scratchpad/stoptrap_wp_draft.out)). C-BIOS's `BREAKX`
+      (its own source) selects keyboard row 7 / 6 through PPI port C and then reads it,
+      interrupts ON: a keyboard ISR between the `out` and the `in` leaves another row
+      selected, and a held Ctrl-STOP reads as up. A plain break never notices one false
+      "up" (the next poll catches the key); the trap's edge shadow took one as a release.
+      🛠 `rp_exec` confirms a release with a second `BREAKX` read, only while the shadow
+      is set: two reads ~100 T apart cannot both straddle one 20 ms interrupt, and the
+      common boundary with no recent press pays one `bit` (and skips the store). +15 B
+      of page 1 (28 → 13 free on 2026-10-20; one `jr rp_lp` became `jp`, 2 T faster).
+      ✅ tests/test_traps.py t_stop_shadow §4 scripts BREAKX: a torn "up" then "down" keeps
+      the shadow and calls BREAKX twice; two "up"s release it; no shadow → one call.
+      🔪 Without the fix the torn-read rows go RED and the other two stay green.
+      stop-trap-acceptance green on the fix alone and on fix + the D-FORINT draft, whose
+      window is gone ([`stoptear_fine_fixdraft.out`](scratchpad/stoptear_fine_fixdraft.out)).
+      ⚠️ The emulator gate cannot see this on 508043a2's timing (no phase tried
+      double-fires there); the host row is the witness.
+
 - [ ] 🐌 **D-LOOPPROF — WHERE A PLAIN STATEMENT'S TIME GOES: FIVE MEASURED LEVERS (filed
       2026-10-20 from a host profile)**
       🎚️ TIER 5 — on-par speed: `A=I+7` ×300 is ~137 ticks here against 70.
@@ -31678,6 +31709,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`rp_exec`'s `BREAKX` poll, `rp_break`, `check_traps`), at start 0.299 on the draft
       and on 508043a2. Then land the draft only with the trap explained (and fixed if it
       is ours).
+      ✅ **EXPLAINED AND FIXED THE SAME EVENING -- D-STOPTEAR (below): a torn BREAKX read,
+      latent on 508043a2, exposed by the draft's timing.** With the fix the draft's window
+      reads flag=1 at every phase ([`stoptear_fine_fixdraft.out`](scratchpad/stoptear_fine_fixdraft.out))
+      and stop-trap-acceptance is green. ➡️ Re-apply the patch on top of D-STOPTEAR, gate,
+      commit.
 
 - [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,
       `FOR A=1 TO 40000` and `FOR A=0 TO 1 STEP .1` ALL RUN WRONG, AND FOUR OF THEM

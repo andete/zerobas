@@ -427,6 +427,50 @@ def t_stop_shadow(fails):
     m.call("set_state", hl=e, a=ZTS_ON)
     fails = check(fails, "STOP set_state ON->ON: SHADOW kept",
                   m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+
+    # 4. D-STOPTEAR (2026-10-20): rp_exec's release of the shadow must survive ONE
+    #    torn BREAKX read. C-BIOS's BREAKX selects the keyboard row and reads it with
+    #    interrupts on, so a keyboard ISR between the two can make a HELD Ctrl-STOP
+    #    read as up; released on that one read, the next poll took the same tap as a
+    #    fresh press and the handler fired twice (stop-trap-acceptance C, measured).
+    #    BREAKX is scripted; execution is stopped at rp_trapchk by raising.
+    class _AtTrapchk(Exception):
+        pass
+
+    def stop_at_trapchk(mm):
+        raise _AtTrapchk
+
+    def run_exec(reads):
+        seq, calls = list(reads), []
+        def breakx(mm):
+            down = seq.pop(0) if seq else False
+            calls.append(down)
+            mm.cpu.f = (mm.cpu.f | 1) if down else (mm.cpu.f & ~1)
+        m.trap("BREAKX", breakx)
+        m.trap("derive_directf", lambda mm: None)
+        m.trap("rp_trapchk", stop_at_trapchk)
+        try:
+            m.call("rp_exec", hl=0x9C40)
+        except _AtTrapchk:
+            pass
+        return calls
+
+    reset_traps(m)
+    m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))   # in the handler, key seen down
+    calls = run_exec([False, True])                    # torn "up", then truly held
+    fails = check(fails, "STOP torn read: a 2nd BREAKX confirms", calls, [False, True])
+    fails = check(fails, "STOP torn read: SHADOW KEPT (no fresh edge next poll)",
+                  m.peek(e)[0] & ZTS_SHADOW, ZTS_SHADOW)
+    reset_traps(m)
+    m.poke(e, bytes([ZTS_SERVICING | ZTS_SHADOW]))
+    calls = run_exec([False, False])                   # released for real
+    fails = check(fails, "STOP real release: shadow cleared",
+                  m.peek(e)[0] & ZTS_SHADOW, 0)
+    reset_traps(m)
+    m.poke(e, bytes([ZTS_ON]))                         # no press seen: no shadow
+    calls = run_exec([False])
+    fails = check(fails, "STOP no shadow: ONE BREAKX (the common boundary pays no 2nd read)",
+                  calls, [False])
     return fails
 
 
