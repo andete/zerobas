@@ -276,6 +276,7 @@ BSAVE_DISK_ID   equ     $FE
 ; ROM reserves no local DPB area.)
 ;
 ; FDC driver state (7 bytes below the sector buffer)
+F37D_STUB       equ     $EFDA   ; D-BDOSBASIC slice 2: the $F37D target, a page-3 stub (28 B)
 DSK_MEDIA       equ     $EFF6   ; D-SIDES: the media ID DSKIO seats sectors by (bit 0 two sides, bit 1 8 a track) (1 B)
 FDC_IFF         equ     $EFF7   ; saved caller IFF2 across a sector op (1 = was EI) (1 B)
 FDC_CNT         equ     $EFF8   ; remaining sector count (1 B)

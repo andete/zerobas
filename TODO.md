@@ -11970,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37935 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37945 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -36479,9 +36479,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       docs/concepts/msx-dos.md. 🔮 "ROBOCOP then runs" (55 %) half: the LOADER now matches; the
       game it loads then resets after ~4 s on zerobas, where the CF-3300 shows `TECLE [CONTROL] !`
       and resets ~15 s on -- a new divergence in the loaded game's run, filed under D-DISKRUN.
-      ➡️ SLICE 2: $F37D from a BASIC program -- a page-3 stub that maps this ROM into page 1
-      around bdos_entry (and back), as the reference's evidently does; then the answer set
-      ($00-$30) measured from BASIC, function by function.
+      ✅ **SLICE 2 DONE 2026-10-21 -- $F37D from a BASIC program:** $F37D now jumps to a 28 B
+      page-3 stub (F37D_STUB, $EFDA, written by install_f37d at INIT with HOOK_SLOT): page 0 =
+      the BIOS (slot 0 -- every BASIC program) -> CALSLT ($001C) into bdos_entry with this ROM's
+      slot, IX / IY kept, EI after; page 0 NOT the BIOS (a boot code's RAM, MSX-DOS) -> straight
+      to bdos_entry, as before. 🔮 "USR SFIRST then A = 0 + the entry, as the CF-3300" (70 %) HIT
+      ([`bdosb2_sfirst_zb.out`](scratchpad/bdosb2_sfirst_zb.out): `SFIRST A= 0  AUTOEXECBAS`, then
+      `PRINT 7*6` 42); "ROBOCOP's loader unchanged" (85 %) HIT. tests/test_bdosbasic.py: the stub
+      both ways (CALSLT with IY = slot / IX = bdos_entry and IX / IY kept; direct); 🔪 the stub
+      always direct -> the BIOS row FAILs. Code in kernel.asm's $4E4E fill (disk.rom 1736 B free).
+      ⚠️ The buffer audit's warning stands: bdos_entry uses the sector buffers BASIC's open files
+      use, unsaved, and the caller is user code.
+      ➡️ SLICE 3: the answer set ($00-$30) measured from BASIC on the CF-3300, function by
+      function, and each missing one answered.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

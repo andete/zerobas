@@ -10,8 +10,7 @@ SPDX-License-Identifier: 0BSD
 > disk and services the BDOS functions DOS 1 programs use, compared with the
 > CF-3300 by standing gates; `A>BASIC` returns to Disk BASIC (since
 > 2026-10-02), and `CALL SYSTEM` goes back to DOS (since 2026-10-09). Not
-> there: BDOS calls through `&HF37D` are a private subset, and from a BASIC
-> program (rather than a disk's boot code) they do not reach it at all.
+> there: BDOS calls through `&HF37D` answer a subset of the functions only.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -104,9 +103,11 @@ the work-area cell the CF-3300 keeps it in.
 A disk's own boot loader is the usual caller: it runs while the disk system is
 switched in, prints a title, finds and opens its file, and reads it in one
 block. The CF-3300 answers that whole sequence and so does zerobas since
-2026-10-21. Machine code called from a BASIC program is different on zerobas:
-there the jump leads into BASIC's own ROM, not the disk system (see
-*Differences*).
+2026-10-21. Machine code called from a BASIC program (with `USR`) reaches the
+same functions: there the disk system is not switched in, so zerobas's jump
+leads to a small routine in RAM that calls it across the slots and comes back.
+A search for a file from a `USR` routine answers `A=0` and fills the transfer
+area on both machines.
 
 ### From BASIC to DOS and back
 
@@ -162,11 +163,8 @@ there the jump leads into BASIC's own ROM, not the disk system (see
 - **`CALL SYSTEM` after a data-disk start with the DOS disk put in later**: the
   CF-3300 restarts Disk BASIC; zerobas answers `Illegal function call`
   (D-SYSLATE).
-- **BDOS through `&HF37D`** answers ten functions only, and from a BASIC
-  program's machine code it does not reach the disk system at all: the
-  CF-3300's search-first answers `A=0` and fills the transfer area, zerobas's
-  returns a meaningless value
-  ([`bdos_sfirst.out`](../../scratchpad/bdos_sfirst.out)). It also uses the sector buffers BASIC's open
+- **BDOS through `&HF37D`** answers ten functions only; which others the
+  CF-3300 answers from BASIC is not measured yet. It also uses the sector buffers BASIC's open
   files use, without saving them: the buffer audit of 2026-09-24 (TODO.md)
   names it as the one crossing that cannot be guarded, because the caller is
   the user's machine code.
@@ -191,6 +189,13 @@ there the jump leads into BASIC's own ROM, not the disk system (see
   zerobas now answers them with the same results
   ([`bdosb_robocop_ret.out`](../../scratchpad/bdosb_robocop_ret.out)). The game
   itself then still behaves differently on the two machines.
+- **From a BASIC program the BDOS door led into BASIC** (fixed 2026-10-21,
+  D-BDOSBASIC slice 2). A `USR` routine asking for a file search got a
+  meaningless answer on zerobas and `A=0` with the file's entry on the CF-3300
+  ([`bdos_sfirst.out`](../../scratchpad/bdos_sfirst.out)): the jump at
+  `&HF37D` pointed into the disk system, which is not switched in while BASIC
+  runs. It now goes through a routine that switches it in
+  ([`bdosb2_sfirst_zb.out`](../../scratchpad/bdosb2_sfirst_zb.out)).
 
 - **The character to print is in register E, not A** (2026-06-30). Reading A
   worked for the first lines of the boot and printed garbage for everything

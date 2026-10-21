@@ -65,6 +65,27 @@ def run():
         cpu = m.call("bdos_entry", c=fn, de=0xC0DA)
         check(cpu.a == 0xFF, f"BDOS ${fn:02X} (not answered yet): A = ${cpu.a:02X} (want $FF)")
 
+    # --- slice 2: the $F37D stub (install_f37d) -----------------------------
+    for page0, label, want in ((0, "page 0 = the BIOS (a BASIC program)", "calslt"),
+                               (3, "page 0 = RAM (a boot code, MSX-DOS)", "direct")):
+        m = Machine(ROM, SYM, rom_base=DISK_BASE)
+        m.poke(m.addr("HOOK_SLOT"), b"\x87")
+        m.call("install_f37d")
+        stub = m.addr("F37D_STUB")
+        log = []
+        m.trap(0x001C, lambda mach: log.append(("calslt", mach.cpu.iy >> 8, mach.cpu.ix,
+                                                mach.cpu.c, mach.cpu.de)))
+        m.trap("bdos_entry", lambda mach: log.append(("direct", mach.cpu.c, mach.cpu.de)))
+        m.cpu.io_in = lambda port, p0=page0: (0xF0 | p0) if port & 0xFF == 0xA8 else 0xFF
+        m.call(stub, c=0x11, de=0xD020, ix=0x1234, iy=0x5678)
+        if want == "calslt":
+            ok = log == [("calslt", 0x87, m.addr("bdos_entry"), 0x11, 0xD020)]
+            ok = ok and m.cpu.ix == 0x1234 and m.cpu.iy == 0x5678
+        else:
+            ok = log == [("direct", 0x11, 0xD020)]
+        check(ok, f"$F37D stub, {label}: {log} (want {want}; IX/IY kept "
+                  f"{m.cpu.ix:04X}/{m.cpu.iy:04X})")
+
     print()
     print("ALL PASS — bdos_entry answers STROUT / SFIRST / SNEXT and sets $F23D"
           if not fails else f"{fails} CHECK(S) FAILED")

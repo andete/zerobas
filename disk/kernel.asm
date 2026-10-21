@@ -17,6 +17,37 @@
 ; (the kernel passes AF=C340 BC=0000 DE=DC80 HL=D606 IX=F195 IY=C0AB; none consumed).
                 ds      $4E4B - $, $00  ; pad to the $4E4B kernel veneer (was $50A9 fill)
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
+; 📌 In the $4E4E..$4EDE fill (check_disk_walls, 2026-10-21).
+; --- D-BDOSBASIC slice 2: $F37D from a BASIC program (oracle; MSX2 TH CALSLT) ---
+; From a BASIC program page 1 is BASIC's own ROM, so a bare `JP bdos_entry` ran into
+; BASIC (the A = 2 of scratchpad/bdos_sfirst.out). $F37D now jumps to this page-3
+; stub. Page 0 is the BIOS (slot 0, the MSX standard) whenever BASIC runs: then
+; the stub calls bdos_entry through the BIOS's CALSLT ($001C) with this ROM's slot
+; (HOOK_SLOT), the caller's IX / IY kept, interrupts back on. Page 0 is NOT the
+; BIOS in a disk's boot code (RAM there) and under MSX-DOS -- and there page 1 is
+; already this ROM, so the stub jumps straight in, as $F37D always did.
+f37d_tmpl:
+                in      a, ($A8)
+                and     3                   ; page 0's primary slot
+                jp      nz, bdos_entry      ; not the BIOS: page 1 is this ROM
+                push    ix
+                push    iy
+f37d_iy:        ld      iy, 0               ; high byte := HOOK_SLOT (install_f37d)
+                ld      ix, bdos_entry
+                call    $001C               ; CALSLT: AF / BC / DE / HL both ways
+                pop     iy
+                pop     ix
+                ei
+                ret
+f37d_end:
+install_f37d:
+                ld      hl, f37d_tmpl
+                ld      de, F37D_STUB
+                ld      bc, f37d_end - f37d_tmpl
+                ldir
+                ld      a, (HOOK_SLOT)
+                ld      (F37D_STUB + f37d_iy - f37d_tmpl + 3), a
+                ret
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).

@@ -164,8 +164,8 @@ init:
                 ; FAT; see basic/sysvars.inc), so the JP form is free to install.
                 ld      a, $C3              ; JP opcode
                 ld      (SYSTEM), a
-                ld      hl, bdos_entry
-                ld      (SYSTEM + 1), hl    ; $F37D = C3 <bdos_entry lo> <hi>
+                ld      hl, F37D_STUB       ; D-BDOSBASIC slice 2: via the page-3 stub
+                ld      (SYSTEM + 1), hl    ; $F37D = C3 <stub lo> <hi> (install_f37d)
                 ; default the settable DTA to the MSX-DOS default ($0080) so a
                 ; SeqRead before any $1A behaves as MSX-DOS does.
                 ld      hl, DTA_DEFAULT
@@ -545,6 +545,7 @@ set_ramad:
                 ; may, and took another road here. The hook stays C-BIOS's RET fill.
                 ld      hl, HOKVLD
                 set     0, (hl)
+                call    install_f37d        ; D-BDOSBASIC slice 2: $F37D's stub
                 ld      a, $F9              ; D-SIDES: DSKIO's seating until a disk is
                 ld      (DSK_MEDIA), a      ; mounted -- 2 sides x 9, as before
                 ; --- RAMAD: ALWAYS filled (D-RAMAD, 2026-10-21) --------------------
