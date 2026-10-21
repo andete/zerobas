@@ -117,9 +117,11 @@ sector with interrupts on (D-FDCDI).
 
 ## Where it lives
 
-- `ex_close` in [basic/files.asm](../../basic/files.asm): the list, the
-  channel checks, `fch_do_close_ch` for one channel and `fch_close_all` for
-  the bare form.
+- `fs_close` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
+  sub-ROM's page 0 since 2026-10-21 (main's `ex_close` hands it over): the
+  list and the channel-0 rule. It calls back into
+  [basic/files.asm](../../basic/files.asm) for the channel checks,
+  `fch_do_close_ch` for one channel and `fch_close_all` for the bare form.
 - The flush of a disk output channel, the Ctrl-Z and the directory entry are
   the disk ROM's ([disk/kernel.asm](../../disk/kernel.asm), `hk_chclose`),
   which every disk channel's `CLOSE` enters, an input one too (since S10.C).

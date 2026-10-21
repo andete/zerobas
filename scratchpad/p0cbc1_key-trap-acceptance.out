@@ -1,0 +1,74 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_key_trap.py  \
+	  
+
+--- firing: the delivery event ---
+PASS  [ref] A_fires                    {'cnt': 1, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'cnt': 1, 'who': 1, 'done': 1}
+PASS  [zb ] A_fires                    {'cnt': 1, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 89} want {'cnt': 1, 'who': 1, 'done': 1}, == ref
+PASS  [ref] B_two_taps                 {'cnt': 2, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'cnt': 2, 'who': 1, 'done': 1}
+PASS  [zb ] B_two_taps                 {'cnt': 2, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 89} want {'cnt': 2, 'who': 1, 'done': 1}, == ref
+PASS  [ref] C_no_enable                {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 72} want {'cnt': 0, 'done': 1}
+PASS  [zb ] C_no_enable                {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 84} want {'cnt': 0, 'done': 1}, == ref
+PASS  [ref] D_off                      {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'cnt': 0, 'done': 1}
+PASS  [zb ] D_off                      {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 88} want {'cnt': 0, 'done': 1}, == ref
+PASS  [ref] E_stop                     {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'cnt': 0, 'done': 1}
+PASS  [zb ] E_stop                     {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 88} want {'cnt': 0, 'done': 1}, == ref
+PASS  [ref] F_positional               {'cnt': 1, 'who': 2, 'err': 0, 'done': 1, 'aux': 0, 't': 84} want {'cnt': 1, 'who': 2, 'done': 1}
+PASS  [zb ] F_positional               {'cnt': 1, 'who': 2, 'err': 0, 'done': 1, 'aux': 0, 't': 97} want {'cnt': 1, 'who': 2, 'done': 1}, == ref
+PASS  [ref] G_empty_slot_clears        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 88} want {'cnt': 0, 'done': 1}
+PASS  [zb ] G_empty_slot_clears        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 93} want {'cnt': 0, 'done': 1}, == ref
+PASS  [ref] H_shift_is_key6            {'cnt': 1, 'who': 6, 'err': 0, 'done': 1, 'aux': 0, 't': 84} want {'cnt': 1, 'who': 6, 'done': 1}
+PASS  [zb ] H_shift_is_key6            {'cnt': 1, 'who': 6, 'err': 0, 'done': 1, 'aux': 0, 't': 97} want {'cnt': 1, 'who': 6, 'done': 1}, == ref
+PASS  [ref] I_shift_not_key1           {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'cnt': 0, 'done': 1}
+PASS  [zb ] I_shift_not_key1           {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 88} want {'cnt': 0, 'done': 1}, == ref
+PASS  [ref] J_press_in_handler         {'cnt': 2, 'who': 2, 'err': 0, 'done': 1, 'aux': 0, 't': 90} want {'cnt': 2, 'who': 2, 'done': 1}
+PASS  [zb ] J_press_in_handler         {'cnt': 2, 'who': 2, 'err': 0, 'done': 1, 'aux': 0, 't': 104} want {'cnt': 2, 'who': 2, 'done': 1}, == ref
+PASS  [ref] K_key_off_display          {'cnt': 1, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 80} want {'cnt': 1, 'who': 1, 'done': 1}
+PASS  [zb ] K_key_off_display          {'cnt': 1, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 93} want {'cnt': 1, 'who': 1, 'done': 1}, == ref
+PASS  [ref] AA_empty_slot_midlist      {'cnt': 1, 'who': 6, 'err': 0, 'done': 1, 'aux': 0, 't': 84} want {'cnt': 1, 'who': 6, 'done': 1}
+PASS  [zb ] AA_empty_slot_midlist      {'cnt': 1, 'who': 6, 'err': 0, 'done': 1, 'aux': 0, 't': 97} want {'cnt': 1, 'who': 6, 'done': 1}, == ref
+PASS  [ref] L_key4                     {'cnt': 1, 'who': 3, 'err': 0, 'done': 1, 'aux': 0, 't': 84} want {'cnt': 1, 'who': 3, 'done': 1}
+PASS  [zb ] L_key4                     {'cnt': 1, 'who': 3, 'err': 0, 'done': 1, 'aux': 0, 't': 97} want {'cnt': 1, 'who': 3, 'done': 1}, == ref
+
+--- the REPEAT property (per-machine, NOT an equality differential) ---
+PASS  [ref] M_hold_repeats             {'cnt': 22, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 76} want {'who': 1, 'done': 1} cnt>=2
+PASS  [zb ] M_hold_repeats             {'cnt': 31, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 89} want {'who': 1, 'done': 1} cnt>=2 (per-machine)
+
+--- diversion: a trapped key leaves the input stream ---
+PASS  [ref] N_baseline_delivers        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 21, 't': 80} want {'done': 1} aux>0
+PASS  [zb ] N_baseline_delivers        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 29, 't': 95} want {'done': 1} aux>0 (per-machine)
+PASS  [ref] O_trapped_diverted         {'cnt': 23, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 96} want {'aux': 0, 'done': 1} cnt>=1
+PASS  [zb ] O_trapped_diverted         {'cnt': 31, 'who': 1, 'err': 0, 'done': 1, 'aux': 0, 't': 112} want {'aux': 0, 'done': 1} cnt>=1 (per-machine)
+PASS  [ref] P_on_empty_swallows        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 96} want {'cnt': 0, 'aux': 0, 'done': 1}
+PASS  [zb ] P_on_empty_swallows        {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 104} want {'cnt': 0, 'aux': 0, 'done': 1}, == ref
+PASS  [ref] Q_off_delivers             {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 22, 't': 96} want {'cnt': 0, 'done': 1} aux>0
+PASS  [zb ] Q_off_delivers             {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 30, 't': 111} want {'cnt': 0, 'done': 1} aux>0 (per-machine)
+PASS  [ref] R_stop_delivers            {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 22, 't': 96} want {'cnt': 0, 'done': 1} aux>0
+PASS  [zb ] R_stop_delivers            {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 30, 't': 111} want {'cnt': 0, 'done': 1} aux>0 (per-machine)
+PASS  [ref] S_untrapped_key_unaffected {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 22, 't': 96} want {'cnt': 0, 'done': 1} aux>0
+PASS  [zb ] S_untrapped_key_unaffected {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 30, 't': 112} want {'cnt': 0, 'done': 1} aux>0 (per-machine)
+
+--- parse / error surface ---
+PASS  [ref] T_key0_err5                {'cnt': 0, 'who': 0, 'err': 5, 'done': 1, 'aux': 0, 't': 54} want {'err': 5, 'done': 1}
+PASS  [zb ] T_key0_err5                {'cnt': 0, 'who': 0, 'err': 5, 'done': 1, 'aux': 0, 't': 54} want {'err': 5, 'done': 1}, == ref
+PASS  [ref] U_key11_err5               {'cnt': 0, 'who': 0, 'err': 5, 'done': 1, 'aux': 0, 't': 54} want {'err': 5, 'done': 1}
+PASS  [zb ] U_key11_err5               {'cnt': 0, 'who': 0, 'err': 5, 'done': 1, 'aux': 0, 't': 54} want {'err': 5, 'done': 1}, == ref
+PASS  [ref] V_ten_slots_ok             {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 58} want {'err': 0, 'done': 1}
+PASS  [zb ] V_ten_slots_ok             {'cnt': 0, 'who': 0, 'err': 0, 'done': 1, 'aux': 0, 't': 58} want {'err': 0, 'done': 1}, == ref
+PASS  [ref] W_eleven_slots_err2        {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 54} want {'err': 2, 'done': 1}
+PASS  [zb ] W_eleven_slots_err2        {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 54} want {'err': 2, 'done': 1}, == ref
+PASS  [ref] X_on_key_goto_err2         {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 50} want {'err': 2, 'done': 1}
+PASS  [zb ] X_on_key_goto_err2         {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 50} want {'err': 2, 'done': 1}, == ref
+PASS  [ref] Y_undef_line_err8          {'cnt': 0, 'who': 0, 'err': 8, 'done': 1, 'aux': 0, 't': 42} want {'err': 8, 'done': 1}
+PASS  [zb ] Y_undef_line_err8          {'cnt': 0, 'who': 0, 'err': 8, 'done': 1, 'aux': 0, 't': 42} want {'err': 8, 'done': 1}, == ref
+PASS  [ref] Z_bare_key_paren_err2      {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 54} want {'err': 2, 'done': 1}
+PASS  [zb ] Z_bare_key_paren_err2      {'cnt': 0, 'who': 0, 'err': 2, 'done': 1, 'aux': 0, 't': 54} want {'err': 2, 'done': 1}, == ref
+
+ALL PASS

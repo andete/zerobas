@@ -14,6 +14,17 @@ session and the loop resumes exactly where it stopped.
   | disk code first | on ~disk-only code still in main: *"that needs to go first."* | **D-DISKREST** (TODO.md) is the FIRST slice series; its real size is ~135-180 B of main, not 1 KB |
   | pin pads | *"I don't think we have to fill holes before pins exactly every time, but we do need to consider them free space we probably want to use again eventually."* | `make pin-check` fails only on a wrong pin; `make basic-reloc` lists the free bytes in front of the pins per hole -- but NOT where a `jr` spans the pad (slice 2: refill it) |
   | collector (10-21) | *"as long as we have the sub rom, there is no point"* (in compromising the fast string collector for bytes) | the fast GC stays; sub-ROM bytes are not the budget -- MAIN is. Shrinking sub-ROM code (string engine's sub half, graphics, float) waits for a future "no sub ROM" goal |
+- **2026-10-21 morning:** Joost: *"Yes, but no new RAM"* to a page-0 call-back -> **D-P0CB**
+  (docs/spec-sub2-p0cb.md). Slice A (43621e4c): `p0cb` in sub2 page 0 calls main through the
+  BIOS's RAM CLPRIM ($F38C), sub2's RST 10h / 18h forward to CHRGTR / OUTDO, a self-test in
+  `make sub2-acceptance`. Slice B (97387546): the event-trap statements live in
+  sub2/trapstmt.asm -- main page 1 tail 36 -> 291 B. RULES LEARNED: every main call from a
+  moved statement goes through p0cb (`p0_*` aliases, tools/gen_resident_abi.py's p0cb class);
+  a raise through p0cb is fine (never returns); a CONTINUATION never is -- the tenant returns
+  DE = where main continues and main's `ex_sub2` jumps there. ➡️ NEXT: slice C, the file family
+  (OPEN / CLOSE / MERGE / MAXFILES, SAVE, LOAD; ~1.4-1.6 KB): hook calls (`call H_xxxx`, a
+  CALLF = `rst $30`) must go through p0cb too, and LOAD / RUN-style continuations replace the
+  program -- read spec §5 and the 2026-10-21 study notes in TODO D-P0CB first.
 - **2026-10-21 early:** D-DISKREST slices 1-5 landed and CLOSED (b3d9b845 .. 433c6b44): main page 1
   1 -> 36 B tail + 153 B in pin pads, low region +31 B. The VG-8020's string collector is
   measured QUADRATIC (~15 s at 400 strings; ours <20 ms) -- kept, per the ruling above.

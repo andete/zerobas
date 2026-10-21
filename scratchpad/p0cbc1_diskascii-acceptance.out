@@ -1,0 +1,33 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+=== probes/disk/disk_probe_merge.py ===
+--- zerobas MERGE -> RUN ---
+result: <123>
+functional: PASS
+
+--- CF-3300 differential ---
+result: <123>
+differential: PASS — identical to zerobas
+=== probes/disk/disk_probe_load_ascii.py ===
+--- zerobas ASCII LOAD -> RUN ---
+result: <35>
+functional: PASS
+
+--- CF-3300 differential ---
+result: <35>
+differential: PASS — identical to zerobas
+=== probes/disk/disk_probe_save_ascii.py ===
+--- zerobas SAVE",A" -> LOAD -> RUN ---
+result: <42>
+functional: PASS
+
+--- CF-3300 differential ---
+result: <42>
+differential: PASS — identical to zerobas
+✅ diskascii-acceptance: MERGE + ASCII LOAD + ASCII SAVE all converged with the CF-3300

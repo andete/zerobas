@@ -1,0 +1,35 @@
+
+row                         cf3300                        zb   verdict
+m.ok                             1                         1   SAME
+m.16                   ERR 5 AT 20                         1   DIFF
+m.big                  ERR 6 AT 20               ERR 6 AT 20   SAME
+m.str                 ERR 13 AT 20              ERR 13 AT 20   SAME
+m.bare                 ERR 2 AT 20               ERR 2 AT 20   SAME
+m.tail                 ERR 2 AT 30               ERR 2 AT 30   SAME
+o.out                            1                         1   SAME
+o.in                            HI                        HI   SAME
+o.app                           AB                        AB   SAME
+o.chan0               ERR 52 AT 20              ERR 52 AT 20   SAME
+o.chan2               ERR 52 AT 20              ERR 52 AT 20   SAME
+o.busy                ERR 54 AT 30              ERR 54 AT 30   SAME
+o.same                       ";1;"                     ";1;"   SAME
+o.wild                ERR 56 AT 20              ERR 56 AT 20   SAME
+o.nofile              ERR 53 AT 20              ERR 53 AT 20   SAME
+o.num                 ERR 13 AT 20              ERR 13 AT 20   SAME
+o.junk                 ERR 2 AT 20               ERR 2 AT 20   SAME
+o.len0                 ERR 5 AT 20               ERR 5 AT 20   SAME
+o.lpt                            1                         1   SAME
+o.casrnd              ERR 56 AT 20              ERR 56 AT 20   SAME
+o.grpin               ERR 56 AT 20              ERR 56 AT 20   SAME
+c.zero                           1                         1   SAME
+c.two                 ERR 52 AT 20              ERR 52 AT 20   SAME
+c.neg                  ERR 5 AT 20               ERR 5 AT 20   SAME
+c.list                           1                         1   SAME
+c.bare                ERR 59 AT 40              ERR 59 AT 40   SAME
+g.bare                ERR 24 AT 20              ERR 24 AT 20   SAME
+g.num                 ERR 13 AT 20              ERR 13 AT 20   SAME
+g.none                ERR 53 AT 20              ERR 53 AT 20   SAME
+
+DIFF (cf3300 vs zb): 1/29  m.16
+done
+refcache: 0 hit, 58 miss, 58 stored

@@ -249,12 +249,18 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Where it lives
 
-- `do_open` in [basic/files.asm](../../basic/files.asm): the name, the device,
-  the mode, the channel checks (`fch_check`) and the header (`oo_hdr_tail`,
-  which calls `t_fch_hdr` in [sub/fatprim.asm](../../sub/fatprim.asm)).
-  `ex_maxfiles` is in the same file, and so is `INPUT #` (`inp_readvar`).
+- `fs_open` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
+  sub-ROM's page 0 since 2026-10-21 (main's `ex_open` hands it over): the name,
+  the device, the mode, the `AS` clause (`fo_parse_as_chan`) and the header
+  (`fo_hdr_tail`, which calls `t_fch_hdr` in
+  [sub/fatprim.asm](../../sub/fatprim.asm)). `MAXFILES` (`fs_maxfiles`) is in
+  the same file. It calls back into main for what other verbs share:
+  `fname_expr`, `dev_cmp`, `oo_parse_reclen` (`LEN=`), the channel checks
+  (`fch_check_d`, `fch_check_nz`) in [basic/files.asm](../../basic/files.asm),
+  where `INPUT #` (`inp_readvar`) also is.
 - `PRINT #` is `ex_print` in [basic/print.asm](../../basic/print.asm).
-- `GRP:`: the `OPEN` arm and `pchar`'s sink are in
+- `GRP:`: the `OPEN` arm is `fo_dev_grp` in
+  [sub2/filestmt.asm](../../sub2/filestmt.asm), `pchar`'s sink is in
   [basic/grpdev.asm](../../basic/grpdev.asm); the drawing is `grpprt_tenant` in
   [sub2/grpprt.asm](../../sub2/grpprt.asm), in the second sub-ROM.
 - A disk file open for input (`hk_finp`) and reading it — the Ctrl-Z end, the

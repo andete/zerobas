@@ -3183,6 +3183,20 @@ ex_interval:
                 ld      c,5                 ; TT_INTERVAL
                 jr      ex_sub2
     ENDIF
+; --- OPEN / CLOSE / MERGE / MAXFILES: zerobas-sub2 page 0 (D-P0CB slice C1) -----
+; ~1 KB of basic/files.asm (and OPEN "GRP:"'s arm, basic/grpdev.asm) is
+; sub2/filestmt.asm's since 2026-10-21. The four stmt_table rows land on ONE byte:
+; exec_stmt enters every handler with A = its token (tests/test_stmt_dispatch.py
+; asserts it), so `ld c,a` hands the token over and trap_tenant forwards any
+; C >= 8 (a token is >= $80; TT_* are 0..7) to file_tenant. The continuations
+; it hands back in DE: exec_stmt, clr_wipe (MAXFILES), end_line_end (MERGE), and
+; disk_error / load_error, which print and RETURN to the statement's caller --
+; which is why they are continuations, never p0cb calls.
+ex_open:
+ex_close:
+ex_merge:
+ex_maxfiles:
+                ld      c,a                 ; C = the statement token
 ex_sub2:
                 ld      ix,SUBROM_ENTRY_BASE_P0+3*SUB2_IDX_TRAPS
                 call    subrom2_call        ; HL / C in; DE / HL out

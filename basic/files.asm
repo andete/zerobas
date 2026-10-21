@@ -424,233 +424,14 @@ df_notfound:
 ; APPEND since S10.B, RANDOM since S10.D, INPUT since S10.C. What is left of
 ; "layered on fat.asm" is the header above, kept as history.
 
-; --- OPEN "name" FOR INPUT AS #n -------------------------------------------
-ex_open:
-                inc     hl                  ; HL -> bytes after the OPEN token
-                jr      do_open
-do_open:
-                call    fname_expr          ; D-FNEXPR: the filename is a string
-                                            ; EXPRESSION; HL -> the staged,
-                                            ; '"'-terminated copy in STRSCR
-                ; --- device-name dispatch: "LPT:"/"CRT:" -> character-device
-                ; channel (no disk file); anything else -> disk filename. Peeked
-                ; case-insensitively; HL is restored on a miss (dev_cmp). CAS:/GRP:/
-                ; COM: OPEN are not in this tier (an unknown xxx: stays a disk name).
-                ; ⚠️ D-FNEXPR: THE DISPATCH NOW RUNS ON THE STAGED COPY, NOT ON
-                ; PROGRAM TEXT, so `OPEN A$ AS #1` with A$="CAS:X" reaches the
-                ; tape arm exactly as the literal does. That is a behaviour
-                ; claim and it is MEASURED (rows d.opendev/f.var, and the
-                ; cassette batteries), not assumed.
-                ld      de,dev_lpt
-                call    dev_cmp
-                jp      z,oo_dev_lpt
-                ld      de,dev_crt
-                call    dev_cmp
-                jp      z,oo_dev_crt
-                ld      de,dev_grp          ; D-OPENGRP: the graphics screen
-                call    dev_cmp
-                jp      z,oo_dev_grp
-                ld      de,dev_cas
-                call    dev_cmp
-                jp      z,oo_dev_cas
-                ; ✅ D-NODISKOPEN (2026-10-07): ON A DISKLESS MACHINE THE CASSETTE
-                ; IS THE DEFAULT DEVICE. Measured on the VG-8020 (no disk,
-                ; probes/basic/basic_probe_nodiskopen.py): `OPEN "X" FOR OUTPUT`
-                ; opens, and a second cassette OPEN beside it is 52 exactly as for
-                ; `OPEN "CAS:X"` -- the same device; a drive name (`"A:X"`) is 56.
-                ; Ours printed `load error` (oo_nodisk, now gone).
-                call    nodisk_dev          ; shared since D-NODISKVERBS (str-engine.asm)
-                jp      z,oo_dev_cas        ; no disk: the cassette; `d:` raised 56
-                call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
-                ; D-OPENWILD (2026-10-07): a WILDCARD name is `Bad file name` (56)
-                ; on the CF-3300 (`OPEN "A*.TXT" FOR INPUT AS #1`); ours looked it
-                ; up and said 53. The parser takes wildcards because KILL / FILES
-                ; need them (`*` fills with `?`), so OPEN refuses a `?` itself,
-                ; before any disk work.
-                push    hl
-                ld      hl,DISK_FCB_NAME
-                ld      b,11
-                ld      a,'?'
-oo_wild:
-                cp      (hl)
-                jp      z,pdf_badname       ; 56
-                inc     hl
-                djnz    oo_wild
-                pop     hl
-                call    skip_spaces
-                cp      FOR_TOKEN           ; FOR
-                jr      nz,oo_random        ; no FOR clause -> RANDOM mode (OPEN..AS #n)
-                inc     hl
-                ; mode keyword: INPUT ($85); OUTPUT = OUT ($9C) + PUT ($B3); or
-                ; APPEND = "APP" (verbatim ASCII $41 $50 $50) + END ($81) — none of
-                ; these are single keywords: OUTPUT is two reserved words, and
-                ; "APPEND" is not a reserved word at all, so the main-ROM tokeniser
-                ; crunches it as the name "APP" followed by the END token (oracle:
-                ; VG-8020 + zerobas both emit $41 $50 $50 $81 — already byte-identical).
-                call    skip_spaces
-                cp      INPUT_TOKEN
-                jr      z,oo_input
-                cp      OUT_TOKEN
-                jr      z,oo_output
-                ; APPEND? match the literal "APP" + END-token sequence.
-                ; D-INPLIST carve: this was four unrolled `cp`/`jp nz`/`inc hl`/
-                ; `ld a,(hl)` groups, 27 B. The sequence is DATA, so it is data
-                ; now -- 13 B of loop plus the 5-byte oo_app_seq below. The
-                ; oracle fact it encodes is unchanged and still written down at
-                ; the block above: the main-ROM tokeniser crunches "APPEND" to
-                ; $41 $50 $50 $81, so this matches bytes and not a keyword.
-                call    oo_is_app           ; D-NODISKOPEN: shared with the tape arm
-                jr      nz,oo_synerr
-                ld      a,3                 ; mode = APPEND (provisional open action)
-                jr      oo_setmode
-; oo_is_app: Z and HL past it iff HL is at APPEND ("APP" + END, crunched)
-oo_is_app:
-                ld      de,oo_app_seq
-oo_app_lp:
-                ld      a,(de)              ; expected byte
-                cp      (hl)                ; against the line
-                ret     nz
-                inc     hl
-                inc     de
-                ld      a,(de)
-                or      a                   ; 0 terminates the sequence
-                jr      nz,oo_app_lp
-                ret                         ; Z
-; ⚠️ ONE LOCAL `stmt_error` TRAMPOLINE FOR THE WHOLE OPEN PARSE (D-INPLIST
-; carve). Six sites reached it with `jp cc,stmt_error` (3 B each); they reach it
-; with `jr cc,oo_synerr` (2 B) now, which pays for itself from the third site on.
-; ⚠️ EVERY ONE OF THE SIX MUST STAY WITHIN `jr` RANGE OF THIS LABEL -- the
-; assembler is the guard: move a caller out of range and the BUILD fails rather
-; than the branch going wrong. Placed here because nothing falls into it (the
-; APPEND arm above ends in `jr oo_setmode`).
-oo_synerr:
-                jp      stmt_error
-oo_app_seq:
-                db      'A','P','P',END_TOKEN,0
-oo_output:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jr      nz,oo_synerr
-                inc     hl
-                ld      a,2                 ; mode = OUTPUT
-                jr      oo_setmode
-oo_input:
-                inc     hl
-                ld      a,1                 ; mode = INPUT
-                jr      oo_setmode
-oo_random:
-                ld      a,4                 ; mode = RANDOM (no FOR clause)
-oo_setmode:
-                ld      (FCH_MODE),a        ; provisional: read below and at oo_done
-                                            ; only. 🗑️ 2026-10-19: the clears on
-                                            ; OPEN's failure tails, CLOSE and cold
-                                            ; start went, with fch_select's store:
-                                            ; nothing outside OPEN reads the cell,
-                                            ; and OPEN writes it first
-                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
-                ; --- optional "LEN=r" record-size clause (Phase 2c; disk-BASIC
-                ; option-closure Item 3). Parsed for every mode; only RANDOM GET/PUT
-                ; reads it. A channel without LEN= defaults to 256; r is any value
-                ; in 1..256 (oo_parse_reclen's header: the power-of-two rule left
-                ; with D-RECLENFIX / D-STRADDLE). Stored per channel in FCH_RECLENS[ch].
-                ld      a,e
-                ld      (OO_RECLEN_CHAN),a  ; stash channel across the LEN= eval
-                call    oo_parse_reclen     ; DE = reclen (default 256); HL past; Cy=1 bad
-                jp      c,oo_fail_ifc       ; D-RECLEN2: out-of-range record size is
-                                            ; (`jp`, not `jr` -- the ERR 5 tail this
-                                            ; slice adds puts it out of relative range)
-                                            ; `Illegal function call` on the CF-3300
-                                            ; (LEN=0 / 257 / 512 all ERR 5), NOT the
-                                            ; `Syntax error` this used to raise
-                ; 🔴 D-OPENEND (2026-10-07): THE STATEMENT MUST END HERE, BEFORE ANY
-                ; DISK WORK. `OPEN "X.TXT" FOR APPEND AS 1,2` is Syntax error (2)
-                ; on the CF-3300 even with X.TXT missing: it parses the whole
-                ; statement first. Ours opened and let exec_stmt meet the `,2`
-                ; afterwards -- which read 2 only by ACCIDENT while a missing file
-                ; went through the print-and-return load_error (D-LOADERRRET), and
-                ; read 53 once disk.rom raised it (S10.B increment 2, ed213e5c;
-                ; kwsweep's t8openappend2, which its gate does not fail on). An
-                ; OUTPUT open would also have CREATED the file before the 2.
-                call    skip_spaces         ; A and HL only: DE (the reclen) survives
-                or      a
-                jr      z,oo_endok
-                cp      ':'
-                jp      nz,oo_fail_syn      ; junk after the clause: 2, nothing opened
-oo_endok:
-                push    hl                  ; GUARD the text cursor -- the store below
-                                            ; uses HL as scratch (a bug once: the lost
-                                            ; cursor abandoned a same-line ':' tail)
-                ld      a,(OO_RECLEN_CHAN)
-                add     a,a                 ; channel * 2 (word index)
-                ld      l,a
-                ld      h,0
-                ld      bc,FCH_RECLENS
-                add     hl,bc
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d              ; FCH_RECLENS[ch] = reclen
-                pop     hl                  ; restore the text cursor
-                ld      a,(OO_RECLEN_CHAN)
-                ld      e,a
-                ld      d,0                 ; restore DE = channel for the rest of do_open
-                ; (no disk here is impossible: a diskless OPEN went to the
-                ; cassette or 56 above, before pdfcb_resume -- D-NODISKOPEN)
-                ; 🔴 D-OPENSAME (2026-09-29): a file ALREADY OPEN on another channel
-                ; is `File already open` (54) on the CF-3300 in every mode, and the
-                ; first channel keeps its data (scratchpad/opensame_before.out).
-                ; disk.rom's hkk_open_check is the walk (KILL/NAME/COPY use it);
-                ; asked through the full gate, because it reads directory sectors
-                ; into the buffer the live channel stages in. Before the claim, so
-                ; a refusal leaves every channel as it was.
-                push    de                  ; the channel
-                push    hl                  ; the text cursor
-                ld      a,FOPEN_SEL_OCHK
-                call    fopen_cross         ; NZ: this file is open on a channel
-                pop     hl
-                pop     de
-                jp      nz,oo_fail_54
-                ; claim the channel: FCH_ACTIVE = e, the row disk.rom's open handler
-                ; builds the FCB in (dout_live). 🗑️ S10.E (2026-10-19): a STORE --
-                ; fch_claim, which saved any OTHER live channel first, is gone with
-                ; the save (nothing of a channel's lives in main any more), and so
-                ; is the HL / DE guard the paragraph below put around it.
-                ; 📜 HISTORY: D-OPEN2FIX: HL IS GUARDED HERE, NOT ONE CALL LATER.
-                ; `fch_claim` documents "Clobbers regs", and when it claims a
-                ; SECOND channel it runs fch_save_active -> fch_ctx_addr, an
-                ; op-18 CALSLT that clobbers HL like every other. The guard
-                ; below said so in its own words -- "CALSLT ... clobbers HL +
-                ; regs" -- and sat one call too late, protecting fat_io_* and
-                ; not this. With ONE channel `fch_claim` returns at its `ret z`
-                ; before reaching any CALSLT, so the omission is INVISIBLE until
-                ; a second disk channel exists: untested by construction, which
-                ; is exactly what D-OPEN2 concluded about this path.
-                ; Traced 2026-09-02 with an openMSX breakpoint script: the token
-                ; cursor goes into fch_claim as $EC15 and the statement boundary
-                ; reads it back as $E9FB, so the parser resumes on garbage and
-                ; raises `Syntax error` AFTER the OPEN has completed -- which is
-                ; why the channel table showed both channels correctly open.
-                ; [[a-scratch-register-that-was-the-callers-value]]
-                ld      a,e
-                ld      (FCH_ACTIVE),a      ; this channel is the live one
-                push    hl                  ; guard the text cursor — CALSLT (inside
-                push    de                  ; fat_io_*) clobbers HL + regs
-                ld      a,(FCH_MODE)        ; action: 1 INPUT/2 OUTPUT/3 APPEND/4 RANDOM
-                cp      2
-                jr      z,oo_create
-                cp      3
-                jr      z,oo_append
-                cp      4
-                jr      z,oo_random_setup
-                ; S10.C (2026-10-15): INPUT is disk.rom's too (hk_finp) -- the FCB
-                ; in the channel's row, the record the block's +9, read by H_CHIN
-                ; (basic/input.asm din_call). It was main's resident fat_io_open
-                ; (basic/fatio-body.inc), whose read state lived in the engine
-                ; globals the sub-ROM's t_fch_save / t_fch_load copied per switch.
-                ; A missing file is 53, raised after the crossing as the CF-3300
-                ; raises it after $FE5D (s10c_hook_run.out).
-                ld      a,FOPEN_SEL_INP
-                jr      oo_cross
+; --- OPEN: zerobas-sub2 page 0 since D-P0CB slice C1 (2026-10-21) -----------
+; ex_open / do_open and every arm only OPEN reaches (the disk modes, LPT: /
+; CRT: / GRP:, CAS:, the AS clause, the header stamp) are fo_* in
+; sub2/filestmt.asm; main's ex_open is one shared byte in front of ex_sub2
+; (basic/program.asm). What stays here is what other verbs or disk.rom also
+; reach: fname_expr, pdfcb_resume, dev_cmp and the device names, fopen_cross,
+; the fch_* channel helpers -- and oo_parse_reclen, which tests/test_open_len.py
+; drives on the main image.
 ; 📌 PIN REFILL (S10.E, 2026-10-19): 46 B moved here from past the $73E5 pin
 ; (basic/program.asm) to take back the 46 B S10.E freed in front of $6CF3 --
 ; chan_gate's flush arm and the chan_restore pair (33), OPEN's fch_claim call
@@ -662,6 +443,8 @@ oo_endok:
 ; `jr`s, and oo_storemode's `jr oo_hdr_tail` reaches forward across the pad, so
 ; neither end may move. Both are whole and entered only by label, with no `jr`
 ; across their edges (tools/pin_plan.py chunks()); their notes stay behind.
+; (D-P0CB slice C1, 2026-10-21: OPEN and its oo_fail_* tails are zerobas-sub2's
+; now, so the `jr` reach that fixed this siting is gone; the chunks stay put.)
 ; --- new_prog: clear the stored program (NEW) --------------------------------
 ; Empty program = a $0000 link word at the text base. Clobbers A, HL.
 new_prog:
@@ -688,75 +471,13 @@ store_line:
                 ld      a,$CC               ; out-of-memory landmark (distinct byte)
                 jp      err7_mark           ; D-TAILMERGE: ERRMARK := A, then ERR 7 --
                                             ; gosub_stk_over's own tail, verbatim
-oo_create:
-                ; S10.B: OUTPUT and APPEND are disk.rom's -- the channel is an
-                ; MSX-DOS FCB in the channel's engine row (hk_fmake / hk_fapp)
-                ld      a,FOPEN_SEL_MAKE
-                jr      oo_cross
-oo_append:
-                ld      a,FOPEN_SEL_APND
-                jr      oo_cross
-oo_random_setup:
-                ; S10.D (2026-10-15): RANDOM is disk.rom's too (hk_frnd) -- the same
-                ; FCB-in-the-row channel, opened or created, LOC zeroed, the record
-                ; (FSECTOR_BUF, live, until D-FLDDESC; the block's +9 since)
-                ; space-filled. It was the sub-ROM's
-                ; fat_rand_open, through a fatprim_bounce shim; GET / PUT
-                ; (basic/field.asm) now cross H_DGET to the same ROM.
-                ld      a,FOPEN_SEL_RAND
-oo_cross:
-                call    fopen_cross         ; A = status, 0 = open
-                add     a,$FF               ; CF iff status != 0
-oo_done:
-                pop     de
-                pop     hl
-                jr      c,oo_fail           ; not found / dir-full / mount / I-O error
-                ; success: record the open mode in the channel table + the mirror.
-                ; S10.B (2026-10-06): both write actions are stored as DOUT_MODE
-                ; (3), disk.rom's FCB channel (APPEND since increment 2; mode 2,
-                ; main's own channel engine, is no longer stored). The FCH_MODES
-                ; address math uses HL, so guard the text cursor (HL) that
-                ; exec_stmt needs to continue the line.
-                ld      a,(FCH_MODE)
-                cp      2
-                jr      c,oo_storemode      ; 1 INPUT
-                cp      4
-                jr      nc,oo_storemode     ; 4 RANDOM
-                ld      a,DOUT_MODE         ; 2 OUTPUT, 3 APPEND
-                ld      (FCH_MODE),a
-oo_storemode:
-                push    hl
-                ld      a,e
-                call    fch_modes_ptr
-                ld      a,(FCH_MODE)        ; 1 INPUT, 3 OUTPUT/APPEND, 4 RANDOM
-                ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
-                ld      (OO_DEVTYPE),a      ; D-FCBHDR: what the header stamp reads
-                jr      oo_hdr_tail
-oo_fail:
-                ; post-claim failure (DE = channel): release the slot we claimed and
-                ; mark the channel closed in the table (its globals are stale garbage).
-                ld      a,e
-                call    fch_modes_ptr
-                xor     a
-                ld      (hl),a              ; FCH_MODES[ch] = 0
-                ld      (FCH_ACTIVE),a      ; no channel live (don't save the garbage)
-                ; D-LOADERR: AFTER the channel cleanup, never before -- a raise
-                ; here would leave the slot claimed.
-                ; 🧭 S10.C (2026-10-15): disk_error, NOT df_or_loaderr any more.
-                ; Every disk mode's open is a disk.rom crossing now (INPUT was the
-                ; last on main's fat_io_open), so DISKOP_OP holds an FOPEN_SEL_*
-                ; selector here, never DISKOP_SEL_FAT_FIND, and the not-found
-                ; reading is disk.rom's: it parks 53 in DISKOP_ERR (hk_finp /
-                ; hk_fapp), and a mount / DSKIO fault parks its own code.
-                jp      disk_error
+; (oo_create .. oo_fail: moved to sub2/filestmt.asm, D-P0CB slice C1.)
 ; 📌 PIN REFILL (D-FCHNUM, 2026-10-17): 8 B moved here from past the $73E5 pin
 ; (basic/missing.asm, basic/program.asm) to take back the 8 B D-FCHNUM and
-; D-JRSLICE3's front-of-pin `jr`s freed ahead of $6CF3. (Its "2 B pad" in
-; `pin_plan --check` is the `jr` bridge over the pin, not a `ds`: not refillable.)
-; Sited HERE, before oo_fail_syn,
-; not at the pad: the OPEN "CAS:" arm's `jr`s reach back across the pad to
-; oo_fail_syn / oo_fail_bfname, so its address must not move. Both are whole and
-; entered only by label (tools/pin_plan.py chunks()).
+; D-JRSLICE3's front-of-pin `jr`s freed ahead of $6CF3. Sited before
+; oo_fail_syn while the OPEN "CAS:" arm past the pin `jr`d back to it; that arm
+; is sub2's since D-P0CB slice C1. Both chunks are whole and entered only by
+; label (tools/pin_plan.py chunks()).
 basicint_play:                              ; the pinned $73E5's target (header:
                 call    pl_args             ; basic/missing.asm)
 bp_ret:
@@ -771,7 +492,8 @@ arl_getbyte:
 ; 12 B pushed them out of reach (and `jp`s there cost bytes the $6CF3..$72D4
 ; stretch does not have). So the two chunks below -- whole, entered only by
 ; label, no `jr` in or out (tools/pin_plan.py chunks()) -- came from past the last
-; pin, where the move shifts nothing fixed.
+; pin, where the move shifts nothing fixed. (Since D-P0CB slice C1 that arm and
+; oo_fail_* are zerobas-sub2's, and the pad in front of $6CF3 is free space.)
 ; --- sep_eval: str_eval_paren's recursion, behind stk_room (R1, D-DEEPEXPR) ----
 ; in/out: as str_eval, except that a refusal returns CF clear (the paren arm's
 ; own decline) with ERR 7 deferred. The `jp` keeps str_eval's frame where the
@@ -787,271 +509,22 @@ sep_eval:
 ; the $73E5 pin in basic/field.asm, then here.)
 dev_cas:
                 db      "CAS:",0
-oo_fail_syn:                                ; `jr` reach for the CAS: arm past the pin
-                jp      stmt_error
-oo_fail_bfname:                             ; the cassette arm's RANDOM / APPEND
-                ld      e,56                ; refusal (D-NODISKOPEN): Bad file name
-                jr      oo_fail_e
-
-; --- oo_fail_ifc: OPEN's ILLEGAL FUNCTION CALL reject (D-RECLEN2, ERR 5) -----
-; oo_fail_syn's sibling with a different face (neither clears FCH_MODE any more,
-; 2026-10-19: nothing outside OPEN reads it). Measured: the
-; CF-3300 answers ERR 5 to `LEN=0`, `LEN=257` and `LEN=512`, and accepts
-; everything in 1..256.
-oo_fail_ifc:
-                ld      e,5                 ; Illegal function call
-oo_fail_e:                                  ; E = the ERR code (D-OPENBUSY shares it)
-                ld      a,e
-                jp      raise_error
-
-; --- oo_fail_bfn: OPEN's BAD FILE NUMBER reject (S-FCH-2, ERR 52) ------------
-; The body lives in main.asm's low region (page 1 is the scarce wall).
-; (§5c's second open question was dissolved by aliasing the LABEL rather than
-; gating the six reject SITES: every `jp cc,oo_fail_bfn` above then assembled to
-; the exact bytes `jp cc,oo_fail_syn` did, so no site needed a gate and no byte
-; moved. The retired lean cart, which defined neither body, rode on that alias.)
-                                            ; exactly as before this slice
-
-; --- OPEN "LPT:"/"CRT:" device channel --------------------------------------
-; A character-device channel: PRINT#n streams to the printer (LPTOUT) or the
-; screen (CHPUT) via pchar's PRDEV dispatch. It owns NO FCB row (no disk.rom
-; open), so it must never be fch_select'd; it is marked in
-; FCH_MODES with the device value LPT_MODE/CRT_MODE and its channel number is
-; classified straight from that array by PRINT#/CLOSE. Only FOR OUTPUT is valid
-; (INPUT from LPT:/CRT: is an error); LEN= is rejected. Sinks are the already-
-; implemented BIOS entry points (LPTOUT $00A5 in zerobas-tape; CHPUT $00A2).
-; Entry: HL -> the char after the "LPT:"/"CRT:" prefix, inside the quotes.
-oo_dev_lpt:
-                ld      a,LPT_MODE
-                jr      oo_dev_open
-oo_dev_crt:
-                ld      a,CRT_MODE
-                ; 📌 D-BASICINT PIN $6CF3 (2026-10-15), bridged: games (Harry Fox)
-                ; drop BLOAD,R's return address and `jp $6CF3`, the reference's
-                ; continuation, which then runs the rest of the statement exactly as
-                ; a `ret` would (scratchpad/basicint_probe.out row `cont`). Ours is
-                ; load_handoff's tail (basic/bload.asm lh_back). FIXED ADDRESS, from
-                ; tools/pin_plan.py's `jr` bridge (no pad today; --check caps it).
+; (oo_fail_syn, oo_fail_bfname, oo_fail_ifc, oo_fail_e and the LPT: / CRT: arms
+; moved to sub2/filestmt.asm, D-P0CB slice C1, 2026-10-21. The CRT: arm used to
+; run THROUGH the pin below on a `jr` bridge; nothing flows into it now, so the
+; bridge is a plain pad.)
+; 📌 D-BASICINT PIN $6CF3 (2026-10-15): games (Harry Fox) drop BLOAD,R's return
+; address and `jp $6CF3`, the reference's continuation, which then runs the rest
+; of the statement exactly as a `ret` would (scratchpad/basicint_probe.out row
+; `cont`). Ours is load_handoff's tail (basic/bload.asm lh_back). FIXED ADDRESS.
     IF BASICINT_PINS
-                jr      oo_dev_open
                 ds      $6CF3 - $, $00
 basicint_6cf3:
                 jp      lh_back
     ENDIF
-oo_dev_open:
-                ld      (OO_DEVTYPE),a      ; remember the device type across the parse
-                ; skip any remaining "filename" chars up to the closing quote (ignored)
-oodv_fn:
-                ld      a,(hl)
-                or      a
-                jr      z,oo_fail_syn       ; unterminated string
-                inc     hl
-                cp      '"'
-                jr      nz,oodv_fn          ; consume through the closing quote
-                ld      hl,(FN_RESUME)      ; D-FNEXPR: that quote was the one
-                                            ; fname_expr appended to the staged
-                                            ; copy -- resume in the program text
-                ; --- D-DEVBARE: the FOR clause is OPTIONAL on a device -------
-                ; This read `jr nz,oo_fail_syn ; device channels require FOR
-                ; OUTPUT`, and the comment asserted a rule the reference does not
-                ; have. Measured on a CF-3300: `OPEN"CRT:"AS #1` and
-                ; `OPEN"LPT:"AS #1` are accepted, and the channel then WORKS --
-                ; `PRINT#1,"x"` and `CLOSE#1` both fine (rows w.crtbare /
-                ; w.crtwrite / w.crtclose / w.lptbare, scratchpad/devbare_probe.py).
-                ; A bare device OPEN means OUTPUT, which is the only direction
-                ; LPT:/CRT: have.
-                ; 🟢 `LEN=` STAYS REFUSED, AND FOR FREE: the terminator check
-                ; after oo_parse_as_chan below accepts only end-of-statement or
-                ; ':', so `OPEN"CRT:"AS #1 LEN=128` is still `Syntax error` --
-                ; which is what BOTH machines answer (row w.crtlen).
-                ; ⚠️ `FOR INPUT` ON A DEVICE IS DELIBERATELY NOT COPIED. The
-                ; reference's answer there is `<NO OUTPUT>` -- the program dies or
-                ; hangs -- and a hang is not a behaviour to reproduce. zerobas
-                ; keeps refusing it. [[a-fix-falsifies-the-justification-beside-it]]
-                call    skip_spaces
-                cp      FOR_TOKEN
-                jr      nz,oodv_as          ; no FOR clause -> OUTPUT (measured)
-                rst    $10     
-                cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
-                jp      nz,oodv_notout      ; INPUT: Syntax error on LPT:/CRT:, 56 on GRP:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jr      nz,oo_fail_syn
-                inc     hl
-oodv_as:
-                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
-                call    skipsp_test ; only a terminator may follow (no LEN=)
-                jr      z,oodv_ok
-                cp      COLON
-                jr      nz,oo_fail_syn
-oodv_ok:
-                ; mark the channel open as a device (FCH_MODES[ch] = LPT/CRT_MODE);
-                ; no fat.asm I/O. Guard the text cursor across the array store.
-                ; 🎯 D-CARVE2: THE CANONICAL "STAMP THE DEVICE TYPE AND RESUME"
-                ; TAIL. Both OPEN arms -- the device arm here and the cassette arm
-                ; at oocas_mark -- ended with these seven instructions verbatim.
-                ; Entry contract, identical at both: HL = the BASIC text cursor
-                ; (pushed and popped here), E = the channel number. oocas_mark
-                ; reaches it having just restored both with `pop hl / pop de`.
-oo_stamp_devtype:
-                push    hl
-                ld      a,e
-                call    fch_modes_ptr
-                ld      a,(OO_DEVTYPE)
-                ld      (hl),a
-                ; FALL THROUGH
-; oo_hdr_tail -- D-FCBHDR (2026-10-08): stamp the channel's FCB HEADER, the
-; bytes a program reads through VARPTR(#n): the MODE at +0, the DEVICE at +4,
-; the buffer position +6 zeroed (disk OUTPUT / APPEND keep disk.rom's). Ours
-; read 255 at +0 and +4 on every channel; the references write them at OPEN
-; (probes/basic/basic_probe_fcbhdr.py). The work is the FAT tenant's row 23
-; (sub/fatprim.asm t_fch_hdr), which maps OO_DEVTYPE -- the FCH_MODES value
-; just stored -- to the reference's codes.
-;   in:  E = the channel, OO_DEVTYPE = its FCH_MODES value; the text cursor
-;        on the stack (pop_exec takes it).
-oo_hdr_tail:
-                ld      a,e
-                call    fch_ctx_addr        ; HL = the channel's block
-                ld      a,DISKOP_SEL_FCH_HDR
-                call    fatprim_bounce
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
-
-; --- OPEN "CAS:name" FOR OUTPUT|INPUT AS #n --------------------------------
-; A cassette SEQUENTIAL data channel. Like LPT:/CRT: it owns no fat.asm context
-; (never fch_select'd); unlike them it drives the real tape via the M1/M2 ASCII
-; block machinery: FOR OUTPUT writes the $EA header now and PRINT#n buffers data
-; bytes through the cassette sink (cas_wbyte), CLOSE flushing the final block;
-; FOR INPUT re-locks the tape (TAPION), verifies the $EA id, primes data block 1,
-; and INPUT#/LINE INPUT#n read via cas_in_getbyte (Ctrl-Z = EOF). Both OUTPUT and
-; INPUT are valid (unlike LPT/CRT which are output-only); APPEND/RANDOM and LEN=
-; are not. Clean-room: the cassette ASCII/sequential format is the MSX2 Technical
-; Handbook cassette chapter (same $EA id + 256-byte blocks + Ctrl-Z as SAVE",A");
-; the byte layer is our own M1/M2 code. See spec-cas-ascii-saveload.md §5 + the
-; tape option-surface audit. A cassette channel must not be interleaved with a disk
-; file channel (they share the $E600 block buffer) — documented (single tape file).
-; Entry: HL -> the char after "CAS:" (dev_cmp advanced it), inside the quotes.
-;
-; D-CASOPEN (docs/spec-basic-casopen.md, reading docs/casopen-msx1-characterization.md):
-; the name is captured by `cas_capture_name` — cload.asm's shared cassette-name
-; parser — rather than by `tape_parse_name`, so it lands in CAS_WANT and arms
-; CAS_WANT_ON for the search. The two parsers produce byte-identical six-byte
-; space-padded fields and leave HL in the same place; what the shared one adds is
-; the "was a name given?" flag, which is precisely the two behaviours MEASURED on
-; both references: the compare is byte-exact (`OPEN"CAS:rt"` does NOT find `RT`)
-; and the bare form takes the next file. `merge_cas` below is the landed
-; precedent for a files.asm caller.
-oo_dev_cas:
-                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a '.' ends the name (D-CASDOT)
-                ; D-FNEXPR: cas_capture_name scanned the STAGED copy, whose
-                ; closing '"' fname_expr wrote itself -- so the quote can no
-                ; longer be missing and the check that used to guard it is gone
-                ; with the 4 bytes it cost. Resume in the program text.
-                ld      hl,(FN_RESUME)
-                ; require FOR INPUT | FOR OUTPUT
-                call    skip_spaces
-                cp      FOR_TOKEN
-                jr      nz,oocas_nofor      ; CAS: needs FOR (no RANDOM cassette)
-                rst    $10     
-                cp      INPUT_TOKEN
-                jr      z,oocas_in
-                cp      OUT_TOKEN           ; OUTPUT = OUT + PUT (two reserved words)
-                jr      z,oocas_out
-                call    oo_is_app           ; D-NODISKOPEN: APPEND is 56 on the
-                jr      nz,oo_fail_syn      ; VG-8020 and CF-3300 alike; other
-                jr      oo_fail_bfname      ; junk after FOR stays 2 (casfoo)
-oocas_nofor:
-                ; RANDOM (`AS #n`, no FOR) is 56 on both references; other junk
-                ; is 2 (casjunk). The AS clause is parsed first, so a bad channel
-                ; there answers before the 56 -- that order is unmeasured.
-                call    oo_parse_as_chan    ; 2 unless `AS [#]n`
-                jr      oo_fail_bfname
-oocas_in:
-                inc     hl
-                ld      a,CAS_IN_MODE
-                jr      oocas_setmode
-oocas_out:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jp      nz,oo_fail_syn
-                inc     hl
-                ld      a,CAS_OUT_MODE
-oocas_setmode:
-                ld      (OO_DEVTYPE),a      ; remember the CAS mode across the AS/#n parse
-                call    oo_parse_as_chan    ; shared "AS [#]n" + ceiling check; DE = ch
-                call    skipsp_test ; only a terminator may follow (no LEN=)
-                jr      z,oocas_argsok
-                cp      COLON
-                jp      nz,oo_fail_syn
-oocas_argsok:
-                ; args fully validated -> now do the tape I/O (so a parse error never
-                ; leaves a half-written tape). Guard the channel + text cursor across it.
-                push    de                  ; DE = channel
-                push    hl                  ; text cursor (TAPOON/TAPIN clobber all)
-                ld      a,(OO_DEVTYPE)
-                cp      CAS_OUT_MODE
-                jr      z,oocas_do_out
-                ; --- FOR INPUT: re-lock the tape, verify $EA, prime data block 1 ---
-                ; ✅ D-CASOPEN: the name is HONOURED. This arm used to write
-                ; `xor a` / `ld (CAS_WANT_ON),a` under the comment "OPEN"CAS:" opens
-                ; the NEXT file (name-matching is Item A's CLOAD/LOAD/RUN/MERGE
-                ; scope, not OPEN)". That scoping was a GUESS about the reference
-                ; that no row had ever checked, and it is measured WRONG: both the
-                ; VG-8020 and the CF-3300 step over a non-matching file and open the
-                ; named one, so zerobas was handing back the WRONG FILE'S BYTES.
-                ; cas_capture_name above has already armed CAS_WANT/CAS_WANT_ON
-                ; (0 for a bare OPEN"CAS:" = load next, which the references also
-                ; do), so the suppression is simply GONE — the search engine needed
-                ; no change at all.
-                call    cas_open_match      ; TAPION header + read id/name; CF = tape end
-                jp      c,dpl_dio           ; D-CASBRK: an I/O error / Ctrl-STOP is 19, raised
-                                            ; (the VG-8020's `19 in 20`); load_error returned
-                ld      a,(CAS_HDRID)
-                cp      ASCII_ID            ; a cassette data file is an $EA ASCII file
-                jr      nz,oocas_ioerr
-                pop     hl                  ; D-CASFCB: the file's own channel buffer,
-                pop     de                  ;  #n (the search used #0's): stack
-                push    de                  ;  [cursor][channel], read and kept
-                push    hl
-                ld      a,e
-                call    cas_bufp_set
-                call    cas_ascii_setup     ; prime data block 1
-                jp      c,dpl_dio           ; D-CASPRIME: a failed read is 19, raised
-                                            ; (ours: `load error`, and the run went on)
-                jr      oocas_mark
-oocas_do_out:
-                ; --- FOR OUTPUT: write the $EA header block; arm the data buffer ---
-                ; D-CASOPEN: cas_write_ea_header emits TSV_NAME (it is shared with
-                ; SAVE"CAS:"/CSAVE, which fill it from tape_parse_name), so the name
-                ; captured above has to be put back where it expects it. This copy
-                ; is the WHOLE cost of the slice — the INPUT half is byte-negative.
-                ; MEASURED unchanged on all three sides by castail's
-                ; `cas-openout:tape` ('WX    ') and `cas-openoutbare:tape` (six
-                ; spaces), which are also the first rows in this tree ever to read
-                ; what a cassette OPEN actually WRITES. HL/DE/BC are free: both
-                ; pushes are above and oocas_mark pops them.
-                ld      hl,CAS_WANT         ; 🟡 D-TSVOVL (2026-10-17): TSV_NAME IS
-                ld      de,TSV_NAME         ;  CAS_WANT now (FILNAM), so this copies
-                ld      bc,6                ;  onto itself -- kept, not removed: the
-                ldir                        ;  11 B are in front of a pin (no hole)
-                pop     hl                  ; D-CASFCB: write through channel #n's
-                pop     de                  ;  own buffer, as the VG-8020 does
-                push    de
-                push    hl
-                ld      a,e
-                call    cas_bufp_set
-                call    cas_write_ea_header ; TAPOON long + $EA*10 + TSV_NAME + TAPOOF
-                jp      c,dpl_dio           ; D-CASWBRK: Ctrl-STOP -> 19, raised
-oocas_mark:
-                pop     hl                  ; text cursor
-                pop     de                  ; channel
-                jp      oo_stamp_devtype    ; D-CARVE2 (-10 B, main page 1); jp since
-                                            ; D-CASBRK's `jp c,dpl_dio` above (+1 B)
-oocas_ioerr:
-                pop     hl
-                pop     de
-                jp      load_error
+; (the OPEN device and cassette arms -- oo_dev_open, oo_stamp_devtype,
+; oo_hdr_tail, oo_dev_cas, oocas_* -- and oodv_notout: moved to
+; sub2/filestmt.asm, D-P0CB slice C1, 2026-10-21)
 
 ; dev_cmp — case-insensitive compare of the string at (HL) against the
 ; 0-terminated device name at (DE). Match: Z, HL advanced past the prefix.
@@ -1080,17 +553,9 @@ dcmp_miss:
                 or      a                   ; NZ
                 ret
 
-; oodv_notout -- a device OPEN whose FOR clause is not OUTPUT. LPT: / CRT: stay
-; Syntax error (oo_dev_open's own note says why); GRP: is `Bad file name`, 56,
-; at the OPEN -- MEASURED on the VG-8020 (D-OPENGRP round 1, `OPEN"GRP:"FOR
-; INPUT AS #1` -> 56 in the OPEN's line). Sited past the `ret` above, not beside
-; oo_dev_open: there it sat between oo_fail_* and the `jr`s the device and
-; cassette arms aim at them, and pushed them out of range one after another.
-oodv_notout:
-                ld      a,(OO_DEVTYPE)
-                cp      GRP_MODE
-                jp      z,pdf_badname
-                jp      oo_fail_syn
+; dev_lpt / dev_crt / dev_grp stay in main page 1 although only OPEN names
+; them: sub2's fs_open hands their addresses to main's dev_cmp through p0cb,
+; and dev_cmp reads (DE) with main's page 0 mapped (D-P0CB slice C1).
 
 dev_lpt:        db      "LPT:",0
 dev_crt:        db      "CRT:",0
@@ -1273,7 +738,7 @@ opr_have:
                 ; reached the range test here and read Illegal function call (5)
                 ; (scratchpad/t6enum_b8_zb_1006.out). Only the RANGE is 5.
                 cp      EQ_TOKEN            ; '='
-                jp      nz,oo_fail_syn      ; no `=`: 2
+                jp      nz,stmt_error        ; no `=`: 2
                 inc     hl
                 call    eval_int16_checked  ; DE = record length; a string is 13
                 ld      a,d
@@ -1564,53 +1029,10 @@ ris_setq:
 ; The NAME and every call site survive; un-alias here for a distinct face.
 ris_done        equ     sidr_done
 
-; --- CLOSE [#n] -------------------------------------------------------------
-; CLOSE [#n] — close one channel, or (bare CLOSE) every open channel. An OUTPUT
-; channel is flushed + Ctrl-Z-stamped via fch_do_close_ch (which selects it first,
-; so the right channel's buffer/dir state is the one flushed).
-ex_close:
-                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,dc_all
-                ; CLOSE [#]n [, [#]m ...] — a comma-separated channel list. Loop:
-                ; parse one [#]expr, close it, and while the next token is ',' repeat.
-dc_listloop:
-                call    skip_spaces
-                cp      '#'
-                jr      nz,dc_num
-                inc     hl
-dc_num:
-                call    eval                ; DE = channel number; HL = text cursor
-                push    hl                  ; guard the cursor (HL is reused + CALSLT)
-                ; D-BADFNUM: the reference is lenient about channel 0 ONLY. CLOSE #2
-                ; / #16 / #256 / #-1 all RAISE there, while this used to no-op every
-                ; one of them silently -- `CLOSE #2 : PRINT 7` printed 7.
-                call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
-                jr      z,dc_done           ; channel 0 -> the one lenient no-op
-                call    fch_check_nz        ; > MAXF -> ERR 52
-                ld      a,e                 ; FCH_MODES[ch] == 0 ? -> already closed
-                call    fch_modes_ptr       ; (preserves E for the fch_do_close_ch below)
-                ld      a,(hl)
-                or      a
-                jr      z,dc_done           ; not open -> no-op
-                ld      a,e
-                call    fch_do_close_ch     ; flush (if OUTPUT) + mark closed
-dc_done:
-                pop     hl                  ; restore the text cursor
-                call    skip_comma
-                jp     nz,dc_finish        ; no more channels in the list
-                inc     hl                  ; consume ',' and parse the next channel
-                jr      dc_listloop
-; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
-; ed_done and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
-; REGION question -- is this label reached from a tenant whose mapping
-; switches the target page OUT? -- is answered by scratchpad/crossreg_probe.py
-; and GATED by check_tenant_closure.py, whose K-XR1 knife proves it can see an
-; `equ` (it resolves addresses from the sym, not from the source form).
-dc_finish       equ     ed_done
-dc_all:
-                push    hl                  ; guard text cursor across CALSLT
-                call    fch_close_all
-                jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
+; --- CLOSE [#n]: zerobas-sub2 page 0 since D-P0CB slice C1 (2026-10-21) -----
+; ex_close is fs_close in sub2/filestmt.asm (dc_finish, an alias of ed_done,
+; went with it: its `jp exec_stmt` is the continuation the tenant hands back).
+; fch_check_d / fch_check_nz / fch_do_close_ch / fch_close_all stay here.
 
 ; init_filechan — cold-start the file-channel state: no channel open, PRINT to
 ; screen, the multi-channel table empty, and MAXFILES = 1 (the observed default:
@@ -1812,61 +1234,8 @@ dl_bare:
                 or      a                   ; anything else -> an ARGUMENT: crunch it
                 ret
 
-; oo_parse_as_chan — the "AS [#]n" clause shared by EVERY form of OPEN.
-; in : HL = cursor just past the mode clause.
-; out: HL past the channel expression, DE = channel (D = 0, E validated 1..MAXF).
-; Never returns on a malformed clause: jumps to oo_fail_syn / oo_fail_bfn.
-; Clobbers A/BC/DE/HL (eval).
-;
-; D-NOTOPEN2 §2d(b): this body was hand-inlined VERBATIM at THREE sites --
-; oo_setmode (disk OPEN), the LPT:/CRT: device arm, and oocas_setmode (cassette).
-; 47 identical bytes each, same raisers, same exit contract. Found by
-; tools/clone_scout.py, not by eye; collapsing the three funds the ERR 55/58/61
-; message pool this slice needs (see docs/spec-basic-gpfi-notopen-err59.md).
-; ⚠️ The three callers differ ONLY in the store that precedes the clause
-; (FCH_MODE / OO_DEVTYPE) and in what may follow it (LEN= for disk, a bare
-; terminator for the other two) -- both stay at the call sites.
-oo_parse_as_chan:
-                ; "AS" is kept verbatim ASCII (not tokenised) -- match it.
-                call    skip_spaces
-                call    upcase
-                cp      'A'
-                jp      nz,oo_fail_syn
-                inc     hl
-                ld      a,(hl)
-                call    upcase
-                cp      'S'
-                jp      nz,oo_fail_syn
-                rst    $10     
-                cp      '#'
-                jr      nz,oopac_num
-                inc     hl
-oopac_num:
-                call    eval                ; DE = channel number, HL past it
-                ; validate the channel against the MAXFILES ceiling (1..MAXF).
-                ; D-BADFNUM: OPEN is the ONE verb that answers 52 to channel 0 --
-                ; everything else answers 59 there -- but it answers ERR 5, not 52,
-                ; to `AS #256` / `AS #-1`. That last cell is the one a three-verb
-                ; sample would have shipped wrong (spec §2).
-                call    fch_check_d         ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
-                jp      z,oo_fail_bfn       ; OPEN's channel-0 exception -> ERR 52
-                call    fch_check_nz        ; > MAXF -> ERR 52; else A = E
-                ; 🔴 D-OPENBUSY (2026-09-29): A CHANNEL THAT IS ALREADY OPEN IS 54.
-                ; `OPEN "X2.TXT" FOR OUTPUT AS #1:OPEN "X3.TXT" FOR OUTPUT AS #1`
-                ; is `File already open` on the CF-3300 (scratchpad/t6enum_b8_zb.out)
-                ; and was accepted here -- the second OPEN took the channel over.
-                ; Here, after the number is valid and before any file work, so it
-                ; covers every OPEN form (disk, LPT:/CRT:, CAS:) at one site.
-                push    hl                  ; the cursor
-                call    fch_modes_ptr       ; HL = &FCH_MODES[ch] (A, HL only)
-                ld      a,(hl)
-                pop     hl
-                or      a
-                ld      a,e
-                ret     z                   ; free: A = E = the channel
-oo_fail_54:                                 ; D-OPENSAME joins here too
-                ld      e,54                ; `File already open`
-                jp      oo_fail_e
+; (oo_parse_as_chan / oo_fail_54: moved to sub2/filestmt.asm as fo_parse_as_chan,
+; D-P0CB slice C1, 2026-10-21 -- OPEN was its only caller.)
 
 ; 📌 PIN REFILL (2026-10-19): 24 B moved here from past the $73E5 pin
 ; (basic/program.asm) to take back what this hole and FCH_MODE's dead stores
@@ -2226,237 +1595,16 @@ ex_name:
                 jp      z,stmt_error        ; 4 = no `AS` -> Syntax error
                 jr      kill_status         ; 0 not found / 1 renamed / 2 I-O
 
-; --- MAXFILES = n — size the multi-channel table ---------------------------
-; MAXFILES sets how many file channels may be open simultaneously (the value also
-; bounds every OPEN/INPUT#/PRINT#/CLOSE channel number, via fch_check). Tokenised
-; as MAX ($CD) + FILES ($B7) — two reserved words, oracle-locked like OUTPUT. Like
-; the reference, changing MAXFILES reinitialises the file system: every open channel
-; is closed first (OUTPUT ones flushed + Ctrl-Z-stamped) and every variable is
-; CLEARed. zerobas accepts 0..FCH_CEIL, which the repack build sets to the MEASURED
-; reference ceiling of 15 (D-FCH §3.2: the blocks are carved out of the FRE(0) pool
-; at MAXFILES time, so an unused channel costs nothing and the ceiling was free).
-; The argument DOMAIN is the reference's, measured across it (D-MFDOM,
-; docs/spec-basic-maxfiles-domain.md): outside int16 -> ERR 6 `Overflow`; inside
-; int16 but outside 0..FCH_CEIL -> ERR 5 `Illegal function call` (negatives
-; included); a fractional value TRUNCATES and is then judged on the integer
-; (15.9 is accepted as 15; 2.5 becomes 2). Entry: HL on the MAX token.
-; See basic/PROVENANCE.md §MAXFILES.
-ex_maxfiles:
-                inc     hl                  ; past MAX ($CD)
-                ld      a,(hl)
-                cp      FILES_TOKEN         ; "MAXFILES" = MAX + FILES; require FILES
-                jp      nz,stmt_error       ; bare MAX is not a statement
-                rst    $10                ; past FILES ($B7)
-                cp      EQ_TOKEN            ; '=' ($EF)
-                jp      nz,stmt_error
-                inc     hl
-                ; S-FCH-2 (first piece): the out-of-domain reject is ERR 5
-                ; `Illegal function call`, as MEASURED — `MAXFILES=16` and
-                ; `MAXFILES=255` both raise it on the CF-3300, read via
-                ; ON ERROR/ERR rather than inferred from the wording
-                ; (docs/chancost-cf3300-characterization.md §3). It used to be
-                ; `syntax error` (ERR 2): the wrong CLASS, independently of where
-                ; the ceiling sat.
-                ;
-                ; ⚠️ D-MFDOM: THE ARGUMENT COMES THROUGH eval_byte_arg, NOT `eval`.
-                ; This used to be `call eval` + a hand-inlined `ld a,d / or a /
-                ; jp nz,gb_illegal`, and that high-byte test could not fire for an
-                ; argument OUT OF INT16: `eval`'s silent flt_to_int16 zeroes DE for
-                ; those (interp.asm's own header says so), so `MAXFILES=65536` and
-                ; `MAXFILES=70000` arrived here as DE=0 and were accepted as an
-                ; ordinary request for ZERO channels — SILENTLY DISABLING ALL FILE
-                ; I/O where the reference raises ERR 6 `Overflow`. Measured on the
-                ; CF-3300 as `mfd_65536`/`mfd_70000` (both read mf0's FRE(0) on
-                ; zerobas against `Overflow` on the reference), not inferred.
-                ;
-                ; eval_byte_arg is get_byte_arg's eval leaf and is exactly the
-                ; reference rule: int16 stage first (ERR 6 outside the RANGE
-                ; -32768..32767 — asymmetric, and CONFIRMED for MAXFILES on the
-                ; CF-3300 by mfd_32767/32768/n32768/n32769 rather than inherited
-                ; from CHR$), then 0..255 (ERR 5). It also REPLACES nine bytes with
-                ; three: this slice is a NET SAVING, not a spend.
-                ;
-                ; The remaining ceiling test stays here because FCH_CEIL is this
-                ; statement's own bound, not a byte-argument rule.
-                call    eval_byte_arg       ; A = E = 0..255; ERR 6 >int16, ERR 5 else
-                cp      FCH_CEIL+1
-                jp      nc,gb_illegal       ; > FCH_CEIL -> ERR 5
-                ; 🔴 D-MAXFTAIL: THE STATEMENT MUST END HERE, AND THE CHECK MUST
-                ; COME BEFORE THE COMMIT. `MAXFILES=1 ZZ` used to execute the whole
-                ; statement and only then trip over `ZZ` -- by which point
-                ; `clr_done`'s CLEAR had WIPED THE USER'S VARIABLES and disarmed
-                ; `ON ERROR`, so the Syntax error was UNTRAPPABLE too. Both
-                ; references reject it first: measured A=42,ERR=2 on each against
-                ; A=0 and no handler here (scratchpad/maxfilestail_probe.py).
-                ; The body is in main.asm's low region, on oo_fail_bfn's precedent
-                ; -- page 1 pays only this call.
-                call    mxf_require_end
-                push    de                  ; guard the requested value
-                push    hl                  ; guard the text cursor across CALSLT
-                call    fch_close_all       ; MAXFILES reinitialises: close everything
-                pop     hl
-                pop     de
-                ld      a,e
-                ld      (MAXF),a            ; commit the new ceiling (0..FCH_CEIL)
-                ; D-FCH §3.2 / characterization §9: MAXFILES CLEARs variables
-                ; UNCONDITIONALLY -- even when the value does not change (the
-                ; `sem_same` row is what pins that; "clears only when it
-                ; reallocates" is the natural reading and it is WRONG). It is
-                ; also load-bearing here rather than merely faithful: the new
-                ; ceiling MOVES the variable region's top boundary (the table is
-                ; carved below the pool floor), so any surviving array would now
-                ; overlap the channel table. The CLEAR is that invalidation.
-                ; It runs AFTER the MAXF store so the wipe sees the new ceiling.
-                ; The string-pool SIZE survives -- POOLSIZE is untouched here,
-                ; which is exactly the measured `CLEAR 500 : MAXFILES=2` row.
-                ;
-                ; ⚠️ AND IT IS FREE, because `CLEAR`'s own tail IS this sequence:
-                ; clr_done (basic/clear.asm) is `push hl / call clear_vars /
-                ; call vars_reset / pop hl / jp exec_stmt` with HL = the statement
-                ; cursor -- exactly our state here. Jumping to it costs the same
-                ; 3 bytes the `jp exec_stmt` it replaces did. Written out inline
-                ; it was 8 bytes, and page 1 had 1. (S-FCH-1's lesson a third
-                ; time: the cost was SITING.)
-                ; D-CLEARCLOSE (2026-10-06): `clr_wipe`, past the bare CLEAR's own
-                ; close-all -- the files are closed above already.
-                jp      clr_wipe
+; --- MAXFILES = n: zerobas-sub2 page 0 since D-P0CB slice C1 (2026-10-21) --
+; ex_maxfiles is fs_maxfiles in sub2/filestmt.asm; it hands clr_wipe back to
+; main's ex_sub2 as its continuation. The domain notes (D-MFDOM, D-MAXFTAIL)
+; travelled with it; basic/PROVENANCE.md §MAXFILES is unchanged.
 
-; --- MERGE "name" — merge an ASCII program from disk ------------------------
-; Reads a SAVE",A"-style ASCII (line-numbered text) program file and stores each
-; line into the CURRENT program (insert-or-replace by line number) — the existing
-; program is KEPT, unlike LOAD. Each file line is accumulated into LINEBUF and fed
-; to dispatch_line, exactly as if it had been typed: the same tokeniser + store_line
-; path. Lines end at CR ($0D); LF ($0A) is ignored; a Ctrl-Z ($1A) or EOF ends the
-; file. A non-blank, non-numbered line is a "Direct statement in file" error (also
-; what guards against a tokenised file being read as garbage ASCII). The byte stream
-; uses the global fat_io read state directly (like LOAD/BLOAD), so MERGE while a
-; user file channel is open is undefined (documented). Token $B6 oracle-locked.
-; Sources: MSX-BASIC language reference (MERGE merges ASCII line-numbered programs);
-; the ASCII save format = line text + CR/LF, Ctrl-Z terminator. See PROVENANCE §MERGE.
-; 🔴 D-MERGEXPR: MERGE'S FILENAME IS A STRING EXPRESSION, AND THIS WAS THE LAST
-; VERB STILL ON THE QUOTE TEST. D-FNEXPR2/D-FILESIDE converted nine (BLOAD, LOAD,
-; FILES, OPEN, KILL, NAME x2, SAVE, BSAVE) and `ex_merge` was missed: it opened
-; with `cp '"' / jp nz,stmt_error` and went straight to parse_disk_fcb, with no
-; fname_expr anywhere. Found by READING, in the standing review tier.
-; MEASURED (scratchpad/mergexpr_probe.py, CF-3300 vs zerobas, 4 rows DIFF):
-;     MERGE A$              ERR 53 File not found   <- was ERR 2 Syntax error
-;     MERGE "A:"+"NOSUCH"   ERR 53                  <- was ERR 56
-;     MERGE                 ERR 24 Missing operand  <- was ERR 2
-;     MERGE 5               ERR 13 Type mismatch    <- was ERR 2
-; The last two are the faces the deleted quote gate used to produce, and they are
-; why the bare test below is explicit: `fname_expr` hands a non-string to
-; els_tc_common (ERR 13, free), but NOTHING in it answers "no operand at all".
-ex_merge:
-                rst    $10                ; HL -> bytes after the MERGE token
-                or      a
-                jp      z,loc_missing       ; bare MERGE -> ERR 24 (MEASURED)
-                                            ; 🔴 `loc_missing`, NOT `g8_missing`:
-                                            ; the latter lives in graphics.asm and
-                                            ; only exists under G8_RESIDENT, while
-                                            ; ex_merge is ALWAYS assembled --
-                                            ; `make switch-build-check` caught the
-                                            ; first cut on exactly that. missing.asm
-                                            ; already carries the ELSE arm, so this
-                                            ; name is defined either way and costs
-                                            ; the shipping build nothing.
-                call    fname_expr          ; the filename is an EXPRESSION; HL ->
-                                            ; the staged '"'-terminated copy
-                ; device dispatch: "CAS:" -> tape ASCII merge; else -> disk. dev_cmp
-                ; advances HL past a matched prefix, restores it on a miss (so the
-                ; disk path still sees HL at the staged name's start).
-                ; ⚠️ THE DISPATCH NOW RUNS ON THE STAGED COPY, not on program text --
-                ; the same move do_open documents, so `MERGE A$` with A$="CAS:X"
-                ; reaches the tape arm exactly as the literal does.
-                ld      de,dev_cas
-                call    dev_cmp
-                jr      z,merge_cas         ; matched "CAS:" -> tape merge (HL past prefix)
-                call    nodisk_dev          ; D-NODISKVERBS: no disk -> the tape, `d:` 56
-                jr      z,merge_cas         ; (was `load error`)
-                call    pdfcb_resume      ; build DISK_FCB_NAME; HL -> closing '"'
-                push    hl                  ; guard the text cursor across the merge
-                call    dsk_aopen           ; step 11: the DISK ROM mounts, finds and
-                jr      c,mrg_ioerr         ; primes -- CF set = it said no
-                call    dsk_ascii_drive     ; tokenise+store each line, bytes through
-                                            ; the crossing; CF set = bad line
-mrg_fin:                                    ; C4 shared tail (2026-10-03): the tape arm
-                pop     hl                  ; restore the text cursor      joins here
-                jp      c,dpl_direct        ; non-numbered line -> 57 "Direct statement in
-                                            ; file", untrapped (D-CASDIRECT; this said so
-                                            ; and raised stmt_error's Syntax error)
-                ; 🔴 D-MERGERET (2026-09-12): MERGE RETURNS TO COMMAND LEVEL, and
-                ; `jp exec_stmt` carried on instead -- in BOTH modes. In a program,
-                ; `20 MERGE"N.BAS" / 30 POKE&HD002,55` left 55 here and 0 on the
-                ; CF-3300; typed, `MERGE"N.BAS":POKE&HD002,55` did the same
-                ; (scratchpad/kwdrain_cmdlevel.out, scratchpad/kwdrain_cmddirect.out).
-                ; 🎯 THE MERGE ITSELF WAS NEVER WRONG: the merged line lands byte for
-                ; byte on both machines and `LIST 100` agrees. Only the cursor did.
-                ; `end_line_end` is the shared tail; `ex_new` is the live precedent,
-                ; and its typed `NEW:POKE` reads 0 on both machines.
-                jp      end_line_end
-mrg_ioerr:
-                pop     hl
-                ; 🔴 NOT `df_or_loaderr` ANY MORE, AND THIS IS THE `A SHARED TAIL
-                ; IS A LABEL, NOT A DECISION` CLASS. That tail decides between
-                ; ERR 53 and a DSKIO code by reading DISKOP_OP -- and FOPEN_SEL
-                ; ALIASES DISKOP_OP, so after the crossing that cell holds $41,
-                ; not DISKOP_SEL_FAT_FIND, and every miss would have reported a
-                ; disk error. The disk side already answered the question:
-                ; DISKOP_STATUS 1 = not found, 3 = mount / I-O.
-                ld      a,(DISKOP_STATUS)
-                dec     a
-                jp      z,df_notfound       ; 1 -> ERR 53 File not found
-                jp      disk_error          ; 3 -> the mapped DSKIO code
-
-; --- MERGE "CAS:name" — merge an ASCII program from cassette ------------------
-; The tape counterpart of the disk MERGE above: read an $EA ASCII cassette file and
-; store each line into the CURRENT program (insert/replace by number — the existing
-; program is KEPT, NO new_prog). Reuses the M1 cassette-ASCII byte machinery: open
-; the tape (TAPION), require the $EA file-type id, then cas_ascii_setup (skip header
-; + prime block 1) + cas_ascii_drive (ascii_read_lines off cal_getbyte, restore +
-; TAPIOF) — exactly what cas_ascii_load does, minus the new_prog. A tokenised ($D3)
-; or unknown file is rejected (MERGE needs ASCII text). Clean-room: MERGE semantics
-; from the MSX-BASIC language reference; format + byte source are our own M1 code.
-; Entry: HL is inside the quotes, past "CAS:". Tier-3 (spec-cas-tier3-cload.md
-; Item A): the name is now HONOURED — captured into CAS_WANT and located by
-; cas_open_match (case-sensitive), skipping earlier non-matching files. An empty
-; name (MERGE"CAS:") merges the next file, unchanged.
-merge_cas:
-                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a '.' ends the name (D-CASDOT)
-                ; D-MERGEXPR: the name came from fname_expr's staged copy, which is
-                ; ALWAYS '"'-terminated by construction, so the old "unterminated
-                ; string" test here could no longer fire. The cursor resumes past
-                ; the EXPRESSION, exactly as on the disk arm above.
-                ld      hl,(FN_RESUME)
-                push    hl                  ; guard the text cursor across the merge
-                call    cas_open_match      ; find the (named) $EA file; header consumed
-                jp      c,dpl_dio           ; D-CASBRK: 19, raised. mc_ioerr's disk_error
-                                            ; raised the STALE disk code -- 255 on the
-                                            ; diskless machine (basic_probe_casbrk pmerge)
-                ld      a,(CAS_HDRID)
-                cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
-                jr      nz,mc_ioerr         ; tokenised / other -> cannot merge
-                call    cas_ascii_setup     ; prime data block 1
-                jr      c,mc_found_dio      ; D-CASPRIME: 19 in 65535, trapped
-                ; NB: NO new_prog — MERGE inserts into the current program.
-                call    cas_ascii_drive     ; read + tokenise + store each line; CF=bad line
-                jr      mrg_fin             ; D-MERGERET: the tape arm of the same
-                                            ; contract as the disk arm above. NO ROW
-                                            ; -- nothing here can PLAY a tape — so it
-                                            ; is changed by the disk arm's reasoning
-                                            ; and named as unmeasured.
-mc_ioerr:
-                pop     hl
-                jp      disk_error          ; D-DISKERR
-; mc_found_dio -- D-CASPRIME (2026-10-11): the first data block failed to read
-; (Ctrl-STOP / an I/O error) after `Found:`. The VG-8020 raises 19 TRAPPED with
-; ERL 65535 -- the MERGE has left the run there (basic_probe_casrbrk's mb2); its
-; search failing BEFORE `Found:` is `19 in <line>` (D-CASBRK's pmerge), and a
-; later block untrapped (mb8). Ours raised the STALE disk code, 255 on the
-; diskless machine, through mc_ioerr -> disk_error. DIRECTF is 0 here.
-mc_found_dio:
-                ld      hl,DIRECTF
-                inc     (hl)                ; 0 -> 1: ERL 65535
-                jp      dpl_dio             ; motor off, 19, raised
+; --- MERGE "name" / MERGE "CAS:name": zerobas-sub2 page 0 since D-P0CB slice C1
+; (2026-10-21) -- ex_merge, mrg_fin, mrg_ioerr, merge_cas, mc_ioerr and
+; mc_found_dio are fm_* in sub2/filestmt.asm, which reaches dsk_aopen /
+; dsk_ascii_drive / cas_ascii_drive here through p0cb. The shared reader below
+; (ascii_read_lines, the disk and tape drives) stays: LOAD uses it too.
 
 ; --- ascii_read_lines — read a line-numbered ASCII (SAVE",A") program from the
 ; ALREADY-OPEN fat_io sequential stream, tokenising + storing each line via

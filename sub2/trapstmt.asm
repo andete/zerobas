@@ -10,7 +10,9 @@
 ; Entered through page-0 index SUB2_IDX_TRAPS from main's `ex_sub2`
 ; (basic/program.asm), which each statement's 4-byte stub reaches with
 ;   in   HL = the cursor exactly where main's handler used to get it
-;        C  = which statement (TT_* below)
+;        C  = which statement (TT_* below) -- or, for OPEN / CLOSE / MERGE /
+;             MAXFILES (D-P0CB slice C1), their token: trap_tenant forwards
+;             C >= TT_COUNT to file_tenant (sub2/filestmt.asm)
 ;   out  DE = the main address to continue at (exec_stmt), HL = its cursor
 ; ex_sub2 then does `push de / ret`. A handler that used to end in `jp pop_exec`
 ; pops its own cursor here and returns exec_stmt: execution must never continue
@@ -33,9 +35,17 @@ TT_INTERVAL     equ     5
 TT_STRIG        equ     6
 TT_KEY          equ     7
 
+TT_COUNT        equ     8                   ; C >= TT_COUNT: a statement TOKEN
+
 trap_tenant:
-                push    hl                  ; the cursor, under the arm's address
+                ; D-P0CB slice C1: main's OPEN / CLOSE / MERGE / MAXFILES enter
+                ; ex_sub2 through ONE `ld c,a` (C = their token, always >= $80),
+                ; so this entry serves both families and main pays 1 B, not a
+                ; second CALSLT stub. sub2/filestmt.asm dispatches on the token.
                 ld      a,c
+                cp      TT_COUNT
+                jp      nc,file_tenant      ; A = C = the statement token
+                push    hl                  ; the cursor, under the arm's address
                 add     a,a
                 ld      e,a
                 ld      d,0

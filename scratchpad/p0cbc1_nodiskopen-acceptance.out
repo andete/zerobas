@@ -1,0 +1,24 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/basic/basic_probe_nodiskopen.py
+ok   out      'OK'         ours 'OK'
+ok   two      'E 52 30'    ours 'E 52 30'
+ok   twocas   'E 52 30'    ours 'E 52 30'
+ok   rand     'E 56 30'    ours 'E 56 30'
+ok   casrand  'E 56 30'    ours 'E 56 30'
+ok   casapp   'E 56 30'    ours 'E 56 30'
+ok   app      'E 56 30'    ours 'E 56 30'
+ok   drive    'E 56 30'    ours 'E 56 30'
+ok   casfoo   'E 2 30'     ours 'E 2 30'
+ok   casjunk  'E 2 30'     ours 'E 2 30'
+ok   dcasrand 'E 56 30'    ours 'E 56 30'
+ok   dcasapp  'E 56 30'    ours 'E 56 30'
+
+PASS: a diskless OPEN as on the VG-8020 (0 divergence(s))
+refcache: 0 hit, 24 miss, 24 stored

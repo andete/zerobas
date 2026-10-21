@@ -1,0 +1,21 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_casdirect.py
+ROW dload    VG-8020 [Direct statement in file || LIST 10] zerobas[Direct statement in file || LIST 10] SAME
+ROW dmerge   VG-8020 [Direct statement in file || LIST 5 10] zerobas[Direct statement in file || LIST 5 10] SAME
+ROW pload    VG-8020 [Direct statement in file || LIST 10] zerobas[Direct statement in file || LIST 10] SAME
+ROW pmerge   VG-8020 [Direct statement in file || LIST 10 15 20 90] zerobas[Direct statement in file || LIST 10 15 20 90] SAME
+ROW kload    CF-3300 [Direct statement in file || LIST 10] zerobas[Direct statement in file || LIST 10] SAME
+ROW kmerge   CF-3300 [Direct statement in file || LIST 5 10] zerobas[Direct statement in file || LIST 5 10] SAME
+ROW kpload   CF-3300 [Direct statement in file || LIST 10] zerobas[Direct statement in file || LIST 10] SAME
+ROW kpmerge  CF-3300 [Direct statement in file || LIST 10 15 20 90] zerobas[Direct statement in file || LIST 10 15 20 90] SAME
+ROW kbinload CF-3300 [Direct statement in file || LIST ] zerobas[Direct statement in file || LIST ] SAME
+
+PASS: a line with no number in an ASCII program (9/9)
+refcache: 0 hit, 18 miss, 18 stored

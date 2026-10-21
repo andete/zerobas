@@ -7,7 +7,9 @@ SPDX-License-Identifier: 0BSD
 
 Status: **slices A and B BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 18h
 and a self-test (`make sub2-acceptance`, both repack machines), then the event-trap
-statements moved (main page 1 +255 B). Slices C-D are not built.
+statements moved (main page 1 +255 B). Slice C1 (OPEN / CLOSE / MERGE / MAXFILES,
+sub2/filestmt.asm) is DRAFTED 2026-10-21: ~800 B of main page 1, all of it pad in
+front of the $6CF3 and $72D4 pins. C2 (SAVE, LOAD) and D are not built.
 
 ## 1. Why
 
@@ -99,7 +101,11 @@ sub2 closure-check mode follow the ROM-1 pattern (`Makefile`, `sub/basic-residen
   `KEY(n) / STRIG(n) / INTERVAL ON / OFF / STOP`; basic/program.asm from `ex_on_stop`),
   ~300 B past the last pin. `ex_on` itself stays (ON GOTO is hot).
 - **C — the file family** (OPEN / CLOSE / MERGE / MAXFILES, SAVE, LOAD), ~1.4-1.6 KB,
-  keeping the pin targets and disk.rom's call-back targets in main.
+  keeping the pin targets and disk.rom's call-back targets in main. **C1** (the first
+  four) reuses slice B's entry: their stmt_table rows share ONE byte, `ld c,a` in
+  front of `ex_sub2`, and trap_tenant forwards C >= 8 (a token) to file_tenant.
+  Their continuations are exec_stmt, clr_wipe, end_line_end -- and disk_error /
+  load_error, which PRINT AND RETURN, so they too go back in DE, never through p0cb.
 - **D — SCREEN / COLOR / WIDTH / KEY**, ~450 B. Graphics (~800 B) only after a
   stopwatch on PSET / LINE / PUT SPRITE.
 

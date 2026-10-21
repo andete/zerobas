@@ -107,7 +107,7 @@
 ; --- the UNIFORM shims (nine contiguous + fat_delete) -- ALL GONE -----------
 ; 🗑️ 2026-10-19: the last two (fat_mount / fat_find) left with AUTOEXEC.BAS's
 ; probe and NAME's lookup (note below the block); this header is the layer's
-; history. fatprim_bounce stays for its one non-shim caller (oo_hdr_tail).
+; history. fatprim_bounce followed them with D-P0CB slice C1 (2026-10-21).
 ; Every one of these was, until 2026-07-27, an independent 34-byte copy of the
 ; SAME body: load a selector, bounce to the tenant, marshal Cy+HL+A back. Only
 ; the DISKOP_SEL_* immediate differed. Thirteen copies (the twelve there were
@@ -150,8 +150,8 @@
 ; (main_fat_mount / main_fat_find), uses that ROM's own fat_mount / fat_find.
 ; Both ran the sub-ROM tenant's rows 2 / 3, which have no sender now; they stay
 ; in the table (sub/fatprim.asm): the numbering is published.
-; fatprim_bounce, below, keeps one caller: OPEN's header stamp (files.asm
-; oo_hdr_tail, row 23).)
+; fatprim_bounce kept one caller, OPEN's header stamp (row 23), until D-P0CB
+; slice C1 moved that to zerobas-sub2; see its note below.)
 
 ; (S10.C, 2026-10-15: the fat_open and fat_read_file_sector shims are gone --
 ; 8 B. Their only main callers were fat_io_open / fat_io_getbyte, main's resident
@@ -179,33 +179,15 @@
 ; field.asm frp_overlay tail-call the old comment here named had already moved
 ; into the tenant with the fat_rand_* engine.)
 
-; fatprim_bounce — the ONE body the thirteen uniform shims shared (none is left
-; since 2026-10-19; OPEN's header stamp, files.asm oo_hdr_tail, calls it direct).
-;   in:  A = DISKOP_SEL_* selector; the primitive's own register inputs are
-;        already marshalled in the DISKOP block by the caller's contract.
-;   out: exactly the pre-collapse contract — Cy=1 + HL/A reloaded on a tenant
-;        error OR a missing sub-ROM, Cy=0 + HL/A reloaded on success.
-;
-; The tail is branchless where the originals branched, and that is the only
-; instruction-level change. It is flag-equivalent, not approximately so:
-;   * `or a` clears Cy and sets Z iff DISKOP_STATUS == 0 (success);
-;   * `ld hl,(nn)` and `ld a,(nn)` DO NOT AFFECT FLAGS, so Z/Cy survive both
-;     reloads — which is what lets the reload be shared by both dispositions
-;     instead of duplicated into an error tail;
-;   * `ret z` therefore returns success with Cy already clear (exactly what the
-;     old `jr nz,<err>` fallthrough did), and the error path falls into `scf`.
-; Reloading HL/A on BOTH paths is not new behaviour: every old shim's error tail
-; did the same two loads before its `scf`.
-fatprim_bounce:
-                call    fatprim_op
-                ret     c                   ; sub-ROM absent -> Cy=1
-                ld      a,(DISKOP_STATUS)
-                or      a                   ; Z iff success; ALSO clears Cy
-                ld      hl,(DISKOP_HL)      ; flag-transparent
-                ld      a,(DISKOP_A)        ; flag-transparent
-                ret     z                   ; success: Cy clear from `or a`
-                scf
-                ret
+; fatprim_bounce — GONE (D-P0CB slice C1, 2026-10-21, 17 B). It was the ONE body
+; the thirteen uniform shims shared (none left since 2026-10-19): `call
+; fatprim_op`, then the disposition read back from DISKOP_STATUS with HL / A
+; reloaded from DISKOP_HL / DISKOP_A and Cy=1 on an error. Its last caller,
+; OPEN's header stamp (oo_hdr_tail), moved to zerobas-sub2 page 0
+; (sub2/filestmt.asm fo_hdr_tail) and discarded all three outputs -- its tail is
+; `pop_exec` -- so the tenant calls fatprim_op through p0cb directly. The probes
+; that cite the old error tail (disk_probe_fat_error_disposition.py) measure
+; verbs that left it with S10.
 
 ; 🎯 THE `name_cmp` SHIM IS GONE, AND ITS DEATH IS A CARVE THIS SLICE DID NOT
 ; PLAN FOR (D-LFILES, docs/spec-basic-lfiles.md §6). It marshalled a Z result

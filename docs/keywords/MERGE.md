@@ -132,12 +132,15 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 
 ## Where it lives
 
-- `ex_merge` in [basic/files.asm](../../basic/files.asm): the name, the device,
-  and the end of the program. A disk file is opened by the disk ROM
+- `fs_merge` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
+  sub-ROM's page 0 since 2026-10-21 (main's `ex_merge` hands it over): the
+  name, the device, and the end of the program. A disk file is opened by the disk ROM
   (`dsk_aopen`) and its bytes are read through it one at a time
   (`dsk_ascii_drive`); each line is tokenised and stored in main, as on the
   CF-3300, where `MERGE` and an ASCII `LOAD` are one mechanism.
-- `merge_cas`, in the same file, is the cassette arm.
+- `fm_cas`, in the same file, is the cassette arm; the readers it calls back
+  (`cas_ascii_drive`, `dsk_ascii_drive`, `ascii_read_lines`) stay in main,
+  shared with `LOAD`.
 
 ## Related concepts
 

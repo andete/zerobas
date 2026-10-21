@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "18c134fc d71e00a1 855a74df e08b0e3b 673b05a5",
+ "rom_fingerprint": "9f3813e4 d71e00a1 1545a8d1 43058dad 399342fd",
  "rows": {
   "ABS": {
    "connected": true,
@@ -818,11 +818,11 @@
   "LOC": {
    "connected": true,
    "modes": {
-    "fn": "DIVERGENT"
+    "fn": "MISSING"
    },
    "row": "loc",
    "subject": "LOC",
-   "verdict": "DIVERGENT",
+   "verdict": "MISSING",
    "weak": false
   },
   "LOCATE": {
@@ -2076,7 +2076,7 @@
   "LOC": {
    "connected": true,
    "rows": {
-    "loc": "DIVERGENT"
+    "loc": "MISSING"
    }
   },
   "LOCATE": {
@@ -2591,5 +2591,5 @@
    }
   }
  },
- "written": "2026-10-21 09:10:53"
+ "written": "2026-10-21 10:43:00"
 }

@@ -4792,7 +4792,39 @@ item — do **one item per session** to keep context lean.
       F_positional, H_shift_is_key6, AA_empty_slot_midlist, L_key4
       ([`traps_knife_t1.out`](scratchpad/traps_knife_t1.out)); sub2.rom 673b05a5 ->
       c5c6cbea -> 673b05a5. 🔮 HIT. Docs: STRIG.md, SPRITE.md, ON.md; examples PASS 3.
-      ➡️ SLICE C: the file family (spec §5).
+      ✅ **SLICE C1 DONE 2026-10-21: OPEN, CLOSE, MERGE, MAXFILES LEFT MAIN.** Drafted
+      by a subagent in its own worktree (build + static checks only, no emulator),
+      integrated and measured here. sub2/filestmt.asm's `file_tenant`, reached through
+      trap_tenant's head (C >= 8 is a token) from ONE 1-byte main entry (`ld c,a` in
+      front of ex_sub2: exec_stmt enters a handler with A = its token), so the four
+      stmt_table rows cost 0 B each. Only OWNED code moved; everything shared or called
+      back by disk.rom (fch_check, fname_expr, pdfcb_resume, fopen_cross,
+      fch_do_close_ch, the cas_* routines, ...) stays in main and is reached through
+      p0cb (47 `p0_*` imports in all). Continuations returned in DE: exec_stmt (HL =
+      cursor), clr_wipe (MAXFILES), end_line_end (MERGE), disk_error / load_error (they
+      print and RETURN when nothing is pending, so they are continuations, not
+      raises). `oo_parse_reclen` stays (tests/test_open_len.py runs it on the main
+      image); `fatprim_bounce` was deleted (its only caller discarded its outputs).
+      📏 Walls (2026-10-21): main page 1 tail 291 -> 290 B, pads +797 B (319 B at
+      $6CF3, 496 B at $72D4; no `jr` spans either); sub2 page 0 15619 -> 14526 B.
+      Witness: unit tests 78/78; sub2 / stop-trap / key-trap / nodisk / opengrp /
+      clearclose / badfnum / diskascii (MERGE) / casdirect / fcbhdr / nodiskopen /
+      lptverb acceptance green; the new [`filestmt_probe.py`](scratchpad/filestmt_probe.py)
+      against the CF-3300 with a disk copy per case, 29/29 SAME
+      ([`filestmt_run.out`](scratchpad/filestmt_run.out)) -- `o.same` reads no output
+      on BOTH sides (its MAXFILES=2 clears ON ERROR, so the 54 goes untrapped): no
+      reading, not an agreement. 🔪 K-C1 (MAXFILES's ERR 5 bound gone): exactly `m.16`
+      diverges; K-C2 (OPEN's wildcard refusal gone): exactly `o.wild`
+      ([`filestmt_knife_c1.out`](scratchpad/filestmt_knife_c1.out),
+      [`filestmt_knife_c2.out`](scratchpad/filestmt_knife_c2.out)); sub2.rom 399342fd
+      -> c1829689 / d0a01523 -> 399342fd. 🔮 all HIT. kwknife: connectedness unchanged;
+      LOC's KNIFED verdict moved DIVERGENT -> MISSING (its row opens a file first), still
+      connected.
+      ⚠️ RISK CARRIED: MERGE now runs the whole ASCII line reader (dispatch_line,
+      store_line, the lineedit tenant) inside a p0cb'd call under the sub2 CALSLT --
+      nested CALSLTs into 3-2 and disk.rom, possible EI, a deeper stack. diskascii /
+      casdirect are green on it; a long or tape MERGE is where it would show.
+      ➡️ SLICE C2: SAVE / LOAD (spec §5).
 
 - [ ] 💡 **D-TWOVARIANT — "BEST WITH SUB ROM" AND "GOOD WITHOUT SUB ROM" (Joost
       2026-10-21, an idea, NOT a plan)**
@@ -11624,7 +11656,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37557 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37589 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11790,7 +11822,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16652 (T-6FE392)8 (T-529ABE)` from `TODO.md:29489 (T-529ABE)`: a
+      `TODO.md:16684 (T-6FE392)8 (T-529ABE)` from `TODO.md:29521 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17499,7 +17531,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29489 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29521 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
