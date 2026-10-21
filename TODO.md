@@ -4657,6 +4657,27 @@ item — do **one item per session** to keep context lean.
          guards IX too) but UNWITNESSED. 🔮 "K-DP1 moves n.arith / n.str": MISSED.
       4. S-FLDPRO: FIELD's prologue (`field_prologue`, `exf_dev`, `exf_bfm`) into
          disk.rom; error order 5/52/59, 5/61, 2 unchanged. Main ~-70 B.
+         ✅ **DONE 2026-10-20.** `hk_field` reads `#` and the comma locally (`hkp_sp` is
+         main's `skip_spaces`), calls back for the channel (`eval`), `fch_check` and
+         `fch_mode_class`, raises 5 / 61 / 2 the same way, and takes the record's
+         address from its own RANDOM row (`dout_row` + `rnd_rec`, block+9) where main
+         asked the sub ROM (`fch_ctx_addr`); FLD_CUROFF / FLD_END are disk imports.
+         Moved in front of the pinned $53A7 with the other two handlers.
+         📏 Walls (2026-10-20): main page 1 gains a 71 B free pad in front of the
+         $73AC pin (it was a 2 B `jr` bridge; 🔮 ~70: HIT), tail 36 B, $73E5 pad 32 B;
+         low region unchanged; disk.rom free 2440 -> 2343 B (🔮 ~-75: MISS, -97).
+         Witness: fldwidth / fldary / badfnum / recauto / fcbhdr / stmtpend / lrvar /
+         nodisk acceptance and lof-characterize (45 cases, 0 divergence) all green;
+         the new [`fldpro_probe.py`](scratchpad/fldpro_probe.py) against the CF-3300
+         with a disk copy per case, 20/20 SAME
+         ([`fldpro_run.out`](scratchpad/fldpro_run.out)) -- 59 closed, 61 INPUT and
+         OUTPUT, 5 LPT: and CRT:, 2, 52, 13, 50, 24, two channels, an expression
+         channel, an exact fit, blanks. ⚠️ `n.twoovf` read the typed line on BOTH
+         sides: no reading, not an agreement. And `FIELD #1 8 AS A$` is 52 on both --
+         the cruncher joins `1 8` into channel 18. 🔪 K-FP1 (any disk mode binds):
+         exactly `e.input` / `e.output` diverge, `1` against ERR 61
+         ([`fldpro_knife_fp1.out`](scratchpad/fldpro_knife_fp1.out)); disk.rom hashed
+         ab0d848d -> ebd5430f -> ab0d848d. 🔮 HIT.
       5. S-FLDITEM (only if FIELD's time allows -- one more crossing per item): ~-45 B.
       Freed bytes in front of a pin stay as FREE SPACE (Joost 2026-10-20, below); the
       walls readout lists them.
@@ -11482,7 +11503,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37415 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37436 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11648,7 +11669,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16510 (T-6FE392)8 (T-529ABE)` from `TODO.md:29347 (T-529ABE)`: a
+      `TODO.md:16531 (T-6FE392)8 (T-529ABE)` from `TODO.md:29368 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17357,7 +17378,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29347 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29368 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

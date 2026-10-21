@@ -140,11 +140,13 @@ The one rung not yet proven is **RAM usage**.
 - Main ROM: `ex_field` in [basic/field.asm](../../basic/field.asm) hands the
   statement to the disk ROM through the `H_FIELD` hook; the parse of each
   `w AS v$`, the record-length check and the store stay in main
-  (`field_prologue`, `field_item`). Since D-FLDDESC (2026-10-17) there is no
-  field table: `field_item` writes the variable's own descriptor,
+  (`field_item`). Since D-FLDDESC (2026-10-17) there is no field table:
+  `field_item` writes the variable's own descriptor,
   `[w][VARPTR(#n)+9+offset]` — the channel's record, which lives in its block.
-- Disk ROM: `hk_field` in [disk/kernel.asm](../../disk/kernel.asm) decides to
-  run and calls back into main for each item.
+- Disk ROM: `hk_field` in [disk/kernel.asm](../../disk/kernel.asm) reads the
+  channel and checks it (open, and opened for random access), finds the
+  channel's record (since 2026-10-20), then calls back into main for each
+  item.
 - The width rules: [fldwidth-msx1-characterization.md](../fldwidth-msx1-characterization.md).
 
 ## Related concepts

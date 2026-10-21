@@ -79,6 +79,8 @@ STRMAX equ 000FFH   ; repack build: string heap (slice-4a §8)
 LRSET_JUST equ 0EEC6H   ; DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1)
 MIDS_DEST equ 0F65EH   ; MID$ statement: the target descriptor's address (2 B)
 EQ_TOKEN equ 000EFH   ; '='
+FLD_CUROFF equ 0EEC3H   ; DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2)
+FLD_END equ 0F019H   ; DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2)
 FMT_GEOMSEL equ 0EF61H   ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
@@ -89,7 +91,9 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 fname_expr equ 06DFEH
 pdfcb_resume equ 06DF7H
 parse_disk_fcb equ 064F7H
-field_prologue equ 07348H
+eval equ 04AE2H
+fch_check equ 07027H
+fch_mode_class equ 04F7AH
 field_item equ 072F6H
 req_letter equ 040DDH
 var_str_type equ 046E0H

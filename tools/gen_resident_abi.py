@@ -295,6 +295,9 @@ REQUIRED_DISK_RAM = [
     "LRSET_JUST",               # the verb's token: bit 0 = RSET
     "MIDS_DEST",                # the target's descriptor, for lrset_finish
     "EQ_TOKEN",                 # ⚠️ a CONSTANT: the `=` token
+    # D-DISKREST slice 4: hk_field sets the record's span for field_item.
+    "FLD_CUROFF",               # where the next field starts (block+9 first)
+    "FLD_END",                  # the byte past the record: the ERR 50 bound
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
@@ -356,7 +359,11 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # crossings. All three may RAISE, which is safe from a call-back.
     # D-FIELDMOVE: FIELD's TWO bundles. field_item returns a CARRY for "another
     # item follows", so the handler's crossings scale with the item count.
-    "field_prologue",           # channel + mode class + the record's span
+    # (field_prologue -- gone, D-DISKREST slice 4: hk_field does the prologue
+    # and calls back for its three main-side steps:)
+    "eval",                     # FIELD's channel expression: DE
+    "fch_check",                # 5 / 59 / 52
+    "fch_mode_class",           # A = the mode, 59 if not open, CF = disk
     "field_item",               # one `w AS v$`; CF=1 -> another follows
     # D-DISKREST slice 1 (2026-10-20): lrset_tgt / lrset_rhs are gone -- hk_lrset
     # parses LSET / RSET itself and calls back ONE HELPER at a time:

@@ -473,6 +473,77 @@ hkd_st:
                 scf                     ; claimed
                 ret
 
+; hk_field -- FIELD #f, w AS v$ [, ...]. 🔁 D-DISKREST slice 4 (2026-10-20): THE
+; PROLOGUE IS HERE -- it was main's call-back 1, field_prologue. `#` and the comma
+; are read locally (hkp_sp is main's skip_spaces); the channel expression,
+; fch_check (5 / 59 / 52) and fch_mode_class (59 if not open; CF = disk) are
+; call-backs; the record's address comes from this ROM's own RANDOM row (dout_row
+; + rnd_rec: block+9, where FIELD has pointed descriptors since D-FLDDESC) where
+; main asked the sub ROM (fch_ctx_addr). Then the item loop, as before.
+; 📌 SITED IN FRONT OF THE PINNED $53A7 ENTRY: its old region had no room.
+;   in   FN_RESUME = the statement cursor, just past the FIELD token
+;   out  the statement is DONE; FN_RESUME = the resume cursor; CF = 1
+hk_field:
+                ei                          ; entered through CALLF, masked
+                ld      hl,(FN_RESUME)
+                call    hkp_sp
+                cp      '#'
+                jr      nz,hkf_ch
+                inc     hl
+hkf_ch:
+                ld      ix,eval
+                call    calbak              ; DE = the channel; HL advanced
+                ld      ix,fch_check
+                call    calbak              ; D!=0 -> 5, 0 -> 59, > MAXFILES -> 52
+                push    hl
+                ld      ix,fch_mode_class
+                call    calbak              ; A = FCH_MODES[E]; 59 if NOT OPEN;
+                pop     hl                  ; CF = a disk channel (E survives)
+                jr      nc,hkf_dev          ; LPT: / CRT: -> 5
+                cp      4
+                jr      nz,hkf_bfm          ; disk, not RANDOM -> 61
+                push    hl                  ; the cursor
+                ld      a,e
+                push    af                  ; the channel
+                ld      de,FCH_RECLENS
+                call    rnd_tab             ; HL = &FCH_RECLENS[ch]
+                ld      c,(hl)
+                inc     hl
+                ld      b,(hl)              ; BC = the record length, 1..256
+                pop     af
+                push    bc
+                call    dout_row            ; HL = the channel's row
+                push    hl
+                pop     ix
+                call    rnd_rec             ; HL = its record, block+9
+                ld      (FLD_CUROFF),hl     ; where the first field starts
+                pop     bc
+                add     hl,bc
+                ld      (FLD_END),hl        ; field_item's ERR 50 bound
+                pop     hl
+                call    hkp_sp
+                cp      ','                 ; FIELD #f , w AS v$
+                jr      nz,hkf_syn
+                inc     hl
+                ld      (FN_RESUME),hl
+hkf_item:
+                ld      ix,field_item
+                call    calbak              ; one `w AS v$`; CF=1 -> another follows
+                jr      c,hkf_item
+                scf
+                ret
+hkf_dev:
+                ld      a,5                 ; illegal function call (LPT: / CRT:)
+                jr      hkf_raise
+hkf_bfm:
+                ld      a,61                ; bad file mode
+hkf_raise:
+                ld      ix,raise_error
+                jp      calbak              ; raises; never returns
+hkf_syn:
+                ld      ix,stmt_error       ; ERR 2, as req_comma raised it
+                jp      calbak
+
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -4265,15 +4336,8 @@ hkm_copy:
 ; the layout is the variable descriptor's, which is main's too -- so nothing
 ; needs hand-mirroring in this ROM, the hazard disk/equates.inc's FSECTOR_BUF
 ; mirror actually caused (D-LRSETMOVE).
-hk_field:
-                ld      ix,field_prologue
-                call    calbak              ; channel, mode class, the record's span
-hkf_item:
-                ld      ix,field_item
-                call    calbak              ; one `w AS v$`; CF=1 -> another follows
-                jr      c,hkf_item
-                scf
-                ret
+; (hk_field's code moved in front of the pinned $53A7 entry when D-DISKREST
+; slice 4 gave it FIELD's prologue: this region had no room for it.)
 
 ; (hk_lrset -- LSET / RSET's handler -- moved to the hole in front of the pinned
 ; $53A7 entry when D-DISKREST slice 1 made it parse: ~60 B more than this region had.)

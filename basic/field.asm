@@ -537,8 +537,6 @@ field_item:
                                             ; created; an OOM is left in FPERR,
                                             ; tgt_store_desc's contract)
                 jr      exf_fits
-exf_bfm:
-                ld      a,61                ; bad file mode (disk, not RANDOM)
 exf_raise:
                 jp      raise_error         ; no `pop hl` -- raise_error resets SP on
                                             ; BOTH arms (trap and abort)
@@ -548,75 +546,14 @@ exf_raise:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 exf_syn         equ     elas_err
-; --- field_prologue: call-back 1 -- the channel, its mode, the record's span ---
-; in:  FN_RESUME = the cursor, just past the FIELD token.
-; out: FLD_CUROFF = the channel's record (block+9), FLD_END = record + reclen,
-;      FN_RESUME = the cursor past the comma that ends the channel clause.
-;      (D-FLDDESC, 2026-10-17: it set FLD_CHAN, zeroed an offset and dropped the
-;      channel's old FLD_TAB entries. A re-FIELD now simply re-points the
-;      variables it names; a variable it does not name keeps its old binding --
-;      the descriptor model's, and the reference's by the same measurement.)
-; May RAISE (ERR 5 / 52 / 59 / 61), which is safe from a call-back: it runs in
-; MAIN with main page 1 mapped, so the unwind discards the disk-ROM frame and
-; the handler never resumes.
-field_prologue:
-                ld      hl,(FN_RESUME)
-                call    skip_spaces
-                cp      '#'
-                jr      nz,exf_havech
-                inc     hl
-exf_havech:
-                call    eval                ; DE = channel; HL advanced
-                call    fch_check           ; D-BADFNUM: D!=0 -> ERR 5, 0 -> ERR 59,
-                                            ; > MAXF -> ERR 52. All three used to be
-                                            ; stmt_error (ERR 2, `Syntax error`)
-                ; the channel must be open, and open RANDOM. D-NOTOPEN2: this was a
-                ; fourth hand-inlined copy of fch_mode_class -- which ALSO returns
-                ; CF = disk-vs-device, exactly the 61-vs-5 split measured below.
-                push    hl                  ; guard cursor across the classify
-                call    fch_mode_class      ; A = FCH_MODES[E]; ERR 59 if NOT OPEN
-                pop     hl                  ; (E, the channel, survives it)
-                jr      nc,exf_dev          ; device channel (LPT:/CRT:) -> ERR 5
-                cp      4
-                jr      nz,exf_bfm          ; a disk channel must be RANDOM -> ERR 61
-                ; D-FLDDESC: the record's span. FLD_CUROFF := block+9, where the
-                ; first field starts; FLD_END := block+9+FCH_RECLENS[ch] (1..256),
-                ; field_item's ERR 50 bound. The reclen is read inline, exactly as
-                ; oo_parse_reclen WRITES it (basic/files.asm) -- load_reclen is the
-                ; sub-ROM's; it was read inline in field_item until this slice.
-                push    hl                  ; guard cursor
-                ld      l,e
-                ld      h,0
-                add     hl,hl               ; channel * 2 (word index)
-                ld      bc,FCH_RECLENS
-                add     hl,bc
-                ld      c,(hl)
-                inc     hl
-                ld      b,(hl)              ; BC = FCH_RECLENS[ch], 1..256
-                push    bc
-                ld      a,e
-                call    fch_ctx_addr        ; HL = the channel's block (a CALSLT:
-                                            ; clobbers A,BC,DE,IX -- all dead here)
-                ld      de,FCH_HDRSZ
-                add     hl,de               ; HL = its record, block+9
-                ld      (FLD_CUROFF),hl
-                pop     bc
-                add     hl,bc
-                ld      (FLD_END),hl        ; the byte past the record's last
-                pop     hl
-                ; a comma separates the channel from the field list: FIELD #f , w AS v$
-                call    req_comma           ; D-NGRAM17
-                ld      (FN_RESUME),hl
-                ret
-
-; D-NOTOPEN2 §3.1: FIELD on an open channel that is not RANDOM. Until this slice
-; ex_field tested only "open at all", so `OPEN "X" FOR INPUT AS #1 : FIELD #1,…`
-; was accepted SILENTLY -- measured `0` (nothing raised) against the CF-3300's
-; ERR 61. ⚠️ The device answer is 5, NOT the 58 that GET/PUT give on the very same
-; LPT: channel; `wm_lpt_fld` and `wm_lpt_get` are the pair that pins that apart.
-exf_dev:
-                ld      a,5                 ; illegal function call (LPT:/CRT:)
-                jr      exf_raise
+; (field_prologue -- FIELD's call-back 1: `#`, the channel, its mode class (5 /
+; 52 / 59 / 61), the record's span into FLD_CUROFF / FLD_END, the comma -- and its
+; refusal tails exf_dev / exf_bfm are GONE, D-DISKREST slice 4, 2026-10-20:
+; disk.rom's hk_field does all of it, calling back for the channel expression,
+; fch_check and fch_mode_class, and reading the record's address from its own
+; RANDOM row instead of fch_ctx_addr's sub-ROM call. D-NOTOPEN2's split stays
+; where it was measured: a device channel is 5 here (GET / PUT say 58 on the same
+; LPT:, `wm_lpt_fld` / `wm_lpt_get`), a disk channel not RANDOM is 61.)
 ; 📌 PIN REFILL (D-FLDDESC, 2026-10-17): with exf_comma gone to the $72D4 gap,
 ; fld_lookup's 20 B gone and field_prologue 11 B larger, 16 B were left in front
 ; of $73AC: derive_directf (basic/program.asm, whose header there is its

@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **436** in the MSX standard work area at or above `$F380`.
-* **disk** — 119 declared addresses in this project's own workspace `$E000..$F37F` (110 with a machine-readable width), plus **64** in the MSX standard work area at or above `$F380`.
+* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **64** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -152,6 +152,7 @@ second one is the question a per-component map cannot answer.
 | `$EE7D` | 32 B | `basic` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EE7D` | 32 B | `disk` | `FCH_RECNOS` | DISK-ONLY: 32 B ($EE7D..$EE9C): per-channel record number |  |
 | `$EEC3` | 2 B | `basic` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
+| `$EEC3` | 2 B | `disk` | `FLD_CUROFF` | DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2) |  |
 | `$EEC6` | 1 B | `basic` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
 | `$EEC6` | 1 B | `disk` | `LRSET_JUST` | DISK-ONLY: LSET/RSET: the verb's token, bit 0 = right-justify (1) |  |
 | `$EEC7` | 1 B | `basic` | `LRSET_W` | DISK-ONLY: LSET/RSET: destination field width (1) |  |
@@ -186,6 +187,7 @@ second one is the question a per-component map cannot answer.
 | `$EFFD` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) |  |
 | `$EFFE` | 27 B | `disk` | `P1_BLIT` | installed blit routine (27 B) -- declared |  |
 | `$F019` | 2 B | `basic` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
+| `$F019` | 2 B | `disk` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F079` | 2 B | `disk` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F07B` | 2 B | `basic` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |
