@@ -11970,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37985 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38006 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -36441,7 +36441,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       K-BS1 (the store cut) → nodisk 2.54 s, disk 2.46 s FAIL, the control
       still PASS — exactly.
 
-- [ ] 🔴 **BDOS CALLS MADE FROM A BASIC PROGRAM (machine code through `$F37D`) ANSWER ONLY
+- [x] ✅ **TIER-1 SCOPE DONE 2026-10-22 (slices 1, 2, 3a, 3b-1; the rest is D-BDOSFCB below)** — 🔴 **BDOS CALLS MADE FROM A BASIC PROGRAM (machine code through `$F37D`) ANSWER ONLY
       SEVEN FUNCTIONS HERE, AND NOTHING COMPARES THEM WITH THE CF-3300 (D-BDOSBASIC,
       found 2026-10-09 by the MSX-DOS concept page).**
       🎚️ TIER 1 — happy path: a real disk's boot loader needs it (ROBOCOP, below; re-tiered
@@ -36532,6 +36532,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       the references (🔮 80 % HIT). tests/test_bdosbasic.py: four rows; 🔪 the two table rows
       retargeted -> 4 FAIL. ➡️ 3b-2: the random record set ($21-$24, $26, $28) and the three
       differing answers ($10 / $14 / $27).
+      🏁 **CLOSED for its TIER 1 scope (2026-10-22):** the witness that made it TIER 1 --
+      ROBOCOP's boot loader -- now makes the CF-3300's calls with its results, and a BASIC
+      program's USR reaches the door. What is left has no program asking for it and is filed
+      as D-BDOSFCB (TIER 6, latent), next.
+
+- [ ] 🔴 **D-BDOSFCB — THE REST OF THE $F37D ANSWER SET FROM BASIC: THE RANDOM RECORD FUNCTIONS AND
+      THE FCB-STATE ANSWERS (split from D-BDOSBASIC, 2026-10-22)**
+      🎚️ TIER 6 (latent) — BDOS from Disk BASIC: no program yet calls these; both references
+      answer them ([`bdosset_run.out`](scratchpad/bdosset_run.out), [`bdosset_run2.out`](scratchpad/bdosset_run2.out)).
+      🤖 **AUTONOMOUS** — measure each against the probe's rows first.
+      - $21 RNDRD, $22 RNDWR, $23 FSIZE, $24 SETRND, $26 WRBLK, $28 WRZER: $FF here. DOS-side
+        bodies exist for FSIZE ($501E), SETRND ($50C8) and WRBLK ($47BE), written for the DOS
+        kernel's FCB copy and register setup -- re-measure their contracts before reusing them.
+      - The FCB-state answers: $10 CLOSE of an FCB never opened ($FF on both references, 0
+        here), $14 SEQRD from one (1 = end of file there, 0 here -- it read zerobas's single
+        internal file), $27 RDBLK's counts (A = 1, HL = 0 there against A = 0, HL = 1). MSX-DOS
+        1 keeps a file's state IN THE FCB; zerobas's BASIC-side bdos_entry keeps one file's state
+        in its own cells. Matching these means moving that state into the FCB -- a design
+        question, not a patch.
+      - ALLOC's free count after the probe's CREATE / SEQWR ($02C7 here, $02C4 there): what
+        those calls allocate differs.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**
