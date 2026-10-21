@@ -4771,11 +4771,28 @@ item — do **one item per session** to keep context lean.
       disk ROM fitted (`National_CF-3300_ZEROBASDISK`) ends in BASIC with `Type mismatch in
       0`; with the stock disk ROM, `Enter date`. So the divergence is in disk.rom's BOOT path
       (what the boot code is given, or calls, after step 7), not in C-BIOS or BASIC.
-      ➡️ NEXT: on that one machine, log which BIOS / BDOS / disk-ROM entries the boot code
-      calls (PC breakpoints on the published entry points, register values in and out) with
-      the stock ROM and with ours, and diff; then the other ZB-NOBOOT rows (DiscStation #32
-      A-D's own "Loading DS" loader, ROBOCOP, SirDan, UR-1, xak2eng2, senigma), the three
-      FILES-DIFF candidates, and the six ZB-ONLY.
+      📏 **PLACED (2026-10-21, black box, same CF-3300 hardware, stock disk ROM vs ours):**
+      the boot code's BDOS $0F (open, FCB at $C0AB) fails identically (A=$FF; only HL
+      differs, 00FF vs E46A -- and forcing HL=00FF on ours changes NOTHING, so not HL); no
+      DSKIO beyond sector 0, no BDOS through $0005, nothing executed at $0100. Then the
+      boot code jumps to **$4022** on both (page 0 already RAM) -- the published entry
+      zerobas implements as BASENT ("start BASIC", D-DOSBASIC). 🔭 **A SECOND REFERENCE
+      AGREES WITH THE FIRST** (Joost 2026-10-21: "Check another reference"): the VG-8020
+      with a Philips NMS 1200 disk interface prints `Enter date (M-D-Y):` from empty.dsk
+      too (🔮 "a CF-3300 quirk" MISSED). CHPUT is called, through an inter-slot call, with
+      page 0 = the BIOS and page 1 = the disk interface (slots $F4): the DISK ROM prints
+      it, in the BASIC environment. Answered with `1-1-90`, the NMS 1200 then starts Disk
+      BASIC normally (banner, `Ok`, `PRINT 7*6` -> 42). **So: a stock disk ROM's $4022,
+      entered by a boot loader that could not open MSXDOS.SYS, ASKS THE DATE (no clock on
+      an MSX1) and then starts BASIC; zerobas's starts BASIC without asking.** The CF-3300
+      prints the same prompt with Japanese text in the brackets.
+      ➡️ NEXT (D-BOOTDATE, the fix): measure, black box, on both references -- WHEN $4022
+      asks (on this boot path only? also after MSX-DOS's `BASIC` command, where D-DOSBASIC
+      saw none?), the accepted forms, an invalid or empty answer, and what the answer sets
+      (the DOS date cells GDATE reads); then zerobas's $4022 asks the same way on the same
+      path. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
+      loader, ROBOCOP, SirDan, UR-1, xak2eng2, senigma), the three FILES-DIFF candidates,
+      and the six ZB-ONLY.
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -11718,7 +11735,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37651 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37668 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11884,7 +11901,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16746 (T-6FE392)8 (T-529ABE)` from `TODO.md:29583 (T-529ABE)`: a
+      `TODO.md:16763 (T-6FE392)8 (T-529ABE)` from `TODO.md:29600 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17593,7 +17610,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29600 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
