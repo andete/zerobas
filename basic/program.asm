@@ -3144,60 +3144,51 @@ oe_reraise:
                 call    derive_directf
                 jp      rerr_msg
 
-; --- ex_on_stop: ON STOP GOSUB <line> -- arm the STOP interrupt trap ----------
-; Reached from ex_on's sibling peek (HL on the STOP token). Stores the resolved
-; handler LINK into the ZTRAP STOP entry; state is left as-is (arm != enable --
-; `STOP ON` enables). Undefined line -> Undefined line number, like GOSUB. Does
-; not redirect flow (continues the same line, as ON ERROR GOTO does).
-; spec-traps-t1-stop-reslice.md §5.1.
-; T4 shares this whole body: `ON SPRITE GOSUB <line>` is `ON STOP GOSUB <line>`
-; with a different entry index, and after the no-line fix below they are otherwise
-; identical token for token. The two heads load the ADDRESS of the entry's handler
-; field and fall into one parser (measured cheaper than duplicate-and-specialise
-; here -- unlike T3, where the duplicate won by 11 B; the difference is that T3 was
-; generalising a five-slot LIST parser with a live second caller, while this is a
-; single-line parser whose second caller is new. Both variants were built).
+; --- the EVENT-TRAP STATEMENTS: zerobas-sub2 page 0 (D-P0CB slice B, 2026-10-21) --
+; ON STOP / SPRITE / STRIG / KEY / INTERVAL GOSUB, INTERVAL ON|OFF|STOP, STRIG(n)
+; ON|OFF|STOP and KEY(n) ON|OFF|STOP ran here (~300 B of main page 1); their parse
+; and their writes into ZTRAP are sub2/trapstmt.asm's now, reached through ONE
+; CALSLT per statement and calling main back through p0cb (docs/spec-sub2-p0cb.md).
+; The trap MACHINERY -- check_traps, set_state, ztrap_entry, the ISR side -- stays.
+; Each entry keeps its label, so ex_on / ex_ff_stmt / screen.asm reach it as before;
+; C says which statement (sub2/trapstmt.asm's TT_*). ex_sub2 runs the tenant and
+; jumps where it says: DE = the continuation (exec_stmt), HL = its cursor.
 ex_on_stop:
-                ld      de,ZTRAP+ZTI_STOP*ZTRAP_ENTSZ+1
-                jr      eos_common
+                ld      c,0                 ; TT_ON_STOP
+                jr      ex_sub2
     IF TRAPS_T4
-ex_on_sprite:                               ; ON SPRITE GOSUB <line> (traps T4)
-                ld      de,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ+1
+ex_on_sprite:
+                ld      c,1                 ; TT_ON_SPRITE
+                jr      ex_sub2
     ENDIF
-eos_common:                                 ; DE = &entry.handler; HL on the event token
-                push    de                  ; ...guarded: trap_line_link RETURNS in DE
-                inc     hl                  ; past STOP_TOKEN / SPRITE_TOKEN
-                call    req_gosub           ; D-NGRAM18
-                                            ; raises, and raise_error resets SP)
-                call    skip_spaces
-eos_line:                                   ; T5 enters HERE: `ON INTERVAL=n GOSUB` has
-                                            ; already consumed its own `=n` and GOSUB, so
-                                            ; it pushes &entry.handler itself and joins
-                                            ; the shared store below. Costs nothing -- a
-                                            ; label is zero bytes.
-                call    trap_line_link      ; CF=1 -> DE = handler LINK
-                jr      c,eos_store
-                ; NO LINE REFERENCE -> CLEAR THE HANDLER. This used to be
-                ; `jp nc,trap_syntax` (ERR 2) and that was a MEASURED DIVERGENCE,
-                ; caught by the T4 characterization round's family sweep
-                ; (spec-traps-t4-sprite.md §1.5): the reference ACCEPTS a bare
-                ; `ON <event> GOSUB` for all four events and clears that entry's
-                ; handler -- VG-8020 err=0 vs zerobas err=2, and `ON STOP GOSUB:
-                ; POKE&HD004,77` still writes 77 there, so the reference's parser
-                ; stops cleanly rather than swallowing the rest of the statement.
-                ; ex_on_strig and ex_on_key have always had this shape (an empty
-                ; list slot writes 0); STOP was the only one that did not, because
-                ; it takes a single line and so never went through the list loop.
-                ld      de,0
-eos_store:
-                pop     bc                  ; BC = &entry.handler (trap_line_link
-                                            ; clobbers BC, so it is popped only now)
-                ld      a,e
-                ld      (bc),a
-                inc     bc
-                ld      a,d
-                ld      (bc),a
-                jp      exec_stmt           ; continue the same line (as ON ERROR GOTO)
+    IF TRAPS_T3
+ex_on_key:
+                ld      c,2                 ; TT_ON_KEY
+                jr      ex_sub2
+ex_key_stmt:
+                ld      c,7                 ; TT_KEY
+                jr      ex_sub2
+    ENDIF
+ex_on_strig:
+                ld      c,3                 ; TT_ON_STRIG
+                jr      ex_sub2
+ex_strig_stmt:
+                ld      c,6                 ; TT_STRIG
+                jr      ex_sub2
+    IF TRAPS_T5
+ex_on_interval:
+                ld      c,4                 ; TT_ON_INTERVAL
+                jr      ex_sub2
+ex_interval:
+                ld      c,5                 ; TT_INTERVAL
+                jr      ex_sub2
+    ENDIF
+ex_sub2:
+                ld      ix,SUBROM_ENTRY_BASE_P0+3*SUB2_IDX_TRAPS
+                call    subrom2_call        ; HL / C in; DE / HL out
+                jp      c,subrom_absent_error
+                push    de
+                ret                         ; -> the continuation, HL = its cursor
 
 ; --- trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements ----
 ; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
@@ -3216,36 +3207,6 @@ trap_syntax     equ     pl_syntax   ; ERR 2 (malformed trap statement)
 ; dead stores / re-reads freed in front of the $72D4 pin. Header and contract
 ; travelled with it.
 
-; --- trap_line_link: resolve an OPTIONAL `$0E,lo,hi` line reference ----------
-; The shared handler-line resolver for the whole `ON <event> GOSUB` family: one
-; line for STOP, a comma-list with possibly-empty slots for STRIG (and, later,
-; KEY). Factoring it out of ex_on_stop pays for ex_on_strig and pre-pays T3.
-;   IN:  HL = token cursor.
-;   OUT: CF=1 -> DE = the handler LINK, HL past the 3-byte operand.
-;        CF=0 -> the token is not a line reference (an empty list slot / end of
-;                list); HL unmoved, DE undefined.
-; A reference to a line that does not exist aborts with Undefined line number
-; (ERR 8, VG-8020-measured case S5), exactly as GOTO does. Clobbers A, BC.
-trap_line_link:
-                ld      a,(hl)
-                call    is_lref             ; $0E / $0D (D-BASICROM)
-                jr      z,tll_have
-                or      a                   ; not a line ref -> CF = 0
-                ret
-tll_have:
-                call    lref_bc             ; BC = the handler line, HL past it
-                push    hl                  ; guard cursor across find_line_bc
-                call    find_line_bc        ; CF set + HL = link addr if found
-                jp     nc,tll_undef
-                ex      de,hl               ; DE = handler LINK
-                pop     hl                  ; HL = cursor
-                scf
-                ret
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ers_undef,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-tll_undef       equ     ers_undef
 
     IF TRAPS_T5
 ; ===========================================================================
@@ -3291,82 +3252,6 @@ iv_m_no:
 ; (iv_seq, the spelling above's `ld de,iv_seq` reads, lives in basic/graphics.asm
 ; since D-WSZERO S14g-d: it refills bytes freed in front of the $6CF3 pin)
 
-; --- ex_interval: INTERVAL ON | OFF | STOP -----------------------------------
-; Entry: HL past the compound. Pure state, exactly like `STOP ON/OFF/STOP`.
-; NO EDGE-SHADOW SEED, and no counter reload -- both MEASURED, not inherited:
-;   * no shadow because the event is GENERATED, not sampled, so there is no
-;     level to de-bounce (contrast STRIG/KEY, which must seed);
-;   * no reload because `OFF` then `ON` does NOT restart the period on the
-;     reference (§1.4 H3_off_reloads: the next fire lands inside a 60-frame
-;     window after re-enabling, where a reload would have put it 100 frames out).
-;     Only the ARMING statement reloads. set_state touches the state byte alone,
-;     so this falls out for free -- it is recorded here because it is a fact that
-;     was checked, not an omission.
-ex_interval:
-                call    skip_spaces         ; returns A = (HL)
-                call    onoff_decode        ; A = the ZTS_ state
-                jp      nc,trap_syntax      ; bare `INTERVAL` / `INTERVAL FOO` -> ERR 2
-ei_set:
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl                  ; guard the cursor across set_state
-                ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
-                call    set_state           ; (preserves HL)
-                ; --- RELEASE A LATCH THAT SURVIVED THE STATE CHANGE -----------
-                ; ⚠️ Not optional, and NOT something the shared machinery does for
-                ; us -- three gate cases failed on exactly this (G_stop_latch 2/1,
-                ; P_on_reloads 2/1, G2_stop_release 1/0, reference/zerobas).
-                ; event_poll raises TRAPPEND when it latches, but check_traps
-                ; CLEARS TRAPPEND whenever it finds nothing FIRABLE -- and a
-                ; STOPped entry is not firable. So the PENDING bit survives the
-                ; suspension exactly as the reference requires, and then nothing
-                ; ever looks at it again: `INTERVAL ON` restored the state but the
-                ; dispatcher had already been told to stop asking.
-                ; T2/T3/T4 never hit this because their sources re-latch every
-                ; frame while ON, which re-raises TRAPPEND on its own; INTERVAL's
-                ; latch is a ONE-SHOT (§1.3 G2: three elapsed periods release
-                ; exactly one), so it has to re-raise here.
-                ; OFF needs no guard: set_state clears PENDING, so bit 7 is 0.
-                bit     7,(hl)
-                jr      z,ei_done
-                call    trap_pend   ; make check_traps look once more
-ei_done:
-                jp      pop_exec            ; continue the line (`INTERVAL ON:...`)
-
-; --- ex_on_interval: ON INTERVAL = <expr> GOSUB [<line>] ---------------------
-; Entry: HL past the compound, on the `=`.
-;
-; THE PERIOD ARGUMENT IS THE ADDRESS DOMAIN, and that is a measurement, not a
-; convenience: §1.2 puts 255/256/32767/32768/65535/-1/-32768 all inside it,
-; 2.7 -> 2 (truncate), and 65536 / -32769 / **-65531** outside it with ERR 6.
-; -65531 is the decisive one -- under a raw mod-65536 reading it would be a
-; perfectly legal 5-frame period. So this is `eval_addr`, the same conversion
-; POKE and `TIME=n` use, which is why the TIME slice landed first.
-; n = 0 is the one addition: ERR 5, not ERR 6.
-ex_on_interval:
-                call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
-                jp      nz,trap_syntax      ; `ON INTERVAL GOSUB 800` -> ERR 2
-                inc     hl
-                call    eval_addr           ; DE = n (checked address domain)
-                call    check_fperr_only    ; outside -32768..65535 -> Overflow (ERR 6)
-                ld      a,d
-                or      e
-                jp      z,eoi_err5          ; ON INTERVAL=0 -> Illegal function call
-                ld      (ZINTVAL),de        ; the period...
-                ld      (ZINTCNT),de        ; ...and RELOAD the live counter: arming
-                                            ; restarts the period (§1.4 P2, measured --
-                                            ; re-arming mid-run moves the next fire)
-                call    req_gosub           ; D-NGRAM18
-                call    skip_spaces
-                ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
-                push    de                  ; eos_line pops it as the store target
-                jp      eos_line            ; shared tail: optional line ref, else CLEAR
-                                            ; the slot (§1.6 -- the reference accepts a
-                                            ; bare `ON INTERVAL=n GOSUB` and disarms)
-; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
-; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
-; The NAME and every call site survive; un-alias here to give this site a
-; distinct face and nothing else moves.
-; (eoi_err5 = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
     ENDIF
 
 ; --- ex_ff_stmt: the `$FF <selector>` STATEMENT fork -------------------------
@@ -3388,201 +3273,3 @@ ex_ff_stmt:
     ENDIF                                   ; ex_mid_stmt's Syntax error is unchanged
                 jp      ex_mid_stmt
 
-; --- ex_on_strig: ON STRIG GOSUB [<l0>][,<l1>[,<l2>[,<l3>[,<l4>]]]] ----------
-; Arm up to five trigger handlers. Reached from ex_on's sibling peek with HL on
-; the STRIG selector byte ($A3; ex_on consumed the $FF prefix).
-; VG-8020-measured semantics (spec-traps-t2-strig.md §1.3):
-;   * the list is POSITIONAL -- slot n is trigger n (R5);
-;   * an EMPTY slot writes 0, i.e. it CLEARS that trigger's handler (S3);
-;   * absent trailing slots are left untouched (D-T2-5);
-;   * state is NOT touched -- arm != enable, `STRIG(n) ON` enables (Q5);
-;   * a 6th slot is a DELIBERATE DEVIATION: the reference runs off the end of its
-;     handler table and takes the machine down (case S2, reproducible x3); we
-;     raise a trappable ERR 2 instead (D-T2-4).
-; Flow continues on the same line.
-;
-; 💰 D-ONTRAPMERGE (2026-09-30): THIS LOOP IS ALSO ON KEY GOSUB's. The two were
-; byte-for-byte the same 46 B but for the slot limit (5 / 10) and the trap index
-; (ZTI_STRIG0+C / ZTI_KEY1+9-C, the reversed KEY band). The limit rides in B --
-; which the loop already guards across trap_line_link -- and the index arm tells
-; the two apart by B's bit 3 (5 = %0101, 10 = %1010). ex_on_key sets B = 10 and
-; jumps in at eon_trap_in. The T3 spec's "duplicate, specialise" verdict priced
-; the constants as RAM PARAMETERS (76 B); in a register they cost 8.
-ex_on_strig:
-                ld      bc,5*256+0          ; B = slot limit, C = slot index 0..4
-eon_trap_in:                                ; ex_on_key joins with B = 10
-                inc     hl                  ; past the STRIG selector byte / KEY token
-                call    req_gosub           ; D-NGRAM18
-eostr_lp:
-                call    skip_spaces
-                push    bc                  ; trap_line_link clobbers BC (find_line_bc)
-                call    trap_line_link
-                pop     bc                  ; pop does not disturb CF
-                jr      c,eostr_store
-                ld      de,0                ; empty slot -> CLEAR this trigger's handler
-eostr_store:
-                push    hl                  ; guard the cursor
-                push    de                  ; guard the LINK across ztrap_entry (clobbers DE)
-                ld      a,c
-    IF TRAPS_T3
-                bit     3,b                 ; B = 10: ON KEY -- the REVERSED band
-                jr      z,eostr_idx
-                neg
-                add     a,ZTI_KEY1+9-ZTI_STRIG0 ; + ZTI_STRIG0 below = ZTI_KEY1+9-C
-eostr_idx:
-    ENDIF
-                add     a,ZTI_STRIG0
-                call    ztrap_entry         ; HL = &ZTRAP[3+C] (the state byte)
-                pop     de
-                inc     hl                  ; -> the handler field
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
-                pop     hl                  ; HL = cursor
-                inc     c
-                call    skip_comma          ; another slot?
-                jp      nz,exec_stmt        ; no -> statement done, continue the line
-                inc     hl                  ; consume the comma
-                ld      a,c
-                cp      b                   ; slots 0..B-1 only
-                jp      nc,trap_syntax      ; a 6th STRIG slot -> trappable ERR 2
-                                            ; (D-T2-4); an 11th KEY slot -> ERR 2
-                                            ; (§1.4 K15), as the reference raises
-                jr      eostr_lp
-
-; --- ex_strig_stmt: STRIG(n) ON | OFF | STOP ---------------------------------
-; The D-I-5 handoff: this replaces input-devices' blanket ERR 2 for `STRIG(n)`
-; used as a statement. Reached from the interpreter's $FF statement dispatch with
-; HL on the STRIG selector byte. VG-8020-measured (spec-traps-t2-strig.md §1.3):
-; n is a normal numeric expression truncated to a byte (`STRIG(.4) ON` == trigger
-; 0, S8), n > 4 is ERR 5 (Q11), and a bare `STRIG(0)` with no ON/OFF/STOP is a
-; trappable ERR 2 (Q10). `STRIG(0)ON` unspaced is legal (S4) -- free, since the
-; crunched form has no space to skip.
-ex_strig_stmt:
-                call    inc_skip_paren     ; past the STRIG selector byte
-                jp      nz,trap_syntax
-                call    inc_eval            ; DE = n; HL past the expression
-                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
-                cp      5                   ; triggers 0..4
-                jp      nc,strig_illegal    ; STRIG(5..255) -> ERR 5
-                add     a,ZTI_STRIG0
-                push    hl                  ; guard the cursor across ztrap_entry
-                call    ztrap_entry         ; HL = &ZTRAP[3+n]
-                ex      de,hl               ; DE = the entry pointer, kept until the end
-                pop     hl                  ; HL = cursor
-                call    skip_spaces
-                cp      ')'
-                jp      nz,trap_syntax
-                rst    $10     
-                call    onoff_decode        ; STRIG(n) ON|OFF|STOP; DE (the entry
-                                            ; pointer) survives -- see its header
-                jp      nc,trap_syntax      ; bare `STRIG(n)` / junk -> trappable ERR 2
-                ld      b,a                 ; B = the state, as the seed logic below wants
-strig_set:
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl                  ; guard the exec-continue cursor
-                ex      de,hl               ; HL = the entry pointer
-                ; Decide "seed the edge shadow?" == (new == ON && old != ON) BEFORE
-                ; set_state, which clobbers A/B/C and rewrites the state bits. Seeding
-                ; means "assume pressed", so a trigger already held when the trap is
-                ; enabled cannot manufacture a spurious 0->1 edge (VG-8020 R1/R2/R3).
-                ; The old != ON half matters: re-issuing `STRIG(n) ON` while already ON
-                ; must be a no-op, or a program that re-enables on every statement
-                ; would hold the shadow set forever and never see a real press.
-                ld      a,b
-                cp      ZTS_ON
-                jr      nz,strig_noseed     ; not enabling
-                ld      a,(hl)
-                and     ZTS_STATE_MASK
-                cp      ZTS_ON              ; ZF=1 iff already ON -> not a transition
-                jr      strig_flag
-strig_noseed:   xor     a                   ; ZF = 1 -> do not seed
-strig_flag:     push    af                  ; carry the decision across set_state
-                ld      a,b                 ; A = the new state
-                call    set_state           ; maintains the TRAPENA "# ON" count
-                pop     af
-                jr      z,strig_done
-                set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
-strig_done:
-                jp      pop_exec            ; continue the line -- a bare `ret` here would
-                                            ; SWALLOW the rest of it (the T1 es_set lesson)
-; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
-; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
-; The NAME and every call site survive; un-alias here to give this site a
-; distinct face and nothing else moves.
-; (strig_illegal = gb_illegal: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
-
-    IF TRAPS_T3
-; ===========================================================================
-; Interrupt-traps T3 (KEY) — the parse surface, DUPLICATED AND SPECIALISED.
-; ===========================================================================
-; docs/spec-traps-t3-key.md §5/§7.5. These are deliberately NOT a generalisation
-; of the STRIG parsers above, even though they are visibly the same shape. That
-; was tried and MEASURED (§7.2): turning the five differing constants into RAM
-; parameters cost **76 B on its own**, before a single byte of KEY behaviour --
-; more than the constants it replaced, because an immediate operand inside an
-; instruction is free while a parameter costs a RAM byte, a store per setter, a
-; load per use and a helper call. Generalisation pays across MANY callers; with
-; two it is a net loss. So: duplicate, specialise, and let each copy be small.
-; 🔴 EXCEPT THE ON ... GOSUB LOOP, SINCE D-ONTRAPMERGE (2026-09-30): its only
-; differences were two constants, and a REGISTER carries them for 8 B where RAM
-; cost 76 -- so ex_on_key is now a 6-byte entry into ex_on_strig's loop (-44 B).
-; The verdict above stands for the other parsers and for RAM parameters.
-;
-; The KEY band is laid out REVERSED -- KEY 10 at ZTI_KEY1, KEY 1 at ZTI_KEY1+9 --
-; so ct_find's ASCENDING scan services the family high-numbered-first as the
-; reference does (§1.3 V2: F1+F2+F3 in one frame -> 3, 2, 1). That costs zero
-; bytes in ct_find and leaves T2's STRIG scan order untouched (D-T3-4).
-
-; --- ex_on_key: ON KEY GOSUB <l1>[,<l2>...[,<l10>]] -------------------------
-; Reached from ex_on's peek with HL on the KEY token -- a SINGLE-byte token
-; ($CC), so unlike STRIG's `$FF $A3` there is no prefix to put back. Positional,
-; slot k = KEY k+1 (§1.4 K8); an empty slot clears that key's handler; absent
-; trailing slots are untouched -- all exactly as T2. An 11th slot is ERR 2, and
-; here NO deviation is needed: the reference raises a clean ERR 2 itself, unlike
-; T2's 6th STRIG slot which takes the machine down.
-ex_on_key:
-                ld      bc,10*256+0         ; B = slot limit, C = slot index 0..9
-                jp      eon_trap_in         ; D-ONTRAPMERGE: STRIG's loop, whose
-                                            ; index arm reverses the band for B = 10
-                                            ; (it lived in basic/field.asm as a pin
-                                            ; refill 2026-10-15..16; D-BASICINT2's
-                                            ; layout sent it home)
-
-; --- ex_key_stmt: KEY(n) ON | OFF | STOP ------------------------------------
-; Reached from ex_key's `(` peek (basic/screen.asm) with HL on the `(`, tested
-; AHEAD of ON/OFF so the display form `KEY ON`/`KEY OFF` keeps working (K10).
-; n is a normal numeric expression truncated to a byte; KEY(0) and KEY(11) are
-; both ERR 5 (§1.4 K11/K12), the same shape as T2's STRIG(5).
-; SHORTER than ex_strig_stmt despite the duplication, because KEY needs NO edge
-; shadow: it is a DELIVERY trap, so a key already held when the trap is enabled
-; simply produces its next repeat delivery -- there is no spurious edge to
-; suppress, and T2's whole seed-decision block disappears (§2).
-ex_key_stmt:
-                call    inc_eval            ; DE = n; HL past the expression
-                call    get_byte_arg        ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
-                dec     a                   ; 1..10 -> slot 0..9; KEY(0) wraps to 255
-                cp      10
-                jp      nc,strig_illegal    ; KEY(0) and KEY(11..255) -> ERR 5
-                ld      c,a
-                ld      a,ZTI_KEY1+9
-                sub     c                   ; REVERSED band
-                push    hl                  ; guard the cursor across ztrap_entry
-                call    ztrap_entry
-                ex      de,hl               ; DE = the entry pointer, kept to the end
-                pop     hl                  ; HL = cursor
-                call    skip_spaces
-                cp      ')'
-                jp      nz,trap_syntax
-                rst    $10     
-                call    onoff_decode        ; KEY(n) ON|OFF|STOP (STOP == OFF, D-T3-6);
-                                            ; DE (the entry pointer) survives
-                jp      nc,trap_syntax      ; bare `KEY(n)` / junk -> trappable ERR 2
-                ld      b,a
-key_set:
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl                  ; guard the exec-continue cursor
-                ex      de,hl               ; HL = the entry pointer
-                ld      a,b
-                jp      trap_state_done     ; D-CARVE2 (-4 B, main page 1)
-    ENDIF

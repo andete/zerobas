@@ -4773,7 +4773,26 @@ item — do **one item per session** to keep context lean.
       🔴 The IX row read `$00` once: `sub2/p0cb.asm` was missing from the Makefile's
       SUB2_PARTS, so sub2.rom was NOT rebuilt and the probe ran the previous image --
       an inert build, caught because the new row's value was impossible. Fixed.
-      ➡️ SLICE B: the trap statements (spec §5).
+      ✅ **SLICE B DONE 2026-10-21: THE EVENT-TRAP STATEMENTS LEFT MAIN.** ON STOP /
+      SPRITE / STRIG / KEY / INTERVAL GOSUB, INTERVAL ON|OFF|STOP, STRIG(n) and KEY(n)
+      ON|OFF|STOP are sub2/trapstmt.asm's (`trap_tenant`, page-0 index 3); main keeps
+      a 4 B stub per entry (`ld c,TT_* / jr ex_sub2`, each label kept for ex_on /
+      ex_ff_stmt / screen.asm) and `ex_sub2` (12 B: subrom2_call, then `push de /
+      ret` to the continuation the tenant returns). Every main routine the arms use is
+      a p0cb call (18 `p0_*` imports); a raise through p0cb never returns, as the `jp
+      nz,trap_syntax` it replaces did not; a `jp pop_exec` became the tenant popping
+      its own cursor and returning exec_stmt -- no main continuation is ever reached
+      through p0cb. STRIG(n) / KEY(n)'s shared middle is one copy (`tt_entry_paren`).
+      The trap machinery (check_traps, set_state, ztrap_entry, iv_match) stays.
+      📏 Walls (2026-10-21): main page 1 tail 36 -> 291 B free (🔮 ~250: HIT); low and
+      the pin pads unchanged; sub2 page 0 16084 -> 15619 B free.
+      Witness: interval / key / sprite / stop / strig / trapdepth / trapsvc /
+      error-trap and sub2 acceptance all green. 🔪 K-T1 (ON KEY's reversed band not
+      reversed): key-trap-acceptance RED on exactly the positional rows --
+      F_positional, H_shift_is_key6, AA_empty_slot_midlist, L_key4
+      ([`traps_knife_t1.out`](scratchpad/traps_knife_t1.out)); sub2.rom 673b05a5 ->
+      c5c6cbea -> 673b05a5. 🔮 HIT. Docs: STRIG.md, SPRITE.md, ON.md; examples PASS 3.
+      ➡️ SLICE C: the file family (spec §5).
 
 - [ ] 💡 **D-TWOVARIANT — "BEST WITH SUB ROM" AND "GOOD WITHOUT SUB ROM" (Joost
       2026-10-21, an idea, NOT a plan)**
@@ -11605,7 +11624,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37538 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37557 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11771,7 +11790,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16633 (T-6FE392)8 (T-529ABE)` from `TODO.md:29470 (T-529ABE)`: a
+      `TODO.md:16652 (T-6FE392)8 (T-529ABE)` from `TODO.md:29489 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17480,7 +17499,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29470 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29489 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

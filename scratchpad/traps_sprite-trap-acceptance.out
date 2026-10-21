@@ -1,0 +1,138 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_sprite_trap.py  \
+	   
+ref = Philips_VG_8020
+zb  = C-BIOS_MSX1_EU_REPACK_DISK
+
+PASS  [ref] A_hit                cnt= 57 err=0 aux=  0 aux2=  0 aux3=  0 t=55
+PASS  [ref] A_hit                fires
+PASS  [zb ] A_hit                cnt=250 err=0 aux=  0 aux2=  0 aux3=  0 t=57
+PASS  [zb ] A_hit                fires
+PASS  [ref] A2_miss              cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=55
+PASS  [zb ] A2_miss              cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=55
+PASS  [zb ] A2_miss              == ref on cnt,err
+PASS  [ref] B_armed_not_on       cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=52
+PASS  [zb ] B_armed_not_on       cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=52
+PASS  [zb ] B_armed_not_on       == ref on cnt,err
+PASS  [ref] C_off                cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=55
+PASS  [zb ] C_off                cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=55
+PASS  [zb ] C_off                == ref on cnt,err
+PASS  [ref] E_no_handler         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=43
+PASS  [zb ] E_no_handler         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=43
+PASS  [zb ] E_no_handler         == ref on cnt,err
+PASS  [ref] G_stop_latch         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] G_stop_latch         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] G_stop_latch         == ref on cnt,err
+PASS  [ref] H_off_latch          cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] H_off_latch          cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=73
+PASS  [zb ] H_off_latch          == ref on cnt,err
+PASS  [ref] R_bare_disarms       cnt=  0 err=0 aux= 31 aux2=  0 aux3=  0 t=88
+PASS  [ref] R_bare_disarms       armed fires
+PASS  [ref] R_bare_disarms       disarmed is silent
+PASS  [zb ] R_bare_disarms       cnt=  0 err=0 aux= 35 aux2=  0 aux3=  0 t=88
+PASS  [zb ] R_bare_disarms       armed fires
+PASS  [zb ] R_bare_disarms       disarmed is silent
+PASS  [zb ] R_bare_disarms       == ref on err
+PASS  [ref] S_rearm              cnt= 32 err=0 aux= 31 aux2=  0 aux3= 31 t=97
+PASS  [ref] S_rearm              armed fires
+PASS  [ref] S_rearm              disarmed is silent
+PASS  [ref] S_rearm              re-arm resumes
+PASS  [zb ] S_rearm              cnt= 35 err=0 aux= 33 aux2=  0 aux3= 35 t=97
+PASS  [zb ] S_rearm              armed fires
+PASS  [zb ] S_rearm              disarmed is silent
+PASS  [zb ] S_rearm              re-arm resumes
+PASS  [zb ] S_rearm              == ref on err
+PASS  [ref] N_statfl_on          cnt= 31 err=0 aux=191 aux2=191 aux3=  0 t=82
+PASS  [ref] N_statfl_on          fires
+PASS  [zb ] N_statfl_on          cnt= 54 err=0 aux=191 aux2=191 aux3=  0 t=82
+PASS  [zb ] N_statfl_on          fires
+PASS  [zb ] N_statfl_on          == ref on err,aux,aux2
+PASS  [ref] N2_statfl_off        cnt=  0 err=0 aux=191 aux2=191 aux3=  0 t=82
+PASS  [zb ] N2_statfl_off        cnt=  0 err=0 aux=191 aux2=191 aux3=  0 t=82
+PASS  [zb ] N2_statfl_off        == ref on cnt,err,aux,aux2
+PASS  [ref] J_syn_on_goto        cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] J_syn_on_goto        cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] J_syn_on_goto        == ref on cnt,err
+PASS  [ref] K_syn_bare           cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] K_syn_bare           cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] K_syn_bare           == ref on cnt,err
+PASS  [ref] P_syn_junk           cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] P_syn_junk           cnt=  0 err=2 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] P_syn_junk           == ref on cnt,err
+PASS  [ref] M_undef_line         cnt=  0 err=8 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] M_undef_line         cnt=  0 err=8 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] M_undef_line         == ref on cnt,err
+PASS  [ref] L_syn_noline         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] L_syn_noline         cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] L_syn_noline         == ref on cnt,err
+PASS  [ref] Q1_stop_noline       cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q1_stop_noline       cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q1_stop_noline       == ref on cnt,err
+PASS  [ref] Q2_strig_noline      cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q2_strig_noline      cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q2_strig_noline      == ref on cnt,err
+PASS  [ref] Q3_key_noline        cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q3_key_noline        cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q3_key_noline        == ref on cnt,err
+PASS  [ref] Q5_sprite_then       cnt=  0 err=0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q5_sprite_then       cnt=  0 err=0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q5_sprite_then       == ref on cnt,err,aux
+PASS  [ref] Q6_stop_then         cnt=  0 err=0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q6_stop_then         cnt=  0 err=0 aux= 77 aux2=  0 aux3=  0 t=28
+PASS  [zb ] Q6_stop_then         == ref on cnt,err,aux
+PASS  [ref] I_screen0            cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=46
+PASS  [zb ] I_screen0            cnt=  0 err=0 aux=  0 aux2=  0 aux3=  0 t=46
+PASS  [zb ] I_screen0            == ref on cnt,err
+PASS  [ref] T_tenant             cnt= 72 err=0 aux=154 aux2=  0 aux3=  0 t=79
+PASS  [ref] T_tenant             still fires inside a tenant window
+PASS  [zb ] T_tenant             cnt=201 err=0 aux=188 aux2=  0 aux3=  0 t=83
+PASS  [zb ] T_tenant             still fires inside a tenant window
+PASS  [ref] V_statfl_src_hit     cnt=  0 err=0 aux=200 aux2=191 aux3=  0 t=58
+PASS  [ref] V_statfl_src_hit     STATFL bit5 set on nearly every frame
+PASS  [zb ] V_statfl_src_hit     cnt=  0 err=0 aux=199 aux2=191 aux3=  0 t=58
+PASS  [zb ] V_statfl_src_hit     STATFL bit5 set on nearly every frame
+PASS  [ref] V2_statfl_src_miss   cnt=  0 err=0 aux=  0 aux2=159 aux3=  0 t=58
+PASS  [ref] V2_statfl_src_miss   no collision -> bit5 clear
+PASS  [zb ] V2_statfl_src_miss   cnt=  0 err=0 aux=  0 aux2=159 aux3=  0 t=58
+PASS  [zb ] V2_statfl_src_miss   no collision -> bit5 clear
+PASS  [zb ] V2_statfl_src_miss   == ref on aux,aux2
+PASS  [ref] F_cadence            trap  299/300  = 0.997  sync 1358/300  = 4.527  ceiling=1.00 period=0      err=0 t=65
+PASS  [ref] F_cadence            apparatus: both windows ran their full length
+PASS  [ref] F_cadence            the handler fits inside a frame (rate2 > 1)
+PASS  [ref] F_cadence            fires ONCE PER FRAME, and never twice
+PASS  [zb ] F_cadence            trap  300/300  = 1.0    sync  947/300  = 3.157  ceiling=1.00 period=0      err=0 t=65
+PASS  [zb ] F_cadence            apparatus: both windows ran their full length
+PASS  [zb ] F_cadence            the handler fits inside a frame (rate2 > 1)
+PASS  [zb ] F_cadence            fires ONCE PER FRAME, and never twice
+PASS  [zb ] F_cadence            == ref on frames1,frames2
+PASS  [ref] F_cadence_period     trap  300/300  = 1.0    sync  360/300  = 1.2    ceiling=1.00 period=1.0    err=0 t=86
+PASS  [ref] F_cadence_period     apparatus: both windows ran their full length
+PASS  [ref] F_cadence_period     apparatus: the stamp pair is phase 1's
+PASS  [ref] F_cadence_period     no fire lost: the period is at most the handler's own cost
+PASS  [ref] F_cadence_period     and never faster than one fire per frame
+PASS  [ref] F_cadence_period     rate == min(1/frame, the handler's own rate)
+PASS  [zb ] F_cadence_period     trap  204/300  = 0.68   sync  190/300  = 0.633  ceiling=1.58 period=1.45   err=0 t=86
+PASS  [zb ] F_cadence_period     apparatus: both windows ran their full length
+PASS  [zb ] F_cadence_period     apparatus: the stamp pair is phase 1's
+PASS  [zb ] F_cadence_period     no fire lost: the period is at most the handler's own cost
+PASS  [zb ] F_cadence_period     and never faster than one fire per frame
+PASS  [zb ] F_cadence_period     rate == min(1/frame, the handler's own rate)
+PASS  [zb ] F_cadence_period     == ref on frames1,frames2
+PASS  [ref] F_cadence_off        trap    0/300  = 0.0    sync 1358/300  = 4.527  ceiling=1.00 period=0      err=0 t=65
+PASS  [ref] F_cadence_off        apparatus: both windows ran their full length
+PASS  [ref] F_cadence_off        armed but never enabled: ZERO fires
+PASS  [ref] F_cadence_off        the same handler, called by the program, IS counted
+PASS  [zb ] F_cadence_off        trap    0/300  = 0.0    sync  947/300  = 3.157  ceiling=1.00 period=0      err=0 t=65
+PASS  [zb ] F_cadence_off        apparatus: both windows ran their full length
+PASS  [zb ] F_cadence_off        armed but never enabled: ZERO fires
+PASS  [zb ] F_cadence_off        the same handler, called by the program, IS counted
+PASS  [zb ] F_cadence_off        == ref on fires1,frames1,frames2
+
+ALL PASS

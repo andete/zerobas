@@ -5054,6 +5054,9 @@ SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/be
 SUB2_IDX_P0TEST equ     2       ; zerobas-sub2 PAGE-0 index: p0cb_selftest (D-P0CB,
                                 ; docs/spec-sub2-p0cb.md): the page-0 call-back proven by
                                 ; injection (probes/basic/basic_probe_sub2_p0cb.py)
+SUB2_IDX_TRAPS  equ     3       ; zerobas-sub2 PAGE-0 index: trap_tenant -- the event-trap
+                                ; STATEMENTS (D-P0CB slice B, sub2/trapstmt.asm), entered
+                                ; from main's ex_sub2 with HL = cursor, C = which one
 CLPRIM          equ     $F38C   ; MSX work area: the BIOS's RAM inter-slot call primitive,
                                 ; copied there at boot (C-BIOS src/slot.asm m_clprim);
                                 ; zerobas-sub2's p0cb calls main through it (D-P0CB) (14)

@@ -136,9 +136,11 @@ any, are on their pages.
 
 ## Where it lives
 
-`ex_on_interval` in [basic/program.asm](../../basic/program.asm) arms the
-trap; the shared trap machinery (`trap_line_link`, the per-frame poll) serves
-all five interrupt traps.
+`ON INTERVAL` and the other `ON … GOSUB` trap statements are parsed in the
+second sub ROM since 2026-10-21 ([sub2/trapstmt.asm](../../sub2/trapstmt.asm),
+reached from `ex_on` in [basic/program.asm](../../basic/program.asm)); the
+shared trap machinery (the per-frame poll in
+[basic/traps.asm](../../basic/traps.asm)) serves all five interrupt traps.
 
 ## Related concepts
 

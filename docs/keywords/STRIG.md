@@ -106,9 +106,10 @@ because its rows need a key held or a button pressed.
 
 - The function: `ev_ff_strig` in [basic/expr.asm](../../basic/expr.asm)
   checks the argument (`ev_ff_ckstrig`) and calls the BIOS routine `GTTRIG`.
-- The statement: `ex_strig_stmt` in
-  [basic/program.asm](../../basic/program.asm); the trap is polled from the
-  timer interrupt in [basic/traps.asm](../../basic/traps.asm).
+- The statement: `tt_strig` in [sub2/trapstmt.asm](../../sub2/trapstmt.asm),
+  in the second sub ROM since 2026-10-21 (main's `ex_strig_stmt` hands it
+  over); the trap is polled from the timer interrupt in
+  [basic/traps.asm](../../basic/traps.asm).
 - Design notes: [spec-basic-input-devices.md](../spec-basic-input-devices.md).
 
 ## Related concepts

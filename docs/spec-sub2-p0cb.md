@@ -5,9 +5,9 @@ SPDX-License-Identifier: 0BSD
 
 # zerobas-sub2 page-0 call-back (`p0cb`): moving cold statements out of main
 
-Status: **slice A BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 18h and a
-self-test, gated by `make sub2-acceptance` on both repack machines. Slices B-D are not
-built.
+Status: **slices A and B BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 18h
+and a self-test (`make sub2-acceptance`, both repack machines), then the event-trap
+statements moved (main page 1 +255 B). Slices C-D are not built.
 
 ## 1. Why
 

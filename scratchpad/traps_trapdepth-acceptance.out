@@ -1,0 +1,31 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_trapdepth.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK 
+
+row              vg8020        cf3300            zb   note
+d.depth0       4071 7 0      3302 7 0      3287 7 0   plain recursion depth, no trap at all
+d.depth1       4046 7 0      3277 7 0      3263 7 0   ...after ONE abandoned dispatch
+d.depth20     4016 7 20     3247 7 20     3225 7 20   ...after TWENTY abandoned dispatches
+d.ctl20        4040 7 0      3271 7 0      3256 7 0   the SAME program, trap unarmed -- the cost of 20 dispatches
+d.selfarm           9 0           9 0           9 0   GUARD: a handler that re-arms its OWN trap, then RETURNs
+
+  vg8020   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  cf3300   20 abandoned dispatches cost  24 frames (1.20/dispatch)   reproduces §10
+  zb       20 abandoned dispatches cost  31 frames (1.55/dispatch)   leaks, like both references
+
+d.depth0   ref pinned '4071 7 0'; zb '3287 7 0' (>= 1000, a pool)
+d.depth1   ref pinned '4046 7 0'; zb '3263 7 0' (>= 1000, a pool)
+d.depth20  ref pinned '4016 7 20'; zb '3225 7 20' (>= 1000, a pool)
+d.ctl20    ref pinned '4040 7 0'; zb '3256 7 0' (>= 1000, a pool)
+d.selfarm  GUARD  all three must read '9 0': ok
+
+rows 5  pinned 4  guards 1  red 0
+TRAPDEPTH: PASS
+refcache: 0 hit, 3 miss, 3 stored

@@ -35,8 +35,8 @@ vlf_unset_int   equ     vptr_none
                                 ; (was basic/vars.asm)
 rn_in          equ     in_msg              ; D-ISLDATA2: both were " in ",0 -- one copy (5 B)
                                 ; (was basic/program.asm)
-eoi_err5        equ     gb_illegal  ; ERR 5 (ON INTERVAL=0)
-                                ; (was basic/program.asm)
+; (eoi_err5 -- ON INTERVAL=0's ERR 5 -- gone with the trap statements to
+; sub2/trapstmt.asm, D-P0CB slice B 2026-10-21: tt_illegal raises gb_illegal there)
 fchk_ifc        equ     gb_illegal  ; ERR 5 (err_msgtab[5])
                                 ; (was basic/files.asm)
 ex_donothing    equ     gb_illegal
@@ -61,5 +61,4 @@ pu_ifc          equ     gb_illegal
                                 ; (was basic/printusing.asm)
 snd_illegal     equ     gb_illegal  ; ERR 5 (register out of 0..13)
                                 ; (was basic/sound.asm)
-strig_illegal   equ     gb_illegal  ; ERR 5 (STRIG n out of 0..4, KEY n out of 1..10)
-                                ; (was basic/program.asm)
+; (strig_illegal -- STRIG(n) / KEY(n)'s ERR 5 -- gone the same way, D-P0CB slice B)

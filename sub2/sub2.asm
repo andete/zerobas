@@ -79,6 +79,8 @@ sub2_p0_table:
                                                 ;   zerobas-sub page 0 by D-TOKOVF
                 jp      p0cb_selftest           ; index 2 (SUB2_IDX_P0TEST): the
                                                 ;   page-0 call-back, proven (D-P0CB)
+                jp      trap_tenant             ; index 3 (SUB2_IDX_TRAPS): the event-
+                                                ;   trap statements (D-P0CB slice B)
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -97,6 +99,7 @@ sub2_p0_ping:
 ; basic-resident-abi.inc's p0cb class (tools/gen_resident_abi.py), which page 1
 ; includes below (pasmo resolves the forward references).
                 include "sub2/p0cb.asm"
+                include "sub2/trapstmt.asm"
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END
 ; (tools/check_sub_walls.py --sub2, a step of `make basic-reloc`).

@@ -436,6 +436,25 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_outdo=outdo",           # sub2's RST 18h (s2_outdo)
     "p0_bp_ret=bp_ret",         # a bare `ret`: p0cb_selftest's register round trip
     "p0_skip_spaces=skip_spaces",  # p0cb_selftest: a page-1 routine with a contract
+    # D-P0CB slice B (2026-10-21): the event-trap statements, sub2/trapstmt.asm.
+    "p0_exec_stmt=exec_stmt",   # the continuation every arm returns in DE
+    "p0_pl_syntax=pl_syntax",   # trap_syntax: a trappable ERR 2
+    "p0_gb_illegal=gb_illegal",  # strig_illegal / eoi_err5: ERR 5
+    "p0_ers_undef=ers_undef",   # tll_undef: ERR 8
+    "p0_req_gosub=req_gosub",
+    "p0_lref_bc=lref_bc",
+    "p0_find_line_bc=find_line_bc",
+    "p0_onoff_decode=onoff_decode",
+    "p0_set_state=set_state",
+    "p0_trap_pend=trap_pend",
+    "p0_skip_eq=skip_eq",
+    "p0_eval_addr=eval_addr",
+    "p0_check_fperr_only=check_fperr_only",
+    "p0_ztrap_entry=ztrap_entry",
+    "p0_skip_comma=skip_comma",
+    "p0_inc_skip_paren=inc_skip_paren",
+    "p0_inc_eval=inc_eval",
+    "p0_get_byte_arg=get_byte_arg",
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)
