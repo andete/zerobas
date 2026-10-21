@@ -11970,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37962 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37975 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -36509,6 +36509,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       suspect. ➡️ SLICE 3a: the info / console set ($02 $06 $0B $0C $0D $0E $18 $19 $1B $2A $2C
       $2E -- most have DOS-side bodies already: conout_body, the $553C GDATE entry); 3b: the
       FCB set ($13 $17 $21-$24 $26 $28) and the three differing answers; each against these rows.
+      ✅ **SLICE 3a DONE 2026-10-21:** bdos_more's tail jumps to bdos_more2, a (function,
+      handler) table in kernel.asm's $53AA fill: $0B const_body, $0E seldsk_drv_body, $18
+      login_body, $19 curdrv_body, $1B getalloc_body, $2A gdate_body, $2E verify_body (the
+      DOS-side bodies), and own bb_ bodies where the BASIC-side answer needs more than the DOS
+      kernel's finishing gives: $02 CONOUT (A = the character), $06 DIRIO (E = $FF: a key or 0,
+      else out), $0C VERSION (A = $22, HL = $0022, B = 0), $0D DSKRST (A = 0, drive A -- NOT
+      dskrst_body, whose $50A9 stub marks MSX-DOS as booted), $2C GTIME (all 0, HL too).
+      [`bdos3a_zb.out`](scratchpad/bdos3a_zb.out): all twelve give the references' A; VERSION,
+      LOGIN, GDATE, GTIME every documented register. 🔮 "all twelve A as the references" HIT;
+      "ALLOC exact" MISSED -- the totals match ($02C9) but the free count is $02C7 here against
+      $02C4: what the earlier CREATE / SEQWR rows allocated differs, a 3b question.
+      tests/test_bdosbasic.py: seven dispatch rows and the five bb_ bodies; 🔪 the table walk
+      returning at once -> 11 FAIL. docs/concepts/msx-dos.md.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

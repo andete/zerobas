@@ -65,8 +65,7 @@ bdos_more:
                 jp      z, snext_body
                 cp      BDOS_F_STROUT
                 jp      z, RES_PRINT        ; '$'-terminated string at DE
-                ld      a, $FF              ; unsupported call
-                ret
+                jp      bdos_more2          ; slice 3a: the table below $543C
 bdos_setdta_body:
                 ld      (BDOS_DTA), de
                 ld      (DOS_DTAPTR), de
@@ -717,6 +716,87 @@ hkf_syn:
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
+; --- D-BDOSBASIC slice 3a: console / info functions at $F37D (oracle; MSX2 TH BDOS) ---
+; Both references answer these from a BASIC program; zerobas returned $FF
+; (scratchpad/bdosset_run.out). Most bodies already serve the same functions under
+; MSX-DOS (the k_ entries); the DOS kernel finishes their registers there, so where
+; the measured BASIC-side answer needs more, a small bb_ body here gives it: CONOUT
+; leaves the character in A, VERSION HL = $0022, GTIME zeroes HL too, and DSKRST is
+; NOT the DOS-side one (that marks MSX-DOS as booted, D-BOOTDATE).
+bdos_tab:
+                db      $02
+                dw      bb_conout
+                db      $06
+                dw      bb_dirio
+                db      $0B
+                dw      const_body
+                db      $0C
+                dw      bb_version
+                db      $0D
+                dw      bb_dskrst
+                db      $0E
+                dw      seldsk_drv_body
+                db      $18
+                dw      login_body
+                db      $19
+                dw      curdrv_body
+                db      $1B
+                dw      getalloc_body
+                db      $2A
+                dw      gdate_body
+                db      $2C
+                dw      bb_gtime
+                db      $2E
+                dw      verify_body
+                db      0
+bdos_more2:                                 ; A = C = the function
+                ld      hl, bdos_tab
+bm_loop:
+                ld      b, (hl)
+                inc     b
+                dec     b
+                jr      z, bm_none          ; end of the table
+                inc     hl
+                cp      b
+                jr      z, bm_hit
+                inc     hl
+                inc     hl
+                jr      bm_loop
+bm_hit:
+                ld      a, (hl)
+                inc     hl
+                ld      h, (hl)
+                ld      l, a
+                jp      (hl)
+bm_none:
+                ld      a, $FF              ; still unanswered here
+                ret
+bb_dirio:
+                ld      a, e
+                inc     a
+                jp      z, dirio_in_body    ; E = $FF: a key, or 0
+bb_conout:
+                call    conout_body         ; E = the character (AF kept)
+                ld      a, e                ; the references leave it in A
+                ret
+bb_version:
+                ld      hl, $0022           ; MSX-DOS 1 answers version 2.2
+                ld      b, h
+                ld      a, l
+                ret
+bb_dskrst:
+                xor     a
+                ld      (CURDRV_CELL), a    ; drive A
+                ret
+bb_gtime:
+                xor     a                   ; no clock: 00:00:00.00
+                ld      b, a
+                ld      c, a
+                ld      d, a
+                ld      e, a
+                ld      h, a
+                ld      l, a
+                ret
 
 ; --- MSX-DOS-1 kernel console entries: $543C/$5445/$544E (M22a) ---------------
 ; While processing BDOS CONST ($0B) / CONIN ($01) / INNOE ($08) the relocated

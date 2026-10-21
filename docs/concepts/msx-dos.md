@@ -93,11 +93,14 @@ Some details a program can see:
 
 On a disk MSX the work-area cell `&HF37D` holds a jump to the disk system's
 BDOS entry, so machine code called from Disk BASIC can make BDOS calls too.
-zerobas puts a jump to its own small dispatcher there. It answers string
-output, open, close, search first and next, read and write the next record,
-create, set the transfer address and read a block (`&H09`, `&H0F`, `&H10`,
-`&H11`, `&H12`, `&H14`, `&H15`, `&H16`, `&H1A`, `&H27`), and returns `A=&HFF`
-for anything else. Setting the transfer address also stores it in `&HF23D`,
+zerobas puts a jump to its own small dispatcher there. It answers console
+output, direct console input, console status, string output, the version
+(`&H22`, DOS 1), disk reset, select drive, open, close, search first and next,
+read and write the next record, create, the logged-in drives, the current
+drive, set the transfer address, the allocation figures, read a block, the
+date, the time (always 0:00, there is no clock) and the verify switch
+(`&H02`, `&H06`, `&H09`, `&H0B`-`&H12`, `&H14`-`&H16`, `&H18`-`&H1B`,
+`&H27`, `&H2A`, `&H2C`, `&H2E`), and returns `A=&HFF` for anything else. Setting the transfer address also stores it in `&HF23D`,
 the work-area cell the CF-3300 keeps it in.
 
 A disk's own boot loader is the usual caller: it runs while the disk system is
@@ -163,8 +166,12 @@ area on both machines.
 - **`CALL SYSTEM` after a data-disk start with the DOS disk put in later**: the
   CF-3300 restarts Disk BASIC; zerobas answers `Illegal function call`
   (D-SYSLATE).
-- **BDOS through `&HF37D`** answers ten functions only; which others the
-  CF-3300 answers from BASIC is not measured yet. It also uses the sector buffers BASIC's open
+- **BDOS through `&HF37D`** does not yet answer delete, rename, the random
+  record functions, file size and the block write (`&H13`, `&H17`,
+  `&H21`-`&H24`, `&H26`, `&H28`), which both references answer from BASIC; and
+  three it answers come out differently there — closing a file that was never
+  opened, a sequential read from one, and the block read's counts
+  ([`bdosset_run.out`](../../scratchpad/bdosset_run.out)). It also uses the sector buffers BASIC's open
   files use, without saving them: the buffer audit of 2026-09-24 (TODO.md)
   names it as the one crossing that cannot be guarded, because the caller is
   the user's machine code.

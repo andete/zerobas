@@ -60,7 +60,37 @@ def run():
     check(dta == 0xD100 and cell == 0xD100,
           f"BDOS $1A DE=$D100: BDOS_DTA ${dta:04X}, $F23D ${cell:04X} (want both $D100)")
 
-    for fn in (0x00, 0x02, 0x13, 0x30):
+    # --- slice 3a: the table at bdos_more2 ----------------------------------
+    for fn, target in ((0x0B, "const_body"), (0x0E, "seldsk_drv_body"), (0x18, "login_body"),
+                       (0x19, "curdrv_body"), (0x1B, "getalloc_body"), (0x2A, "gdate_body"),
+                       (0x2E, "verify_body")):
+        m = Machine(ROM, SYM, rom_base=DISK_BASE)
+        seen = []
+        m.trap(target, lambda mach: seen.append(mach.cpu.e))
+        m.call("bdos_entry", c=fn, de=0x0005)
+        check(seen == [5], f"BDOS ${fn:02X} -> {target} {seen} (want one call, E = 5)")
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    cpu = m.call("bdos_entry", c=0x0C)
+    check(cpu.a == 0x22 and cpu.hl == 0x0022 and cpu.b == 0,
+          f"BDOS $0C VERSION: A ${cpu.a:02X} HL ${cpu.hl:04X} B ${cpu.b:02X} (want 22 / 0022 / 00)")
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    cpu = m.call("bdos_entry", c=0x2C, de=0x1234, hl=0x5678, bc=0x9A2C)
+    check((cpu.a, cpu.bc, cpu.de, cpu.hl) == (0, 0, 0, 0),
+          f"BDOS $2C GTIME: A {cpu.a:02X} BC {cpu.bc:04X} DE {cpu.de:04X} HL {cpu.hl:04X} "
+          "(want all 0: no clock)")
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    out = []
+    m.trap("conout_body", lambda mach: out.append(mach.cpu.e))
+    cpu = m.call("bdos_entry", c=0x02, de=0x0041)
+    check(out == [0x41] and cpu.a == 0x41, f"BDOS $02 CONOUT 'A': {out}, A ${cpu.a:02X} (want "
+                                            "[65], A = $41)")
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    m.poke(0xF247, b"\x01")
+    cpu = m.call("bdos_entry", c=0x0D)
+    check(cpu.a == 0 and m.mem[0xF247] == 0 and m.mem[m.addr("BASENT_REQ")] != ord("S"),
+          f"BDOS $0D DSKRST: A ${cpu.a:02X}, drive {m.mem[0xF247]} (want 0, A:, no DOS mark)")
+
+    for fn in (0x00, 0x13, 0x17, 0x30):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         cpu = m.call("bdos_entry", c=fn, de=0xC0DA)
         check(cpu.a == 0xFF, f"BDOS ${fn:02X} (not answered yet): A = ${cpu.a:02X} (want $FF)")
