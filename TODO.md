@@ -4819,6 +4819,46 @@ item — do **one item per session** to keep context lean.
       row "BD + an AUTOEXEC.BAS" (knifed: without the `ret nc` the question asks for a
       key past the script, rc=1).
 
+- [x] ✅ **FIXED 2026-10-21** — 🎨 **D-COLOREQ — `COLOR=NEW` (AN MSX2 PALETTE FORM ON AN MSX1) IS
+      `Syntax error` ON BOTH REFERENCES AND WAS `Illegal function call` ON zerobas (from D-DISKRUN's
+      facdemo1.di1; 2026-10-21)**
+      🎚️ TIER 3 — common errors: the FIRST error an MSX2 BASIC program meets on an MSX1, and the
+      one a program testing `ERR` to tell the two apart would branch on.
+      🤖 **AUTONOMOUS** — both references settle it.
+      📏 facdemo1's AUTOEXEC.BAS starts at line 65535 (direct mode, so the error carries no line
+      number) with POKEs and `COLOR=NEW`: the CF-3300 says `Syntax error`, zerobas said `Illegal
+      function call`. Typed on both references and zerobas
+      ([`colornew_probe.out`](scratchpad/colornew_probe.out), [`colornew_eu.out`](scratchpad/colornew_eu.out),
+      [`colornew_eval.out`](scratchpad/colornew_eval.out)): `COLOR=NEW`, `COLOR=`, `COLOR=,1`,
+      `COLOR=END`, `COLOR=(1,2,3,4)`, `COLOR=RESTORE` all ERR 2 on the references; zerobas ERR 5 for
+      all but `COLOR=1` (ERR 2). Every other verb with a leading operator (`LOCATE =1`, `WIDTH =3`,
+      `PRINT >1`, `A=*2`) was already ERR 2 on zerobas. 🔮 "COLOR=NEW is ERR 2 vs 5" HIT; "`COLOR=1`
+      commits a colour before its error" MISSED (15 4 kept on both).
+      📏 Host trace (black box on OUR ROM only): eval treats a leading binary operator as having a
+      0 on its left and leaves the Syntax error PENDING in FPERR (4), yielding -1 for `=NEW` / `=` /
+      `=,1` and 0 for `=1`. LOCATE / WIDTH surface it first through eval_int16_checked's
+      check_expr_errors; clr_eval range-checked first and raised ERR 5 over it.
+      ✅ FIX: clr_eval calls check_expr_errors between eval and the 0..15 test (basic/main.asm, low
+      region, +3 B: 11 -> 8 B free). Witness: [`coloreq_after.out`](scratchpad/coloreq_after.out) --
+      every row as the CF-3300, controls `COLOR 99` / `COLOR 256` ERR 5, `COLOR 7,"A"` ERR 13, the
+      colours unchanged; facdemo1 now ends in `Syntax error` as on the CF-3300
+      ([`coloreq_facdemo1.out`](scratchpad/coloreq_facdemo1.out)). tests/test_screen.py: four rows
+      (three `COLOR=` forms ERR 2, `COLOR 99` ERR 5, CHGCLR never called); 🔪 without the call the
+      three `COLOR=` rows FAIL with ERR 5. docs/keywords/COLOR.md: the error table and what we found;
+      example PASS.
+
+- [ ] 🧹 **D-STMTEQ — `CLS=1` AND `SCREEN=1` CLEAR THE SCREEN ON zerobas BEFORE THEIR `Syntax error`;
+      BOTH REFERENCES RAISE IT AND LEAVE THE SCREEN ALONE (found beside D-COLOREQ, 2026-10-21)**
+      🎚️ TIER 6 — every error: a malformed statement's side effect.
+      🤖 **AUTONOMOUS** — the CF-3300 settles it; measure the VG-8020 too before fixing.
+      📏 [`colornew_eq.out`](scratchpad/colornew_eq.out): on zerobas `SCREEN=1` and `CLS=1` each
+      leave a cleared screen holding only `Syntax error`; on the CF-3300 the typed lines and their
+      errors stay on screen. `LOCATE=1`, `WIDTH=3`, `BEEP=1`, `COLOR=1` agree. Likely shape: ex_cls
+      forces Z before calling the BIOS CLS (`xor a`), where the BIOS clears only on Z -- the flag a
+      statement end would give; SCREEN's own path is unread. ➡️ NEXT: measure the pair on the
+      VG-8020, read ex_cls / ex_screen's first argument path, fix, and check `CLS:PRINT` and
+      `SCREEN 1` are untouched.
+
 - [x] ✅ **FIXED 2026-10-21** — 💽 **D-MEDIAID — A DISK'S LAYOUT COMES FROM THE FAT'S MEDIA ID, NOT
       THE BPB: BOTH REFERENCES READ A DISK WHOSE BPB IS DAMAGED OR ZERO; zerobas LISTED NO FILE
       (from D-DISKRUN's facdemo3.di2, a FILES-DIFF row; 2026-10-21)**
@@ -4908,8 +4948,8 @@ item — do **one item per session** to keep context lean.
       prints the same prompt with Japanese text in the brackets.
       ➡️ D-BOOTDATE (filed above, measured) is the fix. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
       loader, ROBOCOP, SirDan, xak2eng2, senigma), the FILES-DIFF candidates (facdemo3
-      DONE: D-MEDIAID; left: facdemo1.di1 `Syntax error` on the CF-3300 against `Illegal
-      function call` on zerobas, kq.dsk, no-waste.dsk), and the six ZB-ONLY.
+      DONE: D-MEDIAID; facdemo1 DONE: D-COLOREQ; left: kq.dsk, no-waste.dsk), and the six
+      ZB-ONLY.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -11859,7 +11899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37792 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37832 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12025,7 +12065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16887 (T-6FE392)8 (T-529ABE)` from `TODO.md:29724 (T-529ABE)`: a
+      `TODO.md:16927 (T-6FE392)8 (T-529ABE)` from `TODO.md:29764 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17734,7 +17774,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29764 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

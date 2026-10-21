@@ -187,6 +187,13 @@ mxf_require_end:
 ; out: E = the value, D = 0. Anything else raises ERR 5 and does not return.
 clr_eval:
                 call    eval
+                ; D-COLOREQ: a PENDING error first. `COLOR=NEW`, `COLOR=` and
+                ; `COLOR=,1` (MSX2 palette forms run on an MSX1) are `Syntax error`
+                ; on BOTH references; here eval returned its junk -1 with the
+                ; syntax error still pending in FPERR, and the 0..15 test below
+                ; raised ERR 5 over it. Every other checked argument already asks
+                ; first (eval_int16_checked).
+                call    check_expr_errors
                 ld      a,d                 ; the HIGH byte first: 256 has a low
                 or      a                   ; byte of 0 and must NOT pass
                 jr      nz,clr_ill

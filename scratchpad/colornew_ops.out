@@ -1,0 +1,415 @@
+=== National_CF-3300
+== S0 ('10:CLS')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S1 ('11:PRINT =1')  pc=0D69 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >
+   |  color cload cont  list.  run
+== S2 ('12:A=*2')  pc=0D79 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >
+   |  color cload cont  list.  run
+== S3 ('13:PRINT >1')  pc=0D86 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *
+   |  color cload cont  list.  run
+== S4 ('14:COLOR >1')  pc=0D76 curlin=FFFF mode=S1
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE
+   |  color auto  goto  list  run
+== S5 ('15:COLOR *1')  pc=0D85 curlin=FFFF mode=S1
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE =1
+   |  Syntax error
+   |  Ok
+   |  WIDTH =
+   |  color cload cont  list.  run
+== S6 ('16:LOCATE =1')  pc=0D7A curlin=FFFF mode=S1
+   |  Ok
+   |  PRINT =1
+   |  Syntax error
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE =1
+   |  Syntax error
+   |  Ok
+   |  WIDTH =3
+   |  Syntax error
+   |  Ok
+   |  POKE =1
+   |  color auto  goto  list  run
+== S7 ('17:WIDTH =3')  pc=0D68 curlin=FFFF mode=S1
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE =1
+   |  Syntax error
+   |  Ok
+   |  WIDTH =3
+   |  Syntax error
+   |  Ok
+   |  POKE =1,2
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S8 ('18:POKE =1,2')  pc=0D6C curlin=FFFF mode=S1
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE =1
+   |  Syntax error
+   |  Ok
+   |  WIDTH =3
+   |  Syntax error
+   |  Ok
+   |  POKE =1,2
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S9 ('21:')  pc=0D6E curlin=FFFF mode=S1
+   |  Ok
+   |  A=*2
+   |  Syntax error
+   |  Ok
+   |  PRINT >1
+   |  Syntax error
+   |  Ok
+   |  COLOR >1
+   |  Syntax error
+   |  Ok
+   |  COLOR *1
+   |  Syntax error
+   |  Ok
+   |  LOCATE =1
+   |  Syntax error
+   |  Ok
+   |  WIDTH =3
+   |  Syntax error
+   |  Ok
+   |  POKE =1,2
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('10:CLS')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+== S1 ('11:PRINT =1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT
+   |  color  auto   goto   list   run
+== S2 ('12:A=*2')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >
+   |  color  cload" cont   list.   run
+== S3 ('13:PRINT >1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *
+   |  color  cload" cont   list.   run
+== S4 ('14:COLOR >1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE
+   |  color  cload" cont   list.   run
+== S5 ('15:COLOR *1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE =1
+   |  Syntax error
+   |  ZB
+   |  WIDTH
+   |  color  auto   goto   list   run
+== S6 ('16:LOCATE =1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =1
+   |  Syntax error
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE =1
+   |  Syntax error
+   |  ZB
+   |  WIDTH =3
+   |  Syntax error
+   |  ZB
+   |  POKE =1
+   |  color  auto   goto   list   run
+== S7 ('17:WIDTH =3')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE =1
+   |  Syntax error
+   |  ZB
+   |  WIDTH =3
+   |  Syntax error
+   |  ZB
+   |  POKE =1,2
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+== S8 ('18:POKE =1,2')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE =1
+   |  Syntax error
+   |  ZB
+   |  WIDTH =3
+   |  Syntax error
+   |  ZB
+   |  POKE =1,2
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run
+== S9 ('21:')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  A=*2
+   |  Syntax error
+   |  ZB
+   |  PRINT >1
+   |  Syntax error
+   |  ZB
+   |  COLOR >1
+   |  Syntax error
+   |  ZB
+   |  COLOR *1
+   |  Syntax error
+   |  ZB
+   |  LOCATE =1
+   |  Syntax error
+   |  ZB
+   |  WIDTH =3
+   |  Syntax error
+   |  ZB
+   |  POKE =1,2
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run

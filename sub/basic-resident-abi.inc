@@ -86,7 +86,7 @@ p0_fch_do_close_ch equ 06EF3H   ; main's fch_do_close_ch
 p0_fch_close_all equ 06F28H   ; main's fch_close_all
 p0_fopen_cross equ 06818H   ; main's fopen_cross
 p0_fatprim_op equ 0649FH   ; main's fatprim_op
-p0_cas_capture_cut equ 03FA4H   ; main's cas_capture_cut
+p0_cas_capture_cut equ 03FA7H   ; main's cas_capture_cut
 p0_cas_open_match equ 0656DH   ; main's cas_open_match
 p0_cas_bufp_set equ 0657CH   ; main's cas_bufp_set
 p0_cas_ascii_setup equ 0669DH   ; main's cas_ascii_setup
@@ -104,6 +104,6 @@ p0_fch_park equ 03BC4H   ; main's fch_park
 p0_list_all equ 06380H   ; main's list_all
 p0_cas_ascii_finish equ 0678DH   ; main's cas_ascii_finish
 p0_cas_capture_name equ 0653FH   ; main's cas_capture_name
-p0_cas_name_cut equ 03FA7H   ; main's cas_name_cut
+p0_cas_name_cut equ 03FAAH   ; main's cas_name_cut
 p0_req_comma equ 02E2DH   ; main's req_comma
 p0_check_expr_errors equ 04407H   ; main's check_expr_errors

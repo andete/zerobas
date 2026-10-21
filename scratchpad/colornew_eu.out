@@ -1,0 +1,62 @@
+== S0 ('10:COLOR=NEW')  pc=0D69 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  color  auto   goto   list   run
+== S1 ('13:COLOR=')  pc=0BA2 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  color  auto   goto   list   run
+== S2 ('16:COLOR=(1,2,3,4)')  pc=0D87 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=(1,2,3,4)
+   |  Syntax error
+   |  Ok
+   |  color  auto   goto   list   run
+== S3 ('19:COLOR=RESTORE')  pc=0D6A curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=(1,2,3,4)
+   |  Syntax error
+   |  Ok
+   |  COLOR=RESTORE
+   |  Syntax error
+   |  Ok
+   |  color  auto   goto   list   run

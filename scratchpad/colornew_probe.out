@@ -1,0 +1,124 @@
+=== National_CF-3300
+== S0 ('10:COLOR=NEW')  pc=0D6C curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  OLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S1 ('13:COLOR=')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  OLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S2 ('16:POKE&HFBB1,1:PRINT 5')  pc=0D7D curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  OLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  POKE&HFBB1,1:PRINT 5
+   |   5
+   |  Ok
+   |  color auto  goto  list  run
+== S3 ('19:POKE&HFF89,229:PRINT 6')  pc=0B9F curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  OLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  POKE&HFBB1,1:PRINT 5
+   |   5
+   |  Ok
+   |  POKE&HFF89,229:PRINT 6
+   |   6
+   |  Ok
+   |  color auto  goto  list  run
+=== Philips_VG_8020 --ext Philips_NMS_1200
+<NO CAPTURE: the machine did not run>
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('10:COLOR=NEW')  pc=19A5 curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  color  auto   goto   list   run
+== S1 ('13:COLOR=')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR=
+   |  Illegal function call
+   |  ZB
+   |  color  auto   goto   list   run
+== S2 ('16:POKE&HFBB1,1:PRINT 5')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR=
+   |  Illegal function call
+   |  ZB
+   |  POKE&HFBB1,1:PRINT 5
+   |   5
+   |  ZB
+   |  color  auto   goto   list   run
+== S3 ('19:POKE&HFF89,229:PRINT 6')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR=
+   |  Illegal function call
+   |  ZB
+   |  POKE&HFBB1,1:PRINT 5
+   |   5
+   |  ZB
+   |  POKE&HFF89,229:PRINT 6
+   |   6
+   |  ZB
+   |  color  auto   goto   list   run

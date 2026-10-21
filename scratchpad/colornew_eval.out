@@ -1,0 +1,397 @@
+=== National_CF-3300
+== S0 ('10:PRINT =')  pc=0D68 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE
+   |  color cload cont  list.  run
+== S1 ('11:PRINT =NEW')  pc=0D79 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =
+   |  color cload cont  list.  run
+== S2 ('12:LOCATE =')  pc=0D6D curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=N
+   |  color cload cont  list.  run
+== S3 ('13:WIDTH =NEW')  pc=0D86 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR N
+   |  color cload cont  list.  run
+== S4 ('14:COLOR=NEW')  pc=0B9F curlin=FFFF mode=S1
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=E
+   |  color cload cont  list.  run
+== S5 ('15:COLOR NEW')  pc=0BA2 curlin=FFFF mode=S1
+   |  Ok
+   |  RINT =
+   |  Syntax error
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=END
+   |  Syntax error
+   |  Ok
+   |  COLOR=,
+   |  color auto  goto  list  run
+== S6 ('16:COLOR=END')  pc=0D62 curlin=FFFF mode=S1
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=END
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S7 ('17:COLOR=,1')  pc=10D9 curlin=FFFF mode=S1
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=END
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+== S8 ('20:')  pc=0D6C curlin=FFFF mode=S1
+   |  Ok
+   |  PRINT =NEW
+   |  Syntax error
+   |  Ok
+   |  LOCATE =
+   |  Syntax error
+   |  Ok
+   |  WIDTH =NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=END
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('10:PRINT =')  pc=21F6 curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE
+   |                cont   list.   run
+== S1 ('11:PRINT =NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH
+   |  color  auto   goto   list   run
+== S2 ('12:LOCATE =')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=N
+   |  color  cload" cont   list.   run
+== S3 ('13:WIDTH =NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR N
+   |  color  cload" cont   list.   run
+== S4 ('14:COLOR=NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  color  auto   goto   list   run
+== S5 ('15:COLOR NEW')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =
+   |  Syntax error
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=END
+   |  Illegal function call
+   |  ZB
+   |  COLOR=
+   |  color  auto   goto   list   run
+== S6 ('16:COLOR=END')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=END
+   |  Illegal function call
+   |  ZB
+   |  COLOR=,1
+   |  Illegal function call
+   |  ZB
+   |  color  auto   goto   list   run
+== S7 ('17:COLOR=,1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=END
+   |  Illegal function call
+   |  ZB
+   |  COLOR=,1
+   |  Illegal function call
+   |  ZB
+   |  color  auto   goto   list   run
+== S8 ('20:')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT =NEW
+   |  Syntax error
+   |  ZB
+   |  LOCATE =
+   |  Syntax error
+   |  ZB
+   |  WIDTH =NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=NEW
+   |  Illegal function call
+   |  ZB
+   |  COLOR NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=END
+   |  Illegal function call
+   |  ZB
+   |  COLOR=,1
+   |  Illegal function call
+   |  ZB
+   |  color  auto   goto   list   run

@@ -1,0 +1,414 @@
+=== National_CF-3300
+== S0 ('10:CLS')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  color cload cont  list.  run
+== S1 ('11:COLOR=NEW')  pc=10D9 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,
+   |  color auto  goto  list  run
+== S2 ('12:COLOR=')  pc=10DC curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  color auto  goto  list  run
+== S3 ('13:COLOR=,1')  pc=0B9F curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 9
+   |  color auto  goto  list  run
+== S4 ('14:COLOR=1')  pc=0D6C curlin=FFFF mode=S1
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7
+   |  color auto  goto  list  run
+== S5 ('15:COLOR 99')  pc=10DC curlin=FFFF mode=S1
+   |  Ok
+   |  LS
+   |  Syntax error
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  Ok
+   |  COLOR 2
+   |  color auto  goto  list  run
+== S6 ('16:COLOR 7,"A"')  pc=0B9F curlin=FFFF mode=S1
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  Ok
+   |  COLOR 256
+   |  Illegal function call
+   |  Ok
+   |  PRINT P
+   |  color cload cont  list.  run
+== S7 ('17:COLOR 256')  pc=0D82 curlin=FFFF mode=S1
+   |  Ok
+   |  COLOR=NEW
+   |  Syntax error
+   |  Ok
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  Ok
+   |  COLOR 256
+   |  Illegal function call
+   |  Ok
+   |  PRINT PEEK(&HF3E9);P
+   |  color cload cont  list.  run
+== S8 ('18:PRINT PEEK(&HF3E9);PEEK(&HF3EA)')  pc=074B curlin=FFFF mode=S1
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  Ok
+   |  COLOR 256
+   |  Illegal function call
+   |  Ok
+   |  PRINT PEEK(&H
+   |  PRINT PEEK(&HF3E9);PEEK(&HF3E
+   |  A)
+   |   15  4
+   |  Ok
+   |  color auto  goto  list  run
+== S9 ('21:')  pc=0D69 curlin=FFFF mode=S1
+   |  COLOR=
+   |  Syntax error
+   |  Ok
+   |  COLOR=,1
+   |  Syntax error
+   |  Ok
+   |  COLOR=1
+   |  Syntax error
+   |  Ok
+   |  COLOR 99
+   |  Illegal function call
+   |  Ok
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  Ok
+   |  COLOR 256
+   |  Illegal function call
+   |  Ok
+   |  PRINT PEEK(&HF3E9);PEEK(&HF3E
+   |  A)
+   |   15  4
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('10:CLS')  pc=246B curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  color  auto   goto   list   run
+== S1 ('11:COLOR=NEW')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  color  auto   goto   list   run
+== S2 ('12:COLOR=')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  color  auto   goto   list   run
+== S3 ('13:COLOR=,1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 9
+   |  color  auto   goto   list   run
+== S4 ('14:COLOR=1')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR
+   |  color  auto   goto   list   run
+== S5 ('15:COLOR 99')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  ZB
+   |  COLOR
+   |  color  auto   goto   list   run
+== S6 ('16:COLOR 7,"A"')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  ZB
+   |  COLOR 256
+   |  Illegal function call
+   |  ZB
+   |  PRINT P
+   |  color  cload" cont   list.   run
+== S7 ('17:COLOR 256')  pc=4622 curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=NEW
+   |  Syntax error
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  ZB
+   |  COLOR 256
+   |  Illegal function call
+   |  ZB
+   |  PRINT PEEK(&HF3E9);PE
+   |  color  cload" cont   list.   run
+== S8 ('18:PRINT PEEK(&HF3E9);PEEK(&HF3EA)')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  ZB
+   |  COLOR 256
+   |  Illegal function call
+   |  ZB
+   |  PRINT PEEK(&HF3E9);PEEK(&HF3EA)
+   |   15  4
+   |  ZB
+   |  color  auto   goto   list   run
+== S9 ('21:')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  COLOR=
+   |  Syntax error
+   |  ZB
+   |  COLOR=,1
+   |  Syntax error
+   |  ZB
+   |  COLOR=1
+   |  Syntax error
+   |  ZB
+   |  COLOR 99
+   |  Illegal function call
+   |  ZB
+   |  COLOR 7,"A"
+   |  Type mismatch
+   |  ZB
+   |  COLOR 256
+   |  Illegal function call
+   |  ZB
+   |  PRINT PEEK(&HF3E9);PEEK(&HF3EA)
+   |   15  4
+   |  ZB
+   |  color  auto   goto   list   run

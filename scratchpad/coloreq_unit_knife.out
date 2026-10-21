@@ -1,0 +1,21 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+PASS  SCREEN 0 -> CHGMOD(A=0)  (want A=0)
+PASS  SCREEN 1 -> CHGMOD(A=1)  (want A=1)
+PASS  SCREEN 2 -> CHGMOD(A=2)  (want A=2)
+PASS  SCREEN 3 -> CHGMOD(A=3)  (want A=3)
+PASS  SCREEN (bare) -> ERR 24 Missing operand, CHGMOD not called  (raise_error saw [24], 0 CHGMOD call(s))
+PASS  SCREEN 4 -> ERR 5 Illegal function call, CHGMOD not called  (raise_error saw [5], 0 CHGMOD call(s))
+PASS  COLOR 7,1,1 -> FORCLR=0x07  (want 0x07)
+PASS  COLOR 7,1,1 -> BAKCLR=0x01  (want 0x01)
+PASS  COLOR 7,1,1 -> BDRCLR=0x01  (want 0x01)
+PASS  COLOR -> CHGCLR(A=SCRMOD=2)  (got A=2)
+PASS  CLS -> CLS BIOS called  (1 call(s))
+PASS  CLS -> A=0 on entry (Z flag set)  (A=0x00)
+PASS  KEY OFF -> ERAFNK called  (era=1, dsp=0)
+PASS  KEY ON -> DSPFNK called  (era=0, dsp=1)
+FAIL  COLOR=NEW -> ERR 2, CHGCLR not called  (raise_error saw [5], 0 CHGCLR call(s))
+FAIL  COLOR= -> ERR 2, CHGCLR not called  (raise_error saw [5], 0 CHGCLR call(s))
+FAIL  COLOR=,1 -> ERR 2, CHGCLR not called  (raise_error saw [5], 0 CHGCLR call(s))
+PASS  COLOR 99 -> ERR 5, CHGCLR not called  (raise_error saw [5], 0 CHGCLR call(s))
+
+3 CASE(S) FAILED

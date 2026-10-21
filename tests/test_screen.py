@@ -260,6 +260,29 @@ def run():
     print(f"{'PASS' if ok_on else 'FAIL'}  KEY ON -> DSPFNK called"
           f"  (era={len(log_era2)}, dsp={len(log_dsp2)})")
 
+    # D-COLOREQ: the MSX2 palette forms on an MSX1 -- `COLOR=NEW`, `COLOR=`,
+    # `COLOR=,1` -- are ERR 2 Syntax error on BOTH references
+    # (scratchpad/coloreq_after.out). eval leaves that error PENDING (FPERR) and
+    # yields a junk -1; clr_eval's 0..15 test used to raise ERR 5 over it.
+    # `COLOR 99` stays ERR 5 (the domain rule), and CHGCLR is never reached.
+    for label, tail, want in (("COLOR=NEW", [s["EQ_TOKEN"], s["NEW_TOKEN"]], 2),
+                              ("COLOR=", [s["EQ_TOKEN"]], 2),
+                              ("COLOR=,1", [s["EQ_TOKEN"], ord(','), 0x12], 2),
+                              ("COLOR 99", [0x0F, 99], 5)):
+        log = m.record("CHGCLR", regs=("a",))
+        raised = []
+        m.trap("raise_error", _stop_at(raised))
+        m.mem[s["FPERR"]] = 0               # the trapped raise never clears it
+        m.poke(BUF, bytes([s["COLOR_TOKEN"]] + tail + [0x00]))
+        try:
+            m.call("ex_color", hl=BUF)
+        except _Raised:
+            pass
+        ok = raised[:1] == [want] and len(log) == 0
+        fails += not ok
+        print(f"{'PASS' if ok else 'FAIL'}  {label} -> ERR {want}, CHGCLR not called"
+              f"  (raise_error saw {raised}, {len(log)} CHGCLR call(s))")
+
     print()
     print("ALL PASS — screen verbs call the correct BIOS entries with correct args"
           if not fails else f"{fails} CASE(S) FAILED")

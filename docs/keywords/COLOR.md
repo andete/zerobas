@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `COLOR` — set the foreground, background and border colours
 
-> **Status (2026-10-14):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-21):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -54,6 +54,7 @@ Each argument is a numeric expression. At least one must be present.
 | `COLOR` on its own | error 24, `Missing operand` |
 | a trailing comma: `COLOR 15,4,`, `COLOR ,,` | error 24, `Missing operand` |
 | a fourth argument: `COLOR 1,1,1,1` | error 2, `Syntax error` |
+| the MSX2 palette forms: `COLOR=NEW`, `COLOR=`, `COLOR=(1,2,3,4)`, `COLOR=RESTORE` | error 2, `Syntax error` |
 
 The range is checked on the whole number, so `COLOR 256` is an error even
 though its low byte is 0. The error set for the three positions is
@@ -98,6 +99,13 @@ sweep over the argument shapes of every statement; the fourth turned up in the
 fix for the third. `COLOR` was, at that point, the least-checked statement in
 the tree.
 
+- **The MSX2 palette forms gave the wrong error** (fixed 2026-10-21,
+  D-COLOREQ). A demo disk written for the MSX2 starts with `COLOR=NEW`; on both
+  references that is `Syntax error`, on zerobas it was `Illegal function call`
+  — a program that tests `ERR` to tell an MSX1 from an MSX2 would have taken
+  the wrong branch. The evaluator had the syntax error pending and the colour
+  range check spoke first
+  ([`coloreq_after.out`](../../scratchpad/coloreq_after.out)).
 - **A bare `COLOR` re-applied the current colours** where both references say
   `Missing operand` (fixed 2026-09-07, D-BAREFIX).
 - **A trailing comma was accepted** — `COLOR 15,4,` and `COLOR ,,` did nothing

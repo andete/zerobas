@@ -1,0 +1,20 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_castype.py
+== lta   VG-8020 20 STOP              skip 0   ours 20 STOP              skip 0
+== cat   VG-8020 10 END               skip 0   ours 10 END               skip 0
+== lbta  VG-8020 20 STOP              skip 0   ours 20 STOP              skip 0
+== cbat  VG-8020 10 END               skip 0   ours 10 END               skip 0
+== mta   VG-8020 20 STOP              skip 0   ours 20 STOP              skip 0
+== ota   VG-8020 read 20 STOP         skip 0   ours read 20 STOP         skip 0
+== mt    VG-8020 E19 in 20            skip 0   ours E19 in 20            skip 0
+== ot    VG-8020 E19 in 20            skip 0   ours E19 in 20            skip 0
+
+PASS: a tape search filters by file type (8/8)
+refcache: 0 hit, 16 miss, 16 stored
