@@ -35,10 +35,17 @@ fat_geom_read:
                 call    read_sector
                 ret     c
                 call    fat_media
-                ret     nc                  ; the fields written from the media ID
+                ld      a, (FAT_DBUF)       ; D-SIDES: DSKIO seats by this media ID
+                jr      nc, fgr_media
+                ld      a, $F9              ; no media ID: the old 2 sides x 9 seating
+                ld      (DSK_MEDIA), a
                 ld      de, 0               ; boot sector = logical sector 0
                 ld      hl, FAT_DBUF
                 jp      read_sector
+fgr_media:
+                ld      (DSK_MEDIA), a
+                or      a                   ; CF = 0
+                ret
 ; fat_media -- in: FAT_DBUF = logical sector 1. A media ID $F8..$FF there: its
 ; format's fields written over FAT_DBUF + 11 .. + 23 in the BPB's own layout (so
 ; fat_mount and getdpb read them as before), CF = 0. Otherwise CF = 1 and nothing
@@ -860,7 +867,7 @@ bdos_create_body:                       ; [bdos_create, bdos_create_failpop) —
 
 write_sector:                           ; relocated (its entry once collided with the $4935 veneer, gone)
                 ld      b, 1            ; one sector
-                ld      c, $F9          ; media byte (ignored, single drive)
+                ld      c, 0            ; media: not an ID -> the mounted disk's (D-SIDES)
                 ld      a, 0            ; drive 0 (ignored)
                 scf                     ; Cy = 1 = WRITE direction (MSX2 TH DSKIO)
                 jp      dskio           ; tail-call: dskio returns to our caller

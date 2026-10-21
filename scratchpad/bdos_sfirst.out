@@ -1,0 +1,349 @@
+=== National_CF-3300
+== S0 ('14:NEW')  pc=0D82 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  color auto  goto  list  run
+== S1 ('15:1 CLEAR 200,&HCFFF')  pc=0D76 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="A
+   |  color cload cont  list.  run
+== S2 ('17:5 N$="AUTOEXECBAS"')  pc=0B9F curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=
+   |  color cload cont  list.  run
+== S3 ('19:6 IF M=1 THEN N$="????????BAS"')  pc=0D68 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  color cload cont  list.  run
+== S4 ('22:10 FOR I=0 TO 19:READ A:POKE &HD000+I,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:POKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:FOR I=12 TO 36:POKE &HD020+I,0:NEXT')  pc=10DC curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000
+   |  color auto  goto  list  run
+== S5 ('34:20 DATA 17,0,209,14,26,205,125,243,17,32,208,14,17,205,125,243,50,16,208,201')  pc=0D86 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000+I,A:NEXT:POKE &HD020,0
+   |  :FOR I=1 TO 11:POKE &HD020+I,
+   |  ASC(MID$(N$,I,1)):NEXT:FOR I=
+   |  12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,17
+   |  color auto  goto  list  run
+== S6 ('44:30 DEFUSR=&HD000:X=USR(0):PRINT "SFIRST A=";PEEK(&HD010);" ";:FOR I=1 TO 11:PRINT CHR$(PEEK(&HD100+I));:NEXT:PRINT')  pc=0D73 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000+I,A:NEXT:POKE &HD020,0
+   |  :FOR I=1 TO 11:POKE &HD020+I,
+   |  ASC(MID$(N$,I,1)):NEXT:FOR I=
+   |  12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,17,32,208,14,17,205,125
+   |  ,243,50,16,208,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "S
+   |  color cload cont  list.  run
+== S7 ('56:RUN')  pc=0D82 curlin=FFFF mode=S1
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000+I,A:NEXT:POKE &HD020,0
+   |  :FOR I=1 TO 11:POKE &HD020+I,
+   |  ASC(MID$(N$,I,1)):NEXT:FOR I=
+   |  12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,17,32,208,14,17,205,125
+   |  ,243,50,16,208,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "SFIRST A=";PEEK(&HD010);"
+   |   ";:FOR I=1 TO 11:PRINT CHR$(
+   |  PEEK(&HD100+I));:NEXT:PRINT
+   |  RUN
+   |  SFIRST A= 0  AUTOEXECBAS
+   |  Ok
+   |  color auto  goto  list  run
+== S8 ('62:M=1:GOTO 6')  pc=0D65 curlin=FFFF mode=S1
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000+I,A:NEXT:POKE &HD020,0
+   |  :FOR I=1 TO 11:POKE &HD020+I,
+   |  ASC(MID$(N$,I,1)):NEXT:FOR I=
+   |  12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,17,32,208,14,17,205,125
+   |  ,243,50,16,208,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "SFIRST A=";PEEK(&HD010);"
+   |   ";:FOR I=1 TO 11:PRINT CHR$(
+   |  PEEK(&HD100+I));:NEXT:PRINT
+   |  RUN
+   |  SFIRST A= 0  AUTOEXECBAS
+   |  Ok
+   |  M=1:GOTO 6
+   |  Out of DATA in 10
+   |  Ok
+   |  color auto  goto  list  run
+== S9 ('70:')  pc=0D88 curlin=FFFF mode=S1
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS
+   |  "
+   |  10 FOR I=0 TO 19:READ A:POKE
+   |  &HD000+I,A:NEXT:POKE &HD020,0
+   |  :FOR I=1 TO 11:POKE &HD020+I,
+   |  ASC(MID$(N$,I,1)):NEXT:FOR I=
+   |  12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,17,32,208,14,17,205,125
+   |  ,243,50,16,208,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "SFIRST A=";PEEK(&HD010);"
+   |   ";:FOR I=1 TO 11:PRINT CHR$(
+   |  PEEK(&HD100+I));:NEXT:PRINT
+   |  RUN
+   |  SFIRST A= 0  AUTOEXECBAS
+   |  Ok
+   |  M=1:GOTO 6
+   |  Out of DATA in 10
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('14:NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  color  cload" cont   list.   run
+== S1 ('15:1 CLEAR 200,&HCFFF')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="
+   |  color  cload" cont   list.   run
+== S2 ('17:5 N$="AUTOEXECBAS"')  pc=21F9 curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M
+   |  color  auto   goto   list
+== S3 ('19:6 IF M=1 THEN N$="????????BAS"')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  color  cload" cont   list.   run
+== S4 ('22:10 FOR I=0 TO 19:READ A:POKE &HD000+I,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:POKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:FOR I=12 TO 36:POKE &HD020+I,0:NEXT')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD00
+   |  color  auto   goto   list   run
+== S5 ('34:20 DATA 17,0,209,14,26,205,125,243,17,32,208,14,17,205,125,243,50,16,208,201')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD000+I
+   |  ,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:P
+   |  OKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:F
+   |  OR I=12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,125,243,17
+   |  color  auto   goto   list   run
+== S6 ('44:30 DEFUSR=&HD000:X=USR(0):PRINT "SFIRST A=";PEEK(&HD010);" ";:FOR I=1 TO 11:PRINT CHR$(PEEK(&HD100+I));:NEXT:PRINT')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD000+I
+   |  ,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:P
+   |  OKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:F
+   |  OR I=12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,125,243,17
+   |  ,32,208,14,17,205,125,243,50,16,208,2
+   |  01
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "S
+   |  color  cload" cont   list.   run
+== S7 ('56:RUN')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD000+I
+   |  ,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:P
+   |  OKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:F
+   |  OR I=12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,125,243,17
+   |  ,32,208,14,17,205,125,243,50,16,208,2
+   |  01
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "SFIR
+   |  ST A=";PEEK(&HD010);" ";:FOR I=1 TO 1
+   |  1:PRINT CHR$(PEEK(&HD100+I));:NEXT:PR
+   |  INT
+   |  RUN
+   |  SFIRST A= 2
+   |  ZB
+   |  color  auto   goto   list   run
+== S8 ('62:M=1:GOTO 6')  pc=01CC curlin=FFFF mode=S0
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD000+I
+   |  ,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:P
+   |  OKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:F
+   |  OR I=12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,125,243,17
+   |  ,32,208,14,17,205,125,243,50,16,208,2
+   |  01
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "SFIR
+   |  ST A=";PEEK(&HD010);" ";:FOR I=1 TO 1
+   |  1:PRINT CHR$(PEEK(&HD100+I));:NEXT:PR
+   |  INT
+   |  RUN
+   |  SFIRST A= 2
+   |  ZB
+   |  M=1:GOTO 6
+   |  Out of DATA in 10
+   |  ZB
+   |  color  auto   goto   list   run
+== S9 ('70:')  pc=01CC curlin=FFFF mode=S0
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  5 N$="AUTOEXECBAS"
+   |  6 IF M=1 THEN N$="????????BAS"
+   |  10 FOR I=0 TO 19:READ A:POKE &HD000+I
+   |  ,A:NEXT:POKE &HD020,0:FOR I=1 TO 11:P
+   |  OKE &HD020+I,ASC(MID$(N$,I,1)):NEXT:F
+   |  OR I=12 TO 36:POKE &HD020+I,0:NEXT
+   |  20 DATA 17,0,209,14,26,205,125,243,17
+   |  ,32,208,14,17,205,125,243,50,16,208,2
+   |  01
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "SFIR
+   |  ST A=";PEEK(&HD010);" ";:FOR I=1 TO 1
+   |  1:PRINT CHR$(PEEK(&HD100+I));:NEXT:PR
+   |  INT
+   |  RUN
+   |  SFIRST A= 2
+   |  ZB
+   |  M=1:GOTO 6
+   |  Out of DATA in 10
+   |  ZB
+   |  color  auto   goto   list   run

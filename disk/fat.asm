@@ -990,25 +990,45 @@ fdc_iod_x:
 ; div9 — divide HL by 9 (logical sector -> track*2+head, sector-1).
 ;   in:  HL = logical sector (0..1439)
 ;   out: B = quotient (HL / 9), L = remainder (0..8), H = 0; A trashed
-div9:
+lsec_chs:
+                ; D-SIDES: logical sector HL -> C = sector (1..), D = track, E = side,
+                ; seated by DSK_MEDIA as the references seat it: bit 1 set = 8 sectors
+                ; a track (else 9), bit 0 set = two sides (track = q / 2, side = q & 1),
+                ; clear = one side (track = q, side 0). Was div9: always 2 sides x 9.
+                ld      a, (DSK_MEDIA)
+                ld      c, 9
+                bit     1, a
+                jr      z, lc_div
+                dec     c                   ; 8 sectors a track
+lc_div:
                 ld      b, 0
 fdc_div_loop:
                 ld      a, h
                 or      a
-                jr      nz, fdc_div_sub ; HL >= 256 -> definitely >= 9
+                jr      nz, fdc_div_sub     ; HL >= 256 -> definitely >= C
                 ld      a, l
-                cp      9
-                jr      c, fdc_div_done ; HL < 9 -> remainder in L
+                cp      c
+                jr      c, fdc_div_done     ; HL < C -> remainder in L
 fdc_div_sub:
                 ld      a, l
-                sub     9
+                sub     c
                 ld      l, a
                 jr      nc, fdc_div_nob
                 dec     h
 fdc_div_nob:
                 inc     b
                 jr      fdc_div_loop
-fdc_div_done:
+fdc_div_done:                               ; B = q, L = sector - 1
+                inc     l
+                ld      c, l                ; C = sector
+                ld      e, 0
+                ld      a, (DSK_MEDIA)
+                rra                         ; bit 0: two sides?
+                jr      nc, lc_one
+                srl     b                   ; track = q / 2 ...
+                rl      e                   ; ... side = q & 1
+lc_one:
+                ld      d, b                ; D = track
                 ret
 
 ; dskchg — disk-change status inquiry ($4013).

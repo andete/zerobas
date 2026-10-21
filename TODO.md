@@ -4819,6 +4819,29 @@ item — do **one item per session** to keep context lean.
       row "BD + an AUTOEXEC.BAS" (knifed: without the `ret nc` the question asks for a
       key past the script, rc=1).
 
+- [x] ✅ **FIXED 2026-10-21** — 💽 **D-SIDES — A SINGLE-SIDED DISK WAS READ WRONGLY PAST ITS FIRST 18
+      SECTORS: THE DRIVER SEATED EVERY SECTOR AS 2 SIDES x 9 (from D-DISKRUN's ROBOCOP, a 180 KB $FC
+      disk; 2026-10-21)**
+      🎚️ TIER 1 — happy path: reading a 1DD (single-sided) disk.
+      🤖 **AUTONOMOUS** — both references settle it.
+      📏 D-MEDIAID's note had it as "a driver matter": dskio mapped logical -> CHS with div9
+      (always 2 sides x 9), ignoring the media byte C the DSKIO contract passes. On a single-sided
+      image the two seatings agree only for sectors 0..17. [`bpbrule_probe.py`](scratchpad/bpbrule_probe.py)
+      P8F (a VALID 360 KB $F8 disk, program at cluster 5 = sector 18): AUTOX on the CF-3300 and
+      the VG-8020 + NMS 1200, NOT on zerobas ([`bpbrule_p8f.out`](scratchpad/bpbrule_p8f.out)); P8
+      (sector 12) had passed by that coincidence. 🔮 "refs run, zerobas does not" HIT.
+      ✅ FIX: dskio adopts C into DSK_MEDIA ($EFF6, new, in the freed $EF64..$EFF6 run) when it is
+      a media ID ($F8+), keeps the last one otherwise; lsec_chs (was div9, disk/fat.asm) divides by
+      8 or 9 (bit 1) and seats one side or two (bit 0). Our FAT layer (read_sector / write_sector)
+      passes C = 0 -- "the mounted disk's" -- and fat_geom_read records the mounted media ID ($F9
+      on the BPB path, the old seating); INIT seeds $F9. FORMAT passes $F9 (its 360 KB $FD is 2 x 9
+      too). Witness: [`sides_zb_after.out`](scratchpad/sides_zb_after.out) -- P8F, P8, V0, SF8, MF9
+      all run. tests/test_sides.py (new): 88 (media, sector) rows for every ID, the $F8 sector-18
+      row, and dskio's adopt / keep rule; 🔪 lsec_chs always two-sided -> 35 FAIL.
+      ⚠️ NOT this item's: ROBOCOP still falls back -- its loader's BDOS search-first from BASIC is
+      unanswered here (D-BDOSBASIC, re-tiered below). And DSKI$ on a disk swapped in with no mount
+      since uses the previous disk's media ID (the reference's path for it is unmeasured).
+
 - [x] ✅ **FIXED 2026-10-21** — 🧮 **D-RAMAD — RAMAD0-3 AND HOKVLD BIT 0, WHICH BOTH REFERENCES' DISK
       ROMS FILL FROM THE BASIC PROMPT ON, WERE LEFT AT C-BIOS'S FILL ON zerobas (from D-DISKRUN's
       MemMan rows: no-waste.dsk, megadoom.dsk, modedit.dsk; 2026-10-21)**
@@ -4873,16 +4896,17 @@ item — do **one item per session** to keep context lean.
       three `COLOR=` rows FAIL with ERR 5. docs/keywords/COLOR.md: the error table and what we found;
       example PASS.
 
-- [ ] 🧹 **D-STMTEQ — `CLS=1` AND `SCREEN=1` CLEAR THE SCREEN ON zerobas BEFORE THEIR `Syntax error`;
-      BOTH REFERENCES RAISE IT AND LEAVE THE SCREEN ALONE (found beside D-COLOREQ, 2026-10-21)**
+- [ ] 🧹 **D-STMTEQ — `SCREEN=1` CLEARS THE SCREEN ON zerobas BEFORE ITS `Syntax error`; BOTH
+      REFERENCES RAISE IT AND LEAVE THE SCREEN ALONE (found beside D-COLOREQ, 2026-10-21)**
       🎚️ TIER 6 — every error: a malformed statement's side effect.
       🤖 **AUTONOMOUS** — the CF-3300 settles it; measure the VG-8020 too before fixing.
+      🔁 **`CLS=1` IS D-BAREEXTRA'S `CLS 1`** (filed 2026-09-27, the same class: the statement-end
+      check comes after the action) -- found again, not new; fix the two together.
       📏 [`colornew_eq.out`](scratchpad/colornew_eq.out): on zerobas `SCREEN=1` and `CLS=1` each
       leave a cleared screen holding only `Syntax error`; on the CF-3300 the typed lines and their
-      errors stay on screen. `LOCATE=1`, `WIDTH=3`, `BEEP=1`, `COLOR=1` agree. Likely shape: ex_cls
-      forces Z before calling the BIOS CLS (`xor a`), where the BIOS clears only on Z -- the flag a
-      statement end would give; SCREEN's own path is unread. ➡️ NEXT: measure the pair on the
-      VG-8020, read ex_cls / ex_screen's first argument path, fix, and check `CLS:PRINT` and
+      errors stay on screen. `LOCATE=1`, `WIDTH=3`, `BEEP=1`, `COLOR=1` agree. SCREEN's own first-
+      argument path is unread. ➡️ NEXT: measure `SCREEN=1` on the VG-8020, read ex_screen's first
+      argument path, fix it with D-BAREEXTRA's CLS / END / STOP, and check `CLS:PRINT` and
       `SCREEN 1` are untouched.
 
 - [x] ✅ **FIXED 2026-10-21** — 💽 **D-MEDIAID — A DISK'S LAYOUT COMES FROM THE FAT'S MEDIA ID, NOT
@@ -4977,6 +5001,15 @@ item — do **one item per session** to keep context lean.
       DONE: D-MEDIAID; facdemo1 DONE: D-COLOREQ; kq.dsk is the APPARATUS -- the CF-3300's
       FILES is slower and the T+6 capture caught it half done; given time it lists the same
       ([`kq_files_slow.out`](scratchpad/kq_files_slow.out))), and the six ZB-ONLY.
+      📏 **RE-RUN 2026-10-21 after D-BOOTDATE / D-MEDIAID / D-COLOREQ / D-RAMAD / D-SIDES** (zerobas
+      only, against the first run's reference rows: `diskcorpus_run.py --reuse-ref`;
+      [`diskcorpus_rerun.out`](scratchpad/diskcorpus_rerun.out), the 43 non-BOTH-RUN rows): BOTH-RUN
+      19 (the 18 date-question disks, now asking on both), ZB-NOBOOT 8, ZB-ONLY 7, FILES-DIFF 7,
+      FILES-SAME 1 (facdemo3), FILES-EMPTY 1. 🔮 "class A -> BOTH-RUN" HIT. ⚠️ Two of the BOTH-RUN
+      are the HEURISTIC, not agreement: ROBOCOP (zerobas at the date question, the CF-3300 in the
+      game -> D-BDOSBASIC) and xak2eng2 (zerobas CURLIN $4003, junk). And most FILES-DIFF rows are
+      the CLASSIFIER: files_listed() reads the banners' version numbers (`1.0`, `0.1`) as file
+      names. BREAKER is an MSX2 game (`SET PAGE`, SCREEN 8 pictures): both fail, not ours.
       📏 **THE MEMMAN CLASS (no-waste, megadoom, modedit; 2026-10-21):** the references stop
       in MemMan's installer (`No free segment for MemMan`; megadoom `Illegal function call
       in 8`). D-RAMAD fixed two documented cells it found unset, and the three STILL part
@@ -11933,7 +11966,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37866 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37910 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12099,7 +12132,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16961 (T-6FE392)8 (T-529ABE)` from `TODO.md:29798 (T-529ABE)`: a
+      `TODO.md:16994 (T-6FE392)8 (T-529ABE)` from `TODO.md:29831 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17808,7 +17841,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29798 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29831 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -36407,12 +36440,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 - [ ] 🔴 **BDOS CALLS MADE FROM A BASIC PROGRAM (machine code through `$F37D`) ANSWER ONLY
       SEVEN FUNCTIONS HERE, AND NOTHING COMPARES THEM WITH THE CF-3300 (D-BDOSBASIC,
       found 2026-10-09 by the MSX-DOS concept page).**
-      🎚️ TIER 6 (latent) — BDOS from Disk BASIC
+      🎚️ TIER 1 — happy path: a real disk's boot loader needs it (ROBOCOP, below; re-tiered
+      2026-10-21 from TIER 6 latent).
       🤖 **AUTONOMOUS** — measure first.
       `bdos_entry` answers `$0F $10 $14 $15 $16 $1A $27` and returns `$FF` for
       the rest; the DOS-side BDOS (under MSX-DOS) is the gated one (tier2-*).
       Measure which functions the CF-3300 answers from BASIC (a `USR` routine
       calling `$F37D`), then decide.
+      📏 **MEASURED 2026-10-21 (D-DISKRUN's ROBOCOP):** [`bootpath_robocop_bdos.out`](scratchpad/bootpath_robocop_bdos.out)
+      (a breakpoint on $F37D, registers only): ROBOCOP's boot loader, run from the boot code in
+      the BASIC environment, calls $09 (STROUT, DE=$C0A2), $1A (SETDTA $0100), $11 (SFIRST,
+      FCB $C0DA), $0F (OPEN) and $27 (RDBLK, $3F00 records) on the CF-3300 and runs the game;
+      on zerobas the $11 comes back at once, the loader asks again and falls back to $4022 (the
+      date question). Our own USR routine ([`bdos_sfirst.out`](scratchpad/bdos_sfirst.out); SETDTA
+      $D100, SFIRST on AUTOEXEC.BAS from Disk BASIC): the CF-3300 A = 0 and the directory entry
+      in the DTA; zerobas A = 2, the DTA untouched (2, not the $FF the dispatcher's tail sets --
+      unexplained, read it first). ➡️ NEXT: the CF-3300's answer set from BASIC, function by
+      function ($00-$30, a USR row each); then SFIRST / SNEXT and STROUT first (ROBOCOP's).
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

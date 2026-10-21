@@ -1,0 +1,4 @@
+=== disk: PASS
+
+PASS 1
+refcache: 0 hit, 2 miss, 2 stored

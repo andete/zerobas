@@ -1,0 +1,45 @@
+[  1/143] ZB-ONLY    -> ZB-ONLY    zb S0 pc=  676 curlin=   10  BREAKER.DSK
+[  3/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  DiscStation32A.dsk
+[  4/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  DiscStation32B.dsk
+[  5/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  DiscStation32C.dsk
+[  6/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  DiscStation32D.dsk
+[  9/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  FSA1GT1.DSK
+[ 11/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  FSA1GT3.DSK
+[ 19/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  MLS.DSK
+[ 23/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  ROBOCOP.DSK
+[ 31/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  STONE.DSK
+[ 36/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  SirDan.dsk
+[ 38/143] ZB-ONLY    -> ZB-ONLY    zb S1 pc= 6487 curlin=    0  TestameB.dsk
+[ 41/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  UR-1.dsk
+[ 42/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  UR-2.dsk
+[ 43/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  UR-3.dsk
+[ 46/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  almost_real.dsk
+[ 51/143] ZB-ONLY    -> ZB-ONLY    zb S1 pc=56829 curlin=    0  calculus.dsk
+[ 53/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  crossbla.dsk
+[ 54/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  daivas5-save.dsk
+[ 56/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  dos2.dsk
+[ 61/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  empty.dsk
+[ 62/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  exordemo.dsk
+[ 65/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  facdemo1.di1
+[ 66/143] FILES-EMPTY -> FILES-EMPTY zb S0 pc=  460 curlin=65535  facdemo2.di2
+[ 67/143] FILES-DIFF -> FILES-SAME zb S0 pc=  460 curlin=65535  facdemo3.di2
+[ 69/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  facdemo5.di2
+[ 70/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  feud.dsk
+[ 92/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  kq.dsk
+[ 97/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  mania111_starquake.dsk
+[ 98/143] FILES-DIFF -> ZB-ONLY    zb S1 pc=17420 curlin=    0  mb.dsk
+[ 99/143] ZB-ONLY    -> ZB-ONLY    zb S0 pc=31479 curlin=    7  megadoom.dsk
+[100/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  mlimit_a.dsk
+[106/143] ZB-ONLY    -> ZB-ONLY    zb S0 pc= 6383 curlin=   10  modedit.dsk
+[108/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  muzax3.dsk
+[109/143] FILES-DIFF -> FILES-DIFF zb S0 pc= 6383 curlin=65535  no-waste.dsk
+[112/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  quinpl-save.dsk
+[114/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  raydemo.dsk
+[115/143] FILES-DIFF -> FILES-DIFF zb S0 pc=  460 curlin=65535  relax.dsk
+[121/143] ZB-NOBOOT  -> ZB-NOBOOT  zb S0 pc=  460 curlin=65535  senigma.di2
+[122/143] ZB-ONLY    -> ZB-ONLY    zb S1 pc= 6488 curlin=    0  ss-final.dsk
+[128/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  total.dsk
+[134/143] ZB-NOBOOT  -> BOTH-RUN   zb S1 pc=  550 curlin=16387  xak2eng2.dsk
+[138/143] ZB-NOBOOT  -> BOTH-RUN   zb S0 pc= 4512 curlin=    0  xak2eng6.dsk
+TALLY {"BOTH-RUN": 19, "FILES-DIFF": 7, "FILES-EMPTY": 1, "FILES-SAME": 1, "ZB-NOBOOT": 8, "ZB-ONLY": 7}
+rc=0

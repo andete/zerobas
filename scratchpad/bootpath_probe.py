@@ -21,6 +21,8 @@ def main():
     ap.add_argument("machine")
     ap.add_argument("seconds", nargs="?", type=float, default=30.0)
     ap.add_argument("--ext", action="append", default=[])
+    ap.add_argument("--bp", action="append", default=[],
+                    help="another PUBLISHED address to log (hex, e.g. F37D: the BDOS door)")
     a = ap.parse_args()
     td = tempfile.mkdtemp(prefix="bootpath_")
     try:
@@ -29,6 +31,7 @@ def main():
         dsk = os.path.join(td, "d" + (".xsa" if ext == ".xsa" else ".dsk"))
         shutil.copy(src, dsk)
         out = os.path.join(td, "log.txt")
+        extra = "".join(f"debug set_bp 0x{b} {{}} {{ __hit {b} }}\n" for b in a.bp)
         tcl = f"""set throttle off
 set __n 0
 proc __hit {{tag}} {{
@@ -46,7 +49,7 @@ proc __hit {{tag}} {{
 }}
 debug set_bp 0xC01E {{}} {{ __hit C01E }}
 debug set_bp 0x4022 {{}} {{ __hit 4022 }}
-after time {a.seconds} {{ exit }}
+{extra}after time {a.seconds} {{ exit }}
 """
         open(os.path.join(td, "s.tcl"), "w").write(tcl)
         cmd = ["/opt/homebrew/bin/openmsx", "-machine", a.machine]

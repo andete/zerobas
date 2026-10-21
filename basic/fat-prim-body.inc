@@ -144,7 +144,8 @@ dc_map:
 read_sector:
                 xor     a               ; drive 0 (ignored); also Cy = 0 = read
                 ld      b, 1            ; one sector
-                ld      c, $F9          ; media byte ($F9 = 720K; ignored, single drive)
+                ld      c, 0            ; media: not an ID -> DSKIO keeps the mounted disk's
+                                        ; (D-SIDES; fat_geom_read records it)
                 jp      dskio_calslt    ; tail-call: returns to our caller with DSKIO's
                                         ; CY (A=0 cleared CY here -> read direction).
                                         ; ONE name for both ROMs now: the local-vs-

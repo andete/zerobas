@@ -156,6 +156,56 @@ def classify(ref, zb):
     return ("FILES-SAME" if fr == fz else "FILES-DIFF"), (len(fr), len(fz))
 
 
+def summary_state(curlin, pc, mode) -> str:
+    """state_of, from a stored row's summary fields instead of a capture."""
+    if curlin != 0xFFFF or pc >= 0x8000 or mode not in ("S0", "S1"):
+        return "RUNNING"
+    return "PROMPT"
+
+
+def rerun_zb(a, names, times) -> int:
+    """--reuse-ref: zerobas only, classified against the previous run's reference
+    summary (state from CURLIN / PC / mode, FILES from its listing)."""
+    prev = {r["image"]: r for r in json.load(open(a.reuse_ref))["results"]}
+    want = {c for c in a.classes.split(",") if c}
+    rows, tally = [], {}
+    for i, n in enumerate(names, 1):
+        old = prev.get(n)
+        if old is None or (want and old["class"] not in want):
+            continue
+        zb = run_one(ZB, os.path.join(a.dir, n), times, typed="FILES")
+        last = sorted(t for t in (zb or {}) if t != "F")[-1] if zb else None
+        if not zb or last is None:
+            cls = "ERROR"
+        else:
+            sr = summary_state(old["ref_curlin"], old["ref_pc"], old["ref_mode"])
+            sz = state_of(zb[last])
+            if sr == "RUNNING" and sz == "RUNNING":
+                cls = "BOTH-RUN"
+            elif sr == "RUNNING":
+                cls = "ZB-NOBOOT"
+            elif sz == "RUNNING":
+                cls = "ZB-ONLY"
+            else:
+                fr, fz = old["ref_files"] or [], files_listed(zb["F"]) if "F" in zb else []
+                cls = ("FILES-EMPTY" if not fr and not fz
+                       else "FILES-SAME" if fr == fz else "FILES-DIFF")
+        tally[cls] = tally.get(cls, 0) + 1
+        row = {"image": n, "class": cls, "was": old["class"],
+               "zb_mode": mode_of(zb[last]["regs"]) if last else None,
+               "zb_pc": zb[last]["pc"] if last else None,
+               "zb_curlin": zb[last]["curlin"] if last else None,
+               "zb_files": files_listed(zb["F"]) if zb and "F" in zb else None,
+               "zb_text": screen_text(zb[last]) if last else None}
+        rows.append(row)
+        print(f"[{i:3d}/{len(names)}] {old['class']:10s} -> {cls:10s} zb {row['zb_mode']} "
+              f"pc={row['zb_pc']!s:>5s} curlin={row['zb_curlin']!s:>5s}  {n}", flush=True)
+        json.dump({"times": times, "reuse_ref": a.reuse_ref, "results": rows, "tally": tally},
+                  open(a.out, "w"), indent=1)
+    print("TALLY", json.dumps(tally, sort_keys=True))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default=os.environ.get("DISKCORPUS_DIR"))
@@ -164,6 +214,12 @@ def main() -> int:
     ap.add_argument("--times", default="20,45")
     ap.add_argument("--out", default="/tmp/diskcorpus.json")
     ap.add_argument("--resume", action="store_true", help="keep --out's rows, run the rest")
+    ap.add_argument("--reuse-ref", metavar="PREV_JSON",
+                    help="run ZEROBAS ONLY, against the reference rows a previous --out holds "
+                         "(the reference does not change between zerobas fixes)")
+    ap.add_argument("--classes", default="",
+                    help="with --reuse-ref: only the images whose PREVIOUS class is in this "
+                         "comma list (e.g. ZB-NOBOOT,ZB-ONLY,FILES-DIFF,FILES-EMPTY)")
     a = ap.parse_args()
     if not a.dir or not os.path.isdir(a.dir):
         sys.exit("give the collection with DISKCORPUS_DIR or --dir")
@@ -176,6 +232,8 @@ def main() -> int:
     if a.limit:
         names = names[:a.limit]
     results, tally = [], {}
+    if a.reuse_ref:
+        return rerun_zb(a, names, times)
     if a.resume and os.path.exists(a.out):
         prev = json.load(open(a.out))
         results = prev["results"]

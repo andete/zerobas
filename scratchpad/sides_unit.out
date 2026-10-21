@@ -1,0 +1,8 @@
+PASS  lsec_chs: 88 (media, sector) rows
+PASS  $F8 sector 18 -> sector 1, track 2, side 0 (want 1, 2, 0 -- 2 sides x 9 gave track 1, side 0)
+PASS  dskio C=F8 with DSK_MEDIA F9: F8 (want F8)
+PASS  dskio C=00 with DSK_MEDIA F8: F8 (want F8)
+PASS  dskio C=FD with DSK_MEDIA F8: FD (want FD)
+PASS  dskio C=F7 with DSK_MEDIA FD: FD (want FD)
+
+ALL PASS — sectors seated by the media byte, as on both references

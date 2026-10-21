@@ -53,7 +53,9 @@ The BPB is not read at all — a disk whose BPB is damaged or entirely zero read
 normally, and one whose FAT starts with another media ID than its real layout
 loses its files. Both reference machines do this, and so does zerobas since
 2026-10-21. (zerobas still reads the BPB of a disk whose FAT does not start
-with a media ID.)
+with a media ID.) The same media ID also tells the drive how the sectors sit:
+a single-sided disk fills one side track after track, a double-sided one
+alternates sides, and the 8-sector formats have one sector less a track.
 
 | media ID | sides | tracks | sectors a track | sectors a cluster | sectors a FAT | root entries |
 |---|---|---|---|---|---|---|
@@ -239,6 +241,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A single-sided disk was read wrongly past its first 9 KB** (fixed
+  2026-10-21, D-SIDES). The drive code placed every sector as on a two-sided
+  disk; on a single-sided one the two agree only for the first 18 sectors. A
+  test disk with its program at sector 18 ran on both references and not here
+  ([`bpbrule_p8f.out`](../../scratchpad/bpbrule_p8f.out)). Found while chasing a
+  game whose loader gave up at once — which turned out to be a different cause.
 - **The RAM-slot cells and the extended-BIOS flag were left unset** (fixed
   2026-10-21, D-RAMAD). Three disks of the collection install the MemMan
   memory manager; the references stop at `No free segment for MemMan`, zerobas

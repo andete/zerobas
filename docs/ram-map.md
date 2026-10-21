@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **437** in the MSX standard work area at or above `$F380`.
-* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 124 declared addresses in this project's own workspace `$E000..$F37F` (115 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -182,6 +182,7 @@ second one is the question a per-component map cannot answer.
 | `$EF62` | 1 B | `disk` | `FMT_RESULT` | DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1) |  |
 | `$EF63` | 1 B | `basic` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
 | `$EF63` | 1 B | `disk` | `FILES_ENTIDX` | DISK-ONLY: FILES: dir entry index 0..15 within a sector (1) |  |
+| `$EFF6` | 1 B | `disk` | `DSK_MEDIA` | D-SIDES: the media ID DSKIO seats sectors by (bit 0 two sides, bit 1 8 a track) (1 B) |  |
 | `$EFF7` | 1 B | `disk` | `FDC_IFF` | saved caller IFF2 across a sector op (1 = was EI) (1 B) |  |
 | `$EFF8` | 1 B | `disk` | `FDC_CNT` | remaining sector count (1 B) |  |
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |

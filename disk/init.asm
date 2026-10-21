@@ -545,6 +545,8 @@ set_ramad:
                 ; may, and took another road here. The hook stays C-BIOS's RET fill.
                 ld      hl, HOKVLD
                 set     0, (hl)
+                ld      a, $F9              ; D-SIDES: DSKIO's seating until a disk is
+                ld      (DSK_MEDIA), a      ; mounted -- 2 sides x 9, as before
                 ; --- RAMAD: ALWAYS filled (D-RAMAD, 2026-10-21) --------------------
                 ; Both references hold their RAM slot here in plain Disk BASIC, before
                 ; any DOS: the CF-3300 83 83 83 83 (slot 3-0), the VG-8020 + NMS 1200

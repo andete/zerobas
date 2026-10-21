@@ -21,6 +21,8 @@ AUTOEXEC.BAS of our own (`10 PRINT "AUTOX"`, ASCII) written into cluster 2:
   SF8 .. SFF                    the same, the image cut to that format's size (TOTAL)
   P8                            SF8 with a VALID 360 KB BPB: is a single-sided disk
                                 read past its first track (the program is at sector 12)?
+  P8F                           P8 with the program at cluster 5 = sector 18, where a
+                                2-sides-x-9 seating and a 1-side one stop agreeing
 Boot, read the screen at T12 (AUTOX printed?), type FILES, read it again. Keys in,
 the screen out.
     DISKCORPUS_DIR=... python3 -u scratchpad/bpbrule_probe.py [cf,eu,zb] [V0,V1,...]
@@ -94,6 +96,17 @@ TOTAL = {0xF8: 720, 0xF9: 1440, 0xFA: 640, 0xFB: 1280, 0xFC: 360, 0xFD: 720,
 
 
 def variant(v):
+    if v == "P8F":                            # P8 with the program at cluster 5 = sector 18:
+        b = bytearray(variant("P8"))          # past the first two tracks' worth of sectors
+        root, data, prog_at = 5 * 512, 12 * 512, (12 + (5 - 2) * 2) * 512
+        e = root                              # the one directory entry
+        b[e + 26:e + 28] = (5).to_bytes(2, "little")
+        for f in (1, 3):                      # FAT copies at 1 and 3: cluster 2 free, 5 = $FFF
+            o = f * 512
+            b[o + 3:o + 9] = bytes([0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF])
+        b[prog_at:prog_at + len(PROG)] = PROG
+        b[data:data + len(PROG)] = bytes(len(PROG))
+        return bytes(b)
     if v == "P8":                             # a VALID 360 KB $F8 disk (BPB filled in)
         b = bytearray(media_disk(0xF8)[:720 * 512])
         b[11:30] = bytes.fromhex("0002" "02" "0100" "02" "7000" "d002" "f8" "0200"

@@ -12,10 +12,22 @@
 ;   in:  Cy = 0 read / 1 write; A = drive; B = sector count; C = media byte;
 ;        DE = start logical sector; HL = transfer address
 ;   out: Cy = 0 ok; Cy = 1 error with A = error code, B = sectors not done
-; Single-drive machine: drive number and media byte are ignored (always drive
-; A). Both directions are implemented: read via fdc_read_phys, write via
+; Single-drive machine: the drive number is ignored (always drive A); the media
+; byte sets the seating (D-SIDES, below). Both directions are implemented: read via fdc_read_phys, write via
 ; fdc_write_phys. See PROVENANCE.md §FDC / §DSKIO interface.
 dskio:
+                ; D-SIDES (2026-10-21): the MEDIA BYTE (C) decides the seating -- bit 0
+                ; two sides, bit 1 eight sectors a track -- as on both references, which
+                ; read a single-sided disk past its first tracks (bpbrule_p8f.out). A
+                ; C below $F8 is not a media ID: our own FAT layer passes 0 for "the
+                ; mounted disk's" (fat_geom_read records it), so the last one stays.
+                push    af                  ; Cy = the direction
+                ld      a, c
+                cp      $F8
+                jr      c, dskio_keep
+                ld      (DSK_MEDIA), a
+dskio_keep:
+                pop     af
                 jr      c, dskio_write
                 ; --- read path ---
                 ld      a, b
@@ -30,15 +42,7 @@ dskio_next:
                 jr      z, dskio_ok
                 ; logical sector -> CHS (track/side/sector)
                 ld      hl, (FDC_LSEC)
-                call    div9            ; B = track*2+head, L = sector-1 (H=0)
-                ld      a, l
-                inc     a
-                ld      c, a            ; C = sector (1..9)
-                ld      a, b
-                and     1
-                ld      e, a            ; E = side (0/1)
-                srl     b
-                ld      d, b            ; D = track (0..79)
+                call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
                 ld      hl, (FDC_DEST)
                 ; page-1 bounce: if destination in $4000-$7FFF (page 1 = our disk
                 ; ROM under DOS) read into SECTOR_BUF then blit to the real target
@@ -86,7 +90,7 @@ dskio_err:
                 ret                     ; Cy still set, A = error code
 ; --- write path -------------------------------------------------------------
 ; Mirrors the read loop's structure exactly: loop the sector count, convert each
-; logical sector -> CHS via div9, and call fdc_write_phys (the write twin of
+; logical sector -> CHS via lsec_chs, and call fdc_write_phys (the write twin of
 ; fdc_read_phys). On entry Cy = 1 (write direction); registers as for read.
 dskio_write:
                 ld      a, b
@@ -101,15 +105,7 @@ dskio_wnext:
                 jr      z, dskio_ok
                 ; logical sector -> CHS (track/side/sector), same as the read path
                 ld      hl, (FDC_LSEC)
-                call    div9            ; B = track*2+head, L = sector-1 (H=0)
-                ld      a, l
-                inc     a
-                ld      c, a            ; C = sector (1..9)
-                ld      a, b
-                and     1
-                ld      e, a            ; E = side (0/1)
-                srl     b
-                ld      d, b            ; D = track (0..79)
+                call    lsec_chs        ; C = sector, D = track, E = side (D-SIDES)
                 ld      hl, (FDC_DEST)
                 call    fdc_write_phys
                 jr      c, dskio_err
