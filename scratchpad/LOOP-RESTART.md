@@ -12,7 +12,14 @@ session and the loop resumes exactly where it stopped.
   | speed PAUSED | *"lets pause working on speed and work on rom space first, it'll also have speed impact"* / *"finish the FOR I% first though"* | D-FORINT landed (4b03009f); NO new TIER 5 slice until Joost says otherwise |
   | interleave | asked "free main first / shrink total first / interleave": **"Interleave both"** | alternate a slice that MOVES code out of main (cold statements -> sub2 page 0, which can call main page 1's evaluator) with one that SHRINKS the total (D-ROMSIZE order: string GC, graphics, float format, dedupe) |
   | disk code first | on ~disk-only code still in main: *"that needs to go first."* | **D-DISKREST** (TODO.md) is the FIRST slice series; its real size is ~135-180 B of main, not 1 KB |
-  | pin pads | *"I don't think we have to fill holes before pins exactly every time, but we do need to consider them free space we probably want to use again eventually."* | `make pin-check` fails only on a wrong pin; `make basic-reloc` lists the free bytes in front of the pins per hole |
+  | pin pads | *"I don't think we have to fill holes before pins exactly every time, but we do need to consider them free space we probably want to use again eventually."* | `make pin-check` fails only on a wrong pin; `make basic-reloc` lists the free bytes in front of the pins per hole -- but NOT where a `jr` spans the pad (slice 2: refill it) |
+  | collector (10-21) | *"as long as we have the sub rom, there is no point"* (in compromising the fast string collector for bytes) | the fast GC stays; sub-ROM bytes are not the budget -- MAIN is. Shrinking sub-ROM code (string engine's sub half, graphics, float) waits for a future "no sub ROM" goal |
+- **2026-10-21 early:** D-DISKREST slices 1-5 landed and CLOSED (b3d9b845 .. 433c6b44): main page 1
+  1 -> 36 B tail + 153 B in pin pads, low region +31 B. The VG-8020's string collector is
+  measured QUADRATIC (~15 s at 400 strings; ours <20 ms) -- kept, per the ruling above.
+  ➡️ NEXT: main-ROM relocation slices -- cold statements (load/save ~1.6 KB, file channels
+  ~1.0 KB, direct mode/editor ~0.9 KB, PRINT USING ~0.7 KB; the 2026-10-20 ranking, E) into
+  sub2 page 0, which can call main page 1's evaluator. Re-rank before picking.
 - **Landed 2026-10-20 evening:** D-STOPTEAR (a7ff1389, a torn BREAKX read fired ON STOP twice),
   D-FORINT (4b03009f, `FOR I%` 39 -> 23 ticks). Main page 1 is at **1 B** (read the wall).
 - **A fresh ROM-size measurement (2026-10-20) lives only in that session's scratchpad**: the four

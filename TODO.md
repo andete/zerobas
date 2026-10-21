@@ -4525,6 +4525,36 @@ item — do **one item per session** to keep context lean.
       (2) **the string engine** -- measure first how the VG-8020 stores and
           reclaims strings (descriptor cost, when space comes back), then a
           smaller design that matches it.
+          📏 **MEASURED 2026-10-21: THE VG-8020's COLLECTOR IS QUADRATIC, OURS IS
+          ~FLAT.** [`gctime_probe.py`](scratchpad/gctime_probe.py) times one
+          `FRE("")` (it compacts first) in TIME ticks over N live 8-byte strings
+          ([`gctime_run.out`](scratchpad/gctime_run.out)):
+          | N | VG-8020, garbage between | VG-8020, none | zerobas |
+          |---|---|---|---|
+          | 25 | 5 | 5 | 1-2 |
+          | 50 | 15 | 15 | 1-2 |
+          | 100 | 52 | 54 | 1-2 |
+          | 200 | 196 | 196 | 1-2 |
+          | 400 | 759 | 760 | 1-2 |
+          ~4x per doubling -- the classic rescan-for-the-highest-live-string shape --
+          and the SAME with no garbage at all, so the reference's cost is the scan,
+          not the moves: 400 strings is ~15 s per compaction there. zerobas's sorted
+          single pass (strheap_gc, 959 B of the sub ROM, 282 of them the sort) does
+          it inside one 20 ms tick at every N; `FRE("")` answers 6400 on both.
+          🔮 "VG-8020 g.400 / g.100 ~16" HIT (14.6); "zerobas grows 4-5x" UNSCORED
+          (below the tick). ➡️ So a quadratic collector -- far smaller -- would still
+          be ON PAR (TIER 5's bar); the sort is bytes spent beating the reference by
+          ~400x at N=400. The bytes are SUB-ROM bytes (sub page 1 has ~3.9 KB free),
+          not the binding main budget.
+          🏗️ **JOOST, 2026-10-21:** *"I think eventually we may want to consider wether
+          we can do without sub rom, and then we may have to start compromising things
+          like the collector, but as long as we have the sub rom, there is no point?"*
+          -> the fast collector STAYS. Bytes saved inside the sub ROM buy nothing while
+          it has room; a reference-shaped collector (and packed floats) is a question
+          for a future "no sub ROM" goal -- everything in main + disk.rom, 32 KB
+          diskless / 48 KB with disk against ~67 KB of content (2026-10-20) -- which is
+          not ruled. So steps (2)-(4) of this item wait for that goal wherever their
+          bytes are sub-ROM bytes; what pays NOW is MAIN (page 1 + the low region).
       (3) **graphics** -- the same: measure, then design.
       (4) **the float core** -- 14 digits at one per byte (18 B per number) where
           the reference packs 8 B; the largest and riskiest (every numeric
@@ -11526,7 +11556,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37459 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37489 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11692,7 +11722,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16554 (T-6FE392)8 (T-529ABE)` from `TODO.md:29391 (T-529ABE)`: a
+      `TODO.md:16584 (T-6FE392)8 (T-529ABE)` from `TODO.md:29421 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17401,7 +17431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29391 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29421 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
