@@ -71,6 +71,16 @@ count kept at `&HF33B`; a `DATE` typed in MSX-DOS moves it, and a program
 `SAVE`d in a disk BASIC entered with `A>BASIC` is stamped with that date, on
 both machines ([MSX-DOS](msx-dos.md)). `COPY` keeps the source's date.
 
+**A boot disk without MSX-DOS asks the date.** When a disk's boot code looks
+for `MSXDOS.SYS`, does not find it, and hands back to the disk ROM, the machine
+clears the screen and asks `Enter date (M-D-Y):` before Disk BASIC starts — on
+the VG-8020 with a Philips NMS 1200 disk interface and on the CF-3300 (whose
+question reads year first), and on zerobas since 2026-10-21. The answer takes
+`-`, `/` or `.` between month, day and an optional year (two digits: 80–99 is
+19xx, 00–79 is 20xx; no year keeps the current one); a plain RETURN keeps the
+date; anything else is `Invalid date` and the question again. The answer is the
+date `SAVE` stamps. Returning from MSX-DOS with `A>BASIC` does not ask.
+
 ### Drives
 
 `A:` is the one drive and the default; `DSKF` and `DSKI$` take 0 or 1 for it.
@@ -199,6 +209,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A boot disk without MSX-DOS skipped the date question** (fixed 2026-10-21,
+  D-BOOTDATE). Found by booting a disk collection on both machines (D-DISKRUN):
+  18 of 143 disks reached a date question on the CF-3300 and BASIC on zerobas. A
+  second reference, the VG-8020 with an NMS 1200, asks too — so it is how a disk
+  ROM behaves, not one machine's habit — and the answers were measured there
+  ([`bootdate_run.out`](../../scratchpad/bootdate_run.out)).
 - **A disk taken out during file work** (2026-10-11, D-GETEJECT, D-LINEJECT):
   `GET`, `PUT`, `LINE INPUT #`, `LOAD`, `BLOAD`, `FILES` and `OPEN` all raise
   `Disk offline` (70) in their own line on both machines, so `ON ERROR` sees

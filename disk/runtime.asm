@@ -557,16 +557,20 @@ int_h_hiram_end:
 ; whole session once seeded. Same DOS-only save/restore discipline as $F338.
 ; D-CALLSYSTEM (2026-10-09): CALL SYSTEM (kernel.asm hk_system) enters at
 ; dos_handoff_keep -- the CF-3300 returns to MSX-DOS without clearing the screen
-; (scratchpad/callsystem_warm.out). Both entries mark BASENT_REQ with DOS_SIG for
-; the duration: a DOS disk never returns, so the mark stays and says "MSX-DOS was
-; booted" to a later CALL SYSTEM; a disk that returns puts the old value back.
+; (scratchpad/callsystem_warm.out). Both entries mark BASENT_REQ for the duration:
+; a disk that returns puts the old value back. D-BOOTDATE (2026-10-21): the mark
+; set here is DOS_TRY, no longer DOS_SIG -- a boot code that cannot open
+; MSXDOS.SYS jumps to $4022 from INSIDE this call, and $4022 must tell that apart
+; from MSX-DOS's own `BASIC` (scratchpad/bootdate_run.out: the reference asks the
+; date only in the first case). DOS_SIG is set when MSX-DOS really starts: its
+; MSXDOS.SYS calls $50A9 (w50a9_stub, kernel.asm), which no failing boot code does.
 dos_handoff:
                 call    dos_clear_screen    ; OI-3: blank BASIC banner + home cursor (below)
 dos_handoff_keep:
                 ld      hl, (BASENT_REQ)    ; D-CALLSYSTEM: the mark, saved ...
                 push    hl
-                ld      hl, DOS_SIG         ; ... and set: MSX-DOS is being booted
-                ld      (BASENT_REQ), hl
+                ld      hl, DOS_TRY         ; ... and set: a boot code is being run
+                ld      (BASENT_REQ), hl    ; (D-BOOTDATE; $50A9 makes it DOS_SIG)
                 ld      a, ($F338)          ; save host $F338 (BASIC hook stub on C-BIOS)
                 push    af
                 ld      hl, ($F30D)         ; save host $F30D/$F30E (date-format config)

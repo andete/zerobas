@@ -371,11 +371,12 @@ DOS_RESV_TOP    equ     $DF93   ; top-of-reserved-RAM advertised in DRVTBL+1 (no
 boot_disk:
                 ; D-DOSBASIC: a BASENT restart wants BASIC, not DOS -- clear the
                 ; request and fall through to BASIC as a non-system disk does.
+                ; basent_resume (fat.asm, in the $4C29 fill) sets the mark: DOS_SIG
+                ; after MSX-DOS's `BASIC` (D-CALLSYSTEM), and after a boot loader's
+                ; fallback first asks the date (D-BOOTDATE).
                 call    basent_pending
                 jr      nz, boot_disk_go
-                ld      hl, DOS_SIG         ; D-CALLSYSTEM: BASENT comes from MSX-DOS,
-                ld      (BASENT_REQ), hl    ; so the mark says it was booted (same size)
-                ret
+                jp      basent_resume       ; HL = the mark; returns to the scan
 boot_disk_go:
                 xor     a               ; drive A
                 ld      b, 1            ; one sector

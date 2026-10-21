@@ -34,14 +34,16 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **437** in the MSX standard work area at or above `$F380`.
-* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **65** in the MSX standard work area at or above `$F380`.
+* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **66** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
 | `$E46A` | 512 B | `basic` | `FAT_DBUF/FSECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E46A..$E669) |  |
-| `$E46A` | 512 B | `disk` | `FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E46A..$E669) |  |
+| `$E46A` | 512 B | `disk` | `BD_LINE/FAT_DBUF/FSECTOR_BUF/SECTOR_BUF` | DISK-ONLY: file data / read sector buffer ($E46A..$E669) |  |
+| `$E483` | 1 B | `disk` | `BD_MON` | the month, while the rest is parsed (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
+| `$E484` | 1 B | `disk` | `BD_DAY` | the day (1 B) | `basic` FAT_DBUF/FSECTOR_BUF |
 | `$E66A` | 512 B | `basic` | `FAT_MBUF/FWBUF` | DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869) |  |
 | `$E66A` | 512 B | `disk` | `FAT_MBUF/FWBUF/WBUF` | write-back FAT/dir sector buffer ($E66A..$E869) = main FWBUF |  |
 | `$E85E` | 4 B | `disk` | `WRBLK_MULACC` | 32-bit product accumulator (LE) | `basic` FAT_MBUF/FWBUF |
@@ -219,7 +221,7 @@ second one is the question a per-component map cannot answer.
 | `$F24E` |  | `disk` | `RES_STUBS` | no-op segment-hook stub table base (§8.29) |  |
 | `$F2B8` |  | `disk` | `RES_STUBS_END` | one past the last stub ($F2B7); $F2B8+ = kernel data (§8.61) |  |
 | `$F33B` | 2 B | `disk` | `DATE_DAYS` | the DOS date: a day count since 1980-01-01, where the CF-3300 keeps it (1461 = 1984-01-01 from boot; D-DOSDATE) (2 B) |  |
-| `$F33D` | 2 B | `disk` | `BASENT_REQ` | D-DOSBASIC: 'B','A' while BASENT restarts BASIC -- disk INIT then keeps the DOS date and skips the DOS boot, and leaves DOS_SIG (above) in it (2 B; a… |  |
+| `$F33D` | 2 B | `disk` | `BASENT_REQ` | D-DOSBASIC: 'B','A' while BASENT restarts BASIC from MSX-DOS, 'B','D' (D-BOOTDATE) from a boot loader's fallback -- disk INIT then keeps the DOS date… |  |
 | `$F340` | 1 B | `disk` | `DOS_F340` | disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B) |  |
 | `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
 | `$F347` | 1 B | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B) |  |
@@ -252,6 +254,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F38C` | 14 B | `basic` | `CLPRIM` | MSX work area: the BIOS's RAM inter-slot call primitive, |  |
 | `$F39A` | 20 B | `basic` | `USRTAB` | 20 B total, 10 USR jump vectors of 2 B each. |  |
 | `$F3AE` |  | `basic` | `LINL40` | text columns for SCREEN 0 (WIDTH default) |  |
+| `$F3AE` | 1 B | `disk` | `BD_LINL40` | MSX2 TH work area: LINL40, SCREEN 0's width (1 B) |  |
 | `$F3AF` |  | `basic` | `LINL32` | text columns for SCREEN 1 (WIDTH default) |  |
 | `$F3B0` |  | `basic` | `LINLEN` | current line length (active width) |  |
 | `$F3B0` |  | `disk` | `LINLEN` | current line length = the active width (ditto) |  |

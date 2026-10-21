@@ -131,6 +131,9 @@ k_509F:
 w50a9_stub:
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
+                ld      de, DOS_SIG     ; D-BOOTDATE: MSXDOS.SYS is running, so the
+                ld      (BASENT_REQ), de ; mark says MSX-DOS was booted (our own
+                                        ; cell, not the contract's; DE is set below)
                 ld      de, W50A9_RET_DE ; DE = $F1AA
                 ld      ix, W50A9_RET_DE ; IX = $F1AA (= DE)
                 ld      hl, W50A9_RET_HL ; HL = $F359
@@ -2386,8 +2389,10 @@ date_fat_word:
 ; hooks refilled with RET as at power-on, and a request flag so the disk INIT it
 ; reruns keeps the DOS date and does not boot DOS again.
 
-; basent_pending -- Z when a BASENT restart is pending (BASENT_REQ = 'B','A').
-; Trashes A, HL.
+; basent_pending -- Z when a BASENT restart is pending (BASENT_REQ = 'B','A' from
+; MSX-DOS, or 'B','D' from a boot loader's fallback -- D-BOOTDATE). Both keep the
+; date and skip the DOS boot: skipping is what stops a boot loader that falls back
+; to $4022 from looping. Out: HL = the mark (H tells the two apart). Trashes A.
 basent_pending:
                 ld      hl, (BASENT_REQ)
                 ld      a, l
@@ -2395,14 +2400,27 @@ basent_pending:
                 ret     nz
                 ld      a, h
                 cp      'A'
+                ret     z
+                cp      'D'
                 ret
 
 ; basent_body -- $4022. Runs in page 1 (this ROM), so the switch away from it
 ; happens in a copy of basent_tramp placed in page-3 RAM (SECTOR_BUF: scratch).
+; D-BOOTDATE: when MSX-DOS never started (the mark is not DOS_SIG -- a boot code
+; that could not open MSXDOS.SYS jumps here from inside dos_handoff, whose mark is
+; DOS_TRY), the restart asks the date first, as both references do
+; (scratchpad/bootdate_run.out); MSX-DOS's own `BASIC` (DOS_SIG) does not ask.
 basent_body:
                 di
+                ld      hl, (BASENT_REQ)
+                ld      de, DOS_SIG
+                or      a
+                sbc     hl, de
                 ld      hl, 'A' * 256 + 'B'
-                ld      (BASENT_REQ), hl    ; 'B','A'
+                jr      z, bb_mark          ; 'B','A': from MSX-DOS
+                ld      h, 'D'              ; 'B','D': from a boot loader
+bb_mark:
+                ld      (BASENT_REQ), hl
                 ld      hl, basent_tramp
                 ld      de, SECTOR_BUF
                 ld      bc, basent_tramp_end - basent_tramp
@@ -2578,8 +2596,9 @@ fmt_menu_text:  db      "1=360k 2=720k? ",0
 ; so the cell is DOS's warm flag, not a "booted DOS" mark.
 ; BASIC's stack ($F380 down, sysvars.inc FN_STK_FLOOR) is already in the area
 ; INIT's boot stack uses, clear of everything the boot loads, so it stays.
-; "Booted into MSX-DOS" is DOS_SIG in BASENT_REQ (dos_handoff, and the DOS ->
-; BASIC restart keeps it). 📍 In the fill above `ds $5FE5 - $`, beside hk_format.
+; "Booted into MSX-DOS" is DOS_SIG in BASENT_REQ (MSXDOS.SYS's $50A9 call sets it
+; since D-BOOTDATE -- dos_handoff marks DOS_TRY until then -- and the DOS -> BASIC
+; restart keeps it). 📍 In the fill above `ds $5FE5 - $`, beside hk_format.
 ;   in   STRSCR+1 = main's cursor at the CALL name (basic/format.asm exc_name)
 ;   out  never returns: MSX-DOS, or an error raised in main (DISKOP_ERR, disk_error)
 hk_system:

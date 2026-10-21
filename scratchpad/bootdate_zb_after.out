@@ -1,0 +1,19 @@
+valid      zb  answer='1-2-90'     stamp=1990-01-02
+     T20:  Enter date (M-D-Y):
+     T26:   zerobas Disk BASIC /   ZB /   color  auto   goto   list   run
+empty      zb  answer=''           stamp=1984-01-01
+     T20:  Enter date (M-D-Y):
+     T26:   zerobas Disk BASIC /   ZB /   color  auto   goto   list   run
+month13    zb  answer='13-2-90'    stamp=None
+     T20:  Enter date (M-D-Y):
+     T26:  Enter date (M-D-Y):13-2-90 /  Invalid date /  Enter date (M-D-Y):
+feb29      zb  answer='2-29-91'    stamp=None
+     T20:  Enter date (M-D-Y):
+     T26:  Enter date (M-D-Y):2-29-91 /  Invalid date /  Enter date (M-D-Y):
+year2digit zb  answer='3-4-5'      stamp=2005-03-04
+     T20:  Enter date (M-D-Y):
+     T26:   zerobas Disk BASIC /   ZB /   color  auto   goto   list   run
+junk       zb  answer='XYZ'        stamp=None
+     T20:  Enter date (M-D-Y):
+     T26:  Enter date (M-D-Y):XYZ /  Invalid date /  Enter date (M-D-Y):
+done

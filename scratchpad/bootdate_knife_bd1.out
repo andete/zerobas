@@ -1,0 +1,19 @@
+valid      zb  answer='1-2-90'     stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   1-2-90 /   color  auto   goto   list   run
+empty      zb  answer=''           stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   zerobas Disk BASIC /   ZB /   color  auto   goto   list   run
+month13    zb  answer='13-2-90'    stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   13-2-90 /   color  auto   goto   list   run
+feb29      zb  answer='2-29-91'    stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   2-29-91 /   color  auto   goto   list   run
+year2digit zb  answer='3-4-5'      stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   3-4-5 /   color  auto   goto   list   run
+junk       zb  answer='XYZ'        stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   Syntax error /   ZB /   color  auto   goto   list   run
+done

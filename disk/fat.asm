@@ -702,6 +702,244 @@ dfl_set:
                 scf
                 ret
 
+; --- D-BOOTDATE: the date question after a boot loader's fallback (oracle) -----
+; Both disk references, booting a disk whose boot code cannot open MSXDOS.SYS (it
+; then jumps to $4022), ask the date before BASIC starts; MSX-DOS's own `BASIC`
+; (also $4022) does not. Measured black box, keys in and the screen and the SAVEd
+; file's directory stamp out (scratchpad/bootdate_probe.py, bootdate_run.out; the
+; full table is TODO.md D-BOOTDATE). The European VG-8020 + NMS 1200's form is the
+; one followed (a style split goes to the VG-8020, Joost 2026-09-04): a cleared
+; SCREEN 0, `Enter date (M-D-Y):`, the typed text right after the colon; RETURN
+; alone keeps the date; a date is set and BASIC starts; anything else prints
+; `Invalid date` on its own line and asks again. MONTH-DAY[-YEAR], separated by
+; `-`, `/` or `.`; a two-digit year is 1980..2099 (80-99 = 19xx, 00-79 = 20xx); no
+; year is this year; validity (month lengths, leap years) is sdate_body's.
+; Rejected as measured: a field 0 or past its range, an empty field (`1--90`),
+; junk (`XYZ`), a leading blank. Trailing junk after the year is own choice
+; (rejected). Own code throughout, over the published BIOS calls (MSX2 TH: CHGET,
+; CHPUT, INITXT): it runs in disk INIT, inside main's slot scan, before the sub
+; ROM is found -- so zerobas's own line editor is not there to use.
+; 📌 SITED IN THE $4C29 FILL: the largest hole in this ROM (check_disk_walls).
+BIOS_CHGET      equ     $009F   ; MSX2 TH BIOS: wait for a key, A = its code
+BIOS_INITXT     equ     $006C   ; MSX2 TH BIOS: SCREEN 0 (TEXT1), cleared, cursor home
+BD_LINL40       equ     $F3AE   ; MSX2 TH work area: LINL40, SCREEN 0's width (1 B)
+BD_LINE         equ     SECTOR_BUF          ; the typed line (own choice: scratch --
+                                            ; the BASENT path skips the boot read)
+BD_MAX          equ     24                  ; own choice: the longest line kept
+BD_MON          equ     BD_LINE + BD_MAX + 1 ; the month, while the rest is parsed (1 B)
+BD_DAY          equ     BD_MON + 1          ; the day (1 B)
+
+; basent_resume -- boot_disk's BASENT branch. In: HL = the mark (basent_pending).
+; 'B','A' (from MSX-DOS): the mark becomes DOS_SIG, as before (D-CALLSYSTEM).
+; 'B','D' (a boot loader's fallback): MSX-DOS never ran, so the mark is cleared --
+; first, so a reset during the question boots normally -- and the date is asked.
+basent_resume:
+                ld      a, h
+                ld      hl, DOS_SIG
+                cp      'A'
+                jr      z, brs_mark
+                ld      hl, 0
+brs_mark:
+                ld      (BASENT_REQ), hl
+                ret     z                   ; from MSX-DOS: on to BASIC
+                ; --- intentional fall-through to boot_date ---
+boot_date:
+                ; The VG-8020 + NMS 1200 asks at WIDTH 37 (LINL40 = 37, measured: the
+                ; prompt starts one column further in than at C-BIOS's default 39; the
+                ; CF-3300 asks at 39 -- a style split, the VG-8020's wins, Joost
+                ; 2026-09-04). zerobas BASIC sets its own width when it starts, after.
+                ld      a, 37
+                ld      (BD_LINL40), a
+                call    BIOS_INITXT         ; a cleared SCREEN 0, the cursor home
+                ld      hl, bd_prompt
+bd_ask:
+                call    bd_puts
+                ei                          ; CHGET waits on the keyboard interrupt
+                call    bd_line             ; B = its length
+                ld      a, b
+                or      a
+                jr      z, bd_done          ; RETURN alone: the date stays
+                call    bd_parse
+                or      a
+                jr      z, bd_done          ; a date: stored
+                ld      hl, bd_invalid      ; runs on into the prompt
+                jr      bd_ask
+bd_done:
+                di                          ; INIT runs masked (the slot scan's DI)
+                ret
+
+; bd_puts -- CHPUT the 0-terminated text at HL. Trashes AF, HL.
+bd_puts:
+                ld      a, (hl)
+                or      a
+                ret     z
+                call    bd_out
+                inc     hl
+                jr      bd_puts
+
+; bd_out -- CHPUT A, keeping BC/DE/HL whatever the BIOS does with them.
+bd_out:
+                push    bc
+                push    de
+                push    hl
+                call    CHPUT
+                pop     hl
+                pop     de
+                pop     bc
+                ret
+
+; bd_line -- read a line into BD_LINE, echoed: printable keys are kept (up to
+; BD_MAX), BS takes the last one back off the screen (BS, space, BS), other
+; control keys are ignored, RETURN ends it. Out: B = length, BD_LINE 0-terminated.
+bd_line:
+                ld      hl, BD_LINE
+                ld      b, 0
+bl_key:
+                push    hl
+                push    bc
+                call    BIOS_CHGET
+                pop     bc
+                pop     hl
+                cp      13
+                jr      z, bl_end
+                cp      8
+                jr      z, bl_bs
+                cp      ' '
+                jr      c, bl_key           ; another control key
+                ld      c, a
+                ld      a, b
+                cp      BD_MAX
+                jr      nc, bl_key          ; full: dropped
+                ld      (hl), c
+                inc     hl
+                inc     b
+                ld      a, c
+                call    bd_out
+                jr      bl_key
+bl_bs:
+                ld      a, b
+                or      a
+                jr      z, bl_key           ; nothing to take back
+                dec     hl
+                dec     b
+                ld      a, 8
+                call    bd_out              ; back
+                ld      a, ' '
+                call    bd_out              ; blank it
+                ld      a, 8
+                call    bd_out              ; back again
+                jr      bl_key
+bl_end:
+                ld      (hl), 0
+                ret
+
+; bd_parse -- BD_LINE (0-terminated) as MONTH-DAY[-YEAR]; a date is stored by
+; sdate_body. Out: A = 0 stored, else not a date (DATE_DAYS untouched).
+bd_parse:
+                ld      de, BD_LINE
+                call    bd_small            ; the month
+                jr      c, bp_bad
+                ld      (BD_MON), a
+                call    bd_sep
+                jr      c, bp_bad
+                call    bd_small            ; the day
+                jr      c, bp_bad
+                ld      (BD_DAY), a
+                ld      a, (de)
+                or      a
+                jr      z, bp_noyear        ; M-D: this year
+                call    bd_sep
+                jr      c, bp_bad
+                call    bd_field            ; the year
+                jr      c, bp_bad
+                ld      a, (de)
+                or      a
+                jr      nz, bp_bad          ; anything after the year
+                ld      a, h
+                or      a
+                jr      nz, bp_set          ; 256 and up: as typed (sdate_body judges)
+                ld      a, l
+                cp      100
+                jr      nc, bp_set          ; 100..255: as typed (refused)
+                ld      bc, 1900
+                cp      80
+                jr      nc, bp_add          ; 80..99: 19xx
+                ld      bc, 2000            ; 00..79: 20xx
+bp_add:
+                add     hl, bc
+                jr      bp_set
+bp_noyear:
+                call    gdate_core          ; HL = the year of the date kept so far
+bp_set:
+                ld      a, (BD_MON)
+                ld      d, a
+                ld      a, (BD_DAY)
+                ld      e, a
+                jp      sdate_body          ; A = 0 stored / $FF not a date
+bp_bad:
+                ld      a, $FF
+                ret
+
+; bd_sep -- step past a `-`, `/` or `.` at DE (CF clear); anything else: CF.
+bd_sep:
+                ld      a, (de)
+                inc     de
+                cp      '-'
+                ret     z
+                cp      '/'
+                ret     z
+                cp      '.'
+                ret     z
+                scf
+                ret
+
+; bd_small -- bd_field, and the value must fit a byte. Out: CF = no; else A = it.
+bd_small:
+                call    bd_field
+                ret     c
+                ld      a, h
+                or      a                   ; CF clear
+                ld      a, l
+                ret     z
+                scf
+                ret
+
+; bd_field -- a decimal field at DE. Out: CF = no digit there; else HL = its value
+; (held once it reaches 2560 -- past every range), DE past the digits. Trashes A, BC.
+bd_field:
+                ld      hl, 0
+                ld      b, h                ; B = digits seen
+bf_lp:
+                ld      a, (de)
+                sub     '0'
+                cp      10
+                jr      nc, bf_end          ; not a digit
+                inc     de
+                inc     b
+                ld      c, a
+                ld      a, h
+                cp      10
+                jr      nc, bf_lp           ; 2560 or more: held
+                push    de
+                ld      d, h
+                ld      e, l
+                add     hl, hl
+                add     hl, hl
+                add     hl, de
+                add     hl, hl              ; x 10
+                ld      e, c
+                ld      d, 0
+                add     hl, de              ; + the digit
+                pop     de
+                jr      bf_lp
+bf_end:
+                ld      a, b
+                cp      1                   ; CF: no digit
+                ret
+
+bd_invalid:     db      13, 10, "Invalid date", 13, 10  ; runs on into bd_prompt
+bd_prompt:      db      "Enter date (M-D-Y):", 0
+
                 ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25
                 ; - $` lines stood here, commented "anchor canonical address", with NO
                 ; code between them: the `jp k_49xx` veneers left with D-FATENG

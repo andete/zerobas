@@ -4743,7 +4743,7 @@ item — do **one item per session** to keep context lean.
       dskio / nodisk (PINNED must stay empty) acceptance, diskrom-abi-check,
       pin-check, check_disk_walls; plus per-slice rows and a knife.
 
-- [ ] 📅 **D-BOOTDATE — A BOOT LOADER THAT FALLS BACK TO $4022 GETS A DATE QUESTION ON BOTH
+- [x] ✅ **FIXED 2026-10-21** — 📅 **D-BOOTDATE — A BOOT LOADER THAT FALLS BACK TO $4022 GETS A DATE QUESTION ON BOTH
       REFERENCES AND NONE ON zerobas (from D-DISKRUN's class A, 18 of 143 disks; 2026-10-21)**
       🎚️ TIER 1 — happy path: what booting such a disk looks like.
       🤖 **AUTONOMOUS** — both references settle it; the date-order split is a style split and
@@ -4769,6 +4769,35 @@ item — do **one item per session** to keep context lean.
       the rules above, re-prompts with `Invalid date`, sets the DOS date the stamps use, then
       starts BASIC as now. Measure first what the screen shows BEFORE the prompt on the
       reference (cleared? the boot screen?), and the input line's editing (INLIN-like?).
+      📏 Measured then: the reference asks on a cleared SCREEN 0 (nothing before it), and the
+      line edits (`1-2-9X`, BS, `0` -> 1990-01-02). And after a boot fallback, `CALL SYSTEM`
+      is `Illegal function call` on BOTH references (MSX-DOS never ran).
+      ✅ **THE FIX** (drafted in a worktree, build + host tests only; integrated and measured
+      here). 🔴 The filed design could not work: on the boot-fallback path BASENT_REQ is
+      ALREADY DOS_SIG at $4022 -- dos_handoff_keep writes it BEFORE the CY=1 call into the
+      boot code, which jumps to $4022 from inside that call -- so "not DOS_SIG" never held
+      and the fallback looked like `A>BASIC`. Now: dos_handoff_keep writes DOS_TRY ('D','T');
+      DOS_SIG is written in w50a9_stub ($50A9, which MSXDOS.SYS's init calls and a failing
+      loader never reaches; the $50A9 register contract unchanged); basent_body writes 'B','A'
+      for DOS_SIG, else 'B','D'; basent_pending accepts both and returns the mark; boot_disk's
+      branch (basent_resume) keeps DOS_SIG for 'BA' and, for 'BD', clears the mark FIRST (a
+      reset during the question boots normally) and runs boot_date (disk/fat.asm, in the
+      $4A96 hole): LINL40 := 37 (the VG-8020 asks at width 37 -- C-BIOS's default 39 put the
+      prompt one column out; the CF-3300's 39 loses the style split), INITXT, the prompt, an
+      own CHGET / CHPUT line reader (24 chars, BS erases, EI while waiting), the measured
+      parser, sdate_body to validate and store, `Invalid date` and again, DI back to the scan.
+      📏 disk.rom free 2295 -> 1973 B; main ROM unchanged.
+      Witness: [`bootdate_zb_after2.out`](scratchpad/bootdate_zb_after2.out) -- zerobas now
+      answers every row of the table as the VG-8020 does (stamps 1990-01-02 / 1984-01-01 /
+      2005-03-04; `Invalid date` + the prompt for 13-2-90, 2-29-91, XYZ), the prompt in the
+      reference's column; tests/test_bootdate.py (new) runs the parser over the measured
+      answers and the question with CHGET / CHPUT trapped, and every mark transition;
+      dosmode / callsystem / dosbasic / dosdate / autorun / nodisk acceptance green.
+      🔪 K-BD1 (basent_body never writes 'B','D'): the prompt is gone, every stamp 1984-01-01
+      ([`bootdate_knife_bd1.out`](scratchpad/bootdate_knife_bd1.out)); disk.rom 6a70b7bf ->
+      93caca57 -> 6a70b7bf. 🔮 "every answer as the VG-8020" HIT; "the mark suites stay
+      green" HIT; "the prompt is one column out" FOUND and fixed (LINL40).
+      Docs: docs/concepts/disk.md (the question, and how it was found); example PASS.
 
 - [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
       MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
@@ -11758,7 +11787,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37691 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37720 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11924,7 +11953,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16786 (T-6FE392)8 (T-529ABE)` from `TODO.md:29623 (T-529ABE)`: a
+      `TODO.md:16815 (T-6FE392)8 (T-529ABE)` from `TODO.md:29652 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17633,7 +17662,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29623 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29652 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
