@@ -368,8 +368,7 @@ bdos_entry:
                 jp      z, bdos_seqwrite
                 cp      BDOS_F_RDBLK
                 jp      z, bdos_rdblk
-                ld      a, $FF          ; unsupported call
-                ret
+                jp      bdos_more       ; D-BDOSBASIC: the rest (disk/kernel.asm)
 
 ; bdos_setdta ($1A) — set the Disk Transfer Area address.
 ;   in:  DE = new DTA pointer
@@ -377,8 +376,7 @@ bdos_entry:
 ; Stores DE into BDOS_DTA; subsequent SeqReads copy each 128-byte record there
 ; instead of the $0080 default. (MSX2 TH / MSX-DOS BDOS call table.)
 bdos_setdta:
-                ld      (BDOS_DTA), de
-                ret
+                jp      bdos_setdta_body    ; D-BDOSBASIC: + the $F23D cell (kernel.asm)
 
 ; bdos_open ($0F) — open the file named in the FCB.
 ; Mounts the volume (BPB), searches the root directory for the FCB's 11-byte 8.3

@@ -20,6 +20,26 @@
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
+; --- D-BDOSBASIC slice 1: more BDOS functions for $F37D (oracle; MSX2 TH BDOS table)
+; A boot loader running in the boot code's environment (page 1 = this ROM) calls
+; these too: ROBOCOP calls $09, $1A, $11, $0F, $27 and runs on the CF-3300
+; (scratchpad/bootpath_robocop_bdos.out). SFIRST / SNEXT are the kernel's own root
+; walk, which fills the DTA through the work-area cell $F23D -- the cell the CF-3300's
+; own SETDTA writes from BASIC (scratchpad/bdos_dtacell.out: $D100), so SETDTA sets
+; it too. STROUT is the resident '$'-string printer. Anything else: A = $FF, as before.
+bdos_more:
+                cp      BDOS_F_SFIRST
+                jp      z, sfirst_body
+                cp      BDOS_F_SNEXT
+                jp      z, snext_body
+                cp      BDOS_F_STROUT
+                jp      z, RES_PRINT        ; '$'-terminated string at DE
+                ld      a, $FF              ; unsupported call
+                ret
+bdos_setdta_body:
+                ld      (BDOS_DTA), de
+                ld      (DOS_DTAPTR), de
+                ret
 ; --- D-MEDIAID: a disk's geometry comes from its MEDIA ID, not its BPB (oracle) ---
 ; Both references (the CF-3300; the VG-8020 + NMS 1200) read a disk whose boot
 ; sector BPB is damaged or ALL ZERO, and lose one whose FAT starts with another

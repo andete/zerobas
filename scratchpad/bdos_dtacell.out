@@ -1,0 +1,216 @@
+=== National_CF-3300
+== S0 ('14:NEW')  pc=0D82 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  color auto  goto  list  run
+== S1 ('15:1 CLEAR 200,&HCFFF')  pc=0D76 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR
+   |  color auto  goto  list  run
+== S2 ('17:10 FOR I=0 TO 8:READ A:POKE &HD000+I,A:NEXT:POKE &HF23D,0:POKE &HF23E,0')  pc=0D88 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &
+   |  HD000+
+   |  color cload cont  list.  run
+== S3 ('24:20 DATA 17,0,209,14,26,205,125,243,201')  pc=0D88 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &
+   |  HD000+I,A:NEXT:POKE &HF23D,0:
+   |  POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,20
+   |  color auto  goto  list  run
+== S4 ('29:30 DEFUSR=&HD000:X=USR(0):PRINT "DTA CELL ";HEX$(PEEK(&HF23D)+256*PEEK(&HF23E))')  pc=0BA2 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &
+   |  HD000+I,A:NEXT:POKE &HF23D,0:
+   |  POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "DT
+   |  color cload cont  list.  run
+== S5 ('36:RUN')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &
+   |  HD000+I,A:NEXT:POKE &HF23D,0:
+   |  POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "DTA CELL ";HEX$(PEEK(&HF2
+   |  3D)+256*PEEK(&HF23E))
+   |  RUN
+   |  DTA CELL D100
+   |  Ok
+   |  color auto  goto  list  run
+== S6 ('40:')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &
+   |  HD000+I,A:NEXT:POKE &HF23D,0:
+   |  POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,12
+   |  5,243,201
+   |  30 DEFUSR=&HD000:X=USR(0):PRI
+   |  NT "DTA CELL ";HEX$(PEEK(&HF2
+   |  3D)+256*PEEK(&HF23E))
+   |  RUN
+   |  DTA CELL D100
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('14:NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  color  cload" cont   list.   run
+== S1 ('15:1 CLEAR 200,&HCFFF')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR
+   |  color  cload" cont   list.   run
+== S2 ('17:10 FOR I=0 TO 8:READ A:POKE &HD000+I,A:NEXT:POKE &HF23D,0:POKE &HF23E,0')  pc=39F2 curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &HD000
+   |  color  cload" cont   list.
+== S3 ('24:20 DATA 17,0,209,14,26,205,125,243,201')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &HD000+I,
+   |  A:NEXT:POKE &HF23D,0:POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,125,243,20
+   |  color  auto   goto   list   run
+== S4 ('29:30 DEFUSR=&HD000:X=USR(0):PRINT "DTA CELL ";HEX$(PEEK(&HF23D)+256*PEEK(&HF23E))')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &HD000+I,
+   |  A:NEXT:POKE &HF23D,0:POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,125,243,20
+   |  1
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "
+   |  color  cload" cont   list.   run
+== S5 ('36:RUN')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &HD000+I,
+   |  A:NEXT:POKE &HF23D,0:POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,125,243,20
+   |  1
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "DTA
+   |  CELL ";HEX$(PEEK(&HF23D)+256*PEEK(&HF
+   |  23E))
+   |  RUN
+   |  DTA CELL 0
+   |  ZB
+   |  color  auto   goto   list   run
+== S6 ('40:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  1 CLEAR 200,&HCFFF
+   |  10 FOR I=0 TO 8:READ A:POKE &HD000+I,
+   |  A:NEXT:POKE &HF23D,0:POKE &HF23E,0
+   |  20 DATA 17,0,209,14,26,205,125,243,20
+   |  1
+   |  30 DEFUSR=&HD000:X=USR(0):PRINT "DTA
+   |  CELL ";HEX$(PEEK(&HF23D)+256*PEEK(&HF
+   |  23E))
+   |  RUN
+   |  DTA CELL 0
+   |  ZB
+   |  color  auto   goto   list   run

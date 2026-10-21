@@ -1,0 +1,5 @@
+python3 tools/tier_table.py --keywords --markdown > docs/.tier-status.md.tmp \
+	  && mv docs/.tier-status.md.tmp docs/tier-status.md \
+	  || (rm -f docs/.tier-status.md.tmp; \
+	      echo "tiers-md: generator FAILED -- docs/tier-status.md left UNCHANGED"; \
+	      exit 1)

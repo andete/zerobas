@@ -357,7 +357,10 @@ FAT_DIRREM      equ     $E887   ; root-dir sectors remaining to scan (word)
 ; consumes. The DTA defaults to $0080 (page 0) but is settable via BDOS $1A —
 ; BLOAD points it at a writable page-3 buffer (page 0 is BIOS ROM under Disk
 ; BASIC, so the $0080 default would silently fail there).
+BDOS_F_STROUT   equ     $09     ; '$'-terminated string output (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_OPEN     equ     $0F     ; FCB Open           (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SFIRST   equ     $11     ; FCB Search First   (MSX2 TH, MSX-DOS BDOS table)
+BDOS_F_SNEXT    equ     $12     ; FCB Search Next    (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_CLOSE    equ     $10     ; FCB Close          (MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_SEQRD    equ     $14     ; FCB Sequential Read(MSX2 TH, MSX-DOS BDOS table)
 BDOS_F_SEQWR    equ     $15     ; FCB Sequential Write (MSX2 TH, MSX-DOS BDOS table)

@@ -5010,6 +5010,10 @@ item — do **one item per session** to keep context lean.
       game -> D-BDOSBASIC) and xak2eng2 (zerobas CURLIN $4003, junk). And most FILES-DIFF rows are
       the CLASSIFIER: files_listed() reads the banners' version numbers (`1.0`, `0.1`) as file
       names. BREAKER is an MSX2 game (`SET PAGE`, SCREEN 8 pictures): both fail, not ours.
+      📏 **ROBOCOP after D-BDOSBASIC slice 1 (2026-10-21):** the loader now matches the CF-3300
+      call for call; the game it loads resets ~4 s later on zerobas (the boot code runs again),
+      where the CF-3300 shows `TECLE [CONTROL] !` first and resets ~15 s on. ➡️ What the loaded
+      game calls (published BIOS entries, the slot state) on both, registers only.
       📏 **THE MEMMAN CLASS (no-waste, megadoom, modedit; 2026-10-21):** the references stop
       in MemMan's installer (`No free segment for MemMan`; megadoom `Illegal function call
       in 8`). D-RAMAD fixed two documented cells it found unset, and the three STILL part
@@ -11966,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37910 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37935 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12132,7 +12136,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16994 (T-6FE392)8 (T-529ABE)` from `TODO.md:29831 (T-529ABE)`: a
+      `TODO.md:16998 (T-6FE392)8 (T-529ABE)` from `TODO.md:29835 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17841,7 +17845,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29831 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29835 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -36457,6 +36461,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       in the DTA; zerobas A = 2, the DTA untouched (2, not the $FF the dispatcher's tail sets --
       unexplained, read it first). ➡️ NEXT: the CF-3300's answer set from BASIC, function by
       function ($00-$30, a USR row each); then SFIRST / SNEXT and STROUT first (ROBOCOP's).
+      📏 **THE A = 2 EXPLAINED (2026-10-21):** zerobas's $F37D is `JP $44FF` -- bdos_entry's
+      address IN THE DISK ROM -- and from a BASIC program page 1 is the MAIN ROM, so the call
+      ran into BASIC's own code; 2 is garbage, not an answer. It works only where page 1 is
+      already this ROM: a disk's boot code (ROBOCOP's case). The CF-3300's SETDTA from BASIC
+      leaves the DTA in the work-area cell $F23D ([`bdos_dtacell.out`](scratchpad/bdos_dtacell.out):
+      $D100; zerobas's stayed 0).
+      ✅ **SLICE 1 DONE 2026-10-21 -- the boot-code environment:** bdos_entry answers $09 STROUT
+      (the resident '$'-printer), $11 SFIRST and $12 SNEXT (the kernel's own root walk,
+      sfirst_body / snext_body, filling the DTA through $F23D), and SETDTA also writes $F23D.
+      disk/driver.asm stays net -2 B (its unsupported tail is `jp bdos_more`, bdos_setdta a
+      `jp` to its body); the bodies sit in kernel.asm's $4EE1 fill. ROBOCOP's loader now makes
+      the CF-3300's five calls with the same entry registers and the same RDBLK result (A = 1,
+      BC = HL = $0780; [`bdosb_robocop_ret.out`](scratchpad/bdosb_robocop_ret.out)) and prints
+      `ROBOCOP DISK VERSION 89`. tests/test_bdosbasic.py (new): the three dispatches, SETDTA's two
+      cells, A = $FF for the rest; 🔪 the SFIRST compare aimed elsewhere -> its row FAILs.
+      docs/concepts/msx-dos.md. 🔮 "ROBOCOP then runs" (55 %) half: the LOADER now matches; the
+      game it loads then resets after ~4 s on zerobas, where the CF-3300 shows `TECLE [CONTROL] !`
+      and resets ~15 s on -- a new divergence in the loaded game's run, filed under D-DISKRUN.
+      ➡️ SLICE 2: $F37D from a BASIC program -- a page-3 stub that maps this ROM into page 1
+      around bdos_entry (and back), as the reference's evidently does; then the answer set
+      ($00-$30) measured from BASIC, function by function.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

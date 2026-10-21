@@ -6,12 +6,12 @@ SPDX-License-Identifier: 0BSD
 
 # MSX-DOS — booting DOS, the BDOS, and the way back to BASIC
 
-> **Status (2026-10-09):** zerobas's disk ROM boots MSX-DOS 1 from a system
+> **Status (2026-10-21):** zerobas's disk ROM boots MSX-DOS 1 from a system
 > disk and services the BDOS functions DOS 1 programs use, compared with the
 > CF-3300 by standing gates; `A>BASIC` returns to Disk BASIC (since
 > 2026-10-02), and `CALL SYSTEM` goes back to DOS (since 2026-10-09). Not
-> there: BDOS calls made from BASIC through `&HF37D` are a small private
-> subset that nothing compares with the reference.
+> there: BDOS calls through `&HF37D` are a private subset, and from a BASIC
+> program (rather than a disk's boot code) they do not reach it at all.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -94,11 +94,19 @@ Some details a program can see:
 
 On a disk MSX the work-area cell `&HF37D` holds a jump to the disk system's
 BDOS entry, so machine code called from Disk BASIC can make BDOS calls too.
-zerobas puts a jump to its own small dispatcher there. It answers only open,
-close, read and write the next record, create, set the transfer address and
-read a block (`&H0F`, `&H10`, `&H14`, `&H15`, `&H16`, `&H1A`, `&H27`), and
-returns `A=&HFF` for anything else. It was written for zerobas's own early
-`BLOAD` path, and no gate compares it with the CF-3300 (see *Differences*).
+zerobas puts a jump to its own small dispatcher there. It answers string
+output, open, close, search first and next, read and write the next record,
+create, set the transfer address and read a block (`&H09`, `&H0F`, `&H10`,
+`&H11`, `&H12`, `&H14`, `&H15`, `&H16`, `&H1A`, `&H27`), and returns `A=&HFF`
+for anything else. Setting the transfer address also stores it in `&HF23D`,
+the work-area cell the CF-3300 keeps it in.
+
+A disk's own boot loader is the usual caller: it runs while the disk system is
+switched in, prints a title, finds and opens its file, and reads it in one
+block. The CF-3300 answers that whole sequence and so does zerobas since
+2026-10-21. Machine code called from a BASIC program is different on zerobas:
+there the jump leads into BASIC's own ROM, not the disk system (see
+*Differences*).
 
 ### From BASIC to DOS and back
 
@@ -154,8 +162,11 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
 - **`CALL SYSTEM` after a data-disk start with the DOS disk put in later**: the
   CF-3300 restarts Disk BASIC; zerobas answers `Illegal function call`
   (D-SYSLATE).
-- **BDOS from BASIC (`&HF37D`)** answers seven functions only and is not
-  measured against the CF-3300. It also uses the sector buffers BASIC's open
+- **BDOS through `&HF37D`** answers ten functions only, and from a BASIC
+  program's machine code it does not reach the disk system at all: the
+  CF-3300's search-first answers `A=0` and fills the transfer area, zerobas's
+  returns a meaningless value
+  ([`bdos_sfirst.out`](../../scratchpad/bdos_sfirst.out)). It also uses the sector buffers BASIC's open
   files use, without saving them: the buffer audit of 2026-09-24 (TODO.md)
   names it as the one crossing that cannot be guarded, because the caller is
   the user's machine code.
@@ -170,6 +181,16 @@ returns `A=&HFF` for anything else. It was written for zerobas's own early
   `Disk BASIC version 1.0`; zerobas shows its own banner and its `ZB` prompt.
 
 ## What we found, and how
+
+- **A game's boot loader could not find its own file** (2026-10-21,
+  D-BDOSBASIC slice 1). A disk of the collection prints its title, then asks
+  the disk system to search for its program, open it and read it; on zerobas
+  the search was not answered and the machine fell back to BASIC. A breakpoint
+  on `&HF37D`, reading only registers, showed the CF-3300 answering all five
+  calls ([`bootpath_robocop_bdos.out`](../../scratchpad/bootpath_robocop_bdos.out));
+  zerobas now answers them with the same results
+  ([`bdosb_robocop_ret.out`](../../scratchpad/bdosb_robocop_ret.out)). The game
+  itself then still behaves differently on the two machines.
 
 - **The character to print is in register E, not A** (2026-06-30). Reading A
   worked for the first lines of the boot and printed garbage for everything

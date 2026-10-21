@@ -1,0 +1,29 @@
+# ROBOCOP.DSK on National_CF-3300 
+C01E  t=  9.444 a8=FC af=006A bc=0000 de=F368 hl=F323 sp=C1FC stk=fe59355b req=0000
+C01E  t=  9.651 a8=FF af=0001 bc=00A0 de=F368 hl=F323 sp=C1FE stk=355bffff req=0000
+F37D  t=  9.651 a8=FF af=0001 bc=0009 de=C0A2 hl=F324 sp=F51D stk=36c00000 req=0000
+F37D  t=  9.721 a8=FF af=2462 bc=C91A de=0100 hl=C924 sp=F51D stk=3ec00000 req=0000
+F37D  t=  9.722 a8=FF af=0800 bc=5811 de=C0DA hl=5808 sp=F51D stk=46c00000 req=0000
+C047  t=  9.949 a8=FF af=0044 bc=000F de=000C hl=0000 sp=F51F stk=00000000 req=0000
+F37D  t=  9.949 a8=FF af=0060 bc=000F de=C0DA hl=010C sp=F51D stk=69c00000 req=0000
+F37D  t=  9.953 a8=FF af=0044 bc=FF27 de=C0DA hl=3F00 sp=F51D stk=7ac00000 req=0000
+C07A  t= 10.689 a8=FF af=0142 bc=0780 de=0000 hl=0780 sp=F51F stk=00000000 req=0000
+# ROBOCOP.DSK on C-BIOS_MSX1_EU_REPACK_DISK 
+C01E  t=  2.674 a8=FC af=EBAC bc=0001 de=0000 hl=0001 sp=F2DA stk=8a4092f3 req=c9c9
+C01E  t=  2.682 a8=FF af=0045 bc=0000 de=0000 hl=0001 sp=F2D0 stk=287f42ff req=4454
+F37D  t=  2.682 a8=FF af=0045 bc=0009 de=C0A2 hl=0002 sp=F51D stk=36c00000 req=4454
+F37D  t=  2.699 a8=FF af=2462 bc=001A de=0100 hl=0002 sp=F51D stk=3ec00000 req=4454
+F37D  t=  2.699 a8=FF af=1A4A bc=0011 de=C0DA hl=0002 sp=F51D stk=46c00000 req=4454
+C047  t=  2.813 a8=FF af=0044 bc=0000 de=0121 hl=E48A sp=F51F stk=00000000 req=4454
+F37D  t=  2.813 a8=FF af=0060 bc=000F de=C0DA hl=010C sp=F51D stk=69c00000 req=4454
+F37D  t=  3.021 a8=FF af=0044 bc=0027 de=C0DA hl=3F00 sp=F51D stk=7ac00000 req=4454
+C07A  t=  4.953 a8=FF af=0144 bc=0780 de=0000 hl=0780 sp=F51F stk=00000000 req=4454
+C01E  t=  8.770 a8=FC af=EBAC bc=0001 de=0000 hl=0001 sp=F2DA stk=8a4092f3 req=c9c9
+C01E  t=  8.778 a8=FF af=0045 bc=0000 de=0000 hl=0001 sp=F2D0 stk=287f4200 req=4454
+F37D  t=  8.778 a8=FF af=0045 bc=0009 de=C0A2 hl=0002 sp=F51D stk=36c00000 req=4454
+F37D  t=  8.795 a8=FF af=2462 bc=001A de=0100 hl=0002 sp=F51D stk=3ec00000 req=4454
+F37D  t=  8.795 a8=FF af=1A4A bc=0011 de=C0DA hl=0002 sp=F51D stk=46c00000 req=4454
+C047  t=  8.909 a8=FF af=0044 bc=0000 de=0121 hl=E48A sp=F51F stk=00000000 req=4454
+F37D  t=  8.909 a8=FF af=0060 bc=000F de=C0DA hl=010C sp=F51D stk=69c00000 req=4454
+F37D  t=  9.117 a8=FF af=0044 bc=0027 de=C0DA hl=3F00 sp=F51D stk=7ac00000 req=4454
+C07A  t= 11.048 a8=FF af=0144 bc=0780 de=0000 hl=0780 sp=F51F stk=00000000 req=4454

@@ -1,0 +1,10 @@
+PASS  BDOS $09 -> [(61897, 49370)] (want 61897 with DE = $C0DA)
+FAIL  BDOS $11 -> [] (want sfirst_body with DE = $C0DA)
+PASS  BDOS $12 -> [('snext_body', 49370)] (want snext_body with DE = $C0DA)
+PASS  BDOS $1A DE=$D100: BDOS_DTA $D100, $F23D $D100 (want both $D100)
+PASS  BDOS $00 (not answered yet): A = $FF (want $FF)
+PASS  BDOS $02 (not answered yet): A = $FF (want $FF)
+PASS  BDOS $13 (not answered yet): A = $FF (want $FF)
+PASS  BDOS $30 (not answered yet): A = $FF (want $FF)
+
+1 CHECK(S) FAILED
