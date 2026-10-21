@@ -1,0 +1,45 @@
+PASS  '1-2-90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1/2/90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1.2.90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1-2-1990'   -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1-2-80'     -> A=00 1980-01-02 (want 1980-01-02)
+PASS  '1-2-79'     -> A=00 2079-01-02 (want 2079-01-02)
+PASS  '3-4-5'      -> A=00 2005-03-04 (want 2005-03-04)
+PASS  '1-2'        -> A=00 1984-01-02 (want 1984-01-02)
+PASS  '2-29-92'    -> A=00 1992-02-29 (want 1992-02-29)
+PASS  '12-31-99'   -> A=00 1999-12-31 (want 1999-12-31)
+PASS  '13-2-90'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '2-29-91'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '0-1-90'     -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '1-0-90'     -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '1--90'      -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  'XYZ'        -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  ' 1-2-90'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-90X'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-'       -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2X'       -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1'          -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-100'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-2100'   -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-99999'  -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '300-2-90'   -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '01-02-1990' -> A=00 1990-01-02 (want 1990-01-02)
+PASS  BD + '1-2-90': screen 'Enter date (M-D-Y):1-2-90', INITXT x1, mark 0000 (want the prompt, the echo, 1990-01-02, the mark cleared)
+PASS  BD + RETURN: screen 'Enter date (M-D-Y):', date kept True
+PASS  BD + '13-2-90', RETURN: screen 'Enter date (M-D-Y):13-2-90\r\nInvalid date\r\nEnter date (M-D-Y):' (want Invalid date and the prompt again, INITXT once)
+PASS  BD + '1-3', BS, '2-90': screen 'Enter date (M-D-Y):1-3\x08 \x082-90', 1990-01-02 (want BS erasing, 1990-01-02)
+PASS  BD + BS on an empty line, a cursor key, '1-2-90': screen 'Enter date (M-D-Y):1-2-90'
+PASS  BD + 30 digits: 24 echoed (want 24 kept, then Invalid date)
+PASS  BD + an AUTOEXEC.BAS on the disk: screen '', INITXT x0, mark 0000, looked up b'AUTOEXECBAS' (want no question -- both references, any size -- and the mark cleared)
+PASS  BA (MSX-DOS's BASIC): screen '', mark 5344 (want no question, DOS_SIG)
+PASS  basent_pending, mark 4142: Z=True HL=4142
+PASS  basent_pending, mark 4442: Z=True HL=4442
+PASS  basent_pending, mark 5344: Z=False HL=5344
+PASS  basent_pending, mark 5444: Z=False HL=5444
+PASS  basent_pending, mark 0000: Z=False HL=0000
+PASS  $4022 with mark 5344: mark 4142 (want 4142)
+PASS  $4022 with mark 5444: mark 4442 (want 4442)
+PASS  $4022 with mark 0000: mark 4442 (want 4442)
+PASS  $50A9: mark 5344 (want DOS_SIG), AF=0042 DE=F1AA HL=F359 (the $50A9 contract unchanged)
+
+ALL PASS — the boot-fallback date question answers as the VG-8020 does

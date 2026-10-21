@@ -1,0 +1,48 @@
+PASS  '1-2-90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1/2/90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1.2.90'     -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1-2-1990'   -> A=00 1990-01-02 (want 1990-01-02)
+PASS  '1-2-80'     -> A=00 1980-01-02 (want 1980-01-02)
+PASS  '1-2-79'     -> A=00 2079-01-02 (want 2079-01-02)
+PASS  '3-4-5'      -> A=00 2005-03-04 (want 2005-03-04)
+PASS  '1-2'        -> A=00 1984-01-02 (want 1984-01-02)
+PASS  '2-29-92'    -> A=00 1992-02-29 (want 1992-02-29)
+PASS  '12-31-99'   -> A=00 1999-12-31 (want 1999-12-31)
+PASS  '13-2-90'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '2-29-91'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '0-1-90'     -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '1-0-90'     -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  '1--90'      -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  'XYZ'        -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  ' 1-2-90'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-90X'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-'       -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2X'       -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1'          -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-100'    -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-2100'   -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '1-2-99999'  -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '300-2-90'   -> A=FF 1984-01-01 (want Invalid date, the date kept)
+PASS  OWN '01-02-1990' -> A=00 1990-01-02 (want 1990-01-02)
+PASS  BD + '1-2-90': screen 'Enter date (M-D-Y):1-2-90', INITXT x1, mark 0000 (want the prompt, the echo, 1990-01-02, the mark cleared)
+PASS  BD + RETURN: screen 'Enter date (M-D-Y):', date kept True
+PASS  BD + '13-2-90', RETURN: screen 'Enter date (M-D-Y):13-2-90\r\nInvalid date\r\nEnter date (M-D-Y):' (want Invalid date and the prompt again, INITXT once)
+PASS  BD + '1-3', BS, '2-90': screen 'Enter date (M-D-Y):1-3\x08 \x082-90', 1990-01-02 (want BS erasing, 1990-01-02)
+PASS  BD + BS on an empty line, a cursor key, '1-2-90': screen 'Enter date (M-D-Y):1-2-90'
+PASS  BD + 30 digits: 24 echoed (want 24 kept, then Invalid date)
+Traceback (most recent call last):
+  File "/Users/joost/projects/zerobas/tests/test_bootdate.py", line 192, in <module>
+    sys.exit(1 if run() else 0)
+                  ~~~^^
+  File "/Users/joost/projects/zerobas/tests/test_bootdate.py", line 152, in run
+    scr, nini, left = ask("", autoexec=True)
+                      ~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/test_bootdate.py", line 122, in ask
+    m.call("basent_resume", hl=start_mark)
+    ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joost/projects/zerobas/tests/msxtest.py", line 373, in call
+    fn(self)               # model the trapped routine's effect
+    ~~^^^^^^
+  File "/Users/joost/projects/zerobas/tests/test_bootdate.py", line 119, in chget
+    raise RuntimeError("the question asked for a key past the script")
+RuntimeError: the question asked for a key past the script

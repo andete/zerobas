@@ -79,7 +79,9 @@ question reads year first), and on zerobas since 2026-10-21. The answer takes
 `-`, `/` or `.` between month, day and an optional year (two digits: 80–99 is
 19xx, 00–79 is 20xx; no year keeps the current one); a plain RETURN keeps the
 date; anything else is `Invalid date` and the question again. The answer is the
-date `SAVE` stamps. Returning from MSX-DOS with `A>BASIC` does not ask.
+date `SAVE` stamps. Returning from MSX-DOS with `A>BASIC` does not ask, and
+neither does a disk with an `AUTOEXEC.BAS` on it — of any size, an empty one
+too: Disk BASIC starts and runs it straight away, on both machines.
 
 ### Drives
 
@@ -214,7 +216,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   18 of 143 disks reached a date question on the CF-3300 and BASIC on zerobas. A
   second reference, the VG-8020 with an NMS 1200, asks too — so it is how a disk
   ROM behaves, not one machine's habit — and the answers were measured there
-  ([`bootdate_run.out`](../../scratchpad/bootdate_run.out)).
+  ([`bootdate_run.out`](../../scratchpad/bootdate_run.out)). The first fix asked
+  on every such disk; one of the collection (UR-1) then got a question the
+  references never ask, because it carries an `AUTOEXEC.BAS`. Saving one onto
+  a disk that asked, and booting it again, removed the question on both
+  references, and an empty one did too
+  ([`bootpath_autoexec00.out`](../../scratchpad/bootpath_autoexec00.out)).
 - **A disk taken out during file work** (2026-10-11, D-GETEJECT, D-LINEJECT):
   `GET`, `PUT`, `LINE INPUT #`, `LOAD`, `BLOAD`, `FILES` and `OPEN` all raise
   `Disk offline` (70) in their own line on both machines, so `ON ERROR` sees

@@ -1,0 +1,32 @@
+== S0 ('40:')  pc=0038 curlin=3900 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |Missing operand in 30
+   |ZB
+   |LIST 10-40
+   |  color  auto   goto   list   run
+== S1 ('41:LIST 10-40')  pc=0038 curlin=3900 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |Missing operand in 30
+   |ZB
+   |LIST 10-40
+   |  color  auto   goto   list   run
+== S2 ('48:')  pc=0038 curlin=3900 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |Missing operand in 30
+   |ZB
+   |LIST 10-40
+   |  color  auto   goto   list   run
+== S3 ('50:FILES')  pc=0038 curlin=3900 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |Missing operand in 30
+   |ZB
+   |LIST 10-40
+   |  color  auto   goto   list   run

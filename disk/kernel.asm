@@ -5616,13 +5616,7 @@ hk_srcfind:
 ; cg_back gives main its EI back on the way out.
 ;   out  DISKOP_STATUS = 0 run it / nonzero skip; CF = 1 (claimed)
 hk_auto:
-                ld      hl,hka_name
-                ld      de,DISK_FCB_NAME
-                push    de
-                ld      bc,11
-                ldir                        ; DISK_FCB_NAME = "AUTOEXECBAS"
-                pop     hl
-                call    hk_srcfind          ; CF: no disk / bad BPB / not found
+                call    auto_find           ; CF: no disk / bad BPB / not found
                 ld      a,1                 ; (flags kept) 1 = skip, silently
                 jr      c,hka_done
                 ld      hl,FAT_FILESIZE
@@ -5637,6 +5631,17 @@ hk_auto:
                 sbc     a,a                 ; $FF = empty: skip; 0 = run it
 hka_done:
                 jp      hk_claim_status
+; auto_find -- is there an AUTOEXEC.BAS? CF = 1: no disk, a bad BPB, or not found;
+; CF = 0: found (FAT_FILESIZE holds its size). Shared with boot_date (fat.asm),
+; which asks no date when the file is there, whatever its size (D-BOOTDATE).
+auto_find:
+                ld      hl,hka_name
+                ld      de,DISK_FCB_NAME
+                push    de
+                ld      bc,11
+                ldir                        ; DISK_FCB_NAME = "AUTOEXECBAS"
+                pop     hl
+                jp      hk_srcfind
 ; The upcased 11-byte 8.3 dirent name, no padding needed: "AUTOEXEC" (8) + "BAS"
 ; (3) -- disk/docs/autoexec-bas-spec.md §2. (Main's island copy, autoexec_name,
 ; went with the probe.)

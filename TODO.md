@@ -4798,6 +4798,26 @@ item — do **one item per session** to keep context lean.
       93caca57 -> 6a70b7bf. 🔮 "every answer as the VG-8020" HIT; "the mark suites stay
       green" HIT; "the prompt is one column out" FOUND and fixed (LINL40).
       Docs: docs/concepts/disk.md (the question, and how it was found); example PASS.
+      🔁 **ADDENDUM 2026-10-21 -- NOT WITH AN AUTOEXEC.BAS.** Triage of D-DISKRUN's UR-1
+      row after the fix: zerobas now ASKED on UR-1, the CF-3300 does not (it runs the
+      disk's AUTOEXEC.BAS). `bootpath_probe.py` (new; a breakpoint on the two
+      published addresses $C01E / $4022, registers, $A8, the stack words, BASENT_REQ):
+      UR-1 and empty.dsk enter $4022 identically on the CF-3300 (same SP, AF; only
+      BC / HL differ) -- the entry is not what separates them. [`disklook.py`](scratchpad/disklook.py)
+      (new; keys in, screen out, an optional KEPT working image): SAVE an AUTOEXEC.BAS
+      onto a /tmp copy of empty.dsk and boot it again -- NO question, it runs, on the
+      CF-3300 AND the VG-8020 + NMS 1200 ([`bootpath_autoexec_ref.out`](scratchpad/bootpath_autoexec_ref.out),
+      [`bootpath_autoexec_eu.out`](scratchpad/bootpath_autoexec_eu.out)). The rule
+      that separates "found" from "will run": a 0-byte AUTOEXEC.BAS (made in our own copy's
+      directory -- BASIC's own OPEN/CLOSE writes a 1-byte ^Z file, which did not separate
+      them) -> NO question and `Ok` on both ([`bootpath_autoexec00.out`](scratchpad/bootpath_autoexec00.out)):
+      presence decides. 🔮 "an AUTOEXEC.BAS silences it" HIT; "an empty one too" (60 %)
+      HIT. FIX: boot_date first calls auto_find (factored out of hk_auto, which keeps
+      its size rule) and returns when the file is there. zerobas then ([`bootae_zb.out`](scratchpad/bootae_zb.out)):
+      UR-1 no question (runs as before); the AUTOX disk prints AUTOX; 0-byte and 1-byte
+      files `Ok`; empty.dsk still asks -- 🔮 four of four HIT. tests/test_bootdate.py
+      row "BD + an AUTOEXEC.BAS" (knifed: without the `ret nc` the question asks for a
+      key past the script, rc=1).
 
 - [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
       MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
@@ -4843,8 +4863,15 @@ item — do **one item per session** to keep context lean.
       an MSX1) and then starts BASIC; zerobas's starts BASIC without asking.** The CF-3300
       prints the same prompt with Japanese text in the brackets.
       ➡️ D-BOOTDATE (filed above, measured) is the fix. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
-      loader, ROBOCOP, SirDan, UR-1, xak2eng2, senigma), the three FILES-DIFF candidates,
+      loader, ROBOCOP, SirDan, xak2eng2, senigma), the three FILES-DIFF candidates,
       and the six ZB-ONLY.
+      📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
+      Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
+      loader; on the CF-3300 the machine then RESETS and boots again, round and round
+      (the boot logo at T25, line 30 again at T40); on zerobas the loader comes back
+      with `Missing operand in 30` and the program area is damaged (LIST hangs). The
+      disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
+      at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -11787,7 +11814,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37720 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37747 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11953,7 +11980,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16815 (T-6FE392)8 (T-529ABE)` from `TODO.md:29652 (T-529ABE)`: a
+      `TODO.md:16842 (T-6FE392)8 (T-529ABE)` from `TODO.md:29679 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17662,7 +17689,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29652 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29679 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,62 @@
+== S0 ('14:')  pc=0D65 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color  auto   goto   list   run
+== S1 ('15:1-1-90')  pc=0D7E curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color  auto   goto   list   run
+== S2 ('18:10 PRINT "AUTOX"')  pc=77CA curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  10 PRINT "AUTOX"
+   |  SAVE"AUTOEXEC.BAS"
+   |  color  cload" cont   list.   run
+== S3 ('19:SAVE"AUTOEXEC.BAS"')  pc=77CD curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  10 PRINT "AUTOX"
+   |  SAVE"AUTOEXEC.BAS"
+   |  color  cload" cont   list.   run
+== S4 ('24:FILES')  pc=0B9F curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  10 PRINT "AUTOX"
+   |  SAVE"AUTOEXEC.BAS"
+   |  Ok
+   |  FILES
+   |  AUTOEXEC.BAS
+   |  Ok
+   |  color  auto   goto   list   run
+=== second boot
+== S0 ('12:')  pc=0D6A curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  color  auto   goto   list   run
+== S1 ('20:')  pc=0D65 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  color  auto   goto   list   run

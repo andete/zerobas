@@ -1,0 +1,38 @@
+=== UR-1
+== S0 ('12:')  pc=7AE8 curlin=001E mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  color  auto   goto   list   run
+== S1 ('30:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |Missing operand in 30
+   |ZB
+   |  color  auto   goto   list   run
+=== AUTOX
+== S0 ('10:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  color  auto   goto   list   run
+=== 0-byte
+== S0 ('10:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  color  auto   goto   list   run
+=== 1-byte (^Z only)
+== S0 ('10:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  color  auto   goto   list   run
+=== empty.dsk
+== S0 ('10:')  pc=11A0 curlin=0000 mode=S0
+   |  Enter date (M-D-Y):

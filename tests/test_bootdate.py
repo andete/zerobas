@@ -104,8 +104,12 @@ def run():
             check(ok, f"{tag}{text!r:12s} -> A={cpu.a:02X} {shown} (want {exp})")
 
     # --- the question: keys in, the screen bytes and the date out -----------
-    def ask(keys, start_mark=MARK_BD):
+    def ask(keys, start_mark=MARK_BD, autoexec=False):
         m.poke_w(days_at, BOOT_DAYS)
+        # AUTOEXEC.BAS's lookup (auto_find -> hk_srcfind): CF = 1 not found, 0 found
+        def srcfind(mach):
+            mach.cpu.f = (mach.cpu.f & ~1) | (0 if autoexec else 1)
+        m.trap("hk_srcfind", srcfind)
         queue = list(keys)
         out = m.capture_chput()
         initxt = m.record("BIOS_INITXT")
@@ -143,6 +147,15 @@ def run():
     check(scr.startswith(prompt + "1" * 24 + "\r\nInvalid date"),
           f"BD + 30 digits: {len(scr[len(prompt):].split(chr(13))[0])} echoed "
           "(want 24 kept, then Invalid date)")
+    m.poke(m.addr("DISK_FCB_NAME"), b"\0" * 11)
+    m.poke_w(req_at, MARK_BD)
+    scr, nini, left = ask("", autoexec=True)
+    fcb = bytes(m.mem[m.addr("DISK_FCB_NAME"):m.addr("DISK_FCB_NAME") + 11])
+    check(scr == "" and nini == 0 and mark() == 0 and days() == BOOT_DAYS
+          and fcb == b"AUTOEXECBAS",
+          f"BD + an AUTOEXEC.BAS on the disk: screen {scr!r}, INITXT x{nini}, mark "
+          f"{mark():04X}, looked up {fcb!r} (want no question -- both references, any "
+          "size -- and the mark cleared)")
     m.poke_w(req_at, MARK_BA)
     scr, nini, left = ask("", start_mark=MARK_BA)
     check(scr == "" and nini == 0 and mark() == DOS_SIG,

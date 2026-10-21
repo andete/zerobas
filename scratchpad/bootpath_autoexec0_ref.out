@@ -1,0 +1,49 @@
+== S0 ('14:')  pc=10D9 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S1 ('15:90-1-1')  pc=0D71 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S2 ('18:OPEN"AUTOEXEC.BAS" FOR OUTPUT AS #1:CLOSE #1')  pc=0B9F curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  OPEN"AUTOEXEC.BAS" FOR OUTPUT
+   |   AS #1:C
+   |  color cload cont  list.  run
+== S3 ('22:FILES')  pc=0D82 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  OPEN"AUTOEXEC.BAS" FOR OUTPUT
+   |   AS #1:CLOSE #1
+   |  Ok
+   |  I
+   |  color auto  goto  list  run
+=== second boot
+== S0 ('12:')  pc=0D73 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S1 ('20:')  pc=0BA4 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run

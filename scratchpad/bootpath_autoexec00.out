@@ -1,0 +1,36 @@
+=== CF-3300, 0-byte AUTOEXEC.BAS
+== S0 ('12:')  pc=0D6E curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S1 ('16:FILES')  pc=0D6B curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  FILES
+   |  AUTOEXEC.BAS
+   |  Ok
+   |  color auto  goto  list  run
+=== VG-8020+NMS1200, 0-byte AUTOEXEC.BAS
+== S0 ('12:')  pc=0D65 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color  auto   goto   list   run
+== S1 ('16:FILES')  pc=0D87 curlin=FFFF mode=S0
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23432 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  FILES
+   |  AUTOEXEC.BAS
+   |  Ok
+   |  color  auto   goto   list   run

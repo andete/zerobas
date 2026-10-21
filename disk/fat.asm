@@ -732,7 +732,8 @@ BD_DAY          equ     BD_MON + 1          ; the day (1 B)
 ; basent_resume -- boot_disk's BASENT branch. In: HL = the mark (basent_pending).
 ; 'B','A' (from MSX-DOS): the mark becomes DOS_SIG, as before (D-CALLSYSTEM).
 ; 'B','D' (a boot loader's fallback): MSX-DOS never ran, so the mark is cleared --
-; first, so a reset during the question boots normally -- and the date is asked.
+; first, so a reset during the question boots normally -- and the date is asked,
+; unless the disk has an AUTOEXEC.BAS.
 basent_resume:
                 ld      a, h
                 ld      hl, DOS_SIG
@@ -744,6 +745,11 @@ brs_mark:
                 ret     z                   ; from MSX-DOS: on to BASIC
                 ; --- intentional fall-through to boot_date ---
 boot_date:
+                ; Not when the disk has an AUTOEXEC.BAS -- of ANY size, a 0-byte one too:
+                ; both references then start BASIC without asking (and run it), measured
+                ; with scratchpad/disklook.py (D-BOOTDATE, the UR-1 row).
+                call    auto_find           ; CF = 0: found
+                ret     nc
                 ; The VG-8020 + NMS 1200 asks at WIDTH 37 (LINL40 = 37, measured: the
                 ; prompt starts one column further in than at C-BIOS's default 39; the
                 ; CF-3300 asks at 39 -- a style split, the VG-8020's wins, Joost
