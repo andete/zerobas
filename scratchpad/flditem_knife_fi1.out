@@ -1,0 +1,26 @@
+
+row                          cf3300                        zb   verdict
+c.bind                          8 4                       8 4   SAME
+c.nohash                          8                         8   SAME
+c.store                       <XY >                     <XY >   SAME
+e.closed               ERR 59 AT 20              ERR 59 AT 20   SAME
+e.input                ERR 61 AT 40              ERR 61 AT 40   SAME
+e.output               ERR 61 AT 30              ERR 61 AT 30   SAME
+e.lpt                   ERR 5 AT 30               ERR 5 AT 30   SAME
+e.crt                   ERR 5 AT 30               ERR 5 AT 30   SAME
+e.nocomma              ERR 52 AT 30              ERR 52 AT 30   SAME
+e.semi                  ERR 2 AT 30               ERR 2 AT 30   SAME
+e.zero                 ERR 59 AT 30              ERR 59 AT 30   SAME
+e.maxf                 ERR 52 AT 30              ERR 52 AT 30   SAME
+e.str                  ERR 13 AT 30              ERR 13 AT 30   SAME
+e.ovf                  ERR 50 AT 30                         1   DIFF
+e.noarg                ERR 24 AT 30              ERR 24 AT 30   SAME
+n.two                         32 16                     32 16   SAME
+n.twoovf                      ";1;"                         1   DIFF
+n.expr                            8                         8   SAME
+n.exact                          32                        32   SAME
+s.blanks                          8                         8   SAME
+
+DIFF (cf3300 vs zb): 2/20  e.ovf n.twoovf
+done
+refcache: 0 hit, 40 miss, 40 stored

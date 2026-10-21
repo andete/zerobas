@@ -298,6 +298,7 @@ REQUIRED_DISK_RAM = [
     # D-DISKREST slice 4: hk_field sets the record's span for field_item.
     "FLD_CUROFF",               # where the next field starts (block+9 first)
     "FLD_END",                  # the byte past the record: the ERR 50 bound
+    "RVDESC",                   # slice 5: the [w][ptr] descriptor FIELD stores
     # D-FMTHOOK (C6-FORMAT-TO-DISKROM): CALL FORMAT's menu and its dispatch to
     # the sub-ROM format_tenant run in disk.rom's hk_format now; main keeps the
     # DISKSLOT_OK gate and the H_FORM crossing. The two tenant cells and the
@@ -364,7 +365,9 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "eval",                     # FIELD's channel expression: DE
     "fch_check",                # 5 / 59 / 52
     "fch_mode_class",           # A = the mode, 59 if not open, CF = disk
-    "field_item",               # one `w AS v$`; CF=1 -> another follows
+    "field_item",               # one `w AS v$`, PARSED: DE = w, BC = key, HL
+                                # (D-DISKREST slice 5: hk_field stores it)
+    "tgt_store_desc",           # the variable := RVDESC (BC = key, TGT_ADDR)
     # D-DISKREST slice 1 (2026-10-20): lrset_tgt / lrset_rhs are gone -- hk_lrset
     # parses LSET / RSET itself and calls back ONE HELPER at a time:
     "req_letter",               # the target must be a name (ERR 2)

@@ -343,18 +343,9 @@ ex_delete:
                 ; matters here more than it does for END: the text this statement
                 ; just memmoved is where CURLINE points.
                 jp      end_line_end        ; -> 1, and the run stops
-exf_comma:
-                inc     hl                  ; past ',' -> the next field item
-                ld      (FN_RESUME),hl
-                scf                         ; CF = 1: go round again
-                ret
-exf_fits:
-                pop     hl
-                call    skip_comma
-                jr      z,exf_comma
-                ld      (FN_RESUME),hl      ; end of the field list
-                or      a                   ; CF = 0: the handler's loop stops
-                ret
+; (exf_comma / exf_fits -- field_item's comma tail, CF = another item -- are
+; GONE, D-DISKREST slice 5, 2026-10-20: hk_field reads the comma itself. Their
+; 15 B are free space in front of the $72D4 pin.)
     IF BASICINT_PINS
 ; 📌 D-BASICINT2 PIN $72D4 (2026-10-16): the reference's tape-byte read, CALLED by
 ; Demonia (HL is its own pointer). Black-box on the VG-8020
@@ -495,51 +486,14 @@ field_item:
                                             ; name + `$` + any `(subs)`. A failed
                                             ; array resolve raises from in there
                 pop     de                  ; DE = width (E = width, D = 0 for w<=255)
-                push    hl                  ; guard cursor across the store
-                ; --- D-FLDDESC (2026-10-17): THE VARIABLE'S OWN DESCRIPTOR ------
-                ; [w][FLD_CUROFF] -- the field's first byte in the channel's record
-                ; at block+9 -- as the CF-3300 writes it (scratchpad/fieldram_run.out:
-                ; A$ = [2][VARPTR(#1)+9], B$ = [3][VARPTR(#1)+11]). It was an
-                ; [chan][key][off][w] entry in FLD_TAB (fld_add) until this slice.
-                ld      hl,(FLD_CUROFF)     ; HL = this field's first byte
-                ld      a,e
-                ld      (RVDESC),a          ; [w]
-                ld      (RVDESC+1),hl       ; [ptr] (a width of 0 keeps it too:
-                                            ; length 0 is never dereferenced)
-                add     hl,de               ; HL = the byte past this field
-                ld      (FLD_CUROFF),hl
-                ; --- D-RECLEN: the running total may not exceed the RECORD LENGTH -
-                ; `FIELD overflow` (ERR 50). The total INCLUDES this item, so a
-                ; field that exactly fills the record is accepted (row r.ok:
-                ; LEN=64, width 64 -> ` 64 `). The raise leaves the pushed HL there
-                ; ON PURPOSE -- the same argument exf_raise already documents
-                ; below: raise_error resets SP from SAVSTK on BOTH its arms.
-                ; 🔴 THE BOUND IS FCH_RECLENS[ch], NOT A CONSTANT 256, and one row
-                ; is why: r.mid FIELDs a width of 200 into a LEN=64 record and the
-                ; CF-3300 refuses it -- 200 is UNDER 256, so a constant-256 test
-                ; passes it. Every row that existed before D-RECLEN used the
-                ; DEFAULT 256-byte record and could not tell the two apart
-                ; (docs/spec-basic-fldwidth.md §6.5 addendum).
-                ; 🏗️ D-FLDDESC: field_prologue turns that bound into an ADDRESS
-                ; once -- FLD_END = block+9+reclen -- so this compares two
-                ; addresses. And the test now comes BEFORE the store: until this
-                ; slice fld_add had already entered the overflowing field into the
-                ; table when ERR 50 was raised; a descriptor written first would
-                ; point past the record into the next block (UNMEASURED on the
-                ; reference: whether its overflowing variable is bound -- filed).
-                ex      de,hl               ; DE = the byte past this field
-                ld      hl,(FLD_END)
-                or      a
-                sbc     hl,de               ; CF iff the field runs past the record
-                ld      a,50                ; ERR 50: FIELD overflow
-                jr      c,exf_raise
-                call    tgt_store_desc      ; the variable := [w][ptr] (a scalar is
-                                            ; created; an OOM is left in FPERR,
-                                            ; tgt_store_desc's contract)
-                jr      exf_fits
-exf_raise:
-                jp      raise_error         ; no `pop hl` -- raise_error resets SP on
-                                            ; BOTH arms (trap and abort)
+                ret                         ; DE = width, BC = key, HL = the cursor
+                ; 🔁 D-DISKREST slice 5 (2026-10-20): THE REST OF THE ITEM IS
+                ; disk.rom's hk_field now -- the [w][ptr] descriptor into RVDESC,
+                ; FLD_CUROFF's advance, the ERR 50 bound against FLD_END (still
+                ; BEFORE the store, D-FLDDESC's order and D-RECLEN's reclen-not-256
+                ; bound), the call-back to tgt_store_desc and the comma loop. BC and
+                ; TGT_ADDR cross untouched: hk_field writes only RAM, A, DE and HL
+                ; between this return and tgt_store_desc.
 
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to elas_err,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no

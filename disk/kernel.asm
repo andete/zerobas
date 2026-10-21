@@ -527,9 +527,35 @@ hkf_ch:
                 inc     hl
                 ld      (FN_RESUME),hl
 hkf_item:
+                ; 🔁 D-DISKREST slice 5 (2026-10-20): field_item only PARSES now
+                ; (`w AS v$`: DE = w, BC = the variable's key, TGT_ADDR, HL past
+                ; it); the descriptor, the bound and the comma are here.
                 ld      ix,field_item
-                call    calbak              ; one `w AS v$`; CF=1 -> another follows
-                jr      c,hkf_item
+                call    calbak              ; DE = width, BC = key, HL = cursor
+                push    hl
+                ld      hl,(FLD_CUROFF)     ; this field's first byte
+                ld      a,e
+                ld      (RVDESC),a          ; [w]
+                ld      (RVDESC+1),hl       ; [ptr]
+                add     hl,de               ; the byte past this field
+                ld      (FLD_CUROFF),hl
+                ex      de,hl
+                ld      hl,(FLD_END)
+                or      a
+                sbc     hl,de               ; CF iff it runs past the record
+                ld      a,50                ; FIELD overflow -- BEFORE the store
+                jr      c,hkf_raise
+                ld      ix,tgt_store_desc
+                call    calbak              ; the variable := [w][ptr] (BC = key)
+                pop     hl
+                call    hkp_sp
+                cp      ','
+                jr      nz,hkf_done
+                inc     hl
+                ld      (FN_RESUME),hl
+                jr      hkf_item
+hkf_done:
+                ld      (FN_RESUME),hl      ; the end of the field list
                 scf
                 ret
 hkf_dev:

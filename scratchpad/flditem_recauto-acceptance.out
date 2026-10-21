@@ -1,0 +1,16 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/disk/disk_probe_recauto.py
+ROW omit CF=[ 24  3] ZB=[ 24  3] SAME
+ROW gomit CF=[ERR 55 IN 50 | TWO      2 | ERR 55 IN 60 | TWO      2] ZB=[ERR 55 IN 50 | TWO      2 | ERR 55 IN 60 | TWO      2] SAME
+ROW mix CF=[ 48  6] ZB=[ 48  6] SAME
+ROW openget CF=[ONE      1 | TWO      2] ZB=[ONE      1 | TWO      2] SAME
+
+PASS: GET # / PUT # without a record number (4/4)
+refcache: 0 hit, 8 miss, 8 stored

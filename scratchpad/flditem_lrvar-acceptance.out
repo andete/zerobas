@@ -1,0 +1,46 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_lrvar.py --gate \
+	         
+D-LRVAR — LSET / RSET on a NON-FIELDed variable   sides: cf3300, zb
+==============================================================================
+ok   n.fldctl    cf3300='HI        '  zb='HI        '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300)]
+ok   n.fld2      cf3300='BB    '  zb='BB    '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.fldary    cf3300='HI        '  zb='HI        '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.ctl       cf3300='HI   '  zb='HI   '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300)]
+ok   n.len       cf3300=' 5 '  zb=' 5 '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.exact     cf3300='HI'  zb='HI'   [ONE REFERENCE ONLY (cf3300)]
+ok   n.long      cf3300='HE'  zb='HE'   [ONE REFERENCE ONLY (cf3300)]
+ok   n.unset     cf3300='| 0 '  zb='| 0 '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.empty     cf3300='| 0 '  zb='| 0 '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.mix       cf3300='HI        |LO   '  zb='HI        |LO   '   [ONE REFERENCE ONLY (cf3300)]
+ok   r.ctl       cf3300='   HI'  zb='   HI'   [ONE REFERENCE ONLY (cf3300)]
+ok   r.long      cf3300='HE'  zb='HE'   [ONE REFERENCE ONLY (cf3300)]
+ok   n.ary       cf3300='HI   '  zb='HI   '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.aryvar    cf3300='HI   '  zb='HI   '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.ary2d     cf3300='HI   '  zb='HI   '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.arysep    cf3300='XXXXX|HI   '  zb='XXXXX|HI   '   [ONE REFERENCE ONLY (cf3300)]
+ok   n.aryoor    cf3300='<Subscript out of range>'  zb='<Subscript out of range>'   [ONE REFERENCE ONLY (cf3300)]
+ok   r.ary       cf3300='   HI'  zb='   HI'   [ONE REFERENCE ONLY (cf3300)]
+ok   n.num       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.miss      cf3300='<Missing operand>'  zb='<Missing operand>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.misscol   cf3300='<Missing operand>'  zb='<Missing operand>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.rmiss     cf3300='<Missing operand>'  zb='<Missing operand>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.num       cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.rnum      cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300)]
+ok   d.numvar    cf3300='<Type mismatch>'  zb='<Type mismatch>'   [ONE REFERENCE ONLY (cf3300)]
+ok   e.ctl       cf3300='HI        '  zb='HI        '   [POSITIVE CONTROL]   [ONE REFERENCE ONLY (cf3300)]
+ok   e.erase     cf3300='HI        '  zb='HI        '   [ONE REFERENCE ONLY (cf3300)]
+ROWS: 27 printed, 27 scored — 27 agree, 0 diverge, 0 without a reference
+==============================================================================
+27/27 readings match their reference (27 cases, 3 positive controls — one per ARM, 27 row(s) with ONE reference only)
+🔴 ORACLE STRENGTH: EVERY row here has ONE reference. LSET / RSET are Disk BASIC, which a diskless VG-8020 cannot express — so the whole table rests on the National CF-3300 alone, a weaker claim than every row D-ARYLV rested on. Not upgraded anywhere.
+DENOMINATOR: (VERB: LSET / RSET) x (TARGET FORM: scalar / array element) x (SOURCE vs TARGET LENGTH: shorter / equal / longer), plus the two degenerate target STATES a single reading cannot separate (never assigned / assigned empty), plus whether LEN() moves, plus the subscript FORM (literal / variable) and RANK (1-D / 2-D), plus the out-of-range and numeric-target ERROR faces, plus the three IDENTITY rows the knives forced (two fields of different widths, a FIELDed and a plain target in one program, two elements of one array), plus one positive control PER ARM, plus the ERASE pair.
+NOT COVERED, named rather than implied: `RSET` as a distinct PARSE site (it shares lrset_common); a target that is its own source (LSET A$=A$ — the store space-fills the destination BEFORE reading the source, so an alias is destroyed, and the reference's answer is not measured); a subscript that is itself an array element; LSET into a target whose body a string GC moves DURING the RHS (unreachable — no program either reference accepts allocates a scalar mid-statement, docs/spec-basic-lvsites.md's VARPTR residual); and the SECOND reference, which does not exist for any row here.
+refcache: 0 hit, 54 miss, 54 stored

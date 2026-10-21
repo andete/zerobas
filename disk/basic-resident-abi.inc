@@ -81,6 +81,7 @@ MIDS_DEST equ 0F65EH   ; MID$ statement: the target descriptor's address (2 B)
 EQ_TOKEN equ 000EFH   ; '='
 FLD_CUROFF equ 0EEC3H   ; DISK-ONLY: FIELD: the next field's first byte, in the channel's record at block+9 (2)
 FLD_END equ 0F019H   ; DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2)
+RVDESC equ 0F698H   ; [len:1][ptr:2] scratch descriptor (3 B)
 FMT_GEOMSEL equ 0EF61H   ; DISK-ONLY: main -> tenant: 0 = 360k, 1 = 720k (1)
 FMT_RESULT equ 0EF62H   ; DISK-ONLY: tenant -> main: 0 = ok, 1 = DSKIO write error (1)
 LINEBUF equ 0F55EH   ; repack: ASCII input line = the reference's BUF (LINEMAX B) (1 B)
@@ -95,6 +96,7 @@ eval equ 04AE2H
 fch_check equ 07027H
 fch_mode_class equ 04F7AH
 field_item equ 072F6H
+tgt_store_desc equ 0475BH
 req_letter equ 040DDH
 var_str_type equ 046E0H
 tgt_parse_req equ 0528DH

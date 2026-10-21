@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **436** in the MSX standard work area at or above `$F380`.
-* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **64** in the MSX standard work area at or above `$F380`.
+* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **65** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -387,6 +387,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F678` | 2 B | `basic` | `TEMPPT` | PUBLISHED cursor: next free slot (2 B) |  |
 | `$F67A` |  | `basic` | `TEMPPOOL` | TEMPST: low (deepest-push) address |  |
 | `$F698` | 3 B | `basic` | `RVDESC/TEMPBASE` | [len:1][ptr:2] scratch descriptor (3 B) |  |
+| `$F698` | 3 B | `disk` | `RVDESC` | [len:1][ptr:2] scratch descriptor (3 B) |  |
 | `$F69B` | 2 B | `basic` | `FRETOP` | heap low boundary; heap occupies (2 B) |  |
 | `$F69D` | 1 B | `basic` | `BL_STAT` | 1 B: tenant -> main. 0 = loaded, 1 = `load -- published TEMP3 (D-WSZERO) |  |
 | `$F69F` | 2 B | `basic` | `BL_OFS` | 2 B: main -> tenant, BLOAD's offset (0 = none) -- published TEMP8 (D-WSZERO; was SW_ADDR's) |  |
