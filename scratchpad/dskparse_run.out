@@ -1,0 +1,22 @@
+
+row                          cf3300                        zb   verdict
+c.dski                 ERR 70 AT 60              ERR 70 AT 60   SAME
+c.dsko                 ERR 70 AT 20              ERR 70 AT 20   SAME
+e.drive                ERR 62 AT 60              ERR 62 AT 60   SAME
+e.drive2                      ";1;"              ERR 62 AT 20   DIFF
+e.nocomma               ERR 2 AT 20               ERR 2 AT 20   SAME
+e.strarg               ERR 13 AT 60              ERR 13 AT 60   SAME
+e.strdrv               ERR 13 AT 60              ERR 13 AT 60   SAME
+e.bigdrv                ERR 5 AT 60               ERR 5 AT 60   SAME
+e.negsec               ERR 70 AT 60              ERR 70 AT 60   SAME
+e.nopar                ERR 70 AT 60              ERR 70 AT 60   SAME
+n.lof                  ERR 70 AT 20              ERR 70 AT 20   SAME
+n.arith                ERR 70 AT 60              ERR 70 AT 60   SAME
+n.twice                ERR 70 AT 60              ERR 70 AT 60   SAME
+n.str                  ERR 70 AT 60              ERR 70 AT 60   SAME
+s.blanks               ERR 70 AT 60              ERR 70 AT 60   SAME
+s.exprs                ERR 70 AT 60              ERR 70 AT 60   SAME
+
+DIFF (cf3300 vs zb): 1/16  e.drive2
+done
+refcache: 0 hit, 32 miss, 32 stored

@@ -807,7 +807,10 @@ def check(im: Image, pins: list[Pin], rom_path: str, budget: int | None,
     if holes:
         # the wall readout's view: free bytes per region, each hole named, so a pad
         # is counted as free space and its fragmentation stays visible
-        for name, lo, hi in (("low region", 0, BASE), ("page-1", BASE, TOP)):
+        # the split is PAGE 1's start, not BASE (the image base, $2781): the low
+        # region is BASE..$3FFF (fixed 2026-10-20, when the first low-region pad
+        # appeared and was reported under page 1)
+        for name, lo, hi in (("low region", BASE, 0x4000), ("page-1", 0x4000, TOP)):
             hs = [(a, n) for a, n in rows if lo <= a < hi and n]
             print(f"    measure: {name + ' pin pads':23s}= {sum(n for _, n in hs)} B free "
                   f"in front of pins ({', '.join(f'{n} B at ${a:04X}' for a, n in hs) or 'none'})")

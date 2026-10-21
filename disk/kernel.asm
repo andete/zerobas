@@ -412,6 +412,67 @@ hklr_syn:
                 ld      ix,stmt_error
                 jp      calbak              ; raises; never returns
 
+; --- hk_dsk: DSKI$ / DSKO$'s sector I/O in the disk ROM (MSX2 TH hooks H.DSKI / H.DSKO) ---
+; D-ROMSIZE step 1 (Joost 2026-10-14/15: the disk evictions first). Main's dsk_core
+; (basic/str-engine.asm) crosses this hook TWICE: first with A = 0, BEFORE the parse,
+; so a diskless machine (cell unclaimed) still answers ERR 5 where the CF-3300
+; answers ERR 2 -- that crossing only says "present"; then, after parsing `d,s`,
+; with A = the selector and BC = the sector. The sector moves between
+; (DSKBUF_PTR) and the disk with THIS ROM's own primitives (basic/fat-prim-body.inc,
+; raw DSKIO through dskio_calslt: no mount, and the DISKOP_ERR mapping inside).
+; It used to be the sub-ROM dirverb tenant, reached through main's dirverb_op with
+; the sector poked into FWR_DIRSEC -- the open OUTPUT channel's own directory
+; pointer, which made a DSKI$ with a file open lose that file (D-ALIASWCELL). The
+; sector now crosses in BC, so that hazard is gone by construction.
+; 🔁 D-DISKREST slice 3 (2026-10-20): AND THE `d,s` PARSE IS HERE, as on the
+; CF-3300 (whose ERR 2 for `DSKO$ 0` is the parse's; the diskless VG-8020's ERR 5
+; is main's unclaimed cell, before it). Main crosses ONCE now, with the cursor in
+; BC; the two-crossing paragraph above is how D-DSKLOCAL left it. Each argument is
+; evaluated by a call-back into main, which may RAISE -- and may itself re-enter
+; this ROM (`DSKO$ 0,LOF(1)`), which is why the selector waits on the stack.
+; Z does not cross a call-back; A and CF do, so each test is re-derived from them.
+;   in   A = DISKOP_SEL_DSKO / DISKOP_SEL_DSKI; BC = the cursor at `d`
+;   out  HL = the cursor after `s`; DISKOP_STATUS = 0 ok / $FF failed
+;        (DISKOP_ERR = the DSKIO code); CF = 1
+hk_dsk:
+                ei                      ; entered through CALLF, masked
+                push    af              ; the selector, across the parse
+                ld      h,b
+                ld      l,c             ; HL = the cursor at `d`
+                ld      ix,eval_byte_arg
+                call    calbak          ; A = E = the drive (0..255, else ERR 5)
+                cp      2
+                jr      c,hkd_drv
+                ld      a,62            ; Bad drive name (DSKI$(3,0), measured)
+                ld      ix,raise_error
+                jp      calbak          ; raises; never returns
+hkd_drv:
+                ld      ix,skip_comma
+                call    calbak          ; A = the next non-blank byte
+                cp      ','
+                jr      z,hkd_comma
+                ld      ix,stmt_error   ; ERR 2 the statement's way (D-STMTPEND)
+                jp      calbak          ; raises; never returns
+hkd_comma:
+                inc     hl
+                ld      ix,eval_int16_checked
+                call    calbak          ; DE = the sector, HL past it
+                pop     af              ; A = the selector
+                push    hl              ; the cursor, across the I/O
+                ld      hl,(DSKBUF_PTR) ; HL = the buffer
+                cp      DISKOP_SEL_DSKO
+                jr      nz,hkd_read
+                call    fatprim_write_sector
+                jr      hkd_st
+hkd_read:
+                call    read_sector
+hkd_st:
+                sbc     a,a             ; CF -> $FF, clear -> 0
+                ld      (DISKOP_STATUS),a
+                pop     hl              ; HL = the cursor after `s`
+                scf                     ; claimed
+                ret
+
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -4124,38 +4185,8 @@ disk_banner:
 ; GONE: every conversion hook got its own body, and DSKI$ / DSKO$, its last two
 ; users, run hk_dsk below since D-DSKLOCAL, 2026-10-15.)
 
-; --- hk_dsk: DSKI$ / DSKO$'s sector I/O in the disk ROM (MSX2 TH hooks H.DSKI / H.DSKO) ---
-; D-ROMSIZE step 1 (Joost 2026-10-14/15: the disk evictions first). Main's dsk_core
-; (basic/str-engine.asm) crosses this hook TWICE: first with A = 0, BEFORE the parse,
-; so a diskless machine (cell unclaimed) still answers ERR 5 where the CF-3300
-; answers ERR 2 -- that crossing only says "present"; then, after parsing `d,s`,
-; with A = the selector and BC = the sector. The sector moves between
-; (DSKBUF_PTR) and the disk with THIS ROM's own primitives (basic/fat-prim-body.inc,
-; raw DSKIO through dskio_calslt: no mount, and the DISKOP_ERR mapping inside).
-; It used to be the sub-ROM dirverb tenant, reached through main's dirverb_op with
-; the sector poked into FWR_DIRSEC -- the open OUTPUT channel's own directory
-; pointer, which made a DSKI$ with a file open lose that file (D-ALIASWCELL). The
-; sector now crosses in BC, so that hazard is gone by construction.
-;   in   A = 0 (presence) / DISKOP_SEL_DSKO / DISKOP_SEL_DSKI; BC = the sector
-;   out  DISKOP_STATUS = 0 ok / $FF failed (DISKOP_ERR = the DSKIO code); CF = 1
-hk_dsk:
-                or      a
-                scf
-                ret     z               ; the gate crossing: present, nothing to do
-                ld      d,b
-                ld      e,c             ; DE = the sector
-                ld      hl,(DSKBUF_PTR) ; HL = the buffer
-                cp      DISKOP_SEL_DSKO
-                jr      nz,hkd_read
-                call    fatprim_write_sector
-                jr      hkd_st
-hkd_read:
-                call    read_sector
-hkd_st:
-                sbc     a,a             ; CF -> $FF, clear -> 0
-                ld      (DISKOP_STATUS),a
-                scf                     ; claimed
-                ret
+; (hk_dsk -- DSKI$ / DSKO$'s handler -- moved in front of the pinned $53A7 entry
+; when D-DISKREST slice 3 gave it the parse: this region had no room for it.)
 
 ; --- hk_mkfloat: MKS$/MKD$'s conversion, RUNNING IN THE DISK ROM -------------
 ; D-DISKABI, docs/spec-basic-nodisk.md §13. The FIRST disk-verb body actually to

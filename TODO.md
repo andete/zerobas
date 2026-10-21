@@ -4624,6 +4624,37 @@ item — do **one item per session** to keep context lean.
          0` 2 where the diskless VG-8020 says 5: the parse is the disk ROM's). One
          crossing, cursor in BC; restore IX/IY (DSKI$ runs inside the evaluator).
          Main ~-30 B (low region; estimated 2026-10-20).
+         ✅ **DONE 2026-10-20.** `dsk_core` crosses the hook ONCE (selector in A,
+         cursor in BC; an unclaimed cell is still ERR 5 before any argument is read);
+         `hk_dsk` evaluates the drive and the sector by call-back (`eval_byte_arg`,
+         `skip_comma`, `eval_int16_checked`; 62 / `stmt_error` raised the same way)
+         and returns the cursor in HL. `hk_dsk` moved in front of disk.rom's pinned
+         $53A7 (its region overflowed: an EMPTY disk.rom again). `pin_plan --holes`
+         split the regions at BASE ($2781) instead of $4000 and reported this
+         slice's low pad under page 1 -- fixed.
+         📏 Walls (2026-10-20): low region 31 B free in front of the $3297 pin (🔮 ~30: HIT; no
+         `jr` spans it), page 1 unchanged (tail 36, $73E5 pad 32); disk.rom free
+         2488 -> 2440 B.
+         Witness: dskio-acceptance 5/5, nodisk-acceptance PASS (pinned-divergent 0),
+         and the new [`dskparse_probe.py`](scratchpad/dskparse_probe.py) against the
+         CF-3300 with a /tmp copy of the test disk per case: 16/17 SAME
+         ([`dskparse_run_disk2.out`](scratchpad/dskparse_run_disk2.out)) -- every
+         error row (62 / 2 / 13 / 5) with its ERL, a nested `LOF(1)` argument,
+         `1+LEN(DSKI$(0,0))*2`, DSKI$ inside a concatenation. The one DIFF,
+         `DSKO$ 2,700` (the CF-3300 waits for the phantom B:, zerobas says 62), is
+         the open phantom-drive item, not this slice: the drive test is unchanged.
+         Its first run had NO disk in the drive (the harness default) and read ERR 70
+         on almost every row ([`dskparse_run.out`](scratchpad/dskparse_run.out)).
+         🔪 K-DP2 (`hk_dsk` never refuses a missing comma): INERT on `DSKO$ 0`, whose
+         sector parse says 2 anyway -- so row `e.semi` (`DSKO$ 0;700`) was added, and
+         it diverges, `1` against the CF-3300's ERR 2
+         ([`dskparse_knife_dp2.out`](scratchpad/dskparse_knife_dp2.out)); disk.rom
+         hashed f43fc254 -> fd373809 -> f43fc254. 🔪 K-DP1 (`dsk_core` without its
+         `push ix` / `pop ix`): INERT -- main ROM cd6f6d05 -> e28348cf, 0 rows moved
+         ([`dskparse_knife_dp1.out`](scratchpad/dskparse_knife_dp1.out)). IX comes
+         back changed (hk_dsk loads it for every call-back), so no row here reads IX
+         after DSKI$ returns; the guard is KEPT (D-DSKLOCAL had it, `ev_ff_dskf`
+         guards IX too) but UNWITNESSED. 🔮 "K-DP1 moves n.arith / n.str": MISSED.
       4. S-FLDPRO: FIELD's prologue (`field_prologue`, `exf_dev`, `exf_bfm`) into
          disk.rom; error order 5/52/59, 5/61, 2 unchanged. Main ~-70 B.
       5. S-FLDITEM (only if FIELD's time allows -- one more crossing per item): ~-45 B.
@@ -11451,7 +11482,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37384 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37415 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11617,7 +11648,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16479 (T-6FE392)8 (T-529ABE)` from `TODO.md:29316 (T-529ABE)`: a
+      `TODO.md:16510 (T-6FE392)8 (T-529ABE)` from `TODO.md:29347 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17326,7 +17357,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29316 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29347 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

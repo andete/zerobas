@@ -2516,6 +2516,9 @@ ex_dsko:
 ; docs/spec-basic-dskio.md §3. In: A = the selector (DISKOP_SEL_DSKO / _DSKI),
 ; DE = the hook cell (H_DSKO / H_DSKI), HL = the cursor at `d`. Out: HL = the
 ; cursor after `s`.
+; 🔁 D-DISKREST slice 3 (2026-10-20): THE PARSE RUNS IN disk.rom TOO, and the
+; hook is crossed ONCE (the body says how); the paragraph below is how D-DSKLOCAL
+; left it, kept for its measurements.
 ; 🧭 D-DSKLOCAL (2026-10-15, D-ROMSIZE step 1): THE SECTOR I/O RUNS IN disk.rom
 ; (hk_dsk). The hook is crossed TWICE. First with A = 0, BEFORE the parse: the
 ; diskless VG-8020 answers ERR 5 to `DSKO$ 0` where the CF-3300 answers ERR 2, so
@@ -2532,37 +2535,23 @@ ex_dsko:
 ; after the I/O (chan_restore_st) is gone -- no channel stages anything in main
 ; any more, and its last job, the LOF / LOC mirror, is disk.rom's FCB read now.
 dsk_core:
-                push    af                  ; the selector, across the parse
-                push    de                  ; the hook cell, for the second crossing
-                push    hl                  ; HL IS THE STATEMENT CURSOR (see ex_kill)
+                ; 🧭 D-DISKREST slice 3 (2026-10-20): ONE crossing, and the PARSE is
+                ; disk.rom's (hk_dsk), as on the CF-3300 -- the diskless VG-8020's
+                ; ERR 5 for `DSKO$ 0` (the CF-3300: 2) is still an unclaimed cell
+                ; refusing BEFORE any argument is read. The selector crosses in A,
+                ; the cursor in BC; the handler hands the cursor after `s` back in
+                ; HL. IX is the evaluator's cursor when DSKI$ runs inside an
+                ; expression, and the CALLF clobbers it.
+                push    ix
+                ld      b,h
+                ld      c,l                 ; BC = the cursor at `d`
                 ex      de,hl               ; HL = the hook cell
-                xor     a                   ; A = 0: the presence crossing
-                call    chan_gate           ; unclaimed -> ERR 5, trappable
-                pop     hl
-                call    eval_byte_arg       ; A = E = drive (0..255, else ERR 5)
-                cp      2
-                jr      c,dsk_drv_ok
-                ld      a,62                ; Bad drive name
-                jp      raise_error
-dsk_drv_ok:
-                call    req_comma           ; D-CARVERC: ERR 2 without it, past it
-                call    eval_int16_checked  ; DE = sector
-                ld      b,d
-                ld      c,e                 ; BC = the sector, for hk_dsk
-                pop     de                  ; DE = the hook cell
-                pop     af                  ; A = the selector
-                push    hl                  ; guard the cursor across the crossing
-                push    ix                  ; and IX -- DSKI$ runs inside the evaluator
-                ex      de,hl               ; HL = the hook cell
-                call    chan_gate_bare      ; disk.rom moves the sector (claimed: the
-                                            ; presence crossing above proved it)
+                call    chan_gate_bare      ; unclaimed -> ERR 5, trappable
                 ei                          ; a CALLF returns with interrupts OFF
-                ld      a,(DISKOP_STATUS)   ; hk_dsk's disposition (S10.E: it was
-                                            ; chan_restore_st's, which reloaded it)
-                pop     ix                  ; the CALLF clobbered IX, the hook HL
-                pop     hl
-                or      a                   ; (the pops keep A)
-                ret     z
+                pop     ix
+                ld      a,(DISKOP_STATUS)   ; hk_dsk's disposition
+                or      a
+                ret     z                   ; HL = the cursor after `s`
                 jp      disk_error          ; DSKIO error -> its code (D-DISKERR)
 
 ; 🎯 PROMOTED HERE FROM basic/interp.asm (page 1) BY D-STACKFLOOR, 2026-09-27: the

@@ -106,4 +106,6 @@ disk_error equ 06B6BH
 read_line equ 045FBH
 fch_close_all equ 0706CH
 eval_int16_checked equ 0454AH
+eval_byte_arg equ 0455EH
+skip_comma equ 042DAH
 raise_error equ 04326H

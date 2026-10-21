@@ -393,6 +393,9 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     # disk ROM parses it (scratchpad/dget_run*.out) -- HL = the cursor in, DE = the
     # record and HL past it out; it may RAISE (13, 6), which is safe from here.
     "eval_int16_checked",
+    # D-DISKREST slice 3 (2026-10-20): DSKI$ / DSKO$'s `d,s` is parsed in hk_dsk.
+    "eval_byte_arg",            # the drive: A = E (0..255, else ERR 5)
+    "skip_comma",               # A = the next non-blank byte (Z does not cross)
     # (fch_select -- no longer a call-back since S10.E, 2026-10-19: hk_dget makes
     # its channel live with a plain store to FCH_ACTIVE, still AFTER the
     # evaluator, whose expression may itself select another (`GET #1,LOF(2)`).

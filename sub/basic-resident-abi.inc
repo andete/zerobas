@@ -15,14 +15,14 @@ fp_sub equ 0348AH
 fp_mul equ 034C7H
 fp_div equ 035A3H
 fp_cmp equ 03679H
-dig15_iszero equ 03226H
+dig15_iszero equ 03207H
 arga_pack_fac equ 0331CH
 widen_fac_to equ 0379FH
 widen_uint_to equ 03A8CH
-flt_to_int16 equ 031DEH
+flt_to_int16 equ 031BFH
 vars_reset equ 03CEEH
 penderr_set equ 02835H
-flt_fmt equ 03084H
+flt_fmt equ 03065H
 rl_vpeek equ 03BC8H
 rl_vpoke equ 03BD3H
 rl_vaddr equ 03BE0H
