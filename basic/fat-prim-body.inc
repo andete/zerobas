@@ -180,12 +180,12 @@ fatprim_write_sector:
 ; ECMA-107 (geometry). All algorithms unchanged from disk.asm.
 ; ===========================================================================
 
-; fat_mount — read the boot sector and derive FAT12 geometry into scratch.
+; fat_mount — derive FAT12 geometry into scratch: from the media ID in the FAT's
+; first byte (D-MEDIAID, disk/fat.asm fat_media -- what both references do), or,
+; with no media ID there, from the boot sector's BPB.
 ;   out: Cy = 0 ok (geometry valid), Cy = 1 error (FDC error / not 512 B per sec)
 fat_mount:
-                ld      de, 0           ; boot sector = logical sector 0
-                ld      hl, FAT_DBUF
-                call    read_sector
+                call    fat_geom_read   ; FAT_DBUF = BPB fields (disk/fat.asm)
                 ret     c
                 ; require 512 bytes per sector ($0200 LE) — matches FAT_DBUF
                 ld      a, (FAT_DBUF + BPB_BYTSPERSEC)

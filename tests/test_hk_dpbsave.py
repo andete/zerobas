@@ -240,8 +240,8 @@ def main():
     ok_row("exactly one sector of file (505 B data)", 0x9000, 0x9000 + 504)
     ok_row(",S from VRAM", 0x1800, 0x18FF, vram=True)
 
-    # no disk: the boot sector cannot be read -- 70 pending, nothing written
-    d = Disk(fail_read={0})
+    # no disk: nothing can be read -- 70 pending, nothing written
+    d = Disk(fail_read={0, 1})      # no disk: sector 1 (D-MEDIAID) and the boot sector
     m = machine(d)
     cpu, st, err = bsave(m, "T.BIN", 0xC000, 0xC00F, data=b"\x00" * 16)
     check(carry(cpu) and st == 3, f"no disk: claimed, status {st} (want 3)")

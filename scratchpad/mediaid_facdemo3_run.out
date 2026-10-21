@@ -1,0 +1,10 @@
+== S0 ('20:')  pc=01CC curlin=FFFF mode=S0
+   |  DON'T HOLD THE CTRL-KEY !!!!!
+   |  Syntax error in 290
+   |  ZB
+   |  color  auto   goto   list   run
+== S1 ('40:')  pc=01CC curlin=FFFF mode=S0
+   |  DON'T HOLD THE CTRL-KEY !!!!!
+   |  Syntax error in 290
+   |  ZB
+   |  color  auto   goto   list   run

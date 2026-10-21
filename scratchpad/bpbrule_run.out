@@ -1,0 +1,16 @@
+V0 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+V0 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+V0 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V1 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+V1 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+V1 zb: AUTOX=no date-question=yes  FILES -> Enter date (M-D-Y):FILES | Invalid date | Enter date (M-D-Y):
+V2 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+V2 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+V2 zb: AUTOX=no date-question=yes  FILES -> Enter date (M-D-Y):FILES | Invalid date | Enter date (M-D-Y):
+V3 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+V3 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+V3 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V4 cf: AUTOX=no date-question=yes  FILES -> Enter date ( - - ):FILES | Invalid date | Enter date ( - - ):
+V4 eu: AUTOX=no date-question=yes  FILES -> Enter date (M-D-Y):FILES | Invalid date | Enter date (M-D-Y):
+V4 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+done

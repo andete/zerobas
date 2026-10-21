@@ -1,0 +1,16 @@
+V0 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V1 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V2 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V3 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+V4 zb: AUTOX=no date-question=yes  FILES -> Enter date (M-D-Y):FILES | Invalid date | Enter date (M-D-Y):
+MF8 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MF9 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFA zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFB zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFC zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFD zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFE zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+MFF zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+SF8 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+P8 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+done

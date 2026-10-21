@@ -1,0 +1,89 @@
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('45:')  pc=01CC curlin=FFFF mode=S0
+   |  FAC-III .003 FAC-III .004
+   |  FAC-III .005 FAC-III .006
+   |  FAC-III .007 FAC-III .008
+   |  FAC-III .009 FAC-III .00A
+   |  FAC-III .00B FAC-III .00C
+   |  FAC-III .00D FAC-III .00E
+   |  FAC-III .00F FAC-III .010
+   |  FAC-III .011 FAC-III .012
+   |  FAC-III .013 FAC-III .014
+   |  FAC-III .015 FAC-III .016
+   |  FAC-III .017 FAC-III .018
+   |  FAC-III .019 FAC-III .01A
+   |  FAC-III .01B FAC-III .01C
+   |  FAC-III .01D FAC-III .021
+   |  FAC-III .022 FAC-III .024
+   |  FAC-III .025 FAC-III .026
+   |  FAC-III .027 FAC-III .028
+   |  FAC-III .029 FAC-III .023
+   |  FAC-III .02A FAC-III .020
+   |  FAC-III .01F FAC-III .01E
+   |  MADPD   .TXT
+   |  ZB
+   |  color  auto   goto   list   run
+== S1 ('46:FILES')  pc=01CC curlin=FFFF mode=S0
+   |  FAC-III .003 FAC-III .004
+   |  FAC-III .005 FAC-III .006
+   |  FAC-III .007 FAC-III .008
+   |  FAC-III .009 FAC-III .00A
+   |  FAC-III .00B FAC-III .00C
+   |  FAC-III .00D FAC-III .00E
+   |  FAC-III .00F FAC-III .010
+   |  FAC-III .011 FAC-III .012
+   |  FAC-III .013 FAC-III .014
+   |  FAC-III .015 FAC-III .016
+   |  FAC-III .017 FAC-III .018
+   |  FAC-III .019 FAC-III .01A
+   |  FAC-III .01B FAC-III .01C
+   |  FAC-III .01D FAC-III .021
+   |  FAC-III .022 FAC-III .024
+   |  FAC-III .025 FAC-III .026
+   |  FAC-III .027 FAC-III .028
+   |  FAC-III .029 FAC-III .023
+   |  FAC-III .02A FAC-III .020
+   |  FAC-III .01F FAC-III .01E
+   |  MADPD   .TXT
+   |  ZB
+   |  color  auto   goto   list   run
+=== National_CF-3300
+== S0 ('45:')  pc=07E6 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Syntax error in 290
+   |  Ok
+   |  FILES
+   |  FAC-III .000 AUTOEXEC.BAS
+   |  FAC-III .002 FAC-III .001
+   |  FAC-III .003 FAC-III .004
+   |  FAC-III .005 FAC-III .006
+   |  FAC-III .007 FAC-III .008
+   |  FAC-III .009 F
+   |  color cload cont  list.  run
+== S1 ('46:FILES')  pc=0D79 curlin=FFFF mode=S1
+   |  FAC-III .003 FAC-III .004
+   |  FAC-III .005 FAC-III .006
+   |  FAC-III .007 FAC-III .008
+   |  FAC-III .009 FAC-III .00A
+   |  FAC-III .00B FAC-III .00C
+   |  FAC-III .00D FAC-III .00E
+   |  FAC-III .00F FAC-III .010
+   |  FAC-III .011 FAC-III .012
+   |  FAC-III .013 FAC-III .014
+   |  FAC-III .015 FAC-III .016
+   |  FAC-III .017 FAC-III .018
+   |  FAC-III .019 FAC-III .01A
+   |  FAC-III .01B FAC-III .01C
+   |  FAC-III .01D FAC-III .021
+   |  FAC-III .022 FAC-III .024
+   |  FAC-III .025 FAC-III .026
+   |  FAC-III .027 FAC-III .028
+   |  FAC-III .029 FAC-III .023
+   |  FAC-III .02A FAC-III .020
+   |  FAC-III .01F FAC-III .01E
+   |  MADPD   .TXT
+   |  Ok
+   |  color auto  goto  list  run

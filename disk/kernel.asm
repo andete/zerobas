@@ -19,6 +19,89 @@
                 jp      k_4E4B          ; $4E4B: COMMAND.COM-load kernel veneer
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
+; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
+; --- D-MEDIAID: a disk's geometry comes from its MEDIA ID, not its BPB (oracle) ---
+; Both references (the CF-3300; the VG-8020 + NMS 1200) read a disk whose boot
+; sector BPB is damaged or ALL ZERO, and lose one whose FAT starts with another
+; media ID than the layout's (scratchpad/bpbrule_probe.py). The geometry is the
+; standard format of the media ID in the FAT's first byte -- logical sector 1,
+; the format's single reserved sector before it -- and the BPB is not read.
+; fat_geom_read -- fat_mount's read: logical sector 1 into FAT_DBUF and, when its
+; first byte is a media ID, that format's BPB fields over it; otherwise the boot
+; sector, BPB and all. Out: CF = 1 on a read error.
+fat_geom_read:
+                ld      de, 1               ; logical sector 1: the FAT, media ID first
+                ld      hl, FAT_DBUF
+                call    read_sector
+                ret     c
+                call    fat_media
+                ret     nc                  ; the fields written from the media ID
+                ld      de, 0               ; boot sector = logical sector 0
+                ld      hl, FAT_DBUF
+                jp      read_sector
+; fat_media -- in: FAT_DBUF = logical sector 1. A media ID $F8..$FF there: its
+; format's fields written over FAT_DBUF + 11 .. + 23 in the BPB's own layout (so
+; fat_mount and getdpb read them as before), CF = 0. Otherwise CF = 1 and nothing
+; written (own choice: no media ID, so the boot sector's BPB is the only clue).
+; Trashes AF, BC, DE, HL.
+fat_media:
+                ld      a, (FAT_DBUF)
+                sub     $F8
+                ret     c                   ; not a media ID
+                ld      c, a
+                add     a, a
+                add     a, a
+                add     a, c                ; A = 5 * index
+                ld      e, a
+                ld      d, 0
+                ld      hl, fmd_tab
+                add     hl, de
+                ex      de, hl              ; DE = the format's entry
+                ld      hl, FAT_DBUF + 11
+                ld      (hl), 0
+                inc     hl
+                ld      (hl), 2             ; +11 bytes per sector, $0200
+                inc     hl
+                call    fmd_copy            ; +13 sectors per cluster
+                ld      (hl), 1
+                inc     hl
+                ld      (hl), 0             ; +14 reserved sectors, 1
+                inc     hl
+                ld      (hl), 2             ; +16 FATs, 2
+                inc     hl
+                call    fmd_copy0           ; +17 root entries
+                call    fmd_copy
+                call    fmd_copy            ; +19 total sectors
+                ld      a, c
+                add     a, $F8
+                ld      (hl), a             ; +21 the media ID
+                inc     hl
+                ; --- intentional fall-through: +22 sectors per FAT ---
+fmd_copy0:
+                call    fmd_copy            ; one byte from the entry, a 0 above it
+                ld      (hl), 0
+                inc     hl
+                or      a                   ; CF = 0
+                ret
+fmd_copy:
+                ld      a, (de)
+                ld      (hl), a
+                inc     de
+                inc     hl
+                ret
+; The standard formats: sectors per cluster, root entries, total sectors (LE),
+; sectors per FAT. MEASURED on both references with the BPB all zero: where the
+; root is (sectors per FAT) for all eight; where the data starts (root entries)
+; for $F8, $F9, $FD and $FE. $FA / $FB / $FC / $FF's data start stayed unmeasured:
+; openMSX did not seat those images' tracks where the format puts them.
+fmd_tab:        db      2, 112, low 720,  high 720,  2  ; $F8 1 side, 80 tracks, 9 sectors
+                db      2, 112, low 1440, high 1440, 3  ; $F9 2 sides, 80 tracks, 9 sectors
+                db      2, 112, low 640,  high 640,  1  ; $FA 1 side, 80 tracks, 8 sectors
+                db      2, 112, low 1280, high 1280, 2  ; $FB 2 sides, 80 tracks, 8 sectors
+                db      1, 64,  low 360,  high 360,  2  ; $FC 1 side, 40 tracks, 9 sectors
+                db      2, 112, low 720,  high 720,  2  ; $FD 2 sides, 40 tracks, 9 sectors
+                db      1, 64,  low 320,  high 320,  1  ; $FE 1 side, 40 tracks, 8 sectors
+                db      2, 112, low 640,  high 640,  1  ; $FF 2 sides, 40 tracks, 8 sectors
 ; --- MSX-DOS-1 kernel SFIRST/SNEXT dir-search entries: $4FB8/$5006 (M19) -------
 ; While processing BDOS SFIRST ($11) / SNEXT ($12) the relocated kernel CALLs these
 ; two page-1 disk-ROM entries to walk the root directory for entries matching the

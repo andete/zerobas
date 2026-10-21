@@ -46,6 +46,26 @@ kilobytes on this disk: 706 on the fresh test disk, whose six files use 7
 clusters. `CALL FORMAT` also offers a 360 KB layout (media `&HFD`, 720
 sectors, 2 sectors a FAT).
 
+**The layout comes from the FAT's first byte, not the BPB.** That byte, the
+media ID, names one of eight standard formats (`&HF8`–`&HFF`), and the machine
+lays the disk out by it: where the FAT, the root directory and the data start.
+The BPB is not read at all — a disk whose BPB is damaged or entirely zero reads
+normally, and one whose FAT starts with another media ID than its real layout
+loses its files. Both reference machines do this, and so does zerobas since
+2026-10-21. (zerobas still reads the BPB of a disk whose FAT does not start
+with a media ID.)
+
+| media ID | sides | tracks | sectors a track | sectors a cluster | sectors a FAT | root entries |
+|---|---|---|---|---|---|---|
+| `&HF8` | 1 | 80 | 9 | 2 | 2 | 112 |
+| `&HF9` | 2 | 80 | 9 | 2 | 3 | 112 |
+| `&HFA` | 1 | 80 | 8 | 2 | 1 | 112 |
+| `&HFB` | 2 | 80 | 8 | 2 | 2 | 112 |
+| `&HFC` | 1 | 40 | 9 | 1 | 2 | 64 |
+| `&HFD` | 2 | 40 | 9 | 2 | 2 | 112 |
+| `&HFE` | 1 | 40 | 8 | 1 | 1 | 64 |
+| `&HFF` | 2 | 40 | 8 | 2 | 1 | 112 |
+
 **A directory entry** is 32 bytes: the name (bytes 0–7) and extension
 (8–10), upper case and padded with spaces; the attributes (11); the time
 (22–23) and date (24–25) of the last write; the first cluster (26–27); the
@@ -211,6 +231,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A disk with a damaged boot sector could not be read** (fixed 2026-10-21,
+  D-MEDIAID). One disk of the collection (a demo) has text over its BPB's
+  sector size; the CF-3300 ran its `AUTOEXEC.BAS`, zerobas listed no file.
+  Disks built for the test — the BPB damaged, zeroed, or contradicting the
+  FAT — showed both references going by the FAT's media ID alone
+  ([`bpbrule_run.out`](../../scratchpad/bpbrule_run.out)). The table's sectors
+  a FAT were measured for all eight IDs (each root directory was found); the
+  data start for `&HF8`, `&HF9`, `&HFD` and `&HFE` — the emulator could not
+  seat the other four formats' tracks
+  ([`bpbrule_media.out`](../../scratchpad/bpbrule_media.out)).
 - **A boot disk without MSX-DOS skipped the date question** (fixed 2026-10-21,
   D-BOOTDATE). Found by booting a disk collection on both machines (D-DISKRUN):
   18 of 143 disks reached a date question on the CF-3300 and BASIC on zerobas. A

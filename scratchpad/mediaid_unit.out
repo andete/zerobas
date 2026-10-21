@@ -1,0 +1,16 @@
+PASS  media F8, BPB all zero: Cy=0 reads [1] root 5 data 12 clusters 356 (want 5 / 12 / 356, ONE read: sector 1)
+PASS  media F9, BPB all zero: Cy=0 reads [1] root 7 data 14 clusters 715 (want 7 / 14 / 715, ONE read: sector 1)
+PASS  media FA, BPB all zero: Cy=0 reads [1] root 3 data 10 clusters 317 (want 3 / 10 / 317, ONE read: sector 1)
+PASS  media FB, BPB all zero: Cy=0 reads [1] root 5 data 12 clusters 636 (want 5 / 12 / 636, ONE read: sector 1)
+PASS  media FC, BPB all zero: Cy=0 reads [1] root 5 data 9 clusters 353 (want 5 / 9 / 353, ONE read: sector 1)
+PASS  media FD, BPB all zero: Cy=0 reads [1] root 5 data 12 clusters 356 (want 5 / 12 / 356, ONE read: sector 1)
+PASS  media FE, BPB all zero: Cy=0 reads [1] root 3 data 7 clusters 315 (want 3 / 7 / 315, ONE read: sector 1)
+PASS  media FF, BPB all zero: Cy=0 reads [1] root 3 data 10 clusters 317 (want 3 / 10 / 317, ONE read: sector 1)
+PASS  V1 facdemo3's damage (bytes/sector $2037, sectors/cluster $20): 720 KB
+PASS  V3 BPB media $F8, FAT $F9: the FAT's 720 KB
+PASS  V4 BPB 720 KB, FAT $F8: the FAT's 360 KB single-sided format
+PASS  FAT byte $00, BPB 720 KB: the BPB's geometry, reads [1, 0] (want [1, 0])
+PASS  FAT byte $00, BPB all zero: Cy=1 (no geometry anywhere)
+PASS  GETDPB, BPB all zero: f900020f040102010002700e00ca02030700 (want the CF-3300's f900020f040102010002700e00ca02030700)
+
+ALL PASS — the geometry comes from the media ID, as on both references

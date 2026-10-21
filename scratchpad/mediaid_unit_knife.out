@@ -1,0 +1,16 @@
+FAIL  media F8, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 5 / 12 / 356, ONE read: sector 1)
+FAIL  media F9, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 7 / 14 / 715, ONE read: sector 1)
+FAIL  media FA, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 3 / 10 / 317, ONE read: sector 1)
+FAIL  media FB, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 5 / 12 / 636, ONE read: sector 1)
+FAIL  media FC, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 5 / 9 / 353, ONE read: sector 1)
+FAIL  media FD, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 5 / 12 / 356, ONE read: sector 1)
+FAIL  media FE, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 3 / 7 / 315, ONE read: sector 1)
+FAIL  media FF, BPB all zero: Cy=1 reads [1, 0] root 0 data 0 clusters 0 (want 3 / 10 / 317, ONE read: sector 1)
+FAIL  V1 facdemo3's damage (bytes/sector $2037, sectors/cluster $20): 720 KB
+PASS  V3 BPB media $F8, FAT $F9: the FAT's 720 KB
+FAIL  V4 BPB 720 KB, FAT $F8: the FAT's 360 KB single-sided format
+PASS  FAT byte $00, BPB 720 KB: the BPB's geometry, reads [1, 0] (want [1, 0])
+PASS  FAT byte $00, BPB all zero: Cy=1 (no geometry anywhere)
+FAIL  GETDPB, BPB all zero: 000000000000000000000000000000000000 (want the CF-3300's f900020f040102010002700e00ca02030700)
+
+11 CHECK(S) FAILED

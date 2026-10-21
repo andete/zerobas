@@ -255,7 +255,9 @@ def disk_part():
     d = Disk()
     d.add_file("TEST.BIN", b"ABCDEFGH")
     fail_row("data with a .BIN name", d, "TEST.BIN", 61, 0)
-    fail_row("no disk", Disk(fail_read={0}), "T.BIN", 1, 70)
+    # no disk: EVERY read fails -- fat_mount reads sector 1 (the media ID) first
+    # since D-MEDIAID, so failing only the boot sector no longer models one
+    fail_row("no disk", Disk(fail_read={0, 1}), "T.BIN", 1, 70)
     d = Disk()
     d.add_file("E.BIN", b"")
     fail_row("empty file", d, "E.BIN", 1, 0)

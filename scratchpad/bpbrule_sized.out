@@ -1,0 +1,11 @@
+SF8 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+SF8 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+SFA cf: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+SFA eu: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+SFB cf: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+SFB eu: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+SFC cf: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+SFC eu: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+SFF cf: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+SFF eu: AUTOX=no date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+done

@@ -1,0 +1,4 @@
+P8 cf: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color auto  goto  list  run
+P8 eu: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | Ok | color  auto   goto   list   run
+P8 zb: AUTOX=yes date-question=no  FILES -> AUTOEXEC.BAS | ZB | color  auto   goto   list   run
+done

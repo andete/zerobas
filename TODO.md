@@ -4819,6 +4819,50 @@ item — do **one item per session** to keep context lean.
       row "BD + an AUTOEXEC.BAS" (knifed: without the `ret nc` the question asks for a
       key past the script, rc=1).
 
+- [x] ✅ **FIXED 2026-10-21** — 💽 **D-MEDIAID — A DISK'S LAYOUT COMES FROM THE FAT'S MEDIA ID, NOT
+      THE BPB: BOTH REFERENCES READ A DISK WHOSE BPB IS DAMAGED OR ZERO; zerobas LISTED NO FILE
+      (from D-DISKRUN's facdemo3.di2, a FILES-DIFF row; 2026-10-21)**
+      🎚️ TIER 1 — happy path: a disk the reference reads.
+      🤖 **AUTONOMOUS** — both references settle it.
+      📏 facdemo3's boot sector holds text over BPB bytes 11..13 (bytes per sector reads
+      $2037, sectors per cluster $20); the rest of the BPB and the FAT ($F9) are a 720 KB
+      disk's. The CF-3300 runs its AUTOEXEC.BAS (`Syntax error in 290`); zerobas listed
+      nothing -- fat_mount refused a sector size other than 512.
+      [`bpbrule_probe.py`](scratchpad/bpbrule_probe.py) (new) builds disks from the
+      collection's empty.dsk plus an AUTOEXEC.BAS of our own (`10 PRINT "AUTOX"`), boots
+      them, reads the screen, types FILES. [`bpbrule_run.out`](scratchpad/bpbrule_run.out),
+      CF-3300 and VG-8020 + NMS 1200 alike: V0 valid, V1 facdemo3's damage, V2 BPB ALL
+      ZERO, V3 BPB media $F8 under a $F9 FAT -- all run AUTOX; V4 a $F8 FAT under a valid
+      720 KB BPB -- the file is lost (the date question). zerobas: V1 / V2 lost, V4 read --
+      the exact inverse. So the layout is the FAT's media ID's standard format and the BPB
+      is not read. 🔮 refs V0-V3 run / V4 lost, zerobas V1 / V2 lost: 15 of 15 HIT.
+      📏 The table, measured with the BPB all zero ([`bpbrule_media.out`](scratchpad/bpbrule_media.out),
+      [`bpbrule_sized.out`](scratchpad/bpbrule_sized.out)): every media ID $F8..$FF finds
+      its root directory on both references (sectors per FAT confirmed for all eight); the
+      program runs (data start, so root entries, confirmed) for $F9 / $FD / $FE on 720 KB
+      images and for $F8 on a 360 KB one. $FA / $FB / $FC / $FF stayed unmeasured past
+      the root: openMSX seats an image's tracks by its size, and did not seat those formats
+      (a format-sized image did not help) -- the standard values stand there, own choice.
+      ✅ FIX: fat_mount's read is fat_geom_read (disk/kernel.asm, in the $4EE1..$4FB8
+      fill): logical sector 1 first; a media ID $F8..$FF there -> fat_media writes that
+      format's BPB fields over the buffer in the BPB's own layout (fat_mount and GETDPB
+      read them unchanged) -- ONE read, as before; no media ID -> the boot sector, BPB and
+      all, as before (own choice: no other clue). disk.rom free 1966 -> 1843 B. Main
+      ROM unchanged.
+      Witness: [`bpbrule_zb_after.out`](scratchpad/bpbrule_zb_after.out) -- V0-V4 as both
+      references; facdemo3 lists the reference's files and runs to `Syntax error in 290`
+      ([`mediaid_facdemo3_run.out`](scratchpad/mediaid_facdemo3_run.out)). tests/test_mediaid.py
+      (new): all eight IDs with the BPB zero (one read, sector 1), V1 / V3 / V4, the BPB
+      fallback (reads 1 then 0), and GETDPB on a zero BPB = the CF-3300's 720 KB DPB byte
+      for byte; 🔪 fat_media always CF=1 -> 12 FAIL.
+      📝 Seen, not pursued: on 720 KB images zerobas also runs $F8 / $FA / $FB / $FC / $FF
+      where the references do not -- zerobas's driver seats every logical sector as 2
+      sides x 9 (div9), which is that image's own layout; the references seat a
+      single-sided or 8-sector format by its own tracks. A driver matter, not this item's
+      (and P8, a valid 360 KB $F8 disk, reads on all three). facdemo3 prints "DON'T HOLD
+      THE CTRL-KEY" on zerobas only -- most likely its drive count (zerobas is single-drive
+      by ruling, the CF-3300 has a phantom B:).
+
 - [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
       MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
       🎚️ TIER 1 — happy path: booting a disk is the first thing a disk machine does.
@@ -4863,8 +4907,9 @@ item — do **one item per session** to keep context lean.
       an MSX1) and then starts BASIC; zerobas's starts BASIC without asking.** The CF-3300
       prints the same prompt with Japanese text in the brackets.
       ➡️ D-BOOTDATE (filed above, measured) is the fix. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
-      loader, ROBOCOP, SirDan, xak2eng2, senigma), the three FILES-DIFF candidates,
-      and the six ZB-ONLY.
+      loader, ROBOCOP, SirDan, xak2eng2, senigma), the FILES-DIFF candidates (facdemo3
+      DONE: D-MEDIAID; left: facdemo1.di1 `Syntax error` on the CF-3300 against `Illegal
+      function call` on zerobas, kq.dsk, no-waste.dsk), and the six ZB-ONLY.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -11814,7 +11859,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37747 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37792 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11980,7 +12025,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16842 (T-6FE392)8 (T-529ABE)` from `TODO.md:29679 (T-529ABE)`: a
+      `TODO.md:16887 (T-6FE392)8 (T-529ABE)` from `TODO.md:29724 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17689,7 +17734,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29679 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29724 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

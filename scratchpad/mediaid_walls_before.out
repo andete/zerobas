@@ -1,0 +1,10 @@
+OK: disk ROM 16384 B, mapped $4000-$7FFF, 58 pinned entry address(es) parsed from disk/*.asm
+    measure: disk free (0x00 runs >= 16 B) = 1966 B in 28 run(s)
+    the 6 largest, with the pin that bounds each:
+      $4EE1-$4FB7    215 B fill   next pin $4FB8   room-before-pin 215 B
+      $53AA-$543B    146 B fill   next pin $543C   room-before-pin 146 B
+      $4E4E-$4EDD    144 B fill   next pin $4EDE   room-before-pin 144 B
+      $4465-$44F3    143 B fill   next pin $44F4   room-before-pin 143 B
+      $5555-$55DA    134 B fill   next pin $55DB   room-before-pin 134 B
+      $5331-$53A6    118 B fill   next pin $53A7   room-before-pin 118 B
+    measure: largest usable hole = 215 B at $4EE1 (bounded by $4FB8)

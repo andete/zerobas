@@ -555,7 +555,22 @@ def disk_seeds(spans):
             if re.match(r'k_[0-9A-F]{4}$', n)
             or n in ('bdos_entry', 'init')
             or n.endswith('_tmpl')}
+    # (16) THE PINNED SFIRST / SNEXT ENTRIES ($4FB8 / $5006, M19), which the
+    # MSX-DOS kernel CALLs by address like the k_* entries, but which carry
+    # their own names. Until D-MEDIAID (2026-10-21) they read as live only
+    # because kernel.asm's PROLOGUE span -- everything above its first label --
+    # FELL THROUGH the `ds $4FB8` pad into `sfirst`; code placed in that pad
+    # gave the file an earlier first label, and 19 spans went "dead". The same
+    # accident fix (15) removed from main. Declared, asserted to resolve.
+    for _pin in DISK_PIN_ROOTS:
+        if _pin not in spans.nodes:
+            sys.exit(f"FAIL: disk pin root {_pin!r} is not a disk label -- a "
+                     f"rename would silently drop a pinned entry (fix 16)")
+    out |= set(DISK_PIN_ROOTS)
     return out
+
+
+DISK_PIN_ROOTS = ('sfirst', 'snext')
 
 
 def disk_abi_seeds(spans):
