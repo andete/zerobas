@@ -246,11 +246,9 @@ flt_neg:
 ; here at the low region's end, past the $3297 pin, so main page 1 -- where the
 ; seven callers are -- only changes call targets.
                 include "basic/cascut-body.inc"     ; cas_capture_cut, cas_name_cut
-; tape_parse_cut -- SAVE"CAS:" / BSAVE"CAS:": tape_parse_name, then the cut
-; (TSV_NAME is CAS_WANT). CSAVE keeps calling tape_parse_name: its name is raw.
-tape_parse_cut:
-                call    tape_parse_name
-                jr      cas_name_cut
+; (tape_parse_cut -- SAVE"CAS:" / BSAVE"CAS:"'s tape_parse_name + the cut: MOVED
+; to sub2/loadsave.asm's ls_tape_parse_cut, D-P0CB slice C2, which calls
+; cas_name_cut here back through p0cb.)
 
 ; ===========================================================================
 ; D-DEEPEXPR (2026-10-20): STACK ROOM INSIDE AN EXPRESSION, PER SITE
@@ -490,16 +488,17 @@ __MEAS_LOW_END:
 ; save.asm call this; it must be assembled before them.
                 include "basic/fat.asm"
 
-; The BLOAD statement handler and the ,R handoff (defines `do_bload`).
+; BLOAD's main half: the ,R handoff (load_handoff) and the sub-ROM call
+; (bload_sub); the statement's parse is sub2/loadsave.asm's (D-P0CB slice C2).
                 include "basic/bload.asm"
 
-; The CLOAD / LOAD"CAS:" cassette program-load handlers (defines `do_cload`,
-; `do_load`). Reuses bload.asm's `load_error` / `dev_cas` and program.asm's
+; The program loaders (do_tape_prog, disk_prog_load) and RUN's bare / <line>
+; arms (do_run); the CLOAD / LOAD statements are sub2/loadsave.asm's. Reuses bload.asm's `load_error` / `dev_cas` and program.asm's
 ; `relink` / `new_prog`, so it follows bload.asm in the include order.
                 include "basic/cload.asm"
 
-; The BSAVE / SAVE disk-write statement handlers (defines `do_bsave`, `do_save`)
-; + the shared disk-write helper. Reuses bload.asm's `load_error` / `dev_cas` /
+; The tape writers SAVE / BSAVE / CSAVE / OPEN "CAS:" share (cas_write_ea_header,
+; cas_wbyte, ...) and sv_tenant; the statements are sub2/loadsave.asm's. Reuses bload.asm's `load_error` / `dev_cas` /
 ; `parse_disk_fcb` and the fat.asm engine and expr.asm's `eval`, so it follows them.
                 include "basic/save.asm"
 

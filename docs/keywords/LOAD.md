@@ -158,12 +158,15 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## Where it lives
 
-- Main ROM: `do_load` and `pcr_load` (the `,R` tail) in
-  [basic/cload.asm](../../basic/cload.asm) and
-  [basic/bload.asm](../../basic/bload.asm). A disk load is handed to the disk
-  ROM; an ASCII file goes through `ascii_load`, which tokenises each line as
-  if it were typed; the tape goes through `do_tape_prog` and
-  `cas_ascii_load`.
+- `ls_load` and `ls_pcr_load` (the `,R` tail) in
+  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second sub-ROM's page 0
+  since 2026-10-21 (main's `ex_load` hands it over): the name, the device, the
+  tail, and what happens after the load (back to the prompt, or `RUN`).
+- Main ROM, called back from there: `disk_prog_load` in
+  [basic/cload.asm](../../basic/cload.asm) hands a disk load to the disk ROM;
+  an ASCII file goes through `ascii_load`, which tokenises each line as if it
+  were typed; the tape goes through `do_tape_prog` and `cas_ascii_load`, whose
+  tape reading runs entirely in main.
 - Disk ROM: `hk_dpload` in [disk/kernel.asm](../../disk/kernel.asm) mounts the
   disk, finds the file and reads it — the same split as on the CF-3300, whose
   whole sector loop runs on the disk ROM's side.

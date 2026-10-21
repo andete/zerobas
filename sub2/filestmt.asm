@@ -13,7 +13,9 @@
 ; Entered through trap_tenant (sub2/trapstmt.asm), which forwards every C >= 8
 ; here: main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm), so C = the statement token (exec_stmt hands every
-; handler A = its token -- tests/test_stmt_dispatch.py asserts it).
+; handler A = its token -- tests/test_stmt_dispatch.py asserts it). A token that
+; is none of the four goes on to ls_tenant (sub2/loadsave.asm, D-P0CB slice C2:
+; the SAVE / LOAD family, which shares the same byte).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
 ;        C  = the statement token
 ;   out  DE = the main address to continue at, HL = what it expects (below)
@@ -52,7 +54,10 @@ file_tenant:                                ; A = C = the token (trap_tenant's h
                 jp      z,fs_merge
                 cp      MAX_TOKEN
                 jp      z,fs_maxfiles
-                ; FALL THROUGH: no other token reaches here (main has no other stub)
+                jp      ls_tenant           ; D-P0CB slice C2: SAVE / CSAVE / BSAVE /
+                                            ; LOAD / CLOAD / BLOAD / RUN <name>
+                                            ; (sub2/loadsave.asm, which shares the
+                                            ; tails below)
 
 ; --- the shared tails -------------------------------------------------------------
 fs_syntax:                                  ; oo_synerr / oo_fail_syn: stmt_error, ERR 2

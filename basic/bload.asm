@@ -13,8 +13,10 @@
 ; project's own black-box oracle observations) + the MSX2 Technical Handbook.
 ; No disassembly.
 ;
-; Entry: do_bload, HL -> the bytes after the BLOAD token. spec-tokenise.md: the
-; arguments are kept verbatim as ASCII, i.e. `"CAS:",R` followed by 0x00.
+; Entry: ls_bload (sub2/loadsave.asm since D-P0CB slice C2 -- the statement's
+; parse left main; bload_sub and load_handoff below are what it calls back and
+; continues at), HL -> the BLOAD token. spec-tokenise.md: the arguments are kept
+; verbatim as ASCII, i.e. `"CAS:",R` followed by 0x00.
 ;
 ; Device-string grammar (this build):
 ;   "CAS:"            -> tape path (verbatim, unchanged from the original)
@@ -30,88 +32,23 @@
 bl_upcase       equ     upcase
 bl_load_error   equ     load_error
 
-; --- do_bload: resident marshalling stub (repack build) ---------------------
-; The verb body (device dispatch, the 8.3 name, the cassette load) is the sub-ROM
-; PAGE-1 tenant sub/bload.asm (docs/spec-traps-t3-key.md §7.6). Marshal the one
-; input (HL = token cursor) and the one output (BL_STAT) through RAM:
-; subrom_call clobbers every register and forces CF=0 on return.
-; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE DISK LOAD IS disk.rom's (hk_dpbload),
-; through H_FOPEN -- the cell the CF-3300's BLOAD enters, once, like LOAD / MERGE
-; (disk/docs/spec-diskcode-eviction.md §6.6ab / §6.6v / §8.2: DE = 1, HL = the
-; program-verb buffer; never $FE76, no per-byte cell). The tenant still decides
-; the device and parses the name into DISK_FCB_NAME; for a disk file it answers
-; BL_STAT = FOPEN_SEL_BLOAD and main makes the crossing. Until this date the
-; tenant read the file itself, over the sub-ROM's second FAT engine (its READ
-; half and a fatio-body copy, the last users of either -- both gone).
-;
-; The `,R` handoff CANNOT move: it ends in `jp (hl)` into the loaded program and
-; never returns, so running it inside the tenant's CALSLT would leave main page 1
-; switched out forever. The tenant returns normally and we do the handoff here.
-do_bload:
-                ; ✅ D-FNEXPR2: THE FILENAME IS EVALUATED **HERE**, NOT IN THE
-                ; TENANT, AND THAT IS FORCED RATHER THAN CHOSEN. `str_eval` is
-                ; main PAGE 1, which is switched OUT while a page-1 sub-ROM
-                ; tenant runs -- the same constraint this file's header already
-                ; states for the rest of the parse ("every one of these verbs
-                ; PARSES with eval, which is main page 1 and therefore switched
-                ; out"). So the one thing BLOAD's parse still did sub-side, the
-                ; opening quote gate, comes back to the resident half; what
-                ; crosses is the STAGED name in STRSCR (RAM, mapped on both
-                ; sides) plus FN_RESUME for the `,R` tail.
-                ; 🎯 AND IT COSTS THE TENANT NOTHING TO GIVE UP: the 9 B gate it
-                ; drops pays for the two `ld hl,(FN_RESUME)` its arms gain.
-                call    fname_expr          ; HL -> the staged '"'-terminated copy
-                ld      (BL_PTR),hl         ; staged name ptr -> tenant
-                call    pcr_bload           ; D-BLOADOFS: the whole tail, HERE
-                call    fch_park            ; D-ASAVECHAN2 (2026-10-03): park the live
-                                            ; channel -- the tenant's disk read reused its
-                                            ; engine globals, and an open INPUT file lost
-                                            ; its place, an OUTPUT one its bytes
-                                            ; (scratchpad/chanside_probe.py). Kept when
-                                            ; the read moved to disk.rom (2026-10-19),
-                                            ; as BSAVE kept it: FCH_ACTIVE = 0 after a
-                                            ; BLOAD is what every measured row saw
-                xor     a                   ; D-CASFCB: a tape BLOAD's search skips
-                call    cas_bufp_set        ;  other files through channel #0's buffer
-                                            ;  -- the tenant calls the SUB-side
-                                            ;  cas_open_match, never main's stub, so
-                                            ;  it is set here (casbin bty / bbare
-                                            ;  read PEEK 0 without it)
+; --- do_bload: MOVED to sub2/loadsave.asm (ls_bload), D-P0CB slice C2 -------
+; The parse -- the filename expression and the whole `,R` / `,S` / offset tail
+; (main's pcr_bload, D-BLOADOFS) -- and the decision on the tenant's BL_STAT run
+; in zerobas-sub2 page 0 since 2026-10-21, calling main back through p0cb. What
+; stays here: this wrapper, because the sub-ROM BLOAD tenant (sub/bload.asm) is
+; reached through an INLINE byte that a p0cb'd caller cannot hand over (IX is
+; p0cb's target); and load_handoff below, the CONTINUATION ls_bload returns in
+; DE -- the `,R` call into the loaded program must not run inside sub2's CALSLT,
+; and the pinned $6CF3 lands on its lh_back. D-ROMSIZE step 1's disk crossing
+; (FOPEN_SEL_BLOAD -> fopen_cross -> disk.rom hk_dpbload) is made by ls_bload
+; through p0cb. The history of each step (D-FNEXPR2, D-ASAVECHAN2, D-CASFCB,
+; D-BLNF, D-BLMODE) is in this file's history before the slice.
+;   out: BL_STAT (0 loaded / 1 load error / FOPEN_SEL_BLOAD a disk file / n ERR n)
+bload_sub:
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD)
-                ; D-BLNF: BL_STAT is THREE-VALUED -- and since 2026-10-19 the
-                ; disk load answers in the SAME code through DISKOP_STATUS:
-                ;   0 -> loaded
-                ;   1 -> `load error`, PRINTED, program runs on -- unless a DSKIO
-                ;        failure is pending, which disk_error RAISES (70, ...)
-                ;   n -> RAISE MSX ERR n, program stops
-                ; 🎯 D-BLMODE MADE THE THIRD VALUE A **CODE** RATHER THAN ADDING A
-                ; FOURTH INDEX: `cp 1` for `dec a` is one byte, and `jp raise_error`
-                ; costs the same three `jp df_notfound` did, because A is already
-                ; the code. 53 = `File not found` (D-BLNF), 61 = `Bad file mode`
-                ; (D-BLMODE) -- both disk.rom's now; the tenant files 19 (tape
-                ; I/O, D-CASBIN), 56 / 62 (a bad name or drive) and 1.
-                ; ⚠️ 1 COVERS THE CASSETTE, a failed mount and a short file. Only
-                ; an arm that PROVED the volume mounted files 53 / 61.
-                ; ⚠️ AND SO BLOAD CANNOT RAISE ERR 1 THROUGH THIS CELL -- see
-                ; sub/bload.asm, where the hazard is written down beside the arms.
-                ; 🏗️ 2026-10-19: FOPEN_SEL_BLOAD ($5A, not an MSX error code, so
-                ; never one the tenant files) means "a DISK file, its name is in
-                ; DISK_FCB_NAME": the selector is ALREADY in A for fopen_cross,
-                ; which crosses H_FOPEN to disk.rom's hk_dpbload and comes back
-                ; with A = DISKOP_STATUS in this same code -- 5 B of main page 1
-                ; for the whole move. Unclaimed (a foreign disk ROM): ERR 5, as
-                ; LOAD / SAVE / BSAVE answer there.
-                ld      a,(BL_STAT)
-                cp      FOPEN_SEL_BLOAD
-                call    z,fopen_cross       ; disk.rom loads it; A = its status
-                or      a
-                jr      z,load_handoff      ; plain BLOAD returns; ,R jumps to EXECPTR
-                cp      1
-                jp      z,disk_error        ; a load error: ERR 70 on an empty drive (D-DISKERR,
-                                            ; disk.rom's mount), else `load error` -- the tape
-                                            ; path has no DSKIO and keeps its face
-                jp      raise_error         ; A = the tenant's ERR code — never returns
+                ret
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
 ; outside bload.asm use it (do_files, do_kill, do_name, do_open, do_run, ex_merge,
@@ -176,140 +113,10 @@ build_83_name:
                 rra                         ; BN_STAT bit0 -> CF (1 = reject)
                 ret
 
-; pcr_noquote — shared option-flag tail used by BOTH the tape and disk paths.
-; Parses an optional single option flag (,R run or ,S VRAM); sets RUNFLAG /
-; VRAM_FLAG accordingly.
-;   in:  HL -> the statement tail, past the filename (FN_RESUME)
-;   out: CF set on ANY syntax error (unrecognized flag, or junk
-;        after the flag — caller -> load_error); CF clear on success, with
-;        RUNFLAG = 1 iff ,R and VRAM_FLAG = 1 iff ,S.
-;
-; 🔴 THE `parse_close_run` HEAD IS GONE FROM THIS COPY TOO (D-FNRUN), AND THE
-; DEAD-CODE GATE DID NOT ASK FOR IT. Four instructions consumed a closing '"'
-; out of program text; D-FNEXPR2 retired three of their four callers and
-; `do_run` was the fourth, so once RUN took a string EXPRESSION the head had no
-; caller in EITHER build. The sub-ROM copy was reported as a 6 B unreachable
-; span the moment it went dead. This one was not — and the reason is worth more
-; than the six bytes:
-;
-;   `check_dead_code.py` seeds the MAIN build with `{init} | (labels named
-;   anywhere under sub/ or tools/)`, and `external_names()` scrapes every
-;   IDENTIFIER in those trees including the ones inside COMMENTS.
-;
-; So the three mentions of `parse_close_run` in sub/bload.asm's own comment --
-; the comment D-FNEXPR2 wrote to explain why the head was removed THERE -- were
-; seeding the label here. **Documenting a removal is what stopped the gate
-; asking for the same removal in the other build.** Falsified rather than
-; reasoned about: mangling those three mentions drops the seed count 304 -> 303
-; and the span is reported immediately. Filed in TODO.md as a gate residual,
-; because the mechanism is general and this is one instance of it.
-; "Honest at the walls" (closure-spec item 2): an unrecognized flag or a trailing
-; token (a second flag, or an argument) is a clean error -- LOAD / RUN's tail;
-; BLOAD's, which takes an `,offset`, is pcr_bload below (D-BLOADOFS) --
-; never a silent no-op. Only ONE option flag is allowed, so ,R and ,S cannot
-; combine.
-pcr_noquote:
-                xor     a
-                ld      (RUNFLAG),a         ; default: no ,R handoff
-                ld      (VRAM_FLAG),a       ; default: RAM load
-                call    skipsp_test
-                jr      z,pcr_ok            ; end of statement -> plain load
-                cp      COLON
-                jr      z,pcr_ok            ; statement separator -> plain load
-                cp      ','
-                jr      nz,pcr_err          ; junk after the quote -> error
-                ; --- one option flag: ,R (run) or ,S (VRAM) ----------------
-                rst    $10                ; past the comma
-                call    upcase              ; accept ,r / ,s as well
-                cp      'R'
-                jr      z,pcr_run
-                cp      'S'
-                jr      z,pcr_vram
-                jr      pcr_err             ; unrecognized flag -> error
-pcr_run:
-                ld      a,1
-                ld      (RUNFLAG),a
-                jr      pcr_flag_end
-pcr_vram:
-                ld      a,1
-                ld      (VRAM_FLAG),a
-pcr_flag_end:
-                ; after the flag ONLY a statement terminator is allowed; a second
-                ; flag or a trailing ,offset is rejected (not silently ignored).
-                call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,pcr_ok
-                ; fall through to pcr_err
-pcr_err:
-                scf
-                ret
-pcr_ok:
-                or      a                   ; CF clear = success
-                ret
-
-; --- pcr_bload: BLOAD's tail `[,R|,S][,offset]`, parsed in MAIN -------------
-; ✅ D-BLOADOFS (2026-10-07). The offset is the documented fourth form, and the
-; CF-3300 (probes/disk/disk_probe_bloadofs.py) adds it to the header's start,
-; END and EXEC alike (`,R,&H1000` runs the code at exec+&H1000), wrapping at 16
-; bits; it is an ADDRESS (-32768..65535: decimal 61440 is &HF000), a string is
-; 13 and 70000 is 6. Parsed HERE rather than in the tenant because `eval` is
-; main page 1, switched out while a page-1 tenant runs (the SAVE family's
-; reason), and BEFORE the disk is touched: a bad tail never opens the file.
-; Out: RUNFLAG, VRAM_FLAG, BL_OFS, FN_RESUME (past the tail, for load_handoff).
-pcr_bload:
-                ld      hl,0
-                ld      (BL_OFS),hl         ; no offset
-                ld      hl,(FN_RESUME)
-                xor     a
-                ld      (RUNFLAG),a
-                ld      (VRAM_FLAG),a
-                call    skipsp_test
-                jr      z,pcb_done          ; `BLOAD "f"`
-                cp      COLON
-                jr      z,pcb_done
-                cp      ','
-                jp      nz,stmt_error
-                rst     $10                 ; past the comma
-                call    upcase
-                ld      de,RUNFLAG
-                cp      'R'
-                jr      z,pcb_flag
-                ld      de,VRAM_FLAG
-                cp      'S'
-                jr      nz,pcb_ofs          ; not a flag: the offset itself
-pcb_flag:
-                ld      a,1
-                ld      (de),a
-                call    stmt_bare_end       ; past the letter; Z iff the end
-                jr      z,pcb_done
-                cp      ','
-                jp      nz,stmt_error
-                inc     hl                  ; past the comma
-pcb_ofs:
-                call    eval_addr           ; DE = the offset, wrapped to 16 bits
-                call    check_expr_errors   ; a string 13, past 65535 6
-                ld      (BL_OFS),de
-                call    skipsp_test
-                jr      z,pcb_done
-                cp      COLON
-                jp      nz,stmt_error
-pcb_done:
-                ld      (FN_RESUME),hl
-                ret
-
-; --- pcr_load: LOAD / RUN's option tail -- pcr_noquote, then a TRAPPABLE 2 ---
-; ✅ D-LOADTAIL (2026-10-07): `LOAD "X.BAS",Q`, `RUN "A",5` and the cassette
-; faces read `2 in 30` under ON ERROR on the CF-3300 / VG-8020; ours took the
-; parse failure to load_error, which PRINTS AND RETURNS (D-LOADERRRET), so the
-; program ran on. `,S` is BLOAD's option, not LOAD's: `LOAD "X.BAS",S` is 2 on
-; the CF-3300 where ours accepted it and searched the disk (53)
-; (probes/disk/disk_probe_loadtail.py). The four LOAD / RUN sites call this.
-pcr_load:
-                call    pcr_noquote
-                jp      c,stmt_error        ; unknown option or junk after it
-                ld      a,(VRAM_FLAG)
-                or      a
-                jp      nz,stmt_error       ; ,S
-                ret
+; pcr_noquote / pcr_load (LOAD / RUN's `,R` tail, D-LOADTAIL) and pcr_bload
+; (BLOAD's `[,R|,S][,offset]`, D-BLOADOFS): MOVED to sub2/loadsave.asm
+; (ls_pcr_noquote, ls_pcr_load, ls_pcr_bload), D-P0CB slice C2 -- their only
+; callers were the LOAD / RUN <name> / BLOAD arms that moved with them.
 
 ; (dev_cas, the "CAS:" device name, moved past the $73E5 pin on 2026-10-19 --
 ; basic/field.asm, after lrset_rhs: its 5 B pay for do_bload's FOPEN_SEL_BLOAD

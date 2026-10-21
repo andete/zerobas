@@ -38,172 +38,17 @@
 ; tape file" behaviour is an own-design simplification (no tape file catalogue);
 ; see PROVENANCE.md. No disassembly.
 
-; --- do_cload: CLOAD ["filename"] --------------------------------------------
-; Entry: HL -> the bytes after the CLOAD token. An optional quoted filename may
-; follow. Tier-3 (spec-cas-tier3-cload.md Item A): the name is now HONOURED — it
-; is captured into CAS_WANT and cas_open_match finds the matching tape file
-; (skipping earlier non-matching files), instead of blindly loading the next one.
-; Bare CLOAD (no name) clears CAS_WANT_ON -> load-next, unchanged.
-do_cload:
-                xor     a
-                ld      (CAS_VERIFY),a      ; default: a real load (not CLOAD?)
-                call    skip_spaces
-                ; Tier-3 Item B: `CLOAD?` is the VERIFY form. Our tokeniser maps
-                ; '?' to PRINT (interp.asm), so `CLOAD?` tokenises to CLOAD_TOKEN
-                ; + PRINT_TOKEN — detect that leading PRINT_TOKEN here.
-                cp      PRINT_TOKEN         ; CLOAD? -> compare-mode verify
-                jr      nz,dcl_name
-                inc     hl                  ; past the '?' (PRINT_TOKEN)
-                ld      a,1
-                ld      (CAS_VERIFY),a      ; compare, do not store
-                xor     a
-                ld      (CAS_VMIS),a        ; fresh verify (no mismatch yet)
-                call    skip_spaces
-dcl_name:
-                ; A = (hl); HL at the first argument char (name or terminator).
-                or      a
-                jr      z,dcl_noname        ; bare CLOAD / CLOAD? -> next tape file
-                cp      COLON               ; CLOAD : ... -> bare form
-                jr      z,dcl_noname
-                ; 🟢 D-CSAVEEXPR (2026-09-05): a string EXPRESSION, the same edit
-                ; as do_csave's. `CLOAD 5` is `Type mismatch` on BOTH references
-                ; and was a non-raising `load error` here.
-                ; ⚠️ AND IT IS THE ONLY CLOAD ROW THAT EXISTS. `CLOAD A$` and
-                ; `CLOAD"P"` REACH THE TAPE, and a tape search that finds nothing
-                ; is the `LOAD"CAS:"` class -- TODO.md records the reference as
-                ; NOT RETURNING, "no row can carry this". So the argument is
-                ; evaluated on the strength of the PARSE face, which is what the
-                ; gate below actually decided, plus the eight verbs already on
-                ; fname_expr. That distinction is stated here rather than left
-                ; for a reader to assume the whole verb was measured.
-                call    fname_expr          ; HL -> the staged '"'-terminated copy
-                call    cas_capture_name    ; -> CAS_WANT + CAS_WANT_ON=1
-                jr      dcl_load            ; (CLOAD has no ,R)
-dcl_noname:
-                xor     a
-                ld      (CAS_WANT_ON),a     ; no name -> load the next tape file
-dcl_load:
-                ; 🔴 D-CASTYPE (2026-10-08): CLOAD SEARCHES FOR A TOKENISED FILE, and
-                ; every other tape verb (LOAD / RUN / MERGE / OPEN "CAS:") for an ASCII
-                ; one -- the VG-8020 steps SILENTLY over a file of the other type, as it
-                ; steps over a wrong name, even under the same name
-                ; (probes/basic/basic_probe_castype.py). Bit 7 of CAS_WANT_ON carries
-                ; it: cas_capture_name / the bare form above write the whole byte (0/1),
-                ; so it is clear for every other verb, and only this one sets it.
-                ld      hl,CAS_WANT_ON
-                set     7,(hl)
-                call    do_tape_prog
-                ret     c                   ; failed: already reported (as before)
-                ; 🔴 D-CLOADPROG (2026-09-28): D-MERGERET'S BUG, IN THE SIBLING VERB.
-                ; This was `jp do_tape_prog`, whose `ret` handed control back to
-                ; the exec loop -- which carried on with the next statement of a
-                ; program the load had just REPLACED. `7 POKE&HE000,201 /
-                ; 10 CLOAD"ZR" / 20 POKE&HE000,202`, RUN: `Syntax error in 3346`
-                ; here, a line number read out of whatever sat under the stale
-                ; cursor, where the VG-8020 stops at a clean `Ok`
-                ; (scratchpad/cload_ta_probe7.out). LOAD already ends the line
-                ; this way (dl_loaded); END/NEW/LIST share the tail.
-                ; ✅ CLOAD? TOO, MEASURED: after a SUCCESSFUL verify the VG-8020
-                ; does not run the rest of the line either -- `CLOAD?"ZQ":PRINT`
-                ; prints nothing past `Ok` (scratchpad/cload_ta_probe8.out), and a
-                ; mismatch returns CF (verify_error) and never gets here.
-                jp      end_line_end
-
-; --- do_load: LOAD <name> | LOAD "CAS:filename" | LOAD "A:filename"[,R] ------
-; Entry: HL -> the bytes after the LOAD token. ⚠️ D-FNEXPR2: the argument is a
-; string EXPRESSION, not "a quoted device string" as this line read until
-; 2026-08-21 -- `LOAD A$` and `LOAD A$+".BAS"` are `File not found` on the
-; CF-3300 and were a PRINTED `load error` here (row f.loadvar). It is evaluated
-; by `fname_expr` and staged in STRSCR, so everything below reads a staged copy:
-; a "CAS:" prefix selects the (unchanged) cassette path; anything else is
-; a disk filename (optional "A:"/"B:" drive prefix) read from the disk BDOS layer.
-; A "CAS:" filename is parsed-past and ignored (TAPION opens the next tape file);
-; a disk LOAD "name",R loads the tokenised BASIC program and runs it.
-;
-; The "CAS:" prefix is peeked NON-DESTRUCTIVELY (exactly like do_bload): only once
-; the full prefix matches do we commit to the tape path, so a name like "CASETTE"
-; falls through cleanly to the disk path. That peek is `dev_cmp` now, not the
-; hand-rolled loop this file carried -- the THIRD copy of it in the tree, and
-; D-FNFUND had collapsed only the two in save.asm because its sweep was on a
-; FILE and not on the MECHANISM.
-do_load:
-                xor     a
-                ld      (CAS_VERIFY),a      ; LOAD is a real load, never CLOAD? verify
-                ; ✅ D-FNEXPR2: the filename is a string EXPRESSION (row f.loadvar:
-                ; `LOAD A$` on a missing file is `File not found` on the CF-3300
-                ; and was `load error` here -- PRINTED, so the program ran on).
-                call    fname_dev   ; D-NGRAM16
-                ; --- device dispatch: "CAS:" -> tape, else -> disk ----------
-                ; 🎯 D-FNEXPR2 CARVE: THIS WAS A **THIRD** HAND-ROLLED COPY OF
-                ; `dev_cmp`, and D-FNFUND collapsed only the two in save.asm --
-                ; its sweep was on `basic/save.asm`, not on the mechanism, which
-                ; is the class this project keeps re-learning (grep the SYMBOL,
-                ; then grep the MECHANISM). Same upcase, same 0-terminated
-                ; prefix, same advance-on-hit / restore-HL-on-miss contract, and
-                ; the `push`/`pop` pair goes with it because dev_cmp owns one.
-                jr      nz,dl_is_disk       ; no "CAS:" prefix -> disk (HL restored)
-dl_is_cas:
-                ; HL is now inside the STAGED copy, past "CAS:". Tier-3: CAPTURE
-                ; the filename into CAS_WANT (cas_open_match then finds the named
-                ; tape file, case-sensitive per spec §A.5). It stops ON the '"'
-                ; fname_expr appended to the staging buffer; the `,R` tail is
-                ; parsed from FN_RESUME instead, in the PROGRAM TEXT where it
-                ; actually lives (D-FNEXPR2). Empty name (LOAD"CAS:") ->
-                ; CAS_WANT_ON=0 = load next.
-                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a . ends the name (D-CASDOT)
-dl_cas_close:
-                ld      hl,(FN_RESUME)      ; D-FNEXPR2: the closing '"' lives in
-                call    pcr_load            ; the STAGED copy, so resume past the
-                                            ; expression and take only the ,R tail
-                call    do_tape_prog        ; load the tokenised program off tape
-                jr      dl_loaded           ; D-SAVECOLON carve (-8 B page 1): the
-                                            ; tail from here was dl_is_disk's 10
-                                            ; bytes verbatim -- `ret c` (D-CASTAIL
-                                            ; defect B: a FAILED tape load has already
-                                            ; reported, so ,R must not run what was
-                                            ; resident), then ,R -> run_prog_top, else
-                                            ; end_line_end (D-MERGERET: after a LOAD the
-                                            ; statement stream is gone). The disk arm
-                                            ; carries the measured rows for both.
-
-; --- do_load disk path: LOAD "A:name"[,R] -----------------------------------
-; D-FNEXPR2: this paragraph used to read "HL was advanced partway through the
-; 'CAS:' compare and must NOT be trusted — restore the filename start from the
-; stack." That was true of the hand-rolled compare loop this file carried; it is
-; not true of `dev_cmp`, which restores HL itself on a miss, and the `push`/`pop`
-; pair the sentence described no longer exists. Parse the FCB (shared with
-; do_bload) out of the staged copy, take the `,R` tail from FN_RESUME, load the
-; tokenised program from disk, then run it iff ,R was given (LOAD"name",R = load
-; and run; standard MSX behaviour).
-dl_is_disk:
-                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
-                call    pcr_load            ; ,R tail only -- no quote in the text
-                call    disk_prog_load      ; load the tokenised program into TXTBASE
-dl_loaded:                                  ; the tape arm joins here (D-SAVECOLON)
-                ret     c                   ; D-RUNTAIL defect B (docs/spec-basic-
-                                            ; runtail.md §3.2): the load FAILED and has
-                                            ; already reported. LOAD"missing",R must not
-                                            ; then run whatever was resident -- the
-                                            ; CF-3300 prints its message and stops
-                                            ; (characterization §4, loadr-miss-res)
-                ; ,R ? -> run the freshly loaded program; else back to the REPL.
-                ; 🔴 D-MERGERET (2026-09-12): "BACK TO THE REPL" IS WHAT THE COMMENT
-                ; SAID AND NOT WHAT `ret z` DID. A `ret` hands control back to the
-                ; exec loop, which carries on with the next statement -- of a program
-                ; this very statement has just REPLACED. Inside a running program
-                ; `10 POKE&HD002,0 / 20 LOAD"PROG.BAS" / 30 POKE&HD002,55` answered
-                ; `Syntax error in 49924` -- a line number read out of whatever now
-                ; sits under the stale cursor -- where the CF-3300 answers a clean
-                ; `Ok` (scratchpad/kwdrain_cmdlevel.out). `end_line_end` is the tail
-                ; END, NEW, LIST, DELETE, RENUM and AUTO already share.
-                ; 🎯 DIRECT MODE ALREADY AGREED (0 on both) and still does: the same
-                ; flag is what `NEW` sets, and a typed `NEW:POKE` measures 0 on both
-                ; machines (scratchpad/kwdrain_cmddirect.out).
-                ld      a,(RUNFLAG)
-                or      a
-                jp      z,end_line_end
-                jr      run_prog_top        ; RUN the loaded program (program.asm) --
-                                            ; at TOP LEVEL, never nested (§3.1)
+; --- do_cload / do_load: MOVED to sub2/loadsave.asm, D-P0CB slice C2 ----------
+; CLOAD (ls_cload: the `?` verify form, the name or none, D-CASTYPE's "tokenised
+; only" bit, then the line ends -- D-CLOADPROG) and LOAD (ls_load: the name, the
+; "CAS:" / disk dispatch, the `,R` tail, then end_line_end or run_prog_top --
+; D-MERGERET, D-RUNTAIL) run in zerobas-sub2 page 0 since 2026-10-21. The loaders
+; they call stay here and are reached through p0cb: do_tape_prog (its TAPION /
+; TAPIN loop is real-time, and one p0cb runs it whole) and disk_prog_load
+; (autoexec_run's too). A load that FAILED has already reported, and the tenant
+; then returns main's bp_ret -- the handler's own `ret c`. The history of each
+; rule (D-CSAVEEXPR, D-FNEXPR2, D-SAVECOLON, D-CASTAIL) is in this file's history
+; before the slice.
 
 ; --- do_run: RUN | RUN <lineno> | RUN <name expression> ---------------------
 ; Entry: HL -> the bytes after the RUN token.
@@ -249,29 +94,21 @@ dl_loaded:                                  ; the tape arm joins here (D-SAVECOL
 ; Mirrors do_load's disk path exactly (fname_expr + parse_disk_fcb +
 ; disk_prog_load), so RUN <name> parses identically to LOAD <name> minus the
 ; RUNFLAG test. The load logic is NOT duplicated.
+; 🏗️ D-P0CB slice C2 (2026-10-21): THE NAME ARM IS sub2/loadsave.asm's (ls_run):
+; the expression, "CAS:" vs disk, the tail, the load and the run at top level
+; (run_prog_top, returned as the continuation). Bare RUN and RUN <lineno> stay
+; here -- they load nothing. CAS_VERIFY is cleared on the name arm now (it was
+; cleared here first): only the tape reader reads it, and these two arms never
+; reach it.
 do_run:
-                xor     a
-                ld      (CAS_VERIFY),a      ; RUN"CAS:" is a real load, never verify
                 call    skipsp_test ; A = the first non-space byte
                 jr      z,dr_stored         ; end of statement -> bare RUN
                 cp      COLON
                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
                 cp      LINENO_TOKEN        ; $0E -> RUN <lineno>
                 jr      z,dr_lineno         ; D-RUNLINE: start AT that line
-                call    fname_dev   ; D-NGRAM16
-                                            ; '"'-terminated copy in STRSCR
-                ; device dispatch: "CAS:" -> tape, else -> disk (mirrors do_load).
-                ; dev_cmp advances HL past a matched prefix and restores it on a miss,
-                ; so the disk path below still sees HL at the filename start.
-                jr      z,dr_is_cas         ; matched "CAS:" -> tape program run
-                call    pdfcb_resume      ; build DISK_FCB; HL -> closing '"'
-                call    pcr_load            ; the only '"' is fname_expr's own
-                call    disk_prog_load      ; load the tokenised program into TXTBASE
-                ret     c                   ; D-RUNTAIL defect B: the load FAILED and has
-                                            ; already reported -- RUN"missing" must run
-                                            ; NOTHING, not the resident program
-                jr      run_prog_top        ; ...and run it (running is implicit), at
-                                            ; TOP LEVEL -- see run_prog_top below
+                ld      c,RUN_TOKEN         ; RUN <name>: zerobas-sub2 page 0, HL on
+                jp      ex_sub2             ; the name (basic/program.asm)
 dr_stored:
                 jr      run_prog_top        ; bare RUN: the stored program from the top,
                                             ; at TOP LEVEL like every sibling arm.
@@ -331,30 +168,9 @@ dr_lineno:
                 call    goto_resolve        ; find_line_bc + ERR 8 + GOTOTGT := the line
                 ld      sp,(SAVSTK)         ; ...then top level, as bare RUN does
                 jp      run_prog_at
-dr_is_cas:
-                ; HL is inside the STAGED copy, past "CAS:". Tier-3: CAPTURE the
-                ; filename into CAS_WANT (cas_open_match finds the named tape file,
-                ; case-sensitive). It stops on fname_expr's appended '"'; the
-                ; statement tail is taken from FN_RESUME, exactly like do_load's
-                ; dl_is_cas.
-                call    cas_capture_cut     ; -> CAS_WANT + CAS_WANT_ON; HL on '"'; a . ends the name (D-CASDOT)
-dr_cas_close:
-                ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
-                call    pcr_load            ; (+ a harmless ,R: run is implicit)
-                call    do_tape_prog        ; load the program off tape (tokenised OR
-                                            ; $EA ASCII — do_tape_prog's 3-way dispatch)
-                ret     c                   ; D-CASTAIL defect B: the load FAILED and has
-                                            ; already reported -- RUN"CAS:x" must run
-                                            ; NOTHING, not the resident program
-                ; ...and FALL THROUGH into run_prog_top (the `jr` here was to the
-                ; very next instruction: -2 B, GA-CROSS-ROMSCAN) to run it, at
-                ; TOP LEVEL -- see
-                                            ; run_prog_top below. D-CASTAIL closes the
-                                            ; D-RUNTAIL §9 residual: this site had the
-                                            ; IDENTICAL defect A and was left alone only
-                                            ; because nothing scored the tape paths.
-                                            ; docs/spec-basic-castail.md, measured in
-                                            ; docs/castail-msx1-characterization.md.
+; (dr_is_cas / dr_cas_close, RUN "CAS:name": MOVED to sub2/loadsave.asm's ls_run
+; with the disk arm, D-P0CB slice C2. They fell through into run_prog_top below;
+; the tenant returns it as the continuation instead.)
 
 ; --- run_prog_top: enter run_prog at TOP LEVEL, from a statement context ------
 ; D-RUNTAIL (docs/spec-basic-runtail.md §3.1), measured in
@@ -444,10 +260,13 @@ cas_bufp_set:
 ;
 ; --- D-CASTAIL: THE CF-OUT CONTRACT (docs/spec-basic-castail.md §3.2) ---------
 ;   out: CF set = the load FAILED and has ALREADY reported.
-; Consumed by `ret c` at dl_cas_close (LOAD"CAS:x",R) and dr_is_cas (RUN"CAS:x"),
+; Consumed by the tape arms of LOAD"CAS:x",R and RUN"CAS:x" (sub2/loadsave.asm
+; ls_load / ls_run since D-P0CB slice C2: CF -> the handler's `ret`, bp_ret),
 ; which must then run NOTHING: both references print their message and stop,
 ; where zerobas ran whatever program was resident (castail characterization §4).
-; do_cload `call`s here (D-CLOADPROG) and `ret c`s on a failure -- no ,R.
+; CLOAD (ls_cload) calls here (D-CLOADPROG) and returns on a failure -- no ,R.
+; All three reach it through p0cb: this loop runs whole in main, so its
+; TAPION / TAPIN timing is the one it always had.
 ;
 ; 🔴 load_error IS NOT TOUCHED, for the reason spec-basic-runtail.md §3.2 gives:
 ; ~50 jp/call sites across seven files, several of which resume into their caller

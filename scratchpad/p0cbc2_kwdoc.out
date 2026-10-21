@@ -1,0 +1,10 @@
+=== BLOAD: PASS
+=== BSAVE: PASS
+=== CLOAD: SKIP (needs a cassette)
+=== CSAVE: SKIP (needs a cassette)
+=== LOAD: PASS
+=== RUN: PASS
+=== SAVE: PASS
+
+PASS 5  SKIP 2
+refcache: 0 hit, 10 miss, 10 stored

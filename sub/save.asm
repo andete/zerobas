@@ -24,8 +24,10 @@
 ;
 ; WHAT STAYS RESIDENT, and why each one has to:
 ;   * THE WHOLE PARSE. Every save verb evaluates its arguments with `eval`, and
-;     `eval` is main page 1 — switched out while this tenant runs. So do_bsave /
-;     do_save / do_csave and their argument parsers stay in basic/save.asm. The
+;     `eval` is main page 1 — switched out while this tenant runs. So the BSAVE /
+;     SAVE / CSAVE statements and their argument parsers stay out of this
+;     tenant (in basic/save.asm until D-P0CB slice C2; sub2/loadsave.asm since,
+;     which reaches main's eval through p0cb). The
 ;     happy consequence is that this tenant needs NO cursor and NO argument
 ;     marshalling: by the time it is entered every value is already in its RAM
 ;     home (TSV_NAME, CURPTR, TSV_END, EXECPTR). Only SV_OP in and SV_STAT out

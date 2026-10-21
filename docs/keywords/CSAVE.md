@@ -116,9 +116,12 @@ that long does not break it here. A short press gives the same screen on both.
 
 ## Where it lives
 
-- `do_csave` and `csav_speed` in [basic/save.asm](../../basic/save.asm): the
-  name, the speed and the error faces; `tape_save_basic` hands the write to
-  the sub-ROM's save tenant ([sub/save.asm](../../sub/save.asm)).
+- `ls_csave` and `ls_csav_speed` in
+  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second sub-ROM's page 0
+  since 2026-10-21 (main's `ex_csave` hands it over): the name, the speed and
+  the error faces. It then calls back into main's `sv_tenant`
+  ([basic/save.asm](../../basic/save.asm)), which hands the write to the
+  sub-ROM's save tenant ([sub/save.asm](../../sub/save.asm)).
 - The tape signal: [tape/tape.asm](../../tape/tape.asm).
 - The format work: [cassave-msx1-characterization.md](../cassave-msx1-characterization.md).
 

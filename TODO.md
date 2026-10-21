@@ -4824,7 +4824,35 @@ item — do **one item per session** to keep context lean.
       store_line, the lineedit tenant) inside a p0cb'd call under the sub2 CALSLT --
       nested CALSLTs into 3-2 and disk.rom, possible EI, a deeper stack. diskascii /
       casdirect are green on it; a long or tape MERGE is where it would show.
-      ➡️ SLICE C2: SAVE / LOAD (spec §5).
+      ✅ **SLICE C2 DONE 2026-10-21: SAVE, CSAVE, BSAVE, LOAD, CLOAD, BLOAD AND RUN
+      "name" LEFT MAIN.** Drafted in a worktree (build + unit tests, no emulator),
+      integrated here. sub2/loadsave.asm's `ls_tenant`, reached from file_tenant's
+      tail; the six 4 B ex_* stubs in interp.asm are now labels on C1's shared `ld c,a`
+      entry, and do_run's name arm does `ld c,RUN_TOKEN / jp ex_sub2`. Moved: the
+      parse halves of do_bload / do_cload / do_load / do_run's name arm, and most of
+      basic/save.asm (BSAVE / SAVE / SAVE ,A / CSAVE arms, csav_speed, tape_parse_name,
+      bsave_opt4). STAYED, reached through p0cb: do_tape_prog (the TAPION / TAPIN loop
+      is real-time -- one p0cb runs it whole), disk_prog_load (autoexec_run calls it),
+      sv_tenant and a new bload_sub (their sub-ROM calls carry an INLINE index byte,
+      which a p0cb caller cannot pass), load_handoff / lh_back and run_prog_top
+      (continuations and pin targets), and the shared cas_* / list_all /
+      load_commit_prog. Continuations in DE: exec_stmt, disk_error, end_line_end,
+      run_prog_top, load_handoff, and bp_ret for the handler's own `ret`. One hook
+      call converted: SAVE ,A's `call H_CHCLOSE` -> p0cb.
+      📏 Walls (2026-10-21): main page 1 pads +776 B ($6CF3 319 -> 1095 B), tail 290 B;
+      low region tail 6 -> 11 B; sub2 page 0 14526 -> 13440 B.
+      Witness: loaddi-acceptance 7/7 -- 🔮 "red: the tenant runs under DI" MISSED, the
+      disk paths re-enable interrupts themselves (cg_back, disk.rom); then the FULL
+      battery. 🔪 K-LS1 (LOAD ,R never runs): runtail-acceptance RED on exactly
+      `loadr-hit` (`<nothing>` against the CF-3300's ZQ9), `load-plain` and its
+      listing control green ([`p0cbc2_knife_ls1.out`](scratchpad/p0cbc2_knife_ls1.out));
+      sub2.rom 4ac6f2e3 -> 57091d44 -> 4ac6f2e3. 🔮 HIT.
+      ⚠️ RISKS CARRIED: the tenant enters under sr_slot's DI, so main-side work an ASCII
+      LOAD / SAVE ,A does between crossings runs masked until something re-enables
+      (loaddi is green, but it pins DISK verbs; a long ASCII TAPE load is the case to
+      watch); a deeper stack (as MERGE, C1); RUN "file" now needs zerobas-sub2.
+      ➡️ NEXT: slice D (SCREEN / COLOR / WIDTH / KEY), and the tape loop (~230 B more)
+      only after a TAPIN timing study.
 
 - [ ] 💡 **D-TWOVARIANT — "BEST WITH SUB ROM" AND "GOOD WITHOUT SUB ROM" (Joost
       2026-10-21, an idea, NOT a plan)**
@@ -11656,7 +11684,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37589 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37617 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11822,7 +11850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16684 (T-6FE392)8 (T-529ABE)` from `TODO.md:29521 (T-529ABE)`: a
+      `TODO.md:16712 (T-6FE392)8 (T-529ABE)` from `TODO.md:29549 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17531,7 +17559,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29521 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29549 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

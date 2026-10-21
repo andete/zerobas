@@ -146,16 +146,18 @@ rung requires. **RAM usage** is not yet proven either.
 
 ## Where it lives
 
-- `do_bsave`, `bsave_opt4` (the disk fourth argument) and `bsave_opt4_cas`
-  (the tape one) in [basic/save.asm](../../basic/save.asm): the whole parse,
-  including the end of the statement, and the device choice.
+- `ls_bsave`, `ls_opt4` (the disk fourth argument) and `ls_opt4_cas` (the
+  tape one) in [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second
+  sub-ROM's page 0 since 2026-10-21 (main's `ex_bsave` hands it over): the
+  whole parse, including the end of the statement, and the device choice. It
+  calls back into main for `fname_expr`, `eval` and the disk hook crossing.
 - **Disk** (since 2026-10-19): main crosses the `$FE5D` hook once — the cell
   the CF-3300's `BSAVE` enters exactly once — and the disk ROM writes the file:
   `hk_dpbsave` in [disk/kernel.asm](../../disk/kernel.asm) over the engine in
   [basic/sv-bsvdisk.inc](../../basic/sv-bsvdisk.inc), on the disk ROM's own
   FAT code. Until then the write ran in the sub-ROM's save tenant, over a
   second copy of the FAT code.
-- **Tape**: `sv_tenant` hands the write to the sub-ROM's save tenant
+- **Tape**: main's `sv_tenant` ([basic/save.asm](../../basic/save.asm)) hands the write to the sub-ROM's save tenant
   ([sub/save.asm](../../sub/save.asm)), which runs
   [basic/sv-bsvcas.inc](../../basic/sv-bsvcas.inc).
 

@@ -141,7 +141,8 @@ err_notopen_raise:                          ; EOF()/LOF() on a closed channel (E
 
 ; --- lst_setall / list_all: the WHOLE program ------------------------------
 ; 🔴 list_walk HAS THREE CALLERS AND A LIST RANGE MUST NOT LEAK INTO TWO OF THEM
-; (spec §3.3). ascii_save and cas_ascii_save (basic/save.asm) drive the same walk
+; (spec §3.3). SAVE ,A and SAVE "CAS:" (sub2/loadsave.asm since D-P0CB slice C2,
+; through p0cb) drive the same walk
 ; to disk and to tape; left alone, `LIST 20-30` followed by `SAVE"F",A` would
 ; silently write TWO LINES -- a data-loss bug in a verb this slice never
 ; mentions. They call list_all instead, which is a 3-byte call exactly like the
@@ -159,7 +160,7 @@ list_all:
 ; --- list_walk — walk the stored program, emitting each line as "number space
 ; detokenised-body CRLF" through pchar. pchar follows the PRDEST sink: the screen
 ; for LIST (PRDEST=0), or the open file channel for ASCII SAVE (PRDEST=1, see
-; ascii_save, save.asm) — so the ONE detokeniser feeds both. Returns after the
+; SAVE ,A in sub2/loadsave.asm) — so the ONE detokeniser feeds both. Returns after the
 ; $0000 end-of-program link. Clean-room: our own detokeniser; the ASCII listing
 ; format is the public MSX-BASIC language reference.
 list_walk:

@@ -218,12 +218,15 @@ saved binary to try it on).
 
 ## Where it lives
 
-- Main ROM: `do_bload` and `pcr_bload` in
-  [basic/bload.asm](../../basic/bload.asm) evaluate the name and parse the
-  whole tail (`,R`, `,S`, offset), then call the sub-ROM. For a disk file main
-  then hands the load to the disk ROM through the `$FE5D` hook, the one the
-  CF-3300's BLOAD uses too. The `,R` call into the loaded code is made here,
-  after either load.
+- `ls_bload` and `ls_pcr_bload` in
+  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second sub-ROM's page 0
+  since 2026-10-21 (main's `ex_bload` hands it over), evaluate the name and
+  parse the whole tail (`,R`, `,S`, offset), then call the sub-ROM through
+  main's `bload_sub`. For a disk file they then hand the load to the disk ROM
+  through the `$FE5D` hook, the one the CF-3300's BLOAD uses too.
+- Main ROM: `load_handoff` in [basic/bload.asm](../../basic/bload.asm) makes
+  the `,R` call into the loaded code, after either load, and runs the rest of
+  the line.
 - Sub-ROM: [basic/bload-body.inc](../../basic/bload-body.inc), run from the
   BLOAD tenant in [sub/bload.asm](../../sub/bload.asm), decides between tape
   and disk, reads the tape (with `bl_apply_ofs` for the offset), and for a disk

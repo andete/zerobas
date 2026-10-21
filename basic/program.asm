@@ -3192,6 +3192,21 @@ ex_interval:
 ; it hands back in DE: exec_stmt, clr_wipe (MAXFILES), end_line_end (MERGE), and
 ; disk_error / load_error, which print and RETURN to the statement's caller --
 ; which is why they are continuations, never p0cb calls.
+; --- and SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD (D-P0CB slice C2) ----------
+; Their parse and their end-of-statement decisions are sub2/loadsave.asm's since
+; 2026-10-21 (from basic/save.asm, cload.asm, bload.asm); the six rows land on the
+; same byte, and file_tenant forwards the token on. RUN <name> joins from do_run
+; (basic/cload.asm) with C = RUN_TOKEN; bare RUN and RUN <line> stay there. The
+; loaders and writers themselves stay in main (do_tape_prog's real-time TAPIN
+; loop, disk_prog_load, sv_tenant, bload_sub) and are called back through p0cb;
+; the continuations added: run_prog_top, load_handoff and bp_ret (a handler's
+; own `ret`).
+ex_save:
+ex_csave:
+ex_bsave:
+ex_load:
+ex_cload:
+ex_bload:
 ex_open:
 ex_close:
 ex_merge:

@@ -9,7 +9,10 @@ Status: **slices A and B BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 1
 and a self-test (`make sub2-acceptance`, both repack machines), then the event-trap
 statements moved (main page 1 +255 B). Slice C1 (OPEN / CLOSE / MERGE / MAXFILES,
 sub2/filestmt.asm) is DRAFTED 2026-10-21: ~800 B of main page 1, all of it pad in
-front of the $6CF3 and $72D4 pins. C2 (SAVE, LOAD) and D are not built.
+front of the $6CF3 and $72D4 pins. Slice C2 (SAVE / CSAVE / BSAVE / LOAD / CLOAD /
+BLOAD / RUN <name>, sub2/loadsave.asm) is DRAFTED 2026-10-21: ~780 B of main page 1
+(pad in front of $6CF3) and 5 B of the low region; the loaders and writers stay in
+main (do_tape_prog's real-time TAPIN loop runs whole inside one p0cb). D is not built.
 
 ## 1. Why
 
@@ -106,6 +109,12 @@ sub2 closure-check mode follow the ROM-1 pattern (`Makefile`, `sub/basic-residen
   front of `ex_sub2`, and trap_tenant forwards C >= 8 (a token) to file_tenant.
   Their continuations are exec_stmt, clr_wipe, end_line_end -- and disk_error /
   load_error, which PRINT AND RETURN, so they too go back in DE, never through p0cb.
+  **C2** (SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD, and RUN's name arm, which
+  main's do_run sends with C = RUN_TOKEN) shares the same byte; file_tenant forwards
+  to ls_tenant. New continuations: run_prog_top (LOAD ,R / RUN <name>), load_handoff
+  (BLOAD: ,R calls the loaded code) and bp_ret (a handler's own `ret` / `ret c`).
+  The loaders and writers stay main's and are p0cb targets; sv_tenant and bload_sub
+  keep main wrappers because their sub-ROM call carries an INLINE byte.
 - **D — SCREEN / COLOR / WIDTH / KEY**, ~450 B. Graphics (~800 B) only after a
   stopwatch on PSET / LINE / PUT SPRITE.
 

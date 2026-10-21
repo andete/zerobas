@@ -871,27 +871,12 @@ exd_nq:
 exd_step:
                 inc     hl
                 jr      exd_lp
-ex_bload:
-                inc     hl                  ; HL -> args (past the BLOAD token)
-                jp      do_bload
-ex_cload:
-                inc     hl                  ; HL -> args (past the CLOAD token)
-                jp      do_cload
-ex_load:
-                inc     hl                  ; HL -> args (past the LOAD token)
-                jp      do_load
+; (ex_bload / ex_cload / ex_load / ex_bsave / ex_save / ex_csave: moved to
+; sub2/loadsave.asm, D-P0CB slice C2 -- their labels share ex_open's one byte
+; in front of ex_sub2, basic/program.asm, and the tenant steps the token.)
 ex_run:
                 inc     hl                  ; HL -> args (past the RUN token)
                 jp      do_run
-ex_bsave:
-                inc     hl                  ; HL -> args (past the BSAVE token)
-                jp      do_bsave
-ex_save:
-                inc     hl                  ; HL -> args (past the SAVE token)
-                jp      do_save
-ex_csave:
-                inc     hl                  ; HL -> args (past the CSAVE token)
-                jp      do_csave
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke

@@ -504,6 +504,23 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_cas_ascii_drive=cas_ascii_drive",
     "p0_dsk_aopen=dsk_aopen",
     "p0_dsk_ascii_drive=dsk_ascii_drive",
+    # D-P0CB slice C2 (2026-10-21): SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD /
+    # RUN <name>, sub2/loadsave.asm. CONTINUATIONS (returned in DE, never p0cb'd):
+    "p0_run_prog_top=run_prog_top",   # LOAD ,R / RUN <name>
+    "p0_load_handoff=load_handoff",   # BLOAD: ,R calls the loaded code
+    # (p0_bp_ret above doubles as the handler's own `ret`)
+    # ordinary returning routines -- the loaders and writers stay main's:
+    "p0_do_tape_prog=do_tape_prog",   # the REAL-TIME TAPIN loop, run whole in main
+    "p0_disk_prog_load=disk_prog_load",
+    "p0_sv_tenant=sv_tenant",         # the sub-ROM tape writers (an inline-byte call)
+    "p0_bload_sub=bload_sub",         # the sub-ROM BLOAD tenant (likewise)
+    "p0_fch_park=fch_park",
+    "p0_list_all=list_all",
+    "p0_cas_ascii_finish=cas_ascii_finish",
+    "p0_cas_capture_name=cas_capture_name",
+    "p0_cas_name_cut=cas_name_cut",
+    "p0_req_comma=req_comma",
+    "p0_check_expr_errors=check_expr_errors",
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)
