@@ -4,7 +4,42 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-20 — THE CURRENT ONE (the 2026-10-17 section below is history; the rulings tables in the 2026-10-15 and 2026-09-24 sections still hold).
+## 🟢 STATE AS OF 2026-10-22 00:30 — THE CURRENT ONE (the 2026-10-20 section below holds the 10-20/10-21 RULINGS table -- read it; the 2026-10-15 and 2026-09-24 tables still hold).
+
+- 🏗️ **JOOST'S RULINGS SINCE 10-20 (all in the 10-20 table below, plus):** *"Disk test run"*
+  (the next step after the ROM-space work, 10-21); *"Check another reference"* (the second disk
+  reference is `Philips_VG_8020 -ext Philips_NMS_1200`); the disk test set is the `disks`
+  collection ONLY (`my_disks` is private; diskcorpus_run.py refuses it), its location passed
+  as DISKCORPUS_DIR, never written into the repo. Speed (TIER 5) is still PAUSED.
+- **Landed 2026-10-21 (all FULL-gated, pushed, CI green):** D-P0CB slices C1/C2 (file family
+  and SAVE/LOAD into sub2 page 0); D-DISKRUN (143 disks on the CF-3300 and zerobas) and what it
+  found, each measured on BOTH disk references: **D-BOOTDATE** (a boot loader falling back to
+  $4022 asks `Enter date (M-D-Y):`; + no question when an AUTOEXEC.BAS exists, any size),
+  **D-MEDIAID** (the layout comes from the FAT's media ID, never the BPB), **D-COLOREQ**
+  (`COLOR=NEW` is Syntax error), **D-RAMAD** (RAMAD0-3 + HOKVLD bit 0 set from the BASIC
+  prompt on), **D-SIDES** (DSKIO seats sectors by the media byte -- a single-sided disk was
+  read wrongly past sector 17), **D-BDOSBASIC** slices 1, 2, 3a (the $F37D BDOS door: STROUT /
+  SFIRST / SNEXT for boot loaders, a page-3 CALSLT stub so a BASIC program's USR reaches it,
+  then twelve console / info functions; slice 3 measured the whole answer set on both refs).
+- ➡️ **NEXT:** D-BDOSBASIC **slice 3b** (TODO.md, the D-BDOSBASIC block, end): the FCB set
+  $13 DELETE, $17 RENAME, $21-$24 random record, $26 WRBLK, $28 WRZER, and the three answers
+  that differ ($10 CLOSE unopened -> $FF, $14 SEQRD unopened -> 1, $27 RDBLK counts) -- against
+  `scratchpad/bdosset_run.out`'s rows, re-run with `scratchpad/bdosset_probe.py`. DOS-side
+  bodies exist for FSIZE / SETRND / WRBLK and the BASIC random-record engine; DELETE / RENAME
+  have none. Then D-DISKRUN's leads: ROBOCOP's loaded game resets (~4 s vs ~15 s), the MemMan
+  class (no-waste / megadoom / modedit), the FILES-DIFF classifier noise (banner versions).
+- **Probes added 10-21 (scratchpad/, all black box):** disklook.py (keys in, screen out, a KEPT
+  image with --persist; escapes Tcl `$`/`[]`), bootpath_probe.py (breakpoints on PUBLISHED
+  addresses, registers only; --bp), bpbrule_probe.py (crafted disks: BPB damage, media IDs,
+  single-sided), bdosset_probe.py (the BDOS answer set from BASIC), diskcorpus_run.py
+  --reuse-ref (zerobas-only re-runs against a previous reference run).
+- **LESSONS 10-21:** a classifier's "both running" can be two different things (ROBOCOP: date
+  question vs game) -- read the screens; the CF-3300's FILES is slower than a T+6 capture
+  (kq.dsk); a disk-ROM pinned region overflows silently into an EMPTY rom -- new code goes in
+  a check_disk_walls hole; the dead-code tool kept a pinned entry alive only by prologue
+  fall-through (fix 16: sfirst/snext declared).
+
+## 🟢 STATE AS OF 2026-10-20 — history since 2026-10-22 (its RULINGS table below still holds; the 2026-10-17 section below is history; the rulings tables in the 2026-10-15 and 2026-09-24 sections still hold).
 
 - 🏗️ **JOOST'S RULINGS, 2026-10-20 EVENING -- READ BEFORE PICKING ANYTHING:**
   | ruling | words | what it means |
