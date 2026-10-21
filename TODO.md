@@ -11970,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37945 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37962 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -36492,6 +36492,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       use, unsaved, and the caller is user code.
       ➡️ SLICE 3: the answer set ($00-$30) measured from BASIC on the CF-3300, function by
       function, and each missing one answered.
+      📏 **SLICE 3 MEASURED 2026-10-21** ([`bdosset_probe.py`](scratchpad/bdosset_probe.py) ->
+      [`bdosset_run.out`](scratchpad/bdosset_run.out): our own disk, an ASCII AUTOEXEC.BAS POKEs a
+      31-byte caller, 32 rows of C / DE / HL in, AF / HL / DE / BC out, read back from our RAM):
+      the CF-3300 and the VG-8020 + NMS 1200 agree on every row but one register (DSKRST's DE,
+      $F1AA vs $F1AC). Both ANSWER every function called; zerobas returns $FF for $02 CONOUT,
+      $06 DIRIO, $0B CONST, $0C VERSION ($22), $0D DSKRST, $0E SELDSK ($02 = drive count),
+      $13 DELETE, $17 RENAME, $18 LOGIN ($03), $19 CURDRV, $1B ALLOC, $21 RNDRD, $22 RNDWR,
+      $23 FSIZE, $24 SETRND, $26 WRBLK, $28 WRZER, $2A GDATE, $2C GTIME, $2E VERIFY. And where
+      zerobas does answer, three differ: $10 CLOSE of an unopened FCB (refs $FF, zerobas 0),
+      $14 SEQRD of an unopened FCB (refs 1, zerobas 0 -- it read something), $27 RDBLK (refs
+      A = 1, HL = 0 here; zerobas A = 0, HL = 1). The other registers (HL / BC leftovers) differ
+      on nearly every row; only A and the documented outputs (HL for RDBLK / $0C, the DTA) are
+      contracts. $2F ABSRD with DE = 0, H = 1, L = 0 never completed on either reference
+      within the run (both had restarted their program by then): unmeasured, my arguments
+      suspect. ➡️ SLICE 3a: the info / console set ($02 $06 $0B $0C $0D $0E $18 $19 $1B $2A $2C
+      $2E -- most have DOS-side bodies already: conout_body, the $553C GDATE entry); 3b: the
+      FCB set ($13 $17 $21-$24 $26 $28) and the three differing answers; each against these rows.
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**
