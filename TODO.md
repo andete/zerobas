@@ -4743,6 +4743,33 @@ item — do **one item per session** to keep context lean.
       dskio / nodisk (PINNED must stay empty) acceptance, diskrom-abi-check,
       pin-check, check_disk_walls; plus per-slice rows and a knife.
 
+- [ ] 📅 **D-BOOTDATE — A BOOT LOADER THAT FALLS BACK TO $4022 GETS A DATE QUESTION ON BOTH
+      REFERENCES AND NONE ON zerobas (from D-DISKRUN's class A, 18 of 143 disks; 2026-10-21)**
+      🎚️ TIER 1 — happy path: what booting such a disk looks like.
+      🤖 **AUTONOMOUS** — both references settle it; the date-order split is a style split and
+      goes to the VG-8020 (Joost 2026-09-04), i.e. M-D-Y.
+      📏 [`bootdate_probe.py`](scratchpad/bootdate_probe.py) (empty.dsk from a /tmp copy; keys
+      in; the screen and the SAVEd file's DIRECTORY DATE STAMP out), on the VG-8020 + Philips NMS
+      1200 (EU) and the National CF-3300 (JP):
+      - WHEN: only on the boot path (the boot code's $4022 after its MSXDOS.SYS open fails).
+        After MSX-DOS ran, `A>BASIC` (also $4022) asks NOTHING (CF-3300; the NMS 1200 hangs on
+        the test disk's MSX-DOS, a separate matter).
+      - PROMPT: `Enter date (M-D-Y):` (EU); the CF-3300's has Japanese in the brackets and
+        reads Y-M-D. Answered, Disk BASIC starts normally (banner, `Ok`).
+      - EU ANSWERS: `1-2-90`, `1/2/90`, `1.2.90`, `1-2-1990` -> 1990-01-02; `1-2-80` -> 1980;
+        `1-2-79` -> 2079 (two digits: 80-99 = 19xx, 00-79 = 20xx); `3-4-5` -> 2005-03-04;
+        `1-2` -> the CURRENT year (1984-01-02); `2-29-92` and `12-31-99` accepted; EMPTY keeps
+        the date (1984-01-01, the default on all three machines). `Invalid date` + the prompt
+        again for `13-2-90`, `2-29-91`, `0-1-90`, `1-0-90`, `1--90`, `XYZ` and a LEADING
+        BLANK (` 1-2-90`).
+      - zerobas: no prompt; whatever is typed lands in BASIC as a direct line (`1-2-90` is
+        stored as program line 1; `XYZ` is a Syntax error).
+      ➡️ FIX: zerobas's $4022 (disk/kernel.asm basent_body), when the boot path enters it (the
+      BASENT_REQ / DOS_SIG mark says DOS never ran), prints the prompt, reads a line, applies
+      the rules above, re-prompts with `Invalid date`, sets the DOS date the stamps use, then
+      starts BASIC as now. Measure first what the screen shows BEFORE the prompt on the
+      reference (cleared? the boot screen?), and the input line's editing (INLIN-like?).
+
 - [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
       MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
       🎚️ TIER 1 — happy path: booting a disk is the first thing a disk machine does.
@@ -4786,11 +4813,7 @@ item — do **one item per session** to keep context lean.
       entered by a boot loader that could not open MSXDOS.SYS, ASKS THE DATE (no clock on
       an MSX1) and then starts BASIC; zerobas's starts BASIC without asking.** The CF-3300
       prints the same prompt with Japanese text in the brackets.
-      ➡️ NEXT (D-BOOTDATE, the fix): measure, black box, on both references -- WHEN $4022
-      asks (on this boot path only? also after MSX-DOS's `BASIC` command, where D-DOSBASIC
-      saw none?), the accepted forms, an invalid or empty answer, and what the answer sets
-      (the DOS date cells GDATE reads); then zerobas's $4022 asks the same way on the same
-      path. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
+      ➡️ D-BOOTDATE (filed above, measured) is the fix. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
       loader, ROBOCOP, SirDan, UR-1, xak2eng2, senigma), the three FILES-DIFF candidates,
       and the six ZB-ONLY.
 
@@ -11735,7 +11758,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37668 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37691 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11901,7 +11924,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16763 (T-6FE392)8 (T-529ABE)` from `TODO.md:29600 (T-529ABE)`: a
+      `TODO.md:16786 (T-6FE392)8 (T-529ABE)` from `TODO.md:29623 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17610,7 +17633,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29600 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29623 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

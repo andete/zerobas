@@ -1,0 +1,55 @@
+valid      eu  answer='1-2-90'     stamp=1990-01-02
+     T20:   Enter date (M-D-Y):
+     T26:   Disk BASIC version 1.0 /   Ok /   color  auto   goto   list   run
+valid      jp  answer='1-2-90'     stamp=None
+     T20:   Enter date ( - - ):
+     T26:   Enter date ( - - ):1-2-90 /   Invalid date /   Enter date ( - - ):
+valid      zb  answer='1-2-90'     stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   1-2-90 /   color  auto   goto   list   run
+empty      eu  answer=''           stamp=1984-01-01
+     T20:   Enter date (M-D-Y):
+     T26:   Disk BASIC version 1.0 /   Ok /   color  auto   goto   list   run
+empty      jp  answer=''           stamp=1984-01-01
+     T20:   Enter date ( - - ):
+     T26:   Disk BASIC version 1.0 /   Ok /   color auto  goto  list  run
+empty      zb  answer=''           stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   zerobas Disk BASIC /   ZB /   color  auto   goto   list   run
+month13    eu  answer='13-2-90'    stamp=None
+     T20:   Enter date (M-D-Y):
+     T26:   Enter date (M-D-Y):13-2-90 /   Invalid date /   Enter date (M-D-Y):
+month13    jp  answer='13-2-90'    stamp=None
+     T20:   Enter date ( - - ):
+     T26:   Enter date ( - - ):13-2-90 /   Invalid date /   Enter date ( - - ):
+month13    zb  answer='13-2-90'    stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   13-2-90 /   color  auto   goto   list   run
+feb29      eu  answer='2-29-91'    stamp=None
+     T20:   Enter date (M-D-Y):
+     T26:   Enter date (M-D-Y):2-29-91 /   Invalid date /   Enter date (M-D-Y):
+feb29      jp  answer='2-29-91'    stamp=None
+     T20:   Enter date ( - - ):
+     T26:   Enter date ( - - ):2-29-91 /   Invalid date /   Enter date ( - - ):
+feb29      zb  answer='2-29-91'    stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   2-29-91 /   color  auto   goto   list   run
+year2digit eu  answer='3-4-5'      stamp=2005-03-04
+     T20:   Enter date (M-D-Y):
+     T26:   Disk BASIC version 1.0 /   Ok /   color  auto   goto   list   run
+year2digit jp  answer='3-4-5'      stamp=2003-04-05
+     T20:   Enter date ( - - ):
+     T26:   Disk BASIC version 1.0 /   Ok /   color auto  goto  list  run
+year2digit zb  answer='3-4-5'      stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   ZB /   3-4-5 /   color  auto   goto   list   run
+junk       eu  answer='XYZ'        stamp=None
+     T20:   Enter date (M-D-Y):
+     T26:   Enter date (M-D-Y):XYZ /   Invalid date /   Enter date (M-D-Y):
+junk       jp  answer='XYZ'        stamp=None
+     T20:   Enter date ( - - ):
+     T26:   Enter date ( - - ):XYZ /   Invalid date /   Enter date ( - - ):
+junk       zb  answer='XYZ'        stamp=1984-01-01
+     T20:   ZB /   color  auto   goto   list   run
+     T26:   Syntax error /   ZB /   color  auto   goto   list   run
+done
