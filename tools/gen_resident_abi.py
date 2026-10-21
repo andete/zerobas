@@ -416,11 +416,32 @@ REQUIRED_DISK_CALLBACK: list[str] = [
     "raise_error",
 ]
 
-Profile = collections.namedtuple("Profile", "code ram callback what")
+Profile = collections.namedtuple("Profile", "code ram callback what p0cb",
+                                 defaults=((),))
+
+# P0CB: main addresses a zerobas-sub2 PAGE-0 tenant calls through p0cb (D-P0CB,
+# docs/spec-sub2-p0cb.md) -- the BIOS's RAM CLPRIM maps main's page 0 back in for
+# the call, so a target may sit ANYWHERE in main (the low region, the islands,
+# page 1). The fourth class, and the only one with no ceiling in either direction:
+# what it must NOT be is mistaken for a CODE import -- a page-1 tenant calling one
+# of these by absolute address would find its page 0 switched out -- so it is
+# emitted under its own header, and check_tenant_closure.py's seed scan stops there.
+P0CB_HEADER = ("; --- page-0 call-back (p0cb) targets: zerobas-sub2 page 0 reaches "
+               "these through CLPRIM, never by absolute address ---")
+REQUIRED_SUB2_P0CB: list[str] = [
+    # Every name ALIASED `p0_`: the file is shared with zerobas-sub, which has
+    # its own skip_spaces (sub/readdata.asm), and the prefix says at each call
+    # site that the address is for p0cb's IX, never for a `call`.
+    "p0_chrgtr=chrgtr",         # sub2's RST 10h (s2_chrgtr)
+    "p0_outdo=outdo",           # sub2's RST 18h (s2_outdo)
+    "p0_bp_ret=bp_ret",         # a bare `ret`: p0cb_selftest's register round trip
+    "p0_skip_spaces=skip_spaces",  # p0cb_selftest: a page-1 routine with a contract
+]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)
 PROFILES = {
-    "sub/basic-resident-abi.inc":  Profile(REQUIRED_SUB, [], [], "sub-ROM"),
+    "sub/basic-resident-abi.inc":  Profile(REQUIRED_SUB, [], [], "sub-ROM",
+                                           REQUIRED_SUB2_P0CB),
     "disk/basic-resident-abi.inc": Profile(REQUIRED_DISK_CODE,
                                            REQUIRED_DISK_RAM,
                                            REQUIRED_DISK_CALLBACK, "disk ROM"),
@@ -511,11 +532,14 @@ def generate(sym_path: str, out_path: str, write: bool = True,
 
     code = [sym_of(n) for n in code]
     ram = [sym_of(n) for n in ram]
-    emit = [(local_of(n), sym_of(n)) for n in prof.code + prof.ram + prof.callback]
+    emit = [(local_of(n), sym_of(n))
+            for n in prof.code + prof.ram + prof.callback + list(prof.p0cb)]
     callback_first = sym_of(prof.callback[0]) if prof.callback else None
+    p0cb_first = sym_of(prof.p0cb[0]) if prof.p0cb else None
     callback = [sym_of(n) for n in callback]
+    p0cb = [sym_of(n) for n in prof.p0cb]
 
-    missing = [n for n in code + ram + callback if n not in syms]
+    missing = [n for n in code + ram + callback + p0cb if n not in syms]
     if missing:
         raise SystemExit(
             "FAIL: gen_resident_abi.py: missing resident symbol(s) in "
@@ -580,6 +604,9 @@ def generate(sym_path: str, out_path: str, write: bool = True,
             lines.append("")
             lines.append("; --- page-1 call-back targets: reached by an "
                          "INTER-SLOT call (MSX2 TH), not an absolute one ---")
+        if p0cb_first and sym == p0cb_first:
+            lines.append("")
+            lines.append(P0CB_HEADER)
         # Leading "0" (same convention pasmo's own --sym output uses, e.g.
         # "fp_div EQU 03632H") so a value whose hex form starts A-F never
         # parses as an identifier instead of a numeric literal.

@@ -4743,6 +4743,50 @@ item — do **one item per session** to keep context lean.
       dskio / nodisk (PINNED must stay empty) acceptance, diskrom-abi-check,
       pin-check, check_disk_walls; plus per-slice rows and a knife.
 
+- [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
+      PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
+      🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
+      🤖 **AUTONOMOUS** — spec [`spec-sub2-p0cb.md`](docs/spec-sub2-p0cb.md). A
+      read-only study (2026-10-21) found no statement could move to sub2 page 0 under
+      the old rules: every parser uses `rst $10`, and raise / eval / print reach main's
+      page 0, which a page-0 tenant switches out. The mechanism is the BIOS's own RAM
+      CLPRIM ($F38C), so no new RAM; main pays ~12 B once (`ex_sub2`), then ~4 KB of
+      cold statements can follow (E): trap statements ~300 B, the file family
+      ~1.4-1.6 KB, SCREEN / COLOR / WIDTH / KEY ~450 B, graphics after a stopwatch.
+      ✅ **SLICE A DONE 2026-10-21 (0 B of main):** `p0cb` (sub2/p0cb.asm, 7 B: AF to
+      AF', push the live $A8, clear page 0's field, `jp CLPRIM` -- whose `ret` lands in
+      the caller), sub2's RST 10h / RST 18h -> main's CHRGTR / OUTDO through it (IX
+      saved), and `p0cb_selftest` at page-0 index 2. Imports are a new p0cb class in
+      `tools/gen_resident_abi.py`, aliased `p0_*` (the file is shared with zerobas-sub,
+      which has its own skip_spaces); `check_tenant_closure.py`'s seed scan stops at
+      their header; `check_dead_code.py` follows an alias to the main label.
+      `make sub2-acceptance` runs [`basic_probe_sub2_p0cb.py`](probes/basic/basic_probe_sub2_p0cb.py)
+      after the ping: 15/15 PASS on BOTH repack machines
+      ([`p0cb_run.out`](scratchpad/p0cb_run.out)) -- RST 10h to CHRGTR, A / F (carry) /
+      BC / DE / HL through a round trip, a page-1 routine, IX kept, EI inside the 3-3
+      page-0 tenant with JIFFY moving and the tenant coming back (D-SUB2EI's twin).
+      🔪 K-P1 (page 0 never switched): the CHRGTR rows go red, the page-1 rows stay
+      green ([`p0cb_knife_p1.out`](scratchpad/p0cb_knife_p1.out)); K-P2 (`s2_chrgtr`
+      does not restore IX): exactly W+12 red, `$60` = CHRGTR's low byte
+      ([`p0cb_knife_p2.out`](scratchpad/p0cb_knife_p2.out)); sub2.rom hashed 373d8bd1 ->
+      4ea9f489 / d069b234 -> 373d8bd1. 🔮 "15/15 on both" HIT, both knives HIT.
+      🔴 The IX row read `$00` once: `sub2/p0cb.asm` was missing from the Makefile's
+      SUB2_PARTS, so sub2.rom was NOT rebuilt and the probe ran the previous image --
+      an inert build, caught because the new row's value was impossible. Fixed.
+      ➡️ SLICE B: the trap statements (spec §5).
+
+- [ ] 💡 **D-TWOVARIANT — "BEST WITH SUB ROM" AND "GOOD WITHOUT SUB ROM" (Joost
+      2026-10-21, an idea, NOT a plan)**
+      🎚️ BUDGET — a possible future direction for ROM size.
+      🙋 **NEEDS-JOOST** — *"It may even be interesting to eventually have two variants of
+      zerobas: the "best with sub rom" and the "good without sub rom""*, after ruling
+      that the fast string collector stays while the sub ROM exists. If it comes: build
+      switches choosing the compact piece (a reference-shaped collector -- measured
+      quadratic on the VG-8020, D-ROMSIZE (2) -- packed floats, fewer fast paths), on
+      the diskless target's model (its own machine and gate), with the variant built
+      and gated from day one: a switch nothing builds stops working
+      (`make switch-build-check`'s history).
+
 - [ ] ⌨️ **D-FLDEI — FIELD / LSET / RSET (AND FORMAT?) RETURN FROM disk.rom WITH
       INTERRUPTS OFF (found 2026-10-20 by reading, D-DISKREST's study)**
       🎚️ TIER 3 — common errors (provisional: D-HOOKDI's class; measure how long the
@@ -6155,7 +6199,7 @@ item — do **one item per session** to keep context lean.
       these five keys (the readline tenant ignores them), the edit is.
       Docs: concepts/screen-editor.md, concepts/rom-layout.md.
 
-- [ ] 🏗️ **D-SUB2EI — THE FIRST ROM-2 PAGE-0 TENANT MUST LAND WITH AN EI GATE
+- [x] ✅ **DONE 2026-10-21 (D-P0CB slice A)** — 🏗️ **D-SUB2EI — THE FIRST ROM-2 PAGE-0 TENANT MUST LAND WITH AN EI GATE
       (filed 2026-10-12, from D-SUB2's close)**
       🎚️ BUDGET — latent: nothing runs in zerobas-sub2's page 0 yet.
       🤖 **AUTONOMOUS** — when the first page-0 tenant goes into sub2/sub2.asm.
@@ -6164,6 +6208,11 @@ item — do **one item per session** to keep context lean.
       (`make subrom-inttest`) and knifed by forcing 3-3 there. With a real 3-3
       page-0 tenant, add the inttest twin in ROM 2 (spin EI, JIFFY moved AND the
       tenant returned), and a knife that restores page 0 to 3-2 must turn it red.
+      ✅ The twin is row W+13 of `basic_probe_sub2_p0cb.py` (`make sub2-acceptance`):
+      p0cb_selftest spins EI in the 3-3 page-0 tenant until JIFFY moves and returns --
+      PASS on both repack machines (2026-10-21). (beep_tenant had been the first 3-3
+      page-0 tenant since D-TOKOVF without this gate.) The 3-2 knife is not repeated
+      here: the trampoline is the one `make subrom-inttest` knifes.
 
 - [ ] 🔍 **D-GRPTAB — `TAB(` AND `SPC(` IN A `PRINT #` TO `GRP:` ARE UNMEASURED
       (filed 2026-10-12, from D-OPENGRP's close)**
@@ -11556,7 +11605,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37489 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37538 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11722,7 +11771,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16584 (T-6FE392)8 (T-529ABE)` from `TODO.md:29421 (T-529ABE)`: a
+      `TODO.md:16633 (T-6FE392)8 (T-529ABE)` from `TODO.md:29470 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17431,7 +17480,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29421 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29470 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

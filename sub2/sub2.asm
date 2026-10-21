@@ -55,6 +55,12 @@ SUB2_PING_P1    equ     $C3 ; written to SUB_PING by the page-1 ping (ROM 1 writ
                 dw      0                       ; $0002: INIT -- none (passive callee)
                 dw      0,0                     ; $0004-$0007: reserved
                 dw      0,0,0,0                 ; $0008-$000F: reserved (RST area)
+                ; D-P0CB (docs/spec-sub2-p0cb.md): this ROM's RST 10h / RST 18h are
+                ; main's CHRGTR / OUTDO through p0cb, so code moved into page 0 keeps
+                ; its `rst`s. Every other RST stays $FF -- refused in this build.
+                jp      s2_chrgtr               ; $0010: RST 10h
+                ds      $0018 - $, $FF
+                jp      s2_outdo                ; $0018: RST 18h
     IF $ > $0038
                 db      SUB2_P0_HEADER_OVERRAN_0038
     ENDIF
@@ -71,6 +77,8 @@ sub2_p0_table:
                 jp      beep_tenant             ; index 1 (SUB2_IDX_BEEP): the BEEP
                                                 ;   body (sub/beep.asm), moved from
                                                 ;   zerobas-sub page 0 by D-TOKOVF
+                jp      p0cb_selftest           ; index 2 (SUB2_IDX_P0TEST): the
+                                                ;   page-0 call-back, proven (D-P0CB)
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -84,6 +92,11 @@ sub2_p0_ping:
 ; and no sub-local helper, so it runs here unchanged. Its `ei` lands on this
 ; ROM's own $0038 -> SUB_INT_RAM, which returns to 3-3 (step (a) above).
                 include "beep.asm"
+; --- p0cb (D-P0CB): the call back into main with main's page 0 mapped, through
+; the BIOS's RAM CLPRIM -- no RAM of this project's own. Its targets come from
+; basic-resident-abi.inc's p0cb class (tools/gen_resident_abi.py), which page 1
+; includes below (pasmo resolves the forward references).
+                include "sub2/p0cb.asm"
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END
 ; (tools/check_sub_walls.py --sub2, a step of `make basic-reloc`).

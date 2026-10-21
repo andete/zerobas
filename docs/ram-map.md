@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **436** in the MSX standard work area at or above `$F380`.
+* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **437** in the MSX standard work area at or above `$F380`.
 * **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **65** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -249,6 +249,7 @@ extents the standard already fixes would be noise, not rigour.
 | address | size | component | name(s) | purpose | inside |
 |---|---|---|---|---|---|
 | `$F380` |  | `basic` | `CLR_HIMEM_TOP` | 62336: highest address CLEAR accepts |  |
+| `$F38C` | 14 B | `basic` | `CLPRIM` | MSX work area: the BIOS's RAM inter-slot call primitive, |  |
 | `$F39A` | 20 B | `basic` | `USRTAB` | 20 B total, 10 USR jump vectors of 2 B each. |  |
 | `$F3AE` |  | `basic` | `LINL40` | text columns for SCREEN 0 (WIDTH default) |  |
 | `$F3AF` |  | `basic` | `LINL32` | text columns for SCREEN 1 (WIDTH default) |  |

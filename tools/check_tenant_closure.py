@@ -278,8 +278,17 @@ def _abi_data_hole(seen, data):
 
 
 def seeds_from_inc(inc_path):
-    return [m.group(1) for line in open(inc_path)
-            if (m := _INC_SYM.match(line))]
+    """The CODE seeds of a generated import. 🔴 It stops at the p0cb section
+    (D-P0CB, 2026-10-21): those targets are reached through CLPRIM with main's
+    page 0 mapped, so their closures may legitimately leave the low region --
+    walking them as page-1-tenant imports would report every one as an escape."""
+    out = []
+    for line in open(inc_path):
+        if line.startswith("; --- page-0 call-back (p0cb) targets"):
+            break
+        if (m := _INC_SYM.match(line)):
+            out.append(m.group(1))
+    return out
 
 
 _INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"', re.IGNORECASE)

@@ -515,7 +515,10 @@ def resident_abi_seeds(spans):
     for ln in open(RESIDENT_ABI):
         m = ABI_EQU.match(ln.split(';', 1)[0])
         if m:
-            names.append(m.group(1))
+            # an ALIASED import (`p0_chrgtr equ ...   ; main's chrgtr`, D-P0CB
+            # 2026-10-21) seeds the MAIN label it names, not its local spelling
+            al = re.search(r";\s*main's\s+([A-Za-z_]\w*)", ln)
+            names.append(al.group(1) if al else m.group(1))
     if len(names) < ABI_FLOOR:
         sys.exit(f"FAIL: {RESIDENT_ABI} yielded {len(names)} import(s), floor is "
                  f"{ABI_FLOOR} -- the resident-ABI surface is the main build's "

@@ -1,0 +1,32 @@
+C-BIOS_MSX1_EU_REPACK_DISK     W+14 $A5 (expect $A5) the tenant RETURNED (sentinel after the CALSLT): PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+0  $58 (expect $58) rst $10 -> main's CHRGTR: A = 'X': PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+1  $12 (expect $12) rst $10 -> main's CHRGTR: HL past the blanks: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+2  $5A (expect $5A) p0cb round trip: A: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+4  $12 (expect $12) p0cb round trip: B: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+5  $34 (expect $34) p0cb round trip: C: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+6  $56 (expect $56) p0cb round trip: D: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+7  $78 (expect $78) p0cb round trip: E: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+8  $9A (expect $9A) p0cb round trip: H: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+9  $BC (expect $BC) p0cb round trip: L: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+10 $58 (expect $58) p0cb -> main page-1 skip_spaces: A = 'X': PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+11 $12 (expect $12) p0cb -> main page-1 skip_spaces: HL past the blanks: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+12 $60 (expect $A5) rst $10 kept IX (s2_chrgtr saves it around p0cb): FAIL
+C-BIOS_MSX1_EU_REPACK_DISK     W+13 $01 (expect $01) EI inside the page-0 tenant: JIFFY moved, and it came back: PASS
+C-BIOS_MSX1_EU_REPACK_DISK     W+3  F=$09 (expect CF set) p0cb round trip: carry: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+14 $A5 (expect $A5) the tenant RETURNED (sentinel after the CALSLT): PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+0  $58 (expect $58) rst $10 -> main's CHRGTR: A = 'X': PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+1  $12 (expect $12) rst $10 -> main's CHRGTR: HL past the blanks: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+2  $5A (expect $5A) p0cb round trip: A: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+4  $12 (expect $12) p0cb round trip: B: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+5  $34 (expect $34) p0cb round trip: C: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+6  $56 (expect $56) p0cb round trip: D: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+7  $78 (expect $78) p0cb round trip: E: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+8  $9A (expect $9A) p0cb round trip: H: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+9  $BC (expect $BC) p0cb round trip: L: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+10 $58 (expect $58) p0cb -> main page-1 skip_spaces: A = 'X': PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+11 $12 (expect $12) p0cb -> main page-1 skip_spaces: HL past the blanks: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+12 $60 (expect $A5) rst $10 kept IX (s2_chrgtr saves it around p0cb): FAIL
+C-BIOS_MSX1_EU_REPACK_NODISK   W+13 $01 (expect $01) EI inside the page-0 tenant: JIFFY moved, and it came back: PASS
+C-BIOS_MSX1_EU_REPACK_NODISK   W+3  F=$09 (expect CF set) p0cb round trip: carry: PASS
+-------------------
+sub2 p0cb gate: FAIL

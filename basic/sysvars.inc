@@ -5051,6 +5051,12 @@ SUB2_IDX_FRELIVE equ    3       ; zerobas-sub2 page-1 index: frelive_tenant -- F
 SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
                                 ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
                                 ; no result, cannot fail, so nothing marshals.
+SUB2_IDX_P0TEST equ     2       ; zerobas-sub2 PAGE-0 index: p0cb_selftest (D-P0CB,
+                                ; docs/spec-sub2-p0cb.md): the page-0 call-back proven by
+                                ; injection (probes/basic/basic_probe_sub2_p0cb.py)
+CLPRIM          equ     $F38C   ; MSX work area: the BIOS's RAM inter-slot call primitive,
+                                ; copied there at boot (C-BIOS src/slot.asm m_clprim);
+                                ; zerobas-sub2's p0cb calls main through it (D-P0CB) (14)
 SUB_INT_DELTA   equ     $F952   ; self-test tenant result: JIFFY ticks observed under EI (1)
 ; --- Math pack slice 2e RND_SEED (repack build only, docs/spec-basic- -------
 ; mathpack-slice2.md §15.3): the RND generator's persistent 14-digit LCG

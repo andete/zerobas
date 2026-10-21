@@ -27,3 +27,9 @@ rl_vpeek equ 03BC8H
 rl_vpoke equ 03BD3H
 rl_vaddr equ 03BE0H
 rl_lastrow equ 03C07H
+
+; --- page-0 call-back (p0cb) targets: zerobas-sub2 page 0 reaches these through CLPRIM, never by absolute address ---
+p0_chrgtr equ 00160H   ; main's chrgtr
+p0_outdo equ 00177H   ; main's outdo
+p0_bp_ret equ 06CCDH   ; main's bp_ret
+p0_skip_spaces equ 042EFH   ; main's skip_spaces
