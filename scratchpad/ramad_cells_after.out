@@ -1,0 +1,15 @@
+== S0 ('14:CLS')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);
+   |  color  auto   goto   list   run
+== S1 ('15:PRINT PEEK(&HFB20);:FOR I=&HF341 TO &HF344:PRINT HEX$(PEEK(I));" ";:NEXT')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);:FOR I=&HF341
+   |  color  auto   goto   list   run
+== S2 ('22:')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);:FOR I=&HF341 TO &
+   |  HF344:PRINT HEX$(PEEK(I));" ";:NEXT
+   |   1 83 83 83 83
+   |  ZB
+   |  color  auto   goto   list   run

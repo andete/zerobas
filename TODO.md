@@ -4819,6 +4819,32 @@ item — do **one item per session** to keep context lean.
       row "BD + an AUTOEXEC.BAS" (knifed: without the `ret nc` the question asks for a
       key past the script, rc=1).
 
+- [x] ✅ **FIXED 2026-10-21** — 🧮 **D-RAMAD — RAMAD0-3 AND HOKVLD BIT 0, WHICH BOTH REFERENCES' DISK
+      ROMS FILL FROM THE BASIC PROMPT ON, WERE LEFT AT C-BIOS'S FILL ON zerobas (from D-DISKRUN's
+      MemMan rows: no-waste.dsk, megadoom.dsk, modedit.dsk; 2026-10-21)**
+      🎚️ TIER 1 — happy path: documented cells disk software reads to find RAM / extend the BIOS.
+      🤖 **AUTONOMOUS** — both references settle it.
+      📏 The three disks install MemMan; the CF-3300 stops at `No free segment for MemMan` (and
+      megadoom at `Illegal function call in 8`), zerobas went on. Documented cells PEEKed at the
+      Disk BASIC prompt ([`memman_cells.out`](scratchpad/memman_cells.out),
+      [`memman_cells_eu.out`](scratchpad/memman_cells_eu.out), [`memman_hokvld.out`](scratchpad/memman_hokvld.out),
+      [`memman_hokvld_eu.out`](scratchpad/memman_hokvld_eu.out)): RAMAD0-3 ($F341-$F344) = 83 83 83 83
+      on the CF-3300 (RAM in 3-0), 03 03 03 03 on the VG-8020 + NMS 1200 (slot 3), C9 C9 C9 C9 on
+      zerobas; HOKVLD ($FB20) = 1 on both references, 0 on zerobas; EXTBIO ($FFCA) five RETs on all
+      three; EXPTBL / SLTTBL agree. set_ramad filled RAMAD only when RAMAD0 read $FF ("C-BIOS reads
+      back $83 by the time MSX-DOS maps RAM" -- true for DOS, false for BASIC).
+      ✅ FIX (disk/init.asm set_ramad, disk INIT): RAMAD0-3 ALWAYS = the page-3 RAM slot (the
+      derivation was already there); HOKVLD bit 0 set; only the $F368 jump table keeps the old $FF
+      gate. Witness: [`ramad_cells_after.out`](scratchpad/ramad_cells_after.out) -- `1 83 83 83 83`.
+      tests/test_ramad.py (new): C-BIOS host, $FF host (table built), RAM in 3-2 ($8B), a
+      non-expanded slot ($03, the VG-8020's shape), HOKVLD's other bits kept; 🔪 the old early
+      return -> 4 FAIL. docs/concepts/disk.md (Drives section: the two cells; what we found).
+      🔮 "RAMAD 83 x4 after" HIT; "the three MemMan disks then match the references" (60 %, then
+      70 % with HOKVLD) MISSED twice -- they still part ways
+      ([`ramad_zb_after.out`](scratchpad/ramad_zb_after.out)): no-waste now WAITS at the prompt with
+      `bload"memman.bin",r` on screen (it slid through RST 38h before the fix), megadoom sits in line
+      7, modedit in line 10. ➡️ Filed back under D-DISKRUN.
+
 - [x] ✅ **FIXED 2026-10-21** — 🎨 **D-COLOREQ — `COLOR=NEW` (AN MSX2 PALETTE FORM ON AN MSX1) IS
       `Syntax error` ON BOTH REFERENCES AND WAS `Illegal function call` ON zerobas (from D-DISKRUN's
       facdemo1.di1; 2026-10-21)**
@@ -4948,8 +4974,16 @@ item — do **one item per session** to keep context lean.
       prints the same prompt with Japanese text in the brackets.
       ➡️ D-BOOTDATE (filed above, measured) is the fix. After that: the other ZB-NOBOOT rows (DiscStation #32 A-D's own "Loading DS"
       loader, ROBOCOP, SirDan, xak2eng2, senigma), the FILES-DIFF candidates (facdemo3
-      DONE: D-MEDIAID; facdemo1 DONE: D-COLOREQ; left: kq.dsk, no-waste.dsk), and the six
-      ZB-ONLY.
+      DONE: D-MEDIAID; facdemo1 DONE: D-COLOREQ; kq.dsk is the APPARATUS -- the CF-3300's
+      FILES is slower and the T+6 capture caught it half done; given time it lists the same
+      ([`kq_files_slow.out`](scratchpad/kq_files_slow.out))), and the six ZB-ONLY.
+      📏 **THE MEMMAN CLASS (no-waste, megadoom, modedit; 2026-10-21):** the references stop
+      in MemMan's installer (`No free segment for MemMan`; megadoom `Illegal function call
+      in 8`). D-RAMAD fixed two documented cells it found unset, and the three STILL part
+      ways ([`ramad_zb_after.out`](scratchpad/ramad_zb_after.out)). ➡️ NEXT for this class:
+      what memman.bin's BLOAD ,R reaches -- a breakpoint on the published BIOS / disk-ROM
+      entries it calls (CALSLT, RDSLT, WRSLT, ENASLT, EXTBIO) on both machines, registers
+      in and out; the software is never decoded.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -11899,7 +11933,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37832 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37866 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12065,7 +12099,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16927 (T-6FE392)8 (T-529ABE)` from `TODO.md:29764 (T-529ABE)`: a
+      `TODO.md:16961 (T-6FE392)8 (T-529ABE)` from `TODO.md:29798 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17774,7 +17808,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29764 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29798 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

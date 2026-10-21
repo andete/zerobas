@@ -1,0 +1,2 @@
+python3 tools/ram_map.py --doc
+docs/ram-map.md: 757 lines, 696 row(s) (one per declared address; the count used to come from the NARROW maps and under-reported the standard work area)

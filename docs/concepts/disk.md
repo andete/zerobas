@@ -112,6 +112,14 @@ drive B: and strike a key when ready` and waits, so two disks can share one
 drive. zerobas lacks it (see *Differences*). Other letters (`C:`–`H:`, `Q:`
 measured) are `Bad drive name` (62) on both.
 
+**Two work-area cells the disk system fills.** From the Disk BASIC prompt on,
+`RAMAD0`–`RAMAD3` (`&HF341`–`&HF344`) hold the slot of the RAM in each of the
+four pages — `&H83` four times on the CF-3300 (slot 3-0), `&H03` on the VG-8020
+with an NMS 1200 (slot 3) — and bit 0 of `HOKVLD` (`&HFB20`) is set, saying the
+extended-BIOS hook at `&HFFCA` may be called (it is a plain `RET`). Programs
+that look for RAM or extend the BIOS read them. zerobas fills both the same way
+since 2026-10-21.
+
 ### The disk statements, as a family
 
 | words | what they do |
@@ -231,6 +239,15 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **The RAM-slot cells and the extended-BIOS flag were left unset** (fixed
+  2026-10-21, D-RAMAD). Three disks of the collection install the MemMan
+  memory manager; the references stop at `No free segment for MemMan`, zerobas
+  went on. Reading documented cells on both machines found zerobas holding the
+  start-up fill (`&HC9`) in `RAMAD0`–`RAMAD3` and 0 in `HOKVLD`
+  ([`memman_cells.out`](../../scratchpad/memman_cells.out),
+  [`memman_hokvld.out`](../../scratchpad/memman_hokvld.out)); its disk ROM
+  filled `RAMAD` only on a host that left it at `&HFF`, which C-BIOS does not.
+  (The three disks still part ways; the cells were one cause, not the last.)
 - **A disk with a damaged boot sector could not be read** (fixed 2026-10-21,
   D-MEDIAID). One disk of the collection (a demo) has text over its BPB's
   sector size; the CF-3300 ran its `AUTOEXEC.BAS`, zerobas listed no file.

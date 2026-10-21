@@ -1,0 +1,99 @@
+=== National_CF-3300
+== S0 ('45:')  pc=0BA4 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color   auto    goto    list    run
+== S1 ('46:CLS')  pc=7722 curlin=FFFF mode=S0
+   | Ok
+   | FILES "KQ2.0*"
+   | color   auto    goto    list    run
+== S2 ('47:FILES "KQ2.0*"')  pc=08CC curlin=FFFF mode=S0
+   | Ok
+   | FILES "KQ2.0*"
+   | KQ2     .015 KQ2     .016 KQ2     .010
+   | KQ2     .009 KQ2     .017 KQ2     .011
+   | KQ2     .018 KQ2     .012 KQ2     .001
+   | KQ2     .000 KQ2     .021 KQ2     .023
+   | KQ2     .014 KQ2
+   | color   auto    goto    list    run
+== S3 ('50:CLS')  pc=761C curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.SBM"
+   | color 1 cload"  cont    list.    run
+== S4 ('51:FILES "*.SBM"')  pc=0D7D curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.SBM"
+   | DELTA1  .SBM DELTA2  .SBM DELTA3  .SBM
+   | DELTA4  .SBM DELTA5  .SBM DELTA6  .SBM
+   | DS_INTRO.SBM TWZINTRO.SBM
+   | Ok
+   | color   auto    goto    list    run
+== S5 ('54:CLS')  pc=7725 curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.BIN"
+   | color 1 cload"  cont    list.    run
+== S6 ('55:FILES "*.BIN"')  pc=761B curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.BIN"
+   | BFILOGDS.BIN
+   | color 1 cload"  cont    list.    run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('45:')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FILES
+   |  color  auto   goto   list   run
+== S1 ('46:CLS')  pc=7AEA curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "KQ2.0*"
+   |  KQ2     .015 KQ2     .016
+   |  KQ2     .010 KQ2     .009
+   |  KQ2     .017 KQ2     .011
+   |  KQ2     .018 KQ2     .012
+   |  KQ2     .001 KQ2     .000
+   |  KQ2     .021 KQ2     .023
+   |  KQ2     .014 KQ2     .022
+   |  color  auto   goto   list   run
+== S2 ('47:FILES "KQ2.0*"')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "KQ2.0*"
+   |  KQ2     .015 KQ2     .016
+   |  KQ2     .010 KQ2     .009
+   |  KQ2     .017 KQ2     .011
+   |  KQ2     .018 KQ2     .012
+   |  KQ2     .001 KQ2     .000
+   |  KQ2     .021 KQ2     .023
+   |  KQ2     .014 KQ2     .022
+   |  KQ2     .013 KQ2     .020
+   |  KQ2     .019 KQ2     .003
+   |  KQ2     .004 KQ2     .002
+   |  KQ2     .006 KQ2     .007
+   |  KQ2     .005 KQ2     .008
+   |  ZB
+   |  color  auto   goto   list   run
+== S3 ('50:CLS')  pc=7AF7 curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "*.SBM"
+   |  DELTA1  .SBM DELTA2  .SBM
+   |  DELTA3  .SBM DELTA4  .SBM
+   |  DELTA5  .SBM DELTA6  .SBM
+   |  color  auto   goto   list   run
+== S4 ('51:FILES "*.SBM"')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "*.SBM"
+   |  DELTA1  .SBM DELTA2  .SBM
+   |  DELTA3  .SBM DELTA4  .SBM
+   |  DELTA5  .SBM DELTA6  .SBM
+   |  DS_INTRO.SBM TWZINTRO.SBM
+   |  ZB
+   |  color  auto   goto   list   run
+== S5 ('54:CLS')  pc=7AF3 curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "*.BIN"
+   |  BFILOGDS.BIN
+   |  color  auto   goto   list   run
+== S6 ('55:FILES "*.BIN"')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FILES "*.BIN"
+   |  BFILOGDS.BIN BNTPLAY .BIN
+   |  ZB
+   |  color  auto   goto   list   run

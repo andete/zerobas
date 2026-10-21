@@ -1,0 +1,99 @@
+=== kq.dsk National_CF-3300
+== S0 ('45:')  pc=7725 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color   auto    goto    list    run
+== S1 ('46:CLS')  pc=7620 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color   auto    goto    list    run
+== S2 ('47:FILES')  pc=F1DC curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | KQ2     .015 KQ2     .016 KQ2     .010
+   | KQ2     .009 KQ2     .017 KQ2     .011
+   | KQ2     .018 KQ2     .012 KQ2     .001
+   | KQ2     .000 AUTOEXEC.BAS KQ2     .021
+   | KQ2     .023 KQ2     .014 KQ2     .022
+   | KQ2     .120 KQ2     .013 KQ2     .020
+   | KQ2     .019 KQ2     .003 KQ2     .004
+   | KQ2     .002 OPTIONS .DAT KQ2     .006
+   | KQ2     .007 KQ2     .005 BFILOGDS.BIN
+   | KQ2     .CHR KQ2     .008 KQ2     .105
+   | KQ2     .109 KQ2     .110 DELTA1  .SBM
+   | DELTAKIT.SBK DELTA2  .SBM DELTA3  .SBM
+   | DELTA4  .SBM DELTA5  .SBM
+   | color   auto    goto    list    run
+=== kq.dsk C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('45:')  pc=4401 curlin=FFFF mode=S0
+   |  ZB
+   |  FILES
+   |  color  auto   goto   list   run
+== S1 ('46:CLS')  pc=01CC curlin=FFFF mode=S0
+   |  KQ2     .010 KQ2     .009
+   |  KQ2     .017 KQ2     .011
+   |  KQ2     .018 KQ2     .012
+   |  KQ2     .001 KQ2     .000
+   |  AUTOEXEC.BAS KQ2     .021
+   |  KQ2     .023 KQ2     .014
+   |  KQ2     .022 KQ2     .120
+   |  KQ2     .013 KQ2     .020
+   |  KQ2     .019 KQ2     .003
+   |  KQ2     .004 KQ2     .002
+   |  OPTIONS .DAT KQ2     .006
+   |  KQ2     .007 KQ2     .005
+   |  BFILOGDS.BIN KQ2     .CHR
+   |  KQ2     .008 KQ2     .105
+   |  KQ2     .109 KQ2     .110
+   |  DELTA1  .SBM DELTAKIT.SBK
+   |  DELTA2  .SBM DELTA3  .SBM
+   |  DELTA4  .SBM DELTA5  .SBM
+   |  KQ2     .121 DELTA6  .SBM
+   |  BNTPLAY .BIN DS_INTRO.SBM
+   |  TWZINTRO.SBM
+   |  ZB
+   |  color  auto   goto   list   run
+== S2 ('47:FILES')  pc=01CC curlin=FFFF mode=S0
+   |  KQ2     .010 KQ2     .009
+   |  KQ2     .017 KQ2     .011
+   |  KQ2     .018 KQ2     .012
+   |  KQ2     .001 KQ2     .000
+   |  AUTOEXEC.BAS KQ2     .021
+   |  KQ2     .023 KQ2     .014
+   |  KQ2     .022 KQ2     .120
+   |  KQ2     .013 KQ2     .020
+   |  KQ2     .019 KQ2     .003
+   |  KQ2     .004 KQ2     .002
+   |  OPTIONS .DAT KQ2     .006
+   |  KQ2     .007 KQ2     .005
+   |  BFILOGDS.BIN KQ2     .CHR
+   |  KQ2     .008 KQ2     .105
+   |  KQ2     .109 KQ2     .110
+   |  DELTA1  .SBM DELTAKIT.SBK
+   |  DELTA2  .SBM DELTA3  .SBM
+   |  DELTA4  .SBM DELTA5  .SBM
+   |  KQ2     .121 DELTA6  .SBM
+   |  BNTPLAY .BIN DS_INTRO.SBM
+   |  TWZINTRO.SBM
+   |  ZB
+   |  color  auto   goto   list   run
+=== no-waste.dsk National_CF-3300
+== S0 ('45:')  pc=7725 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color 1 cload"  cont    list.    run
+== S1 ('46:CLS')  pc=763C curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color 1 cload"  cont    list.    run
+== S2 ('47:FILES')  pc=0D88 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | NO-WASTE.BAS NO-WASTE.BIN NO-WASTE.LZA
+   | MEMMAN  .BIN AUTOEXEC.BAS
+   | Ok
+   | color   auto    goto    list    run
+=== no-waste.dsk C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('45:')  pc=FF48 curlin=FFFF mode=S3
+== S1 ('46:CLS')  pc=000E curlin=FFFF mode=S3
+== S2 ('47:FILES')  pc=0160 curlin=FFFF mode=S3

@@ -479,11 +479,12 @@ page0_ram_out:
 ; RAM where the page-0 BIOS ROM was. Without it MSX-DOS pages an empty slot ($FF)
 ; and the CPU wedges at $0038 ($FF = RST 38h self-loop).
 ;
-; HOST-ADAPTIVE + REGRESSION-SAFE. RAMAD is filled ONLY when the host left it
-; uninitialised ($FF) -- the real-CF-3300 case where the disk-ROM job was skipped.
-; The C-BIOS hosts leave $C9 in RAMAD0 (their page-0 RAM fill), so the $FF gate does
-; NOT re-derive RAMAD for them -- and it need not: on C-BIOS RAMAD0-3 already read
-; back $83 (valid) by the time MSX-DOS maps RAM, so DOS boots. (NOTE: C-BIOS DOES boot
+; 🔴 ALWAYS FILLED SINCE D-RAMAD (2026-10-21). It used to be filled ONLY when the
+; host left it uninitialised ($FF), on the reasoning that C-BIOS hosts (RAMAD0 = $C9,
+; their page-0 RAM fill) "already read back $83 by the time MSX-DOS maps RAM". That
+; held for MSX-DOS and was FALSE for Disk BASIC: both references hold their RAM slot
+; there from the BASIC prompt on, zerobas held $C9, and MemMan's installer read it.
+; Only the $F368 table below still follows the old $FF gate. (NOTE: C-BIOS DOES boot
 ; DOS on the *_BASIC_DISK machine -- an earlier assumption here that it never did was
 ; wrong, and cost the $F340 clear below, which is now unconditional. See
 ; tier2-cbios-dosboot-autoexec-f340.md.)
@@ -536,10 +537,25 @@ set_ramad:
                 ; which also killed COMMAND.COM's BASIC command (D-DOSBASIC). Same class
                 ; as the DRVCNT/CURDRV move above. scratchpad/strout_run.out.
                 call    install_res_print
-                ; --- RAMAD: fill only when the host left it uninitialised ($FF) ------
+                ; 🔴 D-RAMAD (2026-10-21): HOKVLD bit 0, "the EXTBIO hook is valid". Both
+                ; references read 1 there from the Disk BASIC prompt on, with EXTBIO
+                ; ($FFCA) still five RETs; zerobas read 0
+                ; (scratchpad/memman_hokvld*.out). Software that extends the BIOS --
+                ; MemMan's installer -- asks through EXTBIO only when the bit says it
+                ; may, and took another road here. The hook stays C-BIOS's RET fill.
+                ld      hl, HOKVLD
+                set     0, (hl)
+                ; --- RAMAD: ALWAYS filled (D-RAMAD, 2026-10-21) --------------------
+                ; Both references hold their RAM slot here in plain Disk BASIC, before
+                ; any DOS: the CF-3300 83 83 83 83 (slot 3-0), the VG-8020 + NMS 1200
+                ; 03 03 03 03 (slot 3) -- scratchpad/memman_cells*.out. zerobas left
+                ; C-BIOS's $C9 fill (the old gate below returned early on it), and
+                ; software that finds RAM through these cells (MemMan's installer,
+                ; DOS programs) read slot $C9. Only the $F368 table keeps the old
+                ; gate: D = 0 iff the host left RAMAD0 at $FF.
                 ld      a, (RAMAD0)
-                inc     a                   ; $FF -> $00 (Z): RAMAD uninitialised?
-                ret     nz                  ; host already set RAMAD -> leave it alone
+                inc     a                   ; $FF -> $00
+                ld      d, a                ; D = 0: uninitialised (the table's gate)
                 ; --- derive the page-3 RAM slot id (F000SSPP) ---
                 in      a, ($A8)
                 rlca
@@ -566,8 +582,11 @@ sr_store:
                 ld      (RAMAD0 + 1), a     ; page 1
                 ld      (RAMAD0 + 2), a     ; page 2
                 ld      (RAMAD0 + 3), a     ; page 3
+                ld      a, d
+                or      a
+                ret     nz                  ; the host had RAMAD set: no table (as before)
                 ; fall through to build the $F368 disk-work-area jump table -------
-                ; (only reached under the same $FF gate -- the real-CF-3300 DOS host)
+                ; (only reached under the $FF gate -- the real-CF-3300 DOS host)
 
 ; build_wa_table — lay the disk system's resident jump table at $F368-$F37C.
 ; MSXDOS.SYS's resident init CALLs fixed work-area entries $F368/$F36B (the disk

@@ -1,0 +1,7 @@
+PASS  C-BIOS host (RAMAD0 $C9), RAM in 3-0: RAMAD 83 83 83 83 (want 83 x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+PASS  uninitialised host ($FF), RAM in 3-0: RAMAD 83 83 83 83 (want 83 x4), HOKVLD 01 (want 01), $F368 table built (want built)
+PASS  RAM in 3-2, expanded: RAMAD 8b 8b 8b 8b (want 8b x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+PASS  RAM in slot 3, not expanded (the VG-8020's 03): RAMAD 03 03 03 03 (want 03 x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+PASS  HOKVLD's other bits kept: RAMAD 83 83 83 83 (want 83 x4), HOKVLD 81 (want 81), $F368 table not built (want not)
+
+ALL PASS — RAMAD0-3 and HOKVLD as both references hold them

@@ -1,0 +1,75 @@
+=== National_CF-3300
+== S0 ('14:CLS')  pc=0D68 curlin=FFFF mode=S1
+   |  Ok
+   |  FOR I=&HF341 TO &HF34
+   |  color auto  goto  list  run
+== S1 ('15:FOR I=&HF341 TO &HF344:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=0D88 curlin=FFFF mode=S1
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT
+   |  HEX$(PE
+   |  color cload cont  list.  run
+== S2 ('17:FOR I=&HFCC1 TO &HFCC8:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=0D62 curlin=FFFF mode=S1
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT
+   |  HEX$(PEEK(I));" ";:NEXT:PRINT
+   |  83 83 83 83
+   |  Ok
+   |  FOR I
+   |  color cload cont  list.  run
+== S3 ('19:PRINT FRE(0)')  pc=10D9 curlin=FFFF mode=S1
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT
+   |  HEX$(PEEK(I));" ";:NEXT:PRINT
+   |  83 83 83 83
+   |  Ok
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT
+   |  HEX$
+   |  color cload cont  list.  run
+== S4 ('22:')  pc=0D71 curlin=FFFF mode=S1
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT
+   |  HEX$(PEEK(I));" ";:NEXT:PRINT
+   |  83 83 83 83
+   |  Ok
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT
+   |  HEX$(PEEK(I));" ";:NEXT:PRINT
+   |  0 0 0 80 0 0 0 4
+   |  Ok
+   |  PRINT FRE(0)
+   |   23405
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('14:CLS')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FOR I=&HF341 TO &HF34
+   |  color  auto   goto   list   run
+== S1 ('15:FOR I=&HF341 TO &HF344:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(P
+   |  color  cload" cont   list.   run
+== S2 ('17:FOR I=&HFCC1 TO &HFCC8:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=06AA curlin=FFFF mode=S0
+   |  ZB
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  color  auto   goto   list   run
+== S3 ('19:PRINT FRE(0)')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  C9 C9 C9 C9
+   |  ZB
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT HEX
+   |  color  cload" cont   list.   run
+== S4 ('22:')  pc=06DE curlin=FFFF mode=S0
+   |  ZB
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  C9 C9 C9 C9
+   |  ZB
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  0 0 0 80 0 0 0 4
+   |  ZB
+   |  PRINT FRE(0)
+   |  color  auto   goto   list   run

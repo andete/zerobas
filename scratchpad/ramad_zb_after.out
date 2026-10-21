@@ -1,0 +1,45 @@
+=== cells
+== S0 ('14:CLS')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);
+   |  color  auto   goto   list   run
+== S1 ('15:PRINT PEEK(&HFB20);:FOR I=&HF341 TO &HF344:PRINT HEX$(PEEK(I));" ";:NEXT')  pc=01CC curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);:FOR I=&HF341
+   |  color  auto   goto   list   run
+== S2 ('18:')  pc=06A4 curlin=FFFF mode=S0
+   |  ZB
+   |  PRINT PEEK(&HFB20);:FOR I=&HF341 TO &
+   |  HF344:PRINT HEX$(PEEK(I));" ";:NEXT
+   |  color  auto   goto   list   run
+=== no-waste.dsk
+== S0 ('30:')  pc=18EC curlin=FFFF mode=S0
+   |  Installing memman.
+   |  ZB
+   |  bload"memman.bin",r
+== S1 ('45:')  pc=18F3 curlin=FFFF mode=S0
+   |  Installing memman.
+   |  ZB
+   |  bload"memman.bin",r
+=== megadoom.dsk
+== S0 ('30:')  pc=7AF8 curlin=0007 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  color  auto   goto   list   run
+== S1 ('45:')  pc=4404 curlin=0007 mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  color  auto   goto   list   run
+=== modedit.dsk
+== S0 ('30:')  pc=18F0 curlin=000A mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  color  auto   goto   list   run
+== S1 ('45:')  pc=8648 curlin=000A mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  color  auto   goto   list   run

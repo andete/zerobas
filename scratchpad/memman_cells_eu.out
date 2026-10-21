@@ -1,0 +1,36 @@
+== S0 ('14:CLS')  pc=0D6E curlin=FFFF mode=S0
+   |  Ok
+   |  FOR I=&HF341 TO &HF34
+   |  color  auto   goto   list   run
+== S1 ('15:FOR I=&HF341 TO &HF344:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=0D88 curlin=FFFF mode=S0
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(P
+   |  color  cload" cont   list.   run
+== S2 ('17:FOR I=&HFCC1 TO &HFCC8:PRINT HEX$(PEEK(I));" ";:NEXT:PRINT')  pc=10D9 curlin=FFFF mode=S0
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  3 3 3 3
+   |  Ok
+   |  FOR
+   |  color  auto   goto   list   run
+== S3 ('19:PRINT HEX$(INP(&HA8))')  pc=10D9 curlin=FFFF mode=S0
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  3 3 3 3
+   |  Ok
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT HE
+   |  color  cload" cont   list.   run
+== S4 ('22:')  pc=0D53 curlin=FFFF mode=S0
+   |  Ok
+   |  FOR I=&HF341 TO &HF344:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  3 3 3 3
+   |  Ok
+   |  FOR I=&HFCC1 TO &HFCC8:PRINT HEX$(PEE
+   |  K(I));" ";:NEXT:PRINT
+   |  0 0 0 0 0 0 0 F
+   |  Ok
+   |  PRINT HEX$(INP
+   |  color  cload" cont   list.   run

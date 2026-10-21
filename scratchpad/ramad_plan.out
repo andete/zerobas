@@ -1,0 +1,5 @@
+python3 tools/pick_gates.py 
+GATE TIER: FULL
+  why: RAM addresses added or moved: HOKVLD
+  hours since the last full green: 1.0 (full once a day, at every hand-off, and on a RAM-address move)
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance input-devices-acceptance lnblank-say-acceptance

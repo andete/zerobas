@@ -1,0 +1,7 @@
+FAIL  C-BIOS host (RAMAD0 $C9), RAM in 3-0: RAMAD c9 c9 c9 c9 (want 83 x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+PASS  uninitialised host ($FF), RAM in 3-0: RAMAD 83 83 83 83 (want 83 x4), HOKVLD 01 (want 01), $F368 table built (want built)
+FAIL  RAM in 3-2, expanded: RAMAD c9 c9 c9 c9 (want 8b x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+FAIL  RAM in slot 3, not expanded (the VG-8020's 03): RAMAD c9 c9 c9 c9 (want 03 x4), HOKVLD 01 (want 01), $F368 table not built (want not)
+FAIL  HOKVLD's other bits kept: RAMAD c9 c9 c9 c9 (want 83 x4), HOKVLD 81 (want 81), $F368 table not built (want not)
+
+4 CHECK(S) FAILED

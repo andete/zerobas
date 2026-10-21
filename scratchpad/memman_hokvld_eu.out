@@ -1,0 +1,15 @@
+== S0 ('14:CLS')  pc=0B9F curlin=FFFF mode=S0
+   |  Ok
+   |  PRINT PEEK(&HFB20);
+   |  color  auto   goto   list   run
+== S1 ('15:PRINT PEEK(&HFB20);:FOR I=&HFFCA TO &HFFCE:PRINT HEX$(PEEK(I));:NEXT')  pc=0D6D curlin=FFFF mode=S0
+   |  Ok
+   |  PRINT PEEK(&HFB20);:FOR I=&HFFCA
+   |  color  cload" cont   list.   run
+== S2 ('18:')  pc=0D68 curlin=FFFF mode=S0
+   |  Ok
+   |  PRINT PEEK(&HFB20);:FOR I=&HFFCA TO &
+   |  HFFCE:PRINT HEX$(PEEK(I));:NEXT
+   |   1 C9C9C9C9C9
+   |  Ok
+   |  color  auto   goto   list   run

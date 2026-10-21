@@ -55,7 +55,11 @@ def main():
                 tcl.append(f"after time {t} {{ keymatrixdown 6 0x02; keymatrixdown 7 0x10 }}")
                 tcl.append(f"after time {t + 0.3} {{ keymatrixup 6 0x02; keymatrixup 7 0x10 }}")
             elif keys:
-                esc = keys.replace("\\", "\\\\").replace('"', '\\"')
+                # Tcl: a backslash, a quote, `$` (HEX$, A$) and brackets all mean
+                # something inside "..." and must arrive as themselves
+                esc = keys
+                for ch in '\\"$[]':
+                    esc = esc.replace(ch, "\\" + ch)
                 tcl.append(f'after time {t} {{ type "{esc}\\r" }}')
             tcl.append(f"after time {t + 2.5} {{ __cap S{k} }}")
             last = t + 2.5

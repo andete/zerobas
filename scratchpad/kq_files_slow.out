@@ -1,0 +1,33 @@
+=== National_CF-3300
+== S0 ('45:')  pc=0BA4 curlin=FFFF mode=S0
+   | Ok
+   | FILES
+   | color   auto    goto    list    run
+== S1 ('46:CLS')  pc=7722 curlin=FFFF mode=S0
+   | Ok
+   | FILES "KQ2.0*"
+   | color   auto    goto    list    run
+== S2 ('47:FILES "KQ2.0*"')  pc=08CC curlin=FFFF mode=S0
+   | Ok
+   | FILES "KQ2.0*"
+   | KQ2     .015 KQ2     .016 KQ2     .010
+   | KQ2     .009 KQ2     .017 KQ2     .011
+   | KQ2     .018 KQ2     .012 KQ2     .001
+   | KQ2     .000 KQ2     .021 KQ2     .023
+   | KQ2     .014 KQ2
+   | color   auto    goto    list    run
+== S3 ('60:CLS')  pc=7722 curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.BIN"
+   | color   auto    goto    list    run
+== S4 ('61:FILES "*.BIN"')  pc=7620 curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.BIN"
+   | BFILOGDS.BIN
+   | color   auto    goto    list    run
+== S5 ('75:')  pc=0D5B curlin=FFFF mode=S0
+   | Ok
+   | FILES "*.BIN"
+   | BFILOGDS.BIN BNTPLAY .BIN
+   | Ok
+   | color   auto    goto    list    run
