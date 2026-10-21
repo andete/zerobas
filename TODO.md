@@ -4743,6 +4743,40 @@ item — do **one item per session** to keep context lean.
       dskio / nodisk (PINNED must stay empty) acceptance, diskrom-abi-check,
       pin-check, check_disk_walls; plus per-slice rows and a knife.
 
+- [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
+      MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
+      🎚️ TIER 1 — happy path: booting a disk is the first thing a disk machine does.
+      🤖 **AUTONOMOUS** — the CF-3300 settles every row; triage is black box (screens,
+      CURLIN, PC, our own ROM's breakpoints), the software is RUN, never decoded.
+      📏 [`diskcorpus_run.py`](scratchpad/diskcorpus_run.py) boots every image of the `disks`
+      collection (Joost 2026-10-20: never `my_disks`, which is private; the tool refuses
+      it; the collection's location is passed in, never written here) on the National
+      CF-3300 and on zerobas's disk machine from a /tmp copy, 45 s throttle-off, then types
+      FILES. 143 images (130 .dsk, 10 .di1/.di2, 3 .xsa; one "*.dsk" entry is a directory):
+      | class | n | meaning |
+      |---|---|---|
+      | BOTH-RUN | 92 | both machines run the disk's program (NOT compared further: a Japanese and a European machine draw different screens) |
+      | ZB-NOBOOT | 27 | the CF-3300 runs something, zerobas sits at its prompt |
+      | FILES-SAME | 8 | both at the prompt, the same FILES listing |
+      | FILES-DIFF | 9 | mostly NOISE (the banners' version numbers, 32- vs 40-column wrapping); real candidates: no-waste.dsk (zerobas lists none), facdemo3.di2 (1 against 41), kq.dsk (two missing at the end) |
+      | ZB-ONLY | 6 | zerobas runs a program where the CF-3300 sits in direct mode (BREAKER: zerobas at line 10) -- read each |
+      | FILES-EMPTY | 1 | |
+      🔴 **CLASS A (18 of the 27 ZB-NOBOOT): the CF-3300 reaches MSX-DOS's `Enter date` and
+      zerobas BASIC** -- including disks whose root directory holds NO system file at all
+      (empty.dsk has no entries; almost_real.dsk's "directory" is art text). zerobas reads
+      those directories CORRECTLY (FILES lists exactly what is there), and the BPBs are the
+      test disk's (720 KB, F9) -- so it is not the FAT layer. Both machines enter the disk's
+      boot code twice at $C01E (CF=0, then CF=1) identically (a breakpoint on our own call).
+      ⚖️ The differential that places it: empty.dsk on the CF-3300 HARDWARE with zerobas's
+      disk ROM fitted (`National_CF-3300_ZEROBASDISK`) ends in BASIC with `Type mismatch in
+      0`; with the stock disk ROM, `Enter date`. So the divergence is in disk.rom's BOOT path
+      (what the boot code is given, or calls, after step 7), not in C-BIOS or BASIC.
+      ➡️ NEXT: on that one machine, log which BIOS / BDOS / disk-ROM entries the boot code
+      calls (PC breakpoints on the published entry points, register values in and out) with
+      the stock ROM and with ours, and diff; then the other ZB-NOBOOT rows (DiscStation #32
+      A-D's own "Loading DS" loader, ROBOCOP, SirDan, UR-1, xak2eng2, senigma), the three
+      FILES-DIFF candidates, and the six ZB-ONLY.
+
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
       🎚️ BUDGET — ROM size toward the reference; the space every later tier spends.
@@ -11684,7 +11718,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37617 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37651 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -11850,7 +11884,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:16712 (T-6FE392)8 (T-529ABE)` from `TODO.md:29549 (T-529ABE)`: a
+      `TODO.md:16746 (T-6FE392)8 (T-529ABE)` from `TODO.md:29583 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17559,7 +17593,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29549 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29583 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
