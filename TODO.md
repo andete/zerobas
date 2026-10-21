@@ -11970,7 +11970,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:37975 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:37985 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -36522,6 +36522,16 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       $02C4: what the earlier CREATE / SEQWR rows allocated differs, a 3b question.
       tests/test_bdosbasic.py: seven dispatch rows and the five bb_ bodies; 🔪 the table walk
       returning at once -> 11 FAIL. docs/concepts/msx-dos.md.
+      ✅ **SLICE 3b-1 DONE 2026-10-22 -- DELETE ($13) and RENAME ($17):** measured first with
+      positive rows ([`bdosset_run2.out`](scratchpad/bdosset_run2.out): RENAME PROBE.TMP ->
+      PROBE2.TMP A = 0, DELETE PROBE2.TMP A = 0, SFIRST PROBE2 then $FF, on both references;
+      🔮 0 / 0 / $FF HIT). bb_delete loops KILL's fat_delete (wildcards, first match each time;
+      A = 0 if any, $FF if none); bb_rename = NAME's fat_find + the taken-name check +
+      hkn_stamp (A = 0 / $FF). Own choice, unmeasured: a '?' in the new name is literal. Code
+      after the $5552 SDATE veneer. [`bdos3b_zb.out`](scratchpad/bdos3b_zb.out): all five rows as
+      the references (🔮 80 % HIT). tests/test_bdosbasic.py: four rows; 🔪 the two table rows
+      retargeted -> 4 FAIL. ➡️ 3b-2: the random record set ($21-$24, $26, $28) and the three
+      differing answers ($10 / $14 / $27).
 
 - [ ] 🔴 **THREE TAPE CASES NOBODY COMPARED (D-TAPEQ3, found 2026-10-09 by the cassette
       concept page).**

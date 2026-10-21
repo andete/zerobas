@@ -1,0 +1,6 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): disk/kernel.asm
+  why: probe/tool change: scratchpad/bdosset_probe.py tests/test_bdosbasic.py
+  hours since the last full green: 0.6 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (6): cursor-acceptance error-acceptance keystr-acceptance kwsweep runline-acceptance string-acceptance

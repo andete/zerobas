@@ -736,6 +736,10 @@ bdos_tab:
                 dw      bb_dskrst
                 db      $0E
                 dw      seldsk_drv_body
+                db      $13
+                dw      bb_delete
+                db      $17
+                dw      bb_rename
                 db      $18
                 dw      login_body
                 db      $19
@@ -1025,6 +1029,68 @@ gdate_handler:
                 ; for every date, valid or not.
                 ds      $5552 - $, $00
 k_5552:         jp      sdate_body
+; --- D-BDOSBASIC slice 3b: DELETE / RENAME at $F37D (oracle; MSX2 TH BDOS) ------
+; Both references delete and rename from a BASIC program (scratchpad/bdosset_run2.out:
+; RENAME PROBE.TMP -> PROBE2.TMP A = 0, DELETE PROBE2.TMP A = 0, a search for it then
+; $FF; a missing name $FF for both). The FAT work is KILL's and NAME's own:
+; fat_delete (wildcards, the first match each time) and hkn_stamp (the new name over
+; the old entry). RENAME takes the names as they are -- a '?' in the NEW name is not
+; resolved against the old one (unmeasured; own choice for now).
+bb_delete:                                  ; DE = FCB, the name (wildcards) at +1
+                ex      de, hl
+                inc     hl
+                call    bb_name11
+                ld      c, 0                ; C = deleted any
+bbd_loop:
+                push    bc
+                call    fat_delete          ; frees and $E5-marks the first match
+                pop     bc
+                jr      c, bbd_end
+                ld      c, 1
+                jr      bbd_loop
+bbd_end:
+                ld      a, c
+                dec     a                   ; deleted: 0; none: $FF
+                ret
+bb_rename:                                  ; DE = FCB: old name at +1, new at +17
+                push    de
+                ex      de, hl
+                inc     hl
+                call    bb_name11
+                call    fat_mount
+                jr      c, bbr_failpop
+                ld      hl, DISK_FCB_NAME
+                call    fat_find            ; the old one -> FWR_DIRSEC / FWR_DIROFF
+                jr      c, bbr_failpop
+                pop     hl
+                ld      de, 17
+                add     hl, de
+                call    bb_name11           ; DISK_FCB_NAME := the new name
+                ld      hl, (FWR_DIRSEC)
+                push    hl
+                ld      hl, (FWR_DIROFF)
+                push    hl
+                ld      hl, DISK_FCB_NAME
+                call    fat_find            ; CF clear: the new name is taken
+                pop     hl                  ; (POP and LD (nn),HL keep the flags)
+                ld      (FWR_DIROFF), hl
+                pop     hl
+                ld      (FWR_DIRSEC), hl
+                jr      nc, bbr_fail
+                call    hkn_stamp
+                jr      c, bbr_fail
+                xor     a
+                ret
+bbr_failpop:
+                pop     de
+bbr_fail:
+                ld      a, $FF
+                ret
+bb_name11:                                  ; DISK_FCB_NAME := the 11 bytes at HL
+                ld      de, DISK_FCB_NAME
+                ld      bc, 11
+                ldir
+                ret
 
 ; --- MSX-DOS-1 kernel GTIME/STIME/VERIFY entries: $55DB/$55E6/$55FF (M22a) ----
 ; While processing BDOS GTIME ($2C) / STIME ($2D) / VERIFY ($2E) the relocated

@@ -22,6 +22,7 @@ import bpbrule_probe as B  # noqa: E402
 
 MACHINES = B.MACHINES
 FCB_NO, FCB_WILD, FCB_NEW = 0xC020, 0xC0A0, 0xC0D0
+FCB_REN, FCB_NEW2 = 0xC100, 0xC140           # rename: old at +1, new at +17
 # (function, DE, HL, what)
 ROWS = [(0x1A, 0xD400, 0, "SETDTA $D400"), (0x02, 0x0041, 0, "CONOUT 'A'"),
         (0x06, 0x00FF, 0, "DIRIO in"), (0x09, 0xC060, 0, "STROUT"),
@@ -37,7 +38,9 @@ ROWS = [(0x1A, 0xD400, 0, "SETDTA $D400"), (0x02, 0x0041, 0, "CONOUT 'A'"),
         (0x26, FCB_NEW, 0, "WRBLK 0"), (0x27, FCB_NEW, 1, "RDBLK 1"),
         (0x28, FCB_NEW, 0, "WRZER"), (0x10, FCB_NEW, 0, "CLOSE"),
         (0x2A, 0, 0, "GDATE"), (0x2C, 0, 0, "GTIME"), (0x2E, 0x0000, 0, "VERIFY"),
-        (0x2F, 0x0000, 0x0100, "ABSRD s0")]
+        (0x17, FCB_REN, 0, "RENAME ->PROBE2"), (0x13, FCB_NEW2, 0, "DELETE PROBE2"),
+        (0x11, FCB_NEW2, 0, "SFIRST PROBE2"),
+        (0x2F, 0x0000, 0x0100, "ABSRD s0")]       # LAST: both references restarted here
 MC = [0x3A, 0xF0, 0xC0, 0x4F, 0xED, 0x5B, 0xF2, 0xC0, 0x2A, 0xF4, 0xC0, 0xCD, 0x7D,
       0xF3, 0x22, 0xFA, 0xC0, 0xED, 0x53, 0xFC, 0xC0, 0xED, 0x43, 0xFE, 0xC0, 0xF5,
       0xE1, 0x22, 0xF6, 0xC0, 0xC9]
@@ -53,6 +56,9 @@ def program():
              "31 " + fcb(FCB_WILD, "????????BAS"),
              "32 " + fcb(FCB_NEW, "PROBE   TMP"),
              '33 S$="OK$":FOR I=1 TO 3:POKE &HC05F+I,ASC(MID$(S$,I,1)):NEXT',
+             "34 " + fcb(FCB_REN, "PROBE   TMP"),
+             f'35 N$="PROBE2  TMP":FOR I=1 TO 11:POKE &H{FCB_REN + 16:X}+I,ASC(MID$(N$,I,1)):NEXT',
+             "36 " + fcb(FCB_NEW2, "PROBE2  TMP"),
              "40 DEFUSR=&HC000",
              f"50 FOR R=0 TO {len(ROWS) - 1}:READ F,D,H",
              "60 POKE &HC0F0,F:POKE &HC0F2,D-INT(D/256)*256:POKE &HC0F3,INT(D/256):"
