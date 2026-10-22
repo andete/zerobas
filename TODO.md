@@ -5225,6 +5225,21 @@ item — do **one item per session** to keep context lean.
       ➡️ Read how MSXDOS.SYS's page-1 switching reaches us on the C-BIOS target (breakpoints
       on $F368 / $F368+3, our own code), then make the TPA's page 1 RAM; p1dta-acceptance prints
       the subslot bytes every run as a KNOWN GAP until it matches.
+      📏 **READ (2026-10-22, no code yet): this is the WHOLE gated DOS environment, not one
+      table.** The page-1-is-the-TPA design already exists and is built only under set_ramad's
+      $FF gate (a CF-3300-like host): the DRVTBL with its CALSLT trampolines ("under DOS page
+      1 is the TPA, so $4xxx isn't directly callable" -- the §8.22 note), the $F368 table with
+      the wa_seg_rom / wa_seg_ram bodies, the resident routines, and `$0038` vectored to
+      INT_H_HIRAM ("NOT page-1 int_h: page 1 is reclaimed by the TPA", p0_env_tab). On the
+      C-BIOS target none of it is built: the $F368 table holds C-BIOS's RET fill, so MSXDOS.SYS's
+      "RAM into page 1" call does nothing and page 1 stays the disk ROM -- the reduced mode the
+      DOS gates (bdos- / diskbasic- / dosbasic-acceptance) were made green in. ⚠️ The gate is
+      not arbitrary: WA_SEG ($F756) sits on BASIC's own cells (FN_PAREA, the PRINT USING
+      buffer) and DRV_TRAMP / the resident routines claim page-3 RAM BASIC may use, so building
+      it at disk INIT would be clobbered. ➡️ Design first: build the DOS-only plumbing in
+      dos_handoff (when MSX-DOS really starts -- BASIC is gone until BASENT), on every host;
+      then the interrupt path, DRVTBL and every DOS gate must stay green with page 1 = RAM
+      in the TPA. A multi-slice item; measure each step against the CF-3300.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12363,7 +12378,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38399 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38414 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12529,7 +12544,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17391 (T-6FE392)8 (T-529ABE)` from `TODO.md:30228 (T-529ABE)`: a
+      `TODO.md:17406 (T-6FE392)8 (T-529ABE)` from `TODO.md:30243 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18238,7 +18253,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30228 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30243 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
