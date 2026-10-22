@@ -58,7 +58,8 @@ def main() -> int:
         cells = " ".join(str(a) for a in [0xC000] + list(range(0xC010, 0xC01B)))
         dump = (f"after time 100 {{ set f [open {{{out}}} w]; foreach a {{{cells}}} "
                 f"{{ puts $f [debug read memory $a] }}; close $f }}\n")
-        W.run_once(machine, dsk, 14, 110, 180, cmd="DOSDATE", extra_tcl=dump)
+        W.run_once(machine, dsk, 14, 110, 180, cmd="DOSDATE", extra_tcl=dump,
+                   type_cmd=False)  # AUTOEXEC.BAT runs it on both (D-P1RDBLK note)
         ram = [int(x) for x in open(out).read().split()]
         f = RT.Fat12(dsk)
         b = f.img

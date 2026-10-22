@@ -1,0 +1,23 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_dosdate.py
+STOCK: PHASE=2 (2 = finished)
+  GDATE before               (1984, 1, 1, 0)
+  SDATE A                    0
+  GDATE after                (1999, 12, 31, 5)
+  FIXD after WRRND+FCLOSE    time 0000 date 0821 = 1984-01-01
+  NEWD (after SDATE)         time 0000 date 279F = 1999-12-31
+OURS: PHASE=2 (2 = finished)
+  GDATE before               (1984, 1, 1, 0)
+  SDATE A                    0
+  GDATE after                (1999, 12, 31, 5)
+  FIXD after WRRND+FCLOSE    time 0000 date 0821 = 1984-01-01
+  NEWD (after SDATE)         time 0000 date 279F = 1999-12-31
+
+PASS: both machines agree

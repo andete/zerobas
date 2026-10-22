@@ -5136,9 +5136,12 @@ item — do **one item per session** to keep context lean.
       restart, and typed capitals hold SHIFT -- the boot's "no disk ROM". A few hundred more
       cycles in INIT moved which key the boot sampled. 🔧 run_once takes `type_cmd`; the
       dosbasic probe passes False and no longer types `BASIC` on zerobas either; it passes with
-      the install (1999-12-31 on both). ➡️ The other run_once users (dosdate, strout,
-      wrblk_alt) keep the stale premise -- they pass, but each types its command on top of
-      an AUTOEXEC.BAT that zerobas now runs; re-read them.
+      the install (1999-12-31 on both). ✅ The other run_once users (dosdate, strout,
+      wrblk_alt) each put the command in AUTOEXEC.BAT AND typed it, so zerobas ran it TWICE
+      (WRBLK truncates first -- the re-run run_once's own docstring warns of). All pass
+      type_cmd=False now; the docstring's premise is inverted, not deleted; strout-,
+      dosdate- and wrblkalt-acceptance pass
+      ([`typecmd_wrblkalt-acceptance.out`](scratchpad/typecmd_wrblkalt-acceptance.out)).
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12277,7 +12280,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38313 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38316 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12443,7 +12446,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17305 (T-6FE392)8 (T-529ABE)` from `TODO.md:30142 (T-529ABE)`: a
+      `TODO.md:17308 (T-6FE392)8 (T-529ABE)` from `TODO.md:30145 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18152,7 +18155,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30142 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

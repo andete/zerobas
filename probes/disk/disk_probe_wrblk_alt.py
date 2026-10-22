@@ -84,7 +84,11 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
     exactly that (ours empty, then stock empty in a variant), and it looked like
     a WRBLK defect. The CF-3300 honours AUTOEXEC.BAT and C-BIOS's DOS boot does
     not (RT.run's own note), so stock gets AUTOEXEC only and ours one typed
-    command."""
+    command.
+    🔴 THAT PREMISE NO LONGER HOLDS (2026-10-22): zerobas's DOS boot runs
+    AUTOEXEC.BAT now (scratchpad/dosbasic_autoexec.out), so with a typed command
+    ours ran it TWICE -- the very re-run this docstring warns about. Every
+    caller passes type_cmd=False; the typing arm stays for a disk without one."""
     import signal, subprocess as sp, time
     # type_cmd=False (D-P1RDBLK, 2026-10-22): zerobas's DOS boot DOES run
     # AUTOEXEC.BAT now (basent_body reached from AUTOEXEC's own `BASIC` at T14.4,
@@ -201,7 +205,8 @@ def main() -> int:
         plog = (probe_tmp.tmp(f"wrblk_alt_{tag.strip().lower()}.phase")
                 if a.time or a.seek or a.wseek else None)
         try:
-            run_once(machine, dsk, a.boot, a.end, a.timeout, plog)
+            run_once(machine, dsk, a.boot, a.end, a.timeout, plog,
+                     type_cmd=False)  # AUTOEXEC.BAT runs WRBLK on both machines now
         except TimeoutError as e:
             print(f"  {tag} {e}")
             ok = False

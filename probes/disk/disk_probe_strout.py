@@ -39,7 +39,8 @@ for tag, machine in (("STOCK", RT.REF_MACHINE), ("OURS", RT.OUR_MACHINE)):
            "if {($i + 1) % $w == 0} { append s {|} } }; "
            "puts $tf \"SCR $t PHASE=[debug read memory 0xC000] [string map {{  } {}} $s]\"; flush $tf }\n"
            "after time 20 { dumpv 20 }\nafter time 30 { dumpv 30; close $tf }\n")
-    W.run_once(machine, dsk, 14, 31, 300, cmd="STROUT", extra_tcl=tcl)
+    W.run_once(machine, dsk, 14, 31, 300, cmd="STROUT", extra_tcl=tcl,
+               type_cmd=False)  # AUTOEXEC.BAT runs it on both (D-P1RDBLK note)
     print(f"== {tag}")
     text = ""
     for ln in open(out):
