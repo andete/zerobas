@@ -5051,6 +5051,12 @@ item — do **one item per session** to keep context lean.
       ➡️ NEXT for megadoom: what its line 7 waits on (CURLIN stays 7) -- list lines 1-10 on
       zerobas (the screen only, never into the repo) and the slot calls it makes
       (slotcalls_probe.py), both machines.
+      📏 **megadoom TRIAGED (2026-10-22) -> D-TXTTAB.** Listed on the CF-3300 (screen only):
+      line 7 is the classic loader trick -- if PEEK(&HF677) is not &HD0, POKE it (and &HD000)
+      and RUN its own loader file, so the program text moves to $D001. zerobas resets TXTTAB
+      to $8001 at every NEW / LOAD, so the test never comes true and line 7 RUNs the loader
+      for ever (CTRL+STOP cannot land; PC in READ / RESUME). The game itself is MSX2 (line 8
+      `SCREEN7`): the CF-3300's `Illegal function call in 8` is the right end.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -5058,6 +5064,24 @@ item — do **one item per session** to keep context lean.
       with `Missing operand in 30` and the program area is damaged (LIST hangs). The
       disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
       at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
+
+- [ ] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
+      LOAD PUT IT BACK AT $8001 (found 2026-10-22 by D-DISKRUN's megadoom)**
+      🎚️ TIER 1 — happy path: `IF PEEK(&HF677)<>X THEN POKE &HF677,X:POKE X*256,0:RUN"loader"` is
+      a common loader idiom; on zerobas it RUNs the loader for ever.
+      🤖 **AUTONOMOUS** — measured; a multi-site change, so price it first.
+      📏 [`txttab_move.out`](scratchpad/txttab_move.out) (own program): `POKE &HC000,0:POKE
+      &HF676,1:POKE &HF677,&HC0:NEW`, then `10 PRINT ...`, RUN -- the CF-3300 TXTTAB $C001,
+      VARTAB $C026, FRE(0) 7011; zerobas $8001, $8026, 23395 (the POKE undone).
+      The reads already use `(TXTTAB)` (D-BASICROM, 2026-10-12: "LOAD and NEW keep the RAM
+      base"). The WRITERS of the base: new_prog (basic/files.asm), the store cursor and the
+      commit in basic/cload.asm (CLPTR / CLINK := TXTBASE, TXTTAB := TXTBASE), casmatch's
+      CLINK, sav_fits (disk/kernel.asm, `ld de,TXTBASE`), hk_dpload's CLPTR / CLINK (disk/
+      kernel.asm). The cold start must seed TXTTAB = $8001 before new_prog_quiet.
+      ⚠️ CLINK is "the SAVING machine's text base, assumed == ours": the loaders take line
+      lengths from link deltas, so a file SAVEd with TXTTAB moved may load wrongly anywhere --
+      measure that on the CF-3300 too (SAVE at $C001, LOAD at $8001, LIST) before choosing.
+      The ceiling (TXTCEIL, $E36A disk / $F380 diskless) is above $C001 / $D001.
 
 - [x] 🪝 **D-HSTKE — zerobas NEVER CALLED H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
       STACK (found 2026-10-22 by D-DISKRUN's MemMan class; fixed the same day)**
@@ -12133,7 +12157,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38169 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38193 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12299,7 +12323,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17161 (T-6FE392)8 (T-529ABE)` from `TODO.md:29998 (T-529ABE)`: a
+      `TODO.md:17185 (T-6FE392)8 (T-529ABE)` from `TODO.md:30022 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18008,7 +18032,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29998 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
