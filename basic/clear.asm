@@ -265,6 +265,7 @@ clr_wipe:
                 ; splitting the CLEAR onto its own line hid this for so long.
                 ld      hl,(CSP)            ; the frontier BEFORE the wipe
                 push    hl
+                call    hstke               ; D-HSTKE: CLEAR, once
                 call    clear_vars          ; statement cursor across the wipe
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b):
                                             ; CLEAR wipes any live scalars/arrays too;

@@ -33,7 +33,7 @@ other component's cell at the same address; the `inside` column
 names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
-* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **437** in the MSX standard work area at or above `$F380`.
+* **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **438** in the MSX standard work area at or above `$F380`.
 * **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
@@ -745,6 +745,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FE85` |  | `disk` | `H_CHOUT` | S10.B: one byte out of an OUTPUT channel (A) |  |
 | `$FE8A` |  | `basic` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC (disk.rom hk_chin) |  |
 | `$FE8A` |  | `disk` | `H_CHIN` | S10.C: an INPUT channel's byte / EOF / numeric item; S10.E: LOF / LOC |  |
+| `$FEDA` |  | `basic` | `H_STKE` | BASIC reset its stack (MSX2 TH hook list; D-HSTKE) |  |
 | `$FEE4` |  | `basic` | `H_OUTD` | published hook OUTDO calls first (MSX2 TH hook table) |  |
 | `$FEFD` |  | `basic` | `H_ERRP` | error-print hook (D-DISKERR): the errmsg tenant offers a code it |  |
 | `$FEFD` |  | `disk` | `H_ERRP` | error-print hook (D-DISKERR): this ROM prints ERR 68..70 |  |

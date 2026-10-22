@@ -447,7 +447,11 @@ df_notfound:
 ; now, so the `jr` reach that fixed this siting is gone; the chunks stay put.)
 ; --- new_prog: clear the stored program (NEW) --------------------------------
 ; Empty program = a $0000 link word at the text base. Clobbers A, HL.
+; D-HSTKE: NEW and LOAD each call H.STKE once on the CF-3300; the cold boot's
+; early reset enters at new_prog_quiet -- its H.STKE comes after the banner.
 new_prog:
+                call    hstke
+new_prog_quiet:
                 xor     a
                 ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
                 ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON
@@ -457,9 +461,36 @@ new_prog:
                 ld      hl,0
                 ld      (TXTBASE),hl        ; $0000 end marker at the base
                 jp      vars_reset          ; rebase the scalar and array regions
+; --- hstke: call H.STKE ($FEDA) with every register kept (D-HSTKE) -----------
+; 🔴 zerobas NEVER CALLED IT, and software hands BASIC work through it: MemMan's
+; installer points it at its own code and restarts BASIC ($4022), and the
+; CF-3300 prints `No free segment for MemMan` from it (scratchpad/stke_memman.out).
+; When the CF-3300 calls it, counted with our own handler (scratchpad/
+; stke_when*.out): CLEAR, NEW, LOAD, RUN, a typed program line, an error --
+; once each; the start of BASIC once, after the banner; a direct statement,
+; GOTO, STOP, CONT and END never. The sites are those, here.
+; Every register kept: a hook may clobber anything, and the sites sit
+; mid-routine with live registers (the reference calls it as it resets the
+; stack, where nothing is live -- zerobas unwinds differently).
+hstke:
+                push    af
+                push    bc
+                push    de
+                push    hl
+                push    ix
+                push    iy
+                call    H_STKE
+                pop     iy
+                pop     ix
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ret
 ; --- store_line: the line STORE's resident marshalling shim (the lineedit tenant
 ; does the store / delete, relink and vars_reset; basic/program.asm's header) ---
 store_line:
+                call    hstke               ; D-HSTKE: a typed line, once
                 xor     a
                 ld      (CONTVALID),a       ; editing the program invalidates CONT
                 ld      (SL_NUM),bc

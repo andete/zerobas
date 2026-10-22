@@ -146,7 +146,8 @@ init:
     ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
-                call    new_prog            ; empty stored program (Step B)
+                call    new_prog_quiet      ; empty stored program (Step B); no H.STKE
+                                            ; yet -- it comes after the banner (D-HSTKE)
                 xor     a
                 ld      (BROM_TEXT+1),a     ; D-BASICROM: no TEXT cartridge yet (the scan
                                             ; sets it; RAM survives a reset). Here, not in
@@ -291,6 +292,8 @@ bh_himem:
                 call    CALSLT
                 ei
 init_no_diskbanner:
+                call    hstke               ; D-HSTKE: BASIC starts -- once, after the
+                                            ; banner (MemMan's message lands there)
                 call    brom_run            ; D-BASICROM: RUN a cartridge's BASIC program
                 call    autoexec_run        ; auto-run AUTOEXEC.BAS if present (cload.asm)
                 jp      repl                ; read/eval loop (never returns)
@@ -1500,6 +1503,7 @@ ra_abort:                                    ; the S1/S2a abort body (HL = messa
                 ld      hl,(SAVTXT)
                 call    cont_record          ; (basic/program.asm; run mode only)
                 pop     hl
+                call    hstke                ; D-HSTKE: an untrapped error, once
                 jp      fre_abort_low
 rerr_unprintable:
                 ; 🎯 D-MSGSUB: err_subhosted, NOT err_unprintable -- and that one

@@ -399,6 +399,8 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                 ; disk rows (each one a RUN) leaked channels into their
                 ; neighbours and read 38 fake EXTRAs (D-KWT6 batch 8).
                 call    fch_close_all       ; nothing live: GOTOTGT is in RAM
+                call    hstke               ; D-HSTKE: RUN, once (stke_when.out's "+2"
+                                            ; was the typed line 10 and the RUN)
                 call    clear_vars
                 call    vars_reset          ; arrays slice-1 (§9.6) + slice-4b (§3b): a
                                             ; fresh RUN has no live scalars/arrays

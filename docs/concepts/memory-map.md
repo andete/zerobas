@@ -77,6 +77,15 @@ does (ceiling − file blocks − string space). The frames differ in size:
 still runs out a few frames sooner here, because zerobas keeps a larger
 reserve for its own stack before it refuses a frame.
 
+**The stack hook.** Whenever BASIC resets its stack it first calls the
+published hook `H.STKE` (`&HFEDA`, normally a plain `RET`), so a program or
+a cartridge can take over at that moment. Counted on the CF-3300 with a
+handler of our own: `CLEAR`, `NEW`, `LOAD`, `RUN`, typing a program line and
+an error each call it once, and so does the start of BASIC, after the
+banner; a statement typed without a line number, `GOTO`, `STOP`, `CONT` and
+the end of a program do not. zerobas calls it at the same moments since
+2026-10-22.
+
 ### What moves the boundaries
 
 | statement | effect, on both machines |
@@ -208,6 +217,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **zerobas never called the stack hook** (fixed 2026-10-22, D-HSTKE). The
+  memory manager MemMan prints `No free segment for MemMan` on a machine
+  without extra memory by pointing `H.STKE` at its own code and restarting
+  BASIC; zerobas showed nothing. Watching the hook cells while MemMan ran on
+  the CF-3300 showed the write
+  ([`stke_memman.out`](../../scratchpad/stke_memman.out)); a counting handler
+  of our own then showed when the reference calls it
+  ([`stke_when.out`](../../scratchpad/stke_when.out),
+  [`stke_when2.out`](../../scratchpad/stke_when2.out),
+  [`stke_when3.out`](../../scratchpad/stke_when3.out)), and zerobas matches
+  every row ([`stke_when_zb.out`](../../scratchpad/stke_when_zb.out)). A
+  first reading counted `RUN` twice; it was the program line typed just
+  before it.
 - **zerobas kept its own copies of some published cells** (2026-10-13, Joost:
   every memory location zerobas invented is checked against how the
   reference does the job). The VG-8020 keeps `MAXFILES` in `MAXFIL`
@@ -370,3 +392,5 @@ arguments in [basic/clear.asm](../../basic/clear.asm).
 - `make fcb0-acceptance` — channel 0's block, the stride and the blocks' order.
 - `make sysvarsweep`, `make kwram` — the documented work-area cells, and RAM
   usage per keyword, against the reference.
+- `tests/test_hstke.py` (in `make unit-test`) — the stack hook is called with
+  every register kept, from `NEW` and not from the early reset at start-up.

@@ -451,6 +451,7 @@ load_commit_prog:
                 ; relink (program.asm) recomputes them from the loaded bytes, so
                 ; the program is now byte-identical to one typed in.
                 call    relink
+                call    hstke               ; D-HSTKE: LOAD, once (stke_when3.out)
                 or      a                   ; D-CASTAIL: the SUCCESS half of the CF
                 ret                         ; contract -- CF clear = loaded, run it
 

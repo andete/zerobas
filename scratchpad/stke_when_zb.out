@@ -1,0 +1,26 @@
+# D-HSTKE: the CF-3300 rows of stke_when.out / stke_when2.out / stke_when3.out, on zerobas after the fix
+### rows as stke_when.out (CF-3300: A0 B0 C1 N2 E3 R5 F5)
+   |  A 0
+   |  B 0
+   |  C 1
+   |  E 3
+   |  F 5
+   |  N 2
+   |  R 5
+### rows as stke_when2.out (CF-3300: P1 L1 M1 Q1)
+   |  L 1
+   |  M 1
+   |  P 1
+   |  Q 1
+### rows as stke_when3.out (CF-3300: A0 L1 R1)
+   |  A 0
+   |  L 1
+   |  R 1
+### no-waste.dsk
+== S1 ('45:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  No free segment for MemMan
+   |  ZB
+   |  color  auto   goto   list   run

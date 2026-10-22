@@ -3720,6 +3720,7 @@ VCX_FRAMES      equ     20      ; frames remaining for this voice's current note
 ; autorun waits on both. Unclaimed (a bare RET) on all four machines,
 ; scratchpad/autorun_cell_probe.out.
 H_READ          equ     $FF07   ; prompt printed ("Ok" / ZB)
+H_STKE          equ     $FEDA   ; BASIC reset its stack (MSX2 TH hook list; D-HSTKE)
 H_MAIN          equ     $FF0C   ; about to read a line at command level
 H_TIMI          equ     $FD9F   ; timer-interrupt hook, 5-byte inter-slot call area
 ; --- BASIC-extension hooks the DISK ROM claims (D-MKHOOK) -------------------

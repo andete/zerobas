@@ -5043,6 +5043,14 @@ item — do **one item per session** to keep context lean.
       `No free segment for MemMan` -- through H.STKE ([`stke_memman.out`](scratchpad/stke_memman.out):
       memman points $FEDA at its own code just before the call), a hook zerobas never calls
       -> D-HSTKE.
+      📏 **AFTER D-HSTKE (2026-10-22)**, the three disks
+      ([`memman_class_after.out`](scratchpad/memman_class_after.out),
+      [`stke_when_zb.out`](scratchpad/stke_when_zb.out)): no-waste and modedit print `No free
+      segment for MemMan` and stop at the prompt, as on the CF-3300. megadoom still parts:
+      the CF-3300 `Illegal function call in 8`, zerobas still RUNNING in line 7 at T45.
+      ➡️ NEXT for megadoom: what its line 7 waits on (CURLIN stays 7) -- list lines 1-10 on
+      zerobas (the screen only, never into the repo) and the slot calls it makes
+      (slotcalls_probe.py), both machines.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -5051,8 +5059,8 @@ item — do **one item per session** to keep context lean.
       disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
       at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
 
-- [ ] 🪝 **D-HSTKE — zerobas NEVER CALLS H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
-      STACK (found 2026-10-22 by D-DISKRUN's MemMan class)**
+- [x] 🪝 **D-HSTKE — zerobas NEVER CALLED H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
+      STACK (found 2026-10-22 by D-DISKRUN's MemMan class; fixed the same day)**
       🎚️ TIER 1 — happy path: software that hands BASIC work through the published hooks
       (MemMan's "No free segment" message; ROM-resident BASIC programs start the same way).
       🤖 **AUTONOMOUS** — a published MSX hook (MSX2 TH hook list); measured when it fires.
@@ -5063,6 +5071,20 @@ item — do **one item per session** to keep context lean.
       (CLEAR / NEW / error recovery / RUN / the cold start after the banner), call $FEDA from
       them in that count, and price it against the main walls first (READ them: page 1 + low
       share one budget). Then the MemMan disks again: the message should appear.
+      ✅ **FIXED 2026-10-22.** More rows first ([`stke_when2.out`](scratchpad/stke_when2.out):
+      a typed program line +1, `GOTO` / STOP / CONT 0; [`stke_when3.out`](scratchpad/stke_when3.out):
+      LOAD +1, the $4022 restart 1). 🔮 "RUN +2" was a MISREAD: the line typed before it is the
+      other one -- RUN is +1. 🔧 `hstke` (basic/files.asm, every register kept: a hook may
+      clobber anything and the sites are mid-routine) called from new_prog (NEW, LOAD's ASCII
+      path), load_commit_prog (LOAD / CLOAD), store_line (a typed line), run_prog_at (RUN),
+      clr_wipe (CLEAR), ra_abort (an untrapped error) and the cold start after the banner;
+      the cold start's early reset enters new_prog_quiet. 41 B of main page 1, before the
+      LOAD site. Every CF-3300 row matches on zerobas, and no-waste prints the message
+      ([`stke_when_zb.out`](scratchpad/stke_when_zb.out)). tests/test_hstke.py: the helper
+      keeps every register, NEW calls it, the quiet entry does not (knives K1 / K2: 2 rows each,
+      [`hstke_knife.out`](scratchpad/hstke_knife.out)). ⚠️ UNMEASURED, own reading: an ASCII
+      LOAD stores line by line through store_line, so it calls the hook once per line; CLOAD
+      calls it once (the shared commit tail) -- neither asked of a reference.
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -12111,7 +12133,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38147 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38169 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12277,7 +12299,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17139 (T-6FE392)8 (T-529ABE)` from `TODO.md:29976 (T-529ABE)`: a
+      `TODO.md:17161 (T-6FE392)8 (T-529ABE)` from `TODO.md:29998 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17986,7 +18008,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29998 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -260,9 +260,11 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   ([`basent_autoexec.out`](../../scratchpad/basent_autoexec.out)). The
   restart also cleared every hook; the CF-3300 keeps them
   ([`basent_hooks.out`](../../scratchpad/basent_hooks.out)). The loop is gone.
-  The CF-3300 then prints `No free segment for MemMan`, and zerobas does not
-  yet: MemMan prints it from a hook BASIC calls whenever it resets its stack,
-  and zerobas has no such hook (filed as D-HSTKE).
+  The CF-3300 then prints `No free segment for MemMan` from a hook BASIC
+  calls whenever it resets its stack (`H.STKE`, `&HFEDA`), which zerobas
+  never called; it does since the same day (D-HSTKE, see
+  [the memory map](memory-map.md)), and the message appears
+  ([`stke_when_zb.out`](../../scratchpad/stke_when_zb.out)).
 - **A single-sided disk was read wrongly past its first 9 KB** (fixed
   2026-10-21, D-SIDES). The drive code placed every sector as on a two-sided
   disk; on a single-sided one the two agree only for the first 18 sectors. A

@@ -1,0 +1,269 @@
+== S0 ('14:NEW')  pc=0D76 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEA
+   |  color cload cont  list.  run
+== S1 ('16:10 CLEAR 200,&HCFFF')  pc=0D87 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  color auto  goto  list  run
+== S2 ('19:20 FOR I=0 TO 13:READ A:POKE &HD010+I,A:NEXT:POKE &HD013,PEEK(&HF348):POKE &HD100,0')  pc=0D7E curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I
+   |  color cload cont  list.  run
+== S3 ('24:30 FOR I=0 TO 4:READ A:POKE &HD000+I,A:NEXT')  pc=0D71 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POK
+   |  color cload cont  list.  run
+== S4 ('27:40 POKE &HD200,0:POKE &HFEDB,0:POKE &HFEDC,&HD0:POKE &HFEDA,&HC3:END')  pc=0D86 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &H
+   |  color cload cont  list.  run
+== S5 ('31:50 DATA &HFD,&H21,0,0,&HDD,&H21,&H22,&H40,&H21,0,&HD1,&HC3,&H1C,0')  pc=0D68 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H
+   |  color cload cont  list.  run
+== S6 ('35:60 DATA &H21,0,&HD2,&H34,&HC9')  pc=0C1B curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA
+   |  color cload cont  list.  run
+== S7 ('38:SAVE"STK.BAS"')  pc=7723 curlin=FFFF mode=S1
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  color cload cont  list.  run
+== S8 ('50:RUN')  pc=0C80 curlin=FFFF mode=S1
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  Ok
+   |  RUN
+   |  Ok
+   |  color auto  goto  list  run
+== S9 ('54:PRINT "A";PEEK(&HD200)')  pc=0D7E curlin=FFFF mode=S1
+   |  Ok
+   |  10 CLEAR 200,&HCFFF
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  Ok
+   |  RUN
+   |  Ok
+   |  PRINT "A";PEEK(&HD200)
+   |  A 0
+   |  Ok
+   |  color auto  goto  list  run
+== S10 ('57:LOAD"STK.BAS"')  pc=0D7E curlin=FFFF mode=S1
+   |  20 FOR I=0 TO 13:READ A:POKE
+   |  &HD010+I,A:NEXT:POKE &HD013,P
+   |  EEK(&HF348):POKE &HD100,0
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  Ok
+   |  RUN
+   |  Ok
+   |  PRINT "A";PEEK(&HD200)
+   |  A 0
+   |  Ok
+   |  LOAD"STK.BAS"
+   |  Ok
+   |  color auto  goto  list  run
+== S11 ('68:PRINT "L";PEEK(&HD200)')  pc=0BA2 curlin=FFFF mode=S1
+   |  30 FOR I=0 TO 4:READ A:POKE &
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  Ok
+   |  RUN
+   |  Ok
+   |  PRINT "A";PEEK(&HD200)
+   |  A 0
+   |  Ok
+   |  LOAD"STK.BAS"
+   |  Ok
+   |  PRINT "L";PEEK(&HD200)
+   |  L 1
+   |  Ok
+   |  color auto  goto  list  run
+== S12 ('71:POKE &HD200,0:DEFUSR=&HD010:X=USR(0)')  pc=0D62 curlin=FFFF mode=S1
+   |  HD000+I,A:NEXT
+   |  40 POKE &HD200,0:POKE &HFEDB,
+   |  0:POKE &HFEDC,&HD0:POKE &HFED
+   |  A,&HC3:END
+   |  50 DATA &HFD,&H21,0,0,&HDD,&H
+   |  21,&H22,&H40,&H21,0,&HD1,&HC3
+   |  ,&H1C,0
+   |  60 DATA &H21,0,&HD2,&H34,&HC9
+   |  SAVE"STK.BAS"
+   |  Ok
+   |  RUN
+   |  Ok
+   |  PRINT "A";PEEK(&HD200)
+   |  A 0
+   |  Ok
+   |  LOAD"STK.BAS"
+   |  Ok
+   |  PRINT "L";PEEK(&HD200)
+   |  L 1
+   |  Ok
+   |  POKE &HD200,0:DEFUSR=&HD010:X
+   |  =USR(0)
+   |  color cload cont  list.  run
+== S13 ('78:PRINT "R";PEEK(&HD200)')  pc=0D6B curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  PRINT "R";PEEK(&HD200)
+   |  R 1
+   |  Ok
+   |  color auto  goto  list  run
+== S14 ('82:')  pc=0D7E curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  PRINT "R";PEEK(&HD200)
+   |  R 1
+   |  Ok
+   |  color auto  goto  list  run
