@@ -5163,8 +5163,8 @@ item — do **one item per session** to keep context lean.
       ([`typecmd_wrblkalt-acceptance.out`](scratchpad/typecmd_wrblkalt-acceptance.out)).
 
 
-- [ ] 📂 **D-P1SRCH — SFIRST / SNEXT'S DTA FILL DOES NOT REACH A DTA IN PAGE 1 (found 2026-10-22,
-      D-P1DOS's probe)**
+- [x] 📂 **D-P1SRCH — SFIRST / SNEXT'S DTA FILL DOES NOT REACH A DTA IN PAGE 1 (found 2026-10-22,
+      D-P1DOS's probe; fixed the same evening)**
       🎚️ TIER 1 — happy path: an MSX-DOS program listing files into a buffer at $4000-$7FFF gets
       nothing (A = 0, so it does not even know).
       🤖 **AUTONOMOUS** — measured; the fill needs a page-3 scratch first.
@@ -5175,6 +5175,29 @@ item — do **one item per session** to keep context lean.
       P1_BLIT does not replace it. ➡️ Build the 33-byte entry in a page-3 buffer that is idle
       during a search (read the RAM map: not SECTOR_BUF, which holds the directory sector
       being searched), then one P1_BLIT to the DTA; move SFIRST into the probe's verdict.
+      ✅ **FIXED, NO NEW RAM:** the scratch is the HALF OF SECTOR_BUF the matched entry is not
+      in (the sector is re-read by SNEXT). dsm_p1_pre points $F23D at it and keeps the real
+      DTA in P1_DEST; dsm_p1_post restores $F23D and P1_BLITs 33 bytes (both in front of the
+      $53A7 pin -- the driver fill at $4465 overflowed into an EMPTY disk.rom first). The
+      name, time / date, cluster and size now reach page 1
+      ([`p1dta_run6.out`](scratchpad/p1dta_run6.out)); p1dta-acceptance checks them (knife:
+      no blit -> FAIL, [`p1dos_knife.out`](scratchpad/p1dos_knife.out)). 🔮 "the entry then
+      matches byte for byte" MISSED -> D-SRCHFCB (below).
+
+- [ ] 📇 **D-SRCHFCB — SFIRST / SNEXT'S ENTRY LAYOUT: THE CF-3300 WRITES TWO FORMS, zerobas ONE
+      (found 2026-10-22 by D-P1SRCH)**
+      🎚️ TIER 1 (latent) — happy path: the found entry a DOS program reads; no program seen
+      depending on the differing bytes yet.
+      🤖 **AUTONOMOUS** — measured on the CF-3300 with our own .COM.
+      📏 [`p1dta_run6.out`](scratchpad/p1dta_run6.out) (both DTAs pre-filled with $55, then
+      SFIRST for a 512-byte file): into PAGE 3 ($C100) the CF-3300 writes the FCB form -- +0
+      the drive (01), the name, +13 the attribute, **+16 = 04** (the record count) -- and
+      zerobas the same but +16 = 00. Into PAGE 1 ($4200) the CF-3300 writes the RAW directory
+      entry at +1 -- +0 UNTOUCHED ($55), the attribute at +12, +16 = 00 -- while zerobas writes
+      the FCB form there too. And zerobas leaves $FF at +33 on the page-1 DTA (the CF-3300's
+      $55): unexplained, a byte past the 33 copied. ➡️ (1) +16 the record count, every DTA;
+      (2) the page-1 raw form (+0 kept, the entry at +1); (3) the stray +33 byte -- read
+      P1_BLIT's length and the pre-fill first. 🎚️ Reconsider the tier if a program depends on it.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12313,7 +12336,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38349 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38372 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12479,7 +12502,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17341 (T-6FE392)8 (T-529ABE)` from `TODO.md:30178 (T-529ABE)`: a
+      `TODO.md:17364 (T-6FE392)8 (T-529ABE)` from `TODO.md:30201 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18188,7 +18211,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30178 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30201 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

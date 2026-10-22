@@ -713,6 +713,36 @@ hkf_syn:
                 ld      ix,stmt_error       ; ERR 2, as req_comma raised it
                 jp      calbak
 
+; dsm_p1_pre / dsm_p1_post -- D-P1SRCH (2026-10-22): SFIRST / SNEXT's 33-byte entry
+; reaches a DTA in page 1. The fill (disk/kernel.asm dsm_found) stores byte by byte
+; and with an overlapping LDIR into (DOS_DTAPTR) -- into this ROM when the DTA is in
+; page 1: the CF-3300 had the entry at $4200, zerobas $FF (scratchpad/
+; p1dta_run4.out). So the fill goes to a scratch and one P1_BLIT carries it. The
+; scratch is the HALF OF SECTOR_BUF the matched entry is not in -- the directory
+; sector is not needed after the match (SNEXT reads it again), so no new RAM. The
+; real DTA waits in P1_DEST (dskio's bounce word; no dskio runs during the fill).
+; Sited in front of $53A7: the driver fill at $4465 was full (an EMPTY disk.rom).
+;   pre:  in HL = the matched entry (kept)     post: clobbers A, BC, DE, HL
+dsm_p1_pre:
+                push    hl
+                ld      de, (DOS_DTAPTR)
+                ld      (P1_DEST), de       ; the real DTA
+                ld      de, SECTOR_BUF + 256
+                or      a
+                sbc     hl, de              ; CF: the entry is in the first half
+                ld      hl, SECTOR_BUF + 256
+                jr      c, dpp_set
+                ld      hl, SECTOR_BUF
+dpp_set:
+                ld      (DOS_DTAPTR), hl    ; the fill goes to the scratch
+                pop     hl
+                ret
+dsm_p1_post:
+                ld      hl, (DOS_DTAPTR)    ; the scratch
+                ld      de, (P1_DEST)       ; the real DTA
+                ld      (DOS_DTAPTR), de
+                ld      bc, 33
+                jp      P1_BLIT
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)
@@ -7249,6 +7279,7 @@ dsm_skip:
                 ld      (FAT_DIRREM), hl
                 jr      dsm_secloop
 dsm_found:
+                call    dsm_p1_pre          ; D-P1SRCH: fill a scratch, blit it after
                 ; HL = matched 32-byte directory entry. Build the runtime DTA as the
                 ; MSX-DOS SFIRST/SNEXT "found FCB" (drive + unopened FCB), matching
                 ; stock byte-for-byte in every field COMMAND.COM's DIR reads (name,
@@ -7307,6 +7338,7 @@ dsm_found:
 dsm_nohc:
                 ld      bc, 10
                 ldir                        ; -> DTA[23..32]
+                call    dsm_p1_post         ; D-P1SRCH: the 33 bytes to the real DTA
                 call    dsm_bump            ; BDOS_SRCHIDX := match-index + 1
                 xor     a                   ; A = $00 = found
                 ret

@@ -111,8 +111,10 @@ block. The CF-3300 answers that whole sequence and so does zerobas since
 zerobas answers that since 2026-10-22. A loader may also switch RAM into the
 memory range the disk system occupies and read its program there; the data
 then has to land in that RAM, not in the disk ROM. zerobas does so since
-2026-10-22, for a boot loader and for an MSX-DOS program reading a block
-(function `&H27`) alike. Machine code called from a BASIC program (with `USR`) reaches the
+2026-10-22, for a boot loader and for an MSX-DOS program alike: reading a
+block (`&H27`) or a record (`&H14`), or the entry a file search (`&H11`)
+returns. The exact bytes of that search entry still differ in a few places
+(see the TODO item D-SRCHFCB). Machine code called from a BASIC program (with `USR`) reaches the
 same functions: there the disk system is not switched in, so zerobas's jump
 leads to a small routine in RAM that calls it across the slots and comes back.
 A search for a file from a `USR` routine answers `A=0` and fills the transfer

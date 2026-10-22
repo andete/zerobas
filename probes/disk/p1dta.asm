@@ -39,6 +39,17 @@ BDOS    equ     $0005
         call    BDOS
         ld      ($C002), a
         ; --- SFIRST ($11) into $4200: the directory entry -------------------------
+        ; $55 in both DTAs first: does SFIRST WRITE every byte of its 33?
+        ld      hl, $4200
+        ld      (hl), $55
+        ld      de, $4201
+        ld      bc, 40
+        ldir
+        ld      hl, $C100
+        ld      (hl), $55
+        ld      de, $C101
+        ld      bc, 40
+        ldir
         ld      de, $4200
         ld      c, $1A
         call    BDOS
@@ -46,6 +57,13 @@ BDOS    equ     $0005
         ld      c, $11              ; SFIRST
         call    BDOS
         ld      ($C003), a
+        ; --- and SFIRST into $C100 (page 3), the layout without page 1 in it --------
+        ld      de, $C100
+        ld      c, $1A
+        call    BDOS
+        ld      de, fcb4
+        ld      c, $11
+        call    BDOS
         ld      c, $00              ; back to DOS
         call    BDOS
         ret
@@ -54,4 +72,6 @@ fcb:    db      0, "P1DATA  BIN"
 fcb2:   db      0, "P1DATA  BIN"
         ds      25, 0
 fcb3:   db      0, "P1DATA  BIN"
+        ds      25, 0
+fcb4:   db      0, "P1DATA  BIN"
         ds      25, 0
