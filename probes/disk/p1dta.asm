@@ -8,6 +8,11 @@
 ; Our own code and our own data file (P1DATA.BIN, written by the probe).
 BDOS    equ     $0005
         org     $0100
+        in      a, ($A8)
+        ld      ($C004), a          ; the slot state a DOS program runs with:
+        ld      a, ($FFFF)          ; primary ($A8) and slot 3's subslots
+        cpl
+        ld      ($C005), a
         ld      de, fcb
         ld      c, $0F              ; OPEN
         call    BDOS
@@ -64,6 +69,18 @@ BDOS    equ     $0005
         ld      de, fcb4
         ld      c, $11
         call    BDOS
+        ; --- and a 300-byte file into $C200: the record count's rounding -------------
+        ld      hl, $C200
+        ld      (hl), $55
+        ld      de, $C201
+        ld      bc, 40
+        ldir
+        ld      de, $C200
+        ld      c, $1A
+        call    BDOS
+        ld      de, fcb5
+        ld      c, $11
+        call    BDOS
         ld      c, $00              ; back to DOS
         call    BDOS
         ret
@@ -74,4 +91,6 @@ fcb2:   db      0, "P1DATA  BIN"
 fcb3:   db      0, "P1DATA  BIN"
         ds      25, 0
 fcb4:   db      0, "P1DATA  BIN"
+        ds      25, 0
+fcb5:   db      0, "P1SMALL BIN"
         ds      25, 0

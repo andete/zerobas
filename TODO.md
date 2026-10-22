@@ -5184,8 +5184,8 @@ item — do **one item per session** to keep context lean.
       no blit -> FAIL, [`p1dos_knife.out`](scratchpad/p1dos_knife.out)). 🔮 "the entry then
       matches byte for byte" MISSED -> D-SRCHFCB (below).
 
-- [ ] 📇 **D-SRCHFCB — SFIRST / SNEXT'S ENTRY LAYOUT: THE CF-3300 WRITES TWO FORMS, zerobas ONE
-      (found 2026-10-22 by D-P1SRCH)**
+- [x] 📇 **D-SRCHFCB — SFIRST / SNEXT'S ENTRY LAYOUT: THE CF-3300 WRITES TWO FORMS, zerobas ONE
+      (found 2026-10-22 by D-P1SRCH; fixed the same night)**
       🎚️ TIER 1 (latent) — happy path: the found entry a DOS program reads; no program seen
       depending on the differing bytes yet.
       🤖 **AUTONOMOUS** — measured on the CF-3300 with our own .COM.
@@ -5198,6 +5198,33 @@ item — do **one item per session** to keep context lean.
       $55): unexplained, a byte past the 33 copied. ➡️ (1) +16 the record count, every DTA;
       (2) the page-1 raw form (+0 kept, the entry at +1); (3) the stray +33 byte -- read
       P1_BLIT's length and the pre-fill first. 🎚️ Reconsider the tier if a program depends on it.
+      ✅ **FIXED.** The +15 offset first read as +16 was a miscount; it IS the record count. A
+      second file (300 bytes, [`srchfcb_ref.out`](scratchpad/srchfcb_ref.out)) reads 3: the
+      CEILING of size / 128. 🔧 dsm_p1_post (the 33 bytes are in the scratch there) calls
+      dsm_rc (fat.asm, in front of the $477D pin -- the $53A7 hole overflowed): +15 =
+      ceil(size / 128), capped at 128 (own reading of the CP/M extent, unmeasured); and into
+      page 1 it moves the attribute to +12, clears +13 / +15 and blits 32 bytes to DTA+1.
+      Page 3 now matches byte for byte at both sizes; page 1 at +1..+32
+      ([`srchfcb_run2.out`](scratchpad/srchfcb_run2.out)). Knives K-RC / K-RAW both FAIL the
+      probe. And the stray bytes were NOT ours: +0 and +33 are the program's own $55 pre-fill,
+      which never reached page 1 on zerobas -- the next item.
+
+- [ ] 🧠 **D-TPAP1 — AN MSX-DOS PROGRAM RUNS WITH THE DISK ROM IN PAGE 1, NOT RAM (found 2026-10-22
+      by D-SRCHFCB)**
+      🎚️ TIER 1 — happy path: a DOS program larger than ~16 KB, or one using $4000-$7FFF, cannot
+      work; its own stores there go to the ROM.
+      🤖 **AUTONOMOUS** — measured; the DOS environment's page-1 switching (read first).
+      📏 [`srchfcb_slots.out`](scratchpad/srchfcb_slots.out): our own .COM reads $A8 and slot 3's
+      subslots as its first instructions -- the CF-3300 A8 = $FF, subslots $00 (page 1 = RAM
+      3-0); zerobas A8 = $FF, subslots **$04** (page 1 = 3-1, the disk ROM). The program's own
+      LDIR pre-fill of $4200 never reached RAM on zerobas. The BDOS calls into page 1 work
+      since D-P1RDBLK / D-P1DOS / D-P1SRCH because they blit with page 1 switched to RAM; a
+      program's plain stores are not so lucky. Suspect: the $F368 / $F368+3 segment hooks
+      (wa_seg_rom / wa_seg_ram, "map the disk ROM / RAM into page 1") are built only under
+      the $FF gate, so on the C-BIOS target nothing puts RAM back into page 1 for the TPA.
+      ➡️ Read how MSXDOS.SYS's page-1 switching reaches us on the C-BIOS target (breakpoints
+      on $F368 / $F368+3, our own code), then make the TPA's page 1 RAM; p1dta-acceptance prints
+      the subslot bytes every run as a KNOWN GAP until it matches.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12336,7 +12363,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38372 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38399 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12502,7 +12529,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17364 (T-6FE392)8 (T-529ABE)` from `TODO.md:30201 (T-529ABE)`: a
+      `TODO.md:17391 (T-6FE392)8 (T-529ABE)` from `TODO.md:30228 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18211,7 +18238,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30201 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30228 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

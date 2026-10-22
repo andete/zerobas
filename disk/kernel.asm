@@ -741,8 +741,33 @@ dsm_p1_post:
                 ld      hl, (DOS_DTAPTR)    ; the scratch
                 ld      de, (P1_DEST)       ; the real DTA
                 ld      (DOS_DTAPTR), de
+                call    dsm_rc              ; D-SRCHFCB: +15 = the record count
+                ld      a, d
+                and     $C0
+                cp      $40
                 ld      bc, 33
+                jp      nz, P1_BLIT         ; not page 1: the FCB form, 33 bytes
+                ; 🔴 D-SRCHFCB: into PAGE 1 the CF-3300 writes the RAW directory entry
+                ; at DTA+1 -- +0 untouched, the attribute at +12, +13..+22 zero, no
+                ; record count (scratchpad/srchfcb_ref.out). From the FCB form: the
+                ; attribute down one byte, +13 and +15 cleared, 32 bytes from +1.
+                push    hl
+                ld      bc, 13
+                add     hl, bc
+                ld      a, (hl)             ; the attribute (+13)
+                ld      (hl), 0
+                dec     hl
+                ld      (hl), a             ; -> +12
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      (hl), 0             ; +15: no record count in the raw form
+                pop     hl
+                inc     hl                  ; from +1
+                inc     de                  ; to DTA+1
+                ld      bc, 32
                 jp      P1_BLIT
+
                 ds      $53A7 - $, $00  ; pad up to the pinned $53A7 CONOUT-worker entry (M22b)
 k_53A7:
                 jp      conout_body     ; $53A7: BDOS $02 CONOUT canonical entry (M22b slice 1)

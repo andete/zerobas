@@ -82,6 +82,46 @@ k_4720:         jp      wrabs_body          ; $4720: BDOS $30 WRABS canonical en
 ; (fm_fatacc onward, unchanged) is relocated below to make room -- position-
 ; free, reached only by label from fat_mount's own `jp fat_mount_tail`
 ; fall-through above.
+; dsm_rc -- D-SRCHFCB: the found entry's +15 = its record count, ceil(size / 128)
+; (the CF-3300: 512 bytes -> 4, 300 -> 3; scratchpad/srchfcb_ref.out), capped at
+; 128 -- one extent's worth (own reading of the CP/M field, unmeasured).
+;   in: HL = the 33-byte FCB form (size at +29..+32)   keeps HL, DE
+; Sited in front of the $477D pin: the $53A7 hole could not take it (EMPTY disk.rom).
+dsm_rc:
+                push    de
+                push    hl
+                ld      bc, 29
+                add     hl, bc
+                ld      e, (hl)
+                inc     hl
+                ld      d, (hl)             ; DE = size, low word
+                inc     hl
+                ld      a, (hl)
+                inc     hl
+                or      (hl)                ; size >= 64K?
+                jr      nz, drc_max
+                ld      hl, 127
+                add     hl, de              ; HL = size + 127
+                jr      c, drc_max
+                ld      a, h
+                cp      $40
+                jr      nc, drc_max         ; 16K or more: one extent's 128
+                ld      a, l
+                rla                         ; CF = bit 7 of L
+                ld      a, h
+                rla                         ; A = (size + 127) >> 7
+                jr      drc_set
+drc_max:
+                ld      a, 128
+drc_set:
+                pop     hl
+                push    hl
+                ld      bc, 15
+                add     hl, bc
+                ld      (hl), a
+                pop     hl
+                pop     de
+                ret
                 ds      $477D - $, $00      ; pad up to the pinned $477D WRSEQ-worker entry
 k_477D:
                 jp      wrseq_body          ; $477D: BDOS $15 WRSEQ canonical entry (M24 slice B)

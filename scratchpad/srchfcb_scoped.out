@@ -1,0 +1,76 @@
+python3 tools/pick_gates.py --run 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 9s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== ⏱ kwtime / kwram not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
+=== emulator tier RUNS: forced by --full ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0             11s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0            100s  selftest-check
+  (post-mutator refresh 9s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 51 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              5s  basic-reloc
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              1s  subrom-closure-check
+  rc=0            511s  unit-test
+  rc=0              1s  deadcode
+  rc=0              5s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              3s  ram-map-check
+  rc=0              5s  pin-check
+  rc=0              0s  build-assert-check
+  rc=0              6s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              0s  stubinl-check
+  rc=0              2s  rowshape-check
+  rc=0              8s  injector-check
+  rc=0              0s  dead-alias-check
+  rc=0              0s  alias-order-check
+  rc=0              3s  hostkill-check
+  rc=0              1s  session-path-check
+  rc=0              1s  temp-root-check
+  rc=0              0s  tracked-inputs-check
+  rc=0              6s  todo-citation-check
+  rc=0              1s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              1s  error-alphabet-check
+  rc=0              3s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              4s  disk-mount-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              0s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              1s  preflight-check
+  rc=0              5s  latch-check
+  rc=0             13s  patch-freshness-check
+  rc=0              3s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+  rc=0            406s  kwsweep
+  rc=0             20s  string-acceptance
+  rc=0              9s  error-acceptance
+  rc=0              3s  runline-acceptance
+  rc=0              6s  keystr-acceptance
+  rc=0             13s  cursor-acceptance
+  rc=0              2s  p1dta-acceptance
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=0              0s  tiers-md-check
+
+=== wall 521s (9s build + 512s gates) ===
+GATES: 56/56 green
+hashes: 9bb420f8 20dbc3d2 5f39c947 46e83722 558da8c9
+GATE TIER: SCOPED
+  why: ROM change with no enclosing ex_ handler (canary only, the daily FULL backs it): disk/fat.asm disk/kernel.asm
+  why: probe/tool change: probes/disk/disk_probe_p1dta.py scratchpad/missop3_probe.py scratchpad/playop_probe.py
+  hours since the last full green: 1.0 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (7): cursor-acceptance error-acceptance keystr-acceptance kwsweep p1dta-acceptance runline-acceptance string-acceptance
+GATE TIER RAN: SCOPED (7 emulator suites)
