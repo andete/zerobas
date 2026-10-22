@@ -55,6 +55,26 @@ session and the loop resumes exactly where it stopped.
     1. Re-run the disk corpus (`diskcorpus_run.py --reuse-ref`) to score today's disk fixes.
     2. Then D-DISKRUN's remaining leads (ROBOCOP, the ZB-NOBOOT rows).
     3. Then Demonia's last milliseconds before $0000.
+- **Evening 10-22 (pushed, FULL-gated):**
+  - **The disk corpus was re-scored**: BOTH-RUN 92 -> 108, ZB-NOBOOT 27 -> 11
+    (diskcorpus_rerun2.out).
+  - **D-BASENTRUN's other half**: the boot code's FIRST call also runs under DOS_TRY
+    (boot_call0), which fixed facdemo5.
+  - **D-BDOSABS**: RDABS and WRABS for boot loaders.
+  - **The table dispatch now passes the caller's HL.** My own bug, fixed. D-F37DSLOT was
+    filed on a wrong diagnosis and closed.
+  - **D-P1RDBLK**: page-1 DTAs are honoured, and P1_BLIT is installed on every host. starsh2
+    loads its game.
+  - **The dosbasic probe no longer types over the AUTOEXEC.BAT that zerobas now runs.**
+  - 🔴 **Commit 7e854f60's message says "SCOPED 49/49"; its log says 55/55** (corrected in
+    bd101027's message).
+  - ➡️ **NEXT:**
+    - re-read dosdate / strout / wrblk_alt (the same stale run_once premise);
+    - elite's MSX-DOS warm boot ($0000 has nothing);
+    - f1sp3d-1 and starsh2 past their loaders;
+    - the DOS-mode handlers with a page-1 DTA;
+    - Demonia's last milliseconds;
+    - ROBOCOP.
 - **PROBES 10-22:** each logs addresses and registers only; the game is never decoded.
   - tapetrace_probe.py: work-area pointers and the line chain once a second; --watch is a
     write watchpoint, zerobas only.
