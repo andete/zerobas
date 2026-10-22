@@ -108,7 +108,7 @@ type_mismatch_error equ 042FFH
 stmt_error equ 042F1H
 lrset_finish equ 07079H
 fch_ctx_addr equ 06E68H
-disk_error equ 0685EH
+disk_error equ 068BBH
 read_line equ 045E9H
 fch_close_all equ 06F28H
 eval_int16_checked equ 04538H

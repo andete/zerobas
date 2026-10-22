@@ -87,6 +87,17 @@ None known.
 
 ## What we found, and how
 
+- **A program saved from another start address loaded as garbage** (fixed
+  2026-10-22, D-LOADBASE). A saved program records where each line sat on
+  the machine that saved it. zerobas worked out the first line's length by
+  assuming that machine's program started at `&H8001`, as its own does; one
+  saved with the start moved to `&HC001` (a 16 KB machine's, or after
+  `POKE &HF676`) listed as junk. The CF-3300 loads it, also when that line
+  holds numbers like `256` whose stored form contains a zero byte
+  ([`txttab_saveload.out`](../../scratchpad/txttab_saveload.out),
+  [`txttab_saveload2.out`](../../scratchpad/txttab_saveload2.out)). zerobas
+  now reads the first line to its end instead, on tape and on disk
+  ([`loadbase_zb.out`](../../scratchpad/loadbase_zb.out)).
 - **Ctrl-STOP could not break a tape read once the file was found** (fixed
   2026-10-11, D-CASRBRK). The VG-8020 stops the read and says `Device I/O
   error` (19); zerobas read on to the end, because its cassette routines
@@ -134,6 +145,8 @@ None known.
 
 ## Tests that cover it
 
+- `tests/test_loadbase.py` (in `make unit-test`) — a program saved from
+  another start address loads the same, and the tape search skips it whole.
 - `make kwsweep` — the named form (`Skip :ZQ` then `Found:ZR`), the bare form,
   and `CLOAD 5`, against the VG-8020 with a prepared tape.
 - `make castail-acceptance` — the search rows, two programs on one tape, and

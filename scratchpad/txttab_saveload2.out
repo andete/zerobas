@@ -1,0 +1,24 @@
+### CF-3300 writes MV2.BAS from TXTTAB=$C001, line 10 holds 256 ($1C $00 $01)
+   |  SAVE"MV2.BAS"
+   |  Ok
+   |  color auto  goto  list  run
+### National_CF-3300 loads it
+   |  10 A%=256:B%=&H100:PRINT A%;B
+   |  %
+   |  20 PRINT "TWO"
+   |  Ok
+   |  RUN
+   |   256  256
+   |  TWO
+   |  Ok
+   |  color auto  goto  list  run
+### C-BIOS_MSX1_EU_REPACK_DISK loads it
+   |   C#  @  F:|      G  C###s#r :  D 0A
+   |      F   L  T        F    I     ~  I
+   |  . ;   E;:     w   #"LOR.
+   |  49920 -EQVy
+   |  32192 u tBASE INSTRMAX(ERLMAX$0LINE w
+   |   ASEMAX>.;<=16E-480MAXTAB(9 w AX<.=14
+   |  18E-48MAX50PRESET37MAX 1LINE w ASEMAX
+   |  RENUM2*CLOADANDMAX$0LINE w ASE ~
+   |  65535

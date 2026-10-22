@@ -302,14 +302,15 @@ ctp_data_tokenised:
                 jp      c,dpl_dio           ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 
                 ; --- start a fresh program: store cursor at the text base ---
+ctp_begin:                                  ; (tests/test_loadbase.py enters here)
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
-                ld      (CLINK),hl          ; A_0 = the saving machine's text base.
-                                            ; The saved link words are consecutive
-                                            ; absolute addresses; the first line's
-                                            ; predecessor address is the saving
-                                            ; machine's text base, assumed == ours
-                                            ; (TXTBASE $8001, the MSX disk-BASIC base)
+                ld      hl,0                ; 🔴 D-LOADBASE: A_0, the SAVING machine's
+                ld      (CLINK),hl          ; text base, is NOT known -- it was assumed
+                                            ; to be ours ($8001), and a program SAVEd
+                                            ; with TXTTAB at $C001 loaded as garbage
+                                            ; (scratchpad/txttab_saveload.out). 0 marks
+                                            ; the first line, which is scanned instead
 
                 ; --- read the program image, stopping at the $0000 end-link --
                 ; The device half does NOT signal a clean end of data: once the
@@ -343,11 +344,16 @@ ctp_line:
                                             ; BC = saved link word L_n = A_{n+1}
                 ld      a,b
                 or      c
-                jr      z,ctp_done          ; $0000 link -> program complete
+                jp      z,ctp_done          ; $0000 link -> program complete (jp:
+                                            ; ctp_scan sits between, D-LOADBASE)
 
                 ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
                 ld      hl,(CLINK)          ; HL = A_n
                 ld      (CLINK),bc          ; advance CLINK = L_n for the next line
+                ld      a,h                 ; D-LOADBASE: A_n = 0 is the first line,
+                or      l                   ; whose length the links cannot give --
+                ld      de,$FFFF            ; DE = $FFFF: scan it (flags kept)
+                jr      z,ctp_len
                 ld      a,c
                 sub     l
                 ld      e,a
@@ -360,6 +366,7 @@ ctp_line:
                 dec     de                  ; DE = body length (incl. its $00 term)
 
                 ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
+ctp_len:
                 push    de                  ; guard body length across TAPIN/stores
                 ld      hl,(CLPTR)
                 ld      de,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling, less the
@@ -386,6 +393,10 @@ ctp_line:
                 jr      c,ctp_err_pop
                 call    cas_put
                 pop     de                  ; DE = body length
+                ld      a,d                 ; D-LOADBASE: $FFFF -> the first line,
+                and     e                   ; copied up to its own $00
+                inc     a
+                jr      z,ctp_scan
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all)
 ctp_body:
@@ -419,6 +430,36 @@ ctp_err_pop:
 ctp_oom_pop:
                 pop     de
                 jr      ctp_oom
+
+; ctp_scan -- D-LOADBASE: copy the first line's body up to its $00, passing over
+; the bytes of each constant (tok_payload: a constant may hold $00), then go on
+; by link deltas from CLINK = L_1. Same bounds check and errors as ctp_body.
+ctp_scan:
+                ld      e,0                 ; E = constant bytes still to pass
+ctps_lp:
+                push    de
+                ld      hl,(CLPTR)          ; bounds check (as ctp_body)
+                ld      de,(TXTCEIL)
+                or      a
+                sbc     hl,de
+                jr      nc,ctp_oom_pop
+                call    TAPIN
+                jr      c,ctp_err_pop
+                pop     de
+                ld      d,a                 ; D = the byte (cas_put keeps D, E)
+                call    cas_put
+                ld      a,e
+                or      a
+                jr      z,ctps_tok
+                dec     e                   ; inside a constant: any byte, $00 too
+                jr      ctps_lp
+ctps_tok:
+                or      d                   ; A = the byte
+                jp      z,ctp_line          ; its $00: the first line is done
+                call    tok_payload         ; A = its constant's length (C clobbered)
+                ld      e,a
+                jr      ctps_lp
+
 
 ctp_done:
                 call    TAPIOF              ; motor off (program fully read)
@@ -515,6 +556,8 @@ cput_adv:
                 inc     hl
                 ld      (CLPTR),hl
                 ret
+
+                include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE)
 
 ; --- verify_error: report a CLOAD? mismatch (memory left untouched) -----------
 ; D-CASTAIL: this one IS edited in place, unlike load_error, and the reason is a

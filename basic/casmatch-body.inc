@@ -198,8 +198,8 @@ csd_tok:
                 ; tape/tape.asm). A CLOAD that reads a file leaves the same seven.
                 call    TAPION              ; data block leader
                 ret     c
-                ld      hl,TXTBASE
-                ld      (CLINK),hl          ; A_0 = saving machine text base (as ctp)
+                ld      hl,0                ; D-LOADBASE: A_0 unknown (as ctp) --
+                ld      (CLINK),hl          ; 0 = scan the first line
 csd_tok_line:
                 call    TAPIN               ; link low
                 ret     c
@@ -214,6 +214,9 @@ csd_tok_line:
                 jr      z,csd_ok            ; $0000 link -> file complete
                 ld      hl,(CLINK)          ; A_n
                 ld      (CLINK),bc          ; advance CLINK = L_n
+                ld      a,h                 ; D-LOADBASE: A_n = 0 -> the first line
+                or      l
+                jr      z,csd_tok_scan
                 ld      a,c
                 sub     l
                 ld      e,a
@@ -232,6 +235,31 @@ csd_tok_disc:
                 jr      c,csd_tok_err
                 dec     de
                 jr      csd_tok_disc
+; csd_tok_scan -- D-LOADBASE: discard the first line's number, then its body up
+; to its $00, passing over each constant's bytes (tok_payload), as ctp_scan.
+csd_tok_scan:
+                call    TAPIN               ; line number low
+                jr      c,csd_tok_err
+                call    TAPIN               ; line number high
+                jr      c,csd_tok_err
+                ld      e,0                 ; E = constant bytes still to pass
+csdts_lp:
+                push    de
+                call    TAPIN
+                pop     de
+                jr      c,csd_tok_err
+                ld      d,a                 ; D = the byte
+                ld      a,e
+                or      a
+                jr      z,csdts_tok
+                dec     e                   ; inside a constant: any byte, $00 too
+                jr      csdts_lp
+csdts_tok:
+                or      d
+                jr      z,csd_tok_line      ; its $00: the first line is done
+                call    tok_payload
+                ld      e,a
+                jr      csdts_lp
 csd_ok:
                 or      a                   ; CF clear = data consumed
                 ret

@@ -110,6 +110,17 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 
 ## What we found, and how
 
+- **A program saved from another start address loaded as garbage** (fixed
+  2026-10-22, D-LOADBASE). A saved program records where each line sat on
+  the machine that saved it. zerobas worked out the first line's length by
+  assuming that machine's program started at `&H8001`, as its own does; one
+  saved with the start moved to `&HC001` (a 16 KB machine's, or after
+  `POKE &HF676`) listed as junk. The CF-3300 loads it, also when that line
+  holds numbers like `256` whose stored form contains a zero byte
+  ([`txttab_saveload.out`](../../scratchpad/txttab_saveload.out),
+  [`txttab_saveload2.out`](../../scratchpad/txttab_saveload2.out)). zerobas
+  now reads the first line to its end instead, on disk and on tape
+  ([`loadbase_zb.out`](../../scratchpad/loadbase_zb.out)).
 - **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `LOAD "CAS:AB.C"`
   looks for `AB`, as on the VG-8020
   ([`casname_run7.out`](../../scratchpad/casname_run7.out)).
@@ -184,6 +195,8 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 - `make loadtail-acceptance` — the option errors, on disk and on cassette.
 - `make loaddi-acceptance` — the clock keeps running during a disk `LOAD`,
   against the CF-3300.
+- `tests/test_loadbase.py` (in `make unit-test`) — programs saved from `&H8001`,
+  `&H9000` and `&HC001` load the same, from disk and from tape.
 - `make diskascii-acceptance` — `LOAD` of an ASCII file, against the CF-3300.
 - `make dskmsg-acceptance` — `File not found` and the other disk messages.
 - `make castail-acceptance`, `make cas-ascii-acceptance`,

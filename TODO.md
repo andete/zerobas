@@ -5082,6 +5082,27 @@ item — do **one item per session** to keep context lean.
       lengths from link deltas, so a file SAVEd with TXTTAB moved may load wrongly anywhere --
       measure that on the CF-3300 too (SAVE at $C001, LOAD at $8001, LIST) before choosing.
       The ceiling (TXTCEIL, $E36A disk / $F380 diskless) is above $C001 / $D001.
+      ✅ **PART 1 DONE (2026-10-22) -- D-LOADBASE: a program SAVEd from another base LOADs.**
+      Measured first ([`txttab_saveload.out`](scratchpad/txttab_saveload.out)): the CF-3300
+      SAVEs a program with TXTTAB at $C001 and LOADs it back at $8001 -- LIST and RUN right;
+      zerobas listed junk. With `256` / `&H100` in line 1 ($1C $00 $01, $0C $00 $01) too
+      ([`txttab_saveload2.out`](scratchpad/txttab_saveload2.out)): the CF-3300 is token-aware.
+      🔮 "zerobas garbles it" HIT. 🔧 All three tokenised loaders start CLINK at 0 and SCAN the
+      first line to its $00, passing over each constant's bytes (basic/tokpay-body.inc
+      tok_payload, a copy in each ROM); later lines keep the link deltas: ctp_line (CLOAD /
+      LOAD from tape, basic/cload.asm), hdl_line (disk LOAD; the scan sits in disk/driver.asm's
+      $4465 fill -- kernel.asm's region overflowed to an EMPTY disk.rom first), csd_tok (the
+      tape search's skip, zerobas-sub). zerobas then LOADs both files as the CF-3300
+      ([`loadbase_zb.out`](scratchpad/loadbase_zb.out)). tests/test_loadbase.py: tok_payload
+      over 256 bytes; each loader on images from $8001 / $9000 / $C001 (knives
+      [`loadbase_knife.out`](scratchpad/loadbase_knife.out): K1 = the old $8001 start cuts 6,
+      K2 = tok_payload 0 cuts 10). 🔴 THE FIRST KNIFE RUN READ "1 FAIL" FOR A CUT THAT CRASHED
+      THE TEST: a StackLost after row 1 hid every row after it, and grepping FAIL counted only
+      what printed. Loader calls are now guarded (a runaway is a FAIL row) and the knives are
+      scored from the summary. And the CLOAD rows were BLIND to K1 at first: the test poked
+      CLINK itself and entered past the init; they enter at ctp_begin now.
+      ➡️ PART 2 (open): keep a moved TXTTAB across NEW / LOAD / RUN"file" (the writers above)
+      -- megadoom's loop, and own-program txttab_move.out.
 
 - [x] 🪝 **D-HSTKE — zerobas NEVER CALLED H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
       STACK (found 2026-10-22 by D-DISKRUN's MemMan class; fixed the same day)**
@@ -12157,7 +12178,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38193 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38214 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12323,7 +12344,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17185 (T-6FE392)8 (T-529ABE)` from `TODO.md:30022 (T-529ABE)`: a
+      `TODO.md:17206 (T-6FE392)8 (T-529ABE)` from `TODO.md:30043 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18032,7 +18053,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30022 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30043 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

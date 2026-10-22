@@ -1,0 +1,31 @@
+### CF-3300 writes MV.BAS from TXTTAB=$C001
+   |  EEK(&HF677))
+   |  C001
+   |  Ok
+   |  color auto  goto  list  run
+### National_CF-3300 loads it at its own base
+   |  20 PRINT "BB":GOTO 30
+   |  30 PRINT "END"
+   |  Ok
+   |  RUN
+   |  AAAA
+   |  BB
+   |  END
+   |  Ok
+   |  PRINT HEX$(PEEK(&HF676)+256*P
+   |  EEK(&HF677));" ";HEX$(PEEK(&H
+   |  F6C2)+256*PEEK(&HF6C3))
+   |  8001 802D
+   |  Ok
+   |  color auto  goto  list  run
+### C-BIOS_MSX1_EU_REPACK_DISK loads it at its own base
+== S4 ('39:')  pc=0B72 curlin=FFFF mode=S0
+   |   C#  @  F:|      G  C###s#r :  D 0A
+   |      F   L  T        F    I     ~  I
+   |  . ;   E;:     w   #"LOR.
+   |  49920 -EQVy
+   |  32192 u tBASE INSTRMAX(ERLMAX$0LINE w
+   |   ASEMAX>.;<=16E-480MAXTAB(9 w AX<.=14
+   |  18E-48MAX50PRESET37MAX 1LINE w ASEMAX
+   |  RENUM2*CLOADANDMAX$0LINE w ASE ~
+   |  65535

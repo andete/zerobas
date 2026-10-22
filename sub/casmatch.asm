@@ -117,4 +117,5 @@ cas_ascii_setup:
                 ret
 
                 include "basic/casmatch-body.inc"    ; cas_open_match..cas_skip_data
+                include "basic/tokpay-body.inc"      ; tok_payload (D-LOADBASE)
                 include "basic/cal-refill-body.inc"  ; cal_refill (sub-local duplicate)

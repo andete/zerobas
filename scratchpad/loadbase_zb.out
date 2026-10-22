@@ -1,0 +1,21 @@
+### zerobas loads MV.BAS (SAVEd by the CF-3300 with TXTTAB at $C001)
+   |  10 PRINT "AAAA"
+   |  20 PRINT "BB":GOTO 30
+   |  30 PRINT "END"
+   |  ZB
+   |  RUN
+   |  AAAA
+   |  BB
+   |  END
+   |  ZB
+   |  color  auto   goto   list   run
+### zerobas loads MV2.BAS (SAVEd by the CF-3300 with TXTTAB at $C001)
+== S3 ('35:')  pc=01CC curlin=FFFF mode=S0
+   |  10 A%=256:B%=&H100:PRINT A%;B%
+   |  20 PRINT "TWO"
+   |  ZB
+   |  RUN
+   |   256  256
+   |  TWO
+   |  ZB
+   |  color  auto   goto   list   run

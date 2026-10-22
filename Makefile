@@ -97,6 +97,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc basic/cascut-body.inc \
+         basic/tokpay-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
          basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
          basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
@@ -120,7 +121,8 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               basic/fat-prim-body.inc basic/fat-delete-body.inc basic/fatfits-body.inc \
               basic/fatio-body.inc \
               basic/fatiocreate-body.inc basic/fatiow-body.inc \
-              basic/sv-diskwr.inc basic/sv-savdisk.inc basic/sv-bsvdisk.inc
+              basic/sv-diskwr.inc basic/sv-savdisk.inc basic/sv-bsvdisk.inc \
+              basic/tokpay-body.inc
 # A bare `make` builds `all`, wherever that rule sits: it moved below SUB2_ROM's
 # definition (2026-10-13), and the first rule in the file would otherwise win.
 .DEFAULT_GOAL := all
@@ -232,6 +234,7 @@ SUB_PARTS := sub/equates.inc sub/deftype.asm sub/tkfloat.asm sub/mathwrap.asm su
              sub/fatprim.asm basic/fat-prim-body.inc \
              sub/lineedit.asm \
              sub/casmatch.asm basic/casmatch-body.inc basic/cal-refill-body.inc \
+             basic/tokpay-body.inc \
              sub/fcbname.asm basic/fcbname-body.inc \
              sub/lrsetst.asm sub/deffn.asm \
              sub/bload.asm basic/bload-body.inc basic/fatio-body.inc basic/pdfcb-body.inc basic/cascap-body.inc basic/cascut-body.inc \

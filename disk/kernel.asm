@@ -5286,7 +5286,8 @@ hk_dpload:
                 ; so a failed load leaves these cells as untouched as before.
                 ld      hl,TXTBASE
                 ld      (CLPTR),hl
-                ld      (CLINK),hl          ; A_0 = saving machine's text base
+                ld      hl,0                ; D-LOADBASE: A_0 (the SAVING machine's
+                ld      (CLINK),hl          ; base) is unknown: 0 = scan line 1
                 ; first byte selects the format: $FF = tokenised.
                 call    fat_io_getbyte
                 jp      c,hdl_ok            ; D-TRUNCLOAD: EOF here is an empty
@@ -5308,6 +5309,10 @@ hdl_line:
                 ; body length = L_n - A_n - 4   (A_n = CLINK)
                 ld      hl,(CLINK)
                 ld      (CLINK),bc
+                ld      a,h                 ; D-LOADBASE: A_n = 0 is the first line --
+                or      l                   ; DE = $FFFF, scan it (flags kept)
+                ld      de,$FFFF
+                jr      z,hdl_len
                 ld      a,c
                 sub     l
                 ld      e,a
@@ -5319,6 +5324,7 @@ hdl_line:
                 dec     de
                 dec     de                  ; DE = body length (incl. its $00)
                 ; this line's header (>=4 B) must fit below TXTMAX
+hdl_len:
                 push    de
                 ld      hl,(CLPTR)
                 ld      de,TXTMAX-4
@@ -5337,6 +5343,10 @@ hdl_line:
                 call    hdl_get_store
                 jr      c,hdl_eof
                 pop     de                  ; DE = body length
+                ld      a,d                 ; D-LOADBASE: $FFFF -> the first line,
+                and     e                   ; copied up to its own $00
+                inc     a
+                jp      z,hdl_scan          ; (disk/driver.asm's $4465 fill)
 hdl_body:
                 ld      a,d
                 or      e
@@ -5404,6 +5414,8 @@ hdl_answer:
                 ld      (FOPEN_SEL),a
                 scf
                 ret
+
+
 
 install_hook:
                 ld      a, $F7              ; +0: RST 30h (CALLF)
