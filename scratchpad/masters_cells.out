@@ -1,0 +1,9 @@
+# The disk work area $F340-$F34F from the Disk BASIC prompt, read with PEEK
+# (scratchpad/disklook.py, an empty data disk, 2026-10-22):
+#   FOR I=&HF340 TO &HF34F:PRINT RIGHT$("0"+HEX$(PEEK(I)),2);" ";:NEXT
+### National_CF-3300
+F3 83 83 83 83 07 00 02 87 93 DF 0E DD 95 EF 95
+### C-BIOS_MSX1_EU_REPACK_DISK (before D-MASTERS)
+00 83 83 83 83 C9 C9 02 C9 C9 C9 C9 C9 C9 C9 C9
+# $F348 (DRVTBL+0): the master disk ROM's slot -- $87 = 3-1 on the CF-3300, C-BIOS's
+# $C9 fill on zerobas. D-MASTERS fills it on every host.

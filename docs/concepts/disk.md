@@ -105,6 +105,12 @@ date `SAVE` stamps. Returning from MSX-DOS with `A>BASIC` does not ask, and
 neither does a disk with an `AUTOEXEC.BAS` on it — of any size, an empty one
 too: Disk BASIC starts and runs it straight away, on both machines.
 
+**A program can restart BASIC too**, by calling the disk ROM's standard entry
+`&H4022` ("start BASIC") the way MSX-DOS's `BASIC` command does. The CF-3300
+then shows a fresh BASIC and nothing else: no date question, `AUTOEXEC.BAS`
+is not run again, and the hooks a program set in the work area stay set.
+zerobas does the same since 2026-10-22.
+
 ### Drives
 
 `A:` is the one drive and the default; `DSKF` and `DSKI$` take 0 or 1 for it.
@@ -114,13 +120,15 @@ drive B: and strike a key when ready` and waits, so two disks can share one
 drive. zerobas lacks it (see *Differences*). Other letters (`C:`–`H:`, `Q:`
 measured) are `Bad drive name` (62) on both.
 
-**Two work-area cells the disk system fills.** From the Disk BASIC prompt on,
+**Work-area cells the disk system fills.** From the Disk BASIC prompt on,
 `RAMAD0`–`RAMAD3` (`&HF341`–`&HF344`) hold the slot of the RAM in each of the
 four pages — `&H83` four times on the CF-3300 (slot 3-0), `&H03` on the VG-8020
 with an NMS 1200 (slot 3) — and bit 0 of `HOKVLD` (`&HFB20`) is set, saying the
 extended-BIOS hook at `&HFFCA` may be called (it is a plain `RET`). Programs
 that look for RAM or extend the BIOS read them. zerobas fills both the same way
-since 2026-10-21.
+since 2026-10-21. `&HF348` holds the slot of the disk ROM itself (`&H87` on the
+CF-3300, slot 3-1), so a program can call it; zerobas fills it since
+2026-10-22.
 
 ### The disk statements, as a family
 
@@ -241,6 +249,20 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A program that restarted BASIC booted the disk round and round** (fixed
+  2026-10-22, D-MASTERS and D-BASENTRUN). The three MemMan disks call the disk
+  ROM's "start BASIC" entry when the machine has no memory mapper. Logging the
+  published slot calls on both machines showed the call going to the slot
+  held at `&HF348`: the CF-3300's disk ROM there, the unset `&HC9` here
+  ([`slotcalls_nowaste.out`](../../scratchpad/slotcalls_nowaste.out)). With
+  that cell filled, zerobas's restart then ran `AUTOEXEC.BAS` again each time.
+  A test disk of our own counts its runs: 1 on the CF-3300, 4 here
+  ([`basent_autoexec.out`](../../scratchpad/basent_autoexec.out)). The
+  restart also cleared every hook; the CF-3300 keeps them
+  ([`basent_hooks.out`](../../scratchpad/basent_hooks.out)). The loop is gone.
+  The CF-3300 then prints `No free segment for MemMan`, and zerobas does not
+  yet: MemMan prints it from a hook BASIC calls whenever it resets its stack,
+  and zerobas has no such hook (filed as D-HSTKE).
 - **A single-sided disk was read wrongly past its first 9 KB** (fixed
   2026-10-21, D-SIDES). The drive code placed every sector as on a two-sided
   disk; on a single-sided one the two agree only for the first 18 sectors. A
@@ -255,7 +277,8 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   ([`memman_cells.out`](../../scratchpad/memman_cells.out),
   [`memman_hokvld.out`](../../scratchpad/memman_hokvld.out)); its disk ROM
   filled `RAMAD` only on a host that left it at `&HFF`, which C-BIOS does not.
-  (The three disks still part ways; the cells were one cause, not the last.)
+  (The three disks still parted ways; the cells were one cause, not the last
+  -- see the restart above.)
 - **A disk with a damaged boot sector could not be read** (fixed 2026-10-21,
   D-MEDIAID). One disk of the collection (a demo) has text over its BPB's
   sector size; the CF-3300 ran its `AUTOEXEC.BAS`, zerobas listed no file.
@@ -358,4 +381,5 @@ The keyword pages in the table above; [MSX-DOS](msx-dos.md),
 - `make wprotect-acceptance`, `diskfull-acceptance`, `nodiskerr-acceptance`
   — errors 68, 66 and 70; `make nodisk-acceptance` — error 5 without a disk.
 - `make chancost-characterize` — channel cost; `make unit-test` — FAT12 on
-  the host.
+  the host, and (`tests/test_bootdate.py`, `tests/test_ramad.py`) the date
+  question, the restart from a program and the work-area cells.

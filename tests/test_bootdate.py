@@ -56,6 +56,7 @@ DOS_SIG = ord("D") | ord("S") << 8
 DOS_TRY = ord("D") | ord("T") << 8
 MARK_BA = ord("B") | ord("A") << 8
 MARK_BD = ord("B") | ord("D") << 8
+MARK_BB = ord("B") | ord("B") << 8     # D-BASENTRUN: $4022 from a running program
 
 
 def build():
@@ -163,18 +164,48 @@ def run():
           "DOS_SIG)")
 
     # --- the marks -----------------------------------------------------------
-    for val, want_z in ((MARK_BA, True), (MARK_BD, True), (DOS_SIG, False),
+    m.poke_w(req_at, MARK_BB)
+    scr, nini, left = ask("", start_mark=MARK_BB, autoexec=True)
+    check(scr == "" and nini == 0 and mark() == MARK_BB and days() == BOOT_DAYS,
+          f"BB (a running program's $4022): screen {scr!r}, mark {mark():04X} (want no "
+          "question, the mark kept for hk_auto -- D-BASENTRUN)")
+
+    # --- D-BASENTRUN: hk_auto skips AUTOEXEC.BAS once after a BB restart --------
+    seen = []
+    m.trap("hk_srcfind", lambda mach: (seen.append(1), setattr(mach.cpu, "f", mach.cpu.f & ~1)))
+    m.trap("hk_claim_status", lambda mach: seen.append(("status", mach.cpu.a)))
+    m.poke_w(req_at, MARK_BB)
+    m.call("hk_auto")
+    check(mark() == 0 and seen == [("status", 1)],
+          f"hk_auto after BB: {seen}, mark {mark():04X} (want skip without a lookup, "
+          "the mark cleared -- the CF-3300 ran our AUTOEXEC.BAS once, not 4 times)")
+    seen.clear()
+    m.call("hk_auto")
+    check(seen[:1] == [1] and mark() == 0,
+          f"hk_auto, no mark: {seen} (want the AUTOEXEC.BAS lookup, as before)")
+
+    for val, want_z in ((MARK_BA, True), (MARK_BD, True), (MARK_BB, True), (DOS_SIG, False),
                         (DOS_TRY, False), (0, False)):
         m.poke_w(req_at, val)
         cpu = m.call("basent_pending")
         check(bool(cpu.f & 0x40) == want_z and cpu.hl == val,
               f"basent_pending, mark {val:04X}: Z={bool(cpu.f & 0x40)} HL={cpu.hl:04X}")
-    m.trap("SECTOR_BUF", lambda mach: None)   # stop at the trampoline's copy
-    for val, want in ((DOS_SIG, MARK_BA), (DOS_TRY, MARK_BD), (0, MARK_BD)):
+    # stop at the trampoline's copy: its first byte wipes the hooks, bt_keep's
+    # copy keeps them (D-BASENTRUN; the CF-3300 kept four planted hooks)
+    sb = m.addr("SECTOR_BUF")
+    keep_at = sb + m.addr("bt_keep") - m.addr("basent_tramp")
+    entered = []
+    m.trap(sb, lambda mach: entered.append("wipe"))
+    m.trap(keep_at, lambda mach: entered.append("keep"))
+    for val, want, how in ((DOS_SIG, MARK_BA, "wipe"), (DOS_TRY, MARK_BD, "wipe"),
+                           (0, MARK_BB, "keep"), (0x1234, MARK_BB, "keep"),
+                           (ord("D") | ord("X") << 8, MARK_BB, "keep")):
         m.poke_w(req_at, val)
+        entered.clear()
         m.call("basent_body")
-        check(mark() == want, f"$4022 with mark {val:04X}: mark {mark():04X} "
-              f"(want {want:04X})")
+        check(mark() == want and entered == [how],
+              f"$4022 with mark {val:04X}: mark {mark():04X}, hooks {entered} "
+              f"(want {want:04X}, {how})")
     m.poke_w(req_at, DOS_TRY)
     cpu = m.call("w50a9_stub")
     check(mark() == DOS_SIG and cpu.a == 0 and (cpu.f & 0xFF) == 0x42

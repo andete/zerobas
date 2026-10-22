@@ -1,0 +1,10 @@
+== K1: 2 FAIL
+FAIL  $4022 with mark 0000: mark 4442, hooks ['wipe'] (want 4242, keep)
+FAIL  $4022 with mark 1234: mark 4442, hooks ['wipe'] (want 4242, keep)
+== K2: 2 FAIL
+FAIL  hk_auto after BB: [1, ('status', 255)], mark 4242 (want skip without a lookup, the mark cleared -- the C
+FAIL  hk_auto, no mark: [1, ('status', 255)] (want the AUTOEXEC.BAS lookup, as before)
+== K3: 3 FAIL
+FAIL  $4022 with mark 0000: mark 4242, hooks ['wipe'] (want 4242, keep)
+FAIL  $4022 with mark 1234: mark 4242, hooks ['wipe'] (want 4242, keep)
+FAIL  $4022 with mark 5844: mark 4242, hooks ['wipe'] (want 4242, keep)

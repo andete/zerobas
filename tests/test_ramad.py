@@ -27,6 +27,7 @@ DISK_BASE = 0x4000
 ROM = tp("zb_ramad_ut.rom")
 SYM = tp("zb_ramad_ut.sym")
 RAMAD0, HOKVLD, EXPTBL, WA_JMPTAB = 0xF341, 0xFB20, 0xFCC1, 0xF368
+MASTERS = 0xF348      # DRVTBL+0: the master disk ROM's slot (D-MASTERS)
 
 
 def build():
@@ -62,6 +63,8 @@ def run():
         m.poke(EXPTBL, bytes([0x80 if (i == prim and exp) else 0 for i in range(4)]))
         m.poke(0xFFFF, bytes([(~(sub << 6)) & 0xFF]))      # $FFFF reads inverted
         m.poke(WA_JMPTAB, bytes([0x5A]))                   # sentinel: table not built
+        m.poke(m.addr("HOOK_SLOT"), bytes([0x87]))         # this ROM in 3-1, as INIT set it
+        m.poke(MASTERS, bytes([0xC9]))                     # C-BIOS's fill
         m.cpu.io_in = lambda port, prim=prim: (prim << 6) if port & 0xFF == 0xA8 else 0xFF
         m.call("set_ramad")
         got = bytes(m.mem[RAMAD0:RAMAD0 + 4])
@@ -70,6 +73,9 @@ def run():
               f"{label}: RAMAD {got.hex(' ')} (want {want:02x} x4), HOKVLD "
               f"{m.mem[HOKVLD]:02X} (want {want_hok:02X}), $F368 table "
               f"{'built' if tab else 'not built'} (want {'built' if want_tab else 'not'})")
+        # D-MASTERS: $F348 holds the disk ROM's slot on EVERY host (the CF-3300's 87)
+        check(m.mem[MASTERS] == 0x87,
+              f"{label}: $F348 MASTERS {m.mem[MASTERS]:02X} (want 87, this ROM's slot)")
 
     print()
     print("ALL PASS — RAMAD0-3 and HOKVLD as both references hold them"

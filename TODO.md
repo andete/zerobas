@@ -5021,6 +5021,28 @@ item — do **one item per session** to keep context lean.
       what memman.bin's BLOAD ,R reaches -- a breakpoint on the published BIOS / disk-ROM
       entries it calls (CALSLT, RDSLT, WRSLT, ENASLT, EXTBIO) on both machines, registers
       in and out; the software is never decoded.
+      📏 **DONE (2026-10-22) -> D-MASTERS + D-BASENTRUN (fixed), D-HSTKE (filed).**
+      [`slotcalls_probe.py`](scratchpad/slotcalls_probe.py)
+      ([`slotcalls_nowaste.out`](scratchpad/slotcalls_nowaste.out)): no-waste's installer makes
+      the SAME EXTBIO / ENASLT slot scan on both machines, then CALSLTs $4022 (BASENT) in the
+      slot it reads from $F348 -- $87 on the CF-3300, C-BIOS's $C9 fill here (🔮 "the first
+      difference is slot 3's expansion" MISSED: the scan agreed; the BC=$0300 / $0000 on the
+      first EXTBIO did not matter). Filled ($F348 = this ROM's slot on every host), the call
+      reached zerobas's BASENT, which re-ran disk INIT and AUTOEXEC.BAS: the same loop. Own
+      disk ([`basent_autoexec.out`](scratchpad/basent_autoexec.out), an AUTOEXEC.BAS that
+      counts its runs in RAM and calls $4022): CF-3300 1, zerobas 4. Planted hooks
+      ([`basent_hooks.out`](scratchpad/basent_hooks.out)): the CF-3300 keeps all four across
+      $4022, zerobas wiped them. Text at HL ([`basent_ref1.out`](scratchpad/basent_ref1.out),
+      [`basent_ref2.out`](scratchpad/basent_ref2.out), four forms): never run -- 🔮 MISSED
+      twice. 🔧 basent_body: a third mark, 'B','B' (neither DOS_SIG nor DOS_TRY = a running
+      program): no date question, hooks kept (the trampoline's second entry), and hk_auto
+      skips AUTOEXEC.BAS once and clears it. Hosts: tests/test_bootdate.py (5 rows; knives
+      K1-K3 cut 2 / 2 / 3), tests/test_ramad.py ($F348 row; knife cuts 4 of 5 -- the $FF host
+      builds the table anyway). no-waste on zerobas now lands at a prompt once
+      ([`basentrun_nowaste.out`](scratchpad/basentrun_nowaste.out)); the CF-3300 also prints
+      `No free segment for MemMan` -- through H.STKE ([`stke_memman.out`](scratchpad/stke_memman.out):
+      memman points $FEDA at its own code just before the call), a hook zerobas never calls
+      -> D-HSTKE.
       📏 **UR-1 TRIAGED (2026-10-21): an MSX2 demo; both machines fail it, differently.**
       Its AUTOEXEC.BAS RUNs UR.BAS, whose line 30 is `BLOAD "...",R` of a machine-code
       loader; on the CF-3300 the machine then RESETS and boots again, round and round
@@ -5028,6 +5050,19 @@ item — do **one item per session** to keep context lean.
       with `Missing operand in 30` and the program area is damaged (LIST hangs). The
       disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
       at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
+
+- [ ] 🪝 **D-HSTKE — zerobas NEVER CALLS H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
+      STACK (found 2026-10-22 by D-DISKRUN's MemMan class)**
+      🎚️ TIER 1 — happy path: software that hands BASIC work through the published hooks
+      (MemMan's "No free segment" message; ROM-resident BASIC programs start the same way).
+      🤖 **AUTONOMOUS** — a published MSX hook (MSX2 TH hook list); measured when it fires.
+      📏 [`stke_when.out`](scratchpad/stke_when.out) (our own handler `inc ($D200) / ret` in
+      $FEDA, the count after each action, CF-3300): a direct `PRINT` 0, `CLEAR` +1, `NEW` +1,
+      an error in direct mode +1, `RUN` +2, the program's END 0; and once on the $4022 restart
+      (MemMan's message). zerobas: 0 everywhere. ➡️ Find zerobas's stack-reset points
+      (CLEAR / NEW / error recovery / RUN / the cold start after the banner), call $FEDA from
+      them in that count, and price it against the main walls first (READ them: page 1 + low
+      share one budget). Then the MemMan disks again: the message should appear.
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -12076,7 +12111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38112 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38147 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12242,7 +12277,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17104 (T-6FE392)8 (T-529ABE)` from `TODO.md:29941 (T-529ABE)`: a
+      `TODO.md:17139 (T-6FE392)8 (T-529ABE)` from `TODO.md:29976 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17951,7 +17986,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29941 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29976 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

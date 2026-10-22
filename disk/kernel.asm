@@ -2688,6 +2688,8 @@ basent_pending:
                 ld      a, h
                 cp      'A'
                 ret     z
+                cp      'B'                 ; D-BASENTRUN: from a running program
+                ret     z
                 cp      'D'
                 ret
 
@@ -2697,30 +2699,49 @@ basent_pending:
 ; that could not open MSXDOS.SYS jumps here from inside dos_handoff, whose mark is
 ; DOS_TRY), the restart asks the date first, as both references do
 ; (scratchpad/bootdate_run.out); MSX-DOS's own `BASIC` (DOS_SIG) does not ask.
+; 🔴 D-BASENTRUN (2026-10-22): a THIRD caller -- a BASIC program, after the boot is
+; over (the mark is neither DOS_SIG nor DOS_TRY). The CF-3300 then shows a fresh
+; BASIC and nothing else: no date question, and AUTOEXEC.BAS does NOT run again
+; (scratchpad/basent_autoexec.out: our own AUTOEXEC.BAS counts its runs in RAM and
+; calls $4022 -- the CF-3300 reads 1, zerobas read 4). MemMan's installer does
+; exactly this on a machine with no mapper, and zerobas booted the disk round and
+; round. 'B','B' asks for that plain restart; hk_auto clears it.
 basent_body:
                 di
                 ld      hl, (BASENT_REQ)
-                ld      de, DOS_SIG
-                or      a
-                sbc     hl, de
-                ld      hl, 'A' * 256 + 'B'
+                ld      a, l
+                ld      l, 'B'
+                cp      low DOS_SIG         ; 'D': DOS_SIG and DOS_TRY share it
+                ld      a, h
+                ld      h, 'B'              ; 'B','B': from a running program
+                jr      nz, bb_mark
+                cp      high DOS_SIG
+                ld      h, 'A'
                 jr      z, bb_mark          ; 'B','A': from MSX-DOS
-                ld      h, 'D'              ; 'B','D': from a boot loader
+                cp      high DOS_TRY
+                ld      h, 'D'
+                jr      z, bb_mark          ; 'B','D': from a boot loader
+                ld      h, 'B'
 bb_mark:
                 ld      (BASENT_REQ), hl
+                ld      a, h                ; (kept across the copy)
                 ld      hl, basent_tramp
                 ld      de, SECTOR_BUF
                 ld      bc, basent_tramp_end - basent_tramp
                 ldir
-                jp      SECTOR_BUF
+                cp      'B'                 ; D-BASENTRUN: from a running program the
+                jp      z, SECTOR_BUF + (bt_keep - basent_tramp) ; hooks STAY: the
+                jp      SECTOR_BUF          ; CF-3300 keeps four planted ones across
+                                            ; $4022 (scratchpad/basent_hooks.out)
 ; basent_tramp -- position-independent: no absolute jumps or calls inside it.
 basent_tramp:
-                ld      sp, $F2EC           ; the SP the BIOS enters INIT with
                 ld      hl, $FD9A           ; every hook back to RET, as at power-on:
                 ld      de, $FD9B           ; DOS's must not survive into BASIC; the
                 ld      bc, $FFC9 - $FD9A   ; ROM INITs main reruns put theirs back
                 ld      (hl), $C9
                 ldir
+bt_keep:
+                ld      sp, $F2EC           ; the SP the BIOS enters INIT with
                 in      a, ($A8)
                 and     $F0                 ; pages 0/1 -> primary slot 0, the BIOS
                 out     ($A8), a            ; slot; pages 2/3 stay the RAM they are
@@ -5903,6 +5924,15 @@ hk_srcfind:
 ; cg_back gives main its EI back on the way out.
 ;   out  DISKOP_STATUS = 0 run it / nonzero skip; CF = 1 (claimed)
 hk_auto:
+                ld      hl, (BASENT_REQ)    ; D-BASENTRUN: a restart a running program
+                ld      de, 'B' * 256 + 'B' ; asked for (basent_body) -- the CF-3300
+                or      a                   ; does not run AUTOEXEC.BAS again; the
+                sbc     hl, de              ; restart is over, so the mark goes
+                ld      a, 1                ; (flags kept) 1 = skip, silently
+                jr      nz, hka_probe
+                ld      (BASENT_REQ), hl    ; HL = 0
+                jr      hka_done
+hka_probe:
                 call    auto_find           ; CF: no disk / bad BPB / not found
                 ld      a,1                 ; (flags kept) 1 = skip, silently
                 jr      c,hka_done

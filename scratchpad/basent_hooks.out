@@ -1,0 +1,12 @@
+### National_CF-3300
+   |  PRINT PEEK(65243);PEEK(64928)
+   |  ;PEEK(64933);PEEK(65343)
+   |   90  90  90  90
+   |  Ok
+   |  color auto  goto  list  run
+### C-BIOS_MSX1_EU_REPACK_DISK
+   |  PRINT PEEK(65243);PEEK(64928);PEEK(64
+   |  933);PEEK(65343)
+   |   201  126  201  201
+   |  ZB
+   |  color  auto   goto   list   run

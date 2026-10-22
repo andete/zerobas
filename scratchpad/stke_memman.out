@@ -1,0 +1,7 @@
+# no-waste.dsk on the National_CF-3300: writes to the hook area $FD9A-$FFC9 by code
+# running in RAM (PC >= $8000), via an openMSX write watchpoint (debug set_watchpoint
+# write_mem {0xFD9A 0xFFC9}); time, address=value, the writer's PC. Work-area RAM only.
+  12.848 W FEDB=7E pc=825B
+  12.848 W FEDC=82 pc=825B
+  12.848 W FEDA=C3 pc=8260
+  12.927 W FEDA=C9 pc=8280

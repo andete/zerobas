@@ -546,6 +546,18 @@ set_ramad:
                 ld      hl, HOKVLD
                 set     0, (hl)
                 call    install_f37d        ; D-BDOSBASIC slice 2: $F37D's stub
+                ; 🔴 D-MASTERS (2026-10-22): $F348 -- DRVTBL+0, the MASTER disk ROM's
+                ; slot -- on EVERY host. The CF-3300 holds its disk ROM's slot there
+                ; ($87, 3-1) from the Disk BASIC prompt on; zerobas left C-BIOS's $C9
+                ; fill, because the table below is built only under the $FF gate.
+                ; MemMan's installer CALLSLTs that slot's $4022 to hand BASIC a line
+                ; ("No free segment for MemMan" on a 64K machine) and went to slot $C9
+                ; here instead -- the disk booted again, round and round
+                ; (scratchpad/slotcalls_nowaste.out, scratchpad/masters_cells.out).
+                ; Only the slot byte: the rest of the table points at page-3
+                ; trampolines that are free on the DOS host only.
+                ld      a, (HOOK_SLOT)
+                ld      (DRVTBL), a
                 ld      a, $F9              ; D-SIDES: DSKIO's seating until a disk is
                 ld      (DSK_MEDIA), a      ; mounted -- 2 sides x 9, as before
                 ; --- RAMAD: ALWAYS filled (D-RAMAD, 2026-10-21) --------------------

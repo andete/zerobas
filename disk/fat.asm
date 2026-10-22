@@ -734,11 +734,15 @@ BD_DAY          equ     BD_MON + 1          ; the day (1 B)
 ; 'B','D' (a boot loader's fallback): MSX-DOS never ran, so the mark is cleared --
 ; first, so a reset during the question boots normally -- and the date is asked,
 ; unless the disk has an AUTOEXEC.BAS.
+; 'B','B' (a running program, D-BASENTRUN): no date; the mark stays until hk_auto
+; skips AUTOEXEC.BAS and clears it.
 basent_resume:
                 ld      a, h
                 ld      hl, DOS_SIG
                 cp      'A'
                 jr      z, brs_mark
+                cp      'B'                 ; D-BASENTRUN: from a running program --
+                ret     z                   ; the mark stays for hk_auto; no date
                 ld      hl, 0
 brs_mark:
                 ld      (BASENT_REQ), hl

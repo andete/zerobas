@@ -1,0 +1,32 @@
+##### T$=":"+CHR$(&H91)+" 12345"  on ref (National_CF-3300)
+== S7 ('41:')  pc=0D86 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S8 ('50:')  pc=0C7D curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+
+##### T$=":PRINT 12345"  on ref (National_CF-3300)
+== S7 ('41:')  pc=0D68 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+== S8 ('50:')  pc=0C80 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  Ok
+   |  color auto  goto  list  run
+
