@@ -57,6 +57,9 @@ dskio_next:
                 call    fdc_read_phys
                 jr      c, dskio_err
                 call    fdc_di_save     ; a3 §8.36: mask across the page-1 blit too
+                ld      hl, SECTOR_BUF  ; D-P1RDBLK: P1_BLIT takes HL / DE / BC now
+                ld      de, (P1_DEST)
+                ld      bc, 512
                 call    P1_BLIT         ; copy SECTOR_BUF -> P1_DEST with page1=RAM
                 call    fdc_io_done     ; restore caller IFF after the blit
                 ld      hl, (P1_DEST)
@@ -312,6 +315,15 @@ fdc_st_loop:
 ; no repoint is needed anywhere but here.
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
+; install_p1blit -- D-P1RDBLK (2026-10-22): put P1_BLIT in page-3 RAM on EVERY host.
+; It was installed only by install_resident, inside the $FF-gated block, so on the
+; C-BIOS target any DSKIO into page 1 called whatever RAM held at P1_BLIT.
+install_p1blit:
+                ld      hl, p1_blit_tmpl
+                ld      de, P1_BLIT
+                ld      bc, p1_blit_end - p1_blit_tmpl
+                ldir
+                ret
 ; boot_call0 -- step 5: the boot sector's code at $C01E with Cy = 0 ("custom boot"),
 ; under the DOS_TRY mark. 🔴 D-BASENTRUN's other half (2026-10-22): a boot loader may
 ; fall back to $4022 from THIS call too, not only from dos_handoff's -- facdemo5's

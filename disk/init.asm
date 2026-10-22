@@ -261,7 +261,7 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
 RDBLK_RRSTART   equ     $E959   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $E942   ; saved page-1 destination word (dskio bounce path)
-P1_BLIT         equ     $EFFE   ; installed blit routine (27 B) -- declared
+P1_BLIT         equ     $EFFE   ; installed blit routine (14 B) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
                                 ; contiguous, and claims past this 36 B run
@@ -545,7 +545,8 @@ set_ramad:
                 ; may, and took another road here. The hook stays C-BIOS's RET fill.
                 ld      hl, HOKVLD
                 set     0, (hl)
-                call    install_f37d        ; D-BDOSBASIC slice 2: $F37D's stub
+                call    install_f37d        ; D-BDOSBASIC slice 2: $F37D's stub (and,
+                                            ; D-P1RDBLK, P1_BLIT -- every host)
                 ; 🔴 D-MASTERS (2026-10-22): $F348 -- DRVTBL+0, the MASTER disk ROM's
                 ; slot -- on EVERY host. The CF-3300 holds its disk ROM's slot there
                 ; ($87, 3-1) from the Disk BASIC prompt on; zerobas left C-BIOS's $C9

@@ -32,15 +32,16 @@ for tag, machine in (("STOCK", RT.REF_MACHINE), ("OURS", RT.OUR_MACHINE)):
     fat12_add(img, "SDATEX", "COM", COM)
     fat12_add(img, "AUTOEXEC", "BAT", b"SDATEX\r\nBASIC\r\n")
     open(dsk, "wb").write(img)
-    tcl = ("" if tag == "STOCK" else 'after time 24 { type "BASIC\\r" }\n') + \
-          'after time 40 { type "NEW\\r10 REM\\rSAVE\\"DDB.BAS\\"\\r" }\n'
+    # D-P1RDBLK: both machines run this AUTOEXEC.BAT (SDATEX, then BASIC) -- zerobas
+    # gets no typed command either (W.run_once type_cmd=False)
+    tcl = 'after time 40 { type "NEW\\r10 REM\\rSAVE\\"DDB.BAS\\"\\r" }\n'
     scr = probe_tmp.tmp(f"sdatebasic_{tag}.vram")
     tcl += (f"proc dumpv {{t}} {{ set f [open {{{scr}}} a]; set l {{}}; "
             "set nb [expr {([vdpreg 2] & 15) * 1024}]; set w [expr {([vdpreg 1] & 16) ? 40 : 32}]; "
             "lappend l $w; for {set i 0} {$i < 960} {incr i} { lappend l [debug read VRAM [expr {$nb + $i}]] }; "
             "puts $f \"$t $l\"; close $f }\n"
             "after time 38 { dumpv 38 }\nafter time 58 { dumpv 58 }\n")
-    W.run_once(machine, dsk, 14, 60, 300, cmd="SDATEX", extra_tcl=tcl)
+    W.run_once(machine, dsk, 14, 60, 300, cmd="SDATEX", extra_tcl=tcl, type_cmd=False)
     if os.path.exists(scr):
         for ln in open(scr):
             t, w, *v = ln.split()

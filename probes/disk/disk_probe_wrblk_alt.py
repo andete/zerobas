@@ -73,7 +73,8 @@ def build(dos: str, out: str, com: bytes, big: bool = False, wseek: bool = False
 
 
 def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
-             phase_log: str | None = None, cmd: str = "WRBLK", extra_tcl: str = "") -> None:
+             phase_log: str | None = None, cmd: str = "WRBLK", extra_tcl: str = "",
+             type_cmd: bool = True) -> None:
     """Run WRBLK.COM exactly ONCE per machine.
 
     🔴 NOT RT.run, AND WHY: RT.run types `WRBLK` every 6 s on top of AUTOEXEC,
@@ -85,7 +86,13 @@ def run_once(machine: str, dsk: str, boot_s: int, end_s: int, timeout: float,
     not (RT.run's own note), so stock gets AUTOEXEC only and ours one typed
     command."""
     import signal, subprocess as sp, time
-    typed = "" if machine == RT.REF_MACHINE else f'after time {boot_s} {{ type "{cmd}\\r" }}\n'
+    # type_cmd=False (D-P1RDBLK, 2026-10-22): zerobas's DOS boot DOES run
+    # AUTOEXEC.BAT now (basent_body reached from AUTOEXEC's own `BASIC` at T14.4,
+    # scratchpad/dosbasic_autoexec.out), so a probe whose AUTOEXEC.BAT already
+    # runs the command must not type it on top -- the keys then land during the
+    # BASENT restart, and typed capitals hold SHIFT, the boot's "no disk ROM".
+    typed = "" if (machine == RT.REF_MACHINE or not type_cmd) else \
+        f'after time {boot_s} {{ type "{cmd}\\r" }}\n'
     tcl = f"set throttle off\n{typed}{extra_tcl}after time {end_s} {{ exit }}\n"
     if phase_log:
         # --time: poll the exerciser's PHASE byte ($C000, page-3 TPA -- the

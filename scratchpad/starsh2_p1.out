@@ -1,0 +1,7 @@
+# starsh2.dsk: the loader's state right after its BDOS $27 RDBLK into a DTA at $4000 (page 1 = RAM 3-0).
+# A breakpoint at the loader's return address $C05B; registers, slot state and the first RAM bytes at $4000.
+## before D-P1RDBLK
+ref   10.814 AFTER_RDBLK PC=C05B AF=0142 A8=FC SUB=00 mem4000=f3ed7b4afc3100d6
+zb    3.767 AFTER_RDBLK PC=C05B AF=0144 A8=FC SUB=00 mem4000=ffffffffffffffff
+## after D-P1RDBLK
+zb    3.852 AFTER_RDBLK PC=C05B AF=0144 A8=FC SUB=00 mem4000=f3ed7b4afc3100d6

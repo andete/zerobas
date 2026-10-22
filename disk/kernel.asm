@@ -47,7 +47,7 @@ install_f37d:
                 ldir
                 ld      a, (HOOK_SLOT)
                 ld      (F37D_STUB + f37d_iy - f37d_tmpl + 3), a
-                ret
+                jp      install_p1blit  ; D-P1RDBLK: dskio's page-1 bounce, every host
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -6818,17 +6818,16 @@ k_782B:         ret
 ; Lives in the free tail (LDIR-relocated; moved here from the cramped pre-$41FD
 ; region so the wa_seg M5.6 additions fit, §8.58). wa_seg_*_tmpl follows it
 ; immediately so build_resident copies BOTH with one LDIR (RAM-contiguous).
-;   in:  P1_DEST = page-1 target address (word in page-3 scratch)
-;   out: 512 bytes from SECTOR_BUF copied to (P1_DEST); page-1 sub-slot restored
+;   in:  HL = source, DE = page-1 destination, BC = the length (D-P1RDBLK:
+;        the caller loads them -- dskio's 512-byte sector, RDBLK's single bytes)
+;   out: the bytes copied with page 1 = RAM; page-1 sub-slot restored; DE / HL
+;        past the copy (LDIR)
 p1_blit_tmpl:
                 ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
                 cpl                         ; A = actual sub-slot write value
                 push    af                  ; save original state for restore
                 and     $F3                 ; bits 3:2 -> 00: page 1 = sub-slot 0 (RAM)
                 ld      ($FFFF), a          ; page 1 now maps to RAM
-                ld      hl, SECTOR_BUF      ; source: FDC data was read here
-                ld      de, (P1_DEST)       ; dest: original page-1 target (now RAM)
-                ld      bc, 512
                 ldir
                 pop     af                  ; A = original sub-slot write value
                 ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
@@ -6923,10 +6922,7 @@ install_f365:
 ; capacity, and overflowing the `ds $41FD - $` anchor assembles to an EMPTY
 ; object file with NO error (tools/pad_rom.py is what catches it).
 install_resident:
-                ld      hl, p1_blit_tmpl
-                ld      de, P1_BLIT
-                ld      bc, p1_blit_end - p1_blit_tmpl
-                ldir
+                ; (P1_BLIT is installed on every host now -- install_p1blit, D-P1RDBLK)
                 ld      hl, wa_seg_rom_tmpl
                 ld      de, WA_SEG
                 ld      bc, wa_seg_end_tmpl - wa_seg_rom_tmpl
@@ -7388,8 +7384,28 @@ rdb_byteloop:
                 call    rdblk_getbyte       ; A = next file byte (advances buffer)
                 jr      c, rdb_eof          ; chain ended early (defensive)
                 ld      hl, (RDBLK_DST)
+                ld      c, a                ; C = the byte
+                ld      a, h
+                and     $C0
+                cp      $40
+                ld      a, c
+                jr      nz, rdb_store       ; not page 1: a plain store
+                ; 🔴 D-P1RDBLK (2026-10-22): a DTA in page 1 is RAM UNDER this ROM --
+                ; `ld (hl),a` wrote into the disk ROM and the data was lost. starsh2's
+                ; loader reads its game to $4000 with RAM there: the CF-3300 has the
+                ; bytes at $4000 after RDBLK, zerobas had $FF (scratchpad/
+                ; starsh2_p1.out). One byte through P1_BLIT with page 1 = RAM.
+                ld      (P1_DEST), a        ; (P1_DEST is dskio's, idle here)
+                ex      de, hl              ; DE = the destination
+                ld      hl, P1_DEST
+                ld      bc, 1
+                call    P1_BLIT
+                ex      de, hl              ; HL = past the destination
+                jr      rdb_stored
+rdb_store:
                 ld      (hl), a
                 inc     hl
+rdb_stored:
                 ld      (RDBLK_DST), hl
                 ld      hl, (RDBLK_CNT)
                 dec     hl

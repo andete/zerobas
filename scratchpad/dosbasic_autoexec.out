@@ -1,0 +1,14 @@
+# disk_probe_dosbasic's disk (AUTOEXEC.BAT = SDATEX, BASIC) on zerobas, NOTHING typed before T30: breakpoints
+# on our own disk-ROM code. basent_body is reached at T14.446 with the mark DOS_SIG ('D','S' = 5344):
+# MSX-DOS ran AUTOEXEC.BAT's BASIC by itself -- the probe's typed SDATEX at T14 lands in the restart.
+   2.651 set_ramad       SP=F2DA A8=FC SUB=04 mark=C9C9 ret=405A
+   2.651 install_f37d    SP=F2D8 A8=FC SUB=04 mark=C9C9 ret=40EE
+   2.651 install_p1blit  SP=F2D8 A8=FC SUB=04 mark=C9C9 ret=40EE
+   2.651 boot_disk       SP=F2DC A8=FC SUB=04 mark=C9C9 ret=F392
+  14.446 basent_body     SP=D529 A8=FF SUB=04 mark=5344 ret=C300
+  14.457 set_ramad       SP=F2DA A8=FC SUB=04 mark=4142 ret=405A
+  14.457 install_f37d    SP=F2D8 A8=FC SUB=04 mark=4142 ret=40EE
+  14.457 install_p1blit  SP=F2D8 A8=FC SUB=04 mark=4142 ret=40EE
+  14.458 boot_disk       SP=F2DC A8=FC SUB=04 mark=4142 ret=F392
+  14.458 basent_resume   SP=F2DC A8=FC SUB=04 mark=4142 ret=F392
+  14.516 BANNER          SP=F2E2 A8=FC SUB=04 mark=5344 ret=F392

@@ -5112,6 +5112,33 @@ item — do **one item per session** to keep context lean.
       f1sp3d-1 then gets past the read (PC moving, no hang; not yet the CF-3300's SCREEN 3 --
       [`bdosabs_disks.out`](scratchpad/bdosabs_disks.out)); starsh2 unchanged. ➡️ Both back to
       D-DISKRUN.
+      📏 **starsh2 -> D-P1RDBLK, FIXED THE SAME EVENING.** Its loader opens, SETDTAs to $4000 with
+      RAM in page 1 and RDBLKs its game -- both machines answer A=$01 HL=$05C1
+      ([`starsh2_slotcalls.out`](scratchpad/starsh2_slotcalls.out)), but at the loader's return
+      $4000 holds `f3 ed 7b 4a ...` on the CF-3300 and $FF on zerobas
+      ([`starsh2_p1.out`](scratchpad/starsh2_p1.out)): rdb_recloop_body (the BASIC-side RDBLK)
+      stored each byte with `ld (hl),a` while the disk ROM was page 1. And P1_BLIT, dskio's own
+      page-1 bounce, was installed only by install_resident behind the $FF gate -- never on the
+      C-BIOS target. 🔧 P1_BLIT takes HL / DE / BC (14 B of RAM, was 27); install_f37d installs
+      it on every host (init.asm's region could not take the call -- an EMPTY disk.rom first);
+      rdb_recloop_body sends a page-1 byte through it. starsh2 now has its game at $4000 and
+      runs (not yet the CF-3300's screen). tests/test_p1rdblk.py (knives K1 / K2 cut 2 / 2,
+      [`p1rdblk_knife.out`](scratchpad/p1rdblk_knife.out)). ⚠️ Not looked at: the DOS-mode
+      handlers (k47b2_body, SEQRD, SFIRST's DTA fill) with a page-1 DTA.
+      🔴 **The FULL battery then read dosbasic-acceptance RED -- and the probe was the cause.**
+      Bisected: without the unconditional P1_BLIT install it passed; with it, the SAVE after
+      A>BASIC wrote nothing and the disk banner was missing. A write watch showed nothing
+      else touches P1_BLIT's RAM, and a breakpoint trace with NOTHING typed
+      ([`dosbasic_autoexec.out`](scratchpad/dosbasic_autoexec.out)) reached basent_body at
+      T14.446 with the mark DOS_SIG: zerobas's DOS runs AUTOEXEC.BAT (SDATEX, BASIC) by itself
+      now. disk_probe_wrblk_alt.run_once still typed the command for zerobas on the old premise
+      ("C-BIOS's DOS boot does not honour AUTOEXEC.BAT"), so `SDATEX` landed during the BASENT
+      restart, and typed capitals hold SHIFT -- the boot's "no disk ROM". A few hundred more
+      cycles in INIT moved which key the boot sampled. 🔧 run_once takes `type_cmd`; the
+      dosbasic probe passes False and no longer types `BASIC` on zerobas either; it passes with
+      the install (1999-12-31 on both). ➡️ The other run_once users (dosdate, strout,
+      wrblk_alt) keep the stale premise -- they pass, but each types its command on top of
+      an AUTOEXEC.BAT that zerobas now runs; re-read them.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12250,7 +12277,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38286 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38313 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12416,7 +12443,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17278 (T-6FE392)8 (T-529ABE)` from `TODO.md:30115 (T-529ABE)`: a
+      `TODO.md:17305 (T-6FE392)8 (T-529ABE)` from `TODO.md:30142 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18125,7 +18152,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30115 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30142 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
