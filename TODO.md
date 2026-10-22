@@ -5064,6 +5064,41 @@ item — do **one item per session** to keep context lean.
       with `Missing operand in 30` and the program area is damaged (LIST hangs). The
       disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
       at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
+      📏 **FULL RE-RUN 2026-10-22 after the day's disk fixes** (zerobas only, against 10-21's
+      reference rows; [`diskcorpus_rerun2.out`](scratchpad/diskcorpus_rerun2.out)): BOTH-RUN 92 ->
+      108, ZB-NOBOOT 27 -> 11, FILES-SAME 8 -> 10, ZB-ONLY 6 -> 5. Up: SirDan, megadoom, modedit.
+      🔮 "nothing regresses" MISSED -- four rows BOTH-RUN -> ZB-NOBOOT, each read:
+      **facdemo5** a REAL regression of D-BASENTRUN -- its boot code falls back to $4022 from the
+      FIRST (Cy = 0) call, outside dos_handoff's DOS_TRY window, so $4022 took it for a running
+      program and asked no date. Fixed: boot_call0 (disk/driver.asm) runs that call under DOS_TRY
+      too; the date question is back. **f1sp3d-1** -> D-BDOSABS: its loader SETDTAs, then BDOS
+      $2F RDABS 8 sectors; the CF-3300 reads them, the BASIC-side door answered $FF
+      ([`f1sp3d_slotcalls.out`](scratchpad/f1sp3d_slotcalls.out)). Fixed: $2F / $30 in
+      bdos_more2's table (rdabs_body / wrabs_body). It now HANGS inside that call instead ->
+      D-F37DSLOT. 10-21's "BOTH-RUN" for it was a hang the classifier read as running.
+      **elite** gets FURTHER than on 10-21 (then: stuck at the DOS banner at T45; now: the game
+      starts, then jumps to $0000 at T17.4 with RAM in page 0 -- MSX-DOS's warm boot -- and
+      zerobas has none there, so it slides into $4022 and BASIC); **starsh2** unchanged at the
+      prompt. ➡️ elite's warm boot and starsh2 after D-F37DSLOT.
+      Hosts: tests/test_bdosbasic.py ($2F / $30 dispatch rows; the "not answered" row now uses
+      $31), tests/test_bootdate.py (boot_call0's mark); knives cut both
+      ([`bdosabs_knife.out`](scratchpad/bdosabs_knife.out)).
+
+- [ ] 🔀 **D-F37DSLOT — THE $F37D STUB JUMPS INTO RAM WHEN THE CALLER HAS RAM IN PAGES 0 AND 1
+      (found 2026-10-22 by D-DISKRUN's f1sp3d-1)**
+      🎚️ TIER 1 — happy path: a boot loader that maps RAM everywhere (A8 = $FF) and reads its
+      game through BDOS hangs.
+      🤖 **AUTONOMOUS** — measured; the stub's own change.
+      📏 [`f1sp3d_slotcalls2.out`](scratchpad/f1sp3d_slotcalls2.out): the loader ENASLTs RAM into
+      page 1, then calls $F37D with A8 = $FF; BDOS $2F never returns (PC parks at $CDA3). The
+      stub (install_f37d, D-BDOSBASIC slice 2) tests PAGE 0: not slot 0 -> "MSX-DOS is
+      running, the disk ROM is in page 1" -> `jp bdos_entry`. With RAM in page 1 that jump
+      lands in RAM. The CF-3300 answers the same call with A8 = $FF (its DSKIO calls follow,
+      [`f1sp3d_slotcalls.out`](scratchpad/f1sp3d_slotcalls.out)). CALSLT ($001C) is no way out
+      either: page 0 is RAM too. ➡️ The stub must put the disk ROM into page 1 itself
+      (primary bits in $A8, and the slot-3 subslot in $FFFF for an expanded slot), call
+      bdos_entry, and put both back -- under DI; price its RAM ($EFDA holds 28 B now).
+
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
       LOAD PUT IT BACK AT $8001 (found 2026-10-22 by D-DISKRUN's megadoom)**
@@ -12201,7 +12236,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38237 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38272 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12367,7 +12402,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17229 (T-6FE392)8 (T-529ABE)` from `TODO.md:30066 (T-529ABE)`: a
+      `TODO.md:17264 (T-6FE392)8 (T-529ABE)` from `TODO.md:30101 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18076,7 +18111,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30066 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30101 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

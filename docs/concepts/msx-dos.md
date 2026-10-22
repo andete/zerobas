@@ -98,15 +98,18 @@ output, direct console input, console status, string output, the version
 (`&H22`, DOS 1), disk reset, select drive, open, close, search first and next,
 delete, read and write the next record, create, rename, the logged-in drives, the current
 drive, set the transfer address, the allocation figures, read a block, the
-date, the time (always 0:00, there is no clock) and the verify switch
-(`&H02`, `&H06`, `&H09`, `&H0B`-`&H1B`,
-`&H27`, `&H2A`, `&H2C`, `&H2E`), and returns `A=&HFF` for anything else. Setting the transfer address also stores it in `&HF23D`,
+date, the time (always 0:00, there is no clock), the verify switch, and
+reading or writing whole disk sectors (`&H02`, `&H06`, `&H09`,
+`&H0B`-`&H1B`, `&H27`, `&H2A`, `&H2C`, `&H2E`-`&H30`), and returns `A=&HFF`
+for anything else. Setting the transfer address also stores it in `&HF23D`,
 the work-area cell the CF-3300 keeps it in.
 
 A disk's own boot loader is the usual caller: it runs while the disk system is
 switched in, prints a title, finds and opens its file, and reads it in one
 block. The CF-3300 answers that whole sequence and so does zerobas since
-2026-10-21. Machine code called from a BASIC program (with `USR`) reaches the
+2026-10-21. Some loaders read sectors directly instead (function `&H2F`);
+zerobas answers that since 2026-10-22. A loader that has switched RAM into
+every page before calling still does not get through on zerobas (D-F37DSLOT). Machine code called from a BASIC program (with `USR`) reaches the
 same functions: there the disk system is not switched in, so zerobas's jump
 leads to a small routine in RAM that calls it across the slots and comes back.
 A search for a file from a `USR` routine answers `A=0` and fills the transfer

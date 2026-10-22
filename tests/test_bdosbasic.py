@@ -63,7 +63,9 @@ def run():
     # --- slice 3a: the table at bdos_more2 ----------------------------------
     for fn, target in ((0x0B, "const_body"), (0x0E, "seldsk_drv_body"), (0x18, "login_body"),
                        (0x19, "curdrv_body"), (0x1B, "getalloc_body"), (0x2A, "gdate_body"),
-                       (0x2E, "verify_body")):
+                       (0x2E, "verify_body"),
+                       # D-BDOSABS: a boot loader's absolute sector read / write
+                       (0x2F, "rdabs_body"), (0x30, "wrabs_body")):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         seen = []
         m.trap(target, lambda mach: seen.append(mach.cpu.e))
@@ -133,7 +135,7 @@ def run():
               f"BDOS $17 RENAME, new name {'taken' if taken else 'free'}: A ${cpu.a:02X}, "
               f"finds {finds}, stamps {stamps} (want ${want:02X})")
 
-    for fn in (0x00, 0x21, 0x26, 0x30):
+    for fn in (0x00, 0x21, 0x26, 0x31):     # ($30 WRABS answers since D-BDOSABS)
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         cpu = m.call("bdos_entry", c=fn, de=0xC0DA)
         check(cpu.a == 0xFF, f"BDOS ${fn:02X} (not answered yet): A = ${cpu.a:02X} (want $FF)")

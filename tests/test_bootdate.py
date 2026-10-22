@@ -206,6 +206,16 @@ def run():
         check(mark() == want and entered == [how],
               f"$4022 with mark {val:04X}: mark {mark():04X}, hooks {entered} "
               f"(want {want:04X}, {how})")
+    # --- D-BASENTRUN's other half: the boot code's FIRST call (Cy = 0) runs under
+    # DOS_TRY too, so a boot loader falling back to $4022 from it is asked the date
+    # (facdemo5) -- and the mark comes back if the code returns ---------------------
+    inside = []
+    m.trap("BOOT_ENTRY", lambda mach: inside.append((mark(), mach.cpu.f & 1)))
+    m.poke_w(req_at, 0x1234)
+    m.call("boot_call0")
+    check(inside == [(DOS_TRY, 0)] and mark() == 0x1234,
+          f"boot_call0: inside {[(hex(a), c) for a, c in inside]}, after {mark():04X} "
+          "(want DOS_TRY with Cy = 0 inside, the old mark back after)")
     m.poke_w(req_at, DOS_TRY)
     cpu = m.call("w50a9_stub")
     check(mark() == DOS_SIG and cpu.a == 0 and (cpu.f & 0xFF) == 0x42

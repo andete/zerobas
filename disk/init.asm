@@ -392,8 +392,8 @@ boot_disk_go:
                 cp      $E9
                 ret     nz              ; not a boot disk -> BASIC
 boot_sig_ok:
-                or      a               ; Cy = 0 -> step-5 "custom boot" call
-                call    BOOT_ENTRY      ; step 5 (data-disk default RET NC returns here)
+                call    boot_call0      ; step 5, Cy = 0, under the DOS_TRY mark
+                                        ; (disk/driver.asm; D-BASENTRUN's other half)
                 ; --- step 6: stand up the page-0 MSX-DOS environment ----------
                 ; Switch RAM into page 0 (the page-0 BIOS ROM, incl. the inter-slot
                 ; primitives, vanishes) and lay the JP-vector set the boot code +

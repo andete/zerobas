@@ -752,7 +752,11 @@ bdos_tab:
                 dw      bb_gtime
                 db      $2E
                 dw      verify_body
-                db      0
+                db      $2F                 ; D-BDOSABS (2026-10-22): RDABS / WRABS for a
+                dw      rdabs_body          ; boot loader -- f1sp3d-1's reads 8 sectors
+                db      $30                 ; into the DTA before MSX-DOS exists; the
+                dw      wrabs_body          ; CF-3300 does, this answered $FF
+                db      0                   ; (scratchpad/f1sp3d_slotcalls.out)
 bdos_more2:                                 ; A = C = the function
                 ld      hl, bdos_tab
 bm_loop:
