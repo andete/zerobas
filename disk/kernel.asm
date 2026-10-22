@@ -4045,10 +4045,8 @@ k47b2_xfer_byteloop:
                 jr      z, k47b2_xfer_recdone       ; whole record copied -> next record
                 call    k47b2_nextbyte      ; A = next byte / Cy=1 EOF-or-chain-end
                 jr      c, k47b2_xfer_eofcheck
-                ld      hl, (RDBLK_DST)
-                ld      (hl), a
-                inc     hl
-                ld      (RDBLK_DST), hl
+                call    dta_put             ; D-P1DOS: a page-1 DTA under MSX-DOS too
+                                            ; (scratchpad/p1dta_run.out)
                 ld      hl, (RDBLK_CNT)
                 dec     hl
                 ld      (RDBLK_CNT), hl
@@ -4068,10 +4066,8 @@ k47b2_xfer_padloop:
                 ld      a, h
                 or      l
                 jr      z, k47b2_xfer_padded
-                ld      hl, (RDBLK_DST)
-                ld      (hl), 0
-                inc     hl
-                ld      (RDBLK_DST), hl
+                xor     a
+                call    dta_put             ; D-P1DOS: the zero pad goes the same way
                 ld      hl, (RDBLK_CNT)
                 dec     hl
                 ld      (RDBLK_CNT), hl
@@ -7383,30 +7379,7 @@ rdb_byteloop:
                 jr      z, rdb_eof
                 call    rdblk_getbyte       ; A = next file byte (advances buffer)
                 jr      c, rdb_eof          ; chain ended early (defensive)
-                ld      hl, (RDBLK_DST)
-                ld      c, a                ; C = the byte
-                ld      a, h
-                and     $C0
-                cp      $40
-                ld      a, c
-                jr      nz, rdb_store       ; not page 1: a plain store
-                ; 🔴 D-P1RDBLK (2026-10-22): a DTA in page 1 is RAM UNDER this ROM --
-                ; `ld (hl),a` wrote into the disk ROM and the data was lost. starsh2's
-                ; loader reads its game to $4000 with RAM there: the CF-3300 has the
-                ; bytes at $4000 after RDBLK, zerobas had $FF (scratchpad/
-                ; starsh2_p1.out). One byte through P1_BLIT with page 1 = RAM.
-                ld      (P1_DEST), a        ; (P1_DEST is dskio's, idle here)
-                ex      de, hl              ; DE = the destination
-                ld      hl, P1_DEST
-                ld      bc, 1
-                call    P1_BLIT
-                ex      de, hl              ; HL = past the destination
-                jr      rdb_stored
-rdb_store:
-                ld      (hl), a
-                inc     hl
-rdb_stored:
-                ld      (RDBLK_DST), hl
+                call    dta_put             ; D-P1RDBLK: page-1 RAM under this ROM too
                 ld      hl, (RDBLK_CNT)
                 dec     hl
                 ld      (RDBLK_CNT), hl

@@ -5125,6 +5125,16 @@ item — do **one item per session** to keep context lean.
       runs (not yet the CF-3300's screen). tests/test_p1rdblk.py (knives K1 / K2 cut 2 / 2,
       [`p1rdblk_knife.out`](scratchpad/p1rdblk_knife.out)). ⚠️ Not looked at: the DOS-mode
       handlers (k47b2_body, SEQRD, SFIRST's DTA fill) with a page-1 DTA.
+      ✅ **D-P1DOS (same evening): the DOS-mode RDBLK had the same hole.** Our own .COM
+      (probes/disk/p1dta.asm) under MSX-DOS: OPEN our own file, SETDTA $4000, RDBLK one
+      record; read back from the `Main RAM` debuggable -- 🔴 a first cut read CPU memory and
+      got each machine's disk-ROM "AB" header on both (page 1 shows the ROM at the prompt).
+      CF-3300: the record; zerobas: $FF, with A = 0 ([`p1dta_run.out`](scratchpad/p1dta_run.out)).
+      🔧 One store, dta_put (disk/driver.asm), page-1 aware through P1_BLIT, now used by the
+      BASIC-side RDBLK and by k47b2_body's byte loop and zero pad. `make p1dta-acceptance`
+      (in the battery) passes on both ([`p1dta_run2.out`](scratchpad/p1dta_run2.out)); knife:
+      k47b2's plain store back -> FAIL ([`p1dos_knife.out`](scratchpad/p1dos_knife.out)).
+      ➡️ Still unverified with a page-1 DTA: SEQRD ($14) and SFIRST / SNEXT's DTA fill.
       🔴 **The FULL battery then read dosbasic-acceptance RED -- and the probe was the cause.**
       Bisected: without the unconditional P1_BLIT install it passed; with it, the SAVE after
       A>BASIC wrote nothing and the disk banner was missing. A write watch showed nothing
@@ -12280,7 +12290,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38316 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38326 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12446,7 +12456,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17308 (T-6FE392)8 (T-529ABE)` from `TODO.md:30145 (T-529ABE)`: a
+      `TODO.md:17318 (T-6FE392)8 (T-529ABE)` from `TODO.md:30155 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18155,7 +18165,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30155 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

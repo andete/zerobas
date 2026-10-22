@@ -1,0 +1,3 @@
+STOCK: RDBLK A=00 OPEN A=00  $4000.. = the record
+OURS: RDBLK A=00 OPEN A=00  $4000.. = the record
+PASS: the record lands in page-1 RAM on both

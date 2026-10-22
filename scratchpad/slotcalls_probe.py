@@ -8,8 +8,9 @@ BDOS door $F37D: registers at the entry, and registers again when it returns to 
 caller. Black box: breakpoints at published addresses, registers and RAM stack
 words only; no ROM byte is read and the software is never decoded.
 
-Only calls whose RETURN ADDRESS is in $8000..$F37F are logged (a program loaded
-into RAM; the ROMs' own internal use of the entries and the hook area stay out).
+Only calls whose RETURN ADDRESS is in $8000..$F37F are logged by default (a program
+loaded into RAM; the ROMs' own internal use of the entries and the hook area stay
+out); --from 0100-F380 widens it for an MSX-DOS program in the TPA.
 The image is copied to /tmp; the collection comes from DISKCORPUS_DIR.
 
     DISKCORPUS_DIR=... python3 -u scratchpad/slotcalls_probe.py IMAGE \
@@ -26,7 +27,7 @@ ENTRIES = {0x000C: "RDSLT", 0x0014: "WRSLT", 0x001C: "CALSLT", 0x0024: "ENASLT",
            0x0030: "CALLF", 0xFFCA: "EXTBIO", 0xF37D: "BDOS"}
 
 
-def build_tcl(out, end, cap):
+def build_tcl(out, end, cap, lo=0x8000, hi=0xF380):
     # one-shot return breakpoints: openMSX's set_bp returns an id; the command is
     # given at creation, so the id is looked up through a global map by address
     regs = ("set r [format \"AF=%04X BC=%04X DE=%04X HL=%04X IX=%04X IY=%04X SP=%04X A8=%02X\" "
@@ -41,7 +42,7 @@ def build_tcl(out, end, cap):
          "}",
          "proc __ent {name} {",
          "  set ret [__w [reg sp]]",
-         "  if {$ret < 0x8000 || $ret >= 0xF380} return",
+         f"  if {{$ret < {lo:#x} || $ret >= {hi:#x}}} return",
          f"  if {{[incr ::n] > {cap}}} return",
          "  " + regs,
          "  __put [format \"%8.3f ENTER %-6s %04X %s\" [machine_info time] $name $ret $r]",
@@ -55,14 +56,14 @@ def build_tcl(out, end, cap):
     return "\n".join(L) + "\n"
 
 
-def run(machine, image, end, cap):
+def run(machine, image, end, cap, lo=0x8000, hi=0xF380):
     td = tempfile.mkdtemp(prefix="slotc_")
     try:
         dsk = os.path.join(td, "d.dsk")
         shutil.copy(image, dsk)
         out = os.path.join(td, "o.txt")
         s = os.path.join(td, "s.tcl")
-        open(s, "w").write(build_tcl(out, end, cap))
+        open(s, "w").write(build_tcl(out, end, cap, lo, hi))
         subprocess.run(omsx_preflight.guarded([D.OMSX, "-machine", machine, "-diska", dsk,
                         "-command", "set renderer none; set sound_driver null", "-script", s]),
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=240 + 4 * end)
@@ -77,12 +78,15 @@ def main():
     ap.add_argument("--machines", default="ref,zb")
     ap.add_argument("--end", type=float, default=45)
     ap.add_argument("--max", type=int, default=300)
+    ap.add_argument("--from", dest="rng", default="8000-F380",
+                    help="LO-HI (hex): the return-address range logged (a DOS program: 0100-F380)")
     a = ap.parse_args()
     image = os.path.join(os.environ["DISKCORPUS_DIR"], a.image)
     for m in a.machines.split(","):
         machine = D.REF if m == "ref" else D.ZB
         print(f"### {m} ({machine})")
-        print(run(machine, image, a.end, a.max))
+        lo, hi = (int(x, 16) for x in a.rng.split("-"))
+        print(run(machine, image, a.end, a.max, lo, hi))
 
 
 if __name__ == "__main__":

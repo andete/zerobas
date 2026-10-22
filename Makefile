@@ -2687,6 +2687,12 @@ strout-acceptance: repack-machine
 dosdate-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_dosdate.py
 
+# --- p1dta-acceptance: an MSX-DOS program's RDBLK into a page-1 DTA (D-P1DOS) -----
+# Our own .COM reads one record of our own file to $4000 under MSX-DOS; the RAM
+# there must hold it on both machines (zerobas wrote into its disk ROM, 2026-10-22).
+p1dta-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1dta.py
+
 # --- savedate-acceptance: disk BASIC stamps the directory as the CF-3300 (D-WRBLKSEEK (b))
 # Joost 2026-10-01 "Stamp as 3300": SAVE, SAVE ,A and OPEN FOR OUTPUT each stamp
 # date 0821h (1984-01-01), time 0, at the same directory index as the CF-3300.

@@ -315,6 +315,35 @@ fdc_st_loop:
 ; no repoint is needed anywhere but here.
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
+; dta_put -- store A at (RDBLK_DST) and advance it: the block reads' one store.
+; 🔴 D-P1RDBLK / D-P1DOS (2026-10-22): a DTA in page 1 is RAM UNDER this ROM, and
+; `ld (hl),a` wrote into the disk ROM -- the data was lost. starsh2's loader (through
+; $F37D, scratchpad/starsh2_p1.out) and an MSX-DOS program of our own (through
+; $0005, scratchpad/p1dta_run.out) both read to $4000: the CF-3300 has the record
+; there, zerobas had $FF. A page-1 byte goes through P1_BLIT with page 1 = RAM.
+; P1_DEST is dskio's bounce word, idle while a block read copies out of the buffer.
+;   in: A = the byte   out: RDBLK_DST advanced   clobbers A, BC, DE, HL
+dta_put:
+                ld      hl, (RDBLK_DST)
+                ld      c, a
+                ld      a, h
+                and     $C0
+                cp      $40
+                ld      a, c
+                jr      nz, dp_plain        ; not page 1: a plain store
+                ld      (P1_DEST), a
+                ex      de, hl              ; DE = the destination
+                ld      hl, P1_DEST
+                ld      bc, 1
+                call    P1_BLIT
+                ex      de, hl              ; HL = past the destination
+                jr      dp_done
+dp_plain:
+                ld      (hl), a
+                inc     hl
+dp_done:
+                ld      (RDBLK_DST), hl
+                ret
 ; install_p1blit -- D-P1RDBLK (2026-10-22): put P1_BLIT in page-3 RAM on EVERY host.
 ; It was installed only by install_resident, inside the $FF-gated block, so on the
 ; C-BIOS target any DSKIO into page 1 called whatever RAM held at P1_BLIT.
