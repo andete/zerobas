@@ -114,9 +114,19 @@ then has to land in that RAM, not in the disk ROM. zerobas does so since
 2026-10-22, for a boot loader and for an MSX-DOS program alike: reading a
 block (`&H27`) or a record (`&H14`), or the entry a file search (`&H11`)
 returns -- the search entry byte for byte, in both of the reference's forms
-(the FCB form elsewhere, the raw directory entry at +1 in that range). A
-program's OWN stores to `&H4000`-`&H7FFF` under MSX-DOS still do not reach RAM
-on zerobas (TODO D-TPAP1). Machine code called from a BASIC program (with `USR`) reaches the
+(the FCB form elsewhere, the raw directory entry at +1 in that range).
+
+An MSX-DOS program itself runs with RAM in `&H4000`-`&H7FFF`, as on the CF-3300:
+MSX-DOS switches the disk system in around each of its own calls and RAM back
+after. Before 2026-10-23 zerobas left the disk ROM there, so a program's own
+stores to that range were lost (D-TPAP1). The program can also call the
+standard slot routines at the bottom of memory -- read or write a byte in
+another slot (`&H000C`, `&H0014`), call into one (`&H001C`, and the `RST &H30`
+form), or switch one in (`&H0024`) -- and they answer as on the CF-3300. Before
+the same fix, zerobas ignored the slot asked for and the `RST &H30` call never
+returned; now they hand the call to the BIOS's own routines.
+
+Machine code called from a BASIC program (with `USR`) reaches the
 same functions: there the disk system is not switched in, so zerobas's jump
 leads to a small routine in RAM that calls it across the slots and comes back.
 A search for a file from a `USR` routine answers `A=0` and fills the transfer

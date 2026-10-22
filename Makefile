@@ -2693,6 +2693,13 @@ dosdate-acceptance: repack-machine
 p1dta-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1dta.py
 
+# --- p1vec-acceptance: a DOS program's page 1, and the page-0 slot entries (D-TPAP1) ----
+# Our own .COM stores into page 1 and calls RDSLT / WRSLT / CALSLT / CALLF / ENASLT from
+# the TPA; every answer must equal the CF-3300's (zerobas ran the TPA with the disk ROM
+# in page 1 and died in CALLF, 2026-10-23).
+p1vec-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1vec.py
+
 # --- savedate-acceptance: disk BASIC stamps the directory as the CF-3300 (D-WRBLKSEEK (b))
 # Joost 2026-10-01 "Stamp as 3300": SAVE, SAVE ,A and OPEN FOR OUTPUT each stamp
 # date 0821h (1984-01-01), time 0, at the same directory index as the CF-3300.

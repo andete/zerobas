@@ -48,6 +48,64 @@ install_f37d:
                 ld      a, (HOOK_SLOT)
                 ld      (F37D_STUB + f37d_iy - f37d_tmpl + 3), a
                 jp      install_p1blit  ; D-P1RDBLK: dskio's page-1 bounce, every host
+; install_dos_env (D-TPAP1) -- at every DOS entry (lay_page0_env), on every host:
+; the $0038 handler and the slot bridges to INT_H_HIRAM (three pieces, end to end),
+; the $F368 hook bodies to WA_SEG, and $F368 / $F368+3 pointed at them. Built here
+; and not at INIT: WA_SEG and INT_H_HIRAM are BASIC's RAM until MSX-DOS starts.
+install_dos_env:
+                ld      hl, int_h_hiram_tmpl
+                ld      de, INT_H_HIRAM
+                ld      bc, int_h_hiram_end - int_h_hiram_tmpl
+                ldir
+                ld      hl, br1_tmpl
+                ld      bc, br1_end - br1_tmpl
+                ldir
+                ld      hl, br2_tmpl
+                ld      bc, br2_end - br2_tmpl
+                ldir
+                ld      a, $C3
+                ld      (WA_JMPTAB), a
+                ld      (WA_JMPTAB + 3), a
+                ld      hl, WA_SEG_ROM
+                ld      (WA_JMPTAB + 1), hl
+                ld      hl, WA_SEG_RAM
+                ld      (WA_JMPTAB + 4), hl
+                jp      install_resident
+
+; --- S10.D: the RANDOM record engine's multiply (hk_dget). Moved here from below
+; the $7F7C pin (runtime.asm) by D-TPAP1, whose RAM templates needed that room.
+
+; mul_reclen -- A:HL := HL * GP_RECLEN, a 24-bit product (D-PUTU32: k is 0..65535
+; and reclen 1..256, so the product is < 2^24). Two cases, because 256 does not
+; fit an 8-bit multiplier: reclen == 256 is k << 8, moved by bytes; reclen < 256
+; is 8 MSB-first steps with k FIXED in BC and the product doubling in A:HL.
+; Clobbers BC, DE (the sub-ROM copy kept BC; no caller here needs it).
+mul_reclen:
+                ld      b, h
+                ld      c, l                ; BC = k
+                ld      de, (GP_RECLEN)
+                ld      a, d
+                or      a
+                jr      z, mr_lt256
+                ld      a, b                ; reclen == 256: A:HL = k << 8
+                ld      h, c
+                ld      l, 0
+                ret
+mr_lt256:                                   ; A = 0; E = reclen (1..255)
+                ld      h, a
+                ld      l, a
+                ld      d, 8
+mr_loop:
+                add     hl, hl
+                rla                         ; A:HL <<= 1
+                sla     e                   ; reclen's top bit -> CF
+                jr      nc, mr_skip
+                add     hl, bc
+                adc     a, 0                ; A:HL += k
+mr_skip:
+                dec     d
+                jr      nz, mr_loop
+                ret
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -972,44 +1030,8 @@ lstout_body:
 ; (fat_find_body relocated to runtime.asm, M22a — its old span here collided
 ; with the $5462 DIRIN canonical entry above, tier2-m22-cpmver-spec.md §4.6.)
 
-; callf_body_body — the $0030 RST 30h / CALLF handler (the load-bearing one).
-; CALLF is `F7 <slot> <lo> <hi>`: RST 30h pushes the return address (which points
-; at the inline operand) and lands here. H.PHYD ($FFA7 = F7 87 10 40 C9) is exactly
-; this — every PHYDIO from the boot/DOS reaches our DSKIO through it. The callee
-; (DSKIO, $4010) takes A,B,C,DE,HL and CY=read/write, so this handler must deliver
-; ALL of them UNTOUCHED. It saves the caller's registers to page-3 scratch, reads
-; the operand off the stack to find the target address + the post-operand return,
-; then arranges the stack so a plain `ret` jumps to the target with every register
-; (and the carry flag) restored, and the target's own RET lands on the byte after
-; the operand (H.PHYD's trailing C9). Our disk ROM is in page 1, so the target is
-; directly reachable — no real inter-slot switch needed. (§8.4) Reached directly
-; from p0_env_tab's $0030 entry (pageenv.asm, free tail) since M22a removed the
-; 3-byte `callf_body` veneer that used to sit at $41F0 (it collided with the
-; CPMVER canonical entry, tier2-m22-cpmver-spec.md §4.1).
-; Only `ld`/`inc hl`/`pop`/`push`/`ret` are used between entry and the call, none
-; of which touch the flags, so the caller's CY (the DSKIO read/write bit) survives.
-callf_body_body:                        ; ends in ret
-                ld      (R30_HL), hl    ; stash caller HL
-                ld      (R30_BC), bc    ; stash caller BC
-                ld      (R30_DE), de    ; stash caller DE
-                push    af              ; copy AF out without disturbing the return ptr
-                pop     hl              ; HL = AF image (push/pop is SP-neutral)
-                ld      (R30_AF), hl    ; stash caller AF (incl. carry)
-                pop     hl              ; HL = return addr -> inline operand [slot][lo][hi]
-                inc     hl              ; -> lo
-                ld      e, (hl)
-                inc     hl              ; -> hi
-                ld      d, (hl)         ; DE = target address (e.g. $4010)
-                inc     hl              ; HL = operand+3 = byte after CALLF (H.PHYD's C9)
-                push    hl              ; ultimate return: target's RET lands here
-                push    de              ; target address on top
-                ld      hl, (R30_AF)    ; restore caller AF (carry = DSKIO read/write)
-                push    hl
-                pop     af
-                ld      bc, (R30_BC)    ; restore caller BC
-                ld      de, (R30_DE)    ; restore caller DE
-                ld      hl, (R30_HL)    ; restore caller HL (DSKIO transfer address)
-                ret                     ; -> target; its RET -> operand+3 -> caller
+; (callf_body_body, the $0030 CALLF handler, was here: D-TPAP1 moved the page-0
+; entries to page-3 bridges into the main BIOS -- br1_tmpl, pageenv.asm.)
 
 bdos_seqread_body:                      ; [bdos_seqread, bsr_have) -> falls into bsr_have
                 ; EOF once every file byte has been delivered (BYTESLEFT == 0).
@@ -3085,43 +3107,8 @@ ig_init:
                 pop     af
                 jp      init
 
-; --- calslt_body: CALSLT ($001C) while MSX-DOS runs (D-DOSMODE40; oracle: CF-3300) ---
-; A target in pages 1-3 is called where it is, as before -- the boot's targets
-; (this ROM in page 1, the page-3 work area) are mapped. A PAGE-0 target is the
-; main BIOS (COMMAND.COM's MODE: INITXT $006C / INIT32 $006F), and page 0 is DOS's
-; RAM: page the BIOS in for the call and back out after it, with conout_body's
-; pg0_mainrom_in/out (MSX2 TH: CALSLT passes AF, BC, DE, HL to the callee, so they
-; are kept across the slot switch, which clobbers A..L). Measured on the CF-3300:
-; `MODE 40` -> SCREEN 0, LINLEN 40, the screen cleared; `MODE 32` -> SCREEN 1,
-; LINLEN 32 (scratchpad/dosmode_run.out). The slot in IYh is taken to be the main
-; BIOS's -- the only page-0 code there is (a documented simplification).
-calslt_body:
-                ld      (CALSLT_HL), hl     ; the caller's HL passes through
-                push    af                  ; ... and its AF (the page test needs A)
-                push    ix
-                pop     hl
-                ld      a, h
-                cp      $40
-                jr      c, csb_p0
-                pop     af
-                ld      hl, (CALSLT_HL)
-                jp      (ix)                ; mapped: its RET returns to the caller
-csb_p0:
-                push    de
-                push    bc
-                call    pg0_mainrom_in      ; the BIOS in page 0 (clobbers A..L)
-                pop     bc
-                pop     de
-                pop     af
-                ld      hl, csb_p0_back
-                push    hl
-                ld      hl, (CALSLT_HL)
-                jp      (ix)
-csb_p0_back:
-                push    af
-                call    pg0_mainrom_out     ; DOS's RAM back in page 0
-                pop     af
-                ret
+; (calslt_body, CALSLT for a page-0 target under MSX-DOS -- D-DOSMODE40 -- was here;
+; D-TPAP1's br_calslt enters the main BIOS's own CALSLT, which covers that case.)
 
                 ds      $5FE5 - $, $00  ; pad to the first free-region kernel entry
                 jp      k_5FE5          ; $5FE5
@@ -3257,11 +3244,11 @@ fill_sp:
 ; The $0030 entry points DIRECTLY at callf_body_body (M22a: no intermediate veneer).
 ; (cell, handler) pairs; terminated by a 0 cell. No two JP triples overlap.
 p0_env_tab:
-                dw      $000C, rdslt_h  ; RST 8  RDSLT  (read byte from a slot)
-                dw      $0014, wrslt_h  ; RST 10 WRSLT  (write byte to a slot)
-                dw      $001C, calslt_h ; RST 18 CALSLT (inter-slot call)
-                dw      $0024, enaslt_h ; ENASLT (enable slot in a page)
-                dw      $0030, callf_body_body ; RST 30 CALLF (M22a: direct, no veneer)
+                dw      $000C, BR_RDSLT ; RST 8  RDSLT  -- D-TPAP1: page-3 bridges to the
+                dw      $0014, BR_WRSLT ; RST 10 WRSLT     main BIOS's own entries
+                dw      $001C, BR_CALSLT ; RST 18 CALSLT    (br1_tmpl, pageenv.asm)
+                dw      $0024, BR_ENASLT ; ENASLT
+                dw      $0030, BR_CALLF ; RST 30 CALLF
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table

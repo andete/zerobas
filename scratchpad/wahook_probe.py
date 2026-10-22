@@ -22,7 +22,8 @@ from disk_probe_bdos import fat12_add               # noqa: E402
 import disk_probe_wrblk_roundtrip as RT             # noqa: E402
 import omsx_preflight                               # noqa: E402
 
-MACH = {"ref": "National_CF-3300", "zb": "C-BIOS_MSX1_EU_REPACK_DISK"}
+MACH = {"ref": "National_CF-3300", "zb": "C-BIOS_MSX1_EU_REPACK_DISK",
+        "zbcf": "National_CF-3300_ZEROBASDISK"}   # our disk ROM on the CF-3300: the $FF gate open
 
 
 def tcl(out, end, cap):

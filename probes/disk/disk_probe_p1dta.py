@@ -61,15 +61,15 @@ S, O = got["STOCK"], got["OURS"]
 # SFIRST (D-P1SRCH, D-SRCHFCB): into page 3 the CF-3300 writes the FCB form (+0 the drive,
 # +13 the attribute, +15 the record count) -- compared whole, at $C100 (512 B) and $C200
 # (300 B). Into page 1 it writes the raw directory entry at +1 -- compared at +1..+32;
-# +0 and +33 hold the PROGRAM'S own $55 pre-fill, which zerobas cannot write: D-TPAP1.
+# +0 and +33 hold the PROGRAM'S own $55 pre-fill -- lost into the disk ROM on zerobas
+# until D-TPAP1 (2026-10-23) gave a DOS program RAM in page 1; compared since.
 ok = (O[0] == S[0] == DATA[:128] and O[2] == S[2] == DATA[:128]
       and O[1][:4] == S[1][:4]                  # every answer
       and O[3][1:33] == S[3][1:33]              # SFIRST into page 1: the raw entry
       and O[4][:33] == S[4][:33]                # SFIRST into page 3: the FCB form
-      and O[5][:33] == S[5][:33])               # ... and the record count's rounding
-if O[1][4:6] != S[1][4:6]:
-    print(f"KNOWN GAP: a DOS program runs with page 1 = subslots {O[1][5]:02X} here, "
-          f"{S[1][5]:02X} on the CF-3300 -- the TPA is not RAM in page 1 (D-TPAP1)")
+      and O[5][:33] == S[5][:33]                # ... and the record count's rounding
+      and O[1][4:6] == S[1][4:6]                # D-TPAP1: the slots a DOS program runs with
+      and O[3][0] == S[3][0] and O[3][33] == S[3][33])  # ... so its own $55 fill lands
 print("PASS: RDBLK, SEQRD and SFIRST land in page-1 RAM as on the CF-3300, SFIRST's "
       "entry byte for byte" if ok else
       "FAIL: a page-1 DTA differs (see above)")

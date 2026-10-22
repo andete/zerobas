@@ -5209,7 +5209,7 @@ item — do **one item per session** to keep context lean.
       probe. And the stray bytes were NOT ours: +0 and +33 are the program's own $55 pre-fill,
       which never reached page 1 on zerobas -- the next item.
 
-- [ ] 🧠 **D-TPAP1 — AN MSX-DOS PROGRAM RUNS WITH THE DISK ROM IN PAGE 1, NOT RAM (found 2026-10-22
+- [x] 🧠 **D-TPAP1 — AN MSX-DOS PROGRAM RUNS WITH THE DISK ROM IN PAGE 1, NOT RAM (found 2026-10-22
       by D-SRCHFCB)**
       🎚️ TIER 1 — happy path: a DOS program larger than ~16 KB, or one using $4000-$7FFF, cannot
       work; its own stores there go to the ROM.
@@ -5271,7 +5271,52 @@ item — do **one item per session** to keep context lean.
       (dos_handoff_keep and hk_system; BASIC's cells under WA_SEG are dead until BASENT), AND
       route the page-0 vectors ($000C / $0014 / $001C / $0024 / $0030) through RAM stubs that
       bring the disk ROM in around the page-1 handler -- risk (3) -- before page 1 may be RAM.
+      📏 **AND THE VECTORS WERE WORSE THAN "IN PAGE 1" (2026-10-23)** ([`p1vec_run.out`](scratchpad/p1vec_run.out),
+      probes/disk/p1vec.asm, our own .COM: a page-1 store, then RDSLT / WRSLT / CALSLT /
+      CALLF / ENASLT from the TPA, each step's number written before it runs). The CF-3300
+      passes all 8 steps. zerobas died at step 5 -- `RST 30h` from a DOS program -- because
+      the old $0030 handler only ever reached DSKIO, and RDSLT ignored its slot argument;
+      our disk ROM in the CF-3300 (`National_CF-3300_ZEROBASDISK`, where the gated table IS
+      built and page 1 does flip, [`wahook_zbcf.out`](scratchpad/wahook_zbcf.out)) died at
+      step 2. And the RAM home was measured, not assumed ([`dosram_run.out`](scratchpad/dosram_run.out),
+      [`dosram_run2.out`](scratchpad/dosram_run2.out), write watchpoints): neither machine
+      writes $DDF0..$DF92 or $F773..$F87E during a DOS session; the CF-3300's disk ROM fills
+      $DDF0.. BEFORE DOS -- the disk system's resident area, where our $0038 handler sits.
+      🔮 "zb passes 8 / 8, subslots $00" HIT; "zbcf dies at step 2" HIT; "zb dies in CALLF" was
+      not predicted.
+      ✅ **DONE (2026-10-23) -- steps 2 and 3 in one slice: they cannot be separated, the moment
+      the $F368 table is live MSX-DOS puts RAM in page 1.** The five page-0 entries are now
+      stubs in page-3 RAM that page the MAIN BIOS into page 0 and enter its OWN RDSLT /
+      WRSLT / CALSLT / ENASLT / CALLF (CALLF's operand copied to BR_CFOP, the BIOS returns
+      through it); ENASLT of page 0 is switched from RAM (br_p0in). They are LDIR'd with the
+      $0038 handler (now sharing br_mainin) to INT_H_HIRAM by install_dos_env, which also
+      installs the hook bodies at WA_SEG and points $F368 / $F368+3 at them -- at every DOS
+      entry (lay_page0_env: the boot and CALL SYSTEM), on every host. The page-1 handlers,
+      callf_body_body and calslt_body are gone; mul_reclen moved to the $4E7E hole for room;
+      the disk ROM's free space went 1215 -> 1141 B. p1vec-acceptance (new) matches the
+      CF-3300 byte for byte ([`p1vec_acc.out`](scratchpad/p1vec_acc.out)); p1dta-acceptance
+      now also requires the slots and the program's own $55 at +0 / +33
+      ([`p1dta_tpap1.out`](scratchpad/p1dta_tpap1.out)). Step 4 and the other tails: D-TPAPTAIL.
 
+
+- [ ] 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
+      ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
+      🎚️ TIER 1 — latent: each is a DOS program's happy path only if it takes that road.
+      🤖 **AUTONOMOUS** — measure each on the CF-3300 first (our own .COM, registers and RAM).
+      (a) The $F37D stub (f37d_tmpl, kernel.asm) `jp nz, bdos_entry` when page 0 is not the
+      BIOS -- under MSX-DOS that is a jump into page 1, which is now the TPA's RAM. A DOS
+      program that calls $F37D instead of $0005 would run its own RAM. ➡️ Measure a DOS
+      program's `call $F37D` (C = $0C) on the CF-3300 and on zerobas.
+      (b) Slice plan step 4: P1_BLIT writes slot 3's subslot register without the SLTTBL[3]
+      mirror the $F368 bodies and the BIOS slot routines trust; harmless while it restores
+      the same value under DI, wrong if an interrupt's slot call reads the mirror mid-blit.
+      (c) After `BASIC` (BASENT) the $F368 / $F368+3 JPs still point at WA_SEG, which is
+      BASIC's RAM again. Nothing in BASIC calls them today; C-BIOS had RETs there before
+      any DOS. ➡️ Decide by behaviour, not by reading the reference's $F368 bytes (they are
+      RAM-resident CODE, §8.5): a USR routine at the BASIC prompt, before and after a DOS
+      session, calls $F368+3 and reports the slot state it returns with.
+      And noted, not filed: br_p0in's expanded path is valid from RAM only for a slot whose
+      primary is page 3's (true for every slot these machines switch into page 0).
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
       LOAD PUT IT BACK AT $8001 (found 2026-10-22 by D-DISKRUN's megadoom)**
@@ -12409,7 +12454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38445 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38490 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12575,7 +12620,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17437 (T-6FE392)8 (T-529ABE)` from `TODO.md:30274 (T-529ABE)`: a
+      `TODO.md:17482 (T-6FE392)8 (T-529ABE)` from `TODO.md:30319 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18284,7 +18329,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -35,10 +35,9 @@ lay_page0_env:
                 ; COMMAND.COM handoff (page 1 -> RAM) has a live handler instead of $FF
                 ; (tier2-a3-spec.md). Interrupts are OFF here; page 1 (LDIR source) is
                 ; mapped; page 3 (dest) is RAM. Clobbers A/BC/DE/HL like the loop below.
-                ld      hl, int_h_hiram_tmpl
-                ld      de, INT_H_HIRAM
-                ld      bc, int_h_hiram_end - int_h_hiram_tmpl
-                ldir
+                ; D-TPAP1: and the slot bridges + the $F368 table (install_dos_env,
+                ; kernel.asm) -- every DOS entry, every host.
+                call    install_dos_env
                 ld      hl, p0_env_tab
 lpe_loop:
                 ld      e, (hl)
@@ -76,88 +75,74 @@ k_41EF:
                 jp      k_41FD              ; $41FD: COMMAND.COM-load kernel veneer
                 ds      $4217 - $, $00      ; pad to rdslt_h (net-zero: stays $4217)
 
-; rdslt_h ($000C RDSLT) — read the byte at HL. The standard RDSLT takes the slot
-; id in A; during boot every address the code reads through RDSLT is in an already-
-; mapped page (our page-1 ROM or the page-3 work area), so we read the live memory
-; directly. (Deepened in a3 only if a trap shows a genuinely-unmapped target.)
-rdslt_h:
-                ld      a, (hl)
-                ret
-
-; wrslt_h ($0014 WRSLT) — write E to the byte at HL (mapped-memory case, as RDSLT).
-wrslt_h:
-                ld      (hl), e
-                ret
-
-; calslt_h ($001C CALSLT) — inter-slot call to IX (slot id in IYh). The boot's
-; CALSLT targets during the DOS load are in already-mapped pages (our page-1 disk
-; ROM / page-3 work area), so this calls IX directly while passing A,BC,DE,HL
-; through untouched. Stashes HL only to build the return address, then reloads it
-; before the jump so the callee sees the caller's HL. (Deepened in a3 if needed.)
-; 🔴 D-DOSMODE40 (2026-10-10): A PAGE-0 TARGET IS NOT MAPPED -- page 0 is DOS's RAM.
-; COMMAND.COM's `MODE 40` calls INITXT ($006C, slot 0) through here, and the bare
-; `jp (ix)` this was ran DOS's RAM at $006C instead: LINL40 changed, the screen did
-; not (scratchpad/dosmode_run.out, dosmode_trace.out). The body moved to the fill
-; above `ds $5FE5` (calslt_body, kernel.asm); this slot keeps its 13 bytes so dskio
-; stays at its canonical offset.
-calslt_h:
-                jp      calslt_body
-                ds      10, $00         ; net-zero: the old body's 13 bytes
-
-; enaslt_h ($0024 ENASLT) — enable slot (A = slot id Fx00SSPP) in the page of HL.
-; Real primary-slot switch: derive the page from HL bits 15-14 and write the
-; matching 2-bit field of $A8 to the slot's primary number. The secondary ($FFFF)
-; is left as-is — sufficient for our config, where the only expanded target the
-; boot enables (slot 3-1 in page 1) already carries the right secondary (page 1 is
-; our ROM throughout). Runs from page 1, so it survives switching any other page.
-; Clobbers A,F (ENASLT convention). (Documented simplification; widen in a3 if a
-; trap shows an expanded ENASLT to a not-yet-selected secondary.)
-enaslt_h:
+; --- D-TPAP1 (2026-10-23): THE PAGE-0 INTER-SLOT ENTRIES, BRIDGED TO THE MAIN BIOS ---
+; CLEAN-ROOM: the entry addresses and their register contract are MSX2 TH ch.2; the
+; CF-3300 is a black-box oracle (our own .COM, slot state and answers); own code.
+; MSX-DOS runs a program with RAM in page 1 (the CF-3300: slot 3's subslots $00 at
+; the program's first instruction), so the $000C / $0014 / $001C / $0024 / $0030
+; entries cannot live in this ROM. They used to (rdslt_h .. enaslt_h here, the CALLF
+; and CALSLT bodies in the kernel), reading and calling whatever was mapped -- a slot
+; argument was never honoured, and CALLF only reached DSKIO. Now each is a stub in
+; page-3 RAM that pages the main BIOS into page 0 and enters the BIOS's OWN RDSLT /
+; WRSLT / CALSLT / ENASLT / CALLF with the caller's registers; br_back puts page 0
+; back. ENASLT of PAGE 0 is done here (br_p0in): the BIOS cannot switch the page it
+; runs in. Three pieces -- the int_h_hiram block (runtime.asm), this one, br2
+; (fat.asm) -- LDIR'd end to end at INT_H_HIRAM by install_dos_env; `jp` across
+; pieces, `jr` within one. Measured with probes/disk/p1vec.asm (scratchpad/
+; p1vec_run.out): the CF-3300 runs all five from the TPA.
+; D-TPAP1: where each piece of the page-3 slot bridges lands in RAM. All here, ABOVE
+; every use: pasmo 0.5.3 assembles a use of a label-derived equ above its own line
+; as 0 (D-PASMO053, tools/check_alias_order.py).
+BR_MAININ       equ     INT_H_HIRAM + (br_mainin_tmpl - int_h_hiram_tmpl)
+BR_P0IN         equ     INT_H_HIRAM + (br_p0in_tmpl - int_h_hiram_tmpl)
+BR_BACK         equ     INT_H_HIRAM + (br_back_tmpl - int_h_hiram_tmpl)
+BR_BACK_DI      equ     INT_H_HIRAM + (br_back_di_tmpl - int_h_hiram_tmpl)
+BR1_RAM         equ     INT_H_HIRAM + (int_h_hiram_end - int_h_hiram_tmpl)
+BR_RDSLT        equ     BR1_RAM + (br_rdslt_tmpl - br1_tmpl)
+BR_WRSLT        equ     BR1_RAM + (br_wrslt_tmpl - br1_tmpl)
+BR_CALSLT       equ     BR1_RAM + (br_calslt_tmpl - br1_tmpl)
+BR_ENASLT       equ     BR1_RAM + (br_enaslt_tmpl - br1_tmpl)
+BR2_RAM         equ     BR1_RAM + (br1_end - br1_tmpl)
+BR_CALLF        equ     BR2_RAM + (br_callf_tmpl - br2_tmpl)
+BR_GO           equ     BR2_RAM + (br_go_tmpl - br2_tmpl)
+BR_TGT          equ     BR2_RAM + (br_tgt_tmpl - br2_tmpl)
+BR_FRM          equ     BR2_RAM + (br_frm_tmpl - br2_tmpl)
+BR_HL           equ     BR2_RAM + (br_hl_tmpl - br2_tmpl)
+BR_CFOP         equ     BR2_RAM + (br_cfop_tmpl - br2_tmpl)
+br1_tmpl:
+br_rdslt_tmpl:
+                push    hl
+                ld      hl, $000C           ; RDSLT
+                jp      BR_GO
+br_wrslt_tmpl:
+                push    hl
+                ld      hl, $0014           ; WRSLT
+                jp      BR_GO
+br_calslt_tmpl:
+                push    hl
+                ld      hl, $001C           ; CALSLT
+                jp      BR_GO
+br_enaslt_tmpl:
+                push    af
+                ld      a, h
+                cp      $40
+                jr      nc, br_ena_bios_tmpl
+                pop     af                  ; page 0: switch it from here
                 push    bc
                 push    de
-                ld      b, a            ; B = slot id
-                ld      a, h
-                rlca
-                rlca
-                and     3
-                ld      c, a            ; C = page number (0..3) = shift count
-                ld      a, b
-                and     3               ; A = primary slot number (low 2 bits)
-                ld      e, a            ; E = primary value (to be shifted)
-                ld      d, 3            ; D = field mask (to be shifted)
-                inc     c               ; +1 so the dec-first loop runs `page` times
-ena_shift:
-                dec     c
-                jr      z, ena_apply
-                sla     e
-                sla     e               ; primary value <<= 2 per page
-                sla     d
-                sla     d               ; mask <<= 2 per page
-                jr      ena_shift
-ena_apply:
-                in      a, ($A8)
-                ld      b, a            ; B = old $A8
-                ld      a, d
-                cpl                     ; ~mask
-                and     b               ; clear this page's 2-bit field
-                or      e               ; OR in the new primary slot
-                out     ($A8), a
+                push    hl
+                di
+                ld      c, a
+                call    BR_P0IN
+                pop     hl
                 pop     de
                 pop     bc
                 ret
-
-; int_h ($0038) — DOS maskable-interrupt vector while RAM is in page 0 (installed by
-; lay_page0_env; per O-1/§8.70 installing $0038 is the disk ROM's job). The body lives
-; in the free tail (int_h_body) and chains to the main-BIOS KEYINT (A-2/§8.70): a bare
-; VDP ack is NOT enough — the kernel needs H.KEYI/H.TIMI/keyboard/JIFFY, which only the
-; main-ROM KEYINT runs. This slot stays 6 bytes (jp + ds 3) so dskio does not shift.
-int_h:
-                ; D-INTHDEAD (2026-09-09): the `jp int_h_body` that lived here is GONE
-                ; with its body. $0038 has pointed at INT_H_HIRAM since A-3 --
-                ; `p0_env_tab` says so in its own entry, "(NOT page-1 int_h: page 1 is
-                ; reclaimed by the TPA)" -- so nothing has reached this label since.
-                ; ⚠️ THE SIX BYTES STAY. The slot is what keeps dskio at its canonical
-                ; offset; reclaiming them is an address shift, which is a different
-                ; change with a different gate to satisfy.
-                ds      6, $00          ; net-zero: keep dskio at its canonical offset
+br_ena_bios_tmpl:
+                pop     af
+                push    hl
+                ld      hl, $0024           ; ENASLT, pages 1-2
+                jp      BR_GO
+br1_end:
+                ds      $4257 - $, $00      ; net-zero: keep dskio at its canonical offset
 

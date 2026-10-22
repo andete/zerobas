@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **438** in the MSX standard work area at or above `$F380`.
-* **disk** — 125 declared addresses in this project's own workspace `$E000..$F37F` (116 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -85,11 +85,6 @@ second one is the question a per-component map cannot answer.
 | `$E928` | 2 B | `disk` | `BDOS_SRCHIDX` | runtime dir-search cursor (word; M19) |  |
 | `$E92A` | 1 B | `disk` | `BOOT_SV_A8/RRND_RECSEC` | r0 & 3 (record-in-sector) across the sector-seek loop (1 B) |  |
 | `$E92B` | 1 B | `disk` | `BOOT_SV_SEC/RRND_CLUSSEC` | FAT_CLUSSEC-1 across the cluster->sector multiply loop (1 B) |  |
-| `$E92C` | 2 B | `disk` | `R30_HL` | $0030 handler: saved caller HL (word) |  |
-| `$E92E` | 2 B | `disk` | `R30_BC` | $0030 handler: saved caller BC (word) |  |
-| `$E930` | 2 B | `disk` | `R30_DE` | $0030 handler: saved caller DE (word) |  |
-| `$E932` | 2 B | `disk` | `R30_AF` | $0030 handler: saved caller AF incl. carry (word) |  |
-| `$E934` | 2 B | `disk` | `CALSLT_HL` | CALSLT handler: HL stash across the call setup (word) |  |
 | `$E936` |  | `disk` | `FREAD_LEFT/RDBLK_REQ` | records requested (HL on entry) (word) |  |
 | `$E938` | 2 B | `disk` | `RDBLK_RECSIZE` | record size from FCB+14 (word) |  |
 | `$E93A` | 2 B | `disk` | `RDBLK_DONE` | records delivered so far (word; = HL on return) |  |

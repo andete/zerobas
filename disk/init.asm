@@ -208,16 +208,8 @@ BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
 BOOT_SV_A8      equ     $E92A   ; saved $A8 primary-slot config (1 B)
 BOOT_SV_SEC     equ     $E92B   ; saved slot secondary ($FFFF) live value (1 B)
-; step-6 page-0 environment scratch (transient; used only by the $0030 CALLF
-; handler and the CALSLT handler during the boot bridge). The $0030 handler must
-; deliver A,B,C,DE,HL UNTOUCHED to the DSKIO callee, so it saves them here while
-; it reads the inline CALLF operand off the stack. Own-choice free page-3 RAM
-; after BOOT_SV_SEC. (provider-oracle-scope.md §8.4)
-R30_HL          equ     $E92C   ; $0030 handler: saved caller HL (word)
-R30_BC          equ     $E92E   ; $0030 handler: saved caller BC (word)
-R30_DE          equ     $E930   ; $0030 handler: saved caller DE (word)
-R30_AF          equ     $E932   ; $0030 handler: saved caller AF incl. carry (word)
-CALSLT_HL       equ     $E934   ; CALSLT handler: HL stash across the call setup (word)
+; $E92C..$E935 held the page-1 CALLF / CALSLT handlers' register stash until
+; D-TPAP1 (2026-10-23) replaced both with page-3 bridges into the main BIOS; free.
 ; BDOS $27 (Random Block Read) scratch — transient within one RDBLK call. Own-choice
 ; free page-3 RAM after the step-6 block. Only the DOS-boot path (on a real-BIOS host)
 ; calls $27, so this never collides with the zerobas-BASIC host buffers (which use

@@ -990,6 +990,64 @@ bf_end:
 bd_invalid:     db      13, 10, "Invalid date", 13, 10  ; runs on into bd_prompt
 bd_prompt:      db      "Enter date (M-D-Y):", 0
 
+; br2 (D-TPAP1) -- the third piece of the page-3 slot bridges (see br1_tmpl,
+; pageenv.asm). br_callf: RST 30h's inline operand is copied to BR_CFOP and the
+; BIOS's own CALLF reads it there; it returns to BR_CFOP + 3, a `jp BR_BACK`, with
+; the caller's return (past the operand) underneath. br_go / br_frame: the BIOS
+; into page 0, then [target][frame][caller's $A8][caller's return], every register
+; the caller's. BR_TGT / BR_FRM / BR_HL / BR_CFOP are read before the target runs.
+br2_tmpl:
+br_callf_tmpl:
+                ex      (sp), hl            ; HL -> slot, lo, hi
+                push    af
+                ld      a, (hl)
+                ld      (BR_CFOP), a
+                inc     hl
+                ld      a, (hl)
+                ld      (BR_CFOP + 1), a
+                inc     hl
+                ld      a, (hl)
+                ld      (BR_CFOP + 2), a
+                inc     hl                  ; the caller's return: past the operand
+                pop     af
+                ex      (sp), hl
+                push    hl
+                ld      hl, $0030           ; CALLF
+                ld      (BR_TGT), hl
+                ld      hl, BR_CFOP
+                jr      br_frame_tmpl
+br_go_tmpl:
+                ld      (BR_TGT), hl
+                ld      hl, BR_BACK
+br_frame_tmpl:                              ; HL = the frame; stack [HL][return]
+                di
+                ld      (BR_FRM), hl
+                pop     hl
+                push    af
+                push    bc
+                push    de
+                push    hl
+                call    BR_MAININ
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ld      (BR_HL), hl
+                ld      hl, (PG_SV_A8 - 1)  ; H = the caller's $A8
+                push    hl
+                ld      hl, (BR_FRM)
+                push    hl
+                ld      hl, (BR_TGT)
+                push    hl
+                ld      hl, (BR_HL)
+                ret                         ; -> the BIOS entry
+br_tgt_tmpl:    dw      0
+br_frm_tmpl:    dw      0
+br_hl_tmpl:     dw      0
+br_cfop_tmpl:   db      0, 0, 0
+                jp      BR_BACK
+br2_end:
+
                 ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25
                 ; - $` lines stood here, commented "anchor canonical address", with NO
                 ; code between them: the `jp k_49xx` veneers left with D-FATENG

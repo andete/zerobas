@@ -465,24 +465,42 @@ int_h_hiram_tmpl:
                 push    de
                 push    hl
                 di
-                ; --- inlined pg0_mainrom_in (main BIOS ROM -> page 0; EXPTBL[0]) ---
+                call    BR_MAININ           ; the main BIOS into page 0 (clobbers A..L)
+                call    $0038               ; main-ROM KEYINT: ack + H.KEYI + H.TIMI + kb + JIFFY
+                di                          ; close KEYINT's internal EI before un-mapping
+                ld      a, (PG_SV_A8)       ; page 0: DOS's RAM again
+                out     ($A8), a
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ei
+                ret
+; br_mainin / br_p0in (D-TPAP1) -- pg0_mainrom_in's switch, in RAM: the main BIOS
+; (br_mainin) or the slot in C (br_p0in, ENASLT's page-0 case) into PAGE 0, the
+; caller's $A8 kept in PG_SV_A8. Caller DI; clobbers A..L. The expanded path parks
+; page 3 on the target's primary to reach its $FFFF, so from RAM it holds only when
+; that primary IS page 3's (the RAM slot 3-0); an expanded BIOS slot elsewhere would
+; unmap this code (neither target machine has one).
+br_mainin_tmpl:
+                ld      a, (EXPTBL)
+                ld      c, a
+br_p0in_tmpl:
                 in      a, ($A8)
                 ld      (PG_SV_A8), a       ; save full primary-slot config (restore key)
-                ld      a, (EXPTBL)         ; main-ROM slot id
-                ld      c, a
-                and     $03                 ; A = main-ROM primary
+                ld      a, c
+                and     $03                 ; A = the slot's primary
                 ld      b, a
                 ld      a, (PG_SV_A8)
                 and     $FC                 ; clear page-0 primary field
                 or      b
-                out     ($A8), a            ; main-ROM primary now in page 0 (pages 1/2/3 kept)
-                bit     7, c                ; main-ROM slot expanded?
-                jr      z, ihh_keyint       ; unexpanded (CF-3300) -> primary switch is enough
-                ; --- expanded: select page-0 subslot via the $FFFF/SLTTBL protocol ---
+                out     ($A8), a            ; primary now in page 0 (pages 1/2/3 kept)
+                bit     7, c                ; expanded?
+                ret     z
                 ld      a, c
                 rrca
                 rrca
-                and     $03                 ; A = main-ROM subslot S
+                and     $03                 ; A = subslot S
                 ld      e, a
                 ld      hl, SLTTBL
                 ld      a, b
@@ -510,19 +528,36 @@ int_h_hiram_tmpl:
                 ld      ($FFFF), a          ; P's secondary: page-0 subslot = S
                 ld      a, (PG_SV_A8)
                 and     $FC                 ; restore page-3 (& 1/2) primaries; clear page 0
-                or      b                   ; page-0 primary = P (main-ROM, now subslot S)
+                or      b                   ; page-0 primary = P (now subslot S)
                 out     ($A8), a
-ihh_keyint:
-                call    $0038               ; main-ROM KEYINT: ack + H.KEYI + H.TIMI + kb + JIFFY
-                di                          ; close KEYINT's internal EI before un-mapping
-                ; --- inlined pg0_mainrom_out (restore page 0 from PG_SV_A8) ---
-                ld      a, (PG_SV_A8)
-                out     ($A8), a
-                pop     hl
-                pop     de
-                pop     bc
+                ret
+; br_back (D-TPAP1) -- where a bridged main-BIOS entry returns (br_go's frame, or
+; via the `jp` after BR_CFOP). The caller's $A8 rides on the stack, not in
+; PG_SV_A8: a callee may page the BIOS in itself and reuse that cell. Only page 0
+; goes back (ENASLT's pages 1-2 stay as the BIOS set them); the interrupt state is
+; the callee's, as the BIOS leaves it.   in: stack [saved $A8 in H][caller's return]
+br_back_tmpl:
+                ex      (sp), hl            ; H = the caller's $A8
+                push    af                  ; the callee's answer
+                ld      a, i                ; P/V = IFF2
+                push    af
+                di
+                ld      a, h
+                and     $03
+                ld      l, a                ; L = page 0's primary before the call
+                in      a, ($A8)
+                and     $FC
+                or      l
+                out     ($A8), a            ; page 0: DOS's RAM again
                 pop     af
+                jp      po, BR_BACK_DI      ; interrupts were off: leave them off
+                pop     af
+                pop     hl
                 ei
+                ret
+br_back_di_tmpl:
+                pop     af
+                pop     hl
                 ret
 int_h_hiram_end:
 
@@ -661,40 +696,6 @@ dos_clear_screen:
 ; $7FB8-$7FBF mirrored x8). The window is now entirely dead $00 pad. The IF turns any
 ; below-window code that grows INTO the window into a LOUD build error (a bare
 ; negative `ds` only warns -> a silent empty object).
-; --- S10.D: the RANDOM record engine's multiply (disk/kernel.asm hk_dget), in the
-; fill below the $7F7C pin (and below the $7F80 FDC window).
-
-; mul_reclen -- A:HL := HL * GP_RECLEN, a 24-bit product (D-PUTU32: k is 0..65535
-; and reclen 1..256, so the product is < 2^24). Two cases, because 256 does not
-; fit an 8-bit multiplier: reclen == 256 is k << 8, moved by bytes; reclen < 256
-; is 8 MSB-first steps with k FIXED in BC and the product doubling in A:HL.
-; Clobbers BC, DE (the sub-ROM copy kept BC; no caller here needs it).
-mul_reclen:
-                ld      b, h
-                ld      c, l                ; BC = k
-                ld      de, (GP_RECLEN)
-                ld      a, d
-                or      a
-                jr      z, mr_lt256
-                ld      a, b                ; reclen == 256: A:HL = k << 8
-                ld      h, c
-                ld      l, 0
-                ret
-mr_lt256:                                   ; A = 0; E = reclen (1..255)
-                ld      h, a
-                ld      l, a
-                ld      d, 8
-mr_loop:
-                add     hl, hl
-                rla                         ; A:HL <<= 1
-                sla     e                   ; reclen's top bit -> CF
-                jr      nc, mr_skip
-                add     hl, bc
-                adc     a, 0                ; A:HL += k
-mr_skip:
-                dec     d
-                jr      nz, mr_loop
-                ret
                 ; D-DOSBASIC: zerobas's banner entry, pinned here, OUTSIDE the
                 ; standard $4010-$4033 disk-ROM table -- it sat at $4022, which is
                 ; BASENT. Main CALSLTs it (basic/interp.asm, `ld ix,$7F7C`).
