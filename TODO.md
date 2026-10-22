@@ -5258,6 +5258,19 @@ item — do **one item per session** to keep context lean.
       and when (breakpoints on the work-area cells, registers only); (2) give WA_SEG and the
       trampolines a DOS-only home and build them in dos_handoff + CALL SYSTEM; (3) only then
       page 1 = RAM in the TPA, with every DOS gate re-run; (4) SLTTBL in P1_BLIT.
+      ✅ **STEP 1 MEASURED (2026-10-23)** ([`wahook_probe.py`](scratchpad/wahook_probe.py),
+      [`wahook_run.out`](scratchpad/wahook_run.out): breakpoints on the two work-area cells,
+      the caller's return ADDRESS, the slot state at entry and return; the D-P1DOS disk). On
+      the CF-3300 $F368+3 takes the subslots $04 -> $00 (RAM in) and $F368 back. The callers
+      are mostly the SAME addresses on both machines -- $D7B6, $D82A, $D888 / $D88E -- i.e.
+      MSXDOS.SYS (the same file on both) brackets every kernel call: $F368 (ROM in) before,
+      $F368+3 (RAM in) after. The CF-3300's own resident routines ($F1CC..$F1E1) add pairs
+      around their DTA work (zerobas does that with P1_BLIT). On zerobas the same MSXDOS.SYS
+      calls land on C-BIOS's RET fill, so the subslots stay $04 throughout. ➡️ Step 2 is
+      therefore two things: build the $F368 table + the wa_seg bodies at the DOS hand-off
+      (dos_handoff_keep and hk_system; BASIC's cells under WA_SEG are dead until BASENT), AND
+      route the page-0 vectors ($000C / $0014 / $001C / $0024 / $0030) through RAM stubs that
+      bring the disk ROM in around the page-1 handler -- risk (3) -- before page 1 may be RAM.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12396,7 +12409,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38432 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38445 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12562,7 +12575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17424 (T-6FE392)8 (T-529ABE)` from `TODO.md:30261 (T-529ABE)`: a
+      `TODO.md:17437 (T-6FE392)8 (T-529ABE)` from `TODO.md:30274 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18271,7 +18284,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30261 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30274 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
