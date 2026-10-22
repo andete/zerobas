@@ -573,7 +573,9 @@ bsr_partial:
                 push    af              ; keep n for the decrement
                 ld      c, a
                 ld      b, 0            ; BC = n real bytes
-                ldir                    ; copy n real bytes to the DTA
+                call    P1_BLIT         ; copy n real bytes to the DTA -- D-P1DOS: with
+                                        ; page 1 = RAM, so a page-1 DTA gets them too
+                                        ; (an LDIR there wrote into this ROM)
                 ; zero-fill the remaining RECSIZE - n bytes of the record (DE now
                 ; points just past the real bytes in the DTA).
                 pop     af              ; A = n
@@ -583,9 +585,13 @@ bsr_partial:
                 jr      z, bsr_nopad
                 ld      b, a            ; B = pad byte count
 bsr_padloop:
+                push    bc              ; D-P1DOS: each pad byte through P1_BLIT too
                 xor     a
-                ld      (de), a         ; zero-fill (oracle: MSX-DOS pads with $00)
-                inc     de
+                ld      (P1_DEST), a    ; a $00 source byte (oracle: MSX-DOS pads with $00)
+                ld      hl, P1_DEST
+                ld      bc, 1
+                call    P1_BLIT         ; DE advances
+                pop     bc
                 djnz    bsr_padloop
 bsr_nopad:
                 ; BYTESLEFT -= n (n in A on stack); 4-byte LE subtract.

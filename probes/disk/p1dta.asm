@@ -25,8 +25,33 @@ BDOS    equ     $0005
         ld      c, $27              ; RDBLK
         call    BDOS
         ld      ($C000), a          ; RDBLK's answer
+        ; --- SEQRD ($14) into $4100: the same record, sequentially ----------------
+        ld      de, $4100
+        ld      c, $1A
+        call    BDOS
+        ld      de, fcb3            ; a FRESH FCB: the first one's position has moved
+        ld      c, $0F              ; OPEN
+        call    BDOS
+        xor     a
+        ld      (fcb3 + 32), a      ; current record 0
+        ld      de, fcb3
+        ld      c, $14              ; SEQRD
+        call    BDOS
+        ld      ($C002), a
+        ; --- SFIRST ($11) into $4200: the directory entry -------------------------
+        ld      de, $4200
+        ld      c, $1A
+        call    BDOS
+        ld      de, fcb2
+        ld      c, $11              ; SFIRST
+        call    BDOS
+        ld      ($C003), a
         ld      c, $00              ; back to DOS
         call    BDOS
         ret
 fcb:    db      0, "P1DATA  BIN"
+        ds      25, 0
+fcb2:   db      0, "P1DATA  BIN"
+        ds      25, 0
+fcb3:   db      0, "P1DATA  BIN"
         ds      25, 0

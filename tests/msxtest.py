@@ -162,6 +162,13 @@ class Machine:
         # what seeds $8001. Seed it the way the boot does.
         if "TXTTAB" in self.sym and "TXTBASE" in self.sym:
             self.poke_w(self.sym["TXTTAB"], self.sym["TXTBASE"])
+        # D-P1DOS (2026-10-22): the disk ROM's block reads copy through P1_BLIT, the
+        # page-3 routine its INIT installs on every host (install_p1blit). A test that
+        # never runs INIT would call zeroed RAM; install it the way the boot does.
+        need = ("P1_BLIT", "p1_blit_tmpl", "p1_blit_end")
+        if all(n in self.sym for n in need):
+            t0, t1 = self.sym["p1_blit_tmpl"], self.sym["p1_blit_end"]
+            self.mem[self.sym["P1_BLIT"]:self.sym["P1_BLIT"] + (t1 - t0)] = self.mem[t0:t1]
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
 

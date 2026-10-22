@@ -1,0 +1,17 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK python3 probes/disk/disk_probe_p1dta.py
+STOCK: answers RDBLK=00 OPEN=00 SEQRD=00 SFIRST=00
+STOCK:   RDBLK $4000.. = the record   SEQRD $4100.. = the record
+STOCK:   SFIRST $4200.. ff503144415441202042494e200000000000000000000000000000510100020000
+OURS: answers RDBLK=00 OPEN=00 SEQRD=00 SFIRST=00
+OURS:   RDBLK $4000.. = the record   SEQRD $4100.. = the record
+OURS:   SFIRST $4200.. ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+KNOWN GAP: SFIRST's directory entry does not reach page-1 RAM here (D-P1SRCH)
+PASS: RDBLK and SEQRD land in page-1 RAM as on the CF-3300

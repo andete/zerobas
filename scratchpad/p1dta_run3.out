@@ -1,0 +1,7 @@
+STOCK: answers RDBLK=00 OPEN=00 SEQRD=00 SFIRST=00
+STOCK:   RDBLK $4000.. = the record   SEQRD $4100.. = the record
+STOCK:   SFIRST $4200.. ff503144415441202042494e200000000000000000000000000000510100020000
+OURS: answers RDBLK=00 OPEN=00 SEQRD=00 SFIRST=00
+OURS:   RDBLK $4000.. = the record   SEQRD $4100.. ffffffffffffffffffffffffffffffff...
+OURS:   SFIRST $4200.. ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+FAIL: a page-1 DTA differs (see above)
