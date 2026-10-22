@@ -28,6 +28,18 @@ session and the loop resumes exactly where it stopped.
   bodies exist for FSIZE / SETRND / WRBLK and the BASIC random-record engine; DELETE / RENAME
   have none. Then D-DISKRUN's leads: ROBOCOP's loaded game resets (~4 s vs ~15 s), the MemMan
   class (no-waste / megadoom / modedit), the FILES-DIFF classifier noise (banner versions).
+- **Later on 10-22 (pushed):** D-BDOSBASIC slice 3b-1 (DELETE / RENAME), then CLOSED for its
+  TIER 1 scope -- the rest is D-BDOSFCB (TIER 6, latent). **D-TAPELOAD's tape run is REBUILT
+  and TRACKED**: `scratchpad/tapecorpus_run.py` + `tapecorpus_pick.list` (42 titles, derived from
+  TODO.md; TAPECORPUS_DIR = the collection, never written into the repo). First run: SAME 9,
+  NEAR 11, RUNS? 21, ZB-PROMPT 1 (**Blocker**: the program text is overwritten WHILE IT RUNS
+  on zerobas -- `Undefined line number in 88`; it loads intact), RESET 0. ➡️ NEXT (TIER 1):
+  Blocker's overwrite (TODO, the D-TAPELOAD block's 2026-10-22 note), then D-DISKRUN's leads.
+- 🔴 **LESSON 10-22: EVERY openMSX LAUNCH GOES THROUGH `omsx_preflight.guarded()`** -- six of
+  10-21's new probes launched it bare: openMSX then SAVES SETTINGS ON EXIT into the user's
+  ~/.openMSX/share/settings.xml and leaves autorun armed (a tape probe got a CLOAD typed for
+  it). All six fixed; settings.xml was NOT edited (its `sound_driver null` predates this, per
+  omsx_preflight's own note).
 - **Probes added 10-21 (scratchpad/, all black box):** disklook.py (keys in, screen out, a KEPT
   image with --persist; escapes Tcl `$`/`[]`), bootpath_probe.py (breakpoints on PUBLISHED
   addresses, registers only; --bp), bpbrule_probe.py (crafted disks: BPB damage, media IDs,

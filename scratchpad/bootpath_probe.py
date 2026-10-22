@@ -13,6 +13,8 @@ same two published addresses are watched on every machine. The image is copied t
     DISKCORPUS_DIR=... python3 -u scratchpad/bootpath_probe.py IMAGE MACHINE [SECONDS] [--ext E]
 """
 import argparse, os, shutil, subprocess, tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402  (no settings saved, autorun un-armed)
 
 
 def main():
@@ -57,7 +59,7 @@ debug set_bp 0x4022 {{}} {{ __hit 4022 }}
             cmd += ["-ext", e]
         cmd += ["-diska", dsk, "-command", "set renderer none; set sound_driver null",
                 "-script", os.path.join(td, "s.tcl")]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                        timeout=90 + 3 * a.seconds)
         print(f"# {a.image} on {a.machine} {' '.join(a.ext)}")
         print(open(out).read() if os.path.exists(out) else "<NO HITS>", end="")

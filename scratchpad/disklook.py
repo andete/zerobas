@@ -14,6 +14,8 @@ Each step is `T:keys` -- at T seconds type `keys` + RETURN (nothing when empty),
 capture 2.5 s later. `^C` in keys is CTRL+STOP (typed as a key combo).
 """
 import argparse, os, shutil, subprocess, sys, tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402  (no settings saved, autorun un-armed)
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import diskcorpus_run as D  # noqa: E402
@@ -70,7 +72,7 @@ def main():
             cmd += ["-ext", e]
         cmd += ["-diska", dsk, "-command", "set renderer none; set sound_driver null",
                 "-script", os.path.join(td, "s.tcl")]
-        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        subprocess.run(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                        timeout=60 + 2 * last)
         if not os.path.exists(out):
             print("<NO CAPTURE: the machine did not run>")

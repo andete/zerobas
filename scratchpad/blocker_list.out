@@ -1,0 +1,120 @@
+### ref (Philips_VG_8020)
+== K0 'LOAD"CAS:"'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+== K1 'CLS'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+== K2 'LIST 135-140'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+== K3 'CLS'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+== K4 'LIST 200-230'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+== K5 'PRINT FRE(0)'
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  28815 Bytes free
+   |  Ok
+   |  LOAD"CAS:"
+   |  color  auto   goto   list   run
+### zb (C-BIOS_MSX1_EU_REPACK_NODISK)
+== K0 'LOAD"CAS:"'
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  ZB
+   |  "
+   |  Syntax error
+   |  ZB
+   |  CLOAD
+   |  Found:BLOCK
+   |  ZB
+   |  color  auto   goto   list   run
+== K1 'CLS'
+   |  ZB
+   |  color  auto   goto   list   run
+== K2 'LIST 135-140'
+   |  ZB
+   |  LIST 135-140
+   |  135 CLS
+   |  136 LOCATE  1,0:PRINT "SCORE:";
+   |  137 LOCATE 14,0:PRINT "STEP:";
+   |  138 LOCATE 25,0:PRINT "MEN:";
+   |  139 LOCATE 2,23:PRINT " :";
+   |  140 SC=0:L=5:NN=0
+   |  ZB
+   |  color  auto   goto   list   run
+== K3 'CLS'
+   |  ZB
+   |  color  auto   goto   list   run
+== K4 'LIST 200-230'
+   |  201 RETURN
+   |  202 P1=FNN(X-1,Y):P2=FNN(X-1,Y+1)
+   |  203 GOTO 205
+   |  204 P1=FNN(X+2,Y):P2=FNN(X+2,Y+1)
+   |  205 IF (P1<>32)+(P2<>32) THEN V=0
+   |  206 RETURN
+   |  207 P1=FNN(X,Y-1):P2=FNN(X+1,Y-1)
+   |  208 GOTO 210
+   |  209 P1=FNN(X,Y+2):P2=FNN(X+1,Y+2)
+   |  210 IF (P1<>32)+(P2<>32) THEN W=0
+   |  211 RETURN
+   |  212 SOUND 7,56
+   |  213 PLAY"T255S13M500O3C64V","T255S13M
+   |  500O5C64V"
+   |  214 ST=ST+1:LOCATE 19,0
+   |  215 PRINT USING"#####";ST;
+   |  216 RETURN
+   |  217 V=(S2=7)-(S2=3):V=V+V
+   |  218 W=(S2=1)-(S2=5):W=W+W
+   |  219 X1=X:Y1=Y:C=0
+   |  220 X1=X1+V:Y1=Y1+W
+   |  221 P=FNN(X1,Y1)
+   |  222
+   |  color  auto   goto   list   run
+== K5 'PRINT FRE(0)'
+   |  214 ST=ST+1:LOCATE 19,0
+   |  215 PRINT USING"#####";ST;
+   |  216 RETURN
+   |  217 V=(S2=7)-(S2=3):V=V+V
+   |  218 W=(S2=1)-(S2=5):W=W+W
+   |  219 X1=X:Y1=Y:C=0
+   |  220 X1=X1+V:Y1=Y1+W
+   |  221 P=FNN(X1,Y1)
+   |  222 IF P=248 THEN 225
+   |  223 IF P=32 THEN 248
+   |  224 P1=P:C=C+1:GOTO 220
+   |  225 P=FNN(X+V,Y+W)
+   |  226 IF P=224 THEN 229
+   |  227 IF P=228 THEN 234
+   |  228 RETURN
+   |  229 V1=-V:W1=-W
+   |  230 IF FNN(X+V1,Y+W1)<>32 THEN RETURN
+   |  ZB
+   |  PI FRE(0)
+   |  Syntax error
+   |  ZB
+   |  color  auto   goto   list   run

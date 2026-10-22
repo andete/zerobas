@@ -17,6 +17,8 @@ work-area CURLIN and our own disk image out.
     DISKCORPUS_DIR=... python3 -u scratchpad/bootdate_probe.py [eu,jp,zb]
 """
 import os, shutil, struct, subprocess, sys, tempfile
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402  (no settings saved, autorun un-armed)
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import diskcorpus_run as D
@@ -62,9 +64,9 @@ def run(key, answer):
            'after time 28 { type "SAVE\\"D.BAS\\"\\r" }\n'
            "after time 36 {\n" + cap("T36") + "  exit\n}\n")
     open(os.path.join(td, "s.tcl"), "w").write(tcl)
-    subprocess.run(["/opt/homebrew/bin/openmsx", "-machine", machine] + extra +
+    subprocess.run(omsx_preflight.guarded(["/opt/homebrew/bin/openmsx", "-machine", machine] + extra +
                    ["-diska", dsk, "-command", "set renderer none; set sound_driver null",
-                    "-script", os.path.join(td, "s.tcl")],
+                    "-script", os.path.join(td, "s.tcl")]),
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=150)
     caps = {}
     if os.path.exists(out):

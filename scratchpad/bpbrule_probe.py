@@ -28,6 +28,8 @@ the screen out.
     DISKCORPUS_DIR=... python3 -u scratchpad/bpbrule_probe.py [cf,eu,zb] [V0,V1,...]
 """
 import os, subprocess, sys, tempfile, shutil
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "probes", "lib"))
+import omsx_preflight  # noqa: E402  (no settings saved, autorun un-armed)
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import diskcorpus_run as D  # noqa: E402
@@ -150,9 +152,9 @@ def run(mkey, img):
                "after time 16 { __cap F }\n"
                "after time 16.5 { exit }\n")
         open(os.path.join(td, "s.tcl"), "w").write(tcl)
-        subprocess.run(["/opt/homebrew/bin/openmsx", "-machine", machine] + extra +
+        subprocess.run(omsx_preflight.guarded(["/opt/homebrew/bin/openmsx", "-machine", machine] + extra +
                        ["-diska", dsk, "-command", "set renderer none; set sound_driver null",
-                        "-script", os.path.join(td, "s.tcl")],
+                        "-script", os.path.join(td, "s.tcl")]),
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         caps = {}
         if os.path.exists(out):
