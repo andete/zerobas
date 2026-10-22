@@ -5119,7 +5119,7 @@ item — do **one item per session** to keep context lean.
       ([`starsh2_p1.out`](scratchpad/starsh2_p1.out)): rdb_recloop_body (the BASIC-side RDBLK)
       stored each byte with `ld (hl),a` while the disk ROM was page 1. And P1_BLIT, dskio's own
       page-1 bounce, was installed only by install_resident behind the $FF gate -- never on the
-      C-BIOS target. 🔧 P1_BLIT takes HL / DE / BC (14 B of RAM, was 27); install_f37d installs
+      C-BIOS target. 🔧 P1_BLIT takes HL / DE / BC (17 B of RAM, was 27 -- "14" first, a miscount); install_f37d installs
       it on every host (init.asm's region could not take the call -- an EMPTY disk.rom first);
       rdb_recloop_body sends a page-1 byte through it. starsh2 now has its game at $4000 and
       runs (not yet the CF-3300's screen). tests/test_p1rdblk.py (knives K1 / K2 cut 2 / 2,
@@ -5240,6 +5240,24 @@ item — do **one item per session** to keep context lean.
       dos_handoff (when MSX-DOS really starts -- BASIC is gone until BASENT), on every host;
       then the interrupt path, DRVTBL and every DOS gate must stay green with page 1 = RAM
       in the TPA. A multi-slice item; measure each step against the CF-3300.
+      📏 **MAPPED (2026-10-23, a read-only pass over disk/*.asm, file:line in the session):**
+      (a) set_ramad's ungated part now seeds $F340, DRVCNT, CURDRV, RES_PRINT, HOKVLD, the
+      $F37D stub + P1_BLIT, $F348 and DSK_MEDIA; the gated part builds the $F368 table,
+      DRVTBL+1..15 with DRV_TRAMP ($E95C), RES_STUBS ($F24E..$F2B7), the drive-A DPB at $F195
+      (via getdpb), WA_SEG ($F756) and the $F365 stub. (b) lay_page0_env -- NOT gated, run at
+      every DOS boot and CALL SYSTEM -- puts `jp` vectors at $000C / $0014 / $001C / $0024 /
+      $0030 into PAGE-1 disk-ROM handlers, and $0038 into INT_H_HIRAM ($DDAE), which never
+      assumes page 1. (c) Nothing switches page 1 at the hand-off. RISKS for the change: WA_SEG
+      sits on BASIC's live PRINT USING buffer and RND state ($F756 / $F768), so it needs a new
+      home or a reinstall at every DOS entry; build_drvtbl's +9 overwrites DSKBUF_PTR ($F351);
+      with page 1 = RAM every page-0 vector above and the H.PHYD CALLF route run TPA RAM unless
+      the DOS kernel brackets them with $F368 / $F368+3 as it does on the CF-3300; P1_BLIT
+      writes the subslot register without the SLTTBL mirror the wa_seg bodies trust. And,
+      latent today: on C-BIOS, IX = $F195 goes to MSXDOS.SYS with NO DPB built there.
+      ➡️ Slice plan: (1) measure on the CF-3300 which of $F368 / $F368+3 MSXDOS.SYS calls
+      and when (breakpoints on the work-area cells, registers only); (2) give WA_SEG and the
+      trampolines a DOS-only home and build them in dos_handoff + CALL SYSTEM; (3) only then
+      page 1 = RAM in the TPA, with every DOS gate re-run; (4) SLTTBL in P1_BLIT.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12378,7 +12396,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38414 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38432 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12544,7 +12562,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17406 (T-6FE392)8 (T-529ABE)` from `TODO.md:30243 (T-529ABE)`: a
+      `TODO.md:17424 (T-6FE392)8 (T-529ABE)` from `TODO.md:30261 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18253,7 +18271,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30243 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30261 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
