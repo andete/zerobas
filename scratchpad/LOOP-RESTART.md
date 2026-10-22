@@ -4,7 +4,7 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-22 00:30 — THE CURRENT ONE (the 2026-10-20 section below holds the 10-20/10-21 RULINGS table -- read it; the 2026-10-15 and 2026-09-24 tables still hold).
+## 🟢 STATE AS OF 2026-10-22 (updated 14:40) — THE CURRENT ONE (the 2026-10-20 section below holds the 10-20/10-21 RULINGS table -- read it; the 2026-10-15 and 2026-09-24 tables still hold).
 
 - 🏗️ **JOOST'S RULINGS SINCE 10-20 (all in the 10-20 table below, plus):** *"Disk test run"*
   (the next step after the ROM-space work, 10-21); *"Check another reference"* (the second disk
@@ -35,6 +35,43 @@ session and the loop resumes exactly where it stopped.
   NEAR 11, RUNS? 21, ZB-PROMPT 1 (**Blocker**: the program text is overwritten WHILE IT RUNS
   on zerobas -- `Undefined line number in 88`; it loads intact), RESET 0. ➡️ NEXT (TIER 1):
   Blocker's overwrite (TODO, the D-TAPELOAD block's 2026-10-22 note), then D-DISKRUN's leads.
+- **Later still on 10-22 (all pushed, FULL-gated where ROM code moved):**
+  - **D-PLAYIY** (tier 1): `PLAY` with a string variable as a voice played nothing and wrote
+    the descriptor into stray RAM, because a tenant call returned IY = the sub-ROM slot id.
+    sr_slot now keeps the caller's IY. Blocker runs.
+  - **D-MASTERS + D-BASENTRUN**: $F348 holds the disk ROM's slot. $4022 from a running program
+    restarts BASIC with no date question, no second AUTOEXEC.BAS, and the hooks kept.
+  - **D-HSTKE**: BASIC calls H.STKE ($FEDA) once on CLEAR, NEW, LOAD, RUN, a typed line and
+    an error, and once at start after the banner. MemMan's message appears.
+  - **D-LOADBASE**: a program SAVEd from another TXTTAB loads. The loaders scan line 1,
+    using tok_payload in basic/tokpay-body.inc.
+  - **D-TXTTAB**: NEW, LOAD and RUN"file" keep a moved TXTTAB. megadoom is matched.
+  - Filed: D-DEFFNVAR (TIER 4: the reference keeps a 5-byte variable entry per DEF FN),
+    D-BRIDGEIX (TIER 6: the host subrom bridge keeps IX), and Demonia's timing-dependent
+    RESET (D-TAPELOAD; bisected -- latent, not caused by D-HSTKE).
+  - Tape runs: tapecorpus_playiy.out, then tapecorpus_loadbase.out (SAME 9, NEAR 10,
+    RUNS? 22, RESET 1 = Demonia).
+  - ➡️ **NEXT:**
+    1. Re-run the disk corpus (`diskcorpus_run.py --reuse-ref`) to score today's disk fixes.
+    2. Then D-DISKRUN's remaining leads (ROBOCOP, the ZB-NOBOOT rows).
+    3. Then Demonia's last milliseconds before $0000.
+- **PROBES 10-22:** each logs addresses and registers only; the game is never decoded.
+  - tapetrace_probe.py: work-area pointers and the line chain once a second; --watch is a
+    write watchpoint, zerobas only.
+  - iyclobber_probe.py: who hands back IY = X, zerobas's own code.
+  - slotcalls_probe.py: a RAM program's calls to the published slot entries, EXTBIO and
+    $F37D, both machines.
+  - basent_probe.py: our own stub CALSLTs $4022 with HL at our own text.
+- **LESSONS 10-22:**
+  - **The host bridge was kinder than the machine.** msxtest's subrom stand-in never touched
+    IY, so nothing saw the PLAY bug. Run the real routine with the layer below made hostile.
+  - **A knife that CRASHES the test reads as a small FAIL count.** Score from the summary, and
+    guard the calls so a runaway is a row.
+  - **A test that pokes the state the fix sets is blind to that fix.** Enter where the code
+    sets it (ctp_begin).
+  - **Host tests that never boot need every value the boot seeds** (TXTTAB now, like TXTCEIL).
+  - **A new `- [ ]` item goes after its parent block's END.** I split blocks 3 times in a day
+    (memory: a-new-todo-item-goes-after-the-parent-blocks-end).
 - 🔴 **LESSON 10-22: EVERY openMSX LAUNCH GOES THROUGH `omsx_preflight.guarded()`** -- six of
   10-21's new probes launched it bare: openMSX then SAVES SETTINGS ON EXIT into the user's
   ~/.openMSX/share/settings.xml and leaves autorun armed (a tape probe got a CLOAD typed for
