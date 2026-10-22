@@ -455,11 +455,17 @@ new_prog_quiet:
                 xor     a
                 ld      (CONTVALID),a       ; NEW wipes the program -> no CONT resume
                 ld      (TRACEFLAG),a       ; NEW is the ONLY thing that clears TRON
-                ld      hl,TXTBASE
-                ld      (TXTTAB),hl         ; keep the real sysvar consistent ($8001)
+                ; 🔴 D-TXTTAB (2026-10-22): the base is TXTTAB as it stands -- a
+                ; program may have moved it (`POKE &HF677,&HC0:POKE &HC000,0:NEW`
+                ; puts the program at $C001 on the CF-3300, scratchpad/
+                ; txttab_move.out). This wrote $8001 into TXTTAB, so the classic
+                ; loader idiom -- move it, then RUN its own loader -- looped for
+                ; ever (D-DISKRUN's megadoom). The cold start seeds $8001.
+                ld      hl,(TXTTAB)
                 ld      (PRGEND),hl         ; end marker sits at the base
-                ld      hl,0
-                ld      (TXTBASE),hl        ; $0000 end marker at the base
+                ld      (hl),a              ; $0000 end marker at the base (A = 0)
+                inc     hl
+                ld      (hl),a
                 jp      vars_reset          ; rebase the scalar and array regions
 ; --- hstke: call H.STKE ($FEDA) with every register kept (D-HSTKE) -----------
 ; 🔴 zerobas NEVER CALLED IT, and software hands BASIC work through it: MemMan's

@@ -5065,7 +5065,7 @@ item — do **one item per session** to keep context lean.
       disk's files are MSX2-era (VDP / NPC / FM-PAC); not a BASIC divergence. 🎚️ TIER 6
       at most -- not pursued. (It did find the AUTOEXEC.BAS rule, D-BOOTDATE's addendum.)
 
-- [ ] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
+- [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
       LOAD PUT IT BACK AT $8001 (found 2026-10-22 by D-DISKRUN's megadoom)**
       🎚️ TIER 1 — happy path: `IF PEEK(&HF677)<>X THEN POKE &HF677,X:POKE X*256,0:RUN"loader"` is
       a common loader idiom; on zerobas it RUNs the loader for ever.
@@ -5101,8 +5101,16 @@ item — do **one item per session** to keep context lean.
       what printed. Loader calls are now guarded (a runaway is a FAIL row) and the knives are
       scored from the summary. And the CLOAD rows were BLIND to K1 at first: the test poked
       CLINK itself and entered past the init; they enter at ctp_begin now.
-      ➡️ PART 2 (open): keep a moved TXTTAB across NEW / LOAD / RUN"file" (the writers above)
-      -- megadoom's loop, and own-program txttab_move.out.
+      ✅ **PART 2 DONE (2026-10-22): a moved TXTTAB is kept.** new_prog takes the base from
+      TXTTAB (the cold start seeds $8001 first); load_commit_prog no longer writes TXTTAB; the
+      CLOAD / disk-LOAD store cursors and sav_fits start at (TXTTAB). zerobas now reads the
+      CF-3300's `C001 C026 7011` exactly, and megadoom ends at `Illegal function call in 8`
+      as the CF-3300 does ([`txttab_move_zb.out`](scratchpad/txttab_move_zb.out)). 🔮 "the
+      same three values, FRE perhaps not" -- HIT on all three. tests/test_loadbase.py: the
+      loaders store at a moved TXTTAB, NEW keeps it (knives K3 / K4 cut 1 / 2,
+      [`loadbase_knife.out`](scratchpad/loadbase_knife.out)). ⚠️ D-BASICROM's note "LOAD and
+      NEW keep the RAM base" is reversed by this: after a cartridge BASIC program (TXTTAB in
+      the ROM at TEXT + 1) a NEW now keeps that base -- not asked of a reference.
 
 - [x] 🪝 **D-HSTKE — zerobas NEVER CALLED H.STKE ($FEDA), THE HOOK BASIC CALLS WHEN IT RESETS ITS
       STACK (found 2026-10-22 by D-DISKRUN's MemMan class; fixed the same day)**
@@ -12193,7 +12201,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38229 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38237 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12359,7 +12367,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17221 (T-6FE392)8 (T-529ABE)` from `TODO.md:30058 (T-529ABE)`: a
+      `TODO.md:17229 (T-6FE392)8 (T-529ABE)` from `TODO.md:30066 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18068,7 +18076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30058 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30066 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

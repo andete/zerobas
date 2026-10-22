@@ -157,6 +157,11 @@ class Machine:
         # would read 0 (a ceiling of 0); seed it the way the boot does.
         if "TXTCEIL" in self.sym and "TXTMAX" in self.sym:
             self.poke_w(self.sym["TXTCEIL"], self.sym["TXTMAX"])
+        # D-TXTTAB (2026-10-22): new_prog keeps the program base it finds in
+        # TXTTAB (a program may move it, as on the CF-3300); the cold start is
+        # what seeds $8001. Seed it the way the boot does.
+        if "TXTTAB" in self.sym and "TXTBASE" in self.sym:
+            self.poke_w(self.sym["TXTTAB"], self.sym["TXTBASE"])
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
 

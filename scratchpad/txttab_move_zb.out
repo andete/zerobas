@@ -1,0 +1,17 @@
+### C-BIOS_MSX1_EU_REPACK_DISK after D-TXTTAB part 2 (CF-3300, txttab_move.out: C001 C026 7011)
+== S4 ('32:')  pc=01CC curlin=FFFF mode=S0
+   |  HIC001
+   |  ZB
+   |  PRINT HEX$(PEEK(&HF676)+256*PEEK(&HF6
+   |  77));" ";HEX$(PEEK(&HF6C2)+256*PEEK(&
+   |  HF6C3));FRE(0)
+   |  C001 C026 7011
+   |  ZB
+   |  color  auto   goto   list   run
+### megadoom.dsk (CF-3300: Illegal function call in 8)
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  Illegal function call in 8
+   |  ZB
+   |  color  auto   goto   list   run

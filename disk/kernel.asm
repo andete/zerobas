@@ -2759,7 +2759,7 @@ basent_tramp_end:
 ; Ctrl-Z (BSAVE's refusal has one) -- then 66.
 sav_fits:
                 ld      hl,(PRGEND)
-                ld      de,TXTBASE
+                ld      de,(TXTTAB)         ; D-TXTTAB: the image starts at TXTTAB
                 or      a
                 sbc     hl,de
                 ld      de,2
@@ -5284,7 +5284,7 @@ hk_dpload:
                 ; program like every other EOF here, and cannot with CLPTR
                 ; unset. Seeded AFTER the open, exactly where main seeded it,
                 ; so a failed load leaves these cells as untouched as before.
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)         ; D-TXTTAB: at the base as it stands
                 ld      (CLPTR),hl
                 ld      hl,0                ; D-LOADBASE: A_0 (the SAVING machine's
                 ld      (CLINK),hl          ; base) is unknown: 0 = scan line 1

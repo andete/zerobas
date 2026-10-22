@@ -116,21 +116,24 @@ def run():
     bad = [b for b in range(256) if m.call("tok_payload", a=b).a != PAYLOAD.get(b, 0)]
     check(not bad, f"tok_payload matches the format table for all 256 bytes (wrong: {bad[:8]})")
 
-    for base in (TXTBASE, 0xC001, 0x9000):
+    TXTTAB_CELL = 0xF676
+    for base, at in ((TXTBASE, TXTBASE), (0xC001, TXTBASE), (0x9000, TXTBASE),
+                     (TXTBASE, 0xC001)):
         want = stored(base)
-        tag = f"SAVEd from ${base:04X}"
+        tag = f"SAVEd from ${base:04X}" + (f", TXTTAB moved to ${at:04X}" if at != TXTBASE else "")
 
         # --- CLOAD / LOAD: ctp_line ------------------------------------------
         m = Machine(MAIN_ROM, MAIN_SYM, rom_base=BASIC_BASE)
         s = m.sym
         m.trap("ctp_done", lambda mach: None)
+        m.poke_w(TXTTAB_CELL, at)           # as the cold start (or a POKE) left it
         feeder(m, image(base))
         m.poke(s["CAS_VERIFY"], b"\x00")
         m.poke_w(s["CLINK"], TXTBASE)       # stale: the loader's own start must set it
         if guarded(lambda: m.call("ctp_begin"), f"CLOAD {tag}"):
             end = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
-            check(bytes(m.mem[TXTBASE:end]) == want,
-                  f"CLOAD {tag}: {end - TXTBASE} B stored (want {len(want)}, the same bytes)")
+            check(bytes(m.mem[at:end]) == want,
+                  f"CLOAD {tag}: {end - at} B stored at ${at:04X} (want {len(want)}, the same bytes)")
 
         # --- disk LOAD: hk_dpload ----------------------------------------------
         d = D.Disk()
@@ -139,11 +142,12 @@ def run():
         ds = dm.sym
         dm.poke(ds["DISK_FCB_NAME"], D.name83("P.BAS"))
         dm.poke(ds["FOPEN_SEL"], ds["FOPEN_SEL_LOAD"])
+        dm.poke_w(TXTTAB_CELL, at)
         if guarded(lambda: dm.call("hk_dpload"), f"disk LOAD {tag}"):
             end = dm.mem[ds["CLPTR"]] | dm.mem[ds["CLPTR"] + 1] << 8
-            check(dm.mem[ds["DISKOP_STATUS"]] == 0 and bytes(dm.mem[TXTBASE:end]) == want,
-                  f"disk LOAD {tag}: status {dm.mem[ds['DISKOP_STATUS']]}, {end - TXTBASE} B "
-                  f"(want 0, {len(want)} B, the same bytes)")
+            check(dm.mem[ds["DISKOP_STATUS"]] == 0 and bytes(dm.mem[at:end]) == want,
+                  f"disk LOAD {tag}: status {dm.mem[ds['DISKOP_STATUS']]}, {end - at} B at "
+                  f"${at:04X} (want 0, {len(want)} B, the same bytes)")
 
         # --- the tape file skip: csd_tok (zerobas-sub) ----------------------------
         sm = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
@@ -153,6 +157,18 @@ def run():
         if guarded(lambda: res.append(sm.call("csd_tok")), f"tape skip {tag}"):
             check(not res[0].f & 1 and len(used) == len(image(base)),
                   f"tape skip {tag}: {len(used)} B consumed (want {len(image(base))}, CF clear)")
+
+    # --- D-TXTTAB part 2: NEW keeps a moved TXTTAB ------------------------------
+    m = Machine(MAIN_ROM, MAIN_SYM, rom_base=BASIC_BASE)
+    s = m.sym
+    m.poke_w(TXTTAB_CELL, 0xC001)
+    m.poke(0xC001, b"\x55\x55")
+    m.call("new_prog_quiet")
+    prgend = m.mem[s["PRGEND"]] | m.mem[s["PRGEND"] + 1] << 8
+    tt = m.mem[TXTTAB_CELL] | m.mem[TXTTAB_CELL + 1] << 8
+    check(tt == 0xC001 and prgend == 0xC001 and m.peek(0xC001, 2) == b"\x00\x00",
+          f"NEW with TXTTAB $C001: TXTTAB ${tt:04X}, PRGEND ${prgend:04X}, end link "
+          f"{m.peek(0xC001, 2).hex()} (want $C001, $C001, 0000 -- the CF-3300 keeps it)")
     return fails
 
 

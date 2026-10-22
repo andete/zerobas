@@ -18,3 +18,10 @@ FAIL  CLOAD SAVEd from $9000: the loader ran away (StackLost)
 FAIL  disk LOAD SAVEd from $9000: status 0, 71 B (want 0, 69 B, the same bytes)
 FAIL  tape skip SAVEd from $9000: 75 B consumed (want 71, CF clear)
 FAILED: 10 failure(s)
+== K3: FAILED: 1 failure(s)
+FAIL  NEW with TXTTAB $C001: TXTTAB $8001, PRGEND $8001, end link 5555 (want $C001, $C001,
+FAILED: 1 failure(s)
+== K4: FAILED: 2 failure(s)
+FAIL  CLOAD SAVEd from $8001, TXTTAB moved to $C001: -16315 B stored at $C001 (want 69, th
+FAIL  disk LOAD SAVEd from $8001, TXTTAB moved to $C001: status 0, -16315 B at $C001 (want
+FAILED: 2 failure(s)

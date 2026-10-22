@@ -303,7 +303,7 @@ ctp_data_tokenised:
 
                 ; --- start a fresh program: store cursor at the text base ---
 ctp_begin:                                  ; (tests/test_loadbase.py enters here)
-                ld      hl,TXTBASE
+                ld      hl,(TXTTAB)         ; D-TXTTAB: at the base as it stands
                 ld      (CLPTR),hl
                 ld      hl,0                ; 🔴 D-LOADBASE: A_0, the SAVING machine's
                 ld      (CLINK),hl          ; text base, is NOT known -- it was assumed
@@ -483,9 +483,7 @@ load_commit_prog:
                 ld      (hl),0
                 inc     hl
                 ld      (hl),0
-                ; keep the TXTTAB sysvar consistent with the program base
-                ld      hl,TXTBASE
-                ld      (TXTTAB),hl
+                ; (D-TXTTAB: TXTTAB is left as it stands -- the load went there)
 
                 ; --- relink: recompute every line's absolute link pointer ---
                 ; The saved links were absolute addresses on the saving machine;

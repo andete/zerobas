@@ -146,6 +146,8 @@ init:
     ENDIF
                 call    clear_usrtab        ; zero the DEF USR vectors
                 call    init_filechan       ; no open channel; PRINT dest = screen
+                ld      hl,TXTBASE          ; D-TXTTAB: new_prog keeps the base it finds;
+                ld      (TXTTAB),hl         ; the cold start is where $8001 is chosen
                 call    new_prog_quiet      ; empty stored program (Step B); no H.STKE
                                             ; yet -- it comes after the banner (D-HSTKE)
                 xor     a

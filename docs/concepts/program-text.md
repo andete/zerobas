@@ -106,7 +106,10 @@ references 9999 and 9.
 ### How it sits in memory
 
 The program starts at the address in `TXTTAB` (`$F676`), which is `&H8001` on
-the VG-8020 and on zerobas. Each line is
+the VG-8020 and on zerobas. A program may move it: with the byte just before
+the new start set to 0, `POKE &HF676,1:POKE &HF677,&HC0:NEW` puts the next
+program at `&HC001`, and `NEW`, `LOAD` and `RUN "file"` keep it there. Loaders
+use this to make room below the program. Each line is
 
 ```
 [address of the next line: 2 bytes] [line number: 2 bytes] [crunched text] [0]
@@ -115,9 +118,12 @@ the VG-8020 and on zerobas. Each line is
 with two-byte values low byte first, and a "next line" address of 0 ends the
 program. The variables start right after that end marker; `VARTAB` (`$F6C2`)
 holds the address. The MSX documentation also describes a second form of line
-reference, `$0D` plus an address, that BASIC may use while a program runs;
-zerobas never writes it, and whether the reference does so visibly has not
-been measured.
+reference, `$0D` plus an address. The reference rewrites a jump's line number
+into that form in place when the jump runs, so a program saved after it ran
+carries them; zerobas reads both forms and writes only the line number.
+
+A saved program keeps the line addresses of the machine that saved it. Both
+machines load it at their own start whatever start it was saved from.
 
 ### Back to text: LIST
 
@@ -175,6 +181,17 @@ nothing and reports nothing), and the `$0D` form above.
 
 ## What we found, and how
 
+- **A moved program start was put back, and a program saved from another start
+  loaded as junk** (fixed 2026-10-22, D-TXTTAB and D-LOADBASE). A disk game's
+  first line moves `TXTTAB` and runs its loader unless it is already moved;
+  zerobas reset `TXTTAB` to `&H8001` at every `NEW` and `LOAD`, so the check
+  never passed and the loader ran for ever. With a program of our own the
+  CF-3300 runs at `&HC001` (`TXTTAB` `C001`, `VARTAB` `C026`,
+  `FRE(0)` 7011, [`txttab_move.out`](../../scratchpad/txttab_move.out)), and
+  zerobas now gives the same three values
+  ([`txttab_move_zb.out`](../../scratchpad/txttab_move_zb.out)). Loading took
+  the first line's length from an assumed `&H8001`; it now reads that line to
+  its end ([the LOAD page](../keywords/LOAD.md)).
 - **The keyword tokens were read off the reference, not copied from a table.**
   Each was found by crunching the keyword on a VG-8020 and reading the stored
   bytes; published token tables were only a cross-check (`AUTO`, `DELETE`,
@@ -263,3 +280,5 @@ the token specs [spec-tokenise.md](../../basic/docs/spec-tokenise.md) and
 - `make editverb-acceptance` — `RENUM`, `AUTO` and `LLIST`.
 - `make txtceil-acceptance` — a program never outgrows its memory.
 - `make kwsweep` — the crunched bytes of the keyword rows it carries.
+- `tests/test_loadbase.py` (in `make unit-test`) — `NEW` keeps a moved start;
+  programs saved from another start load at ours, or at a moved one.
