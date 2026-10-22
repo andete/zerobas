@@ -5431,6 +5431,12 @@ item — do **one item per session** to keep context lean.
       voice descriptor there from line 62 on (`PLAY "...",A1$,A3$`). After the fix
       ([`blocker_trace_fixed.out`](scratchpad/blocker_trace_fixed.out)) the chain stays 546
       lines and the game runs the lines the reference ran (132, 217-237, 336/338).
+      📼 **RE-RUN after D-PLAYIY (2026-10-22, the low region changed):**
+      [`tapecorpus_playiy.out`](scratchpad/tapecorpus_playiy.out) -- **SAME 9, NEAR 12, RUNS? 21,
+      ZB-PROMPT 0, RESET 0.** Two classes moved, both up: Blocker ZB-PROMPT -> RUNS? (both at
+      line 132; it seeds RND from TIME, so the playfields differ), Elite RUNS? -> NEAR. No title
+      lost a class; the rest is the VRAM distance of animated screens. 🔮 "Blocker leaves
+      ZB-PROMPT, nothing regresses" HIT.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -12070,7 +12076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38106 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38112 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12236,7 +12242,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17098 (T-6FE392)8 (T-529ABE)` from `TODO.md:29935 (T-529ABE)`: a
+      `TODO.md:17104 (T-6FE392)8 (T-529ABE)` from `TODO.md:29941 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17945,7 +17951,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29935 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29941 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
