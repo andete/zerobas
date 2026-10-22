@@ -5539,6 +5539,21 @@ item — do **one item per session** to keep context lean.
       line 132; it seeds RND from TIME, so the playfields differ), Elite RUNS? -> NEAR. No title
       lost a class; the rest is the VRAM distance of animated screens. 🔮 "Blocker leaves
       ZB-PROMPT, nothing regresses" HIT.
+      📼 **RE-RUN after D-LOADBASE / D-HSTKE (2026-10-22):**
+      [`tapecorpus_loadbase.out`](scratchpad/tapecorpus_loadbase.out) -- SAME 9, NEAR 10, RUNS?
+      22, RESET 1. Boulder Dash and Elite flipped NEAR -> RUNS? on the 128-byte line (129, 198:
+      animated screens). 🔴 **Demonia RUNS? -> RESET, reproducible** -- 🔮 "nothing regresses"
+      MISSED. Bisected ([`demonia_reset.out`](scratchpad/demonia_reset.out),
+      [`demonia_timing.out`](scratchpad/demonia_timing.out)): hstke off -> RUNS?; only the RUN
+      site off -> RUNS?; hstke's pushes WITHOUT the hook call -> RUNS?; and with NO hook at all,
+      20 nops at that site -> RESET, 40 / 80 -> RUNS?. So D-HSTKE is not the cause: the
+      attract demo crashes on some timings whatever the RUN site does -- at T281 the CPU
+      reaches $0000 with SP $E1AC over $FFFF words (empty RAM), ~11 ms after an ordinary slot
+      switch (the game writes $FFFF = 00 itself, so it knows slot 3 is expanded). Which timing
+      the corpus hits is luck; the latent crash is ours. ➡️ What the game executes in the
+      last milliseconds before $0000 (a PC ring on zerobas from T280, its own RAM code
+      addresses only) -- likely a BASIC / BIOS internal entry it calls (D-BASICINT /
+      D-BIOSINT class) on a path the reference survives.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -12178,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38214 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38229 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12344,7 +12359,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17206 (T-6FE392)8 (T-529ABE)` from `TODO.md:30043 (T-529ABE)`: a
+      `TODO.md:17221 (T-6FE392)8 (T-529ABE)` from `TODO.md:30058 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18053,7 +18068,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30043 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30058 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
