@@ -108,8 +108,7 @@ A disk's own boot loader is the usual caller: it runs while the disk system is
 switched in, prints a title, finds and opens its file, and reads it in one
 block. The CF-3300 answers that whole sequence and so does zerobas since
 2026-10-21. Some loaders read sectors directly instead (function `&H2F`);
-zerobas answers that since 2026-10-22. A loader that has switched RAM into
-every page before calling still does not get through on zerobas (D-F37DSLOT). Machine code called from a BASIC program (with `USR`) reaches the
+zerobas answers that since 2026-10-22. Machine code called from a BASIC program (with `USR`) reaches the
 same functions: there the disk system is not switched in, so zerobas's jump
 leads to a small routine in RAM that calls it across the slots and comes back.
 A search for a file from a `USR` routine answers `A=0` and fills the transfer

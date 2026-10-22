@@ -1,0 +1,13 @@
+### f1sp3d-1.dsk zb
+== S0 ('10:')  pc=4880 curlin=0000 mode=S1
+== S1 ('20:')  pc=FD9A curlin=FFFF mode=S1
+== S2 ('45:')  pc=18EC curlin=FFFF mode=S1
+### starsh2.dsk zb
+== S0 ('10:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  color  auto   goto   list   run
+== S1 ('20:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1

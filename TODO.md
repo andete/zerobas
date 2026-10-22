@@ -5084,8 +5084,8 @@ item — do **one item per session** to keep context lean.
       $31), tests/test_bootdate.py (boot_call0's mark); knives cut both
       ([`bdosabs_knife.out`](scratchpad/bdosabs_knife.out)).
 
-- [ ] 🔀 **D-F37DSLOT — THE $F37D STUB JUMPS INTO RAM WHEN THE CALLER HAS RAM IN PAGES 0 AND 1
-      (found 2026-10-22 by D-DISKRUN's f1sp3d-1)**
+- [x] 🔀 **D-F37DSLOT — THE $F37D STUB JUMPS INTO RAM WHEN THE CALLER HAS RAM IN PAGES 0 AND 1
+      (found 2026-10-22 by D-DISKRUN's f1sp3d-1) — 🔴 PREMISE FALSE, CLOSED THE SAME DAY**
       🎚️ TIER 1 — happy path: a boot loader that maps RAM everywhere (A8 = $FF) and reads its
       game through BDOS hangs.
       🤖 **AUTONOMOUS** — measured; the stub's own change.
@@ -5098,6 +5098,20 @@ item — do **one item per session** to keep context lean.
       either: page 0 is RAM too. ➡️ The stub must put the disk ROM into page 1 itself
       (primary bits in $A8, and the slot-3 subslot in $FFFF for an expanded slot), call
       bdos_entry, and put both back -- under DI; price its RAM ($EFDA holds 28 B now).
+      🔴 **MEASURED BEFORE BUILDING, AND THE DIAGNOSIS ABOVE WAS WRONG**
+      ([`f1sp3d_rdabs.out`](scratchpad/f1sp3d_rdabs.out), breakpoints on our own code): at
+      both $F37D calls A8 = $FF but the slot-3 subslot register reads $04 -- page 1 IS 3-1, the
+      disk ROM, and bdos_entry's bytes are there; the stub's jump is right. The hang was MINE,
+      from D-BDOSABS hours earlier: bdos_more2's table dispatch loaded the handler's address
+      into HL for `jp (hl)`, so rdabs_body took H = $4D -- 77 sectors from $8000 up, over the
+      loader and the stack -- instead of the caller's 8. 🔧 The dispatcher now pushes the
+      caller's HL and enters the handler by `ex (sp),hl / ret`; the dispatch rows in
+      tests/test_bdosbasic.py pass HL = $0800 and want it at the handler (knife: `jp (hl)` back
+      fails 9 rows). The earlier table entries never read HL, and the rows passed only E --
+      the test asserted the half of the contract the old handlers used.
+      f1sp3d-1 then gets past the read (PC moving, no hang; not yet the CF-3300's SCREEN 3 --
+      [`bdosabs_disks.out`](scratchpad/bdosabs_disks.out)); starsh2 unchanged. ➡️ Both back to
+      D-DISKRUN.
 
 
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
@@ -12236,7 +12250,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38272 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38286 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12402,7 +12416,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17264 (T-6FE392)8 (T-529ABE)` from `TODO.md:30101 (T-529ABE)`: a
+      `TODO.md:17278 (T-6FE392)8 (T-529ABE)` from `TODO.md:30115 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18111,7 +18125,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30101 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30115 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

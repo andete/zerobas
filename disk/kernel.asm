@@ -758,7 +758,8 @@ bdos_tab:
                 dw      wrabs_body          ; CF-3300 does, this answered $FF
                 db      0                   ; (scratchpad/f1sp3d_slotcalls.out)
 bdos_more2:                                 ; A = C = the function
-                ld      hl, bdos_tab
+                push    hl                  ; 🔴 D-BDOSABS: the CALLER'S HL rides through
+                ld      hl, bdos_tab        ; to the handler -- RDABS / WRABS take the
 bm_loop:
                 ld      b, (hl)
                 inc     b
@@ -775,8 +776,11 @@ bm_hit:
                 inc     hl
                 ld      h, (hl)
                 ld      l, a
-                jp      (hl)
+                ex      (sp), hl            ; sector count in H; `jp (hl)` handed them
+                ret                         ; the handler's address (77 sectors for
+                                            ; f1sp3d-1's 8: scratchpad/f1sp3d_rdabs.out)
 bm_none:
+                pop     hl                  ; the caller's HL back
                 ld      a, $FF              ; still unanswered here
                 ret
 bb_dirio:

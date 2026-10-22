@@ -68,9 +68,11 @@ def run():
                        (0x2F, "rdabs_body"), (0x30, "wrabs_body")):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         seen = []
-        m.trap(target, lambda mach: seen.append(mach.cpu.e))
-        m.call("bdos_entry", c=fn, de=0x0005)
-        check(seen == [5], f"BDOS ${fn:02X} -> {target} {seen} (want one call, E = 5)")
+        m.trap(target, lambda mach: seen.append((mach.cpu.e, mach.cpu.hl)))
+        m.call("bdos_entry", c=fn, de=0x0005, hl=0x0800)
+        check(seen == [(5, 0x0800)],
+              f"BDOS ${fn:02X} -> {target} {seen} (want one call, E = 5, the caller's HL "
+              "$0800 -- RDABS's sector count is H)")
     m = Machine(ROM, SYM, rom_base=DISK_BASE)
     cpu = m.call("bdos_entry", c=0x0C)
     check(cpu.a == 0x22 and cpu.hl == 0x0022 and cpu.b == 0,

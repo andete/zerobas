@@ -1,0 +1,4 @@
+# f1sp3d-1 on zerobas: breakpoints on OUR rdabs_body / rdabs_ioerr, the loader's return address $C02C and $CDA3.
+# rdabs_body entered with HL = $4DE1 -- the dispatcher's jp (hl) target -- so H = $4D sectors, not 8.
+   2.682 BACK_C02C PC=C02C AF=FFAC BC=0000 DE=0000 HL=4001 SP=F2CE A8=FF SUB=04
+   2.683 RDABS_IN PC=4DE1 AF=E16A BC=2F2F DE=0004 HL=4DE1 SP=F2CE A8=FF SUB=04

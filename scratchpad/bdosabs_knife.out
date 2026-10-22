@@ -1,3 +1,4 @@
 == K-ABS (row $2F renumbered), K-MARK (no DOS_TRY store):
 FAIL  BDOS $2F -> rdabs_body [] (want one call, E = 5)
 FAIL  boot_call0: inside [('0x1234', 0)], after 1234 (want DOS_TRY with Cy = 0 inside, the old mark back after)
+== K-HL (jp (hl) back): 9 FAIL
