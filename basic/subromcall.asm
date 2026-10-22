@@ -35,7 +35,8 @@
 ; the caller. Returns CF=1 WITHOUT calling if the sub-ROM is absent (reduced
 ; builds); CF=0 after a completed call. The tenant runs with slot-0 page 0 (BIOS
 ; + $0038 ISR) switched out, so the whole call is under DI (§3b/§3d); CALSLT
-; clobbers all registers — the caller guards anything live (e.g. the text cursor).
+; clobbers all registers EXCEPT IY, which sr_slot saves since D-PLAYIY (below) --
+; the caller guards anything else live (e.g. the text cursor).
 ; --- deffn_subcall: `ld ix,<the DEF FN tenant's entry>` + `call subrom_call`
 ; stood open-coded at all FOUR DEF FN dispatch sites (basic/deffn.asm x3 for
 ; FNF_SAVE / the request read / FNF_RESTORE, basic/interp.asm x1 for
@@ -64,7 +65,18 @@ subrom_call:
                 scf
                 ret     z                   ; absent -> CF=1, no call (caller errors)
                 ld      a,(SUBSLOT)
+; 🔴 D-PLAYIY (2026-10-22): THE CALLER'S IY SURVIVES THE CALL, AND IT DID NOT.
+; `pop iy` below leaves the slot id in IYh -- $8B00 for slot 3-2 -- and PLAY's
+; pl_voice holds its voice-block pointer in IY across `str_eval`, whose string
+; VARIABLE lookup is a tenant call (str_get_key -> ary_engine_call). So
+; `PLAY "C",A$,B$` stored B$'s descriptor at $8B02 instead of the voice block:
+; in free RAM for a short program, inside the program text for one past ~2.8 KB.
+; The tape run's Blocker lost line 140's link that way and died in `GOSUB 217`
+; (scratchpad/blocker_watch.out, scratchpad/iyclobber.out). Saved HERE rather
+; than at pl_voice because the class is "a caller holds IY across anything that
+; can reach a tenant", and this is the one door every tenant call goes through.
 sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
+                push    iy                  ; D-PLAYIY: the caller's IY, back after
                 push    de                  ; a tenant may take DE as an arg (crunch: dest)
                 ld      d,a
                 ld      e,0
@@ -74,14 +86,16 @@ sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
                 di
                 call    CALSLT              ; HL/DE pass through; tenant runs under DI
                 ei
+                pop     iy                  ; D-PLAYIY: the caller's IY again
                 or      a                   ; CF=0: call completed (A = tenant's result)
                 ret
 
 ; subrom2_call (D-SUB2 c, 2026-10-12): subrom_call into the SECOND sub ROM,
 ; zerobas-sub2 in slot 3-3 (sub2/sub2.asm). Same contract -- IX = the entry
 ; (the SAME table bases, SUBROM_ENTRY_BASE_P0 / _P1: the ROM is chosen by the
-; slot, never by the address), HL/DE pass through, CALSLT clobbers the rest,
-; CF=1 without calling when the ROM is absent (SUBSLOT2 = 0). It joins
+; slot, never by the address), HL/DE pass through, IY survives (D-PLAYIY), CALSLT
+; clobbers the rest, CF=1 without calling when the ROM is absent (SUBSLOT2 = 0).
+; It joins
 ; subrom_call AFTER that one's slot load, so ROM 1's path is unchanged by a
 ; single T-state. 8 B, low: a sub page-1 tenant may call it too (the low
 ; region is visible from every context that runs main code).
@@ -148,14 +162,14 @@ STUBINL_P1H     equ     high SUBROM_ENTRY_BASE_P1
                 ENDIF
 
 ; zks_p2 -- the low-region tail of the D-KEYSHIFT repaint (basic/islands.asm
-; zks_paint pushed BC DE HL IX): IY, the keystr tenant's paint, then restore.
+; zks_paint pushed BC DE HL IX): the keystr tenant's paint, then restore. Its
+; own `push iy` / `pop iy` went with D-PLAYIY: sr_slot keeps the caller's IY
+; now, for every tenant call (4 B back, which is what the fix there cost).
 zks_p2:
-                push    iy
                 ld      a,KEYOP_FNKPAINT
                 ld      (KEYARG),a
                 call    sr_inl0
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_KEYSTR)
-                pop     iy
                 pop     ix
                 pop     hl
                 pop     de

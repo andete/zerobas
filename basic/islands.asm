@@ -324,7 +324,8 @@ rn_undefined:   db      "Undefined line ",0
 ; sites reach CHSNS / CHGET through these two wrappers (C-BIOS's own chget
 ; waits on a HALT and is left untouched). The paint is the keystr tenant's,
 ; which picks the set from FNKSWI; its register saves run in zks_paint (here)
-; and zks_p2 (the low region, basic/subromcall.asm) -- CALSLT clobbers all.
+; and zks_p2 (the low region, basic/subromcall.asm) -- CALSLT clobbers all but
+; IY, which sr_slot keeps (D-PLAYIY).
 zb_chget:
                 call    zb_chsns
                 jp      nz,CHGET            ; a key is waiting: CHGET takes it

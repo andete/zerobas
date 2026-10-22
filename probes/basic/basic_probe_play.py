@@ -85,6 +85,15 @@ FN_CASES = [
     ("fn_v2",    'PLAY "","%s"' % LONG,       VOICES,                "-1 0 -1 0"),
     ("fn_v3",    'PLAY "","","%s"' % LONG,    VOICES,                "-1 0 0 -1"),
     ("fn_trunc", 'PLAY "","","%s"' % LONG,    "PLAY(2.7);PLAY(3.7)", "0 -1"),
+    # D-PLAYIY (2026-10-22): a voice given as a string VARIABLE. Its lookup is a
+    # tenant call, and IY -- pl_voice's voice-block pointer -- came back as
+    # something else (the sub-ROM slot id, $8B00, in a program with no arrays),
+    # so the descriptor missed the voice block and that voice played nothing.
+    # 🔴 READ THE VOICE, NOT AN ADDRESS: a first row summed the array cells
+    # around $8B02 and stayed GREEN with the fix cut -- once an array exists
+    # the clobbered IY is a different value and the write lands elsewhere.
+    ("var_v2",   'A$="%s":PLAY "",A$' % LONG,    VOICES,                "-1 0 -1 0"),
+    ("var_v3",   'A$="%s":PLAY "","",A$' % LONG, VOICES,                "-1 0 0 -1"),
 ]
 
 # --- INTEGRATION SELF-CHECK (zerobas only): (label, stmt, expected MUSICF) ------

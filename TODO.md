@@ -5421,6 +5421,16 @@ item — do **one item per session** to keep context lean.
       cause is NOT shown: the game's writes would have to address its variables by pointer
       arithmetic. ➡️ Next for Blocker: list its lines 60-140 on zerobas for POKE / VARPTR and
       see which address it computes.
+      ✅ **FOUND AND FIXED the same night -> D-PLAYIY (below): NOT the DEF FN layout.** Lines
+      60-90 hold no POKE (🔮 MISSED). A pointer trace
+      ([`blocker_trace.out`](scratchpad/blocker_trace.out),
+      [`tapetrace_probe.py`](scratchpad/tapetrace_probe.py)) showed VARTAB fixed and the
+      line chain cut at line 140's link ($8B03) between lines 25 and 65 -- the reference's
+      546 lines stay whole. A write watchpoint on zerobas
+      ([`blocker_watch.out`](scratchpad/blocker_watch.out)) caught `pl_voice` storing a
+      voice descriptor there from line 62 on (`PLAY "...",A1$,A3$`). After the fix
+      ([`blocker_trace_fixed.out`](scratchpad/blocker_trace_fixed.out)) the chain stays 546
+      lines and the game runs the lines the reference ran (132, 217-237, 336/338).
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -5931,6 +5941,39 @@ item — do **one item per session** to keep context lean.
       undocumented addresses and support them."* -> filed as **D-BASICINT**
       (below): characterise each address BLACK-BOX on the VG-8020, implement it
       at the same address.
+
+- [x] 🎵 **D-PLAYIY — `PLAY` WITH A STRING VARIABLE AS A VOICE PLAYED NOTHING AND WROTE THE
+      DESCRIPTOR INTO RANDOM RAM (found 2026-10-22 by D-TAPELOAD's Blocker; fixed the same day)**
+      🎚️ TIER 1 — happy path: `PLAY "",A$` is ordinary game music, and a program past ~2.8 KB
+      had its own text overwritten.
+      📏 `pl_voice` (basic/play.asm) keeps the voice-block pointer in IY across `str_eval`. A
+      string VARIABLE's lookup is a tenant call (str_get_key -> ary_engine_call -> sc_call ->
+      sr_slot), and sr_slot loads IYh with the sub-ROM slot id for CALSLT and never put the
+      caller's IY back ([`iyclobber.out`](scratchpad/iyclobber.out),
+      [`iyclobber_probe.py`](scratchpad/iyclobber_probe.py) -- zerobas's own code only). With
+      no arrays the descriptor went to $8B02 (slot 3-2); with arrays, elsewhere. Voices 2 and 3
+      given through a variable read `0 0 0 0` on `PLAY(0..3)`; both references `-1 0 -1 0`.
+      🔧 sr_slot (basic/subromcall.asm) saves and restores the caller's IY around CALSLT -- the
+      one door every tenant call goes through, so the whole class closes. zks_p2's own IY
+      save became redundant and went: 0 B net in the low region.
+      🔬 WHY NOTHING SAW IT: tests/msxtest.py's subrom bridge traps `subrom_call` and never
+      touches IY -- the host was kinder than the machine. `tests/test_playiy.py` takes the
+      bridge out and runs the real sr_slot with a CALSLT stub that wrecks IY (knife: cutting
+      the two lines fails 3 rows). `make play-acceptance` rows `var_v2` / `var_v3` read the
+      voices (knife: both go `0 0 0 0`). 🔴 A first row summed array cells around $8B02 and
+      stayed GREEN with the fix cut: with an array present the clobbered IY is a different
+      value. Read the behaviour, not the address.
+      ➡️ Not done here: the bridge still hands back IX untouched although the contract says
+      CALSLT clobbers it -- the same kindness for a different register; filed as D-BRIDGEIX.
+
+- [ ] 🔬 **D-BRIDGEIX — THE HOST SUBROM BRIDGE KEEPS IX (AND A, F) THE WAY THE MACHINE DOES NOT
+      (found 2026-10-22 by D-PLAYIY)**
+      🎚️ TIER 6 — apparatus: a caller that keeps IX across a tenant call is green on the host
+      and wrong on the machine, exactly as IY was.
+      🤖 **AUTONOMOUS** — make tests/msxtest.py's bridge set IX to a poison value after the
+      call (sr_slot's contract: HL/DE pass through, IY survives, the rest is clobbered); every
+      test that goes red names a caller to check against the real machine before the test is
+      blamed.
 
 - [ ] 🧮 **D-DEFFNVAR — A `DEF FN` TAKES A 5-BYTE ENTRY IN THE REFERENCE'S VARIABLE TABLE AND NONE
       IN zerobas'S (found 2026-10-22 by D-TAPELOAD's Blocker)**
@@ -12027,7 +12070,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38063 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38106 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12193,7 +12236,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17055 (T-6FE392)8 (T-529ABE)` from `TODO.md:29892 (T-529ABE)`: a
+      `TODO.md:17098 (T-6FE392)8 (T-529ABE)` from `TODO.md:29935 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17902,7 +17945,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29892 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29935 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

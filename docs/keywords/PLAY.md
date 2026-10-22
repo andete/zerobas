@@ -131,6 +131,17 @@ the ten test programs also showed a different amount of free string space.
 
 ## What we found, and how
 
+- **A voice given as a string variable played nothing** (fixed 2026-10-22,
+  D-PLAYIY). `A$="L1CDEFGAB":PLAY "",A$` sounded no voice at all; both
+  references sound voice 2. Looking up a variable's value is a call into
+  zerobas's second ROM, and that call changed a register `PLAY` was keeping its
+  place in. So the variable's details were written somewhere else in memory.
+  In a long program that place was the program itself: the tape game Blocker
+  lost its lines from 140 on and stopped with `Undefined line number in 88`.
+  Found by watching which code wrote to the damaged line, on zerobas only. The
+  call now hands that register back for every caller. The earlier tests had
+  missed it because the host test harness stands in for that call and never
+  changed the register; a test now runs the real call.
 - **A game plays its music by calling BASIC's own `PLAY` code directly**
   (supported 2026-10-15, D-AVTAK). A View to a Kill jumps into the reference's
   `PLAY` handler at the fixed address `&H73E5`, with its own music strings, and
@@ -193,5 +204,7 @@ the ten test programs also showed a different amount of free string space.
 - `make kwsweep` — one row per MML command, each reading the sound chip back,
   and the error rows.
 - `make kwram` — the RAM-usage comparison.
+- `tests/test_playiy.py` — a call into the second ROM hands the caller's
+  register back; run on the real call, not the harness's stand-in.
 - `make basicint-acceptance` — the `&H73E5` entry games call, against the
   VG-8020; `make pin-check` keeps it at that address.
