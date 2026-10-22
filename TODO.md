@@ -5398,9 +5398,29 @@ item — do **one item per session** to keep context lean.
       the run line 139 ends in garbage tokens and nothing past 140 is left -- the program text
       is overwritten WHILE IT RUNS. Its setup lines VPOKE the colour table and use
       STOP ON / INTERVAL ON / PLAY ([`blocker_cload.out`](scratchpad/blocker_cload.out), the
-      VG-8020's half; zerobas's half of that run lost its timing). ➡️ NEXT: find the statement
-      whose write lands in program text on zerobas -- run to line N and LIST 139 / PEEK the
-      pointers, halving N; tapelist_probe.py needs longer gaps for long typed lines.
+      VG-8020's half; zerobas's half of that run lost its timing).
+      📏 **NARROWED (2026-10-22, work-area cells and a hash of $8001..VARTAB -- an equality
+      check, nothing interpreted):** the game REWRITES ITS OWN PROGRAM TEXT on the VG-8020 too
+      -- the hash changes every second from line ~68 on, and its USR routine ($E000, the tape's
+      2nd file, `DEF USR=&HE000`) runs from line 260. On zerobas the first change comes at the
+      same lines (65-68) and USR is never reached: the WRITES land somewhere else. Ruled out:
+      PLAY changing a literal-assigned string in place (own program,
+      [`playlit_probe.out`](scratchpad/playlit_probe.out): intact on both -- 🔮 MISSED); CLOAD's
+      VARTAB (zerobas $B2CE, the VG-8020 $B2CF -- the reference counts one more zero past the end
+      link; POKEd to $B2CF before RUN, zerobas still fails in line 88 -- 🔮 MISSED, unless RUN
+      re-derives VARTAB). STANDING DIFFERENCE: the simple-variable area (VARTAB..ARYTAB) is 185 B
+      on the VG-8020 against 134 B here at the same lines (52 / 42 at line 15) -- the game's
+      `DEF FN`s (five) live in the reference's variable table; zerobas keeps DEF FN in its own
+      pool (D-DEFFN). A game that addresses its variables through the work-area pointers writes
+      elsewhere on zerobas. Also: MEMSIZ ($F672) reads 0 here, $F168 there; STKTOP ($F674) $F380
+      here, $F0A0 there. ➡️ NEXT: measure the DEF FN layout with an own program (DEF FN then a
+      variable: VARTAB / ARYTAB and VARPTR of the variable, both machines); if it is the cause,
+      that is a D-DEFFN layout item, not a tape one.
+      📏 MEASURED the same night -> **D-DEFFNVAR** (filed below): one `DEF FN` makes the
+      reference hold one more 5-byte variable entry than zerobas. Whether that is Blocker's
+      cause is NOT shown: the game's writes would have to address its variables by pointer
+      arithmetic. ➡️ Next for Blocker: list its lines 60-140 on zerobas for POKE / VARPTR and
+      see which address it computes.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -5911,6 +5931,21 @@ item — do **one item per session** to keep context lean.
       undocumented addresses and support them."* -> filed as **D-BASICINT**
       (below): characterise each address BLACK-BOX on the VG-8020, implement it
       at the same address.
+
+- [ ] 🧮 **D-DEFFNVAR — A `DEF FN` TAKES A 5-BYTE ENTRY IN THE REFERENCE'S VARIABLE TABLE AND NONE
+      IN zerobas'S (found 2026-10-22 by D-TAPELOAD's Blocker)**
+      🎚️ TIER 4 — RAM usage (VG-8020 / CF-3300): FRE(0) and every later variable's VARPTR shift
+      by 5 bytes per DEF FN.
+      🤖 **AUTONOMOUS** — measure the entry first.
+      📏 [`deffn_layout.out`](scratchpad/deffn_layout.out) (own program, `10 DEFINT A-Z:DEF
+      FNA(X)=X+1:B=5`, then VARTAB / ARYTAB / VARPTR(B)): the CF-3300's variable area is 29 B
+      with B's value at VARTAB+13; zerobas's 24 B, B at VARTAB+8 -- two 5-byte entries before B
+      there, one here. Blocker (five DEF FNs) reads 185 B against 134 B at the same lines.
+      zerobas keeps FN definitions in its own pool (D-DEFFN, 2026-08-23); Joost's 09-11 ruling
+      is about the string-FN GC root taking the pool, NOT about where a definition lives -- read
+      [[joost-ruled-merge-and-pool]] before designing. ➡️ Read the reference's entry bytes
+      (variable-area RAM: type byte, name, the 2-byte value) to learn what the entry holds; then
+      decide whether zerobas mirrors it.
 
 - [ ] 🔁 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
       INTERNALS) ARE NOT AT THEIR ADDRESSES (found 2026-10-15 by D-BASICINT)**
@@ -11992,7 +12027,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38028 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38063 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12158,7 +12193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17020 (T-6FE392)8 (T-529ABE)` from `TODO.md:29857 (T-529ABE)`: a
+      `TODO.md:17055 (T-6FE392)8 (T-529ABE)` from `TODO.md:29892 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -17867,7 +17902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:29857 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:29892 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,258 @@
+=== National_CF-3300
+== S0 ('14:NEW')  pc=0D79 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G"
+   |  color cload cont  list.  run
+== S1 ('15:10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"')  pc=0D76 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  color auto  goto  list  run
+== S2 ('20:20 PLAY "O5L8EFG4",A$,B$')  pc=0D82 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  color auto  goto  list  run
+== S3 ('24:30 PLAY "O5E+1",A$,B$')  pc=0D79 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  color auto  goto  list  run
+== S4 ('28:RUN')  pc=0D73 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  Ok
+   |  color auto  goto  list  run
+== S5 ('36:LIST')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  Ok
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  Ok
+   |  color auto  goto  list  run
+== S6 ('40:PRINT A$;"/";B$')  pc=0D6E curlin=FFFF mode=S1
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  Ok
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  Ok
+   |  PRINT A$;"/";B$
+   |  L8O2GO3GO2GO3G/L8R8CR8C
+   |  Ok
+   |  color auto  goto  list  run
+== S7 ('44:')  pc=0D62 curlin=FFFF mode=S1
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  Ok
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8
+   |  R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  Ok
+   |  PRINT A$;"/";B$
+   |  L8O2GO3GO2GO3G/L8R8CR8C
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('14:NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G
+   |  color  cload" cont   list.   run
+== S1 ('15:10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  color  cload" cont   list.   run
+== S2 ('20:20 PLAY "O5L8EFG4",A$,B$')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  color  auto   goto   list   run
+== S3 ('24:30 PLAY "O5E+1",A$,B$')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  color  auto   goto   list   run
+== S4 ('28:RUN')  pc=196D curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  ZB
+   |  color  auto   goto   list   run
+== S5 ('36:LIST')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  ZB
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  ZB
+   |  color  auto   goto   list   run
+== S6 ('40:PRINT A$;"/";B$')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  ZB
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  ZB
+   |  PRINT A$;"/";B$
+   |  L8O2GO3GO2GO3G/L8R8CR8C
+   |  ZB
+   |  color  auto   goto   list   run
+== S7 ('44:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  RUN
+   |  ZB
+   |  LIST
+   |  10 A$="L8O2GO3GO2GO3G":B$="L8R8CR8C"
+   |  20 PLAY "O5L8EFG4",A$,B$
+   |  30 PLAY "O5E+1",A$,B$
+   |  ZB
+   |  PRINT A$;"/";B$
+   |  L8O2GO3GO2GO3G/L8R8CR8C
+   |  ZB
+   |  color  auto   goto   list   run

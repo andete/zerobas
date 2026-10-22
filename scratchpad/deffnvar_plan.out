@@ -1,0 +1,5 @@
+python3 tools/pick_gates.py 
+GATE TIER: SCOPED
+  why: probe/tool change: scratchpad/missop3_probe.py scratchpad/playop_probe.py scratchpad/tapelist_probe.py
+  hours since the last full green: 0.1 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (0): -

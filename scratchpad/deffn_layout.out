@@ -1,0 +1,174 @@
+=== National_CF-3300
+== S0 ('14:NEW')  pc=0D6D curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(
+   |  color cload cont  list.  run
+== S1 ('15:10 DEFINT A-Z:DEF FNA(X)=X+1:B=5')  pc=0D6D curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:
+   |  B=5
+   |  color auto  goto  list  run
+== S2 ('22:20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3):A!=PEEK(&HF6C4)+256!*PEEK(&HF6C5)')  pc=0D71 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:
+   |  B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(
+   |  &HF6C3
+   |  color auto  goto  list  run
+== S3 ('32:30 PRINT "VARS";A!-V!;"B AT";VARPTR(B)-V!;FNA(1)')  pc=0D65 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:
+   |  B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(
+   |  &HF6C3):A!=PEEK(&HF6C4)+256!*
+   |  PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";
+   |  VARPTR(B
+   |  color cload cont  list.  run
+== S4 ('42:RUN')  pc=0D6E curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:
+   |  B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(
+   |  &HF6C3):A!=PEEK(&HF6C4)+256!*
+   |  PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";
+   |  VARPTR(B)-V!;FNA(1)
+   |  RUN
+   |  VARS 29 B AT-65523  2
+   |  Ok
+   |  color auto  goto  list  run
+== S5 ('46:')  pc=0D62 curlin=FFFF mode=S1
+   |  MSX BASIC version 1.0
+   |  Copyright 1983 by Microsoft
+   |  23430 Bytes free
+   |  Disk BASIC version 1.0
+   |  AUTOX
+   |  Ok
+   |  NEW
+   |  Ok
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:
+   |  B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(
+   |  &HF6C3):A!=PEEK(&HF6C4)+256!*
+   |  PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";
+   |  VARPTR(B)-V!;FNA(1)
+   |  RUN
+   |  VARS 29 B AT-65523  2
+   |  Ok
+   |  color auto  goto  list  run
+=== C-BIOS_MSX1_EU_REPACK_DISK
+== S0 ('14:NEW')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA
+   |  color  cload" cont   list.   run
+== S1 ('15:10 DEFINT A-Z:DEF FNA(X)=X+1:B=5')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |  color  auto   goto   list   run
+== S2 ('22:20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3):A!=PEEK(&HF6C4)+256!*PEEK(&HF6C5)')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C
+   |  color  cload" cont   list.   run
+== S3 ('32:30 PRINT "VARS";A!-V!;"B AT";VARPTR(B)-V!;FNA(1)')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3):
+   |  A!=PEEK(&HF6C4)+256!*PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";VARPTR(
+   |  color  cload" cont   list.   run
+== S4 ('42:RUN')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3):
+   |  A!=PEEK(&HF6C4)+256!*PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";VARPTR(B
+   |  )-V!;FNA(1)
+   |  RUN
+   |  VARS 24 B AT-65528  2
+   |  ZB
+   |  color  auto   goto   list   run
+== S5 ('46:')  pc=01CC curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  AUTOX
+   |  ZB
+   |  NEW
+   |  ZB
+   |  10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |  20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3):
+   |  A!=PEEK(&HF6C4)+256!*PEEK(&HF6C5)
+   |  30 PRINT "VARS";A!-V!;"B AT";VARPTR(B
+   |  )-V!;FNA(1)
+   |  RUN
+   |  VARS 24 B AT-65528  2
+   |  ZB
+   |  color  auto   goto   list   run

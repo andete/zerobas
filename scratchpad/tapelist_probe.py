@@ -9,7 +9,7 @@ is written into the repo beyond what a probe output shows.
 
     TAPECORPUS_DIR=... python3 -u scratchpad/tapelist_probe.py TITLE \
         'LOAD"CAS:"' 'LIST 130-140' ... [--wait 150] [--machines ref,zb]
-The first key line is typed at T2; it may run for --wait seconds (the load); every
+The first key line is typed at T6; it may run for --wait seconds (the load); every
 later line gets 4 s and its own screen capture.
 """
 import argparse, os, shutil, subprocess, sys, tempfile
@@ -20,7 +20,7 @@ sys.path.insert(0, HERE)
 import tapecorpus_run as T  # noqa: E402
 
 
-def run(machine, cas, keys, wait):
+def run(machine, cas, keys, wait, step=4.0):
     td = tempfile.mkdtemp(prefix="tlist_")
     try:
         out = os.path.join(td, "c.txt")
@@ -34,13 +34,13 @@ def run(machine, cas, keys, wait):
                  '  puts $f "$tag [reg pc] $r 0000 $v"',
                  "  close $f",
                  "}"]
-        t = 2.0
+        t = 6.0                               # past both machines' boot
         for k, key in enumerate(keys):
             esc = key
             for ch in '\\"$[]':
                 esc = esc.replace(ch, "\\" + ch)
             lines.append(f'after time {t} {{ type "{esc}\\r" }}')
-            t += wait if k == 0 else 4.0
+            t += wait if k == 0 else step
             lines.append(f"after time {t - 0.5} {{ __cap K{k} }}")
         lines.append(f"after time {t} {{ exit }}")
         open(os.path.join(td, "s.tcl"), "w").write("\n".join(lines) + "\n")
@@ -66,6 +66,8 @@ def main():
     ap.add_argument("keys", nargs="+")
     ap.add_argument("--wait", type=float, default=150.0)
     ap.add_argument("--machines", default="ref,zb")
+    ap.add_argument("--step", type=float, default=4.0,
+                    help="seconds per later key line (long lines type slowly)")
     a = ap.parse_args()
     td = tempfile.mkdtemp(prefix="tlistz_")
     try:
@@ -73,7 +75,7 @@ def main():
         for m in a.machines.split(","):
             machine = T.REF if m == "ref" else T.ZB
             print(f"### {m} ({machine})")
-            for tag, rows in run(machine, cas, a.keys, a.wait):
+            for tag, rows in run(machine, cas, a.keys, a.wait, a.step):
                 print(f"== {tag} {a.keys[int(tag[1:])]!r}")
                 for r in rows:
                     print("   |" + r)
