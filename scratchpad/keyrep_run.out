@@ -1,0 +1,22 @@
+=== Philips_VG_8020
+  A hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.07s rep=13 q=1 | +0.13s rep=12 q=1 | +0.25s rep=11 q=1 | +0.31s rep=10 q=1 | +0.37s rep=9 q=1
+  B hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.23s rep=11 q=1 | +0.29s rep=10 q=1 | +0.35s rep=9 q=1 | +0.41s rep=8 q=1
+  C hold 1500 ms  REPCNT before=1  queued=14
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.17s rep=11 q=1 | +0.23s rep=10 q=1 | +0.29s rep=9 q=1 | +0.35s rep=8 q=1 | +0.41s rep=7 q=1 | +0.47s rep=6 q=1 | +0.53s rep=5 q=1 | +0.59s rep=4 q=1 | +0.65s rep=3 q=1 | +0.71s rep=2 q=1 | +0.77s rep=1 q=1 | +0.83s rep=1 q=2 | +0.89s rep=1 q=3 | +0.95s rep=1 q=4 | +1.01s rep=1 q=5 | +1.07s rep=1 q=6 | +1.13s rep=1 q=7 | +1.19s rep=1 q=8 | +1.25s rep=1 q=9 | +1.31s rep=1 q=10 | +1.37s rep=1 q=11 | +1.43s rep=1 q=12 | +1.49s rep=1 q=13 | +1.53s rep=12 q=13 | +1.59s rep=11 q=13 | +1.65s rep=13 q=14 | +1.71s rep=12 q=14
+  D hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=11 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.23s rep=11 q=1 | +0.29s rep=10 q=1 | +0.35s rep=9 q=1 | +0.41s rep=8 q=1
+  E hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.07s rep=13 q=1 | +0.13s rep=12 q=1 | +0.25s rep=11 q=1 | +0.31s rep=10 q=1 | +0.37s rep=9 q=1
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+  A hold 120 ms  REPCNT before=68  queued=1
+     +0.01s rep=67 q=0 | +0.03s rep=5 q=1 | +0.09s rep=4 q=1 | +0.21s rep=3 q=1 | +0.27s rep=2 q=1 | +0.33s rep=1 q=1
+  B hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=5 q=1 | +0.07s rep=4 q=1 | +0.19s rep=3 q=1 | +0.25s rep=2 q=1 | +0.31s rep=1 q=1
+  C hold 1500 ms  REPCNT before=1  queued=22
+     +0.01s rep=1 q=0 | +0.07s rep=5 q=1 | +0.13s rep=4 q=1 | +0.19s rep=3 q=1 | +0.25s rep=2 q=1 | +0.31s rep=1 q=1 | +0.37s rep=1 q=2 | +0.43s rep=1 q=3 | +0.49s rep=1 q=4 | +0.55s rep=1 q=5 | +0.61s rep=1 q=6 | +0.67s rep=1 q=7 | +0.73s rep=1 q=8 | +0.79s rep=1 q=9 | +0.85s rep=1 q=10 | +0.91s rep=1 q=11 | +0.97s rep=1 q=12 | +1.03s rep=1 q=13 | +1.09s rep=1 q=14 | +1.15s rep=1 q=15 | +1.21s rep=1 q=16 | +1.27s rep=1 q=17 | +1.33s rep=1 q=18 | +1.39s rep=1 q=19 | +1.45s rep=1 q=20 | +1.51s rep=1 q=21 | +1.55s rep=5 q=21 | +1.57s rep=4 q=21 | +1.61s rep=5 q=22 | +1.67s rep=4 q=22 | +1.79s rep=3 q=22
+  D hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=5 q=1 | +0.07s rep=4 q=1 | +0.19s rep=3 q=1 | +0.25s rep=2 q=1 | +0.31s rep=1 q=1 | +0.37s rep=0 q=1 | +0.39s rep=1 q=1
+  E hold 120 ms  REPCNT before=0  queued=1
+     +0.01s rep=1 q=0 | +0.03s rep=5 q=1 | +0.09s rep=4 q=1 | +0.21s rep=3 q=1 | +0.27s rep=2 q=1 | +0.33s rep=1 q=1

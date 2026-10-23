@@ -1,0 +1,15 @@
+=== National_CF-3300
+  A hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.09s rep=12 q=1 | +0.19s rep=11 q=1 | +0.25s rep=10 q=1 | +0.29s rep=9 q=1 | +0.35s rep=8 q=1 | +0.39s rep=7 q=1
+  B hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.09s rep=12 q=1 | +0.19s rep=11 q=1 | +0.25s rep=10 q=1 | +0.29s rep=9 q=1 | +0.35s rep=8 q=1 | +0.39s rep=7 q=1
+  C hold 1500 ms  REPCNT before=1  queued=19
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.15s rep=11 q=1 | +0.21s rep=10 q=1 | +0.25s rep=9 q=1 | +0.31s rep=8 q=1 | +0.35s rep=7 q=1 | +0.41s rep=6 q=1 | +0.45s rep=5 q=1 | +0.51s rep=4 q=1 | +0.55s rep=3 q=1 | +0.61s rep=2 q=1 | +0.65s rep=1 q=1 | +0.71s rep=1 q=2 | +0.75s rep=1 q=3 | +0.81s rep=1 q=4 | +0.85s rep=1 q=5 | +0.91s rep=1 q=6 | +0.95s rep=1 q=7 | +1.01s rep=1 q=8 | +1.05s rep=1 q=9 | +1.11s rep=1 q=10 | +1.15s rep=1 q=11 | +1.21s rep=1 q=12 | +1.25s rep=1 q=13 | +1.31s rep=1 q=14 | +1.35s rep=1 q=15 | +1.41s rep=1 q=16 | +1.45s rep=1 q=17 | +1.51s rep=1 q=18 | +1.55s rep=12 q=18 | +1.61s rep=11 q=18 | +1.65s rep=13 q=19 | +1.71s rep=12 q=19
+  D hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=11 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.21s rep=11 q=1 | +0.25s rep=10 q=1 | +0.31s rep=9 q=1 | +0.35s rep=8 q=1 | +0.41s rep=7 q=1
+  E hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=1 q=0 | +0.05s rep=13 q=1 | +0.11s rep=12 q=1 | +0.21s rep=11 q=1 | +0.25s rep=10 q=1 | +0.31s rep=9 q=1 | +0.35s rep=8 q=1 | +0.41s rep=7 q=1
+  F hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=13 q=1 | +0.07s rep=12 q=1 | +0.11s rep=11 q=1 | +0.17s rep=12 q=1 | +0.21s rep=11 q=1 | +0.27s rep=10 q=1 | +0.31s rep=9 q=1 | +0.37s rep=8 q=1 | +0.41s rep=7 q=1
+  G hold 120 ms  REPCNT before=1  queued=1
+     +0.01s rep=13 q=1 | +0.07s rep=12 q=1 | +0.11s rep=11 q=1 | +0.17s rep=12 q=1 | +0.21s rep=11 q=1 | +0.27s rep=10 q=1 | +0.31s rep=9 q=1 | +0.37s rep=8 q=1 | +0.41s rep=7 q=1

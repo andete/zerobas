@@ -1,0 +1,39 @@
+diff --git a/src/main.asm b/src/main.asm
+index 545d9af..1415618 100644
+--- a/src/main.asm
++++ b/src/main.asm
+@@ -2704,7 +2704,12 @@ clear_oldkey:
+                 ld      (hl),c
+                 inc     hl
+                 djnz    clear_oldkey
+-                call    key_in
++                ; zerobas repack (D-KEYREP): compare the matrix key_in just read,
++                ; not a second read. A key pressed between two reads in one
++                ; interrupt was queued HERE, its delay then overwritten by the 1
++                ; below, so it repeated at the next scan (`PPUT` for `PUT`); it is
++                ; now a new key at the next scan, with the full delay.
++                call    key_cmp
+                 ld      a,1
+                 ld      (REPCNT),a
+ 
+@@ -2747,6 +2752,7 @@ key_in_lp:
+                 inc     c
+                 djnz    key_in_lp
+ 
++key_cmp:
+                 ld      ix,OLDKEY
+                 ld      de,NEWKEY
+                 ; Use plain or SHIFT version of rows 0-5?
+@@ -2793,8 +2799,11 @@ key_bit_next:
+ 
+ key_set_delay:
+                 ; Set the auto-repeat delay.
++                ; zerobas repack (D-KEYREP): 13 scans, the VG-8020's and the
++                ; CF-3300's REPCNT on a new key (zerobas scratchpad/keyrep_run.out,
++                ; keyrep_run_cf.out); C-BIOS had 5, so a key held 0.3 s repeated.
+                 push    af
+-                ld      a,5
++                ld      a,13
+                 ld      (REPCNT),a
+                 pop     af
+                 ret

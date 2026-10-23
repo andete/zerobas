@@ -200,6 +200,18 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   showed `ZB` about 2.5 seconds before it took the first key. zerobas now sets
   it at start-up, and the first key is taken as soon as the prompt shows, as
   on the reference.
+- **A held key started repeating too soon, and a key could come out twice**
+  (fixed 2026-10-23, D-KEYREP). Both references wait 13 keyboard scans before a
+  held key repeats (about 0.8 s on the 50 Hz VG-8020); C-BIOS waited 5, so a
+  key held for a third of a second repeated, and holding one for 1.5 s typed
+  22 characters where the VG-8020 types 14
+  ([`keyrep_run.out`](../../scratchpad/keyrep_run.out),
+  [`keyrep_run_cf.out`](../../scratchpad/keyrep_run_cf.out),
+  [after](../../scratchpad/keyrep_after.out)). And a key pressed at one
+  particular moment of the scan was taken as already repeating, so it came out
+  twice (`PPUT` for `PUT`): rare when typing by hand, and reproducible with a
+  test that types at fixed times
+  ([`step7c_keyrep.out`](../../scratchpad/step7c_keyrep.out)).
 - **`INTERVAL` was first written off as an MSX2 feature** (2026-07-24) because
   it is not in the keyword table; running it showed it works on the VG-8020,
   built from `INT` and `VAL`. It shipped on 2026-07-26 with a 149-case gate.

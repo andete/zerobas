@@ -22,8 +22,8 @@ session and the loop resumes exactly where it stopped.
 **Pick up here, in order:**
 1. ~~D-STEP7DATE~~ DONE 2026-10-23 (apparatus 4db28378 + 84137e8c, then the ROM
    half with the SCNCNT store in boot_date).
-2. **D-KEYREP (TIER 1)** -- the first key after an idle spell can double; measure
-   the VG-8020's REPCNT on a new key first (TODO block).
+2. ~~D-KEYREP~~ DONE 2026-10-23 (cbios-repack/key-repeat.patch: delay 13, no
+   second matrix read in the repeat pass).
 3. **ss-final.dsk** -- ZB-ONLY since re-run 4, not D-STEP7DATE (D-DISKRUN's note).
 4. **mb.dsk** -- 🙋 waiting for Joost (options a/b/c in D-DISKRUN).
 5. **D-TPAPTAIL (c)**.
@@ -1874,7 +1874,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11079 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11099 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

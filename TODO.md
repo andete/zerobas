@@ -1487,7 +1487,7 @@ item — do **one item per session** to keep context lean.
       🔮 Scored: "BOTH-RUN stays 118" MISS (119: mania111 counts as running once it asks); "no
       image newly asks where the CF-3300 does not" HIT; "mania111 now asks" HIT.
 
-- [ ] ⌨️ **D-KEYREP — THE FIRST KEY AFTER AN IDLE SPELL CAN COME OUT TWICE: A NEW KEY DOES NOT
+- [x] ✅ **DONE 2026-10-23 (D-KEYREP)** ⌨️ **D-KEYREP — THE FIRST KEY AFTER AN IDLE SPELL CAN COME OUT TWICE: A NEW KEY DOES NOT
       RESTART THE AUTO-REPEAT DELAY (found 2026-10-23 by D-STEP7DATE's apparatus)**
       🎚️ TIER 1 — typing at the prompt (a candidate: measure the reference first).
       🤖 **AUTONOMOUS** — work-area cells only.
@@ -1503,6 +1503,26 @@ item — do **one item per session** to keep context lean.
       a key is held 120 ms after an idle spell), and whether it ever doubles; then the C-BIOS
       key scan (cbios-repack/, a patch) restarts the delay on a new key the same way. Which
       states leave REPCNT at 1 is part of the measurement (it read 0 at the date prompt).
+      ✅ **FIXED 2026-10-23 -- AND THE FILED MECHANISM WAS WRONG.** [`keyrep_probe.py`](scratchpad/keyrep_probe.py)
+      (keys held on the matrix after idle spells, the work area every 20 ms): a plain 120 ms
+      tap queues ONE character on zerobas too, with or without SHIFT, disk or no disk
+      ([`keyrep_run2.out`](scratchpad/keyrep_run2.out), [`keyrep_run3.out`](scratchpad/keyrep_run3.out)).
+      The doubling is a RACE in C-BIOS's repeat pass (read: C-BIOS source, the repack's own
+      base): with KEYBUF empty and REPCNT run out it clears OLDKEY, READS the matrix a second
+      time, then sets REPCNT = 1 -- a key that went down between the two reads is queued there,
+      its new-key delay overwritten by the 1, so it repeats at the next scan. And the delay
+      itself was wrong: both references load REPCNT = **13** on a new key (VG-8020 14 characters
+      in a 1.5 s hold at 50 Hz, CF-3300 19 at 60 Hz -- [`keyrep_run.out`](scratchpad/keyrep_run.out),
+      [`keyrep_run_cf.out`](scratchpad/keyrep_run_cf.out)), C-BIOS 5 (22 characters).
+      Fix: `cbios-repack/key-repeat.patch` (#12): the repeat pass compares the matrix just read
+      (`key_cmp`, a label after key_in's read loop) and the delay is 13. 2 bytes change
+      ($194A, $19B9), nothing moves; repacked sha1 eaf3fae8. After
+      ([`keyrep_after.out`](scratchpad/keyrep_after.out)): 14 characters in 1.5 s on both
+      repack machines, every tap 1; lof's shifted timeline now echoes `PUT #1,1` once and
+      LOF 256 (the raced key is taken a scan later, as a new key with REPCNT 13).
+      🔮 Scored: "zerobas doubles a 120 ms tap after idle" MISS (it does not: a race, not a state);
+      "SHIFT is the trigger" MISS; "the disk machine differs" MISS; "after the fix: 14 / 1"
+      HIT; "PUT echoed once" HIT.
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -6647,7 +6667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9113 (T-6FE392)8 (T-529ABE)` from `TODO.md:14680 (T-529ABE)`: a
+      `TODO.md:9133 (T-6FE392)8 (T-529ABE)` from `TODO.md:14700 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9568,7 +9588,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14680 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14700 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

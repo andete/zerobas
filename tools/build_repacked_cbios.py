@@ -88,11 +88,18 @@ PATCHES = [
     # after vdp_bios. Nothing from $0D16 to the font pad moves; C-BIOS ends 28 B
     # later, at $2781, and BASIC_ORG / BASIC_BASE follow it.
     os.path.join(REPO, "cbios-repack", "bios-keyscan.patch"),
+    # D-KEYREP (2026-10-23): a new key's auto-repeat delay is 13 scans, the
+    # VG-8020's and the CF-3300's REPCNT (C-BIOS: 5), and the repeat pass compares
+    # the matrix the scan just read instead of reading it again -- a key pressed
+    # between the two reads was queued with its delay overwritten by 1, so it
+    # came out twice (scratchpad/step7c_keyrep.out). Byte-neutral: a label and an
+    # operand; nothing moves.
+    os.path.join(REPO, "cbios-repack", "key-repeat.patch"),
 ]
 
 PINNED_TAG = "v0.29-3-gb5ad9cb"
 PRISTINE_SHA1 = "baf2e9c69252fd9b350b488d89c71887b9d05eec"
-REPACKED_SHA1 = "6cee0d67b9ccbf7c66ad7fd0018c35129b99c01a"
+REPACKED_SHA1 = "eaf3fae8ddd06c8ec4726e31f848207ae770038c"
 ROM_REL = os.path.join("derived", "bin", "cbios_main_msx1_eu.rom")
 
 

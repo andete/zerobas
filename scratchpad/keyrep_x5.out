@@ -1,0 +1,5 @@
+bdos-acceptance exit=0
+diskbasic-acceptance exit=0
+fat-error-acceptance exit=0
+input-devices-acceptance exit=0
+lnblank-say-acceptance exit=0
