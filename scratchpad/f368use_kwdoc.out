@@ -1,0 +1,3 @@
+=== msx-dos: SKIP (no example: MSX-DOS needs a system disk the example checker does not mount; the BDOS gates below cover it)
+
+SKIP 1

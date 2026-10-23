@@ -1,0 +1,17 @@
+ROW $F36B nodos National_CF-3300             F:F0 4 F0 4 5A
+    screen: Ok | RUN"T.BAS" | F:F0 4 F0 4 5A | Ok | color   auto    goto    list    run
+ROW $F36B nodos C-BIOS_MSX1_EU_REPACK_DISK   F:F0 0 F0 0 5A
+    screen: ZB | RUN"T.BAS" | F:F0 0 F0 0 5A | ZB | color   auto    goto    list    run
+ROW $F36B dos   National_CF-3300             F:F0 4 F0 4 5A
+    screen: Ok | RUN"T.BAS" | F:F0 4 F0 4 5A | Ok | color   auto    goto    list    run
+ROW $F36B dos   C-BIOS_MSX1_EU_REPACK_DISK   F:F0 4 F0 4 5A
+    screen: ZB | RUN"T.BAS" | F:F0 4 F0 4 5A | ZB | color   auto    goto    list    run
+ROW $F368 nodos National_CF-3300             F:F0 4 F0 4 5A
+    screen: Ok | RUN"T.BAS" | F:F0 4 F0 4 5A | Ok | color   auto    goto    list    run
+ROW $F368 nodos C-BIOS_MSX1_EU_REPACK_DISK   F:F0 0 F0 0 5A
+    screen: ZB | RUN"T.BAS" | F:F0 0 F0 0 5A | ZB | color   auto    goto    list    run
+ROW $F368 dos   National_CF-3300             F:F0 4 F0 4 5A
+    screen: Ok | RUN"T.BAS" | F:F0 4 F0 4 5A | Ok | color   auto    goto    list    run
+ROW $F368 dos   C-BIOS_MSX1_EU_REPACK_DISK   F:F0 4 F0 4 5A
+    screen: ZB | RUN"T.BAS" | F:F0 4 F0 4 5A | ZB | color   auto    goto    list    run
+refcache: 4 hit, 4 miss, 4 stored

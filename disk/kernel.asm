@@ -2933,6 +2933,15 @@ basent_tramp:
                 ld      bc, $FFC9 - $FD9A   ; ROM INITs main reruns put theirs back
                 ld      (hl), $C9
                 ldir
+                ; D-TPAPTAIL (c): and the two $F368 entries DOS pointed at its page-1
+                ; bodies (install_dos_env) -- in BASIC they are BASIC's RAM again. A USR
+                ; routine calling $F368 or $F368+3 after A>BASIC: on the CF-3300 the
+                ; slots come back as they went in, before a DOS session and after one;
+                ; zerobas rewrote slot 3's subslot register (scratchpad/f368use_run.out).
+                ; C-BIOS has RETs here before any DOS.
+                ld      a, $C9
+                ld      (WA_JMPTAB), a
+                ld      (WA_JMPTAB + 3), a
 bt_keep:
                 ld      sp, $F2EC           ; the SP the BIOS enters INIT with
                 in      a, ($A8)

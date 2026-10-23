@@ -1376,7 +1376,7 @@ item — do **one item per session** to keep context lean.
       make only bb_mark robust (any entry there restarts BASIC once instead of looping). Not a
       style split, so not covered by the VG-8020 ruling.
 
-- [ ] 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
+- [x] ✅ **DONE 2026-10-23 ((a), (b), (c))** 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
       ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
       🎚️ TIER 1 — latent: each is a DOS program's happy path only if it takes that road.
       🤖 **AUTONOMOUS** — measure each on the CF-3300 first (our own .COM, registers and RAM).
@@ -1417,6 +1417,19 @@ item — do **one item per session** to keep context lean.
       (zerobas cut the third line, the CF-3300's lines landed in a date prompt --
       [`f368bas_nodos.out`](scratchpad/f368bas_nodos.out)); put the test in an AUTOEXEC.BAS
       instead. The date prompt is D-STEP7DATE (filed below).
+      ✅ **(c) DONE 2026-10-23.** [`f368use_probe.py`](scratchpad/f368use_probe.py): T.BAS on the
+      disk (a FAT12 add into a copy), one typed `RUN"T.BAS"`; our 33-byte routine records $A8 and
+      page 3's subslot register, CALLs $F368 or $F368+3 (called, never read), records them again.
+      CF-3300: unchanged in all four rows -- before a DOS session and after A>BASIC, both entries.
+      zerobas after A>BASIC: both entries rewrote the subslot register 04 -> 00 (the DOS bodies);
+      before DOS unchanged (C-BIOS's RETs) ([`f368use_run.out`](scratchpad/f368use_run.out)).
+      Fix: basent_tramp also stores RET at $F368 / $F36B (+8 B, walls and pins unchanged); CALL
+      SYSTEM's road back reinstalls the bodies (lay_page0_env). After: all four zerobas rows come
+      back unchanged ([`f368use_after.out`](scratchpad/f368use_after.out)). The power-on table
+      (build_wa_table, the CF-3300-hardware host only) keeps its JP wa_stub.
+      🔮 Scored: "before DOS both unchanged" HIT; "zerobas after DOS never returns" MISS (it
+      returns, slots changed); "$F368 after DOS crashes zerobas" MISS (same 04 -> 00); "after
+      the fix all unchanged" HIT.
 
 - [x] ✅ **DONE 2026-10-23 (D-STEP7DATE)** 📅 **D-STEP7DATE — A BOOT DISK WHOSE CODE RETURNS AT STEP 7 GETS THE DATE QUESTION ON BOTH
       REFERENCES, AND NONE ON zerobas (found 2026-10-23 by D-TPAPTAIL (c))**
@@ -6677,7 +6690,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9143 (T-6FE392)8 (T-529ABE)` from `TODO.md:14710 (T-529ABE)`: a
+      `TODO.md:9156 (T-6FE392)8 (T-529ABE)` from `TODO.md:14723 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9598,7 +9611,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14710 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14723 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

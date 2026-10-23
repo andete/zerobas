@@ -160,6 +160,11 @@ area on both machines.
   again and keeping the DOS date, so a program `SAVE`d there carries the date
   typed in DOS — `&H279F` = 1999-12-31 in the test, as on the CF-3300.
   Whether `AUTOEXEC.BAS` runs after `A>BASIC` has not been measured.
+- **`&HF368` and `&HF36B` are inert in BASIC.** Under DOS they switch the disk
+  ROM or RAM into page 1 for a program. A machine-code routine that `CALL`s
+  either one from BASIC gets the slots back exactly as they were, on the
+  CF-3300 both before any DOS session and after `A>BASIC`, and on zerobas
+  since 2026-10-23 (D-TPAPTAIL (c)).
 
 ### `AUTOEXEC.BAT` and `AUTOEXEC.BAS`
 
@@ -218,6 +223,17 @@ area on both machines.
 
 ## What we found, and how
 
+- **The two page-1 switches stayed live after `A>BASIC`** (fixed 2026-10-23,
+  D-TPAPTAIL (c)). A small routine of our own, run from a `T.BAS` file, called
+  `&HF368` and `&HF36B` and recorded the slot registers before and after. On the
+  CF-3300 nothing changed, before a DOS session and after one. zerobas, after
+  `A>BASIC`, rewrote slot 3's subslot register, because both entries still
+  pointed at their DOS bodies
+  ([before](../../scratchpad/f368use_run.out),
+  [after](../../scratchpad/f368use_after.out)). Starting BASIC from DOS now
+  turns them back into plain returns, as they are before any DOS session.
+  Typing the routine in line by line had not worked: the lines landed in the
+  CF-3300's date question ([`f368bas_nodos.out`](../../scratchpad/f368bas_nodos.out)).
 - **A disk's boot code took another road after D-TPAP1** (fixed 2026-10-23,
   D-BOOTREGS). Re-running the disk collection after the page-1 fix showed four
   `fray` disks stuck where they used to reach their menu. Breakpoints on our own
