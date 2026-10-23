@@ -1332,6 +1332,18 @@ item — do **one item per session** to keep context lean.
       `set_condition` fired 7 ms late, so log the PC at the call's own return address
       instead, or watch which of OUR entries (or C-BIOS's) runs between the push and the
       INIT re-entry.
+      📏 **NARROWED (2026-10-23, [`mb_a8.out`](scratchpad/mb_a8.out)):** 230 µs after the boot
+      code's entry, code at **$E47E** (RAM, inside our SECTOR_BUF) writes $A8 := $F0 (pages 0 /
+      1 = slot 0) on a stack unwound to C-BIOS's scan frame (SP $F2EC, return $F392); then our
+      main ROM's cold start (init, $4010) runs and C-BIOS re-scans every slot. None of our
+      disk-ROM labels and no page-0 BIOS entry runs in between. REFUTED, one run each, all by
+      overriding at the $C01E entry: DE / HL, the CF-3300's stack shape, DRVINF ($FB21 / $FB22
+      := 02 / $87) and a reference-shaped $F349..$F356 (its words are BUFFER POINTERS on the
+      CF-3300 -- $DF93, 0, $EF95, $ED95, $EB95, 0, $F195 -- not the trampolines our gated
+      build_drvtbl writes; that reading is worth a note on build_drvtbl either way).
+      ➡️ Next: who CALLS $E47E -- a write watch on page 1 / page 2 RAM for a fake "AB" header
+      (a boot loader that lets the BIOS's own ROM scan start it), and what the CF-3300's scan
+      does after this boot code's step 5.
 
 - [ ] 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
       ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
@@ -6505,7 +6517,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8971 (T-6FE392)8 (T-529ABE)` from `TODO.md:14538 (T-529ABE)`: a
+      `TODO.md:8983 (T-6FE392)8 (T-529ABE)` from `TODO.md:14550 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9426,7 +9438,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14538 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
