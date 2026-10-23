@@ -114,6 +114,19 @@ saved binary to try it on).
 
 ## What we found, and how
 
+- **A tape load used more stack than the reference, low enough for the file to
+  land on it** (fixed 2026-10-23, D-BLOADSTK). A program that does not `CLEAR`
+  and loads a file into the RAM just below the stack worked on the VG-8020 and
+  crashed zerobas: while the tape was read, zerobas's stack went 26 bytes
+  deeper (to `&HF072`, against `&HF08C` there), into the area being loaded, so
+  the last bytes of the file overwrote return addresses. The extra depth was a
+  routine layer that stayed underneath the load since BLOAD's parsing moved to
+  another ROM; the load now runs without it, and the stack stays above that
+  area (`&HF084`). It surfaced when an unrelated change moved code by 52 bytes:
+  which return address the file hit had been luck
+  ([VG-8020](../../scratchpad/bloadstk_vg.out),
+  [before](../../scratchpad/bloadstk_zb_after_deffnvar.out),
+  [after](../../scratchpad/bloadstk_zb_after_fix.out)).
 - **A tape `BLOAD"CAS:…",R,offset` jumped to the wrong address** (fixed
   2026-10-19, D-CASOFS2X). The bytes landed at start + offset, as on the
   reference, but the tape path added the offset a second time after the data,

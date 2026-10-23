@@ -31,6 +31,10 @@ def main():
         # first run of this probe typed only `30 END` (every line with a quote lost)
         L.append(f'after time {t:.1f} {{ type {{{ln}}} }}')
         L.append(f'after time {t + 1.5:.1f} {{ type "\\r" }}'); t += 4.0
+    # D-BLOADSTK: the stack words mid-load (SP .. $F0A0), our own return addresses
+    for k in (8, 10, 12):
+        L.append(f"after time {t + k:.1f} {{ binary scan [debug read_block memory [reg SP] [expr {{0xF0A0 - [reg SP]}}]] H* h; "
+                 f"puts $__f \"STK{k} sp=[format %04X [reg SP]] pc=[format %04X [reg PC]] a8=[format %02X [debug read ioports 0xA8]] $h\"; flush $__f }}")
     for k in range(1, 13):
         L.append(f"after time {t + 5 * k:.1f} {{ puts $__f \"S{5 * k} pc=[format %04X [reg PC]] sp=[format %04X [reg SP]] a8=[format %02X [debug read ioports 0xA8]] iff=[reg iff] curlin=[format %04X [peek16 0xF41C]]\"; flush $__f }}")
     L.append(f"after time {t + 61:.1f} {{ binary scan [debug read_block VRAM 0 960] H* h; puts $__f \"SCR $h\"; "

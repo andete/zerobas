@@ -215,24 +215,14 @@ ls_bload:
                 xor     a                   ; D-CASFCB: a tape BLOAD's search skips
                 ld      ix,p0_cas_bufp_set  ;  other files through channel #0's
                 call    p0cb                ;  buffer
-                ld      ix,p0_bload_sub
-                call    p0cb                ; the sub-ROM BLOAD tenant (+ absent raise)
-                ld      a,(BL_STAT)
-                cp      FOPEN_SEL_BLOAD     ; a DISK file: its name is in DISK_FCB_NAME
-                jr      nz,lbl_stat
-                ld      ix,p0_fopen_cross
-                call    p0cb                ; disk.rom loads it; A = its status
-lbl_stat:
-                or      a
-                jr      z,lbl_handoff       ; plain BLOAD returns; ,R jumps to EXECPTR
-                cp      1
-                jp      z,fs_disk_error     ; a load error (a continuation: it prints
-                                            ; and returns when nothing is pending)
-                ld      ix,p0_raise_error   ; A = the tenant's ERR code -- never returns
-                jp      p0cb
-lbl_handoff:                                ; main's `jr z,load_handoff`: a CONTINUATION
-                ld      de,p0_load_handoff  ; (it calls the loaded code; the pinned
-                ret                         ; $6CF3 lands on its lh_back)
+                ; 📼 D-BLOADSTK (2026-10-23): the LOAD runs in main, not under this
+                ; tenant's CALSLT. Run from here (p0cb -> bload_sub -> its sub-ROM
+                ; call) a tape BLOAD sat ~26 B deeper than the VG-8020's, inside RAM a
+                ; no-CLEAR loader fills ($F072 against $F08C, scratchpad/bloadstk_*.out),
+                ; and the load wrote over live return addresses. main's bload_cont
+                ; makes the call and decides on BL_STAT, as this did.
+                ld      de,p0_bload_cont    ; a CONTINUATION
+                ret
 
 ; ===========================================================================
 ; SAVE <name>[,A]   (main's do_save)

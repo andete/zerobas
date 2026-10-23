@@ -2392,7 +2392,7 @@ item — do **one item per session** to keep context lean.
       gap" HIT; "two of three rows move under the knife" HIT; "the 76 rows all agree" HIT;
       "FRE(0) still short of the VG-8020" MISS (it matches).
 
-- [ ] 📼 **D-BLOADSTK — BLOAD FROM TAPE RUNS ~26 B DEEPER ON zerobas THAN ON THE VG-8020, INTO
+- [x] ✅ **DONE 2026-10-23 (D-BLOADSTK)** 📼 **D-BLOADSTK — BLOAD FROM TAPE RUNS ~26 B DEEPER ON zerobas THAN ON THE VG-8020, INTO
       RAM A NO-CLEAR LOADER MAY FILL (found 2026-10-23: wszero's `noclear3` went red after
       D-DEFFNVAR's layout shift)**
       🎚️ TIER 1 — happy path: loading existing software from tape (D-TAPELOAD's class -- a
@@ -2417,6 +2417,19 @@ item — do **one item per session** to keep context lean.
       do_tape_prog already runs whole in main) -- target: SP stays >= $F080 through the load.
       🔴 Class lesson, again: a gate row that passes by luck is found by a layout shift in an
       unrelated change; the rule "run ALL the tapes after a layout change" exists for this.
+      ✅ **FIXED 2026-10-23.** The stack words mid-load, mapped to our symbols
+      ([`bloadstk_zb_after_deffnvar.out`](scratchpad/bloadstk_zb_after_deffnvar.out) STK lines):
+      rp_run -> ex_sub2 -> sub2's CALSLT -> ls_bload -> p0cb -> bload_sub -> sc_call's sub-ROM
+      CALSLT -> the tape read. ls_bload now parses (name, tail, park, buffer) and RETURNS the
+      continuation p0_bload_cont; main's bload_cont runs bload_sub, the disk crossing and the
+      BL_STAT decision (+25 B of the $6CF3 pad on 2026-10-23; p0_bload_sub / p0_load_handoff
+      left the import list). After ([`bloadstk_zb_after_fix.out`](scratchpad/bloadstk_zb_after_fix.out)):
+      SP $F084-$F088 during the load, the program prints `[A][G] 1 2 XY`; the pin came off and
+      noclear / noclear2 / noclear3 read SAME ([`bloadstk_after.out`](scratchpad/bloadstk_after.out)).
+      The knife is the tree before (HEAD 986541b6): noclear3 DIVERGES ([`bloadstk_pin.out`](scratchpad/bloadstk_pin.out)).
+      ⚠️ The margin is 4 B above the window; the VG-8020 sits 8 B higher still ($F08C) -- what
+      remains is sc_call's sub-ROM frame under the read. 🔮 Scored: "SP >= $F080 during the
+      load" HIT ($F084); "noclear3 prints" HIT.
 
 - [ ] 🧮 **D-DEFFNARY — `DEF FNA(C(1))=…` DIMS THE ARRAY `C` AT THE DEF ON THE VG-8020; zerobas
       LEAVES IT FOR THE CALL (found 2026-10-23 by D-DEFFNVAR)**
@@ -6803,7 +6816,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9269 (T-6FE392)8 (T-529ABE)` from `TODO.md:14836 (T-529ABE)`: a
+      `TODO.md:9282 (T-6FE392)8 (T-529ABE)` from `TODO.md:14849 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9724,7 +9737,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14849 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

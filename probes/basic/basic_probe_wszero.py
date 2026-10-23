@@ -309,8 +309,9 @@ _S14D_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=
 # noclear3 window ($E000..$F07F): the load overwrites live return addresses, and
 # whether that crashes depends on which slot the last bytes hit -- it passed by luck
 # until D-DEFFNVAR's +52 B layout shift in main page 1 (scratchpad/bloadstk_*.out).
-# The pin comes off when the depth is fixed (a pinned row that agrees ROTS).
-KNOWN_DIVERGE = {"noclear3"}
+# FIXED the same day: the load now runs in main (bload_cont), SP $F084-$F088 during
+# it, and the pin came off.
+KNOWN_DIVERGE = set()
 
 PROGRAM_NOCLEAR = [
     "NEW",

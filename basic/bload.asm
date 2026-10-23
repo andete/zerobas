@@ -38,17 +38,36 @@ bl_load_error   equ     load_error
 ; in zerobas-sub2 page 0 since 2026-10-21, calling main back through p0cb. What
 ; stays here: this wrapper, because the sub-ROM BLOAD tenant (sub/bload.asm) is
 ; reached through an INLINE byte that a p0cb'd caller cannot hand over (IX is
-; p0cb's target); and load_handoff below, the CONTINUATION ls_bload returns in
-; DE -- the `,R` call into the loaded program must not run inside sub2's CALSLT,
-; and the pinned $6CF3 lands on its lh_back. D-ROMSIZE step 1's disk crossing
-; (FOPEN_SEL_BLOAD -> fopen_cross -> disk.rom hk_dpbload) is made by ls_bload
-; through p0cb. The history of each step (D-FNEXPR2, D-ASAVECHAN2, D-CASFCB,
+; p0cb's target); bload_cont, the CONTINUATION ls_bload returns in DE since
+; D-BLOADSTK (2026-10-23) -- the LOAD itself, D-ROMSIZE step 1's disk crossing
+; (FOPEN_SEL_BLOAD -> fopen_cross -> disk.rom hk_dpbload) and the status decision
+; run here, off sub2's CALSLT; and load_handoff, where bload_cont goes on -- the
+; `,R` call into the loaded program must not run inside sub2's CALSLT either, and
+; the pinned $6CF3 lands on its lh_back. The history of each step (D-FNEXPR2, D-ASAVECHAN2, D-CASFCB,
 ; D-BLNF, D-BLMODE) is in this file's history before the slice.
 ;   out: BL_STAT (0 loaded / 1 load error / FOPEN_SEL_BLOAD a disk file / n ERR n)
 bload_sub:
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_BLOAD)
                 ret
+
+; bload_cont -- ls_bload's CONTINUATION (D-BLOADSTK, 2026-10-23): the load and the
+; decision on its status, in main, once sub2's frame is off the stack. Run from the
+; tenant, a tape load went ~26 B deeper than the VG-8020's (SP $F072 against $F08C)
+; into RAM a no-CLEAR loader may fill. BL_STAT: 0 loaded -> load_handoff; 1 ->
+; disk_error (printed); FOPEN_SEL_BLOAD -> disk.rom loads it first; n -> ERR n.
+bload_cont:
+                call    bload_sub           ; the sub-ROM BLOAD tenant (+ absent raise)
+                ld      a,(BL_STAT)
+                cp      FOPEN_SEL_BLOAD     ; a DISK file: its name is in DISK_FCB_NAME
+                jr      nz,blc_stat
+                call    fopen_cross         ; disk.rom loads it; A = its status
+blc_stat:
+                or      a
+                jp      z,load_handoff      ; plain BLOAD returns; ,R calls EXECPTR
+                cp      1
+                jp      z,disk_error        ; a load error: printed (a continuation)
+                jp      raise_error         ; A = the tenant's ERR code
 
 ; parse_disk_fcb stays RESIDENT even though the verb around it left: nine callers
 ; outside bload.asm use it (do_files, do_kill, do_name, do_open, do_run, ex_merge,

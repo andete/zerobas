@@ -30,6 +30,8 @@ session and the loop resumes exactly where it stopped.
 5. ~~D-TPAPTAIL (c)~~ DONE 2026-10-23 (basent_tramp restores RET at $F368 / $F36B).
 6. ~~D-F346~~ DONE 2026-10-23 (Joost's report: CALL SYSTEM goes by &HF346).
 7. ~~D-DEFFNVAR~~ DONE 2026-10-23 (DEF FN creates its formals; deffn-acceptance is --strict).
+8. ~~D-BLOADSTK~~ DONE 2026-10-23 (the tape load runs in main; noclear3 held by luck before).
+   ➡️ A tape-corpus re-run is DUE (two page-1 layout shifts today: D-DEFFNVAR, D-BLOADSTK).
 
 **Learned the hard way today:**
 - An uncapped breakpoint log reached the public repo (21 MB, 0b417fb3, trimmed in
@@ -1877,7 +1879,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11235 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11248 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 
