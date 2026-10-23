@@ -1,0 +1,321 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/disk/diskbasic_acceptance.py \
+	        --machine C-BIOS_MSX1_EU_REPACK_DISK --expect-build repack 
+[runner] zerobas machine: C-BIOS_MSX1_EU_REPACK_DISK  build=repack  (/Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml)
+  FAIL  [live    ] FILES            FAIL — wrap/format differs from CF-3300
+    --- probe tail ---
+     2|  Enter date (M-D-Y):
+    FAIL — missing entries: ['TEST    .BIN', 'HI      .TXT', 'PROG    .BIN', 'PROG    .BAS', 'PROG2   .BAS', 'PROG3   .BAS']
+    
+    --- zerobas FILES (WIDTH 29 -> LINLEN=37) vs CF-3300 ---
+     0|  Enter date (M-D-Y):WIDTH 29
+     1|  Invalid date
+     2|  Enter date (M-D-Y):FILES
+     3|  Invalid date
+     4|  Enter date (M-D-Y):
+    got     : ['Invalid date', 'Enter date (M-D-Y):']
+    CF-3300 : ['TEST    .BIN HI      .TXT', 'PROG    .BIN PROG    .BAS', 'PROG2   .BAS PROG3   .BAS']
+    FAIL — wrap/format differs from CF-3300
+  FAIL  [live    ] KILL             differential: FAIL
+    --- probe tail ---
+    before: HI.TXT at dir offset 0xe20, first cluster 4, FAT[4]=0xfff
+    
+    zerobas after KILL: live entry=3616, dir[0xe20]=0x48, FAT[4]=0xfff
+    functional: FAIL
+    
+    differential vs CF-3300: image DIFFERS
+      5 differing bytes; first few at ['0x206', '0x207', '0x806', '0x807', '0xe20']
+    differential: FAIL
+  FAIL  [live    ] NAME             differential: FAIL
+    --- probe tail ---
+    zerobas after NAME:
+      HI.TXT  present: True
+      BYE.TXT present: False
+    functional: FAIL
+    
+    differential vs CF-3300: image DIFFERS
+      3 differing bytes; first at ['0xe20', '0xe21', '0xe22']
+    differential: FAIL
+  FAIL  [live    ] MAXFILES         differential: FAIL — CF-3300 bytes differ
+    --- probe tail ---
+    --- zerobas two-channel interleave ---
+    on-disk A.TXT = None
+    on-disk B.TXT = None
+    functional: FAIL (expected A=b'aaa\r\nccc\r\n\x1a' B=b'bbb\r\nddd\r\n\x1a')
+    
+    --- CF-3300 differential ---
+    on-disk A.TXT = b'aaa\r\nccc\r\n\x1a'
+    on-disk B.TXT = b'bbb\r\nddd\r\n\x1a'
+    differential: FAIL — CF-3300 bytes differ
+  FAIL  [live    ] MERGE            differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas MERGE -> RUN ---
+    result: <None>
+    functional: FAIL (expected <123>; merged 10/20/30 -> ((1*10+2)*10+3))
+    
+    --- CF-3300 differential ---
+    result: <123>
+    differential: FAIL — CF-3300 differs
+  FAIL  [live    ] FIELD/LSET/RSET  differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas FIELD/LSET/RSET ---
+    result: <";a$;"|";b$   ;">
+    functional: FAIL (expected <HI   |       END>)
+    
+    --- CF-3300 differential ---
+    result: <HI   |       END>
+    differential: FAIL — CF-3300 differs
+  FAIL  [live    ] GET/PUT          differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas GET/PUT round-trip ---
+    records: []
+    functional: FAIL (expected ['alpha|  bet', 'gamma|delta'])
+    
+    --- CF-3300 differential ---
+    records: ['alpha|  bet', 'gamma|delta']
+    differential: FAIL — CF-3300 differs
+  PASS  [live    ] GET(RDBLK)       converged
+  PASS  [live    ] PUT(WRBLK)       converged
+  FAIL  [live    ] MKI$/CVI         differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas MKI$ / CVI (a$=MKI$(258), c$=MKI$(CVI(a$))) ---
+    on-disk M.DAT = None
+    functional: FAIL (want b'\x02\x01\x02\x01\x1a')
+    
+    --- CF-3300 differential ---
+    on-disk M.DAT = b'\x02\x01\x02\x01\x1a'
+    differential: FAIL — CF-3300 differs
+  FAIL  [live    ] EOF/LOF          CF-3300 got: ['26', '0'] -> differential: FAIL
+    --- probe tail ---
+    --- CF-3300 differential (Case A) ---
+        MSX BASIC version 1.0
+        Copyright 1983 by Microsoft
+        23430 Bytes free
+        Disk BASIC version 1.0
+        Ok
+        open"hi.txt" for input as #1:
+        print lof(1);eof(1):close#1
+         26  0
+        Ok
+        color auto  goto  list  run
+    CF-3300 got: ['26', '0'] -> differential: FAIL
+  FAIL  [live    ] DSKF             differential: FAIL
+    --- probe tail ---
+    direct FAT12 free-cluster count: 706
+    zerobas DSKF(0) = None
+    functional: FAIL (expected 706)
+    
+    CF-3300 DSKF(0) = 706
+    differential: FAIL
+  FAIL  [live    ] PRINT#           differential: FAIL — CF-3300 bytes differ
+    --- probe tail ---
+     2|  Invalid date
+     3|  Enter date (M-D-Y):open"out.txt" for
+     4|  input
+     5|  Invalid date
+     6|  Enter date (M-D-Y):
+    round-trip: FAIL (screen != 'hello world')
+    on-disk OUT.TXT = None
+    on-disk bytes: FAIL (expected b'hello world\r\n\x1a')
+    
+    --- CF-3300 differential ---
+    on-disk OUT.TXT = b'hello world\r\n\x1a'
+    differential: FAIL — CF-3300 bytes differ
+  FAIL  [live    ] PRINT#-append    differential: FAIL — CF-3300 bytes differ
+    --- probe tail ---
+    --- zerobas OPEN FOR APPEND ---
+    on-disk AP.TXT = None
+    functional: FAIL (expected b'first\r\nsecond\r\n\x1a')
+    
+    --- CF-3300 differential ---
+    on-disk AP.TXT = b'first\r\nsecond\r\n\x1a'
+    differential: FAIL — CF-3300 bytes differ
+  FAIL  [live    ] INPUT#           FAIL — expected a line == 'Hello from zerobas-disk!'
+    --- probe tail ---
+     1|  Copyright 1983 by Microsoft
+     2|  23430 Bytes free
+     3|  Disk BASIC version 1.0
+     4|  Ok
+     5|  open"hi.txt" for input as #1:
+     6|  line input#1,a$:close#1:print
+     7|   a$
+     8|  Hello from zerobas-disk!
+     9|  Ok
+    23|  color auto  goto  list  run
+    PASS — CF-3300 prints the identical line (differential)
+    
+  FAIL  [live    ] PRINT#-USING     differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas PRINT# USING ---
+    on-disk U.DAT = None
+    functional: FAIL (expected b'  5\r\n[c]\r\n 1  2  3 \r\n\x1a')
+    
+    --- CF-3300 differential ---
+    on-disk U.DAT = b'  5\r\n[c]\r\n 1  2  3 \r\n\x1a'
+    differential: FAIL — CF-3300 differs
+  FAIL  [live    ] INPUT$           differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas INPUT$ ---
+    extracted: []
+    functional: FAIL (expected ['Hello', ' from '])
+    
+    --- CF-3300 differential ---
+    extracted: ['Hello', ' from ']
+    differential: FAIL — CF-3300 differs
+  FAIL  [artifact] CALL FORMAT      functional: T.DAT=None  FAIL
+    --- probe tail ---
+    === 720K (menu choice '2') ===
+      structural: BPB[11:28]=e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5 FAThead=e5e5e5  FAIL vs 0002020100027000a005f9030009000200
+      functional: T.DAT=None  FAIL
+    === 360K (menu choice '1') ===
+      structural: BPB[11:28]=e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5 FAThead=e5e5e5  FAIL vs 0002020100027000d002fd020009000200
+      functional: T.DAT=None  FAIL
+  FAIL  [artifact] SAVE/BSAVE       FAIL -- see per-check results above
+    --- probe tail ---
+    
+    BSAVE"A:SV2.BIN",&HC000,&HC010  ->  BLOAD"A:SV2.BIN",R
+      [FAIL] ,R handoff: PC=$11A0 (expect $C010 JR$ landmark; exec defaulted to start)
+      [FAIL] exec ran: ($D000)=$A5 (expect $5A, sentinel was $A5)
+    
+    SAVE"A:SV.BAS"  ->  NEW  ->  RUN"A:SV.BAS"
+      [FAIL] store at $8001 DIFFERS from the relinked line-link image
+            got 00000000ffffffffffffffffffffff
+            exp 0e800a0098200c02d02c0f7b000000
+      [FAIL] reloaded program ran: ($D002)=$C4 (expect $7B)
+    
+    FAIL -- see per-check results above
+  FAIL  [live    ] SAVE(ASCII)      differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas SAVE",A" -> LOAD -> RUN ---
+    result: <None>
+    functional: FAIL (expected <42>; <999> => reload got corrupted memory, no <..> => SAVE",A" or LOAD failed)
+    
+    --- CF-3300 differential ---
+    result: <42>
+    differential: FAIL — CF-3300 differs
+  PASS  [live    ] BSAVE(.bas)      converged
+  FAIL  [artifact] LOAD             FAIL -- see per-check results above
+    --- probe tail ---
+      [FAIL] store at $8001 DIFFERS from the relinked line-link image
+            got 00000000ffffffffffffffffffffff
+            exp 0e800a0098200c02d02c0f7b000000
+      [PASS] NO auto-run: ($D002)=$C4 (expect untouched sentinel $C4)
+    
+    LOAD"A:PROG.BAS",R
+      [FAIL] store at $8001 DIFFERS from the relinked line-link image
+            got 00000000ffffffffffffffffffffff
+            exp 0e800a0098200c02d02c0f7b000000
+      [FAIL] RUN executed: ($D002)=$C4 (expect $7B, sentinel was $C4)
+    
+    FAIL -- see per-check results above
+  FAIL  [artifact] LOAD(NUL)        FAIL -- see per-check results above
+    --- probe tail ---
+      [FAIL] store at $8001 DIFFERS from the relinked image (embedded $00s intact)
+            got 00000000ffffffffffffffffffffffff
+            exp 0f800a0098200c00d12c0c7b00000000
+      [PASS] NO auto-run: ($D100)=$C4 (expect untouched sentinel $C4)
+    
+    LOAD"A:PROG2.BAS",R
+      [FAIL] store at $8001 DIFFERS from the relinked image
+            got 00000000ffffffffffffffffffffffff
+            exp 0f800a0098200c00d12c0c7b00000000
+      [FAIL] RUN executed the (post-$00) POKE: ($D100)=$C4 (expect $7B)
+    
+    FAIL -- see per-check results above
+  FAIL  [live    ] LOAD(ASCII)      differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas ASCII LOAD -> RUN ---
+    result: <None>
+    functional: FAIL (expected <35>; <999> => decoy survived (no clear), no <..> => ASCII detection/load failed)
+    
+    --- CF-3300 differential ---
+    result: <35>
+    differential: FAIL — CF-3300 differs
+  FAIL  [artifact] RUN"file"        FAIL -- see per-check results above
+    --- probe tail ---
+    RUN"A:PROG.BAS"
+      [FAIL] store at $8001 DIFFERS from the relinked line-link image
+            got 00000000ffffffffffffffffffffff
+            exp 0e800a0098200c02d02c0f7b000000
+      [FAIL] RUN executed: ($D002)=$C4 (expect $7B, sentinel was $C4)
+    
+    FAIL -- see per-check results above
+  FAIL  [artifact] BLOAD            FAIL -- see per-check results above
+    --- probe tail ---
+            got ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9000000000000000000000000000000000000
+            exp 3e5a3200d0000000000000000000000018fe000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+      [FAIL] ,R handoff: PC=$11A0 (expect $C010 JR$ landmark)
+      [FAIL] exec ran: ($D000)=$A5 (expect $5A, sentinel was $A5)
+    
+    BLOAD"A:PROG.BIN"  (no ,R)
+      [FAIL] data bytes [C000..C031] DIFFER the BSAVE body
+            got ebfe905a45524f424153200002020100027000a005f90300090002000000d0c9000000000000000000000000000000000000
+            exp 3e5a3200d0000000000000000000000018fe000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+      [PASS] NO exec: ($D000)=$A5 (expect untouched sentinel $A5)
+    
+    FAIL -- see per-check results above
+  PASS  [live    ] AUTOEXEC         converged
+  PASS  [live    ] BSAVE/BLOAD(VRAM) converged
+  PASS  [artifact] OPTION(hygiene)  converged
+  FAIL  [live    ] OPEN(LEN=)       differential: FAIL — CF-3300 differs
+    --- probe tail ---
+    --- zerobas OPEN LEN=128 GET/PUT round-trip ---
+    records: []
+    functional: FAIL (expected ['rec01|   AA', 'rec02|   BB', 'rec03|   CC', 'rec04|   DD'])
+    
+    --- CF-3300 differential ---
+    records: ['rec01|   AA', 'rec02|   BB', 'rec03|   CC', 'rec04|   DD']
+    differential: FAIL — CF-3300 differs
+  PASS  [live    ] FILES(wild)      converged
+  FAIL  [live    ] KILL(wild)       differential: FAIL
+    --- probe tail ---
+    before: PROG.BAS first cluster 6, FAT=0xfff
+    before: PROG2.BAS first cluster 7, FAT=0xfff
+      PROG.BAS: deleted=False (live=3680, FAT=0xfff)
+      PROG2.BAS: deleted=False (live=3712, FAT=0xfff)
+      TEST.BIN: kept=True
+      HI.TXT: kept=True
+      PROG.BIN: kept=True
+    functional: FAIL
+    
+    differential vs CF-3300: image DIFFERS
+      13 differing bytes; first few at ['0x209', '0x20a', '0x20b', '0x20c', '0x20d', '0x809', '0x80a', '0x80b']
+    differential: FAIL
+  PASS  [artifact] CLOSE(list)      converged
+  PASS  [artifact] OPEN(LPT/CRT)    converged
+
+===== Disk-BASIC acceptance: 9/34 verbs converged =====
+DIVERGENCE — the Disk-BASIC verb surface no longer matches the oracle:
+  - FILES (disk_probe_files.py): FAIL — wrap/format differs from CF-3300
+  - KILL (disk_probe_kill.py): differential: FAIL
+  - NAME (disk_probe_name.py): differential: FAIL
+  - MAXFILES (disk_probe_maxfiles.py): differential: FAIL — CF-3300 bytes differ
+  - MERGE (disk_probe_merge.py): differential: FAIL — CF-3300 differs
+  - FIELD/LSET/RSET (disk_probe_field.py): differential: FAIL — CF-3300 differs
+  - GET/PUT (disk_probe_getput.py): differential: FAIL — CF-3300 differs
+  - MKI$/CVI (disk_probe_mkicvi.py): differential: FAIL — CF-3300 differs
+  - EOF/LOF (disk_probe_eof.py): CF-3300 got: ['26', '0'] -> differential: FAIL
+  - DSKF (disk_probe_dskf.py): differential: FAIL
+  - PRINT# (disk_probe_filewrite.py): differential: FAIL — CF-3300 bytes differ
+  - PRINT#-append (disk_probe_append.py): differential: FAIL — CF-3300 bytes differ
+  - INPUT# (disk_probe_fileread.py): FAIL — expected a line == 'Hello from zerobas-disk!'
+  - PRINT#-USING (disk_probe_printusing_file.py): differential: FAIL — CF-3300 differs
+  - INPUT$ (disk_probe_inputdollar.py): differential: FAIL — CF-3300 differs
+  - CALL FORMAT (disk_probe_format.py): functional: T.DAT=None  FAIL
+  - SAVE/BSAVE (disk_probe_save.py): FAIL -- see per-check results above
+  - SAVE(ASCII) (disk_probe_save_ascii.py): differential: FAIL — CF-3300 differs
+  - LOAD (disk_probe_load_disk.py): FAIL -- see per-check results above
+  - LOAD(NUL) (disk_probe_load_embedded_nul.py): FAIL -- see per-check results above
+  - LOAD(ASCII) (disk_probe_load_ascii.py): differential: FAIL — CF-3300 differs
+  - RUN"file" (disk_probe_run_disk.py): FAIL -- see per-check results above
+  - BLOAD (disk_probe_bload_disk.py): FAIL -- see per-check results above
+  - OPEN(LEN=) (disk_probe_openlen.py): differential: FAIL — CF-3300 differs
+  - KILL(wild) (disk_probe_kill_wildcard.py): differential: FAIL
+make[1]: *** [diskbasic-acceptance] Error 1

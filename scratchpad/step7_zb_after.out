@@ -1,0 +1,10 @@
+### plain.dsk
+== S0 ('6:')  pc=11A0 curlin=0000 mode=S0
+   |  Enter date (M-D-Y):
+### zero.dsk
+== S0 ('6:')  pc=11A0 curlin=0000 mode=S0
+   |  Enter date (M-D-Y):
+### dos.dsk
+== S0 ('6:')  pc=0523 curlin=0000 mode=S1
+   |  MSX-DOS version 1.03
+   |  Copyright 1984 by Microsoft

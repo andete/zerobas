@@ -1427,6 +1427,23 @@ item — do **one item per session** to keep context lean.
       the probes that pass -diska at launch for zerobas, give them the reference's
       insert-after-boot (or a RETURN), THEN the ROM change; FULL battery and a collection
       re-run (it must not ask where the CF-3300 does not).
+      📏 **TRIED AND REVERTED (2026-10-23) -- the ROM half works, the apparatus is the job.** A
+      build routing both exits (step 7 returned; no boot signature) through boot_date via stubs
+      after br5 asked `Enter date (M-D-Y):` for make_test_dsk's disk and the all-zero image and
+      still booted MSX-DOS from the DOS disk ([`step7_zb_after.out`](scratchpad/step7_zb_after.out));
+      tests/test_bootdate.py green. The FULL battery's excluded five then measured the blast
+      radius: diskbasic-acceptance (11+ sub-probes: FILES, KILL, NAME, MAXFILES, MERGE,
+      FIELD/LSET/RSET, GET/PUT, MKI$/CVI, EOF/LOF, DSKF, PRINT# --
+      [`step7_inv_diskbasic.out`](scratchpad/step7_inv_diskbasic.out)), fat-error-acceptance
+      ([`step7_inv_faterror.out`](scratchpad/step7_inv_faterror.out)) and lnblank-say
+      ([`step7_inv_lnblank.out`](scratchpad/step7_inv_lnblank.out)) -- every red is typed input
+      landing in the date prompt. The probes reach the machine three ways: probe_sides' reset
+      tuples (the CF-3300's already starts with "" -- that IS its date answer; zb's is
+      ("NEW",)), suite-local reset tuples (fat-error's ("NEW","CLS"), lnblank's per-side), and
+      raw-Tcl key SEQUENCEs with per-machine timings (diskbasic_probe_files.py and siblings press
+      RETURN at 12 s, after zb has already typed). ➡️ Do the apparatus first, as a commit of its
+      own that stays green on today's ROM: one rule in omsx_repl (a disk mounted at launch -> one
+      empty line at boot, before any case) plus the raw-Tcl sequences; then the ROM change.
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -6571,7 +6588,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9037 (T-6FE392)8 (T-529ABE)` from `TODO.md:14604 (T-529ABE)`: a
+      `TODO.md:9054 (T-6FE392)8 (T-529ABE)` from `TODO.md:14621 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9492,7 +9509,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14604 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14621 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

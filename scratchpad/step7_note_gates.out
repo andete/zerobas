@@ -1,0 +1,73 @@
+python3 tools/pick_gates.py --run 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 12s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== D-PINSTALE: the kwsweep pin was measured on no recorded ROM, this build is 9bb420f8 20dbc3d2 5f39c947 0559599b 558da8c9: kwsweep RUNS (kwtime / kwram are daily: their last pins are kept) ===
+=== ⏱ kwtime / kwram not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
+=== emulator tier RUNS: forced by --full ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0             13s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0            123s  selftest-check
+  (post-mutator refresh 13s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 46 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              8s  basic-reloc
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              2s  subrom-closure-check
+  rc=0            572s  unit-test
+  rc=0              2s  deadcode
+  rc=0              9s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              5s  ram-map-check
+  rc=0              8s  pin-check
+  rc=0              0s  build-assert-check
+  rc=0             10s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              0s  stubinl-check
+  rc=0              3s  rowshape-check
+  rc=0             13s  injector-check
+  rc=0              0s  dead-alias-check
+  rc=0              1s  alias-order-check
+  rc=0              1s  size-check
+  rc=0              4s  hostkill-check
+  rc=0              4s  session-path-check
+  rc=0              2s  temp-root-check
+  rc=0              0s  tracked-inputs-check
+  rc=0              7s  todo-citation-check
+  rc=0              1s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              2s  error-alphabet-check
+  rc=0              5s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              5s  disk-mount-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              1s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              2s  preflight-check
+  rc=0              9s  latch-check
+  rc=0             16s  patch-freshness-check
+  rc=0              5s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+  rc=0            589s  kwsweep
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=2              0s  tiers-md-check
+
+=== wall 617s (12s build + 605s gates) ===
+GATES: 50/51 green
+RED: tiers-md-check
+hashes: 9bb420f8 20dbc3d2 5f39c947 0559599b 558da8c9
+GATE TIER: SCOPED
+  why: probe/tool change: scratchpad/missop3_probe.py scratchpad/playop_probe.py scratchpad/revertsweep.py
+  hours since the last full green: 5.3 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (0): -
+GATE TIER RAN: SCOPED (0 emulator suites)
+make: *** [gates-scoped] Error 1
