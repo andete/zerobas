@@ -1831,6 +1831,11 @@ item — do **one item per session** to keep context lean.
       🔮 "still RESET" MISSED: the timing moved again. The latent crash is unchanged in kind;
       today's layout no longer lands on it, and 2026-10-22's 20-nop reproduction was against
       another layout. Not chased further without a reproduction on the current build.
+      📼 **RE-RUN after D-DEFFNVAR / D-BLOADSTK (2026-10-24, two page-1 layout shifts):**
+      [`tapecorpus_bloadstk.out`](scratchpad/tapecorpus_bloadstk.out) -- **SAME 9, NEAR 12,
+      RUNS? 21, RESET 0** (42 titles). Three moved, all up: Boulder Dash RUNS? -> NEAR, Hustler
+      RUNS? -> NEAR, Demonia RESET -> RUNS?; none lost a class. 🔮 "RESET 0, nothing
+      regresses" HIT.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -6816,7 +6821,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9282 (T-6FE392)8 (T-529ABE)` from `TODO.md:14849 (T-529ABE)`: a
+      `TODO.md:9287 (T-6FE392)8 (T-529ABE)` from `TODO.md:14854 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9737,7 +9742,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14849 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14854 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
