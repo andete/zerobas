@@ -6957,7 +6957,16 @@ k_782B:         ret
 ;        the caller loads them -- dskio's 512-byte sector, RDBLK's single bytes)
 ;   out: the bytes copied with page 1 = RAM; page-1 sub-slot restored; DE / HL
 ;        past the copy (LDIR)
+; 🔴 D-TPAPTAIL (b), 2026-10-23: THE WINDOW IS ATOMIC NOW. The flip writes $FFFF and
+; not the SLTTBL[3] mirror, so an interrupt landing mid-copy whose hooks switch slots
+; (BASIC's PLAY / trap hooks call the sub ROM in slot 3-2; the BIOS restores page 1
+; from the mirror) would put the disk ROM back under the LDIR and lose the rest of
+; the copy. DI around the window, and the caller's interrupt state back after.
+;   (A and the flags are not kept; they never were.)
 p1_blit_tmpl:
+                ld      a, i                ; P/V = IFF2: were interrupts on?
+                push    af
+                di
                 ld      a, ($FFFF)          ; A = inverted sub-slot state (MSX2 TH)
                 cpl                         ; A = actual sub-slot write value
                 push    af                  ; save original state for restore
@@ -6966,6 +6975,9 @@ p1_blit_tmpl:
                 ldir
                 pop     af                  ; A = original sub-slot write value
                 ld      ($FFFF), a          ; page 1 back to disk ROM (sub-slot 1)
+                pop     af
+                ret     po                  ; they were off: leave them off
+                ei
                 ret
 p1_blit_end:
 

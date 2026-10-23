@@ -1381,6 +1381,15 @@ item — do **one item per session** to keep context lean.
       (b) Slice plan step 4: P1_BLIT writes slot 3's subslot register without the SLTTBL[3]
       mirror the $F368 bodies and the BIOS slot routines trust; harmless while it restores
       the same value under DI, wrong if an interrupt's slot call reads the mirror mid-blit.
+      ✅ **(b) DONE (2026-10-23):** it was NOT under DI -- P1_BLIT ran its window with interrupts
+      as the caller had them, and BASIC's PLAY / trap hooks call the sub ROM (slot 3-2) from
+      the interrupt, whose slot switch restores page 1 from the mirror. Made atomic instead of
+      mirrored: `ld a,i` / DI / the flip and LDIR / the caller's state back (`ret po` / EI),
+      24 B of the 36 B run at $EFFE. tests/z80.py now models the interrupt flip-flop (DI / EI
+      set it, LD A,I reads it into P/V; nothing is delivered) and test_p1rdblk pins both
+      states; the knife (no `ret po`) fails the "off" row. Not measured on a machine: no
+      interrupt was caught mid-blit -- this closes a window, it does not fix an observed
+      divergence.
       (c) After `BASIC` (BASENT) the $F368 / $F368+3 JPs still point at WA_SEG, which is
       BASIC's RAM again. Nothing in BASIC calls them today; C-BIOS had RETs there before
       any DOS. ➡️ Decide by behaviour, not by reading the reference's $F368 bytes (they are
@@ -6532,7 +6541,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8998 (T-6FE392)8 (T-529ABE)` from `TODO.md:14565 (T-529ABE)`: a
+      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:14574 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9453,7 +9462,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14565 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14574 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

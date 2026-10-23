@@ -253,7 +253,7 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
 RDBLK_RRSTART   equ     $E959   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
 P1_DEST         equ     $E942   ; saved page-1 destination word (dskio bounce path)
-P1_BLIT         equ     $EFFE   ; installed blit routine (17 B) -- declared
+P1_BLIT         equ     $EFFE   ; installed blit routine (24 B, D-TPAPTAIL (b)) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
                                 ; contiguous, and claims past this 36 B run

@@ -35,6 +35,9 @@ class Z80:
         self.sp = 0xF380
         self.pc = 0
         self.halted = False
+        self.iff = 0                       # IFF1/IFF2 as one flag: DI / EI set it, LD A,I
+                                           # reads it into P/V (D-TPAPTAIL (b)). Still no
+                                           # interrupt is ever DELIVERED by this core.
         # Port I/O hooks. A unit test that exercises OUT/IN (e.g. the OUT
         # statement) wires these to record or supply port traffic; by default a
         # read returns the bus-idle $FF and a write is dropped. (port,val).
@@ -359,8 +362,8 @@ class Z80:
             self._alu((op >> 3) & 7, self.fetch()); return
         if op == 0xF9:                         # LD SP,HL/idx
             self.sp = getattr(self, idx) if idx else self.hl; return
-        if op in (0xF3, 0xFB):                 # DI / EI (no interrupts modelled)
-            return
+        if op in (0xF3, 0xFB):                 # DI / EI: the flag only (none delivered)
+            self.iff = 1 if op == 0xFB else 0; return
         if op == 0xD3:                         # OUT (n),A  — port = n (A on hi bus)
             self.io_out(self.fetch(), self.a); return
         if op == 0xDB:                         # IN A,(n)
@@ -463,7 +466,10 @@ class Z80:
             return
         if op in (0x46, 0x56, 0x5E, 0x4E, 0x66, 0x6E, 0x76, 0x7E):  # IM n
             return
-        if op in (0x47, 0x4F, 0x57, 0x5F):     # LD I/R,A and back (no I/R modelled)
+        if op == 0x57:                         # LD A,I: I is not modelled (0); P/V = IFF2
+            self.a = 0
+            self.f = (self.f & C) | self._szyx(0) | (PV if self.iff else 0); return
+        if op in (0x47, 0x4F, 0x5F):           # LD I,A / LD R,A / LD A,R (not modelled)
             return
         if op in (0x45, 0x4D):                 # RETN / RETI
             self.pc = self.pop(); return

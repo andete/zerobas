@@ -184,7 +184,7 @@ second one is the question a per-component map cannot answer.
 | `$EFF9` | 2 B | `disk` | `FDC_LSEC` | current logical sector (word) |  |
 | `$EFFB` | 2 B | `disk` | `FDC_DEST` | current transfer address (word) |  |
 | `$EFFD` | 1 B | `disk` | `FDC_TRY` | read attempt counter (1 B) |  |
-| `$EFFE` | 17 B | `disk` | `P1_BLIT` | installed blit routine (17 B) -- declared |  |
+| `$EFFE` | 24 B | `disk` | `P1_BLIT` | installed blit routine (24 B, D-TPAPTAIL (b)) -- declared |  |
 | `$F019` | 2 B | `basic` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F019` | 2 B | `disk` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |

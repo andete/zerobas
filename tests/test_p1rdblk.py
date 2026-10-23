@@ -114,6 +114,13 @@ def run():
     check(m.mem[0xFFFF] == 0x04,
           f"P1_BLIT: the subslot register written back as ${m.mem[0xFFFF]:02X} (want $04, "
           "page 1 = the disk ROM again)")
+    # D-TPAPTAIL (b): the window is DI'd and the caller's interrupt state comes back
+    for iff in (1, 0):
+        m.poke(0xFFFF, bytes([(~0x04) & 0xFF]))
+        m.cpu.iff = iff
+        c = m.call(p1, hl=0xD000, de=0xD100, bc=5)
+        check(c.iff == iff, f"P1_BLIT returns with interrupts {'on' if iff else 'off'} as they "
+                            f"were (iff {c.iff}, want {iff})")
     return fails
 
 
