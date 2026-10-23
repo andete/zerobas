@@ -59,7 +59,8 @@ CASE_B = ('open"hi.txt" for input as #1:line input#1,a$'
 
 
 def build_tcl(out_path, line, cf3300):
-    pre = 'after time 11 { type "\\r" }\n' if cf3300 else ""
+    pre = ('after time 11 { type "\\r" }\n' if cf3300 else
+           'after time 4 { type "\\r" }\n')  # D-STEP7DATE: zerobas's date question
     t = 16 if cf3300 else 8
     va = "0x1800" if cf3300 else "0x0000"
     key = "scr1" if cf3300 else "scr0"

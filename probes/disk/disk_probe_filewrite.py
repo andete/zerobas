@@ -93,6 +93,8 @@ def build_tcl(out_path, lines, cf3300):
     t = 12 if cf3300 else 8
     if cf3300:
         body.append('after time 11 { type "\\r" }')   # clear the date prompt
+    else:
+        body.append('after time 4 { type "\\r" }')  # D-STEP7DATE: zerobas's date question
     for ln in lines:
         body.append(f'after time {t} {{ type {{{ln}}} }}')
         body.append(f'after time {t+3} {{ type "\\r" }}')

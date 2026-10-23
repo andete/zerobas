@@ -80,7 +80,8 @@ def fat12_get(img, clus):
 
 
 def build_tcl(out_path, cf3300):
-    pre = 'after time 11 { type "\\r" }\n' if cf3300 else ""
+    pre = ('after time 11 { type "\\r" }\n' if cf3300 else
+           'after time 4 { type "\\r" }\n')  # D-STEP7DATE: zerobas's date question
     t = 16 if cf3300 else 8
     return ("set throttle off\n"
             f"set __f [open {{{out_path}}} w]\n"

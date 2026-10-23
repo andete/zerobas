@@ -666,6 +666,11 @@ def build_tcl(out_path: str, lines, date_prompt: bool, boot_t: float,
     if date_prompt:
         L.append(f'after time {t} {{ type "\\r" }}')   # clear "Enter date"
         t += 4.0
+    else:
+        # D-STEP7DATE: zerobas's date question, answered at 4 s so the typed lines
+        # keep their times (moving them 4 s later realigned them with the repeat
+        # countdown and doubled first characters: scratchpad/step7c_lof_v.out).
+        L.append('after time 4 { type "\\r" }')
     for ln in lines:
         # openMSX drops a CR that shares a burst with text under `throttle off`,
         # so each Enter is its own event ~3s after its command.

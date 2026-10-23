@@ -1,0 +1,39 @@
+case             ref LOF   ref dir    zb LOF    zb dir   verdict
+------------------------------------------------------------------------------
+rand_put            None      None   MANGLED         0   MANGLED (a typed line was not echoed -- NOT a reading)
+      zb | zerobas version 0.1
+      zb | clean-room MSX1 BASIC
+      zb | zerobas Disk BASIC
+      zb | ZB
+      zb | OPEN "ZQ.DAT" AS #1
+      zb | ZB
+      zb | FIELD #1,10 AS A$
+      zb | ZB
+      zb | LSET A$="X"
+      zb | ZB
+      zb | PPUT #1,1
+      zb | Syntax error
+      zb | ZB
+      zb | PRINT LOF(1)
+      zb | 0
+      zb | ZB
+      zb | color  auto   goto   list   run
+      zb | NOT ECHOED: ['PUT #1,1']
+trap_print_closed      None      None   MANGLED      None   MANGLED (a typed line was not echoed -- NOT a reading)
+      zb | zerobas version 0.1
+      zb | clean-room MSX1 BASIC
+      zb | zerobas Disk BASIC
+      zb | ZB
+      zb | 10 ON ERROR GOTO 100
+      zb | 20 PRINT #1,"X"
+      zb | 100 PRINT ERR
+      zb | RRUN
+      zb | Syntax error
+      zb | ZB
+      zb | color  auto   goto   list   run
+      zb | NOT ECHOED: ['RUN']
+
+meta(zb) : meta scrmod=00 linlen=25
+
+2 cases, 0 unfiled divergence(s), 0 oracle drift(s), 2 mangled
+  MANGLED (re-run; raise the per-line delay): ['rand_put', 'trap_print_closed']

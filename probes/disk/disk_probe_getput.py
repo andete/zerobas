@@ -123,6 +123,8 @@ def build_tcl(out_path, lines, cf3300):
                                    # inject overwrites the buffer. CF-3300 is slower.
     if cf3300:
         body.append('after time 11 { __inj "" }')   # initial CR to reach the prompt
+    else:
+        body.append('after time 4 { __inj "" }')  # D-STEP7DATE: zerobas's date question
     for ln in lines:
         body.append(f'after time {t} {{ __inj {{{ln}}} }}')
         t += step

@@ -1,0 +1,44 @@
+# lof rand_put, zerobas + the ROM half + SCNCNT store, lof's zb timeline moved 4 s later (date_prompt=True).
+# 'PUT #1,1' typed at 54.0 s. sc/rep = SCNCNT,REPCNT ($F3F6,$F3F7); nk = NEWKEY x11; putpnt/getpnt = KEYBUF pointers.
+# P (row 4 bit 5, with SHIFT row 6 bit 0) goes down at 54.08: one char (putpnt FBFB->FBFC); still held at the
+# next scan (54.14) with REPCNT 1 -> a REPEAT (FBFD), then REPCNT reloads to 5. The screen then reads 'PPUT #1,1'.
+53.800 sc/rep=0201 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.820 sc/rep=0101 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.840 sc/rep=0301 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.860 sc/rep=0201 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.880 sc/rep=0101 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.900 sc/rep=0301 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.920 sc/rep=0201 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.940 sc/rep=0101 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.960 sc/rep=0301 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+53.980 sc/rep=0201 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+54.000 sc/rep=0101 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+54.020 sc/rep=0301 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+54.040 sc/rep=0201 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+54.060 sc/rep=0101 nk=ffffffffffffffffffffff putpnt=FBFB getpnt=FBFB kb=5345542041243d22 pc=01CC
+54.080 sc/rep=0301 nk=ffffffffdffffeffffffff putpnt=FBFC getpnt=FBFC kb=5345542041243d22 pc=01CC
+54.100 sc/rep=0201 nk=ffffffffdffffeffffffff putpnt=FBFC getpnt=FBFC kb=5345542041243d22 pc=01CC
+54.120 sc/rep=0101 nk=ffffffffdffffeffffffff putpnt=FBFC getpnt=FBFC kb=5345542041243d22 pc=01CC
+54.140 sc/rep=0301 nk=ffffffffdffffeffffffff putpnt=FBFD getpnt=FBFD kb=5345542041243d22 pc=01CC
+54.160 sc/rep=0201 nk=ffffffffdffffeffffffff putpnt=FBFD getpnt=FBFD kb=5345542041243d22 pc=01CC
+54.180 sc/rep=0101 nk=ffffffffdffffeffffffff putpnt=FBFD getpnt=FBFD kb=5345542041243d22 pc=01CC
+54.200 sc/rep=0305 nk=fffffffffffbfeffffffff putpnt=FBFE getpnt=FBFE kb=5345542041243d22 pc=01CC
+54.220 sc/rep=0205 nk=fffffffffffbfeffffffff putpnt=FBFE getpnt=FBFE kb=5345542041243d22 pc=01CC
+54.240 sc/rep=0105 nk=fffffffffffbfeffffffff putpnt=FBFE getpnt=FBFE kb=5345542041243d22 pc=01CC
+54.260 sc/rep=0305 nk=fffffffffffdfeffffffff putpnt=FBFF getpnt=FBFF kb=5345542041243d22 pc=01CC
+54.280 sc/rep=0205 nk=fffffffffffdfeffffffff putpnt=FBFF getpnt=FBFF kb=5345542041243d22 pc=01CC
+54.300 sc/rep=0105 nk=fffffffffffdfeffffffff putpnt=FBFF getpnt=FBFF kb=5345542041243d22 pc=01CC
+54.320 sc/rep=0305 nk=fffffffffffffffffeffff putpnt=FC00 getpnt=FC00 kb=5345542041243d22 pc=01CC
+54.340 sc/rep=0205 nk=fffffffffffffffffeffff putpnt=FC00 getpnt=FC00 kb=5345542041243d22 pc=01CC
+54.360 sc/rep=0105 nk=fffffffffffffffffeffff putpnt=FC00 getpnt=FC00 kb=5345542041243d22 pc=01CC
+54.380 sc/rep=0305 nk=f7fffffffffffeffffffff putpnt=FC01 getpnt=FC01 kb=5345542041243d22 pc=01CC
+54.400 sc/rep=0205 nk=f7fffffffffffeffffffff putpnt=FC01 getpnt=FC01 kb=5345542041243d22 pc=01CC
+54.420 sc/rep=0105 nk=f7fffffffffffeffffffff putpnt=FC01 getpnt=FC01 kb=5345542041243d22 pc=01CC
+54.440 sc/rep=0305 nk=fdffffffffffffffffffff putpnt=FC02 getpnt=FC02 kb=5345542041243d22 pc=01CC
+54.460 sc/rep=0205 nk=fdffffffffffffffffffff putpnt=FC02 getpnt=FC02 kb=5345542041243d22 pc=01CC
+54.480 sc/rep=0105 nk=fdffffffffffffffffffff putpnt=FC02 getpnt=FC02 kb=5345542041243d22 pc=01CC
+54.500 sc/rep=0305 nk=fffffbffffffffffffffff putpnt=FC03 getpnt=FC03 kb=5345542041243d22 pc=01CC
+54.520 sc/rep=0205 nk=fffffbffffffffffffffff putpnt=FC03 getpnt=FC03 kb=5345542041243d22 pc=01CC
+54.540 sc/rep=0105 nk=fffffbffffffffffffffff putpnt=FC03 getpnt=FC03 kb=5345542041243d22 pc=01CC
+54.560 sc/rep=0305 nk=fdffffffffffffffffffff putpnt=FC04 getpnt=FC04 kb=5345542041243d22 pc=01CC
+54.580 sc/rep=0205 nk=fdffffffffffffffffffff putpnt=FC04 getpnt=FC04 kb=5345542041243d22 pc=01CC

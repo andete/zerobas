@@ -94,6 +94,7 @@ def run_run_case(machine: str, out: str, timeout: float = 90.0) -> dict:
     """BLOAD"A:PROG.BIN",R : poison MARKER, type the line, break at the JR$
     landmark, capture PC + loaded region + MARKER. Sync on the landmark event."""
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]
@@ -121,6 +122,7 @@ def run_plain_case(machine: str, out: str, timeout: float = 90.0) -> dict:
     time well after the load completes. The handoff must NOT fire, so there is no
     landmark to sync on -- MARKER must remain the sentinel and the bytes loaded."""
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]

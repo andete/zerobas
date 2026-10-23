@@ -1,0 +1,17 @@
+# D-STEP7DATE: zerobas + the ROM half (no SCNCNT store), test720.dsk at launch, the date prompt up from 3 s.
+# RETURN held on the key matrix (row 7 bit 7) 4.0-4.5 s and 5.6-5.9 s; work-area cells read at T.
+# newkey/oldkey = $FBE5/$FBDA x11, scncnt = $F3F6..F3F7, htimi = $FD9F x5, putpnt = $F3F8.
+T4.1 newkey=ffffffffffffffffffffff oldkey=ffffffffffffffffffffff scncnt=3600 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 putpnt=FBF0
+T4.3 newkey=ffffffffffffffffffffff oldkey=ffffffffffffffffffffff scncnt=2c00 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 putpnt=FBF0
+T5.7 newkey=ffffffffffffff7fffffff oldkey=ffffffffffffff7fffffff scncnt=0305 htimi=c37e3bc9c9 hkeyi=c9c9c9c9c9 putpnt=FBF1
+T5.9 newkey=ffffffffffffff7fffffff oldkey=ffffffffffffff7fffffff scncnt=0304 htimi=c37e3bc9c9 hkeyi=c9c9c9c9c9 putpnt=FBF1
+T6.2 newkey=ffffffffffffffffffffff oldkey=ffffffffffffffffffffff scncnt=0300 htimi=c37e3bc9c9 hkeyi=c9c9c9c9c9 putpnt=FBF1
+
+# RETURN typed (openMSX type) at T, screen at 8 s:
+RET@4 4.5 5 -> still 'Enter date (M-D-Y):'; RET@5.5 and 6 -> the BASIC banner
+# 4.1 s scncnt=$36, 4.3 s $2C: one per frame down from $FF; no scan until it reaches 0 (~5.2 s).
+# AFTER the SCNCNT store in boot_date (RETURN typed at T, screen 0.6 s later):
+RET@3.5 T3 ['  Enter date (M-D-Y):']
+RET@3.5 T+0.6 ['  zerobas version 0.1', '  clean-room MSX1 BASIC']
+RET@4 T3 ['  Enter date (M-D-Y):']
+RET@4 T+0.6 ['  zerobas version 0.1', '  clean-room MSX1 BASIC']

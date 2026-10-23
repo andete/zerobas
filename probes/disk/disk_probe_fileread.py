@@ -65,6 +65,7 @@ after time 26 {{
     return f"""set throttle off
 set __f [open {{{out_path}}} w]
 proc __hex_v {{a l}} {{ binary scan [debug read_block VRAM $a $l] H* h; return $h }}
+after time 4 {{ type "\\r" }}
 after time 8  {{ type {{{line}}} }}
 after time 12 {{ type "\\r" }}
 after time 18 {{

@@ -1,0 +1,11 @@
+# D-STEP7DATE timing, zerobas + the ROM half (bd_step7/bd_nosig), test720.dsk at launch;
+# screen rows captured at T s; RETURN typed at 6 s, PRINT 7*6 at 8 s. T2 is the boot font, not text.
+T2 (font upload)
+T3 ['  Enter date (M-D-Y):']
+T4 ['  Enter date (M-D-Y):']
+T5 ['  Enter date (M-D-Y):']
+T5.5 ['  Enter date (M-D-Y):']
+T6.5 ['  zerobas version 0.1', '  clean-room MSX1 BASIC', '  zerobas Disk BASIC', '  ZB', '  ÿ', '  color  auto   goto   list   run']
+T7 ['  zerobas version 0.1', '  clean-room MSX1 BASIC', '  zerobas Disk BASIC', '  ZB', '  ÿ', '  color  auto   goto   list   run']
+T7.5 ['  zerobas version 0.1', '  clean-room MSX1 BASIC', '  zerobas Disk BASIC', '  ZB', '  ÿ', '  color  auto   goto   list   run']
+T11 ['  zerobas version 0.1', '  clean-room MSX1 BASIC', '  zerobas Disk BASIC', '  ZB', '  PRINT 7*6', '   42']

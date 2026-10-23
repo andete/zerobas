@@ -178,6 +178,7 @@ def fresh_disk() -> str:
 def rt_bsave_bload(machine: str, dsk: str) -> dict:
     out = "/tmp/save_rt1.txt"
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]
@@ -206,6 +207,7 @@ after time 44 {{ cap }}
 def rt_bsave_bload_r(machine: str, dsk: str) -> dict:
     out = "/tmp/save_rt2.txt"
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]
@@ -238,6 +240,7 @@ after time 55 {{ cap }}
 def rt_save_run(machine: str, dsk: str) -> dict:
     out = "/tmp/save_rt3.txt"
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]

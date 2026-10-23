@@ -57,7 +57,8 @@ NAME_RE = re.compile(r"[A-Z0-9][A-Z0-9 ]{7}\.[A-Z0-9 ]{3}")
 
 
 def build_tcl(out_path, cmd, cf3300):
-    pre = 'after time 11 { type "\\r" }\n' if cf3300 else ""
+    pre = ('after time 11 { type "\\r" }\n' if cf3300 else
+           'after time 4 { type "\\r" }\n')  # D-STEP7DATE: zerobas's date question
     t = 16 if cf3300 else 8
     va = "0x1800" if cf3300 else "0x0000"
     sz = 768 if cf3300 else 960

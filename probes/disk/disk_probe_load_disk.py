@@ -106,6 +106,7 @@ def _run_case(machine: str, out: str, line: str, timeout: float = 90.0) -> dict:
     """Type a LOAD line, poison MARKER, then capture the store image + MARKER on a
     time well after the load (and any run) completes."""
     tcl = f"""set throttle off
+after time 4 {{ type "\\r" }}
 {_hexproc()}
 proc cap {{}} {{
   set f [open {{{out}}} w]

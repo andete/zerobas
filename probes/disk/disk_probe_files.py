@@ -77,6 +77,7 @@ def build_tcl(out_path: str, width: int | None) -> str:
         pre = (f'after time 6  {{ type "WIDTH {width}" }}\n'
                f'after time 7  {{ type "\\r" }}\n')
     return f"""set throttle off
+after time 4 {{ type "\\r" }}
 set __f [open {{{out_path}}} w]
 proc __hex {{a l}} {{ binary scan [debug read_block memory $a $l] H* h; return $h }}
 proc __hex_v {{a l}} {{ binary scan [debug read_block VRAM $a $l] H* h; return $h }}

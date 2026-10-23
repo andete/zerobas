@@ -1,0 +1,63 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+ZEROBAS_BASIC_MACHINE=C-BIOS_MSX1_EU_REPACK_DISK \
+	  python3 probes/disk/diskbasic_probe_lof.py --gate \
+	         
+case             ref LOF   ref dir    zb LOF    zb dir   verdict
+------------------------------------------------------------------------------
+ctl_syntax        SYNTAX      None    SYNTAX      None   agree
+new_out                0         0         0         0   agree
+new_out_wr             0         0         0         0   agree
+stale_prev             0      None         0      None   agree
+stale_big              0      None         0      None   agree
+exist_out              0         0         0         0   agree
+exist_out_wr           0         0         0         0   agree
+append_new           FNO    absent       FNO    absent   agree
+append_new_wr        FNO    absent       FNO    absent   agree
+append_exist          26        26        26        26   agree
+rand_new               0         0         0         0   agree
+rand_exist            26        26        26        26   agree
+rand_put             256         0       256         0   agree
+rnd_put_cl           FNO       256       FNO       256   agree
+rnd_put_rt           256       256       256       256   agree
+rnd_put_len           16         0        16         0   agree
+rnd_put_big         2048      2048      2048      2048   agree
+lof_input             26        26        26        26   agree
+lof_bin             2048      2048      2048      2048   agree
+lof_closed           FNO      None       FNO      None   agree
+ctl_prwr_closed       FNO      None       FNO      None   agree
+closed_input         FNO      None       FNO      None   agree
+closed_lineinp       FNO      None       FNO      None   agree
+trap_print_closed        59      None        59      None   agree
+trap_input_closed        59      None        59      None   agree
+trap_lof_closed        59      None        59      None   agree
+closed_get           FNO      None       FNO      None   agree
+closed_field         FNO      None       FNO      None   agree
+closed_put           FNO      None       FNO      None   agree
+closed_inpd          FNO      None       FNO      None   agree
+trap_get_closed        59      None        59      None   agree
+trap_put_closed        59      None        59      None   agree
+trap_field_closed        59      None        59      None   agree
+trap_inpd_closed        59      None        59      None   agree
+ok_in_inpd             0      None         0      None   agree
+ok_rnd_get             0      None         0      None   agree
+wm_in_get             61      None        61      None   agree
+wm_app_put            61      None        61      None   agree
+wm_lpt_get            58      None        58      None   agree
+wm_in_field           61      None        61      None   agree
+wm_lpt_fld             5      None         5      None   agree
+wm_rnd_inpd           61      None        61      None   agree
+wm_out_inpd           55      None        55      None   agree
+closed_ch2           BFN      None       BFN      None   agree
+roundtrip              8         8         8         8   agree
+
+meta(ref): meta scrmod=01 linlen=1d
+meta(zb) : meta scrmod=00 linlen=25
+
+45 cases, 0 unfiled divergence(s), 0 oracle drift(s), 0 mangled

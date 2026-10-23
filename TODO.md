@@ -1444,6 +1444,46 @@ item — do **one item per session** to keep context lean.
       RETURN at 12 s, after zb has already typed). ➡️ Do the apparatus first, as a commit of its
       own that stays green on today's ROM: one rule in omsx_repl (a disk mounted at launch -> one
       empty line at boot, before any case) plus the raw-Tcl sequences; then the ROM change.
+      ✅ **APPARATUS DONE 2026-10-23 (two commits).** (1) 4db28378: omsx_repl types one empty
+      line at boot when a disk is mounted at launch. (2) The raw-Tcl probes: a FULL battery WITH
+      the ROM half ([`step7b_full.out`](scratchpad/step7b_full.out)) found the main battery's
+      share -- 218/222, the reds diskascii, badfnum, lof (every row MANGLED or typed into the
+      prompt; tiers-md-check is the ROM pin) -- and diskbasic's 26 sub-probes. 26 probes now type
+      one RETURN at 4 s on zerobas ([`step7_probes.py`](scratchpad/step7_probes.py) applied the
+      three shapes; lof by hand, which badfnum reuses); the CF-3300 side is untouched.
+      🔴 **THE ROM HALF NEEDS A SECOND STORE: THE KEYBOARD IS DEAD AT THE DATE PROMPT.** A RETURN at
+      4 s was lost, typed or held on the key matrix; 5.5 s worked
+      ([`step7b_scncnt.out`](scratchpad/step7b_scncnt.out)). SCNCNT (`$F3F6`) still counts down
+      from C-BIOS's power-on `$FF` -- D-BOOTSCAN's store is in main INIT, which runs AFTER the
+      disk ROM's question -- so no key is scanned until ~5.2 s, and a user who answers at once
+      loses the key. The same holds for D-BOOTDATE's question, which ships. boot_date now stores 1
+      first (+5 B; [`step7_apply.py`](scratchpad/step7_apply.py) carries the whole ROM half):
+      RETURN at 3.5 s / 4 s -> BASIC 0.6 s later. With it, diskbasic, diskascii, lof and badfnum
+      are green on the ROM half ([`step7c_diskbasic-acceptance.out`](scratchpad/step7c_diskbasic-acceptance.out),
+      [`step7c_lof-acceptance.out`](scratchpad/step7c_lof-acceptance.out)).
+      🔮 Scored: "the main battery green but <= 3 suites" HIT (3); "fat-error and lnblank green
+      now" HIT; "a RETURN at 4 s answers it" MISS (the SCNCNT find); "all four green" MISS twice
+      (SCNCNT, then lof's doubled characters -- D-KEYREP below); "a RETURN at 3.5 / 4 s is taken
+      with the store" HIT; "lof and badfnum green with the timeline kept" HIT.
+      ➡️ NEXT: the ROM half (`python3 scratchpad/step7_apply.py`), FULL battery, kwknife re-pin,
+      a collection re-run (it must not ask where the CF-3300 does not), docs.
+
+- [ ] ⌨️ **D-KEYREP — THE FIRST KEY AFTER AN IDLE SPELL CAN COME OUT TWICE: A NEW KEY DOES NOT
+      RESTART THE AUTO-REPEAT DELAY (found 2026-10-23 by D-STEP7DATE's apparatus)**
+      🎚️ TIER 1 — typing at the prompt (a candidate: measure the reference first).
+      🤖 **AUTONOMOUS** — work-area cells only.
+      📏 lof's `rand_put` with its zerobas lines moved 4 s later typed `PPUT #1,1` and `RRUN`,
+      deterministically ([`step7c_lof_v.out`](scratchpad/step7c_lof_v.out)). Sampled every
+      20 ms ([`step7c_keyrep.out`](scratchpad/step7c_keyrep.out)): REPCNT (`$F3F7`) sat at 1
+      while no key was down; `P` went down (one character queued), was still down at the next
+      scan 60 ms later, REPCNT ran out -> a REPEAT (a second `P`), and only then did REPCNT
+      reload to 5. The key was down ~120 ms -- a human press. The keys after it did not double:
+      REPCNT was already reloaded. lof's 2026 note ("at 9.0 s zerobas began DOUBLING the first
+      character") is this, filed then as cadence and paced around.
+      ➡️ Measure what the VG-8020 + NMS 1200 does to REPCNT on a NEW key (the work area, while
+      a key is held 120 ms after an idle spell), and whether it ever doubles; then the C-BIOS
+      key scan (cbios-repack/, a patch) restarts the delay on a new key the same way. Which
+      states leave REPCNT at 1 is part of the measurement (it read 0 at the date prompt).
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -6588,7 +6628,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9054 (T-6FE392)8 (T-529ABE)` from `TODO.md:14621 (T-529ABE)`: a
+      `TODO.md:9094 (T-6FE392)8 (T-529ABE)` from `TODO.md:14661 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9509,7 +9549,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14621 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14661 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

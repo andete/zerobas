@@ -102,7 +102,7 @@ def read_fat_file(img, name8, ext3):
 
 
 def build_tcl(lines):
-    body, t = [], 8
+    body, t = ['after time 4 { type "\\r" }'], 8  # D-STEP7DATE: an E5-filled disk gets the date question
     for ln in lines:
         body.append(f'after time {t} {{ type {{{ln}}} }}')
         body.append(f'after time {t+3} {{ type "\\r" }}')
