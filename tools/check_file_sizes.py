@@ -33,13 +33,15 @@ def git(*args, inp=None):
 
 
 def allowlist(path=ALLOW):
-    """`path  reason` per line; # comments and blank lines skipped."""
+    """{path: cap} from `path  [max=BYTES]  reason` lines (# comments and blank lines
+    skipped). No `max=` is no cap at all; a cap is the file's own, higher limit."""
     out = {}
     for line in open(path):
         line = line.strip()
         if line and not line.startswith("#"):
-            name, _, reason = line.partition(" ")
-            out[name] = reason.strip()
+            name, _, rest = line.partition(" ")
+            tok = rest.split()
+            out[name] = int(tok[0][4:]) if tok and tok[0].startswith("max=") else None
     return out
 
 
@@ -72,7 +74,11 @@ def sizes(entries):
 
 
 def offenders(path_sizes, allow):
-    return sorted((s, p) for p, s in path_sizes.items() if s > LIMIT and p not in allow)
+    def cap(p):
+        if p not in allow:
+            return LIMIT
+        return allow[p] if allow[p] is not None else float("inf")
+    return sorted((s, p) for p, s in path_sizes.items() if s > max(LIMIT, cap(p)))
 
 
 def selftest():
@@ -82,15 +88,19 @@ def selftest():
         fails.append("a planted file one byte over the limit is not refused")
     if offenders({"scratchpad/x.out": small}, {}):
         fails.append("a file exactly at the limit is refused")
-    if offenders({"TODO.md": big}, {"TODO.md": "why"}):
-        fails.append("an allowlisted file is refused")
+    if offenders({"docs/x.md": big}, {"docs/x.md": None}):
+        fails.append("an allowlisted, uncapped file is refused")
+    if offenders({"TODO.md": 2 * LIMIT}, {"TODO.md": 3 * LIMIT}):
+        fails.append("an allowlisted file under its own cap is refused")
+    if offenders({"TODO.md": 3 * LIMIT + 1}, {"TODO.md": 3 * LIMIT}) != [(3 * LIMIT + 1, "TODO.md")]:
+        fails.append("an allowlisted file over its own cap is not refused")
     tracked = set(git("ls-files", "-z").split("\0"))
     gone = [p for p in allowlist() if p not in tracked]
     if gone:
         fails.append(f"the allowlist names untracked files: {gone}")
     for f in fails:
         print("SELFTEST FAIL:", f)
-    print("size-check selftest:", "FAIL" if fails else "PASS (4 arms)")
+    print("size-check selftest:", "FAIL" if fails else "PASS (6 arms)")
     return 1 if fails else 0
 
 

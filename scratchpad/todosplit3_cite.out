@@ -1,0 +1,44 @@
+selftest: GREEN control passes and a planted drift goes RED on TODO.md:4421 (T-6443D1); NOT-A-CITATION suppresses 1 citation(s) there and nothing else; D-CITESUBJ fires on two docs naming different blocks and not on agreement ✅
+todo-citations: 100 citation(s) into TODO.md / docs/TODO-done.md across 27 file(s)
+   53 verified against the block id
+    9 link targets agreeing with their label
+   38 id-less (line existence only -- NOT verified):
+        docs/TODO-done.md:31089 -> ../TODO.md:14815
+        docs/tier-status.md:78 -> TODO.md:2351
+        docs/tier-status.md:84 -> TODO.md:15758
+        docs/tier-status.md:85 -> TODO.md:15723
+        docs/tier-status.md:88 -> TODO.md:15744
+        docs/tier-status.md:91 -> TODO.md:7750
+        docs/tier-status.md:91 -> TODO.md:16491
+        docs/tier-status.md:92 -> TODO.md:16104
+        docs/tier-status.md:109 -> TODO.md:16607
+        docs/tier-status.md:110 -> TODO.md:16317
+        docs/tier-status.md:110 -> TODO.md:16607
+        docs/tier-status.md:111 -> TODO.md:16607
+        docs/tier-status.md:113 -> TODO.md:15744
+        docs/tier-status.md:119 -> TODO.md:15733
+        docs/tier-status.md:119 -> TODO.md:16596
+        docs/tier-status.md:124 -> TODO.md:2117
+        docs/tier-status.md:124 -> TODO.md:11656
+        docs/tier-status.md:125 -> TODO.md:9857
+        docs/tier-status.md:129 -> TODO.md:9857
+        docs/tier-status.md:129 -> TODO.md:15715
+        docs/tier-status.md:131 -> TODO.md:15715
+        docs/tier-status.md:148 -> TODO.md:220
+        docs/tier-status.md:148 -> TODO.md:4381
+        docs/tier-status.md:153 -> TODO.md:16818
+        docs/tier-status.md:158 -> TODO.md:16826
+        docs/tier-status.md:171 -> TODO.md:13537
+        docs/tier-status.md:178 -> TODO.md:12552
+        docs/tier-status.md:181 -> TODO.md:16818
+        docs/tier-status.md:183 -> TODO.md:2343
+        docs/tier-status.md:187 -> TODO.md:16218
+        docs/tier-status.md:197 -> TODO.md:1161
+        docs/tier-status.md:207 -> TODO.md:16506
+        docs/tier-status.md:210 -> TODO.md:16866
+        docs/tier-status.md:212 -> TODO.md:16875
+        docs/tier-status.md:219 -> TODO.md:15768
+        docs/tier-status.md:219 -> TODO.md:16498
+        docs/tier-status.md:221 -> TODO.md:12316
+        tools/tier_table.py:2063 -> TODO.md:2
+    0 sentence(s) naming MORE THAN ONE block (D-CITESUBJ: at most one can be right)

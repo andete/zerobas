@@ -1,4 +1,6 @@
 # tools/large-files-allow.txt -- tracked files allowed over the 1 MiB limit that
 # tools/check_file_sizes.py enforces (the pre-commit hook and `make size-check`).
-# One per line: `path  reason`. Keep it short; every entry is a file that grows.
-TODO.md  the work list itself, ~3 MB; it is text that changes every commit, and git stores it as deltas
+# One per line: `path  [max=BYTES]  reason`. A `max=` is that file's own limit; none
+# is no limit. Keep it short; every entry is a file that grows.
+TODO.md  max=1800000  the pickup list (1.49 MB after the 2026-10-23 split). Over the cap: split the closed work out (tools/split_todo_archive.py), don't raise it
+docs/TODO-done.md  the closed-work archive; append-only by design, so uncapped

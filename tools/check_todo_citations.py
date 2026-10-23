@@ -42,7 +42,11 @@ import probe_tmp                                                 # noqa: E402
 # id group is optional. (The forms are described rather than written out: a
 # literal example in this file is a citation this check would then try to
 # resolve, and it would be right to fail it.)
-CITE = re.compile(r"(?<![-\w])((?:\.\./)?TODO(?:-done)?\.md):(\d+)"
+# 🔴 AND THE `docs/` PREFIX (2026-10-23, the third archive split): TODO.md's own
+# citations into the archive spell it from the repo root, and without the prefix
+# in the group the match began at `TODO-done.md`, which resolves to nothing from
+# the repo root -- eight correct citations read as dangling.
+CITE = re.compile(r"(?<![-\w])((?:\.\./|docs/)?TODO(?:-done)?\.md):(\d+)"
                   r"(?:\s*\((T-[0-9A-F]{6}(?:\.\d+)?)\))?")
 SCAN_EXT = (".md", ".py", ".asm", ".inc")
 
@@ -149,7 +153,11 @@ def scan(files, root=ROOT):
                     if not lab:
                         out.append((rel, n, spelled, line, bid, "RED",
                                     "link target with no label citation to agree with"))
-                    elif (lab[-1].group(1), lab[-1].group(2)) != (spelled, str(line)):
+                    # Compared as RESOLVED files: a label spelled from the repo
+                    # root (`docs/...`) and a target spelled relative to the
+                    # citing doc name the same file (2026-10-23).
+                    elif ((resolve(rel, lab[-1].group(1)), lab[-1].group(2))
+                          != (resolve(rel, spelled), str(line))):
                         out.append((rel, n, spelled, line, bid, "RED",
                                     f"the link's two halves disagree: label says "
                                     f"{lab[-1].group(1)}:{lab[-1].group(2)}, "

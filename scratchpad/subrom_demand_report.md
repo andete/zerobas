@@ -88,7 +88,7 @@ Sources: `docs/concepts/rom-layout.md` (whole), `docs/subrom-tenant-playbook.md`
   * **Both regions share one budget.** Which region a routine lands in is
     decided only by where its `include` sits relative to `__MEAS_LOW_END`;
     promotion moves the split 1:1 and cannot raise the sum (memory
-    `carve-routes-measured-shut` 09-08; `TODO.md:20446-20455`). Price every
+    `carve-routes-measured-shut` 09-08; `TODO.md:10590 (T-CA3CA6)-20455`). Price every
     main item against low + page 1 **combined**.
   * **Islands**: four runs of C-BIOS padding below `$2765` that hold small
     leaves and read-only tables (`basic/islands.asm`; space plan A2/A3). They
@@ -130,7 +130,7 @@ Sources: `docs/concepts/rom-layout.md` (whole), `docs/subrom-tenant-playbook.md`
   kernel, with **pinned** entry addresses, so its free space is holes between
   pins (`tools/check_disk_walls.py`; `docs/concepts/rom-layout.md` "disk ROM").
   Items that live here must fit a hole, and the hot `$607B..$75A5` region "has
-  no room" (`TODO.md:29980, 30048`).
+  no room" (`docs/TODO-done.md:26000 (T-12AD22), 30048`).
 
 ### A.3 Approximate size map **[I, computed]** — what is actually in each region
 
@@ -233,7 +233,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
 * **Main-bound, unpriced** (ruled YES by Joost, each a slice): DEF FN alias
   pool, String-too-long ownership, CONT line, T6 enumeration per keyword,
   INPUT$ cassette source. Historical slice costs in this tree run 20–100 B of
-  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:28507`).
+  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:13933 (T-59C37A)`).
 * **Sub-bound**: SCREEN 3 (170–280 B p0), PAINT span-stack re-architect (p0),
   FCBSHAPE S1–S3 (p1), Phase C's C5-LOW/SBH-1 which *need* 181 B of sub p1 to
   *give* 157 B of main. The sub walls (137/94 B) block all of these today.
@@ -265,7 +265,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
   rows are the tape byte readers `cas_in_getbyte` 102 / `cal_getbyte` 90, and a
   tape-block move was refuted on timing (SBH-10, space plan §1).
 * **Dup-span, clone, `jp→jr`, promotion**: all measured shut or renewable at
-  single bytes (`carve-routes-measured-shut` 09-08; `TODO.md:4340-4360`).
+  single bytes (`carve-routes-measured-shut` 09-08; `TODO.md:936 (T-5E5DB1)-4360`).
   Promotion cannot raise the combined budget.
 * **De-eviction is refuted** (smallest tenant body 74 B vs largest stub ~42 B;
   memory `rom-region-structure-review`) — so there is no "bring code back"
@@ -349,7 +349,7 @@ program during the call (`docs/plan-main-rom-space-2026-10.md` §4 R4).
   iteration is the *more* slowed one (3.06×). Conclusion filed there: *"the
   eviction is not what makes this tree slow"*; the 2.5–3.8× lives in resident
   interpreter code (dispatch + expression evaluation, D-INTERPSPEED
-  `TODO.md:13540-13560`).
+  `TODO.md:7093 (T-C1D0BC)-13560`).
 * **kwtime rows for tenant-backed functions** (`scratchpad/openwild_kwtime.out`,
   file dated Oct 7, columns `ref ms / zb ms / zb/ref / alone`): `sqr` 39.8 →
   327.6 = **8.23×**, `cos` 5.23×, `exp` 3.67×, `atn` 3.58×, `log` 3.57×;
@@ -360,7 +360,7 @@ program during the call (`docs/plan-main-rom-space-2026-10.md` §4 R4).
   file deliberately slows rows to prove the gate catches it — ignore its
   "146×" lines.)
 * **D-FORFAST**: `nextkw` 2.37× the VG-8020 after D-FORFLOAT, dominated by BCD
-  add/compare, no tenant call on the path (`TODO.md:26675-26690`).
+  add/compare, no tenant call on the path (`docs/TODO-done.md:23537 (T-F3005D)-26690`).
 
 ### D.2 Which tenants sit on a hot path **[M, from `sub/sub.asm` and the call sites]**
 
@@ -395,7 +395,7 @@ block; the memory's `flt_to_int16` "CALSLT-per-factor would wreck the
 interpreter"): the measured data since then says a *single* crossing per
 statement is lost in the noise, but a crossing per *factor* or per *byte*
 would not be (D-LOADRUN: `dpl_*` per-byte path already ~2× its own,
-`TODO.md:4307-4337`). The rule stands as a rule about *density* of crossings.
+`TODO.md:903 (T-5E5DB1)-4337`). The rule stands as a rule about *density* of crossings.
 
 ---
 
@@ -403,7 +403,7 @@ would not be (D-LOADRUN: `dpl_*` per-byte path already ~2× its own,
 
 What the tree says **[M]**: MSX2 is "out of charter, far future" — *"Later
 generations — a clone axis (has oracles) … the V9938/V9958 SCREEN 4–12 modes +
-blitter, MSX-DOS 2, R800 timing, and the extra BASIC verbs"* (`TODO.md:35005-35010`).
+blitter, MSX-DOS 2, R800 timing, and the extra BASIC verbs"* (`docs/TODO-done.md:29190 (T-5C8467)-35010`).
 No sizing exists anywhere in `docs/` or `TODO.md` (grep for MSX2 port /
 extension finds only Technical-Handbook citations).
 

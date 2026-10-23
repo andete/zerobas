@@ -118,7 +118,7 @@ page literal names a guest's page (S6 lesson); every NUMBUF walker uses 16-bit `
 4. **INP_CURSOR / GFX_CPHASE / PU_FMTD sharing one ARG-tail word; TK*/FP*/MUL*/KEYARG pairs sharing the DAC
    tail (TKVALEND, 2 B, overlapping KEYARG/MATH_N's byte):** replaced by exclusive bytes — sharing is not
    needed once FUNACT and the RS2IQ bytes are counted, and the DAC/ARG tails are USR-exposed.
-5. **FILTAB/NULBUF ($F860-$F863): REJECTED as a host.** D-FCBSHAPE (TODO.md:20800, ruled 2026-09-27,
+5. **FILTAB/NULBUF ($F860-$F863): REJECTED as a host.** D-FCBSHAPE (docs/TODO-done.md:20354 (T-7F5C6E), ruled 2026-09-27,
    AUTONOMOUS) writes the published FILTAB (docs/spec-fcbshape.md:15,43,92).
 6. **MEMSIZ ($F672-$F673): REJECTED.** BASIC-visible, tracks CLEAR's ceiling on the reference
    (probes/basic/basic_probe_clear.py:105), a re-homing candidate.

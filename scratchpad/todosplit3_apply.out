@@ -1,0 +1,47 @@
+  whole sections moved: 3
+        Phase 1 record — committed work (all ✅ done) -- its preamble says so: 'nothing here is outst
+        Done — Phase 1 (loader-stub BASIC) -- 'Complete and oracle-validated; kept below a
+        Done — storage transports -- a prose done-record of disk and tape; no ite
+TODO.md 41671 lines, 529 top-level blocks
+  MOVE   357 blocks   21620 lines -> docs/TODO-done.md
+  STAY   172 blocks   19473 lines
+        kept closed block T-E2B959: closed block, LIVE verdict -- 🧱 **D-FLDDESC — FIELD AS THE REFERENCE DOES IT: NO TABLE, TH
+        kept closed block T-A96151: closed block, LIVE verdict -- 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GRO
+        kept closed block T-06B8CE: closed block, LIVE verdict -- 🔴 **`tools/split_todo_archive.py --apply` IS A ONE-SHOT TOOL
+        kept closed block T-99E081: closed block, LIVE verdict -- ✅ **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HA
+        kept closed block T-EEED28: closed block, LIVE verdict -- 🟢 **A DEAD REFERENCE MACHINE WAS CACHED AS A READING — FIXED
+        kept closed block T-ABA845: closed block, LIVE verdict -- ⚠️ **FIVE MORE NON-ATOMIC PUBLISHES INTO THE SHARED openMSX 
+        kept closed block T-EF8C91: closed block, LIVE verdict -- 🔴 **`KEY n,"str"` AND `KEY LIST` ARE UNIMPLEMENTED — A WELL-
+        kept closed block T-AC33CE: closed block, LIVE verdict -- 🔴 **D-TODOSWEEP'S OWN ELEVEN PROBES RE-IMPLEMENT THE `[...]`
+        kept closed block T-035C3D: closed block, LIVE verdict -- 🧹 **A TRACKED `scratchpad/` SCRIPT CAN HARDCODE THE AUTHOR'S
+        kept closed block T-75E937: closed block, LIVE verdict -- ✅ **ARC: CONTROL FRAMES BELONG IN ONE HIMEM-BOUNDED POOL, NO
+        kept closed block T-F184BB: closed block, LIVE verdict -- ⚠️ **`CLEARPOOL=0` IS UNTESTED AND CANNOT BE ADDED TO
+        kept closed block T-2E1C86: closed block, LIVE verdict -- ⚠️ **NO GATE READS THE BOOT BANNER, AND D-MISSOPFIX MOVED IT
+        kept closed block T-B34E15: closed block, LIVE verdict -- ⚠️ **`DEF FN`: a STRING formal's shadow slot is not a GC roo
+        kept closed block T-B42728: closed block, LIVE verdict -- 💰 **THE GENERIC ERROR-LAYER SEAM: per-verb error checks that
+        kept closed block T-B96267: closed block, LIVE verdict -- 🔴 **zerobas does NOT implement the `PLAY(n)` FUNCTION (backg
+        kept closed block T-58C2D1: closed block, LIVE verdict -- 🔴 **`castail-acceptance` VOIDS THE WHOLE BATTERY WHEN A CONT
+        kept closed block T-F80602: closed block, LIVE verdict -- 💰 **A DATA-ONLY SPAN STILL CONFERS FALLTHROUGH ON WHATEVER F
+        kept closed block T-816985: closed block, LIVE verdict -- ⚠️ **THE `tools/` SEED ARM IS AN INTERSECTION, NOT AN ASSERT
+        kept closed block T-687C2B: closed block, LIVE verdict -- ⚠️ **`CSAVE` AND `CLOAD` STILL TAKE A LITERAL FILENAME ONLY,
+        kept closed block T-D4D426: closed block, LIVE verdict -- ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT T
+        kept closed block T-45C1F6: closed block, LIVE verdict -- ⚠️ **NOTHING IN 360 ROWS PINS THE TENANT'S `GRPACX` STORE.**
+        kept closed block T-7F8323: closed block, LIVE verdict -- 🔴 **PHASE Q3's CONTROL SHARES ITS SUBJECT'S STATEMENT, SO TH
+        kept closed block T-8462D6: closed block, LIVE verdict -- ⚠️ **ZEROBAS DRAWS ARCS 5–6× SLOWER THAN THE REFERENCE, AND 
+        kept closed block T-87A882: closed block, LIVE verdict -- 🔴 **`t.zero` IS BLIND TO A CUT THAT ALSO DISABLES ITS SEED, 
+        kept closed block T-3628DB: closed block, LIVE verdict -- **Direct sector access — INVESTIGATED, DEFERRED to Phase 3**
+        kept closed block T-48AC8B: closed block, LIVE verdict -- **Direct-mode control flow — ✅ DONE 2026-07-26**, spec + as-
+        kept closed block T-E20888: closed block, LIVE verdict -- **Screen-editor REPL** — real MSX BASIC does not use a seque
+        kept closed block T-01E128: closed block, LIVE verdict -- ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM
+        kept closed block T-A7AEE9: closed block, LIVE verdict -- ✅ **D-TAPETAIL — THE CASSETTE SAVE VERBS' BAD TAILS PRINTED 
+        kept closed block T-E0E24C: closed block, LIVE verdict -- ✅ **TWO FILES WRITTEN AND READ TOGETHER CAME BACK WRONG — TW
+        kept closed block T-E0B04B: closed block, LIVE verdict -- 🔴 **A LINE STORE IS BOUNDED BY THE CONSTANT `TXTMAX`, NOT BY
+        kept closed block T-4857B9: closed block, LIVE verdict -- **README "Limitations (this slice)" IS STALE** — pre-existin
+        kept closed block T-94C4D6: closed block, LIVE verdict -- ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A C
+        kept closed block T-B42E11: closed block, LIVE verdict -- ✅ **CLOSED 2026-08-21 (D-FNEXPR2), 0 ROM BYTES — THE FACE FO
+        kept closed block T-2148BA: closed block, LIVE verdict -- ✅ **`.` — THE CURRENT-LINE PSEUDO-LINE-NUMBER — LANDED 2026-
+  result: TODO.md 20051 lines, archive 21667 lines
+  lossless: reconstruction is byte-identical to the source ✅
+
+wrote /Users/joost/projects/zerobas/TODO.md and APPENDED to (prior 10407 lines kept) /Users/joost/projects/zerobas/docs/TODO-done.md
+  repointed 58 citation(s) in 10 file(s)

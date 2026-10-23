@@ -50,7 +50,8 @@
     "🎯_the_precedent_inside_the_list": "T-70A01E ALREADY CONTAINS A CORRECTION OF THIS EXACT SHAPE: '🔴 AND \"no Makefile target runs it\" WAS FALSE. `make diskbasic-acceptance` dispatches...'. Someone hit this class before and fixed it in the other direction. ⚠️ BUT THAT CORRECTION IS ITSELF INCOMPLETE: a target EXISTING is not the battery RUNNING it, and diskbasic-acceptance is one of the 22. The fix replaced one wrong claim with a narrower one that is still not the question that matters."
    }
   },
-  "id_scheme_tradeoff": "🎯 NEITHER ID SCHEME IS STABLE, AND THE AUDIT IS WHAT MAKES EITHER USABLE. Positional ids (tranche 1) rot on any edit ABOVE the block -- one paragraph inserted in the header renumbered everything. Content-derived ids (tranche 2 onward) rot on any edit TO THE BLOCK'S OWN HEADLINE -- correcting NINE to ELEVEN in tranche 58 re-keyed T-872E8C to T-AC33CE and orphaned its verdict. Both failures are silent; what caught the second one instantly was `--audit` reporting 'verdicts for NON-subject: 1'. The lesson is not 'pick better ids' -- it is that a verdict set needs a RECONCILIATION CHECK against the live file, because any keying scheme will drift."
+  "id_scheme_tradeoff": "🎯 NEITHER ID SCHEME IS STABLE, AND THE AUDIT IS WHAT MAKES EITHER USABLE. Positional ids (tranche 1) rot on any edit ABOVE the block -- one paragraph inserted in the header renumbered everything. Content-derived ids (tranche 2 onward) rot on any edit TO THE BLOCK'S OWN HEADLINE -- correcting NINE to ELEVEN in tranche 58 re-keyed T-872E8C to T-AC33CE and orphaned its verdict. Both failures are silent; what caught the second one instantly was `--audit` reporting 'verdicts for NON-subject: 1'. The lesson is not 'pick better ids' -- it is that a verdict set needs a RECONCILIATION CHECK against the live file, because any keying scheme will drift.",
+  "split_2026_10_23": "Third archive split (Joost 2026-10-23, 'yes, do the split'). The 91 closed top-level blocks with no verdict whose last 8 lines still pointed onward were read and verdicted (82 DONE, 9 LIVE). The other 265 unverdicted closed blocks end on a finished note and move by the tool's default."
  },
  "T-B96267": {
   "verdict": "LIVE",
@@ -1345,5 +1346,551 @@
   "headline": "NAME \"old\" AS <non-string> DIVERGES TWICE",
   "reading": "the new open item carrying the two measured DIFFs. Its parent T-B42E11 is now REOPENED.",
   "note": "🎯 the subject set grew by one BECAUSE the sweep worked -- 177 -> 178. A sweep that files nothing has not necessarily been thorough; this one moved a closed item back to open on a measurement."
+ },
+ "T-83534A": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed 2026-10-17: Vampier reports KEY works again; the 'NEXT: get the program' pointer is moot once the reporter confirms the fix.",
+  "headline": "- [x] ⌨️ **D-KEYOOM -- A `KEY` n,\"...\" LINE ANSWERED `Out of memory` ON zerobas Disk"
+ },
+ "T-907927": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "All four slices shipped. The cosmetic dirverb rename is moot: D-DSKLOCAL (line ~4319, 2026-10-15) deleted sub/dirverb.asm, dirverb_op and the tenant.",
+  "headline": "- [x] 🟢 **STEP 13: DELETE THE THREE-ROM ROUND TRIP THE PORTED DISK VERBS STILL"
+ },
+ "T-AC66EC": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fix planned in the ➡️ line built the same day: gosub_stk_over calls ctl_reset, margin 768->256, gosuboom-acceptance 4/4, Head over Heels runs.",
+  "headline": "- [x] ✅ **FIXED 2026-10-16** — 🧱 **D-GOSUBOOM -- A GOSUB NEAR THE MEMORY EDGE IS `Out of memory` ON zerobas: IT"
+ },
+ "T-E2B959": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Residuals (a) LSET A$=A$ on a fielded var, (b) whether ERR 50 leaves the var bound (both unmeasured on ref), (d) stale K-WS22/23 knives: no other item carries them.",
+  "headline": "- [x] 🧱 **D-FLDDESC — FIELD AS THE REFERENCE DOES IT: NO TABLE, THE VARIABLE'S OWN"
+ },
+ "T-23F1FC": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-14, gate bloadrtail-acceptance 5/5, knife HIT; no open pointer.",
+  "headline": "- [x] 📼 **D-BLOADRTAIL — AFTER `BLOAD\"CAS:\",R` THE REST OF THE LINE WAS DROPPED;"
+ },
+ "T-3CE628": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-12. Filed follow-ups: D-INSTR128 (line 7080, closed) and D-GRPTAB (line 7146, open item).",
+  "headline": "- [x] ✅ **D-OPENGRP — `OPEN \"GRP:\"` IS NOT SUPPORTED: TEXT ON THE GRAPHICS SCREEN"
+ },
+ "T-B81A50": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Levers A and B done as scoped. Deferred SYNCHR is carried by D-SYNCHR (line 35183, open). The rest is stated as optional island space.",
+  "headline": "- [x] 🔬 **MAKING ROOM IN MAIN — JOOST, 2026-09-25: *\"We need to come up with"
+ },
+ "T-CFC3F0": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Instrument built; its one remaining hit (D-RECLEN2) is read and allowed with the reason in the tool. No open pointer.",
+  "headline": "- [x] 🟢 **D-REVERTSWEEP: A FILED ✅ FOR WORK THE SOURCE SAYS WAS UNDONE — AND"
+ },
+ "T-B42BAC": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed 2026-09-01 by D-REPOINTMARK: the split_todo_archive repoint() fix and arms S8-S10 shipped.",
+  "headline": "- [x] 🟢 **`check_todo_citations.py --fix` CANNOT TELL A CITATION QUOTED AS AN"
+ },
+ "T-62AB54": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "ramfree_probe repaired (D-RAMFIX, 14/14). The COLOR atomic fix it unblocked shipped as D-PARTIAL (commit ecf0c859).",
+  "headline": "- [x] 🔬 **THE FILED-ROW DENOMINATOR WAS UNREADABLE FOR A THIRD OF ITS CORPUS, AND"
+ },
+ "T-9FC977": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The bsave_opt4 stray-4th-token residual was reworked by D-BSAVEVAR (line ~34029): the CF exit and the callers' jp c,load_error are gone, ',S'+junk raises 2.",
+  "headline": "- [x] ✅ **D-SAVETRAP (2026-09-08): `BSAVE` WITH A MISSING REQUIRED ARGUMENT"
+ },
+ "T-A05A64": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The remaining e.val divergence needed descriptor-based binding. D-FLDDESC (line 4138) built it 2026-10-17 and Joost ruled to match the reference.",
+  "headline": "- [x] 🟢 **`CLOSE` EMPTIES A FIELDED VARIABLE HERE AND DOES NOT ON THE"
+ },
+ "T-70A326": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Left-overs (FCB #0, header bytes, FILTAB geometry) are carried by the open item D-FCBSHAPE (line 23692).",
+  "headline": "- [x] 🔗 **D-VARPTRCH — `VARPTR(#n)` ANSWERS ITS CHANNEL's FCB ADDRESS (IT WAS `Syntax error`)**"
+ },
+ "T-8B186B": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "LOC shipped 2026-09-11 (D-LOC), t.two gated. The page-1 note is a wall reading, not open work.",
+  "headline": "- [x] 🔴 **`LOC(#n)` IS A MISSING KEYWORD WITH ITS ORACLE MEASURED, AND IT WAS"
+ },
+ "T-DDF40E": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Superseded by D-OPEN2FIX (line 27979) / D-OPEN2 closed by measurement. D-PUT3 withdrawn (D-PUT3SLOW). VARTAB is now maintained (D-VARTABADOPT).",
+  "headline": "- [x] 🟢 **(superseded, kept for its row work) A SECOND DISK `OPEN` RAISES A"
+ },
+ "T-D8F142": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The torn-read half is carried by the separate item directly below (line 29795, 'NOTHING STOPS THE NEXT PLANTING --selftest...').",
+  "headline": "- [x] 🟢 **A RECURRING \"FLAKE\" WAS A REAL RACE, AND THE MUTATOR LIST NAMED THREE"
+ },
+ "T-7394A1": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-06 with gate clearclose-acceptance. The ➡️ line is a note for S10.B, not open work.",
+  "headline": "- [x] 🔴 **AN ACCEPTED `CLEAR` DID NOT CLOSE THE OPEN FILES — `PRINT#` AFTER IT WROTE ON"
+ },
+ "T-056610": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-20. The side finding is carried by D-EDGEONERR (line 33035).",
+  "headline": "- [x] 💥 **D-DEEPEXPR -- NEAR THE MEMORY EDGE A DEEP EXPRESSION OVERWRITES THE ARRAYS OR"
+ },
+ "T-A7AEE9": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Residual: CSAVE's 5/2 and BSAVE's exec 6 are measured but not in tools/kwerrset.py (still CSAVE {13,24}, BSAVE with-entry {2,13}). No other item carries the widening.",
+  "headline": "- [x] ✅ **D-TAPETAIL — THE CASSETTE SAVE VERBS' BAD TAILS PRINTED `load error`; THE VG-8020 RAISES"
+ },
+ "T-4B47E9": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-09-28 via the seqio sub-ROM tenant, 16/16 agree. The trailing ➡️ lines belong to the superseded original filing.",
+  "headline": "- [x] ✅ **FIXED 2026-09-28 (D-SEQEOF): A TEXT FILE READS THE REFERENCE'S WAY — CTRL-Z"
+ },
+ "T-853FAC": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "DOS side fixed 2026-10-01. 'Left: D-DOSDATEBASIC' is carried by its own item at line 36249.",
+  "headline": "- [x] ✅ **D-DOSDATE — DOES A DOS `DATE` MOVE THE CF-3300'S FILE STAMP? (filed 2026-10-01 with"
+ },
+ "T-9D47EA": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Ruling (c) carried by D-KWT5ALONE, the item directly below (line 37795), closed 2026-09-24.",
+  "headline": "- [x] 🟢 **RULED 2026-09-24 — (c): WHOLE PROGRAM FOR T2, KEYWORD ALONE FOR T5.**"
+ },
+ "T-C18ED6": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The INPUT$-on-CAS: divergence is carried by the next item (line 40930), shipped as D-CASINP 2026-09-07.",
+  "headline": "- [x] ✅ **`GET`/`PUT`/`FIELD`/`INPUT$` on a `CAS:` channel (`FCH_MODES` 7/8) are"
+ },
+ "T-8DB624": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Onward pointer D-HOOKDI is its own item, closed as FIXED 2026-10-10 (TODO.md line 283).",
+  "headline": "- [x] ✅ **FIXED 2026-10-10 (D-LOADDI)** — ⌨️ **THE WHOLE DISK `LOAD` RAN WITH"
+ },
+ "T-6443D1": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The cap_gap>step scan is carried by the D-CAPGAP item (line 1496, closed: all twelve sites answered). aliasbite_probe got its run_gap (line 2101).",
+  "headline": "- [x] ✅ **D-TWOFILE IS WITHDRAWN: THERE IS NO DEFECT. IT WAS THE PROBE'S"
+ },
+ "T-13015C": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The leftover vestigial veneers / orphan rets and the step-14 gate are carried by the open D-ROMSIZE item (lines 4241-4564, step (1); see lines 4273 and 4436).",
+  "headline": "- [x] 🧱 **S10.E -- DISK.ROM ANSWERS LOF / LOC; MAIN'S CHANNEL-SWITCH MACHINERY AND THE"
+ },
+ "T-7C20FF": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "RANDOM record at block+9 and the FIELD table were done by D-FLDDESC (line 4138, CF-3300 RAM measured first). AUTOEXEC/NAME into disk.rom and LOF/LOC were done in S10.E (line 3878).",
+  "headline": "- [x] 💰 **D-FCHNUM — FCH_NUM'S DEAD STORES, THE FRONT-OF-PIN `jr`s, AND A 16 B REFILL"
+ },
+ "T-9DDA67": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The IX bridge residual is filed as its own open item, D-BRIDGEIX (line 6433).",
+  "headline": "- [x] 🎵 **D-PLAYIY — `PLAY` WITH A STRING VARIABLE AS A VOICE PLAYED NOTHING AND WROTE THE"
+ },
+ "T-B50ACB": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-09-26, DIFF 0/3 against the reference. No onward work.",
+  "headline": "- [x] 🖥️ **D-KEYSCR1 — zerobas SHOWS NO FUNCTION-KEY LINE IN SCREEN 1** —"
+ },
+ "T-EFC12E": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed by D-STOPSEED. The trailing arrow belongs to the original filing and the stopseed probe answered it.",
+  "headline": "- [x] 🟢 **`ex_stop`'s MISSING EDGE SEED — CLOSED 2026-09-22 (D-STOPSEED):"
+ },
+ "T-4959ED": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Its three still-open residuals are their own items: STILL OWED at line 13044, refusal cuts at 27457, unary plus string half at ~12318/25400.",
+  "headline": "- [x] 🟢 **D-CLOSESWEEP: FOUR ITEMS WERE FINISHED WORK STILL SPELLED"
+ },
+ "T-D7DEC4": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-SPLITFIX fixed both defects with arms. No onward work.",
+  "headline": "- [x] 🟢 **FIXED 2026-08-30 (D-SPLITFIX) — BOTH DEFECTS, WITH SEVEN ARMS THE"
+ },
+ "T-A36EFD": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-MKSD shipped: 0 DIFF over 32 rows, knives 4/4. No onward work.",
+  "headline": "- [x] ✅ **D-MKSD — `MKS$` / `MKD$` / `CVS` / `CVD` SHIP.** 2026-09-03,"
+ },
+ "T-99E081": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Open residual with no carrier: s.trail and s.stardol stay NO_ORACLE, and the planned **$### row has not been run (no other TODO item, commit or probe has it).",
+  "headline": "- [x] ✅ **D-USING (2026-09-09): PRINT USING'S FORMAT VOCABULARY HAS THREE"
+ },
+ "T-EEED28": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "STILL OPEN with no carrier: the scrape is still SCREEN-0-only (no $1800/32-column support), and storable() still tests the wrong layer for other junk captures.",
+  "headline": "- [x] 🟢 **A DEAD REFERENCE MACHINE WAS CACHED AS A READING — FIXED 2026-09-02"
+ },
+ "T-BC9943": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The x5 log is kept now. The arrow is only conditional advice for a future red, not open work.",
+  "headline": "- [x] 🧰 **D-X5LOG — THE EXCLUDED FIVE's OUTPUT WAS DISCARDED, SO A RED LEFT NOTHING TO READ**"
+ },
+ "T-9A77FD": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Re-verified by D-SPRCOVER and closed by D-CLOSESWEEP2 as a disposition; nothing owed.",
+  "headline": "- [x] ✅ **`a.spr` IS BLIND TO A CUT THAT STOPS THE SPRITE SIZE BEING APPLIED.**"
+ },
+ "T-0F408E": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed with gate readref-acceptance. The literal-assignment residual is filed as D-LITREF (line 29035, closed).",
+  "headline": "- [x] ✅ **D-READREF — A STORED `DATA` LITERAL CHARGES THE STRING POOL NOTHING ON BOTH"
+ },
+ "T-9E2E9A": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed by D-POOLWRITE: mtime/size attribution built and falsified. The final arrow describes the shipped behaviour.",
+  "headline": "- [x] 🟢 **NOTHING STOPS THE NEXT PLANTING `--selftest` FROM LANDING IN A POOL"
+ },
+ "T-136E39": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-FORFAST fast path built 2026-10-20 (1.3x the VG-8020). The note that the next page-1 slice needs a carve is not a residual.",
+  "headline": "- [x] 🐌 **A DEFAULT-TYPE `FOR` LOOP IS 44 % SLOWER SINCE D-FORFLOAT — `NEXT`"
+ },
+ "T-01461E": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-20 (R=84, gated by deepexpr row edge136). The arrow belongs to the original filing and is answered.",
+  "headline": "- [x] 🧮 **D-EDGEONERR -- WITH AN ERROR HANDLER AND STRINGS SET UP, A DIM ~136 B FROM THE"
+ },
+ "T-F28C2F": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-TODODUP: the duplicate-ID rule plus selftest shipped and the file was repaired. No onward work.",
+  "headline": "- [x] ✅ **D-TODODUP — `todo-marker-check` PASSED A TODO.md THAT CARRIED 87 DUPLICATED LINES: TWO"
+ },
+ "T-E48EBE": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Level 1 reached 0. The level-0 VARPTR residual is carried by D-VARPTRFCB (line 36664) and D-VARPTRCH (line 23942, shipped).",
+  "headline": "- [x] 🟢 **D-KWT2TA SHIPPED 2026-09-28: A TYPE-AHEAD END MARK TIMES THE RUN-ENDING"
+ },
+ "T-CE61D7": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Its left-open residuals are their own items: D-SYSBOOTERR (line 36922, open), D-SYSLATE (line 36933, open), D-DOSMODE40 (line 36944, fixed).",
+  "headline": "- [x] ✅ **FIXED 2026-10-09 (D-CALLSYSTEM)** — 🔴 **`CALL SYSTEM` IS `Syntax error` HERE; THE CF-3300's ANSWER IS UNMEASUR"
+ },
+ "T-F13863": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-VDPIE measured: no user-visible divergence. The arrow is the original filing's measurement plan, now done.",
+  "headline": "- [x] 🟢 **CLOSED 2026-09-24 — D-VDPIE MEASURED: NOT A DIVERGENCE A USER CAN SEE. The"
+ },
+ "T-2BD9AA": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-PUTCUT measured the power-cut window: zerobas is more robust than the reference. Not a parity question; nothing owed.",
+  "headline": "- [x] ✅ **UNMEASURED: a machine reset BETWEEN a RANDOM `PUT` and its `CLOSE`.**"
+ },
+ "T-BDDD14": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fix shipped. The follow-up D-FLOORCENSUS is its own item at line 369, marked DONE 2026-10-14.",
+  "headline": "- [x] ✅ **FIXED 2026-10-13 (D-FLOORREC)** — 💾 **ON A DISKLESS MACHINE EVERY CHANNEL"
+ },
+ "T-E3E834": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "aliasscope was re-run on $CFFE with a guard (figures identical), and the four tracked $D000 probes were checked and found fine. Nothing left open.",
+  "headline": "- [x] ✅ **~~`$D000` IS NOT A PRIVATE CELL~~ — IT IS WRITTEN AT **BOOT** AND IS"
+ },
+ "T-BAD1F3": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-LETNEWFIRST fixed 2026-10-19 with witnesses. The drafting pointer is what was built. No onward work.",
+  "headline": "- [x] 🧮 **D-LETNEWFIRST -- A LET CREATES ITS TARGET VARIABLE BEFORE THE RIGHT SIDE ON"
+ },
+ "T-B81BFC": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-RAMAD fixed. The MemMan residual was filed back under D-DISKRUN, open item at line 4956.",
+  "headline": "- [x] ✅ **FIXED 2026-10-21** — 🧮 **D-RAMAD — RAMAD0-3 AND HOKVLD BIT 0, WHICH BOTH REFERENCES' DISK"
+ },
+ "T-B1E160": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Pins shipped and gated. Onward work is carried by D-BASICPUB (open, line 6457) and D-TAPELOAD class B1/B2 (open, line 5823).",
+  "headline": "- [x] 🧩 **D-BASICINT — GAMES CALL UNDOCUMENTED BASIC-ROM INTERNALS ($73AC, $6CF3,"
+ },
+ "T-A96151": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-PAINTSP shipped, but no row yet tells old from new. The fill-at-two-HIMEMs row asserting overflow tracks HIMEM still has no gate, and no other item carries it.",
+  "headline": "- [x] 🔴 **PAINT's SPAN STACK IS A FIXED ARRAY; THE REFERENCE'S GROWS DOWN FROM"
+ },
+ "T-EE440A": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed as superseded. Steps 10-12 are carried by the step list (MERGE done, OPEN under D-CHANHOOK). The equ-alias gate arm is done (D-ALIASGATE, line 10270).",
+  "headline": "- [x] 🛑 **SUPERSEDED — kept for its reasoning, but its CAUSE was wrong (see the"
+ },
+ "T-1D0419": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Both things it funded are done: the TXTMAX line-store bound (closed item, line 38600) and string unary plus (D-UPSTR, line 25524).",
+  "headline": "- [x] 🟢 **D-DGTPUSH: THREE COPIES OF ONE ELEVEN-BYTE DIGIT LOOP BECOME ONE —"
+ },
+ "T-06B8CE": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-SPLITFIX (fe24b54b) fixed append mode and the repointer. Residual: teach check_todo_citations.py --fix to change the FILE when an id moved to the archive. apply_fix still only rewrites the line, and no other item carries it.",
+  "headline": "- [x] 🔴 **`tools/split_todo_archive.py --apply` IS A ONE-SHOT TOOL THAT DOES NOT"
+ },
+ "T-D7EFA7": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Its NEXT list is done: MKS$/MKD$/CVS/CVD (D-MKSD, line 14013; D-CVMOVE) and DSKF (D-DSKFMOVE/D-DSKFLOCAL commits).",
+  "headline": "- [x] ✅ **D-MKHOOK — THE HOOK MECHANISM WORKS, PROVED ON `MKI$`.** 2026-09-03,"
+ },
+ "T-AC7083": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-GETREC is at 0 DIFF. The PUT cap-lifting it points to is the item right after it, D-PUTDOMAIN (line 16792).",
+  "headline": "- [x] ✅ **D-GETREC — CLOSED 2026-09-09, 6 DIFF → 0. `GET`/`PUT`'s RECORD ERRORS WERE UNTRAPPABLE,"
+ },
+ "T-75E937": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Pool landed and D-CTLLIM is gated. Residual: nothing covers a possible third growth path that leaves the cached CTLLIM stale (would need the derivation back). Only spec §18 records it; no TODO item.",
+  "headline": "- [x] ✅ **ARC: CONTROL FRAMES BELONG IN ONE HIMEM-BOUNDED POOL, NOT THREE FIXED"
+ },
+ "T-609BA6": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-INSBOTTOM fixed and measured SAME 2026-09-26. The sub page-1 budget note is not work.",
+  "headline": "- [x] ⌨️ **D-INSBOTTOM — INSERT MODE ON A LINE THAT ENDS ON THE BOTTOM ROW**"
+ },
+ "T-E623D4": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Retired as not a divergence (D-FIELDCH). The class was swept the same day.",
+  "headline": "- [x] 🟢 **NOT A DIVERGENCE — RETIRED 2026-08-30 (D-FIELDCH). THE REFERENCE SIDE"
+ },
+ "T-D8B85B": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Filing corrected. D-FLAKEKEEP fixed the real gap: red unit logs are now kept.",
+  "headline": "- [x] 🟢 **`badfnum-acceptance` REPORTED `1 unfiled divergence` AND NEVER SAID"
+ },
+ "T-DB7B2B": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Bucket closed by D-EDITBUCKET 2026-09-10. WAIT, RENUM, AUTO, DELETE and CTRL-C are done; the RENUM/AUTO gate exists (D-EDITVERB in the Makefile).",
+  "headline": "- [x] **Editor / program management** — ~~`RENUM`, `AUTO`,"
+ },
+ "T-094F5C": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-FORINT landed on top of D-STOPTEAR (line 32790). The remaining statement-loop gap is D-LOOPPROF, open item at line 32821.",
+  "headline": "- [x] ✅ **FIXED 2026-10-20** — 🐌 **D-FORINT — AN INTEGER `FOR I%` LOOP IS 4.9× THE VG-8020, NOW SLOWER THAN A"
+ },
+ "T-EA6453": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-DIMRESERVE closed 2026-10-20 (D-DEEPEXPR, D-EDGEONERR, D-FREPLUS14). The remaining slope is D-EVALSLOPE (line 33072).",
+  "headline": "- [x] 📏 **`DIM` KEEPS A STACK RESERVE THAT THE REFERENCE DOES NOT — a DIM"
+ },
+ "T-516A81": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-WPROTECT/D-SAVEOPEN fixed and gated. D-ERRKEEP2 is carried in the D-DISKERRS block (line 33557), with its residual noted there.",
+  "headline": "- [x] ✅ **FIXED 2026-09-28 (D-WPROTECT + D-SAVEOPEN): A WRITE ERROR REACHES BASIC —"
+ },
+ "T-B34AC1": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-CFWSTALL withdrawn 2026-10-01: there was no stall, the capture fired too early (run_gap). Nothing left.",
+  "headline": "- [x] 🧰 **D-CFWSTALL — THE CF-3300 GOES SILENT AT A MID-PROGRAM RECORD WRITE IN OUR HARNESS**"
+ },
+ "T-8199F3": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Tier-1 scope closed. Slice 3b-2 and the three differing answers are carried by D-BDOSFCB (open, line 37104). The ROBOCOP game divergence is under D-DISKRUN.",
+  "headline": "- [x] ✅ **TIER-1 SCOPE DONE 2026-10-22 (slices 1, 2, 3a, 3b-1; the rest is D-BDOSFCB below)** — 🔴 **BDOS CALLS MADE FROM"
+ },
+ "T-5FC4D7": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-PSGLATCH closed; all 11 PSG rows synced. The R14 race is recorded as reference behaviour, explicitly not filed as work.",
+  "headline": "- [x] 🟢 **CLOSED 2026-09-24 — D-PSGLATCH: EVERY `OUT&HA0`→`INP(&HA2)` ROW WAS A RACE"
+ },
+ "T-B42FE6": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "tools/who_reaches.py built (D-WHOREACH), selftested and collected. Not being a gate is a deliberate choice, not a residual.",
+  "headline": "- [x] ✅ **AN INDIRECT REACHER CANNOT BE ENUMERATED BY NAMING THE CALLEE.**"
+ },
+ "T-7501F8": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-11 and gated by fdcdi-acceptance; the DRQ-wait lever its pointers named shipped. Only an unattributed-loss note remains; the gate tolerates 18/22 by design.",
+  "headline": "- [x] ✅ **FIXED 2026-10-11 (D-FDCDI)** — ⌨️ **D-FDCDI — OUR FDC DRIVER HOLDS DI THROUGH EACH WHOLE SECTOR OPERATION, SO "
+ },
+ "T-3FB394": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed and gated (autorun-acceptance). The one residual, H.READ being called after CLOAD, is carried by the open item D-CLOADREAD at TODO.md:2448.",
+  "headline": "- [x] ✅ **D-AUTORUN — openMSX's TAPE AUTORUN NEVER FIRES: zerobas CALLS NEITHER H.READ"
+ },
+ "T-B5473B": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The front-of-pin jr sites were taken by D-FCHNUM (closed, TODO.md:4221): six sites, 6 B. What remains is conditional advice, not a task.",
+  "headline": "- [x] 💰 **D-JRSLICE3 — `jp` -> `jr` BEHIND THE LAST PINS (2026-10-17)** — ✅ main low"
+ },
+ "T-CBCA70": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed. The stray-byte residual it points to ('the next item') is carried by D-TPAP1 (TODO.md:5243).",
+  "headline": "- [x] 📇 **D-SRCHFCB — SFIRST / SNEXT'S ENTRY LAYOUT: THE CF-3300 WRITES TWO FORMS, zerobas ONE"
+ },
+ "T-D1B3C2": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Harry Fox runs (fixed in lh_adopt, row rvtarr, knife K-HO1). The trailing 'which allocation fails' pointer was answered by that fix.",
+  "headline": "- [x] ✅ **D-HFOXOOM — HARRY FOX: THE PROGRAM ITS LOADER RUNS NEXT STOPS WITH"
+ },
+ "T-C3B8B4": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Withdrawn. The divergence it points to is the closed item 'A HELD Ctrl-STOP DOES NOT RE-FIRE' (TODO.md:9845), and step 9 has since shipped (TODO.md:9995/10141).",
+  "headline": "- [x] ✅ **WITHDRAWN 2026-09-20 (D-REARMSENS): OUR DISK ROM CANNOT INSTALL AN"
+ },
+ "T-EDD480": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "D-RAMMAP and D-RAMPAREN shipped. gen_resident_abi.py now copies the declared-width comments across. The rest is 'do it the day someone needs bytes'.",
+  "headline": "- [x] ✅ **DONE 2026-09-19 (D-RAMMAP): THE ONLY RAM MAP WE HAVE COULD NOT SEE"
+ },
+ "T-7B2530": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The marker gate shipped (make todo-marker-check, static tier) and the listing now buckets by marker. Nothing points onward.",
+  "headline": "- [x] 🟢 **D-MARKGATE: THE ONE INVARIANT THIS SECTION IS BUILT ON HAD NO"
+ },
+ "T-9300F7": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The premise was stale (D-CVITM). NO-ORACLE is dissolved in the ngram15 and ngram11 probes; truncload's rows correctly stay. Nothing left.",
+  "headline": "- [x] 🟢 **`CVI(5)` — THE ITEM WAS STALE ON THE DAY IT WAS FILED, AND THE ROWS"
+ },
+ "T-EEB626": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The remaining PRINT USING families are carried by D-PUCOMMA (14429), D-PUEXP (14486) and D-PULEAD (14511, probe at 0 divergent).",
+  "headline": "- [x] ✅ **D-PUDOT — `PRINT USING`'s `.` DECIMAL SPECIFIER SHIPS** (2026-09-04,"
+ },
+ "T-A85EAF": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The class was measured empty with 0 DIFF. The arrow points to a rule to carry, not a task.",
+  "headline": "- [x] ✅ **D-VDPDOM (2026-09-09): `VDP(n)=` and `BASE(n)=` argument domains —"
+ },
+ "T-3295DE": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed. Both remainders are carried by their own items: D-SCR1PROMPT (TODO.md:24184) and D-INSMODE (TODO.md:23641).",
+  "headline": "- [x] ▮ **D-CURSORBLOCK — ZEROBAS SHOWS NO BLOCK CURSOR AT THE PROMPT**"
+ },
+ "T-75C590": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Measured 0 DIFF. The unrowed fix is now gated by runline-acceptance, with knife K-RL1.",
+  "headline": "- [x] ✅ **`RUN <lineno>` IN DIRECT MODE IS ~~STILL THE OLD BEHAVIOUR~~ — R2"
+ },
+ "T-FDD06D": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed. The one row left (same file on two channels) is filed as the open item at TODO.md:28008, and D-OPENSAME later fixed it.",
+  "headline": "- [x] 🟢 **A SECOND DISK `OPEN` — FIXED 2026-09-02 (D-OPEN2FIX), +2 B, 9 DIFF →"
+ },
+ "T-39DDB0": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Closed by D-FIXTUREPOLL. Gated by fixture-integrity-check, and namspc-acceptance joined the battery.",
+  "headline": "- [x] 🟢 **`namspc-acceptance` REFUSES: A POSITIVE CONTROL FAILS ON THE"
+ },
+ "T-606973": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Re-pinned under D-PLAYWIN. The class and the MUSICF rule are recorded on the open PLAY(n) transient item (TODO.md:24974).",
+  "headline": "- [x] 🟢 **CLOSED 2026-09-24 — THE 09-10 AGREEMENT WAS A RACE THE ROW WON, NOT A"
+ },
+ "T-9B4682": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 15/15 and gated by forvar-acceptance. The speed cost it filed is carried by D-FORFAST (TODO.md:32726, closed).",
+  "headline": "- [x] 🔴 **A `FOR` LOOP IS INT16 ARITHMETIC — `STEP .5`, `FOR A=.5 TO 3`,"
+ },
+ "T-01E128": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Open residual with no carrier: D-ERRKEEP2 (LOAD/MERGE/ASCII LOAD/DSKF don't end via hk_claim_status, parked for a witness). Also B: phantom drive, wildcard-open order.",
+  "headline": "- [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,"
+ },
+ "T-E0E24C": {
+  "verdict": "LIVE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "String-item residual is carried by D-INPSTR/D-INPQUOTE. But the note that tape (CAS:) numeric items keep the field rule (no peek) is unverified against the reference and has no carrier.",
+  "headline": "- [x] ✅ **TWO FILES WRITTEN AND READ TOGETHER CAME BACK WRONG — TWO BUGS, ONE OF THEM"
+ },
+ "T-65DC5B": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "The read-side check was covered by D-RDBLKMULTI (RS=1 RDBLK proven byte-exact), D-RDBLKSEEK and D-RDRNDMULTI (rrnd_position fixed), all closed.",
+  "headline": "- [x] ✅ **D-WRBLKRS — BDOS `$26` WRBLK IS ONLY RIGHT FOR A RECORD SIZE OF 128: AT RS = 1 IT"
+ },
+ "T-20A0C3": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Fixed 2026-10-10. Gated by readerl-acceptance 7/7, and readflt's KNOWN rows graduated. No onward pointer left.",
+  "headline": "- [x] ✅ **FIXED 2026-10-10 (D-READERL)** — 🔴 **A BAD `DATA` ITEM IS `Syntax error in <the DATA line>` ON THE VG-8020 AND"
+ },
+ "T-D0058C": {
+  "verdict": "DONE",
+  "how": "read (TODO split 2026-10-23: the block, TODO.md, git log)",
+  "reading": "Retired by Joost on 2026-09-09. The EU-only coverage loss stays on record as a fact, not an open action.",
+  "headline": "- [x] ✅ **REGIONALISE THE REPACK BUILD — RETIRED** (filed 2026-07-29, S2 of the lean"
  }
 }

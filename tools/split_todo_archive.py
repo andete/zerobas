@@ -333,6 +333,13 @@ def main():
     os.makedirs(os.path.dirname(DST), exist_ok=True)
     open(DST, "w").write(out)
     print(f"\nwrote {SRC} and {how} {DST}")
+    # 🔴 THE MAP COUNTS `dst_out`, NOT THE ARCHIVE AS WRITTEN (2026-10-23, the third
+    # split). Appending shifts every moved line down by the prior archive, so the
+    # repoint wrote `TODO-done.md:717` for a block at :11056 -- 30 citations, caught  NOT-A-CITATION
+    # by todo-citation-check and re-anchored by --fix because they carried ids.
+    if prior.strip():
+        off = _dst_offset(dst_out, out)
+        mapping = {k: (w, n + off if w == "dst" else n) for k, (w, n) in mapping.items()}
     repoint(mapping, blocks)
     return 0
 
@@ -401,12 +408,27 @@ def selftest() -> int:
     arm("S5 ...and the newly moved block is there too",
         "- [x] a newly moved block" in src)
     arm("S6 the archive never SHRINKS across a pass", len(src) >= len(prior))
+    off = _dst_offset(fresh, src)
+    arm("S11 the repoint offset lands a moved line on its line in the WRITTEN "
+        "archive (the third split numbered from the appended part)",
+        src.split("\n")[5 + off - 1] == "- [x] a newly moved block")
     empty = os.path.join(d, "empty.md")
     arm("S7 a FIRST pass (no archive yet) still writes the header",
         _append_or_write(empty, fresh).startswith("# generated header"))
 
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 1
+
+
+def _dst_offset(dst_out, out):
+    """Lines to add to a `dst_out` line number to get its line in the written
+    archive. Appending drops `dst_out`'s header and resumes at its first `## `
+    line, so that line is found again in `out` and the two positions compared."""
+    h = next(i for i, l in enumerate(dst_out) if l.startswith("## "))
+    lines = out.split("\n")
+    at = max(i for i, l in enumerate(lines) if l == dst_out[h]
+             and lines[i:i + len(dst_out) - h] == dst_out[h:])
+    return at - h
 
 
 def _append_or_write(dst, dst_out):
