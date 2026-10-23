@@ -1,0 +1,107 @@
+# calculus.dsk, register samples (PC/SP/A8/IFF + JIFFY, SCRMOD work-area cells only).
+# CF-3300 (scratchpad/screen_timeline.py's run, sampled every 0.25 s):
+T5.0 pc=77BB sp=EEBB a8=FC iff=7 jiffy=a400 scrmod=01
+T5.25 pc=77BB sp=EEBB a8=FC iff=7 jiffy=b300 scrmod=01
+T5.5 pc=77BB sp=EEBB a8=FC iff=7 jiffy=c200 scrmod=01
+T5.75 pc=77B8 sp=EEBB a8=FC iff=7 jiffy=d100 scrmod=01
+T6.0 pc=77F3 sp=EEBD a8=FC iff=7 jiffy=e000 scrmod=01
+T6.25 pc=77F4 sp=EEBD a8=FC iff=7 jiffy=ef00 scrmod=01
+T6.5 pc=77F4 sp=EEBD a8=FC iff=7 jiffy=fe00 scrmod=01
+T6.75 pc=77F4 sp=EEBD a8=FC iff=7 jiffy=0d01 scrmod=01
+T7.0 pc=01BE sp=DC91 a8=FC iff=0 jiffy=1c01 scrmod=01
+T7.25 pc=01F2 sp=DC8F a8=FC iff=0 jiffy=2a01 scrmod=01
+T7.5 pc=028F sp=DC91 a8=FC iff=0 jiffy=2a01 scrmod=01
+T7.75 pc=0299 sp=DC8F a8=FC iff=0 jiffy=2a01 scrmod=01
+T8.0 pc=029E sp=DC87 a8=FC iff=0 jiffy=2a01 scrmod=01
+T8.25 pc=77BB sp=C1C6 a8=FC iff=7 jiffy=3701 scrmod=01
+T8.5 pc=77BB sp=C1C6 a8=FC iff=7 jiffy=4601 scrmod=01
+T8.75 pc=77BB sp=C1C6 a8=FC iff=7 jiffy=5501 scrmod=01
+T9.0 pc=7723 sp=C1CA a8=FC iff=7 jiffy=6401 scrmod=01
+T9.25 pc=7723 sp=C1CA a8=FC iff=7 jiffy=7301 scrmod=01
+T9.5 pc=761B sp=C1C6 a8=FC iff=0 jiffy=7f01 scrmod=01
+T9.75 pc=7622 sp=F4D7 a8=FF iff=0 jiffy=8401 scrmod=01
+T10.0 pc=7957 sp=F4D9 a8=FF iff=7 jiffy=8901 scrmod=01
+T10.25 pc=EFEC sp=F4D7 a8=FF iff=0 jiffy=8e01 scrmod=01
+T10.5 pc=EFEC sp=F4D7 a8=FF iff=0 jiffy=9101 scrmod=01
+T10.75 pc=EFEC sp=F4D7 a8=FF iff=0 jiffy=9501 scrmod=01
+T11.0 pc=F011 sp=F4D7 a8=FF iff=0 jiffy=a101 scrmod=01
+T11.25 pc=F014 sp=F4D7 a8=FF iff=0 jiffy=a401 scrmod=01
+T11.5 pc=0128 sp=342E a8=FF iff=0 jiffy=a701 scrmod=01
+T11.75 pc=DDAE sp=6FB6 a8=FF iff=0 jiffy=ffff scrmod=ff
+T12.0 pc=2B09 sp=0034 a8=FF iff=0 jiffy=ffff scrmod=ff
+T12.25 pc=A6CD sp=002E a8=FF iff=0 jiffy=ffff scrmod=ff
+T12.5 pc=62C9 sp=0026 a8=FF iff=0 jiffy=ffff scrmod=ff
+T12.75 pc=1EC3 sp=001E a8=FF iff=0 jiffy=ffff scrmod=ff
+T13.0 pc=9A87 sp=0018 a8=FF iff=0 jiffy=ffff scrmod=ff
+T13.25 pc=5683 sp=0010 a8=FF iff=0 jiffy=ffff scrmod=ff
+T13.5 pc=127D sp=0008 a8=FF iff=0 jiffy=ffff scrmod=ff
+T13.75 pc=8E41 sp=0002 a8=FF iff=0 jiffy=ffff scrmod=ff
+T14.0 pc=4A3D sp=FFFA a8=FF iff=0 jiffy=ffff scrmod=ff
+# zerobas (every 0.5 s; registers only):
+T4.0 pc=18FD sp=F4FF a8=FC iff=0 af=1F08 bc=0CF3 de=8700 hl=2467
+T4.5 pc=DDD2 sp=F513 a8=FF iff=0 af=0054 bc=0000 de=0000 hl=0000
+T5.0 pc=18EA sp=F511 a8=FC iff=0 af=FC54 bc=0000 de=0000 hl=0000
+T5.5 pc=195F sp=F513 a8=FC iff=0 af=FC54 bc=0000 de=0000 hl=0000
+T6.0 pc=DDC3 sp=F51D a8=FF iff=0 af=0044 bc=0000 de=0000 hl=0000
+T6.5 pc=18EC sp=F665 a8=FC iff=0 af=FC54 bc=0000 de=0000 hl=E46A
+T7.0 pc=18F5 sp=F659 a8=FC iff=0 af=FCAC bc=0CF3 de=8700 hl=2467
+T7.5 pc=DDC4 sp=F675 a8=FF iff=3 af=0045 bc=1009 de=0000 hl=E46A
+T8.0 pc=1951 sp=F657 a8=FC iff=0 af=1F08 bc=0CF3 de=8700 hl=2467
+T8.5 pc=DDB6 sp=F66D a8=FC iff=0 af=FC54 bc=0000 de=0000 hl=E46A
+T9.0 pc=1959 sp=F663 a8=FC iff=0 af=FCAC bc=0CF3 de=8700 hl=2467
+T9.5 pc=7A6E sp=F679 a8=FF iff=7 af=C183 bc=00C1 de=E46A hl=FF87
+T10.0 pc=7AF4 sp=F66D a8=FF iff=0 af=0110 bc=0008 de=0002 hl=E46A
+T10.5 pc=7AF6 sp=F669 a8=FF iff=0 af=0154 bc=0002 de=0002 hl=E46A
+T11.0 pc=7AF1 sp=F66D a8=FF iff=0 af=0110 bc=0002 de=0102 hl=E46A
+T11.5 pc=7AF6 sp=F66D a8=FF iff=0 af=0154 bc=0003 de=0102 hl=E46A
+T12.0 pc=7AF4 sp=F669 a8=FF iff=0 af=0110 bc=0002 de=0002 hl=E46A
+T12.5 pc=4654 sp=F677 a8=FF iff=7 af=0042 bc=004A de=E46A hl=E90F
+T13.0 pc=7AF8 sp=F66D a8=FF iff=0 af=0154 bc=0008 de=0102 hl=E46A
+T13.5 pc=7AF4 sp=F66D a8=FF iff=0 af=0110 bc=0001 de=0102 hl=E46A
+T14.0 pc=7AFA sp=F66D a8=FF iff=0 af=0110 bc=0002 de=0102 hl=E46A
+T14.5 pc=7A8A sp=F679 a8=FF iff=7 af=0083 bc=0000 de=E46A hl=DF00
+T15.0 pc=463C sp=F677 a8=FF iff=7 af=5BBB bc=003A de=0200 hl=0058
+T15.5 pc=4401 sp=F669 a8=FF iff=0 af=2530 bc=0002 de=0000 hl=E46A
+T16.0 pc=7AF4 sp=F669 a8=FF iff=0 af=0110 bc=0002 de=0002 hl=E46A
+T16.5 pc=801C sp=F67B a8=FF iff=7 af=FFAC bc=151E de=1382 hl=9B4C
+T17.0 pc=4401 sp=DEB0 a8=FF iff=0 af=2130 bc=6408 de=6401 hl=C001
+T17.5 pc=7AF6 sp=DEB0 a8=FF iff=0 af=0154 bc=0008 de=6402 hl=C001
+T18.0 pc=7AFA sp=DEB0 a8=FF iff=0 af=0110 bc=0008 de=6402 hl=C001
+T18.5 pc=4401 sp=DEB0 a8=FF iff=0 af=2131 bc=1008 de=6402 hl=C001
+T19.0 pc=4406 sp=DEB0 a8=FF iff=0 af=2131 bc=1008 de=6402 hl=C001
+T19.5 pc=7AFA sp=DEB0 a8=FF iff=0 af=0110 bc=0008 de=6402 hl=C001
+T20.0 pc=7AF4 sp=DEB0 a8=FF iff=0 af=0110 bc=0008 de=6402 hl=C001
+T20.5 pc=0D74 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T21.0 pc=0D77 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T21.5 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T22.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T22.5 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T23.0 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T23.5 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T24.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T24.5 pc=0D77 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T25.0 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T25.5 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T26.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T26.5 pc=0D77 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T27.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T27.5 pc=0D74 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T28.0 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T28.5 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T29.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T29.5 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T30.0 pc=0D76 sp=DEB8 a8=FF iff=7 af=1F4D bc=009B de=6402 hl=0E2E
+T30.5 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T31.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T31.5 pc=0D77 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+T32.0 pc=0D73 sp=DEB8 a8=FF iff=7 af=8F4D bc=009B de=6402 hl=0E2E
+# zerobas work area during its wait loop:
+T8 pc=1951 a8=FC jiffy=8201 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F
+T12 pc=7AF4 a8=FF jiffy=f401 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=9F
+T16 pc=7AF4 a8=FF jiffy=5602 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=9F
+T19 pc=4406 a8=FF jiffy=6e02 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=9F
+T21 pc=0D77 a8=FF jiffy=8702 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F
+T22 pc=0D73 a8=FF jiffy=ac02 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F
+T24 pc=0D73 a8=FF jiffy=f102 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F
+T27 pc=0D73 a8=FF jiffy=5d03 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F
+T30 pc=0D76 a8=FF jiffy=c803 htimi=c9c9c9c9c9 hkeyi=c9c9c9c9c9 intcnt=0000 scrmod=01 vdpst=1F

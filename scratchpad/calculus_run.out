@@ -1,0 +1,3 @@
+[  1/2] BOTH-RUN    4776  ref S1 pc=  670  zb S1 pc=25852  calculus.di2
+[  2/2] BOTH-RUN    4752  ref S1 pc=  670  zb S1 pc= 6481  calculus.dsk
+TALLY {"BOTH-RUN": 2}

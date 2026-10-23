@@ -1325,7 +1325,18 @@ item — do **one item per session** to keep context lean.
       chased: what it measures is inside third-party code, and the black-box route is a
       reference measurement of interrupts DURING a BDOS disk transfer into page 1 (our own
       test program on a DOS disk: count JIFFY across a long random-block read with EI).
-      Next by class: ZB-ONLY BREAKER / TestameB / calculus / mb, FILES-DIFF (mostly noise, see
+      📏 **calculus and TestameB (2026-10-23): THE CF-3300 CRASHES ON BOTH -- not ours.**
+      [`screen_timeline.py`](scratchpad/screen_timeline.py) ([`calculus_timeline.out`](scratchpad/calculus_timeline.out),
+      [`testameb_timeline.out`](scratchpad/testameb_timeline.out)) and register samples
+      ([`calculus_regs.out`](scratchpad/calculus_regs.out), [`testameb_cf_regs.out`](scratchpad/testameb_cf_regs.out)):
+      ~1-2 s after its program starts, the CF-3300's SP runs down through all of RAM, JIFFY and
+      SCRMOD read $FF (the work area wiped), interrupts off, PC sweeping -- its "picture" was
+      the name table read during the wipe. zerobas fails differently (calculus: the program's
+      own loop at $0D73 with interrupts on, JIFFY moving, hooks untouched; TestameB: a loop at
+      $06BE), so there is no reference behaviour to match. Noted on the way: calculus loads
+      MSX-DOS + the program by ~11 s on the CF-3300 and by ~20 s on zerobas -- disk read speed,
+      TIER 5 (the LOAD speed item).
+      Next by class: ZB-ONLY BREAKER (MSX2, both fail) / mb (🙋), FILES-DIFF (mostly noise, see
       the first table).
       📏 **mb.dsk is not ZB-ONLY, it is a BOOT LOOP** (read 2026-10-23, already so on 10-22 --
       diskcorpus_rerun2.out has the same row): zerobas sits on C-BIOS's start-up screen ("Init
@@ -6718,7 +6729,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9184 (T-6FE392)8 (T-529ABE)` from `TODO.md:14751 (T-529ABE)`: a
+      `TODO.md:9195 (T-6FE392)8 (T-529ABE)` from `TODO.md:14762 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9639,7 +9650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14762 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
