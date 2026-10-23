@@ -763,6 +763,7 @@ dfl_set:
 BIOS_CHGET      equ     $009F   ; MSX2 TH BIOS: wait for a key, A = its code
 BIOS_INITXT     equ     $006C   ; MSX2 TH BIOS: SCREEN 0 (TEXT1), cleared, cursor home
 BD_LINL40       equ     $F3AE   ; MSX2 TH work area: LINL40, SCREEN 0's width (1 B)
+BD_SCNCNT       equ     $F3F6   ; MSX work area: SCNCNT, the key-scan countdown (1 B)
 BD_LINE         equ     SECTOR_BUF          ; the typed line (own choice: scratch --
                                             ; the BASENT path skips the boot read)
 BD_MAX          equ     24                  ; own choice: the longest line kept
@@ -800,6 +801,13 @@ boot_date:
                 ; 2026-09-04). zerobas BASIC sets its own width when it starts, after.
                 ld      a, 37
                 ld      (BD_LINL40), a
+                ; The keyboard answers the prompt at once: C-BIOS leaves the key-scan
+                ; countdown SCNCNT at its power-on $FF, so the interrupt took no key for
+                ; ~5 s after power-on; main INIT's D-BOOTSCAN store comes after this
+                ; question. The VG-8020's start-up clears the cell within 1 s
+                ; (scratchpad/keycells_vg.out); measured here in scratchpad/step7b_scncnt.out.
+                ld      a, 1                ; 1 = scan at the next interrupt
+                ld      (BD_SCNCNT), a
                 call    BIOS_INITXT         ; a cleared SCREEN 0, the cursor home
                 ld      hl, bd_prompt
 bd_ask:

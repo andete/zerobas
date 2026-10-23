@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **438** in the MSX standard work area at or above `$F380`.
-* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **66** in the MSX standard work area at or above `$F380`.
+* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -277,6 +277,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F3F2` | 1 B | `basic` | `ATRBYT` | current graphics attribute / plot colour (1) |  |
 | `$F3F5` |  | `basic` | `GFX_CPHASE` | CIRCLE-parse co-routine phase (sub/circleparse.asm): |  |
 | `$F3F6` |  | `basic` | `SCNCNT` | key-scan countdown: the interrupt scans the keyboard when it reaches 0 (MSX work area; D-BOOTSCAN) |  |
+| `$F3F6` | 1 B | `disk` | `BD_SCNCNT` | MSX work area: SCNCNT, the key-scan countdown (1 B) |  |
 | `$F3FC` | 2 B | `basic` | `CS120_LOW` | 1200-baud reference low-signal length word |  |
 | `$F401` | 2 B | `basic` | `CS240_LOW` | 2400-baud reference low-signal length word |  |
 | `$F406` | 2 B | `basic` | `ACT_LOW` | active low-signal length word (the live baud) |  |

@@ -387,7 +387,7 @@ boot_disk_go:
                 cp      $EB
                 jr      z, boot_sig_ok
                 cp      $E9
-                ret     nz              ; not a boot disk -> BASIC
+                jp      nz, bd_nosig    ; not a boot disk -> the date, then BASIC
 boot_sig_ok:
                 call    boot_call0      ; step 5, Cy = 0, under the DOS_TRY mark
                                         ; (disk/driver.asm; D-BASENTRUN's other half)
@@ -425,8 +425,7 @@ boot_sig_ok:
                 ; pad-packed to the $41FD anchor. (tier2-f338-default-spec.md)
                 call    dos_handoff     ; DOS disk JPs into MSXDOS.SYS (no return)
                 call    page0_ram_out   ; data disk returned: BIOS ROM back in page 0
-                ei
-                ret                     ; -> BIOS boot scan -> BASIC
+                jp      bd_step7        ; D-STEP7DATE: the date, then the scan -> BASIC
 
 ; page0_ram_in — map page 3's slot/subslot (always RAM: the stack lives there)
 ; into page 0, so the boot code/MSXDOS see RAM where the BIOS ROM was. Derives

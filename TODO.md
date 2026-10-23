@@ -1309,6 +1309,12 @@ item — do **one item per session** to keep context lean.
       The CF-3300 asks `Enter date ( - - ):` for it; zerobas starts BASIC. Not a program: filed
       here, not chased. ➡️ If it is ever taken up: does the VG-8020 + NMS 1200 ask too (the
       style split's authority), and what does the CF-3300 do with a blank but FORMATTED disk?
+      📏 2026-10-23 (D-STEP7DATE's re-run, [`diskcorpus_rerun5.out`](scratchpad/diskcorpus_rerun5.out)):
+      ss-final.dsk went FILES-EMPTY -> ZB-ONLY between re-run 4 and HEAD, independent of the ROM
+      half (today's ROM does the same). The CF-3300 and re-run 4's zerobas stop at its own
+      `FATAL ERROR  Not enough free memory found (at least 32kB)` under MSX-DOS; HEAD's zerobas
+      passes that check and loads on. Candidates: the commits after re-run 4 (D-TPAPTAIL (b)'s
+      P1_BLIT, D-BOOTREGS's tail). ➡️ Measure the TPA top ($0006) on both, read before fixing.
       Next by class: ZB-ONLY BREAKER / TestameB / calculus / mb, FILES-DIFF (mostly noise, see
       the first table).
       📏 **mb.dsk is not ZB-ONLY, it is a BOOT LOOP** (read 2026-10-23, already so on 10-22 --
@@ -1402,7 +1408,7 @@ item — do **one item per session** to keep context lean.
       [`f368bas_nodos.out`](scratchpad/f368bas_nodos.out)); put the test in an AUTOEXEC.BAS
       instead. The date prompt is D-STEP7DATE (filed below).
 
-- [ ] 📅 **D-STEP7DATE — A BOOT DISK WHOSE CODE RETURNS AT STEP 7 GETS THE DATE QUESTION ON BOTH
+- [x] ✅ **DONE 2026-10-23 (D-STEP7DATE)** 📅 **D-STEP7DATE — A BOOT DISK WHOSE CODE RETURNS AT STEP 7 GETS THE DATE QUESTION ON BOTH
       REFERENCES, AND NONE ON zerobas (found 2026-10-23 by D-TPAPTAIL (c))**
       🎚️ TIER 1 — happy path: what powering on with a data disk in the drive looks like.
       🤖 **AUTONOMOUS** — measured on both references with OUR OWN disks; the prompt's style is
@@ -1465,8 +1471,21 @@ item — do **one item per session** to keep context lean.
       now" HIT; "a RETURN at 4 s answers it" MISS (the SCNCNT find); "all four green" MISS twice
       (SCNCNT, then lof's doubled characters -- D-KEYREP below); "a RETURN at 3.5 / 4 s is taken
       with the store" HIT; "lof and badfnum green with the timeline kept" HIT.
-      ➡️ NEXT: the ROM half (`python3 scratchpad/step7_apply.py`), FULL battery, kwknife re-pin,
-      a collection re-run (it must not ask where the CF-3300 does not), docs.
+      ✅ **ROM HALF DONE 2026-10-23.** `scratchpad/step7_apply.py`: init.asm's two exits jump to
+      bd_step7 / bd_nosig (kernel.asm, after br5_end: not copied to RAM, br5's copy stops at
+      br5_end), and boot_date stores SCNCNT = 1 first (+5 B). tests/test_bootdate.py ALL PASS;
+      docs/concepts/disk.md's examples PASS ([`step7e_kwdoc.out`](scratchpad/step7e_kwdoc.out));
+      kwknife re-pinned ([`step7e_kwknife_all.out`](scratchpad/step7e_kwknife_all.out),
+      [`step7e_kwknife_allfn.out`](scratchpad/step7e_kwknife_allfn.out)).
+      📊 Collection, zerobas against the CF-3300 rows ([`diskcorpus_rerun5.out`](scratchpad/diskcorpus_rerun5.out)):
+      BOTH-RUN **119**, FILES-SAME 10, FILES-DIFF 8, ZB-ONLY 5, FILES-EMPTY 1, ZB-NOBOOT **0**.
+      mania111_starquake.dsk (all zeros) now asks, as the CF-3300 does. 🔍 No image asks the date
+      on zerobas where the CF-3300 does not (screens compared, all 143). Four ask on the CF-3300
+      only (FSA1GT2, SNATCHE1-3) -- as in re-run 4, not this change. ss-final.dsk moved
+      FILES-EMPTY -> ZB-ONLY, and today's ROM (the ROM half reverted) does the same: not this
+      change -- see D-DISKRUN.
+      🔮 Scored: "BOTH-RUN stays 118" MISS (119: mania111 counts as running once it asks); "no
+      image newly asks where the CF-3300 does not" HIT; "mania111 now asks" HIT.
 
 - [ ] ⌨️ **D-KEYREP — THE FIRST KEY AFTER AN IDLE SPELL CAN COME OUT TWICE: A NEW KEY DOES NOT
       RESTART THE AUTO-REPEAT DELAY (found 2026-10-23 by D-STEP7DATE's apparatus)**
@@ -6628,7 +6647,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9094 (T-6FE392)8 (T-529ABE)` from `TODO.md:14661 (T-529ABE)`: a
+      `TODO.md:9113 (T-6FE392)8 (T-529ABE)` from `TODO.md:14680 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9549,7 +9568,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14661 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14680 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

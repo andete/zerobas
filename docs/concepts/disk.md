@@ -93,11 +93,14 @@ count kept at `&HF33B`; a `DATE` typed in MSX-DOS moves it, and a program
 `SAVE`d in a disk BASIC entered with `A>BASIC` is stamped with that date, on
 both machines ([MSX-DOS](msx-dos.md)). `COPY` keeps the source's date.
 
-**A boot disk without MSX-DOS asks the date.** When a disk's boot code looks
-for `MSXDOS.SYS`, does not find it, and hands back to the disk ROM, the machine
-clears the screen and asks `Enter date (M-D-Y):` before Disk BASIC starts — on
-the VG-8020 with a Philips NMS 1200 disk interface and on the CF-3300 (whose
-question reads year first), and on zerobas since 2026-10-21. The answer takes
+**A disk that does not start MSX-DOS asks the date.** When a disk's boot code
+looks for `MSXDOS.SYS`, does not find it, and hands back to the disk ROM — or
+is a plain data disk whose boot code just returns — the machine clears the
+screen and asks `Enter date (M-D-Y):` before Disk BASIC starts — on the VG-8020
+with a Philips NMS 1200 disk interface and on the CF-3300 (whose question reads
+year first), and on zerobas since 2026-10-21 (the data disk since 2026-10-23).
+The CF-3300 asks for a disk with no boot code at all, an all-zero image, too,
+and so does zerobas. The keyboard answers as soon as the question shows. The answer takes
 `-`, `/` or `.` between month, day and an optional year (two digits: 80–99 is
 19xx, 00–79 is 20xx; no year keeps the current one); a plain RETURN keeps the
 date; anything else is `Invalid date` and the question again. The answer is the
@@ -302,6 +305,17 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
   a disk that asked, and booting it again, removed the question on both
   references, and an empty one did too
   ([`bootpath_autoexec00.out`](../../scratchpad/bootpath_autoexec00.out)).
+- **A data disk in the drive at power-on skipped the date question** (fixed
+  2026-10-23, D-STEP7DATE). A disk made for the test with a boot sector whose
+  code only returns, and no system files, got `Enter date` on the CF-3300 and
+  on the VG-8020 + NMS 1200, and BASIC at once on zerobas
+  ([`stepret_plain_cf.out`](../../scratchpad/stepret_plain_cf.out),
+  [`stepret_plain_nms.out`](../../scratchpad/stepret_plain_nms.out)); the
+  CF-3300 asked for an all-zero image as well. On the way, the question turned
+  out to ignore keys for its first two seconds or so: the keyboard was not
+  scanned until a countdown left over from power-on ran out, which BASIC resets
+  only after the question. The question now resets it first
+  ([`step7b_scncnt.out`](../../scratchpad/step7b_scncnt.out)).
 - **A disk taken out during file work** (2026-10-11, D-GETEJECT, D-LINEJECT):
   `GET`, `PUT`, `LINE INPUT #`, `LOAD`, `BLOAD`, `FILES` and `OPEN` all raise
   `Disk offline` (70) in their own line on both machines, so `ON ERROR` sees

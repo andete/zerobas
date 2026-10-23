@@ -251,6 +251,20 @@ br_hl_tmpl:     dw      0
 br_cfop_tmpl:   db      0, 0, 0
                 jp      BR_BACK
 br5_end:
+; bd_step7 / bd_nosig (D-STEP7DATE, 2026-10-23) -- a disk in the drive that did not start
+; MSX-DOS: its boot code RETURNED from step 7 (a data disk's `RET NC` / `RET` stub), or
+; it carries no boot signature at all. Both references then ask the date before BASIC
+; (the CF-3300 `Enter date ( - - ):`, the VG-8020 + NMS 1200 `Enter date (M-D-Y):`)
+; with our own make_test_dsk.py disk (scratchpad/stepret_plain_cf.out,
+; scratchpad/stepret_plain_nms.out), and the CF-3300 for an all-zero image too.
+; boot_date is D-BOOTDATE's question (it skips a disk with an AUTOEXEC.BAS, as both
+; references do) and returns with interrupts masked.
+bd_step7:
+                call    boot_date
+                ei                      ; as the step-7 return always did
+                ret                     ; -> the BIOS boot scan -> BASIC
+bd_nosig:
+                jp      boot_date       ; the scan's masked state kept, as before
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
