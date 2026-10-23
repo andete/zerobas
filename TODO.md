@@ -5093,6 +5093,16 @@ item — do **one item per session** to keep context lean.
       style split's authority), and what does the CF-3300 do with a blank but FORMATTED disk?
       Next by class: ZB-ONLY BREAKER / TestameB / calculus / mb, FILES-DIFF (mostly noise, see
       the first table).
+      📏 **mb.dsk is not ZB-ONLY, it is a BOOT LOOP** (read 2026-10-23, already so on 10-22 --
+      diskcorpus_rerun2.out has the same row): zerobas sits on C-BIOS's start-up screen ("Init
+      ROM in slot: 0") and our INIT runs again every 208 ms -- the boot code is entered at
+      $C01E with Cy = 0 each time with the same SP / AF, the floppy controller polled in
+      between, no step 7, no $4022, no RAM clear (so not a reset). Not D-BOOTREGS: a build of
+      9f818938 loops too, and so does HEAD without the step-5 DE / HL. The disk holds a
+      standard-looking boot sector, AUTOEXEC.BAS and MOONBLAS.* (no MSXDOS.SYS); the CF-3300
+      ends at its prompt. ➡️ What re-enters INIT: does the step-5 call come back to
+      boot_call0 at all (a breakpoint on its return), and who calls our INIT the second time
+      (C-BIOS is our own repack, so its ROM scan may be read).
 
 - [x] 🔀 **D-F37DSLOT — THE $F37D STUB JUMPS INTO RAM WHEN THE CALLER HAS RAM IN PAGES 0 AND 1
       (found 2026-10-22 by D-DISKRUN's f1sp3d-1) — 🔴 PREMISE FALSE, CLOSED THE SAME DAY**
@@ -12513,7 +12523,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38549 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38559 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12679,7 +12689,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17541 (T-6FE392)8 (T-529ABE)` from `TODO.md:30378 (T-529ABE)`: a
+      `TODO.md:17551 (T-6FE392)8 (T-529ABE)` from `TODO.md:30388 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18388,7 +18398,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30378 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30388 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
