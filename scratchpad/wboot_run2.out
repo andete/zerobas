@@ -1,0 +1,11 @@
+### zb (C-BIOS_MSX1_EU_REPACK_DISK)
+   1.000 sample PC=108B SP=F2FE A8=F0 mark=F0
+   2.000 sample PC=108B SP=F2FE A8=F0 mark=F0
+   2.684 JP0 C=00 DE=F368 SP=F2D0 ret=7F3A A8=FF
+   2.684 0005 C=00 DE=F368 SP=F2D0 ret=7F3A A8=FF
+   3.000 sample PC=7AEF SP=F2CE A8=FC mark=5A
+   4.000 sample PC=01CC SP=F2E8 A8=F0 mark=5A
+   5.000 sample PC=01CC SP=F2E8 A8=F0 mark=5A
+   6.000 sample PC=01CC SP=F2E8 A8=F0 mark=5A
+   7.000 sample PC=01CC SP=F2E8 A8=F0 mark=5A
+   8.000 sample PC=01CC SP=F2E8 A8=F0 mark=5A

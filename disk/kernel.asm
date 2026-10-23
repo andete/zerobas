@@ -68,46 +68,24 @@ install_dos_env:
                 ld      a, $C3
                 ld      (WA_JMPTAB), a
                 ld      (WA_JMPTAB + 3), a
+                ld      ($0000), a          ; D-BOOTREGS: the warm boot goes on into the
+                ld      hl, $0005           ; BDOS with the caller's C, as on the CF-3300
+                ld      ($0001), hl         ; before MSXDOS.SYS (scratchpad/wboot_run.out)
                 ld      hl, WA_SEG_ROM
                 ld      (WA_JMPTAB + 1), hl
                 ld      hl, WA_SEG_RAM
                 ld      (WA_JMPTAB + 4), hl
-                jp      install_resident
-
-; --- S10.D: the RANDOM record engine's multiply (hk_dget). Moved here from below
-; the $7F7C pin (runtime.asm) by D-TPAP1, whose RAM templates needed that room.
-
-; mul_reclen -- A:HL := HL * GP_RECLEN, a 24-bit product (D-PUTU32: k is 0..65535
-; and reclen 1..256, so the product is < 2^24). Two cases, because 256 does not
-; fit an 8-bit multiplier: reclen == 256 is k << 8, moved by bytes; reclen < 256
-; is 8 MSB-first steps with k FIXED in BC and the product doubling in A:HL.
-; Clobbers BC, DE (the sub-ROM copy kept BC; no caller here needs it).
-mul_reclen:
-                ld      b, h
-                ld      c, l                ; BC = k
-                ld      de, (GP_RECLEN)
-                ld      a, d
-                or      a
-                jr      z, mr_lt256
-                ld      a, b                ; reclen == 256: A:HL = k << 8
-                ld      h, c
-                ld      l, 0
+                ld      hl, wa_seg_rom_tmpl ; ... and the hook bodies right after br2
+                ld      bc, wa_seg_end_tmpl - wa_seg_rom_tmpl   ; (DE runs on: = WA_SEG)
+                ldir
+                ld      hl, br3_tmpl        ; ... then br3 (D-BOOTREGS)
+                ld      bc, br3_end - br3_tmpl
+                ldir
+                ld      hl, br5_tmpl        ; ... and br5
+                ld      bc, br5_end - br5_tmpl
+                ldir
                 ret
-mr_lt256:                                   ; A = 0; E = reclen (1..255)
-                ld      h, a
-                ld      l, a
-                ld      d, 8
-mr_loop:
-                add     hl, hl
-                rla                         ; A:HL <<= 1
-                sla     e                   ; reclen's top bit -> CF
-                jr      nc, mr_skip
-                add     hl, bc
-                adc     a, 0                ; A:HL += k
-mr_skip:
-                dec     d
-                jr      nz, mr_loop
-                ret
+
                 ds      $4EDE - $, $00  ; pad to the $4EDE kernel veneer
                 jp      k_4EDE          ; $4EDE: COMMAND.COM-load kernel veneer
 ; 📌 In the $4EE1..$4FB8 fill (check_disk_walls: the largest hole, 2026-10-21).
@@ -237,6 +215,42 @@ fmd_tab:        db      2, 112, low 720,  high 720,  2  ; $F8 1 side, 80 tracks,
                 ds      $4FB8 - $, $00  ; pad up to the pinned $4FB8 SFIRST entry
 sfirst:
                 jp      sfirst_body     ; -> free-tail: find FIRST matching dir entry (M19)
+; br5 (D-BOOTREGS) -- br2's shared tail, moved here when br_callf grew: br_go /
+; br_frame put the BIOS into page 0, then [target][frame][caller's $A8][caller's
+; return], every register the caller's. BR_TGT / BR_FRM / BR_HL / BR_CFOP are read
+; before the target runs; the BIOS's CALLF returns through BR_CFOP + 3.
+br5_tmpl:
+br_go_tmpl:
+                ld      (BR_TGT), hl
+                ld      hl, BR_BACK
+br_frame_tmpl:                              ; HL = the frame; stack [HL][return]
+                di
+                ld      (BR_FRM), hl
+                pop     hl
+                push    af
+                push    bc
+                push    de
+                push    hl
+                call    BR_MAININ
+                pop     hl
+                pop     de
+                pop     bc
+                pop     af
+                ld      (BR_HL), hl
+                ld      hl, (PG_SV_A8 - 1)  ; H = the caller's $A8
+                push    hl
+                ld      hl, (BR_FRM)
+                push    hl
+                ld      hl, (BR_TGT)
+                push    hl
+                ld      hl, (BR_HL)
+                ret                         ; -> the BIOS entry
+br_tgt_tmpl:    dw      0
+br_frm_tmpl:    dw      0
+br_hl_tmpl:     dw      0
+br_cfop_tmpl:   db      0, 0, 0
+                jp      BR_BACK
+br5_end:
                 ds      $5006 - $, $00  ; pad up to the pinned $5006 SNEXT entry
 snext:
                 jp      snext_body      ; -> free-tail: find NEXT matching dir entry (M19)
@@ -1034,6 +1048,84 @@ lstout_body:
 
 ; (callf_body_body, the $0030 CALLF handler, was here: D-TPAP1 moved the page-0
 ; entries to page-3 bridges into the main BIOS -- br1_tmpl, pageenv.asm.)
+
+; boot_call0 -- step 5: the boot sector's code at $C01E with Cy = 0 ("custom boot"),
+; under the DOS_TRY mark. 🔴 D-BASENTRUN's other half (2026-10-22): a boot loader may
+; fall back to $4022 from THIS call too, not only from dos_handoff's -- facdemo5's
+; does, and the references ask the date. Without the mark, $4022 took it for a
+; running program and asked nothing (scratchpad/diskcorpus_rerun2.out). The same
+; window as dos_handoff's: the mark as it was comes back if the code returns.
+; Sited here (the old CALLF handler's hole) by D-BOOTREGS, whose DE / HL overflowed the
+; driver.asm fill it had moved to from init.asm.
+boot_call0:
+                ld      hl, (BASENT_REQ)
+                push    hl
+                ld      hl, DOS_TRY
+                ld      (BASENT_REQ), hl
+                ld      de, $F368       ; D-BOOTREGS: DE / HL as the CF-3300 hands them
+                ld      hl, $F323       ; to the boot code at both steps (fray_c01e.out)
+                or      a               ; Cy = 0 -> step-5 "custom boot" call
+                call    BOOT_ENTRY      ; (data-disk default RET NC returns here)
+                pop     hl
+                ld      (BASENT_REQ), hl
+                ret
+; br3 (D-BOOTREGS) -- the fourth piece of the page-3 slot bridges, laid after the hook
+; bodies: $0005 until MSXDOS.SYS lays its own. A boot code may put RAM into page 1
+; ($F368+3) and then call the BDOS -- frayd1.dsk's does, through $F37D, and the
+; CF-3300 answers it (scratchpad/fray_f37d.out). So: the disk ROM in for bdos_entry,
+; and the caller's page 1 (RAM, subslot 0, or this ROM) back after.
+br3_tmpl:
+br_bdos_tmpl:
+                push    af
+                ld      a, (SLTTBL3)
+                and     $0C                 ; the caller's page-1 subslot
+                ld      (BR_P1SV), a
+                pop     af
+                call    WA_SEG_ROM          ; register-transparent
+                call    bdos_entry
+                push    af
+                ld      a, (BR_P1SV)
+                or      a
+                call    z, WA_SEG_RAM       ; it was RAM: RAM again
+                pop     af
+                ret
+br_p1sv_tmpl:   db      0
+br3_end:
+
+; --- S10.D: the RANDOM record engine's multiply (hk_dget). Moved from below the $7F7C
+; pin (runtime.asm) by D-TPAP1, then from the $4E7E hole by D-BOOTREGS: both needed room.
+
+; mul_reclen -- A:HL := HL * GP_RECLEN, a 24-bit product (D-PUTU32: k is 0..65535
+; and reclen 1..256, so the product is < 2^24). Two cases, because 256 does not
+; fit an 8-bit multiplier: reclen == 256 is k << 8, moved by bytes; reclen < 256
+; is 8 MSB-first steps with k FIXED in BC and the product doubling in A:HL.
+; Clobbers BC, DE (the sub-ROM copy kept BC; no caller here needs it).
+mul_reclen:
+                ld      b, h
+                ld      c, l                ; BC = k
+                ld      de, (GP_RECLEN)
+                ld      a, d
+                or      a
+                jr      z, mr_lt256
+                ld      a, b                ; reclen == 256: A:HL = k << 8
+                ld      h, c
+                ld      l, 0
+                ret
+mr_lt256:                                   ; A = 0; E = reclen (1..255)
+                ld      h, a
+                ld      l, a
+                ld      d, 8
+mr_loop:
+                add     hl, hl
+                rla                         ; A:HL <<= 1
+                sla     e                   ; reclen's top bit -> CF
+                jr      nc, mr_skip
+                add     hl, bc
+                adc     a, 0                ; A:HL += k
+mr_skip:
+                dec     d
+                jr      nz, mr_loop
+                ret
 
 bdos_seqread_body:                      ; [bdos_seqread, bsr_have) -> falls into bsr_have
                 ; EOF once every file byte has been delivered (BYTESLEFT == 0).
@@ -3251,8 +3343,9 @@ p0_env_tab:
                 dw      $001C, BR_CALSLT ; RST 18 CALSLT    (br1_tmpl, pageenv.asm)
                 dw      $0024, BR_ENASLT ; ENASLT
                 dw      $0030, BR_CALLF ; RST 30 CALLF
-                dw      $0005, bdos_entry ; BDOS until MSXDOS.SYS lays its own (D-TPAPTAIL:
-                                          ; the $F37D stub's road with RAM in page 0)
+                dw      $0005, BR_BDOS  ; BDOS until MSXDOS.SYS lays its own (D-TPAPTAIL:
+                                        ; the $F37D stub's road with RAM in page 0); the
+                                        ; disk ROM in around it (br3, D-BOOTREGS)
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
@@ -6920,8 +7013,6 @@ wa_seg_set_tmpl:
                 pop     af
                 ret
 wa_seg_end_tmpl:
-WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
-WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
 
 ; f365_iord_tmpl — clean-room body for the fixed disk-work-area slot-read stub at
 ; $F365 (M15 OI-1/§7 pin: unbuilt/FF on ours; §7.1 causally BOUNDS the func-9 STROUT

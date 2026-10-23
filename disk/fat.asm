@@ -993,9 +993,7 @@ bd_prompt:      db      "Enter date (M-D-Y):", 0
 ; br2 (D-TPAP1) -- the third piece of the page-3 slot bridges (see br1_tmpl,
 ; pageenv.asm). br_callf: RST 30h's inline operand is copied to BR_CFOP and the
 ; BIOS's own CALLF reads it there; it returns to BR_CFOP + 3, a `jp BR_BACK`, with
-; the caller's return (past the operand) underneath. br_go / br_frame: the BIOS
-; into page 0, then [target][frame][caller's $A8][caller's return], every register
-; the caller's. BR_TGT / BR_FRM / BR_HL / BR_CFOP are read before the target runs.
+; the caller's return (past the operand) underneath. br_go / br_frame: br5 (kernel.asm).
 br2_tmpl:
 br_callf_tmpl:
                 ex      (sp), hl            ; HL -> slot, lo, hi
@@ -1009,43 +1007,37 @@ br_callf_tmpl:
                 ld      a, (hl)
                 ld      (BR_CFOP + 2), a
                 inc     hl                  ; the caller's return: past the operand
+                ; D-BOOTREGS: an "expanded" slot id whose primary is NOT expanded ($80
+                ; for slot 0 here) is called where it is, no slot switch -- the CF-3300
+                ; before MSXDOS.SYS (scratchpad/bootcallf_run.out); frayd1.dsk's boot
+                ; code asks for $80:$0141 and gets its own program's RAM there.
+                push    hl
+                ld      hl, (BR_CFOP)       ; L = the slot id
+                bit     7, l
+                jr      z, br_cf_bios_tmpl
+                ld      a, l
+                and     $03
+                ld      hl, EXPTBL
+                add     a, l                ; EXPTBL aligned: no page crossing
+                ld      l, a
+                bit     7, (hl)
+                jr      nz, br_cf_bios_tmpl ; really expanded: the BIOS's CALLF
+                pop     hl                  ; HL = past the operand
+                pop     af
+                ex      (sp), hl            ; [past the operand], HL = the caller's
+                push    hl
+                ld      hl, (BR_CFOP + 1)
+                ex      (sp), hl            ; [target][past the operand]
+                ret                         ; called where it is
+br_cf_bios_tmpl:
+                pop     hl
                 pop     af
                 ex      (sp), hl
                 push    hl
                 ld      hl, $0030           ; CALLF
                 ld      (BR_TGT), hl
                 ld      hl, BR_CFOP
-                jr      br_frame_tmpl
-br_go_tmpl:
-                ld      (BR_TGT), hl
-                ld      hl, BR_BACK
-br_frame_tmpl:                              ; HL = the frame; stack [HL][return]
-                di
-                ld      (BR_FRM), hl
-                pop     hl
-                push    af
-                push    bc
-                push    de
-                push    hl
-                call    BR_MAININ
-                pop     hl
-                pop     de
-                pop     bc
-                pop     af
-                ld      (BR_HL), hl
-                ld      hl, (PG_SV_A8 - 1)  ; H = the caller's $A8
-                push    hl
-                ld      hl, (BR_FRM)
-                push    hl
-                ld      hl, (BR_TGT)
-                push    hl
-                ld      hl, (BR_HL)
-                ret                         ; -> the BIOS entry
-br_tgt_tmpl:    dw      0
-br_frm_tmpl:    dw      0
-br_hl_tmpl:     dw      0
-br_cfop_tmpl:   db      0, 0, 0
-                jp      BR_BACK
+                jp      BR_FRAME
 br2_end:
 
                 ; 🔴 NO PINS BETWEEN HERE AND $4C29 (2026-10-15). Thirteen `ds $49xx..$4C25

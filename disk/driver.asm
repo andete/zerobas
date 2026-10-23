@@ -353,23 +353,7 @@ install_p1blit:
                 ld      bc, p1_blit_end - p1_blit_tmpl
                 ldir
                 ret
-; boot_call0 -- step 5: the boot sector's code at $C01E with Cy = 0 ("custom boot"),
-; under the DOS_TRY mark. 🔴 D-BASENTRUN's other half (2026-10-22): a boot loader may
-; fall back to $4022 from THIS call too, not only from dos_handoff's -- facdemo5's
-; does, and the references ask the date. Without the mark, $4022 took it for a
-; running program and asked nothing (scratchpad/diskcorpus_rerun2.out). The same
-; window as dos_handoff's: the mark as it was comes back if the code returns.
-; Sited in this fill because init.asm's region overflowed (an EMPTY disk.rom).
-boot_call0:
-                ld      hl, (BASENT_REQ)
-                push    hl
-                ld      hl, DOS_TRY
-                ld      (BASENT_REQ), hl
-                or      a               ; Cy = 0 -> step-5 "custom boot" call
-                call    BOOT_ENTRY      ; (data-disk default RET NC returns here)
-                pop     hl
-                ld      (BASENT_REQ), hl
-                ret
+; (boot_call0 moved to the kernel's old CALLF-handler hole, D-BOOTREGS.)
 ; hdl_scan -- D-LOADBASE: the first line's body up to its $00, passing over each
 ; constant's bytes (tok_payload); then link deltas from CLINK = L_1. As ctp_scan
 ; in basic/cload.asm: the CF-3300 LOADs a program SAVEd with TXTTAB moved

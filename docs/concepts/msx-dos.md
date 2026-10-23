@@ -42,6 +42,14 @@ set, which on a system disk loads `MSXDOS.SYS` and never returns. A data disk
 returns, and BASIC starts as usual (MSX2 Technical Handbook, chapter 3; the
 contracts are in [spec-diskrom-kernel.md](../../disk/docs/spec-diskrom-kernel.md)).
 
+What the boot program finds at that second call matters to custom boot code,
+and zerobas matches the CF-3300 there since 2026-10-23 (D-BOOTREGS). It is entered
+with `DE=&HF368` and `HL=&HF323`. A jump to `&H0000` goes on into the disk
+system's BDOS with the program's `C` unchanged. The BDOS (through `&H0005` or
+`&HF37D`) answers even after the program has switched RAM into page 1. And an
+inter-slot call (`RST &H30`) to a slot number marked "expanded" whose slot is not
+expanded runs the code where it is, without switching slots.
+
 `MSXDOS.SYS` then loads `COMMAND.COM`, which prints, in order,
 `MSX-DOS version 1.03`, `Copyright 1984 by Microsoft`,
 `COMMAND version 1.08` (on the gates' DOS disk), `Current date is Sun 84-01-01` and
@@ -210,6 +218,18 @@ area on both machines.
 
 ## What we found, and how
 
+- **A disk's boot code took another road after D-TPAP1** (fixed 2026-10-23,
+  D-BOOTREGS). Re-running the disk collection after the page-1 fix showed four
+  `fray` disks stuck where they used to reach their menu. Breakpoints on our own
+  observed addresses, reading only registers and RAM data, found four
+  differences from the CF-3300 in what the boot code finds
+  ([`fray_c01e.out`](../../scratchpad/fray_c01e.out),
+  [`wboot_run.out`](../../scratchpad/wboot_run.out),
+  [`bootcallf_run.out`](../../scratchpad/bootcallf_run.out)): the two
+  registers, the jump at `&H0000`, the BDOS with RAM in page 1, and the
+  inter-slot call to a mis-marked slot. The boot code's `RST &H30` to "slot
+  `&H80`" is answered from RAM on the CF-3300; zerobas had started handing it to
+  the BIOS.
 - **A game's boot loader could not find its own file** (2026-10-21,
   D-BDOSBASIC slice 1). A disk of the collection prints its title, then asks
   the disk system to search for its program, open it and read it; on zerobas

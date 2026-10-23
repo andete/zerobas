@@ -5328,6 +5328,45 @@ item — do **one item per session** to keep context lean.
       And noted, not filed: br_p0in's expanded path is valid from RAM only for a slot whose
       primary is page 3's (true for every slot these machines switch into page 0).
 
+- [x] 🧠 **D-BOOTREGS — A DISK'S BOOT CODE AT STEP 7 FOUND ANOTHER ENVIRONMENT THAN ON THE CF-3300:
+      THE FOUR `fray` DISKS LOST THEIR MENU AFTER D-TPAP1 (found and fixed 2026-10-23)**
+      🎚️ TIER 1 — happy path: booting a disk (a regression D-TPAP1 caused).
+      🤖 **AUTONOMOUS** — measured on both machines, our own boot code and breakpoints on
+      observed addresses (registers and RAM data only; the boot code is RUN, not decoded).
+      📏 The disk-collection re-run after D-TPAP1 ([`diskcorpus_rerun3.out`](scratchpad/diskcorpus_rerun3.out))
+      moved 8 disks to BOTH-RUN and 4 back: frayd1 / frayd1i / frayg1 / frayg1i (all twelve
+      fray images changed road). Bisected on worktree builds: good up to 09517d26, broken at
+      281b563a (D-TPAP1). frayd1's boot code loads its own program (MSXDOS.SYS is a 0-byte
+      file) and found FOUR differences, each measured
+      ([`fray_c01e.out`](scratchpad/fray_c01e.out), [`fray_f37d.out`](scratchpad/fray_f37d.out),
+      [`wboot_run.out`](scratchpad/wboot_run.out), [`bootcallf_run.out`](scratchpad/bootcallf_run.out)):
+      (1) the CF-3300 enters $C01E at both steps with DE = $F368, HL = $F323 (ours 0 / junk);
+      (2) its `JP 0` goes on into the BDOS with the caller's C (ours: FF FF FF there);
+      (3) the boot code switches RAM into page 1 ($F368+3) and then calls the BDOS through
+      $F37D -- ours jumped to bdos_entry in that RAM and each call ran ~3 s of garbage;
+      (4) its `RST 30h` to slot $80 (an "expanded" id; slot 0 is not) at $0141 runs the RAM
+      there (A = $A5 from our own routine), slot $00 the BIOS (A = $FF). D-TPAP1's bridges
+      handed both to the BIOS -- the old page-1 handler had called in place, which is why
+      frayd1 used to work. (4) decided the road: the boot code CALLFs $80:$0141 right after
+      its CLOSE. 🔮 Misses on the way: "the hook bodies at $F756 were clobbered" (moved them
+      anyway, beside the bridges where the CF-3300 keeps its own; not the cause), "the
+      stack sits at ($0006)", "DRVINF", "the warm-boot vector decides" -- each refuted by
+      one run.
+      🔧 (1) boot_call0 / dos_handoff load DE / HL (boot_call0 moved to the kernel hole);
+      (2) install_dos_env lays $0000 = JP $0005; (3) $0005 = JP BR_BDOS, a RAM bridge that
+      brings the disk ROM in for bdos_entry and puts the caller's page 1 back; (4) br_callf
+      calls an expanded-flagged id whose primary is not expanded in place. Two more pieces of
+      bridge (br3 / br5), mul_reclen moved again for room; the RAM block ends at $DF02.
+      bootenv-acceptance (new, probes/disk/disk_probe_bootenv.py) compares DE / HL and both
+      CALLFs with the CF-3300 ([`bootenv_acc.out`](scratchpad/bootenv_acc.out)); frayd1 shows
+      `SELECT => 50Hz` again by the CF-3300's road (BDOS 0 with SP = $003A).
+      📊 **The collection re-scored on this build** ([`diskcorpus_rerun4.out`](scratchpad/diskcorpus_rerun4.out),
+      zerobas re-run against the CF-3300 rows of the first run): BOTH-RUN 108 -> **118**,
+      ZB-NOBOOT 11 -> **1**, no row moved back. Since the 2026-10-22 re-score: DiscStation #32
+      A-D, elite, facdemo5, senigma, starsh2, UR-1 and f1sp3d-1 now run; the four fray disks
+      are back; ss-final went ZB-ONLY -> FILES-EMPTY (both at the prompt). 🔮 "no regression,
+      1-3 improve" (made before this item existed) MISSED both ways: 4 regressed, 8 improved.
+
 - [x] 📍 **D-TXTTAB — A PROGRAM THAT MOVES THE PROGRAM START (POKE TXTTAB, $F676) IS IGNORED: NEW /
       LOAD PUT IT BACK AT $8001 (found 2026-10-22 by D-DISKRUN's megadoom)**
       🎚️ TIER 1 — happy path: `IF PEEK(&HF677)<>X THEN POKE &HF677,X:POKE X*256,0:RUN"loader"` is
@@ -12464,7 +12503,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38500 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38539 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12630,7 +12669,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17492 (T-6FE392)8 (T-529ABE)` from `TODO.md:30329 (T-529ABE)`: a
+      `TODO.md:17531 (T-6FE392)8 (T-529ABE)` from `TODO.md:30368 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18339,7 +18378,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30329 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30368 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

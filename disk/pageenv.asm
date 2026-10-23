@@ -104,11 +104,21 @@ BR_CALSLT       equ     BR1_RAM + (br_calslt_tmpl - br1_tmpl)
 BR_ENASLT       equ     BR1_RAM + (br_enaslt_tmpl - br1_tmpl)
 BR2_RAM         equ     BR1_RAM + (br1_end - br1_tmpl)
 BR_CALLF        equ     BR2_RAM + (br_callf_tmpl - br2_tmpl)
-BR_GO           equ     BR2_RAM + (br_go_tmpl - br2_tmpl)
-BR_TGT          equ     BR2_RAM + (br_tgt_tmpl - br2_tmpl)
-BR_FRM          equ     BR2_RAM + (br_frm_tmpl - br2_tmpl)
-BR_HL           equ     BR2_RAM + (br_hl_tmpl - br2_tmpl)
-BR_CFOP         equ     BR2_RAM + (br_cfop_tmpl - br2_tmpl)
+WA_SEG          equ     BR2_RAM + (br2_end - br2_tmpl)  ; the $F368 hook bodies: right after
+                                ; br2 (install_dos_env's DE runs on) -- no width here: WA_SEG_ROM
+                                ; shares the address and declares none, so one would only DISPUTE
+WA_SEG_ROM      equ     WA_SEG + (wa_seg_rom_tmpl - wa_seg_rom_tmpl)   ; = WA_SEG
+WA_SEG_RAM      equ     WA_SEG + (wa_seg_ram_tmpl - wa_seg_rom_tmpl)
+BR3_RAM         equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)
+BR_BDOS         equ     BR3_RAM + (br_bdos_tmpl - br3_tmpl)
+BR_P1SV         equ     BR3_RAM + (br_p1sv_tmpl - br3_tmpl)
+BR5_RAM         equ     BR3_RAM + (br3_end - br3_tmpl)
+BR_GO           equ     BR5_RAM + (br_go_tmpl - br5_tmpl)
+BR_FRAME        equ     BR5_RAM + (br_frame_tmpl - br5_tmpl)
+BR_TGT          equ     BR5_RAM + (br_tgt_tmpl - br5_tmpl)
+BR_FRM          equ     BR5_RAM + (br_frm_tmpl - br5_tmpl)
+BR_HL           equ     BR5_RAM + (br_hl_tmpl - br5_tmpl)
+BR_CFOP         equ     BR5_RAM + (br_cfop_tmpl - br5_tmpl)
 br1_tmpl:
 br_rdslt_tmpl:
                 push    hl

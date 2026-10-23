@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **438** in the MSX standard work area at or above `$F380`.
-* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **66** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -490,8 +490,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F754` | 1 B | `basic` | `FN_SLOTP` | 1 B: low byte of the slot the NEXT formal takes |  |
 | `$F755` | 1 B | `basic` | `FN_RTYPE` | 1 B: the FN's own resolved type (its result type) |  |
 | `$F756` |  | `basic` | `FN_PAREA/HORNER_G/MATH_T/PU_NUM/RND_LE/SQRT_X` | PRINT USING numeric render buffer, 0-terminated (32 B) |  |
-| `$F756` |  | `disk` | `WA_SEG/WA_SEG_ROM` | base of the two hook bodies -- no width |  |
-| `$F75C` |  | `disk` | `WA_SEG_RAM` |  |  |
+| `$F756` |  | `disk` | `WA_CHAIN` | base of the inter-slot scratch chain (was WA_SEG's) |  |
 | `$F768` |  | `basic` | `MATH_A/RND_STATE/SQRT_Y` | fp_atan's persistent reduced-argument "a" -- |  |
 | `$F771` | 1 B | `disk` | `CONOUT_CHAR` | CONOUT: saved char (1 B) |  |
 | `$F772` | 1 B | `disk` | `PG_SV_A8` | shared: saved $A8 config (1 B) |  |

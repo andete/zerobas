@@ -1,0 +1,3 @@
+STOCK: CALLF $80:$0141 -> A=A5   CALLF $00:$0141 -> A=FF   mark=5A   step 7 entered with DE=F368 HL=F323
+OURS: CALLF $80:$0141 -> A=A5   CALLF $00:$0141 -> A=FF   mark=5A   step 7 entered with DE=F368 HL=F323
+PASS: the boot code's step-7 environment matches the CF-3300 (DE / HL, CALLF to page 0)

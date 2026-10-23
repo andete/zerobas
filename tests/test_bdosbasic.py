@@ -154,7 +154,7 @@ def run():
                                                 mach.cpu.c, mach.cpu.de)))
         m.trap("bdos_entry", lambda mach: log.append(("direct", mach.cpu.c, mach.cpu.de)))
         # D-TPAPTAIL: with RAM in page 0 the stub takes $0005 -- MSX-DOS's own entry, or
-        # (before MSXDOS.SYS) the JP bdos_entry lay_page0_env lays there (checked below)
+        # (before MSXDOS.SYS) the JP BR_BDOS lay_page0_env lays there (checked below)
         m.trap(0x0005, lambda mach: log.append(("dos", mach.cpu.c, mach.cpu.de)))
         m.cpu.io_in = lambda port, p0=page0: (0xF0 | p0) if port & 0xFF == 0xA8 else 0xFF
         m.call(stub, c=0x11, de=0xD020, ix=0x1234, iy=0x5678)
@@ -165,7 +165,7 @@ def run():
             ok = log == [("dos", 0x11, 0xD020)]
         check(ok, f"$F37D stub, {label}: {log} (want {want}; IX/IY kept "
                   f"{m.cpu.ix:04X}/{m.cpu.iy:04X})")
-    # ... and the page-0 table lays $0005 = JP bdos_entry for the boot (D-TPAPTAIL)
+    # ... and the page-0 table lays $0005 = JP BR_BDOS for the boot (D-TPAPTAIL, D-BOOTREGS)
     m = Machine(ROM, SYM, rom_base=DISK_BASE)
     tab, rows = m.addr("p0_env_tab"), []
     while True:
@@ -176,8 +176,8 @@ def run():
         tgt = m.peek(tab + 2, 2)
         rows.append((cell, tgt[0] | tgt[1] << 8))
         tab += 4
-    check((0x0005, m.addr("bdos_entry")) in rows,
-          f"p0_env_tab lays $0005 -> bdos_entry: {[f'{c:04X}->{t:04X}' for c, t in rows]}")
+    check((0x0005, m.addr("BR_BDOS")) in rows,
+          f"p0_env_tab lays $0005 -> BR_BDOS: {[f'{c:04X}->{t:04X}' for c, t in rows]}")
 
     print()
     print("ALL PASS — bdos_entry answers STROUT / SFIRST / SNEXT and sets $F23D"

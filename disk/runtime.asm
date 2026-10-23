@@ -623,6 +623,8 @@ dos_handoff_keep:
                                             ;   shift it into the FDC hole)
                 ld      hl, $0001
                 ld      ($F30D), hl         ; DOS default: $F30D=01, $F30E=00 (date format)
+                ld      de, $F368           ; D-BOOTREGS: the boot code is entered with
+                ld      hl, $F323           ; DE = $F368, HL = $F323, as on the CF-3300
                 scf                         ; Cy = 1 -> step-7 "load the system" entry
                 call    BOOT_ENTRY          ; DOS disk JPs into MSXDOS.SYS (no return)
                 pop     af                  ; data disk returned: recover host $F23B

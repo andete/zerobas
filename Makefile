@@ -2700,6 +2700,12 @@ p1dta-acceptance: repack-machine
 p1vec-acceptance: repack-machine
 	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_p1vec.py
 
+# --- bootenv-acceptance: what a boot code gets at step 7, before MSXDOS.SYS (D-BOOTREGS) ---
+# Our own boot sector records DE / HL at the step-7 call and CALLFs a page-0 target with
+# slot $80 and $00; every answer must equal the CF-3300's (frayd1.dsk relies on both).
+bootenv-acceptance: repack-machine
+	ZEROBAS_BASIC_MACHINE=$(REPACK_MACHINE) python3 probes/disk/disk_probe_bootenv.py
+
 # --- savedate-acceptance: disk BASIC stamps the directory as the CF-3300 (D-WRBLKSEEK (b))
 # Joost 2026-10-01 "Stamp as 3300": SAVE, SAVE ,A and OPEN FOR OUTPUT each stamp
 # date 0821h (1984-01-01), time 0, at the same directory index as the CF-3300.

@@ -1,0 +1,13 @@
+[  1/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayd0.dsk
+[  2/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayd0i.dsk
+[  3/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayd1.dsk
+[  4/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayd1i.dsk
+[  5/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=62333 curlin=    0  frayeng1.xsa
+[  6/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=62333 curlin=    0  frayeng2.xsa
+[  7/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=62333 curlin=    0  frayeng3.xsa
+[  8/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=62333 curlin=    0  frayeng4.xsa
+[  9/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayg0.dsk
+[ 10/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayg0i.dsk
+[ 11/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayg1.dsk
+[ 12/12] BOTH-RUN   -> BOTH-RUN   zb S1 pc=57443 curlin=    0  frayg1i.dsk
+TALLY {"BOTH-RUN": 12}

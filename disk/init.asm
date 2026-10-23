@@ -280,13 +280,18 @@ P1_BLIT         equ     $EFFE   ; installed blit routine (17 B) -- declared
 ; that every unattributed run >= 20 B in ram_map's output turned out to be
 ; occupied when read against that file -- $E700/$E900 are inside
 ; FSECTOR_BUF/FWBUF and LINEBUF $EB00 sits inside the biggest one.
-WA_SEG          equ     $F756   ; base of the two hook bodies -- no width
-                                ; here: WA_SEG_ROM shares the address and
-                                ; declares none, so one would only DISPUTE
+; 🔴 D-TPAP1 (2026-10-23): THE HOOK BODIES LIVE AFTER THE SLOT BRIDGES NOW, in the
+; disk system's resident area (install_dos_env's fourth LDIR; asserted at the end of
+; runtime.asm), not at $F756. A program that has the machine to itself -- frayd1.dsk's
+; loader, run in place of MSXDOS.SYS -- uses BASIC's RAM at $F756 and calls $F368
+; after: it went down with the bodies (scratchpad/fray_bisect.out). The CF-3300 keeps
+; its own in the same resident area. WA_SEG is declared with the bridges (pageenv.asm);
+; the chain below keeps its old base, WA_CHAIN.
+WA_CHAIN        equ     $F756   ; base of the inter-slot scratch chain (was WA_SEG's)
 ; Inter-slot helper scratch (M8/§8.67 CONOUT + A-2/§8.70 int_h): transient page-3 RAM
-; right after the WA_SEG hook bodies — dead during the DOS phase (SP is in page 2/3),
+; in the old hook-body span and after it — dead during the DOS phase (SP is in page 2/3),
 ; written+read within one DI'd call. PG_SV_A8 is shared by both page-0 main-ROM calls.
-CONOUT_CHAR     equ     WA_SEG + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char (1 B)
+CONOUT_CHAR     equ     WA_CHAIN + (wa_seg_end_tmpl - wa_seg_rom_tmpl)  ; CONOUT: saved char (1 B)
 PG_SV_A8        equ     CONOUT_CHAR + 1                              ; shared: saved $A8 config (1 B)
 ; A-2b (tier2-a2b-spec.md): a private interrupt stack so int_h_body is NON-DESTRUCTIVE
 ; when an interrupt fires with a corrupt caller SP (a primary derail) — it never marches
@@ -620,22 +625,9 @@ bwt_loop:
                 ld      (hl), high wa_stub
                 inc     hl
                 djnz    bwt_loop
-                ; Overwrite slots 0/1 with the real segment-switch bodies (§8.58):
-                ; $F368 = map disk ROM into page 1, $F36B = map RAM into page 1. The
-                ; remaining slots ($F36E/$F371/$F374) stay wa_stub -- never CALLed in
-                ; the COMMAND.COM-load->A> trace (ncalls 0); $F377/$F37A unused.
-                ld      hl, WA_JMPTAB + 0   ; $F368 -> wa_seg_rom
-                ld      (hl), $C3
-                inc     hl
-                ld      (hl), low WA_SEG_ROM
-                inc     hl
-                ld      (hl), high WA_SEG_ROM
-                ld      hl, WA_JMPTAB + 3   ; $F36B -> wa_seg_ram
-                ld      (hl), $C3
-                inc     hl
-                ld      (hl), low WA_SEG_RAM
-                inc     hl
-                ld      (hl), high WA_SEG_RAM
+                ; Slots 0/1 ($F368 ROM in, $F368+3 RAM in) get their real bodies at
+                ; every DOS entry since D-TPAP1 (install_dos_env): the bodies are DOS-
+                ; only RAM, so until then all seven are wa_stub here.
                 ; fall through to build the $F348 DRVTBL (same $FF gate)
 ; build_drvtbl — synthesise the four CALLF trampolines in page-3 RAM, then lay the
 ; $F348 DRVTBL pointing at them + our slot + reserved-top + the $4030 work area.

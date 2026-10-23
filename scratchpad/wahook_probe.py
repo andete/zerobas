@@ -44,6 +44,8 @@ proc __h {{t}} {{
   __put [format "%8.3f %s from %04X  %s" [machine_info time] $t $r [{st}]]
   if {{![info exists ::rb($r)]}} {{ set ::rb($r) [debug set_bp $r {{}} [list __ret $r $t]] }}
 }}
+proc __e {{}} {{ __put [format "%8.3f ENTRY C01E  AF=%04X BC=%04X DE=%04X HL=%04X IX=%04X SP=%04X  %s" [machine_info time] [reg af] [reg bc] [reg de] [reg hl] [reg ix] [reg sp] [{st}]] }}
+debug set_bp 0xC01E {{}} {{__e}}
 debug set_bp 0xF368 {{}} {{__h F368_ROM}}
 debug set_bp 0xF36B {{}} {{__h F36B_RAM}}
 after time {end} {{ exit }}
@@ -55,6 +57,7 @@ def main():
     ap.add_argument("--machines", default="ref,zb")
     ap.add_argument("--end", type=float, default=40)
     ap.add_argument("--max", type=int, default=80)
+    ap.add_argument("--image", help="boot this disk image (a /tmp copy) instead of the D-P1DOS disk")
     a = ap.parse_args()
     import probe_tmp
     com = probe_tmp.tmp("p1dta.com")
@@ -63,13 +66,16 @@ def main():
     data = bytes((i * 37 + 11) & 0xFF for i in range(512))
     for m in a.machines.split(","):
         dsk = probe_tmp.tmp(f"wahook_{m}.dsk")
-        shutil.copyfile(RT.DEFAULT_DOS, dsk)
-        img = bytearray(open(dsk, "rb").read())
-        fat12_add(img, "P1DTA", "COM", open(com, "rb").read())
-        fat12_add(img, "P1DATA", "BIN", data)
-        fat12_add(img, "P1SMALL", "BIN", data[:300])
-        fat12_add(img, "AUTOEXEC", "BAT", b"P1DTA\r\n")
-        open(dsk, "wb").write(img)
+        if a.image:
+            shutil.copyfile(a.image, dsk)
+        else:
+            shutil.copyfile(RT.DEFAULT_DOS, dsk)
+            img = bytearray(open(dsk, "rb").read())
+            fat12_add(img, "P1DTA", "COM", open(com, "rb").read())
+            fat12_add(img, "P1DATA", "BIN", data)
+            fat12_add(img, "P1SMALL", "BIN", data[:300])
+            fat12_add(img, "AUTOEXEC", "BAT", b"P1DTA\r\n")
+            open(dsk, "wb").write(img)
         out = probe_tmp.tmp(f"wahook_{m}.txt")
         s = probe_tmp.tmp(f"wahook_{m}.tcl")
         open(s, "w").write(tcl(out, a.end, a.max))

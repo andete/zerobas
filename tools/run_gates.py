@@ -134,7 +134,7 @@ lvfix-acceptance nxary-acceptance nxlist-acceptance play-acceptance
 play-trace-acceptance readvar-acceptance runtail-acceptance sound-acceptance
 sprite-trap-acceptance stop-trap-acceptance strig-trap-acceptance
 subrom-acceptance tgtspc-acceptance width-acceptance eofcas-acceptance wrblkalt-acceptance
-savedate-acceptance dosdate-acceptance strout-acceptance dosbasic-acceptance p1dta-acceptance p1vec-acceptance
+savedate-acceptance dosdate-acceptance strout-acceptance dosbasic-acceptance p1dta-acceptance p1vec-acceptance bootenv-acceptance
 diskfull-acceptance asavechan-acceptance nohash-acceptance ctrlkeys-acceptance
 clearclose-acceptance dout-acceptance prnumwrap-acceptance savetail-acceptance
 loadtail-acceptance inputdn-acceptance bloadofs-acceptance
