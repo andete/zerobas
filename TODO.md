@@ -1709,7 +1709,7 @@ item — do **one item per session** to keep context lean.
       and gated from day one: a switch nothing builds stops working
       (`make switch-build-check`'s history).
 
-- [ ] ⌨️ **D-FLDEI — FIELD / LSET / RSET (AND FORMAT?) RETURN FROM disk.rom WITH
+- [x] ✅ **CLOSED 2026-10-23: MEASURED, NOT A DEFECT (D-FLDEI)** ⌨️ **D-FLDEI — FIELD / LSET / RSET (AND FORMAT?) RETURN FROM disk.rom WITH
       INTERRUPTS OFF (found 2026-10-20 by reading, D-DISKREST's study)**
       🎚️ TIER 3 — common errors (provisional: D-HOOKDI's class; measure how long the
       clock stops before re-tiering).
@@ -1721,6 +1721,14 @@ item — do **one item per session** to keep context lean.
       D-HOOKDI). `format.asm`'s crossing looks the same. ➡️ Measure with
       [`verbclock_probe.py`](scratchpad/verbclock_probe.py)'s method (a loop of LSETs
       against TIME, CF-3300 beside it), then 1 B per site and a knife.
+      📏 **MEASURED 2026-10-23 -- THE CLOCK DOES NOT STOP.** [`verbclock_probe.py`](scratchpad/verbclock_probe.py)
+      rows lset / field / ctrl (OPEN on the line, then 3000 LSETs / FIELDs / plain assignments;
+      [`fldei_before.out`](scratchpad/fldei_before.out)): zerobas keeps **100 %** of the
+      emulated time in TIME on all three, the CF-3300 92-96 %. Whatever the hook's return
+      leaves, the interrupts are back on before the next statement can starve the clock.
+      🔮 "lset / field near 0 on zerobas" MISSED -- a read defect that does not show at run
+      time. RSET shares LSET's path; FORMAT's crossing stays unmeasured (CALL FORMAT is
+      interactive and runs once, it cannot starve a loop).
 
 - [ ] 🧪 **D-VG8020-20 — ALSO RUN THE DIFFERENTIALS AGAINST THE VG 8020/20 (filed
       2026-10-13, Joost: *"add testing against the /20 as something to be done at
@@ -1818,6 +1826,11 @@ item — do **one item per session** to keep context lean.
       last milliseconds before $0000 (a PC ring on zerobas from T280, its own RAM code
       addresses only) -- likely a BASIC / BIOS internal entry it calls (D-BASICINT /
       D-BIOSINT class) on a path the reference survives.
+      📏 2026-10-23 (after D-STEP7DATE / D-KEYREP / D-TPAPTAIL (c) / D-F346): Demonia alone
+      reads **RUNS?**, both at line 50 ([`demonia_rerun.out`](scratchpad/demonia_rerun.out)) --
+      🔮 "still RESET" MISSED: the timing moved again. The latent crash is unchanged in kind;
+      today's layout no longer lands on it, and 2026-10-22's 20-nop reproduction was against
+      another layout. Not chased further without a reproduction on the current build.
       🎚️ TIER 1 — happy path: loading existing software from tape.
       🤖 **AUTONOMOUS** — since 2026-10-14 (it waited on the failing tapes
       themselves): a tester's report (Quibus, relayed by Joost) names ~45 that fail
@@ -6729,7 +6742,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9195 (T-6FE392)8 (T-529ABE)` from `TODO.md:14762 (T-529ABE)`: a
+      `TODO.md:9208 (T-6FE392)8 (T-529ABE)` from `TODO.md:14775 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9650,7 +9663,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14762 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14775 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

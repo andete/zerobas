@@ -47,6 +47,12 @@ VERBS = {
     "dskf":   ([], "X=DSKF(0)"),
     "bsave":  ([], 'BSAVE"B.BIN",&H9000,&HAFFF'),
     "bload":  (['BSAVE"B.BIN",&H9000,&HAFFF'], 'BLOAD"B.BIN"'),
+    # D-FLDEI (2026-10-23): FIELD / LSET through disk.rom's hook, many times on one
+    # line (RUN closes files, so the OPEN is on the line too); ctrl is the same
+    # loop with a plain assignment.
+    "lset":   ([], 'OPEN"R.DAT"AS 1 LEN=64:FIELD 1,64 AS A$:FOR I=1 TO 3000:LSET A$="X":NEXT'),
+    "field":  ([], 'OPEN"R.DAT"AS 1 LEN=64:FOR I=1 TO 3000:FIELD 1,64 AS A$:NEXT'),
+    "ctrl":   ([], 'OPEN"R.DAT"AS 1 LEN=64:FOR I=1 TO 3000:B$="X":NEXT'),
 }
 
 

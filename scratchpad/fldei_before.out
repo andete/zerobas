@@ -1,0 +1,13 @@
+
+=== cf3300 (National_CF-3300, 60 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  lset        16.940   16.050    95%
+  field       23.345   22.450    96%
+  ctrl        10.417    9.533    92%
+
+=== zb (C-BIOS_MSX1_EU_REPACK_DISK, 50 Hz) ===  sizes {'S': 1055, 'M': 7208, 'L': 14369}
+  verb    emulated s   TIME s   kept
+  lset        20.761   20.740   100%
+  field       19.795   19.780   100%
+  ctrl        11.776   11.740   100%
+refcache: 0 hit, 8 miss, 8 stored
