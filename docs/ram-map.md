@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **438** in the MSX standard work area at or above `$F380`.
-* **disk** — 120 declared addresses in this project's own workspace `$E000..$F37F` (111 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -221,6 +221,7 @@ second one is the question a per-component map cannot answer.
 | `$F33D` | 2 B | `disk` | `BASENT_REQ` | D-DOSBASIC: 'B','A' while BASENT restarts BASIC from MSX-DOS, 'B','D' (D-BOOTDATE) from a boot loader's fallback -- disk INIT then keeps the DOS date… |  |
 | `$F340` | 1 B | `disk` | `DOS_F340` | disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B) |  |
 | `$F341` | 4 B | `disk` | `RAMAD0` | RAM-slot id per page ($F341-$F344), MSX2 TH work area |  |
+| `$F346` | 1 B | `disk` | `DOS_F346` | disk work area: MSX-DOS has been booted -- CALL SYSTEM's gate (D-F346) (1 B) |  |
 | `$F347` | 1 B | `disk` | `DRVCNT` | DRVTBL-1: logical-drive count ($02); read by $50D5 (M17) (1 B) |  |
 | `$F348` | 16 B | `disk` | `DRVTBL` | MSX-DOS-1 disk-driver table, $F348..$F357 (§8.22; |  |
 | `$F351` | 2 B | `basic` | `DSKBUF_PTR` | DISK-ONLY: word -> the DSKI$/DSKO$ sector buffer (2) |  |

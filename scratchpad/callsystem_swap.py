@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_preflight                               # noqa: E402
 import probe_tmp                                    # noqa: E402
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
+OMSX_EXTRA = []   # extra launch arguments (scratchpad/f346_probe.py: the NMS 1200 -ext)
 
 
 def script(steps, out):
@@ -44,7 +45,7 @@ def run(machine, boot_dsk, steps, tag):
     open(tcl_path, "w").write(tcl)
     if os.path.exists(out):
         os.unlink(out)
-    cmd = [OMSX, "-machine", machine, "-diska", boot_dsk,
+    cmd = [OMSX, "-machine", machine] + OMSX_EXTRA + ["-diska", boot_dsk,
            "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
     proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL, start_new_session=True)

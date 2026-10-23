@@ -1,0 +1,28 @@
+== data_peek eu Philips_VG_8020
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,255,40,5,1,40)
+   |Ok
+   |PRINT PEEK(&HF346)
+   | 0
+   |Ok
+   |color   auto    goto    list    run
+== dos_peek eu Philips_VG_8020
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,0,37,1,1,37)
+== late_poke eu Philips_VG_8020
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,0,40,6,1,40)
+   |Ok
+   |PRINT PEEK(&HF346)
+   | 0
+   |Ok
+   |POKE &HF346,1:CALL SYSTEM
+== late_plain eu Philips_VG_8020
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,255,40,10,1,40)
+   |Ok
+   |CALL SYSTEM
+   |Illegal function call
+   |Ok
+   |PRINT 12345
+   | 12345
+   |Ok
+   |color   auto    goto    list    run
+== dos_zero eu Philips_VG_8020
+   |(SCRMOD 0; CRTCNT,CNSDFG,LINLEN,CSRY,CSRX,LINL40 = 24,0,37,1,1,37)

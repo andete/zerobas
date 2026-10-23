@@ -1510,6 +1510,34 @@ item — do **one item per session** to keep context lean.
       🔮 Scored: "BOTH-RUN stays 118" MISS (119: mania111 counts as running once it asks); "no
       image newly asks where the CF-3300 does not" HIT; "mania111 now asks" HIT.
 
+- [x] ✅ **DONE 2026-10-23 (D-F346)** 🖥️ **D-F346 — `CALL SYSTEM` GOES BY THE WORK-AREA CELL `&HF346`, AND
+      zerobas KEPT ITS OWN MARK (Joost, 2026-10-23: "if you boot into basic and not into dos
+      first, if you do poke &hf346,1 you can do call system")**
+      🎚️ TIER 3 — common errors: whether `CALL SYSTEM` is allowed, and a documented way round it.
+      🤖 **AUTONOMOUS** — the CF-3300 settles it; work-area reads and typed keys only.
+      📏 [`f346_probe.py`](scratchpad/f346_probe.py) (on [`callsystem_swap.py`](scratchpad/callsystem_swap.py),
+      which swaps the disk mid-session; [`f346_run.out`](scratchpad/f346_run.out)): the CF-3300
+      reads `&HF346` = 0 after a data-disk boot and 255 after DOS -> `A>BASIC`; a data boot, the
+      DOS disk swapped in, `POKE &HF346,1:CALL SYSTEM` reaches `A>` (DIR works); without the
+      POKE `Illegal function call`; `POKE &HF346,0` after a DOS boot: `Illegal function call`.
+      zerobas read 201 (C-BIOS's fill) both ways and went by `DOS_SIG` in BASENT_REQ: the POKE
+      did nothing either way. The VG-8020 + NMS 1200 agrees on the two rows it gave (0 after a
+      data disk; no POKE: `Illegal function call`); its DOS rows came back blank to the text
+      capture, with waits x1.8 too ([`f346_run_eu.out`](scratchpad/f346_run_eu.out)) -- unread,
+      not claimed.
+      Fix: DOS_F346 (disk/equates.inc); cleared with the power-on date seed (NOT on a $4022
+      restart -- the first cut cleared it in set_ramad and A>BASIC read 0), set to 255 by
+      w50a9_stub (MSXDOS.SYS running); hk_system tests it (5 B shorter than the mark compare).
+      BASENT_REQ's DOS_SIG stays for $4022. After: all five rows as the CF-3300
+      ([`f346_after.out`](scratchpad/f346_after.out)). Gate: four rows in
+      callsystem-acceptance (f346data / f346dos / f346poke -- the gate passing is seen as a
+      non-booting disk's Syntax error / f346zero), 4/4 SAME ([`f346_gate.out`](scratchpad/f346_gate.out)).
+      🔪 K-F346 (the DOS_SIG gate back): f346poke and f346zero DIVERGE, 0/2, disk.rom
+      e00e4b85 -> 92caa005 -> e00e4b85 ([`f346_knife.out`](scratchpad/f346_knife.out)).
+      🔮 Scored: the CF-3300 rows as Joost said (0 / 255 / A> / IFC / IFC) HIT; zerobas
+      diverging on the two POKE rows HIT; "all five match after the first cut" MISS (A>BASIC
+      read 0 -- set_ramad runs on the $4022 restart); four gate rows SAME HIT; knife HIT.
+
 - [x] ✅ **DONE 2026-10-23 (D-KEYREP)** ⌨️ **D-KEYREP — THE FIRST KEY AFTER AN IDLE SPELL CAN COME OUT TWICE: A NEW KEY DOES NOT
       RESTART THE AUTO-REPEAT DELAY (found 2026-10-23 by D-STEP7DATE's apparatus)**
       🎚️ TIER 1 — typing at the prompt (a candidate: measure the reference first).
@@ -6690,7 +6718,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9156 (T-6FE392)8 (T-529ABE)` from `TODO.md:14723 (T-529ABE)`: a
+      `TODO.md:9184 (T-6FE392)8 (T-529ABE)` from `TODO.md:14751 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9611,7 +9639,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14723 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

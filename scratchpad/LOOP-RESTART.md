@@ -28,6 +28,7 @@ session and the loop resumes exactly where it stopped.
    BDOS copy); TIER 6 latent, not chased (D-DISKRUN's note).
 4. **mb.dsk** -- 🙋 waiting for Joost (options a/b/c in D-DISKRUN).
 5. ~~D-TPAPTAIL (c)~~ DONE 2026-10-23 (basent_tramp restores RET at $F368 / $F36B).
+6. ~~D-F346~~ DONE 2026-10-23 (Joost's report: CALL SYSTEM goes by &HF346).
 
 **Learned the hard way today:**
 - An uncapped breakpoint log reached the public repo (21 MB, 0b417fb3, trimmed in
@@ -1875,7 +1876,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11122 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11150 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

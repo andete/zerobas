@@ -1,0 +1,6 @@
+# K-F346: hk_system's gate put back to the DOS_SIG mark; disk.rom e00e4b85 -> 92caa005, restored e00e4b85
+ROW f346poke CF=[POKE &HF346,1:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK]] ZB=[POKE &HF346,1:CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] DIVERGES
+ROW f346zero CF=[POKE &HF346,0:CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[POKE &HF346,0:CALL SYSTEM | A>PRINT "[OK]" |               Bad command or file name | A>] DIVERGES
+
+FAIL: CALL SYSTEM (0/2)
+refcache: 0 hit, 4 miss, 4 stored

@@ -18,6 +18,7 @@ DOS_TRY         equ     'T'*256+'D' ; D-BOOTDATE: in BASENT_REQ, 'D','T' = a boo
 BASENT_REQ      equ     $F33D   ; D-DOSBASIC: 'B','A' while BASENT restarts BASIC from MSX-DOS, 'B','D' (D-BOOTDATE) from a boot loader's fallback -- disk INIT then keeps the DOS date and skips the DOS boot; 'BA' leaves DOS_SIG (above) in it, 'BD' asks the date and leaves 0 (2 B; a signature, so power-on RAM cannot match)
 DATE_DAYS       equ     $F33B   ; the DOS date: a day count since 1980-01-01, where the CF-3300 keeps it (1461 = 1984-01-01 from boot; D-DOSDATE) (2 B)
 DOS_F340        equ     $F340   ; disk work-area flag the kernel reads at init (§8.33); $00 = ok (1 B)
+DOS_F346        equ     $F346   ; disk work area: MSX-DOS has been booted -- CALL SYSTEM's gate (D-F346) (1 B)
 RAMAD0          equ     $F341   ; RAM-slot id per page ($F341-$F344), MSX2 TH work area
 HOKVLD          equ     $FB20   ; bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B)
 EXPTBL          equ     $FCC1   ; expanded-slot flags, 1 byte/primary, bit 7 = expanded

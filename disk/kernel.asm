@@ -357,6 +357,8 @@ k_509F:
                 jp      dskrst_body     ; $509F: BDOS $0D DSKRST canonical entry (M22a)
                 ds      $50A9 - $, $00  ; pad remainder up to the kernel's $50A9 target
 w50a9_stub:
+                ld      a, $FF          ; D-F346: MSX-DOS has been booted -- the CF-3300
+                ld      (DOS_F346), a   ; reads 255 after it (scratchpad/f346_run.out)
                 sub     a               ; A=$00, F=$42 (Z+N) -- the exact exit AF
                 ld      (W50A9_WRKB), a ; $F242 := $00  (the only persistent write)
                 ld      de, DOS_SIG     ; D-BOOTDATE: MSXDOS.SYS is running, so the
@@ -3106,9 +3108,10 @@ fmt_menu_text:  db      "1=360k 2=720k? ",0
 ; so the cell is DOS's warm flag, not a "booted DOS" mark.
 ; BASIC's stack ($F380 down, sysvars.inc FN_STK_FLOOR) is already in the area
 ; INIT's boot stack uses, clear of everything the boot loads, so it stays.
-; "Booted into MSX-DOS" is DOS_SIG in BASENT_REQ (MSXDOS.SYS's $50A9 call sets it
-; since D-BOOTDATE -- dos_handoff marks DOS_TRY until then -- and the DOS -> BASIC
-; restart keeps it). 📍 In the fill above `ds $5FE5 - $`, beside hk_format.
+; "Booted into MSX-DOS" is the work-area cell $F346 since D-F346, as on the
+; CF-3300: set_ramad clears it, MSXDOS.SYS's $50A9 call sets it to 255, and a
+; program may POKE it (it was our own DOS_SIG mark in BASENT_REQ, which $4022
+; still uses). 📍 In the fill above `ds $5FE5 - $`, beside hk_format.
 ;   in   STRSCR+1 = main's cursor at the CALL name (basic/format.asm exc_name)
 ;   out  never returns: MSX-DOS, or an error raised in main (DISKOP_ERR, disk_error)
 hk_system:
@@ -3133,12 +3136,15 @@ hsy_end:
                 cp      ':'
                 jp      nz,hsy_syn
 hsy_ok:
-                ld      hl,(BASENT_REQ)
-                ld      de,DOS_SIG
+                ; D-F346 (Joost 2026-10-23: "if you boot into basic and not into dos
+                ; first, if you do poke &hf346,1 you can do call system"): the CF-3300
+                ; goes by the work-area cell $F346 -- 0 after a data-disk boot, 255
+                ; once MSX-DOS ran; POKE 1 then CALL SYSTEM boots DOS, POKE 0 after a
+                ; DOS boot is Illegal function call (scratchpad/f346_run.out).
+                ld      a,(DOS_F346)
                 or      a
-                sbc     hl,de
                 ld      a,5                 ; MSX-DOS never booted: Illegal function call
-                jp      nz,hsy_err
+                jp      z,hsy_err
                 ld      ix,fch_close_all
                 call    calbak              ; close every file, as the CF-3300 does
                 di                          ; D-HOOKDI: calbak returns EI now; the

@@ -14,6 +14,11 @@ and is Illegal function call after a data-disk boot; zerobas said Syntax error.
   dosprog   after DOS: from a program line           -> the same
   dosfile   after DOS: an OPEN output file           -> closed (TYPE shows it)
   doscom    after DOS: COMMAND.COM deleted           -> MSXDOS.SYS asks for it
+  f346data  data disk: PEEK(&HF346)                  -> 0   (D-F346, 2026-10-23)
+  f346dos   after DOS: PEEK(&HF346)                  -> 255
+  f346poke  data disk: POKE &HF346,1:CALL SYSTEM     -> the gate passes, the disk does
+            not boot: Syntax error (Joost: "poke &hf346,1 [and] you can do call system")
+  f346zero  after DOS: POKE &HF346,0:CALL SYSTEM     -> Illegal function call
 
 Each row prints `ROW <name> CF=[...] ZB=[...] <verdict>`.
 Exit 0 all agree; 1 a divergence; 2 the CF-3300 gave no reading / no DOS disk.
@@ -41,6 +46,13 @@ ROWS = {
     "dosfile":  ("dos", TO_BASIC + ['OPEN "X.TXT" FOR OUTPUT AS 1', 'PRINT #1,"HELLO"',
                                     "CALL SYSTEM", "TYPE X.TXT"]),
     "doscom":   ("dos", TO_BASIC + ['KILL "COMMAND.COM"', "CALL SYSTEM"]),
+    # D-F346: CALL SYSTEM goes by the work-area cell $F346 (scratchpad/f346_run.out:
+    # with the DOS disk swapped in, POKE 1 reaches A> -- that row needs a disk swap,
+    # so here the gate is seen passing by the Syntax error of a disk that does not boot).
+    "f346data": ("data", ["PRINT PEEK(&HF346)"]),
+    "f346dos":  ("dos", TO_BASIC + ["PRINT PEEK(&HF346)"]),
+    "f346poke": ("data", ["POKE &HF346,1:CALL SYSTEM", 'PRINT "[OK]"']),
+    "f346zero": ("dos", TO_BASIC + ["POKE &HF346,0:CALL SYSTEM", 'PRINT "[OK]"']),
 }
 
 

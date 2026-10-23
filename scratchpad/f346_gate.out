@@ -1,0 +1,7 @@
+ROW f346data CF=[PRINT PEEK(&HF346) |  0 | color   auto    goto    list    run] ZB=[PRINT PEEK(&HF346) |  0 | color   auto    goto    list    run] SAME
+ROW f346dos CF=[PRINT PEEK(&HF346) |  255 | color   auto    goto    list    run] ZB=[PRINT PEEK(&HF346) |  255 | color   auto    goto    list    run] SAME
+ROW f346poke CF=[POKE &HF346,1:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK]] ZB=[POKE &HF346,1:CALL SYSTEM | Syntax error | PRINT "[OK]" | [OK]] SAME
+ROW f346zero CF=[POKE &HF346,0:CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] ZB=[POKE &HF346,0:CALL SYSTEM | Illegal function call | PRINT "[OK]" | [OK] | color   auto    goto    list    run] SAME
+
+PASS: CALL SYSTEM (4/4)
+refcache: 0 hit, 8 miss, 8 stored

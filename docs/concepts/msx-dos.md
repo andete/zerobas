@@ -147,7 +147,12 @@ area on both machines.
 - **`CALL SYSTEM`** (or `_SYSTEM`) leaves Disk BASIC for MSX-DOS, as on the
   CF-3300 (since 2026-10-09, D-CALLSYSTEM). It works only when the machine
   booted into MSX-DOS first; after a boot from a data disk it is `Illegal
-  function call`. It closes every open file, removes the function-key row,
+  function call`. What it looks at is the work-area byte `&HF346`: 0 after a
+  data-disk boot, 255 once MSX-DOS has run (and still after `A>BASIC`). So
+  after booting straight into BASIC, `POKE &HF346,1` with a system disk in the
+  drive makes `CALL SYSTEM` start DOS, and `POKE &HF346,0` after a DOS boot
+  makes it `Illegal function call` (zerobas since 2026-10-23, D-F346). It
+  closes every open file, removes the function-key row,
   and starts DOS again *warm*: straight to `A>`, with no banner, no date
   question and no `AUTOEXEC.BAT`, and the screen as it was. `MSXDOS.SYS` and
   `COMMAND.COM` are read from the disk again, so the system disk must be in
@@ -223,6 +228,17 @@ area on both machines.
 
 ## What we found, and how
 
+- **`CALL SYSTEM` did not go by `&HF346`** (fixed 2026-10-23, D-F346, from
+  Joost's memory of real machines: *"if you boot into basic and not into dos
+  first, if you do poke &hf346,1 you can do call system"*). Measured with a
+  disk swapped in mid-session: on the CF-3300 the cell reads 0 after a data
+  disk and 255 after DOS, `POKE &HF346,1` then `CALL SYSTEM` reached `A>`, and
+  `POKE &HF346,0` after DOS gave `Illegal function call`. zerobas kept its own
+  record of whether DOS had booted, so both POKEs did nothing
+  ([before and the CF-3300](../../scratchpad/f346_run.out),
+  [after](../../scratchpad/f346_after.out)). The VG-8020 with an NMS 1200 agrees
+  where it could be read (0 after a data disk, `Illegal function call` without
+  the POKE); its rows after a DOS boot came back blank to the text capture.
 - **The two page-1 switches stayed live after `A>BASIC`** (fixed 2026-10-23,
   D-TPAPTAIL (c)). A small routine of our own, run from a `T.BAS` file, called
   `&HF368` and `&HF36B` and recorded the slot registers before and after. On the

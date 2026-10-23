@@ -190,6 +190,8 @@ init:
                 jr      z, boot_disk        ; a BASENT restart keeps the DOS date
                 ld      hl, 1461
                 ld      (DATE_DAYS), hl
+                xor     a                   ; D-F346: MSX-DOS not booted (the CF-3300's
+                ld      (DOS_F346), a       ; 0) -- at power-on only: A>BASIC keeps 255
                 ; fall into the DOS-boot bridge (TH ch.3); it returns to the BIOS
                 ; boot scan, falling through to BASIC for a non-system disk.
                 ; --- intentional fall-through to boot_disk -------------------
