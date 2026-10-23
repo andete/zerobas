@@ -1344,6 +1344,21 @@ item — do **one item per session** to keep context lean.
       ➡️ Next: who CALLS $E47E -- a write watch on page 1 / page 2 RAM for a fake "AB" header
       (a boot loader that lets the BIOS's own ROM scan start it), and what the CF-3300's scan
       does after this boot code's step 5.
+      ✅ **ANSWERED (2026-10-23, [`mb_5e10.out`](scratchpad/mb_5e10.out), [`mb_nms1200.out`](scratchpad/mb_nms1200.out)):
+      the boot code CALLs a FIXED DISK-ROM ADDRESS, $5E10** (breakpoints on every address
+      $5DF8..$5E14, its return $C051 on the stack; DE = $7368, HL = $E646 on both machines). In
+      our ROM $5E10 is the middle of basent_body, so it reaches bb_mark with L = 'F' (HL =
+      $4246, not a mark), copies the restart trampoline to $E470 -- the "$E47E" above -- and
+      restarts; INIT does not recognise the mark and boots again, for ever. And the REFERENCES
+      DISAGREE about $5E10: on the CF-3300 it never returns either and the screen stays blank
+      (SCREEN 1, a BIOS wait loop); on the VG-8020 + NMS 1200 BASIC starts and AUTOEXEC.BAS
+      runs, ending `Illegal function call in 20`. The disk's boot sector is written for one
+      disk ROM's internals; neither reference runs its program.
+      🙋 **FOR JOOST:** zerobas's reboot loop is the worst of the three. Options: (a) pin a
+      $5E10 entry that starts BASIC as the NMS 1200 does (AUTOEXEC.BAS runs), (b) as the
+      CF-3300 does (a blank hang -- faithful to the disk reference, useless), (c) leave it and
+      make only bb_mark robust (any entry there restarts BASIC once instead of looping). Not a
+      style split, so not covered by the VG-8020 ruling.
 
 - [ ] 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
       ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
@@ -6517,7 +6532,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:8983 (T-6FE392)8 (T-529ABE)` from `TODO.md:14550 (T-529ABE)`: a
+      `TODO.md:8998 (T-6FE392)8 (T-529ABE)` from `TODO.md:14565 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9438,7 +9453,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14565 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

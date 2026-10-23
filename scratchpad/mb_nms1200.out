@@ -1,0 +1,12 @@
+== S0 ('10:')  pc=0D82 curlin=FFFF mode=S0
+   |  Illegal function call in 20
+   |  Ok
+   |  color  auto   goto   list   run
+== S1 ('20:')  pc=0D69 curlin=FFFF mode=S0
+   |  Illegal function call in 20
+   |  Ok
+   |  color  auto   goto   list   run
+== S2 ('35:')  pc=0D62 curlin=FFFF mode=S0
+   |  Illegal function call in 20
+   |  Ok
+   |  color  auto   goto   list   run
