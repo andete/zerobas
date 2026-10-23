@@ -465,6 +465,14 @@ alias-order-check:
 	python3 tools/check_alias_order.py --selftest
 	python3 tools/check_alias_order.py
 
+# --- D-FILESIZE (Joost 2026-10-23): no tracked file over 1 MiB outside
+# tools/large-files-allow.txt. 0b417fb3 pushed a 21 MB probe log to the public repo
+# with every gate green; the pre-commit hook (tools/git-hooks/pre-commit, enabled by
+# `git config core.hooksPath tools/git-hooks`) runs the same check on the staged set.
+size-check:
+	python3 tools/check_file_sizes.py --selftest
+	python3 tools/check_file_sizes.py
+
 # --- Layout invariant (D-LAYOUTINV) -------------------------------------------
 # The property a LAYOUT PASS is allowed to preserve: every routine keeps its
 # ORDERED INSTRUCTION SEQUENCE, and only its address and the FORM of its branches

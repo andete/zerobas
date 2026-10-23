@@ -1,0 +1,4 @@
+# tools/large-files-allow.txt -- tracked files allowed over the 1 MiB limit that
+# tools/check_file_sizes.py enforces (the pre-commit hook and `make size-check`).
+# One per line: `path  reason`. Keep it short; every entry is a file that grows.
+TODO.md  the work list itself, ~3 MB; it is text that changes every commit, and git stores it as deltas

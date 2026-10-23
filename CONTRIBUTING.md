@@ -78,6 +78,10 @@ The firewall is easiest to keep if you separate, in time and inputs, the two rol
 
 1. Fork and branch; keep each PR to **one logical change** (the project works one TODO
    item at a time — see [`docs/dev-workflow.md`](docs/dev-workflow.md)).
+   Once per clone, turn on the repository's hooks: `git config core.hooksPath tools/git-hooks`.
+   The pre-commit hook refuses a file over 1 MiB (exceptions in
+   [`tools/large-files-allow.txt`](tools/large-files-allow.txt)); `make size-check` runs the
+   same check over every tracked file.
 2. Build: `make`. Test: `make unit-test` (emulator-free) — and the differential probes
    where applicable. Don't regress the byte-identical crunch probe.
 3. Follow the per-feature checklist in `docs/dev-workflow.md`, including the
