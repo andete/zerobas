@@ -4,7 +4,36 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-22 (updated 14:40) — THE CURRENT ONE (the 2026-10-20 section below holds the 10-20/10-21 RULINGS table -- read it; the 2026-10-15 and 2026-09-24 tables still hold).
+## 🟢 STATE AS OF 2026-10-23 (13:10) — THE CURRENT ONE (the 2026-10-22 section below and its pointers to the RULINGS tables still hold).
+
+**Shipped 10-23** (each with its gate; read the TODO block before building on it):
+- D-TPAP1 -- an MSX-DOS program runs with RAM in page 1; the page-0 slot entries
+  are page-3 bridges into the main BIOS (p1vec-acceptance).
+- D-TPAPTAIL (a) $F37D under DOS and (b) atomic P1_BLIT. (c) is open: measure it
+  with an AUTOEXEC.BAS, not typed lines.
+- D-BOOTREGS -- a boot code's step-7 environment as on the CF-3300
+  (bootenv-acceptance).
+- The disk collection re-scored: BOTH-RUN 118, ZB-NOBOOT 1 (an all-zero image).
+- D-FILESIZE -- the pre-commit hook plus `make size-check`, 1 MiB. Enable the hook
+  per clone with `git config core.hooksPath tools/git-hooks`.
+- The third TODO split: TODO.md 2.9 -> 1.49 MB. Its cap is 1.8 MB in
+  tools/large-files-allow.txt; over it, re-split.
+
+**Pick up here, in order:**
+1. **D-STEP7DATE (TIER 1)**, the apparatus first: one rule in omsx_repl (a disk
+   mounted at launch -> one empty line at boot) plus the raw-Tcl key sequences,
+   committed green on today's ROM. THEN the ROM change. It was built and measured;
+   the TODO block has the exact stubs and the inventory.
+2. **mb.dsk** -- 🙋 waiting for Joost (options a/b/c in D-DISKRUN).
+3. **D-TPAPTAIL (c)**.
+
+**Learned the hard way today:**
+- An uncapped breakpoint log reached the public repo (21 MB, 0b417fb3, trimmed in
+  d0a6fb6e; the history keeps it, rewriting it is Joost's call).
+- `*.log` is gitignored: cite `.out` files.
+- A comment line starting `; --` reads as a section header to the citation audit.
+
+## 🟢 STATE AS OF 2026-10-22 (updated 14:40) — history since 2026-10-23 (the 2026-10-20 section below holds the 10-20/10-21 RULINGS table -- read it; the 2026-10-15 and 2026-09-24 tables still hold).
 
 - 🏗️ **JOOST'S RULINGS SINCE 10-20 (all in the 10-20 table below, plus):** *"Disk test run"*
   (the next step after the ROM-space work, 10-21); *"Check another reference"* (the second disk

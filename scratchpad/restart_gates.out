@@ -1,56 +1,57 @@
 python3 tools/pick_gates.py --run 
 === warm-up (serial build of shared artifacts) ===
-warm-up 10s
+warm-up 13s
 === refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
-=== SKIPPING 169 emulator target(s): --static: the emulator tier was NOT run ===
+=== SKIPPING 172 emulator target(s): --static: the emulator tier was NOT run ===
 === ⏱ kwtime / kwram not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
 === the keyword sweeps are NOT in this run: tiers-md-check reads the PREVIOUS run's pins, kept across the build wipe ===
 === 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
   rc=0              1s  switch-build-check
-  rc=0             11s  diskdep-check
+  rc=0             13s  diskdep-check
   rc=0              0s  wall-literal-check
-  rc=0            103s  selftest-check
-  (post-mutator refresh 10s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
-=== 44 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
-  rc=0              5s  basic-reloc
+  rc=0            125s  selftest-check
+  (post-mutator refresh 13s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 45 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              8s  basic-reloc
   rc=0              0s  deps-check
   rc=0              0s  subrom-abi-check
   rc=0              0s  diskrom-abi-check
   rc=0              0s  rom-parts-check
-  rc=0              1s  subrom-closure-check
-  rc=0            503s  unit-test
+  rc=0              2s  subrom-closure-check
+  rc=0            559s  unit-test
   rc=0              1s  deadcode
-  rc=0              6s  wall-assertion-check
+  rc=0              9s  wall-assertion-check
   rc=0              0s  ram-claim-check
-  rc=0              3s  ram-map-check
-  rc=0              5s  pin-check
+  rc=0              4s  ram-map-check
+  rc=0              8s  pin-check
   rc=0              0s  build-assert-check
-  rc=0              6s  needle-case-check
+  rc=0             11s  needle-case-check
   rc=0              0s  redundant-load-check
   rc=0              0s  stubinl-check
-  rc=0              2s  rowshape-check
-  rc=0              8s  injector-check
+  rc=0              3s  rowshape-check
+  rc=0             14s  injector-check
   rc=0              0s  dead-alias-check
-  rc=0              0s  alias-order-check
-  rc=0              3s  hostkill-check
-  rc=0              1s  session-path-check
-  rc=0              1s  temp-root-check
+  rc=0              1s  alias-order-check
+  rc=0              1s  size-check
+  rc=0              4s  hostkill-check
+  rc=0              3s  session-path-check
+  rc=0              2s  temp-root-check
   rc=0              0s  tracked-inputs-check
-  rc=0              6s  todo-citation-check
+  rc=0              7s  todo-citation-check
   rc=0              1s  todo-marker-check
   rc=0              0s  deferral-pin-check
-  rc=0              1s  error-alphabet-check
-  rc=0              3s  chokepoint-check
+  rc=0              2s  error-alphabet-check
+  rc=0              5s  chokepoint-check
   rc=0              0s  filed-pin-check
-  rc=0              4s  disk-mount-check
+  rc=0              5s  disk-mount-check
   rc=0              0s  shared-body-check
   rc=0              0s  probe-reach-check
   rc=0              0s  battery-membership-check
-  rc=0              0s  fixture-integrity-check
+  rc=0              1s  fixture-integrity-check
   rc=0              0s  hook-equate-check
-  rc=0              1s  preflight-check
-  rc=0              5s  latch-check
-  rc=0             12s  patch-freshness-check
+  rc=0              2s  preflight-check
+  rc=0              8s  latch-check
+  rc=0             16s  patch-freshness-check
   rc=0              5s  refcache-check
   rc=0              0s  knife-guard-check
   rc=0              1s  knife-rom-guard-check
@@ -59,12 +60,17 @@ warm-up 10s
 === 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
   rc=0              0s  tiers-md-check
 
-=== wall 513s (10s build + 502s gates) ===
-GATES: 49/49 green [STATIC TIER ONLY]
-  ⚠️  169 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
+=== wall 573s (13s build + 560s gates) ===
+GATES: 50/50 green [STATIC TIER ONLY]
+  ⚠️  172 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
   ⚠️  this is NOT a full battery; `make gates-full` to force one
-hashes: 14f65904 d71e00a1 17f33f9b 964ce7a3 489db11d
+🔴 BATTERY FAILED ON A POOL WRITE: 1 TRACKED FILE(S) WERE WRITTEN DURING THE PARALLEL POOL. The gate tally above is about the gates; this is about the tree they ran on — 40+ units read these while they changed, and a torn read has no witness of its own.
+     scratchpad/restart_gates.out
+       running at the write: (no unit window covers it — the serial phase, a retry, or something outside the battery)
+     → re-run each named unit ALONE and diff the tree, then put the offender in MUTATORS. A legitimately regenerated path goes in REGENERATED, with its reason.
+hashes: 9bb420f8 20dbc3d2 5f39c947 0559599b 558da8c9
 GATE TIER: STATIC
   why: no ROM, probe or tool change
-  hours since the last full green: 0.1 (full once a day, at every hand-off, and on a RAM-address move)
+  hours since the last full green: 5.6 (full once a day, at every hand-off, and on a RAM-address move)
 GATE TIER RAN: STATIC
+make: *** [gates-scoped] Error 1
