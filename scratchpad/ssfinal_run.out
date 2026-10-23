@@ -1,0 +1,22 @@
+=== National_CF-3300  ss-final.dsk
+  T3 pc=77EC sp=F082 a8=FC p0-bdos=not-RAM ramad=ffffffff exptbl=00000080 slttbl=00000004 himem=80f3
+  T4 pc=77BC sp=EEBB a8=FC p0-bdos=not-RAM ramad=00000000 exptbl=00000080 slttbl=00000004 himem=bff1
+  T5 pc=77BB sp=EEBB a8=FC p0-bdos=not-RAM ramad=00000000 exptbl=00000080 slttbl=00000004 himem=bff1
+  T6 pc=77F3 sp=EEBD a8=FC p0-bdos=not-RAM ramad=00000000 exptbl=00000080 slttbl=00000004 himem=bff1
+  T7 pc=01BE sp=DC91 a8=FC p0-bdos=not-RAM ramad=00000000 exptbl=00000080 slttbl=00000004 himem=93df
+  T8 pc=029E sp=DC87 a8=FC p0-bdos=not-RAM ramad=83008383 exptbl=00000080 slttbl=00000004 himem=93df
+  T10 pc=7957 sp=F4D9 a8=FF p0-bdos=0 ramad=83838383 exptbl=00000080 slttbl=00000004 himem=93df
+  T12 pc=13AC sp=D7FC a8=FF p0-bdos=0 ramad=83838383 exptbl=00000080 slttbl=00000000 himem=93df
+  T16 pc=13B3 sp=D7FC a8=FF p0-bdos=0 ramad=83838383 exptbl=00000080 slttbl=00000000 himem=93df
+  T20 pc=13AA sp=D7FC a8=FF p0-bdos=0 ramad=83838383 exptbl=00000080 slttbl=00000000 himem=93df
+=== C-BIOS_MSX1_EU_REPACK_DISK  ss-final.dsk
+  T3 pc=195E sp=F511 a8=FC p0-bdos=not-RAM ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T4 pc=DDAE sp=F51D a8=FF p0-bdos=c3b2de ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T5 pc=1955 sp=F503 a8=FC p0-bdos=not-RAM ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T6 pc=18F1 sp=F507 a8=FC p0-bdos=not-RAM ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T7 pc=DDB6 sp=F66D a8=FC p0-bdos=not-RAM ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T8 pc=DDBA sp=F66D a8=FC p0-bdos=not-RAM ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T10 pc=7AF4 sp=F66D a8=FF p0-bdos=c3b2de ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T12 pc=7AFA sp=F669 a8=FF p0-bdos=c3b2de ramad=83838383 exptbl=00000080 slttbl=00000004 himem=77de
+  T16 pc=83AB sp=DEAE a8=FF p0-bdos=c3b2de ramad=83838383 exptbl=00000080 slttbl=00000000 himem=77de
+  T20 pc=83AB sp=DEAE a8=FF p0-bdos=c3b2de ramad=83838383 exptbl=00000080 slttbl=00000000 himem=77de

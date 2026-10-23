@@ -1313,8 +1313,18 @@ item — do **one item per session** to keep context lean.
       ss-final.dsk went FILES-EMPTY -> ZB-ONLY between re-run 4 and HEAD, independent of the ROM
       half (today's ROM does the same). The CF-3300 and re-run 4's zerobas stop at its own
       `FATAL ERROR  Not enough free memory found (at least 32kB)` under MSX-DOS; HEAD's zerobas
-      passes that check and loads on. Candidates: the commits after re-run 4 (D-TPAPTAIL (b)'s
-      P1_BLIT, D-BOOTREGS's tail). ➡️ Measure the TPA top ($0006) on both, read before fixing.
+      passes that check and loads on. 📏 **BISECTED (2026-10-23, [`ssfinal_bisect.out`](scratchpad/ssfinal_bisect.out)):**
+      0b417fb3 stops at the error, 1c884267 -- D-TPAPTAIL (b), P1_BLIT made atomic -- runs on.
+      Both return from the copy with the caller's interrupt state; the only change is that no
+      interrupt lands INSIDE the page-1 copy now. So the program's outcome hangs on interrupt
+      timing inside a BDOS transfer. [`ssfinal_probe.py`](scratchpad/ssfinal_probe.py)
+      ([`ssfinal_run.out`](scratchpad/ssfinal_run.out); RAM and work area only, page 0 read only
+      while it is the RAM slot RAMAD0 names): under the program, the CF-3300's page-0 RAM holds
+      `00 00 00` at $0005, zerobas's still `JP $DEB2` -- different code paths from 10 s on.
+      The program misdetects the CF-3300 itself ("Turbo-R", "V9958"). 🎚️ TIER 6 latent, not
+      chased: what it measures is inside third-party code, and the black-box route is a
+      reference measurement of interrupts DURING a BDOS disk transfer into page 1 (our own
+      test program on a DOS disk: count JIFFY across a long random-block read with EI).
       Next by class: ZB-ONLY BREAKER / TestameB / calculus / mb, FILES-DIFF (mostly noise, see
       the first table).
       📏 **mb.dsk is not ZB-ONLY, it is a BOOT LOOP** (read 2026-10-23, already so on 10-22 --
@@ -6667,7 +6677,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9133 (T-6FE392)8 (T-529ABE)` from `TODO.md:14700 (T-529ABE)`: a
+      `TODO.md:9143 (T-6FE392)8 (T-529ABE)` from `TODO.md:14710 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9588,7 +9598,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14700 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14710 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

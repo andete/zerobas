@@ -1,0 +1,6 @@
+# ss-final.dsk, zerobas only (scratchpad/diskcorpus_run.py --reuse-ref, --only ss-final), 2026-10-23.
+# Each commit's tree built with `make repack-machine` in a throwaway worktree; HEAD reinstalled after.
+0b417fb3 (D-BOOTREGS, re-run 4's tree)        FILES-EMPTY  pc=5090  last rows: ['        memory found (at least', '  32kB)']
+1c884267 (D-TPAPTAIL (b): P1_BLIT atomic)     ZB-ONLY      pc=33707  last rows: ['    @\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ @', '      @     Z      @\\\\\\\\\\\\\\\\\\\\']
+84137e8c (today's ROM before D-STEP7DATE)     ZB-ONLY      pc=33707  last rows: ['    @\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ @', '      @     Z      @\\\\\\\\\\\\\\\\\\\\']
+ROM half of D-STEP7DATE (fa9488b7)            ZB-ONLY      pc=33707  last rows: ['    @\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ @', '      @     Z      @\\\\\\\\\\\\\\\\\\\\']
