@@ -147,7 +147,7 @@ set a symbol that is about to stop existing. Concretely:
   `IF $ < BASIC_ORG`. The `$8000` ceiling guard's diagnostic symbol
   `BASIC_IMAGE_OVERRAN_8000_CEILING__GATE_FEATURE_ON_ROM_BASE_OR_TRIM` loses its now-
   meaningless advice → `…__TRIM_IT_OR_EVICT_TO_SUBROM`.
-* [`basic/main-reloc.asm`](basic/main-reloc.asm) is **deleted**. `sub/sub.asm`'s
+* `basic/main-reloc.asm` (deleted by 19e8bfde) is **deleted**. `sub/sub.asm`'s
   `ROM_BASE equ $2812` is deleted (nothing reads it once the shared includes are folded;
   `SUB_BUILD` stays — it gates a genuinely two-sided `*-body.inc`).
 * Makefile: `$(RELOC_SYM)`, `$(RELOC_ROM)` and `$(MAIN_ROM)` retarget from

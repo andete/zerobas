@@ -1640,7 +1640,7 @@ Option A implementation is GATED behind that audit passing. Next-action board up
 
 **[M13 — CONIN Option A implemented (user go-ahead 2026-07-01). Tier-1 green, garbage spin GONE.]**
 · **what I did:** implemented `tier2-conin-spec.md` v3 Option A: a `jp conin_line_body` veneer at the
-pinned CALL target `$50E0` ([kernel.asm](kernel.asm)), consuming our own `$00` dead region (net-zero,
+pinned CALL target `$50E0` ([kernel.asm](../kernel.asm)), consuming our own `$00` dead region (net-zero,
 `disk.rom` still 16384 B); the body (`conin_line_body`, [runtime.asm](../runtime.asm)) reimplements the
 published BDOS func-`$0A` buffered-line read clean-room: per-char inter-slot CHGET (`$009F`) via the
 existing `pg0_mainrom_in/out` bridge, CR ends the line, BS edits back one char, else echo via

@@ -499,7 +499,7 @@ green row that had agreed for the wrong reason for its whole life, and it took a
    measurement it cites is real but does not support "invalidate"; §2.2.
 4. **`docs/spec-basic-direct-ctrl.md` §5** — add a pointer: the typed-break rule
    is *"records nothing"*, not *"invalidates"*.
-5. **[`probes/basic/basic_probe_cont.py`](../probes/basic/basic_probe_cont.py)** —
+5. **`probes/basic/basic_probe_cont.py` (deleted by 5c300c74)** —
    ⚠️ **found broken during this spec**: it is wired into **no** make target, its
    `run(cart, …)` calls reference a `cart` global that the lean-cart retirement
    deleted (an instant `NameError`), and its case (e) asserts *"CONT after a

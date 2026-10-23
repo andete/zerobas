@@ -63,14 +63,14 @@ tenant-side re-split closed the last 23 B.
 ## 4. Carve 2 — `fat_io_append`'s resume-point tail (+131 B)
 
 `fia_walked` … `fia_bytes_m1` → **fatprim-tenant row
-`DISKOP_SEL_FIA_WALKED` = 18** ([sub/fiawalk.asm](../sub/fiawalk.asm)); no new
+`DISKOP_SEL_FIA_WALKED` = 18** (`sub/fiawalk.asm` (deleted by 21f76704; now [`hk_dpbsave`](../disk/kernel.asm))); no new
 tenant index, the G4 `fat_rand_*` pattern.
 
 - **Why it qualifies:** it is pure arithmetic over `FAT_*`/`FWR_*` and
   `FSECTOR_BUF` and **calls nothing at all**; every path returns `Cy = 0`, so the
   resident shim needs no status marshalling.
 - Body shared verbatim with the lean cart:
-  [basic/fiawalked-body.inc](../basic/fiawalked-body.inc).
+  `basic/fiawalked-body.inc` (deleted by 21f76704; now [`hk_dpbsave`](../disk/kernel.asm)).
 - Measured $7EE9 → **$7E66** (410 B free).
 
 ## 5. The last 23 B — a tenant-side re-split, not a third carve

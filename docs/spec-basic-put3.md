@@ -180,7 +180,7 @@ with D-FLDWIDTH's domain rows, not here.
    cumulative resource, not per-`FCB` state. The path is narrowed but not read:
    `ex_put` ([`basic/field.asm`](basic/field.asm)) is stack-balanced, so the
    subject is inside `fat_rand_put`
-   ([`basic/randio-body.inc`](basic/randio-body.inc)) and its chain —
+   (`basic/randio-body.inc` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) and its chain —
    `frnd_locate`, which extends the cluster chain with `GP_FLAGS=1`, and the
    `fat_dir_update` tail.
 2. Only then re-take §2's rows on zerobas at `LEN=100`, and price the validator.

@@ -143,7 +143,7 @@ was reset". Its call sites are, in full:
 | `new_prog` ([`basic/program.asm:285`](../basic/program.asm:285)) | `NEW`, cold `init`, `LOAD` |
 | `run_prog` ([`basic/program.asm:300`](../basic/program.asm:300)) | `RUN` |
 | `clr_done` ([`basic/clear.asm:93`](../basic/clear.asm:93)) | `CLEAR` — and `MAXFILES`, via `jp clr_done` |
-| `relink` ([`basic/lineedit-body.inc:217`](../basic/lineedit-body.inc:217), and the sub-ROM tenant [`sub/lineedit.asm:642`](../sub/lineedit.asm:642)) | every program EDIT, `MERGE`, `CLOAD`/`LOAD` |
+| `relink` (`basic/lineedit-body.inc:217` (deleted by b58f34b7), and the sub-ROM tenant [`sub/lineedit.asm:642`](../sub/lineedit.asm:642)) | every program EDIT, `MERGE`, `CLOAD`/`LOAD` |
 
 That set is the measured set, 1:1. So the fix is not an addition — it is a
 **MOVE**: `run_prog`'s existing `ONELIN:=0` goes down into `vars_reset`, where

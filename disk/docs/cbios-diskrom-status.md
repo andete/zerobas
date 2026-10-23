@@ -22,7 +22,7 @@ machine rather than C-BIOS itself.
 
 `reference/cbios/disk/disk.asm` builds `cbios_disk.rom`, but its core routine is
 explicitly incomplete — `; NOTE: This routine is still stubbed` sits directly above
-`dskio:` ([disk.asm:253](../reference/cbios/disk/disk.asm)).
+`dskio:` (`disk.asm:253` (upstream C-BIOS `disk/disk.asm`, not in this tree)).
 
 Despite the file header ("based on WD2793 FDC"), the code does **not** talk to a
 floppy controller. `dskio` implements a **"ROM disk"**: sectors are served from a
@@ -35,7 +35,7 @@ sits a partial BDOS jump table (`SETDTA`, `RDABS`, `DSKRST`, `CURDRV`, partial
 What it does **not** do:
 
 - **No writing** — `dskio_write` unconditionally returns a write-protect error
-  (`xor a; scf`, [disk.asm:390](../reference/cbios/disk/disk.asm)).
+  (`xor a; scf`, `disk.asm:390` (upstream C-BIOS `disk/disk.asm`, not in this tree)).
 - **No real FDC** — no controller driver; the "disk" is a baked-in ROM image.
 - Open in-code TODOs about sectors crossing a page boundary and which slot to load
   into.
@@ -123,7 +123,7 @@ upstream merges.
 
 ## Sources
 
-- C-BIOS source + git history: [`reference/cbios/disk/disk.asm`](../reference/cbios/disk/disk.asm),
+- C-BIOS source + git history: `reference/cbios/disk/disk.asm` (upstream C-BIOS `disk/disk.asm`, not in this tree),
   `cbios/cbios` commit log (2004–2018)
 - [C-BIOS Association status page](https://cbios.sourceforge.net/)
 - msx.org forum: [*Status of cbios development regarding disks*](https://www.msx.org/forum/msx-talk/development/status-cbios-development-regarding-disks) (2013)

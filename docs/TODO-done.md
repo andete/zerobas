@@ -2395,7 +2395,7 @@ point into it are checked by `make todo-citation-check`.
       [`docs/repricing-page1-2026-08-19.md`](docs/repricing-page1-2026-08-19.md)
       §3.2.
       There is no accessor to borrow — `load_reclen`
-      ([`basic/randio-body.inc:270`](basic/randio-body.inc:270)) is **sub-ROM**
+      (`basic/randio-body.inc:270` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) is **sub-ROM**
       (`sub/randio.asm:47`) and not callable from `ex_field`, and `GP_RECLEN` is
       only loaded at GET/PUT time so reading it here reads a stale cell.
       🔴 **AND ITS DENOMINATOR IS NOT BUILT.** Every row above uses the
@@ -6723,7 +6723,7 @@ stub this supports: `CLEAR …,&Hxxxx : SCREEN n : BLOAD"…",R` or
       The reference stamps at `CLOSE` with the same value, and the **round trip
       agrees**, so no BASIC program can observe the difference. It is a *when*,
       not a *what*. zerobas's `fat_rand_put` tails into `jp fat_dir_update`
-      ([`basic/randio-body.inc:373`](basic/randio-body.inc:373)) and stamps on
+      (`basic/randio-body.inc:373` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) and stamps on
       every `PUT`; the reference defers to `CLOSE`.
       🔴 **AND THE RULE ITSELF HAD BEEN AGREEING FOR TWO REASONS AT ONCE.** The
       characterization's `recno × reclen` rested on the single **256** — but
@@ -17719,7 +17719,7 @@ the section headings they were written beneath.
       either. `FILES` and `LFILES` share `do_files` and the `tnt_files` walk
       entirely — only the sink and the layout branch on `DISKOP_OP` — so both
       defects lived in `df_end` / `df_emit`
-      ([`sub/dirverb.asm`](sub/dirverb.asm)).
+      (`sub/dirverb.asm` (deleted by 347452e0; now [`hk_dsk`](../disk/kernel.asm))).
       | arm | before | after | CF-3300 |
       |---|---|---|---|
       | `FILES"PROG.BIN"` then `POS(0)` | next row, col 6 | **col 19** | col 19 |
@@ -18157,7 +18157,7 @@ the section headings they were written beneath.
       `ex_get` came LAST when all 135 handlers were ranked by comment density.
       Reading it end to end: the record number is `eval`'d and stored RAW, and —
       per D-VDPDOM's rule, read the CONSUMER — `fat_rand_get`
-      ([`basic/randio-body.inc`](basic/randio-body.inc)) rejects a nonzero HIGH
+      (`basic/randio-body.inc` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) rejects a nonzero HIGH
       byte and a zero low byte, i.e. it enforces **1..255**.
       | row | cf3300 | zb |
       |---|---|---|
@@ -18193,7 +18193,7 @@ the section headings they were written beneath.
         `gp_common` already calls. It lives in page-3 RAM, so the sub-ROM tenant
         sees it too; `ev_ff_lof` reads exactly this for `LOF(#n)`.
       - **The offset is already computed.** `frnd_calc`
-        ([`basic/randio-body.inc`](basic/randio-body.inc)) does
+        (`basic/randio-body.inc` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) does
         `HL = (recno-1) * reclen` via `mul_reclen`, and its own comment pins
         `byteoffset < 32768`.
       - **So the test is a comparison, not arithmetic**: if `FAT_FILESIZE`'s HIGH
@@ -18366,7 +18366,7 @@ the section headings they were written beneath.
       exactly `byteoffset >> 9` for **any** 16-bit byteoffset — H stays 0 because
       `65535>>9` is 127, not because the offset is under 32768 — and `ld a,h /
       and 1` is `& 511` unconditionally. The comment is corrected in
-      [`basic/randio-body.inc`](basic/randio-body.inc); the real 16-bit bound is
+      `basic/randio-body.inc` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm)); the real 16-bit bound is
       `mul_reclen`'s silently-wrapping `add hl,bc`
       [[a-justification-parenthesis-is-an-unrun-claim]].
       ➡️ **The cap-lifting itself is now the item below.**
@@ -23236,10 +23236,10 @@ the section headings they were written beneath.
       and much more answerable question than the one this entry was filed with.
       ✅ **ANSWERED 2026-09-07 (D-FILESGUARD) — IT IS THE SECOND, AND IT IS
       STRUCTURAL. NO `FILES` ROW CAN EVER PIN THIS GUARD.**
-      [`sub/dirverb.asm`](sub/dirverb.asm) reads `DISKOP_OP` at FOUR sites past
-      the dispatch — [:260](sub/dirverb.asm:260) (trailing CR/LF),
-      [:297](sub/dirverb.asm:297) (field layout), [:349](sub/dirverb.asm:349)
-      (the printer's own space) and [:375](sub/dirverb.asm:375) (the SINK,
+      `sub/dirverb.asm` (deleted by 347452e0; now [`hk_dsk`](../disk/kernel.asm)) reads `DISKOP_OP` at FOUR sites past
+      the dispatch — `:260` (trailing CR/LF),
+      `:297` (field layout), `:349`
+      (the printer's own space) and `:375` (the SINK,
       `CHPUT` vs `LPTOUT`) — and **every one is the same binary test,
       `cp DISKOP_SEL_LFILES`**. `DISKOP_SEL_FILES` is **2**,
       `DISKOP_SEL_LFILES` is **3**, the clobber is **7**. 2 and 7 are both
@@ -25145,7 +25145,7 @@ the section headings they were written beneath.
       ⚠️ ONE REFERENCE (Disk BASIC; a diskless VG-8020 cannot express it).
       📏 **SCOPED 2026-09-06 (D-RECLENSCOPE): SPACE IS NOT THE BLOCKER, AND THE
       ENTRY NEVER NAMED A REGION.** The bodies are in
-      [`basic/randio-body.inc`](basic/randio-body.inc:323), included at exactly
+      `basic/randio-body.inc` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm)), included at exactly
       ONE site — `sub/randio.asm:47`, itself included at `sub/sub.asm:762`, i.e.
       **sub page 1, 920 B free (2026-09-06)**. `basic/field.asm`'s
       `fat_rand_put`/`fat_rand_get` are 5-byte trampolines

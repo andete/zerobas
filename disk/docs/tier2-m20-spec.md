@@ -371,7 +371,7 @@ explains why Revision 2's `IY`/`DPB+19` wiring changed nothing: those reads (sto
 nothing downstream of the handler's `ret` ever consults them. Causally proven (not just
 inferred): poking `$F306:=0` at the exit-path anchor flips the branch and the handler's
 real `HL` survives to `$C6C5` unmodified. Corroboration already in-tree: `gdate_handler`
-([kernel.asm](kernel.asm)) already clears `$F306` — previously commented "stock parity,
+([kernel.asm](../kernel.asm)) already clears `$F306` — previously commented "stock parity,
 harmless"; it is in fact load-bearing, and the only reason GDATE's `HL=year` reaches its
 caller. Full investigation (all probe commands + trace dumps): tier2-review-queue.md M20
 entries.

@@ -358,7 +358,7 @@ The statements are parsed in the main ROM
 tenant over `DSKIO`. `FILES`, `KILL`, `NAME`, `COPY` and `DSKF` cross to the
 disk ROM through hooks (`H_FILE` … `H_DSKF`) answered by `hk_files` …
 `hk_dskf` in [disk/kernel.asm](../../disk/kernel.asm); raw sectors move in
-[sub/dirverb.asm](../../sub/dirverb.asm). Error texts 50–65 are in
+`sub/dirverb.asm` (deleted by 347452e0; now [`hk_dsk`](../../disk/kernel.asm)). Error texts 50–65 are in
 [sub/errmsg.asm](../../sub/errmsg.asm), 66 and 68–70 in the disk ROM's
 `hk_errp`, reached through `H.ERRP`.
 

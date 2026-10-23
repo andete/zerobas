@@ -195,12 +195,12 @@ the formula had been agreeing with both rules at once. And `rnd_put_big` reads
 2048 in all four columns: **no truncation, no data loss**, on either machine.
 `max()` is pinned by the PAIR (`rand_put` grows 0 → 256; `rnd_put_big` does not
 shrink), not by either row alone. zerobas's `frnd_update_size`
-([`basic/randio-body.inc:381`](../basic/randio-body.inc:381)) is a genuine
+(`basic/randio-body.inc:381` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))) is a genuine
 `max()` — `ret c` / `ret z` before the store — which is *why* it could not
 shrink.
 
 **Mechanism, both sides:** zerobas's `fat_rand_put` tails into
-`jp fat_dir_update` ([`basic/randio-body.inc:373`](../basic/randio-body.inc:373)),
+`jp fat_dir_update` (`basic/randio-body.inc:373` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))),
 stamping on every `PUT`; the reference defers to `CLOSE`.
 
 ### Knives

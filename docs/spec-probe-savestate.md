@@ -39,7 +39,7 @@ SPDX-License-Identifier: 0BSD
 
 **Date:** 2026-08-24. **Files:** [`probes/lib/omsx_repl.py`](../probes/lib/omsx_repl.py)
 (`make_savestate` + the `state_load` path in `_tcl`/`_run_batch`),
-[`probes/lib/savestate_check.py`](../probes/lib/savestate_check.py) (the standing
+`probes/lib/savestate_check.py` (deleted by e50c2331) (the standing
 correctness gate), [`Makefile`](../Makefile) (`savestate-check`),
 [`tools/run_gates.py`](../tools/run_gates.py) (battery registration).
 

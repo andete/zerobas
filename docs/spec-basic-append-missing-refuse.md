@@ -85,7 +85,7 @@ one of those two is wrong.
 | 3 | [`files.asm:1331`](../basic/files.asm:1331) `NAME`'s old file | Cy=1 → error | refuses | ✅ correct |
 | 4 | [`cload.asm:1068`](../basic/cload.asm:1068) cassette-side find | Cy=1 → error | — | ✅ correct |
 | 5 | [`sub/fatprim.asm:148`](../sub/fatprim.asm:148) tenant dispatch | marshals Cy back | — | ✅ transport, not policy |
-| 6 | [`randio-body.inc:72`](../basic/randio-body.inc:72) `fat_rand_open` → `fro_create` | **creates** | `rand_new`: ref `dir` = **0**, i.e. the reference CREATES | ✅ **intentional** |
+| 6 | `randio-body.inc:72` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm)) `fat_rand_open` → `fro_create` | **creates** | `rand_new`: ref `dir` = **0**, i.e. the reference CREATES | ✅ **intentional** |
 | 7 | [`fat.asm:282`](../basic/fat.asm:282) `fat_io_append` | **creates** | `append_new`: ref `dir` = **absent** | 🔴 **the defect** |
 
 The other `fat_io_create` callers do not consult a miss at all and are creates by

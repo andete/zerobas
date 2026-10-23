@@ -175,7 +175,7 @@ the `CLOSE` actually ran. A row whose only reading is `dir` cannot tell "the
 the same number.
 
 **The mechanism, both sides.** zerobas's `fat_rand_put` tails into
-`jp fat_dir_update` ([`basic/randio-body.inc:373`](../basic/randio-body.inc:373)),
+`jp fat_dir_update` (`basic/randio-body.inc:373` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm))),
 so it rewrites the entry on *every* `PUT`; the reference defers it to `CLOSE`.
 
 **And §3's formula needed separating, not just stating.** The rule was written up
@@ -241,7 +241,7 @@ defect, not a `LOF` one. Filed in [`TODO.md`](../TODO.md).
   "at CLOSE", citing
   [`basic/fat-prim-body.inc:1247`](../basic/fat-prim-body.inc:1247). True on the
   SEQUENTIAL path and incomplete on the RANDOM one — `fat_rand_put` tails into
-  `jp fat_dir_update` ([`basic/randio-body.inc:373`](../basic/randio-body.inc:373))
+  `jp fat_dir_update` (`basic/randio-body.inc:373` (deleted by c577b59c; now [`hk_dget`](../disk/kernel.asm)))
   and stamps on every `PUT`. The conclusion the bullet draws is unaffected (the
   stamp reads `FWR_BYTES` either way), but the *when* was wrong, and it is the
   exact `when` §3a had to go and measure.

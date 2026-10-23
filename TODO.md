@@ -17843,7 +17843,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
         to `<empty>` on zerobas while the ONE-channel control `w.seq` stayed
         green, so the switch itself is what the arms break.
         🎯 **THE LIKELY REASON IS WRITTEN IN THE BODY I CALLED.**
-        [`basic/randio-body.inc:267`](basic/randio-body.inc:267) says the rand
+        `basic/randio-body.inc:267` (deleted by c577b59c; now [`hk_dget`](disk/kernel.asm)) says the rand
         primitives assume *"the channel is already live (GET/PUT call
         `fch_select` first, setting `FCH_ACTIVE`)"* — and these arms call them
         from INSIDE `fch_select`, when it is not. `fdet_rand` also fires a full

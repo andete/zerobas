@@ -3,7 +3,7 @@
 
 **Status: ✅ IMPLEMENTED + GATED 2026-07-11.** Signed off then shipped this
 session. The whole tokeniser body (`tokenise`/`tk_*`/`tk_hex`/`match_kw`/
-`branch_lineno`) was extracted to [`basic/tokenise.inc`](tokenise.inc) and evicted
+`branch_lineno`) was extracted to [`basic/tokenise.inc`](../basic/tokenise.inc) and evicted
 to sub-ROM page 0 ([`sub/sub.asm`](../sub/sub.asm) index 1 = `SUBROM_IDX_TOKENISE`),
 reunited with the wave-1 `tk_float` crunch ([`sub/tkfloat.asm`](../sub/tkfloat.asm),
 now an in-slot callee). The repack main ROM keeps only a two-line `tokenise`
