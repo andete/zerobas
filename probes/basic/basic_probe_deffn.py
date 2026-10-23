@@ -152,6 +152,13 @@ CASES = {
     'o.errfend13'       : (['X=5:DEF FNA(X)=A$', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
     'o.errfend18'       : (['X=5:DEF FNA(X)=FNZ(0)', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
     'o.errrestore'      : (['X=5:DEF FNA(X)=X/0', 'ON ERROR GOTO 800', 'Y=FNA(2)'], 'X;E', ['800 E=ERR:RESUME 60']),
+    # D-DEFFNVAR (2026-10-23): the DEF creates each plain-name formal in the variable
+    # table, zero-valued, if missing -- the distance from a variable made before
+    # the DEF to one made after it counts the FN entry AND the formals
+    # (scratchpad/deffnvar_cases.out); an existing formal is not made again.
+    'o.defvar'          : (['DEFINT A-Z', 'Q=1:DEF FNA(X)=X:B=5'], 'VARPTR(B)-VARPTR(Q)'),
+    'o.defvar2'         : (['DEFINT A-Z', 'Q=1:DEF FNA$(X$,Y!)=X$:B=5'], 'VARPTR(B)-VARPTR(Q)'),
+    'o.defvarx'         : (['DEFINT A-Z', 'Q=1:X=2:DEF FNA(X)=X:B=5'], 'VARPTR(B)-VARPTR(Q)'),
     'o.fnbang'          : (['DEF FNA!(X)=X/2'], 'FNA!(5)'),
     'o.fnpct'           : (['DEF FNA%(X)=X/2'], 'FNA%(5)'),
     'o.global'          : (['Y=3:DEF FNA(X)=X+Y'], 'FNA(2)'),
@@ -254,6 +261,9 @@ WANT = {
     'o.errfend13'       : '5 13',   # deffn_fend_probe, 2026-08-23
     'o.errfend18'       : '5 18',   # deffn_fend_probe, 2026-08-23
     'o.errrestore'      : '5 11',   # round5
+    'o.defvar'          : '15',   # D-DEFFNVAR 2026-10-23: Q 2 + FNA 5 + X 5 + B's header 3
+    'o.defvar2'         : '24',   # D-DEFFNVAR: Q 2 + FNA$ 6 + X$ 6 + Y! 7 + B's header 3
+    'o.defvarx'         : '15',   # D-DEFFNVAR: Q 2 + X 5 (existing) + FNA 5 + B's header 3
     'o.fnbang'          : '2.5',   # round6
     'o.fnpct'           : '2',   # round6
     'o.global'          : '5',   # round6

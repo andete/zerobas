@@ -1,0 +1,6 @@
+    capture-on-signal: 9 on signal, 0 fell back to the scheduled budget   [signalled at 72.1-94.1 emulated s]
+ok   o.defvar   ref='15'  vg8020='15'  cf3300='15'  zb='15'
+ok   o.defvar2  ref='24'  vg8020='24'  cf3300='24'  zb='24'
+ok   o.defvarx  ref='15'  vg8020='15'  cf3300='15'  zb='15'
+ROWS: 3 printed, 3 scored — 0 of 3 DEF FN rows still divergent; 0 of 11 controls failed
+refcache: 0 hit, 9 miss, 9 stored

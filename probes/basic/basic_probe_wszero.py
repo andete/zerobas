@@ -304,7 +304,13 @@ _S14F_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=
 _S14D_SUM = ['900 SCREEN 0:S=0:RESTORE 950:FOR K=1 TO 5:READ P,Q:FOR J=P TO Q:S=S+PEEK(J):NEXT:NEXT'
              ':PRINT"[S";S;"]":END',
              "950 DATA 60728,60760,60775,60798,61194,61219,61581,61583,61589,61590"]
-KNOWN_DIVERGE = set()
+# D-BLOADSTK (2026-10-23): zerobas's BLOAD-from-tape runs ~26 B deeper than the
+# VG-8020's (SP $F072-$F074 during the load against $F08C-$F08E there), INSIDE the
+# noclear3 window ($E000..$F07F): the load overwrites live return addresses, and
+# whether that crashes depends on which slot the last bytes hit -- it passed by luck
+# until D-DEFFNVAR's +52 B layout shift in main page 1 (scratchpad/bloadstk_*.out).
+# The pin comes off when the depth is fixed (a pinned row that agrees ROTS).
+KNOWN_DIVERGE = {"noclear3"}
 
 PROGRAM_NOCLEAR = [
     "NEW",

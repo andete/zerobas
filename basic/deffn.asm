@@ -13,9 +13,10 @@
 ;   1. THE FORMAL IS A SHADOW CELL, not the program's variable. `X=5 :
 ;      P=VARPTR(X) : DEF FNA(X)=PEEK(P)` reads 5 while the body runs
 ;      (o.realcell), and `VARPTR(X)-P` inside the body is 30327, not 0
-;      (o.sameaddr). So the variable table is NEVER written -- which is also
+;      (o.sameaddr). So a CALL never writes the variable table -- which is also
 ;      why the ERROR path needs no unwinding at all (o.errrestore, o.strnumx:
-;      `X` is still 5 after a body that faulted).
+;      `X` is still 5 after a body that faulted). (The DEF does: it creates each
+;      plain-name formal, zero-valued, if missing -- D-DEFFNVAR, below.)
 ;   2. ...BUT THE SHADOW BLOCK **IS** SAVED AND RESTORED. z.addr2/z.addr2i read
 ;      the SAME address one nesting level deeper, so the reference reuses one
 ;      fixed block; o.nestsame (`DEF FNA(X)=X : DEF FNB(X)=FNA(X+1)+X` ->
@@ -105,6 +106,48 @@ exdf_run:
                 inc     hl
                 ld      (hl),d
                 ex      de,hl               ; HL = the definition text again
+                ; 🧮 D-DEFFNVAR (2026-10-23): AND EACH FORMAL THAT IS A PLAIN NAME IS
+                ; CREATED IN THE VARIABLE TABLE NOW, zero-valued, if it is not there:
+                ; the VG-8020 holds FNA, then X, then Y after `DEF FNA(X,Y)=..` (never
+                ; called), keeps an existing Y where it is, makes X once for `(X,X)`,
+                ; and types X! / Y# / X$ by suffix or DEFtype
+                ; (scratchpad/deffnvar_cases.out). The lookup is LET's own
+                ; (var_alloc_or_find, type 1 for a string name). The scan raises
+                ; NOTHING, as before (o.lazybody / o.noeq / o.aryformal): it stops at
+                ; anything that is not a letter, and at a name followed by `(` --
+                ; the reference DIMs such an array formal at the DEF, which this does
+                ; not (filed, D-DEFFNVAR).
+dfv_formal:
+                ld      a,(hl)
+                cp      '('
+                jr      z,dfv_next
+                cp      ','
+                jr      nz,dfv_done
+dfv_next:
+                inc     hl
+                call    skip_spaces
+                call    is_letter
+                jr      nc,dfv_done
+                call    var_str_type        ; A = 1 for a string name (HL kept)
+                push    af
+                call    var_name_key        ; BC = key, HL past name + suffix
+                pop     af
+                ld      e,a                 ; E = string? (var_name_key set VARTYPE)
+                ld      a,(hl)
+                cp      '('
+                jr      z,dfv_done          ; an array formal: left for the call
+                ld      a,e
+                or      a
+                jr      nz,dfv_alloc        ; A = 1: the string chain
+                ld      a,(VARTYPE)
+dfv_alloc:
+                push    hl
+                call    var_alloc_or_find   ; created zero-valued if new
+                pop     hl
+                jp      nc,fp_runtime_error ; Out of memory: FPERR already set
+                call    skip_spaces
+                jr      dfv_formal
+dfv_done:
                 ; ⚠️ THE SKIP IS TOKEN-AWARE AND THAT IS MEASURED BOTH WAYS.
                 ; `DEF FNA$(X$)=X$+":Q"` returns `a:Q` (o.quotedcolon), so a ':'
                 ; inside a string literal does NOT end the definition -- while

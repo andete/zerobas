@@ -1,0 +1,16 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+row              kw         (a)      (b)         (c)  detail
+deffn            DEF        PASS     FAIL      1.30x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F6F7 $F6F8 $F6F9 $F712 $F713 $F718… | value $F6EA $F6EB $F6EC $F6ED
+fnkw             FN         PASS     FAIL      0.78x  ref-only $F416 $F662 $F664 $F678 $F679 $F67A… | zb-only $F6F7 $F6F8 $F6F9 $F712 $F713 $F718… | value $F6EA $F6EB $F6EC $F6ED
+kwram: a=PASS b=FAIL: 2
+kwram cache: 0 group(s) replayed, 2 measured
+pin: NOT written -- an --only run measures a subset
+refcache: 0 hit, 0 miss, 2 stored
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+row              kw         (a)      (b)         (c)  detail
+fnkw_b           FN         PASS     FAIL      1.08x  ref-only $F416 $F662 $F678 $F679 $F6A5 $F6E7… | zb-only $F67D $F67E $F67F $F6F7 $F6F8 $F6F9… | value $F67A $F67B $F67C $F699
+deffn_b          DEF        PASS     FAIL      1.08x  ref-only $F416 $F662 $F678 $F679 $F6A5 $F6E7… | zb-only $F67D $F67E $F67F $F6F7 $F6F8 $F6F9… | value $F67A $F67B $F67C $F699
+kwram: a=PASS b=FAIL: 2
+kwram cache: 0 group(s) replayed, 2 measured
+pin: NOT written -- an --only run measures a subset
+refcache: 0 hit, 0 miss, 2 stored

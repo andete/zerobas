@@ -36,6 +36,10 @@ Up to nine parameters. A function with none is called without parentheses.
   leaves the program's `X` at 5 during and after the call, even if the call
   fails. Other variables are read normally: with `Y=3`, `DEF FNA(X)=X+Y`
   sees 3.
+- **`DEF FN` creates its parameters as ordinary variables**, at 0, when the
+  statement runs, unless they already exist: after `DEF FNA(X,Y)=X+Y` the
+  program has an `X` and a `Y`, typed by their suffix or `DEFINT` and friends,
+  even if `FNA` is never called. The call itself still never touches them.
 - **Arguments are worked out in the caller's scope**, before the body runs:
   `X=5:FNA(X+1)` passes 6.
 - **`DEF FN` does not look at the body** until the function is called, so
@@ -106,13 +110,27 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   `DEF FNA$(5)=1` (D-DEFFNPARAM, found 2026-09-27): a parameter must be a
   name. Open, TIER 6; it holds back `DEF FN`'s own every-error rung.
 
-The rung not yet proven is **RAM usage**, and here the free memory itself
-differs: defining and calling a numeric function in the sweep's row costs 22
-bytes of `FRE(0)` on the VG-8020 and 11 on zerobas, a string function 12 and 6
-([`rdrndfix_kwram.out`](../../scratchpad/rdrndfix_kwram.out)).
+- **A parameter written like an array element** (`DEF FNA(C(1))=…`) makes
+  the VG-8020 dimension the array `C` at the `DEF`; zerobas leaves it until the
+  call (D-DEFFNVAR, 2026-10-23). Open, TIER 6.
+
+The rung not yet proven is **RAM usage**. The free memory now agrees: defining
+and calling a numeric function in the sweep's row costs 22 bytes of `FRE(0)` on
+both machines, a string function 12 (it was 11 and 6 here before D-DEFFNVAR,
+[before](../../scratchpad/rdrndfix_kwram.out),
+[after](../../scratchpad/deffnvar_kwram.out)); the work-area cells each side
+writes still differ, as they do for every keyword.
 
 ## What we found, and how
 
+- **The parameters were missing from the variable table** (fixed 2026-10-23,
+  D-DEFFNVAR, found while chasing a tape game). Our own program printed the
+  first bytes of the variable table after a `DEF FN`: the VG-8020 holds the
+  function's entry, then one entry per new parameter, then the next variable;
+  zerobas held only the function's entry, so every later variable sat 5 or more
+  bytes lower and `FRE(0)` read more free memory
+  ([`deffnvar_cases.out`](../../scratchpad/deffnvar_cases.out),
+  [after](../../scratchpad/deffnvar_after.out)).
 - **`DEF FN` was the last missing MSX1 keyword** (shipped 2026-08-23,
   D-DEFFNLAND). It was measured first — 82 cases on both references — and the
   measurement overturned the obvious design: the parameter is not saved in and

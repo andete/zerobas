@@ -3779,8 +3779,11 @@ lineerr-characterize: repack-machine $(DISK_TEST_DSK)
 # rows required to match: that is the target that flips when DEF FN lands.
 # `SIDES=vg8020,cf3300` re-measures the reference column instead of trusting the
 # banked one (docs/deffn-design-2026-08-22.md).
+# --strict (D-DEFFNVAR, 2026-10-23): --gate alone fails only on the controls; a
+# divergent SUBJECT row printed DIFF and the target stayed green -- the "until the
+# verb ships" setting, left on after DEF FN shipped (2026-08-23).
 deffn-acceptance: repack-machine
-	python3 probes/basic/basic_probe_deffn.py --gate \
+	python3 probes/basic/basic_probe_deffn.py --gate --strict \
 	        $(if $(ONLY),--only $(ONLY),) $(if $(SIDES),--sides $(SIDES),)
 
 # 🔬 MUTATION-TEST THE GATE. DEF FN is missing, so 67 of 69 rows are red no

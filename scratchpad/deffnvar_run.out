@@ -1,0 +1,56 @@
+=== Philips_VG_8020
+   |Ok
+   |NEW
+   |Ok
+   |10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3)
+   |30 FOR I=0 TO 19:PRINT RIGHT$("0"+HEX$(P
+   |EEK(V!+I)),2);:NEXT:PRINT
+   |40 PRINT "T";HEX$(PEEK(&HF676)+256*PEEK(
+   |&HF677))
+   |RUN
+   |02C1000F80025800000002420005000456004532
+   |T8001
+   |Ok
+   |color   auto    goto    list    run
+🔴 omsx_repl: NOT CACHING National_CF-3300 -- all 9 echo slots read BLIND/mode (SCRMOD != 0): the capture is not the text plane. The readings below are returned as measured, but they are a scrape of the wrong VRAM plane, not the text screen. A stock MSX1 boots SCREEN 1; this module's scrape assumes SCREEN 0 (40 cols at 0x0000), so a machine whose `reset` does not put it there reads the pattern generator table as if it were text.
+=== National_CF-3300
+   |        ~B~B~B    T (D      4R      8T
+   | (| 8T     |    ~BB~BB~ @~H<(~
+   |        (D < $L ( \ l P | |D|D|  p
+   |~   "D   |(((N
+   |                         B$  $B  |  (D
+   |          TT  0                 PPP
+   |PP P PP  x p(       @   @ @   `   @
+   |  @@@   @     @   p p                  @
+   |   x         ``      @  p     p  `
+   |p   `   p  0  p  0P             0@    p
+   |        p  p  p p  x  `                @
+   | 0` `0           `0 0`  p       p  h  p
+   | P       HHpHH  0H   H0  PHHHP
+   |        p     p         p     p 8     `
+   |                                p     p
+   |        p     h         p  p  p
+   |      p     PP            P P      p
+   |    @   p@@@@@p  P p p  p     p  P
+   |        @         p x x           p   p
+   |  h   h   p   p  (        h  h p
+   |  `   p   0    `@@HP`PH `     p
+   |          p   p           h  h
+   |  x     @@ @@H0       h      P        P
+=== C-BIOS_MSX1_EU_REPACK_NODISK
+   |ZB
+   |NEW
+   |ZB
+   |10 DEFINT A-Z:DEF FNA(X)=X+1:B=5
+   |20 V!=PEEK(&HF6C2)+256!*PEEK(&HF6C3)
+   |30 FOR I=0 TO 19:PRINT RIGHT$("0"+HEX$(P
+   |EEK(V!+I)),2);:NEXT:PRINT
+   |40 PRINT "T";HEX$(PEEK(&HF676)+256*PEEK(
+   |&HF677))
+   |RUN
+   |C100020F80420002050056000445329050490002
+   |T8001
+   |ZB
+   |color   auto    goto    list    run
+refcache: 0 hit, 3 miss, 2 stored

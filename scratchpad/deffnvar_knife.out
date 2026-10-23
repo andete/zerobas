@@ -1,0 +1,15 @@
+# K-DFV1: dfv_formal jumps straight to dfv_done (no formal created); main ROM 680ba30e -> ad5e1ffa, restored 680ba30e; probe rc=0
+    capture-on-signal: 3 on signal, 0 fell back to the scheduled budget   [signalled at 72.1-72.1 emulated s]
+DIFF o.defvar   ref='15'  zb='10'
+DIFF o.defvar2  ref='24'  zb='11'
+ok   o.defvarx  ref='15'  zb='15'
+ROWS: 3 printed, 3 scored — 2 of 3 DEF FN rows still divergent; 0 of 11 controls failed
+
+# K-DFV1 through `make deffn-acceptance ONLY=o.defvar` (now --strict): main ROM 680ba30e -> ad5e1ffa, restored 680ba30e; make rc=2
+WARNING: Var CON_ROWS_KEYON is never used on line 1623 of file basic/sysvars.inc
+WARNING: Var CON_ROWS_KEYON is never used on line 1623 of file basic/sysvars.inc
+DIFF o.defvar   ref='15'  zb='10'
+DIFF o.defvar2  ref='24'  zb='11'
+ok   o.defvarx  ref='15'  zb='15'
+ROWS: 3 printed, 3 scored — 2 of 3 DEF FN rows still divergent; 0 of 11 controls failed
+make: *** [deffn-acceptance] Error 1

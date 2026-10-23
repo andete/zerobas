@@ -2351,7 +2351,7 @@ item — do **one item per session** to keep context lean.
       test that goes red names a caller to check against the real machine before the test is
       blamed.
 
-- [ ] 🧮 **D-DEFFNVAR — A `DEF FN` TAKES A 5-BYTE ENTRY IN THE REFERENCE'S VARIABLE TABLE AND NONE
+- [x] ✅ **DONE 2026-10-23 (D-DEFFNVAR)** 🧮 **D-DEFFNVAR — A `DEF FN` TAKES A 5-BYTE ENTRY IN THE REFERENCE'S VARIABLE TABLE AND NONE
       IN zerobas'S (found 2026-10-22 by D-TAPELOAD's Blocker)**
       🎚️ TIER 4 — RAM usage (VG-8020 / CF-3300): FRE(0) and every later variable's VARPTR shift
       by 5 bytes per DEF FN.
@@ -2365,6 +2365,67 @@ item — do **one item per session** to keep context lean.
       [[joost-ruled-merge-and-pool]] before designing. ➡️ Read the reference's entry bytes
       (variable-area RAM: type byte, name, the 2-byte value) to learn what the entry holds; then
       decide whether zerobas mirrors it.
+      ✅ **FIXED 2026-10-23 -- AND THE ITEM'S PREMISE WAS HALF WRONG.** [`deffnvar_probe.py`](scratchpad/deffnvar_probe.py)
+      (our program PRINTs the first 28 bytes from VARTAB; interpreter data, no code): zerobas
+      DOES hold the FN entry (`C1 00 02 0F 80`, same size as the VG-8020's `02 C1 00 0F 80`; the
+      byte ORDER inside an entry is a documented difference, docs/concepts/variables.md). What
+      it lacked were the FORMALS: the VG-8020 creates each one at the DEF, zero-valued, after
+      the FN entry -- `(X,Y)` makes X then Y, an existing Y stays put, `(X,X)` makes X once,
+      `X!` / `Y#` / `X$` by suffix or DEFtype, and `(C(1))` DIMs an ARRAY C at the DEF
+      ([`deffnvar_cases.out`](scratchpad/deffnvar_cases.out)). Fix: ex_deffn walks the formals
+      with LET's own lookup (var_name_key, var_alloc_or_find; type 1 for a string name),
+      raising nothing (o.lazybody / o.noeq / o.aryformal hold) and stopping at a non-letter or
+      at a name followed by `(` (+52 B of the $6CF3 pin pad; page 1's tail unchanged). After:
+      every case but the array formal as the VG-8020 ([`deffnvar_after.out`](scratchpad/deffnvar_after.out));
+      kwram's four DEF / FN rows now agree on FRE(0) (22 / 22, 12 / 12;
+      [`deffnvar_kwram.out`](scratchpad/deffnvar_kwram.out)).
+      🧪 deffn-acceptance rows o.defvar / o.defvar2 / o.defvarx: 15 / 24 / 15 on the VG-8020,
+      the CF-3300 and zerobas ([`deffnvar_gate.out`](scratchpad/deffnvar_gate.out)).
+      🔪 K-DFV1 (the scan skipped): o.defvar 10, o.defvar2 11, o.defvarx 15 (its formal
+      exists) -- HIT ([`deffnvar_knife.out`](scratchpad/deffnvar_knife.out)).
+      🔴 **AND THE GATE COULD NOT FAIL ON A SUBJECT ROW.** `--gate` fails on controls and
+      predicates only; DIFF rows needed `--strict`, which the Makefile never passed -- the
+      "until the verb ships" setting, left on since 2026-08-23. All 76 rows agree today
+      ([`deffn_strict.out`](scratchpad/deffn_strict.out)), so deffn-acceptance is `--strict`
+      now; the knife through `make deffn-acceptance` exits 2.
+      🔮 Scored: "zerobas has no FN entry" (the item's own claim) MISS; "the formals are the
+      gap" HIT; "two of three rows move under the knife" HIT; "the 76 rows all agree" HIT;
+      "FRE(0) still short of the VG-8020" MISS (it matches).
+
+- [ ] 📼 **D-BLOADSTK — BLOAD FROM TAPE RUNS ~26 B DEEPER ON zerobas THAN ON THE VG-8020, INTO
+      RAM A NO-CLEAR LOADER MAY FILL (found 2026-10-23: wszero's `noclear3` went red after
+      D-DEFFNVAR's layout shift)**
+      🎚️ TIER 1 — happy path: loading existing software from tape (D-TAPELOAD's class -- a
+      loader that does not `CLEAR` and fills RAM just under the stack).
+      🤖 **AUTONOMOUS** — registers only; the VG-8020 settles it.
+      📏 [`nc3_sp_probe.py`](scratchpad/nc3_sp_probe.py) (the row's own tape and program; SP
+      sampled every 5 s and on every dip under $F080): during the load the VG-8020's SP is
+      **$F08C-$F08E** and the program prints `[A][G] 1 2 XY` ([`bloadstk_vg.out`](scratchpad/bloadstk_vg.out));
+      zerobas's is **$F072-$F074**, inside the window ($E000..$F07F), on the builds before AND
+      after D-DEFFNVAR ([`bloadstk_zb_before_deffnvar.out`](scratchpad/bloadstk_zb_before_deffnvar.out),
+      [`bloadstk_zb_after_deffnvar.out`](scratchpad/bloadstk_zb_after_deffnvar.out)). The
+      load writes its last bytes over live return addresses; before, they happened to land
+      harmlessly; after D-DEFFNVAR's shift in main page 1 (52 B of the $6CF3 pad on 2026-10-23) the machine runs off (SP $E5E5,
+      then garbage) and nothing is printed. So `noclear3` -- D-WSZERO S15's "a no-CLEAR loader
+      under the stack is harmless" -- held by LUCK since at least D-P0CB slice C2 (2026-10-21,
+      BLOAD's parse moved into a sub2 tenant through p0cb, i.e. under nested slot calls).
+      📌 PINNED in basic_probe_wszero.py's KNOWN_DIVERGE until fixed (the pin ROTS -- fails --
+      the day the row agrees).
+      ➡️ Where the depth goes: SP at each frame of BLOAD's tape path on zerobas (our own code
+      addresses: the sub2 entry, p0cb, bload_sub, TAPIN), against the VG-8020's ~18 B; then
+      make the read loop run shallower (e.g. leave the sub2 tenant before the load, as
+      do_tape_prog already runs whole in main) -- target: SP stays >= $F080 through the load.
+      🔴 Class lesson, again: a gate row that passes by luck is found by a layout shift in an
+      unrelated change; the rule "run ALL the tapes after a layout change" exists for this.
+
+- [ ] 🧮 **D-DEFFNARY — `DEF FNA(C(1))=…` DIMS THE ARRAY `C` AT THE DEF ON THE VG-8020; zerobas
+      LEAVES IT FOR THE CALL (found 2026-10-23 by D-DEFFNVAR)**
+      🎚️ TIER 6 — every error: an array element written as a formal, which the call rejects.
+      🤖 **AUTONOMOUS** — measured ([`deffnvar_cases.out`](scratchpad/deffnvar_cases.out),
+      row aryform: an 11-element integer array C after the simple variables).
+      ➡️ Whether the subscript is EVALUATED at the DEF (an out-of-range `C(11)`, a `C(1/0)`)
+      decides the shape; then ex_deffn's formal scan calls the array resolver instead of
+      stopping at the `(`.
 
 - [ ] 🔁 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
       INTERNALS) ARE NOT AT THEIR ADDRESSES (found 2026-10-15 by D-BASICINT)**
@@ -6742,7 +6803,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9208 (T-6FE392)8 (T-529ABE)` from `TODO.md:14775 (T-529ABE)`: a
+      `TODO.md:9269 (T-6FE392)8 (T-529ABE)` from `TODO.md:14836 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9663,7 +9724,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14775 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14836 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
