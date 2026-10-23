@@ -1397,6 +1397,36 @@ item — do **one item per session** to keep context lean.
       session, calls $F368+3 and reports the slot state it returns with.
       And noted, not filed: br_p0in's expanded path is valid from RAM only for a slot whose
       primary is page 3's (true for every slot these machines switch into page 0).
+      📏 (c) method, 2026-10-23: typing a USR test line by line at the prompt is unreliable
+      (zerobas cut the third line, the CF-3300's lines landed in a date prompt --
+      [`f368bas_nodos.out`](scratchpad/f368bas_nodos.out)); put the test in an AUTOEXEC.BAS
+      instead. The date prompt is D-STEP7DATE (filed below).
+
+- [ ] 📅 **D-STEP7DATE — A BOOT DISK WHOSE CODE RETURNS AT STEP 7 GETS THE DATE QUESTION ON BOTH
+      REFERENCES, AND NONE ON zerobas (found 2026-10-23 by D-TPAPTAIL (c))**
+      🎚️ TIER 1 — happy path: what powering on with a data disk in the drive looks like.
+      🤖 **AUTONOMOUS** — measured on both references with OUR OWN disks; the prompt's style is
+      already the VG-8020's (D-BOOTDATE's boot_date).
+      📏 tools/make_test_dsk.py's disk (EB FE 90, the documented `RET NC` / `RET` stub at $1E, no
+      system files) inserted at power-on: the CF-3300 asks `Enter date ( - - ):`
+      ([`stepret_plain_cf.out`](scratchpad/stepret_plain_cf.out)), the VG-8020 + NMS 1200 `Enter
+      date (M-D-Y):` ([`stepret_plain_nms.out`](scratchpad/stepret_plain_nms.out)); zerobas starts
+      BASIC at once ([`stepret_plain_zb.out`](scratchpad/stepret_plain_zb.out)). The same with
+      the DOS test disk's boot code patched to that stub ([`stepret_nms.out`](scratchpad/stepret_nms.out),
+      [`stepret_cf.out`](scratchpad/stepret_cf.out)), and the CF-3300 asked for the ALL-ZERO
+      mania111_starquake.dsk too (no boot signature at all). D-BOOTDATE measured the question
+      only on the $4022 fallback; this is the other road into it. 108 boot-signed images of the
+      collection boot WITHOUT it on the CF-3300 -- boot_date already skips a disk with an
+      AUTOEXEC.BAS (both references do), and the rest presumably never return from their boot
+      code; not read (third-party code), the re-run will tell.
+      ➡️ FIX (small): init.asm's data-disk return after `call dos_handoff` and boot_disk's
+      no-signature `ret nz` go through boot_date (the pre-$41FD region is pad-packed: jump out to
+      a hole). ⚠️ THE BLAST RADIUS IS THE APPARATUS, NOT THE ROM: every probe that boots zerobas
+      WITH a data disk inserted (the reference side already inserts after boot, for exactly this
+      reason -- probes/disk/disk_probe_boot.py's docstring) would stop at the prompt. Inventory
+      the probes that pass -diska at launch for zerobas, give them the reference's
+      insert-after-boot (or a RETURN), THEN the ROM change; FULL battery and a collection
+      re-run (it must not ask where the CF-3300 does not).
 
 - [ ] 🧱 **D-P0CB — COLD STATEMENTS OUT OF MAIN INTO zerobas-sub2 PAGE 0, THROUGH A
       PAGE-0 CALL-BACK (Joost 2026-10-21: "Yes, but no new RAM")**
@@ -6541,7 +6571,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9007 (T-6FE392)8 (T-529ABE)` from `TODO.md:14574 (T-529ABE)`: a
+      `TODO.md:9037 (T-6FE392)8 (T-529ABE)` from `TODO.md:14604 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9462,7 +9492,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14574 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14604 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,5 @@
+== S0 ('8:')  pc=7622 curlin=0000 mode=S1
+== S1 ('11:')  pc=1224 curlin=0000 mode=S1
+   |  Enter date ( - - ):
+== S2 ('14:')  pc=0D88 curlin=0000 mode=S1
+   |  Enter date ( - - ):

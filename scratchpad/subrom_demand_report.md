@@ -349,7 +349,7 @@ program during the call (`docs/plan-main-rom-space-2026-10.md` §4 R4).
   iteration is the *more* slowed one (3.06×). Conclusion filed there: *"the
   eviction is not what makes this tree slow"*; the 2.5–3.8× lives in resident
   interpreter code (dispatch + expression evaluation, D-INTERPSPEED
-  `TODO.md:7093 (T-C1D0BC)-13560`).
+  `TODO.md:7123 (T-C1D0BC)-13560`).
 * **kwtime rows for tenant-backed functions** (`scratchpad/openwild_kwtime.out`,
   file dated Oct 7, columns `ref ms / zb ms / zb/ref / alone`): `sqr` 39.8 →
   327.6 = **8.23×**, `cos` 5.23×, `exp` 3.67×, `atn` 3.58×, `log` 3.57×;

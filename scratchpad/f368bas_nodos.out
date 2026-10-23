@@ -1,0 +1,22 @@
+#### National_CF-3300 data disk (no DOS)
+== S5 ('23:')  pc=0D6A curlin=0000 mode=S1
+   |  Enter date ( - - ):10 FOR I=0
+   |   TO 19:REA
+   |  Invalid date
+   |  Enter date ( - - ):20 DEFUSR=
+   |  &HC000:X=U
+   |  Invalid date
+   |  Enter date ( - - ):30 DATA 20
+#### C-BIOS_MSX1_EU_REPACK_DISK data disk (no DOS)
+== S5 ('23:')  pc=0251 curlin=FFFF mode=S0
+   |  zerobas version 0.1
+   |  clean-room MSX1 BASIC
+   |  zerobas Disk BASIC
+   |  ZB
+   |  10 FOR I=0 TO 19:READ A:POKE &HC000+I
+   |  ,A:NEXT
+   |  20 DEFUSR=&HC000:X=USR(0):PRINT "R";H
+   |  EX$(PEEK(&HC020));" ";HEX$(PEEK(&HC02
+   |  1))
+   |  30 DATA 2
+   |  color  auto   goto   list   run

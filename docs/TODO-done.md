@@ -16418,7 +16418,7 @@ the section headings they were written beneath.
       `reverted` with no `attempt` beside it and kept the false positive the very
       comment disqualifies.
       ⚠️ **THE ONE REMAINING HIT IS READ AND ALLOWED, WITH THE REASON IN THE
-      TOOL**: `D-RECLEN2` is filed exactly right at `../TODO.md:2287 (T-E47041)` — *"THE FACE
+      TOOL**: `D-RECLEN2` is filed exactly right at `../TODO.md:2317 (T-E47041)` — *"THE FACE
       SHIPPED, THE DOMAIN DID NOT"* — and a **half**-shipped slice is something
       this sweep cannot tell from a filing that claims the whole. Allowed rather
       than tuned away, so clean means *nothing new* instead of *nothing looked*.
