@@ -124,7 +124,9 @@ standard slot routines at the bottom of memory -- read or write a byte in
 another slot (`&H000C`, `&H0014`), call into one (`&H001C`, and the `RST &H30`
 form), or switch one in (`&H0024`) -- and they answer as on the CF-3300. Before
 the same fix, zerobas ignored the slot asked for and the `RST &H30` call never
-returned; now they hand the call to the BIOS's own routines.
+returned; now they hand the call to the BIOS's own routines. A program that calls the disk
+system through `&HF37D` instead of `&H0005` gets the same answer as through
+`&H0005`, as on the CF-3300 (also 2026-10-23).
 
 Machine code called from a BASIC program (with `USR`) reaches the
 same functions: there the disk system is not switched in, so zerobas's jump

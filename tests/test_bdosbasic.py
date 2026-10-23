@@ -144,7 +144,7 @@ def run():
 
     # --- slice 2: the $F37D stub (install_f37d) -----------------------------
     for page0, label, want in ((0, "page 0 = the BIOS (a BASIC program)", "calslt"),
-                               (3, "page 0 = RAM (a boot code, MSX-DOS)", "direct")):
+                               (3, "page 0 = RAM (a boot code, MSX-DOS)", "dos")):
         m = Machine(ROM, SYM, rom_base=DISK_BASE)
         m.poke(m.addr("HOOK_SLOT"), b"\x87")
         m.call("install_f37d")
@@ -153,15 +153,31 @@ def run():
         m.trap(0x001C, lambda mach: log.append(("calslt", mach.cpu.iy >> 8, mach.cpu.ix,
                                                 mach.cpu.c, mach.cpu.de)))
         m.trap("bdos_entry", lambda mach: log.append(("direct", mach.cpu.c, mach.cpu.de)))
+        # D-TPAPTAIL: with RAM in page 0 the stub takes $0005 -- MSX-DOS's own entry, or
+        # (before MSXDOS.SYS) the JP bdos_entry lay_page0_env lays there (checked below)
+        m.trap(0x0005, lambda mach: log.append(("dos", mach.cpu.c, mach.cpu.de)))
         m.cpu.io_in = lambda port, p0=page0: (0xF0 | p0) if port & 0xFF == 0xA8 else 0xFF
         m.call(stub, c=0x11, de=0xD020, ix=0x1234, iy=0x5678)
         if want == "calslt":
             ok = log == [("calslt", 0x87, m.addr("bdos_entry"), 0x11, 0xD020)]
             ok = ok and m.cpu.ix == 0x1234 and m.cpu.iy == 0x5678
         else:
-            ok = log == [("direct", 0x11, 0xD020)]
+            ok = log == [("dos", 0x11, 0xD020)]
         check(ok, f"$F37D stub, {label}: {log} (want {want}; IX/IY kept "
                   f"{m.cpu.ix:04X}/{m.cpu.iy:04X})")
+    # ... and the page-0 table lays $0005 = JP bdos_entry for the boot (D-TPAPTAIL)
+    m = Machine(ROM, SYM, rom_base=DISK_BASE)
+    tab, rows = m.addr("p0_env_tab"), []
+    while True:
+        cell = m.peek(tab, 2)
+        cell = cell[0] | cell[1] << 8
+        if cell == 0:
+            break
+        tgt = m.peek(tab + 2, 2)
+        rows.append((cell, tgt[0] | tgt[1] << 8))
+        tab += 4
+    check((0x0005, m.addr("bdos_entry")) in rows,
+          f"p0_env_tab lays $0005 -> bdos_entry: {[f'{c:04X}->{t:04X}' for c, t in rows]}")
 
     print()
     print("ALL PASS — bdos_entry answers STROUT / SFIRST / SNEXT and sets $F23D"

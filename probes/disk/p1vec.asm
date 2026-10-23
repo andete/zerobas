@@ -4,7 +4,7 @@
 ; p1vec.asm -- D-TPAP1: what an MSX-DOS program sees in PAGE 1, and whether the
 ; page-0 inter-slot entries still work from the TPA. Our own program; each step
 ; writes its number to $C000 BEFORE it runs, so a crash names the step, and its
-; answer to $C001+. The probe reads $C000.. back from RAM on every machine.
+; answer to $C001+ (9 = all done). The probe reads $C000.. back from RAM.
 BDOS    equ     $0005
 RDSLT   equ     $000C
 WRSLT   equ     $0014
@@ -65,6 +65,13 @@ RAMAD1  equ     $F342
         in      a, ($A8)
         ld      ($C009), a
         ld      a, 8
+        ld      ($C000), a
+        ld      c, $0C              ; CPMVER through $F37D, not $0005 (D-TPAPTAIL)
+        call    $F37D
+        ld      ($C00A), a
+        ld      a, l
+        ld      ($C00B), a
+        ld      a, 9
         ld      ($C000), a
         ld      c, $00
         call    BDOS

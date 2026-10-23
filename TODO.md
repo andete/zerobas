@@ -5307,6 +5307,16 @@ item — do **one item per session** to keep context lean.
       BIOS -- under MSX-DOS that is a jump into page 1, which is now the TPA's RAM. A DOS
       program that calls $F37D instead of $0005 would run its own RAM. ➡️ Measure a DOS
       program's `call $F37D` (C = $0C) on the CF-3300 and on zerobas.
+      ✅ **(a) DONE (2026-10-23)** ([`f37ddos_run.out`](scratchpad/f37ddos_run.out), our own
+      .COM, scratchpad/f37ddos.asm): the CF-3300 answers CPMVER through $F37D -- A = $22,
+      HL = $0022; zerobas (and our ROM in the CF-3300) returned A = $03, HL = 0, having run
+      the program's page-1 RAM and come back by luck. 🔮 "zerobas never reaches step 2" MISSED
+      (it returned, wrongly). 🔧 The stub's not-the-BIOS road is `jp nz, $0005` now: under
+      MSX-DOS that is MSX-DOS's own entry (it switches the disk ROM in itself), and before
+      MSXDOS.SYS loads lay_page0_env lays $0005 = JP bdos_entry (a p0_env_tab row), the road
+      a boot loader with RAM in page 0 took before. Same answer on all three machines
+      ([`f37ddos_run2.out`](scratchpad/f37ddos_run2.out)); p1vec-acceptance's step 8 carries it
+      ([`p1vec_acc2.out`](scratchpad/p1vec_acc2.out)).
       (b) Slice plan step 4: P1_BLIT writes slot 3's subslot register without the SLTTBL[3]
       mirror the $F368 bodies and the BIOS slot routines trust; harmless while it restores
       the same value under DI, wrong if an interrupt's slot call reads the mirror mid-blit.
@@ -12454,7 +12464,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       `fp_exp`/`fp_log`'s `$8000` reachability item — a different subject
       entirely. The gate was GREEN on it, correctly by its own rule: the id
       really was the id of the block at that line. The real `LOAD"CAS:"` item is
-      at `TODO.md:38490 (T-A55F3D)`, now cited. **It surfaced only because closing
+      at `TODO.md:38500 (T-A55F3D)`, now cited. **It surfaced only because closing
       the `$8000` item changed that headline, so the id stopped resolving** — had
       I not touched that line it would still be wrong and still be green.
       🎯 **THE HOLE IS STRUCTURAL, NOT A TYPO**: the id is derived from the
@@ -12620,7 +12630,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:17482 (T-6FE392)8 (T-529ABE)` from `TODO.md:30319 (T-529ABE)`: a
+      `TODO.md:17492 (T-6FE392)8 (T-529ABE)` from `TODO.md:30329 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was
@@ -18329,7 +18339,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:30319 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:30329 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -29,7 +29,9 @@
 f37d_tmpl:
                 in      a, ($A8)
                 and     3                   ; page 0's primary slot
-                jp      nz, bdos_entry      ; not the BIOS: page 1 is this ROM
+                jp      nz, $0005           ; not the BIOS: MSX-DOS's own entry, or ours
+                                            ; before MSXDOS.SYS (lay_page0_env) -- under
+                                            ; DOS page 1 is the TPA's RAM (D-TPAPTAIL)
                 push    ix
                 push    iy
 f37d_iy:        ld      iy, 0               ; high byte := HOOK_SLOT (install_f37d)
@@ -3249,6 +3251,8 @@ p0_env_tab:
                 dw      $001C, BR_CALSLT ; RST 18 CALSLT    (br1_tmpl, pageenv.asm)
                 dw      $0024, BR_ENASLT ; ENASLT
                 dw      $0030, BR_CALLF ; RST 30 CALLF
+                dw      $0005, bdos_entry ; BDOS until MSXDOS.SYS lays its own (D-TPAPTAIL:
+                                          ; the $F37D stub's road with RAM in page 0)
                 dw      $0038, INT_H_HIRAM ; maskable-int vector -> A-3 high-RAM handler
                                            ; (NOT page-1 int_h: page 1 is reclaimed by the TPA)
                 dw      0               ; end of table
