@@ -546,6 +546,7 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
          sentinel: tuple[int, int] | None = None,
          run_gap: float | None = None,
          sentinel_capture: bool = False,
+         boot_lines: tuple[str, ...] = (),
          # 🔴 D-KWSTOP: **AT THE END, AND KEYWORD-ONLY IN PRACTICE.** The first cut
          # put `hold_lead` beside `hold_secs`, which reads better and SHIFTED EVERY
          # POSITIONAL ARGUMENT AFTER IT: `tests/test_echo_oracle.py` passes
@@ -692,6 +693,11 @@ def _tcl(out_path: str, cases: list[tuple[str, list[str]]],
     # marks, and every timing came back None.
     last_inj = [boot]
     t = boot
+    # D-STEP7DATE (2026-10-23): typed once, at boot, before the first case -- a disk in
+    # the drive at power-on gets the DATE QUESTION on both references (and on zerobas
+    # once D-STEP7DATE's ROM half lands), and a case typed into it reads `Invalid date`.
+    for r in boot_lines:
+        t = emit(t, r)
     for idx, (mode, lines) in enumerate(cases):
         # a reset line belongs to the case it precedes: a swallowed `NEW` leaks
         # the PREVIOUS case's variables into THIS one, so this one is the reading
@@ -1217,7 +1223,8 @@ def _run_batch(machine: str, cases: list[tuple[str, list[str]]], *,
                          hold_lead=hold_lead, hb_path=hb,
                          settle_n=settle_n, sentinel=sentinel, run_gap=run_gap,
                          sentinel_capture=sentinel_capture,
-                         watch_values=watch_values))
+                         watch_values=watch_values,
+                         boot_lines=("",) if diska else ()))
         for p in (out, hb):
             if os.path.exists(p):
                 os.unlink(p)
