@@ -122,9 +122,9 @@ writes is not the same.
 
 ## Where it lives
 
-`ex_screen` and `scr_extra` in [basic/screen.asm](../../basic/screen.asm);
-the per-argument checks for the sprite size, key click and baud are
-`spr_extra_arg` in [basic/graphics.asm](../../basic/graphics.asm). The return
+`scr_screen` and `scs_extra` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm), a tenant of the second sub-ROM since
+2026-10-24 (D-P0CB slice D); the per-argument checks for the sprite size, key
+click and baud are `scs_extra_arg` there. The return
 to text is `txt_mode` in [basic/repl.asm](../../basic/repl.asm).
 
 ## Related concepts

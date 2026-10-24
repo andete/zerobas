@@ -1696,6 +1696,32 @@ item — do **one item per session** to keep context lean.
       watch); a deeper stack (as MERGE, C1); RUN "file" now needs zerobas-sub2.
       ➡️ NEXT: slice D (SCREEN / COLOR / WIDTH / KEY), and the tape loop (~230 B more)
       only after a TAPIN timing study.
+      ✅ **SLICE D DONE 2026-10-24: SCREEN, COLOR, WIDTH AND KEY LEFT MAIN.** Drafted by a
+      subagent in its own worktree (build, host tests and static checks only), integrated and
+      measured here. sub2/scrstmt.asm's `scr_tenant`, reached from ls_tenant's tail; the four
+      stmt_table labels sit on C1's shared `ld c,a` byte (0 B). Moved: ex_screen / scr_extra,
+      ex_color and its helpers (clr_eval / clr_prep / clr_commit from the LOW region),
+      ex_width, ex_key and its arms, and SCREEN's sprite-argument helpers from graphics.asm.
+      STAYED: ex_cls / cls_keyline, key_repaint (CLS and the prompt share it), spr_tenant
+      (the sprite statements), and a new `key_op` label on key_repaint's tail (0 B); one new
+      main routine, `key_drain` (11 B), the continuation for KEY LIST / KEY n,"text" so their
+      print loop runs in main, off sub2's frame (D-BLOADSTK's lesson). Six `p0_*` imports.
+      📏 Walls (2026-10-24): main low region 8 -> 41 B free, the $6CF3 pad 893 -> 1274 B,
+      page-1 tail 287 -> 291 B (418 B of main); sub2 page 0 13476 -> 12940 B. Host tests 87/87;
+      tests/msxtest.py bridges subrom2_call into sub2 when a test seeds SUBSLOT2.
+      📏 screenerr-acceptance 76/76 agree on slice D ([`scrbaud_knife_base.out`](scratchpad/scrbaud_knife_base.out));
+      🔪 the D-SCRBAUD knives, re-pointed at sub2/scrstmt.asm (their old target had moved --
+      an inert knife until then): K-SB1..4 each reach sub2.rom and move exactly their rows,
+      restore BYTE-IDENTICAL ([`slicED_scrbaud_knives.out`](scratchpad/slicED_scrbaud_knives.out)).
+      ⏱ THE SPEED COST, measured by the FULL battery's kwtime (2026-10-24, T5 is paused --
+      Joost 10-20: ROM space first, "it'll also have speed impact"): COLOR's border form 2x ->
+      2.8x the reference's time, KEY's display-on 3.1x -> 3.4x, WIDTH 0.8x -> 0.81x, SCREEN
+      unchanged (docs/tier-status.md). A game that runs COLOR every frame pays it.
+      📼 The tape collection on slice D ([`tapecorpus_sliceD.out`](scratchpad/tapecorpus_sliceD.out)):
+      SAME 9, NEAR 12, RUNS? 21, RESET 0 -- all 42 titles in the class they had before it.
+      ⚠️ RISK CARRIED: these statements now run 18-22 B deeper (one CALSLT + p0cb frames), the
+      D-BLOADSTK class for a no-CLEAR loader that then runs SCREEN / COLOR / WIDTH / KEY; and the
+      tenant enters under sr_slot's DI (C-BIOS's VDP routines re-enable).
 
 - [ ] 💡 **D-TWOVARIANT — "BEST WITH SUB ROM" AND "GOOD WITHOUT SUB ROM" (Joost
       2026-10-21, an idea, NOT a plan)**
@@ -6821,7 +6847,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9287 (T-6FE392)8 (T-529ABE)` from `TODO.md:14854 (T-529ABE)`: a
+      `TODO.md:9313 (T-6FE392)8 (T-529ABE)` from `TODO.md:14880 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9742,7 +9768,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14854 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14880 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

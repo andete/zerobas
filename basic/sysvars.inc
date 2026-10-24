@@ -607,10 +607,14 @@ G8_RESIDENT     equ     1
 ; Gated like G8_RESIDENT/I1_RESIDENT, and it MUST be: the
 ; T3 parse surface (ex_on_key/ex_key_stmt) lives in the low region, so it exists
 ; only in the repack build, while its two call sites (ex_on's peek in program.asm
-; and ex_key's peek in basic/screen.asm) sit in always-assembled page-1 code, so
+; and ex_key's peek in basic/screen.asm, which is sub2/scrstmt.asm's since
+; D-P0CB slice D) sit in always-assembled page-1 code, so
 ; a bare `IF TRAPS_T3` there would leave them referencing symbols the disabled
 ; build never assembles -- i.e. the gate could not be flipped at all without this
 ; ELSE. (It also had to carry the retired lean cart, which assembled neither.)
+; 🚚 Since D-P0CB slices B / D the parse surface is zerobas-sub2's
+; (sub2/trapstmt.asm), and ex_key's `(` peek is sub2/scrstmt.asm's scr_key; the
+; flag gates that peek and main's ex_on_key stub (program.asm).
 TRAPS_T3        equ     1
 
 ; --- TRAPS_T4: the SPRITE-trap build gate (docs/spec-traps-t4-sprite.md §7) --
@@ -1570,7 +1574,9 @@ CON_LASTROW     equ     23      ; 0-based; CSRY is 1-based, so CSRY max = 24
 ; under `KEY ON` and 0 under `KEY OFF` (measured both ways in ONE run,
 ; scratchpad/cnsdfg_probe.py: 0 -> 255 on the VG-8020).
 ; 🔴 AND C-BIOS DOES NOT MAINTAIN IT -- it reads 0 in BOTH states here, which is
-; why `key_on`/`key_off` WRITE it instead of reading it. That makes this MORE
+; why KEY ON / KEY OFF WRITE it instead of reading it (sub2/scrstmt.asm's
+; sck_on / sck_off since D-P0CB slice D; basic/screen.asm's key_on / key_off
+; before). That makes this MORE
 ; faithful, not less: a program PEEKing $F3DE now sees the MSX-correct value on
 ; our target too, where before it saw 0 whatever `KEY` had done.
 ; ⚠️ NOT A NEW RAM BYTE ON PURPOSE. RAM has no gate here and both cells this file
@@ -1599,7 +1605,7 @@ KEYOP_FNKBLANK  equ     253     ; keystr_tenant: erase it
 ; adjustment lives inside its BIOS `CHPUT`; C-BIOS has no such adjustment but
 ; DOES honour `CRTCNT`, and screen output here goes through `CHPUT` (`pchar`'s
 ; `PRDEST` dispatch), so the only lever we own is `CRTCNT` itself.
-; 🎯 SO `key_on` DECREMENTS IT AND `key_off` GIVES IT BACK, which makes the
+; 🎯 SO KEY ON DECREMENTS IT AND KEY OFF GIVES IT BACK, which makes the
 ; BEHAVIOUR identical -- scrolling AND `LOCATE` both stop at 22 under `KEY ON`,
 ; exactly as the reference does -- and every other consumer of `CRTCNT` (the
 ; screen editor in `sub/readline.asm`, `basic/repl.asm`) inherits the correct
@@ -4585,12 +4591,13 @@ GP_LEFT         equ     $EE79   ; DISK-ONLY: record bytes still to move, ends $E
 ; --- D-PARTIAL: COLOR's shadow colour pair (2026-09-08) ----------------------
 ; `COLOR 7,99` must leave the foreground UNCHANGED: both references reject the
 ; statement ATOMICALLY, and zerobas stored each component as it validated it.
-; ex_color now writes the fg/bg here and clr_apply copies them out, so NOTHING
+; COLOR now writes the fg/bg here and its commit copies them out (sub2/
+; scrstmt.asm's scr_color / scc_apply since D-P0CB slice D), so NOTHING
 ; reaches the real sysvars until the statement has committed — which makes every
 ; failure path atomic for free, including the ones that reset SP.
 ; ⚠️ FORCLR ($F3E9) and BAKCLR ($F3EA) are ADJACENT, so both ride one 16-bit load.
 ; BDRCLR is NOT shadowed and needs no saving: the border is stored LAST and
-; nothing between that store and clr_apply can fail.
+; nothing between that store and the commit (scc_apply) can fail.
 ; 🟢 TAKEN FROM THE RETIRED FOR_STK, and the span is MEASURED free rather than
 ; merely unnamed: `make ramfree-acceptance` fills it and runs nine subsystems over
 ; it — FOR nests to depth 9, GOSUB, crunch, PAINT, DRAW, PLAY, the string heap,

@@ -37,8 +37,9 @@ tne_loop:
                 ; `ld a,(nn) / dec a / ld (nn),a` is 7 -- and this is the ONLY
                 ; site of that shape in the whole tree where HL is free AND the
                 ; bytes land in MAIN PAGE 1. The other four main-tree sites
-                ; (basic/screen.asm, basic/traps.asm x3) each already carry a
-                ; comment saying HL is live there; the other twelve are in
+                ; (basic/screen.asm -- SCREEN's GFX_SARGN count, in
+                ; sub2/scrstmt.asm since D-P0CB slice D -- and basic/traps.asm
+                ; x3) each already carry a comment saying HL is live there; the other twelve are in
                 ; sub-only bodies, where a byte is not a carve.
                 ; ⚠️ HL IS DEAD HERE and that is READ, not assumed: `ld (TSV_PTR),hl`
                 ; two instructions up has already stored it, and the loop top

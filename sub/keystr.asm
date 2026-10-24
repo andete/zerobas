@@ -165,8 +165,9 @@ keystr_tenant:
                 jr      z,ks_blank
                 ; Every other op leaves DETOKBUF printable for the resident drain:
                 ; LIST fills it, the others leave it EMPTY (a lone NUL), so
-                ; ex_key can drain unconditionally and spend no page-1 bytes on
-                ; a branch.
+                ; main's key_drain (basic/screen.asm -- KEY's continuation since
+                ; D-P0CB slice D moved the parse to sub2) can drain
+                ; unconditionally and spend no page-1 bytes on a branch.
                 push    af
                 call    db_begin            ; D-DETOKBUF: the window; DB_SKIP is the
                                             ; resident loop's (KEY LIST re-runs)

@@ -4,8 +4,9 @@
 ; keytrap.asm — the KEY interrupt-trap EVENT SOURCE (arc slice T3).
 ; ===========================================================================
 ; docs/spec-traps-t3-key.md §4. Only the event source lives here; the parse
-; surface (`ON KEY GOSUB`, `KEY(n) ON|OFF|STOP`) is in program.asm/screen.asm
-; and the dispatch half is the shared check_traps machinery in traps.asm.
+; surface (`ON KEY GOSUB`, `KEY(n) ON|OFF|STOP`) is zerobas-sub2's since D-P0CB
+; slices B / D (sub2/trapstmt.asm, reached from program.asm's ex_on_key stub and,
+; for KEY(n), from sub2/scrstmt.asm's KEY) and the dispatch half is the shared check_traps machinery in traps.asm.
 ;
 ; WHY THIS IS A C-BIOS HOOK AND NOT A MATRIX POLL (D-T3-1, measured).
 ; KEY is a DELIVERY trap, not an edge trap like STRIG: it fires once per BIOS

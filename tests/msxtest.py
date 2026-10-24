@@ -23,6 +23,7 @@ from z80 import Z80
 _SENTINEL = 0xFFFF          # return address that marks "the routine returned"
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SUB_CACHE = {}             # process-wide cache of the assembled sub-ROM bytes
+_SUB2_CACHE = {}            # ...and of zerobas-sub2's (D-P0CB slice D)
 
 # Floor of the stack band call() owns. RAM starts at $8000 and call() puts its
 # own stack at $F380, so anything below this means SP was loaded from memory
@@ -99,6 +100,31 @@ def _build_subrom():
     return _SUB_CACHE["bytes"], _SUB_CACHE["sym"]
 
 
+def _build_sub2rom():
+    """Assemble sub2/sub2.asm (zerobas-sub2, slot 3-3) once per process -> (full
+    32 KB bytes, symbols). Same two-page layout as sub.rom; the same per-pid
+    names as _build_subrom, for the same reason. Its p0_* call-back addresses
+    come from the tracked sub/basic-resident-abi.inc, which subrom-abi-check
+    keeps equal to a fresh regen from basic/main.asm -- the source every test
+    image here is assembled from."""
+    if "bytes" not in _SUB2_CACHE:
+        rom = tp(f"msxtest_sub2.{os.getpid()}.rom")
+        sym = tp(f"msxtest_sub2.{os.getpid()}.sym")
+        try:
+            subprocess.run(["pasmo", "-I", "sub", "--bin", "sub2/sub2.asm", rom, sym],
+                           check=True, capture_output=True, cwd=_ROOT)
+            with open(rom, "rb") as fh:
+                _SUB2_CACHE["bytes"] = fh.read()
+            _SUB2_CACHE["sym"] = load_symbols(sym)
+        finally:
+            for f in (rom, sym):
+                try:
+                    os.remove(f)
+                except OSError:
+                    pass
+    return _SUB2_CACHE["bytes"], _SUB2_CACHE["sym"]
+
+
 def load_symbols(path):
     """Parse a pasmo symbol file ('LABEL\\tEQU 0xXXXXH') -> {name: addr}."""
     syms = {}
@@ -171,6 +197,8 @@ class Machine:
             self.mem[self.sym["P1_BLIT"]:self.sym["P1_BLIT"] + (t1 - t0)] = self.mem[t0:t1]
         if "subrom_call" in self.sym:
             self._install_subrom_bridge()
+        if "subrom2_call" in self.sym and "SUBSLOT2" in self.sym:
+            self._install_sub2_bridge()
 
     def _seed_hooks(self):
         """Fill the hook table $FD9A..$FFC9 with RET, as the BIOS does at boot.
@@ -310,6 +338,81 @@ class Machine:
             cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)
 
         self.trap("subrom_call", bridge)
+
+    def _install_sub2_bridge(self):
+        """Bridge `subrom2_call` -- the CALSLT into zerobas-sub2, slot 3-3 (D-SUB2
+        c) -- and, inside a sub2 PAGE-0 tenant, its call-back `p0cb` (D-P0CB,
+        docs/spec-sub2-p0cb.md). Added with D-P0CB slice D, which moved SCREEN /
+        COLOR / WIDTH / KEY -- statements tests/test_screen.py drives -- into a
+        sub2 page-0 tenant.
+
+        🎯 OPT-IN BY THE MACHINE'S OWN CELL, exactly as the ROM decides: the real
+        subrom2_call refuses (CF=1, A=0, Z) when SUBSLOT2 is 0, and this harness's
+        RAM starts zeroed, so every test that does not seed SUBSLOT2 sees "sub2
+        absent" -- what it saw before this bridge existed. A test that wants the
+        tenant seeds SUBSLOT2 the way the boot does (subrom-boot.asm).
+
+        The maps, mirroring a real CALSLT:
+          * PAGE 0 (IX < $4000): sub2's page 0 over $0000-$3FFF; main PAGE 1 STAYS
+            ($4000-$7FFF), and RAM is shared. Main traps on page 1 come along;
+            those on $0000-$3FFF do not (that page is sub2's while it runs).
+          * PAGE 1 (IX >= $4000): sub2's page 1 over $4000-$7FFF; main's low
+            region and BIOS stay, with their traps (as the ROM-1 page-1 bridge).
+        `p0cb` (trapped in the page-0 machine) runs IX in THIS machine -- main's
+        page 0 mapped back, as CLPRIM does -- on the tenant's own SP, handing A, F,
+        BC, DE, HL (and IY, untouched) over and back; a raise inside propagates
+        as the Python exception the test's own trap throws. RAM is copied across
+        every crossing in both directions (D-WSZERO S16.0: one RAM, one stack)."""
+        RAM_LO = 0x8000
+        main = self
+
+        def regs_in(dst, src):
+            dst.a, dst.f, dst.bc, dst.de, dst.hl = src.a, src.f, src.bc, src.de, src.hl
+            dst.ix, dst.iy = src.ix, src.iy
+
+        def p0cb(s2m):
+            c = s2m.cpu
+            main.mem[RAM_LO:0x10000] = s2m.mem[RAM_LO:0x10000]
+            regs_in(main.cpu, c)
+            main.cpu.sp = c.sp                  # the tenant's stack: one RAM
+            target = c.ix
+            main.call(target, keep_sp=True)     # main's page 0 mapped for the call
+            s2m.mem[RAM_LO:0x10000] = main.mem[RAM_LO:0x10000]
+            r = main.cpu
+            c.a, c.f, c.bc, c.de, c.hl, c.ix = r.a, r.f, r.bc, r.de, r.hl, r.ix
+
+        def bridge(mach):
+            cpu = mach.cpu
+            if mach.mem[mach.sym["SUBSLOT2"]] == 0:
+                cpu.a = 0                       # the real `ld a,(SUBSLOT2) / or a /
+                cpu.f = 0x45                    # scf / ret z`: A = 0, Z, P, CF = 1
+                return
+            sub2_bytes, sub2_sym = _build_sub2rom()
+            s2m = object.__new__(Machine)
+            s2m.mem = bytearray(mach.mem)
+            s2m.sym = {}
+            s2m.cpu = Z80(s2m.mem)
+            if cpu.ix < 0x4000:
+                s2m.mem[0:0x4000] = sub2_bytes[0:0x4000]
+                s2m.traps = {a: fn for a, fn in mach.traps.items() if 0x4000 <= a < 0x8000}
+                s2m.traps[sub2_sym["p0cb"]] = p0cb
+            else:
+                s2m.mem[0x4000:0x8000] = sub2_bytes[0x4000:0x8000]
+                s2m.traps = {a: fn for a, fn in mach.traps.items() if a < 0x4000}
+            sp_entry = cpu.sp                   # -> the return address; restored below
+            s2m.cpu.sp = cpu.sp                 # the CALLER's stack
+            s2m.call(cpu.ix, keep_sp=True, a=cpu.a, bc=cpu.bc, de=cpu.de, hl=cpu.hl,
+                     iy=cpu.iy)
+            mach.mem[RAM_LO:0x10000] = s2m.mem[RAM_LO:0x10000]
+            r = s2m.cpu
+            cpu.sp = sp_entry
+            cpu.a, cpu.bc, cpu.de, cpu.hl, cpu.ix = r.a, r.bc, r.de, r.hl, r.ix
+            # sr_slot's tail `or a`: CF = 0 (completed), S / Z / P from A
+            a = cpu.a
+            cpu.f = (a & 0x80) | (0x40 if a == 0 else 0) | \
+                (0x04 if bin(a).count("1") % 2 == 0 else 0)
+
+        self.trap("subrom2_call", bridge)
 
     # --- symbol / memory access ------------------------------------------
     def addr(self, name):

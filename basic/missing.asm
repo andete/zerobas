@@ -98,7 +98,8 @@ mot_go:
 ; ERRFLG is set for them and the migration is one err_msgtab operand.
 
 ; --- ex_locate: LOCATE [col][,[row][,cursor]] -------------------------------
-; Modelled on ex_color (basic/screen.asm), the tree's other three-optional-
+; Modelled on ex_color (basic/screen.asm then; zerobas-sub2's scr_color,
+; sub2/scrstmt.asm, since D-P0CB slice D), the tree's other three-optional-
 ; comma-separated-argument statement, with four differences that are all
 ; measured (spec §3.2, characterization §3.2/§3.3):
 ;
@@ -214,8 +215,8 @@ loc_col_set:
                 inc     a                   ; CSRX is 1-BASED
                 ld      (CSRX),a
                 ; row -> clamp to the console's bottom row, which is
-                ; `CRTCNT - 1` and MOVES WITH `KEY` (D-SCROLLBOUND): `key_on`
-                ; reserves a row by decrementing `CRTCNT`, so the clamp, the
+                ; `CRTCNT - 1` and MOVES WITH `KEY` (D-SCROLLBOUND): KEY ON
+                ; (sub2/scrstmt.asm's sck_on since D-P0CB slice D) reserves a row by decrementing `CRTCNT`, so the clamp, the
                 ; scroll and the screen editor all read ONE bound instead of
                 ; three copies of the rule.
                 ; 🔴 THE OLD COMMENT HERE SAID "NOT CRTCNT, which measures 24 on

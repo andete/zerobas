@@ -1,5 +1,5 @@
 {
- "rom_fingerprint": "9c8b4cf9 20dbc3d2 e14d43a9 063a634f c40ac2e0",
+ "rom_fingerprint": "ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2",
  "rows": {
   "ABS": {
    "connected": true,
@@ -149,11 +149,11 @@
   "CIRCLE": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "DIVERGENT"
    },
    "row": "circlekw",
    "subject": "CIRCLE",
-   "verdict": "UNREADABLE",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "CLEAR": {
@@ -388,11 +388,11 @@
   "DRAW": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "MISSING"
    },
    "row": "drawkw",
    "subject": "DRAW",
-   "verdict": "UNREADABLE",
+   "verdict": "MISSING",
    "weak": false
   },
   "DSKF": {
@@ -778,11 +778,11 @@
   "LINE": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "DIVERGENT"
    },
    "row": "linekw",
    "subject": "LINE",
-   "verdict": "UNREADABLE",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "LIST": {
@@ -1077,11 +1077,11 @@
   "PAINT": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "MISSING"
    },
    "row": "paintkw",
    "subject": "PAINT",
-   "verdict": "UNREADABLE",
+   "verdict": "MISSING",
    "weak": false
   },
   "PDL": {
@@ -1144,13 +1144,13 @@
    "weak": false
   },
   "PRESET": {
-   "connected": true,
+   "connected": false,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "SUPPORTED"
    },
    "row": "presetkw",
    "subject": "PRESET",
-   "verdict": "UNREADABLE",
+   "verdict": "SUPPORTED",
    "weak": false
   },
   "PRINT": {
@@ -1166,21 +1166,21 @@
   "PSET": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "MISSING"
    },
    "row": "psetkw",
    "subject": "PSET",
-   "verdict": "UNREADABLE",
+   "verdict": "MISSING",
    "weak": false
   },
   "PUT": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "MISSING"
    },
    "row": "putsprite",
    "subject": "PUT SPRITE",
-   "verdict": "UNREADABLE",
+   "verdict": "MISSING",
    "weak": false
   },
   "READ": {
@@ -1356,11 +1356,11 @@
   "SPRITE": {
    "connected": true,
    "modes": {
-    "stmt": "UNREADABLE"
+    "stmt": "DIVERGENT"
    },
    "row": "spritekw",
    "subject": "SPRITE",
-   "verdict": "UNREADABLE",
+   "verdict": "DIVERGENT",
    "weak": false
   },
   "SQR": {
@@ -1656,7 +1656,7 @@
   "CIRCLE": {
    "connected": true,
    "rows": {
-    "circlekw": "UNREADABLE"
+    "circlekw": "DIVERGENT"
    }
   },
   "CLEAR": {
@@ -1803,7 +1803,7 @@
   "DRAW": {
    "connected": true,
    "rows": {
-    "drawkw": "UNREADABLE"
+    "drawkw": "MISSING"
    }
   },
   "DSKF": {
@@ -2042,7 +2042,7 @@
   "LINE": {
    "connected": true,
    "rows": {
-    "linekw": "UNREADABLE"
+    "linekw": "DIVERGENT"
    }
   },
   "LINE INPUT": {
@@ -2278,7 +2278,7 @@
   "PAINT": {
    "connected": true,
    "rows": {
-    "paintkw": "UNREADABLE"
+    "paintkw": "MISSING"
    }
   },
   "PDL": {
@@ -2313,9 +2313,9 @@
    }
   },
   "PRESET": {
-   "connected": true,
+   "connected": false,
    "rows": {
-    "presetkw": "UNREADABLE"
+    "presetkw": "SUPPORTED"
    }
   },
   "PRINT": {
@@ -2345,7 +2345,7 @@
   "PSET": {
    "connected": true,
    "rows": {
-    "psetkw": "UNREADABLE"
+    "psetkw": "MISSING"
    }
   },
   "PUT #": {
@@ -2357,7 +2357,7 @@
   "PUT SPRITE": {
    "connected": true,
    "rows": {
-    "putsprite": "UNREADABLE",
+    "putsprite": "MISSING",
     "putsprite_b": "UNREADABLE"
    }
   },
@@ -2471,7 +2471,7 @@
   "SPRITE": {
    "connected": true,
    "rows": {
-    "spritekw": "UNREADABLE"
+    "spritekw": "DIVERGENT"
    }
   },
   "SQR": {
@@ -2591,5 +2591,5 @@
    }
   }
  },
- "written": "2026-10-23 23:43:07"
+ "written": "2026-10-24 01:38:44"
 }

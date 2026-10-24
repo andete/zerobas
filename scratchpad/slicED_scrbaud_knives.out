@@ -1,0 +1,40 @@
+base ROM ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2
+base rows: {'a.spr': ' 0 , 1 ', 'a.sprbad': ' 5 , 1 ', 'a.sprslot1': ' 0 , 2 ', 't.b1': ' 0 , 1 ', 't.b2': ' 0 , 1 ', 't.b0': ' 5 , 1 ', 't.b3': ' 5 , 1 '}
+
+K-SB1:   ROM ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2  ->  ae9e90ef 20dbc3d2 c55817cc 9d4663c3 66811f76
+    t.b0: ' 5 , 1 '  held
+    t.b1: ' 0 , 1 ' -> ' 5 , 1 '  MOVED
+    t.b2: ' 0 , 1 ' -> ' 5 , 1 '  MOVED
+    t.b3: ' 5 , 1 '  held
+    a.sprbad: ' 5 , 1 '  held
+    a.spr: ' 0 , 1 ' -> ' 5 , 1 '  MOVED
+    a.sprslot1: ' 0 , 2 ' -> ' 5 , 2 '  MOVED
+
+K-SB2:   ROM ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2  ->  ae9e90ef 20dbc3d2 c55817cc 9d4663c3 22d47d42
+    t.b0: ' 5 , 1 '  held
+    t.b1: ' 0 , 1 '  held
+    t.b2: ' 0 , 1 '  held
+    t.b3: ' 5 , 1 ' -> ' 0 , 1 '  MOVED
+    a.sprbad: ' 5 , 1 '  held
+    a.spr: ' 0 , 1 '  held
+    a.sprslot1: ' 0 , 2 '  held
+
+K-SB3:   ROM ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2  ->  ae9e90ef 20dbc3d2 c55817cc 9d4663c3 6dcb3f05
+    t.b0: ' 5 , 1 '  held
+    t.b1: ' 0 , 1 '  held
+    t.b2: ' 0 , 1 '  held
+    t.b3: ' 5 , 1 '  held
+    a.sprbad: ' 5 , 1 '  held
+    a.spr: ' 0 , 1 '  held
+    a.sprslot1: ' 0 , 2 ' -> ' 99 , 2 '  MOVED
+
+K-SB4:   ROM ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2  ->  ae9e90ef 20dbc3d2 c55817cc 9d4663c3 3edc27dd
+    t.b0: ' 5 , 1 ' -> ' 0 , 1 '  MOVED
+    t.b1: ' 0 , 1 '  held
+    t.b2: ' 0 , 1 ' -> ' 5 , 1 '  MOVED
+    t.b3: ' 5 , 1 '  held
+    a.sprbad: ' 5 , 1 '  held
+    a.spr: ' 0 , 1 '  held
+    a.sprslot1: ' 0 , 2 '  held
+
+restore: ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2 -> ae9e90ef 20dbc3d2 c55817cc 9d4663c3 483539d2  BYTE-IDENTICAL

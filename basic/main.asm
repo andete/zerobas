@@ -175,62 +175,10 @@ mxf_require_end:
                 jp      stmt_error          ; anything else -> ERR 2, raised BEFORE
                                             ; the CLEAR that would eat the variables
 
-; 🔴 D-DOMAIN: COLOR VALIDATED NOTHING. `COLOR 99`, `COLOR -1`, `COLOR 256`,
-; `COLOR 15,99` and `COLOR 15,4,99` were all ACCEPTED here and are all
-; `Illegal function call` on BOTH references. The domain is pinned by rows, not
-; guessed: 0 and 15 are legal, **16 is the first illegal one**, and `COLOR 256`
-; is ALSO ERR 5 -- so the test must see the whole 16-bit value, because 256's
-; low byte is 0 and would pass a byte-only check.
-; 💰 The three call sites stay 3 bytes each (`call eval` -> `call clr_eval`), so
-; page 1 pays NOTHING; the helper itself lives in the low region.
-; clr_eval — evaluate a COLOR component and require 0..15.
-; out: E = the value, D = 0. Anything else raises ERR 5 and does not return.
-clr_eval:
-                call    eval
-                ; D-COLOREQ: a PENDING error first. `COLOR=NEW`, `COLOR=` and
-                ; `COLOR=,1` (MSX2 palette forms run on an MSX1) are `Syntax error`
-                ; on BOTH references; here eval returned its junk -1 with the
-                ; syntax error still pending in FPERR, and the 0..15 test below
-                ; raised ERR 5 over it. Every other checked argument already asks
-                ; first (eval_int16_checked).
-                call    check_expr_errors
-                ld      a,d                 ; the HIGH byte first: 256 has a low
-                or      a                   ; byte of 0 and must NOT pass
-                jr      nz,clr_ill
-                ld      a,e
-                cp      16
-                ret     c                   ; 0..15 -> good
-clr_ill:
-                ; 🟢 D-PARTIAL: NOTHING TO UNDO HERE, WHICH IS THE POINT. A
-                ; save-and-restore shape would need an arm at every exit — and
-                ; `clr_missing` and any error raised inside `eval` both reach
-                ; `raise_error`, which resets SP, so two of the four exits could
-                ; not run one. The shadow makes them all atomic without an arm.
-                jp      gb_illegal          ; ERR 5 Illegal function call
-
-; clr_prep — snapshot FORCLR+BAKCLR into the shadow before COLOR parses anything.
-; Called from ex_color's first instruction; page 1 pays only the `call`.
-; ⚠️ IT MUST PRESERVE HL ITSELF: HL is the text cursor, live in every statement
-; handler. An earlier attempt at this fix used HL as scratch here and turned every
-; `COLOR` in the tree into ERR 2 — the probe's CONTROL row is what caught it.
-; 🎯 THE SNAPSHOT IS ALSO WHAT MAKES AN OMITTED ARGUMENT WORK: `COLOR ,bg` never
-; writes the fg slot, so the commit puts the old foreground back unchanged.
-clr_prep:
-                push    hl
-                ld      hl,(FORCLR)
-                ld      (CLR_SAVE),hl
-                pop     hl
-                ret
-
-; clr_commit — publish the shadow pair, once the whole statement has parsed.
-; Called from INSIDE clr_apply's existing `push hl` window and BEFORE `call
-; CHGCLR`, which reads the three sysvars — so it needs no HL guard of its own.
-; It leaves A alone; since D-ADDR29 S3 (2026-09-25) clr_apply loads SCRMOD AFTER
-; this call (it copies FORCLR to ATRBYT first), so that no longer matters.
-clr_commit:
-                ld      hl,(CLR_SAVE)
-                ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
-                ret
+; (clr_eval / clr_prep / clr_commit -- COLOR's component check and its D-PARTIAL
+; shadow pair -- stood here, 33 B of the low region, until D-P0CB slice D
+; (2026-10-24) moved COLOR into zerobas-sub2: sub2/scrstmt.asm scc_eval and
+; scr_color / scc_apply's inline copies. Their history is this file's before it.)
 
 ; From in front of the $3297 pin (D-BIOSINT, 2026-10-17): the repacked C-BIOS
 ; grew 28 B ($0D12's keyboard-scan entry) and BASIC_ORG with it, so exactly
@@ -447,7 +395,9 @@ __MEAS_LOW_END:
 ; + pchar + the string layer), so it follows print.asm in the include order.
                 include "basic/printusing.asm"
 
-; Screen-setup verbs SCREEN/COLOR/CLS/WIDTH/KEY (defines `ex_screen`, …).
+; CLS and the function-key-line helpers (ex_cls, key_repaint, key_op, key_drain);
+; SCREEN / COLOR / WIDTH / KEY are zerobas-sub2's since D-P0CB slice D
+; (sub2/scrstmt.asm; their entry labels are in basic/program.asm).
                 include "basic/screen.asm"
 
 

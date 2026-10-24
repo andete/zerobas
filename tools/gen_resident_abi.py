@@ -520,6 +520,16 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_cas_name_cut=cas_name_cut",
     "p0_req_comma=req_comma",
     "p0_check_expr_errors=check_expr_errors",
+    # D-P0CB slice D (2026-10-24): SCREEN / COLOR / WIDTH / KEY, sub2/scrstmt.asm.
+    # CONTINUATION (returned in DE, never p0cb'd):
+    "p0_key_drain=key_drain",         # KEY LIST / KEY n,"str": the print loop, in main
+    # ordinary returning routines (CHGMOD / CHGCLR / ERAFNK / DSPFNK are the
+    # BIOS's fixed jump-table addresses, from sysvars.inc -- not imports):
+    "p0_req_operand=req_operand",
+    "p0_eval_byte_checked=eval_byte_checked",
+    "p0_spr_tenant=spr_tenant",       # SCREEN's sprite-size ops (shared with SPRITE)
+    "p0_key_repaint=key_repaint",     # shared with CLS and the prompt
+    "p0_key_op=key_op",               # the keystr tenant (an inline-byte call)
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)

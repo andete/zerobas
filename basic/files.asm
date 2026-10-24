@@ -1305,8 +1305,10 @@ dl_bare:
 ;        CF=0 -> not one of the three; A = the original token, so a caller can
 ;                still test it (ex_stop's bare-`STOP` path needs exactly that).
 ;   Clobbers A, B, F. **Preserves HL and DE** -- non-negotiable: HL is the token
-;   cursor at every site, and ex_strig_stmt/ex_key_stmt hold the ZTRAP entry
-;   pointer in DE across this call.
+;   cursor at every site, and STRIG(n) / KEY(n)'s shared middle (sub2's
+;   tt_entry_paren, sub2/trapstmt.asm, through p0cb -- main's ex_strig_stmt /
+;   ex_key_stmt bodies until D-P0CB slices B / D) holds the ZTRAP entry pointer
+;   in DE across this call.
 ;
 ; ⚠️ It returns "which one", NOT "is this allowed". Acceptance stays with the
 ; caller, which is what lets a 2-way site share a 3-way decoder: `MOTOR STOP` is

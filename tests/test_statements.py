@@ -7,7 +7,8 @@ bypass by calling internals directly:
   - PRINT  (ex_print + exp_* + print_number) — captured CHPUT stream
   - GOTO   (ex_goto, the bare statement form)
   - CLEAR  (ex_clear / clr_himem — records HIMEM)
-  - WIDTH  (ex_width — sets LINLEN, re-inits via CHGMOD)
+  - WIDTH  (ex_width -> zerobas-sub2's scr_width since D-P0CB slice D —
+             sets LINLEN, re-inits via CHGMOD)
 
 Method: store a small program, run it through run_prog (so each statement goes
 through exec -> exec_stmt -> the handler), trap BREAKX (never pressed) and the
@@ -189,6 +190,9 @@ def run():
 
     # --- WIDTH n (ex_width sets LINLEN) --------------------------------------
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    m.mem[m.sym["SUBSLOT2"]] = 0x8F        # D-P0CB slice D: WIDTH runs in sub2
+                                            # (3-3); the harness bridges it once
+                                            # SUBSLOT2 says the ROM is there
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
 
@@ -197,7 +201,8 @@ def run():
     # (scratchpad/letnew_probe.py -> scratchpad/letnew_run.out): FRE(0) inside
     # `X=...FRE(0)...` with X new reads the new entry already spent -- 11 B for a
     # double, 5 int, 7 single, 6 for a string's entry, 11 for `FOR I=FRE(0)`, 0 on
-    # every `.pre` twin. This harness has no sub2 (FRE(0)'s live-stack tenant), so
+    # every `.pre` twin. These machines leave SUBSLOT2 at 0, so msxtest's sub2
+    # bridge reports sub2 ABSENT and FRE(0)'s live-stack tenant never runs, so
     # the witness is VARPTR, which FINDS and never creates (D-VPTRDOM): VARPTR(X)
     # inside X's own right side is Illegal function call unless X already exists.
     # Before this slice every row below printed `Illegal function call in 10`.

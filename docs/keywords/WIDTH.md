@@ -124,9 +124,10 @@ not the same.
 
 ## Where it lives
 
-`ex_width` in [basic/screen.asm](../../basic/screen.asm): the range check per
-mode, the no-op test against `LINLEN`, then the BIOS mode switch to apply the
-new width and `key_repaint` for the function-key line.
+`scr_width` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm) (the second sub-ROM, since 2026-10-24): the range check
+per mode, the no-op test against `LINLEN`, then the BIOS mode switch to apply
+the new width and `key_repaint` ([basic/screen.asm](../../basic/screen.asm))
+for the function-key line.
 
 ## Related concepts
 

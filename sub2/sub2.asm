@@ -85,7 +85,9 @@ sub2_p0_table:
                                                 ;   by token (slice C1, filestmt.asm),
                                                 ;   SAVE / CSAVE / BSAVE / LOAD / CLOAD /
                                                 ;   BLOAD / RUN <name> (slice C2,
-                                                ;   loadsave.asm)
+                                                ;   loadsave.asm), SCREEN / COLOR /
+                                                ;   WIDTH / KEY (slice D,
+                                                ;   scrstmt.asm)
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -107,6 +109,7 @@ sub2_p0_ping:
                 include "sub2/trapstmt.asm"
                 include "sub2/filestmt.asm"
                 include "sub2/loadsave.asm"     ; D-P0CB slice C2: SAVE / LOAD family
+                include "sub2/scrstmt.asm"      ; D-P0CB slice D: SCREEN / COLOR / WIDTH / KEY
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END
 ; (tools/check_sub_walls.py --sub2, a step of `make basic-reloc`).

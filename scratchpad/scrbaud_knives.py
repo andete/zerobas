@@ -72,7 +72,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scratchpad"))
 import knife_guard                                                # noqa: E402
 
-SRC = os.path.join(ROOT, "basic", "graphics.asm")
+# D-P0CB slice D (2026-10-24): SCREEN's trailing arguments moved to sub2 --
+# spr_extra_arg / sea_bound are scs_extra_arg / scs_bound in sub2/scrstmt.asm.
+# knife_guard hashes build/sub2.rom too, so a cut there cannot be inert unseen.
+SRC = os.path.join(ROOT, "sub2", "scrstmt.asm")
 WATCH = ("t.b0", "t.b1", "t.b2", "t.b3", "a.sprbad", "a.spr", "a.sprslot1")
 
 # 🔴 EVERY CUT HERE IS THE SAME NUMBER OF BYTES AS WHAT IT REPLACES.
@@ -85,15 +88,15 @@ WATCH = ("t.b0", "t.b1", "t.b2", "t.b3", "a.sprbad", "a.spr", "a.sprslot1")
 # ending in "\n" cannot match the region's LAST line -- which `ld c,2` is.
 KNIVES = [
     ("K-SB1", "                cp      c\n",
-     "                cp      a\n", "sea_bound"),
+     "                cp      a\n", "scs_bound"),
     ("K-SB2", "                ld      c,2                 ; serves both domains",
-     "                ld      c,4                 ; serves both domains", "spr_extra_arg"),
+     "                ld      c,4                 ; serves both domains", "scs_extra_arg"),
     ("K-SB3", "                ret     z                   ; baud is validated and then IGNORED\n",
      "                ret     nz                  ; baud is validated and then IGNORED\n",
-     "sea_bound"),
+     "scs_bound"),
     ("K-SB4", "                dec     e                   ; baud 1..2 -> 0..1, so ONE bound test\n",
      "                nop                         ; baud 1..2 -> 0..1, so ONE bound test\n",
-     "spr_extra_arg"),
+     "scs_extra_arg"),
 ]
 
 

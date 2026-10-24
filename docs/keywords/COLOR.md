@@ -134,9 +134,9 @@ the tree.
 
 ## Where it lives
 
-`ex_color` in [basic/screen.asm](../../basic/screen.asm). The range check
-`clr_eval` and the shadow (`clr_prep`, `clr_commit`) are in
-[basic/main.asm](../../basic/main.asm). The colours reach the screen through
+`scr_color` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm), a tenant of the second sub-ROM since 2026-10-24
+(D-P0CB slice D), with the range check `scc_eval` and the apply step
+`scc_apply` beside it. The colours reach the screen through
 the BIOS colour call, which zerobas takes from C-BIOS with one change:
 [cbios-repack/vdp-reg7.patch](../../cbios-repack/vdp-reg7.patch).
 

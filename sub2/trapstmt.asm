@@ -12,7 +12,9 @@
 ;   in   HL = the cursor exactly where main's handler used to get it
 ;        C  = which statement (TT_* below) -- or, for OPEN / CLOSE / MERGE /
 ;             MAXFILES (D-P0CB slice C1), their token: trap_tenant forwards
-;             C >= TT_COUNT to file_tenant (sub2/filestmt.asm)
+;             C >= TT_COUNT to file_tenant (sub2/filestmt.asm), which passes
+;             the SAVE / LOAD family (C2) and SCREEN / COLOR / WIDTH / KEY (D)
+;             on through ls_tenant
 ;   out  DE = the main address to continue at (exec_stmt), HL = its cursor
 ; ex_sub2 then does `push de / ret`. A handler that used to end in `jp pop_exec`
 ; pops its own cursor here and returns exec_stmt: execution must never continue
@@ -33,7 +35,11 @@ TT_ON_STRIG     equ     3
 TT_ON_INTERVAL  equ     4
 TT_INTERVAL     equ     5
 TT_STRIG        equ     6
-TT_KEY          equ     7
+TT_KEY          equ     7                   ; main sends it no longer: since D-P0CB
+                                            ; slice D, KEY(n) arrives as KEY_TOKEN
+                                            ; and sub2/scrstmt.asm's scr_key jumps
+                                            ; to tt_key itself (the table keeps the
+                                            ; slot so the indices do not move)
 
 TT_COUNT        equ     8                   ; C >= TT_COUNT: a statement TOKEN
 
@@ -248,6 +254,9 @@ tt_flag:        push    af                  ; carry the decision across set_stat
                 jp      tt_pop_exec
 
 ; --- KEY(n) ON | OFF | STOP -------------------------------------------------------
+; Entered by `jp` from scr_key (sub2/scrstmt.asm, D-P0CB slice D) with HL on the
+; `(` and the stack as this file's arms get it -- main's ex_key peeked the `(` and
+; went to ex_key_stmt's stub until then.
 tt_key:
                 ld      ix,p0_inc_eval
                 call    p0cb                ; DE = n; HL past the expression

@@ -26,7 +26,9 @@
 ; six entry labels share ex_open's ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm): exec_stmt hands a handler A = its token. RUN's name arm is
 ; the exception -- main keeps bare RUN and RUN <line> (basic/cload.asm do_run)
-; and sends only a NAME here, with C = RUN_TOKEN.
+; and sends only a NAME here, with C = RUN_TOKEN. Any token that is none of
+; these seven is forwarded on to scr_tenant (sub2/scrstmt.asm, D-P0CB slice D:
+; SCREEN / COLOR / WIDTH / KEY, which share the same byte).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract) -- for
 ;             RUN, on the first non-space byte AFTER it (do_run's skipsp_test)
 ;        A = C = the token
@@ -77,8 +79,11 @@ ls_tenant:                                  ; A = C = the token (file_tenant's t
                 jp      z,ls_cload
                 cp      BLOAD_TOKEN
                 jp      z,ls_bload
-                ; FALL THROUGH: RUN_TOKEN is the only other token main sends
-                ; (do_run's name arm); no other reaches here
+                cp      RUN_TOKEN
+                jp      nz,scr_tenant       ; D-P0CB slice D: SCREEN / COLOR / WIDTH /
+                                            ; KEY (sub2/scrstmt.asm) -- every other
+                                            ; token main sends is one of those four
+                ; FALL THROUGH: RUN_TOKEN (do_run's name arm)
 
 ; ===========================================================================
 ; RUN <name expression>   (main's do_run, from its fname_dev on)

@@ -7,10 +7,14 @@ ERAFNK, DSPFNK) that are trapped and replaced by Python stubs.  We assert
 that zerobas calls each entry with the correct arguments and/or writes the
 correct sysvar bytes, not that the BIOS entry itself does anything.
 
-Entry convention (screen.asm): each handler is entered with HL ON its own
-keyword token.  The first instruction of every handler is `inc hl` to step
-past that token.  exec_stmt dispatches directly to ex_screen / ex_color /
-ex_cls / ex_key without the intermediary `inc hl` wrapper used by ex_poke.
+Entry convention: each handler is entered with HL ON its own keyword token
+and A = that token (exec_stmt's contract; tests/test_stmt_dispatch.py).
+exec_stmt dispatches directly to ex_screen / ex_color / ex_cls / ex_key
+without the intermediary `inc hl` wrapper used by ex_poke. Since D-P0CB slice D
+SCREEN / COLOR / KEY run in zerobas-sub2's page 0 (sub2/scrstmt.asm): their
+labels are ex_open's shared `ld c,a` byte in front of ex_sub2, and msxtest's
+sub2 bridge (with p0cb back into main) runs the tenant once SUBSLOT2 is seeded.
+CLS (ex_cls, basic/screen.asm) stayed in main.
 
 So the token buffer layout for each verb is:
     [ keyword_token | operand tokens... | 0x00 ]
@@ -98,6 +102,13 @@ def run():
     build()
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
     s = m.sym
+    # 🚚 D-P0CB slice D (2026-10-24): SCREEN / COLOR / WIDTH / KEY run in
+    # zerobas-sub2's page 0 (sub2/scrstmt.asm). The handler labels are one shared
+    # byte, `ld c,a`, in front of ex_sub2: they take the TOKEN in A, as exec_stmt
+    # hands it (tests/test_stmt_dispatch.py), so each call below passes it. And
+    # the harness bridges sub2 only when SUBSLOT2 says the ROM is there -- the
+    # boot's job (subrom-boot.asm), seeded here; $8F = slot 3-3. CLS stayed main's.
+    m.mem[s["SUBSLOT2"]] = 0x8F
 
     fails = 0
 
@@ -112,7 +123,7 @@ def run():
         log = m.record("CHGMOD", regs=("a",))
         stream = bytes([s["SCREEN_TOKEN"], 0x11 + mode, 0x00])
         m.poke(BUF, stream)
-        m.call("ex_screen", hl=BUF)
+        m.call("ex_screen", hl=BUF, a=s["SCREEN_TOKEN"])
         ok_count = len(log) == 1 and log[0]["a"] == mode
         fails += not ok_count
         print(f"{'PASS' if ok_count else 'FAIL'}  SCREEN {mode}"
@@ -135,7 +146,7 @@ def run():
     stream = bytes([s["SCREEN_TOKEN"], 0x00])    # bare SCREEN, no operand
     m.poke(BUF, stream)
     try:
-        m.call("ex_screen", hl=BUF)
+        m.call("ex_screen", hl=BUF, a=s["SCREEN_TOKEN"])
     except _Raised:
         pass
     ok = raised == [24] and len(log) == 0
@@ -154,7 +165,7 @@ def run():
     stream = bytes([s["SCREEN_TOKEN"], 0x11 + 4, 0x00])   # SCREEN 4 (MSX2 only)
     m.poke(BUF, stream)
     try:
-        m.call("ex_screen", hl=BUF)
+        m.call("ex_screen", hl=BUF, a=s["SCREEN_TOKEN"])
     except _Raised:
         pass
     ok = raised == [5] and len(log) == 0
@@ -179,7 +190,7 @@ def run():
                      ord(','), 0x11 + BD,
                      0x00]))
     m.poke(BUF, stream)
-    m.call("ex_color", hl=BUF)
+    m.call("ex_color", hl=BUF, a=s["COLOR_TOKEN"])
 
     for svar, want, name in [
         (s["FORCLR"], FG, "FORCLR"),
@@ -242,7 +253,7 @@ def run():
     log_dsp = m.record("DSPFNK")
     stream = bytes([s["KEY_TOKEN"], s["OFF_TOKEN"], 0x00])
     m.poke(BUF, stream)
-    m.call("ex_key", hl=BUF)
+    m.call("ex_key", hl=BUF, a=s["KEY_TOKEN"])
     ok_off = len(log_era) == 1 and len(log_dsp) == 0
     fails += not ok_off
     print(f"{'PASS' if ok_off else 'FAIL'}  KEY OFF -> ERAFNK called"
@@ -254,7 +265,7 @@ def run():
     log_dsp2 = m.record("DSPFNK")
     stream = bytes([s["KEY_TOKEN"], s["ON_TOKEN"], 0x00])
     m.poke(BUF, stream)
-    m.call("ex_key", hl=BUF)
+    m.call("ex_key", hl=BUF, a=s["KEY_TOKEN"])
     ok_on = len(log_dsp2) == 1 and len(log_era2) == 0
     fails += not ok_on
     print(f"{'PASS' if ok_on else 'FAIL'}  KEY ON -> DSPFNK called"
@@ -275,7 +286,7 @@ def run():
         m.mem[s["FPERR"]] = 0               # the trapped raise never clears it
         m.poke(BUF, bytes([s["COLOR_TOKEN"]] + tail + [0x00]))
         try:
-            m.call("ex_color", hl=BUF)
+            m.call("ex_color", hl=BUF, a=s["COLOR_TOKEN"])
         except _Raised:
             pass
         ok = raised[:1] == [want] and len(log) == 0

@@ -3152,7 +3152,8 @@ oe_reraise:
 ; and their writes into ZTRAP are sub2/trapstmt.asm's now, reached through ONE
 ; CALSLT per statement and calling main back through p0cb (docs/spec-sub2-p0cb.md).
 ; The trap MACHINERY -- check_traps, set_state, ztrap_entry, the ISR side -- stays.
-; Each entry keeps its label, so ex_on / ex_ff_stmt / screen.asm reach it as before;
+; Each entry keeps its label, so ex_on / ex_ff_stmt reach it as before (screen.asm's
+; ex_key reached ex_key_stmt until slice D moved KEY itself to sub2);
 ; C says which statement (sub2/trapstmt.asm's TT_*). ex_sub2 runs the tenant and
 ; jumps where it says: DE = the continuation (exec_stmt), HL = its cursor.
 ex_on_stop:
@@ -3167,9 +3168,9 @@ ex_on_sprite:
 ex_on_key:
                 ld      c,2                 ; TT_ON_KEY
                 jr      ex_sub2
-ex_key_stmt:
-                ld      c,7                 ; TT_KEY
-                jr      ex_sub2
+                ; (KEY(n) ON|OFF|STOP's stub, ex_key_stmt -- `ld c,7` -- went with
+                ; D-P0CB slice D: KEY_TOKEN reaches sub2 through the shared byte
+                ; below, and sub2's scr_key jumps to tt_key on the `(` itself.)
     ENDIF
 ex_on_strig:
                 ld      c,3                 ; TT_ON_STRIG
@@ -3203,6 +3204,17 @@ ex_interval:
 ; loop, disk_prog_load, sv_tenant, bload_sub) and are called back through p0cb;
 ; the continuations added: run_prog_top, load_handoff and bp_ret (a handler's
 ; own `ret`).
+; --- and SCREEN / COLOR / WIDTH / KEY (D-P0CB slice D, 2026-10-24) -------------
+; basic/screen.asm's four handlers (and SCREEN's sprite-size arms from
+; graphics.asm, COLOR's helpers from main's low region) are sub2/scrstmt.asm's;
+; their rows land on the same byte and ls_tenant forwards the token on. KEY(n)
+; ON|OFF|STOP comes too, as KEY_TOKEN. What stays in main: CLS, key_repaint
+; (CLS and the prompt share it), key_op (the keystr tenant's inline-byte call)
+; and the continuation key_drain (KEY LIST's print loop, off sub2's frame).
+ex_screen:
+ex_color:
+ex_width:
+ex_key:
 ex_save:
 ex_csave:
 ex_bsave:

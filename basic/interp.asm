@@ -237,7 +237,8 @@ bh_himem:
                 ; as the VG-8020 does (`color  auto   goto   list   run` on row 23,
                 ; CNSDFG 255, the scroll bound at row 22 -- scratchpad/
                 ; s3cells_probe.py and the boot-screen capture in TODO D-KEYBOOT).
-                ; This is `key_on`'s work (basic/screen.asm) minus its statement
+                ; This is KEY ON's work (sub2/scrstmt.asm sck_on since D-P0CB
+                ; slice D; basic/screen.asm's key_on before) minus its statement
                 ; frame: AFTER show_title, whose INITXT clears the screen, and
                 ; through subrom_call rather than sc_call -- an absent sub-ROM
                 ; must not raise during init (the KEYSTR defaults above, same).
@@ -537,7 +538,8 @@ str_target_parse:
 ; positions (missing.asm), PLAY's voice slot (play.asm), PRINT USING's format and
 ; its value list (printusing.asm x2), and SCREEN's mode and trailing arguments
 ; (screen.asm x2). 12 B each, 72 B in all; one 13 B body plus six 3 B calls is
-; 31 B: **-41 B of page 1**.
+; 31 B: **-41 B of page 1**. (SCREEN's two are zerobas-sub2's since D-P0CB slice
+; D -- sub2/scrstmt.asm reaches this routine through p0cb as p0_req_operand.)
 ;   in:  HL = cursor.
 ;   out: A = the token, HL on it -- EXACTLY as the open-coded form left them, so
 ;        every caller's following `cp ','` reads the same byte and re-sets its own
@@ -878,7 +880,8 @@ exd_step:
                 jr      exd_lp
 ; (ex_bload / ex_cload / ex_load / ex_bsave / ex_save / ex_csave: moved to
 ; sub2/loadsave.asm, D-P0CB slice C2 -- their labels share ex_open's one byte
-; in front of ex_sub2, basic/program.asm, and the tenant steps the token.)
+; in front of ex_sub2, basic/program.asm, and the tenant steps the token. So do
+; ex_screen / ex_color / ex_width / ex_key since slice D: sub2/scrstmt.asm.)
 ex_run:
                 inc     hl                  ; HL -> args (past the RUN token)
                 jp      do_run

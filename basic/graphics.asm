@@ -1221,105 +1221,11 @@ spr_tenant:
 
     IF G7_RESIDENT
 
-; --- SCREEN's sprite-size argument (D-G7-2) --------------------------------
-; `SCREEN <mode>,<size>` selects 8x8 vs 16x16 (bit 1) and magnification (bit 0),
-; and the setting PERSISTS across later SCREEN statements that omit it -- both
-; measured. RG1SAV bits 1..0 ARE that state (the tenant reads them for the entry
-; size and the pattern scaling), so persistence is just "re-apply them after
-; CHGMOD", which is also where the attribute-x snapshot goes (D-G7-3).
-; Called from ex_screen (basic/screen.asm).
-spr_mode_save:
-                ld      a,(RG1SAV)
-                and     $03                 ; remember the size across CHGMOD, which
-                ld      (GFX_SSIZE),a       ; re-writes VDP register 1 from its own table
-                ld      a,10                ; tenant: snapshot the 32 attribute x bytes
-                jr      spr_tenant
-spr_mode_restore:
-                ld      a,11                ; tenant: put the x bytes back (CHGMOD zeroes
-                jr      spr_tenant          ; them; the reference leaves them alone) AND
-                                            ; re-apply the size bits to VDP register 1
-; spr_extra_arg: one evaluated trailing SCREEN argument (DE = its value). Only the
-; FIRST is the sprite size; the rest (key click, baud, printer) stay ignored.
-spr_extra_arg:
-                ; D-SCRERR: the slot NUMBER is maintained by ex_screen at each
-                ; comma (screen.asm), because an OMITTED argument never reaches
-                ; here to be counted. Slot 1 is the sprite size; 2+ are ignored.
-                ld      a,(GFX_SARGN)
-                dec     a                   ; 0 = slot 1 (size), 2 = slot 3 (baud)
-                ; 🎯 D-SCRBAUD: SLOT 3 IS THE CASSETTE BAUD RATE AND ITS DOMAIN IS
-                ; 1..2, NOT 0..255 (docs/spec-basic-screenerr.md §10). `SCREEN
-                ; 1,,,0` and `SCREEN 1,,,3` are ERR 5 on BOTH references and were
-                ; accepted here; `SCREEN 1,,,1` / `,,,2` are accepted on all three,
-                ; and without that accepted pair a refusal of 0 and 3 would prove
-                ; only that the slot rejects everything. Slot 4 (printer) really is
-                ; byte-wide, so the narrowing is specific to slot 3 rather than
-                ; general to "later slots" -- which is why this is one arm and not
-                ; a rule.
-                ; 💰 THE BOUND LIVES IN C SO BOTH SLOTS SHARE ONE `jp nc`, AND THEN
-                ; C SAYS WHICH SLOT WE WERE. gb_illegal is at ~$4582 and this is at
-                ; ~$61C6, so `jr` cannot reach it and a second copy would cost 3 B
-                ; -- the version with two `jp`s prices at 12 B against 11 B free.
-                ; C is dead on both sides: spr_tenant takes only A, and subrom_call
-                ; clobbers everything; the sole caller (screen.asm's scr_extra)
-                ; reads nothing but HL, which it pushes.
-                ld      c,4                 ; sprite size: 0..3
-                jr      z,sea_bound
-                ; 🔴 D-SCRCLICK: SLOT 2 IS THE KEYBOARD CLICK AND IT USED TO BE
-                ; IGNORED WITH THE REST. TODO.md filed it as unmeasurable -- "the
-                ; key click has no cell any row here can read" -- and that was an
-                ; INSTRUMENT claim that did not survive being asked. CLIKSW $F3DB
-                ; is a published work-area cell, and both references move it:
-                ; `SCREEN ,,0` -> 0, `,,1` -> 1, `,,2` -> **2**, against a POKEd
-                ; sentinel that proves the cell holds what BASIC writes
-                ; (scratchpad/clicksw_probe.py). zerobas left the sentinel standing
-                ; on every one.
-                ; 🎯 THE BYTE IS STORED RAW -- no `and 1`, no domain check. That is
-                ; the reason `,,2` was asked at all: an implementation that
-                ; normalised would have looked right on 0 and 1 and been wrong on
-                ; the first value anyone actually varies. Slot 3's domain narrowing
-                ; below is specific to slot 3 and is NOT a rule about later slots.
-                cp      1                   ; slot 2 = the key click
-                jr      z,sea_click
-                cp      2                   ; slot 3?  (A = slot - 1)
-                ret     nz                  ; slots 4 and 5 stay ignored
-                dec     e                   ; baud 1..2 -> 0..1, so ONE bound test
-                ld      c,2                 ; serves both domains
-sea_bound:
-                ld      a,e
-                cp      c
-                jp      nc,gb_illegal       ; ERR 5 -- out of this slot's domain
-                dec     c
-                dec     c                   ; 4 -> 2 (size), 2 -> 0 (baud)
-                ret     z                   ; baud is validated and then IGNORED
-                ; D-SCRERR (docs/spec-basic-screenerr.md §2.2): the sprite size has
-                ; its OWN domain and it is 0..3, not "the low two bits of whatever
-                ; you passed". `SCREEN 1,99` and `SCREEN 1,-1` are Illegal function
-                ; call on both references where the `and $03` silently accepted 99
-                ; as size 3; `SCREEN 1,70000` is Overflow, which the caller's
-                ; eval_byte_checked now raises before we are reached. +3 B.
-                ; ⚠️ ONLY `SCREEN 1,99` TESTS THIS TEST. Knife K-SE4 cut it and
-                ; `SCREEN 1,-1` did not move -- a negative sprite size never
-                ; reaches here at all, because the caller's byte stage rejects a
-                ; set high byte first. The two rows look like one class and are
-                ; caught by two different stages (spec-basic-screenerr.md §8).
-                ld      (GFX_SSIZE),a       ; A = E, checked against C above
-                ld      a,12                ; tenant: apply the size bits to register 1
-                jr      spr_tenant
-
-; --- sea_click: SCREEN's key-click slot (D-SCRCLICK) ------------------------
-; 🔴 SITED HERE, AFTER THE ROUTINE'S LAST EXIT, AND THE FIRST CUT PUT IT ABOVE
-; `sea_bound` WHERE IT BROKE A FALLTHROUGH. The baud arm ends `dec e / ld c,2`
-; and FALLS THROUGH into sea_bound; a block dropped in that gap silently became
-; baud's continuation, so `SCREEN 1,,,0` and `SCREEN 1,,,3` stored the baud byte
-; to CLIKSW and returned WITHOUT their domain check -- ERR 5 on both references,
-; nothing here. Caught by screenerr-acceptance's t.b0 and t.b3, not by review:
-; a span is byte-identical without being ENTERED the same way, and a fallthrough
-; is precisely what reading the diff does not show [[dupspan-slice]].
-; in: E = the argument, stored RAW (see the dispatch comment above).
-sea_click:
-                ld      a,e
-                ld      (CLIKSW),a
-                ret
+; --- SCREEN's sprite-size argument (D-G7-2): spr_mode_save / spr_mode_restore /
+; spr_extra_arg / sea_click were here, called only by SCREEN. D-P0CB slice D
+; (2026-10-24) moved them with SCREEN into zerobas-sub2 (sub2/scrstmt.asm,
+; scs_mode_save / scs_mode_restore / scs_extra_arg / scs_click); they reach
+; spr_tenant above through p0cb. Their history is this file's before that slice.
 
 ; --- ex_put_sprite: PUT SPRITE p[,(x,y)|STEP(dx,dy)][,c][,n] ---------------
 ; Reached from ex_put (basic/field.asm) with HL ON the SPRITE token. Parses into

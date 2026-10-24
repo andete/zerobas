@@ -14,8 +14,9 @@ MEASURED on the VG-8020 (scratchpad/freshape_probe.py -> freshape_run3.out; the
 44 rows scratchpad/frelive_model.py reproduces), plus the statement bases and
 the degrade-to-the-base rows the tenant's header promises.
 
-What it does NOT cover: the main side (fre_go's subtraction and the CALSLT; the
-flat harness bridges only zerobas-sub) and the VG-8020 itself -- that is
+What it does NOT cover: the main side (fre_go's subtraction and the CALSLT --
+msxtest bridges zerobas-sub2 since D-P0CB slice D, but only for a test that
+seeds SUBSLOT2, which this one does not) and the VG-8020 itself -- that is
 scratchpad/freshape_probe.py on both machines.
 """
 
