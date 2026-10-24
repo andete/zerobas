@@ -70,6 +70,15 @@ item — do **one item per session** to keep context lean.
       🔴 **Until then, every TIER 6 fix prefers an existing generic path** (as
       D-USRBARE, D-CONTPROG and D-ERRORARG did) and says so in its ✅ note when it
       had to add a site-specific check instead.
+      📏 **STEP 1a DONE 2026-10-24** ([`spec-basic-deferr-study.md`](docs/spec-basic-deferr-study.md) §2,
+      [`deferr_side_run.out`](scratchpad/deferr_side_run.out)): a USR call counter after a faulting
+      operand reads **0 on the VG-8020 and 1 here** for `1/0`, `(1/0)*`, `SQR(-1)` and
+      `ASC("")` -- four observable divergences caused by deferral alone, so the
+      prototype family is the expression-level DOMAIN faults (Division by zero,
+      function domain), not the argument range checks (those already raise at once:
+      `LEFT$("A",-1)` reads 0 on both). 🔴 Type mismatch goes the OTHER way: the
+      reference evaluates `USR(0)` after `1+"X"`, zerobas does not -- an evaluation-
+      order question for its own measurement. PRINT agrees (items realised one by one).
 
 - [ ] 🏗️ **JOOST RULED 2026-09-17: EVERY HOOK-IMPLEMENTABLE KEYWORD MUST USE ITS
       HOOK, AND EVERY DISK COMMAND'S IMPLEMENTATION BELONGS IN `disk.rom`
@@ -6951,7 +6960,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9437 (T-6FE392)8 (T-529ABE)` from `TODO.md:15004 (T-529ABE)`: a
+      `TODO.md:9446 (T-6FE392)8 (T-529ABE)` from `TODO.md:15013 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9892,7 +9901,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15004 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15013 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
