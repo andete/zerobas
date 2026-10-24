@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Run scratchpad/tapin_margin.py against builds that delay CLOAD's byte loop.
 
-Each variant plants a delay at the top of ctp_body (basic/cload.asm, once per
-program byte), rebuilds with `make repack-machine`, hashes the main ROM (a cut
-that did not reach the ROM is reported, never scored), runs the probe, and
-restores the source; the last build is the restored tree, hashed again.
+Each variant plants a delay at the top of ctp_body (sub2/tapeprog.asm since
+D-P0CB's tape-loop slice, 2026-10-24 -- basic/cload.asm for runs 1-4; once per
+program byte), rebuilds with `make repack-machine`, hashes the ROM that carries
+the loop (zerobas-sub2 now, the main ROM for runs 1-4; a cut that did not reach
+the ROM is reported, never scored), runs the probe, and restores the source; the
+last build is the restored tree, hashed again.
 
     [TAPIN_TAPE=x.wav] python3 -u scratchpad/tapin_margin_knives.py [--wide | --b2400 | --b2400hi]
 """
 import hashlib, os, subprocess, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(REPO, "basic", "cload.asm")
-ROM = os.path.join(REPO, "build", "zerobas-main-eu.rom")
+SRC = os.path.join(REPO, "sub2", "tapeprog.asm")     # basic/cload.asm for runs 1-4
+ROM = os.path.join(REPO, "build", "sub2.rom")           # zerobas-main-eu.rom for runs 1-4
 ANCHOR = "ctp_body:\n                ld      a,d\n"
 
 

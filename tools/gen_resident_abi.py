@@ -509,7 +509,7 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_run_prog_top=run_prog_top",   # LOAD ,R / RUN <name>
     # (p0_bp_ret above doubles as the handler's own `ret`)
     # ordinary returning routines -- the loaders and writers stay main's:
-    "p0_do_tape_prog=do_tape_prog",   # the REAL-TIME TAPIN loop, run whole in main
+    # (p0_do_tape_prog left with D-P0CB's tape-loop slice: the reader is sub2's own)
     "p0_disk_prog_load=disk_prog_load",
     "p0_sv_tenant=sv_tenant",         # the sub-ROM tape writers (an inline-byte call)
     "p0_bload_cont=bload_cont",       # BLOAD: the load + its status, in main (D-BLOADSTK)
@@ -530,6 +530,17 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_spr_tenant=spr_tenant",       # SCREEN's sprite-size ops (shared with SPRITE)
     "p0_key_repaint=key_repaint",     # shared with CLS and the prompt
     "p0_key_op=key_op",               # the keystr tenant (an inline-byte call)
+    # D-P0CB, the tape-loop slice (2026-10-24): the tape program reader,
+    # sub2/tapeprog.asm. Its TAPION / TAPIN / TAPIOF are the BIOS's fixed
+    # jump-table addresses (sysvars.inc), not imports. All are p0cb TAILS or
+    # returning calls -- the read's per-byte path imports nothing:
+    "p0_cas_ascii_load=cas_ascii_load",       # an $EA program (the ASCII reader)
+    "p0_load_commit_prog=load_commit_prog",   # the commit, shared with the disk LOAD
+    "p0_dpl_err=dpl_err",             # an unknown id / CLOAD? of $EA: printed, CF set
+    "p0_dpl_oom=dpl_oom",             # a store overflow, shared with the disk LOAD
+    "p0_print_msg=print_msg",         # CLOAD?'s "Verify error"
+    # DATA in main page 1, read by main's print_msg (called through p0cb):
+    "p0_err_verify=err_verify",       # err_msgtab[20] names it too
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)

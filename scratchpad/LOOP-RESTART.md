@@ -36,7 +36,8 @@ session and the loop resumes exactly where it stopped.
    COLOR / KEY slower, T5 paused). ➡️ D-P0CB's next: the tape loop (~230 B) -- the TAPIN
    study (2026-10-24) found ~1300-1700 T of per-byte slack at the .cas rate, the move would
    spend ~300 T; the 2400-baud WAV the VG-8020 writes holds >= 160 passes -- the move is
-   timing-safe, it is D-P0CB's next slice. D-ROMSIZE (2)-(4) WAIT (Joost
+   timing-safe -- MOVED 2026-10-24 (sub2/tapeprog.asm, 317 B of main, +136 T per byte, the
+   collection unchanged). D-ROMSIZE (2)-(4) WAIT (Joost
    10-21: the sub ROM has room; only main bytes pay now).
 
 **Learned the hard way today:**
@@ -1885,7 +1886,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11304 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11319 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

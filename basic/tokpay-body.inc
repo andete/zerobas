@@ -2,9 +2,11 @@
 ; SPDX-License-Identifier: 0BSD
 ; --- tok_payload: how many constant bytes follow a program-text byte ----------
 ; D-LOADBASE (2026-10-22). Shared by the three tokenised loaders -- CLOAD / LOAD
-; (basic/cload.asm ctp_line), the tape file skip (basic/casmatch-body.inc,
-; zerobas-sub) and the disk LOAD (disk/kernel.asm hdl_line) -- each ROM includes
-; its own copy (none can call another's page 1).
+; (sub2/tapeprog.asm ctp_scan, zerobas-sub2 page 0; main's basic/cload.asm until
+; D-P0CB's tape-loop slice, 2026-10-24), the tape file skip
+; (basic/casmatch-body.inc, zerobas-sub) and the disk LOAD (disk/kernel.asm
+; hdl_line) -- each ROM includes its own copy (none can call another's page 1,
+; and the tape reader's is on its per-byte path, where a crossing costs time).
 ; A loader scans the FIRST line of a file for its $00 terminator, because the
 ; first line's length cannot come from the link words without the SAVING
 ; machine's text base: the CF-3300 LOADs a program SAVEd with TXTTAB at $C001

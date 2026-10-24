@@ -1,0 +1,6 @@
+base ROM b986715d
+ROM 56784eef  d64: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM c5d56078  d255: BROKEN  got=None  (0 s wall)
+d510: build rc=2 ROM c5d56078 -- DID NOT REACH THE ROM, not scored
+d1020: build rc=2 ROM c5d56078 -- DID NOT REACH THE ROM, not scored
+restore: b986715d -> b986715d  BYTE-IDENTICAL

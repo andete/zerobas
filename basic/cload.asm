@@ -9,8 +9,9 @@
 ; program area — the same line-link area that NEW / RUN / LIST manage — and make
 ; it the current program, as if it had been typed.
 ;
-; Both verbs share one cassette I/O path (do_tape_prog). They differ only in how
-; they parse their argument:
+; Both verbs share one cassette I/O path (do_tape_prog, zerobas-sub2 page 0 since
+; D-P0CB's tape-loop slice: sub2/tapeprog.asm). They differ only in how they parse
+; their argument:
 ;   CLOAD ["filename"]      — the device is implicitly cassette; the optional
 ;                             quoted name is the tape file to find (we accept and
 ;                             ignore it: TAPION loads the next file on the tape).
@@ -43,9 +44,10 @@
 ; only" bit, then the line ends -- D-CLOADPROG) and LOAD (ls_load: the name, the
 ; "CAS:" / disk dispatch, the `,R` tail, then end_line_end or run_prog_top --
 ; D-MERGERET, D-RUNTAIL) run in zerobas-sub2 page 0 since 2026-10-21. The loaders
-; they call stay here and are reached through p0cb: do_tape_prog (its TAPION /
-; TAPIN loop is real-time, and one p0cb runs it whole) and disk_prog_load
-; (autoexec_run's too). A load that FAILED has already reported, and the tenant
+; they call: disk_prog_load stays here (autoexec_run's too), reached through
+; p0cb; do_tape_prog, the tape reader, followed them into zerobas-sub2 page 0 on
+; 2026-10-24 (sub2/tapeprog.asm, after the TAPIN timing study -- one p0cb per
+; program byte, the TAPIN). A load that FAILED has already reported, and the tenant
 ; then returns main's bp_ret -- the handler's own `ret c`. The history of each
 ; rule (D-CSAVEEXPR, D-FNEXPR2, D-SAVECOLON, D-CASTAIL) is in this file's history
 ; before the slice.
@@ -218,8 +220,9 @@ run_prog_top:
 ; (TAPION/TAPIN), both visible from a page-1 tenant. This stub just
 ; subrom_calls the tenant and converts its CM_STATUS byte back to the
 ; existing CF-return convention (out: CF clear = matched, CAS_HDRID set / CF
-; set = not found or tape error) -- all 3 call sites (do_tape_prog below,
-; files.asm merge_cas/oo_dev_cas) are unchanged, they already just test CF.
+; set = not found or tape error) -- its callers (the tape reader do_tape_prog,
+; MERGE "CAS:" and OPEN "CAS:", all three zerobas-sub2's since D-P0CB, through
+; p0cb: sub2/tapeprog.asm, sub2/filestmt.asm) just test CF.
 cas_open_match:
                 ; D-CASFCB: the search SKIPS non-matching files by reading their
                 ; blocks into the tape buffer, so the buffer is set first -- channel
@@ -250,228 +253,27 @@ cas_bufp_set:
                 ld      (CAS_BUFP),hl
                 ret
 
-; --- do_tape_prog: the shared cassette BASIC-program load path ----------------
-; Finds the requested tape file (cas_open_match: name-matching per Tier-3, or the
-; next file for the bare form), then dispatches on its file-type id: $D3 reads a
-; tokenised program-area image line-by-line into TXTBASE and relinks it; $EA is an
-; ASCII (SAVE"CAS:",A) program handed to cas_ascii_load. TAPIN trashes every
-; register, so all state lives in RAM. CLOAD, LOAD"CAS:" and RUN"CAS:" all reach
-; here, so all three accept either format and honour the filename transparently.
-;
-; --- D-CASTAIL: THE CF-OUT CONTRACT (docs/spec-basic-castail.md §3.2) ---------
-;   out: CF set = the load FAILED and has ALREADY reported.
-; Consumed by the tape arms of LOAD"CAS:x",R and RUN"CAS:x" (sub2/loadsave.asm
-; ls_load / ls_run since D-P0CB slice C2: CF -> the handler's `ret`, bp_ret),
-; which must then run NOTHING: both references print their message and stop,
-; where zerobas ran whatever program was resident (castail characterization §4).
-; CLOAD (ls_cload) calls here (D-CLOADPROG) and returns on a failure -- no ,R.
-; All three reach it through p0cb: this loop runs whole in main, so its
-; TAPION / TAPIN timing is the one it always had.
-;
-; 🔴 load_error IS NOT TOUCHED, for the reason spec-basic-runtail.md §3.2 gives:
-; ~50 jp/call sites across seven files, several of which resume into their caller
-; on purpose. The contract is stated on THIS routine's exits, and its producer is
-; dpl_err (below) -- `call load_error` + `scf` + `ret`, already written for the
-; disk half, so every failure exit here repoints at ZERO delta.
-;
-; ⚠️ COVERAGE, EXACTLY: only the cas_open_match exit is scored by a row (the
-; Ctrl-STOP abort -- the ONLY tape failure a reference reports; 🔴 and it does NOT
-; "return from" it: it RAISES 19, trappable (D-CASBRK, 2026-10-08) -- that exit and
-; the TAPION/TAPIN ones now go to dpl_dio, not dpl_err;
-; a missing tape file just searches past the end of the tape and waits forever,
-; characterization §6). The rest carry the contract for COMPLETENESS, and the
-; tokenised ($D3) exits are unreachable from every row in the battery.
-do_tape_prog:
-                call    cas_open_match      ; find the (named) file; header consumed
-                jp      c,dpl_dio           ; tape error / Ctrl-STOP abort: 19 (D-CASBRK)
-                ld      a,(CAS_HDRID)
-                cp      BASIC_ID            ; tokenised BASIC -> the store/compare loop
-                jr      z,ctp_data_tokenised
-                cp      ASCII_ID            ; ASCII program -> cas_ascii_load
-                jp      nz,dpl_err          ; neither id -> unrecognised file
-                ; $EA ASCII: CLOAD? verify is tokenised-only (spec §B) -> reject
-                ld      a,(CAS_VERIFY)
-                or      a
-                jp      nz,dpl_err
-                jp      cas_ascii_load
-ctp_data_tokenised:
-                ; --- data block: skip its leader tone -----------------------
-                ; Like BLOAD, the program data is a SEPARATE tape block, so it
-                ; needs its own TAPION to re-lock onto the data block's leader.
-                call    TAPION
-                jp      c,dpl_dio           ; D-CASTAIL CF contract -> 19 (D-CASBRK)
-
-                ; --- start a fresh program: store cursor at the text base ---
-ctp_begin:                                  ; (tests/test_loadbase.py enters here)
-                ld      hl,(TXTTAB)         ; D-TXTTAB: at the base as it stands
-                ld      (CLPTR),hl
-                ld      hl,0                ; 🔴 D-LOADBASE: A_0, the SAVING machine's
-                ld      (CLINK),hl          ; text base, is NOT known -- it was assumed
-                                            ; to be ours ($8001), and a program SAVEd
-                                            ; with TXTTAB at $C001 loaded as garbage
-                                            ; (scratchpad/txttab_saveload.out). 0 marks
-                                            ; the first line, which is scanned instead
-
-                ; --- read the program image, stopping at the $0000 end-link --
-                ; The device half does NOT signal a clean end of data: once the
-                ; tape block's bytes run out, TAPIN blocks on silence rather than
-                ; returning CF. So we must stop reading EXACTLY when the program
-                ; ends — at the $0000 link word that terminates the line-link
-                ; chain — never reading a byte past it.
-                ;
-                ; LENGTH-DRIVEN copy. A token body legitimately contains $00 bytes
-                ; (e.g. INT2 `$1C lo hi`, &H `$0C lo hi`, line-number refs), so the
-                ; first $00 is NOT the line boundary. The boundary is defined by the
-                ; saved link words: each link is the saving machine's absolute
-                ; address of the NEXT line, so this line's full length is
-                ; (this link) - (previous link) and its body length is that minus the
-                ; 4-byte link+lineno header. We copy EXACTLY that many body bytes —
-                ; embedded $00s included — landing precisely on the next link word.
-                ;
-                ; Per line: read the 2-byte link word; $0000 -> end of program.
-                ; Otherwise store link word + 2-byte line number verbatim, then copy
-                ; the computed body byte count. The saved links are stored as-is;
-                ; relink (token-aware) recomputes them below.
-ctp_line:
-                call    TAPIN               ; link low
-                jp      c,dpl_dio           ; D-CASTAIL CF contract -> 19 (D-CASBRK)
-                push    af                  ; preserve link-low: TAPIN clobbers C
-                call    TAPIN               ; link high
-                jr      c,ctp_link_err      ; must pop before leaving
-                ld      b,a                 ; B = link high
-                pop     af
-                ld      c,a                 ; C = link low (restored)
-                                            ; BC = saved link word L_n = A_{n+1}
-                ld      a,b
-                or      c
-                jp      z,ctp_done          ; $0000 link -> program complete (jp:
-                                            ; ctp_scan sits between, D-LOADBASE)
-
-                ; body length = L_n - A_n - 4   (A_n = CLINK = previous link word)
-                ld      hl,(CLINK)          ; HL = A_n
-                ld      (CLINK),bc          ; advance CLINK = L_n for the next line
-                ld      a,h                 ; D-LOADBASE: A_n = 0 is the first line,
-                or      l                   ; whose length the links cannot give --
-                ld      de,$FFFF            ; DE = $FFFF: scan it (flags kept)
-                jr      z,ctp_len
-                ld      a,c
-                sub     l
-                ld      e,a
-                ld      a,b
-                sbc     a,h
-                ld      d,a                 ; DE = L_n - A_n = full line length
-                dec     de
-                dec     de
-                dec     de
-                dec     de                  ; DE = body length (incl. its $00 term)
-
-                ; bounds: this line's header (>=4 bytes) must fit below TXTMAX
-ctp_len:
-                push    de                  ; guard body length across TAPIN/stores
-                ld      hl,(CLPTR)
-                ld      de,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling, less the
-                dec     de                  ;  4-byte header
-                dec     de
-                dec     de
-                dec     de
-                or      a
-                sbc     hl,de
-                jr      nc,ctp_oom_pop
-
-                ; store (load) OR compare (CLOAD? verify) the saved link word via
-                ; cas_put — one mode-flagged emit point (relink fixes links later).
-                ld      a,c
-                call    cas_put
-                ld      a,b
-                call    cas_put
-
-                ; line number (2 bytes)
-                call    TAPIN
-                jr      c,ctp_err_pop
-                call    cas_put
-                call    TAPIN
-                jr      c,ctp_err_pop
-                call    cas_put
-                pop     de                  ; DE = body length
-                ld      a,d                 ; D-LOADBASE: $FFFF -> the first line,
-                and     e                   ; copied up to its own $00
-                inc     a
-                jr      z,ctp_scan
-
-                ; token body: copy EXACTLY DE bytes (embedded $00s and all)
-ctp_body:
-                ld      a,d
-                or      e
-                jr      z,ctp_line          ; whole body copied -> next line
-                push    de                  ; guard remaining count across TAPIN
-                ld      hl,(CLPTR)          ; bounds check
-                ld      de,(TXTCEIL)        ; D-RAMCEIL: boot's ceiling
-                or      a
-                sbc     hl,de
-                jr      nc,ctp_oom_pop
-                call    TAPIN
-                jr      c,ctp_err_pop
-                call    cas_put             ; store or compare the body byte
-                pop     de                  ; DE = remaining count
-                dec     de
-                jr      ctp_body
-
-; ctp_link_err — the second TAPIN (link high) failed with CF; AF (link-low) is on
-; the stack from the push before that call.  Pop it to restore balance, then error.
-ctp_link_err:
-                pop     af
-                jp      dpl_dio             ; D-CASTAIL CF contract -> 19 (D-CASBRK)
-
-; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
-; it before taking the shared error / out-of-memory path so the stack stays balanced.
-ctp_err_pop:
-                pop     de
-                jp      dpl_dio             ; D-CASTAIL CF contract -> 19 (D-CASBRK)
-ctp_oom_pop:
-                pop     de
-                jr      ctp_oom
-
-; ctp_scan -- D-LOADBASE: copy the first line's body up to its $00, passing over
-; the bytes of each constant (tok_payload: a constant may hold $00), then go on
-; by link deltas from CLINK = L_1. Same bounds check and errors as ctp_body.
-ctp_scan:
-                ld      e,0                 ; E = constant bytes still to pass
-ctps_lp:
-                push    de
-                ld      hl,(CLPTR)          ; bounds check (as ctp_body)
-                ld      de,(TXTCEIL)
-                or      a
-                sbc     hl,de
-                jr      nc,ctp_oom_pop
-                call    TAPIN
-                jr      c,ctp_err_pop
-                pop     de
-                ld      d,a                 ; D = the byte (cas_put keeps D, E)
-                call    cas_put
-                ld      a,e
-                or      a
-                jr      z,ctps_tok
-                dec     e                   ; inside a constant: any byte, $00 too
-                jr      ctps_lp
-ctps_tok:
-                or      d                   ; A = the byte
-                jp      z,ctp_line          ; its $00: the first line is done
-                call    tok_payload         ; A = its constant's length (C clobbered)
-                ld      e,a
-                jr      ctps_lp
-
-
-ctp_done:
-                call    TAPIOF              ; motor off (program fully read)
-                ld      a,(CAS_VERIFY)
-                or      a
-                jr      nz,ctp_verify_done  ; CLOAD? -> report, do NOT mutate memory
+; --- do_tape_prog: MOVED to sub2/tapeprog.asm (D-P0CB, the tape-loop slice) -------
+; The tape program reader -- the header dispatch ($D3 tokenised / $EA ASCII), the
+; tokenised line loop (ctp_begin / ctp_line / ctp_len / ctp_body, D-LOADBASE's
+; ctp_scan) and its error shims, ctp_done / ctp_verify_done / ctp_oom, cas_put and
+; verify_error -- runs in zerobas-sub2 page 0 since 2026-10-24, called directly by
+; ls_cload / ls_load / ls_run (sub2/loadsave.asm). Until then slice C2 had left it
+; here, run whole through ONE p0cb, because the TAPIN loop is real-time; the TAPIN
+; timing study (TODO, D-P0CB) measured >= ~1270 T of slack per byte, and the moved
+; loop pays one p0cb (the TAPIN, +136 T) per byte. What it calls stays here and is
+; reached through p0cb: cas_open_match above, cas_ascii_load below, the commit
+; load_commit_prog (below, shared with the disk LOAD as dpl_done), dpl_dio /
+; dpl_err / dpl_oom, and print_msg with err_verify (below: err_msgtab[20] names it).
+; The history of each rule (D-CASTAIL's CF-out contract, D-LOADBASE, D-CASBRK,
+; D-OOMTAIL) moved with the code; this file's history has the copy before the slice.
 
 ; --- load_commit_prog: COMMIT A FRESHLY LOADED PROGRAM -----------------------
-; D-NGRAM12: the SHARED completion tail of BOTH program loaders. do_tape_prog
-; (CLOAD) falls through into it; disk_prog_load (LOAD "file") reaches it as
-; `dpl_done`, which is an ALIAS of this label and not a second copy -- its whole
-; body was these ten instructions, byte for byte.
+; D-NGRAM12: the SHARED completion tail of BOTH program loaders. The tape reader
+; (sub2/tapeprog.asm ctp_done, since D-P0CB's tape-loop slice) reaches it through
+; p0cb as its tail -- it fell through into it while it lived here; disk_prog_load
+; (LOAD "file") reaches it as `dpl_done`, which is an ALIAS of this label and not
+; a second copy -- its whole body was these ten instructions, byte for byte.
 ; Entered with CLPTR = the store cursor just past the last line.
 ; Leaves CF CLEAR = loaded, run it (D-CASTAIL / D-RUNTAIL: the SUCCESS half of
 ; the CF contract both callers publish; `relink`'s own carry is not a result and
@@ -494,83 +296,18 @@ load_commit_prog:
                 or      a                   ; D-CASTAIL: the SUCCESS half of the CF
                 ret                         ; contract -- CF clear = loaded, run it
 
-; --- ctp_verify_done: CLOAD? end-of-tape -> report Ok / Verify error ----------
-; Verify is NON-DESTRUCTIVE: no marker, no PRGEND, no relink — CAS_VMIS holds the
-; verdict. A clean CAS_VMIS = identical (silent Ok); otherwise "Verify error".
-; Any real difference (including nearly all length changes — the saved link words
-; are absolute addresses, so a different program layout differs byte-for-byte and
-; trips CAS_VMIS during the body compare) is caught. The one gap is a tape that is
-; an EXACT PREFIX of a longer in-memory program (all compared bytes equal, tape
-; ends early); that is outside the verify use case (confirming a same-length
-; CSAVE round-trip) and is a documented limitation (spec §B).
-ctp_verify_done:
-                ld      a,(CAS_VMIS)
-                or      a
-                ret     z                   ; no difference -> Ok (memory intact)
-                jr      verify_error        ; a byte differed -> "Verify error"
-
-ctp_oom:
-                call    TAPIOF              ; stop the motor before reporting
-                ld      a,(CAS_VERIFY)
-                or      a
-                jr      nz,verify_error     ; CLOAD? overrun = mismatch, do NOT wipe
-                ; D-OOMTAIL: the seven instructions that used to sit here were
-                ; byte-for-byte dpl_oom's whole body (the comments even said
-                ; "mirrors dpl_oom") -- so jump to the mirror instead of
-                ; carrying it. 13 B. The D-CASTAIL contract is unchanged: CF=1,
-                ; empty program, "Out of memory" -- dpl_oom IS that contract,
-                ; and this couples the two halves ON PURPOSE: they are filed as
-                ; mirrors, so a future edit to one is an edit to both.
-                jp      dpl_oom
 err_prog_mem    equ     err_mem             ; repack: share sl_oom's "out of memory"
                                             ; (program.asm) — identical bytes. Part of
                                             ; D-2's self-funding string dedup (S1).
 
-; --- cas_put: store-or-compare one program byte at CLPTR, advance CLPTR --------
-; The single mode-flagged emit point of the tokenised tape reader (spec §B).
-; CAS_VERIFY=0 (a real CLOAD/LOAD"CAS:"/RUN"CAS:") -> store A at CLPTR (plain
-; load). CAS_VERIFY=1 (CLOAD?) -> COMPARE A against the in-memory program byte at
-; CLPTR and set the sticky CAS_VMIS on any difference, WITHOUT writing (verify is
-; non-destructive). CLPTR advances TXTBASE.. either way, so in verify mode it is
-; exactly the in-memory comparand cursor. Preserves BC, DE; clobbers A, HL, flags.
-;   in: A = the program byte just read from tape.
-; Clobbers A, C, HL (BC is dead at every call site — the link bytes are stored
-; before the next TAPIN, and TAPIN then trashes BC anyway).
-cas_put:
-                ld      c,a                 ; C = the byte
-                ld      hl,(CLPTR)
-                ld      a,(CAS_VERIFY)
-                or      a
-                ld      a,c                 ; A = the byte back
-                jr      nz,cput_cmp
-                ld      (hl),a              ; load mode: store the byte
-                jr      cput_adv
-cput_cmp:
-                cp      (hl)                ; verify: compare vs the in-memory byte
-                jr      z,cput_adv
-                ld      a,1
-                ld      (CAS_VMIS),a        ; mismatch -> sticky
-cput_adv:
-                inc     hl
-                ld      (CLPTR),hl
-                ret
-
-                include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE)
-
-; --- verify_error: report a CLOAD? mismatch (memory left untouched) -----------
-; D-CASTAIL: this one IS edited in place, unlike load_error, and the reason is a
-; COUNT not a principle -- its only two callers (ctp_verify_done, ctp_oom) are
-; both inside do_tape_prog, so `scf` here cannot reach anyone else's carry.
-verify_error:
-                ld      hl,err_verify
-                call    print_msg                       ; D-MSGENC
-                scf                             ; a mismatch is a FAILED load: CF out
-                ret                             ; (docs/spec-basic-castail.md §3.2)
+; --- err_verify: the CLOAD? mismatch text -------------------------------------
+; Printed by the tape reader's ctp_verify_error (sub2/tapeprog.asm, through p0cb
+; to print_msg) and named by err_msgtab[20] (basic/missing.asm), so it stays here.
 err_verify:     db      "Verify error",0
 
 ; --- cas_ascii_load: LOAD of an ASCII (SAVE"CAS:",A) cassette program --------
-; Reached from do_tape_prog's header dispatch when byte 0 is $EA (ASCII)
-; instead of $D3 (tokenised). Mirrors disk ascii_load (files.asm): LOAD
+; Reached from do_tape_prog's header dispatch (sub2/tapeprog.asm, through p0cb,
+; as its tail) when byte 0 is $EA (ASCII) instead of $D3 (tokenised). Mirrors disk ascii_load (files.asm): LOAD
 ; replaces the current program (new_prog), then the file is tokenised + stored
 ; line-by-line by the shared MERGE reader (ascii_read_lines, files.asm) — the
 ; same path disk ASCII LOAD/MERGE use. The only cassette-specific part is the
@@ -626,7 +363,8 @@ err_verify:     db      "Verify error",0
 ;      reads byte-perfect came back all-zero through a stack-guarded loop). So the
 ;      fill keeps its position in CAL_CNT (RAM) and recomputes the address each
 ;      byte — the same "state in RAM across a BIOS tape call" discipline
-;      do_tape_prog's ctp_body uses (it guards CLPTR in RAM, not the stack). The
+;      do_tape_prog's ctp_body uses (it guards CLPTR in RAM, not the stack;
+;      sub2/tapeprog.asm since D-P0CB's tape-loop slice). The
 ;      fill TARGET (which buffer) lives in RAM too (CAL_CURHI), for the same reason.
 ;  (2) THE DATA-BLOCK TAPION MUST BE PROMPT — for EVERY block, not just block 1.
 ;      Deferring it past new_prog + the ascii-reader entry makes it miss the block
@@ -898,15 +636,16 @@ dpl_done        equ     load_commit_prog
 ; D-RUNTAIL: `call` + `scf`, not `jp` — this IS the CF-set half of the contract
 ; above, and load_error's own return carry belongs to its other ~50 callers.
 ;
-; ⚠️ D-CASTAIL: SHARED WITH do_tape_prog. Every tape failure exit repointed here
+; ⚠️ D-CASTAIL: SHARED WITH do_tape_prog (sub2/tapeprog.asm since D-P0CB's tape-
+; loop slice: its ctp_bad_file reaches here through p0cb). Every tape failure exit repointed here
 ; (docs/spec-basic-castail.md §3.2) -- 🔴 until D-CASBRK (2026-10-08) moved the
 ; TAPE BIOS failures (search / TAPION / TAPIN) to dpl_dio below, which RAISES 19
 ; as the VG-8020 does; only the content faults stay. So defect B's PRODUCER costs 0 B on the
 ; tape path -- these five bytes already say exactly 'reported, and failed'. The
 ; `dpl_` prefix is therefore no longer disk-only; renaming it would churn eight
 ; disk call sites and make spec-basic-runtail.md §3.2's table stale for nothing.
-; 🔴 dpl_err IS SHARED WITH THE WHOLE CASSETTE PATH (do_tape_prog above, nine
-; `jp c,dpl_err` sites) AND THAT IS WHY THE NOT-FOUND TEST IS NOT HERE.
+; 🔴 dpl_err IS SHARED WITH THE WHOLE CASSETTE PATH (do_tape_prog, which had nine
+; `jp c,dpl_err` sites when this was written) AND THAT IS WHY THE NOT-FOUND TEST IS NOT HERE.
 ; D-LOADERR's first draft put `call df_or_loaderr` in this tail. It reads
 ; DISKOP_OP, which only `fatprim_bounce` writes — so on a CASSETTE failure the
 ; cell is STALE from whatever disk statement ran last, and when that happened to
@@ -948,13 +687,14 @@ dpl_dio:
                 ld      a,19                ; Device I/O error
                 jp      raise_error
 ; dpl_oom — store overflow: leave a clean (empty) program, report "out of memory".
-; Mirrors ctp_oom for the disk store-overflow case. (No Close: read side is clean.)
+; Mirrors ctp_oom for the disk store-overflow case -- and IS ctp_oom's tail: the
+; tape reader (sub2/tapeprog.asm) reaches it through p0cb. (No Close: read side is clean.)
 dpl_oom:
                 call    new_prog            ; leave a clean (empty) program
                 ld      a,$CC               ; out-of-memory landmark (as store_line)
                 ld      (ERRMARK),a
                 ld      hl,err_prog_mem
-                call    print_msg           ; D-MSGENC (as ctp_oom above)
+                call    print_msg           ; D-MSGENC
                 scf                         ; D-RUNTAIL: a store overflow is a FAILED
                 ret                         ; load too -- RUN"file" must not then run the
                                             ; empty program new_prog just left

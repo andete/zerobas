@@ -97,7 +97,6 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc basic/cascut-body.inc \
-         basic/tokpay-body.inc \
          basic/fcbname-body.inc basic/bload-body.inc basic/fatio-body.inc \
          basic/sv-bsvdisk.inc basic/sv-bsvcas.inc basic/sv-savdisk.inc basic/sv-tsb.inc \
          basic/sv-tputw.inc basic/sv-tne.inc basic/sv-diskwr.inc \
@@ -294,6 +293,7 @@ sub: $(SUB_ROM)
 SUB2_SRC  := sub2/sub2.asm
 SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm sub2/frelive.asm sub/beep.asm \
               sub2/p0cb.asm sub2/trapstmt.asm sub2/filestmt.asm sub2/loadsave.asm sub2/scrstmt.asm \
+              sub2/tapeprog.asm basic/tokpay-body.inc \
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym

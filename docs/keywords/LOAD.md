@@ -176,8 +176,10 @@ No user-visible difference is known on disk. Two items concern `LOAD`:
 - Main ROM, called back from there: `disk_prog_load` in
   [basic/cload.asm](../../basic/cload.asm) hands a disk load to the disk ROM;
   an ASCII file goes through `ascii_load`, which tokenises each line as if it
-  were typed; the tape goes through `do_tape_prog` and `cas_ascii_load`, whose
-  tape reading runs entirely in main.
+  were typed; an ASCII tape goes through `cas_ascii_load`, whose tape reading
+  runs entirely in main. A tokenised tape is read by `do_tape_prog` in
+  [sub2/tapeprog.asm](../../sub2/tapeprog.asm), in the second sub-ROM since
+  2026-10-24, calling main's `TAPIN` for each byte.
 - Disk ROM: `hk_dpload` in [disk/kernel.asm](../../disk/kernel.asm) mounts the
   disk, finds the file and reads it — the same split as on the CF-3300, whose
   whole sector loop runs on the disk ROM's side.

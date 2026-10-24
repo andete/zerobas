@@ -9,10 +9,12 @@
 ; offset, BSAVE's addresses and fourth slot, CSAVE's speed) -- and the decision
 ; each statement makes at its end.
 ;
-; THE LOADERS AND WRITERS STAY IN MAIN, and are reached through p0cb:
-;   do_tape_prog     the tape program reader. Its TAPION / TAPIN loop is
-;                    REAL-TIME (basic/cload.asm, tape/tape.asm): one p0cb runs it
-;                    whole in main, so not one cycle between two TAPINs changes.
+; THE TAPE PROGRAM READER IS THIS ROM'S: do_tape_prog (sub2/tapeprog.asm), moved
+; out of main after the TAPIN timing study (D-P0CB, 2026-10-24) -- its loop is
+; real-time, and it pays one p0cb (the TAPIN) per program byte; ls_cload /
+; ls_load / ls_run `call` it. It was main's, run whole through ONE p0cb, until
+; then.
+; THE OTHER LOADERS AND THE WRITERS STAY IN MAIN, and are reached through p0cb:
 ;   disk_prog_load   autoexec_run (main's init) calls it too.
 ;   sv_tenant / bload_sub   the sub-ROM tape engines (sub/save.asm, sub/bload.asm)
 ;                    are reached through an INLINE-byte call (sc_inl1), which a
@@ -110,8 +112,8 @@ lrn_cas:
                 call    p0cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
                 call    ls_pcr_load         ; (+ a harmless ,R: run is implicit)
-                ld      ix,p0_do_tape_prog
-                call    p0cb                ; tokenised OR $EA ASCII; CF = failed
+                call    do_tape_prog        ; tokenised OR $EA ASCII; CF = failed
+                                            ; (sub2/tapeprog.asm, this ROM's own)
 lrn_loaded:
                 jr      c,ls_ret            ; failed and reported: run NOTHING
 ls_run_top:                                 ; main's `jp run_prog_top`: a CONTINUATION
@@ -134,8 +136,7 @@ ls_load:
                 call    p0cb                ; -> CAS_WANT + CAS_WANT_ON; a . ends the name
                 ld      hl,(FN_RESUME)      ; the ,R tail lives in the PROGRAM TEXT
                 call    ls_pcr_load
-                ld      ix,p0_do_tape_prog
-                call    p0cb                ; CF = failed, already reported
+                call    do_tape_prog        ; CF = failed, already reported
                 jr      lld_loaded
 lld_disk:
                 ld      ix,p0_pdfcb_resume
@@ -194,8 +195,7 @@ lcl_noname:
 lcl_load:
                 ld      hl,CAS_WANT_ON
                 set     7,(hl)              ; D-CASTYPE: a tokenised ($D3) file only
-                ld      ix,p0_do_tape_prog
-                call    p0cb
+                call    do_tape_prog        ; sub2/tapeprog.asm
                 jr      c,ls_ret            ; failed: already reported
                 jr      ls_end_line         ; D-CLOADPROG: the line ends
 

@@ -12,7 +12,10 @@ sub2/filestmt.asm) is DRAFTED 2026-10-21: ~800 B of main page 1, all of it pad i
 front of the $6CF3 and $72D4 pins. Slice C2 (SAVE / CSAVE / BSAVE / LOAD / CLOAD /
 BLOAD / RUN <name>, sub2/loadsave.asm) is DRAFTED 2026-10-21: ~780 B of main page 1
 (pad in front of $6CF3) and 5 B of the low region; the loaders and writers stay in
-main (do_tape_prog's real-time TAPIN loop runs whole inside one p0cb). D is not built.
+main (do_tape_prog's real-time TAPIN loop runs whole inside one p0cb). Slice D (SCREEN /
+COLOR / WIDTH / KEY, sub2/scrstmt.asm) is BUILT 2026-10-24 (418 B of main), and the tokenised
+tape loop followed the same day (sub2/tapeprog.asm, 317 B of main): one p0cb per TAPIN, +136 T
+per byte against >= ~1270 T of measured slack (TODO.md, D-P0CB's TAPIN study).
 
 ## 1. Why
 

@@ -1733,6 +1733,21 @@ item — do **one item per session** to keep context lean.
       `Device I/O error`, so the WAV is what plays. 🔮 "the slack halves at 2400" MISSED: the
       reference-written 2400-baud tape is MORE tolerant (>= ~2100 T) than openMSX's .cas
       playback (~1300-1700 T), which is the worst case measured.
+      ✅ **THE TAPE LOOP MOVED 2026-10-24 (drafted in a subagent's worktree, integrated and
+      measured here).** sub2/tapeprog.asm: do_tape_prog's header dispatch, the ctp_* read
+      loop and its error shims, the end of the read, cas_put, verify_error and the tok_payload
+      include (none has another caller); sub2/loadsave.asm calls it directly. STAYED in main,
+      through p0cb: TAPION / TAPIN / TAPIOF (BIOS), cas_open_match (OPEN / MERGE use it),
+      cas_ascii_load, load_commit_prog and the dpl_* tails (shared with the disk LOAD),
+      print_msg / err_verify. ONE p0cb per program byte (TAPIN): +136 T per byte (256 -> 392 T,
+      counted); the loop runs at the same stack depth (TAPIN entered at S-24 before and after).
+      📏 Walls (2026-10-24): the $6CF3 pad 1274 -> 1591 B (317 B of main), sub2 page 0
+      12940 -> 12573 B; host tests 87/87 (test_loadbase enters sub2's ctp_begin through the
+      sub2 bridge; a planted fault turned its four CLOAD rows red). 📏 Margin after the move
+      ([`tapin_margin_postmove.out`](scratchpad/tapin_margin_postmove.out)): base OK, d64 (~850 T
+      more) OK, d255 BROKEN -- as before the move; 🔮 "d64 still OK" HIT.
+      📼 The tape collection after it ([`tapecorpus_tapeloop.out`](scratchpad/tapecorpus_tapeloop.out)):
+      SAME 9, NEAR 12, RUNS? 21, RESET 0 -- all 42 titles in their previous class.
       ✅ **STUDY CONCLUSION: the move is timing-safe** -- ~300 T of p0cb against >= ~1270 T
       of slack on the worst tape measured, 4x headroom. ➡️ NEXT: move the tape loop
       (do_tape_prog's ctp_* body, ~230 B) into the sub2 tenant, TAPIN / cas_put through p0cb;
@@ -6872,7 +6887,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9338 (T-6FE392)8 (T-529ABE)` from `TODO.md:14905 (T-529ABE)`: a
+      `TODO.md:9353 (T-6FE392)8 (T-529ABE)` from `TODO.md:14920 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9793,7 +9808,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14905 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14920 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

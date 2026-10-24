@@ -352,7 +352,7 @@ ex_delete:
 ; (scratchpad/basicint_tape_probe.py): A = the next byte off the tape, across
 ; block boundaries; HL and B come back intact (the probe's stub loops on both);
 ; a read failure raises ERR 19 (Device I/O error). BC/DE/HL are kept here because
-; this tree's TAPIN clobbers C (basic/cload.asm ctp_line).
+; this tree's TAPIN clobbers C (sub2/tapeprog.asm ctp_line, once basic/cload.asm's).
                 ds      $72D4 - $, $00
 basicint_taprd:
                 push    bc
