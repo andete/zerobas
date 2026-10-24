@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `STOP` — pause the program with a `Break` message
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors: not applicable · RAM usage not yet proven · every error not yet
-> proven. One recorded difference: `STOP` followed by junk (below).
+> proven. No recorded difference since `STOP 1` was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -19,7 +19,7 @@ Ctrl-STOP would. Unlike [`END`](END.md) it is a pause: variables, open loops
 and subroutines are kept, and [`CONT`](CONT.md) carries on with the next
 statement. It is the classic debugging tool — stop, `PRINT` a few variables,
 `CONT`. zerobas behaves like the Philips VG-8020 in every case we have
-measured, except `STOP` followed by something it does not expect.
+measured.
 
 ## Syntax
 
@@ -69,19 +69,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`STOP 1` breaks here; the VG-8020 raises `Syntax error`** (error 2) instead
-(found 2026-09-27 by the every-error enumeration;
-[t6enum_b7.out](../../scratchpad/t6enum_b7.out)). zerobas does not check that
-the statement ends after a bare `STOP`. It is filed with the same defect in
-`END 1` and `CLS 1` (D-BAREEXTRA, a TIER 6 item in [TODO.md](../../TODO.md)),
-and it is why the "every error" rung is not proven: `Syntax error` is the only
-error `STOP` can raise. `STOP ON 1` and `STOP,` are `Syntax error` on the
-VG-8020 too.
-
-The other rung not yet proven is **RAM usage**.
+None recorded. `STOP ON 1` and `STOP,` are `Syntax error` on the VG-8020 too.
+The rungs not yet proven are **RAM usage** and **every error**.
 
 ## What we found, and how
 
+- **`STOP 1` broke the program where it should be an error** (fixed
+  2026-10-24, D-BAREEXTRA, found 2026-09-27 by the every-error enumeration,
+  [t6enum_b7.out](../../scratchpad/t6enum_b7.out)). The VG-8020 raises
+  `Syntax error in 10`; zerobas printed `Break in 10`, as if the `1` were not
+  there ([`stmteq_run.out`](../../scratchpad/stmteq_run.out), [after](../../scratchpad/stmteq_after.out)).
 - **`Break in 10` was invisible in graphics mode** (fixed 2026-09-27,
   D-GFXERRMSG). zerobas printed the message into the `SCREEN 2` picture and
   went back to text only for the prompt, so the user saw nothing but the
@@ -115,7 +112,9 @@ same routine.
 ## Tests that cover it
 
 - `make kwsweep` — the everyday row (the `Break in 10` message is what it
-  reads) and the `STOP 1` error row, which does not agree yet.
+  reads) and the `STOP 1` error row.
+- `make missing-acceptance` (the `trace` battery) — `bx-stop1`, `STOP 1` after
+  a printed marker, against the references.
 - `make abort-acceptance` — the `CONT` point a `STOP` records, and what typed
   statements do to it.
 - `make direct-ctrl-acceptance` — a `STOP` typed at the prompt.

@@ -1077,7 +1077,14 @@ ex_stop:
                 rst    $10                ; past STOP token
                 call    onoff_decode        ; STOP ON|OFF|STOP -> A = the ZTS_ state
                 jr      c,es_set
-                jr      do_break            ; bare STOP -> record + "Break in <line>"
+                ; D-BAREEXTRA (2026-10-24): a bare STOP must END here -- `STOP 1` is
+                ; `Syntax error in 10` on the VG-8020, not a Break (stmteq_run.out).
+                ld      a,(hl)
+                or      a
+                jr      z,do_break          ; bare STOP -> record + "Break in <line>"
+                cp      COLON
+                jr      z,do_break
+                jp      stmt_error
 es_set:
                 inc     hl                  ; consume the ON/OFF/STOP sub-keyword
                 push    hl                  ; guard the exec-continue ptr across set_state

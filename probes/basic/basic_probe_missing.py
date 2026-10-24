@@ -563,6 +563,13 @@ TRACE_DIRECT = [
     ("trd-bare",      'CLS:TRON:TROFF',                                     "screen"),
     ("trd-arg",       'CLS:TRON 1',                                         "screen"),
     ("trd-troff-arg", 'CLS:TROFF 1',                                        "screen"),
+    # D-BAREEXTRA (2026-10-24): an argument-free statement with junk after it must
+    # raise BEFORE it acts -- the [M] printed first survives on the VG-8020
+    # (scratchpad/stmteq_run.out); zerobas cleared it (CLS) or ended / broke silently.
+    ("bx-cls1",       'CLS:PRINT "[M]":CLS 1',                              "screen"),
+    ("bx-clseq",      'CLS:PRINT "[M]":CLS=1',                              "screen"),
+    ("bx-end1",       'CLS:PRINT "[M]":END 1',                              "screen"),
+    ("bx-stop1",      'CLS:PRINT "[M]":STOP 1',                             "screen"),
 ]
 
 # TRON's SCOPE ACROSS THE RUN BOUNDARY -- the question a single line cannot ask.

@@ -90,6 +90,8 @@ class Pin:
 
 PINS = [
     Pin(0x3297, 2, bytes([0xE1, 0xC9]), None, "D-BASICINT pop hl / ret"),
+    # $4EF8: Head over Heels returns into it (D-BAREEXTRA's tape regression, 2026-10-24)
+    Pin(0x4EF8, 4, bytes.fromhex("EB912FC9"), None, "D-BASICINT ex de,hl / sub c / cpl / ret"),
     Pin(0x6CF3, 3, "jp", "lh_back", "D-BASICINT BLOAD,R continuation: jp lh_back"),
     # $73AC IS the RUN entry's body (basic/field.asm basicint_run), not a `jp` to
     # it: the 8 bytes checked are its address-free head -- ld hl,(VARTAB $F6C2) /

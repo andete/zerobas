@@ -31,13 +31,15 @@ session and the loop resumes exactly where it stopped.
 6. ~~D-F346~~ DONE 2026-10-23 (Joost's report: CALL SYSTEM goes by &HF346).
 7. ~~D-DEFFNVAR~~ DONE 2026-10-23 (DEF FN creates its formals; deffn-acceptance is --strict).
 8. ~~D-BLOADSTK~~ DONE 2026-10-23 (the tape load runs in main; noclear3 held by luck before).
+10. ~~D-BAREEXTRA / D-STMTEQ~~ DONE 2026-10-24 -- and a D-BASICINT pin at $4EF8 (Head over Heels
+    returned into it; the 9 B shift broke its luck).
    ✅ Tape-corpus re-run done 2026-10-24: SAME 9, NEAR 12, RUNS? 21, RESET 0 (3 up, none down).
 9. ~~D-P0CB slice D~~ DONE 2026-10-24 (SCREEN / COLOR / WIDTH / KEY to sub2, 418 B of main;
    COLOR / KEY slower, T5 paused). ➡️ D-P0CB's next: the tape loop (~230 B) -- the TAPIN
    study (2026-10-24) found ~1300-1700 T of per-byte slack at the .cas rate, the move would
    spend ~300 T; the 2400-baud WAV the VG-8020 writes holds >= 160 passes -- the move is
    timing-safe -- MOVED 2026-10-24 (sub2/tapeprog.asm, 317 B of main, +136 T per byte, the
-   collection unchanged). D-ROMSIZE (2)-(4) WAIT (Joost
+   collection unchanged); slice E (DELETE / RENUM / AUTO's head, 88 B) done. D-ROMSIZE (2)-(4) WAIT (Joost
    10-21: the sub ROM has room; only main bytes pay now).
 
 **Learned the hard way today:**
@@ -1886,7 +1888,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11334 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11338 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

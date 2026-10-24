@@ -1196,7 +1196,7 @@ ev_ff_ckdone:
                 cp      EOF_TOKEN
                 jr      z,ev_ff_eof
                 cp      LOF_TOKEN
-                jr      z,ev_ff_lof         ; `jp` since D-LOC: the LOC test below
+                jp      z,ev_ff_lof         ; `jp` since D-LOC (again since D-BASICINT's $4EF8 pin, 2026-10-24): the LOC test below
                                             ; sits between this and its target
                                             ; ⚠️ D-SPMERGE step 5 tried `jr` here on
                                             ; jr_mapper's 2026-09-12 proposal and the
@@ -1316,6 +1316,23 @@ ev_ret_e:                                   ; D-RETTAIL: the shared `DE = A` ret
                 ld      e,a
                 ld      d,0                 ; INP yields 0..255
                 ret
+    IF BASICINT_PINS
+; 📌 D-BASICINT PIN $4EF8 (2026-10-24): Head over Heels' machine code RETURNS into
+; the reference's $4EF8 (a `ret` in the BIOS lands there -- scratchpad/
+; hoh_err_probe.py's PC ring). This tree had EOF's body at that address by luck:
+; a 9 B layout shift (D-BAREEXTRA) put ev_ff_eof+9 there and the game stopped with
+; `Bad file mode in 50`. Black-box on the VG-8020 (scratchpad/biosint2_probe.py,
+; entered by `jp` as a `ret` would; hoh_4ef8.out, hoh_4ef8_vary.out): ONE stack
+; word taken, DE and HL swapped, A = NOT(A - C) with SUB-then-CPL flags (C7/12,
+; 21/B3, A5/32, 5B/9A over four inputs), BC / IX / IY kept, no work-area cell
+; written. HL / DE do not reach A; A and C do.
+                ds      $4EF8 - $, $00
+basicint_4ef8:
+                ex      de,hl
+                sub     c
+                cpl
+                ret
+    ENDIF
 ev_ff_eof:                                  ; EOF(n): -1 at end of the input file n
                 ; Make channel n (DE = arg) the live one, then ask disk.rom whether
                 ; its next byte is the end (fat_io_eof, H_CHIN op 2). fch_select is a

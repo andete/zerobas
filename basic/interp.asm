@@ -837,7 +837,11 @@ ex_end:
                 ; END token here (the dispatcher's contract, es_hit above), so the
                 ; `inc hl` IS the measured resume position; HL is dead afterwards
                 ; and A is reloaded below, so cont_record's clobbers are free.
-                inc     hl
+                ; D-BAREEXTRA (2026-10-24): `END 1` is `Syntax error in 10` on the
+                ; VG-8020; zerobas ended the run silently. The statement must end
+                ; here -- HL then sits on the ':' / end, the same resume position.
+                call    stmt_bare_end       ; past the END token; Z iff 0 or ':'
+                jp      nz,stmt_error
                 call    cont_record         ; (basic/program.asm; run mode only)
                 ; D-ONEFLG site B (docs/spec-basic-oneflg-reset-scope.md §4): END
                 ; TERMINATES the run, so the handler context dies with it (spec

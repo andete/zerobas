@@ -1,0 +1,5 @@
+x4ef8a Philips_VG_8 [R 3344 5566 1122 21B3 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x4ef8h Philips_VG_8 [R 3344 0 1122 C712 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x4ef8d Philips_VG_8 [R 0 5566 1122 C712 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x4ef8c Philips_VG_8 [R 3344 5566 0 A532 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+refcache: 0 hit, 4 miss, 4 stored

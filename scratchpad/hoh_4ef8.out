@@ -1,0 +1,5 @@
+x4ef8  Philips_VG_8 [R 3344 5566 1122 C712 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x4ef8  C-BIOS_MSX1_ [R F760 0 1122 100 FFFF D3F2 7788 99AA] F3F6:2>1 F733:0>44 FC9E:B4>B6 [N 3 ] ZB color   auto    goto    list    run
+x4ef8b Philips_VG_8 [R 403 605 201 5B9A 0 D3F2 7788 99AA] [N 0 ] Ok color   auto    goto    list    run
+x4ef8b C-BIOS_MSX1_ [R F71F 0 201 100 FFFF D3F2 7788 99AA] F3F6:2>1 F733:0>3 FC9E:B4>B6 [N 3 ] ZB color   auto    goto    list    run
+refcache: 0 hit, 4 miss, 4 stored

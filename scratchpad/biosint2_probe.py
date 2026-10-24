@@ -82,6 +82,15 @@ CASES += [("ba", prog(0x2010, a=0xA5)), ("bbc", prog(0x2010, bc=0x0201)),
           ("bde", prog(0x2010, de=0x0403)), ("bhl", prog(0x2010, hl=0x0605))]
 
 
+# 2026-10-24: Head over Heels returns into the BASIC ROM's $4EF8 (D-BAREEXTRA's tape
+# regression; scratchpad/hoh_err_probe.py's PC ring: a `ret` in the BIOS at $19A2-$19A6
+# lands there) -- what does the reference do when $4EF8 is entered by a ret?
+CASES += [("x4ef8", prog(0x4EF8)), ("x4ef8b", prog(0x4EF8, a=0xA5, bc=0x0201, de=0x0403, hl=0x0605))]
+# ... and which input A follows: one register varied at a time
+CASES += [("x4ef8a", prog(0x4EF8, a=0x00)), ("x4ef8h", prog(0x4EF8, hl=0x0000)),
+          ("x4ef8d", prog(0x4EF8, de=0x0000)), ("x4ef8c", prog(0x4EF8, bc=0x0000))]
+
+
 def main():
     machines = ("Philips_VG_8020",) if VGONLY else ("Philips_VG_8020", "C-BIOS_MSX1_EU_REPACK_NODISK")
     for name, p in CASES:

@@ -37,7 +37,11 @@
 
 ; --- ex_cls: CLS -----------------------------------------------------------
 ex_cls:
-                inc     hl                  ; past the CLS token
+                ; D-BAREEXTRA (2026-10-24): the statement must END here BEFORE the
+                ; screen goes -- `CLS 1` / `CLS=1` raise Syntax error with the screen
+                ; intact on the VG-8020; zerobas cleared first (scratchpad/stmteq_run.out).
+                call    stmt_bare_end       ; past the CLS token; Z iff 0 or ':'
+                jp      nz,stmt_error
                 push    hl
                 xor     a                   ; CLS requires the zero flag set on entry
                 call    CLS

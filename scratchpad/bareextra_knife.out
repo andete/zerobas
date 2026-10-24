@@ -1,0 +1,7 @@
+# K-BX1: CLS / END / STOP as at HEAD (no end check); main ROM 5da3e971 -> 75a2eee0, restored 5da3e971; gate rc=1
+FAIL  trace    bx-cls1        CLS:PRINT "[M]":CLS 1              ref=      [M]/Syntax error  zb=          Syntax error
+FAIL  trace    bx-clseq       CLS:PRINT "[M]":CLS=1              ref=      [M]/Syntax error  zb=          Syntax error
+FAIL  trace    bx-end1        CLS:PRINT "[M]":END 1              ref=      [M]/Syntax error  zb=                   [M]
+FAIL  trace    bx-stop1       CLS:PRINT "[M]":STOP 1             ref=      [M]/Syntax error  zb=             [M]/Break
+ATTENTION: see FAIL rows above
+refcache: 1 hit, 3 miss, 3 stored

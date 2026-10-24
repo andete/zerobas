@@ -1158,7 +1158,7 @@ item — do **one item per session** to keep context lean.
       The cheap sub-ROM table wins in the report (packed constants -600..-700 B,
       keyword table -160..-320 B, KEY defaults -90 B) Joost "cares about less".
 
-- [ ] 🧹 **D-STMTEQ — `SCREEN=1` CLEARS THE SCREEN ON zerobas BEFORE ITS `Syntax error`; BOTH
+- [x] ✅ **CLOSED 2026-10-24 (D-STMTEQ)** 🧹 **D-STMTEQ — `SCREEN=1` CLEARS THE SCREEN ON zerobas BEFORE ITS `Syntax error`; BOTH
       REFERENCES RAISE IT AND LEAVE THE SCREEN ALONE (found beside D-COLOREQ, 2026-10-21)**
       🎚️ TIER 6 — every error: a malformed statement's side effect.
       🤖 **AUTONOMOUS** — the CF-3300 settles it; measure the VG-8020 too before fixing.
@@ -1170,6 +1170,10 @@ item — do **one item per session** to keep context lean.
       argument path is unread. ➡️ NEXT: measure `SCREEN=1` on the VG-8020, read ex_screen's first
       argument path, fix it with D-BAREEXTRA's CLS / END / STOP, and check `CLS:PRINT` and
       `SCREEN 1` are untouched.
+      ✅ **CLOSED 2026-10-24:** `SCREEN=1` ALREADY AGREES (the VG-8020 and zerobas both keep the
+      screen and raise `Syntax error`, [`stmteq_run.out`](scratchpad/stmteq_run.out) -- fixed on
+      the way, unattributed); `SCREEN 1 X` reads the same on both; `CLS=1` was D-BAREEXTRA's and
+      is fixed with it; the controls `SCREEN 1:SCREEN 0` and `CLS:PRINT` unchanged.
 
 - [ ] 💽 **D-DISKRUN — THE DISK COLLECTION ON BOTH MACHINES: 18 SYSTEM DISKS REACH
       MSX-DOS ON THE CF-3300 AND BASIC ON zerobas (run 2026-10-21, Joost: "Disk test run")**
@@ -6902,7 +6906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9368 (T-6FE392)8 (T-529ABE)` from `TODO.md:14935 (T-529ABE)`: a
+      `TODO.md:9372 (T-6FE392)8 (T-529ABE)` from `TODO.md:14939 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9823,7 +9827,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14935 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14939 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16138,7 +16142,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       zerobas collapses every fault to 5 and runs `ERROR 1` before seeing `,1`.
       `ERROR 0` and `ERROR 256` agree (5). Blocks ERROR's T6.
 
-- [ ] 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
+- [x] ✅ **DONE 2026-10-24 (D-BAREEXTRA)** 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
       SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found
       2026-09-27 by T6).**
       🎚️ TIER 6 — `CLS` / `END` followed by an argument
@@ -16151,6 +16155,37 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       check comes after the action (CLS) or never (END). Blocks CLS and END's T6.
       ➕ **`STOP 1` too (batch 7, `t7stopbreak2` EXTRA):** the VG-8020 raises
       `Syntax error`, zerobas breaks as if the `1` were not there. Blocks STOP's T6.
+      ✅ **FIXED 2026-10-24.** [`stmteq_probe.py`](scratchpad/stmteq_probe.py) (a `[MARK]`
+      printed first shows a clear; [`stmteq_run.out`](scratchpad/stmteq_run.out)): the VG-8020
+      keeps [MARK] and raises `Syntax error` for `CLS 1` / `CLS=1`, and `Syntax error in 10`
+      for `END 1` / `STOP 1` in a program; zerobas cleared, ended silently, and printed `Break
+      in 10`. Fix: ex_cls and ex_end start with `call stmt_bare_end / jp nz,stmt_error` (in
+      place of their `inc hl`; HL then sits on the ':' / end -- the same CONT resume point);
+      a bare STOP checks for 0 / ':' before do_break (main page-1 tail 361 -> 352 B on
+      2026-10-24). After ([`stmteq_after.out`](scratchpad/stmteq_after.out)): all eight rows as
+      the VG-8020. Gate: missing-acceptance's trace battery, rows bx-cls1 / bx-clseq / bx-end1
+      / bx-stop1 against the references ([`bareextra_gate.out`](scratchpad/bareextra_gate.out));
+      🔪 K-BX1 (the three handlers as at HEAD): all four FAIL, gate rc=1, ROM 5da3e971 ->
+      75a2eee0 -> 5da3e971 ([`bareextra_knife.out`](scratchpad/bareextra_knife.out)). Docs:
+      CLS.md / END.md / STOP.md, examples PASS 3. 🔮 Scored: zerobas diverging on cls / end /
+      stop HIT; "zerobas clears on SCREEN=1" MISS (it already agrees -- D-STMTEQ's SCREEN half).
+      📼 **AND IT BROKE A TAPE -- BY LUCK, NOT BY LOGIC (found the same day).** The tape
+      collection after the fix: Head over Heels NEAR -> ZB-PROMPT, `Bad file mode in 50` (its
+      line 50 is a USR call). Deterministic, and the HEAD build reads NEAR. A PC ring before the
+      ERR 61 ([`hoh_err_probe.py`](scratchpad/hoh_err_probe.py)): a `ret` in the BIOS lands in
+      main at **$4EF8** -- the game returns into a fixed REFERENCE BASIC-ROM address, which
+      held ev_ff_eof+14 at HEAD (harmless by luck) and ev_ff_eof+9 after the 9 B shift (EOF ->
+      ERR 61). The D-BASICINT class (Joost 2026-10-15: support those addresses). Black-box on
+      the VG-8020 ([`biosint2_probe.py`](scratchpad/biosint2_probe.py) rows x4ef8*,
+      [`hoh_4ef8.out`](scratchpad/hoh_4ef8.out), [`hoh_4ef8_vary.out`](scratchpad/hoh_4ef8_vary.out)):
+      one stack word taken, DE <-> HL, A = NOT(A - C) with SUB-then-CPL flags (C7/12, 21/B3,
+      A5/32, 5B/9A), BC / IX / IY kept, no work-area cell. 📌 PIN $4EF8 (basic/expr.asm,
+      `ex de,hl / sub c / cpl / ret`, in front of ev_ff_eof; tools/pin_plan.py 7/7; ev_ff_lof's
+      `jr` back to `jp`). After ([`hoh_4ef8_after.out`](scratchpad/hoh_4ef8_after.out)): all six
+      rows' registers as the VG-8020 (a 5th column reads 0 there and FFFF here in every row,
+      before the pin too -- unexamined); Head over Heels NEAR again, both at line 140.
+      📼 The collection with the fix AND the pin ([`tapecorpus_bareextra.out`](scratchpad/tapecorpus_bareextra.out)):
+      SAME 9, NEAR 12, RUNS? 21, RESET 0 -- all 42 titles in their slice-E class.
 
 - [ ] 🔴 **`CIRCLE(99,99),-5` IS `Illegal function call` HERE AND DRAWS ON THE
       REFERENCE (D-CIRCNEGR, found 2026-09-27 by T6 batch 7b).**

@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `CLS` — clear the screen
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors: not applicable · RAM usage not yet proven · every error not yet
-> proven. One recorded difference: `CLS` followed by junk (below).
+> proven. No recorded difference since `CLS 1` was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -17,7 +17,7 @@ SPDX-License-Identifier: 0BSD
 `CLS` erases the text screen and puts the cursor in the top-left corner,
 row 0, column 0. The function-key line at the bottom of the screen, when it is
 shown, stays where it is. zerobas behaves like the Philips VG-8020 in every
-case we have measured except one malformed spelling, `CLS 1`.
+case we have measured.
 
 ## Syntax
 
@@ -40,8 +40,8 @@ or the end of the line) is a `Syntax error`.
 - **There is no common error to get wrong.** `CLS` takes nothing that could be
   out of range or of the wrong type, so the "common errors" rung is declared
   not applicable (Joost, 2026-09-29: *"go with (A)"*).
-- **Its only error is junk after it**, `Syntax error` (error 2) — see
-  *Differences*.
+- **Its only error is junk after it**, `Syntax error` (error 2), and it comes
+  before the screen is touched: `CLS 1` and `CLS=1` leave the screen as it was.
 
 ## Example
 
@@ -64,20 +64,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`CLS 1` and `CLS,` clear the screen here before reporting their error.**
-Both machines answer `Syntax error`, but the VG-8020 checks for the stray
-argument first and leaves the screen intact, while zerobas clears the screen
-and then raises the error (D-BAREEXTRA, found 2026-09-27, filed in
-[TODO.md](../../TODO.md) as a TIER 6 item; `END 1` has the same shape). The
-error code and line agree; the screen does not. It is the reason the "every
-error" rung is not ticked.
-
-The other rung not yet proven is **RAM usage**: `CLS` moves free memory the
+None recorded. The rung not yet proven is **RAM usage**: `CLS` moves free memory the
 same way on both machines, but the set of documented work-area cells each
 one writes is not the same.
 
 ## What we found, and how
 
+- **`CLS 1` cleared the screen before its error** (fixed 2026-10-24,
+  D-BAREEXTRA, found 2026-09-27). Both machines answer `Syntax error`, but the
+  VG-8020 checks for the stray argument first and leaves the screen intact;
+  zerobas cleared it, then raised the error. A marker printed just before shows
+  it ([`stmteq_run.out`](../../scratchpad/stmteq_run.out), [after](../../scratchpad/stmteq_after.out)). `END 1` and `STOP 1` had the same shape.
 - **`CLS` erased the function-key line** (fixed 2026-09-26, D-KEYCLS). C-BIOS's
   own screen clear wipes all 24 rows, so the bottom row came back blank where
   the VG-8020 keeps the labels. `SCREEN 0` and a `WIDTH` change had the same
