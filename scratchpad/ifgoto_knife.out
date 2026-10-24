@@ -1,0 +1,6 @@
+# K-IG1: ex_if as at HEAD (GOTO -> if_goto_form); main ROM a42f9396 -> 74befa53, restored a42f9396; gate rc=1
+g.gotoelse                     1                   1                   1   SAME
+g.gotobare                     1                   1         ERR 2 AT 30   DIFF
+g.gotostmt                     2                   2         ERR 2 AT 30   DIFF
+g.gotoelse2                    9                   9         ERR 2 AT 30   DIFF
+3/28 rows diverging  g.gotobare g.gotostmt g.gotoelse2

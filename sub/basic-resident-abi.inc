@@ -35,7 +35,7 @@ p0_bp_ret equ 066C2H   ; main's bp_ret
 p0_skip_spaces equ 042E5H   ; main's skip_spaces
 p0_exec_stmt equ 04136H   ; main's exec_stmt
 p0_pl_syntax equ 05ACAH   ; main's pl_syntax
-p0_gb_illegal equ 04565H   ; main's gb_illegal
+p0_gb_illegal equ 0455EH   ; main's gb_illegal
 p0_ers_undef equ 07B43H   ; main's ers_undef
 p0_req_gosub equ 040F0H   ; main's req_gosub
 p0_lref_bc equ 04104H   ; main's lref_bc
@@ -49,8 +49,8 @@ p0_check_fperr_only equ 04418H   ; main's check_fperr_only
 p0_ztrap_entry equ 05CBBH   ; main's ztrap_entry
 p0_skip_comma equ 042D0H   ; main's skip_comma
 p0_inc_skip_paren equ 042CCH   ; main's inc_skip_paren
-p0_inc_eval equ 04ADAH   ; main's inc_eval
-p0_get_byte_arg equ 0455CH   ; main's get_byte_arg
+p0_inc_eval equ 04AD3H   ; main's inc_eval
+p0_get_byte_arg equ 04555H   ; main's get_byte_arg
 p0_stmt_error equ 042FCH   ; main's stmt_error
 p0_raise_error equ 0431CH   ; main's raise_error
 p0_pdf_badname equ 027BFH   ; main's pdf_badname
@@ -73,8 +73,8 @@ p0_nodisk_dev equ 02812H   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 028DFH   ; main's skipsp_test
 p0_upcase equ 042DCH   ; main's upcase
-p0_eval equ 04ADBH   ; main's eval
-p0_eval_byte_arg equ 04557H   ; main's eval_byte_arg
+p0_eval equ 04AD4H   ; main's eval
+p0_eval_byte_arg equ 04550H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042ECH   ; main's stmt_bare_end
 p0_mxf_require_end equ 03F62H   ; main's mxf_require_end
 p0_oo_parse_reclen equ 06D4AH   ; main's oo_parse_reclen
@@ -107,7 +107,7 @@ p0_req_comma equ 02E2DH   ; main's req_comma
 p0_check_expr_errors equ 04418H   ; main's check_expr_errors
 p0_key_drain equ 05A79H   ; main's key_drain
 p0_req_operand equ 04129H   ; main's req_operand
-p0_eval_byte_checked equ 0454BH   ; main's eval_byte_checked
+p0_eval_byte_checked equ 04544H   ; main's eval_byte_checked
 p0_spr_tenant equ 06109H   ; main's spr_tenant
 p0_key_repaint equ 05A59H   ; main's key_repaint
 p0_key_op equ 05A6BH   ; main's key_op
@@ -119,7 +119,7 @@ p0_print_msg equ 0765EH   ; main's print_msg
 p0_err_verify equ 06490H   ; main's err_verify
 p0_exa_loop equ 076D4H   ; main's exa_loop
 p0_le_call_op equ 06E6EH   ; main's le_call_op
-p0_print_string equ 045EDH   ; main's print_string
+p0_print_string equ 045E6H   ; main's print_string
 p0_list_num equ 062A1H   ; main's list_num
 p0_print_crlf equ 057C4H   ; main's print_crlf
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

@@ -16113,13 +16113,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔴 Harness trap found on the way: an unseeded `FN_FEND` makes every host scalar
       lookup walk a 256-byte page (~9000 T); tests/test_forfast.py's F4 now seeds it.
 
-- [ ] 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
+- [x] ✅ **DONE 2026-10-24 (D-IFGOTOBARE)** 🔴 **`IF 1 GOTO` (no line) IS ACCEPTED ON THE REFERENCE AND `Syntax error`
       HERE (D-IFGOTOBARE, found 2026-09-27 by T6).**
       🎚️ TIER 6 — `IF … GOTO` with no line number
       🤖 **AUTONOMOUS** — the reference settles it.
       `scratchpad/t6enum_b6.out` + a raw-screen capture: VG-8020 prints `[OK]`
       (the statement completes; nothing jumps), zerobas `(2, 20)`. `IF 1 GOTO 99`
       (8) and `IF 1 GOTO "A"` (2) agree.
+      ✅ **FIXED 2026-10-24.** [`ifgoto_probe.py`](scratchpad/ifgoto_probe.py) ([`ifgoto_run.out`](scratchpad/ifgoto_run.out)):
+      on the VG-8020 `IF <c> GOTO` without a line number IS `IF <c> THEN` -- `IF 1 GOTO PRINT"[X]"`
+      prints, `IF 1 GOTO :PRINT"[R]"` prints, `IF 1 GOTO ELSE ...` skips the ELSE, false
+      takes it; a bare `GOTO` statement is ERR 2 on both. Fix: ex_if's GOTO arm jumps to
+      if_then (if_goto_form deleted, -5 B): a line number still goes to the conditional GOTO,
+      anything else runs as THEN's statements. After: all 7 rows as the VG-8020
+      ([`ifgoto_after.out`](scratchpad/ifgoto_after.out)). Gate: ifsem-acceptance rows g.gotobare /
+      g.gotostmt / g.gotoelse2, SAME on all three ([`ifgoto_gate.out`](scratchpad/ifgoto_gate.out));
+      🔪 K-IG1 (ex_if as at HEAD): exactly those three DIFF (`ERR 2 AT 30`), gate rc=1, ROM
+      restored ([`ifgoto_knife.out`](scratchpad/ifgoto_knife.out)). Docs: IF.md, GOTO.md; examples PASS 2.
 
 - [ ] 🔴 **`CLEAR 1,2,3` IS `Illegal function call` HERE AND `Syntax error` ON
       THE REFERENCE (D-CLEAR3ARG, found 2026-09-27 by T6).**

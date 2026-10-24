@@ -1,0 +1,36 @@
+
+row                       vg8020              cf3300                  zb   verdict
+c.true                         1                   1                   1   SAME
+c.false                        2                   2                   2   SAME
+c.noelse                       9                   9                   9   SAME
+c.goto               ERR 8 AT 20         ERR 8 AT 20         ERR 8 AT 20   SAME
+c.float                        1                   1                   1   SAME
+c.negfloat                     1                   1                   1   SAME
+s.strvar            ERR 13 AT 30        ERR 13 AT 30        ERR 13 AT 30   SAME
+s.strempty          ERR 13 AT 30        ERR 13 AT 30        ERR 13 AT 30   SAME
+s.strlit            ERR 13 AT 20        ERR 13 AT 20        ERR 13 AT 20   SAME
+n.dangle                       9                   9                   9   SAME
+n.dangle2                      2                   2                   2   SAME
+n.dangle3                      1                   1                   1   SAME
+n.after                        9                   9                   9   SAME
+n.outerelse                    3                   3                   3   SAME
+n.outerelse2                   3                   3                   3   SAME
+n.plainelse                    3                   3                   3   SAME
+d.depth2                       4                   4                   4   SAME
+d.depth2b                      3                   3                   3   SAME
+r.rem                          9                   9                   9   SAME
+r.quote                        9                   9                   9   SAME
+r.remtrue                      9                   9                   9   SAME
+g.gotoelse                     1                   1                   1   SAME
+g.gotobare                     1                   1                   1   SAME
+g.gotostmt                     2                   2                   2   SAME
+g.gotoelse2                    9                   9                   9   SAME
+e.nestelse                     2                   2                   2   SAME
+e.nestelse2                    3                   3                   3   SAME
+x.endelse                      5                   5                   5   SAME
+
+0/28 rows diverging  
+🟢 CONTROLS: c.* are the shapes every other row is read against -- float
+   truthiness (IF .5 / IF -.5), the plain no-nesting ELSE, and the
+   no-ELSE line-end. If one of those reddens, no n.* row means anything.
+refcache: 0 hit, 84 miss, 84 stored

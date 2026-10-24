@@ -101,6 +101,11 @@ add('r.quote',   ['B=9', "IF 0 THEN 'X ELSE B=1"],    'B'),
 add('r.remtrue', ['B=9', "IF 1 THEN REM ELSE B=1"],   'B'),
 # --- the IF <expr> GOTO form, with an ELSE after it --------------------------
 add('g.gotoelse',['B=9', 'IF 0 GOTO 900 ELSE B=1'],   'B'),
+# D-IFGOTOBARE (2026-10-24): GOTO with no line number after it IS THEN -- the VG-8020
+# runs the rest as THEN's statements (scratchpad/ifgoto_run.out); zerobas was ERR 2.
+add('g.gotobare',['B=9', 'IF 1 GOTO :B=1'],            'B'),
+add('g.gotostmt',['B=9', 'IF 1 GOTO B=2'],             'B'),
+add('g.gotoelse2',['B=9', 'IF 1 GOTO ELSE B=3'],       'B'),
 # --- a nested IF in the ELSE BRANCH (taken path, not the skip path) ----------
 add('e.nestelse',['B=9', 'IF 0 THEN B=1 ELSE IF 1 THEN B=2 ELSE B=3'], 'B'),
 add('e.nestelse2',['B=9','IF 0 THEN B=1 ELSE IF 0 THEN B=2 ELSE B=3'], 'B'),

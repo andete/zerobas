@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `GOTO` — jump to a line
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference, in the `IF … GOTO` form (below).
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No recorded
+> difference since the `IF … GOTO` form was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -81,17 +81,15 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`IF 1 GOTO` with no line number** is accepted by the VG-8020, which carries
-on without jumping, and is `Syntax error` here (D-IFGOTOBARE, found
-2026-09-27; [t6enum_b6.out](../../scratchpad/t6enum_b6.out)). A plain `GOTO`
-with no line number is `Syntax error` on both machines. This is filed as a
-TIER 6 item ("every error") in [TODO.md](../../TODO.md) and is listed under
-both `GOTO` and `IF`.
-
-The one rung not yet proven is **RAM usage**.
+None recorded. A plain `GOTO` with no line number is `Syntax error` on both
+machines; inside `IF`, see [`IF`](IF.md). The one rung not yet proven is **RAM
+usage**.
 
 ## What we found, and how
 
+- **`IF 1 GOTO` with no line number was `Syntax error` here** (fixed
+  2026-10-24, D-IFGOTOBARE): on the VG-8020 a `GOTO` after `IF`'s condition
+  without a line number works as `THEN` ([`ifgoto_run.out`](../../scratchpad/ifgoto_run.out), [after](../../scratchpad/ifgoto_after.out)).
 - **A jump stored as a line POINTER was a Syntax error** (fixed 2026-10-12,
   D-BASICROM). After a jump runs, the reference rewrites its operand from a line
   number into the address of the line, in the program text itself; a program

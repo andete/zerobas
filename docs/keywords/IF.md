@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `IF` — run part of a line only when a condition holds
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: `IF 1 GOTO` with no line number (below).
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No recorded
+> difference since `IF 1 GOTO` was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -54,7 +54,7 @@ IF <condition> GOTO <line number> [ELSE <statements> | <line number>]
 | `IF THEN 30` (no condition), `IF 1 GOTO "A"` | 2 `Syntax error` |
 | `IF 1 THEN 99`, `IF 0 THEN 30 ELSE 99`, `IF 1 GOTO 99`, no line 99 | 8 `Undefined line number` |
 | `IF "A" THEN 30`, `IF "A" GOTO 30` | 13 `Type mismatch` |
-| `IF 1 GOTO` (no line number) | accepted on the VG-8020, 2 here — see *Differences* |
+| `IF 1 GOTO` (no line number) | accepted: `GOTO` without a line number works as `THEN` |
 
 The whole set of errors `IF` raises is {2, 8, 13} for `THEN` and `GOTO` and
 {8, 13} for `ELSE`, the same on both machines.
@@ -88,17 +88,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`IF 1 GOTO` with no line number** is accepted by the VG-8020, which carries
-on without jumping, and is `Syntax error` here (D-IFGOTOBARE, found
-2026-09-27 by the every-error enumeration;
-[t6enum_b6.out](../../scratchpad/t6enum_b6.out)). `IF 1 GOTO 99` and
-`IF 1 GOTO "A"` agree. It is filed as a TIER 6 item in
-[TODO.md](../../TODO.md).
-
-The one rung not yet proven is **RAM usage**.
+None recorded. The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`GOTO` after the condition is `THEN` when no line number follows** (fixed
+  2026-10-24, D-IFGOTOBARE, found 2026-09-27 by the every-error enumeration,
+  [t6enum_b6.out](../../scratchpad/t6enum_b6.out)). On the VG-8020
+  `IF 1 GOTO PRINT "X"` prints `X`, `IF 1 GOTO :PRINT "R"` prints `R`, and
+  `IF 1 GOTO` alone carries on; zerobas raised `Syntax error` for all three.
+  A plain `GOTO` with no line number is `Syntax error` on both ([`ifgoto_run.out`](../../scratchpad/ifgoto_run.out), [after](../../scratchpad/ifgoto_after.out)).
 - **A false `IF` ran a nested `IF`'s `ELSE`** (fixed 2026-09-02, D-IFSEM).
   zerobas looked for the first `ELSE` on the line, so
   `B=9:IF 0 THEN IF 1 THEN B=1 ELSE B=2` left `B` at 2 where both references

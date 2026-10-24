@@ -2019,14 +2019,14 @@ exif_truth_ok:
                 call    skip_spaces
                 cp      THEN_TOKEN
                 jr      z,if_then
-                cp      GOTO_TOKEN          ; allow `IF <expr> GOTO <line>`
-                jr      z,if_goto_form
+                cp      GOTO_TOKEN          ; `IF <expr> GOTO ...` IS `IF <expr> THEN ...`:
+                jr      z,if_then           ; D-IFGOTOBARE (2026-10-24) -- on the VG-8020
+                                            ; a line number after GOTO jumps, anything
+                                            ; else runs as THEN's statements (`IF 1 GOTO
+                                            ; PRINT"X"` prints X; `IF 1 GOTO` alone is
+                                            ; fine), a bare GOTO statement is still ERR 2
+                                            ; (scratchpad/ifgoto_run.out)
                 jp      stmt_error
-if_goto_form:
-                ld      a,d                 ; condition true?
-                or      e
-                jr      z,if_false
-                jp      exec_stmt           ; true: let exec run the GOTO at HL
 if_then:
                 rst    $10                ; past THEN
                 ld      a,d                 ; condition true?

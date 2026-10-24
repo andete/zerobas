@@ -1,0 +1,8 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   true_end   [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   true_rest  [R] | [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   false_rest [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   true_else  [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   false_else [E] | [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   true_stmt  [X] | [N]
+C-BIOS_MSX1_EU_REPACK_NODISK   goto_bare  Syntax error in 10
+refcache: 0 hit, 7 miss, 7 stored
