@@ -8,7 +8,7 @@ spend: a build plants N passes of `djnz` (13 T each) at the top of ctp_body -- o
 per program byte -- and a tokenised 40-line program is CLOADed from a CSAVE-shaped
 tape on zerobas diskless; the run LISTs and RUNs it. Our own ROM, our own tape.
 
-    python3 -u scratchpad/tapin_margin.py LABEL      (run against the INSTALLED build)
+    [TAPIN_TAPE=x.wav] python3 -u scratchpad/tapin_margin.py LABEL   (the INSTALLED build)
 """
 import os, shutil, subprocess, sys, tempfile, time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,6 +28,11 @@ def main():
     td = tempfile.mkdtemp(prefix="tapin_")
     cas = os.path.join(td, "p.cas")
     open(cas, "wb").write(build_cas_basic_csave("PROG", prog))
+    # TAPIN_TAPE=<wav>: the same program from a recorded tape instead (the 2400-baud
+    # one the VG-8020 writes, scratchpad/tapin_wav2400.py)
+    if os.environ.get("TAPIN_TAPE"):
+        cas = os.path.join(td, "p.wav")
+        shutil.copy(os.environ["TAPIN_TAPE"], cas)
     t0 = time.time()
     scr = omsx_repl.run_cases("C-BIOS_MSX1_EU_REPACK_NODISK",
                               [("direct", ["CLOAD", "RUN"])], batch=False,

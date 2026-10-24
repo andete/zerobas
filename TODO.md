@@ -1724,9 +1724,20 @@ item — do **one item per session** to keep context lean.
       into sub2 it would pay a p0cb round trip (~150 T, counted from sub2/p0cb.asm + CLPRIM)
       for TAPIN and another for cas_put: ~300 T, about a fifth of the slack. 🔮 "OK up to
       ~6600 T, the two stop bits" MISSED -- the margin is a quarter of that.
-      ➡️ Before moving it: the same study on a 2400-baud tape (a WAV; the .cas rate here is
-      openMSX's, likely 1200), where the slack should roughly halve and the move would spend
-      ~40% of it. Not moved tonight.
+      📏 **AND ON A REAL 2400-BAUD TAPE (2026-10-24):** the VG-8020 itself wrote it
+      ([`tapin_wav2400.py`](scratchpad/tapin_wav2400.py): CLOAD the .cas, then `CSAVE"PROG",2`
+      into a fresh recording; cas_decode reads 4822 Hz short half-periods = 2400 baud, 1297
+      bytes, the program). zerobas CLOADs it with 0 / 32 / 48 / 64 / 96 / 112 / 128 / 160
+      passes -- ALL OK ([`tapin_margin_run3.out`](scratchpad/tapin_margin_run3.out),
+      [`tapin_margin_run4.out`](scratchpad/tapin_margin_run4.out)); a copy cut to 60 % reads
+      `Device I/O error`, so the WAV is what plays. 🔮 "the slack halves at 2400" MISSED: the
+      reference-written 2400-baud tape is MORE tolerant (>= ~2100 T) than openMSX's .cas
+      playback (~1300-1700 T), which is the worst case measured.
+      ✅ **STUDY CONCLUSION: the move is timing-safe** -- ~300 T of p0cb against >= ~1270 T
+      of slack on the worst tape measured, 4x headroom. ➡️ NEXT: move the tape loop
+      (do_tape_prog's ctp_* body, ~230 B) into the sub2 tenant, TAPIN / cas_put through p0cb;
+      witness: the tape gates, the tape collection, and tapin_margin.py's d64 row (~850 T
+      more on top of the move) as the margin check after it.
       ⏱ THE SPEED COST, measured by the FULL battery's kwtime (2026-10-24, T5 is paused --
       Joost 10-20: ROM space first, "it'll also have speed impact"): COLOR's border form 2x ->
       2.8x the reference's time, KEY's display-on 3.1x -> 3.4x, WIDTH 0.8x -> 0.81x, SCREEN
@@ -6861,7 +6872,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9327 (T-6FE392)8 (T-529ABE)` from `TODO.md:14894 (T-529ABE)`: a
+      `TODO.md:9338 (T-6FE392)8 (T-529ABE)` from `TODO.md:14905 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9782,7 +9793,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14894 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14905 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

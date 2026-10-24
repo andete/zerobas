@@ -6,7 +6,7 @@ program byte), rebuilds with `make repack-machine`, hashes the main ROM (a cut
 that did not reach the ROM is reported, never scored), runs the probe, and
 restores the source; the last build is the restored tree, hashed again.
 
-    python3 -u scratchpad/tapin_margin_knives.py [--wide]
+    [TAPIN_TAPE=x.wav] python3 -u scratchpad/tapin_margin_knives.py [--wide | --b2400 | --b2400hi]
 """
 import hashlib, os, subprocess, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +25,13 @@ WIDE = [("d64", delay(64, 1)), ("d255", delay(255, 1)), ("d510", delay(255, 2)),
         ("d1020", delay(255, 4))]
 NARROW = [("d96", delay(96, 1)), ("d128", delay(128, 1)), ("d160", delay(160, 1)),
           ("d192", delay(192, 1))]
-VARIANTS = WIDE if "--wide" in sys.argv else NARROW
+# run 3 (--b2400, with TAPIN_TAPE set to the VG-8020's 2400-baud recording)
+B2400 = [("d0", ANCHOR), ("d32", delay(32, 1)), ("d48", delay(48, 1)), ("d64", delay(64, 1)),
+         ("d96", delay(96, 1))]
+# run 4 (--b2400hi): all of run 3 held, so where does the 2400-baud tape break?
+B2400HI = [("d112", delay(112, 1)), ("d128", delay(128, 1)), ("d160", delay(160, 1))]
+VARIANTS = (WIDE if "--wide" in sys.argv else B2400 if "--b2400" in sys.argv
+            else B2400HI if "--b2400hi" in sys.argv else NARROW)
 
 
 def h():
@@ -47,7 +53,7 @@ def main():
             open(SRC, "w").write(orig.replace(ANCHOR, repl))
             rc = build()
             now = h()
-            if rc or now == base:
+            if rc or (now == base and repl != ANCHOR):
                 print(f"{tag}: build rc={rc} ROM {now} -- DID NOT REACH THE ROM, not scored", flush=True)
                 continue
             out = subprocess.run([sys.executable, "-u", os.path.join(REPO, "scratchpad", "tapin_margin.py"), tag],

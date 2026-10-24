@@ -1,0 +1,7 @@
+base ROM ae9e90ef
+ROM ae9e90ef  d0: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM 983788ce  d32: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM 682ab55d  d48: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM f89e29bb  d64: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM 1580ac50  d96: OK  got='[S 741 LINE38********************]'  (0 s wall)
+restore: ae9e90ef -> ae9e90ef  BYTE-IDENTICAL
