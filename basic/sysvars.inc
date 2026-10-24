@@ -2890,7 +2890,8 @@ LIST_TOKEN      equ     $93     ; LIST
 ; ✅ ALL FOUR ARE DISPATCHED. DELETE_TOKEN got its stmt_table row in D-DELETE
 ; (docs/spec-basic-delete.md, 2026-08-02); LLIST/AUTO/RENUM got theirs in
 ; D-EDITVERB (docs/spec-basic-editverb.md, 2026-08-06) -- ex_llist sharing
-; ex_list's body, ex_renum, ex_auto, gated at 61 rows on three sides by
+; ex_list's body, ex_renum, ex_auto (whose statement halves are zerobas-sub2's
+; sub2/pgmedit.asm since D-P0CB, 2026-10-24, as DELETE's is), gated at 61 rows on three sides by
 ; `make editverb-acceptance`. No token in this block falls through to
 ; es_noentry -> stmt_error any more.
 ;
@@ -3576,7 +3577,9 @@ SL_DELPTR       equ     SL_TOK          ; DELETE: the statement cursor, on the t
 ;
 ; returns readers in exactly two files: basic/program.asm (store_line,
 ; ex_delete) and sub/lineedit.asm (le_store, le_delrange, prog_find_del,
-; delete_at, open_gap). NO detok, save, FAT or cassette path appears. One
+; delete_at, open_gap). (Since D-P0CB, 2026-10-24, ex_delete's write of
+; SL_DELPTR is sub2/pgmedit.asm's pe_delete -- a third file, the same one
+; writer, the same single LE_OP per call.) NO detok, save, FAT or cassette path appears. One
 ; subrom_call reaches exactly one LE_OP, so a store, a delrange and a listrange
 ; are never in flight together.
 LST_LO          equ     SL_NUM          ; LIST: low end of the range (2)

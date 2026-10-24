@@ -9,6 +9,9 @@ bypass by calling internals directly:
   - CLEAR  (ex_clear / clr_himem — records HIMEM)
   - WIDTH  (ex_width -> zerobas-sub2's scr_width since D-P0CB slice D —
              sets LINLEN, re-inits via CHGMOD)
+  - DELETE / RENUM / AUTO  (their statement heads -> zerobas-sub2's
+             sub2/pgmedit.asm since D-P0CB, 2026-10-24, calling the sub ROM's
+             lineedit tenant back through p0cb; AUTO's loop stays main's exa_loop)
 
 Method: store a small program, run it through run_prog (so each statement goes
 through exec -> exec_stmt -> the handler), trap BREAKX (never pressed) and the
@@ -195,6 +198,62 @@ def run():
                                             # SUBSLOT2 says the ROM is there
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
+
+    # --- DELETE / RENUM / AUTO: their heads run in sub2 (D-P0CB, 2026-10-24) --
+    # sub2/pgmedit.asm, reached through ex_sub2, calling main's le_call_op back
+    # through p0cb -- which reaches the lineedit tenant through the ROM-1 bridge.
+    # The oracle is the measured rules the code encodes (docs/spec-basic-delete.md
+    # R-D2 / R-D8, docs/spec-basic-editverb.md R-RN8 / R-RN9 / R-AU6 / R-AU8),
+    # not the ROM's own output. A raise inside p0cb would leave the nested
+    # harness call's stack band (raise_error resets SP), so it is trapped there.
+    class Raised(Exception):
+        pass
+
+    def edit_machine():
+        m1 = Machine(ROM, SYM, rom_base=BASIC_BASE)
+        m1.mem[m1.sym["SUBSLOT2"]] = 0x8F      # sub2 present (slot 3-3)
+
+        def raise_trap(mm):
+            raise Raised(mm.cpu.a)
+        m1.trap("raise_error", raise_trap)
+        return m1
+
+    def has_line(m1, n):
+        return bool(m1.call("find_line_bc", bc=n).f & 0x01)
+
+    m = edit_machine()
+    out = run_prog_cap(m, [(10, "DELETE 20"), (20, "PRINT 2"), (30, "PRINT 3")])
+    check("DELETE 20 removes line 20, keeps 10 and 30, and stops the run (R-D8)",
+          (has_line(m, 10), has_line(m, 20), has_line(m, 30), out),
+          (True, False, True, b""))
+
+    m = edit_machine()
+    try:
+        run_prog_cap(m, [(10, "DELETE 25"), (20, "PRINT 2"), (30, "PRINT 3")])
+        got = "no error"
+    except Raised as e:
+        got = e.args[0]
+    check("DELETE 25 (no such high line) raises ERR 5, deletes nothing (R-D2)",
+          (got, has_line(m, 20), has_line(m, 30)), (5, True, True))
+
+    m = edit_machine()
+    out = run_prog_cap(m, [(1, "RENUM:GOTO 77")])
+    check("RENUM reports `Undefined line 77 in 1` and renumbers 1 -> 10 (R-RN8/9)",
+          (out, has_line(m, 1), has_line(m, 10)),
+          (b"Undefined line 77 in 1\r\n", False, True))
+
+    m = edit_machine()
+    seen = {}
+
+    def ctrl_stop(mm):                          # read_line: Ctrl-STOP at once
+        seen["rl_auto"] = mm.mem[mm.sym["RL_AUTO"]]
+        mm.cpu.f |= 0x01
+    m.trap("rl_loop", ctrl_stop)
+    out = run_prog_cap(m, [(10, "AUTO 100,5")])
+    check("AUTO 100,5 prompts `100 ` with RL_AUTO = 1, Ctrl-STOP ends it (R-AU8)",
+          (out, seen.get("rl_auto"), m.mem[m.sym["RL_AUTO"]],
+           m.peek(m.sym["AU_NUM"], 2), m.peek(m.sym["AU_INC"], 2)),
+          (b"100 ", 1, 0, bytes([100, 0]), bytes([5, 0])))
 
     # --- LET / FOR create their SCALAR target BEFORE the right side ----------
     # 🧮 D-LETNEWFIRST (2026-10-19). Measured on the VG-8020

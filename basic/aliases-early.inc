@@ -33,8 +33,8 @@ raf_zero_ok     equ     cpow_x0_pos
                                 ; (was basic/float-arith.asm)
 vlf_unset_int   equ     vptr_none
                                 ; (was basic/vars.asm)
-rn_in          equ     in_msg              ; D-ISLDATA2: both were " in ",0 -- one copy (5 B)
-                                ; (was basic/program.asm)
+; (rn_in -- `equ in_msg`, D-ISLDATA2 -- left with RENUM's report loop for
+; sub2/pgmedit.asm, D-P0CB 2026-10-24: it imports in_msg itself, as p0_rn_in)
 ; (eoi_err5 -- ON INTERVAL=0's ERR 5 -- gone with the trap statements to
 ; sub2/trapstmt.asm, D-P0CB slice B 2026-10-21: tt_illegal raises gb_illegal there)
 fchk_ifc        equ     gb_illegal  ; ERR 5 (err_msgtab[5])

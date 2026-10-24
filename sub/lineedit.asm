@@ -247,8 +247,10 @@ le_oom:
 ; docs/delete-msx1-characterization.md. The WHOLE verb is here -- parse,
 ; both validations and the walk -- because the walk drives the memmove engine
 ; below and the parse marshals as one pointer; basic/program.asm's ex_delete
-; is a ~34 B marshalling head, against the ~88 B of main page 1 a resident
-; parse would have cost (spec §3.1).
+; was a ~34 B marshalling head (18 B by D-P0CB), against the ~88 B of main page 1
+; a resident parse would have cost (spec §3.1). Since D-P0CB (2026-10-24) the head
+; is zerobas-sub2's (sub2/pgmedit.asm pe_delete), calling here through main's
+; le_call_op by p0cb.
 ;   IN : SL_DELPTR = the statement cursor, ON the DELETE token (an alias of
 ;        SL_TOK -- §3.2 records the proof that store_line's cells are never in
 ;        flight with this op).
@@ -311,8 +313,8 @@ ldr_fail:
                 ld      (LE_STATUS),a
                 ret                             ; R-D7: a FAILED delete is a
                                                 ; COMPLETE no-op -- no relink, no
-                                                ; vars_reset, and the resident head
-                                                ; leaves CONTVALID alone. Measured
+                                                ; vars_reset, and the head (sub2's
+                                                ; pe_delete) leaves CONTVALID alone. Measured
                                                 ; without a RUN in the way:
                                                 ; dlt-varsbad keeps A=1 and
                                                 ; dlt-contbad's CONT still resumes.
@@ -803,7 +805,8 @@ ste_done:
 ; docs/editverb-msx1-characterization.md §2.
 ;   IN : RN_PTR = the statement cursor, ON the RENUM token (op 5 only).
 ;   OUT: LE_STATUS = 0 (done) / 1 (RN_TGT + RN_LINE hold ONE undefined-line
-;        report; the resident head prints it and re-enters with op 6) / else
+;        report; the head -- sub2/pgmedit.asm pe_renum since D-P0CB -- prints it
+;        and re-enters with op 6) / else
 ;        the ERR CODE ITSELF -- 2 (R-RN14, R-RN15) or 5 (R-RN11..R-RN13).
 ;
 ; 🎯 RENUM NEVER CHANGES A LINE'S LENGTH, AND THAT IS THE WHOLE DESIGN. A line
@@ -913,7 +916,8 @@ lrn_body0:
 le_renum_next:
                 ; op 6 re-enters HERE, with RN_PTR mid-body and RN_LINE already
                 ; standing. Everything pass 2 needs across the round trip is in
-                ; RAM; the head ran print_msg and list_num in between.
+                ; RAM; the head (sub2's pe_renum) ran print_string and list_num in
+                ; between, through p0cb.
                 ld      hl,(RN_PTR)
 lrn_scan:
                 ld      (RN_PTR),hl
@@ -1162,7 +1166,9 @@ lrno_ok:
 ; docs/spec-basic-editverb.md §3.3. Only the ARGUMENT is here; AUTO's modal
 ; prompt loop is main-resident, because it drives read_line, dispatch_line and
 ; CHPUT -- all main page 1, none reachable from a page-1 tenant. This is the
-; same head/body split LIST uses, with the halves the other way round.
+; same head/body split LIST uses, with the halves the other way round. (Since
+; D-P0CB, 2026-10-24, the statement head that calls this is zerobas-sub2's
+; sub2/pgmedit.asm pe_auto; the loop stays main's exa_loop, its continuation.)
 ;   IN : RN_PTR = the statement cursor, ON the AUTO token.
 ;   OUT: AU_NUM / AU_INC; LE_STATUS = 0, or the ERR CODE (2 or 5).
 ;

@@ -199,7 +199,8 @@ fld_gate_resume:                            ; C4 shared tail (2026-10-03): LSET/
 ; chunks, an exact-fill search), in this order: lrset_finish + lrset_store (18 B,
 ; from past $73E5), the GET / PUT heads -- ex_put .. gp_nochan, then gp_dev ..
 ; gp_raise, which they `jr` to (71 B, from past $73E5; gp_fin stays there, beside
-; basic/format.asm's `jr gp_fin`), ex_delete (18 B, basic/program.asm), and
+; basic/format.asm's `jr gp_fin`), ex_delete (18 B, basic/program.asm; gone to
+; zerobas-sub2 with D-P0CB, 2026-10-24 -- sub2/pgmedit.asm), and
 ; exf_comma (6 B, from behind $72E9). exf_fits stays LAST, so field_item's
 ; `jr exf_fits` and its own `jr z,exf_comma` reach as before; dir_line / run_kw
 ; (D-FCHNUM's 8 B) moved on to the $73E5 gap. Every chunk is whole and entered
@@ -319,30 +320,10 @@ gp_bfm:
                 ld      a,61                ; bad file mode (disk, not RANDOM)
 gp_raise:
                 jp      raise_error         ; no `pop` -- raise_error resets SP
-; (ex_delete: basic/program.asm, whose header there is its contract.)
-ex_delete:
-                ld      (SL_DELPTR),hl      ; the statement cursor, on the token
-                ld      a,LE_OP_DELRANGE
-                ; LE_STATUS carries the ERR CODE ITSELF for this op (basic/
-                ; sysvars.inc): 0 = ok, 2 = R-D6 trailing junk, 5 = R-D2 (the high
-                ; end names no stored line) or R-D4 (lo > hi). One compare, no
-                ; second table.
-                call    le_call_op          ; A = LE_STATUS, Z = ok
-                jp      nz,raise_error
-                ; R-D7: a SUCCEEDING delete is a program EDIT. The tenant has
-                ; already run relink + vars_reset (its own tail, exactly as
-                ; store_line's op does); CONTVALID is the resident half, and it is
-                ; cleared HERE and only here -- a FAILING delete must leave the
-                ; CONT point alone, which dlt-contbad is the row for (its CONT
-                ; still resumes, reading 5 like its control).
-                xor     a
-                ld      (CONTVALID),a
-                ; R-D8: and then the run stops. Same mechanism as ex_end -- the
-                ; run loop tests ENDFLAG immediately after `exec` returns
-                ; (rp_run, above) and BEFORE it dereferences CURLINE, which
-                ; matters here more than it does for END: the text this statement
-                ; just memmoved is where CURLINE points.
-                jp      end_line_end        ; -> 1, and the run stops
+; (ex_delete's 18 B body stood here, a PIN REFILL since D-FLDDESC: DELETE's
+; statement head is zerobas-sub2's since D-P0CB, 2026-10-24 -- sub2/pgmedit.asm
+; pe_delete; main's ex_delete is a label on ex_sub2's shared byte, basic/
+; program.asm. Its 18 B are free space in front of the $72D4 pin.)
 ; (exf_comma / exf_fits -- field_item's comma tail, CF = another item -- are
 ; GONE, D-DISKREST slice 5, 2026-10-20: hk_field reads the comma itself. Their
 ; 15 B are free space in front of the $72D4 pin.)

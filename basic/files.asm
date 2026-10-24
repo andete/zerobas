@@ -1165,7 +1165,9 @@ fch_ctx_addr:
 ;     ld ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_LINEEDIT
 ;     call subrom_call / jp c,subrom_absent_error / ld a,(LE_STATUS) / or a
 ; -- LIST (list.asm), the line STORE, DELETE, RENUM and AUTO (this file). 70 B in
-; all; one 15 B body plus five 3 B calls is 30 B.
+; all; one 15 B body plus five 3 B calls is 30 B. (Since D-P0CB, 2026-10-24,
+; DELETE / RENUM / AUTO call it from zerobas-sub2 -- sub2/pgmedit.asm, through
+; p0cb, as p0_le_call_op -- so two main sites remain: LIST and the store.)
 ; 🎯 AND FOUR OF THE FIVE SET LE_OP IMMEDIATELY BEFORE IT, so `le_call_op` is a
 ; 3 B second ENTRY rather than a second body: those four drop their own
 ; `ld (LE_OP),a` for nothing. Together: **-49 B of page 1.**

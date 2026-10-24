@@ -1314,98 +1314,29 @@ err_mem         equ     err_mem_arr
 ; D-FLDDESC, 2026-10-17, in front of $6CF3: `ld c,LE_OP_RELINK` + the lineedit
 ; tenant call, entered only by `call`.)
 
-; --- ex_delete: DELETE [<lo>][-[<hi>]] ---------------------------------------
-; docs/spec-basic-delete.md, measured in docs/delete-msx1-characterization.md.
-; HL enters on the DELETE token (the es_hit contract). The WHOLE verb -- the
-; argument parse, the two validations and the delete walk -- lives in
-; sub/lineedit.asm beside the TXTTAB memmove engine it drives; this is the
-; marshalling head, and it is deliberately the third shim in this file rather
-; than a fourth thing that knows about line storage.
-;
-; WHY THE PARSE IS SUB-SIDE (spec §3.1). The grammar is `[$0E lo] [$F2 [$0E hi]]`
-; -- pure token bytes, no expression evaluation anywhere -- so the entire
-; argument marshals as ONE POINTER. Parsing it here instead would cost ~88 B of
-; main page 1 against this head's ~34; the tenant pays it out of sub page 1,
-; which had 3339 B free at D-RETLN's HEAD. Measured both ways (spec §7 K6): the
-; claim is not left as an estimate.
-;
-; ⚠️ NOTHING COMES BACK BUT A STATUS, AND THAT IS R-D8, NOT A SHORTCUT. DELETE
-; ENDS the line and the program on BOTH paths -- a succeeding one via ENDFLAG
-; below, a failing one via raise_error -- so the advanced cursor has no reader
-; and is never marshalled back. `DELETE 20:B=9` leaves B at 0 with ERR 0 on both
-; references (dlt-tail, against dlt-tailctl's 9), which is what says the ':' is
-; ACCEPTED and then abandoned rather than rejected.
-; 📌 (ex_delete's BODY is a PIN REFILL in basic/field.asm since D-FLDDESC,
-; 2026-10-17, in front of the $72D4 pin; the header above is its contract. It is
-; entered only through the statement table.)
+; --- DELETE / RENUM / AUTO: zerobas-sub2 page 0 (D-P0CB, 2026-10-24) -----------
+; The three editor verbs' STATEMENT halves -- ex_delete's marshalling head (a pin
+; refill in basic/field.asm until then), ex_renum whole (its report loop
+; included) and ex_auto's argument head -- are sub2/pgmedit.asm's, reached through
+; the shared `ld c,a` byte in front of ex_sub2 (below; their stmt_table labels sit
+; on it). Their contracts, the measured R-D* / R-RN* / R-AU* rules and the history
+; travelled with the code; docs/spec-basic-delete.md and spec-basic-editverb.md
+; are the specs. The verbs' ENGINES were already the sub ROM's (sub/lineedit.asm:
+; le_delrange, le_renum, le_auto), reached as before through le_call_op -- now a
+; p0cb call. RENUM's report texts stay main's (rn_undefined / in_msg, page 0's
+; islands): main's print_string reads them, called through p0cb.
+; What STAYS here is AUTO's modal LOOP, below: it waits on the keyboard
+; (rl_loop) and stores every line it reads (dispatch_line), so it must not run
+; nested under sub2's CALSLT frame (D-BLOADSTK's rule). The tenant parses, sets
+; RL_AUTO and returns exa_loop as its continuation, which ex_sub2 jumps to with
+; the stack exactly as the statement entered.
 
-; --- ex_renum: RENUM [<new>][,[<old>][,<inc>]] (D-EDITVERB) -------------------
-; docs/spec-basic-editverb.md §3.2, measured in
-; docs/editverb-msx1-characterization.md §2. HL enters on the RENUM token (the
-; es_hit contract). The whole verb -- parse, both validations, the reference pass
-; and the header pass -- lives in sub/lineedit.asm (le_renum), for the same
-; reason DELETE's does: it drives the stored program text and marshals as one
-; pointer. This is the marshalling head PLUS the one thing the tenant cannot do.
-;
-; 🔴 THE LOOP IS THE POINT. `Undefined line <n> in <m>` is emitted ONCE PER
-; DANGLING REFERENCE (R-RN9 -- `1 ON 1 GOTO 77,88` prints two, both `in 1`), and
-; rendering it needs print_string + list_num, which are main PAGE-1 resident and
-; therefore unreachable from a page-1 tenant. So the tenant STOPS at each one,
-; hands back the pair in RN_TGT/RN_LINE, and this head prints it and re-enters
-; with LE_OP_RENUM_NEXT. The tenant's cursor lives in RN_PTR across the round
-; trip, which is why that cell may not be an alias of the SL_* block.
-;
-; 🔴 AND IT IS NOT AN ERROR (R-RN10). ERR stays 0, ON ERROR does not trap it, and
-; the renumbering HAPPENS ANYWAY -- `1 GOTO 77` becomes `10 GOTO 77`. That is why
-; status 1 is a REPORT and only status >= 2 reaches raise_error.
-ex_renum:
-                ld      (RN_PTR),hl         ; the statement cursor, on the token
-                ld      a,LE_OP_RENUM
-exr_call:
-                call    le_call_op          ; A = LE_STATUS, Z = ok
-                jr      z,exr_done          ; 0 = the whole renumbering is done
-                dec     a
-                jr      nz,exr_raise        ; >= 2 is the ERR CODE ITSELF: 2 for
-                                            ; R-RN14/R-RN15, 5 for R-RN11/12/13
-                ld      hl,rn_undefined     ; 1 = report one dangling reference
-                call    print_string
-                ld      de,(RN_TGT)
-                call    list_num            ; the target, bare unsigned decimal
-                ld      hl,rn_in
-                call    print_string
-                ld      de,(RN_LINE)        ; R-RN8: the containing line's OLD
-                call    list_num            ; number -- `in 1`, not `in 10`
-                call    print_crlf
-                ld      a,LE_OP_RENUM_NEXT
-                jr      exr_call
-exr_raise:
-                ld      a,(LE_STATUS)
-                jp      raise_error
-exr_done:
-                ; R-RN16: and then the run stops, exactly as DELETE and LIST do.
-                ; ⚠️ CONTVALID IS DELIBERATELY NOT CLEARED AND vars_reset IS
-                ; DELIBERATELY NOT RUN -- R-RN17, measured on both references with
-                ; a program whose lines actually MOVE: `1 A=7/RUN/RENUM/PRINT A`
-                ; reads 7, and `1 STOP/2 PRINT 5/RUN/RENUM/CONT` still prints 5.
-                ; RENUM is not a program EDIT in the sense DELETE is: no byte
-                ; changes length, so nothing the variables or the CONT point
-                ; address has moved.
-                jp      end_line_end
-
-; The two halves of the report. Plain ASCII rather than the D-MSGENC pool: the
-; pool encodes whole messages and this one has two NUMBERS spliced into it, so
-; there is no message to look up -- and `Undefined line` is not a prefix of
-; err_undefined's text in any form the decoder could share.
-; rn_undefined -- MOVED to basic/islands.asm (D-ISLDATA2, 2026-10-03): pure data,
-; read only by absolute `ld` from main; now in the font island.
-; (rn_in = in_msg: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
-
-; --- ex_auto: AUTO [<start>][,<inc>] (D-EDITVERB) ----------------------------
+; --- exa_loop: AUTO's modal loop, a CONTINUATION (D-EDITVERB) -------------------
 ; docs/spec-basic-editverb.md §3.3, measured in
-; docs/editverb-msx1-characterization.md §3. The ARGUMENT is parsed sub-side
-; (le_auto); the MODAL LOOP is here, because it drives read_line, dispatch_line,
-; find_line_bc, list_num and CHPUT -- all main page 1, none of them reachable
-; from a page-1 tenant. LIST's split with the halves reversed.
+; docs/editverb-msx1-characterization.md §3. Entered from sub2's pe_auto (sub2/
+; pgmedit.asm) through ex_sub2, with AU_NUM / AU_INC parsed (le_auto) and RL_AUTO
+; = 1; HL is not read. The loop is here because it drives read_line,
+; dispatch_line, find_line_bc, list_num and CHPUT -- and blocks on the keyboard.
 ;
 ; 🎯 THE LOOP STORES NOTHING ITSELF. It writes the line number's own digits at
 ; the FRONT of LINEBUF, points read_line's cursor just past them, and hands the
@@ -1419,15 +1350,6 @@ exr_done:
 ; way, so the marker goes to CHPUT and the SPACE goes to the buffer. Putting the
 ; measured character into LINEBUF would store `10*REM X`, whose body crunches to
 ; something else entirely.
-ex_auto:
-                ld      (RN_PTR),hl         ; the statement cursor, on the token
-                ld      a,LE_OP_AUTO
-                call    le_call_op          ; A = LE_STATUS, Z = ok.
-                                            ; 2 = R-AU9 trailing junk, 5 = R-AU5
-                                            ; (increment 0, which is also what bare
-                jp      nz,raise_error      ; `AUTO ,` reduces to)
-                inc     a                   ; -> 1: read_line polls from here on
-                ld      (RL_AUTO),a
 exa_loop:
                 ld      de,(AU_NUM)
                 call    list_num            ; print the digits -- and leave them
@@ -3211,6 +3133,13 @@ ex_interval:
 ; ON|OFF|STOP comes too, as KEY_TOKEN. What stays in main: CLS, key_repaint
 ; (CLS and the prompt share it), key_op (the keystr tenant's inline-byte call)
 ; and the continuation key_drain (KEY LIST's print loop, off sub2's frame).
+; --- and DELETE / AUTO / RENUM (D-P0CB, 2026-10-24) -----------------------------
+; Their statement halves are sub2/pgmedit.asm's (scr_tenant forwards the token);
+; the engines stay the sub ROM's lineedit tenant, through le_call_op. AUTO's modal
+; loop stays here as the continuation exa_loop (above), off sub2's frame.
+ex_delete:
+ex_auto:
+ex_renum:
 ex_screen:
 ex_color:
 ex_width:

@@ -36,7 +36,7 @@ p0_skip_spaces equ 042E0H   ; main's skip_spaces
 p0_exec_stmt equ 04136H   ; main's exec_stmt
 p0_pl_syntax equ 05AB3H   ; main's pl_syntax
 p0_gb_illegal equ 04560H   ; main's gb_illegal
-p0_ers_undef equ 07B80H   ; main's ers_undef
+p0_ers_undef equ 07B3AH   ; main's ers_undef
 p0_req_gosub equ 040F0H   ; main's req_gosub
 p0_lref_bc equ 04104H   ; main's lref_bc
 p0_find_line_bc equ 076ABH   ; main's find_line_bc
@@ -117,3 +117,10 @@ p0_dpl_err equ 064F3H   ; main's dpl_err
 p0_dpl_oom equ 06505H   ; main's dpl_oom
 p0_print_msg equ 0765EH   ; main's print_msg
 p0_err_verify equ 06479H   ; main's err_verify
+p0_exa_loop equ 076CBH   ; main's exa_loop
+p0_le_call_op equ 06E6EH   ; main's le_call_op
+p0_print_string equ 045E8H   ; main's print_string
+p0_list_num equ 0628AH   ; main's list_num
+p0_print_crlf equ 057B2H   ; main's print_crlf
+p0_rn_undefined equ 001B5H   ; main's rn_undefined
+p0_rn_in equ 01BB3H   ; main's in_msg

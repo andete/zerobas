@@ -127,9 +127,10 @@ exl_walk:
                 ; INVARIANT WITH NO GATE OF ITS OWN. If LLIST ever stops ending
                 ; the run, the sink leaks into the next statement and `llt-sink`
                 ; is the row that would catch it.
-                ; R-LS7: and then the run stops. Same mechanism as ex_end/ex_delete
+                ; R-LS7: and then the run stops. Same mechanism as ex_end / DELETE
+                ; (sub2/pgmedit.asm pe_delete since D-P0CB)
                 ; -- the run loop tests ENDFLAG immediately after `exec` returns.
-                ; ⚠️ AND UNLIKE ex_delete, CONTVALID IS *NOT* CLEARED: R-LS8, LIST
+                ; ⚠️ AND UNLIKE DELETE, CONTVALID IS *NOT* CLEARED: R-LS8, LIST
                 ; is not a program edit, and lse-cont (whose CONT must still resume,
                 ; reading 5 like its control) is the row that gates the difference.
                 jp      end_line_end

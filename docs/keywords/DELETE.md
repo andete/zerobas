@@ -112,7 +112,7 @@ The one rung not yet proven is **RAM usage**.
 
 ## Where it lives
 
-- `ex_delete` in [basic/program.asm](../../basic/program.asm) hands the
+- `pe_delete` in [sub2/pgmedit.asm](../../sub2/pgmedit.asm) (the second sub-ROM, since 2026-10-24) hands the
   statement to the line-editor code in the sub ROM and turns its answer into a
   BASIC error.
 - `le_delrange` in [sub/lineedit.asm](../../sub/lineedit.asm) parses the range,

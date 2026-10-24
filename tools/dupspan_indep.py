@@ -398,7 +398,13 @@ def run_selftest(spans):
     chk("raise_error resolves from the sym (not a frozen literal)",
         pat is not None, True)
     alive = [s for s in spans if s["name"] in want]
-    grp = [s for s in alive if s["bytes"].hex() == pat]
+    # A span runs to the NEXT label. When the code after a member moves away (D-P0CB
+    # slice E took ex_delete from behind gp_raise, 2026-10-24), the member's span runs
+    # on into the pin pad's $00 fill: it still carries the pattern if it is the
+    # pattern followed by pad bytes only.
+    def carries(b):
+        return pat is not None and b[:3].hex() == pat and not any(b[3:])
+    grp = [s for s in alive if carries(s["bytes"])]
     print(f"        raise_error = {tgt:#06x} -> pattern {pat}")
     print(f"        {len(alive)} of the {len(want)} named spans still exist; "
           f"{len(grp)} carry the pattern")

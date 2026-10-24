@@ -293,7 +293,7 @@ sub: $(SUB_ROM)
 SUB2_SRC  := sub2/sub2.asm
 SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub2/grpprt.asm sub2/edctrl.asm sub2/frelive.asm sub/beep.asm \
               sub2/p0cb.asm sub2/trapstmt.asm sub2/filestmt.asm sub2/loadsave.asm sub2/scrstmt.asm \
-              sub2/tapeprog.asm basic/tokpay-body.inc \
+              sub2/tapeprog.asm sub2/pgmedit.asm basic/tokpay-body.inc \
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom
 SUB2_SYM  := $(BUILD)/sub2.sym

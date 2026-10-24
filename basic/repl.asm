@@ -80,7 +80,8 @@ repl:
                                             ; (defensive after an AUTO session:
                                             ; a typed line that ERRORS out of one
                                             ; unwinds straight to here, so clearing
-                                            ; the flag only in ex_auto's own exit
+                                            ; the flag only in AUTO's own exit
+                                            ; (exa_stop, basic/program.asm)
                                             ; would leave the PROMPT polling and a
                                             ; Ctrl-STOP there dispatching a stale
                                             ; buffer -- D-EDITVERB §3.3)

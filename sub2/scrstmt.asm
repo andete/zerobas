@@ -28,7 +28,8 @@
 ;
 ; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant
 ; (sub2/filestmt.asm) -> ls_tenant (sub2/loadsave.asm), which forwards every
-; token but RUN here. Main's four entry labels share ex_open's ONE byte, `ld c,a`
+; token but RUN here; a token that is none of these four goes on to pe_tenant
+; (sub2/pgmedit.asm: DELETE / AUTO / RENUM, D-P0CB 2026-10-24). Main's four entry labels share ex_open's ONE byte, `ld c,a`
 ; in front of ex_sub2 (basic/program.asm): exec_stmt hands a handler A = its
 ; token (tests/test_stmt_dispatch.py asserts it).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
@@ -71,7 +72,11 @@ scr_tenant:                                 ; A = C = the token (ls_tenant's tai
                 jp      z,scr_color
                 cp      WIDTH_TOKEN
                 jp      z,scr_width
-                ; FALL THROUGH: KEY_TOKEN is the only other token main sends here
+                cp      KEY_TOKEN
+                jp      nz,pe_tenant        ; D-P0CB 2026-10-24: DELETE / AUTO / RENUM
+                                            ; (sub2/pgmedit.asm) -- every other token
+                                            ; main sends here is one of those three
+                ; FALL THROUGH: KEY_TOKEN
 
 ; ===========================================================================
 ; KEY OFF | KEY ON | KEY LIST | KEY n,"text"   (main's ex_key)

@@ -116,7 +116,7 @@ The one rung not yet proven is **RAM usage**.
 
 ## Where it lives
 
-- `ex_renum` in [basic/program.asm](../../basic/program.asm) calls the
+- `pe_renum` in [sub2/pgmedit.asm](../../sub2/pgmedit.asm) (the second sub-ROM, since 2026-10-24) calls the
   line-editor code in the sub ROM and prints each `Undefined line … in …`
   report it hands back.
 - `le_renum` and `le_renum_next` in [sub/lineedit.asm](../../sub/lineedit.asm)

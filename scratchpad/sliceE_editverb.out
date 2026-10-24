@@ -1,0 +1,77 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_editverb.py --gate \
+	        --sides vg8020,cf3300,zb \
+	         --repeat 1
+D-EDITVERB — RENUM / AUTO / LLIST   sides: vg8020, cf3300, zb
+==============================================================================
+ok  rnm-noop       'LIST / 10 REM A / 20 REM B'
+ok  rnm-bare       'LIST / 10 GOTO 30 / 20 PRINT"A" / 30 GOSUB 50 / 40 END / 50 RESTORE 60 / 60 DATA 1 / 70 ON 1 GOTO 20,40 / 80 IF 1 THEN 40 ELSE 20 / 90 RETURN'
+ok  rnm-new        'LIST / 100 GOTO 120 / 110 PRINT"A" / 120 GOSUB 140 / 130 END / 140 RESTORE 150 / 150 DATA 1 / 160 ON 1 GOTO 110,130 / 170 IF 1 THEN 130 ELSE 110 / 180 RETURN'
+ok  rnm-newold     'LIST / 1 GOTO 100 / 2 PRINT"A" / 100 GOSUB 120 / 110 END / 120 RESTORE 130 / 130 DATA 1 / 140 ON 1 GOTO 2,110 / 150 IF 1 THEN 110 ELSE 2 / 160 RETURN'
+ok  rnm-full       'LIST / 1 GOTO 100 / 2 PRINT"A" / 100 GOSUB 110 / 105 END / 110 RESTORE 115 / 115 DATA 1 / 120 ON 1 GOTO 2,105 / 125 IF 1 THEN 105 ELSE 2 / 130 RETURN'
+ok  rnm-incskip    'LIST / 10 REM A / 15 REM B'
+ok  rnm-oldonly    'LIST / 1 REM A / 2 REM B / 10 REM C'
+ok  rnm-selfref    'LIST / 10 GOTO 10'
+ok  rnm-erl        'LIST / 10 ON ERROR GOTO 30 / 20 ERROR 7 / 30 PRINT ERL'
+ok  rnm-runref     'LIST / 10 REM A / 20 RUN 10'
+ok  rnm-hexctl     '1 A=&HE0E'
+ok  rnm-hexref     'LIST / 10 A=&HE0E / 20 GOTO 10'
+ok  rnm-octref     'LIST / 10 A=&O16 / 20 GOTO 10'
+ok  rnm-strref     'LIST / 10 A$="GOTO 1" / 20 GOTO 10'
+ok  rnm-datref     'LIST / 10 DATA 1,2 / 20 GOTO 10'
+ok  rnm-notaref    'LIST / 10 A=3 / 20 PRINT 3 / 30 END'
+ok  rnm-dang1      'Undefined line 77 in 1 / LIST / 10 GOTO 77 / 20 END'
+ok  rnm-dang3      'Undefined line 77 in 1 / Undefined line 88 in 2 / Undefined line 99 in 3 / LIST / 10 GOTO 77 / 20 GOTO 88 / 30 GOTO 99 / 40 END'
+ok  rnm-dangline   'Undefined line 77 in 1 / Undefined line 88 in 1 / LIST / 10 ON 1 GOTO 77,88 / 20 END'
+ok  rnm-goto0      'Undefined line 0 in 1 / LIST / 10 GOTO 0 / 20 END'
+ok  rnm-dangerr    'Undefined line 77 in 1 / PRINT ERR / 0'
+ok  rnm-zeroinc    'Illegal function call / LIST / 1 REM A / 2 REM B'
+ok  rnm-ordeq      'Illegal function call / LIST / 10 REM A / 20 REM B / 30 REM C'
+ok  rnm-ordgt      'LIST / 10 REM A / 20 REM B / 21 REM C'
+ok  rnm-args4      'Syntax error / LIST / 1 REM A'
+ok  rnm-ceil1at    'LIST / 65529 REM A'
+ok  rnm-ceil2at    'LIST / 65519 REM A / 65529 REM B'
+ok  rnm-ceil2ov    'Illegal function call / LIST / 1 REM A / 2 REM B'
+ok  rnm-ceil3at    'LIST / 65509 REM A / 65519 REM B / 65529 REM C'
+ok  rnm-ceil3ov    'Illegal function call / LIST / 1 REM A / 2 REM B / 3 REM C'
+ok  rnm-litover    'Syntax error / LIST / 1 REM A'
+ok  rnm-tail       'PRINT B / 0'
+ok  llt-tailb      'PRINT B / 0'
+ok  rnm-vars       'PRINT A / 7'
+ok  rnm-cont       'CONT / 5'
+ok  rnm-empty      'LIST'
+ok  rnm-inprog     '10 RENUM / 20 REM B'
+ok  rnm-dot        'LIST / 1 REM A / 100 REM B'
+ok  aut-ctl        '10 REM C'
+ok  aut-bare       '10 REM X / 20 / LIST / 10 REM X'
+ok  aut-start      '55 REM X / 65 / LIST / 55 REM X'
+ok  aut-both       '100 REM A / 105 REM B / 110 / LIST / 100 REM A / 105 REM B'
+ok  aut-inconly    '0 REM X / 7 / LIST / 0  REM X'
+ok  aut-nocomma    'Illegal function call'
+ok  aut-plain      '10 REM X / 20 / LIST / 10 REM X'
+ok  aut-star       '10*REM X / 20 / LIST / 10 REM X'
+ok  aut-empty      '10* / 20* / LIST / 10 REM KEEP / 20 REM B'
+ok  aut-tail       '10 / PRINT B / 0'
+ok  aut-ceiling    '65525 REM A / REM B / LIST / 65525 REM A'
+ok  llt-ctl        'CTL\\r\\n'
+ok  llt-all        '10 REM P\\r\\n20 REM Q\\r\\n30 REM R\\r\\n'
+ok  llt-one        '20 REM Q\\r\\n'
+ok  llt-from       '20 REM Q\\r\\n30 REM R\\r\\n'
+ok  llt-upto       '10 REM P\\r\\n20 REM Q\\r\\n'
+ok  llt-range      '20 REM Q\\r\\n'
+ok  llt-rev        '<nothing printed>'
+ok  llt-above      '<nothing printed>'
+ok  llt-comma      '<nothing printed>'
+ok  llt-tail       '10 REM P\\r\\n'
+ok  llt-empty      '<nothing printed>'
+ok  llt-sink       '10 REM P\\r\\n'
+==============================================================================
+61/61 rows agree across 3 sides (2 reference)
+refcache: 0 hit, 9 miss, 9 stored

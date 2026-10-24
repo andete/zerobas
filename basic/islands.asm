@@ -170,7 +170,8 @@ rdslt_scan:
 ; (five blocks, 58 B, when it landed; space plan B-7 took fmt_menu_text out to
 ; disk.rom on 2026-10-04 -- four blocks, 41 B, now.)
 ; Same rules as the $0160 block: absolute `ld` readers only. `rn_in` became an
-; equ alias of in_msg in basic/program.asm (both were " in ",0).
+; equ alias of in_msg in basic/program.asm (both were " in ",0); since D-P0CB
+; (2026-10-24) it is sub2/pgmedit.asm's import p0_rn_in = in_msg.
 ; rn_undefined -- MOVED to island 2 (D-CTRLKEYS, 2026-10-05): island 1 lost
 ; 23 B to the CTRL arm in C-BIOS's key_ascii. Same readers, same rules.
 ; fmt_menu_text WAS here (D-ISLDATA2) until space plan B-7 (C6-FORMAT,
@@ -312,7 +313,9 @@ fmt_name:       db      "FORMAT"
 prompt_text:
                 db      "ZB",13,10,0
 ; rn_undefined -- from island 1 (D-CTRLKEYS, 2026-10-05): pure data, absolute
-; `ld` readers only, exactly as in its D-ISLDATA2 home.
+; `ld` readers only, exactly as in its D-ISLDATA2 home. Its one reader is RENUM's
+; report in sub2/pgmedit.asm since D-P0CB (2026-10-24): an `ld hl,p0_rn_undefined`
+; handed to main's print_string through p0cb, which maps this page back in.
 rn_undefined:   db      "Undefined line ",0
 
 ; --- D-KEYSHIFT (Joost, 2026-10-11): the key line follows SHIFT ---------------

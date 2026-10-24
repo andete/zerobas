@@ -98,8 +98,10 @@ the `AUTO` session).
 
 ## Where it lives
 
-- `ex_auto` in [basic/program.asm](../../basic/program.asm) prints each prompt
-  (with the `*` when the line exists) and reads the line.
+- `pe_auto` in [sub2/pgmedit.asm](../../sub2/pgmedit.asm) (the second sub-ROM, since 2026-10-24) parses the
+  statement and starts the session; the prompt loop `exa_loop` in
+  [basic/program.asm](../../basic/program.asm) prints each prompt (with the `*`
+  when the line exists) and reads the line.
 - `le_auto` in [sub/lineedit.asm](../../sub/lineedit.asm) parses the start and
   the increment.
 - The design notes are in [spec-basic-editverb.md](../spec-basic-editverb.md).

@@ -16,6 +16,8 @@ main (do_tape_prog's real-time TAPIN loop runs whole inside one p0cb). Slice D (
 COLOR / WIDTH / KEY, sub2/scrstmt.asm) is BUILT 2026-10-24 (418 B of main), and the tokenised
 tape loop followed the same day (sub2/tapeprog.asm, 317 B of main): one p0cb per TAPIN, +136 T
 per byte against >= ~1270 T of measured slack (TODO.md, D-P0CB's TAPIN study).
+The direct-mode statements DELETE / RENUM / AUTO's head followed (sub2/pgmedit.asm, 88 B of
+main; AUTO's prompt loop stays in main as a continuation).
 
 ## 1. Why
 

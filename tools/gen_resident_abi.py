@@ -541,6 +541,17 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_print_msg=print_msg",         # CLOAD?'s "Verify error"
     # DATA in main page 1, read by main's print_msg (called through p0cb):
     "p0_err_verify=err_verify",       # err_msgtab[20] names it too
+    # D-P0CB, the editor-verb slice (2026-10-24): DELETE / AUTO / RENUM,
+    # sub2/pgmedit.asm. CONTINUATION (returned in DE, never p0cb'd):
+    "p0_exa_loop=exa_loop",           # AUTO's modal loop: blocks on the keyboard, in main
+    # ordinary returning routines (end_line_end / raise_error are imported above):
+    "p0_le_call_op=le_call_op",       # the lineedit tenant (LIST and the line store too)
+    "p0_print_string=print_string",
+    "p0_list_num=list_num",
+    "p0_print_crlf=print_crlf",
+    # DATA in main's page-0 islands, read by main's print_string (through p0cb):
+    "p0_rn_undefined=rn_undefined",   # "Undefined line "
+    "p0_rn_in=in_msg",                # " in " (DATA's error suffix shares it)
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)

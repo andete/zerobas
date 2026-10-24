@@ -1748,6 +1748,21 @@ item — do **one item per session** to keep context lean.
       more) OK, d255 BROKEN -- as before the move; 🔮 "d64 still OK" HIT.
       📼 The tape collection after it ([`tapecorpus_tapeloop.out`](scratchpad/tapecorpus_tapeloop.out)):
       SAME 9, NEAR 12, RUNS? 21, RESET 0 -- all 42 titles in their previous class.
+      ✅ **SLICE E DONE 2026-10-24: DELETE, RENUM AND AUTO'S HEAD LEFT MAIN** (drafted in a
+      subagent's worktree, integrated and measured here). sub2/pgmedit.asm's `pe_tenant`,
+      reached from scr_tenant's tail; the three stmt_table labels on the shared `ld c,a`
+      byte. The engines were already the sub ROM's lineedit tenant -- only the statement
+      heads moved, so 88 B of main (page-1 tail 291 -> 361, the $72D4 pad 496 -> 514; sub2
+      page 0 12573 -> 12439 B, 2026-10-24). AUTO's modal loop exa_loop STAYS in main (it waits
+      on the keyboard per line -- D-BLOADSTK's rule), returned as a continuation, at the
+      statement's own SP; DELETE / RENUM run 18 B deeper. Host tests 87/87 with four new
+      test_statements rows; planted faults K1-K3 turned exactly those rows red.
+      📏 editverb-acceptance 61/61 across the VG-8020, the CF-3300 and zerobas
+      ([`sliceE_editverb.out`](scratchpad/sliceE_editverb.out)); the tape collection unchanged,
+      42 titles ([`tapecorpus_sliceE.out`](scratchpad/tapecorpus_sliceE.out)). The FULL
+      battery's one red was tools/dupspan_indep.py's selftest: gp_raise's span ran on into the
+      $72D4 pad once ex_delete left -- the tool now accepts the `jp raise_error` followed by
+      pad bytes only (its teeth kept: real code after it still fails).
       ✅ **STUDY CONCLUSION: the move is timing-safe** -- ~300 T of p0cb against >= ~1270 T
       of slack on the worst tape measured, 4x headroom. ➡️ NEXT: move the tape loop
       (do_tape_prog's ctp_* body, ~230 B) into the sub2 tenant, TAPIN / cas_put through p0cb;
@@ -6887,7 +6902,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9353 (T-6FE392)8 (T-529ABE)` from `TODO.md:14920 (T-529ABE)`: a
+      `TODO.md:9368 (T-6FE392)8 (T-529ABE)` from `TODO.md:14935 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9808,7 +9823,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14920 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14935 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

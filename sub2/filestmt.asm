@@ -81,6 +81,7 @@ fo_fail_ifc:                                ; LEN= out of 1..256: ERR 5 (D-RECLE
                 ld      e,5
 fo_fail_e:                                  ; E = the ERR code
                 ld      a,e
+fs_raise:                                   ; A = the ERR code (sub2/pgmedit.asm's)
                 ld      ix,p0_raise_error
                 jp      p0cb
 fs_pop_exec:                                ; main's `jp pop_exec`
