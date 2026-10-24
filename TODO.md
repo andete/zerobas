@@ -26,6 +26,51 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+- [ ] 🔴 **STUDY: DEFERRED ERRORS VS RAISING AT THE POINT OF DETECTION — HOW MUCH OF
+      THE PER-COMMAND "WHICH ERROR WINS" CODE EXISTS ONLY BECAUSE ZEROBAS DEFERS?
+      (D-DEFERRSTUDY, filed 2026-10-24 at Joost's request.)**
+      🎚️ TIER 1 — ruled by Joost 2026-10-24: *"it doesn't really fit the tiers I
+      guess, so just file as tier 1"*. It is an architecture question, not a keyword.
+      🤖 **AUTONOMOUS** — the study (inventory, one prototype family, the
+      numbers). The decision to convert beyond that family goes back to Joost
+      with the numbers, at step 3 below: it changes the error architecture.
+      📏 **Why it was raised.** Joost, on D-CLEAR3ARG: *"every fix like that makes
+      me worry we're introducing a ton of command specific error handling, while
+      reference probably has generic mechanisms mostly?"* Black-box, the VG-8020
+      behaves as if each fault is raised the moment it is detected, so precedence
+      falls out of parse order: D-CLEAR3ARG (overflow, then statement end, then the
+      range checks) and D-ERRORARG (expression fault, then byte range, then end,
+      then 0) both measured exactly that. zerobas instead records many faults as
+      PENDING (`penderr_set`, first-error-wins) and raises them at
+      `check_expr_errors`, so each site has to rebuild the reference's order by hand
+      (D-CLEAR3ARG needed an `fperr_test` arm plus an end check routed through the
+      pending path to keep the POOLSIZE restore). At filing: 19 `penderr_set` call
+      sites, 17 `check_expr_errors` sites, 9 `stmt_bare_end` callers.
+      🎯 **The deferral looks historical.** D-F2-1's deferred discipline predates
+      `raise_error`, and [`spec-basic-error-handling.md`](docs/spec-basic-error-handling.md)
+      itself says the `SAVSTK` reset lets an error from ANY depth unwind cleanly,
+      "strictly more robust", anticipating "a future non-deferred site". So an
+      immediate raise from inside an expression is mechanically possible TODAY.
+      ⚠️ **What is NOT known, and must be measured, not assumed:** which deferred
+      sites protect state an immediate raise would leave half-written — D-CLEARFIT's
+      POOLSIZE restore is one; DEF FN shadow frames, string temporaries, a
+      half-assigned variable (`var_store_fac`'s contract), FIELD / file state are
+      candidates.
+      ➡️ **Plan.**
+      1. Inventory every deferred-error writer and every realisation point; for
+         each, classify "an immediate raise is equivalent" vs "it protects state
+         (name the state)". A table in a spec, with file:line.
+      2. Prototype ONE family on a branch — the argument range checks are the
+         likeliest (the `get_int16_checked` / `eval_byte_checked` callers) — as an
+         immediate raise; run the FULL battery, the TIER 6 error rows, the tape
+         collection; price the bytes (expected to go DOWN: ordering code deleted).
+      3. Report to Joost: bytes, rows moved, what state-protecting sites remain,
+         and whether new "which error wins" items would become deletions rather than
+         additions. He decides whether to convert further.
+      🔴 **Until then, every TIER 6 fix prefers an existing generic path** (as
+      D-USRBARE, D-CONTPROG and D-ERRORARG did) and says so in its ✅ note when it
+      had to add a site-specific check instead.
+
 - [ ] 🏗️ **JOOST RULED 2026-09-17: EVERY HOOK-IMPLEMENTABLE KEYWORD MUST USE ITS
       HOOK, AND EVERY DISK COMMAND'S IMPLEMENTATION BELONGS IN `disk.rom`
       BEHIND IT — NO EXCEPTIONS.**
@@ -6906,7 +6951,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9392 (T-6FE392)8 (T-529ABE)` from `TODO.md:14959 (T-529ABE)`: a
+      `TODO.md:9437 (T-6FE392)8 (T-529ABE)` from `TODO.md:15004 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9847,7 +9892,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14959 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15004 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

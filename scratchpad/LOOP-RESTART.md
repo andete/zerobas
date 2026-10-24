@@ -42,7 +42,21 @@ session and the loop resumes exactly where it stopped.
    collection unchanged); slice E (DELETE / RENUM / AUTO's head, 88 B) done. D-ROMSIZE (2)-(4) WAIT (Joost
    10-21: the sub ROM has room; only main bytes pay now).
 
+11. ~~D-IFGOTOBARE / D-CONTPROG / D-USRBARE / D-CLEAR3ARG / D-ERRORARG~~ DONE 2026-10-24 (TIER 6).
+12. ➡️ **D-DEFERRSTUDY -- TIER 1, NEXT.** 🏗️ RULED BY JOOST 2026-10-24: file the
+    deferred-error study *"as tier 1"* (it fits no tier). Study is autonomous
+    (inventory, one prototype family, the numbers); converting further is HIS call
+    with those numbers. Until then every TIER 6 fix prefers an existing generic
+    path. The TODO block is at the top of the pickup list.
+13. D-KWERRWORDS (APPARATUS): kwsweep's ERROR_WORDS cannot name `NEXT without
+    FOR` etc., so a wrong error can read EXTRA and stay green.
+
 **Learned the hard way today:**
+- A hand-rolled knife that hashes ONE image and restores with a plain build can
+  leave sub2 half-restored (make's whole-second mtimes); kwknife then pins a
+  machine that does not exist. Use knife_guard, five hashes, clean builds -- and
+  a clean build deletes build/kwsweep-verdicts.json, so `make kwsweep` before
+  `make tiers-md`.
 - An uncapped breakpoint log reached the public repo (21 MB, 0b417fb3, trimmed in
   d0a6fb6e; the history keeps it, rewriting it is Joost's call).
 - `*.log` is gitignored: cite `.out` files.
@@ -1888,7 +1902,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11358 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11403 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 
