@@ -16179,7 +16179,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       FAIL, the control holds, rc=2, all five images restored ([`clear3_knife.out`](scratchpad/clear3_knife.out)).
       Docs: CLEAR.md; examples PASS 1 ([`clear3_kwdoc.out`](scratchpad/clear3_kwdoc.out)).
 
-- [ ] 🔴 **`ERROR`'s ARGUMENT IS NOT CHECKED LIKE THE REFERENCE'S — `ERROR "A"`,
+- [x] ✅ **DONE 2026-10-24 (D-ERRORARG)** 🔴 **`ERROR`'s ARGUMENT IS NOT CHECKED LIKE THE REFERENCE'S — `ERROR "A"`,
       bare `ERROR`, `ERROR 70000` all raise 5 HERE; `ERROR 1,1` RAISES ERROR 1
       (D-ERRORARG, found 2026-09-27 by T6).**
       🎚️ TIER 6 — `ERROR` with a malformed argument
@@ -16189,6 +16189,43 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (type, missing operand, overflow) and then demands the statement end;
       zerobas collapses every fault to 5 and runs `ERROR 1` before seeing `,1`.
       `ERROR 0` and `ERROR 256` agree (5). Blocks ERROR's T6.
+      ✅ **FIXED 2026-10-24, WITH SHARED HELPERS ONLY.** [`errorarg_probe.py`](scratchpad/errorarg_probe.py),
+      15 cases ([`errorarg_run.out`](scratchpad/errorarg_run.out)): the VG-8020's order
+      is the expression's own fault (13 / 24 / 6), then the BYTE range (`ERROR 300,1`,
+      `ERROR -1,1` -> 5), then the statement END (`ERROR 1,1`, `ERROR 0,1`, `ERROR 1 X`
+      -> 2), then 0 -> 5. That is exactly `eval_byte_checked` + `mxf_require_end`, in
+      that order, so ex_error is now those two calls plus its own zero test (+1 B).
+      🎯 Predictions: 3 misses -- `ERROR 300,1` / `ERROR -1,1` said 2 (the byte range
+      comes FIRST), `ERROR 1.5` said 2 (it truncates; both machines agreed already).
+      After: 15/15 ([`errorarg_after.out`](scratchpad/errorarg_after.out)). Gate: kwsweep T6 rows
+      t6errorr13 / r24 / r6 / r2 ([`errorarg_gate.out`](scratchpad/errorarg_gate.out)) and
+      missing-acceptance trace rows er-extra / er-zero ([`errorarg_trace.out`](scratchpad/errorarg_trace.out)).
+      🔪 K-EA1 ([`errorarg_knife.py`](scratchpad/errorarg_knife.py), knife_guard, clean builds):
+      r13 / r24 / r6 DIVERGENT, both trace rows FAIL, kwsweep rc=2, trace rc=2, all
+      five images restored ([`errorarg_knife.out`](scratchpad/errorarg_knife.out)). 🔴 BUT t6errorr2
+      read **EXTRA**, which does not redden kwsweep -- see the APPARATUS item filed
+      below (D-KWERRWORDS); that is why `ERROR 1,1` is ALSO a trace row.
+      Docs: ERROR.md; examples PASS 1 ([`errorarg_kwdoc.out`](scratchpad/errorarg_kwdoc.out)).
+
+- [ ] 🔴 **KWSWEEP'S ERROR CLASSIFIER IS A HAND LIST THAT CANNOT NAME `NEXT without
+      FOR`, SO A ROW WHERE ZEROBAS RAISES THE WRONG ERROR CAN READ `EXTRA` AND STAY
+      GREEN (D-KWERRWORDS, found 2026-10-24 by D-ERRORARG's knife).**
+      🎚️ APPARATUS — error-message alphabet
+      🤖 **AUTONOMOUS** — the alphabet is derived already; the cost is the re-read.
+      📏 [`errorarg_knife.out`](scratchpad/errorarg_knife.out): with ex_error cut back, `ERROR 1,1`
+      read ref `Syntax error in 10` vs zb `NEXT without FOR in 10` and was scored
+      **EXTRA** ("the reference errors, zerobas does not"), and the run's red line
+      counted only the three DIVERGENT rows. Cause:
+      [`basic_probe_kwsweep.py`](probes/basic/basic_probe_kwsweep.py)'s `ERROR_WORDS` is a hand tuple whose
+      catch-all is the substring `error`; any message without that word (`NEXT
+      without FOR`, `RETURN without GOSUB`, `Out of DATA`, `Can't CONTINUE`, `String
+      too long`, `FIELD overflow`, ...) classifies as a VALUE. D-ALPHAGATE (2026-09-05)
+      gave the 16 small classifiers the derived alphabet
+      ([`errmsg_alphabet.py`](probes/lib/errmsg_alphabet.py)); kwsweep's was not one of them.
+      ➡️ Fix: classify from errmsg_alphabet.MESSAGES (both ROMs' texts, case-folded),
+      then diff the FULL verdict pin before/after -- every row that changes is
+      either a hidden divergence or a now-correct refusal, and each must be read,
+      not bulk-accepted. Also check whether EXTRA should redden at all.
 
 - [x] ✅ **DONE 2026-10-24 (D-BAREEXTRA)** 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
       SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found

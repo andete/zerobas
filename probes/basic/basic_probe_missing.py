@@ -570,6 +570,14 @@ TRACE = [
                        'PRINT ERR:END']),
     ("cl-colon",      ['CLS:ON ERROR GOTO 40', 'CLEAR 1,2:PRINT 9', 'PRINT "N":END',
                        'PRINT ERR:END']),
+    # D-ERRORARG (2026-10-24): `ERROR 1,1` is 2 before ERROR raises anything
+    # (scratchpad/errorarg_run.out). HERE, not only in kwsweep: kwsweep's
+    # ERROR_WORDS cannot name `NEXT without FOR`, so the pre-fix reading there is
+    # EXTRA, which does not redden the sweep (scratchpad/errorarg_knife.out).
+    ("er-extra",      ['CLS:ON ERROR GOTO 40', 'ERROR 1,1', 'PRINT "N":END',
+                       'PRINT ERR:END']),
+    ("er-zero",       ['CLS:ON ERROR GOTO 40', 'ERROR 0,1', 'PRINT "N":END',
+                       'PRINT ERR:END']),
 ]
 # tr-bignum needs line numbers the 10/20/... numbering cannot give it; it is
 # emitted with an explicit numbering below (see STORED_EXPLICIT).

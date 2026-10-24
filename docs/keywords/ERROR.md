@@ -6,10 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `ERROR` — raise an error on purpose
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded differences: a malformed argument raises the wrong error, and the
-> diskless build prints disk messages for codes 60–64 (below).
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: the diskless build prints disk messages for codes 60–64 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -19,8 +18,8 @@ SPDX-License-Identifier: 0BSD
 armed `ON ERROR GOTO` handler catches it, and `ERR` and `ERL` read `n` and the
 line. Without a handler the program stops with the message for `n`. It is how
 a program signals its own errors, and how you test an error handler.
-zerobas matches the Philips VG-8020 for every valid code measured; what
-differs is how a *malformed argument* is reported.
+zerobas matches the Philips VG-8020 for every code and every malformed
+argument measured.
 
 ## Syntax
 
@@ -53,10 +52,11 @@ One argument, an error code from 1 to 255.
 | `ERROR 7` | error 7, `Out of memory` |
 | `ERROR 200` | error 200, `Unprintable error` |
 | `ERROR 0`, `ERROR 256` | error 5, `Illegal function call` |
-| `ERROR "A"` | error 13 on the VG-8020; error 5 here (see *Differences*) |
-| `ERROR` | error 24 on the VG-8020; error 5 here |
-| `ERROR 70000` | error 6 on the VG-8020; error 5 here |
-| `ERROR 1,1` | error 2 on the VG-8020; error 1 here |
+| `ERROR "A"` | error 13, `Type mismatch` |
+| `ERROR` | error 24, `Missing operand` |
+| `ERROR 70000` | error 6, `Overflow` |
+| `ERROR 300,1`, `ERROR -1,1` | error 5 — a code outside 0 to 255 is refused before anything else is looked at |
+| `ERROR 1,1`, `ERROR 0,1`, `ERROR 1 X` | error 2, `Syntax error` — then the rest of the statement, before the code is raised |
 
 The whole set of errors the VG-8020 raises for a malformed `ERROR` is
 {2, 5, 6, 13, 24}.
@@ -91,15 +91,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A malformed argument is always error 5 here** (D-ERRORARG, found
-2026-09-27, open, TIER 6). The VG-8020 evaluates the argument as an ordinary
-integer expression and then insists the statement ends: a string is
-`Type mismatch` (13), a missing argument is `Missing operand` (24), a value
-past 32767 is `Overflow` (6), and `ERROR 1,1` is `Syntax error` (2). zerobas
-reports 5 for the first three and runs `ERROR 1` before it sees the `,1`.
-Ordinary use — a valid code — is not affected. This is why *every error* is not
-yet proven for `ERROR`.
-
 **Codes 60 to 64 on a machine without a disk** (D-NODISKERRTXT, found
 2026-10-09, open, TIER 6). The VG-8020 has no disk messages, so `ERROR 60`
 to `ERROR 64` print `Unprintable error`; zerobas's diskless build prints the
@@ -112,6 +103,17 @@ been able to rate `ERROR`'s test programs.
 
 ## What we found, and how
 
+- **A malformed argument was always error 5** (fixed 2026-10-24, D-ERRORARG).
+  The VG-8020 checks `ERROR`'s argument in a fixed order: first the expression
+  itself (a string is `Type mismatch`, nothing at all is `Missing operand`, a
+  value past 32767 is `Overflow`), then that the code fits in 0 to 255, then
+  that the statement ends, and only then that the code is not 0. zerobas
+  reported 5 for every faulty expression, and raised `ERROR 1` before it saw
+  the `,1`. It now uses the same argument reader and end-of-statement check as
+  other statements, which give exactly that order; 15 cases agree
+  ([`errorarg_run.out`](../../scratchpad/errorarg_run.out),
+  [`errorarg_after.out`](../../scratchpad/errorarg_after.out), from
+  [`errorarg_probe.py`](../../scratchpad/errorarg_probe.py)).
 - **An error did not stop a running program** (fixed 2026-07-18, the first
   slice of the error-handling work). zerobas printed the message and carried on
   with the next line; the VG-8020 stops. The same slice added the
@@ -149,6 +151,8 @@ live in the sub-ROM, [sub/errmsg.asm](../../sub/errmsg.asm).
   ` in <line>` suffix, trapping, and the message-table bounds (25 has a
   message, 26 does not).
 - `make msgexact-gate` — every message's text against both references.
-- `make kwsweep` — the everyday rows (`ERROR 7`, `ERROR 53`) and the error
-  row `ERROR 0` (5).
+- `make kwsweep` — the everyday rows (`ERROR 7`, `ERROR 53`) and one row for
+  each error a malformed `ERROR` can raise (2, 5, 6, 13, 24).
+- `make missing-acceptance` — `ERROR 1,1` and `ERROR 0,1` under `ON ERROR`
+  (rows `er-extra`, `er-zero`).
 - `make kwram` — the RAM-usage comparison.

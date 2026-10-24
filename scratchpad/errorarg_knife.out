@@ -1,0 +1,29 @@
+  ROM 2829ece7 20dbc3d2 1a5d9c18 aa586822 12989a3e  ->  93911490 20dbc3d2 2c9631c2 502f25d8 85426f77
+restore: 2829ece7 20dbc3d2 1a5d9c18 aa586822 12989a3e -> 2829ece7 20dbc3d2 1a5d9c18 aa586822 12989a3e  build rc=0  BYTE-IDENTICAL (all five)
+K-EA1: gate rc=2
+SAME   t6errorr5 error 0
+SAME   t6errorr13 error "A"
+SAME   t6errorr24 error
+SAME   t6errorr6 error 70000
+SAME   t6errorr2 error 1,1
+SAME   error_t3  error 0
+DIVERGENT     t6errorr13 ERROR "A"
+DIVERGENT     t6errorr24 ERROR
+DIVERGENT     t6errorr6 ERROR 70000
+EXTRA         t6errorr2 ERROR 1,1
+SUPPORTED     t6errorr5 ERROR 0
+SUPPORTED     error_t3  ERROR 0
+t6errorr5  present SUPPORTED   match
+t6errorr13 present DIVERGENT   ref 'Type mismatch in 10' vs zb 'Illegal function call in 10'
+t6errorr24 present DIVERGENT   ref 'Missing operand in 10' vs zb 'Illegal function call in 10'
+t6errorr6  present DIVERGENT   ref 'Overflow in 10' vs zb 'Illegal function call in 10'
+t6errorr2  present EXTRA       ref 'Syntax error in 10' vs zb 'NEXT without FOR in 10'
+error_t3   present SUPPORTED   match
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+*** 🔴 3 UNPINNED SUPPORT DIVERGENCE(S), both sides read: t6errorr13, t6errorr24, t6errorr6
+FAIL  trace    er-extra       CLS:ON ERROR GOTO 40 : ERROR 1,1 : ref=                     2  zb=                     1
+FAIL  trace    er-zero        CLS:ON ERROR GOTO 40 : ERROR 0,1 : ref=                     2  zb=                     5
+--- 30/32 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  er-extra       CLS:ON ERROR GOTO 40 : ERROR 1,1 : PRINT "N" -> 2
+  er-zero        CLS:ON ERROR GOTO 40 : ERROR 0,1 : PRINT "N" -> 2
+GATE-RC kwsweep=2 missing=2

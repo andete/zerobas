@@ -3806,6 +3806,17 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:2 FORM:error-code"),
     ("t6errorr5", 'error 0', 'ERROR 0', "stored",
      "PROVES-T6:5 FORM:raise"),
+    # D-ERRORARG (2026-10-24): the expression's own faults, then the byte range,
+    # then the statement end (scratchpad/errorarg_run.out). zerobas read 5 for
+    # the first three and RAISED 1 for `ERROR 1,1`.
+    ("t6errorr13", 'error "A"', 'ERROR "A"', "stored",
+     "PROVES-T6:13 FORM:raise"),
+    ("t6errorr24", 'error', 'ERROR', "stored",
+     "PROVES-T6:24 FORM:raise"),
+    ("t6errorr6", 'error 70000', 'ERROR 70000', "stored",
+     "PROVES-T6:6 FORM:raise"),
+    ("t6errorr2", 'error 1,1', 'ERROR 1,1', "stored",
+     "PROVES-T6:2 FORM:raise"),
     ("t6gosubc2", 'gosub', 'GOSUB', "stored",
      "PROVES-T6:2 FORM:call"),
     ("t6gosubc8", 'gosub 99', 'GOSUB 99', "stored",

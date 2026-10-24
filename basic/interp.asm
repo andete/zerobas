@@ -1642,15 +1642,22 @@ err_unprintable:                            ; D-MSGENC (§4.4) encoded this; DT-
 ; err_msgtab's hole handling -- matching the reference for 26..49 but NOT for the
 ; disk codes 50..69 (`ERROR 52` -> `Bad file number` there), which is S-FCH-2's
 ; open item, not this one. HL enters on the ERROR token. Clobbers A, DE, HL.
+; 🏗️ D-ERRORARG (2026-10-24): THE ORDER IS THREE SHARED HELPERS, NOT A CHECK OF
+; ITS OWN. The VG-8020 (scratchpad/errorarg_run.out, 15 cases): the expression's
+; own fault first (`ERROR "A"` 13, bare `ERROR` 24, `ERROR 70000` 6), then the
+; BYTE range (`ERROR 300,1` / `ERROR -1,1` 5), then the statement END (`ERROR 1,1`
+; / `ERROR 1 X` / `ERROR 0,1` 2), and only then value 0 -> 5. inc_eval used to
+; collapse every expression fault to 5 (its value read 0) and raise `ERROR 1`
+; before seeing `,1`; eval_byte_checked + mxf_require_end are exactly those
+; first three stages, in that order.
 ex_error:
-                call    inc_eval            ; DE = code, HL advanced (unused past here)
-                ld      a,d
-                or      a                   ; high byte set -> value >255 or negative ->
-                jr      nz,ee_illegal       ;   out of the 1..255 domain -> illegal fn
-                or      e                   ; A was 0 (=d), so A:=e; Z <=> value 0
+                inc     hl                  ; past the ERROR token
+                call    eval_byte_checked   ; E = 0..255: 13 / 24 / 6 / 5 raised here
+                call    mxf_require_end     ; anything after it -> ERR 2 (DE survives)
+                ld      a,e
+                or      a                   ; Z <=> value 0
                 jr      nz,ee_raise         ; 1..255 -> raise E verbatim
-ee_illegal:
-                ld      a,5                 ; 0 / >255 / negative -> ERR 5 illegal fn
+                ld      a,5                 ; 0 -> ERR 5 illegal fn
 ee_raise:
                 jp      raise_error
 
