@@ -33,8 +33,10 @@ session and the loop resumes exactly where it stopped.
 8. ~~D-BLOADSTK~~ DONE 2026-10-23 (the tape load runs in main; noclear3 held by luck before).
    ✅ Tape-corpus re-run done 2026-10-24: SAME 9, NEAR 12, RUNS? 21, RESET 0 (3 up, none down).
 9. ~~D-P0CB slice D~~ DONE 2026-10-24 (SCREEN / COLOR / WIDTH / KEY to sub2, 418 B of main;
-   COLOR / KEY slower, T5 paused). ➡️ D-P0CB's next: the tape loop (~230 B) only after a
-   TAPIN timing study; then D-ROMSIZE (2) the string engine (measure the VG-8020 first).
+   COLOR / KEY slower, T5 paused). ➡️ D-P0CB's next: the tape loop (~230 B) -- the TAPIN
+   study (2026-10-24) found ~1300-1700 T of per-byte slack at the .cas rate, the move would
+   spend ~300 T; measure a 2400-baud WAV before moving. D-ROMSIZE (2)-(4) WAIT (Joost
+   10-21: the sub ROM has room; only main bytes pay now).
 
 **Learned the hard way today:**
 - An uncapped breakpoint log reached the public repo (21 MB, 0b417fb3, trimmed in
@@ -1882,7 +1884,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11279 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11293 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

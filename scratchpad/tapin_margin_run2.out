@@ -1,0 +1,6 @@
+base ROM ae9e90ef
+ROM 1580ac50  d96: OK  got='[S 741 LINE38********************]'  (0 s wall)
+ROM 7a2e803c  d128: BROKEN  got=None  (0 s wall)
+ROM 59cd643d  d160: BROKEN  got=None  (0 s wall)
+ROM ae035203  d192: BROKEN  got=None  (0 s wall)
+restore: ae9e90ef -> ae9e90ef  BYTE-IDENTICAL

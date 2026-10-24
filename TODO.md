@@ -1713,6 +1713,20 @@ item — do **one item per session** to keep context lean.
       🔪 the D-SCRBAUD knives, re-pointed at sub2/scrstmt.asm (their old target had moved --
       an inert knife until then): K-SB1..4 each reach sub2.rom and move exactly their rows,
       restore BYTE-IDENTICAL ([`slicED_scrbaud_knives.out`](scratchpad/slicED_scrbaud_knives.out)).
+      📏 **THE TAPIN TIMING STUDY (2026-10-24), the tape loop's precondition:**
+      [`tapin_margin.py`](scratchpad/tapin_margin.py) CLOADs a 40-line tokenised program
+      from a CSAVE-shaped .cas on zerobas diskless and RUNs it; [`tapin_margin_knives.py`](scratchpad/tapin_margin_knives.py)
+      plants N `djnz` passes (13 T each, + 21 T) at the top of ctp_body -- once per program
+      byte -- each build ROM-hashed, the restore BYTE-IDENTICAL. Baseline OK; **96 passes
+      (~1270 T) OK, 128 (~1680 T) BROKEN**, and 255 / 510 / 1020 broken
+      ([`tapin_margin_run.out`](scratchpad/tapin_margin_run.out), [`tapin_margin_run2.out`](scratchpad/tapin_margin_run2.out)).
+      So the loop has ~1300-1700 T of slack per byte at openMSX's .cas playback rate. Moved
+      into sub2 it would pay a p0cb round trip (~150 T, counted from sub2/p0cb.asm + CLPRIM)
+      for TAPIN and another for cas_put: ~300 T, about a fifth of the slack. 🔮 "OK up to
+      ~6600 T, the two stop bits" MISSED -- the margin is a quarter of that.
+      ➡️ Before moving it: the same study on a 2400-baud tape (a WAV; the .cas rate here is
+      openMSX's, likely 1200), where the slack should roughly halve and the move would spend
+      ~40% of it. Not moved tonight.
       ⏱ THE SPEED COST, measured by the FULL battery's kwtime (2026-10-24, T5 is paused --
       Joost 10-20: ROM space first, "it'll also have speed impact"): COLOR's border form 2x ->
       2.8x the reference's time, KEY's display-on 3.1x -> 3.4x, WIDTH 0.8x -> 0.81x, SCREEN
@@ -6847,7 +6861,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9313 (T-6FE392)8 (T-529ABE)` from `TODO.md:14880 (T-529ABE)`: a
+      `TODO.md:9327 (T-6FE392)8 (T-529ABE)` from `TODO.md:14894 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9768,7 +9782,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14880 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14894 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
