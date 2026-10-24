@@ -31,6 +31,36 @@ The writers sit almost entirely in the expression evaluator
 realisation points sit in the statement handlers. The per-site classification
 ("an immediate raise is equivalent" against "it protects state, which") is still to do.
 
+### 1b. The per-site classification (draft, 2026-10-24)
+
+[`deferr_sites_table.md`](../scratchpad/deferr_sites_table.md): 67 writer sites (the grep
+of section 1 plus 7 it missed: `arrays.asm:497`, `expr.asm:146` / `:725` / `:1758`,
+`str-engine.asm:1054`, `deffn.asm:178`, and one store in disk.rom, `kernel.asm:1419`).
+Read from the source; nothing was run. Verdict if the site raised at once: SAME 36,
+DIFFERENT 2, UNSAFE 10, UNSURE 14, n/a 5. Two of its load-bearing claims were
+checked by hand before this was written: CLEAR's ordering (below) and that the sub
+ROM calls main's `fp_add` / `fp_mul` / `fp_div` by address
+([`sub/basic-resident-abi.inc`](../sub/basic-resident-abi.inc)), so a raise inside them
+would fire in tenant context.
+
+* **UNSAFE** sites run inside a sub-ROM or disk-ROM tenant, or in main code those
+  tenants call (`float-arith.asm`'s overflow and `fp_div` writers), or skip a
+  restore (CLEAR's POOLSIZE). They stay deferred; where they matter, the raise
+  happens in main after the tenant returns.
+* **Division by zero** and the **function-domain** family convert at their
+  main-only points (`combine_div_float`, `sdivmod_zerocheck`, `combine_pow`'s `0^-1`,
+  the `ev_f_ifc` tail); `fp_div`'s own check stays deferred for the tenants.
+* **Blocker:** CLEAR stores the new POOLSIZE before it evaluates its memory-top
+  argument and restores it only on the deferred path, so `CLEAR 200,1/0` raised at
+  once would leave the pool floor moved. That ordering changes first.
+* **Rule for the immediate-raise helper:** report an already-pending code FIRST
+  (`str_heap_oom_error`'s shape: `penderr_set`, then `fp_runtime_error`), or
+  `POKE 99999,1/0` stops being ERR 6.
+* **No realisation point becomes dead** from converting those two families: every
+  one is still reached by overflow, type mismatch, syntax or out-of-memory. Code
+  only becomes deletable if those convert too; what goes stale first is comment
+  text and test rows.
+
 ## 2. Does evaluation run on past a fault? (step 1a, black-box)
 
 A pending error and an immediate one differ observably only when something with a
@@ -69,10 +99,40 @@ case" missed `ovf` (a design error in the case) and `tm` (the reference is the l
 one); "zerobas counts 1 in most fault cases" held for the four deferral cases and
 missed `tm` and `fnarg`.
 
+## 2b. Where does a type mismatch raise? (step 1b, black-box)
+
+Step 1a found the reference evaluating `USR(0)` after `1+"X"`. Ten variations
+([`tmorder_probe.py`](../scratchpad/tmorder_probe.py),
+[`tmorder_run.out`](../scratchpad/tmorder_run.out)):
+
+| case | VG-8020 count | zerobas count |
+|---|---|---|
+| `A=1+"X"+USR(0)` | **1** | **0** |
+| `A=1-"X"+USR(0)` | **1** | **0** |
+| `A=1+"X"+USR(0)+1` | **1** | **0** |
+| `A="X"+1+USR(0)` | **0** | **1** |
+| `A=1+"X"*USR(0)` | 0 | 0 |
+| `A=(1+"X")+USR(0)` | 0 | 0 |
+| `A=1+"X"<USR(0)` | 0 | 0 |
+| `A=1+"X" AND USR(0)` | 0 | 0 |
+| `PRINT 1+"X";USR(0)` | 0 | 0 |
+| `A=ABS(1+"X")+USR(0)` | 0 | 0 |
+
+On the VG-8020 the USR runs only when a number-op-string is followed by another
+additive operator (`+`, `-`); a higher-precedence operator, a closing parenthesis, a
+relational, `AND`, a PRINT separator or a function argument all raise first. zerobas
+raises early in the three additive cases and runs on past `"X"+1` (a string
+concatenation given a number). That is an evaluation-ORDER divergence, not a
+deferral one, in both directions; it is filed on its own as D-TMORDER (TIER 6).
+The prediction ("the reference raises a mismatch only at the end of the expression")
+missed: 7 of the 10 cases raise before the USR.
+
 ## 3. Next
 
-1. Classify the ~60 writers (section 1) per site, starting with the domain-fault
-   family of section 2.
-2. Pin the type-mismatch order: where in `a+b+c` does the reference raise?
-3. Step 2 of the TODO plan: convert the domain-fault family to an immediate raise on
-   a branch; full battery, error rows, tape collection, bytes.
+1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the
+   prototype reaches them.
+2. ~~Pin the type-mismatch order~~ done (section 2b): D-TMORDER, its own item.
+3. Step 2 of the TODO plan: first reorder CLEAR (evaluate both arguments before the
+   POOLSIZE store), then convert Division by zero and the function-domain family to
+   an immediate raise at their main-only points, with a pending-first helper; on a
+   branch; full battery, the error rows, step 1a's probe, the tape collection, bytes.
