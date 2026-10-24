@@ -88,7 +88,7 @@ Sources: `docs/concepts/rom-layout.md` (whole), `docs/subrom-tenant-playbook.md`
   * **Both regions share one budget.** Which region a routine lands in is
     decided only by where its `include` sits relative to `__MEAS_LOW_END`;
     promotion moves the split 1:1 and cannot raise the sum (memory
-    `carve-routes-measured-shut` 09-08; `TODO.md:10921 (T-CA3CA6)-20455`). Price every
+    `carve-routes-measured-shut` 09-08; `TODO.md:10941 (T-CA3CA6)-20455`). Price every
     main item against low + page 1 **combined**.
   * **Islands**: four runs of C-BIOS padding below `$2765` that hold small
     leaves and read-only tables (`basic/islands.asm`; space plan A2/A3). They
@@ -233,7 +233,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
 * **Main-bound, unpriced** (ruled YES by Joost, each a slice): DEF FN alias
   pool, String-too-long ownership, CONT line, T6 enumeration per keyword,
   INPUT$ cassette source. Historical slice costs in this tree run 20–100 B of
-  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14066 (T-59C37A)`).
+  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14086 (T-59C37A)`).
 * **Sub-bound**: SCREEN 3 (170–280 B p0), PAINT span-stack re-architect (p0),
   FCBSHAPE S1–S3 (p1), Phase C's C5-LOW/SBH-1 which *need* 181 B of sub p1 to
   *give* 157 B of main. The sub walls (137/94 B) block all of these today.

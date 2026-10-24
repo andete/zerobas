@@ -1,0 +1,8 @@
+  ROM 63a5a48a 20dbc3d2 0021d113 f3895499 954962a6  ->  c9a79632 20dbc3d2 0021d113 c2a2992b 1a2d2183
+restore: 63a5a48a 20dbc3d2 0021d113 f3895499 954962a6 -> 63a5a48a 20dbc3d2 0021d113 f3895499 954962a6  build rc=0  BYTE-IDENTICAL (all five)
+K-CU1: gate rc=2
+FAIL  trace    ct-trap        CLS:ON ERROR GOTO 50 : CONT : PRIN ref=                 17 20  zb=      Can't CONTINUE/N
+FAIL  trace    ct-plain       CLS:PRINT "A" : CONT : PRINT "N"   ref=A/Can't CONTINUE in 20  zb=    A/Can't CONTINUE/N
+FAIL  trace    us-trap        CLS:ON ERROR GOTO 40 : A=USR : PRI ref=                  2 20  zb=                     N
+FAIL  trace    us-plus        CLS:A=USR1+1 : PRINT "N"           ref=    Syntax error in 10  zb=                     N
+--- 22/26 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red

@@ -6906,7 +6906,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9372 (T-6FE392)8 (T-529ABE)` from `TODO.md:14939 (T-529ABE)`: a
+      `TODO.md:9392 (T-6FE392)8 (T-529ABE)` from `TODO.md:14959 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -8148,7 +8148,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       keyword is at TIER 4 or better".
       🎚️ STANDING — ruling, SUPERSEDED IN PART 2026-09-10 (see the tail of this block)
 
-- [ ] 🔴 **`CONT` IN A PROGRAM LOSES ITS LINE NUMBER: `Can't CONTINUE` HERE,
+- [x] ✅ **DONE 2026-10-24 (D-CONTPROG)** 🔴 **`CONT` IN A PROGRAM LOSES ITS LINE NUMBER: `Can't CONTINUE` HERE,
       `Can't CONTINUE in 10` ON THE REFERENCE.** Found 2026-09-12 by D-KWDRAIN while
       sweeping the program verbs for D-NEWSTMT's class
       ([`scratchpad/kwdrain_contsuffix.py`](scratchpad/kwdrain_contsuffix.py),
@@ -8185,6 +8185,26 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — ADD THE LINE IN-PROGRAM.** Raise with the line when CONT
       runs inside a program; keep the deliberate `print_msg` path for the prompt.
       🤖 **AUTONOMOUS** — ruled above; price it from a clean tree, carve first.
+      ✅ **FIXED 2026-10-24 (D-CONTPROG, one fix with D-USRBARE's commit).**
+      [`contusr_probe.py`](scratchpad/contusr_probe.py) ([`contusr_run.out`](scratchpad/contusr_run.out)):
+      on the VG-8020 a program's `CONT` with nothing to continue is ERR 17 at its
+      line (`[E 17 20]` under ON ERROR, `Can't CONTINUE in 20` without); zerobas printed
+      `Can't CONTINUE` and ran on to `[N]`. ex_cont_no now takes raise_error when
+      DIRECTF = 0 (+7 B of main); the prompt keeps the ERRFLG + print_msg path the
+      site comment defends. 🎯 Prediction miss: `cont_live` (a live resume point,
+      then the program's own CONT) was predicted 17 on the VG-8020 -- it RESUMES the
+      STOP again and loops, on both, so CONTVALID still decides first. After: all 5
+      rows as the VG-8020 ([`contusr_after.out`](scratchpad/contusr_after.out)). Gate:
+      missing-acceptance trace rows ct-trap / ct-plain ([`contusr_gate.out`](scratchpad/contusr_gate.out));
+      🔪 K-CU1 (both handlers as at HEAD): exactly ct-trap, ct-plain, us-trap,
+      us-plus FAIL, gate rc=2, all five images restored byte-identical ([`contusr_knife.out`](scratchpad/contusr_knife.out), from [`contusr_knife.py`](scratchpad/contusr_knife.py)).
+      ⚠️ The runner's first cut hashed the MAIN ROM only and restored with a plain
+      build; a same-second write left $(RELOC_SYM) -> sub ABI -> sub2 at the CUT
+      layout while main rebuilt, and kwknife pinned that half-restored machine
+      (tiers-md-check and knife-rom-guard-check refused it in the FULL run). Now
+      knife_guard, five hashes, clean builds; kwknife re-pinned after it.
+      Docs: CONT.md (both Differences gone), USR.md; examples PASS 2
+      ([`contusr_kwdoc.out`](scratchpad/contusr_kwdoc.out)).
 
 - [ ] 🔁 **STANDING TIER (Joost, 2026-08-31): WHEN THE 🤖 QUEUE DRAINS, REVIEW
       EACH STATEMENT'S IMPLEMENTATION IN FULL, one verb at a time.** The
@@ -9827,7 +9847,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:14939 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:14959 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -16930,20 +16950,32 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       a T5 cell whose REFERENCE side is a disk row needs either several reference
       samples or a stability rule before it is shown as a number.
 
-- [ ] 🔴 **`CONT` INSIDE A RUNNING PROGRAM IS `Can't continue` (17) ON THE VG-8020 AND
+- [x] ✅ **DONE 2026-10-24 (D-CONTPROG)** 🔴 **`CONT` INSIDE A RUNNING PROGRAM IS `Can't continue` (17) ON THE VG-8020 AND
       A NO-OP HERE (D-CONTPROG, found 2026-09-28 by T6 batch 10).**
       🎚️ TIER 6 — CONT with nothing to continue.
       🤖 **AUTONOMOUS** — the reference settles it.
       📏 [`scratchpad/t6enum_b10.out`](scratchpad/t6enum_b10.out): `CONT` and `CONT 1`
       read (17, 20) there and OK here. Blocks CONT's T6.
+      ✅ **FIXED 2026-10-24** -- one fix with the line-suffix block (D-CONTPROG,
+      its ✅ note has the rows, the knife and the prediction miss); CONT's every-error
+      rung is ✓ in CONT.md.
 
-- [ ] 🔴 **A BARE `USR` / `USR1` IS `Syntax error` ON THE VG-8020 AND ACCEPTED HERE
+- [x] ✅ **DONE 2026-10-24 (D-USRBARE)** 🔴 **A BARE `USR` / `USR1` IS `Syntax error` ON THE VG-8020 AND ACCEPTED HERE
       (D-USRBARE, found 2026-09-28 by T6 batch 9).**
       🎚️ TIER 6 — `USR` without its argument.
       🤖 **AUTONOMOUS** — the reference settles it.
       📏 [`scratchpad/t6enum_b9.out`](scratchpad/t6enum_b9.out): `A=USR` and `A=USR1` read
       (2, 20) there and OK here. Does NOT block T6 (code 2 has agreeing rows in
       both forms: `A=USR()`, `A=USR1(1,2)`), but it is a divergence.
+      ✅ **FIXED 2026-10-24.** [`contusr_probe.py`](scratchpad/contusr_probe.py): `A=USR`,
+      `A=USR1`, `A=USR:PRINT`, `A=USR+1`, `PRINT USR` are `[E 2 20]` on the VG-8020 and
+      ran on here with 0 ([`contusr_run.out`](scratchpad/contusr_run.out)). Cause:
+      ev_usr_err took errmark_ret0, whose $DD landmark nothing on an expression path
+      reads (D-EVFERR's class). Now `jp ev_f_empty`, the checked deferred FPERR=4 --
+      same 3 B. After: 6/6 as the VG-8020 ([`contusr_after.out`](scratchpad/contusr_after.out)).
+      Gate rows us-trap / us-plus (missing-acceptance trace); K-CU1 cuts them
+      (see D-CONTPROG's ✅ note). 🔎 usr_undef (`USR` on an un-DEF'd slot) still
+      takes errmark_ret0 -- not measured here, not claimed.
 
 - [ ] 🔴 **A TRAP EVENT HELD BACK BY `INTERVAL STOP` FIRES SOONER HERE THAN ON THE
       VG-8020 AFTER `INTERVAL ON` (D-TRAPLATCHWHEN, found 2026-10-09).**

@@ -161,7 +161,12 @@ ev_usr:
                 jr      usr_call            ; perform the call (preserves IX) -> DE
 ev_usr_err:
                 pop     af                  ; discard saved index
-                jp      errmark_ret0        ; expression-error marker (cf. ev_f_err), DE = 0
+                jp      ev_f_empty          ; D-USRBARE (2026-10-24): the CHECKED deferred
+                                            ; syntax error, DE = 0. A bare `A=USR` / `USR1`
+                                            ; / `USR+1` is Syntax error on the VG-8020;
+                                            ; errmark_ret0's bare $DD landmark is read by
+                                            ; nothing on this path, so it ran on with 0
+                                            ; (scratchpad/contusr_run.out). Same 3 B.
 
 ; --- ev_usr_index: optional USR number 0..9 from the IX stream -------------
 ; ⚠️ THE DEFAULT ARM IS usr_index's, NOT A COPY (D-DEFTYPETOK funding trim).

@@ -1,0 +1,12 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   cont_trap   [E 17  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   cont_plain  [A] | Can't CONTINUE in 20
+C-BIOS_MSX1_EU_REPACK_NODISK   cont1_trap  [E 17  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   cont_live   [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B]
+C-BIOS_MSX1_EU_REPACK_NODISK   cont_live_t [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B] | [B]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr_trap    [E 2  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr1_trap   [E 2  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr_colon   [E 2  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr_plus    [E 2  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr_print   [E 2  20 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usr_plain   Syntax error in 10
+refcache: 0 hit, 11 miss, 11 stored

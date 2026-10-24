@@ -1198,6 +1198,15 @@ ex_cont:
                 ld      sp,(SAVSTK)
                 jp      rp_lp               ; re-enter the run loop
 ex_cont_no:
+                ld      a,(DIRECTF)         ; D-CONTPROG (2026-10-24): a CONT INSIDE A
+                or      a                   ; RUNNING PROGRAM with nothing to continue is
+                ld      a,17                ; a real ERR 17 on the VG-8020 -- trappable
+                jp      z,raise_error       ; (`ON ERROR` sees 17 at its line) and, untrapped,
+                                            ; `Can't CONTINUE in <line>` that stops the run;
+                                            ; it used to print the message and run on
+                                            ; (scratchpad/contusr_run.out). A LIVE resume
+                                            ; point still resumes, as there.
+                ld      (ERRFLG),a          ; ERR 17: can't continue (see below)
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)
                 ld      (ERRMARK),a
                 ; 🔴 THIS ARM PRINTED ITS MESSAGE AND LEFT `ERR` AT 0, AND NOTHING
@@ -1213,11 +1222,11 @@ ex_cont_no:
                 ; returns to the REPL; routing it through raise_error's trap branch
                 ; would jump into a finished program from the prompt. PRINT ERR is
                 ; the only observer either way, and it now reads what both
-                ; references read.
-                ld      a,17                ; ERR 17: can't continue
-                ld      (ERRFLG),a
+                ; references read. ⚠️ DIRECT MODE ONLY since D-CONTPROG: a running
+                ; program's CONT took raise_error at the top of this arm, and this
+                ; rationale is exactly why that test is on DIRECTF.
                 ld      hl,err_subhosted    ; D-MSGMIGRATE: em_cont, keyed on the
-                                            ; ERRFLG store two lines up. ⚠️ THAT STORE
+                                            ; ERRFLG store at this arm's top. ⚠️ THAT STORE
                                             ; IS NOW LOAD-BEARING FOR THE TEXT, not just
                                             ; for PRINT ERR -- change the 17 and this
                                             ; prints `Unprintable error`. Gate row

@@ -6,10 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `CONT` — continue a stopped program
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven.
-> Two recorded differences, both about `CONT` used inside a running program
-> (below).
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓.
+> No recorded difference since 2026-10-24 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -19,7 +18,7 @@ SPDX-License-Identifier: 0BSD
 [`STOP`](STOP.md), a Ctrl-STOP, an [`END`](END.md), or an error. Variables,
 open `FOR` loops and `GOSUB`s are as they were. With nothing to continue it
 is `Can't CONTINUE` (error 17). zerobas behaves like the Philips VG-8020 in
-every case we have measured from the prompt.
+every case we have measured, at the prompt and inside a program.
 
 ## Syntax
 
@@ -55,7 +54,7 @@ No arguments.
 | situation | error |
 |---|---|
 | nothing to continue: at power-on, after `NEW`, after an edit to the program | 17 `Can't CONTINUE` |
-| `CONT` written inside a program | 17 `Can't CONTINUE` on the VG-8020; see *Differences* |
+| `CONT` written inside a program, nothing to continue | 17 `Can't CONTINUE in <line>`; an `ON ERROR` handler catches it |
 
 ## Example
 
@@ -82,28 +81,28 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-Both concern `CONT` written *inside* a program, which can never continue
-anything:
+None recorded. The two that stood until 2026-10-24 are under *What we found*.
 
-- **The line number is missing.** The VG-8020 prints `Can't CONTINUE in 10`;
-  zerobas prints `Can't CONTINUE` (found 2026-09-12;
-  [kwdrain_contsuffix.out](../../scratchpad/kwdrain_contsuffix.out)). zerobas
-  prints the message directly instead of raising an ordinary error, on
-  purpose, so that the case typed at the prompt cannot jump into a finished
-  program. Joost ruled on 2026-09-27: *"add the line"* in a program, and keep
-  the prompt's path.
-- **An `ON ERROR` handler does not see it.** On the VG-8020 the error is
-  error 17 like any other and the handler catches it; in the measured case
-  zerobas ran on to the next line instead (D-CONTPROG, found 2026-09-28;
-  [t6enum_b10.out](../../scratchpad/t6enum_b10.out)). This is why the
-  "every error" rung is not proven: 17 is the only error `CONT` raises.
-
-Both are TIER 6 items in [TODO.md](../../TODO.md), and probably one fix.
-
-The other rung not yet proven is **RAM usage**.
+The rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`CONT` inside a program said `Can't CONTINUE` and ran on** (fixed
+  2026-10-24, D-CONTPROG). On the VG-8020 it is error 17 like any other: an
+  `ON ERROR` handler catches it, and without one the program stops with
+  `Can't CONTINUE in 20`. zerobas printed the message without a line and went
+  on to the next statement, so a handler never saw it
+  ([`contusr_run.out`](../../scratchpad/contusr_run.out), from
+  [`contusr_probe.py`](../../scratchpad/contusr_probe.py); found 2026-09-12 and
+  2026-09-28). The message used to be printed directly on purpose, so that
+  `CONT` typed at the prompt cannot jump into a finished program; that path is
+  kept for the prompt, and only a running program now raises an ordinary error,
+  as Joost ruled on 2026-09-27 (*"add the line"*). After the fix all five
+  cases read as on the VG-8020
+  ([`contusr_after.out`](../../scratchpad/contusr_after.out)). The same
+  measurement showed that a `CONT` in a program is not always an error: after a
+  `STOP` that was continued from the prompt, the program's own `CONT` continues
+  from that `STOP` again, on both machines.
 - **`CONT` only worked after `STOP`** (fixed 2026-07-30, D-CONTR). After
   `END`, after an error, or after the program ran off its end, zerobas said
   `Can't CONTINUE`; the VG-8020 continues in each case, each from a different
@@ -137,6 +136,7 @@ exits in [basic/interp.asm](../../basic/interp.asm).
 - `make abort-acceptance` — every stop `CONT` can continue from, the typed
   statements that must leave it alone, and the three that clear it.
 - `make kwsweep` — the everyday row (`STOP`, then `CONT` typed at the prompt)
-  and `CONT` with nothing to continue. There is no agreeing row yet for 17
-  inside a program (see *Differences*).
+  and `CONT` with nothing to continue.
+- `make missing-acceptance` — `CONT` inside a program, caught by `ON ERROR`
+  and not caught (rows `ct-trap`, `ct-plain`).
 - `make kwram` — the RAM-usage comparison.

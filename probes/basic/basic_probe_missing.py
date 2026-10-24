@@ -549,6 +549,16 @@ TRACE = [
     ("tr-semi",       ['CLS:TRON', 'PRINT "A";', 'PRINT "B";', 'TROFF']),
     # LINE NUMBER WIDTH -- a 5-digit line number in the decoration
     ("tr-bignum",     ['CLS:TRON', 'PRINT "A"']),
+    # D-CONTPROG / D-USRBARE (2026-10-24), not TRON but the same whole-screen
+    # stored-run shape: a CONT with nothing to continue INSIDE a program is a
+    # trappable ERR 17 that stops the run, and a bare USR is Syntax error
+    # (scratchpad/contusr_run.out); zerobas printed / ran on, and USR gave 0.
+    ("ct-trap",       ['CLS:ON ERROR GOTO 50', 'CONT', 'PRINT "N"', 'END',
+                       'PRINT ERR;ERL:END']),
+    ("ct-plain",      ['CLS:PRINT "A"', 'CONT', 'PRINT "N"']),
+    ("us-trap",       ['CLS:ON ERROR GOTO 40', 'A=USR', 'PRINT "N":END',
+                       'PRINT ERR;ERL:END']),
+    ("us-plus",       ['CLS:A=USR1+1', 'PRINT "N"']),
 ]
 # tr-bignum needs line numbers the 10/20/... numbering cannot give it; it is
 # emitted with an explicit numbering below (see STORED_EXPLICIT).

@@ -6,10 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `USR` and `DEF USR` — call a machine-code routine
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences: `DEF USR` accepts an address past 65535, and a bare `USR` with
-> no argument is accepted (below).
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: `DEF USR` accepts an address past 65535 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -52,6 +51,7 @@ USR[<n>](<argument>)
 | you write | you get |
 |---|---|
 | `USR()`, `USR(1,2)`, `USR1()`, `USR1(1,2)` | error 2, `Syntax error` |
+| a bare `USR` or `USR1`, with no argument: `A=USR`, `A=USR+1`, `PRINT USR` | error 2, `Syntax error` |
 | `DEF USR`, `DEF USR9` | error 2, `Syntax error` |
 | `DEF USR="A"`, `DEF USR9="A"` | error 13, `Type mismatch` |
 | `DEF USR=70000` | error 6, `Overflow` on the VG-8020; accepted here (see *Differences*) |
@@ -87,15 +87,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 - **`DEF USR=70000` is accepted here** and `Overflow` (error 6) on the
   VG-8020, for every slot (D-DEFUSRRANGE, found 2026-09-27). zerobas stores
   something and runs on. Open, TIER 6.
-- **A bare `A=USR` or `A=USR1`, with no argument at all, is accepted here**
-  and `Syntax error` on the VG-8020 (D-USRBARE, found 2026-09-28). Open,
-  TIER 6; it does not block the every-error rung, because error 2 already has
-  agreeing rows (`USR()`, `USR1(1,2)`).
 
 The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 
 ## What we found, and how
 
+- **A bare `USR` with no argument gave 0** (fixed 2026-10-24, D-USRBARE).
+  `A=USR`, `A=USR1`, `A=USR+1` and `PRINT USR` are `Syntax error` on the
+  VG-8020; zerobas marked the fault in a way nothing on that path read, so
+  the statement ran on with 0
+  ([`contusr_run.out`](../../scratchpad/contusr_run.out), from
+  [`contusr_probe.py`](../../scratchpad/contusr_probe.py)). It now raises the
+  same checked syntax error as `A=(1+2`; all six cases read as on the VG-8020
+  afterwards ([`contusr_after.out`](../../scratchpad/contusr_after.out)).
 - **`DEF USR` and `USR` came early** (by June 2026): the classic way a BASIC
   loader jumps into code it has just loaded is `DEFUSR=&Hxxxx : A=USR(0)`.
   The addresses went into the published `USRTAB` from the start, but the
@@ -131,3 +135,5 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
   calling a one-byte routine that returns its argument, and the error rows.
 - `make unit-test` — the entry state a routine sees, and the returned value.
 - `make catusr-acceptance` — the evaluation count.
+- `make missing-acceptance` — a bare `USR` and `USR1+1`, caught by `ON ERROR`
+  and not caught (rows `us-trap`, `us-plus`).
