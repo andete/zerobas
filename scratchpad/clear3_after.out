@@ -1,0 +1,11 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   bad2_3rd    CLEAR 1,2,3              [E 2 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ok2_3rd     CLEAR 200,&HF000,3       [E 2 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ovf1_3rd    CLEAR 99999,&HF000,3     [E 6 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ovf2_3rd    CLEAR 200,70000,3        [E 6 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   oom2_3rd    CLEAR 200,&H8100,3       [E 2 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   bad2_comma  CLEAR 1,2,               [E 2 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   bad2_junk   CLEAR 1,2 X              [E 2 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   bad2_colon  CLEAR 1,2:PRINT 9        [E 5 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   neg1_3rd    CLEAR -1,&HF000,3        [E 5 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ok_ctl      CLEAR 200,&HF000         [N]
+refcache: 0 hit, 10 miss, 10 stored

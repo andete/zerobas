@@ -1,0 +1,7 @@
+  ROM 93911490 20dbc3d2 2c9631c2 502f25d8 85426f77  ->  63a5a48a 20dbc3d2 0021d113 f3895499 954962a6
+restore: 93911490 20dbc3d2 2c9631c2 502f25d8 85426f77 -> 93911490 20dbc3d2 2c9631c2 502f25d8 85426f77  build rc=0  BYTE-IDENTICAL (all five)
+K-CL3: gate rc=2
+FAIL  trace    cl-bad3        CLS:ON ERROR GOTO 40 : CLEAR 1,2,3 ref=                     2  zb=                     5
+FAIL  trace    cl-ok3         CLS:ON ERROR GOTO 40 : CLEAR 200,& ref=                     2  zb=    Syntax error in 20
+FAIL  trace    cl-onejunk     CLS:ON ERROR GOTO 40 : CLEAR 200 X ref=                     2  zb=    Syntax error in 20
+--- 27/30 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red

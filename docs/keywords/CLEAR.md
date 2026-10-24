@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `CLEAR` — reset the variables, and size the string space
 
-> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: `CLEAR` with three arguments (below).
+> difference: less free memory than the VG-8020 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -17,7 +17,7 @@ SPDX-License-Identifier: 0BSD
 `CLEAR` throws away every variable and array, and can at the same time set the
 size of the string space (where string values are kept) and the highest memory
 address BASIC may use. zerobas behaves like the Philips VG-8020 in every case
-we have measured, except for the error a three-argument `CLEAR` raises.
+we have measured, except that it has less free memory to give out.
 
 ## Syntax
 
@@ -53,6 +53,7 @@ CLEAR [<string space>][,<memory top>]
 | `CLEAR 200,&H8050` (no room left for the program) | 7 `Out of memory` |
 | `CLEAR 200,` | 24 `Missing operand` |
 | `CLEAR,`, `CLEAR ,&HD000` | 2 `Syntax error` |
+| anything after the last argument: `CLEAR 1,2,3`, `CLEAR 200,&HF000,3`, `CLEAR 200 X` | 2 `Syntax error`, before a bad value is reported and before anything is cleared; only `Overflow` while reading an argument, and a negative first argument, come first |
 
 The measured set of errors is {2} for the bare form, {5, 6, 7, 13} for the
 string-space form and {5, 13, 24} for the memory-top form, the same on both
@@ -82,13 +83,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**`CLEAR 1,2,3` is `Illegal function call` here and `Syntax error` on the
-VG-8020** (D-CLEAR3ARG, open, a TIER 6 item;
-[readings](../../scratchpad/t6enum_b6.out)). zerobas checks the second argument
-(2 is below &H8000) before noticing the third; the reference rejects the shape
-of the statement first. This does not block **every error**: the error 2 that
-the bare form can raise is also reached by `CLEAR,`, which agrees.
-
 **zerobas has less free memory than the VG-8020**, so a string space that just
 fits there can be `Out of memory` here: on 2026-09-27 `CLEAR 25000` was
 accepted on the VG-8020 and refused here. Since 2026-10-13 it fits on both
@@ -103,6 +97,18 @@ That belongs to the **RAM usage** rung, which is not yet proven.
 
 ## What we found, and how
 
+- **Something after the last argument was noticed too late** (fixed
+  2026-10-24, D-CLEAR3ARG). The VG-8020 checks that the statement ends before
+  it looks at the memory-top value: `CLEAR 1,2,3` is `Syntax error`, not
+  `Illegal function call`, and `CLEAR 200,&H8100,3` is `Syntax error`, not
+  `Out of memory`. zerobas checked the value first, and when the value was good
+  (`CLEAR 200,&HF000,3`, `CLEAR 200 X`) it carried out the `CLEAR`, which also
+  removes an `ON ERROR` handler, so the `Syntax error` that followed could not
+  be caught. Thirteen cases on both machines pinned the order
+  ([`clear3_run.out`](../../scratchpad/clear3_run.out),
+  [`clear3_run2.out`](../../scratchpad/clear3_run2.out), from
+  [`clear3_probe.py`](../../scratchpad/clear3_probe.py)); all agree since
+  ([`clear3_after.out`](../../scratchpad/clear3_after.out)).
 - **The string-space size used to be ignored** (fixed 2026-07-29, D-CLP).
   zerobas kept one free area for variables and strings, and `CLEAR n` evaluated
   `n` and threw it away. Measuring the reference showed a separate string
@@ -151,4 +157,7 @@ That belongs to the **RAM usage** rung, which is not yet proven.
 - `make clearclose-acceptance` — files closed by `CLEAR` on the disk build.
 - `make kwsweep` — the bare form (a variable really reset), the string-space
   form, the memory-top form, and the error rows.
+- `make missing-acceptance` — something after the last argument, with and
+  without a good value, under `ON ERROR` (rows `cl-bad3`, `cl-ok3`,
+  `cl-onejunk`, and `cl-colon` as the control).
 - `make kwram` — the RAM-usage comparison.

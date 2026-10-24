@@ -559,6 +559,17 @@ TRACE = [
     ("us-trap",       ['CLS:ON ERROR GOTO 40', 'A=USR', 'PRINT "N":END',
                        'PRINT ERR;ERL:END']),
     ("us-plus",       ['CLS:A=USR1+1', 'PRINT "N"']),
+    # D-CLEAR3ARG (2026-10-24): CLEAR's statement must END before its memory-top
+    # value is range-checked or acted on (scratchpad/clear3_run.out). cl-ok3 is
+    # the sharp one: zerobas ACTED, wiping ON ERROR, and the junk raised untrapped.
+    ("cl-bad3",       ['CLS:ON ERROR GOTO 40', 'CLEAR 1,2,3', 'PRINT "N":END',
+                       'PRINT ERR:END']),
+    ("cl-ok3",        ['CLS:ON ERROR GOTO 40', 'CLEAR 200,&HF000,3', 'PRINT "N":END',
+                       'PRINT ERR:END']),
+    ("cl-onejunk",    ['CLS:ON ERROR GOTO 40', 'CLEAR 200 X', 'PRINT "N":END',
+                       'PRINT ERR:END']),
+    ("cl-colon",      ['CLS:ON ERROR GOTO 40', 'CLEAR 1,2:PRINT 9', 'PRINT "N":END',
+                       'PRINT ERR:END']),
 ]
 # tr-bignum needs line numbers the 10/20/... numbering cannot give it; it is
 # emitted with an explicit numbering below (see STORED_EXPLICIT).

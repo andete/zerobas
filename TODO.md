@@ -16151,7 +16151,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       🔪 K-IG1 (ex_if as at HEAD): exactly those three DIFF (`ERR 2 AT 30`), gate rc=1, ROM
       restored ([`ifgoto_knife.out`](scratchpad/ifgoto_knife.out)). Docs: IF.md, GOTO.md; examples PASS 2.
 
-- [ ] 🔴 **`CLEAR 1,2,3` IS `Illegal function call` HERE AND `Syntax error` ON
+- [x] ✅ **DONE 2026-10-24 (D-CLEAR3ARG)** 🔴 **`CLEAR 1,2,3` IS `Illegal function call` HERE AND `Syntax error` ON
       THE REFERENCE (D-CLEAR3ARG, found 2026-09-27 by T6).**
       🎚️ TIER 6 — `CLEAR` with three arguments
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -16160,6 +16160,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       third; the reference rejects the statement shape first. ⚠️ NOT a T6
       blocker (first written as one, and the tier sheet refuted it): the bare
       form's code 2 also comes from `CLEAR,`, which agrees — CLEAR reads T6✓.
+      ✅ **FIXED 2026-10-24.** [`clear3_probe.py`](scratchpad/clear3_probe.py), 13 cases
+      ([`clear3_run.out`](scratchpad/clear3_run.out), [`clear3_run2.out`](scratchpad/clear3_run2.out)):
+      on the VG-8020 the statement-END check comes before the memory-top value's
+      range checks -- `CLEAR 1,2,3`, `CLEAR 200,&H8100,3`, `CLEAR 1,2 X`, `CLEAR 1,2,`
+      and the one-argument `CLEAR 200 X` / `CLEAR 30000 X` are all 2 -- while an
+      OVERFLOW reading either argument (6) and a negative first argument (5) raise
+      first. 🔴 Sharper than filed: a VALID `CLEAR 200,&HF000,3` / `CLEAR 200 X` ACTED
+      here, wiping ON ERROR, and the junk raised UNTRAPPED. Fix: clr_chk in
+      basic/clear.asm -- `dec hl / call stmt_bare_end`, NZ -> FPERR 4 through clr_h_set
+      (so D-CLEARFIT's POOLSIZE restore still runs before the raise); the one-argument
+      path enters there too. +9 B (8 + `jr z,clr_done` -> `jp`), from the pad in front
+      of a pin. 🎯 Predictions: 2 misses -- `CLEAR 200,70000,3` (said 2, is 6) and
+      `CLEAR -1,&HF000,3` (said 2, is 5). After: 13/13 as the VG-8020
+      ([`clear3_after.out`](scratchpad/clear3_after.out)). Gate: missing-acceptance trace rows
+      cl-bad3 / cl-ok3 / cl-onejunk + control cl-colon ([`clear3_gate.out`](scratchpad/clear3_gate.out));
+      🔪 K-CL3 ([`clear3_knife.py`](scratchpad/clear3_knife.py)): exactly the three subject rows
+      FAIL, the control holds, rc=2, all five images restored ([`clear3_knife.out`](scratchpad/clear3_knife.out)).
+      Docs: CLEAR.md; examples PASS 1 ([`clear3_kwdoc.out`](scratchpad/clear3_kwdoc.out)).
 
 - [ ] 🔴 **`ERROR`'s ARGUMENT IS NOT CHECKED LIKE THE REFERENCE'S — `ERROR "A"`,
       bare `ERROR`, `ERROR 70000` all raise 5 HERE; `ERROR 1,1` RAISES ERROR 1

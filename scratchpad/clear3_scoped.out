@@ -1,0 +1,125 @@
+python3 tools/pick_gates.py --run 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 13s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== ⏱ kwtime not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
+=== emulator tier RUNS: forced by --full ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0             13s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0            119s  selftest-check
+  (post-mutator refresh 13s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 93 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              7s  basic-reloc
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              2s  subrom-closure-check
+  rc=0            732s  unit-test
+  rc=0              1s  deadcode
+  rc=0              8s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              4s  ram-map-check
+  rc=0              7s  pin-check
+  rc=0              0s  build-assert-check
+  rc=0              9s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              0s  stubinl-check
+  rc=0              3s  rowshape-check
+  rc=0             11s  injector-check
+  rc=0              1s  dead-alias-check
+  rc=0              1s  alias-order-check
+  rc=0              1s  size-check
+  rc=0              4s  hostkill-check
+  rc=0              3s  session-path-check
+  rc=0              1s  temp-root-check
+  rc=0              0s  tracked-inputs-check
+  rc=0              7s  todo-citation-check
+  rc=0              1s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              2s  error-alphabet-check
+  rc=0              5s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              5s  disk-mount-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              1s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              2s  preflight-check
+  rc=0             15s  latch-check
+  rc=0             18s  patch-freshness-check
+  rc=0              6s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+  rc=0           1349s  kwsweep
+  rc=0           2823s  kwram
+  rc=0             48s  string-acceptance
+  rc=0            108s  penderr-acceptance
+  rc=0            126s  missing-acceptance
+  rc=0             18s  error-acceptance
+  rc=0            101s  error-trap-acceptance
+  rc=0            240s  math-acceptance
+  rc=0            147s  float-acceptance
+  rc=0             87s  tmfp-acceptance
+  rc=0            227s  array-acceptance
+  rc=0            209s  deffn-strict
+  rc=0            614s  graphics-acceptance
+  rc=0            224s  interval-trap-acceptance
+  rc=0            143s  clearpool-acceptance
+  rc=0            150s  stackpool-acceptance
+  rc=0           1202s  ctllim-acceptance
+  rc=0             27s  gosuboom-acceptance
+  rc=0             52s  biosregs-acceptance
+  rc=0           1032s  ramfree-acceptance
+  rc=0             22s  txtceil-acceptance
+  rc=0              6s  runline-acceptance
+  rc=0             19s  keystr-acceptance
+  rc=0             29s  cursor-acceptance
+  rc=0            545s  namspc-acceptance
+  rc=0            160s  arrdim-acceptance
+  rc=0             48s  binfre-acceptance
+  rc=0            225s  deffn-acceptance
+  rc=0             83s  direct-ctrl-acceptance
+  rc=0             93s  gicini-acceptance
+  rc=0             63s  inputary-acceptance
+  rc=0            337s  lnblank-acceptance
+  rc=0            145s  lptverb-acceptance
+  rc=0             74s  stop-trap-acceptance
+  rc=0            257s  width-acceptance
+  rc=0             17s  eofcas-acceptance
+  rc=0             42s  clearclose-acceptance
+  rc=0            110s  dout-acceptance
+  rc=0             26s  readref-acceptance
+  rc=0             90s  pulong-acceptance
+  rc=0            387s  wszero-acceptance
+  rc=0             99s  basicint-acceptance
+  rc=0             21s  diskfre-acceptance
+  rc=0             27s  deepexpr-acceptance
+  rc=0             43s  dimedge-acceptance
+  rc=0            121s  opengrp-acceptance
+  rc=0             63s  instr128-acceptance
+  rc=0             27s  floorcensus-acceptance
+=== ⏱ the daily sweeps ran in this battery: docs/tier-status.md re-rendered from their fresh pins (rc=0) -- STAGE IT with the commit ===
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=0              0s  tiers-md-check
+
+=== wall 2851s (13s build + 2838s gates) ===
+GATES: 98/98 green
+hashes: 502f25d8 20dbc3d2 93911490 2c9631c2 85426f77
+GATE TIER: SCOPED
+  why: disk.rom rebuilt against a regenerated ABI: the disk canary
+  why: ROM change in handler(s): CLEAR
+  why: probe/tool change: probes/basic/basic_probe_missing.py scratchpad/clear3_knife.py scratchpad/clear3_probe.py
+  hours since the last full green: 2.6 (full once a day, at every hand-off, and on a RAM-address move)
+  emulator suites (48): array-acceptance arrdim-acceptance basicint-acceptance binfre-acceptance biosregs-acceptance clearclose-acceptance clearpool-acceptance ctllim-acceptance cursor-acceptance deepexpr-acceptance deffn-acceptance deffn-strict dimedge-acceptance direct-ctrl-acceptance diskfre-acceptance dout-acceptance eofcas-acceptance error-acceptance error-trap-acceptance float-acceptance floorcensus-acceptance gicini-acceptance gosuboom-acceptance graphics-acceptance inputary-acceptance instr128-acceptance interval-trap-acceptance keystr-acceptance kwram kwsweep lnblank-acceptance lptverb-acceptance math-acceptance missing-acceptance namspc-acceptance opengrp-acceptance penderr-acceptance pulong-acceptance ramfree-acceptance readref-acceptance runline-acceptance stackpool-acceptance stop-trap-acceptance string-acceptance tmfp-acceptance txtceil-acceptance width-acceptance wszero-acceptance
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance lnblank-say-acceptance
+bdos-acceptance exit=0
+diskbasic-acceptance exit=0
+fat-error-acceptance exit=0
+lnblank-say-acceptance exit=0
+GATE TIER RAN: SCOPED (48 emulator suites)

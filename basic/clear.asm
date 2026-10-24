@@ -58,7 +58,7 @@
 ; still read variables), then everything is wiped.
 ex_clear:
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jr      z,clr_done
+                jp      z,clr_done
                 ; 🔴 D-CLRFIX (docs/spec-basic-clrfix.md). THE TWO LINES THAT USED
                 ; TO STAND HERE ARE DELETED, AND THIS IS A CARVE, NOT A COST:
                 ;
@@ -130,7 +130,8 @@ ex_clear:
                 ; ERR 7, the restore and the (unchanged) HIMEM store are all its.
                 push    hl                  ; the cursor, as clr_floor's caller holds it
                 ld      de,(HIMEM)          ; "value" = the CURRENT ceiling
-                jr      clr_floor
+                jr      clr_chk             ; (in range: only CLEAR, boot and the disk
+                                            ; kernel store HIMEM, all inside the window)
 clr_himem:
                 ; ⚠️ Since D-CLEARFIT reached by `jr z,clr_himem` just above (the
                 ; comma); D-CLRFIX had deleted the leading-comma arm's jump here.
@@ -194,6 +195,16 @@ clr_himem:
                                             ; skip the range check (DE is 0 here anyway)
                                             ; and HL is still the statement cursor.
                 push    hl                  ; guard the cursor across the arithmetic
+clr_chk:                                    ; D-CLEAR3ARG (2026-10-24): the statement must
+                dec     hl                  ; END here before the value is range-checked or
+                call    stmt_bare_end       ; acted on. VG-8020: `CLEAR 1,2,3` / `CLEAR 1,2 X`
+                ld      a,4                 ; are ERR 2, not 5; `CLEAR 200,&H8100,3` is 2,
+                jr      nz,clr_h_set        ; not 7; an OVERFLOW still wins (the jr above,
+                                            ; `CLEAR 200,70000,3` = 6). zerobas range-checked
+                                            ; first, and a VALID `CLEAR 200,&HF000,3` acted
+                                            ; -- wiping ON ERROR -- before the junk raised,
+                                            ; untrapped (scratchpad/clear3_run.out). FPERR 4
+                                            ; through clr_h_set keeps the D-CLEARFIT restore.
                 ld      hl,CLR_HIMEM_TOP    ; value > $F380 -> ERR 5
                 or      a
                 sbc     hl,de
