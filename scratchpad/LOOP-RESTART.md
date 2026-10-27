@@ -754,6 +754,18 @@ stays paused until he restarts it.**
 | (raised) SHIFT / CTRL at boot | filed as D-BOOTKEYS, 🤖 TIER 4: measure on the CF-3300 first |
 | (2026-10-27) "Ctrl boot should behave same as ref" | D-BOOTKEYS CTRL RAM half: HIMEM $E48D on a CTRL boot, disk buffers moved up $443 -- SHIPPED 2026-10-27 |
 | (2026-10-27) the circle issue: "match the vg-8020" | D-CIRCNEGR: a negative CIRCLE radius drops its sign bit, superseding G4-rneg's ERR 5 -- SHIPPED 2026-10-27 |
+| (2026-10-27, asked one by one) mb.dsk | "Start BASIC (NMS 1200)": pin $5E10 to start BASIC (D-DISKRUN) |
+| (2026-10-27) OPEN of one file on two channels | "come up with an exact match without costing more RAM then reference" |
+| (2026-10-27) D-DEFERRSTUDY | "Convert, family by family" |
+| (2026-10-27) D-SLOT3EXP | "Later" -- parked with the ROM-space layout question |
+| (2026-10-27) D-MKIREUSE | "Keep the copy" -- closed |
+| (2026-10-27) the two type-code namespaces | "Merge to reference codes" |
+| (2026-10-27) err_verify / brk_msg | "Measure first, then decide" (the CLOAD? reading) |
+| (2026-10-27) ex_mid_stmt's shadowed 3 B abort | "Take the 3 B" |
+| (2026-10-27) knife tags | "No, close it" |
+| (2026-10-27) stall watchdog | "Print only" |
+| (2026-10-27) settle_audit gate | "Make a call yourselves" -> PAINT rows only |
+| (2026-10-27) the 104 uncollected probes | "You pick, under a budget" (~+120 s) |
 
 📚 **LATER ON 2026-10-09: THE KEYWORD PAGES SHIPPED** — `docs/keywords/`, 146 pages
 (one per level-3 keyword), every example run on both machines by
@@ -1904,7 +1916,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11493 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11502 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

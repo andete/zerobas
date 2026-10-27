@@ -92,6 +92,10 @@ item — do **one item per session** to keep context lean.
       `/` raise left 2 where the reference has 8 -- so a converted site must set
       VALTYP as the reference has it; main itself already differs on five of these
       (D-ERRVALTYP). Converting further is Joost's call.
+      🏗️ **RULED BY JOOST 2026-10-27: *"Convert, family by family"*.** Ship the prototype
+      family (expression DOMAIN faults, each leaving VALTYP as measured in herro_run2.out),
+      then the other SAME-classified writers one family at a time, each gated and knifed;
+      the UNSAFE / UNSURE rows of the classification stay deferred until each is settled.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
@@ -1505,6 +1509,11 @@ item — do **one item per session** to keep context lean.
       CF-3300 does (a blank hang -- faithful to the disk reference, useless), (c) leave it and
       make only bb_mark robust (any entry there restarts BASIC once instead of looping). Not a
       style split, so not covered by the VG-8020 ruling.
+      🏗️ **RULED BY JOOST 2026-10-27: (a), *"Start BASIC (NMS 1200)"*** -- pin a $5E10 entry
+      in disk.rom that starts BASIC as the NMS 1200 does (AUTOEXEC.BAS runs). ➡️ Next:
+      measure the NMS 1200's state at BASIC's start after that call (registers, the work
+      area, which disk is current) black-box, then the pin -- price the $5E10 neighbourhood
+      against check_disk_walls first.
 
 - [x] ✅ **DONE 2026-10-23 ((a), (b), (c))** 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
       ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
@@ -2787,7 +2796,7 @@ item — do **one item per session** to keep context lean.
 - [ ] 🙋 **D-SLOT3EXP — AN ALL-RAM GAME WRITES $FFFF, WHICH ON ZEROBAS IS SLOT 3's
       SUB-SLOT REGISTER (BMX Simulator, 2026-10-17)**
       🎚️ TIER 1 — happy path: loading existing software from tape.
-      🙋 **NEEDS-JOOST** — the machine's slot layout (a hardware-shape decision).
+      🙋 **NEEDS-JOOST** — 🅿️ PARKED BY RULING (Joost 2026-10-27: *"Later"*) -- re-opens with the ROM-space layout question (space plan R4). The machine's slot layout (a hardware-shape decision).
       📏 Session harness (PCs, SP, A8, slot state, write ADDRESSES; never data):
       BMX's line 50 BLOADs a 24 KB code file (EXECPTR $9000, no `,R` -- every
       `,R` spelling behaves alike on both machines, scratchpad/blrform_run.out),
@@ -7041,7 +7050,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9527 (T-6FE392)8 (T-529ABE)` from `TODO.md:15094 (T-529ABE)`: a
+      `TODO.md:9536 (T-6FE392)8 (T-529ABE)` from `TODO.md:15103 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9659,7 +9668,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       use, and retrofitting the 12 is unpriced. **The item stays open for that.**
       [[a-coverage-row-whose-geometry-cannot-reach-the-case]]
 
-- [ ] 🔬 **KNIFE TAGS ARE NOT UNIQUE: `K2`/`K5`/`K6` ARE REUSED ACROSS SLICES.**
+- [x] ✅ **CLOSED 2026-10-27 by Joost's ruling ("No, close it": the slice-prefixed knife names K-XX1 already identify each knife).** 🔬 **KNIFE TAGS ARE NOT UNIQUE: `K2`/`K5`/`K6` ARE REUSED ACROSS SLICES.**
       Filed 2026-08-28 by D-KNIFEROM
       ([`docs/spec-kniferom.md`](docs/spec-kniferom.md) §7).
       📏 **7 of 22 recorded null verdicts cannot be traced to their knife**
@@ -9683,7 +9692,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — knife tags
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🙋 NEEDS-JOOST — worth doing only if the traceability is wanted for its own
+      🏗️ **RULED BY JOOST 2026-10-27**: *"No, close it"*. (It read: 🙋 needs-Joost — worth doing only if the traceability is wanted for its own
       sake; I do not think it pays for itself.
 
 - [ ] 💰 **A 2 B CARVE WITH ITS EVIDENCE ALREADY ATTACHED: `ems_typecheck`'s
@@ -9870,7 +9879,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — stall watchdog
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🙋 **NEEDS-JOOST** — what remains is a design call, not a measurement.
+      🤖 **AUTONOMOUS** — 🏗️ **RULED BY JOOST 2026-10-27**: *"Print only"* -- run_gates.py prints the emulation rate beside every retry verdict; the classifier is unchanged. What remained was a design call, not a measurement.
       `run_gates.py`
       still calls a unit REAL when it fails twice, and the rate is now available
       to it. Teaching the classifier to read it would change GATE VERDICTS — and
@@ -9982,7 +9991,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15103 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11185,7 +11194,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — emulated-time budgets
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🙋 **NEEDS-JOOST** — the last ask is a gate, and it has a real price.
+      🤖 **AUTONOMOUS** — 🏗️ **RULED BY JOOST 2026-10-27**: *"Make a call yourselves"* -- chosen: (a), gate settle_audit over the PAINT rows only. The last ask was a gate, and it has a real price.
       `scratchpad/settle_audit.py` is a WRAPPER: it re-runs a whole probe under
       instrumentation, so gating it over `basic_probe_graphics` adds a unit the
       size of `graphics-acceptance`, which the last battery measured at **380 s**
@@ -12206,7 +12215,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — uncollected probes
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🙋 NEEDS-JOOST — (a) is done; (b), which of the 104 earn a battery slot, is a
+      🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"You pick, under a budget"* -- rank the 104 by what each catches that the battery does not, collect the best into ~+120 s; (a) is done; (b) was which of the 104 earn a battery slot, a
       runtime-budget call and the measuring in front of it is finished.
 
 - [ ] ⚠️ **`DEF FN`: two formals of ONE call can alias, and no row separates
@@ -13775,7 +13784,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       error check — weigh that against the bytes
       ([[rule-gated-structurally-has-no-knife]]).
       🎚️ BUDGET — 3 B carve
-      🙋 NEEDS-JOOST — a call that is yours to make (page-1 budget).
+      🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"Take the 3 B"* -- remove the shadowed abort; document that MID$ relies on eval_pos_arg's re-raise.
 - [x] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
       ✅ **CLOSED 2026-09-05 — the helper exists, is SHARED, and the "where should
       it live" question is answered by the gate that already collects it.**
@@ -14213,7 +14222,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       the reference's own guard (the case-changed name above).
       ✅ Seen while pricing: the reserve held an unused row 0. Shipped as
       D-ENGROW0 (+50 B of disk boot FRE), which also moves the price below to 15 rows.
-      🙋 **NEEDS-JOOST** — spend 165 B of disk-machine RAM to reproduce the verbatim-name
+      🤖 **AUTONOMOUS** — 🏗️ **RULED BY JOOST 2026-10-27** (asked one by one): *"come up with an exact match without costing more RAM then reference"* -- design the verbatim-name rule inside the reference's own RAM, no 165 B spend. The question as it was put: spend 165 B of disk-machine RAM to reproduce the verbatim-name
       rule (the letter of the 09-27 ruling), or keep the directory-entry rule and
       pin `s.case` as a documented divergence (the ruling's intent: no separate
       spend)?
@@ -14679,7 +14688,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       🎚️ OTHER — internal type-code namespaces (architecture)
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🙋 NEEDS-JOOST — a call that is yours to make (refactor, no oracle).
+      🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"Merge to reference codes"* -- one namespace, the reference's (3 = string in both); see also the D-DEFSTR item below.
 
 - [ ] 🐌 **THE BATTERY IS NOW 846 s AND EACH EMULATOR UNIT PAYS ITS OWN BOOT —
       COLLAPSE SUITES THAT SHARE A MACHINE INTO ONE RUN.** Joost's suggestion,
@@ -17704,7 +17713,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       alone FAILs (zb `13 13 K`), all five restored ([`midextra_knife.out`](scratchpad/midextra_knife.out)).
       Docs: MID$.md.
 
-- [ ] 🔴 **`hk_mki` DUPLICATES A CONVERSION MAIN ALREADY HAS — REPLACE IT WITH A CALL
+- [x] ✅ **CLOSED 2026-10-27 by Joost's ruling ("Keep the copy").** 🔴 **`hk_mki` DUPLICATES A CONVERSION MAIN ALREADY HAS — REPLACE IT WITH A CALL
       TO MAIN'S CHECKED FLOAT → INT16 (D-MKIREUSE, filed 2026-09-29 under Joost's
       rule).**
       🎚️ BUDGET — code space: ~95 B of disk.rom that exists only to route around a
@@ -17722,7 +17731,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (`MKI$(1.5)` → 1 on the CF-3300, [`mkirange_run.out`](scratchpad/mkirange_run.out))
       where CINT rounds — so the reused routine is the TRUNCATING one (FIX/INT's),
       with the int16 range check. Rows `t6mki6` / `t6mkiedge` are the regression net.
-      🙋 **NEEDS-JOOST** — **THE FILED FIX PUTS TWO OF THE RULE'S THREE PARTS AGAINST
+      🏗️ **RULED BY JOOST 2026-10-27**: *"Keep the copy"* -- the 95 B disk.rom conversion stays. (It read: 🙋 needs-Joost — **THE FILED FIX PUTS TWO OF THE RULE'S THREE PARTS AGAINST
       EACH OTHER** (2026-09-29). Main page 1 had bytes again (29 B after D-OPENSAME, 2026-09-29), so the
       "carve first" blocker is gone. But the fix as filed spends main bytes (a call
       in `str_mkf`) on a TIER 6 behaviour, which part 2 forbids, to remove the
@@ -20531,7 +20540,7 @@ and left 37 B behind.
       🎚️ OTHER — architecture
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
-      🔭 SCOUT-THEN-ASK — the decision is yours; the measuring and pricing in front of it are not (refactor, no oracle, but unpriced/unmeasured first).
+      🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"Merge to reference codes"* (asked as the namespace item above; the scouting and pricing come first, then the merge).
 
 - [ ] **HOW MUCH OF THE 311-BYTE `NO-ORACLE` BUCKET IS A POINTER?** Filed
       2026-08-01 by D-REHOME. `FRETOP` sat in that bucket scored as *"no
@@ -20721,7 +20730,7 @@ and left 37 B behind.
         literal $06. And `Break` is not an error, so ERRFLG is stale. Two
         independent blockers; this one needs a PRINTER change, not a key.
       🎚️ BUDGET — main-resident messages
-      🙋 NEEDS-JOOST — a call that is yours to make (charter / scope).
+      🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"Measure first, then decide"* -- take the CLOAD? reading (ERR after a Verify error) on the VG-8020; move `Verify error` only if it matches; `Break` stays.
 
 - [x] ⚠️ **A PROBE'S MESSAGE LITERAL IS EITHER AN ASSERTION OR A CLASSIFIER
       ✅ **CLOSED 2026-09-05.** Both halves are gated: `make needle-case-check` passes 1-2 (tables discovered as case-folded) and pass 3 (the table-free one-off), 8 arms, two of which go green under the old loose rule. Nothing outstanding.
