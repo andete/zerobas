@@ -5514,7 +5514,12 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 # for them (scratchpad/donothing_probe.py, four sides).
 # D-KWDIVPIN (2026-10-07): support rows that diverge ON PURPOSE, each with its
 # measured why. Empty: every known divergence is fixed or filed elsewhere.
-SUPPORT_DIVERGENT_PINNED: dict[str, str] = {}
+# D-KWERRWORDS (2026-10-27): EXTRA rows (the reference errors, zerobas does not)
+# redden too now, so a FILED one is pinned here against its item until it is fixed.
+SUPPORT_DIVERGENT_PINNED: dict[str, str] = {
+    "t7deffnnumeric2": "D-DEFFNPARAM (TIER 6): DEF FNA(5)=1 is Syntax error there, stored here",
+    "t7deffnstringvalued2": "D-DEFFNPARAM (TIER 6): DEF FNA$(5)=1, the same",
+}
 
 CRUNCH_DIFF_PINNED = {
 }
@@ -6391,9 +6396,18 @@ def main() -> int:
             if (sv and sv[0] == "DIVERGENT" and key not in SUPPORT_DIVERGENT_PINNED
                     and _readable(sv[2]) and _readable(sv[4])):
                 regress.append(key)
+            # 🔴 D-KWERRWORDS (2026-10-27): EXTRA -- the reference ERRORS and zerobas
+            # does not -- is a divergence too, and used to leave this gate green: twice
+            # measured hiding a real one (scratchpad/errorarg_knife.out,
+            # scratchpad/defusrrange_knife.out). zerobas's side is typically blank (no
+            # message), so only the reference's side has to be readable.
+            elif (sv and sv[0] == "EXTRA" and key not in SUPPORT_DIVERGENT_PINNED
+                    and _readable(sv[2])):
+                regress.append(key)
         if regress:
-            print(f"\n*** \U0001f534 {len(regress)} UNPINNED SUPPORT DIVERGENCE(S), "
-                  f"both sides read: {', '.join(regress)}")
+            print(f"\n*** \U0001f534 {len(regress)} UNPINNED SUPPORT DIVERGENCE(S) "
+                  f"(DIVERGENT: both sides read; EXTRA: the reference errored): "
+                  f"{', '.join(regress)}")
             print("    A row the reference and zerobas BOTH answered, differently. "
                   "Fix it, or pin it in\n    SUPPORT_DIVERGENT_PINNED with its "
                   "measured why.")

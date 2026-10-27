@@ -16377,6 +16377,15 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       refuses, a real divergence -- and kwsweep exited 0 ([`defusrrange_knife.out`](scratchpad/defusrrange_knife.out)).
       ➡️ Next: count the EXTRA rows the current pin carries, read each, and decide
       whether EXTRA reddens (with an allowlist for zerobas's own extensions).
+      ✅ **EXTRA REDDENS NOW (2026-10-27).** The pin carried exactly 2 EXTRA rows of 996,
+      both filed divergences (t7deffnnumeric2 / t7deffnstringvalued2, D-DEFFNPARAM) --
+      no zerobas extension among them. The support gate now counts an EXTRA row whose
+      reference side is readable as a divergence (zerobas's side is typically blank),
+      under the same SUPPORT_DIVERGENT_PINNED list and stale-pin check; the two DEF FN
+      rows are pinned against D-DEFFNPARAM. Full sweep green ([`extrared_sweep.out`](scratchpad/extrared_sweep.out)). 🔪 K-XR1
+      ([`extrared_knife.py`](scratchpad/extrared_knife.py), the pre-D-DEFUSRRANGE reader planted byte-neutrally): the
+      two `=70000` rows read EXTRA and the sweep now exits **2** on them -- the same
+      divergence that left it green this morning ([`extrared_knife.out`](scratchpad/extrared_knife.out)).
 
 - [x] ✅ **DONE 2026-10-24 (D-BAREEXTRA)** 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
       SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found
