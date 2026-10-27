@@ -224,7 +224,11 @@ class Pair:
         lo, hi = STACK_BAND
         if a[0x8000:lo] == b[0x8000:lo] and a[hi:] == b[hi:]:
             return []
-        return [i for i in list(range(0x8000, lo)) + list(range(hi, 0x10000)) if a[i] != b[i]]
+        # TXTCEIL is LAYOUT, not output: msxtest seeds it with each tree's own TXTMAX,
+        # and TXTMAX moved after the old tree (D-BOOTKEYS CTRL RAM, 2026-10-27).
+        lay = {self.new.sym["TXTCEIL"], self.new.sym["TXTCEIL"] + 1}
+        return [i for i in list(range(0x8000, lo)) + list(range(hi, 0x10000))
+                if a[i] != b[i] and i not in lay]
 
     def run(self, setup, call, seed, regs=False, timed=False):
         """-> (ok, old_state, new_state, detail, t_old, t_new)"""

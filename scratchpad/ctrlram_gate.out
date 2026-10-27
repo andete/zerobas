@@ -1,0 +1,4 @@
+ROW ctrlram CF=[F 24871 E48D | M 24337 | C 18976] ZB=[F 24871 E48D | M 24337 | C 18976] SAME
+
+PASS: keys held at power-on (1/1)
+refcache: 0 hit, 2 miss, 2 stored

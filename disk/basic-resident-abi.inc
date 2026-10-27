@@ -25,8 +25,8 @@ FILES_HASPAT equ 0F09DH   ; DISK-ONLY: FILES: 1 = a filespec pattern is in DISK_
 FAC equ 0F7F6H   ; float accumulator = DAC: value bytes as tokenised (8)
 FPERR equ 0F7B9H   ; runtime numeric-error flag: 0 none / 1 overflow / (1 B)
 FACTYP equ 0F663H   ; 2=int / 4=single / 8=double (1)
-FSECTOR_BUF equ 0E46AH   ; DISK-ONLY: file data / read sector buffer ($E46A..$E669)
-FWBUF equ 0E66AH   ; DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869)
+FSECTOR_BUF equ 0E8ADH   ; DISK-ONLY: file data / read sector buffer ($E8AD..$EAAC)
+FWBUF equ 0EAADH   ; DISK-ONLY: FAT/dir metadata sector buffer ($EAAD..$ECAC)
 STRPTR equ 0F954H   ; pointer to the [len][bytes] descriptor (2 bytes)
 DISKOP_OP equ 0FCACH   ; main -> tenant: DISKOP_SEL_* primitive selector (1)
 DISKOP_ERR equ 0FC9AH   ; tenant -> main: ERR code of the last DSKIO failure, 0 = none (1)
@@ -34,7 +34,7 @@ CLPTR equ 0F6EDH   ; CLOAD/LOAD: store cursor into the program area (2)
 CLINK equ 0F6EFH   ; CLOAD/LOAD: saved link word of the current line
 TXTBASE equ 08001H   ; text base (oracle: TXTTAB value after boot)
 TXTTAB equ 0F676H   ; sysvar: pointer to the BASIC text base
-TXTMAX equ 0E36AH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
+TXTMAX equ 0E7ADH   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 TXTMAX_NODISK equ 0F380H   ; NOT-A-CELL: the diskless build's text ceiling
 PRGEND equ 0F6E8H   ; addr of the $0000 end-of-program marker (2 bytes)
 DSV_PTR equ 0EF59H   ; DISK-ONLY: SAVE: current source byte pointer (2)

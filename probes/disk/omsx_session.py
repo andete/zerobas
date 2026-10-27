@@ -76,7 +76,7 @@ STALL_TIMEOUT = 20.0
 OWN_RAM_RANGES = [
     (0xEE40, 0xEE5B),  # P1_BLIT (was $E77A, inside main's FSECTOR_BUF)
     (0xEA9C, 0xEAB7),  # WA_SEG_ROM/WA_SEG_RAM (was $E795, same reason)
-    (0xE592, 0xE5A6),  # DRV_TRAMP (was $E800, inside main's FWBUF -- D-BUFMERGE)
+    (0xED9F, 0xEDB3),  # DRV_TRAMP (D-BOOTKEYS CTRL RAM 2026-10-27: the disk block moved up $443)
     (0xF1C9, 0xF1D0),  # RES_PRINT
     (0xF24E, 0xF2B8),  # RES_STUBS
     (0xF368, 0xF380),  # WA_JMPTAB + SYSTEM

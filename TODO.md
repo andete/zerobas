@@ -17403,7 +17403,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
 
 - [ ] 🔴 **SHIFT OR CTRL HELD AT BOOT — THE DISK ROM'S OWN BOOT OPTIONS FOR MORE FREE
       RAM (D-BOOTKEYS, raised by Joost 2026-10-09).**
-      🎚️ TIER 4 — RAM usage (VG-8020 / CF-3300): the user-facing way to get RAM back
+      🎚️ TIER 6 — the `$F347` cell after a SHIFT boot (below); the TIER 4 face (SHIFT, CTRL's drive and RAM halves) shipped 2026-10-10 / 2026-10-27
       🤖 **AUTONOMOUS** — the CF-3300 settles it; measure before building.
       Joost: *"I also remember booting with shift key or ctrl key pressed disabled
       some parts of the disk stuff for more RAM available."* The MSX convention,
@@ -17459,7 +17459,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`bootctrl_after.out`](scratchpad/bootctrl_after.out)). Gate: bootkeys-acceptance row `ctrlb` ([`bootctrl_gate.out`](scratchpad/bootctrl_gate.out),
       4/4); 🔪 K-BC1 ([`bootctrl_knife.py`](scratchpad/bootctrl_knife.py)): `ctrlb` alone diverges (the B: prompt
       back), rc=2, all five restored ([`bootctrl_knife.out`](scratchpad/bootctrl_knife.out)). Docs: concepts/disk.md.
-      🙋 **THE RAM HALF NEEDS JOOST (asked 2026-10-27):** the CF-3300 also frees 1558 B
+      🏗️ **RULED BY JOOST 2026-10-27: *"Ctrl boot should behave same as ref"*** (it was
+      🙋, below). **The RAM half needed him (asked 2026-10-27):** the CF-3300 also frees 1558 B
       (HIMEM $DE77 -> $E48D). zerobas's own disk buffers (FAT_DBUF/FSECTOR_BUF $E46A,
       FAT_MBUF $E66A..$E869) sit inside that range, so matching it means moving them --
       a RAM-layout adjustment, which D-TIER5RAM says comes back to him. Residual (priority 3/4, an address): after a SHIFT boot the
@@ -17479,6 +17480,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       MSX-DOS boot path on every C-BIOS host -- a tier2 DOS-boot battery, for a value no
       program can observe. 🎚️ The `$F347` residual is TIER 6; CTRL (above) stays the
       item's TIER 4 face.
+      ✅ **CTRL'S RAM HALF SHIPPED 2026-10-27** (Joost's ruling above). The block from the
+      disk engine table to FAT_DEFER (DSK_ENGTAB, FSECTOR_BUF/SECTOR_BUF, FWBUF/WBUF and
+      every disk.rom cell, $E04A..$E976) moved up $443 as one piece: TXTMAX $E36A -> $E7AD,
+      so DSK_ENGTAB = $E48D and the cells end at FAT_DEFER $EDB9, under BASIC_WS_CEIL.
+      install_basic_hooks (disk/kernel.asm) reads SNSMAT row 6 itself -- set_ramad seeds
+      DRVCNT after it runs, and set_ramad's region had no room for the store (pasmo wrote
+      an EMPTY disk.rom) -- and stores CTRL_HIMEM $E48D instead of DISK_HIMEM; asserted
+      under the engine table rows. 🔮 plain 23320/$DE77, CTRL 24878/$E48D/1 drive on both:
+      HIT ([`ctrlram_bootkeys.out`](scratchpad/ctrlram_bootkeys.out)). 🔮 MAXFILES=3, an
+      OPEN write/read, CLEAR 300,&HD000, MAXFILES=0: every row equal, CTRL 1558 B above
+      plain until the CLEAR: HIT ([`ctrlram_probe.py`](scratchpad/ctrlram_probe.py) ->
+      [`ctrlram_run.out`](scratchpad/ctrlram_run.out)). Gate: bootkeys-acceptance row
+      `ctrlram` ([`ctrlram_gate.out`](scratchpad/ctrlram_gate.out)); 🔪 K-CR1
+      ([`ctrlram_knife.py`](scratchpad/ctrlram_knife.py)): the four files back to HEAD ->
+      `ctrlram` alone DIVERGES (ZB 23313 / $DE77), rc=2, all five images restored
+      ([`ctrlram_knife.out`](scratchpad/ctrlram_knife.out)). probes/disk/omsx_session.py's
+      DRV_TRAMP range follows the move. Docs: concepts/disk.md, memory-map.md, rom-layout.md.
 
 - [ ] 📚 **CONCEPT PAGES — HUMAN-FRONTING DOCS FOR WHAT IS NOT A KEYWORD (D-CONCEPTDOCS,
       Joost 2026-10-09).**

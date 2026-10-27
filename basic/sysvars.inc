@@ -2524,7 +2524,7 @@ TXTBASE         equ     $8001   ; text base (oracle: TXTTAB value after boot)
 ; stub, $DF93 advertised top) are live ONLY on the DOS-boot path
 ; (disk/init.asm's lay_page0_env, after a bootable boot sector) -- BASIC and DOS
 ; never co-exist (D-RECLAIM), as the old buffer already relied on.
-TXTMAX          equ     $E36A   ; NOT-A-CELL: the text ceiling (= the workspace floor)
+TXTMAX          equ     $E7AD   ; NOT-A-CELL: the text ceiling (= the workspace floor)
 ; 🧮 D-RAMCEIL (lever (2) step a, 2026-10-13): THE CEILING IS CHOSEN AT BOOT.
 ; TXTMAX stays the DISK build's ceiling (the disk ROM, which exists only there,
 ; keeps using the constant); TXTMAX_NODISK is the diskless one, and TXTCEIL is
@@ -3304,7 +3304,7 @@ EOC             equ     $0FFF   ; end-of-chain marker we write (Microsoft FAT §
 ; dir stamp never disturbs FSECTOR_BUF's in-flight data (same discipline as
 ; disk.asm's SECTOR_BUF/WBUF split). Placed at the diskless floor, $E36A/$E56A
 ; (D-FATFLOOR; $E5C0/$E7C0 before): RAM a diskless machine gives to programs.
-FSECTOR_BUF     equ     $E46A   ; DISK-ONLY: file data / read sector buffer ($E46A..$E669)
+FSECTOR_BUF     equ     $E8AD   ; DISK-ONLY: file data / read sector buffer ($E8AD..$EAAC)
 ; D-DSKIO (docs/spec-basic-dskio.md): the word a program reads to find DSKI$'s
 ; sector -- the MSX idiom PEEK(&HF351)+256*PEEK(&HF352), MEASURED on the CF-3300
 ; (its buffer is at $EB95 behind the same cell). Here it names ~~FSECTOR_BUF~~
@@ -3319,7 +3319,7 @@ FSECTOR_BUF     equ     $E46A   ; DISK-ONLY: file data / read sector buffer ($E4
 ; 2026-09-11 (12 planted bytes survived a two-channel/KILL/FILES/DSKF/string/DEF FN
 ; workload) and lies below the sysvar sweep's $F380 floor.
 DSKBUF_PTR      equ     $F351   ; DISK-ONLY: word -> the DSKI$/DSKO$ sector buffer (2)
-FWBUF           equ     $E66A   ; DISK-ONLY: FAT/dir metadata sector buffer ($E66A..$E869)
+FWBUF           equ     $EAAD   ; DISK-ONLY: FAT/dir metadata sector buffer ($EAAD..$ECAC)
 
 ; D-FATENG Option 2: the shared FAT body (basic/fat-prim-body.inc) is assembled
 ; into sub.rom AND disk.rom and must not spell either ROM's private names, so it
@@ -3335,7 +3335,7 @@ FAT_MBUF        equ     FWBUF           ; the body's FAT/dir metadata buffer
 ; saw only its own control POKE -- measured at $E5AC, before D-FATFLOOR moved it
 ; +$400); disk.rom's cells end at MBUF_PTR $E9AB, and BASIC's map keeps
 ; $E960..$E9BF for disk.rom.
-FAT_DEFER       equ     $E976   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
+FAT_DEFER       equ     $EDB9   ; DISK-ONLY: deferred-FAT-write flag, read only by the FAT body (1)
 ; FAT12 geometry, filled by fat_mount from the on-disk BPB (own-choice free RAM in
 ; page $E9, above disk.rom's cell block).
 FAT_SECPERCLUS  equ     $EDFD   ; DISK-ONLY: sectors per cluster (byte)

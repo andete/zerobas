@@ -5175,10 +5175,24 @@ install_basic_hooks:
                 ; disk machine has the SAME free RAM, 4. the same addresses -- $DE77
                 ; serves both. The engine table rows stay above it (asserted below);
                 ; the RAM between is reserved, as the reference's disk work area is.
+                ; D-BOOTKEYS CTRL RAM (Joost 2026-10-27: "Ctrl boot should behave same
+                ; as ref"): CTRL held at power-on is the CF-3300's one-drive boot, and
+                ; its HIMEM is $E48D -- a smaller work area, 1558 B more free RAM
+                ; (scratchpad/bootkeys_run.out). Read here, not from DRVCNT: set_ramad
+                ; seeds that cell AFTER this runs, and its region has no room.
+                ld      a, 6
+                call    $0141               ; SNSMAT row 6, bit 1 low = CTRL held
+                and     $02
                 ld      hl, DISK_HIMEM
+                jr      nz, ibh_him
+                ld      hl, CTRL_HIMEM
+ibh_him:
                 ld      (HIMEM), hl
     IF DISK_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
                 db      DISK_HIMEM_ABOVE_THE_ENGINE_TABLE   ; rows 1..FCH_CEIL must stay reserved
+    ENDIF
+    IF CTRL_HIMEM > TXTMAX-FCH_CEIL*FCH_STATESZ
+                db      CTRL_HIMEM_ABOVE_THE_ENGINE_TABLE   ; the CTRL boot's too (disk/init.asm)
     ENDIF
                 ld      hl, FWBUF           ; D-DSKIO: publish the DSKI$/DSKO$ buffer at the
                 ld      (DSKBUF_PTR), hl    ; cell the MSX idiom PEEKs (docs/spec-basic-dskio.md)

@@ -1,0 +1,5 @@
+plain  CF  [M 22655 | RHELLO 22649 | C 18852 D000 | Z 19653 | K 706]
+plain  ZB  [M 22655 | RHELLO 22649 | C 18852 D000 | Z 19653 | K 706]
+ctrl   CF  [M 24213 | RHELLO 24207 | C 18852 D000 | Z 19653 | K 706]
+ctrl   ZB  [M 24213 | RHELLO 24207 | C 18852 D000 | Z 19653 | K 706]
+refcache: 0 hit, 4 miss, 4 stored

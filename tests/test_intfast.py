@@ -241,9 +241,12 @@ class Pair:
         lo, hi = STACK_BAND
         if a[0x8000:lo] == b[0x8000:lo] and a[hi:] == b[hi:]:
             return []
-        # the driver itself differs (it calls each image's own leaf address)
+        # the driver itself differs (it calls each image's own leaf address); and
+        # TXTCEIL is LAYOUT, not output: msxtest seeds it with each tree's own TXTMAX,
+        # and TXTMAX moved after the old tree (D-BOOTKEYS CTRL RAM, 2026-10-27).
+        lay = {self.new.sym["TXTCEIL"], self.new.sym["TXTCEIL"] + 1}
         return [i for i in list(range(0x8000, lo)) + list(range(hi, 0x10000))
-                if a[i] != b[i] and not STUB <= i < STG + 32]
+                if a[i] != b[i] and not STUB <= i < STG + 32 and i not in lay]
 
     def run(self, op, lhs, rhs, seed, fperr=0, plant=None):
         """-> (ok, old_state, new_state, detail, t_old, t_new, fast_taken)"""

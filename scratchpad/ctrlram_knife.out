@@ -1,0 +1,9 @@
+  ROM cf1f3f4b 8041c13b 52ce3522 e3069c6b f7f25d68  ->  a22841bb 20dbc3d2 2a816a33 743e7515 f7f25d68
+restore: cf1f3f4b 8041c13b 52ce3522 e3069c6b f7f25d68 -> cf1f3f4b 8041c13b 52ce3522 e3069c6b f7f25d68  build rc=0  BYTE-IDENTICAL (all five)
+K-CR1: gate rc=2
+ROW plain CF=[K 706] ZB=[K 706] SAME
+ROW shift CF=[KE 5  20] ZB=[KE 5  20] SAME
+ROW ctrl CF=[K 706] ZB=[K 706] SAME
+ROW ctrlb CF=[KE 62  20 | D 1] ZB=[KE 62  20 | D 1] SAME
+ROW ctrlram CF=[F 24871 E48D | M 24337 | C 18976] ZB=[F 23313 DE77 | M 22779 | C 18976] DIVERGES
+FAIL: keys held at power-on (4/5)

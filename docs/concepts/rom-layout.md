@@ -10,8 +10,7 @@ SPDX-License-Identifier: 0BSD
 > entry points, the slot conventions, the hooks and their addresses — follow
 > the published MSX interfaces; where the code sits inside the ROMs is
 > zerobas's own and differs from a real MSX by design. Open: `RST 8` (SYNCHR)
-> is still C-BIOS's debug stub (D-SYNCHR, TIER 6), and the disk ROM's
-> SHIFT/CTRL boot options are not built (D-BOOTKEYS, TIER 4).
+> is still C-BIOS's debug stub (D-SYNCHR, TIER 6).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -226,9 +225,6 @@ never for the code it points at. The allowed sources are listed in the
 - **`RST 8` (SYNCHR) is C-BIOS's stub**, which prints `SYNCHR` and returns.
   It matters to machine code and extension ROMs that use it; filed as
   D-SYNCHR, TIER 6, not yet measured on either reference.
-- **SHIFT or CTRL held at power-on** is not built. On the CF-3300 they are
-  expected to skip the disk ROM's start-up, or its second drive, for more RAM;
-  filed as D-BOOTKEYS (TIER 4), to be measured there first.
 - **In `SCREEN 0`, `ATRBAS` and `PATBAS` read 0** (`&HF928`, `&HF926`), where
   the VG-8020 keeps `&H1B00` and `&H3800`, so `CALATR` and `CALPAT` called in
   text mode answer differently

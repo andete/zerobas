@@ -208,20 +208,20 @@ CHPUT           equ     $00A2   ; MSX BIOS: emit the character in A (MSX2 TH)
 BOOT_LOAD       equ     $C000   ; standard boot-sector load address (MSX2 TH ch.3)
 BOOT_ENTRY      equ     $C01E   ; custom-boot-program entry (BOOT_LOAD + $1E)
 ; page-0 RAM-swap scratch (transient, used only during INIT's boot bridge).
-BOOT_SV_A8      equ     $E92A   ; saved $A8 primary-slot config (1 B)
-BOOT_SV_SEC     equ     $E92B   ; saved slot secondary ($FFFF) live value (1 B)
+BOOT_SV_A8      equ     $ED6D   ; saved $A8 primary-slot config (1 B)
+BOOT_SV_SEC     equ     $ED6E   ; saved slot secondary ($FFFF) live value (1 B)
 ; $E92C..$E935 held the page-1 CALLF / CALSLT handlers' register stash until
 ; D-TPAP1 (2026-10-23) replaced both with page-3 bridges into the main BIOS; free.
 ; BDOS $27 (Random Block Read) scratch — transient within one RDBLK call. Own-choice
 ; free page-3 RAM after the step-6 block. Only the DOS-boot path (on a real-BIOS host)
 ; calls $27, so this never collides with the zerobas-BASIC host buffers (which use
 ; the standard DSKIO path, not bdos_entry). (disk/PROVENANCE.md §BDOS interface)
-RDBLK_REQ       equ     $E936   ; records requested (HL on entry) (word)
-RDBLK_RECSIZE   equ     $E938   ; record size from FCB+14 (word)
-RDBLK_DONE      equ     $E93A   ; records delivered so far (word; = HL on return)
-RDBLK_CNT       equ     $E93C   ; bytes left in the current record (word)
-RDBLK_BUFPOS    equ     $E93E   ; byte offset into SECTOR_BUF (word, 0..512)
-RDBLK_DST       equ     $E940   ; current DTA write pointer (word; from BDOS_DTA)
+RDBLK_REQ       equ     $ED79   ; records requested (HL on entry) (word)
+RDBLK_RECSIZE   equ     $ED7B   ; record size from FCB+14 (word)
+RDBLK_DONE      equ     $ED7D   ; records delivered so far (word; = HL on return)
+RDBLK_CNT       equ     $ED7F   ; bytes left in the current record (word)
+RDBLK_BUFPOS    equ     $ED81   ; byte offset into SECTOR_BUF (word, 0..512)
+RDBLK_DST       equ     $ED83   ; current DTA write pointer (word; from BDOS_DTA)
 ; --- the tokenised-LOAD stream cursor, ALIASED ONTO THE RDBLK SCRATCH ---------
 ; D-DPLPORT (spec-diskcode-eviction.md §6.6f). `basic/fatio-body.inc` is now
 ; assembled into THIS ROM too, and its cursor needs 6 bytes of state that survive
@@ -252,9 +252,9 @@ FREAD_LEFT      equ     RDBLK_REQ       ; file bytes undelivered (4-byte LE:
 ; D-BUFMERGE moved the whole block with its layout; the gap
 ; currently ends at FAT_ALLOCHINT=$E7FB word -> $E7FD-$E7FF free). Per-call
 ; lifetime only (like the other RDBLK_* cells above).
-RDBLK_RRSTART   equ     $E959   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
+RDBLK_RRSTART   equ     $ED9C   ; k_47B2 entry RR, FCB+33..35 (24-bit, 3 bytes)
 ; page-1 transfer bounce scratch (a3 §8.35; free page-3 RAM after RDBLK_DST)
-P1_DEST         equ     $E942   ; saved page-1 destination word (dskio bounce path)
+P1_DEST         equ     $ED85   ; saved page-1 destination word (dskio bounce path)
 P1_BLIT         equ     $EFFE   ; installed blit routine (24 B, D-TPAPTAIL (b)) -- declared
                                 ; because the map otherwise DERIVES 54 B, the
                                 ; old blit+bodies size from when they were
@@ -359,7 +359,7 @@ W50A9_RET_HL    equ     $F359   ; HL on return: disk work-area pointer (DRVTBL+$
 ; `F7 <slot> <lo> <hi> C9` (RST 30h inter-slot call; MSX2 TH §2) -- into our own
 ; $4010-region BIOS entries, never the stock's $EF95 kernel bytes. DRV_TRAMP holds
 ; them in reserved page-3 RAM past the $4030 work area (free, gated DOS path only).
-DRV_TRAMP       equ     $E95C   ; 4 CALLF trampolines, 5 bytes each ($E95C-$E96F;
+DRV_TRAMP       equ     $ED9F   ; 4 CALLF trampolines, 5 bytes each ($ED9F-$EDB2;
                                 ; was $E800, inside main's FWBUF -- D-BUFMERGE)
 ; Reserved top-of-RAM advertised in DRVTBL+1 (the stock's HIMEM value). NOTE: this is
 ; NOT the kernel-placement lever -- §8.20 ruled out HIMEM, §8.23 ruled out DRVTBL+1,

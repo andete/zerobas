@@ -14,7 +14,8 @@ SPDX-License-Identifier: 0BSD
 > less that morning, 4978 less on 2026-10-13); the disk build is 531 bytes
 > *ahead* of the National CF-3300
 > ([`strscrbuf_disk.out`](../../scratchpad/strscrbuf_disk.out)). Open, TIER 4:
-> the 14 bytes (D-FREPLUS14), D-DIMRESERVE, the `GOSUB` frame, D-BOOTKEYS' CTRL.
+> the 14 bytes (D-FREPLUS14), D-DIMRESERVE, the `GOSUB` frame. CTRL held at
+> power-on gives the CF-3300's `HIMEM` (`&HE48D`) and free RAM (since 2026-10-27).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -211,12 +212,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   never be worse; only `GOSUB` (8 against 7) is, and making it 7 turned out to
   be a redesign — that choice is back with him.
 - **`STKTOP`, `MEMSIZ` and `FRETOP` are not published.**
-- **SHIFT or CTRL held at start-up** (D-BOOTKEYS, TIER 4): as Joost recalls,
-  on a disk MSX they skip parts of the disk system to free memory. Not yet
-  measured on either machine.
 
 ## What we found, and how
 
+- **SHIFT or CTRL held at start-up did nothing** (fixed 2026-10-10 and
+  2026-10-27, D-BOOTKEYS). On the CF-3300 SHIFT leaves the disk system out
+  (`HIMEM` `&HF380`), and CTRL keeps one drive and puts `HIMEM` at `&HE48D`
+  instead of `&HDE77`: 1558 bytes more for programs, and the same after
+  `MAXFILES` and `CLEAR`
+  ([`ctrlram_run.out`](../../scratchpad/ctrlram_run.out)). zerobas's disk
+  buffers sat in that RAM; they moved above it, and both keys now match.
 - **zerobas never called the stack hook** (fixed 2026-10-22, D-HSTKE). The
   memory manager MemMan prints `No free segment for MemMan` on a machine
   without extra memory by pointing `H.STKE` at its own code and restarting
