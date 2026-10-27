@@ -598,6 +598,10 @@ TRACE = [
                        'DEF FNA(X,)=1', 'DEF FNA(X+1)=1', 'DEF FNA(X=1',
                        'DEF FNA(X Y)=1:DEF FNA(X))=1:DEF FNA(X)1:PRINT "K"', 'END',
                        'PRINT ERR;:RESUME NEXT']),
+    # D-STRINGEMPTY (2026-10-27): an empty character string is 5, but a missing `)`
+    # still wins as 2 (scratchpad/stringempty_run.out).
+    ("se-empty",      ['CLS:ON ERROR GOTO 50', 'PRINT STRING$(2,"")', 'PRINT STRING$(2,""',
+                       'PRINT "K":END', 'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

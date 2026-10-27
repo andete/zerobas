@@ -17687,14 +17687,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       (b) keep the disk copy (part 2 over part 3), or (c) build and prove a
       non-raising main entry reachable by `calbak`, pricing its main bytes first.
 
-- [ ] 🔴 **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
-      THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration).**
+- [x] ✅ **`STRING$(2,"")` IS `Syntax error` HERE AND `Illegal function call` ON
+      THE REFERENCE (D-STRINGEMPTY, found 2026-09-27 by the T6 enumeration; FIXED 2026-10-27).**
       🎚️ TIER 6 — `STRING$` with an EMPTY string as its character argument
       🤖 **AUTONOMOUS** — the reference settles it; a ROM change, carve first.
       `scratchpad/t6enum_b2.out`: `PRINT STRING$(2,"")` → VG-8020 `(5, 20)`,
       zerobas `(2, 20)`. The empty-string character argument is a DOMAIN fault on
       the reference (Illegal function call), not a syntax one. Every other
       STRING$ case agreed (type, both range edges, missing, extra).
+      📏 **MEASURED 2026-10-27** ([`stringempty_probe.py`](scratchpad/stringempty_probe.py) ->
+      [`stringempty_run.out`](scratchpad/stringempty_run.out)): VG-8020 `STRING$(2,"")` 5,
+      `STRING$(2,""` **2** (the missing `)` wins), `STRING$(2,"")X` 5, `STRING$(300,"")` 5;
+      zerobas 2 / 2 / 2 / 5. 🔮 10/10 HIT. ✅ sfg_str2_empty (basic/str-engine.asm) tests the
+      `)` first (sfg_reject1, 2, if missing), then defers FPERR 3; +12 B, the low region's pin
+      pad 31 -> 19. After: 5/5 identical ([`stringempty_after.out`](scratchpad/stringempty_after.out)).
+      Gate: missing-acceptance row `se-empty` ([`stringempty_gate.out`](scratchpad/stringempty_gate.out), 37/37).
+      🔪 K-SE1 ([`stringempty_knife.py`](scratchpad/stringempty_knife.py)): str-engine.asm back to HEAD ->
+      `se-empty` alone FAILs (zb `2 2 K`), all five restored ([`stringempty_knife.out`](scratchpad/stringempty_knife.out)).
+      Docs: STRING$.md.
 
 - [ ] 🔴 **`TAN(1E38)` OVERFLOWS ON THE REFERENCE AND RETURNS A VALUE HERE
       (D-TANBIG, found 2026-09-27 by the T6 enumeration).**

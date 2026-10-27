@@ -7,8 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `STRING$` — a character repeated a number of times
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: an empty fill string gives the wrong error code (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. An empty fill string
+> is `Illegal function call` as on the VG-8020 (since 2026-10-27).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -55,7 +55,7 @@ Which form you wrote is decided by the type of the second argument.
 | `STRING$(99999,65)`, `STRING$(5,99999)` | error 6, `Overflow` |
 | `STRING$("A","A")` | error 13, `Type mismatch` |
 | `STRING$(2)`, `STRING$()`, `STRING$(2,"A","A")` | error 2, `Syntax error` |
-| `STRING$(2,"")` | error 5 on the reference, **error 2 here** (see *Differences*) |
+| `STRING$(2,"")` | error 5 — but `STRING$(2,""` (no closing parenthesis) is error 2 |
 
 The set of errors the T6 enumeration measured for `STRING$` is {2, 5, 13},
 and each has a matching case; the `Overflow` above comes from the separate
@@ -84,22 +84,19 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**An empty fill string is error 2 here and error 5 on the VG-8020.**
-`PRINT STRING$(2,"")` reads `Illegal function call` on the reference — an
-empty string has no first character, which the reference treats as a bad
-value, like `ASC("")` — and `Syntax error` on zerobas
-([`t6enum_b2.out`](../../scratchpad/t6enum_b2.out)). Every other `STRING$`
-error case agreed. It is filed as TIER 6 (D-STRINGEMPTY in
-[TODO.md](../../TODO.md)). The rung *every error* is still ticked, because
-error 5 is matched by other cases (`STRING$(-1,"A")`); this case reports the
-wrong one.
-
-The other rung not yet proven is **RAM usage**: `STRING$` changes free memory
+The rung not yet proven is **RAM usage**: `STRING$` changes free memory
 by the same amount on both machines, but the set of work-area cells written
 differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 
 ## What we found, and how
 
+- **An empty fill string was error 2 here and error 5 on the VG-8020** (fixed
+  2026-10-27, D-STRINGEMPTY, found by the every-error sweep,
+  [`t6enum_b2.out`](../../scratchpad/t6enum_b2.out)). An empty string has no
+  first character, which the reference treats as a bad value; a missing
+  closing parenthesis still wins as `Syntax error`
+  ([`stringempty_run.out`](../../scratchpad/stringempty_run.out), from
+  [`stringempty_probe.py`](../../scratchpad/stringempty_probe.py)).
 - **`STRING$` arrived on 2026-07-10.** Its first run against the VG-8020
   caught `PRINT STRING$(…)` answering `Type mismatch`, because the `PRINT`
   item reader had no case for it; a review the same day caught a negative
@@ -141,3 +138,5 @@ number. Both numbers are checked by the shared `get_byte_arg` in
 - `make kwsweep` — the everyday row (`STRING$(3,"x")`) and the error rows for
   {2, 5, 13}.
 - `make kwram` — the RAM-usage comparison.
+- `make missing-acceptance`, row `se-empty` — the empty fill string, and the
+  missing parenthesis that outranks it.

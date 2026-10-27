@@ -1994,8 +1994,8 @@ sfi_empty:                                  ; spr_rd_done end here too (one copy
 ; str_fn_string: STRING$(n,c) / STRING$(n,x$) -> n copies of a single fill
 ; byte, clamped to STRMAX (D-3). The fill byte is resolved by PROBING the 2nd
 ; argument's type (D-4, the established str_eval-CF pattern): a string x$
-; contributes its first byte (empty x$ is a function error -- own-design,
-; mirrors ASC ""); otherwise it is re-parsed numerically via `eval` and the low
+; contributes its first byte (empty x$ is Illegal function call, AFTER the `)`
+; test -- D-STRINGEMPTY); otherwise it is re-parsed numerically via `eval` and the low
 ; byte is the character code. Entered from str_eval_one (basic/strvar.asm) with
 ; HL ON the STRING_TOKEN byte itself ($E3) -- a single-byte reserved-word
 ; token (Group B), unlike the $FF-prefixed Group A verbs above. Length known
@@ -2043,8 +2043,19 @@ sfg_str2:
                 pop     hl                  ; HL = cursor (restored)
                 jr      sfg_close
 sfg_str2_empty:
-                pop     hl                  ; balance (cursor discarded -- error exit)
-                jr      sfg_reject1
+                ; 🎯 D-STRINGEMPTY (2026-10-27): an empty x$ is Illegal function
+                ; call on the VG-8020, not Syntax error -- but a missing `)` still
+                ; wins: `STRING$(2,""` is 2 there, `STRING$(2,"")` and
+                ; `STRING$(2,"")X` are 5 (scratchpad/stringempty_run.out). So the
+                ; `)` is tested first, as sfg_close does, and FPERR 3 deferred.
+                pop     hl                  ; HL = cursor (restored)
+                ld      a,(hl)
+                cp      ')'
+                jr      nz,sfg_reject1      ; no `)`: Syntax error wins
+                pop     af                  ; discard [count]
+                ld      a,3                 ; Illegal function call (deferred)
+                call    penderr_set
+                jp      str_eval_no
 sfg_close:
                 push    af                  ; guard fill byte                  [count][fill]
                 ld      a,(hl)

@@ -1,0 +1,6 @@
+  ROM 679c3659 6b847f97 0ac64837 9aec32a7 2187f8c8  ->  36243fce 8041c13b 0ac64837 1d7203d1 4b5109f6
+restore: 679c3659 6b847f97 0ac64837 9aec32a7 2187f8c8 -> 679c3659 6b847f97 0ac64837 9aec32a7 2187f8c8  build rc=0  BYTE-IDENTICAL (all five)
+K-SE1: gate rc=1
+FAIL  trace    se-empty       CLS:ON ERROR GOTO 50 : PRINT STRIN ref=                 5 2 K  zb=                 2 2 K
+--- 36/37 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  se-empty       CLS:ON ERROR GOTO 50 : PRINT STRING$(2,"") : -> 5 2 K
