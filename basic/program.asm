@@ -116,7 +116,7 @@ dl_store:
                 cp      low (LINENO_CEIL+1)
                 jr      c,dl_lnok
                 ld      a,2                 ; ERR 2 -- measured, not assumed
-                ld      (ERRFLG),a
+                call    set_errflg          ; D-HERRO
                 ld      hl,err_syntax       ; low-region string pool (arrays.asm)
                 jr      dl_ovf_report       ; reports and returns to the REPL. Like
                                             ; the overflow arm above this reports
@@ -230,7 +230,7 @@ dl_overflow:
                 ; `PRINT ERR` after `20 A=1E99` read whatever the previous error left.
                 ; Both references read 6 there (measured 2026-08-02, spec §6.4).
                 ld      a,(TKOVF)
-                ld      (ERRFLG),a          ; the reject reason IS the ERR code
+                call    set_errflg          ; the reject reason IS the ERR code (D-HERRO)
                 ld      hl,err_subhosted    ; ERR 6 -> em_overflow, 25 -> em_linebuf_overflow
 dl_ovf_report:
                 ; --- D-ERLENTRY: A LINE-ENTRY ERROR LEAVES ERL = 65535 --------
@@ -1206,7 +1206,7 @@ ex_cont_no:
                                             ; it used to print the message and run on
                                             ; (scratchpad/contusr_run.out). A LIVE resume
                                             ; point still resumes, as there.
-                ld      (ERRFLG),a          ; ERR 17: can't continue (see below)
+                call    set_errflg          ; ERR 17: can't continue (see below; D-HERRO)
                 ld      a,$C9               ; "can't continue" landmark (distinct byte)
                 ld      (ERRMARK),a
                 ; 🔴 THIS ARM PRINTED ITS MESSAGE AND LEFT `ERR` AT 0, AND NOTHING
@@ -2648,7 +2648,7 @@ exr_syn:
                 ld      (ERRLIN),de
                 ld      (DOT),de
                 ld      a,2                 ; Syntax error
-                ld      (ERRFLG),a
+                call    set_errflg          ; D-HERRO
                 jp      rerr_msg
 exr_bad:
                 pop     hl                  ; discard the exec cursor and the key
@@ -3030,7 +3030,7 @@ oe_undef        equ     ers_undef
 ; raise_error_forced (ERR 22) has always used.
 oe_badop:
                 ld      a,2
-                ld      (ERRFLG),a
+                call    set_errflg          ; D-HERRO
                 call    record_errline      ; ERRLIN := this line (ERL reads 30)
                 ld      hl,err_syntax       ; err_msgtab entry 2, low-region pool
                 jp      ra_abort            ; PAST raise_error_hl -> never traps

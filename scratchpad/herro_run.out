@@ -1,0 +1,13 @@
+Philips_VG_8020                ctl_none  I%=3:X=10/(I%-2)     "]" | [V 255 C 0 ]
+Philips_VG_8020                div_int   I%=3:X=10/(I%-3)     Division by zero | "]" | [V 8 C 1 ]
+Philips_VG_8020                div_sng   X!=0:Y=10/X!         Division by zero | "]" | [V 8 C 1 ]
+Philips_VG_8020                sqr       X=SQR(-1)            Illegal function call | "]" | [V 8 C 1 ]
+Philips_VG_8020                intdiv    I%=0:X=10\I%         Division by zero | "]" | [V 2 C 1 ]
+Philips_VG_8020                syntax    X=1+                 Missing operand | "]" | [V 2 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ctl_none  I%=3:X=10/(I%-2)     "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   div_int   I%=3:X=10/(I%-3)     Division by zero | "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   div_sng   X!=0:Y=10/X!         Division by zero | "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   sqr       X=SQR(-1)            Illegal function call | "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   intdiv    I%=0:X=10\I%         Division by zero | "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   syntax    X=1+                 Missing operand | "]" | [V 255 C 0 ]
+refcache: 0 hit, 12 miss, 12 stored

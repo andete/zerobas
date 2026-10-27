@@ -103,6 +103,10 @@ been able to rate `ERROR`'s test programs.
 
 ## What we found, and how
 
+- **The error hook was never called** (fixed 2026-10-27, D-HERRO): machine
+  code hooked into `H.ERRO` (`&HFFB1`) now sees every error, `ERROR` included,
+  with the code in E, as on the VG-8020; see
+  [Errors](../concepts/errors.md).
 - **A malformed argument was always error 5** (fixed 2026-10-24, D-ERRORARG).
   The VG-8020 checks `ERROR`'s argument in a fixed order: first the expression
   itself (a string is `Type mismatch`, nothing at all is `Missing operand`, a

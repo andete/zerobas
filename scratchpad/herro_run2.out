@@ -1,0 +1,11 @@
+Philips_VG_8020                ctl_none  I%=3:X=10/(I%-2)     "]" | [V 255 C 0 ]
+Philips_VG_8020                div_int   I%=3:X=10/(I%-3)     Division by zero | "]" | [V 8 C 1 ]
+Philips_VG_8020                div_sng   X!=0:Y=10/X!         Division by zero | "]" | [V 8 C 1 ]
+Philips_VG_8020                sqr       X=SQR(-1)            Illegal function call | "]" | [V 8 C 1 ]
+Philips_VG_8020                intdiv    I%=0:X=10\I%         Division by zero | "]" | [V 2 C 1 ]
+Philips_VG_8020                syntax    X=1+                 Missing operand | "]" | [V 2 C 1 ]
+Philips_VG_8020                log0      X=LOG(0)             Illegal function call | "]" | [V 8 C 1 ]
+Philips_VG_8020                pow0      X=0^-1               Division by zero | "]" | [V 2 C 1 ]
+Philips_VG_8020                negfrac   X=(-2)^.5            Illegal function call | "]" | [V 8 C 1 ]
+Philips_VG_8020                asc       X=ASC("")            Illegal function call | "]" | [V 3 C 1 ]
+refcache: 6 hit, 4 miss, 4 stored

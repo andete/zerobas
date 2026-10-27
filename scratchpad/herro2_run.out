@@ -1,0 +1,9 @@
+Philips_VG_8020                div      [V 8 C 1 E 11 R 0            Division by zero
+Philips_VG_8020                syntax   [V 2 C 1 E 24 R 0            Missing operand
+Philips_VG_8020                error7   [V 2 C 1 E 7 R 0             Out of memory
+Philips_VG_8020                trapped  [V 8 C 1 E 11 R 0            
+C-BIOS_MSX1_EU_REPACK_NODISK   div      [V 255 C 0 E 255 R 255       Division by zero
+C-BIOS_MSX1_EU_REPACK_NODISK   syntax   [V 255 C 0 E 255 R 255       Missing operand
+C-BIOS_MSX1_EU_REPACK_NODISK   error7   [V 255 C 0 E 255 R 255       Out of memory
+C-BIOS_MSX1_EU_REPACK_NODISK   trapped  [V 255 C 0 E 255 R 255       
+refcache: 0 hit, 8 miss, 8 stored

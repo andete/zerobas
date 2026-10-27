@@ -81,10 +81,54 @@ item — do **one item per session** to keep context lean.
       order question for its own measurement. PRINT agrees (items realised one by one).
       📏 **STEP 1b DONE 2026-10-24** (spec §2b, [`tmorder_run.out`](scratchpad/tmorder_run.out)): the
       type-mismatch order is its own divergence, filed as D-TMORDER (TIER 6) below.
+      📏 **PROTOTYPE MEASURED 2026-10-24, branch `deferr-proto` (local, unpushed;
+      spec §4 there):** step 1a 11/12 as the VG-8020, every emulator suite green,
+      tapes 42/42; `unit-test` RED (4 files assert the deferred contract; 1 differs
+      in VALTYP at the error). 🎯 **That one field is EXPLAINED 2026-10-27**: it is
+      VALTYP ($F663) at the moment of the error, which the reference makes visible
+      to machine code through H.ERRO -- implemented on main as D-HERRO -- and the
+      reference's values are measured per fault ([`herro_run2.out`](scratchpad/herro_run2.out):
+      `/` 8, SQR / LOG 8, `\` 2, `0^-1` 2, `(-2)^.5` 8, ASC("") 3). The prototype's
+      `/` raise left 2 where the reference has 8 -- so a converted site must set
+      VALTYP as the reference has it; main itself already differs on five of these
+      (D-ERRVALTYP). Converting further is Joost's call.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
       + function domain at their main-only points with a pending-first raise helper.
+
+- [x] ✅ **DONE 2026-10-27 (D-HERRO)** 🔴 **THE PUBLISHED ERROR HOOK H.ERRO ($FFB1) WAS NEVER
+      CALLED; THE VG-8020 CALLS IT ON EVERY ERROR (D-HERRO, found 2026-10-27 by
+      D-DEFERRSTUDY).**
+      🎚️ TIER 1 — latent: machine code that hooks errors saw nothing
+      🤖 **AUTONOMOUS** — measured on the reference, fixed, gated.
+      📏 [`herro_probe.py`](scratchpad/herro_probe.py) / [`herro2_probe.py`](scratchpad/herro2_probe.py), our own RAM routine
+      at $D000 behind `JP $D000` in the hook ([`herro_run.out`](scratchpad/herro_run.out), [`herro2_run.out`](scratchpad/herro2_run.out)):
+      the VG-8020 calls H.ERRO once per error, trapped or not, BEFORE ERR is set
+      (ERR still 0 inside), with E = the code; and the code is RE-READ from E: a hook
+      doing `ld e,5` turns `ERROR 7` into Illegal function call, ERR 5. zerobas: never
+      called. ✅ **FIXED**: `set_errflg` (basic/interp.asm) -- `ld e,a / call H_ERRO /
+      ld a,e / ld (ERRFLG),a` -- and every site that stored ERRFLG for an error calls
+      it in place of the 3-byte store (raise_error, raise_error_forced, the three
+      editor refusals, READ's syntax error, ON ERROR's bad operand, ERR 21): +9 B of
+      main in all. ⚠️ The editor refusals that print a FIXED message keep it even if a
+      hook rewrites E. After: every probe row as the VG-8020 ([`herro2_after.out`](scratchpad/herro2_after.out),
+      [`herro_after.out`](scratchpad/herro_after.out)) except VALTYP for five faults -- D-ERRVALTYP below. Gate:
+      missing-acceptance trace rows he-count / he-rewrite ([`herro_gate.out`](scratchpad/herro_gate.out)); 🔪 K-HE1
+      ([`herro_knife.py`](scratchpad/herro_knife.py)): both FAIL (`0 7`, `7`), rc=2, all five images restored
+      ([`herro_knife.out`](scratchpad/herro_knife.out)). Docs: concepts/errors.md (also brought up to date
+      for D-ERRORARG, which it still listed as open), ERROR.md; examples PASS 1.
+
+- [ ] 🔴 **AN ERROR HOOK SEES A DIFFERENT VALTYP THAN ON THE VG-8020 FOR FIVE FAULTS
+      (D-ERRVALTYP, found 2026-10-27 by D-HERRO).**
+      🎚️ TIER 6 — what machine code in H.ERRO reads at the moment of an error
+      🤖 **AUTONOMOUS** — the reference's value is measured per fault.
+      📏 [`herro_run2.out`](scratchpad/herro_run2.out) (VG-8020) against [`herro_after.out`](scratchpad/herro_after.out) (zerobas):
+      VALTYP ($F663) at the error is `SQR(-1)` 8 / 2 here, `LOG(0)` 8 / 2, `0^-1` 2 / 8,
+      `(-2)^.5` 8 / 4, `ASC("")` 3 / 2; `/` (8), `\` (2) and a missing operand (2)
+      agree. It is the type of whatever was last evaluated or converted, so it
+      depends on WHERE each fault is detected -- the same question as D-DEFERRSTUDY's
+      prototype, whose sites must set it as the reference has it. Invisible to BASIC.
 
 - [ ] 🔴 **A TYPE MISMATCH IS RAISED AT A DIFFERENT POINT OF THE EXPRESSION THAN ON
       THE VG-8020, IN BOTH DIRECTIONS (D-TMORDER, found 2026-10-24 by D-DEFERRSTUDY).**
@@ -6977,7 +7021,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9463 (T-6FE392)8 (T-529ABE)` from `TODO.md:15030 (T-529ABE)`: a
+      `TODO.md:9507 (T-6FE392)8 (T-529ABE)` from `TODO.md:15074 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9918,7 +9962,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15030 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15074 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

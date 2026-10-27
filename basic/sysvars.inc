@@ -3868,6 +3868,10 @@ H_DSKO          equ     $FDEF   ; DSKO$ handler -- 🔴 WAS $FDF4 AND THAT WAS W
 H_DSKI          equ     $FE17   ; DSKI$ handler (D-DSKIO)
 H_COPY          equ     $FE08   ; COPY handler (D-COPY; the standard slot)
 H_ERRP          equ     $FEFD   ; error-print hook (D-DISKERR): the errmsg tenant offers a code it
+H_ERRO          equ     $FFB1   ; PUBLISHED error hook (D-HERRO, 2026-10-27): called on EVERY
+                                ; error, before ERR is stored, with E = the code; the code
+                                ; is RE-READ from E afterwards, so a hook may rewrite it
+                                ; (scratchpad/herro2_run.out, herro_e5). RET by default.
                                 ; does not host to this cell with A = ERR; the disk ROM claims it
                                 ; and prints the disk codes (68..70) it hosts, CF=1 when it did
 ; --- the KEY-trap fn-key hook (interrupt-traps T3, docs/spec-traps-t3-key.md §4) ---

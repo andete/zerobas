@@ -6,12 +6,13 @@ SPDX-License-Identifier: 0BSD
 
 # Errors — codes, messages and `ON ERROR`
 
-> **Status (2026-10-09):** every error code and every message is the
-> reference's, letter for letter, and trapping, `ERR`, `ERL` and `RESUME` match
-> the VG-8020 in every case measured. Open: a few rare failure paths still print
-> zerobas's own `load error` instead of raising a trappable code (D-LOADERRRET,
-> TIER 3); a malformed `ERROR` argument (D-ERRORARG, TIER 6); disk messages for
-> 60–64 on the diskless build (D-NODISKERRTXT, TIER 6).
+> **Status (2026-10-27):** every error code and every message is the
+> reference's, letter for letter, and trapping, `ERR`, `ERL`, `RESUME` and the
+> error hook `H.ERRO` match the VG-8020 in every case measured. Open: a few rare
+> failure paths still print zerobas's own `load error` instead of raising a
+> trappable code (D-LOADERRRET, TIER 3); disk messages for 60–64 on the diskless
+> build (D-NODISKERRTXT, TIER 6); the value type an error hook sees for a few
+> faults (D-ERRVALTYP, TIER 6).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -170,9 +171,14 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   TIER 3): zerobas's own text, with no code and no trap. The ones left include
   a disk read failing inside `GET` and a failing tape header write; no test
   row reaches them yet.
-- **A malformed `ERROR` argument** (D-ERRORARG, TIER 6): the VG-8020 gives
-  13, 24, 6 or 2 depending on what is wrong; zerobas gives 5, and runs
-  `ERROR 1,1` as `ERROR 1`. See [`ERROR`](../keywords/ERROR.md).
+- **The value type an error hook sees** (D-ERRVALTYP, TIER 6): at the moment
+  of the error, `VALTYP` (`&HF663`) holds the type of whatever was last
+  evaluated. Machine code in `H.ERRO` can read it, and for five faults it
+  differs: `SQR(-1)` and `LOG(0)` read 2 here and 8 on the VG-8020, `0^-1` 8 and
+  2, `(-2)^.5` 4 and 8, `ASC("")` 2 and 3
+  ([`herro_after.out`](../../scratchpad/herro_after.out) against
+  [`herro_run2.out`](../../scratchpad/herro_run2.out)). Nothing in BASIC itself
+  can see it.
 - **`ERROR 60` to `ERROR 64` on the diskless build** print the CF-3300's disk
   messages; the VG-8020 prints `Unprintable error` (D-NODISKERRTXT, TIER 6,
   [`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)). Code 65 is
@@ -180,6 +186,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **The error hook `H.ERRO` was never called** (fixed 2026-10-27, D-HERRO).
+  The VG-8020 calls the published hook at `&HFFB1` once for every error,
+  trapped or not, before `ERR` is set, with the code in register E, and takes
+  the code back from E afterwards: a hook that puts 5 there turns `ERROR 7`
+  into `Illegal function call`
+  ([`herro2_run.out`](../../scratchpad/herro2_run.out), from
+  [`herro2_probe.py`](../../scratchpad/herro2_probe.py)). zerobas never called
+  it, so machine code that watches for errors saw nothing. Every error now goes
+  through it.
+- **A malformed `ERROR` argument was always error 5** (fixed 2026-10-24,
+  D-ERRORARG); see [`ERROR`](../keywords/ERROR.md).
 - **An untrapped error did not stop a program** (fixed 2026-07-18, with the
   ` in <line>` suffix: [spec-basic-error-handling.md](../spec-basic-error-handling.md));
   syntax errors became trappable on 2026-07-22.
@@ -202,7 +219,9 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 ## How zerobas does it
 
 Every error goes through `raise_error` in
-[basic/interp.asm](../../basic/interp.asm): it stores the code in `ERRFLG`,
+[basic/interp.asm](../../basic/interp.asm): it calls the error hook `H.ERRO`
+with the code in E and takes the code back from E (`set_errflg`; the few
+editor refusals that print their own message call it too), stores it in `ERRFLG`,
 `record_errline` writes `ERL` (65535 in direct mode), and then, if a handler
 is armed and none is active, it resets the stack to the run loop's anchor
 (`SAVSTK` — an error can come from any depth), saves the failing statement for
@@ -247,4 +266,6 @@ visible side effect, so such a statement checks its argument before acting:
 - `make msgexact-gate` — every message against both references.
 - `make stmtpend-acceptance`, `make penderr-acceptance` — first fault wins.
 - `make nodiskerr-acceptance` — `Disk offline` on an empty drive.
+- `make missing-acceptance` — `H.ERRO` is called once per error and can change
+  the code (rows `he-count`, `he-rewrite`).
 - `make unit-test` — includes the sub-ROM message-table bound check.

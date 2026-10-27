@@ -1,0 +1,6 @@
+  ROM b5c7e8e5 20dbc3d2 e3763993 e0c70377 f58662b6  ->  2829ece7 20dbc3d2 1a5d9c18 aa586822 12989a3e
+restore: b5c7e8e5 20dbc3d2 e3763993 e0c70377 f58662b6 -> b5c7e8e5 20dbc3d2 e3763993 e0c70377 f58662b6  build rc=0  BYTE-IDENTICAL (all five)
+K-HE1: gate rc=2
+FAIL  trace    he-count       CLS:POKE-12288,33:POKE-12287,33:PO ref=                   1 7  zb=                   0 7
+FAIL  trace    he-rewrite     CLS:POKE-12288,30:POKE-12287,5:POK ref=                     5  zb=                     7
+--- 32/34 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red

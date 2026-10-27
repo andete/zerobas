@@ -275,7 +275,7 @@ e21_walk:
 e21_last:
                 ld      (CURLINE),bc
                 ld      a,21
-                ld      (ERRFLG),a
+                call    set_errflg          ; D-HERRO
                 call    record_errline      ; ERL := that line (run mode; DIRECTF==0
                                             ; is exactly what the gate above proved)
                 ld      hl,err_no_resume

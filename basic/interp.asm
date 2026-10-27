@@ -1338,8 +1338,24 @@ fp_runtime_error:
 ; ONELIN stores the handler line's LINK address (find_line_bc's return
 ; convention, a CURLINE-shaped value), exactly what rp_goto expects.
 ; Clobbers A, DE, HL (and SP, on the trap path only).
-raise_error:
+; --- set_errflg: A = an ERR code -> call H.ERRO, then ERR := the code -------
+; 🏗️ D-HERRO (2026-10-27). The VG-8020 calls the published error hook H.ERRO
+; ($FFB1) once on EVERY error -- trapped or not, from ERROR or BASIC itself --
+; BEFORE ERR is stored, with E = the code, and takes the code back from E
+; (a hook doing `ld e,5` turns ERROR 7 into Illegal function call):
+; scratchpad/herro_probe.py / herro2_probe.py. zerobas never called it. Every
+; site that recorded an error with `ld (ERRFLG),a` calls this instead, the same
+; 3 bytes. ⚠️ The editor rejects that print a FIXED message (line too large,
+; line-buffer overflow, CONT at the prompt) keep it even if a hook rewrites E.
+; Out: A = the (possibly rewritten) code. Clobbers DE.
+set_errflg:
+                ld      e,a
+                call    H_ERRO              ; RET unless something hooked it
+                ld      a,e
                 ld      (ERRFLG),a
+                ret
+raise_error:
+                call    set_errflg          ; D-HERRO: the hook, then ERR
                 ; D-DEFFN: A FAULT INSIDE AN FN BODY MUST NOT LEAVE THE SHADOW
                 ; FRAME STANDING. Nothing unwinds fn_leave -- the trap path
                 ; resets SP outright -- so a stale FN_FEND would leave every
@@ -1542,7 +1558,7 @@ ex_resume_noerr:                    ; ERR 22 "resume without error" entry — fa
                                     ; fix: raise_error_forced's ONLY caller, so the
                                     ; separate `ld a,22`/`jp` block is merged in here)
 raise_error_forced:                          ; reached ONLY via ex_resume_noerr, A=22
-                ld      (ERRFLG),a
+                call    set_errflg          ; D-HERRO
                 call    record_errline
                 ld      hl,err_subhosted     ; ERR 22's message, sub-hosted (D-MSGMIGRATE:
                 jr      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.

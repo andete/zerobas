@@ -578,6 +578,18 @@ TRACE = [
                        'PRINT ERR:END']),
     ("er-zero",       ['CLS:ON ERROR GOTO 40', 'ERROR 0,1', 'PRINT "N":END',
                        'PRINT ERR:END']),
+    # D-HERRO (2026-10-27): the published error hook H.ERRO ($FFB1) is called once
+    # per error with E = the code, and the code is RE-READ from E afterwards
+    # (scratchpad/herro2_run.out). A RAM routine at $D000; each handler puts RET
+    # back in the hook before it ends, so no row leaks a hook into the next.
+    ("he-count",      ['CLS:POKE-12288,33:POKE-12287,33:POKE-12286,208:POKE-12285,52:POKE-12284,201',
+                       'POKE-12255,0:POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
+                       'ERROR 7', 'END',
+                       'POKE-79,201:PRINT PEEK(-12255);ERR:END']),
+    ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
+                       'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
+                       'ERROR 7', 'END',
+                       'POKE-79,201:PRINT ERR:END']),
 ]
 # tr-bignum needs line numbers the 10/20/... numbering cannot give it; it is
 # emitted with an explicit numbering below (see STORED_EXPLICIT).
