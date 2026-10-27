@@ -351,6 +351,21 @@ pes_pending:
 ; arrays' own OOM uses; the shared fre_msgtab entry, no new message).
 str_heap_oom_error:
                 ld      a,FPERR_STROOM
+                jr      raise_now
+; raise_now: A = an FPERR code -> raise it AT ONCE, but a code already pending
+; wins (first-error-wins, as penderr_set). D-DEFERRSTUDY: the immediate
+; counterpart of `call penderr_set`. 🎯 VALTYP ($F663) is what machine code in
+; H.ERRO reads at the error, and it is the type of whatever the REFERENCE last
+; evaluated -- measured per fault (scratchpad/herro_run2.out): 8 after `/`,
+; SQR / LOG and (-x)^frac, 3 after ASC(""), 2 after `\` and 0^-1. So the
+; entries above raise_now set it first: raise_now8 (E = 8) and raise_now_t (E =
+; the type) (D-ERRVALTYP).
+raise_now8:
+                ld      e,8                 ; the double the reference leaves
+raise_now_t:
+                ld      hl,FACTYP
+                ld      (hl),e              ; VALTYP as the reference has it
+raise_now:
                 call    penderr_set
                 jp      fp_runtime_error
 
@@ -1063,14 +1078,17 @@ ev_ff_asc:
                 ld      hl,(STRPTR)
                 ld      a,(hl)              ; length
                 or      a
-                jp      z,ev_f_ifc          ; ASC("") -> illegal function call (deferred
-                                            ; FPERR=3; was a bare ev_f_err -> silent " 0")
+                jr      z,asc_empty         ; ASC("") -> Illegal function call, at once
                 inc     hl
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = ptr (the body address)
                 ld      a,(de)              ; first byte of the body
                 jp      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
+asc_empty:
+                ld      a,3                 ; FPERR 3, and VALTYP 3 (a string was the
+                ld      e,a                 ; last thing evaluated: herro_run2.out)
+                jp      raise_now_t
 ; ✅ D-AMPB (2026-10-09): `&B` BINARY. Both references crunch `&B101` as the
 ; typed characters (no token -- basic/PROVENANCE.md "&O / &B"), and the
 ; VG-8020 then READS them when the line runs: `PRINT &B101` 5,

@@ -127,6 +127,30 @@ deferral one, in both directions; it is filed on its own as D-TMORDER (TIER 6).
 The prediction ("the reference raises a mismatch only at the end of the expression")
 missed: 7 of the 10 cases raise before the USR.
 
+## 2c. Family 1 shipped (2026-10-27, Joost: "convert, family by family")
+
+The prototype's family -- the expression DOMAIN faults -- is on main: Division by
+zero at `/` (combine_div_float), `\` / `MOD` (sdivmod_zerocheck) and `0^-1`
+(cpow), `SQR` / `LOG` (evmc_sqr_err), `(-x)^frac` (cpow_frac) and `ASC("")`
+(ev_ff_asc), each raised AT ONCE through `raise_now` (pending-first: a code
+already pending still wins). CLEAR's pool-size store moved after the memory-top
+argument (the blocker, §1b). And each site leaves VALTYP as the VG-8020 does,
+which the prototype did not: `raise_now8` (E = 8: `/`, SQR, LOG, `(-x)^frac`)
+and `raise_now_t` (E = the type: `ASC("")` 3); `\` and `0^-1` already left 2
+([`herro_run2.out`](../scratchpad/herro_run2.out) vs
+[`deferr1_herro.out`](../scratchpad/deferr1_herro.out), 10/10). Side effects:
+[`deferr1_side.out`](../scratchpad/deferr1_side.out) agrees with
+[`deferr_side_run.out`](../scratchpad/deferr_side_run.out) on 11 of 12 -- the
+twelfth, `1+"X"+USR(0)`, is a type mismatch, D-TMORDER's family, not this one.
+Cost 13 B of the low region. Gate: missing-acceptance row `dz-side`; knife K-DF1
+([`deferr1_knife.out`](../scratchpad/deferr1_knife.out)). The host tests that
+called these routines as returning subroutines now see the raise through
+msxtest's OPT-IN `raise_now` trap (`trap_raise_now()`), which keeps the code and
+abandons the call -- opt-in because a test that runs a whole program must reach
+the real error path (installed for every machine, it stopped test_forint's
+ON ERROR handlers); the rows
+that asserted the deferred tail's "result 0" are gone, with a note where they stood.
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the

@@ -611,6 +611,12 @@ TRACE = [
     # 3171 (scratchpad/circneg_run.out). The long -1 / -5 draws stay in the probe.
     ("cn-dot",        ['CLS:ON ERROR GOTO 40', 'SCREEN 2:CIRCLE(99,99),-32768:V=VPEEK(3171)',
                        'SCREEN 0:PRINT V:END', 'SCREEN 0:PRINT "E";ERR:END']),
+    # D-DEFERRSTUDY family 1 (2026-10-27): a domain fault is raised AT ONCE, so a USR
+    # call after it in the same expression never runs (counter at $D010 stays 0), as on
+    # the VG-8020 (scratchpad/deferr_side_run.out); the deferred path ran it.
+    ("dz-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 50',
+                       'A=1/0+USR(0)', 'A=SQR(-1)+USR(0)', 'PRINT PEEK(-12272):END',
+                       'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

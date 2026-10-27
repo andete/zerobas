@@ -83,6 +83,7 @@ def mod_nest(n):
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=RELOC_BASE)
+    m.trap_raise_now()   # D-DEFERRSTUDY: routines are called, not run (msxtest)
     s = m.sym
     m.poke_w(s["PRGEND"], 0x9000)
     m.poke(0x9000, b"\x00\x00")

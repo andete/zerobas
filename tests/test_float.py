@@ -379,7 +379,9 @@ def run_f2(m, s, ck):
     m.poke(FPERR, 0)
     cpu = m.call("signed_div_de_bc", de=1, bc=0)
     ckf("signed_div_de_bc(1\\0) FPERR=division by zero", m.peek(FPERR)[0], 2)
-    ckf("signed_div_de_bc(1\\0) DE", cpu.de, 0)
+    # (No DE row: D-DEFERRSTUDY raises Division by zero AT ONCE, so the routine never
+    # returns a value -- the "DE = 0" was the deferred tail's, penderr_de0's. msxtest's
+    # raise_now trap abandons the call and keeps the code, which the FPERR row reads.)
     m.poke(FPERR, 0)
     cpu = m.call("signed_mod_de_bc", de=1, bc=0)
     ckf("signed_mod_de_bc(1 mod 0) FPERR=division by zero", m.peek(FPERR)[0], 2)
@@ -454,6 +456,7 @@ def _poke_fac_from_decimal(m, s, value):
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=RELOC_BASE)
+    m.trap_raise_now()   # D-DEFERRSTUDY: routines are called, not run (msxtest)
     s = m.sym
     FAC = s["FAC"]
     FACTYP = s["FACTYP"]

@@ -86,6 +86,7 @@ def eval_tokens(m, token_bytes):
 def run():
     build()
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
+    m.trap_raise_now()   # D-DEFERRSTUDY: routines are called, not run (msxtest)
     s = m.sym
 
     # Convenience: token constants from the symbol file, so if sysvars.inc changes
@@ -224,7 +225,8 @@ def run():
     FPERR_DIVZERO = 2
     got, em = eval_expr(m, "5/0")
     fperr = m.mem[s["FPERR"]]
-    cases.append(("5/0 result=0",   got,   0,             em, 0))
+    # (No "result=0" row: D-DEFERRSTUDY raises Division by zero AT ONCE, so eval
+    # returns no value -- the 0 was the deferred tail's. The FPERR row reads the code.)
     cases.append(("5/0 FPERR=2",    fperr, FPERR_DIVZERO, 0,  0))
     m.poke(s["FPERR"], 0)           # statement boundary, as interp.asm:196 does
 

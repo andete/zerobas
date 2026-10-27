@@ -11,8 +11,7 @@ SPDX-License-Identifier: 0BSD
 > error hook `H.ERRO` match the VG-8020 in every case measured. Open: a few rare
 > failure paths still print zerobas's own `load error` instead of raising a
 > trappable code (D-LOADERRRET, TIER 3); disk messages for 60–64 on the diskless
-> build (D-NODISKERRTXT, TIER 6); the value type an error hook sees for a few
-> faults (D-ERRVALTYP, TIER 6).
+> build (D-NODISKERRTXT, TIER 6).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -171,14 +170,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   TIER 3): zerobas's own text, with no code and no trap. The ones left include
   a disk read failing inside `GET` and a failing tape header write; no test
   row reaches them yet.
-- **The value type an error hook sees** (D-ERRVALTYP, TIER 6): at the moment
-  of the error, `VALTYP` (`&HF663`) holds the type of whatever was last
-  evaluated. Machine code in `H.ERRO` can read it, and for five faults it
-  differs: `SQR(-1)` and `LOG(0)` read 2 here and 8 on the VG-8020, `0^-1` 8 and
-  2, `(-2)^.5` 4 and 8, `ASC("")` 2 and 3
-  ([`herro_after.out`](../../scratchpad/herro_after.out) against
-  [`herro_run2.out`](../../scratchpad/herro_run2.out)). Nothing in BASIC itself
-  can see it.
 - **`ERROR 60` to `ERROR 64` on the diskless build** print the CF-3300's disk
   messages; the VG-8020 prints `Unprintable error` (D-NODISKERRTXT, TIER 6,
   [`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)). Code 65 is
@@ -186,6 +177,23 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Some faults were noted and reported later, where the VG-8020 stops at
+  once** (the first family fixed 2026-10-27, D-DEFERRSTUDY; Joost ruled
+  *"convert, family by family"*). Division by zero (`/`, `\`, `MOD`, `0^-1`),
+  `SQR` and `LOG` of a bad value, `(-2)^.5` and `ASC("")` now stop the
+  expression where they are found: in `A=1/0+USR(0)` the `USR` call no longer
+  runs, as on the reference
+  ([`deferr_side_run.out`](../../scratchpad/deferr_side_run.out)). The error
+  message was already the same; only what ran before it differed.
+  Other faults are still noted and reported a moment later
+  ([spec](../spec-basic-deferr-study.md)).
+- **The value type an error hook sees differed for five faults** (fixed
+  2026-10-27, D-ERRVALTYP, with the family above). At the moment of the error
+  `VALTYP` (`&HF663`) holds the type of whatever the reference last evaluated:
+  `SQR(-1)`, `LOG(0)`, `/` and `(-2)^.5` 8, `ASC("")` 3, `\` and `0^-1` 2
+  ([`herro_run2.out`](../../scratchpad/herro_run2.out); zerobas now
+  [`deferr1_herro.out`](../../scratchpad/deferr1_herro.out)). Machine code in
+  `H.ERRO` can read it; nothing in BASIC itself can.
 - **The error hook `H.ERRO` was never called** (fixed 2026-10-27, D-HERRO).
   The VG-8020 calls the published hook at `&HFFB1` once for every error,
   trapped or not, before `ERR` is set, with the code in register E, and takes

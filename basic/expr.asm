@@ -636,8 +636,8 @@ ev_f_ifc:                                   ; deferred FPERR=3 "illegal function
                                             ; contract as ev_f_empty; mirrors SQR(x<0)/LOG
                                             ; (FPERR=3, house-lowercase). E is a dead code
                                             ; carrier -- ev_f_err zeroes DE below.
-                ld      e,3
-                jr      ev_f_defer
+                ld      a,3
+                jp      raise_now           ; at once (D-DEFERRSTUDY; was `ld e,3 / jr ev_f_defer`)
 ; --- ev_f_nonlet: a factor that is not a letter -- an ASCII number, or missing ---
 ; 🔴 D-ASCIINUM (2026-10-05, from D-INPUTDNOHASH). A number that follows a
 ; letter run and a space stays ASCII in the stored line: `OPEN"X"AS 1` stores
@@ -2270,7 +2270,7 @@ evmc_sqr:
                 jr      evmc_dispatch
 evmc_sqr_err:
                 ld      a,3
-                jp      penderr_de0         ; D-PENDTAIL (-4 B, main page 1)
+                jp      raise_now8          ; SQR(-x) / LOG(<=0), at once, VALTYP 8 (D-DEFERRSTUDY)
 
 ; --- evmc_prologue / evmc_dispatch: the body the math-function stubs shared ---
 ; verbatim.  Until 2026-07-27 EIGHT stubs (SQR LOG EXP ATN SIN COS TAN RND) each

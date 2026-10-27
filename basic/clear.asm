@@ -118,7 +118,10 @@ ex_clear:
                 bit     7,d                 ; the sign bit, tested in place: 2 B
                 jp      nz,gb_illegal       ; against `ld a,d`/`rla`/`jr c` + a
                                             ; local `jp` (7 B). Negative -> ERR 5.
-                ld      (POOLSIZE),de       ; the pool floor is derived sub-side
+                push    de                  ; [old][new] -- D-DEFERRSTUDY: stored only
+                                            ; once the memory-top argument has been read,
+                                            ; so a fault RAISED inside it leaves POOLSIZE
+                                            ; as it was (the pool floor is derived sub-side)
     ELSE
                 call    eval                ; <string-space>, evaluated and ignored
     ENDIF
@@ -128,6 +131,10 @@ ex_clear:
                 ; the new string space must fit UNDER it by the same rule the
                 ; memory-top arm applies (floor = PRGEND + POOLSIZE + margin); the
                 ; ERR 7, the restore and the (unchanged) HIMEM store are all its.
+    IF CLEARPOOL
+                pop     bc                  ; the new pool size, stored now
+                ld      (POOLSIZE),bc
+    ENDIF
                 push    hl                  ; the cursor, as clr_floor's caller holds it
                 ld      de,(HIMEM)          ; "value" = the CURRENT ceiling
                 jr      clr_chk             ; (in range: only CLEAR, boot and the disk
@@ -190,6 +197,10 @@ clr_himem:
                 ; exactly as -1 does yet is ACCEPTED on all three -- the domain is
                 ; a RANGE, not a sign (docs/spec-basic-clrfix.md STILL OPEN note).
                 call    eval_addr           ; DE = -32768..65535, FPERR=1 past it
+    IF CLEARPOOL
+                pop     bc                  ; the new pool size, stored now (above)
+                ld      (POOLSIZE),bc
+    ENDIF
                 call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,clr_h_store      ; >=65536 overflow already pending -> ERR 6;
                                             ; skip the range check (DE is 0 here anyway)

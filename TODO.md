@@ -96,6 +96,21 @@ item — do **one item per session** to keep context lean.
       family (expression DOMAIN faults, each leaving VALTYP as measured in herro_run2.out),
       then the other SAME-classified writers one family at a time, each gated and knifed;
       the UNSAFE / UNSURE rows of the classification stay deferred until each is settled.
+      ✅ **FAMILY 1 SHIPPED 2026-10-27** (spec §2c): the prototype's sites on main -- `/`, `\` /
+      MOD, `0^-1`, SQR / LOG, `(-x)^frac`, `ASC("")` raise AT ONCE through raise_now; CLEAR's
+      pool store moved after the memory-top argument; each site leaves VALTYP as measured
+      (raise_now8 / raise_now_t) -- 🔮 10/10 VALTYP rows HIT after the fix
+      ([`deferr1_herro.out`](scratchpad/deferr1_herro.out); before it, single `/` left 4, not
+      the predicted 2). Side effects 11/12 as the VG-8020 ([`deferr1_side.out`](scratchpad/deferr1_side.out); the 12th
+      is D-TMORDER). +13 B low (pin pad 16 -> 3). Gate: missing-acceptance row `dz-side`
+      ([`deferr1_gate.out`](scratchpad/deferr1_gate.out), 40/40); 🔪 K-DF1 ([`deferr1_knife.py`](scratchpad/deferr1_knife.py)): the four
+      ROM files back to HEAD -> `dz-side` alone FAILs (zb `11 5 2`), all five restored
+      ([`deferr1_knife.out`](scratchpad/deferr1_knife.out)). Unit tests: msxtest's OPT-IN trap_raise_now() (keeps the
+      code, abandons the call; opt-in -- automatic, it stopped test_forint's ON ERROR
+      handlers, test_deepexpr_guard and test_statements); test_float's `1\0 DE` and test_expr's `5/0 result=0` rows (the
+      deferred tail's zero) removed with a note; test_fpdiv_fast ignores FACTYP / DE when
+      both images raise the same fault. ➡️ Next family: the SAME-classified writers in
+      [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md), one family per commit.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
@@ -123,8 +138,8 @@ item — do **one item per session** to keep context lean.
       ([`herro_knife.out`](scratchpad/herro_knife.out)). Docs: concepts/errors.md (also brought up to date
       for D-ERRORARG, which it still listed as open), ERROR.md; examples PASS 1.
 
-- [ ] 🔴 **AN ERROR HOOK SEES A DIFFERENT VALTYP THAN ON THE VG-8020 FOR FIVE FAULTS
-      (D-ERRVALTYP, found 2026-10-27 by D-HERRO).**
+- [x] ✅ **AN ERROR HOOK SEES A DIFFERENT VALTYP THAN ON THE VG-8020 FOR FIVE FAULTS
+      (D-ERRVALTYP, found 2026-10-27 by D-HERRO; FIXED 2026-10-27 with D-DEFERRSTUDY family 1: 10/10, deferr1_herro.out).**
       🎚️ TIER 6 — what machine code in H.ERRO reads at the moment of an error
       🤖 **AUTONOMOUS** — the reference's value is measured per fault.
       📏 [`herro_run2.out`](scratchpad/herro_run2.out) (VG-8020) against [`herro_after.out`](scratchpad/herro_after.out) (zerobas):
@@ -7050,7 +7065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9536 (T-6FE392)8 (T-529ABE)` from `TODO.md:15103 (T-529ABE)`: a
+      `TODO.md:9551 (T-6FE392)8 (T-529ABE)` from `TODO.md:15118 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9991,7 +10006,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15103 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15118 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

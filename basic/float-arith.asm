@@ -2042,6 +2042,10 @@ combine_div_float:
                 call    pop_lhs_and_probe   ; ZF result ignored -- '/' is always
                                             ; float regardless (spec §10.1)
                 call    widen_both_operands
+                ld      hl,ARGB+FPNUM_DIG   ; D-DEFERRSTUDY: a zero divisor is raised
+                call    dig15_iszero        ; HERE, at once (the VG-8020 never evaluates
+                ld      a,2                 ; past it: scratchpad/deferr_side_run.out);
+                jp      z,raise_now8        ; VALTYP 8, as there; fp_div's own test stays
                 jp      fp_div
 
 ; =============================================================================
@@ -2099,7 +2103,7 @@ cpow_y_nonzero:
                 or      a
                 jr      z,cpow_x0_pos
                 ld      a,2
-                call    penderr_set         ; Division by zero
+                jp      raise_now           ; Division by zero, at once (D-DEFERRSTUDY)
 cpow_x0_pos:
                 xor     a
                 ld      (FAC),a             ; FAC := 0 (double lead byte)
@@ -2184,6 +2188,8 @@ cpow_frac:
                 or      a
                 jr      z,cpow_frac_ok
                 ld      a,3
+                jp      raise_now8          ; (-x)^frac: at once, VALTYP 8 (D-DEFERRSTUDY); the
+                                            ; tail below keeps its other callers
                 ; 🎯 D-PENDTAIL: THE CANONICAL "DEFER CODE A, RETURN DE=0" TAIL.
                 ; Four sites had these three instructions verbatim; this one keeps
                 ; them and the other three `jp` here, so the shared body costs no
@@ -2266,7 +2272,7 @@ sdivmod_zerocheck:
                                             ; signed_mod_de_bc (own-design early-out; see
                                             ; header)
                 ld      a,2
-                jr      penderr_de0         ; D-PENDTAIL (-4 B, low region)
+                jp      raise_now           ; `\` / MOD by 0, at once (D-DEFERRSTUDY)
 
 ; --- sdivmod_mag: DE=dividend, BC=divisor (both SIGNED int16, divisor -----
 ; already confirmed nonzero) -> DE=quotient magnitude, HL=remainder

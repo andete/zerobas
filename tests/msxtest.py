@@ -175,6 +175,7 @@ class Machine:
         self.sym = load_symbols(sym_path)
         self.cpu = Z80(self.mem)
         self.traps = {}                # addr -> callback(machine)
+        self._call_sp0 = []            # each live call()'s own frame (abort_call)
         self._seed_fat_buffers()
         self._seed_hooks()
         # D-RAMCEIL (2026-10-13): the text ceiling is a RAM cell the cold boot
@@ -199,6 +200,34 @@ class Machine:
             self._install_subrom_bridge()
         if "subrom2_call" in self.sym and "SUBSLOT2" in self.sym:
             self._install_sub2_bridge()
+
+    def trap_raise_now(self):
+        """D-DEFERRSTUDY family 1 (2026-10-27): a domain fault is RAISED at the point
+        of detection (raise_now, basic/str-engine.asm) instead of deferred in FPERR,
+        so a routine CALLED as a subroutine never returns -- it jumps into the error
+        funnel. This models what the raise means to that caller: the code is kept
+        (first error wins, as penderr_set) and the whole call is abandoned, so a row
+        that reads FPERR after the call sees the code as under the deferred contract.
+        🔴 OPT-IN, NOT AUTOMATIC: in a test that runs a whole PROGRAM the raise must
+        reach the real error path (ON ERROR, the message) -- installed for every
+        Machine it stopped test_forint's handlers, test_deepexpr_guard's pending 7 and
+        test_statements' RHS row (scratchpad/deferr1_unit.out)."""
+        if "raise_now" in self.sym and "FPERR" in self.sym:
+            self.trap("raise_now", Machine._raise_now_trap)
+
+    @staticmethod
+    def _raise_now_trap(m):
+        fperr = m.sym["FPERR"]
+        if m.mem[fperr] == 0:
+            m.mem[fperr] = m.cpu.a
+        m.abort_call()
+
+    def abort_call(self):
+        """From inside a trap: abandon the innermost call(), as an error abort does.
+        The trap's own RET then pops the sentinel, so call() returns normally."""
+        sp0 = self._call_sp0[-1]
+        self.cpu.sp = sp0 - 2
+        self.poke_w(sp0 - 2, _SENTINEL)
 
     def _seed_hooks(self):
         """Fill the hook table $FD9A..$FFC9 with RET, as the BIOS does at boot.
@@ -479,6 +508,14 @@ class Machine:
             cpu.sp = 0xF380     # keep_sp=True: reuse the caller's stack (nested run,
         sp0 = cpu.sp            #   e.g. the subrom bridge) so it doesn't stomp it
         cpu.push(_SENTINEL)     # sp0 = the frame this call owns; SP may never rise
+        self.__dict__.setdefault("_call_sp0", []).append(sp0)   # abort_call()'s target
+                                # (nested calls stack; a copied Machine has none yet)
+        try:
+            return self._call_run(cpu, sp0, name_or_addr, max_steps)
+        finally:
+            self._call_sp0.pop()
+
+    def _call_run(self, cpu, sp0, name_or_addr, max_steps):
         cpu.pc = name_or_addr if isinstance(name_or_addr, int) else self.sym[name_or_addr]
         entry = name_or_addr if isinstance(name_or_addr, str) else f"{name_or_addr:#06x}"
         steps = 0

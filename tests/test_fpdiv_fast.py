@@ -102,6 +102,7 @@ def machines():
     old = Machine(OLD_ROM, OLD_SYM, BASE)
     msxtest._SUB_CACHE.clear()                 # the new one assembles the tree's
     new = Machine(NEW_ROM, NEW_SYM, BASE)
+    new.trap_raise_now()   # D-DEFERRSTUDY: routines are called, not run (msxtest)
     return old, new
 
 
@@ -257,6 +258,14 @@ class Pair:
             # is what makes "dead" above a SUBSET claim, not a hope.
             live += [a for a in self.untouched
                      if self.new.mem[a] != self._junk[a - JUNK[0]]]
+        if so.get("FPERR") and so.get("FPERR") == sn.get("FPERR"):
+            # D-DEFERRSTUDY family 1 (2026-10-27): the SAME fault on both sides, but
+            # the new image RAISES it at once -- it leaves VALTYP as the VG-8020 does
+            # (scratchpad/herro_run2.out) and returns no DE. Those two are the change
+            # itself; FAC and FPERR must still agree.
+            so = {k: v for k, v in so.items() if k not in ("FACTYP", "DE")}
+            sn = {k: v for k, v in sn.items() if k not in ("FACTYP", "DE")}
+            live = [x for x in live if x != self.new.sym["FACTYP"]]
         ok = so == sn and not live
         detail = "" if ok else (f"old={so} new={sn} live RAM diffs="
                                 f"{[hex(a) for a in live[:12]]}")

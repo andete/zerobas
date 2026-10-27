@@ -85,6 +85,11 @@ observe through `FRE` differs. No keyword has this rung yet.
   2026-07-17, in the follow-up to the string-heap work). It now raises
   `Illegal function call` through the same deferred-error path the math
   functions use: [spec-basic-arrays-slice4a-string-heap.md](../spec-basic-arrays-slice4a-string-heap.md).
+- **`ASC("")` was reported a moment late** (fixed 2026-10-27, D-DEFERRSTUDY):
+  the error was noted and the rest of the expression ran first; in
+  `A=ASC("")+USR(0)` the `USR` call ran here and not on the VG-8020. It is now
+  raised at once, as there
+  ([`deferr_side_run.out`](../../scratchpad/deferr_side_run.out)).
 - **`ASC(5)` said `Syntax error`** where the reference says `Type mismatch`
   (fixed the same day, 2026-07-17). `LEN` and `VAL` share the code and were
   fixed with it.
