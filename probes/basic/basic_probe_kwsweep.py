@@ -88,6 +88,7 @@ import tempfile
 _sys.path.insert(0, _os.path.join(
     _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "disk"))  # bas_tokenise
 
+import errmsg_alphabet  # D-KWERRWORDS: the derived alphabet, both ROMs' message texts
 import cas_decode  # reads the recording back -- the NEEDS-BLANKTAPE: capture
 import cas_encode  # the clean-room .cas encoder -- the NEEDS-TAPE: fixture
 from bas_tokenise import make_multiline_program
@@ -5543,6 +5544,8 @@ ERROR_WORDS = (
     "illegal direct", "nexus", "bad file", "file not found", "disk offline",
     "device i/o error", "not found", "error",   # bare "error" LAST: catch-all
 )
+ERRMSG_LOWER = tuple(m.lower() for m in errmsg_alphabet.MESSAGES)   # longest first
+assert ERROR_WORDS[-1] == "error", "the catch-all must stay last (classify splits on it)"
 
 
 def tokens(raw: str | None) -> bytes | None:
@@ -5710,9 +5713,22 @@ def classify(raw: str | None, cmdline: str,
         if tail is None:
             return ("?noecho", "")
     low = tail.lower()
-    for phrase in ERROR_WORDS:
+    for phrase in ERROR_WORDS[:-1]:
         if phrase in low:
             return (f"error:{phrase}", tail)
+    # 🔴 D-KWERRWORDS (2026-10-27): the hand list above cannot name `NEXT without
+    # FOR`, `RETURN without GOSUB`, `Out of DATA`, `Can't CONTINUE`... -- so a row
+    # where zerobas raised one of those read as a VALUE, and with the reference
+    # erroring it scored EXTRA, which does not redden the sweep (D-ERRORARG's knife,
+    # scratchpad/errorarg_knife.out). The derived alphabet (probes/lib/
+    # errmsg_alphabet.py, D-ALPHAGATE) names every message either ROM prints; it is
+    # consulted BEFORE the bare-"error" catch-all and AFTER the hand list, so every
+    # class string the hand list produced is unchanged.
+    for msg in ERRMSG_LOWER:
+        if msg in low:
+            return (f"error:{msg}", tail)
+    if ERROR_WORDS[-1] in low:
+        return (f"error:{ERROR_WORDS[-1]}", tail)
     return ("value", tail)
 
 

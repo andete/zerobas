@@ -1,0 +1,23 @@
+  ROM b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6  ->  c5d92d75 20dbc3d2 26831dd7 144c7abf f58662b6
+restore: b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6 -> b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6  build rc=0  BYTE-IDENTICAL (all five)
+K-KW1: gate rc=2
+SAME   t6errorr5 error 0
+SAME   t6errorr13 error "A"
+SAME   t6errorr24 error
+SAME   t6errorr6 error 70000
+SAME   t6errorr2 error 1,1
+SAME   error_t3  error 0
+DIVERGENT     t6errorr2 ERROR 1,1
+SUPPORTED     t6errorr5 ERROR 0
+SUPPORTED     t6errorr13 ERROR "A"
+SUPPORTED     t6errorr24 ERROR
+SUPPORTED     t6errorr6 ERROR 70000
+SUPPORTED     error_t3  ERROR 0
+t6errorr5  present SUPPORTED   match
+t6errorr13 present SUPPORTED   match
+t6errorr24 present SUPPORTED   match
+t6errorr6  present SUPPORTED   match
+t6errorr2  present DIVERGENT   ref 'Syntax error in 10' vs zb 'NEXT without FOR in 10'
+error_t3   present SUPPORTED   match
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+*** 🔴 1 UNPINNED SUPPORT DIVERGENCE(S), both sides read: t6errorr2

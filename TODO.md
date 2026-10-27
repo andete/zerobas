@@ -16342,7 +16342,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       below (D-KWERRWORDS); that is why `ERROR 1,1` is ALSO a trace row.
       Docs: ERROR.md; examples PASS 1 ([`errorarg_kwdoc.out`](scratchpad/errorarg_kwdoc.out)).
 
-- [ ] 🔴 **KWSWEEP'S ERROR CLASSIFIER IS A HAND LIST THAT CANNOT NAME `NEXT without
+- [x] ✅ **DONE 2026-10-27 (D-KWERRWORDS)** 🔴 **KWSWEEP'S ERROR CLASSIFIER IS A HAND LIST THAT CANNOT NAME `NEXT without
       FOR`, SO A ROW WHERE ZEROBAS RAISES THE WRONG ERROR CAN READ `EXTRA` AND STAY
       GREEN (D-KWERRWORDS, found 2026-10-24 by D-ERRORARG's knife).**
       🎚️ APPARATUS — error-message alphabet
@@ -16361,6 +16361,17 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       then diff the FULL verdict pin before/after -- every row that changes is
       either a hidden divergence or a now-correct refusal, and each must be read,
       not bulk-accepted. Also check whether EXTRA should redden at all.
+      ✅ **FIXED 2026-10-27.** classify() keeps the hand list first (every class string
+      it produced is unchanged), then consults errmsg_alphabet.MESSAGES (both ROMs'
+      texts, case-folded, longest first), and only then the bare-`error` catch-all.
+      🎯 Prediction "a handful of rows change" MISSED: the full sweep moved **0 of 996**
+      verdicts against the pin before ([`kwerrwords_sweep.out`](scratchpad/kwerrwords_sweep.out)) -- the blindness hid no
+      current divergence. Proof it now SEES: 🔪 K-KW1 ([`kwerrwords_knife.py`](scratchpad/kwerrwords_knife.py)), a
+      BYTE-NEUTRAL cut (three NOPs over ex_error's end check; a byte-adding cut of the old
+      body failed the build -- page 1 is full) makes `ERROR 1,1` raise 1 again, and
+      t6errorr2 now reads **DIVERGENT** and counts ("1 UNPINNED SUPPORT DIVERGENCE"),
+      gate rc=2, all five restored ([`kwerrwords_knife.out`](scratchpad/kwerrwords_knife.out)). ➡️ Still open, not done here:
+      whether EXTRA itself should redden the sweep.
 
 - [x] ✅ **DONE 2026-10-24 (D-BAREEXTRA)** 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
       SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found
