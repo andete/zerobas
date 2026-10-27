@@ -1,0 +1,13 @@
+CF dskf2     PRINT DSKF(2) | Insert diskette for drive B: | and strike a key when ready | 706 | Ok
+ZB dskf2     PRINT DSKF(2) | 706 | ZB
+CF dski2     A$=DSKI$(2,0):PRINT LEN(A$) | Insert diskette for drive B: | and strike a key when ready | 0 | Ok
+ZB dski2     A$=DSKI$(2,0):PRINT LEN(A$) | Bad drive name | ZB
+CF filesb    FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok
+ZB filesb    FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB
+CF b_then_a  FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok | FILES"A:" | Insert diskette for drive A: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok
+ZB b_then_a  FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB | FILES"A:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB
+CF b_then_b  FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok | FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok
+ZB b_then_b  FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB | FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB
+CF saveb     NEW | Ok | 10 REM Q | SAVE"B:Q" | Insert diskette for drive B: | and strike a key when ready | Ok | FILES"A:" | Insert diskette for drive A: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Q | Ok
+ZB saveb     NEW | ZB | 10 REM Q | SAVE"B:Q" | ZB | FILES"A:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Q       . | ZB
+refcache: 0 hit, 12 miss, 12 stored

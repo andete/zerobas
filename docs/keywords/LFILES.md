@@ -92,6 +92,9 @@ reaches the printer waits for it.
 
 ## What we found, and how
 
+- **A name with no extension was listed with a dot** (fixed 2026-10-27,
+  D-FILESNOEXT): the same listing routine as `FILES`, so the same fix -- a
+  space where the dot would be. See [`FILES`](FILES.md).
 - **`LFILES` arrived on 2026-08-06** (D-LFILES), after its behaviour had been
   measured on the references first (D-LPTVERB). The obvious build — `FILES`
   with its output pointed at the printer — would have been wrong: it ran all

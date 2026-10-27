@@ -1,0 +1,8 @@
+  ROM b5c7e8e5 20dbc3d2 8b5f2664 e0c70377 f58662b6  ->  b5c7e8e5 20dbc3d2 e3763993 e0c70377 f58662b6
+restore: b5c7e8e5 20dbc3d2 8b5f2664 e0c70377 f58662b6 -> b5c7e8e5 20dbc3d2 8b5f2664 e0c70377 f58662b6  build rc=0  BYTE-IDENTICAL (all five)
+K-FN1: gate rc=2
+ROW full CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] SAME
+ROW part CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT X] SAME
+ROW w37 CF=[  10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS |   X] ZB=[  10 FILES:PRINT "X" |   RUN |   TEST    .BIN HI      .TXT |   PROG    .BIN PROG    .BAS |   PROG2   .BAS PROG3   .BAS |   X] SAME
+ROW midline CF=[AB | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] ZB=[AB | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | X] SAME
+ROW noext CF=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Q            R            X] ZB=[TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Q       .    R       .    X] DIVERGES

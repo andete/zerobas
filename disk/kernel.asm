@@ -6369,8 +6369,17 @@ de_name:
                 pop     hl
                 inc     hl
                 djnz    de_name
-                push    hl                  ; '.' between name and extension
+                push    hl                  ; '.' between name and extension -- or a
+                ld      a,(hl)              ; SPACE when the extension is blank: D-FILESNOEXT
+                inc     hl                  ; (2026-10-27), the CF-3300 lists `Q` with no
+                or      (hl)                ; dot, the 12-column field kept
+                inc     hl                  ; (scratchpad/filesnoext_run.out). Directory
+                or      (hl)                ; bytes are printable, so the OR of the three is
+                cp      ' '                 ; exactly ' ' only when all three are spaces
                 ld      a,'.'
+                jr      nz,de_dot
+                ld      a,' '
+de_dot:
                 call    df_out
                 pop     hl
                 ld      b,3                 ; 3 extension chars

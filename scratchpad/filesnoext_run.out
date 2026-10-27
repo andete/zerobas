@@ -1,0 +1,9 @@
+CF |TEST~~~~.BIN~HI~~~~~~.TXT~PROG~~~~.BIN|
+CF |PROG~~~~.BAS~PROG2~~~.BAS~PROG3~~~.BAS|
+CF |Q~~~~~~~~~~~~R~~~~~~~~~~~~S~~~~~~~.A|
+CF |Ok|
+ZB |TEST~~~~.BIN~HI~~~~~~.TXT~PROG~~~~.BIN|
+ZB |PROG~~~~.BAS~PROG2~~~.BAS~PROG3~~~.BAS|
+ZB |Q~~~~~~~.~~~~R~~~~~~~.~~~~S~~~~~~~.A|
+ZB |ZB|
+refcache: 0 hit, 2 miss, 2 stored

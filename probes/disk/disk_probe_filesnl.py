@@ -11,6 +11,8 @@ page's example). A partly filled last row keeps the cursor on it, on both.
   part     7 files (a last row of one)
   w37      6 files at WIDTH 37 (rows of two)
   midline  PRINT "AB"; then FILES -- the listing starts mid-row
+  noext    two names saved with NO extension -- a space where the dot goes, the
+           12-column field kept (D-FILESNOEXT, 2026-10-27; filesnoext_run.out)
 
 Each row prints `ROW <name> CF=[...] ZB=[...] <verdict>`.
 Exit 0 all agree; 1 a divergence; 2 the CF-3300 gave no reading.
@@ -28,6 +30,7 @@ CASES = {
     "part": ("SCREEN 0:WIDTH 40", ['10 COPY "HI.TXT" TO "H2.TXT"', '20 FILES:PRINT "X"', "RUN"]),
     "w37": ("SCREEN 0:WIDTH 37", ['10 FILES:PRINT "X"', "RUN"]),
     "midline": ("SCREEN 0:WIDTH 40", ['10 PRINT "AB";:FILES:PRINT "X"', "RUN"]),
+    "noext": ("SCREEN 0:WIDTH 40", ['10 REM', 'SAVE"Q"', 'SAVE"R"', '10 FILES:PRINT "X"', "RUN"]),
 }
 
 

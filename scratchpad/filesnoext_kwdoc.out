@@ -1,0 +1,5 @@
+=== FILES: PASS
+=== LFILES: SKIP (needs a printer)
+
+PASS 1  SKIP 1
+refcache: 0 hit, 2 miss, 2 stored

@@ -17285,6 +17285,31 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Related: D-BOOTKEYS (CTRL at boot is how the reference turns drive B off).
       📏 [`errtext6064_run.out`](scratchpad/errtext6064_run.out) (last row).
       `DSKO$` drive 2 is unmeasured.
+      📏 **SCOPE MEASURED 2026-10-27** ([`dskib_probe.py`](scratchpad/dskib_probe.py) ->
+      [`dskib_run.out`](scratchpad/dskib_run.out), fresh test720.dsk each case, Enter as the key): on
+      the CF-3300 EVERY switch of logical drive prompts (`Insert diskette for drive B:` /
+      `and strike a key when ready`, and the same for A: when going back); a second
+      access to the same drive does not; it is the one physical disk throughout (`Q`
+      saved to B: is in A:'s listing). Faces: `DSKF(2)` prompts then 706, `DSKI$(2,0)`
+      prompts, `FILES"B:"` prompts then lists, `SAVE"B:Q"` prompts. zerobas: DSKF(2) 706
+      at once, DSKI$(2,0) Bad drive name, FILES"B:" lists with NO prompt (🎯 prediction
+      "Bad drive name" missed). ➡️ Next: one "current logical drive" cell and the prompt
+      + key wait on a switch, on every disk path, in disk.rom.
+
+- [x] ✅ **DONE 2026-10-27 (D-FILESNOEXT)** 🔴 **`FILES` LISTED A NAME WITH NO EXTENSION AS
+      `Q       .`; THE CF-3300 PRINTS A SPACE WHERE THE DOT GOES (found 2026-10-27 by
+      D-DSKIB's scope probe).**
+      🎚️ TIER 1 — happy path: FILES' everyday listing
+      🤖 **AUTONOMOUS** — the CF-3300 settled it.
+      📏 [`filesnoext_probe.py`](scratchpad/filesnoext_probe.py) ([`filesnoext_run.out`](scratchpad/filesnoext_run.out), spaces shown
+      as `~`): `Q~~~~~~~~~~~~R` on the CF-3300 -- the 12-column field kept, no dot --
+      against `Q~~~~~~~.~~~~R` here. ✅ df_emit (disk/kernel.asm, FILES and LFILES)
+      emits a space instead of the dot when the three extension bytes OR to ' ' (all
+      spaces); disk.rom only. After: identical ([`filesnoext_after.out`](scratchpad/filesnoext_after.out)). Gate:
+      filesnl-acceptance row `noext` ([`filesnoext_gate.out`](scratchpad/filesnoext_gate.out)); 🔪 K-FN1
+      ([`filesnoext_knife.py`](scratchpad/filesnoext_knife.py)): only disk.rom moved, `noext` alone DIVERGES,
+      rc=2, all five images restored ([`filesnoext_knife.out`](scratchpad/filesnoext_knife.out)). Docs: FILES.md,
+      LFILES.md; examples PASS 1, SKIP 1 (the printer one).
 
 - [ ] 🔴 **SHIFT OR CTRL HELD AT BOOT — THE DISK ROM'S OWN BOOT OPTIONS FOR MORE FREE
       RAM (D-BOOTKEYS, raised by Joost 2026-10-09).**

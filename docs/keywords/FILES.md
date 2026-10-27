@@ -6,10 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # `FILES` — list the files on the disk
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-27):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence: the
-> two happy-path differences found on 2026-10-09 (the cursor after the listing,
-> a blank or drive-only pattern) were fixed the same day.
+> happy-path differences found on 2026-10-09 (the cursor after the listing, a
+> blank or drive-only pattern) and 2026-10-27 (a name with no extension) are
+> fixed.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -94,6 +95,12 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A name with no extension was listed with a dot** (fixed 2026-10-27,
+  D-FILESNOEXT). After `SAVE"Q"` the CF-3300 lists `Q` with a space where the
+  dot would be, keeping every name 12 columns wide; zerobas printed `Q       .`
+  ([`filesnoext_run.out`](../../scratchpad/filesnoext_run.out), from
+  [`filesnoext_probe.py`](../../scratchpad/filesnoext_probe.py); found while
+  measuring drive B, [`dskib_run.out`](../../scratchpad/dskib_run.out)).
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   `FILES` kept `TIME` running for 30 % of its work here, against 71 % on the
   CF-3300; now 38 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile
@@ -151,6 +158,7 @@ The one rung not yet proven is **RAM usage**.
 
 ## Tests that cover it
 
+- `make filesnl-acceptance` — row `noext`: names with no extension.
 - `make diskbasic-acceptance` — the plain and the wildcard listing, compared
   with the CF-3300's screen.
 - `make kwsweep` — the bare listing, the pattern listing and the error rows
