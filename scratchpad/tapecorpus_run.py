@@ -18,6 +18,10 @@ TAPECORPUS_DIR (or --dir). The pick is scratchpad/tapecorpus_pick.list.
     SAME      VRAM byte-identical            NEAR  < 128 VRAM bytes apart
     RUNS?     both running (a program line, or a graphics screen), far apart
     RESET     zerobas back at its boot banner while the reference is not
+    ZB-LOADING / REF-LOADING  that machine still loading the tape (its `Found:` line
+              on a direct-mode text screen) while the other one runs -- D-TAPELOAD
+              2026-10-27: Space read RESET at T300 because the banner was still
+              above `Found:Pyrami`, not because anything reset
     ZB-PROMPT zerobas in direct mode at a text screen, the reference running
     REF-PROMPT the reference in direct mode, zerobas running
     BOTH-PROMPT both in direct mode     ERROR a machine did not run / no .cas
@@ -106,6 +110,9 @@ def run_one(machine, cas, times):
 
 def state(cap, banner):
     text = " ".join(D.screen_text(cap))
+    if "Found:" in text and cap["curlin"] == 0xFFFF and cap["pc"] < 0x8000 \
+            and D.mode_of(cap["regs"]) in ("S0", "S1"):
+        return "LOADING"                    # checked BEFORE the banner: see the legend
     if banner in text and cap["curlin"] == 0xFFFF:
         return "BANNER"
     if cap["curlin"] != 0xFFFF or D.mode_of(cap["regs"]) not in ("S0", "S1") \
@@ -126,6 +133,10 @@ def classify(ref, zb, last):
     sz = state(zb[last], "zerobas version")
     if sz == "BANNER" and sr != "BANNER":
         return "RESET", apart
+    if sz == "LOADING" and sr == "RUNNING":
+        return "ZB-LOADING", apart
+    if sr == "LOADING" and sz == "RUNNING":
+        return "REF-LOADING", apart
     if sr == "RUNNING" and sz == "RUNNING":
         return "RUNS?", apart
     if sr == "RUNNING":

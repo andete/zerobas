@@ -1951,6 +1951,20 @@ item — do **one item per session** to keep context lean.
       value) or by Joost, before any zerobas row is judged against it. Then
       decide whether the docs' "the VG-8020" should read "the VG 8020/00".
 
+- [ ] 🐌 **AN ASCII BASIC TAPE (`RUN"CAS:"`) TAKES ~40% LONGER TO LOAD THAN ON THE VG-8020
+      (D-ASCTAPESPD, found 2026-10-27 by D-TAPELOAD's corpus).**
+      🎚️ TIER 5 — on-par speed of loading an ASCII program from tape (within T2's 10×)
+      🤖 **AUTONOMOUS** — black-box timing settles it; ⏸️ speed is PAUSED (Joost 10-20:
+      ROM space first), so this is filed, not chased.
+      📏 [`tapeload_space_timing.out`](scratchpad/tapeload_space_timing.out): the collection's "Space"
+      (`RUN"CAS:"` of an ASCII program), sampled every 30 s: the VG-8020 starts the
+      program between T210 and T240, zerobas between T300 and T330 -- ~90 s later,
+      reproduced exactly on a second run. The tape's data rate is the same on both, so
+      the extra time is spent between blocks -- most likely tokenising and storing
+      each block's lines while the motor is stopped. ➡️ First measurement when picked
+      up: the same ASCII program loaded from DISK (LOAD"A:...") on both, and the time
+      against the program's line count -- per-line cost vs per-block cost.
+
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
       📼 **THE TAPE RUN, REBUILT AND TRACKED (2026-10-22):** the one-off harness and its
@@ -1965,6 +1979,12 @@ item — do **one item per session** to keep context lean.
       diskless, the screen at T420: **SAME 9, NEAR 11, RUNS? 21, ZB-PROMPT 1, RESET 0.** 🔮
       "few or no RESET" HIT; "a quarter SAME / NEAR" MISSED low (20 of 42). Most RUNS? rows sit
       at the SAME program line on both (animation phase). Known: BMX Simulator (D-SLOT3EXP, 🙋).
+      🔧 **2026-10-27: a still-LOADING machine read as RESET.** `state()` called a direct-
+      mode screen with the boot banner on it BANNER, and the banner stays on screen above
+      `Found:` while a tape loads -- so Space, sampled at T300, read RESET
+      ([`tapeload_space_t300.out`](scratchpad/tapeload_space_t300.out) after the fix). New states ZB-LOADING /
+      REF-LOADING (scratchpad/tapecorpus_run.py), checked before the banner. The finding
+      behind it is D-ASCTAPESPD (TIER 5).
       🆕 **Blocker** (no history before -- it entered the pick on a stray word): zerobas stops
       with `Undefined line number in 88` (`GOSUB 217`) where the VG-8020 runs on to line 132's
       `HIT SPACE KEY`. A CLOAD tape; loaded, NOT run, zerobas's program is intact (lines 135-140
@@ -7021,7 +7041,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9507 (T-6FE392)8 (T-529ABE)` from `TODO.md:15074 (T-529ABE)`: a
+      `TODO.md:9527 (T-6FE392)8 (T-529ABE)` from `TODO.md:15094 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9962,7 +9982,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15074 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15094 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
