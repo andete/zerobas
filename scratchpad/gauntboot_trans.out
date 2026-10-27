@@ -1,0 +1,46 @@
+  CF TRANS t=3.796 to=0C4D from=FD9A
+  CF TRANS t=3.796 to=0C56 from=FD9F
+  CF TRANS t=3.804 to=1B49 from=FEE4
+  CF TRANS t=3.804 to=1462 from=FEDF
+  CF TRANS t=3.804 to=08C3 from=FDA4
+  CF TRANS t=3.847 to=5FE5 from=F367
+CF: 0 H.ERRO call(s)
+  CF T3 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T6 pc=77F3 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T9 pc=7723 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T12 pc=77B8 hook=c9c9c9c9c9 err=00 erl=0000 curline=0a00
+  CF T16 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T20 pc=01FC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  ZB TRANS t=3.506 to=18FA from=FD9A
+  ZB TRANS t=3.506 to=3B7E from=FD9F
+  ZB TRANS t=4.014 to=2467 from=F397
+  ZB TRANS t=4.014 to=662C from=FE61
+  ZB TRANS t=4.014 to=403D from=F398
+  ZB TRANS t=4.015 to=66A7 from=FEDA
+  ZB TRANS t=4.016 to=004F from=F398
+  ZB TRANS t=4.018 to=0049 from=F398
+  ZB TRANS t=4.018 to=6D25 from=F398
+  ZB TRANS t=4.019 to=0A55 from=F397
+  ZB TRANS t=4.019 to=6CF6 from=F398
+  ZB TRANS t=4.019 to=0A5F from=F397
+  ZB TRANS t=4.019 to=2812 from=F398
+  ZB TRANS t=4.019 to=076F from=F397
+  ZB TRANS t=4.019 to=6D1E from=F398
+  ZB TRANS t=4.020 to=4046 from=F398
+  ZB TRANS t=4.022 to=0778 from=F397
+  ZB TRANS t=4.022 to=28DF from=F398
+  ZB TRANS t=4.022 to=0A83 from=F397
+  ZB TRANS t=4.022 to=64F7 from=F398
+  ZB TRANS t=4.022 to=0030 from=FE5D
+  ZB TRANS t=4.022 to=7130 from=F398
+  ZB TRANS t=4.719 to=0782 from=F397
+  ZB TRANS t=4.724 to=0038 from=FFB1
+  ZB TRANS t=4.983 to=23BF from=C300
+ZB: 1 H.ERRO call(s)
+  ZB HOOK t=4.72 E=116 A=116
+  ZB T3 pc=7AE6 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  ZB T6 pc=FD9A hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T9 pc=18ED hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T12 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T16 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T20 pc=18F5 hook=ffffffffff err=ff erl=ffff curline=ffff

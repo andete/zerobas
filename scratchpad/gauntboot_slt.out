@@ -1,0 +1,21 @@
+CF: 0 H.ERRO call(s)
+  CF T2 pc=7D10 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000000 A8=F0
+  CF T3 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T4 pc=77BC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T4_5 pc=77BB hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T6 pc=77F3 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T9 pc=7723 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T12 pc=77B8 hook=c9c9c9c9c9 err=00 erl=0000 curline=0a00 exptbl_slttbl=0000008000000004 A8=FC
+  CF T16 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  CF T20 pc=01FC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+ZB: 1 H.ERRO call(s)
+  ZB HOOK t=4.72 E=116 A=116
+  ZB T2 pc=108B hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000000 A8=F0
+  ZB T3 pc=7AE6 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  ZB T4 pc=7AFE hook=c9c9c9c9c9 err=00 erl=0000 curline=0000 exptbl_slttbl=0000008000000004 A8=FC
+  ZB T4_5 pc=7ADB hook=c9c9c9c9c9 err=00 erl=0000 curline=0a00 exptbl_slttbl=0000008000000007 A8=FC
+  ZB T6 pc=FD9A hook=ffffffffff err=ff erl=ffff curline=ffff exptbl_slttbl=ffffffffffffffff A8=F0
+  ZB T9 pc=18ED hook=ffffffffff err=ff erl=ffff curline=ffff exptbl_slttbl=ffffffffffffffff A8=F0
+  ZB T12 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff exptbl_slttbl=ffffffffffffffff A8=F0
+  ZB T16 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff exptbl_slttbl=ffffffffffffffff A8=F0
+  ZB T20 pc=18F5 hook=ffffffffff err=ff erl=ffff curline=ffff exptbl_slttbl=ffffffffffffffff A8=F0

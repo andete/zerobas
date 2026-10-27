@@ -17315,7 +17315,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       restored ([`dskib_knife.out`](scratchpad/dskib_knife.out)). Docs: DSKF.md, DSKI$.md, DSKO$.md,
       concepts/disk.md; examples PASS 4 + 1. ⚠️ Residual: COPY across drives, below.
 
-- [ ] 🔴 **GAUNT.DSK NO LONGER BOOTS ON ZEROBAS: BASIC'S BANNER AND PROMPT, WHERE IT RAN IN
+- [x] ✅ **CLOSED 2026-10-27: NOT OURS -- written for a machine with RAM in slot 3-2 (D-GAUNTBOOT)**
+      🔴 **GAUNT.DSK NO LONGER BOOTS ON ZEROBAS: BASIC'S BANNER AND PROMPT, WHERE IT RAN IN
       EVERY EARLIER COLLECTION RUN (D-GAUNTBOOT, found 2026-10-27 by D-DSKIB's run).**
       🎚️ TIER 1 — happy path: booting a disk is the first thing a disk machine does
       🤖 **AUTONOMOUS** — bisect it; the CF-3300 still runs it.
@@ -17324,6 +17325,24 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       fails the same way ([`gauntboot_head.out`](scratchpad/gauntboot_head.out)). Every earlier run read BOTH-RUN
       (diskcorpus_rerun2..5); rerun5 is fa9488b7 (2026-10-23 17:41), 25 commits back, 12
       of them in disk/. ➡️ Bisect those 25 with `diskcorpus_run.py --only GAUNT`.
+      📏 **BISECTED AND MEASURED 2026-10-27** ([`gauntboot_probe.py`](scratchpad/gauntboot_probe.py)): the first bad
+      commit is 81097b93, **D-HERRO** (git bisect run in a worktree; ⚠️ the step script has to
+      `unset GIT_DIR` etc., or the C-BIOS build's own git call resolves its tag in the
+      wrong repository and every step is skipped). Why: the loader's line 20 is a
+      constant `POKE -1,170` -- subslot 2 in every page of slot 3 -- and a breakpoint on
+      do_poke's store logs exactly that ([`gauntboot_poke.out`](scratchpad/gauntboot_poke.out): addr FFFF val AA). Page 3
+      then holds no RAM: the stack, the work area and the hooks read $FF
+      ([`gauntboot_slt.out`](scratchpad/gauntboot_slt.out)), exec_stmt's FPERR backstop reads a bogus pending code (A=116), and
+      since D-HERRO the error path's `call H_ERRO` executes those $FF bytes (RST 38h)
+      ([`gauntboot_errbp.out`](scratchpad/gauntboot_errbp.out), [`gauntboot_trans.out`](scratchpad/gauntboot_trans.out), [`gauntboot_ring.out`](scratchpad/gauntboot_ring.out)). 🎯 **THE REFERENCE LOSES PAGE 3 TOO**: in
+      openMSX's National_CF-3300 description slot 3-2 is EMPTY (RAM is 3-0), so the same
+      POKE leaves it with no RAM in page 3 -- it ends in SCREEN 1 with an empty screen,
+      line 0, the PC in the BIOS. Neither reference runs the game; it needs RAM in 3-2.
+      The old "BOTH-RUN" was two machines running on after the fault, which the
+      collection's classifier cannot tell from a working title. Same class as D-DISKRUN's
+      calculus / TestameB: not ours. 🔮 Predictions: "a fixed-address call landed in the
+      error path after the 9 B shift" MISSED (it is a slot POKE); "the POKE is to $FFFF"
+      HIT; "zerobas's SLTTBL decodes to subslot 2" MISSED (the 2 is a constant).
 
 - [ ] 🔴 **`COPY "A:X" TO "B:Y"` PROMPTS FOUR TIMES ON THE CF-3300 AND ONCE HERE
       (D-DSKIBCOPY, found 2026-10-27 by D-DSKIB).**

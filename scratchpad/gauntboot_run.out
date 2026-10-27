@@ -1,0 +1,15 @@
+CF: 0 H.ERRO call(s)
+  CF T3 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T6 pc=77F3 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T9 pc=7723 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T12 pc=77B8 hook=c9c9c9c9c9 err=00 erl=0000 curline=0a00
+  CF T16 pc=77EC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  CF T20 pc=01FC hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+ZB: 1 H.ERRO call(s)
+  ZB HOOK t=4.72 E=116 A=116
+  ZB T3 pc=7AE6 hook=c9c9c9c9c9 err=00 erl=0000 curline=0000
+  ZB T6 pc=FD9A hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T9 pc=18ED hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T12 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T16 pc=18F7 hook=ffffffffff err=ff erl=ffff curline=ffff
+  ZB T20 pc=18F5 hook=ffffffffff err=ff erl=ffff curline=ffff
