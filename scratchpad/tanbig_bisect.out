@@ -1,0 +1,13 @@
+Philips_VG_8020                e1E11    X=1E11:PRINT SIN(X);COS(X):PRINT TAN(X) [ .92977648588827  .36812455268468 |  2.5257116894472 | OK | color   auto    goto    list    run]
+Philips_VG_8020                e1E12    X=1E12:PRINT SIN(X);COS(X):PRINT TAN(X) [-.58778525229247  .80901699437495 | -.72654252800535 | OK | color   auto    goto    list    run]
+Philips_VG_8020                e2E13    X=2E13:PRINT SIN(X);COS(X):PRINT TAN(X) [ 0  .95105651629516 |  0 | OK | color   auto    goto    list    run]
+Philips_VG_8020                e3E13    X=3E13:PRINT SIN(X);COS(X):PRINT TAN(X) [ 0  .95105651629516 |  0 | OK | color   auto    goto    list    run]
+Philips_VG_8020                e5E13    X=5E13:PRINT SIN(X);COS(X):PRINT TAN(X) [ 0  .95105651629516 |  0 | OK | color   auto    goto    list    run]
+Philips_VG_8020                e7E13    X=7E13:PRINT SIN(X);COS(X):PRINT TAN(X) [ 0  0 | E 6  20 | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e1E11    X=1E11:PRINT SIN(X);COS(X):PRINT TAN(X) [ .92854524756063  .37121923876946 |  2.5013392372621 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e1E12    X=1E12:PRINT SIN(X);COS(X):PRINT TAN(X) [-.64668072005736  .76276080543385 | -.8478158755018 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e2E13    X=2E13:PRINT SIN(X);COS(X):PRINT TAN(X) [-.4739079701105  .88057431160205 | -.53818055315321 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e3E13    X=3E13:PRINT SIN(X);COS(X):PRINT TAN(X) [-.88974490164622  .45645811417796 | -1.9492366857112 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e5E13    X=5E13:PRINT SIN(X);COS(X):PRINT TAN(X) [-.91732545674384  .39813817503676 | -2.3040379301963 | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   e7E13    X=7E13:PRINT SIN(X);COS(X):PRINT TAN(X) [-.79302749218405 -.6091854311736 |  1.301783417007 | OK | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 12 miss, 12 stored

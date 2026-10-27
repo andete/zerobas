@@ -270,7 +270,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | — | TIER 1 | 🙋 | loading existing software from tape. | 2787 |
 | — | TIER 1 | 🤖 | it is the bar every other item is measured against, and three | 15769 |
 | — | TIER 1 | 🤖 | it is part of the bar every other item is measured against. | 16028 |
-| — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | 17733 |
+| — | TIER 1 | 🤖 | the measured keyword-completeness remainder, now an | 17752 |
 | `COPY`, `TO` | TIER 3 | 🙋 | a wildcard COPY is the ordinary way to copy a set of files. | 16803 |
 | — | TIER 4 | 🤖 | the rung's own definition; it is the bar every other item at | 2926 |
 | — | TIER 4 | 🤖 | RAM usage: this item is the measurement the RAM rung is | 2998 |

@@ -17729,6 +17729,25 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       either), so it is TAN's own path — likely the reference's quotient
       SIN/COS overflowing after a lossy argument reduction. ➡️ First bisect the
       argument where the reference starts raising; it blocks TAN's T6.
+      📏 **MEASURED 2026-10-27 -- THE PREMISE WAS HALF WRONG: SIN AND COS DIFFER TOO.**
+      ([`tanbig_probe.py`](scratchpad/tanbig_probe.py) -> [`tanbig_run.out`](scratchpad/tanbig_run.out),
+      [`tanbig_bisect.out`](scratchpad/tanbig_bisect.out); `X=e:PRINT SIN(X);COS(X):PRINT TAN(X)`, one
+      boot each.) VG-8020: 1E10 / 1E11 values; **1E12 SIN = sin(0.9·2π), COS = sin(0.15·2π)**
+      exactly -- the reduction keeps only the fraction digits of x/2π that survive its BCD
+      precision, and COS is the quarter-turn shift of the same quantised fraction; 1E13..5E13
+      SIN 0, COS .95105651629516 (= sin(0.3·2π)), TAN 0; **7E13 and up (1E14..1E38, -1E38,
+      1D30) SIN 0, COS 0, TAN Overflow (6)** -- TAN is the quotient 0/0. zerobas: different
+      values from 1E10 on (neither side is accurate: true sin(1E10) = -.48750602508751), COS 1
+      and TAN 0 from 1E15 on, never an error. 🔮 "TAN raises from ~1E15-16, SIN/COS quiet,
+      zerobas a number everywhere": the error edge MISSED (it is between 5E13 and 7E13), the
+      rest hit. 🎯 So the faithful fix is not a TAN threshold (that would match the error and
+      still answer every SIN/COS of a large argument differently): it is the reference's
+      reduction -- x/2π quantised to the digits its arithmetic keeps, COS as that fraction +
+      1/4 -- and the TAN Overflow then falls out of COS = 0. ➡️ Next: pin the quantisation on
+      both sides of each digit boundary (1E11 / 1E12 / 1E13 and the 5E13..7E13 edge), then
+      compare the rule against zerobas's own reduction (sub/fp_sin.asm) before writing
+      code. TIER 6 stands: no program is
+      known to take the sine of 1E12.
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
