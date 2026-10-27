@@ -118,6 +118,8 @@ bdos_setdta_body:
 ; first byte is a media ID, that format's BPB fields over it; otherwise the boot
 ; sector, BPB and all. Out: CF = 1 on a read error.
 fat_geom_read:
+                ld      a, (DK_FCB_DRV)     ; D-DSKIB: the drive this operation named
+                call    drv_select          ; -> the swap prompt when it is the other one
                 ld      de, 1               ; logical sector 1: the FAT, media ID first
                 ld      hl, FAT_DBUF
                 call    read_sector
@@ -352,6 +354,52 @@ getalloc:
 ; an explicit entry. Real flush semantics are unverifiable here (no dirty
 ; buffers at these call sites); the register contract is the observable
 ; surface (§8.4 residual).
+; drv_select: the single drive's A:/B: swap (D-DSKIB; black box: scratchpad/dskib_run.out).
+; 🏗️ Joost 2026-10-09: "yeah, we need to have the prompt mechanism" -- ONE physical
+; drive, two logical ones. On the CF-3300 (scratchpad/dskib_run.out, _run2, _run3)
+; addressing the OTHER logical drive prints, from a fresh line,
+;     Insert diskette for drive B:
+;     and strike a key when ready
+; waits for ONE key (consumed: the next one stays queued), goes to a new line and
+; carries on with the same disk; a second access to the same drive is silent, and
+; a name with no drive (DSKF(0), DSKF(1) too) is A:. The current drive is
+; DSK_CURDRV. ⚠️ The WAIT goes through calbak to the BIOS's CHGET: a page-1 tenant
+; must never wait itself (PLAY and the traps tick only with main in page 1).
+; ⚠️ COPY "A:X" TO "B:Y" prompts four times there (per buffer); here it names one
+; drive per operation -- filed in D-DSKIB, not modelled.
+;   in   A = a drive code: 0 default, 1 A:, 2 B:   out  nothing; keeps IX only --
+; fat_geom_read, its main caller, clobbers BC DE HL itself straight after
+DK_FCB_DRV      equ     DISK_FCB_NAME - 1   ; DISK_FCB+0 (basic/sysvars.inc DISK_FCB_DRV) (1 B)
+DK_CHGET        equ     $009F               ; MSX BIOS: wait for a key -> A
+drv_select:
+                cp      2                   ; 2 (B:) -> 1, anything else -> 0 (A:)
+                ld      a,0
+                jr      nz,dsl_cmp
+                inc     a
+dsl_cmp:
+                ld      hl,DSK_CURDRV
+                cp      (hl)
+                ret     z                   ; the drive already holds it: silent
+                ld      (hl),a
+                push    ix
+                push    af                  ; the new drive, 0 / 1
+                ld      a,(CSRX)
+                dec     a
+                ld      hl,dsl_text_nl      ; mid-line: a fresh line first
+                call    nz,hke_pr
+                ld      hl,dsl_text_1
+                call    hke_pr
+                pop     af
+                add     a,'A'
+                call    CHPUT               ; the drive letter
+                ld      hl,dsl_text_2
+                call    hke_pr
+                ld      ix,DK_CHGET
+                call    calbak              ; ONE key, with main in page 1
+                ld      hl,dsl_text_nl
+                call    hke_pr
+                pop     ix
+                ret
                 ds      $509F - $, $00  ; pad up to the pinned $509F DSKRST entry (M22a)
 k_509F:
                 jp      dskrst_body     ; $509F: BDOS $0D DSKRST canonical entry (M22a)
@@ -674,12 +722,16 @@ hk_dsk:
                 ld      l,c             ; HL = the cursor at `d`
                 ld      ix,eval_byte_arg
                 call    calbak          ; A = E = the drive (0..255, else ERR 5)
-                cp      2
+                cp      3               ; D-DSKIB: 2 is B:, the swap prompt (dskib_run.out)
                 jr      c,hkd_drv
                 ld      a,62            ; Bad drive name (DSKI$(3,0), measured)
                 ld      ix,raise_error
                 jp      calbak          ; raises; never returns
 hkd_drv:
+                ld      (DK_FCB_DRV),a  ; D-DSKIB: this drive, and the swap prompt if it
+                push    hl              ; is the other one -- DSKI$/DSKO$ read the sector
+                call    drv_select      ; straight through DSKIO, past fat_mount
+                pop     hl
                 ld      ix,skip_comma
                 call    calbak          ; A = the next non-blank byte
                 cp      ','
@@ -1927,6 +1979,8 @@ hkf_pat:
                 cp      'B'
                 jr      nz,hkp_end
 hkp_drv:
+                sub     'A'-1               ; D-DSKIB: 1 A:, 2 B: (a name instead: pdfcb rewrites it)
+                ld      (DK_FCB_DRV),a
                 inc     hl
                 ld      a,(hl)
                 cp      ':'
@@ -4942,6 +4996,8 @@ hk_dskf:
                 cp      3                   ; 0..2 accepted, 3+ refused
                 ld      a,62                ; (flags kept) no such drive -> 62
                 jr      nc,hkdf_bad
+                ld      a,e                 ; D-DSKIB: the drive DSKF named -- fat_mount's
+                ld      (DK_FCB_DRV),a      ; drv_select prompts for B: (2) or back to A:
                 call    fat_count_free      ; DE = free clusters -- LOCAL since
                                             ; D-DSKFLOCAL: no crossing to main,
                                             ; and none on to the sub ROM
@@ -6184,6 +6240,7 @@ hkf_sel:
                 push    af                  ; the selector, ACROSS the evaluator
                 xor     a
                 ld      (FILES_HASPAT),a    ; no pattern yet
+                ld      (DK_FCB_DRV),a      ; D-DSKIB: and the default drive (A:) until one is typed
 hkf_sp:
                 ld      a,(hl)              ; skip blanks before the filespec
                 cp      ' '

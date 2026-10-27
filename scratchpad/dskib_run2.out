@@ -1,0 +1,15 @@
+CF b_then_none FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok | FILES | Insert diskette for drive A: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok
+ZB b_then_none FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB | FILES | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB
+CF b_then_dskf0 FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok | PRINT DSKF(0) | Insert diskette for drive A: | and strike a key when ready | 706 | Ok
+ZB b_then_dskf0 FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB | PRINT DSKF(0) | 706 | ZB
+CF b_then_dskf1 FILES"B:" | Insert diskette for drive B: | and strike a key when ready | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | Ok | PRINT DSKF(1) | Insert diskette for drive A: | and strike a key when ready | 706 | Ok
+ZB b_then_dskf1 FILES"B:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | ZB | PRINT DSKF(1) | 706 | ZB
+CF loadb     LOAD"B:PROG.BAS" | Insert diskette for drive B: | and strike a key when ready | Ok | LIST | 10 POKE &HD002,123 | Ok
+ZB loadb     LOAD"B:PROG.BAS" | ZB | LIST | 10 POKE &HD002,123 | ZB
+CF killb     KILL"B:HI.TXT" | Insert diskette for drive B: | and strike a key when ready | Ok | FILES"B:" | TEST    .BIN PROG    .BIN PROG    .BAS | PROG2   .BAS PROG3   .BAS | Ok
+ZB killb     KILL"B:HI.TXT" | ZB | FILES"B:" | TEST    .BIN PROG    .BIN PROG    .BAS | PROG2   .BAS PROG3   .BAS | ZB
+CF openb     OPEN"B:HI.TXT" FOR INPUT AS 1:LINE INPUT | #1,A$:CLOSE:PRINT A$ | Insert diskette for drive B: | and strike a key when ready | Hello from zerobas-disk! | Ok
+ZB openb     OPEN"B:HI.TXT" FOR INPUT AS 1:LINE INPUT | #1,A$:CLOSE:PRINT A$ | Hello from zerobas-disk! | ZB
+CF dsko2     DSKO$ 2,700 | Insert diskette for drive B: | and strike a key when ready | Ok
+ZB dsko2     DSKO$ 2,700 | Bad drive name | ZB
+refcache: 0 hit, 14 miss, 14 stored

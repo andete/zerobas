@@ -7,8 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `DSKI$` — read a raw disk sector
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences: a sector number past the end of the disk, and drive 2 (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
+> difference: a sector number past the end of the disk (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -94,19 +94,20 @@ same crafted disk: neither shape arises on an intact disk.
 `DSKI$(0,9999)` agrees (no error on either machine), so the rule behind the
 difference is not yet known.
 
-**Drive 2.** The CF-3300 has one disk drive but treats drive 2 (`B:`) as a
-second, logical drive on the same mechanism: `DSKI$(2,0)` prints `Insert
-diskette for drive B: and strike a key when ready` and waits. zerobas has
-no logical drive B and answers `Bad drive name`
-([`errtext6064_run.out`](../../scratchpad/errtext6064_run.out)). Joost ruled
-on 2026-10-09: *"yeah, we need to have the prompt mechanism"* — zerobas will
-get the same logical drive B: and its prompt (D-DSKIB, open; `DSKF(2)` is the
-same case).
-
 The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Drive B: was missing** (fixed 2026-10-27, D-DSKIB). The CF-3300 has one
+  drive and two logical ones on it: naming the other one prints, from a fresh
+  line, `Insert diskette for drive B:` / `and strike a key when ready`, waits
+  for one key and carries on with the same disk; naming the same drive again
+  is silent, and no drive (or drive 0 or 1) means `A:`
+  ([`dskib_run.out`](../../scratchpad/dskib_run.out),
+  [`dskib_run2.out`](../../scratchpad/dskib_run2.out),
+  [`dskib_run3.out`](../../scratchpad/dskib_run3.out), from
+  [`dskib_probe.py`](../../scratchpad/dskib_probe.py)). zerobas now does the
+  same for `DSKF`, `DSKI$`, `DSKO$`, `FILES` and every `"B:"` file name.
 - **"It returns the sector as a string" was wrong** (2026-09-07, D-DSKI). The
   first measurement found the value is always `""`, which left the question
   of where the data goes. A watchpoint on the CF-3300's RAM answered it

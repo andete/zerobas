@@ -34,7 +34,7 @@ names the other component's BUFFER this address falls within. That
 second one is the question a per-component map cannot answer.
 
 * **basic** — 69 declared addresses in this project's own workspace `$E000..$F37F` (68 with a machine-readable width), plus **439** in the MSX standard work area at or above `$F380`.
-* **disk** — 121 declared addresses in this project's own workspace `$E000..$F37F` (112 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
+* **disk** — 123 declared addresses in this project's own workspace `$E000..$F37F` (114 with a machine-readable width), plus **67** in the MSX standard work area at or above `$F380`.
 
 ## This project's own workspace (`$E000..$F37F`)
 
@@ -165,6 +165,7 @@ second one is the question a per-component map cannot answer.
 | `$EF44` | 2 B | `basic` | `SCAN_INIT` | BOOT-ONLY: candidate ROM's INIT entry address (2) |  |
 | `$EF46` | 2 B | `basic` | `SCAN_IY` | BOOT-ONLY: CALSLT slot word: high byte = slot (IYh) (2) |  |
 | `$EF48` |  | `basic` | `DISK_FCB/DISK_FCB_DRV` | +0: drive code (0=default,1=A,2=B); read only by the FCB header stamp (D-FCBHDR) |  |
+| `$EF48` | 1 B | `disk` | `DK_FCB_DRV` | DISK_FCB+0 (basic/sysvars.inc DISK_FCB_DRV) (1 B) |  |
 | `$EF49` | 11 B | `basic` | `DISK_FCB_NAME` | DISK-ONLY: +1..+11: 8.3 name field (11 bytes) |  |
 | `$EF49` | 11 B | `disk` | `DISK_FCB_NAME` | DISK-ONLY: +1..+11: 8.3 name field (11 bytes) |  |
 | `$EF59` | 2 B | `basic` | `DSV_PTR` | DISK-ONLY: SAVE: current source byte pointer (2) |  |
@@ -187,6 +188,7 @@ second one is the question a per-component map cannot answer.
 | `$EFFE` | 24 B | `disk` | `P1_BLIT` | installed blit routine (24 B, D-TPAPTAIL (b)) -- declared |  |
 | `$F019` | 2 B | `basic` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
 | `$F019` | 2 B | `disk` | `FLD_END` | DISK-ONLY: FIELD: the end of the channel's record, block+9+reclen -- ERR 50's bound (2) |  |
+| `$F022` | 1 B | `disk` | `DSK_CURDRV` | D-DSKIB: the logical drive the one physical drive holds now -- 0 A:, 1 B: (1 B) |  |
 | `$F079` | 2 B | `basic` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F079` | 2 B | `disk` | `GP_RECNO` | DISK-ONLY: record number, 1-based (2 B) |  |
 | `$F07B` | 2 B | `basic` | `GP_SEC` | DISK-ONLY: file logical-sector index of the record (2) |  |

@@ -313,6 +313,10 @@ fdc_st_loop:
 ; (RC-1). Vacating this span lets a real veneer sit exactly at $4462; every
 ; caller of the moved routines resolves by symbol (grep-confirmed, §5.3), so
 ; no repoint is needed anywhere but here.
+; drv_select's text (D-DSKIB, disk/kernel.asm): sited in this fill for room.
+dsl_text_1:     db      "Insert diskette for drive ",0
+dsl_text_2:     db      ":",13,10,"and strike a key when ready"
+dsl_text_nl:    db      13,10,0
                 ds      $4462 - $, $00      ; pad to the collision point
                 jp      fopen_fill_body     ; M21a: real FOPEN dir-fill (disk/fat.asm)
 ; dta_put -- store A at (RDBLK_DST) and advance it: the block reads' one store.

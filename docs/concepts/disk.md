@@ -6,10 +6,11 @@ SPDX-License-Identifier: 0BSD
 
 # Disk BASIC — files on a 720 KB floppy, one drive
 
-> **Status (2026-10-09):** the disk statements agree with the National CF-3300
-> in the forms measured. There is no logical drive B: yet (D-DSKIB, TIER 6, ruled to be
-> built). SHIFT held at power-on keeps Disk BASIC out, as on the CF-3300
-> (since 2026-10-10); CTRL's one-drive boot waits on drive B: (D-BOOTKEYS).
+> **Status (2026-10-27):** the disk statements agree with the National CF-3300
+> in the forms measured, the logical drive B: and its prompt included (since
+> 2026-10-27; `COPY` from `A:` to `B:` prompts once here, per buffer there).
+> SHIFT held at power-on keeps Disk BASIC out, as on the CF-3300 (since
+> 2026-10-10); CTRL's one-drive boot is not done yet (D-BOOTKEYS).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -119,9 +120,11 @@ zerobas does the same since 2026-10-22.
 `A:` is the one drive and the default; `DSKF` and `DSKI$` take 0 or 1 for it.
 The CF-3300 also has a **logical drive B: on the same mechanism**: naming it
 (`DSKF(2)`, `DSKI$(2,0)`, a `"B:"` file name) prints `Insert diskette for
-drive B: and strike a key when ready` and waits, so two disks can share one
-drive. zerobas lacks it (see *Differences*). Other letters (`C:`–`H:`, `Q:`
-measured) are `Bad drive name` (62) on both.
+drive B: and strike a key when ready` and waits for one key, so two disks
+can share one drive; naming `A:` again prompts the same way, and naming the
+same drive twice does not. A name or drive argument without `B:` (or drive 2)
+means `A:`. zerobas does the same since 2026-10-27. Other letters (`C:`–`H:`,
+`Q:` measured) are `Bad drive name` (62) on both.
 
 **Work-area cells the disk system fills.** From the Disk BASIC prompt on,
 `RAMAD0`–`RAMAD3` (`&HF341`–`&HF344`) hold the slot of the RAM in each of the
@@ -230,13 +233,11 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **No logical drive B:** (D-DSKIB, TIER 6): `DSKF(2)` answers drive A's
-  count, `DSKI$(2,0)` is `Bad drive name`, a `"B:"` name means `A:`. One
-  physical drive stays (Joost, 2026-06-22); the prompt comes (ruled
-  2026-10-09: *"yeah, we need to have the prompt mechanism"*).
+- **`COPY "A:X" TO "B:Y"`** prompts four times on the CF-3300 (B:, A:, B:,
+  A: for one small file -- it swaps per buffer); zerobas prompts once
+  (D-DSKIB). The copy itself is the same.
 - **CTRL held at power-on** gives one drive and 1558 more bytes on the CF-3300;
-  zerobas ignores it, as it has no logical drive B: to drop yet (D-BOOTKEYS,
-  after D-DSKIB).
+  zerobas ignores it (D-BOOTKEYS, now that drive B: exists).
 - **A wildcard `COPY` with two or more matches** is error 5 here (D-COPYWILD;
   Joost, 2026-10-09: *"stay error 5 for now"*).
 - **Keys typed during long disk work** are nearly all kept here; the CF-3300
@@ -252,6 +253,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Drive B: was missing** (fixed 2026-10-27, D-DSKIB). The CF-3300 has one
+  drive and two logical ones on it: naming the other one prints, from a fresh
+  line, `Insert diskette for drive B:` / `and strike a key when ready`, waits
+  for one key and carries on with the same disk; naming the same drive again
+  is silent, and no drive (or drive 0 or 1) means `A:`
+  ([`dskib_run.out`](../../scratchpad/dskib_run.out),
+  [`dskib_run2.out`](../../scratchpad/dskib_run2.out),
+  [`dskib_run3.out`](../../scratchpad/dskib_run3.out), from
+  [`dskib_probe.py`](../../scratchpad/dskib_probe.py)). zerobas now does the
+  same for `DSKF`, `DSKI$`, `DSKO$`, `FILES` and every `"B:"` file name.
 - **A program that restarted BASIC booted the disk round and round** (fixed
   2026-10-22, D-MASTERS and D-BASENTRUN). The three MemMan disks call the disk
   ROM's "start BASIC" entry when the machine has no memory mapper. Logging the
@@ -388,6 +399,8 @@ The keyword pages in the table above; [MSX-DOS](msx-dos.md),
 
 ## Tests that cover it
 
+- `make dskib-acceptance` — the drive-B: prompt for `DSKF`, `DSKI$`,
+  `DSKO$`, `FILES`, `SAVE` and `LOAD`, from a fresh line, against the CF-3300.
 - `make bootkeys-acceptance` — a plain boot, SHIFT held and CTRL held from
   power-on: whether Disk BASIC is there, against the CF-3300.
 - `make diskbasic-acceptance` — the statements against the CF-3300, by screen

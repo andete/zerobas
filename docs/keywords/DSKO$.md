@@ -91,6 +91,16 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Drive B: was missing** (fixed 2026-10-27, D-DSKIB). The CF-3300 has one
+  drive and two logical ones on it: naming the other one prints, from a fresh
+  line, `Insert diskette for drive B:` / `and strike a key when ready`, waits
+  for one key and carries on with the same disk; naming the same drive again
+  is silent, and no drive (or drive 0 or 1) means `A:`
+  ([`dskib_run.out`](../../scratchpad/dskib_run.out),
+  [`dskib_run2.out`](../../scratchpad/dskib_run2.out),
+  [`dskib_run3.out`](../../scratchpad/dskib_run3.out), from
+  [`dskib_probe.py`](../../scratchpad/dskib_probe.py)). zerobas now does the
+  same for `DSKF`, `DSKI$`, `DSKO$`, `FILES` and every `"B:"` file name.
 - **`DSKO$` arrived with `DSKI$` on 2026-09-11** (D-DSKIO), once the
   CF-3300 had shown where `DSKI$` puts its data; Joost had ruled the day
   before *"DSKI$ DSKO$ should also be implemented"*. Its test is a round

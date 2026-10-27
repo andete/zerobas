@@ -4090,7 +4090,8 @@ GP_FLAGS        equ     $F088   ; DISK-ONLY: bit0 = extend (PUT allocates; GET d
 PU_FMTD         equ     $FAF9   ; -> the format's [len][ptr] descriptor (2)
 PU_FDESC        equ     BUFTX   ; [len][ptr] copy for a format that cannot move (3)
                                 ; D-WSZERO S14d: BUF, statement-exclusive (PRINT USING) (was $F08D)
-; FREE-RAM $F022..$F03C  PU_FMT's tail, given up by D-PULONG (2026-10-14)
+; $F022: DISK-ONLY DSK_CURDRV (disk/equates.inc, D-DSKIB 2026-10-27) -- the current logical drive
+; FREE-RAM $F023..$F03C  PU_FMT's tail, given up by D-PULONG (2026-10-14)
 PU_FMTLEN       equ     BUFTX + 5   ; live format length (1)
                                 ; D-WSZERO S14f: BUFTX, beside PRINT USING's other cells (was $F090)
 PU_POS          equ     BUFTX + 6   ; current scan index into the format (1)

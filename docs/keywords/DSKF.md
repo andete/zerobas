@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `DSKF` — free space on the disk
 
-> **Status (2026-10-11):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: drive 2 (below).
+> **Status (2026-10-27):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No recorded difference
+> since 2026-10-27 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -32,9 +32,10 @@ One argument, always.
 
 - **Drives 0 and 1 both name the one drive** of a single-drive machine, and
   both answer the same count.
-- **Drive 2 is the "phantom" drive B:** on the CF-3300 it prints
-  *Insert diskette for drive B:* and waits for a key. What happens after that
-  is not measured, so test programs leave drive 2 alone.
+- **Drive 2 is the logical drive B:** on the same mechanism. The first time
+  it is named after `A:` (and the first time `A:` is named after it) BASIC
+  prints *Insert diskette for drive B:* / *and strike a key when ready* and
+  waits for one key; then it counts the disk that is in the drive.
 - **Two checks, in this order:**
   1. the argument is not a byte (below 0 or above 255) → `Illegal function
      call` (error 5);
@@ -84,11 +85,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Drive 2.** The CF-3300 treats drive 2 as a second, logical drive B: on its
-one mechanism and asks for that disk; zerobas answers at once with drive A's
-count — a free-space figure for a disk that was never inserted. Joost ruled on
-2026-10-09 that zerobas gets the same prompt mechanism (D-DSKIB, open).
-
 One possible gap is filed without a reproduction: with a file
 open, an error the disk ROM reports for `DSKF` (such as `Disk offline`) could
 lose its error code and print as a plain `load error`. The same flaw was
@@ -99,6 +95,16 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Drive B: was missing** (fixed 2026-10-27, D-DSKIB). The CF-3300 has one
+  drive and two logical ones on it: naming the other one prints, from a fresh
+  line, `Insert diskette for drive B:` / `and strike a key when ready`, waits
+  for one key and carries on with the same disk; naming the same drive again
+  is silent, and no drive (or drive 0 or 1) means `A:`
+  ([`dskib_run.out`](../../scratchpad/dskib_run.out),
+  [`dskib_run2.out`](../../scratchpad/dskib_run2.out),
+  [`dskib_run3.out`](../../scratchpad/dskib_run3.out), from
+  [`dskib_probe.py`](../../scratchpad/dskib_probe.py)). zerobas now does the
+  same for `DSKF`, `DSKI$`, `DSKO$`, `FILES` and every `"B:"` file name.
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   `DSKF(0)` kept `TIME` running for 2 % of its count here, against 76 % on
   the CF-3300; now 25 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile

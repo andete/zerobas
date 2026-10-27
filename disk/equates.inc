@@ -278,6 +278,7 @@ BSAVE_DISK_ID   equ     $FE
 ;
 ; FDC driver state (7 bytes below the sector buffer)
 F37D_STUB       equ     $EFDA   ; D-BDOSBASIC slice 2: the $F37D target, a page-3 stub (28 B)
+DSK_CURDRV      equ     $F022   ; D-DSKIB: the logical drive the one physical drive holds now -- 0 A:, 1 B: (1 B)
 DSK_MEDIA       equ     $EFF6   ; D-SIDES: the media ID DSKIO seats sectors by (bit 0 two sides, bit 1 8 a track) (1 B)
 FDC_IFF         equ     $EFF7   ; saved caller IFF2 across a sector op (1 = was EI) (1 B)
 FDC_CNT         equ     $EFF8   ; remaining sector count (1 B)

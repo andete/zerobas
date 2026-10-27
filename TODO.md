@@ -17268,7 +17268,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       CF-3300's texts, which the sub-ROM holds for both targets). A diskless
       build should not have them; nodisk-acceptance has no `ERROR 60+` row.
 
-- [ ] 🔴 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
+- [x] ✅ **DONE 2026-10-27 (D-DSKIB)** 🔴 **`DSKI$(2,0)` IS `Bad drive name` HERE; THE CF-3300 PROMPTS `Insert diskette
       for drive B: and strike a key when ready` (D-DSKIB, found 2026-10-09).**
       🎚️ TIER 6 — `DSKI$` / `DSKO$` / `DSKF` on drive 2 (the phantom `B:`)
       ✅ **RULED (Joost, 2026-10-09): "yeah, we need to have the prompt
@@ -17295,6 +17295,44 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       at once, DSKI$(2,0) Bad drive name, FILES"B:" lists with NO prompt (🎯 prediction
       "Bad drive name" missed). ➡️ Next: one "current logical drive" cell and the prompt
       + key wait on a switch, on every disk path, in disk.rom.
+      ✅ **BUILT 2026-10-27.** Two more rounds of the probe pinned the rest
+      ([`dskib_run2.out`](scratchpad/dskib_run2.out): after B: an unprefixed name, DSKF(0) and DSKF(1)
+      all mean A: and prompt; LOAD / KILL / OPEN / DSKO$ on B: prompt;
+      [`dskib_run3.out`](scratchpad/dskib_run3.out): the prompt starts on a fresh line only mid-row,
+      exactly ONE key is consumed, COPY A:->B: prompts four times). disk.rom: one cell
+      DSK_CURDRV ($F022, DISK-ONLY, 0 A: / 1 B:, cleared at INIT) and `drv_select`
+      (kernel.asm, before the $509F pin; its text before $4462 in driver.asm -- the
+      largest usable disk hole is under 90 B): if the requested drive is the other
+      one, print the prompt, wait for one key through calbak to CHGET (a page-1 tenant
+      must not wait itself), record it. Requested drive = DISK_FCB_DRV (0/1 A:, 2 B:),
+      which parse_disk_fcb already set for every file name; FILES now resets it and its
+      pattern parser sets it; ONE call in fat_geom_read covers every operation that
+      mounts; DSKF sets it before its count (which mounts); DSKI$/DSKO$ accept drive 2
+      and call drv_select themselves (they read past fat_mount). After: 13/14 rows of
+      the probe as the CF-3300, the raw layout and the key too. Gate:
+      `make dskib-acceptance` ([`disk_probe_dskib.py`](probes/disk/disk_probe_dskib.py), 11/11,
+      [`dskib_gate.out`](scratchpad/dskib_gate.out)); 🔪 K-DB1 ([`dskib_knife.py`](scratchpad/dskib_knife.py)): 0/11, rc=2, all five images
+      restored ([`dskib_knife.out`](scratchpad/dskib_knife.out)). Docs: DSKF.md, DSKI$.md, DSKO$.md,
+      concepts/disk.md; examples PASS 4 + 1. ⚠️ Residual: COPY across drives, below.
+
+- [ ] 🔴 **GAUNT.DSK NO LONGER BOOTS ON ZEROBAS: BASIC'S BANNER AND PROMPT, WHERE IT RAN IN
+      EVERY EARLIER COLLECTION RUN (D-GAUNTBOOT, found 2026-10-27 by D-DSKIB's run).**
+      🎚️ TIER 1 — happy path: booting a disk is the first thing a disk machine does
+      🤖 **AUTONOMOUS** — bisect it; the CF-3300 still runs it.
+      📏 [`diskcorpus_dskib.out`](scratchpad/diskcorpus_dskib.out): ZB-NOBOOT (zerobas at its banner, SCREEN
+      0, line 65535; the CF-3300 in SCREEN 1). It is NOT D-DSKIB: the committed disk ROM
+      fails the same way ([`gauntboot_head.out`](scratchpad/gauntboot_head.out)). Every earlier run read BOTH-RUN
+      (diskcorpus_rerun2..5); rerun5 is fa9488b7 (2026-10-23 17:41), 25 commits back, 12
+      of them in disk/. ➡️ Bisect those 25 with `diskcorpus_run.py --only GAUNT`.
+
+- [ ] 🔴 **`COPY "A:X" TO "B:Y"` PROMPTS FOUR TIMES ON THE CF-3300 AND ONCE HERE
+      (D-DSKIBCOPY, found 2026-10-27 by D-DSKIB).**
+      🎚️ TIER 6 — the prompts of a copy between the two logical drives
+      🤖 **AUTONOMOUS** — the CF-3300 settles it; measure a bigger file first.
+      📏 [`dskib_run3.out`](scratchpad/dskib_run3.out) `copyab`: B:, A:, B:, A: for one small file
+      (it swaps per buffer); zerobas names one drive per operation, so it prompts
+      once. The copy is the same. Measure how the count scales with the file's size
+      before modelling it.
 
 - [x] ✅ **DONE 2026-10-27 (D-FILESNOEXT)** 🔴 **`FILES` LISTED A NAME WITH NO EXTENSION AS
       `Q       .`; THE CF-3300 PRINTS A SPACE WHERE THE DOT GOES (found 2026-10-27 by
@@ -17359,7 +17397,8 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       bootkeys_probe.py): **plain** now IDENTICAL (FRE 23320, HIMEM $DE77, 2 drives,
       DSKF 706 -- D-DISKHIMEM); **SHIFT** FRE 28705 and HIMEM $F380 IDENTICAL (since
       D-WSZERO's $F380 ceiling), DSKF ERR 5 on both. 🔮 "plain and SHIFT match, CTRL
-      differs": HIT. Residual (priority 3/4, an address): after a SHIFT boot the
+      differs": HIT. ➡️ **2026-10-27: D-DSKIB is built**, so CTRL (one drive, B: gone,
+      +1558 B) is unblocked. Residual (priority 3/4, an address): after a SHIFT boot the
       drive-count cell $F347 reads 255 (untouched) on the CF-3300 and 201 ($C9) here
       -- who writes $C9 there is unmeasured. CTRL still open (D-DSKIB).
       📏 **$F347 SETTLED 2026-10-20 -- C-BIOS's own fill, kept; the residual is TIER 6.**

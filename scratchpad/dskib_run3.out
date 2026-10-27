@@ -1,0 +1,33 @@
+CF midline   |Ok|
+CF midline   |PRINT~"QQ";:PRINT~DSKF(2)|
+CF midline   |QQ|
+CF midline   |Insert~diskette~for~drive~B:|
+CF midline   |and~strike~a~key~when~ready|
+CF midline   |~706|
+CF midline   |Ok|
+ZB midline   |ZB|
+ZB midline   |PRINT~"QQ";:PRINT~DSKF(2)|
+ZB midline   |QQ~706|
+ZB midline   |ZB|
+CF keyeaten  |Ok|
+CF keyeaten  |10~PRINT~DSKF(2):FOR~I=1~TO~300:NEXT:PRI|
+CF keyeaten  |NT~"[";INKEY$;"]"|
+CF keyeaten  |RUN|
+CF keyeaten  |Insert~diskette~for~drive~B:|
+CF keyeaten  |and~strike~a~key~when~ready|
+CF keyeaten  |~706|
+CF keyeaten  |]|
+CF keyeaten  |Ok|
+ZB keyeaten  |ZB|
+ZB keyeaten  |10~PRINT~DSKF(2):FOR~I=1~TO~300:NEXT:PRI|
+ZB keyeaten  |NT~"[";INKEY$;"]"|
+ZB keyeaten  |RUN|
+ZB keyeaten  |~706|
+ZB keyeaten  |[]|
+ZB keyeaten  |ZB|
+ZB keyeaten  |Z|
+ZB keyeaten  |Syntax~error|
+ZB keyeaten  |ZB|
+CF copyab    COPY "A:HI.TXT" TO "B:H2.TXT" | Insert diskette for drive B: | and strike a key when ready | Insert diskette for drive A: | and strike a key when ready | Insert diskette for drive B: | and strike a key when ready | Insert diskette for drive A: | and strike a key when ready | Ok | FILES"A:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT | Ok
+ZB copyab    COPY "A:HI.TXT" TO "B:H2.TXT" | ZB | FILES"A:" | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS | H2      .TXT | ZB
+refcache: 0 hit, 6 miss, 6 stored

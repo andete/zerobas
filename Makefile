@@ -2474,6 +2474,12 @@ wszero-acceptance: repack-machine
 filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_filesnl.py
 
+# --- dskib-acceptance: the single drive's A:/B: swap prompt (D-DSKIB) ---------------
+# One physical drive, two logical ones: addressing the other prints `Insert diskette
+# for drive B:` / `and strike a key when ready` and waits for a key, as on the CF-3300.
+dskib-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_dskib.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.
