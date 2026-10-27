@@ -606,6 +606,11 @@ TRACE = [
     # statement target that is not a name are 2, not 13 (scratchpad/midextra_run.out).
     ("me-extra",      ['CLS:ON ERROR GOTO 50', 'PRINT MID$("AB",1,1,1)', 'MID$(5,1)="X"',
                        'PRINT "K":END', 'PRINT ERR;:RESUME NEXT']),
+    # D-CIRCNEGR (Joost 2026-10-27: "match the vg-8020"): a negative radius drops its
+    # sign bit -- -32768 is radius 0, ONE dot: pixel (99,99) is bit 4 of pattern byte
+    # 3171 (scratchpad/circneg_run.out). The long -1 / -5 draws stay in the probe.
+    ("cn-dot",        ['CLS:ON ERROR GOTO 40', 'SCREEN 2:CIRCLE(99,99),-32768:V=VPEEK(3171)',
+                       'SCREEN 0:PRINT V:END', 'SCREEN 0:PRINT "E";ERR:END']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

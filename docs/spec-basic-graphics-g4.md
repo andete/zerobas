@@ -119,7 +119,8 @@ many octant steps (slow but EI) — the G3 perf caveat (§4.5).
 **3.4 Errors (measured §11.5):** SCREEN 0/1 → **Illegal function call ERR 5**;
 colour > 15 → **ERR 5**; aspect < 0 → **ERR 5**; centre/radius > int16 → **ERR 6**;
 bad grammar (missing `,r`, stray token) → **Syntax error ERR 2**. **Negative radius**
-→ see §9 G4-rneg (reference hangs; decision needed).
+→ see §9 G4-rneg (reference hangs; decision needed). ⚠️ SUPERSEDED 2026-10-27: it
+does not hang -- see §9 G4-rneg.
 
 ---
 
@@ -339,7 +340,7 @@ is **no runtime disambiguation** — `CIRCLE` is unambiguous.
 | **G4-f** | Negative start/end ⇒ radius spoke (centre→endpoint) via the landed `GFX_OP=3` line op | **Yes** — measured (§5.3/§11.4); reuses G3, no new tenant code |
 | **G4-arcbnd** | Arc-endpoint inclusivity (±1 boundary pixel) pinned during impl with targeted captures + host test | **Yes** — the G3-clip-residual method (§5.4) |
 | **G4-spoke** | Spoke draw order vs arc (overlap-pixel clash) | Pin with a capture during impl; default spoke-after-arc |
-| **G4-rneg** | Negative radius: the reference **hangs** (unsigned-wrap → gigantic). | ✅ **SIGNED OFF → ERR 5** (Illegal function call), documented deviation ([memory: bug-for-bug-compat-over-accuracy]); a clean-room engine must not infinite-loop. Guard in `ex_circle` after radius eval: `r < 0` → ERR 5. |
+| **G4-rneg** | Negative radius: the reference **hangs** (unsigned-wrap → gigantic). | ✅ **SIGNED OFF → ERR 5** (Illegal function call), documented deviation ([memory: bug-for-bug-compat-over-accuracy]); a clean-room engine must not infinite-loop. Guard in `ex_circle` after radius eval: `r < 0` → ERR 5. ⚠️ **SUPERSEDED 2026-10-27 (D-CIRCNEGR):** the premise was false (the reference finishes, [`circneg_run.out`](../scratchpad/circneg_run.out)); Joost ruled *"match the vg-8020"* — the radius loses its sign bit (`res 7,h` in sub/circleparse.asm). |
 | **G4-work** | `GXPOS/GYPOS` after CIRCLE: reference leaves `(r, cy)` residue | ✅ **SIGNED OFF → match the quirk** (`GXPOS=r, GYPOS=cy`); byte-faithful work area, the differential gate asserts it. `GRPAC=centre` (unchanged). |
 
 Implementation order (capture ✅ + fit ✅ done): kwtable row + dispatch + `ex_circle`
@@ -387,7 +388,9 @@ spoke; `-0.1,-1.57` = wedge + 2 spokes). Work area: `GRPAC` = centre; `GXPOS=r`,
 **11.5 Errors / clip.** `r=0` → centre pixel, no error. Off-screen/neg centre
 (`(300,300)`, `(-5,-5)`) → clip, no error. `>int16` centre or radius (`(32768,0)`,
 `r=32768`) → ERR 6. SCREEN 0/1 → ERR 5. colour 16 → ERR 5. aspect −1 → ERR 5.
-**Negative radius (`-1`,`-5`) → hang** (unsigned-wrap; §9 G4-rneg).
+**Negative radius (`-1`,`-5`) → hang** (unsigned-wrap; §9 G4-rneg). ⚠️ REFUTED
+2026-10-27: the VG-8020 finishes after ~3787 jiffies -- the radius loses its sign
+bit, `-32768` is the centre dot ([`circneg_run.out`](../scratchpad/circneg_run.out)).
 
 ---
 

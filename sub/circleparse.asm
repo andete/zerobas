@@ -77,19 +77,22 @@ cpt_after_center:
 ; 🔴 THIS IS THE RADIUS DOMAIN, AND IT IS 0..32767 -- NOT 0..255 (D-CIRCDOM).
 ; Five `$8000` verdicts in docs/fixpoint8000-msx1-sweep.md §4.2 and four
 ; headers in sub/graphics.asm used to cite a "blessed r<=255 domain" that is
-; enforced NOWHERE. The actual enforcement is exactly two tests, in two files:
+; enforced NOWHERE. The actual enforcement is one test and one mask:
 ;
-;   UPPER  basic/graphics.asm cp_req_int -> gfx_eval_int16   ERR 6 for |r|>=32768
-;   LOWER  the `jp m,cpt_err5` three lines below              ERR 5 for r<0
+;   UPPER  basic/graphics.asm cp_req_int -> gfx_eval_int16   ERR 6 past int16
+;   SIGN   the `res 7,h` three lines below                    r AND &H7FFF
 ;
 ; so GFX_R is any value in 0..32767 and `CIRCLE(128,96),1000` is accepted (K on
 ; BOTH references, measured -- circdom §4 phase S). Cite THIS pair, not "r<=255",
 ; anywhere a graphics routine needs the radius domain.
+; 🎯 D-CIRCNEGR (Joost 2026-10-27: "match the vg-8020"): A NEGATIVE RADIUS IS NOT
+; AN ERROR. The VG-8020 drops the sign bit: -1 and -5 draw as long as 32767 does
+; (3787 jiffies, nothing on screen), -32768 is radius 0 (one dot), and 65535 /
+; -32769 / 70000 are Overflow (scratchpad/circneg_run.out). This was `jp m` to
+; ERR 5, the G4-rneg deviation, whose premise ("the reference hangs") was false.
 cpt_after_r:
                 ld      hl,(GFX_DVAL)       ; r
-                ld      a,h
-                or      a
-                jp      m,cpt_err5          ; r<0 -> ERR 5 (G4-rneg deviation)
+                res     7,h                 ; the sign bit dropped, as on the VG-8020
                 ld      (GFX_R),hl
                 call    cpt_defaults
                 call    cpt_skipsp

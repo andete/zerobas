@@ -1,0 +1,6 @@
+  ROM da3135ce 0d0064da 0ac64837 8d64ebfc 8a5d8ad1  ->  da3135ce 8476ddd4 0ac64837 8d64ebfc 8a5d8ad1
+restore: da3135ce 0d0064da 0ac64837 8d64ebfc 8a5d8ad1 -> da3135ce 0d0064da 0ac64837 8d64ebfc 8a5d8ad1  build rc=0  BYTE-IDENTICAL (all five)
+K-CN1: gate rc=1
+FAIL  trace    cn-dot         CLS:ON ERROR GOTO 40 : SCREEN 2:CI ref=                    16  zb=                   E 5
+--- 38/39 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  cn-dot         CLS:ON ERROR GOTO 40 : SCREEN 2:CIRCLE(99,99 -> 16

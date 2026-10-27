@@ -16432,15 +16432,48 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       📼 The collection with the fix AND the pin ([`tapecorpus_bareextra.out`](scratchpad/tapecorpus_bareextra.out)):
       SAME 9, NEAR 12, RUNS? 21, RESET 0 -- all 42 titles in their slice-E class.
 
-- [ ] 🔴 **`CIRCLE(99,99),-5` IS `Illegal function call` HERE AND DRAWS ON THE
-      REFERENCE (D-CIRCNEGR, found 2026-09-27 by T6 batch 7b).**
+- [x] ✅ **`CIRCLE(99,99),-5` IS `Illegal function call` HERE AND DRAWS ON THE
+      REFERENCE (D-CIRCNEGR, found 2026-09-27 by T6 batch 7b; FIXED 2026-10-27).**
       🎚️ TIER 6 — `CIRCLE` with a negative radius
-      🤖 **AUTONOMOUS** — the reference settles it.
+      🤖 **AUTONOMOUS** — the reference settles it (Joost ruled 2026-10-27: match the VG-8020).
       [`scratchpad/t6enum_b7_rerun.out`](scratchpad/t6enum_b7_rerun.out): the
       VG-8020 accepts it and draws for MINUTES (a radius read as unsigned, a
       huge clipped circle) before `[OK]`; zerobas refuses at once with 5. Not a
       T6 blocker — the reference raises nothing there — and matching it means
       matching a very slow draw, so the fix is worth measuring before choosing.
+      📏 **MEASURED 2026-10-27** ([`circneg_probe.py`](scratchpad/circneg_probe.py) ->
+      [`circneg_run.out`](scratchpad/circneg_run.out); `SCREEN 2:TIME=0:CIRCLE(99,99),r:T=TIME`, then
+      the pattern-table bytes that are non-zero): **the VG-8020 drops the radius's sign bit
+      (r AND &H7FFF)** -- r = -5 and -1 take 3788 / 3787 jiffies, the same as 32767 (3787),
+      and draw nothing on screen; -32768 is radius 0 (T 1, ONE byte set: the dot); 65535,
+      -32769, 70000 are Overflow. It does NOT hang: 3787 jiffies is ~76 s at 50 Hz. zerobas:
+      5 for every negative, Overflow past int16 as there, and its own r = 32767 draw takes
+      1941 jiffies. 🔮 6/9 -- MISSED -32768 (a dot, not a long draw) and 65535 (Overflow,
+      not accepted). The fix is one instruction in sub/circleparse.asm cpt_after_r: `res 7,h`
+      for the `jp m,cpt_err5` test (-3 B, a sub-ROM tenant).
+      🏗️ **RULED BY JOOST 2026-10-27: *"match the vg-8020"*** -- option (a) below, which
+      supersedes G4-rneg. The question as it was put:
+      🙋 **NOT SHIPPED -- THIS REVERSES A RULING OF JOOST'S.** docs/spec-basic-graphics-g4.md
+      §9 **G4-rneg** was confirmed by him on 2026-07-21: *negative radius -> ERR 5, a
+      documented deviation*, because *"the reference hangs"* and a clean-room engine must
+      not loop forever. That premise is now measured FALSE: the reference finishes, and
+      zerobas's own worst case (r = 32767) finishes in about half its time. Options: (a)
+      match the VG-8020 (drop the sign bit; a negative radius then draws for ~40 s here
+      where the reference takes ~76 s, and -32768 is a dot); (b) keep ERR 5 as the
+      documented deviation, and close this item against the ruling.
+      ✅ **SHIPPED 2026-10-27 (option a):** cpt_after_r's `ld a,h / or a / jp m,cpt_err5`
+      is `res 7,h` (-3 B, sub page 1). After: all 9 radii agree on the error and the bytes
+      drawn ([`circneg_after.out`](scratchpad/circneg_after.out)); -1 / -5 / 32767 take 1941
+      jiffies here against 3787 there (speed, TIER 5). Gate: missing-acceptance row `cn-dot`
+      (-32768 is one dot, VPEEK(3171) = 16; [`circneg_gate.out`](scratchpad/circneg_gate.out), 39/39).
+      🔪 K-CN1 ([`circneg_knife.py`](scratchpad/circneg_knife.py)): circleparse.asm back to HEAD ->
+      `cn-dot` alone FAILs (zb `E 5`), all five restored ([`circneg_knife.out`](scratchpad/circneg_knife.out)).
+      Docs: CIRCLE.md, spec-basic-graphics-g4.md (G4-rneg marked superseded, its reasoning kept).
+      🔴 **THE FULL BATTERY CAUGHT THE DEVIATION'S OWN TEST:** graphics-acceptance Phase G
+      was a zerobas-ONLY row asserting `E 5` ("the reference hangs", so no differential).
+      It went red, REAL on retry ([`circneg_full.out`](scratchpad/circneg_full.out)). Rewritten as a two-sided
+      differential on the fast case: `CIRCLE(30,30),-32768,15:P=POINT(30,30)` -> `K 15` on
+      both ([`circneg_phaseg.out`](scratchpad/circneg_phaseg.out)); its docstring keeps why it used to be one-sided.
 
 - [x] ✅ **DONE 2026-10-27 (D-DEFUSRRANGE)** 🔴 **`DEF USR=70000` IS ACCEPTED HERE AND `Overflow` ON THE REFERENCE
       (D-DEFUSRRANGE, found 2026-09-27 by T6 batch 7).**

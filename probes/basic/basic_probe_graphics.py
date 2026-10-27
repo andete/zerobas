@@ -638,22 +638,25 @@ def phase_f() -> int:
 
 
 def phase_g_rneg() -> int:
-    """G4-rneg (signed-off deviation, spec §9): the REFERENCE HANGS on a
-    negative radius (unsigned-wrap), so this is NOT a differential -- only
-    zerobas is exercised, asserting the documented ERR 5 deviation."""
+    """G4-rneg: a NEGATIVE RADIUS, against the VG-8020.
+
+    This was zerobas-only, asserting ERR 5: G4-rneg (spec §9, signed off
+    2026-07-21) took the reference to HANG on a negative radius. Measured
+    2026-10-27 (D-CIRCNEGR, scratchpad/circneg_run.out) it does not -- it drops
+    the sign bit, so -1 draws for ~3787 jiffies as 32767 does, and -32768 is
+    radius 0, the centre dot -- and Joost ruled "match the vg-8020". The row
+    is the fast case, two-sided: -32768 must set the centre pixel, no error."""
     fails = 0
-    print("=== PHASE G: CIRCLE negative radius (zerobas-only; reference hangs) ===")
-    body = ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(30,30),-1,15",
-            'SCREEN0:PRINT"K":END', 'SCREEN0:PRINT"E";ERR:END']
-    so_z = {}
-    zb = omsx_repl.run_cases(ZB, [("stored", paint_mark(body))], batch=False,
-                             reset=("NEW", "CLS"), **paint_sn(so_z))[0]
-    paint_tally(so_z)
-    za = _answer(zb, "E")
-    ok = za is not None and za.strip() == "E 5"
+    print("=== PHASE G: CIRCLE negative radius (-32768 is the centre dot) ===")
+    body = ["ON ERROR GOTO 40", "SCREEN2:CIRCLE(30,30),-32768,15:P=POINT(30,30)",
+            'SCREEN0:PRINT"K";P:END', 'SCREEN0:PRINT"E";ERR:END']
+    specs = [("stored", body)]
+    ref = omsx_repl.run_cases(REF, specs, batch=False, reset=("NEW", "CLS"))[0]
+    zb = omsx_repl.run_cases(ZB, specs, batch=False, reset=("NEW", "CLS"))[0]
+    ra, za = _answer(ref, "K") or _answer(ref, "E"), _answer(zb, "K") or _answer(zb, "E")
+    ok = ra is not None and ra == za and ra.strip().startswith("K")
     fails += not ok
-    print(f"  {'PASS' if ok else 'FAIL'} rneg_err zb={za!r} (want 'E 5')")
-    print(paint_sig_line())
+    print(f"  {'PASS' if ok else 'FAIL'} rneg_dot ref={ra!r} zb={za!r}")
     return fails
 
 

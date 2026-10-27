@@ -7,8 +7,8 @@ SPDX-License-Identifier: 0BSD
 # `CIRCLE` — draw a circle, an ellipse or an arc
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: a negative radius (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. A negative radius is
+> drawn as on the VG-8020 (since 2026-10-27).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -18,8 +18,7 @@ SPDX-License-Identifier: 0BSD
 screen. Optional arguments turn it into an arc (a start and an end angle) or
 an ellipse (an aspect ratio). zerobas draws the same pixels as the Philips
 VG-8020 — circles, ellipses, arcs and their radius lines — and raises the same
-errors in every case we have measured, except for a negative radius, which is
-a deliberate decision.
+errors in every case we have measured.
 
 ## Syntax
 
@@ -34,6 +33,10 @@ Any optional argument can be skipped with an empty comma:
 
 - **A circle is pixel-round.** With the default aspect, a radius of 20 is
   41 pixels wide and 41 high. A radius of 0 sets just the centre.
+- **A negative radius loses its sign bit.** `-1` is drawn as 32767 (a huge
+  circle, entirely off the screen, which takes a long time to draw and shows
+  nothing), and `-32768` as 0, the centre dot. A radius beyond -32768..32767
+  is `Overflow`.
 - **The aspect squashes one axis.** Below 1 the circle keeps its width and
   gets flatter (`.5` halves the height); above 1 it keeps its height and gets
   narrower. A negative aspect is error 5.
@@ -100,21 +103,20 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A negative radius is error 5 here.** `CIRCLE(99,99),-5` is
-`Illegal function call` on zerobas at once. The VG-8020 accepts it and keeps
-drawing for a long time before it finishes, apparently treating the radius as
-a very large positive number. When the graphics slice was designed the
-reference seemed to hang, and Joost signed off on error 5 as a documented
-deviation on 2026-07-21
-([spec-basic-graphics-g4.md](../spec-basic-graphics-g4.md) §9). Re-measured on
-2026-09-27 (D-CIRCNEGR), the reference does come back; matching it would mean
-matching a very slow draw, so the item stays open in [TODO.md](../../TODO.md)
-to be measured before anything is chosen.
-
-The one rung not yet proven is **RAM usage**.
+No known difference in what `CIRCLE` draws or answers. The one rung not yet
+proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A negative radius was error 5 here** (fixed 2026-10-27, D-CIRCNEGR). When
+  the graphics slice was designed the reference seemed to hang on one, and
+  Joost signed off on error 5 as a documented deviation on 2026-07-21
+  ([spec-basic-graphics-g4.md](../spec-basic-graphics-g4.md) §9). Measured
+  again, the VG-8020 finishes: it drops the radius's sign bit, so `-1` and
+  `-5` take as long as 32767 and draw nothing on the screen, and `-32768` is
+  the centre dot ([`circneg_run.out`](../../scratchpad/circneg_run.out), from
+  [`circneg_probe.py`](../../scratchpad/circneg_probe.py)). Joost then ruled
+  *"match the vg-8020"*.
 - **`CIRCLE` arrived on 2026-07-21** (graphics slice G4), its pixel sets for
   circles of six sizes and four aspect ratios fitted against captures from the
   VG-8020 until every one matched. One belief did not survive: a "round on the
@@ -160,3 +162,5 @@ arguments are read by `circleparse_tenant` in
 - `make kwsweep` — one row per form (circle, arc, `STEP`, aspect, default
   colour) and one error row per code.
 - `make kwram` — the RAM-usage comparison.
+- `make missing-acceptance`, row `cn-dot` — a radius of `-32768` is the
+  centre dot.

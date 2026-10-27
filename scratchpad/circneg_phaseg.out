@@ -1,0 +1,3 @@
+=== PHASE G: CIRCLE negative radius (-32768 is the centre dot) ===
+  PASS rneg_dot ref='K 15' zb='K 15'
+refcache: 0 hit, 2 miss, 2 stored

@@ -753,6 +753,7 @@ stays paused until he restarts it.**
 | D-DSKIB (drive 2 / `B:` on a one-drive machine) | **"yeah, we need to have the prompt mechanism"** -- 🤖 build the logical A/B swap model + the CF-3300's prompt; measure its scope first |
 | (raised) SHIFT / CTRL at boot | filed as D-BOOTKEYS, 🤖 TIER 4: measure on the CF-3300 first |
 | (2026-10-27) "Ctrl boot should behave same as ref" | D-BOOTKEYS CTRL RAM half: HIMEM $E48D on a CTRL boot, disk buffers moved up $443 -- SHIPPED 2026-10-27 |
+| (2026-10-27) the circle issue: "match the vg-8020" | D-CIRCNEGR: a negative CIRCLE radius drops its sign bit, superseding G4-rneg's ERR 5 -- SHIPPED 2026-10-27 |
 
 📚 **LATER ON 2026-10-09: THE KEYWORD PAGES SHIPPED** — `docs/keywords/`, 146 pages
 (one per level-3 keyword), every example run on both machines by
