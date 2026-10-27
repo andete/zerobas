@@ -7,8 +7,9 @@ SPDX-License-Identifier: 0BSD
 # `MID$` — characters from the middle of a string, or overwrite them
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error not yet proven. One
-> recorded difference: an extra argument gives the wrong error code (below).
+> errors ✓ · RAM usage not yet proven · every error not yet proven. An extra
+> argument, and a statement target that is not a variable, are `Syntax error`
+> as on the VG-8020 (since 2026-10-27).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -102,22 +103,25 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**An extra argument, or a target that is not a variable, is error 13 here
-and error 2 on the VG-8020.** `PRINT MID$("AB",1,1,1)` and `MID$(5,1)="X"`
-both read `Syntax error` on the reference and `Type mismatch` on zerobas
-([`t6enum_b4.out`](../../scratchpad/t6enum_b4.out)). zerobas evaluates past
-the point where the reference already demands `)` or a variable, and then
-checks the type. It is filed as TIER 6 (D-MIDEXTRA in
-[TODO.md](../../TODO.md)), likely one fix with the same shape in `MKI$`, and
-it is why *every error* is not yet proven for `MID$`: the three-argument
-function has no case where the reference's error 2 is matched.
+No known difference in what `MID$` answers. *Every error* is still not
+proven for `MID$` by the sweep: its three-argument function has no sweep row
+in which the reference's error 2 is matched; the case is covered by the
+gate row below instead.
 
-The other rung not yet proven is **RAM usage**: `MID$` changes free memory by
+The rung **RAM usage** is not yet proven either: `MID$` changes free memory by
 the same amount on both machines, but the set of work-area cells written
 differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 
 ## What we found, and how
 
+- **An extra argument, or a statement target that is not a variable, was
+  error 13 here and error 2 on the VG-8020** (fixed 2026-10-27, D-MIDEXTRA,
+  found by the every-error sweep,
+  [`t6enum_b4.out`](../../scratchpad/t6enum_b4.out)). `PRINT MID$("AB",1,1,1)`
+  and `MID$(5,1)="X"` are `Syntax error` there; a numeric variable as the
+  target (`MID$(A,1)="X"`) stays `Type mismatch` on both
+  ([`midextra_run.out`](../../scratchpad/midextra_run.out), from
+  [`midextra_probe.py`](../../scratchpad/midextra_probe.py)).
 - **The statement arrived on 2026-07-10**, as a handler of its own; the
   function is a different piece of code, so tests of one do not reach the
   other: [spec-basic-mid-statement.md](../spec-basic-mid-statement.md).
@@ -175,3 +179,5 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 - `make kwsweep` — all three forms (`MID$("hi",2,1)`, `MID$("hello",3)`, the
   statement) and the error rows.
 - `make kwram` — the RAM-usage comparison.
+- `make missing-acceptance`, row `me-extra` — the extra argument and the
+  target that is not a variable.

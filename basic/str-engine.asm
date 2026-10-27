@@ -1549,7 +1549,11 @@ sfm_starthave:
 sfm_reject2:
                 pop     bc                  ; discard p
                 pop     bc                  ; discard temp
-                jp      str_eval_no
+                jp      str_arg_empty       ; 🎯 D-MIDEXTRA (2026-10-27): Syntax error,
+                                            ; deferred -- `MID$("AB",1,1,1)` is 2 on the
+                                            ; VG-8020; str_eval_no alone declined, and the
+                                            ; caller read the decline as Type mismatch
+                                            ; (scratchpad/midextra_run.out)
 
 ; ===========================================================================
 ; MID$ STATEMENT (repack build only): MID$(A$,n[,m])=B$ -- overwrite a substring
@@ -1605,6 +1609,9 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                                             ; accept `LEFT$ ("AB",1)`
                 jp      nz,stmt_error
                 inc     hl                  ; HL -> target var name
+                call    req_letter          ; D-MIDEXTRA: a target that is not a NAME
+                                            ; is Syntax error -- `MID$(5,1)="X"` is 2
+                                            ; on the VG-8020, a numeric NAME 13 (below)
                 call    str_target_parse    ; string-var target: type-check, parse,
                                             ; raise -- D-NGRAM9
                 ; D-LVFIX (docs/spec-basic-lvsites.md §4.2): the target is any

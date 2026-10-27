@@ -1,0 +1,10 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   fn4      PRINT MID$("AB",1,1,1)   [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   fn4s     PRINT MID$("AB",1,1,"Q") [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   fn3ok    PRINT MID$("AB",2,1)     [B | OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   fn3sp    PRINT MID$("AB",1 1)     [OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   stnum    MID$(5,1)="X"            [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   stexpr   A$="AB":MID$(A$+"",1)="X" [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   stnvar   A=1:MID$(A,1)="X"        [E 13  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   st4      A$="AB":MID$(A$,1,1,1)="X" [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   stok     A$="AB":MID$(A$,2)="X":PRINT A$ [AX | OK | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 9 miss, 9 stored

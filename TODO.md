@@ -17647,15 +17647,29 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       20)`. The argument is a DUMMY on the reference and its type is not checked.
       Not a T6 blocker (the reference raises nothing there), but a divergence.
 
-- [ ] 🔴 **AN EXTRA ARGUMENT TO `MID$` IS `Type mismatch` HERE AND `Syntax error`
+- [x] ✅ **AN EXTRA ARGUMENT TO `MID$` IS `Type mismatch` HERE AND `Syntax error`
       ON THE REFERENCE — `MID$("AB",1,1,1)` AND `MID$(5,1)="X"` (D-MIDEXTRA,
-      found 2026-09-27 by T6).**
+      found 2026-09-27 by T6; FIXED 2026-10-27).**
       🎚️ TIER 6 — `MID$` with an extra or non-variable argument
       🤖 **AUTONOMOUS** — the reference settles it; likely ONE fix with D-MKEXTRA.
       `scratchpad/t6enum_b4.out`: both read VG-8020 `(2, 20)`, zerobas `(13, 20)`.
       The same shape as D-MKEXTRA (the MK$ functions): the argument parse
       evaluates past where the reference demands `)` / a variable, and then
       type-checks. Blocks MID$'s T6 (substring-3arg code 2 has no agreeing case).
+      📏 **MEASURED 2026-10-27** ([`midextra_probe.py`](scratchpad/midextra_probe.py) ->
+      [`midextra_run.out`](scratchpad/midextra_run.out), 9 forms): VG-8020 `MID$("AB",1,1,1)` /
+      `(…,"Q")` 2, `MID$(5,1)="X"` 2, `MID$(A$+"",1)="X"` 2, `MID$(A,1)="X"` **13**, a 4th
+      statement argument 2; zerobas 13 / 13 / 13 on the first three. 🔮 8/9 -- MISSED
+      `MID$("AB",1 1)` (predicted 2: it is `11`, an empty result, on both). ✅ Two separate
+      causes, separate from D-MKEXTRA's (fixed 2026-09-29, basic/strvar.asm): the function's missing-`)` exit
+      (sfm_reject2) declined through str_eval_no and the caller read the decline as 13 -- it
+      goes to str_arg_empty (deferred 2), byte-neutral; the statement typed its target before
+      asking whether it was a NAME -- req_letter first, +3 B (low pin pad 19 -> 16). After: 9/9
+      identical ([`midextra_after.out`](scratchpad/midextra_after.out)). Gate: missing-acceptance
+      row `me-extra` ([`midextra_gate.out`](scratchpad/midextra_gate.out), 38/38). 🔪 K-ME1
+      ([`midextra_knife.py`](scratchpad/midextra_knife.py)): str-engine.asm back to HEAD -> `me-extra`
+      alone FAILs (zb `13 13 K`), all five restored ([`midextra_knife.out`](scratchpad/midextra_knife.out)).
+      Docs: MID$.md.
 
 - [ ] 🔴 **`hk_mki` DUPLICATES A CONVERSION MAIN ALREADY HAS — REPLACE IT WITH A CALL
       TO MAIN'S CHECKED FLOAT → INT16 (D-MKIREUSE, filed 2026-09-29 under Joost's

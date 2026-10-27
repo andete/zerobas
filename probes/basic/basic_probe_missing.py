@@ -602,6 +602,10 @@ TRACE = [
     # still wins as 2 (scratchpad/stringempty_run.out).
     ("se-empty",      ['CLS:ON ERROR GOTO 50', 'PRINT STRING$(2,"")', 'PRINT STRING$(2,""',
                        'PRINT "K":END', 'PRINT ERR;:RESUME NEXT']),
+    # D-MIDEXTRA (2026-10-27): a 4th argument to the MID$ function and a MID$
+    # statement target that is not a name are 2, not 13 (scratchpad/midextra_run.out).
+    ("me-extra",      ['CLS:ON ERROR GOTO 50', 'PRINT MID$("AB",1,1,1)', 'MID$(5,1)="X"',
+                       'PRINT "K":END', 'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

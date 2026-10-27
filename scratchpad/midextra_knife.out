@@ -1,0 +1,6 @@
+  ROM da3135ce 8476ddd4 0ac64837 8d64ebfc 8a5d8ad1  ->  679c3659 6b847f97 0ac64837 9aec32a7 2187f8c8
+restore: da3135ce 8476ddd4 0ac64837 8d64ebfc 8a5d8ad1 -> da3135ce 8476ddd4 0ac64837 8d64ebfc 8a5d8ad1  build rc=0  BYTE-IDENTICAL (all five)
+K-ME1: gate rc=1
+FAIL  trace    me-extra       CLS:ON ERROR GOTO 50 : PRINT MID$( ref=                 2 2 K  zb=               13 13 K
+--- 37/38 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  me-extra       CLS:ON ERROR GOTO 50 : PRINT MID$("AB",1,1,1 -> 2 2 K
