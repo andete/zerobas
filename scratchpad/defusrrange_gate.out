@@ -1,0 +1,60 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_kwsweep.py \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 't7defusrdefault2,t7defusrdefault6,t7defusrdefault13,t7defusrnumbered2,t7defusrnumbered6,t7defusrnumbered13'
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+build under measurement: git=42073de6 zerobas-main-eu.rom=a22841bb243e sub.rom=20dbc3d29e37 disk.rom=2a816a33485f
+
+==============================================================================
+LAYER 1 — CRUNCH (tokenisation only; NOT a support answer)
+==============================================================================
+SAME   t7defusrdefault2 def usr
+SAME   t7defusrdefault6 def usr=70000
+SAME   t7defusrdefault13 def usr="a"
+SAME   t7defusrnumbered2 def usr9
+SAME   t7defusrnumbered6 def usr9=70000
+SAME   t7defusrnumbered13 def usr9="a"
+
+==============================================================================
+LAYER 2 — SUPPORT (the load-bearing layer)
+==============================================================================
+SUPPORTED     t7defusrdefault2 DEF USR
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7defusrdefault6 DEF USR=70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t7defusrdefault13 DEF USR="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+SUPPORTED     t7defusrnumbered2 DEF USR9
+            ref  [error:syntax error] 'Syntax error in 10'
+SUPPORTED     t7defusrnumbered6 DEF USR9=70000
+            ref  [error:overflow] 'Overflow in 10'
+SUPPORTED     t7defusrnumbered13 DEF USR9="A"
+            ref  [error:type mismatch] 'Type mismatch in 10'
+
+==============================================================================
+COMBINED — tokenised? x observable consequence
+==============================================================================
+word       crunch  support     consequence
+------------------------------------------------------------------------------
+t7defusrdefault2 present SUPPORTED   match
+t7defusrdefault6 present SUPPORTED   match
+t7defusrdefault13 present SUPPORTED   match
+t7defusrnumbered2 present SUPPORTED   match
+t7defusrnumbered6 present SUPPORTED   match
+t7defusrnumbered13 present SUPPORTED   match
+
+==============================================================================
+SUMMARY  SUPPORTED=6
+         executed 6 / 6 words; 0 crunch-only
+==============================================================================
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+pin: NOT written -- an --only run measures a subset, and the pin is the whole sweep
+
+=== CRUNCH PIN — words the reference tokenises and zerobas does not ===
+refcache: 0 hit, 4 miss, 4 stored

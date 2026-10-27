@@ -81,7 +81,10 @@ ex_def:
                 push    af                  ; save index across '=' + eval
                 call    skip_eq             ; '=' crunches to $EF
                 jp     nz,ex_def_err
-                call    inc_eval            ; DE = entry address, HL = cursor
+                inc     hl                  ; D-DEFUSRRANGE (2026-10-27): POKE's own address
+                call    eval_addr           ; reader -- -32768..65535, FPERR=1 past it -- and
+                call    check_fperr_only    ; its check, BEFORE the store: `DEF USR=70000` is
+                                            ; Overflow on the VG-8020 and stored garbage here
                 pop     af                  ; A = index
                 push    hl                  ; guard cursor across the store
                 call    usr_setslot         ; USRTAB[index] = DE

@@ -586,6 +586,11 @@ TRACE = [
                        'POKE-12255,0:POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',
                        'POKE-79,201:PRINT PEEK(-12255);ERR:END']),
+    # D-DEFUSRRANGE (2026-10-27): an address past 65535 is Overflow BEFORE the
+    # store, as on the VG-8020 (kwsweep's t7defusr*6 rows read EXTRA before, and
+    # EXTRA does not redden that sweep -- so the subject is here too).
+    ("du-ovf",        ['CLS:ON ERROR GOTO 40', 'DEF USR9=70000', 'PRINT "N":END',
+                       'PRINT ERR:END']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

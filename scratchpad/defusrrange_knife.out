@@ -1,0 +1,26 @@
+  ROM a22841bb 20dbc3d2 2a816a33 743e7515 f7f25d68  ->  b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6
+restore: a22841bb 20dbc3d2 2a816a33 743e7515 f7f25d68 -> a22841bb 20dbc3d2 2a816a33 743e7515 f7f25d68  build rc=0  BYTE-IDENTICAL (all five)
+K-DU1: gate rc=2
+SAME   t7defusrdefault2 def usr
+SAME   t7defusrdefault6 def usr=70000
+SAME   t7defusrdefault13 def usr="a"
+SAME   t7defusrnumbered2 def usr9
+SAME   t7defusrnumbered6 def usr9=70000
+SAME   t7defusrnumbered13 def usr9="a"
+EXTRA         t7defusrdefault6 DEF USR=70000
+EXTRA         t7defusrnumbered6 DEF USR9=70000
+SUPPORTED     t7defusrdefault2 DEF USR
+SUPPORTED     t7defusrdefault13 DEF USR="A"
+SUPPORTED     t7defusrnumbered2 DEF USR9
+SUPPORTED     t7defusrnumbered13 DEF USR9="A"
+t7defusrdefault2 present SUPPORTED   match
+t7defusrdefault6 present EXTRA       ref 'Overflow in 10' vs zb ''
+t7defusrdefault13 present SUPPORTED   match
+t7defusrnumbered2 present SUPPORTED   match
+t7defusrnumbered6 present EXTRA       ref 'Overflow in 10' vs zb ''
+t7defusrnumbered13 present SUPPORTED   match
+ROWS: 6 printed, 6 scored — 0 crunch-only word(s) carry no support reading and are printed but not scored
+FAIL  trace    du-ovf         CLS:ON ERROR GOTO 40 : DEF USR9=70 ref=                     6  zb=                     N
+--- 34/35 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  du-ovf         CLS:ON ERROR GOTO 40 : DEF USR9=70000 : PRIN -> 6
+GATE-RC kwsweep=0 missing=2

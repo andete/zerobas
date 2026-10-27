@@ -1,0 +1,125 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/basic/basic_probe_missing.py --gate \
+	        --zb-machine C-BIOS_MSX1_EU_REPACK_DISK --only 'trace' \
+	        
+# 35 two-sided -> Philips_VG_8020 + C-BIOS_MSX1_EU_REPACK_DISK
+
+=== CALIBRATION / GATE (must AGREE) ===
+PASS  trace    tr-basic       CLS:TRON : PRINT "A" : TROFF : PRI ref=           [20]A/[30]B  zb=           [20]A/[30]B
+PASS  trace    tr-all         CLS:TRON : PRINT "A" : PRINT "B"   ref=           [20]A/[30]B  zb=           [20]A/[30]B
+PASS  trace    tr-multi-stmt  CLS:TRON : PRINT "A":PRINT "B" : P ref=         [20]A/B/[30]C  zb=         [20]A/B/[30]C
+PASS  trace    tr-goto        CLS:TRON : GOTO 40 : PRINT "SKIP"  ref=             [20][40]D  zb=             [20][40]D
+PASS  trace    tr-forloop     CLS:TRON : FOR I=1 TO 2 : NEXT : T ref=      [20][30][30][40]  zb=      [20][30][30][40]
+PASS  trace    tr-gosub       CLS:TRON:GOSUB 40 : TROFF : END :  ref=              [40][20]  zb=              [40][20]
+PASS  trace    tr-off-first   CLS:TROFF : PRINT "A"              ref=                     A  zb=                     A
+PASS  trace    tr-off-mid     CLS:TRON : PRINT "A" : TROFF : PRI ref=     [20]A/[30]B/[60]C  zb=     [20]A/[30]B/[60]C
+PASS  trace    tr-semi        CLS:TRON : PRINT "A"; : PRINT "B"; ref=        [20]A[30]B[40]  zb=        [20]A[30]B[40]
+PASS  trace    ct-trap        CLS:ON ERROR GOTO 50 : CONT : PRIN ref=                 17 20  zb=                 17 20
+PASS  trace    ct-plain       CLS:PRINT "A" : CONT : PRINT "N"   ref=A/Can't CONTINUE in 20  zb=A/Can't CONTINUE in 20
+PASS  trace    us-trap        CLS:ON ERROR GOTO 40 : A=USR : PRI ref=                  2 20  zb=                  2 20
+PASS  trace    us-plus        CLS:A=USR1+1 : PRINT "N"           ref=    Syntax error in 10  zb=    Syntax error in 10
+PASS  trace    cl-bad3        CLS:ON ERROR GOTO 40 : CLEAR 1,2,3 ref=                     2  zb=                     2
+PASS  trace    cl-ok3         CLS:ON ERROR GOTO 40 : CLEAR 200,& ref=                     2  zb=                     2
+PASS  trace    cl-onejunk     CLS:ON ERROR GOTO 40 : CLEAR 200 X ref=                     2  zb=                     2
+PASS  trace    cl-colon       CLS:ON ERROR GOTO 40 : CLEAR 1,2:P ref=                     5  zb=                     5
+PASS  trace    er-extra       CLS:ON ERROR GOTO 40 : ERROR 1,1 : ref=                     2  zb=                     2
+PASS  trace    er-zero        CLS:ON ERROR GOTO 40 : ERROR 0,1 : ref=                     2  zb=                     2
+PASS  trace    he-count       CLS:POKE-12288,33:POKE-12287,33:PO ref=                   1 7  zb=                   1 7
+PASS  trace    du-ovf         CLS:ON ERROR GOTO 40 : DEF USR9=70 ref=                     6  zb=                     6
+PASS  trace    he-rewrite     CLS:POKE-12288,30:POKE-12287,5:POK ref=                     5  zb=                     5
+PASS  trace    tr-bignum      1 CLS:TRON : 30000 PRINT "A" : 327 ref=      [30000]A/[32767]  zb=      [30000]A/[32767]
+PASS  trace    trd-direct     CLS:TRON:PRINT "A":TROFF           ref=                     A  zb=                     A
+PASS  trace    trd-bare       CLS:TRON:TROFF                     ref=               <blank>  zb=               <blank>
+PASS  trace    trd-arg        CLS:TRON 1                         ref=          Syntax error  zb=          Syntax error
+PASS  trace    trd-troff-arg  CLS:TROFF 1                        ref=          Syntax error  zb=          Syntax error
+PASS  trace    bx-cls1        CLS:PRINT "[M]":CLS 1              ref=      [M]/Syntax error  zb=      [M]/Syntax error
+PASS  trace    bx-clseq       CLS:PRINT "[M]":CLS=1              ref=      [M]/Syntax error  zb=      [M]/Syntax error
+PASS  trace    bx-end1        CLS:PRINT "[M]":END 1              ref=      [M]/Syntax error  zb=      [M]/Syntax error
+PASS  trace    bx-stop1       CLS:PRINT "[M]":STOP 1             ref=      [M]/Syntax error  zb=      [M]/Syntax error
+PASS  trace    trs-direct-into-run 10 CLS : 20 PRINT "A" : TRON : RUN ref=                 [20]A  zb=                 [20]A
+PASS  trace    trs-survives-run 10 CLS : 20 TRON : 30 PRINT "A" :  ref=             [20][30]A  zb=             [20][30]A
+PASS  trace    trs-after-end  10 CLS:TRON : 20 PRINT "A" : 30 EN ref=            [20]A/[30]  zb=            [20]A/[30]
+PASS  trace    trs-new-clears 10 CLS:TRON : 20 PRINT "A" : RUN : ref=                     B  zb=                     B
+--- 35/35 as recorded   (0 expected-divergent, see XDIVERGENT)
+
+=== TRON / TROFF -- SCREEN — the ROM dictates ===
+  tr-basic       CLS:TRON : PRINT "A" : TROFF : PRINT "B"     -> [20]A/[30]B
+                     zb=[20]A/[30]B
+  tr-all         CLS:TRON : PRINT "A" : PRINT "B"             -> [20]A/[30]B
+                     zb=[20]A/[30]B
+  tr-multi-stmt  CLS:TRON : PRINT "A":PRINT "B" : PRINT "C"   -> [20]A/B/[30]C
+                     zb=[20]A/B/[30]C
+  tr-goto        CLS:TRON : GOTO 40 : PRINT "SKIP" : PRINT "D -> [20][40]D
+                     zb=[20][40]D
+  tr-forloop     CLS:TRON : FOR I=1 TO 2 : NEXT : TROFF       -> [20][30][30][40]
+                     zb=[20][30][30][40]
+  tr-gosub       CLS:TRON:GOSUB 40 : TROFF : END : RETURN     -> [40][20]
+                     zb=[40][20]
+  tr-off-first   CLS:TROFF : PRINT "A"                        -> A
+                     zb=A
+  tr-off-mid     CLS:TRON : PRINT "A" : TROFF : PRINT "B" : T -> [20]A/[30]B/[60]C
+                     zb=[20]A/[30]B/[60]C
+  tr-semi        CLS:TRON : PRINT "A"; : PRINT "B"; : TROFF   -> [20]A[30]B[40]
+                     zb=[20]A[30]B[40]
+  ct-trap        CLS:ON ERROR GOTO 50 : CONT : PRINT "N" : EN -> 17 20
+                     zb=17 20
+  ct-plain       CLS:PRINT "A" : CONT : PRINT "N"             -> A/Can't CONTINUE in 20
+                     zb=A/Can't CONTINUE in 20
+  us-trap        CLS:ON ERROR GOTO 40 : A=USR : PRINT "N":END -> 2 20
+                     zb=2 20
+  us-plus        CLS:A=USR1+1 : PRINT "N"                     -> Syntax error in 10
+                     zb=Syntax error in 10
+  cl-bad3        CLS:ON ERROR GOTO 40 : CLEAR 1,2,3 : PRINT " -> 2
+                     zb=2
+  cl-ok3         CLS:ON ERROR GOTO 40 : CLEAR 200,&HF000,3 :  -> 2
+                     zb=2
+  cl-onejunk     CLS:ON ERROR GOTO 40 : CLEAR 200 X : PRINT " -> 2
+                     zb=2
+  cl-colon       CLS:ON ERROR GOTO 40 : CLEAR 1,2:PRINT 9 : P -> 5
+                     zb=5
+  er-extra       CLS:ON ERROR GOTO 40 : ERROR 1,1 : PRINT "N" -> 2
+                     zb=2
+  er-zero        CLS:ON ERROR GOTO 40 : ERROR 0,1 : PRINT "N" -> 2
+                     zb=2
+  he-count       CLS:POKE-12288,33:POKE-12287,33:POKE-12286,2 -> 1 7
+                     zb=1 7
+  du-ovf         CLS:ON ERROR GOTO 40 : DEF USR9=70000 : PRIN -> 6
+                     zb=6
+  he-rewrite     CLS:POKE-12288,30:POKE-12287,5:POKE-12286,20 -> 5
+                     zb=5
+  tr-bignum      1 CLS:TRON : 30000 PRINT "A" : 32767 TROFF   -> [30000]A/[32767]
+                     zb=[30000]A/[32767]
+  trd-direct     CLS:TRON:PRINT "A":TROFF                     -> A
+                     zb=A
+  trd-bare       CLS:TRON:TROFF                               -> <blank>
+                     zb=<blank>
+  trd-arg        CLS:TRON 1                                   -> Syntax error
+                     zb=Syntax error
+  trd-troff-arg  CLS:TROFF 1                                  -> Syntax error
+                     zb=Syntax error
+  bx-cls1        CLS:PRINT "[M]":CLS 1                        -> [M]/Syntax error
+                     zb=[M]/Syntax error
+  bx-clseq       CLS:PRINT "[M]":CLS=1                        -> [M]/Syntax error
+                     zb=[M]/Syntax error
+  bx-end1        CLS:PRINT "[M]":END 1                        -> [M]/Syntax error
+                     zb=[M]/Syntax error
+  bx-stop1       CLS:PRINT "[M]":STOP 1                       -> [M]/Syntax error
+                     zb=[M]/Syntax error
+  trs-direct-into-run 10 CLS : 20 PRINT "A" : TRON : RUN           -> [20]A
+                     zb=[20]A
+  trs-survives-run 10 CLS : 20 TRON : 30 PRINT "A" : RUN : RUN  -> [20][30]A
+                     zb=[20][30]A
+  trs-after-end  10 CLS:TRON : 20 PRINT "A" : 30 END : RUN    -> [20]A/[30]
+                     zb=[20]A/[30]
+  trs-new-clears 10 CLS:TRON : 20 PRINT "A" : RUN : NEW : 10  -> B
+                     zb=B
+
+OK
+refcache: 0 hit, 2 miss, 2 stored

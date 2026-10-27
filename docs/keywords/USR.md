@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `USR` and `DEF USR` — call a machine-code routine
 
-> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. One recorded
-> difference: `DEF USR` accepts an address past 65535 (below).
+> **Status (2026-10-27):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No recorded difference
+> since 2026-10-27 (below).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -54,7 +54,7 @@ USR[<n>](<argument>)
 | a bare `USR` or `USR1`, with no argument: `A=USR`, `A=USR+1`, `PRINT USR` | error 2, `Syntax error` |
 | `DEF USR`, `DEF USR9` | error 2, `Syntax error` |
 | `DEF USR="A"`, `DEF USR9="A"` | error 13, `Type mismatch` |
-| `DEF USR=70000` | error 6, `Overflow` on the VG-8020; accepted here (see *Differences*) |
+| `DEF USR=70000`, `DEF USR9=70000` | error 6, `Overflow` |
 
 Calling a slot that was never set has not been compared with the reference.
 
@@ -84,14 +84,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **`DEF USR=70000` is accepted here** and `Overflow` (error 6) on the
-  VG-8020, for every slot (D-DEFUSRRANGE, found 2026-09-27). zerobas stores
-  something and runs on. Open, TIER 6.
+None recorded. The last one is under *What we found*.
 
 The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 
 ## What we found, and how
 
+- **An address past 65535 was accepted** (fixed 2026-10-27, D-DEFUSRRANGE).
+  `DEF USR=70000` is `Overflow` on the VG-8020, for every slot; zerobas stored
+  part of the number and ran on. It now reads the address the way `POKE` does
+  (any value from −32768 to 65535) and raises `Overflow` before storing it.
 - **A bare `USR` with no argument gave 0** (fixed 2026-10-24, D-USRBARE).
   `A=USR`, `A=USR1`, `A=USR+1` and `PRINT USR` are `Syntax error` on the
   VG-8020; zerobas marked the fault in a way nothing on that path read, so
@@ -135,5 +137,6 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
   calling a one-byte routine that returns its argument, and the error rows.
 - `make unit-test` — the entry state a routine sees, and the returned value.
 - `make catusr-acceptance` — the evaluation count.
+- `make missing-acceptance` — `DEF USR9=70000` under `ON ERROR` (row `du-ovf`).
 - `make missing-acceptance` — a bare `USR` and `USR1+1`, caught by `ON ERROR`
   and not caught (rows `us-trap`, `us-plus`).

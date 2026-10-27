@@ -16372,6 +16372,11 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       t6errorr2 now reads **DIVERGENT** and counts ("1 UNPINNED SUPPORT DIVERGENCE"),
       gate rc=2, all five restored ([`kwerrwords_knife.out`](scratchpad/kwerrwords_knife.out)). ➡️ Still open, not done here:
       whether EXTRA itself should redden the sweep.
+      📏 **EVIDENCE FOR THE OPEN HALF (2026-10-27, D-DEFUSRRANGE's knife):** with the fix
+      cut out, `DEF USR=70000` read EXTRA -- zerobas accepting what the reference
+      refuses, a real divergence -- and kwsweep exited 0 ([`defusrrange_knife.out`](scratchpad/defusrrange_knife.out)).
+      ➡️ Next: count the EXTRA rows the current pin carries, read each, and decide
+      whether EXTRA reddens (with an allowlist for zerobas's own extensions).
 
 - [x] ✅ **DONE 2026-10-24 (D-BAREEXTRA)** 🔴 **`CLS 1` CLEARS THE SCREEN BEFORE ITS `Syntax error`, AND `END 1` ENDS
       SILENTLY — trailing junk after a no-argument statement (D-BAREEXTRA, found
@@ -16428,7 +16433,7 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       T6 blocker — the reference raises nothing there — and matching it means
       matching a very slow draw, so the fix is worth measuring before choosing.
 
-- [ ] 🔴 **`DEF USR=70000` IS ACCEPTED HERE AND `Overflow` ON THE REFERENCE
+- [x] ✅ **DONE 2026-10-27 (D-DEFUSRRANGE)** 🔴 **`DEF USR=70000` IS ACCEPTED HERE AND `Overflow` ON THE REFERENCE
       (D-DEFUSRRANGE, found 2026-09-27 by T6 batch 7).**
       🎚️ TIER 6 — `DEF USR[n]=` with an address past 65535
       🤖 **AUTONOMOUS** — the reference settles it.
@@ -16436,6 +16441,14 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       Overflow (6) for `DEF USR=70000` and `DEF USR9=70000`; zerobas stores
       something and runs on. `DEF USR="A"` (13) and a bare `DEF USR` (2) agree.
       Blocks DEF USR's T6.
+      ✅ **FIXED 2026-10-27, WITH POKE'S OWN READER.** ex_def's `call inc_eval` is now
+      `inc hl / call eval_addr / call check_fperr_only` (+4 B): -32768..65535 accepted,
+      Overflow raised BEFORE usr_setslot. After: all six t7defusr* rows SUPPORTED
+      ([`defusrrange_gate.out`](scratchpad/defusrrange_gate.out)); trace row `du-ovf` ([`defusrrange_trace.out`](scratchpad/defusrrange_trace.out)).
+      🔪 K-DU1 ([`defusrrange_knife.py`](scratchpad/defusrrange_knife.py)): du-ovf FAILS (missing rc=2) -- and kwsweep reads both
+      `=70000` rows EXTRA (`ref 'Overflow in 10' vs zb ''`) and exits **0**
+      ([`defusrrange_knife.out`](scratchpad/defusrrange_knife.out)): a second measured case of EXTRA hiding a real
+      divergence (see D-KWERRWORDS' open half). Docs: USR.md.
 
 - [ ] 🔴 **`DEF FNA(5)=1` IS ACCEPTED HERE AND `Syntax error` ON THE REFERENCE
       (D-DEFFNPARAM, found 2026-09-27 by T6 batch 7).**
