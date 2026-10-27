@@ -18,6 +18,18 @@
 ; Sequential Write, so a zero-byte file occupies no clusters (matching MSX-DOS).
 bdos_create:
                 jp      bdos_create_body    ; Tier-2 3b: divert; veneer fills the gap
+; dsl_bcheck: drv_select's B: arm (D-BOOTKEYS CTRL, 2026-10-27; disk/kernel.asm):
+; A := 1 when there are two logical drives, else `Bad drive name` -- one drive
+; after a CTRL boot, as on the CF-3300 (scratchpad/bootctrl_run.out). Sited in
+; this fill for room.
+dsl_bcheck:
+                ld      a, (DRVCNT)
+                cp      2
+                ld      a, 1
+                ret     nc
+                ld      a, 62               ; Bad drive name
+                ld      ix, raise_error
+                jp      calbak              ; raises; never returns
                 ds      $46BA - $, $00      ; pure $00 pad (M26, tier2-m26-spec.md
                                             ; §2.4: trace --resync confirmed $46BA is
                                             ; the kernel's real fixed $2F RDABS dispatch

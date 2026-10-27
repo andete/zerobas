@@ -17417,7 +17417,19 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       DSKF 706 -- D-DISKHIMEM); **SHIFT** FRE 28705 and HIMEM $F380 IDENTICAL (since
       D-WSZERO's $F380 ceiling), DSKF ERR 5 on both. 🔮 "plain and SHIFT match, CTRL
       differs": HIT. ➡️ **2026-10-27: D-DSKIB is built**, so CTRL (one drive, B: gone,
-      +1558 B) is unblocked. Residual (priority 3/4, an address): after a SHIFT boot the
+      +1558 B) is unblocked. ✅ **CTRL'S DRIVE HALF SHIPPED 2026-10-27**
+      ([`bootctrl_probe.py`](scratchpad/bootctrl_probe.py) -> [`bootctrl_run.out`](scratchpad/bootctrl_run.out): on the CF-3300 a CTRL boot answers
+      DSKF(2) and FILES"B:" with 62 and $F347 reads 1). INIT reads SNSMAT row 6 bit 1
+      into DRVCNT (1 with CTRL held, else 2); drv_select's B: arm calls dsl_bcheck
+      (disk/fat.asm, the $46BA fill): DRVCNT below 2 -> 62 through calbak -- one check
+      for every path, since every B: access passes drv_select. After: identical
+      ([`bootctrl_after.out`](scratchpad/bootctrl_after.out)). Gate: bootkeys-acceptance row `ctrlb` ([`bootctrl_gate.out`](scratchpad/bootctrl_gate.out),
+      4/4); 🔪 K-BC1 ([`bootctrl_knife.py`](scratchpad/bootctrl_knife.py)): `ctrlb` alone diverges (the B: prompt
+      back), rc=2, all five restored ([`bootctrl_knife.out`](scratchpad/bootctrl_knife.out)). Docs: concepts/disk.md.
+      🙋 **THE RAM HALF NEEDS JOOST (asked 2026-10-27):** the CF-3300 also frees 1558 B
+      (HIMEM $DE77 -> $E48D). zerobas's own disk buffers (FAT_DBUF/FSECTOR_BUF $E46A,
+      FAT_MBUF $E66A..$E869) sit inside that range, so matching it means moving them --
+      a RAM-layout adjustment, which D-TIER5RAM says comes back to him. Residual (priority 3/4, an address): after a SHIFT boot the
       drive-count cell $F347 reads 255 (untouched) on the CF-3300 and 201 ($C9) here
       -- who writes $C9 there is unmeasured. CTRL still open (D-DSKIB).
       📏 **$F347 SETTLED 2026-10-20 -- C-BIOS's own fill, kept; the residual is TIER 6.**

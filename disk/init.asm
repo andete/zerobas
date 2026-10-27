@@ -523,7 +523,17 @@ set_ramad:
                 ; bitmap $FF (8 phantom drives) instead of $03 (drives A:/B:), and $F247
                 ; stayed $FF. See tier2-cbios-bdos-login-f347.md. Clean-room: published
                 ; single-drive convention ([[dual-drive-decision]]) + boot state, not stock.
-                ld      a, $02
+                push    bc                  ; D-BOOTKEYS CTRL (2026-10-27): CTRL held at
+                push    hl                  ; power-on gives ONE logical drive -- no B: --
+                ld      a, 6                ; as on the CF-3300 ($F347 reads 1, DSKF(2) and
+                call    $0141               ; FILES"B:" are 62: scratchpad/bootctrl_run.out).
+                pop     hl                  ; SNSMAT row 6, bit 1 low = CTRL held.
+                pop     bc
+                and     $02                 ; Z = CTRL held
+                ld      a, $01
+                jr      z, dc_one
+                inc     a                   ; otherwise two logical drives, A: and B:
+dc_one:
                 ld      (DRVCNT), a         ; $F347 logical-drive count (LOGIN/SELDSK read it)
                 xor     a
                 ld      (CURDRV_CELL), a    ; $F247 current drive = A: ($00)

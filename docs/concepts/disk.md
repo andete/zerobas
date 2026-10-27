@@ -10,7 +10,8 @@ SPDX-License-Identifier: 0BSD
 > in the forms measured, the logical drive B: and its prompt included (since
 > 2026-10-27; `COPY` from `A:` to `B:` prompts once here, per buffer there).
 > SHIFT held at power-on keeps Disk BASIC out, as on the CF-3300 (since
-> 2026-10-10); CTRL's one-drive boot is not done yet (D-BOOTKEYS).
+> 2026-10-10); CTRL held gives one drive (since 2026-10-27), but not yet the
+> RAM it frees there (D-BOOTKEYS).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -236,8 +237,10 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - **`COPY "A:X" TO "B:Y"`** prompts four times on the CF-3300 (B:, A:, B:,
   A: for one small file -- it swaps per buffer); zerobas prompts once
   (D-DSKIB). The copy itself is the same.
-- **CTRL held at power-on** gives one drive and 1558 more bytes on the CF-3300;
-  zerobas ignores it (D-BOOTKEYS, now that drive B: exists).
+- **CTRL held at power-on** gives one drive and 1558 more bytes on the CF-3300.
+  zerobas gives the one drive (B: is `Bad drive name`, `PEEK(&HF347)` is 1)
+  but not the bytes: its own disk buffers sit where that RAM would go
+  (D-BOOTKEYS).
 - **A wildcard `COPY` with two or more matches** is error 5 here (D-COPYWILD;
   Joost, 2026-10-09: *"stay error 5 for now"*).
 - **Keys typed during long disk work** are nearly all kept here; the CF-3300
@@ -253,6 +256,12 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **CTRL held at power-on did nothing** (drive half fixed 2026-10-27,
+  D-BOOTKEYS). On the CF-3300 it turns the logical drive B: off: `DSKF(2)` and
+  `FILES"B:"` are `Bad drive name`, and the drive count at `&HF347` reads 1
+  ([`bootctrl_run.out`](../../scratchpad/bootctrl_run.out), from
+  [`bootctrl_probe.py`](../../scratchpad/bootctrl_probe.py)). zerobas now does
+  the same.
 - **Drive B: was missing** (fixed 2026-10-27, D-DSKIB). The CF-3300 has one
   drive and two logical ones on it: naming the other one prints, from a fresh
   line, `Insert diskette for drive B:` / `and strike a key when ready`, waits
@@ -402,7 +411,8 @@ The keyword pages in the table above; [MSX-DOS](msx-dos.md),
 - `make dskib-acceptance` — the drive-B: prompt for `DSKF`, `DSKI$`,
   `DSKO$`, `FILES`, `SAVE` and `LOAD`, from a fresh line, against the CF-3300.
 - `make bootkeys-acceptance` — a plain boot, SHIFT held and CTRL held from
-  power-on: whether Disk BASIC is there, against the CF-3300.
+  power-on: whether Disk BASIC is there, and (row `ctrlb`) that CTRL leaves
+  one drive, against the CF-3300.
 - `make diskbasic-acceptance` — the statements against the CF-3300, by screen
   and by the disk image they leave; `make kwsweep` — every disk keyword's rows.
 - `make copy-acceptance`, `dskio-acceptance`, `savedate-acceptance`,

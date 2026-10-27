@@ -375,7 +375,7 @@ drv_select:
                 cp      2                   ; 2 (B:) -> 1, anything else -> 0 (A:)
                 ld      a,0
                 jr      nz,dsl_cmp
-                inc     a
+                call    dsl_bcheck          ; B: = 1 -- unless there is no B: (fat.asm)
 dsl_cmp:
                 ld      hl,DSK_CURDRV
                 cp      (hl)

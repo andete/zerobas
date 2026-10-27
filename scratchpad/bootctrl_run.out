@@ -1,0 +1,5 @@
+plain  CF  [A 706 | B | Insert diskette for drive B: | and strike a key when ready |  706 | C 2 | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS]
+plain  ZB  [A 706 | B | Insert diskette for drive B: | and strike a key when ready |  706 | C 2 | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS]
+ctrl   CF  [A 706 | BE 62  30 | C 1 | E 62  50]
+ctrl   ZB  [A 706 | B | Insert diskette for drive B: | and strike a key when ready |  706 | C 2 | TEST    .BIN HI      .TXT PROG    .BIN | PROG    .BAS PROG2   .BAS PROG3   .BAS]
+refcache: 0 hit, 4 miss, 4 stored

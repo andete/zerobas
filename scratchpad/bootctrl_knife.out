@@ -1,0 +1,8 @@
+  ROM b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6  ->  b5c7e8e5 20dbc3d2 54dd68d6 e0c70377 f58662b6
+restore: b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6 -> b5c7e8e5 20dbc3d2 26831dd7 e0c70377 f58662b6  build rc=0  BYTE-IDENTICAL (all five)
+K-BC1: gate rc=2
+ROW plain CF=[K 706] ZB=[K 706] SAME
+ROW shift CF=[KE 5  20] ZB=[KE 5  20] SAME
+ROW ctrl CF=[K 706] ZB=[K 706] SAME
+ROW ctrlb CF=[KE 62  20 | D 1] ZB=[K | Insert diskette for drive B: | and strike a key when ready] DIVERGES
+FAIL: keys held at power-on (3/4)

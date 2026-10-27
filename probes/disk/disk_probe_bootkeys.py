@@ -24,9 +24,13 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 import omsx_repl                                    # noqa: E402
 import probe_tmp                                    # noqa: E402
 
-KEYS = {"plain": None, "shift": (6, 0x01), "ctrl": (6, 0x02)}
+KEYS = {"plain": None, "shift": (6, 0x01), "ctrl": (6, 0x02),
+        # D-BOOTKEYS CTRL's drive half (2026-10-27): one logical drive -- no B:
+        "ctrlb": (6, 0x02)}
 LINES = ["10 ON ERROR GOTO 90", '20 PRINT "K";DSKF(0)', "30 END",
          '90 PRINT "E";ERR;ERL:END', "RUN"]
+LINES_B = ["10 ON ERROR GOTO 90", '20 PRINT "K";DSKF(2)', '30 PRINT "D";PEEK(&HF347):END',
+           '90 PRINT "E";ERR;ERL:RESUME NEXT', "RUN"]
 
 
 def rows(scr):
@@ -49,7 +53,7 @@ def main():
             shutil.copyfile(os.path.join(REPO, "disk", "test720.dsk"), dsk)
             pro = () if key is None else (f"keymatrixdown {key[0]} {key[1]}",
                                           f"after time 6 {{ keymatrixup {key[0]} {key[1]} }}")
-            got[side] = rows(omsx_repl.run_cases(m, [("direct", LINES)], batch=False,
+            got[side] = rows(omsx_repl.run_cases(m, [("direct", LINES_B if name == "ctrlb" else LINES)], batch=False,
                                                  diska=dsk, boot=14.0,
                                                  reset=("", "SCREEN 0:WIDTH 40"), step=4.0,
                                                  run_gap=10.0, prologue=pro)[0])
