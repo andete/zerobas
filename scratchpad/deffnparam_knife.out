@@ -1,0 +1,6 @@
+  ROM 36243fce 8041c13b 0ac64837 1d7203d1 4b5109f6  ->  cf1f3f4b 8041c13b 52ce3522 e3069c6b f7f25d68
+restore: 36243fce 8041c13b 0ac64837 1d7203d1 4b5109f6 -> 36243fce 8041c13b 0ac64837 1d7203d1 4b5109f6  build rc=0  BYTE-IDENTICAL (all five)
+K-DP1: gate rc=1
+FAIL  trace    df-formals     CLS:ON ERROR GOTO 100 : DEF FNA()= ref=         2 2 2 2 2 2 K  zb=                     K
+--- 35/36 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  df-formals     CLS:ON ERROR GOTO 100 : DEF FNA()=1 : DEF FN -> 2 2 2 2 2 2 K

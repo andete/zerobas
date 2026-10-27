@@ -7,9 +7,10 @@ SPDX-License-Identifier: 0BSD
 # `FN` and `DEF FN` — one-line functions of your own
 
 > **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Two recorded
-> differences: an argument that reads the caller's own parameter after it was
-> rebound, and `DEF FNA(5)=…` being accepted (below).
+> errors ✓ · RAM usage not yet proven · every error ✓. Recorded differences:
+> an argument that reads the caller's own parameter after it was rebound, and
+> an array-element parameter (below). Since 2026-10-27 a parameter list that is
+> not a list of names is `Syntax error` at the `DEF`, as on the VG-8020.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -106,10 +107,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   argument. Joost ruled on 2026-09-09 *"we need to match the reference"*, and
   on 2026-09-27 chose the route: evaluate every argument into the
   control-frame pool before binding. Open, TIER 6.
-- **`DEF FNA(5)=1` is accepted here** and `Syntax error` on the VG-8020, as is
-  `DEF FNA$(5)=1` (D-DEFFNPARAM, found 2026-09-27): a parameter must be a
-  name. Open, TIER 6; it holds back `DEF FN`'s own every-error rung.
-
 - **A parameter written like an array element** (`DEF FNA(C(1))=…`) makes
   the VG-8020 dimension the array `C` at the `DEF`; zerobas leaves it until the
   call (D-DEFFNVAR, 2026-10-23). Open, TIER 6.
@@ -123,6 +120,16 @@ writes still differ, as they do for every keyword.
 
 ## What we found, and how
 
+- **A parameter list that was not a list of names was accepted** (fixed
+  2026-10-27, D-DEFFNPARAM, found 2026-09-27 by the every-error sweep). On the
+  VG-8020 `DEF FNA(5)=1`, `DEF FNA()=1`, `DEF FNA(X,5)=1`, `DEF FNA(,X)=1`,
+  `DEF FNA(X,)=1`, `DEF FNA(X+1)=1` and `DEF FNA(X=1` are all `Syntax error`
+  at the `DEF`. `DEF FNA(X Y)=1` is one parameter, `XY`, and nothing after the
+  closing parenthesis is checked until the call (`DEF FNA(X))=1` and
+  `DEF FNA(X)1` pass)
+  ([`deffnparam_run.out`](../../scratchpad/deffnparam_run.out), from
+  [`deffnparam_probe.py`](../../scratchpad/deffnparam_probe.py)). zerobas
+  accepted all of them; it now checks the list and only the list.
 - **The parameters were missing from the variable table** (fixed 2026-10-23,
   D-DEFFNVAR, found while chasing a tape game). Our own program printed the
   first bytes of the variable table after a `DEF FN`: the VG-8020 holds the
@@ -172,4 +179,5 @@ writes still differ, as they do for every keyword.
   scope, types, errors and nesting, against both references.
 - `make deffn-selftest` — deliberately broken versions the gate must catch.
 - `make kwsweep` — numeric and string `DEF FN` / `FN` rows and the error rows.
+- `make missing-acceptance`, row `df-formals` — the parameter-list forms above.
 - `make kwram` — the RAM-usage comparison.

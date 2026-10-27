@@ -16459,13 +16459,27 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       ([`defusrrange_knife.out`](scratchpad/defusrrange_knife.out)): a second measured case of EXTRA hiding a real
       divergence (see D-KWERRWORDS' open half). Docs: USR.md.
 
-- [ ] 🔴 **`DEF FNA(5)=1` IS ACCEPTED HERE AND `Syntax error` ON THE REFERENCE
-      (D-DEFFNPARAM, found 2026-09-27 by T6 batch 7).**
+- [x] ✅ **`DEF FNA(5)=1` IS ACCEPTED HERE AND `Syntax error` ON THE REFERENCE
+      (D-DEFFNPARAM, found 2026-09-27 by T6 batch 7; FIXED 2026-10-27).**
       🎚️ TIER 6 — a DEF FN parameter that is not a variable name
       🤖 **AUTONOMOUS** — the reference settles it.
       `t7deffnnumeric2` / `t7deffnstringvalued2` (EXTRA): `DEF FNA(5)=1` and
       `DEF FNA$(5)=1` are Syntax error on the VG-8020 and stored here. A formal
       is a NAME. Blocks DEF FN's T6.
+      📏 **MEASURED 2026-10-27** ([`deffnparam_probe.py`](scratchpad/deffnparam_probe.py) ->
+      [`deffnparam_run.out`](scratchpad/deffnparam_run.out), 14 forms, one boot each): on the
+      VG-8020 `(5)`, `$(5)`, `()`, `(X,5)`, `(,X)`, `(X,)`, `(X+1)`, `(X=1` are 2 at the DEF;
+      `(X Y)` (one name, XY), `(X))=1`, `(X)1`, `( X , Y )`, `(C(1))` pass. zerobas passed all
+      14. 🔮 13/14 -- MISSED `(X Y)` (predicted 2; names read across spaces, D-NAMSPC).
+      ✅ dfv_formal (basic/deffn.asm): each formal goes through req_letter (2 on a non-letter),
+      and after a name only `,` (next) or `)` (done) may follow, else stmt_error; a name
+      followed by `(` still stops the scan unchecked. -2 B. After: 14/14 identical
+      ([`deffnparam_after.out`](scratchpad/deffnparam_after.out)). Gate: missing-acceptance
+      row `df-formals` ([`deffnparam_gate.out`](scratchpad/deffnparam_gate.out), 36/36); the
+      two kwsweep pins are gone. 🔪 K-DP1 ([`deffnparam_knife.py`](scratchpad/deffnparam_knife.py)):
+      deffn.asm back to HEAD -> `df-formals` alone FAILs (zb ` K`), all five images restored
+      ([`deffnparam_knife.out`](scratchpad/deffnparam_knife.out)). Docs: FN.md, DEF.md (and DEF.md's
+      stale DEF USR range line, fixed by D-DEFUSRRANGE).
 
 - [x] ✅ **DISK BASIC'S ERROR SURFACE: 32 OF 126 CASES DIVERGE FROM THE CF-3300,
       AND FOUR OF THEM LOSE DATA SILENTLY (D-DISKERRS, found 2026-09-27 by T6

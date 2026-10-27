@@ -591,6 +591,13 @@ TRACE = [
     # EXTRA does not redden that sweep -- so the subject is here too).
     ("du-ovf",        ['CLS:ON ERROR GOTO 40', 'DEF USR9=70000', 'PRINT "N":END',
                        'PRINT ERR:END']),
+    # D-DEFFNPARAM (2026-10-27): the formal list is checked AT THE DEF -- a formal
+    # that is not a name, an empty list, a missing/extra comma, anything but `,` /
+    # `)` after a name is 2 -- and nothing after its `)` is (scratchpad/deffnparam_run.out).
+    ("df-formals",    ['CLS:ON ERROR GOTO 100', 'DEF FNA()=1', 'DEF FNA(X,5)=1', 'DEF FNA(,X)=1',
+                       'DEF FNA(X,)=1', 'DEF FNA(X+1)=1', 'DEF FNA(X=1',
+                       'DEF FNA(X Y)=1:DEF FNA(X))=1:DEF FNA(X)1:PRINT "K"', 'END',
+                       'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

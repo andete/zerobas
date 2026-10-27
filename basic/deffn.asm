@@ -112,22 +112,23 @@ exdf_run:
                 ; called), keeps an existing Y where it is, makes X once for `(X,X)`,
                 ; and types X! / Y# / X$ by suffix or DEFtype
                 ; (scratchpad/deffnvar_cases.out). The lookup is LET's own
-                ; (var_alloc_or_find, type 1 for a string name). The scan raises
-                ; NOTHING, as before (o.lazybody / o.noeq / o.aryformal): it stops at
-                ; anything that is not a letter, and at a name followed by `(` --
+                ; (var_alloc_or_find, type 1 for a string name).
+                ; 🎯 D-DEFFNPARAM (2026-10-27): THE FORMAL LIST IS CHECKED AT THE DEF,
+                ; AND ONLY THE LIST. On the VG-8020 a formal that is not a name, an
+                ; empty list, a missing or extra comma and anything but `,` / `)`
+                ; after a name are Syntax error at the DEF -- `(5)`, `()`, `(X,5)`,
+                ; `(,X)`, `(X,)`, `(X+1)`, `(X=1` -- while `(X Y)` is one name and
+                ; nothing after the `)` is read (`(X))=1`, `(X)1` pass: o.noeq,
+                ; o.lazybody) (scratchpad/deffnparam_run.out). The scan stops,
+                ; unchecked, at a name followed by `(` --
                 ; the reference DIMs such an array formal at the DEF, which this does
                 ; not (filed, D-DEFFNVAR).
-dfv_formal:
                 ld      a,(hl)
                 cp      '('
-                jr      z,dfv_next
-                cp      ','
-                jr      nz,dfv_done
+                jr      nz,dfv_done         ; `DEF FNA=..`: no list
 dfv_next:
                 inc     hl
-                call    skip_spaces
-                call    is_letter
-                jr      nc,dfv_done
+                call    req_letter          ; a formal is a NAME, or Syntax error
                 call    var_str_type        ; A = 1 for a string name (HL kept)
                 push    af
                 call    var_name_key        ; BC = key, HL past name + suffix
@@ -145,8 +146,11 @@ dfv_alloc:
                 call    var_alloc_or_find   ; created zero-valued if new
                 pop     hl
                 jp      nc,fp_runtime_error ; Out of memory: FPERR already set
-                call    skip_spaces
-                jr      dfv_formal
+                call    skip_spaces         ; A = the character after the name
+                cp      ','
+                jr      z,dfv_next
+                cp      ')'
+                jp      nz,stmt_error       ; `(X+1)` / `(X=1`: Syntax error
 dfv_done:
                 ; ⚠️ THE SKIP IS TOKEN-AWARE AND THAT IS MEASURED BOTH WAYS.
                 ; `DEF FNA$(X$)=X$+":Q"` returns `a:Q` (o.quotedcolon), so a ':'

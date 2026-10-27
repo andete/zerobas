@@ -5517,8 +5517,7 @@ SKIP_EXEC = {k for k, _, ex, _, _ in SWEEP if ex is None}
 # D-KWERRWORDS (2026-10-27): EXTRA rows (the reference errors, zerobas does not)
 # redden too now, so a FILED one is pinned here against its item until it is fixed.
 SUPPORT_DIVERGENT_PINNED: dict[str, str] = {
-    "t7deffnnumeric2": "D-DEFFNPARAM (TIER 6): DEF FNA(5)=1 is Syntax error there, stored here",
-    "t7deffnstringvalued2": "D-DEFFNPARAM (TIER 6): DEF FNA$(5)=1, the same",
+    # D-DEFFNPARAM's two rows (t7deffnnumeric2 / t7deffnstringvalued2) left 2026-10-27: fixed.
 }
 
 CRUNCH_DIFF_PINNED = {

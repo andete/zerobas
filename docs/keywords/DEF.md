@@ -46,9 +46,9 @@ statement: [`FN`](FN.md), [`USR`](USR.md).
 ## Differences from the reference
 
 The open items filed against `DEF` all belong to one of its two statements,
-and are described on those pages: a `DEF FN` whose parameter is not a variable
-name (`DEF FNA(5)=1`) is accepted here, two parameters of one call can share
-a value ([`FN`](FN.md)), and `DEF USR` accepts an address past 65535
+and are described on those pages: two parameters of one call can share a
+value, and an array-element parameter is not dimensioned at the `DEF`
+([`FN`](FN.md)). `DEF USR` and its address range match the VG-8020
 ([`USR`](USR.md)).
 
 ## Related concepts
