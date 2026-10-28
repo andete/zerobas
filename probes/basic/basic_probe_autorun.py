@@ -48,6 +48,7 @@ after time 0.3 {
   trace remove execution cassetteplayer leave ::__zb_unarm
   set autoruncassettes on
   cassetteplayer insert {CAS}
+  AUTORUN_FIX
 }
 proc __rd16 {a} { expr {[debug read memory $a] + 256*[debug read memory [expr {$a+1}]]} }
 proc __done {r} {
@@ -74,7 +75,8 @@ def run(machine, kind):
     tcl = probe_tmp.tmp(f"autorun_e2e_{machine}_{kind}.tcl")
     if os.path.exists(out):
         os.unlink(out)
-    open(tcl, "w").write(TCL.replace("{CAS}", "{" + cas + "}")
+    open(tcl, "w").write(TCL.replace("AUTORUN_FIX", omsx_preflight.AUTORUN_FIX)
+                         .replace("{CAS}", "{" + cas + "}")
                          .replace("{OUT}", "{" + out + "}").replace("LIMIT", str(LIMIT)))
     proc = subprocess.Popen(omsx_preflight.guarded(
                                 [OMSX, "-machine", machine, "-command",

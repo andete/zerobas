@@ -281,15 +281,17 @@ ctp_verify_done:
                 or      a
                 ret     z                   ; no difference -> Ok (memory intact)
                 ; FALL THROUGH: a byte differed -> "Verify error"
-; ctp_verify_error -- main's verify_error: report a CLOAD? mismatch (memory left
-; untouched). Its two callers are both here, so the `scf` reaches no one else's
-; carry. The text stays main's (err_verify, which err_msgtab[20] names too).
+; ctp_verify_error -- a CLOAD? mismatch (memory left untouched) is ERROR 20, RAISED.
+; 🎯 err_verify (Joost 2026-10-27: "Measure first, then decide"): it was printed
+; through print_msg with no error state, so `PRINT ERR` read 0 after it; on the
+; VG-8020 it reads 20 (scratchpad/cloadverr_run.out). raise_error prints the same
+; text (err_msgtab[20] is err_verify) and sets ERR / ERL as the reference does. The
+; motor is already off (ctp_done / ctp_oom), and the raise's SP reset discards
+; this frame, as fs_raise's does (sub2/filestmt.asm).
 ctp_verify_error:
-                ld      hl,p0_err_verify
-                ld      ix,p0_print_msg
-                call    p0cb                ; D-MSGENC
-                scf                         ; a mismatch is a FAILED load: CF out
-                ret                         ; (docs/spec-basic-castail.md §3.2)
+                ld      a,20
+                ld      ix,p0_raise_error
+                jp      p0cb
 
 ctp_oom:
                 ld      ix,TAPIOF

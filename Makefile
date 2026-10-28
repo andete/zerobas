@@ -2494,6 +2494,12 @@ boot5e10-acceptance: repack-machine $(DISK_TEST_DSK)
 namecase-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_namecase.py
 
+# --- cloadverr-acceptance: a CLOAD? mismatch is ERROR 20 (the err_verify item) ---------
+# `Verify error` and ERR = 20 afterwards, as on the VG-8020 (Joost 2026-10-27: measure
+# first, then decide). Launches its own openMSX -- never pkill (a parallel battery).
+cloadverr-acceptance: repack-machine
+	python3 probes/basic/basic_probe_cloadverr.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

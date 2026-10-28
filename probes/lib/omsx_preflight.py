@@ -349,6 +349,21 @@ UNARM_HOOK = ("proc ::__zb_unarm {args} { if {[info exists ::openmsx::auto_run_b
               "{ debug remove_bp $::openmsx::auto_run_bp; unset ::openmsx::auto_run_bp } }; "
               "catch {trace add execution cassetteplayer leave ::__zb_unarm}; ::__zb_unarm")
 
+# openMSX 22.0's tape autorun types nothing: its `auto_run_cb`, defined inside
+# `namespace eval ::openmsx`, sets `openmsx::auto_run_bp` -- RELATIVE, so it
+# resolves to ::openmsx::openmsx (stderr: "parent namespace doesn't exist") and the
+# next hit dies reading the unset id. A harness that WANTS autorun puts this right
+# after its `cassetteplayer insert` (which is what (re)defines the proc): the same
+# body with the name qualified. Harmless on a build without the defect.
+AUTORUN_FIX = (
+    "proc ::openmsx::auto_run_cb {args} {\n"
+    "  debug remove_bp $::openmsx::auto_run_bp; unset ::openmsx::auto_run_bp\n"
+    "  after time 0.2 \"type [lindex $args 0]\"\n"
+    "  set next [lrange $args 1 end]\n"
+    "  if {[llength $next] == 0} return\n"
+    "  set ::openmsx::auto_run_bp [debug set_bp 0xFF0C 1 \"::openmsx::auto_run_cb $next\"]\n"
+    "}")
+
 
 def isolate(cmd):
     """`cmd` with NO_SAVE and UNARM_HOOK added to every openMSX launch (one naming

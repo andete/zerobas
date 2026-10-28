@@ -68,6 +68,7 @@ def run_one(machine, cas, times):
                  "  trace remove execution cassetteplayer leave ::__zb_unarm",
                  "  set autoruncassettes on",
                  f"  cassetteplayer insert {{{cas}}}",
+                 omsx_preflight.AUTORUN_FIX,
                  "}",
                  "set throttle off",
                  "proc __cap {tag} {",

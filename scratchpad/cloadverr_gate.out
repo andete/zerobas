@@ -1,0 +1,2 @@
+msxtest: BASIC image carries islands -- loaded at $0000, not $2781
+ROW cloadverr VG=[Verify error | E 20] ZB=[Verify error | E 20] SAME

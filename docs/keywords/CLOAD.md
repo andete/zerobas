@@ -29,7 +29,8 @@ CLOAD? [<name>]
 ```
 
 The name is a string expression (`CLOAD A$` works). `CLOAD?` compares the
-tape with the program in memory instead of loading it.
+tape with the program in memory instead of loading it; a difference is error
+20, `Verify error`, and the program in memory is left as it was.
 
 ## Details
 
@@ -87,6 +88,11 @@ None known.
 
 ## What we found, and how
 
+- **A `CLOAD?` mismatch printed `Verify error` but was not an error** (fixed
+  2026-10-28). On the VG-8020 `PRINT ERR` reads 20 afterwards; here it read 0,
+  because the text was printed without the error being raised
+  ([`cloadverr_run.out`](../../scratchpad/cloadverr_run.out)). It is now raised
+  as error 20, the same text.
 - **A program saved from another start address loaded as garbage** (fixed
   2026-10-22, D-LOADBASE). A saved program records where each line sat on
   the machine that saved it. zerobas worked out the first line's length by
@@ -158,3 +164,5 @@ None known.
 - `make casrbrk-acceptance` — the tape read broken with Ctrl-STOP, in the
   header leader and in the data.
 - `make kwram` — the RAM-usage comparison.
+- `make cloadverr-acceptance` — a `CLOAD?` mismatch, then `PRINT ERR`, on
+  the VG-8020 and zerobas.

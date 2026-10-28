@@ -1,0 +1,4 @@
+  ROM 3b87c89f a0cf9df9 6e62d049 b58eae99 005ccb26  ->  3b87c89f a0cf9df9 6e62d049 b58eae99 7d520aff
+restore: 3b87c89f a0cf9df9 6e62d049 b58eae99 005ccb26 -> 3b87c89f a0cf9df9 6e62d049 b58eae99 005ccb26  build rc=0  BYTE-IDENTICAL (all five)
+K-CV1: gate rc=2
+ROW cloadverr VG=[Verify error | E 20] ZB=[Verify error | E 0] DIVERGES

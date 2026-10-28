@@ -98,6 +98,8 @@ import glob
 import hashlib
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -244,8 +246,36 @@ def harness_fingerprint() -> str:
             # ADDS to every spawned argv (no settings save; autorun un-armed on a
             # tape mount), so it is part of HOW a reading is taken
             for n in sorted(("omsx_repl.py", "omsx_run.py", "omsx_preflight.py"))
-            if os.path.exists(os.path.join(here, n))) + switches.encode())
+            if os.path.exists(os.path.join(here, n))) + switches.encode()
+            + emulator_identity().encode())
     return _HARNESS
+
+
+_EMU: str | None = None
+
+
+def emulator_identity() -> str:
+    """The openMSX build the probes launch: `openmsx -v`'s first line (e.g.
+    `openMSX 22.0-12-g989fb0b76`). Unreadable -> a random token, so nothing is
+    served from a cache whose instrument cannot be named.
+
+    🔴 THE EMULATOR IS PART OF THE INSTRUMENT (2026-10-28). Joost swapped openMSX
+    for a 22.0 development build, and the key held nothing of the binary: a
+    reading the OLD emulator took would have been replayed as the new one's,
+    hiding exactly the change the swap was meant to show. Folded into
+    harness_fingerprint(), so a new build expires every entry once.
+    """
+    global _EMU
+    if _EMU is None:
+        exe = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
+        try:
+            out = subprocess.run([exe, "-v"], capture_output=True, text=True, timeout=30).stdout
+            _EMU = out.splitlines()[0].strip() if out.strip() else ""
+        except (OSError, subprocess.SubprocessError):
+            _EMU = ""
+        if not _EMU:
+            _EMU = "UNREADABLE:" + os.urandom(8).hex()
+    return _EMU
 
 
 def key_for(machine: str, cases, params: dict) -> str:
@@ -568,6 +598,17 @@ def _selftest() -> int:
     k = key_for(M, CASES, P)
     _HARNESS = saved
     arm("K5 a changed harness fingerprint -> MISS", k != k0, f"{k0[:8]} vs {k[:8]}")
+    # K5e the EMULATOR is part of the instrument (2026-10-28): a different openMSX
+    # build must change the fingerprint itself, not only a planted one
+    global _EMU
+    saved_h, saved_e = _HARNESS, _EMU
+    _HARNESS = None
+    h_real = harness_fingerprint()
+    _HARNESS, _EMU = None, "openMSX 0.0-PRETEND-ANOTHER-BUILD"
+    h_other = harness_fingerprint()
+    _HARNESS, _EMU = saved_h, saved_e
+    arm("K5e another openMSX build -> a different harness fingerprint -> MISS",
+        h_other != h_real, f"{h_real[:8]} vs {h_other[:8]}")
 
     # --- K6 a non-reading is never stored --------------------------------
     for bad, why in ((None, "None"), ([], "empty list"), ([None], "[None]"),
