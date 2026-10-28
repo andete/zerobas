@@ -151,6 +151,29 @@ the real error path (installed for every machine, it stopped test_forint's
 ON ERROR handlers); the rows
 that asserted the deferred tail's "result 0" are gone, with a note where they stood.
 
+## 2d. Family 2, measured (2026-10-28): OVERFLOW
+
+[`deferr2_probe.py`](../scratchpad/deferr2_probe.py) ->
+[`deferr2_run.out`](../scratchpad/deferr2_run.out) (a USR counter after the fault):
+the VG-8020 raises an overflow INSIDE an expression at once -- `EXP(1000)`,
+`VAL("&H1FFFF")`, `&B` with 17 digits, `1E38*1E38`, `CINT(40000)` all leave the
+counter 0 -- while an overflow at the STORE (`A%=40000+USR(0)`) runs the USR
+first (1), on both machines. zerobas defers four of the five (1); `&B` already
+raises at once. VALTYP at the error
+([`herro3_run.out`](../scratchpad/herro3_run.out)): EXP 2, VAL 2, `1E38*1E38` 8,
+`X!*X!` 8, CINT 4, `&B` 8 on the VG-8020; zerobas agrees except CINT (2) and `&B`
+(2). Prediction scored 1/6 on VALTYP and 7/7 on the reference's counter.
+
+⚠️ Two of the writers are SHARED, so converting them converts more than the
+rows measured: CINT overflows through `fac_to_int_go` (basic/float-arith.asm),
+which is also `\`, MOD, AND / OR / XOR / NOT's operand conversion and the
+address-domain arguments (POKE, VPOKE ...); the float multiply overflows in
+`round_and_finalize`, shared by every float operation. ➡️ Before converting:
+measure those other callers the same way (a USR counter after the fault, VALTYP
+at the error) -- `1 AND 40000`, `NOT 40000`, `40000\1`, `1E38+1E38`, `1E38/1E-38`,
+`POKE 70000+USR(0),1` -- then convert per writer. `EXP` (evmc_exp_overflow) and
+`VAL` (evv_refuse) are single-site and can go first.
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the

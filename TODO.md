@@ -111,6 +111,13 @@ item — do **one item per session** to keep context lean.
       deferred tail's zero) removed with a note; test_fpdiv_fast ignores FACTYP / DE when
       both images raise the same fault. ➡️ Next family: the SAME-classified writers in
       [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md), one family per commit.
+      📏 **FAMILY 2 (OVERFLOW) MEASURED 2026-10-28** (spec §2d, [`deferr2_run.out`](scratchpad/deferr2_run.out),
+      [`herro3_run.out`](scratchpad/herro3_run.out)): the VG-8020 raises EXP(1000), VAL("&H1FFFF"), a 17-digit `&B`,
+      1E38*1E38 and CINT(40000) at once (USR counter 0); a store-time overflow runs on (1) on
+      both. zerobas defers four (`&B` already immediate). VALTYP differs for CINT (4 there, 2
+      here) and `&B` (8 / 2). ⚠️ CINT's writer (fac_to_int_go) and the float overflow
+      (round_and_finalize) are SHARED -- measure their other callers first (spec §2d list);
+      EXP and VAL are single-site and go first.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
@@ -7076,7 +7083,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9562 (T-6FE392)8 (T-529ABE)` from `TODO.md:15129 (T-529ABE)`: a
+      `TODO.md:9569 (T-6FE392)8 (T-529ABE)` from `TODO.md:15136 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10017,7 +10024,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15129 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15136 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
