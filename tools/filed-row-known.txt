@@ -38,7 +38,6 @@
 # two days with `c.arith` at `<NO OUTPUT>`, and that missing row set the filed
 # interpreter-speed band 0.7x too low (2.5-3.1x published; 3.81x measured once
 # the emulated-time budget was widened, 2026-09-04).
-budget_probe: NO-VERDICT -- emulated-time window/used/margin percentages, for sizing probe budgets
 cf3300_files_probe: NO-VERDICT -- a REFRESH TOOL for disk_probe_files.py's frozen CF-3300 FILES constant (one machine, run when disk/test720.dsk changes); nothing to compare. Declared 2026-09-25 by the filed-row triage.
 loadrun_probe: NO-VERDICT -- D-LOADRUN, a TIMING instrument (a tokenised LOAD's cost per byte, by differences); it reports costs, not SAME/DIFF. Declared 2026-09-25 by the filed-row triage.
 mergeshape_probe: NO-VERDICT -- D-MERGESHAPE CHARACTERISES THE REFERENCE's MERGE mechanism (which hook cells, what scales) for the eviction design; 'what does X DO', not 'do we match'. Declared 2026-09-25 by the filed-row triage.

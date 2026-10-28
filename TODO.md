@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15288 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15302 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9850,7 +9850,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       picked when a keyword tier needs the bytes.
       🤖 AUTONOMOUS — a carve under the standing rule (ruled 2026-09-10).
 
-- [ ] 🙋 **THE STALL WATCHDOG NOW HAS A REAL DISCRIMINATOR (D-STALLRATE,
+- [x] ✅ **DONE 2026-10-28 (print only, as ruled).** 🙋 **THE STALL WATCHDOG NOW HAS A REAL DISCRIMINATOR (D-STALLRATE,
       2026-09-10) — BUT `run_gates.py` STILL CALLS A CONTENDED UNIT *REAL*.** Filed 2026-08-26 by D-DRAWOP; the
       diagnostic half FIXED the same day by D-STALLSLOW (`a897bcd`), the
       classifier half OPEN. The message used to assert *"a stall is a FROZEN OR
@@ -9973,6 +9973,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
       🤖 **AUTONOMOUS** — 🏗️ **RULED BY JOOST 2026-10-27**: *"Print only"* -- run_gates.py prints the emulation rate beside every retry verdict; the classifier is unchanged. What remained was a design call, not a measurement.
+      ✅ **SHIPPED 2026-10-28:** tools/run_gates.py's `stall_rates()` reads every stall kill's
+      final-beat rate (or `boot`) out of a unit's first and retry logs, and the retry line prints
+      them after the verdict -- `[stall-kill rate -- first 0.012x; retry boot]`. The verdict
+      itself is unchanged. Selftest arms S17a / S17b (the rate is read out of the kill's own
+      wording; a log with none names none).
       `run_gates.py`
       still calls a unit REAL when it fails twice, and the rate is now available
       to it. Teaching the classifier to read it would change GATE VERDICTS — and
@@ -10084,7 +10089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15288 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -11175,7 +11180,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🎚️ APPARATUS — capture sentinel
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (both halves differentialled 2026-08-26; the standing gate remains).
 
-- [ ] 🙋 ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
+- [x] ✅ **CLOSED 2026-10-28 (measured: nothing to gate -- see the end).** 🙋 ~~**THE REAL GATE-SUITE LEVER IS THE EMULATED-TIME BUDGETS**~~ (original
       framing, kept for the reasoning it carries) — **THE TWO-KNOBS RESIDUAL WAS
       SHIPPED THE DAY THIS WAS FILED; ONLY THE RED-IF-THIN GATE IS LEFT
       (re-measured 2026-09-10, D-SETTLEROT)**
@@ -11288,6 +11293,15 @@ list. **When a slice lands, grep this list for what it just shipped.**
       🔁 **RULED (Joost, 2026-09-10): stays as classed** — not before TIERS 1–4 unless it
       blocks a keyword tier; still his call when it is picked.
       🤖 **AUTONOMOUS** — 🏗️ **RULED BY JOOST 2026-10-27**: *"Make a call yourselves"* -- chosen: (a), gate settle_audit over the PAINT rows only. The last ask was a gate, and it has a real price.
+      🔴 **2026-10-28: MEASURED -- THE PAINT ROWS CANNOT BE AUDITED, AND NO LONGER NEED IT.** A module
+      running only basic_probe_graphics' phases H and H-MC under settle_audit sampled **0 cases**,
+      twice (refcache on: 12 s; ZEROBAS_REFCACHE=0: 23 s, [`settle_paint.out`](scratchpad/settle_paint.out)). The rows pass
+      `**paint_sn(...)`, which sets settle_n -- the audit's wrapper skips an instrumented case by
+      design -- and they are CAPTURE-ON-SIGNAL since D-SNCAP (probes/lib/probe_signal.py): the
+      program POKEs a mark when its result is final and the capture fires then, so the budget is
+      a pure failure detector (a missing mark falls back LOUDLY). A too-short budget can no longer
+      capture a half-finished fill, which is the one thing settle_audit exists to find. Gate not
+      added; closed (option (a)'s premise -- non-default budgets deciding the capture -- is gone).
       `scratchpad/settle_audit.py` is a WRAPPER: it re-runs a whole probe under
       instrumentation, so gating it over `basic_probe_graphics` adds a unit the
       size of `graphics-acceptance`, which the last battery measured at **380 s**

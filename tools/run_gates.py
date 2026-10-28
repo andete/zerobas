@@ -272,6 +272,24 @@ SELF_REPAIRING = {
 }
 
 
+# 🎚️ D-STALLRATE, the classifier half (Joost 2026-10-27: "Print only"): a stall kill
+# carries the emulation rate over its final beat (probes/lib/omsx_repl.py), the one
+# figure that separates a STARVED emulator from a FROZEN one. The retry verdict
+# stays as it is -- an auto-FLAKE on a low rate could hide a real defect on a loaded
+# host -- and the rates are only PRINTED beside it, for the human reading the red.
+_STALL_RATE = re.compile(r"final beat interval ran at ([0-9.]+)x realtime"
+                         r"|(killed during boot)")
+
+
+def stall_rates(path):
+    """-> the stall-kill rates a unit log names, e.g. ['0.012x', 'boot']."""
+    try:
+        text = open(path, errors="replace").read()
+    except OSError:
+        return []
+    return [m.group(1) + "x" if m.group(1) else "boot" for m in _STALL_RATE.finditer(text)]
+
+
 def retry_verdict(name, rc):
     """-> (verdict text, counts as a recovered FLAKE).
 
@@ -469,6 +487,16 @@ def selftest():
         "stochastic behaviour, and a repair is not stochastic)", f0 is False)
     arm("S17 a self-repairing target STILL RED is INCONCLUSIVE, never REAL",
         v2.startswith("INCONCLUSIVE") and "REAL" not in v2)
+    # D-STALLRATE print-only: the rate is read out of a stall kill's own wording
+    import tempfile as _tf
+    with _tf.NamedTemporaryFile("w", suffix=".log", delete=False) as _f:
+        _f.write("x\nstall watchdog: ... the final beat interval ran at 0.012x realtime, ...\n"
+                 "stall watchdog: ... this run was killed during boot\n")
+    _r = stall_rates(_f.name)
+    os.unlink(_f.name)
+    arm("S17a a stall kill's final-beat rate is read out for the retry line",
+        _r == ["0.012x", "boot"])
+    arm("S17b a log with no stall kill names no rate", stall_rates(os.devnull) == [])
     # ⚠️ MEMBERSHIP MUST BE EARNED BY THE RECIPE, or this becomes a list of
     # targets someone wanted to stop failing.
     bad = []
@@ -995,7 +1023,12 @@ def main():
                 verdict, is_flake = retry_verdict(n, rc)
                 if is_flake:
                     flaky.append(n)
-                print(f"  retry {n}: rc {old}->{rc}  {verdict}", flush=True)
+                base = f"{OUT}/{n.replace('/', '_').replace('#', '_')}"
+                rates = [(tag, stall_rates(f"{base}{sfx}.log"))
+                         for tag, sfx in (("first", ""), ("retry", ".retry"))]
+                shown = "; ".join(f"{tag} {', '.join(r)}" for tag, r in rates if r)
+                print(f"  retry {n}: rc {old}->{rc}  {verdict}"
+                      + (f"   [stall-kill rate -- {shown}]" if shown else ""), flush=True)
 
     # 🔴 D-FASTPIN (2026-09-26): A POST-CHECK READS WHAT THE POOL WROTE, AND A
     # RETRY IS WHAT WROTE IT. tiers-md-check ran BEFORE the retries, so when the

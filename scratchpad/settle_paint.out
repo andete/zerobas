@@ -1,0 +1,35 @@
+=== PHASE H: PAINT fill differential (VG-8020 POINT vs zerobas, step=90.0s) ===
+  PASS box_bounded_c15b15     ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS box_flood_c4b15        ref=[4, 4, 4, 4] zb=[4, 4, 4, 4]
+  PASS box_bounded_c9b9       ref=[9, 9, 9, 1] zb=[9, 9, 9, 1]
+  PASS step_form              ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS defaults_c_and_b       ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS comma_empty_c          ref=[15, 15, 15, 1] zb=[15, 15, 15, 1]
+  PASS border16_flood_ok      ref=[9, 9, 9, 9] zb=[9, 9, 9, 9]
+  PASS seed_on_border_still_floods ref=[7, 7] zb=[7, 7]
+  PASS seed_on_wall_pixel     ref=[7, 7, 7] zb=[7, 7, 7]
+  PASS seed_already_c_noop    ref=[1, 9, 1] zb=[1, 9, 1]
+  PASS seed_already_c_bg_noop ref=[9, 1] zb=[9, 1]
+  PASS plain_wall_cb_bounded  ref=[7, 7, 1, 1] zb=[7, 7, 1, 1]
+  PASS bf_wall_not_a_border   ref=[9, 9, 9, 9] zb=[9, 9, 9, 9]
+  PASS paint_then_pset        ref=[6, 15, 15] zb=[6, 15, 15]
+    capture-on-signal: 0 on signal, 0 fell back to the 90s budget
+=== PHASE H-MC: PAINT fill differential in SCREEN 3 (D-PAINTMC, step=45.0s) ===
+  PASS mc_flood_default       ref=[9, 9, 9] zb=[9, 9, 9]
+  PASS mc_border_stops        ref=[9, 4] zb=[9, 4]
+  PASS mc_border_is_bg        ref=[4, 4] zb=[4, 4]
+  PASS mc_already_c_stops     ref=[9, 4] zb=[9, 4]
+  PASS mc_seed_on_border      ref=[15, 4] zb=[15, 4]
+  PASS mc_seed_already_c      ref=[9, 9] zb=[9, 9]
+  PASS mc_notch_one_cell      ref=[9, 9, 7, 9] zb=[9, 9, 7, 9]
+  PASS mc_box_bounded         ref=[9, 4] zb=[9, 4]
+  PASS mc_bg_border_walk      ref=[1, 4] zb=[1, 4]
+    capture-on-signal: 0 on signal, 0 fell back to the 90s budget
+
+=== SETTLE AUDIT: 0 cases sampled ===
+  🔴 still moving at capture : 0
+  🟠 settled in the last 10% : 0
+  probe's own exit code: 0
+real 23.32
+user 4.90
+sys 4.72
