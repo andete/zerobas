@@ -787,6 +787,7 @@ stays paused until he restarts it.**
 | (2026-10-27) stall watchdog | "Print only" |
 | (2026-10-27) settle_audit gate | "Make a call yourselves" -> PAINT rows only |
 | (2026-10-27) the 104 uncollected probes | "You pick, under a budget" (~+120 s) |
+| (2026-10-28) RUNS? tapes | "yes, triage the RUNS? tapes after the deferred work" (D-TAPELOAD) |
 
 📚 **LATER ON 2026-10-09: THE KEYWORD PAGES SHIPPED** — `docs/keywords/`, 146 pages
 (one per level-3 keyword), every example run on both machines by
@@ -1937,7 +1938,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11572 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:11576 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

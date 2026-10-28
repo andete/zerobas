@@ -2046,6 +2046,10 @@ item — do **one item per session** to keep context lean.
 
 - [ ] 📼 **D-TAPELOAD — MANY `.cas` AND `.wav` TAPES DO NOT LOAD (Joost, 2026-10-11;
       TRIAGED 2026-10-14, see the end)**
+      🏗️ **JOOST 2026-10-28: *"yes, triage the RUNS? tapes after the deferred work"*.** The 21 titles
+      tapecorpus_run.py tallies RUNS? (both running, screens far apart): per title, a timing / phase
+      difference or a real divergence -- fix ours, file the rest with their evidence. Queued right
+      after D-DEFERRSTUDY's current families.
       📼 **THE TAPE RUN, REBUILT AND TRACKED (2026-10-22):** the one-off harness and its
       pick_martos (51) lived in a lost session scratchpad, and the standing rule below (re-run
       ALL the tapes after a page-0 / page-1 layout change) was overdue -- D-DISKREST, D-P0CB
@@ -7120,7 +7124,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9606 (T-6FE392)8 (T-529ABE)` from `TODO.md:15173 (T-529ABE)`: a
+      `TODO.md:9610 (T-6FE392)8 (T-529ABE)` from `TODO.md:15177 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10061,7 +10065,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15173 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15177 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
