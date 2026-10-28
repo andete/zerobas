@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15260 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15273 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15260 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14383,6 +14383,19 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       is open there (case-insensitive) or allowed (as OPEN is)? (2) (B) in fat_dir_create also
       reaches BDOS _FMAKE -- does MSX-DOS create a lower-case directory entry from a lower-case
       user FCB on the CF-3300, or upper-case it? Measure both, then write A-D.
+      📏 **BOTH ANSWERED 2026-10-28 -- AND BOTH ARE MORE DIVERGENCES** ([`fcbcase2_probe.py`](scratchpad/fcbcase2_probe.py) ->
+      [`fcbcase2_run.out`](scratchpad/fcbcase2_run.out), [`fcbcase2_bdos.out`](scratchpad/fcbcase2_bdos.out); our own disk): (1) with `TS.DAT` OPEN, the CF-3300 ALLOWS
+      `KILL"ts.dat"` (the open file is deleted), `NAME"ts.dat"AS"UU.DAT"` (renamed) and
+      `COPY"ts.dat"TO"VV.DAT"` (copied) -- only the exact `KILL"TS.DAT"` is `File still open` (both
+      machines); zerobas refuses all three. The verbatim, case-sensitive open check is SHARED by
+      OPEN / KILL / NAME / COPY there. (2) BDOS _FMAKE from a lower-case user FCB writes `LC.TXT`
+      on the CF-3300 and `lc.txt` here. 🔮 Both MISSED (predicted: refused; verbatim lower case).
+      📐 **THE DESIGN, NOW SETTLED:** the builder keeps the typed case (DISK_FCB_NAME, every row
+      FCB); hkk_open_check -- OPEN, KILL, NAME, COPY alike -- compares those names byte for byte
+      (case-sensitive, closes all four); fat_dir_create and hkn_stamp upper-case what they write
+      (also fixes BDOS _FMAKE); hkc_same folds case (the self-copy safety). 0 B of RAM. ➡️ Next:
+      write it, price it in disk.rom (check_disk_walls), gate rows for s.case / KILL / NAME / COPY /
+      _FMAKE, knife.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,

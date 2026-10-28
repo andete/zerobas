@@ -1,0 +1,11 @@
+National_CF-3300             kill_open      [MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1:O | N ERROR GOTO 0 | KILL"ts.dat" | CLOSE:FILES"TS.*" | File not found | color   auto    goto    list    run]
+National_CF-3300             name_open      [MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | NAME"ts.dat"AS"UU.DAT" | CLOSE:FILES"*.DAT" | UU      .DAT | color   auto    goto    list    run]
+National_CF-3300             copy_open      [MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | COPY"ts.dat"TO"VV.DAT" | CLOSE:FILES"*.DAT" | TS      .DAT VV      .DAT | color   auto    goto    list    run]
+National_CF-3300             kill_open_uc   [MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | KILL"TS.DAT" | File still open | CLOSE | color   auto    goto    list    run]
+National_CF-3300             bdos_fmake     [ TO 11:POKE &HD100+I, | ASC(MID$(N$,I,1)):NEXT | RESTORE:FOR I=0 TO 16:READ B:POKE &HD000 | +I,B:NEXT:DEFUSR=&HD000:A=USR(0):FILES"* | .TXT" | Out of DATA | DATA 17,0,209,14,22,205,125,243,17,0,209 | ,14,16,205,125,243,201 | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   kill_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1:O | N ERROR GOTO 0 | ZB | KILL"ts.dat" | File still open | ZB | CLOSE:FILES"TS.*" | TS      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   name_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | NAME"ts.dat"AS"UU.DAT" | File still open | ZB | CLOSE:FILES"*.DAT" | TS      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   copy_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | COPY"ts.dat"TO"VV.DAT" | File still open | ZB | CLOSE:FILES"*.DAT" | TS      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   kill_open_uc   [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | KILL"TS.DAT" | File still open | ZB | CLOSE | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   bdos_fmake     [100+I, | ASC(MID$(N$,I,1)):NEXT | ZB | RESTORE:FOR I=0 TO 16:READ B:POKE &HD000 | +I,B:NEXT:DEFUSR=&HD000:A=USR(0):FILES"* | .TXT" | Out of DATA | ZB | DATA 17,0,209,14,22,205,125,243,17,0,209 | ,14,16,205,125,243,201 | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 10 miss, 10 stored
