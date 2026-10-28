@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15234 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15245 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15234 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14357,6 +14357,17 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       directory entry (FILES / DSKI$ of the root sector), and does `LOAD "ts.dat"` find a file
       saved as `TS.DAT`? The answer decides whether the change is "keep case in the FCB only" or
       "keep case on the disk too". Parked at that measurement.
+      📏 **MEASURED 2026-10-28** ([`fcbcase_probe.py`](scratchpad/fcbcase_probe.py) -> [`fcbcase_run.out`](scratchpad/fcbcase_run.out), CF-3300 and zerobas DISK, our own
+      disk): `SAVE"ts.dat"` writes `TS      .DAT` on BOTH; `LOAD"ts.dat"` finds `TS.DAT` on both; an
+      `OPEN"ab.txt"` file is `AB      .TXT` on both. 🔮 Both HIT. (The 4th case was my error -- channel
+      2 needs MAXFILES=2; both said Bad file number. s.case itself is already measured, dupopen.)
+      So the DISK is upper-case on both and only the open-file compare keeps the typed case. 📐 The
+      exact shape: the TYPED name in the channel's FCB (+1..11), used by OPEN's same-file compare
+      (hk_ochk against every open row, byte for byte); everything that reaches the disk upper-cases
+      -- directory compares case-insensitive (BDOS's toupper name_cmp as the precedent), a created
+      entry written upper-case. 0 B of RAM. ➡️ Next: inventory every reader of the FCB name / of
+      DISK_FCB_NAME in disk.rom (find, create, rename, copy, kill, the BDOS FCB calls), then price
+      the change in disk.rom bytes (check_disk_walls) before writing it.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
