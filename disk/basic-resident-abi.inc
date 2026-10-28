@@ -15,7 +15,7 @@ widen_fac_to equ 0379FH
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
 pu_deref_body equ 02871H
-subrom_call equ 03B30H
+subrom_call equ 03B2AH
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)

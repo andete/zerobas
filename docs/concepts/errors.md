@@ -185,8 +185,12 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   runs, as on the reference
   ([`deferr_side_run.out`](../../scratchpad/deferr_side_run.out)). The error
   message was already the same; only what ran before it differed.
+  Since 2026-10-28 an `Overflow` in `EXP` or `VAL` and a too-long `&B` number
+  stop at once too ([`deferr2_run.out`](../../scratchpad/deferr2_run.out)).
   Other faults are still noted and reported a moment later
-  ([spec](../spec-basic-deferr-study.md)).
+  ([spec](../spec-basic-deferr-study.md)); among them the overflow of a float
+  multiply or divide and of `CINT`, which the reference also raises at once
+  but whose code zerobas shares with routines that run outside main ROM.
 - **The value type an error hook sees differed for five faults** (fixed
   2026-10-27, D-ERRVALTYP, with the family above). At the moment of the error
   `VALTYP` (`&HF663`) holds the type of whatever the reference last evaluated:

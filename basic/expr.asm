@@ -2401,7 +2401,7 @@ evmc_exp_huge:
                 jp      fac_dbl_int16       ; D-NGRAM14
 evmc_exp_overflow:
                 ld      a,1
-                jp      penderr_de0         ; D-PENDTAIL (-4 B, main page 1)
+                jp      raise_now           ; EXP(huge): at once (D-DEFERRSTUDY family 2)
 
 ; ATN / SIN / COS / TAN / RND have no stubs of their own any more -- see
 ; `evmc_total_scan` and `evmc_total_tab` above (the SWAP-funding carve,

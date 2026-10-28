@@ -1119,8 +1119,8 @@ evnl_blp:
                 ld      e,a
                 jr      evnl_blp
 evnl_bovf:
-                ld      e,1                 ; FPERR 1 -> ERR 6 (VAL's own idiom)
-                jp      ev_f_defer
+                ld      a,1                 ; Overflow at once, VALTYP 8 as on the
+                jp      raise_now8          ; VG-8020 (D-DEFERRSTUDY family 2)
 ev_ff_val:
                 call    ev_str_arg          ; STRPTR -> the string-arg descriptor;
                                             ; IX advanced past ')'
@@ -1153,12 +1153,11 @@ ev_ff_val:
                 jp      nz,flt_to_int16     ; DE = the rounded int16; FAC/FACTYP stand
                 ret                         ; DE = the parsed integer value
 evv_refuse:
-                ld      e,4                 ; SH_ERR 4 -> syntax error
+                ld      e,4                 ; SH_ERR 4 -> syntax error (deferred)
                 cp      5
-                jr      nz,evv_defer
-                ld      e,1                 ; SH_ERR 5 -> overflow
-evv_defer:
-                jp      ev_f_defer
+                jp      nz,ev_f_defer
+                ld      a,1                 ; SH_ERR 5 -> overflow, AT ONCE as on the
+                jp      raise_now           ; VG-8020 (D-DEFERRSTUDY family 2)
 
 ; --- str_arg_snap: evaluate a string argument and OWN it (D-NGRAM8) ---------
 ; LEFT$, RIGHT$ and MID$ all open the same way: evaluate the source expression,

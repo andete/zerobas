@@ -174,6 +174,30 @@ at the error) -- `1 AND 40000`, `NOT 40000`, `40000\1`, `1E38+1E38`, `1E38/1E-38
 `POKE 70000+USR(0),1` -- then convert per writer. `EXP` (evmc_exp_overflow) and
 `VAL` (evv_refuse) are single-site and can go first.
 
+### 2d (cont.) Family 2, partly shipped (2026-10-28)
+
+The other callers, measured ([`deferr2b_run.out`](../scratchpad/deferr2b_run.out)):
+`1 AND 40000`, `NOT 40000`, `40000\1` and `1E38/1E-38` raise at once on the
+VG-8020 (counter 0); `POKE 70000+USR(0),1` runs the USR first on both (the
+address is converted after its expression). (`1E38+1E38` and `10^40` do not
+overflow at all -- doubles reach ~1E63; a wrong premise of the case list.)
+
+Converted: `EXP` (evmc_exp_overflow), `VAL` (evv_refuse's overflow arm; its
+syntax arm stays deferred) and `&B` (evnl_bovf, now leaving VALTYP 8 as there).
+`penderr_de0` lost its last caller and went (-6 B). After: 7/7 counter rows and
+the VALTYP rows for EXP / VAL / `&B` as on the VG-8020
+([`deferr2_after.out`](../scratchpad/deferr2_after.out),
+[`herro3_after.out`](../scratchpad/herro3_after.out)). Gate: missing-acceptance
+`ov-side`; knife K-DF2 ([`deferr2_knife.out`](../scratchpad/deferr2_knife.out)).
+
+🔴 NOT converted, and why -- the build REFUSED it: `fac_to_int_go` (CINT, `\`,
+AND/OR/XOR/NOT operands) and `check_preexp_bounds` (float `*` / `/` overflow)
+are called by the sub-ROM's page-1 math TENANTS, where main page 1 -- and so
+`fp_runtime_error` -- is switched out; tools/check_tenant_closure.py failed on
+the raise's whole closure. These are §1b's UNSAFE class. ➡️ They need a
+tenant-safe shape: a deferring entry for tenant callers and an immediate one for
+main's, or a raise the tenant bridge performs on the way back.
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the
