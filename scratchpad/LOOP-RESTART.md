@@ -4,7 +4,28 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-23 (13:10) — THE CURRENT ONE (the 2026-10-22 section below and its pointers to the RULINGS tables still hold).
+## 🟢 STATE AS OF 2026-10-28 — THE CURRENT ONE (the 2026-10-23 section below and every RULINGS table it points to still hold; the 2026-10-27 rulings rows are in the 2026-10-09 rulings table, look for "(2026-10-27")
+
+- **Shipped 10-27/10-28 (all pushed, FULL-gated where ROM code moved):** D-BOOTKEYS CTRL RAM half
+  (the disk block moved up $443, CTRL boot HIMEM $E48D); D-DEFFNPARAM; D-STRINGEMPTY; D-MIDEXTRA;
+  D-CIRCNEGR (Joost: match the VG-8020; graphics Phase G is now two-sided); the 12 rulings Joost gave
+  one by one (recorded in their items); D-DEFERRSTUDY family 1 (domain faults raised at once, VALTYP
+  as measured -- closed D-ERRVALTYP; msxtest has an OPT-IN `trap_raise_now()`); D-DISKRUN mb.dsk ($5E10
+  pinned to basent_body, gate boot5e10-acceptance); D-DEFERRSTUDY family 2 PART (EXP / VAL / &B).
+- **Measured, not shipped:** D-TANBIG (the reference quantises x/2pi -- the faithful fix is the
+  reduction, not a TAN threshold).
+- ➡️ **NEXT, by tier:** D-DEFERRSTUDY's tenant-safe shape for fac_to_int_go / check_preexp_bounds
+  (spec §2d cont. -- the build's check_tenant_closure refuses an immediate raise there), then the next
+  SAME family in scratchpad/deferr_sites_table.md (syntax 4->2); the OPEN-twice exact match without
+  more RAM (Joost 10-27); merge the type-code namespaces; the CLOAD? reading for err_verify; the 3 B
+  ex_mid_stmt carve; watchdog print-only; settle_audit over PAINT rows; collect probes under ~+120 s.
+- 🔴 **LOW REGION:** the pin pad in front of $3297 is 2 B; the low region's tail has 32 B. Price
+  every low-region change against both (`make basic-reloc` from clean).
+- 🔴 **Lessons this session:** a commit tier is what `make gates-plan` says or higher -- run it BEFORE
+  the commit (76d0fa44 was committed on gates-fast alone, verified after); never edit files while a
+  background gate runs; a host-test trap installed for EVERY Machine broke program-running tests.
+
+## 🟢 STATE AS OF 2026-10-23 (13:10) — history since 2026-10-28 (its pointers to the RULINGS tables still hold).
 
 **Shipped 10-23** (each with its gate; read the TODO block before building on it):
 - D-TPAP1 -- an MSX-DOS program runs with RAM in page 1; the page-0 slot entries
