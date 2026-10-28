@@ -2500,6 +2500,13 @@ namecase-acceptance: repack-machine $(DISK_TEST_DSK)
 cloadverr-acceptance: repack-machine
 	python3 probes/basic/basic_probe_cloadverr.py
 
+# --- programs-acceptance: the program ladder (D-PROGLADDER) -----------------------
+# Whole original 1980s-style BASIC programs (probes/programs/L<n>_*.bas) run from an
+# ASCII tape on the VG-8020 and on both zerobas targets; the LPRINT checkpoints
+# and the final screen must match.
+programs-acceptance: repack-machine
+	python3 -u probes/programs/run_programs.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

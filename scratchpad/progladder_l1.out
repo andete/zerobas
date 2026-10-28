@@ -1,0 +1,14 @@
+L1_dice
+  Philips_VG_8020                ENDED t=46.0  lpt 18 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=97.9  SAME  x2.13 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=97.9  SAME  x2.13 time
+L1_guess
+  Philips_VG_8020                ENDED t=21.9  lpt 8 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=22.3  SAME  x1.02 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=22.3  SAME  x1.02 time
+L1_loan
+  Philips_VG_8020                ENDED t=24.1  lpt 6 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=28.2  SAME  x1.17 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=28.2  SAME  x1.17 time
+
+PASS: 3 program(s), 0 divergent run(s)

@@ -26,6 +26,34 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+- [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
+      TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
+      🎚️ TIER 1 — it finds what a real user hits first, so its findings are
+      ranked by the tier they land in, not by this item's tier.
+      🤖 **AUTONOMOUS** — write the programs, run them, file what diverges.
+      📏 **Why.** Joost: progress on the filed items had slowed, and most of them
+      are tier-6 edges or apparatus. Programs of the kind people actually typed in
+      exercise the INTERACTIONS (string space under load, nested FOR/GOSUB, PRINT
+      USING, files, sprites, music, traps) that one-keyword rows never combine.
+      🧰 **Apparatus:** [`run_programs.py`](probes/programs/run_programs.py), gate
+      `programs-acceptance`. Each `probes/programs/L<n>_*.bas` is ORIGINAL code
+      (never a typed-in listing). It goes on an ASCII tape that autorun loads
+      (each machine tokenises it itself), with the `REM @ANSWERS` keys typed once
+      it runs. The program LPRINTs numbered checkpoints into openMSX's printer
+      logger, which never scroll away; the final screen is compared too (the
+      `ZB` prompt reads as `Ok`). The emulated-time ratio is printed beside each
+      zerobas row.
+      📈 **Ladder:** L1 (guessing, loan with PRINT USING, dice/RND histogram) ·
+      L2 (address book with a string sort and search; text adventure with a word
+      parser) · L3 (grid spreadsheet; string-GC-heavy report) · L4 (sprite game
+      with ON SPRITE / ON INTERVAL / STRIG / PLAY, input made deterministic) ·
+      L5 (random-access database with FIELD / GET / PUT, ON ERROR) — disk rungs
+      need the NMS 1200 reference.
+      ✅ **L1 (2026-10-28): 3 programs, SAME on both zerobas targets**
+      ([`progladder_l1.out`](scratchpad/progladder_l1.out)). Time ratios: guess
+      x1.02, loan x1.17, **dice x2.13** — 1200 `RND(1)` + array updates; a TIER 5
+      reading, filed here only (speed is paused for ROM space).
+
 - [ ] 🔴 **STUDY: DEFERRED ERRORS VS RAISING AT THE POINT OF DETECTION — HOW MUCH OF
       THE PER-COMMAND "WHICH ERROR WINS" CODE EXISTS ONLY BECAUSE ZEROBAS DEFERS?
       (D-DEFERRSTUDY, filed 2026-10-24 at Joost's request.)**
@@ -7143,7 +7171,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15302 (T-529ABE)`: a
+      `TODO.md:9657 (T-6FE392)8 (T-529ABE)` from `TODO.md:15330 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10089,7 +10117,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15330 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
