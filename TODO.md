@@ -127,6 +127,15 @@ item — do **one item per session** to keep context lean.
       converted and the BUILD REFUSED them (check_tenant_closure: the sub-ROM's math
       tenants call both, with main page 1 switched out) -- reverted; they need a
       tenant-safe shape (spec §2d cont.). Docs: concepts/errors.md.
+      ✅ **FAMILY 2 COMPLETE 2026-10-28** (spec §2d cont. 2): fac_to_int_go was NOT in the tenant
+      closure after all (alone it builds clean; check_preexp_bounds was the failure) -- it now
+      raises at once (CINT's VALTYP 4 as there); the float writer keeps deferring for the tenants
+      and main's combine_mul / combine_div_float go through page-1 wrappers fp_mul_raise /
+      fp_div_raise (17 B of page 1 on 2026-10-28, raise only code 1). 🔮 22/22 rows as the VG-8020
+      ([`deferr2c_after.out`](scratchpad/deferr2c_after.out), [`deferr2bc_after.out`](scratchpad/deferr2bc_after.out), [`herro3c_after.out`](scratchpad/herro3c_after.out)). Gate `ov-side2`
+      ([`deferr2c_gate.out`](scratchpad/deferr2c_gate.out), 42/42); 🔪 K-DF2C ([`deferr2c_knife.py`](scratchpad/deferr2c_knife.py)): float-arith.asm + expr.asm back to
+      HEAD -> `ov-side2` alone FAILs (zb `6 6 6 6 4`) ([`deferr2c_knife.out`](scratchpad/deferr2c_knife.out)). ➡️ Next family: syntax
+      (4 -> 2) in deferr_sites_table.md.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
@@ -7092,7 +7101,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9578 (T-6FE392)8 (T-529ABE)` from `TODO.md:15145 (T-529ABE)`: a
+      `TODO.md:9587 (T-6FE392)8 (T-529ABE)` from `TODO.md:15154 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10033,7 +10042,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15145 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15154 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

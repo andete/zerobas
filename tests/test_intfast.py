@@ -97,6 +97,7 @@ def machines():
     old = Machine(OLD_ROM, OLD_SYM, BASE)
     msxtest._SUB_CACHE.clear()
     new = Machine(NEW_ROM, NEW_SYM, BASE)
+    new.trap_raise_now()   # D-DEFERRSTUDY: a float overflow now RAISES (msxtest)
     return old, new
 
 
@@ -286,6 +287,13 @@ class Pair:
         diff = self._ram_diff()
         live = [a for a in diff if a not in self.dead]
         self.seen_dead |= set(diff) - set(live)
+        if so.get("FPERR") and so.get("FPERR") == sn.get("FPERR"):
+            # D-DEFERRSTUDY family 2 (2026-10-28): the SAME fault on both sides, but the
+            # new image RAISES it at once (fp_mul_raise) -- no registers come back and
+            # VALTYP is the reference's; FAC and FPERR must still agree.
+            so = {k: v for k, v in so.items() if k not in ("FACTYP", "regs")}
+            sn = {k: v for k, v in sn.items() if k not in ("FACTYP", "regs")}
+            live = [x for x in live if x != self.new.sym["FACTYP"]]
         ok = so == sn and not live
         detail = "" if ok else (f"old={so} new={sn} live RAM diffs="
                                 f"{[hex(a) for a in live[:12]]}")
@@ -444,6 +452,7 @@ class Runner:
 
     def __init__(self, m):
         self.m = m
+        m.untrap_raise_now()   # programs RUN: a raise must reach ON ERROR (msxtest)
         s = self.s = m.sym
         self.out = []
         m.trap("BREAKX", lambda mm: setattr(mm.cpu, "f", mm.cpu.f & ~0x01))

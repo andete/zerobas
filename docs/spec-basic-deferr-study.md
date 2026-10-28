@@ -198,6 +198,24 @@ the raise's whole closure. These are §1b's UNSAFE class. ➡️ They need a
 tenant-safe shape: a deferring entry for tenant callers and an immediate one for
 main's, or a raise the tenant bridge performs on the way back.
 
+### 2d (cont. 2) Family 2 complete (2026-10-28)
+
+The tenant-safe shape, measured into place: `fac_to_int_go` turned out NOT to be in
+the tenants' closure -- converting it ALONE builds clean (the first attempt changed
+both writers at once, and only `check_preexp_bounds` -- reached through the
+imported `fp_mul` / `fp_div` -- made the closure fail). So `fac_to_int_go` raises
+at once (CINT, `\`, AND / OR / XOR / NOT operands; CINT now leaves VALTYP 4, as the
+VG-8020, because the raise comes before FACTYP := 2). The float writer keeps
+deferring for the tenants, and main's two callers (combine_mul, combine_div_float)
+go through new page-1 wrappers `fp_mul_raise` / `fp_div_raise` (basic/expr.asm,
+17 B of page 1, 0 of the low region) that raise right after it returns -- only
+code 1, so a pending type mismatch keeps its own timing (D-TMORDER). After: all 22
+rows of [`deferr2c_after.out`](../scratchpad/deferr2c_after.out),
+[`deferr2bc_after.out`](../scratchpad/deferr2bc_after.out) and
+[`herro3c_after.out`](../scratchpad/herro3c_after.out) as on the VG-8020. Gate:
+missing-acceptance `ov-side2`; knife K-DF2C
+([`deferr2c_knife.out`](../scratchpad/deferr2c_knife.out)).
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the

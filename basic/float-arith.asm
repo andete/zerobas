@@ -1455,8 +1455,9 @@ fac_to_int_go:
                 ret     z
                 call    domain_convert_core
                 ret     nc
-                ld      a,1
-                jp      penderr_set
+                ld      a,1                 ; D-DEFERRSTUDY family 2: CINT, `\`, AND / OR
+                jp      raise_now           ; / XOR / NOT operands raise AT ONCE, before
+                                            ; FACTYP := 2 (CINT's VALTYP 4: herro3_run.out)
 
 ; --- eval_addr: HL(cursor) -> DE = a checked ADDRESS-domain int value, ----
 ; HL(cursor advanced). Thin wrapper combining eval + fac_to_int_addr — the
@@ -1973,7 +1974,7 @@ cmul_overflow:
                 ld      de,(FP_TMP_B)       ; DE = the rhs, as widen_both_operands
 cmul_old:                                   ; wants it (the float path's is live)
                 call    widen_both_operands
-                jp      fp_mul
+                jp      fp_mul_raise        ; overflow at once (D-DEFERRSTUDY, expr.asm)
 cmul_float:
                 call    fx_cvt              ; NC: HL = the lhs, DE = the rhs, both
                 jr      c,cmul_old          ; exact int16s (D-INTFAST)
@@ -2046,7 +2047,7 @@ combine_div_float:
                 call    dig15_iszero        ; HERE, at once (the VG-8020 never evaluates
                 ld      a,2                 ; past it: scratchpad/deferr_side_run.out);
                 jp      z,raise_now8        ; VALTYP 8, as there; fp_div's own test stays
-                jp      fp_div
+                jp      fp_div_raise        ; overflow at once (D-DEFERRSTUDY, expr.asm)
 
 ; =============================================================================
 ; combine_pow -- ev_pw's `^` site (math pack slice 2c, docs/spec-basic-

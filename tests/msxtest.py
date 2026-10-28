@@ -215,6 +215,12 @@ class Machine:
         if "raise_now" in self.sym and "FPERR" in self.sym:
             self.trap("raise_now", Machine._raise_now_trap)
 
+    def untrap_raise_now(self):
+        """Undo trap_raise_now(): a test that also RUNS PROGRAMS on the same Machine
+        must let the raise reach the real error path for them."""
+        if "raise_now" in self.sym:
+            self.traps.pop(self.sym["raise_now"], None)
+
     @staticmethod
     def _raise_now_trap(m):
         fperr = m.sym["FPERR"]

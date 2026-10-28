@@ -1,0 +1,6 @@
+  ROM edbd0117 7fabff84 b694885f b4bb063f b837c673  ->  400ef720 7fabff84 6effa837 72681e68 6773ff65
+restore: edbd0117 7fabff84 b694885f b4bb063f b837c673 -> edbd0117 7fabff84 b694885f b4bb063f b837c673  build rc=0  BYTE-IDENTICAL (all five)
+K-DF2C: gate rc=1
+FAIL  trace    ov-side2       CLS:POKE-12288,33:POKE-12287,16:PO ref=             6 6 6 6 0  zb=             6 6 6 6 4
+--- 41/42 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  ov-side2       CLS:POKE-12288,33:POKE-12287,16:POKE-12286,2 -> 6 6 6 6 0

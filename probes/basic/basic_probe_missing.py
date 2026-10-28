@@ -622,6 +622,12 @@ TRACE = [
     ("ov-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 50',
                        'A=EXP(1000)+USR(0)', 'A=VAL("&H1FFFF")+USR(0)', 'PRINT PEEK(-12272):END',
                        'PRINT ERR;:RESUME NEXT']),
+    # D-DEFERRSTUDY family 2, the shared writers (2026-10-28): CINT / AND (fac_to_int_go)
+    # and float * / (main's fp_mul_raise / fp_div_raise) raise at once too
+    # (scratchpad/deferr2b_run.out).
+    ("ov-side2",      ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 70',
+                       'A=CINT(40000)+USR(0)', 'A=(1 AND 40000)+USR(0)', 'A=1E38*1E38+USR(0)',
+                       'A=1E38/1E-38+USR(0)', 'PRINT PEEK(-12272):END', 'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

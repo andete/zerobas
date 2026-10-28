@@ -2403,6 +2403,31 @@ evmc_exp_overflow:
                 ld      a,1
                 jp      raise_now           ; EXP(huge): at once (D-DEFERRSTUDY family 2)
 
+; --- fp_mul_raise / fp_div_raise: main's float * and /, OVERFLOW raised at once ---
+; 🎯 D-DEFERRSTUDY family 2 (2026-10-28): the VG-8020 raises `1E38*1E38` and
+; `1E38/1E-38` at once (scratchpad/deferr2_run.out, deferr2b_run.out: a USR after
+; them never runs). The overflow is found in check_preexp_bounds, which the sub-ROM's
+; math tenants reach through fp_mul / fp_div with main page 1 switched out -- an
+; immediate raise THERE fails check_tenant_closure (the build refused it). So the
+; writer keeps deferring, and main's own callers (combine_mul / combine_div_float)
+; come through here and raise right after it returns. Only code 1: a pending type
+; mismatch keeps its own timing (D-TMORDER), and first-error-wins means an earlier
+; fault is what FPERR still holds.
+fp_mul_raise:
+                call    fp_mul
+                jr      fpr_check
+fp_div_raise:
+                call    fp_div
+fpr_check:
+                push    af                  ; fp_mul / fp_div's own A and flags go back
+                ld      a,(FPERR)           ; unchanged when nothing is raised (host
+                cp      1                   ; test_intfast compares them)
+                jr      z,fpr_raise
+                pop     af
+                ret
+fpr_raise:
+                jp      raise_now           ; Overflow, now (FPERR already 1: it stays)
+
 ; ATN / SIN / COS / TAN / RND have no stubs of their own any more -- see
 ; `evmc_total_scan` and `evmc_total_tab` above (the SWAP-funding carve,
 ; 2026-07-28). They were five VERBATIM copies of one shape, which is precisely
