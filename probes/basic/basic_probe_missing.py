@@ -638,6 +638,11 @@ TRACE = [
     ("pw-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 50',
                        'A=10^1000+USR(0)', 'A=.5^-2000+USR(0)', 'PRINT PEEK(-12272):END',
                        'PRINT ERR;:RESUME NEXT']),
+    # D-DEFERRSTUDY family 5 (2026-10-28): EOF on a non-tape device channel is ERR 5
+    # raised at once (after the seqio tenant), as on the VG-8020 (deferr5_run.out).
+    ("ef-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 40',
+                       'OPEN"CRT:"FOR OUTPUT AS 1:A=EOF(1)+USR(0)', 'CLOSE:PRINT PEEK(-12272):END',
+                       'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

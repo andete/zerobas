@@ -195,7 +195,9 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   the value is stored (`A%=40000`) comes after the expression on both
   machines. So does a `Syntax error` inside an expression -- `SQR()`, a bare
   `USR`, `VAL("&")` -- since the same day
-  ([`deferr3_run.out`](../../scratchpad/deferr3_run.out)). Other faults are
+  ([`deferr3_run.out`](../../scratchpad/deferr3_run.out)), and `EOF` on a
+  screen or printer channel, `Illegal function call`
+  ([`deferr5_run.out`](../../scratchpad/deferr5_run.out)). Other faults are
   still noted and reported a moment later
   ([spec](../spec-basic-deferr-study.md)).
 - **The value type an error hook sees differed for five faults** (fixed

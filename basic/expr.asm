@@ -1538,6 +1538,13 @@ eof_dev:                                    ; D-EOFCAS: A = FCH_MODES[E], not di
                 call    sc_inl1             ; D-STUBINL
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SEQIO)
                 pop     ix
+                ; 🎯 D-DEFERRSTUDY family 5 (2026-10-28): the tenant defers ERR 5 for a
+                ; non-tape device (FPERR 3); the VG-8020 raises it AT ONCE --
+                ; `A=EOF(1)+USR(0)` on CRT: / LPT: never runs the USR there
+                ; (scratchpad/deferr5_run.out). Raised here, in main, after the tenant.
+                ld      a,(FPERR)
+                cp      3
+                jp      z,raise_now
                 ld      a,(SEQ_EOF)
                 rra                         ; CF = at the end (tape); 0 otherwise
                 jr      eof_answer

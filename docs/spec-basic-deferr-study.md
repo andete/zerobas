@@ -248,6 +248,18 @@ that raises code 1 at once in main. After: 5/5, and families 2's rows unchanged
 [`deferr4_h3.out`](../scratchpad/deferr4_h3.out)). Gate: missing-acceptance
 `pw-side`; knife K-DF4 ([`deferr4_knife.out`](../scratchpad/deferr4_knife.out)).
 
+## 2g. Family 5, EOF on a device channel (2026-10-28)
+
+[`deferr5_probe.py`](../scratchpad/deferr5_probe.py) ->
+[`deferr5_run.out`](../scratchpad/deferr5_run.out): `EOF(1)` on a `CRT:` or
+`LPT:` channel is ERR 5 raised at once on the VG-8020 (counter 0); zerobas ran
+on. The seqio tenant defers it (FPERR 3, §1b UNSAFE (a)); `eof_dev` (expr.asm)
+now raises it in main once the tenant has returned -- 8 B of page 1 on
+2026-10-28. A tape INPUT channel still answers EOF as before (D-EOFCAS).
+After: 3/3 ([`deferr5_after.out`](../scratchpad/deferr5_after.out)). Gate:
+missing-acceptance `ef-side`; knife K-DF5
+([`deferr5_knife.out`](../scratchpad/deferr5_knife.out)).
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the
