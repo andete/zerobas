@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15196 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15208 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15196 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14319,6 +14319,18 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       rule (the letter of the 09-27 ruling), or keep the directory-entry rule and
       pin `s.case` as a documented divergence (the ruling's intent: no separate
       spend)?
+      📐 **DESIGN 2026-10-28 (for Joost's 10-27 ruling -- exact, no more RAM than the reference):** the
+      disk machine's free RAM now equals the CF-3300's (D-BOOTKEYS / D-DISKHIMEM), so the 11-byte
+      typed name must live in RAM zerobas ALREADY reserves. The 50-byte DSK_ENGTAB row is a saved
+      copy of the contiguous live span FCH_STATE0..FWR_DIROFF ($EE06..$EE37), and ~20 B of that
+      span look like per-DISK or TRANSIENT scratch, not per-channel state: FAT_NUMFATS (1),
+      FAT_SECPERFAT (2) -- geometry; FAT_PARITY / BYTEIDX / FATSEC / B0 / B1 (7) -- the FAT walk;
+      FAT_NAMEPTR / DIRSEC / DIRREM (6) -- the directory search; FAT_WRTMP / WRTMP2 (4). Move
+      the ones that ARE transient out of the copied span and put the typed name in: each row then
+      carries it inside its existing 50 B -- 0 B more RAM -- and disk.rom's OPEN compares the
+      verbatim name per channel, the reference's rule (s.case opens there). ➡️ Next: verify each
+      candidate's readers (is it read after a channel switch without being rewritten first?),
+      then the move, the compare, and dupopen's `s.case` row un-pinned. Not started.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
