@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15220 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15234 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15234 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -13862,7 +13862,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       *do not "fix" `s.fldarymix` or K-FA1*, which only helps while it is
       visible. It sat in the 🤖 queue with nothing in it to do.
       🎚️ APPARATUS — unknifeable row
-- [ ] ⚠️ **3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED.**
+- [x] ✅ **CLOSED 2026-10-28 -- nothing left to take (see the end).** ⚠️ **3 B carve candidate: `ex_mid_stmt`'s resolve abort is SHADOWED.**
       D-LVFIX's `jp nz,fp_runtime_error` at `ex_mid_stmt` is **not falsifiable**:
       K-LV3 cut it and reddened nothing, because `eval_pos_arg` →
       `get_int16_checked` → `check_fperr_only` re-raises the same `FPERR` on the
@@ -13878,6 +13878,12 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       ([[rule-gated-structurally-has-no-knife]]).
       🎚️ BUDGET — 3 B carve
       🤖 AUTONOMOUS — 🏗️ **RULED BY JOOST 2026-10-27**: *"Take the 3 B"* -- remove the shadowed abort; document that MID$ relies on eval_pos_arg's re-raise.
+      🔴 **2026-10-28: THE SITE IS GONE -- ALREADY FACTORED.** ex_mid_stmt has no abort of its own any
+      more: str_target_parse is `call tgt_parse_req / ret`, and tgt_parse_req (basic/expr.asm) is the
+      ONE shared `call tgt_parse / ret z / jp fp_runtime_error` that every target-parse caller uses --
+      the per-site 3 B were carved when D-ARYLV made it a shared tail. Removing it now would remove
+      the bail for LINE INPUT / INPUT# too, which str_target_parse's own note measures as
+      load-bearing (D-N9BAIL). Closed: Joost's "take the 3 B" was taken by the factoring.
 - [x] ⚠️ **A KNIFE RUNNER STILL HAS NO SHARED WAY TO SCOPE A CUT TO ONE
       ✅ **CLOSED 2026-09-05 — the helper exists, is SHARED, and the "where should
       it live" question is answered by the gate that already collects it.**
@@ -14343,6 +14349,14 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       case, hk_ochk compares the rows' +1..11 with DISK_FCB_NAME (0 B RAM). If it upper-cases,
       the FCB must keep the case and the directory match become case-insensitive (BDOS's
       toupper name_cmp, kernel.asm, is the precedent) -- a wider change, priced first.
+      📏 **ANSWERED THE SAME DAY: IT UPPER-CASES.** build_83_name (basic/fcbname-body.inc) calls
+      fcb_upcase, so DISK_FCB_NAME -- and every row FCB -- holds the upper-cased name; `ts.dat` and
+      `TS.DAT` are the same bytes here. The exact rule therefore needs the TYPED case kept in the
+      FCB and every directory comparison made case-insensitive -- SAVE / LOAD / KILL / NAME / COPY
+      all meet it. ➡️ Measure on the CF-3300 FIRST: does `SAVE "ts.dat"` write a lower-case
+      directory entry (FILES / DSKI$ of the root sector), and does `LOAD "ts.dat"` find a file
+      saved as `TS.DAT`? The answer decides whether the change is "keep case in the FCB only" or
+      "keep case on the disk too". Parked at that measurement.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
