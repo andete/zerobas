@@ -1,0 +1,5 @@
+  ROM abb33eda 7455064a 6fa2878c 24fd5a5c fde2ca7c  ->  abb33eda 7455064a 3d8b68c6 24fd5a5c fde2ca7c
+restore: abb33eda 7455064a 6fa2878c 24fd5a5c fde2ca7c -> abb33eda 7455064a 6fa2878c 24fd5a5c fde2ca7c  build rc=0  BYTE-IDENTICAL (all five)
+K-MB1: gate rc=2
+ROW boot5e10 EU=[AX 5] ZB=[no AX] DIVERGES
+make: *** [boot5e10-acceptance] Error 1

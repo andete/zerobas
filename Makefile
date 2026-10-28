@@ -2480,6 +2480,13 @@ filesnl-acceptance: repack-machine $(DISK_TEST_DSK)
 dskib-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_dskib.py
 
+# --- boot5e10-acceptance: a boot code calling the disk ROM's fixed $5E10 (D-DISKRUN) ---
+# mb.dsk's boot code does; the VG-8020 + NMS 1200 starts BASIC and runs AUTOEXEC.BAS
+# with no date question (Joost 2026-10-27: match the NMS 1200). Our own disk, our own
+# boot code `CALL $5E10` and AUTOEXEC.BAS; zerobas pins $5E10 to basent_body.
+boot5e10-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_5e10.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

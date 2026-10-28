@@ -2942,6 +2942,18 @@ basent_pending:
                 cp      'D'
                 ret
 
+; 🎯 D-DISKRUN mb.dsk (Joost 2026-10-27: "Start BASIC (NMS 1200)"): $5E10 IS PINNED.
+; mb.dsk's boot code CALLs this fixed address in its step-5 call (scratchpad/mb_5e10.out,
+; DE = $7368, HL = $E646 on both machines). On the VG-8020 + NMS 1200 it starts BASIC
+; and AUTOEXEC.BAS runs, with no date question (scratchpad/mbtime_run.out: the banner
+; at T6, AUTOEXEC.BAS's own `Illegal function call in 20` by T9); the CF-3300 hangs
+; there. Here $5E10 was the middle of basent_body and the machine rebooted for ever.
+; It is basent_body itself: under boot_call0's DOS_TRY mark that is the boot-loader
+; restart ('B','D'), which skips the DOS boot and asks the date only when the disk has
+; no AUTOEXEC.BAS -- mb.dsk has one. A pad, then the jump: no new behaviour.
+                ds      $5E10 - $, $00  ; pad up to the pinned $5E10 entry
+mb_5e10:
+                jp      basent_body
 ; basent_body -- $4022. Runs in page 1 (this ROM), so the switch away from it
 ; happens in a copy of basent_tramp placed in page-3 RAM (SECTOR_BUF: scratch).
 ; D-BOOTDATE: when MSX-DOS never started (the mark is not DOS_SIG -- a boot code

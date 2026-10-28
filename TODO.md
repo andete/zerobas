@@ -1529,6 +1529,17 @@ item — do **one item per session** to keep context lean.
       measure the NMS 1200's state at BASIC's start after that call (registers, the work
       area, which disk is current) black-box, then the pin -- price the $5E10 neighbourhood
       against check_disk_walls first.
+      ✅ **SHIPPED 2026-10-27.** 📏 [`mbtime_probe.py`](scratchpad/mbtime_probe.py) -> [`mbtime_run.out`](scratchpad/mbtime_run.out): the NMS 1200 shows
+      its banner at T6 and AUTOEXEC.BAS's `Illegal function call in 20` by T9 -- NO date
+      question; the CF-3300 a blank screen; zerobas C-BIOS's start-up screen, looping. 🔮 HIT
+      on all three. Nothing new was needed: under boot_call0's DOS_TRY mark basent_body is
+      the boot-loader restart ('B','D'), which asks the date only with no AUTOEXEC.BAS. So
+      $5E10 is pinned (disk/kernel.asm, `ds $5E10 - $` + `mb_5e10: jp basent_body`, 22 B
+      of the free run before $5FE5; disk free 799 -> 796 B). After: zerobas ends where the
+      NMS 1200 does ([`mbtime_after.out`](scratchpad/mbtime_after.out)). Gate: boot5e10-acceptance ([`disk_probe_5e10.py`](probes/disk/disk_probe_5e10.py):
+      our own disk, boot code `CALL $5E10`, AUTOEXEC.BAS `10 PRINT "AX";5`; EU / ZB `AX 5`,
+      [`boot5e10_gate.out`](scratchpad/boot5e10_gate.out)). 🔪 K-MB1 ([`mbpin_knife.py`](scratchpad/mbpin_knife.py)): kernel.asm back to HEAD -> ZB `no AX`,
+      DIVERGES, all five restored ([`mbpin_knife.out`](scratchpad/mbpin_knife.out)). Docs: concepts/disk.md.
 
 - [x] ✅ **DONE 2026-10-23 ((a), (b), (c))** 🧠 **D-TPAPTAIL — WHAT D-TPAP1 LEFT: THE TPA HAS RAM IN PAGE 1 NOW, AND THREE THINGS STILL
       ASSUME IT DOES NOT (filed 2026-10-23 by D-TPAP1)**
@@ -7065,7 +7076,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9551 (T-6FE392)8 (T-529ABE)` from `TODO.md:15118 (T-529ABE)`: a
+      `TODO.md:9562 (T-6FE392)8 (T-529ABE)` from `TODO.md:15129 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10006,7 +10017,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15118 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15129 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

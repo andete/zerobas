@@ -116,6 +116,11 @@ then shows a fresh BASIC and nothing else: no date question, `AUTOEXEC.BAS`
 is not run again, and the hooks a program set in the work area stay set.
 zerobas does the same since 2026-10-22.
 
+**Some boot codes call a fixed address inside one particular disk ROM**,
+`&H5E10`. On the VG-8020 with its Philips NMS 1200 interface that starts BASIC
+and runs `AUTOEXEC.BAS`, with no date question; on the CF-3300 the screen
+stays blank. zerobas follows the NMS 1200 (Joost, 2026-10-27).
+
 ### Drives
 
 `A:` is the one drive and the default; `DSKF` and `DSKI$` take 0 or 1 for it.
@@ -252,6 +257,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **A disk whose boot code calls `&H5E10` restarted the machine for ever**
+  (fixed 2026-10-27, D-DISKRUN). The collection's `mb.dsk` does that from its
+  boot code; in zerobas the address was the middle of a routine, which
+  restarted the machine, which booted the disk again. The two references
+  disagree there: the VG-8020 with an NMS 1200 starts BASIC and runs the
+  disk's `AUTOEXEC.BAS` with no date question, and the CF-3300 shows a blank
+  screen ([`mbtime_run.out`](../../scratchpad/mbtime_run.out), from
+  [`mbtime_probe.py`](../../scratchpad/mbtime_probe.py)). Joost chose the
+  NMS 1200; `&H5E10` now jumps to zerobas's own "start BASIC" entry
+  ([`mbtime_after.out`](../../scratchpad/mbtime_after.out)).
 - **CTRL held at power-on did nothing** (drive half fixed 2026-10-27,
   D-BOOTKEYS). On the CF-3300 it turns the logical drive B: off: `DSKF(2)` and
   `FILES"B:"` are `Bad drive name`, and the drive count at `&HF347` reads 1
@@ -412,6 +427,9 @@ The keyword pages in the table above; [MSX-DOS](msx-dos.md),
 
 ## Tests that cover it
 
+- `make boot5e10-acceptance` — our own disk, whose boot code calls `&H5E10`
+  and whose `AUTOEXEC.BAS` prints a line, against the VG-8020 with an
+  NMS 1200.
 - `make dskib-acceptance` — the drive-B: prompt for `DSKF`, `DSKI$`,
   `DSKO$`, `FILES`, `SAVE` and `LOAD`, from a fresh line, against the CF-3300.
 - `make bootkeys-acceptance` — a plain boot, SHIFT held and CTRL held from

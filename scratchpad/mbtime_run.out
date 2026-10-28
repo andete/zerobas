@@ -1,0 +1,18 @@
+eu T6   pc=0738 curlin=0000             MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+eu T9   pc=0D71 curlin=FFFF    Illegal function call in 20 /   Ok /   color  auto   goto   list   run
+eu T12  pc=0D57 curlin=FFFF    Illegal function call in 20 /   Ok /   color  auto   goto   list   run
+eu T16  pc=0D6E curlin=FFFF    Illegal function call in 20 /   Ok /   color  auto   goto   list   run
+eu T22  pc=0D71 curlin=FFFF    Illegal function call in 20 /   Ok /   color  auto   goto   list   run
+eu T30  pc=0BA2 curlin=FFFF    Illegal function call in 20 /   Ok /   color  auto   goto   list   run
+jp T6   pc=77F3 curlin=0000             MSX  system /            version 1.0 /    Copyright 1983 by Microsoft
+jp T9   pc=7723 curlin=0000  
+jp T12  pc=0C3D curlin=FFFF  
+jp T16  pc=0C3D curlin=FFFF  
+jp T22  pc=0C3C curlin=FFFF  
+jp T30  pc=0038 curlin=FFFF  
+zb T6   pc=7B02 curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
+zb T9   pc=7AEA curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
+zb T12  pc=7AE6 curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
+zb T16  pc=7AE3 curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
+zb T22  pc=7AE6 curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
+zb T30  pc=7AEB curlin=0000    C-BIOS 0.29      cbios.sf.net /   Character set: US /   Interrupt frequency: 50Hz /   Keyboard type: US /   Init ROM in slot: 0
