@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15208 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15220 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15220 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14331,6 +14331,18 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       verbatim name per channel, the reference's rule (s.case opens there). ➡️ Next: verify each
       candidate's readers (is it read after a channel switch without being rewritten first?),
       then the move, the compare, and dupopen's `s.case` row un-pinned. Not started.
+      🔴 **THE DESIGN'S PREMISE WAS STALE (audited 2026-10-28, a read-only search over main / sub /
+      disk):** nothing saves or loads the FCH_STATE0..FWR_DIROFF span on a channel switch any more
+      (S10.E removed it 2026-10-19; fch_select is now a store). The DSK_ENGTAB row IS an MSX-DOS
+      FCB (+0..36) plus the DOUT / DIN fields -- 49 of its 50 B (disk/kernel.asm DOUT_* /
+      disk/fat.asm DIN_LEFT) -- and an FCB's +1..11 IS the 8.3 name; the CF-3300's 37 B block is
+      the same shape. 📐 **SO THE EXACT RULE MAY COST 0 B:** hk_ochk (OPEN's same-file check)
+      reuses hkk_open_check's directory-entry walk (KILL / NAME / COPY's); for OPEN alone the
+      reference compares the FCB NAMES, case kept. ➡️ Next: does pdfcb (the name builder)
+      upper-case the name before it reaches DISK_FCB_NAME / the row FCB? If it keeps the typed
+      case, hk_ochk compares the rows' +1..11 with DISK_FCB_NAME (0 B RAM). If it upper-cases,
+      the FCB must keep the case and the directory match become case-insensitive (BDOS's
+      toupper name_cmp, kernel.asm, is the precedent) -- a wider change, priced first.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,
