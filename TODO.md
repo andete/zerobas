@@ -2056,6 +2056,19 @@ item — do **one item per session** to keep context lean.
       tapecorpus_run.py tallies RUNS? (both running, screens far apart): per title, a timing / phase
       difference or a real divergence -- fix ours, file the rest with their evidence. Queued right
       after D-DEFERRSTUDY's current families.
+      ✅ **TRIAGED 2026-10-28** ([`runsq_triage.py`](scratchpad/runsq_triage.py) -> [`runsq_triage.out`](scratchpad/runsq_triage.out): both machines every
+      2 s T400..T420, bytes apart per VDP table, the BEST ref x zb frame pair, the bytes apart in
+      EVERY pair; then side-by-side tile renders, kept in session scratch -- third-party screens):
+      | class | titles | reading |
+      |---|---|---|
+      | timing / phase, nothing persistent | Ballblazer, Blow Up, Lazy Jones, Navy Moves, Sorcery, Demonia, Elite | a frame pair identical or within 108 B |
+      | attract-mode phase (render) | Manic Miner (other demo level), Fruit Panic (other caption), Buzz Off (round 0195 / 0200), Ninja 2 (same picture) | small persistent remainders (35-600 B) |
+      | timing + ~60 B persistent | Shark Hunter (two windows: best 94 / 136) | an earlier render caught a different phase |
+      | speed | Space (zerobas has printed FURTHER: line 2260 / 2190) | TIER 5, paused |
+      | font (C-BIOS's glyphs, not the VG-8020's) | Lazer Bykes, Punch & Judy (873 B of pattern table each), Jump Jet, Blocker (+ phase), Blagger | the Loopy Laundry glyph question, parked by Joost 2026-10-17 |
+      | real, already filed | Chuckie Egg (zerobas black), Space Shuttle (blue screen), BMX Simulator | D-SLOT3EXP ($FFFF written from game code), parked "Later" 2026-10-27 |
+      🔮 Sorcery predicted as timing: hit (best 0). No NEW defect: every non-timing title lands on
+      an existing item (font, slot 3) or on speed.
       📼 **THE TAPE RUN, REBUILT AND TRACKED (2026-10-22):** the one-off harness and its
       pick_martos (51) lived in a lost session scratchpad, and the standing rule below (re-run
       ALL the tapes after a page-0 / page-1 layout change) was overdue -- D-DISKREST, D-P0CB
@@ -7130,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9616 (T-6FE392)8 (T-529ABE)` from `TODO.md:15183 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15196 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10071,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15183 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15196 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

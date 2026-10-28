@@ -1,0 +1,24 @@
+BMX Simulator  S2 ref L50 zb L14592  T420 names=0 patterns=4894 colours=6096 sattr=128 spat=1362  best=11979 always=11175 ref-moves=10187
+Ballblazer     S2 ref L65535 zb L65535  T420 names=0 patterns=279 colours=0 sattr=0 spat=0  best=0 always=0 ref-moves=791
+Blagger        S1 ref L10 zb L10  T420 names=20 patterns=2 colours=0 sattr=2 spat=0  best=2836 always=2818 ref-moves=30
+Blocker        S1 ref L132 zb L132  T420 names=8 patterns=706 colours=0 sattr=4 spat=0  best=3522 always=3522 ref-moves=32
+Blow Up        S2 ref L43234 zb L43234  T420 names=20 patterns=431 colours=457 sattr=80 spat=0  best=0 always=0 ref-moves=11584
+Buzz Off       S2 ref L65535 zb L65535  T420 names=29 patterns=95 colours=57 sattr=82 spat=84  best=39 always=35 ref-moves=783
+Chuckie Egg    S2 ref L65535 zb L65535  T420 names=0 patterns=1869 colours=4288 sattr=0 spat=133  best=6266 always=6146 ref-moves=190
+Demonia        S2 ref L50 zb L50  T420 names=7 patterns=15 colours=0 sattr=9 spat=216  best=28 always=0 ref-moves=470
+Elite          S2 ref L65535 zb L65535  T420 names=0 patterns=184 colours=0 sattr=0 spat=0  best=108 always=0 ref-moves=402
+Fruit Panic    S2 ref L310 zb L310  T420 names=38 patterns=278 colours=0 sattr=38 spat=0  best=302 always=302 ref-moves=5144
+Jump Jet       S2 ref L150 zb L150  T420 names=0 patterns=302 colours=82 sattr=0 spat=0  best=384 always=384 ref-moves=0
+Lazer Bykes    S1 ref L210 zb L210  T420 names=0 patterns=873 colours=0 sattr=0 spat=0  best=3689 always=3689 ref-moves=0
+Lazy Jones     S2 ref L180 zb L180  T420 names=449 patterns=0 colours=208 sattr=20 spat=0  best=0 always=0 ref-moves=505
+Manic Miner    S2 ref L8 zb L8  T420 names=0 patterns=1933 colours=4096 sattr=25 spat=309  best=631 always=602 ref-moves=4389
+Navy Moves     S2 ref L22781 zb L22781  T420 names=0 patterns=0 colours=224 sattr=0 spat=0  best=0 always=0 ref-moves=240
+Ninja 2        S2 ref L70 zb L70  T420 names=0 patterns=1068 colours=0 sattr=6 spat=0  best=733 always=503 ref-moves=11588
+Punch & Judy   S1 ref L3080 zb L3080  T420 names=0 patterns=873 colours=0 sattr=0 spat=0  best=941 always=941 ref-moves=0
+Shark Hunter   S2 ref L65535 zb L65535  T420 names=768 patterns=216 colours=820 sattr=45 spat=619  best=94 always=64 ref-moves=2375
+Sorcery        S1 ref L2 zb L2  T420 names=453 patterns=0 colours=0 sattr=0 spat=0  best=0 always=0 ref-moves=467
+Space          S1 ref L2190 zb L2260  T420 names=40 patterns=448 colours=0 sattr=0 spat=0  best=3265 always=3264 ref-moves=549
+Space Shuttle  S2 ref L65535 zb L65535  T420 names=765 patterns=33 colours=0 sattr=80 spat=1970  best=3994 always=3971 ref-moves=2977
+
+--late (T440..T480), rerun 2026-10-28:
+Shark Hunter   S2 ref L65535 zb L65535  T480 names=88 patterns=70 colours=0 sattr=36 spat=149  best=136 always=60 ref-moves=774
