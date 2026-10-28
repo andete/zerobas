@@ -191,7 +191,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   ([`deferr2_run.out`](../../scratchpad/deferr2_run.out),
   [`deferr2b_run.out`](../../scratchpad/deferr2b_run.out)); an overflow when
   the value is stored (`A%=40000`) comes after the expression on both
-  machines. Other faults are still noted and reported a moment later
+  machines. So does a `Syntax error` inside an expression -- `SQR()`, a bare
+  `USR`, `VAL("&")` -- since the same day
+  ([`deferr3_run.out`](../../scratchpad/deferr3_run.out)). Other faults are
+  still noted and reported a moment later
   ([spec](../spec-basic-deferr-study.md)).
 - **The value type an error hook sees differed for five faults** (fixed
   2026-10-27, D-ERRVALTYP, with the family above). At the moment of the error

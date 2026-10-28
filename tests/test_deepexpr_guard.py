@@ -131,14 +131,22 @@ def run():
         tok(text)
         fresh(ctllim)
         m.poke_w(STRPTR, 0)
-        cpu = m.call("str_eval", hl=TOKBUF)
+        m.trap_raise_now()      # D-DEFERRSTUDY: a raise at the floor is CALLED here
+        try:
+            cpu = m.call("str_eval", hl=TOKBUF)
+        finally:
+            m.untrap_raise_now()   # statements elsewhere in this file must raise for real
         ptr = m.mem[STRPTR] | (m.mem[STRPTR + 1] << 8)
         return cpu, ptr
 
     def num_eval(text, ctllim):
         tok(text)
         fresh(ctllim)
-        cpu = m.call("eval", hl=TOKBUF)
+        m.trap_raise_now()      # D-DEFERRSTUDY family 3: the pending 7 is now RAISED
+        try:                    # at the floor (raise_now, pending-first) -- the code
+            cpu = m.call("eval", hl=TOKBUF)   # is kept and the call abandoned
+        finally:
+            m.untrap_raise_now()
         return cpu.de & 0xFFFF
 
     LOOSE = 0x9100          # CTLLIM far below the stack: every test passes

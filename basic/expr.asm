@@ -753,7 +753,12 @@ ev_f_empty:                                 ; D-F2-3: the empty parenthesised/ar
                                             ; pattern: no mid-expression unwind). The value
                                             ; (DE=0) survives every downstream success op
                                             ; unchanged, but the flag makes the driver abort.
-                ld      e,4
+                ; 🎯 D-DEFERRSTUDY family 3 (2026-10-28): NOW RAISED AT ONCE. The VG-8020
+                ; stops at a syntax fault inside an expression -- `A=SQR()+USR(0)`,
+                ; `A=USR+USR(0)`, `A=VAL("&")+USR(0)` never run the USR there
+                ; (scratchpad/deferr3_run.out). Pending-first, as every raise_now.
+                ld      a,4
+                jp      raise_now
 ev_f_defer:                                 ; shared tail: E = FPERR code to defer.
                 ld      a,e                 ; D-F2-4 first-error-wins: if the argument
                 call    penderr_set         ; expression ALREADY raised a hard error

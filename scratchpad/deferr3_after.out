@@ -1,0 +1,11 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   ctl_once  A=1+USR(0):PRINT"[N]"                [N] | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   sqr_empty A=SQR()+USR(0):PRINT"[N]"            Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   len_empty A=LEN()+USR(0):PRINT"[N]"            Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   varptr5   A=VARPTR(5)+USR(0):PRINT"[N]"        Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   instr1    A=INSTR("AB")+USR(0):PRINT"[N]"      Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   usrbare   A=USR+USR(0):PRINT"[N]"              Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   comma     A=(1,2)+USR(0):PRINT"[N]"            Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   aryparse  DIM Q(3):A=Q(1;2)+USR(0):PRINT"[N]"  Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   valamp    A=VAL("&")+USR(0):PRINT"[N]"         Syntax error | [C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   pr_sqr    PRINT"[A]";SQR();"[B]"               [A] | Syntax error | [C 0 ]
+refcache: 0 hit, 10 miss, 10 stored

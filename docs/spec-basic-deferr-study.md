@@ -216,6 +216,23 @@ rows of [`deferr2c_after.out`](../scratchpad/deferr2c_after.out),
 missing-acceptance `ov-side2`; knife K-DF2C
 ([`deferr2c_knife.out`](../scratchpad/deferr2c_knife.out)).
 
+## 2e. Family 3, syntax (2026-10-28)
+
+[`deferr3_probe.py`](../scratchpad/deferr3_probe.py) ->
+[`deferr3_run.out`](../scratchpad/deferr3_run.out): the VG-8020 raises a syntax
+fault inside an expression at once -- nine forms (`SQR()`, `LEN()`, `VARPTR(5)`,
+`INSTR("AB")`, a bare `USR`, `(1,2)`, `Q(1;2)`, `VAL("&")`, and `PRINT`'s
+`SQR()` item) leave the USR counter 0. zerobas already did on six; `SQR()`,
+`USR` and `VAL("&")` ran on. `ev_f_empty` -- the code-4 entry of the evaluator's
+deferral tail, 16 callers, all syntax -- now raises at once (+3 B page 1), and
+VAL's syntax arm goes there instead of deferring (-2 B low). NOT `ev_f_defer`
+itself: its callers include `cl_not_oom`, the stack-floor family §1b keeps
+deferred. After: 10/10 counter rows and the 10 original VALTYP rows unchanged
+([`deferr3_after.out`](../scratchpad/deferr3_after.out),
+[`deferr3_herro.out`](../scratchpad/deferr3_herro.out)). Gate:
+missing-acceptance `sx-side`; knife K-DF3
+([`deferr3_knife.out`](../scratchpad/deferr3_knife.out)).
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the

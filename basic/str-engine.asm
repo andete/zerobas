@@ -1153,9 +1153,8 @@ ev_ff_val:
                 jp      nz,flt_to_int16     ; DE = the rounded int16; FAC/FACTYP stand
                 ret                         ; DE = the parsed integer value
 evv_refuse:
-                ld      e,4                 ; SH_ERR 4 -> syntax error (deferred)
-                cp      5
-                jp      nz,ev_f_defer
+                cp      5                   ; SH_ERR 4 -> syntax error, at once
+                jp      nz,ev_f_empty       ; (D-DEFERRSTUDY family 3)
                 ld      a,1                 ; SH_ERR 5 -> overflow, AT ONCE as on the
                 jp      raise_now           ; VG-8020 (D-DEFERRSTUDY family 2)
 
