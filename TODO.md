@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15245 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15260 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15260 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14368,6 +14368,21 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       entry written upper-case. 0 B of RAM. ➡️ Next: inventory every reader of the FCB name / of
       DISK_FCB_NAME in disk.rom (find, create, rename, copy, kill, the BDOS FCB calls), then price
       the change in disk.rom bytes (check_disk_walls) before writing it.
+      📋 **INVENTORY 2026-10-28** (a read-only search over main / sub / sub2 / disk): build_83_name's
+      fcb_upcase is the ONLY place a disk 8.3 name is upper-cased before it is stored; every
+      directory lookup (name_cmp, fat_find, fat_dir_create's same-name check, FILES, hkc_resolve,
+      BDOS name_cmp_wild) already folds case on both sides. Keeping the typed case needs exactly:
+      (A) **hkc_same** (disk/kernel.asm, COPY's self-copy check) case-insensitive -- it is `cp (hl)`
+      today, and with typed case `COPY "a.txt" TO "A.TXT"` would DELETE the destination (= the
+      source) and copy from its freed chain; (B) **fat_dir_create**'s name write upper-cased
+      (basic/fat-prim-body.inc -- ONE site covers SAVE, BSAVE, SAVE ,A, OPEN OUTPUT, RANDOM create,
+      the COPY destination); (C) **hkn_stamp** (NAME's rename write) upper-cased; (D) build_83_name
+      stops upper-casing; and OPEN's own compare made case-SENSITIVE (hoc_dout uses name_cmp).
+      ❓ Two questions for the CF-3300 BEFORE code: (1) hkk_open_check is shared by OPEN, KILL, NAME
+      and COPY -- is `KILL"ts.dat"` / `NAME"ts.dat"AS..` / `COPY"ts.dat"TO..` refused while `TS.DAT`
+      is open there (case-insensitive) or allowed (as OPEN is)? (2) (B) in fat_dir_create also
+      reaches BDOS _FMAKE -- does MSX-DOS create a lower-case directory entry from a lower-case
+      user FCB on the CF-3300, or upper-case it? Measure both, then write A-D.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,

@@ -233,7 +233,7 @@ sub body); the file-channel slimming (RAM to free, ROM cost unknown).
 * **Main-bound, unpriced** (ruled YES by Joost, each a slice): DEF FN alias
   pool, String-too-long ownership, CONT line, T6 enumeration per keyword,
   INPUT$ cassette source. Historical slice costs in this tree run 20–100 B of
-  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14372 (T-59C37A)`).
+  main each (e.g. D-ASCIINUM, D-LITREF 70 B, D-INPQUOTE ~30–40 B, `TODO.md:14387 (T-59C37A)`).
 * **Sub-bound**: SCREEN 3 (170–280 B p0), PAINT span-stack re-architect (p0),
   FCBSHAPE S1–S3 (p1), Phase C's C5-LOW/SBH-1 which *need* 181 B of sub p1 to
   *give* 157 B of main. The sub walls (137/94 B) block all of these today.
