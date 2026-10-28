@@ -1539,8 +1539,12 @@ hkc_dk:         inc     hl
                 ld      hl,COPY_SRC
                 ld      de,DISK_FCB_NAME
                 ld      b,11
-hkc_same:       ld      a,(de)
-                cp      (hl)
+hkc_same:       ld      a,(de)              ; CASE-FOLDED (OPEN twice, 2026-10-28): the
+                call    toupper             ; names keep the typed case now, and
+                ld      c,a                 ; `COPY "a.txt" TO "A.TXT"` IS a self-copy --
+                ld      a,(hl)              ; byte-wise it would delete the source and
+                call    toupper             ; copy from its freed chain
+                cp      c
                 jr      nz,hkc_differ
                 inc     hl
                 inc     de
@@ -2482,7 +2486,7 @@ hoc_dout:
                 call    dout_row
                 inc     hl                  ; the FCB's name
                 ld      de, DISK_FCB_NAME
-                call    name_cmp            ; Z = it matches the pattern
+                call    hoc_cmp             ; Z = it matches the pattern, CASE KEPT
                 pop     bc
                 scf
                 ret     z
@@ -6034,9 +6038,8 @@ hkn_stamp:
                 ld      de,(FWR_DIROFF)
                 add     hl,de               ; HL -> the entry in the buffer
                 ex      de,hl               ; DE -> its 11-byte name field
-                ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name
-                ld      bc,11
-                ldir
+                ld      hl,DISK_FCB_NAME    ; source = the NEW 8.3 name, typed case:
+                call    cpy_up11            ; the entry is upper case (OPEN twice)
                 ld      de,(FWR_DIRSEC)
                 ld      hl,FAT_DBUF
                 jp      write_sector        ; tail-call: its CF is our answer

@@ -155,16 +155,6 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **The same file under two spellings** (TIER 6, open). `OPEN "TS.DAT" AS #1`
-  then `OPEN "ts.dat" AS #2` opens on the CF-3300 and is
-  `File already open` (54) here. The CF-3300 compares the names as typed,
-  upper and lower case distinct, while its disk treats them as one file — so
-  its own guard lets one file be opened twice. zerobas asks whether the
-  directory entry is already open. Joost ruled on 2026-09-27 to *"fold into
-  D-FCBSHAPE"* — refuse like the reference once a channel has the MSX block
-  shape, where the name would have a home. That block turned out to have no
-  name field, so copying the reference would cost 165 bytes of the disk
-  machine's RAM, and the question is back with him.
 - **`VARPTR(#0)`** — channel 0, the one `LOAD` and `SAVE` use — is an address
   on both references and `File not OPEN` (59) here, because zerobas reserves
   no block for it. Joost ruled on 2026-10-09: *"build it"*; it will cost
@@ -188,6 +178,16 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
+  2026-10-27 for an exact match that costs no more memory than the reference).
+  The CF-3300 checks whether a file is open by the name as it was typed, upper
+  and lower case distinct, while its disk treats both spellings as one file:
+  with `TS.DAT` open, `OPEN "ts.dat"` on a second channel opens there and was
+  `File already open` here. zerobas now keeps the typed name in each
+  channel's block and compares it the same way, so one file can be opened
+  twice under two spellings, as on the reference. The disk itself is upper case on both machines
+  ([`fcbcase2_run.out`](../../scratchpad/fcbcase2_run.out),
+  [`fcbcase_run.out`](../../scratchpad/fcbcase_run.out)).
 - **A dot in a tape name** (fixed 2026-10-17, D-CASDOT): `OPEN "CAS:X.T"`
   looks for `X`, as on the VG-8020, and `"CAS:.T"` is `Bad file name` on
   both (`casbin-acceptance` row `odot`). What `FOR OUTPUT` writes for a

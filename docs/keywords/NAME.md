@@ -40,7 +40,9 @@ keyword; both machines store it that way in the program.
   AS 5` is `Type mismatch` and `NAME "HI.TXT"` with no `AS` is `Syntax error`.
 - **The new name must be free**: renaming onto an existing file is
   `File already exists` (error 65).
-- **An open file cannot be renamed** (`File still open`, error 64); when
+- **An open file cannot be renamed** (`File still open`, error 64) — under
+  the spelling it was opened with; a different case goes through, as on the
+  CF-3300. When
   error 65 would also apply, 64 is the one raised.
 
 ### Errors
@@ -91,6 +93,14 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
+  2026-10-27 for an exact match that costs no more memory than the reference).
+  The CF-3300 checks whether a file is open by the name as it was typed, upper
+  and lower case distinct, while its disk treats both spellings as one file:
+  with `TS.DAT` open, `NAME "ts.dat" AS "UU.DAT"` renames it there and was refused
+  here; it now renames it here too. The disk itself is upper case on both machines
+  ([`fcbcase2_run.out`](../../scratchpad/fcbcase2_run.out),
+  [`fcbcase_run.out`](../../scratchpad/fcbcase_run.out)).
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   `NAME` kept `TIME` running for 8 % of its work here, against 56 % on the
   CF-3300; now 14 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile

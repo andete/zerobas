@@ -1,0 +1,5 @@
+C-BIOS_MSX1_EU_REPACK_DISK   save_lc_files  [ZB | NEW | ZB | 10 REM | SAVE"ts.dat" | ZB | FILES"*.DAT" | TS      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   load_lc        [ZB | NEW | ZB | 10 REM | SAVE"TS.DAT" | ZB | NEW | ZB | LOAD"ts.dat" | ZB | LIST | 10 REM | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   open_lc_files  [ZB | OPEN"ab.txt"FOR OUTPUT AS 1:PRINT#1,"X": | CLOSE | ZB | FILES"*.TXT" | HI      .TXT AB      .TXT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   open_case2     [ZB | OPEN"TS.DAT"FOR OUTPUT AS 1:PRINT#1,"X": | CLOSE | ZB | OPEN"TS.DAT"FOR INPUT AS 1 | ZB | OPEN"ts.dat"FOR INPUT AS 2 | Bad file number | ZB | PRINT "K";ERR | K 52 | ZB | CLOSE | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 4 miss, 4 stored

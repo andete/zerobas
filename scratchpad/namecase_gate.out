@@ -1,0 +1,19 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 probes/disk/disk_probe_namecase.py
+ROW s.case CF=[[OK]] ZB=[[OK]] SAME
+ROW kill_open CF=[File not found] ZB=[File not found] SAME
+ROW name_open CF=[UU      .DAT] ZB=[UU      .DAT] SAME
+ROW copy_open CF=[TS      .DAT VV      .DAT] ZB=[TS      .DAT VV      .DAT] SAME
+ROW kill_open_uc CF=[File still open] ZB=[File still open] SAME
+ROW save_lc CF=[NEW | TS      .DAT] ZB=[NEW | TS      .DAT] SAME
+ROW bdos_fmake CF=[10 FOR I=0 TO 36:POKE &HD100+I,0:NEXT:N$ | 20 RESTORE:FOR I=0 TO 16:READ B:POKE &HD | 30 DATA 17,0,209,14,22,205,125,243,17,0, | RUN | HI      .TXT LC      .TXT] ZB=[10 FOR I=0 TO 36:POKE &HD100+I,0:NEXT:N$ | 20 RESTORE:FOR I=0 TO 16:READ B:POKE &HD | 30 DATA 17,0,209,14,22,205,125,243,17,0, | RUN | HI      .TXT LC      .TXT] SAME
+
+PASS: disk names, case (7/7)
+refcache: 0 hit, 14 miss, 14 stored

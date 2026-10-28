@@ -109,7 +109,10 @@ for label, _, _ in CASES:
 PINNED = {
     # measured 2026-09-10; the filing says "accepted here and refused on the
     # CF-3300", and these are the two values that make that sentence true.
-    "e.same2": {"cf3300": "<File already open>", "zb": "OK"},
+    # RE-PINNED 2026-10-28: zerobas refuses it too since D-OPENSAME (2026-09-29) --
+    # this pin had gone stale unseen; the OPEN-twice fix closed the item, the
+    # filed-pin sweep then named it an orphan, and the re-run showed 0/18 apart.
+    "e.same2": {"cf3300": "<File already open>", "zb": "<File already open>"},
 }
 
 drift = []

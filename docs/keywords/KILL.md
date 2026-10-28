@@ -44,7 +44,7 @@ The name is a string expression and may carry a drive (`"A:HI.TXT"`).
 | situation | error |
 |---|---|
 | no such file | 53 `File not found` |
-| the file is open | 64 `File still open` |
+| the file is open, under the same spelling | 64 `File still open` |
 | a drive past `B:` (`KILL "Q:A.TXT"`) | 62 `Bad drive name` |
 | a number instead of a name (`KILL 5`) | 13 `Type mismatch` |
 | no name at all (`KILL`) | 24 `Missing operand` |
@@ -84,6 +84,14 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
+  2026-10-27 for an exact match that costs no more memory than the reference).
+  The CF-3300 checks whether a file is open by the name as it was typed, upper
+  and lower case distinct, while its disk treats both spellings as one file:
+  with `TS.DAT` open, `KILL "ts.dat"` deletes it there and was refused here; it
+  now deletes it here too. The disk itself is upper case on both machines
+  ([`fcbcase2_run.out`](../../scratchpad/fcbcase2_run.out),
+  [`fcbcase_run.out`](../../scratchpad/fcbcase_run.out)).
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   `KILL` of a long file kept `TIME` running for none of its work here,
   against 39 % on the CF-3300; now 15 %. The disk ROM's code ran with interrupts off, so keys typed meanwhile

@@ -303,9 +303,11 @@ def sub_part():
           and m.mem[s["DISK_FCB_DRV"]] == 0,
           f"tenant: GAME.BIN -> BL_STAT {st:#x} (want {sel:#x}), name built, drive 0")
     st = run("b:x.bin")
-    check(st == sel and m.peek(s["DISK_FCB_NAME"], 11) == name83("X.BIN")
+    # the TYPED case is kept since 2026-10-28 (OPEN twice): disk.rom upper-cases
+    # where the name meets the disk, so the builder's own answer is `x       bin`
+    check(st == sel and m.peek(s["DISK_FCB_NAME"], 11) == b"x       bin"
           and m.mem[s["DISK_FCB_DRV"]] == 2,
-          f"tenant: b:x.bin -> BL_STAT {st:#x}, name X.BIN, drive 2")
+          f"tenant: b:x.bin -> BL_STAT {st:#x}, name x.bin (typed case), drive 2")
     st = run("Q:X.BIN")
     check(st == 62, f"tenant: Q:X.BIN -> BL_STAT {st} (want 62, Bad drive name)")
     st = run("")

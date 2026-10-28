@@ -7143,7 +7143,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15273 (T-529ABE)`: a
+      `TODO.md:9629 (T-6FE392)8 (T-529ABE)` from `TODO.md:15288 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10084,7 +10084,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15273 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15288 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
@@ -14198,7 +14198,7 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       exception.
       🤖 AUTONOMOUS — the reference or a gate settles it; finishable unattended (no his-decision signal found).
 
-- [ ] 🔴 **THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE
+- [x] ✅ **FIXED 2026-10-28 (exact, 0 B of RAM -- see the end).** 🔴 **THE SAME FILE ON TWO CHANNELS IS ACCEPTED HERE AND REFUSED ON THE
       CF-3300.** Uncovered 2026-09-02 by D-OPEN2FIX, which removed the
       `Syntax error` that was killing every two-channel open before this could be
       reached.
@@ -14396,6 +14396,21 @@ finds zero shared names (a renamed block would otherwise make it silently blind)
       (also fixes BDOS _FMAKE); hkc_same folds case (the self-copy safety). 0 B of RAM. ➡️ Next:
       write it, price it in disk.rom (check_disk_walls), gate rows for s.case / KILL / NAME / COPY /
       _FMAKE, knife.
+      ✅ **SHIPPED 2026-10-28.** build_83_name keeps the typed case (fcb_upcase deleted, sub/fcbname.asm);
+      the open check's compare is hoc_cmp -- byte for byte, `?` still a wildcard -- for OPEN, KILL,
+      NAME and COPY; fat_dir_create and hkn_stamp write through cpy_up11 (upper case); hkc_same folds
+      case. disk.rom free 796 -> 753 B on 2026-10-28 (hoc_cmp + cpy_up11 sited in the FAT body's
+      region; in hoc_dout's the image came out EMPTY). 🔮 ALL HIT: fcbcase2 8/8 and fcbcase 3/3 as the
+      CF-3300 ([`fcbcase2_after.out`](scratchpad/fcbcase2_after.out), [`fcbcase_after.out`](scratchpad/fcbcase_after.out)); dupopen DIFF 0/11 with s.case re-pinned
+      ([`dupopen_after_case.out`](scratchpad/dupopen_after_case.out)). Gate: namecase-acceptance ([`disk_probe_namecase.py`](probes/disk/disk_probe_namecase.py), 7/7,
+      [`namecase_gate.out`](scratchpad/namecase_gate.out)); 🔪 K-NC1 ([`namecase_knife.py`](scratchpad/namecase_knife.py)): the four ROM files back to HEAD -> 5 rows
+      DIVERGE, the two controls SAME, all five images restored ([`namecase_knife.out`](scratchpad/namecase_knife.out)). Docs: OPEN,
+      KILL, NAME, COPY, concepts/disk.md.
+      🔴 Closing the item made filed-pin-check name dupopen_probe and open2_probe ORPHANS, and the
+      re-run caught a month-old stale pin: open2's `e.same2` was pinned `zb OK` while zerobas had
+      refused it since D-OPENSAME (2026-09-29) -- 0/18 apart ([`open2_after_case.out`](scratchpad/open2_after_case.out)). Both left
+      tools/filed-row-known.txt; open2's pin now holds the measured face. test_hk_dpbload's
+      tenant row expects the typed `x       bin`.
 
 - [ ] 🐌 **`PUT` IS SLOWER THAN THE REFERENCE — AND THE "UNTRAPPABLE HANG" THIS
       ITEM WAS FILED AS IS WITHDRAWN (D-PUT3SLOW, 2026-09-02,

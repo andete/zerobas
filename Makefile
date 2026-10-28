@@ -2487,6 +2487,13 @@ dskib-acceptance: repack-machine $(DISK_TEST_DSK)
 boot5e10-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 probes/disk/disk_probe_5e10.py
 
+# --- namecase-acceptance: a disk name keeps its typed case for the open check (OPEN twice) ---
+# The CF-3300 compares the TYPED name, case-sensitively, when OPEN / KILL / NAME / COPY
+# ask whether a file is open; what reaches the disk is upper case (Joost 2026-10-27:
+# an exact match, no more RAM than the reference).
+namecase-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 probes/disk/disk_probe_namecase.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

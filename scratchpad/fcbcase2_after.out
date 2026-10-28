@@ -1,0 +1,6 @@
+C-BIOS_MSX1_EU_REPACK_DISK   kill_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1:O | N ERROR GOTO 0 | ZB | KILL"ts.dat" | ZB | CLOSE:FILES"TS.*" | File not found | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   name_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | NAME"ts.dat"AS"UU.DAT" | ZB | CLOSE:FILES"*.DAT" | UU      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   copy_open      [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | COPY"ts.dat"TO"VV.DAT" | ZB | CLOSE:FILES"*.DAT" | TS      .DAT VV      .DAT | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   kill_open_uc   [ZB | MAXFILES=2:OPEN"TS.DAT"FOR OUTPUT AS 1 | ZB | KILL"TS.DAT" | File still open | ZB | CLOSE | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_DISK   bdos_fmake     [$(N$,I,1)):NEXT | 20 RESTORE:FOR I=0 TO 16:READ B:POKE &HD | 000+I,B:NEXT:DEFUSR=&HD000:A=USR(0):FILE | S"*.TXT" | 30 DATA 17,0,209,14,22,205,125,243,17,0, | 209,14,16,205,125,243,201 | RUN | HI      .TXT LC      .TXT | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 5 miss, 5 stored

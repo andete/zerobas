@@ -123,7 +123,10 @@ PINNED = {
     "s.modes":    {"cf3300": "<File already open>", "zb": "<File already open>"},
     "s.seqsame":  {"cf3300": "<File already open>", "zb": "<File already open>"},
     "s.reclaim":  {"cf3300": "<File already open>", "zb": "<File already open>"},
-    "s.case":     {"cf3300": "OK", "zb": "<File already open>"},
+    # RE-PINNED 2026-10-28 (OPEN twice, Joost's 10-27 ruling): the name keeps the
+    # TYPED case and the open check compares it case-sensitively, so s.case opens
+    # here as on the CF-3300 (scratchpad/fcbcase2_after.out).
+    "s.case":     {"cf3300": "OK", "zb": "OK"},
 }
 
 _drift = []

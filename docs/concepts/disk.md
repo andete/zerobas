@@ -76,8 +76,11 @@ alternates sides, and the 8-sector formats have one sector less a track.
 size in bytes (28–31). A deleted entry starts with `&HE5`. A date is packed as
 (year − 1980) × 512 + month × 32 + day.
 
-**File names** are 8.3 and are upper-cased, so `"hi.txt"` and `"HI.TXT"` are
-one file. Measured on the CF-3300 and matched (D-FSPEC, 2026-09-04;
+**File names** are 8.3 and are upper case on the disk, so `"hi.txt"` and
+`"HI.TXT"` are one file — a `SAVE`, an `OPEN` and MSX-DOS's create all write
+the upper-case name. Only the check for an OPEN file keeps the typed case: with
+`TS.DAT` open, `OPEN`, `KILL`, `NAME` and `COPY` of `"ts.dat"` go through, as on
+the CF-3300 (since 2026-10-28). Measured on the CF-3300 and matched (D-FSPEC, 2026-09-04;
 D-FSPECCHAR, 2026-09-05):
 
 - a name past 8 characters is not an error: the extension starts after the
@@ -257,6 +260,18 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
+  2026-10-27 for an exact match that costs no more memory than the reference).
+  The CF-3300 checks whether a file is open by the name as it was typed, upper
+  and lower case distinct, while its disk treats both spellings as one file:
+  with `TS.DAT` open, a second `OPEN "ts.dat"`, `KILL`, `NAME` and `COPY` of it all
+  go through there, and zerobas refused all four. MSX-DOS's create call
+  (`_FMAKE`) given a lower-case name wrote a lower-case entry here and an
+  upper-case one there. The name now keeps its typed case in each channel's
+  block, the open check compares it byte for byte, and every write to the
+  directory upper-cases it — no extra memory. The disk itself is upper case on both machines
+  ([`fcbcase2_run.out`](../../scratchpad/fcbcase2_run.out),
+  [`fcbcase_run.out`](../../scratchpad/fcbcase_run.out)).
 - **A disk whose boot code calls `&H5E10` restarted the machine for ever**
   (fixed 2026-10-27, D-DISKRUN). The collection's `mb.dsk` does that from its
   boot code; in zerobas the address was the middle of a routine, which

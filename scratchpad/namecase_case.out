@@ -1,0 +1,4 @@
+ROW s.case CF=[[OK]] ZB=[[OK]] SAME
+
+PASS: disk names, case (1/1)
+refcache: 0 hit, 2 miss, 2 stored

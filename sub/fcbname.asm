@@ -58,12 +58,8 @@ fcbn_store:
 ; is unmapped while this PAGE-1 tenant runs (page 0 shows the main slot). So the
 ; shared body's `call fcb_upcase` binds to this co-located page-1 clone; in the
 ; resident side the same name is a zero-byte EQU onto upcase.
-fcb_upcase:
-                cp      'a'
-                ret     c
-                cp      'z'+1
-                ret     nc
-                sub     $20
-                ret
+; (fcb_upcase stood here: the 8.3 builder upper-cased the typed name. Since the
+; OPEN-twice fix (2026-10-28) the name keeps its typed case and disk.rom upper-cases
+; where it meets the disk; the routine had no other caller.)
 
                 include "basic/fcbname-body.inc"    ; build_83_name..bn_star_fill

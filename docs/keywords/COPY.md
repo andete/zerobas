@@ -54,7 +54,7 @@ the wildcards `?` and `*`; so may the destination.
 | copying a file onto itself | 5 `Illegal function call` |
 | no `TO` part (`COPY "HI.TXT"`) | 5 `Illegal function call` — but 53 if the source does not exist either, because the source is looked up first |
 | a wildcard source matches two or more files | 5 `Illegal function call` (see *Differences*) |
-| the source or the destination is open (`OPEN`) | 64 `File still open` |
+| the source or the destination is open (`OPEN`), under the same spelling | 64 `File still open` |
 | a number instead of a name (`COPY 5 TO "B"`) | 13 `Type mismatch` |
 | no disk in the drive | 70 `Disk offline` |
 
@@ -102,6 +102,15 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
+  2026-10-27 for an exact match that costs no more memory than the reference).
+  The CF-3300 checks whether a file is open by the name as it was typed, upper
+  and lower case distinct, while its disk treats both spellings as one file:
+  with `TS.DAT` open, `COPY "ts.dat" TO "VV.DAT"` copies it there and was refused
+  here; it now copies it here too. `COPY "a.txt" TO "A.TXT"` is still a copy
+  onto itself (error 5): that check ignores case. The disk itself is upper case on both machines
+  ([`fcbcase2_run.out`](../../scratchpad/fcbcase2_run.out),
+  [`fcbcase_run.out`](../../scratchpad/fcbcase_run.out)).
 - **The clock stopped while the disk worked** (fixed 2026-10-10, D-HOOKDI):
   `TIME` stopped during a `COPY` here; now it runs for 16 % of it, against
   37 % on the CF-3300. The disk ROM's code ran with interrupts off, so keys typed meanwhile

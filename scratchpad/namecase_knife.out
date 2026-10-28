@@ -1,0 +1,11 @@
+  ROM 3b87c89f a0cf9df9 6e62d049 b58eae99 7d520aff  ->  3b87c89f fdefffef dadbef61 b58eae99 7d520aff
+restore: 3b87c89f a0cf9df9 6e62d049 b58eae99 7d520aff -> 3b87c89f a0cf9df9 6e62d049 b58eae99 7d520aff  build rc=0  BYTE-IDENTICAL (all five)
+K-NC1: gate rc=2
+ROW s.case CF=[[OK]] ZB=[File already open | [OK]] DIVERGES
+ROW kill_open CF=[File not found] ZB=[File still open | TS      .DAT] DIVERGES
+ROW name_open CF=[UU      .DAT] ZB=[File still open | TS      .DAT] DIVERGES
+ROW copy_open CF=[TS      .DAT VV      .DAT] ZB=[File still open | TS      .DAT] DIVERGES
+ROW kill_open_uc CF=[File still open] ZB=[File still open] SAME
+ROW save_lc CF=[NEW | TS      .DAT] ZB=[NEW | TS      .DAT] SAME
+ROW bdos_fmake CF=[10 FOR I=0 TO 36:POKE &HD100+I,0:NEXT:N$ | 20 RESTORE:FOR I=0 TO 16:READ B:POKE &HD | 30 DATA 17,0,209,14,22,205,125,243,17,0, | RUN | HI      .TXT LC      .TXT] ZB=[10 FOR I=0 TO 36:POKE &HD100+I,0:NEXT:N$ | 20 RESTORE:FOR I=0 TO 16:READ B:POKE &HD | 30 DATA 17,0,209,14,22,205,125,243,17,0, | RUN | HI      .TXT lc      .txt] DIVERGES
+FAIL: disk names, case (2/7)

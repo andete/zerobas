@@ -79,9 +79,9 @@ bn_name:
                 ; must take the normal separator path, not have the dot land in
                 ; the extension field.
                 jr      z,bn_ext_pos        ; name full -> extension, positionally
-                ld      a,c
-                call    fcb_upcase
-                ld      (de),a
+                ld      a,c                 ; the TYPED case is kept (OPEN twice, Joost
+                ld      (de),a              ; 2026-10-27): disk.rom upper-cases where the
+                                            ; name meets the disk (fat_dir_create, hkn_stamp)
                 inc     de
                 inc     hl
                 dec     b
@@ -119,8 +119,7 @@ bn_ext_loop:
                 jr      z,bn_star_ext       ; '*' -> fill the rest of the ext with '?'
                 call    bn_chk              ; D-FSPECCHAR: the illegal set
                 jr      c,bn_reject
-                call    fcb_upcase
-                ld      (de),a
+                ld      (de),a              ; typed case kept (see the name loop)
                 inc     de
                 inc     hl
                 dec     b

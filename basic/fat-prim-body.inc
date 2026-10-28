@@ -401,6 +401,40 @@ toupper:
                 sub     $20
                 ret
 
+; cpy_up11 -- copy the 11-byte 8.3 name (HL) to DE, upper-cased: what reaches the
+; DISK is upper case on the CF-3300 (OPEN twice, 2026-10-28). Leaves HL / DE past
+; the 11 bytes, as the `ld bc,11 / ldir` it replaces did. Clobbers A, B.
+cpy_up11:
+                ld      b, 11
+cu11_lp:
+                ld      a, (hl)
+                call    toupper
+                ld      (de), a
+                inc     hl
+                inc     de
+                djnz    cu11_lp
+                ret
+
+; hoc_cmp -- the open check's compare (OPEN, KILL, NAME, COPY): HL = an open row's
+; name, DE = DISK_FCB_NAME. Z = equal, byte for byte, with `?` in DE matching any
+; character as name_cmp does -- but CASE-SENSITIVE: on the CF-3300 a second OPEN of
+; `ts.dat`, and KILL / NAME / COPY of it, all go through while `TS.DAT` is open; only
+; the same spelling is refused (scratchpad/fcbcase2_run.out, dupopen s.case). The
+; names keep the typed case since 2026-10-28. Clobbers A, B, DE, HL.
+hoc_cmp:
+                ld      b, 11
+hcm_lp:
+                ld      a, (de)
+                cp      '?'
+                jr      z, hcm_next
+                cp      (hl)
+                ret     nz
+hcm_next:
+                inc     hl
+                inc     de
+                djnz    hcm_lp
+                ret                         ; Z: the last test was equal (or '?')
+
 ; fat_open — start sequential reading of the file found by fat_find.
 fat_open:
                 ld      hl, (FAT_FIRSTCLUS)
@@ -1287,12 +1321,14 @@ fdcr_useslot:
                 sbc     hl, de              ; HL = offset within the sector
                 ld      (FWR_DIROFF), hl
                 pop     hl
-                ; write the 11-byte name (case already 8.3 upper from the caller).
+                ; write the 11-byte name, UPPER-CASED here: the caller's name keeps
+                ; the typed case since 2026-10-28 (OPEN twice), and the CF-3300
+                ; writes an upper-case entry from any of them -- SAVE"ts.dat", an
+                ; OPEN, BDOS _FMAKE (scratchpad/fcbcase_run.out, fcbcase2_bdos.out).
                 push    hl
                 ex      de, hl              ; DE = dest slot
                 ld      hl, (FAT_NAMEPTR)
-                ld      bc, 11
-                ldir                        ; name -> entry +0..10
+                call    cpy_up11            ; name -> entry +0..10, upper-cased
                 ; +11 = attribute $00 (normal file; ORACLE: matches MSX-DOS Create).
                 xor     a
                 ld      (de), a             ; +11 = $00
