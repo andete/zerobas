@@ -146,6 +146,15 @@ item — do **one item per session** to keep context lean.
       FAILs (zb `2 2 2 3`) ([`deferr3_knife.out`](scratchpad/deferr3_knife.out)). ➡️ Left: the TM family (D-TMORDER's, UNSURE rows),
       the stack-floor family (kept deferred by §1b), string OOM (mostly immediate already),
       and the tenant-side UNSAFE rows (convert after each tenant call returns).
+      ✅ **FAMILY 4 (OVERFLOW INSIDE A MATH TENANT) SHIPPED 2026-10-28** (spec §2f): the VG-8020 raises
+      `10^1000`, `.5^-2000`, `10^500.5` at once ([`deferr4_run.out`](scratchpad/deferr4_run.out); 🔮 3/3; `SIN(1E38)*...` was a
+      bad case, it does not overflow). cpow_tail -- every math tenant's way back -- ends in a
+      page-1 mt_back that raises code 1 in main (15 B of page 1 on 2026-10-28, 0 low). After:
+      5/5 + family 2's rows unchanged ([`deferr4_after.out`](scratchpad/deferr4_after.out), [`deferr4_f2.out`](scratchpad/deferr4_f2.out), [`deferr4_h3.out`](scratchpad/deferr4_h3.out)). Gate
+      `pw-side` ([`deferr4_gate.out`](scratchpad/deferr4_gate.out), 44/44); 🔪 K-DF4 ([`deferr4_knife.py`](scratchpad/deferr4_knife.py)): `pw-side` alone FAILs (zb
+      `6 6 2`) ([`deferr4_knife.out`](scratchpad/deferr4_knife.out)). ➡️ Left: the TM family (UNSURE), the stack floor (kept), the
+      remaining tenant rows (EOF on a device in seqio, the strheap slice OOM, hk_mki in
+      disk.rom) -- each convertible after its own call returns, measure first.
       📏 **STEP 1 CLASSIFICATION DRAFTED 2026-10-24** (spec §1b, [`deferr_sites_table.md`](scratchpad/deferr_sites_table.md)):
       67 writers -- SAME 36, DIFFERENT 2, UNSAFE 10 (tenant context / CLEAR's restore),
       UNSURE 14. ➡️ Next: reorder CLEAR first (blocker), then prototype Division by zero
@@ -7111,7 +7120,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9597 (T-6FE392)8 (T-529ABE)` from `TODO.md:15164 (T-529ABE)`: a
+      `TODO.md:9606 (T-6FE392)8 (T-529ABE)` from `TODO.md:15173 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10052,7 +10061,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15164 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15173 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

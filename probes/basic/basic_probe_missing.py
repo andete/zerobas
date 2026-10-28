@@ -633,6 +633,11 @@ TRACE = [
     ("sx-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 60',
                        'A=SQR()+USR(0)', 'A=USR+USR(0)', 'A=VAL("&")+USR(0)', 'PRINT PEEK(-12272):END',
                        'PRINT ERR;:RESUME NEXT']),
+    # D-DEFERRSTUDY family 4 (2026-10-28): an overflow found INSIDE the math tenant
+    # (`^`) is raised at once once the tenant returns (scratchpad/deferr4_run.out).
+    ("pw-side",       ['CLS:POKE-12288,33:POKE-12287,16:POKE-12286,208:POKE-12285,52:POKE-12284,201:POKE-12272,0:DEF USR=&HD000:ON ERROR GOTO 50',
+                       'A=10^1000+USR(0)', 'A=.5^-2000+USR(0)', 'PRINT PEEK(-12272):END',
+                       'PRINT ERR;:RESUME NEXT']),
     ("he-rewrite",    ['CLS:POKE-12288,30:POKE-12287,5:POKE-12286,201',
                        'POKE-78,0:POKE-77,208:POKE-79,195:ON ERROR GOTO 50',
                        'ERROR 7', 'END',

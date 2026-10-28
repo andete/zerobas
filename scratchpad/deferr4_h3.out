@@ -1,0 +1,8 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   ctl_none  X=1                  "]" | [V 255 C 0 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   exp       X=EXP(1000)          Overflow | "]" | [V 2 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   valhex    X=VAL("&H1FFFF")     Overflow | "]" | [V 2 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   fmul      X=1E38*1E38          Overflow | "]" | [V 8 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   fmul_s    X!=1E38:Y=X!*X!      Overflow | "]" | [V 8 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   cint      X=CINT(40000)        Overflow | "]" | [V 4 C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ampb17    X=&B11111111111111111 Overflow | "]" | [V 8 C 1 ]
+refcache: 0 hit, 7 miss, 7 stored

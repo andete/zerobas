@@ -2212,7 +2212,8 @@ cpow_tail:
                                             ; in FAC (COMPUTE-ONLY tenant).
                 pop     ix
                 jp      c,subrom_absent_error
-                jp      fac_dbl_int16       ; D-NGRAM14
+                jp      mt_back             ; D-DEFERRSTUDY family 4 (expr.asm), then
+                                            ; fac_dbl_int16 (D-NGRAM14)
 
 ; --- combine_cmp: ev_rel's numeric-compare site. Both-int -> the EXISTING --
 ; cmp16_bits (byte-for-byte the same as before, tail-called). Any float ->

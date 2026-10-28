@@ -233,6 +233,21 @@ deferred. After: 10/10 counter rows and the 10 original VALTYP rows unchanged
 missing-acceptance `sx-side`; knife K-DF3
 ([`deferr3_knife.out`](../scratchpad/deferr3_knife.out)).
 
+## 2f. Family 4, overflow inside a math tenant (2026-10-28)
+
+[`deferr4_probe.py`](../scratchpad/deferr4_probe.py) ->
+[`deferr4_run.out`](../scratchpad/deferr4_run.out): the VG-8020 raises `10^1000`,
+`.5^-2000` and `10^500.5` at once (counter 0); zerobas ran on. (`SIN(1E38)*...`
+does not overflow at all there -- SIN(1E38) is 0, D-TANBIG.) The overflow is found
+inside the sub-ROM power / exp tenant -- §1b UNSAFE (a) -- so it stays deferred
+there, and every math tenant's way back, `cpow_tail`, now ends in a page-1
+`mt_back` (basic/expr.asm, 15 B of page 1 on 2026-10-28, 0 of the low region)
+that raises code 1 at once in main. After: 5/5, and families 2's rows unchanged
+([`deferr4_after.out`](../scratchpad/deferr4_after.out),
+[`deferr4_f2.out`](../scratchpad/deferr4_f2.out),
+[`deferr4_h3.out`](../scratchpad/deferr4_h3.out)). Gate: missing-acceptance
+`pw-side`; knife K-DF4 ([`deferr4_knife.out`](../scratchpad/deferr4_knife.out)).
+
 ## 3. Next
 
 1. ~~Classify the writers~~ drafted (section 1b); the UNSURE rows are measured as the

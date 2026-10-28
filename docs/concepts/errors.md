@@ -187,7 +187,9 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   message was already the same; only what ran before it differed.
   Since 2026-10-28 every `Overflow` inside an expression stops at once too --
   `EXP`, `VAL`, a too-long `&B` number, `CINT`, the operands of `AND`, `OR`,
-  `XOR`, `NOT` and `\`, and a float multiply or divide
+  `XOR`, `NOT` and `\`, a float multiply or divide, and a power that
+  overflows (`10^1000`, `.5^-2000`,
+  [`deferr4_run.out`](../../scratchpad/deferr4_run.out))
   ([`deferr2_run.out`](../../scratchpad/deferr2_run.out),
   [`deferr2b_run.out`](../../scratchpad/deferr2b_run.out)); an overflow when
   the value is stored (`A%=40000`) comes after the expression on both

@@ -1,0 +1,11 @@
+Philips_VG_8020                ctl_once  A=1+USR(0):PRINT"[N]"                [N] | [C 1 ]
+Philips_VG_8020                pow_big   A=10^1000+USR(0):PRINT"[N]"          Overflow | [C 0 ]
+Philips_VG_8020                pow_recip A=.5^-2000+USR(0):PRINT"[N]"         Overflow | [C 0 ]
+Philips_VG_8020                pow_frac  A=10^500.5+USR(0):PRINT"[N]"         Overflow | [C 0 ]
+Philips_VG_8020                sin_big   A=SIN(1E38)*1E38*1E38+USR(0):PRINT"[N]" [N] | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   ctl_once  A=1+USR(0):PRINT"[N]"                [N] | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   pow_big   A=10^1000+USR(0):PRINT"[N]"          Overflow | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   pow_recip A=.5^-2000+USR(0):PRINT"[N]"         Overflow | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   pow_frac  A=10^500.5+USR(0):PRINT"[N]"         Overflow | [C 1 ]
+C-BIOS_MSX1_EU_REPACK_NODISK   sin_big   A=SIN(1E38)*1E38*1E38+USR(0):PRINT"[N]" [N] | [C 1 ]
+refcache: 2 hit, 8 miss, 8 stored

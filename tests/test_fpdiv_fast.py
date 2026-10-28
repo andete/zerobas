@@ -266,6 +266,9 @@ class Pair:
             so = {k: v for k, v in so.items() if k not in ("FACTYP", "DE")}
             sn = {k: v for k, v in sn.items() if k not in ("FACTYP", "DE")}
             live = [x for x in live if x != self.new.sym["FACTYP"]]
+            # ...and the float scratch: family 4 (2026-10-28) raises an overflow found in
+            # a math tenant BEFORE fac_dbl_int16 ran over it, so ARGB keeps what it held
+            live = [x for x in live if not JUNK[0] <= x < JUNK[1]]
         ok = so == sn and not live
         detail = "" if ok else (f"old={so} new={sn} live RAM diffs="
                                 f"{[hex(a) for a in live[:12]]}")

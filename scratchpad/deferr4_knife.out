@@ -1,0 +1,6 @@
+  ROM f8904ab5 fdefffef 511c4fe0 a6e5430b 9ad57369  ->  b1f7b5a5 fdefffef 1d28970f c0fc0333 69f3894b
+restore: f8904ab5 fdefffef 511c4fe0 a6e5430b 9ad57369 -> f8904ab5 fdefffef 511c4fe0 a6e5430b 9ad57369  build rc=0  BYTE-IDENTICAL (all five)
+K-DF4: gate rc=1
+FAIL  trace    pw-side        CLS:POKE-12288,33:POKE-12287,16:PO ref=                 6 6 0  zb=                 6 6 2
+--- 43/44 as recorded   (0 expected-divergent, see XDIVERGENT)   <-- red
+  pw-side        CLS:POKE-12288,33:POKE-12287,16:POKE-12286,2 -> 6 6 0

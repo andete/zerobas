@@ -2418,6 +2418,22 @@ evmc_exp_overflow:
 ; come through here and raise right after it returns. Only code 1: a pending type
 ; mismatch keeps its own timing (D-TMORDER), and first-error-wins means an earlier
 ; fault is what FPERR still holds.
+; --- mt_back: every math tenant's way back (cpow_tail), OVERFLOW raised at once ---
+; 🎯 D-DEFERRSTUDY family 4 (2026-10-28): the VG-8020 raises `10^1000`, `.5^-2000`
+; and `10^500.5` at once (scratchpad/deferr4_run.out: a USR after them never runs).
+; The overflow is found INSIDE the sub-ROM tenant (fp_pow / fp_exp), where main page
+; 1 is switched out (study §1b UNSAFE (a)), so it stays deferred there and is raised
+; HERE, in main, once the tenant has returned. Code 1 only, as fp_mul_raise.
+mt_back:
+                push    af
+                ld      a,(FPERR)
+                cp      1
+                jr      z,mtb_raise
+                pop     af
+                jp      fac_dbl_int16
+mtb_raise:
+                jp      raise_now           ; Overflow, now (FPERR already 1: it stays)
+
 fp_mul_raise:
                 call    fp_mul
                 jr      fpr_check
