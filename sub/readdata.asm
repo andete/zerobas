@@ -30,9 +30,16 @@
 ; Clean-room: this is our own code, relocated. No disassembly.
 
 readdata_tenant:
+                ei                          ; D-GCDI3: READ's DATA scan held DI ~90 ms
+                                            ; (the program ladder's L2_adven line 40),
+                                            ; losing frames and keys. Page-0 tenant: an
+                                            ; IRQ takes the $0038 trampoline; the scan
+                                            ; only reads program text, and nothing the
+                                            ; ISR runs touches it or RDV_*.
                 call    read_one_value      ; A = status, DE = value (numeric mode)
                 ld      (RDV_VAL),de
                 ld      (RDV_ST),a
+                di                          ; the trampoline contract: DI before ret
                 ret
 
                 include "basic/readdata-body.inc"

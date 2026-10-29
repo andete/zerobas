@@ -1,13 +1,16 @@
-sub.rom 949c8125 (clean)
-K-S sub.rom 8129c312 (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 0
+sub.rom 34843e21 (clean)
+K-S sub.rom c7907737 (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 0
    scalar  C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=389 max=0.059    DIVERGES
    scalar  C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=389 max=0.058    DIVERGES
-K-A sub.rom ac0c9543 (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
+K-A sub.rom a758110c (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
    array   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=23.4 gaps=56 max=0.034  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
    array   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=23.4 gaps=55 max=0.035  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
-K-M sub.rom 98cf7ded (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
+K-R sub.rom cdfc3c43 (CHANGED)  rc=1  read red on 2/2 zerobas rows, other rows red 0
+   read    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=42.6 gaps=24 max=0.049  CP 1 [O VXIGLY QUICK DAFT ZEBRAS] 26  42 FOUND  DIVERGES
+   read    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=42.6 gaps=24 max=0.049  CP 1 [OW EINGLY QUICK DAFT ZEBRAS] 27  42 FOUND  DIVERGES
+K-M sub.rom 5c000812 (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
    math    C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
    math    C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
-K-H main 3ef3c1b8 (CHANGED)  rc=1  di_safety red: 1
+K-H main 6740e9e1 (CHANGED)  rc=1  di_safety red: 1
    FAIL  di_safety notes-advanced=[]
-restored sub.rom 949c8125 == clean
+restored sub.rom 34843e21 == clean

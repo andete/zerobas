@@ -31,8 +31,9 @@ Two things are compared:
     stride 32; the prompt
     row `ZB` reads as `Ok`).
 The emulated seconds each machine took are printed beside them. With `--gaps`
-(the gate runs that way) a JIFFY watchpoint also counts frame-interrupt gaps,
-and a zerobas run with MORE of them than the reference diverges (D-GCDI).
+(the gate runs that way) a JIFFY watchpoint also counts frame-interrupt gaps
+(> 30 ms): where the reference has none, zerobas may have none; where it has
+some (disk I/O), no zerobas gap may be longer than its longest (D-GCDI).
 
 Clean-room: typed keys and a tape in; the printer port, the text screen and
 work-area RAM (CURLIN, TXTNAM / T32NAM, SCRMOD) out. No reference ROM byte is read.
@@ -228,10 +229,12 @@ def run(machine, name, text, gaps=False, typing="inject"):
 # and fails once they come back clean on EVERY target (so the entry cannot outlive
 # its fix; one target can be clean while another is not).
 KNOWN_GAPS = {
-    "L2_adven": "D-GCDI3",  # READ's DATA scan: ~90 ms in line 40
-    "L3_report": "D-GCDI3", # VAL's tok_skip: one ~31 ms gap on the DISK target
-    "L4_sprite": "D-GCDI3", # READ's DATA scan (line 60) and PLAY's parser (line 140)
+    "L4_sprite": "D-GCDI3", # PLAY's parser (line 140): one ~40 ms gap
 }
+
+
+def _maxgap(head):
+    return float(head.split("max=")[1].split()[0]) if "max=" in head else 99.0
 
 
 def _gaps(head):
@@ -277,7 +280,14 @@ def main():
             ok = not d_lpt and not d_scr and zb[0].split()[0] == ref[0].split()[0]
             note = ""
             if gaps:   # no more frame-interrupt gaps than the reference (D-GCDI)
-                more = _gaps(zb[0]) > _gaps(ref[0])
+                # the reference has no gaps: zerobas may have none either. It has
+                # some (disk I/O holds DI on the CF-3300 too): the COUNT swings with
+                # disk timing (L5_stock: 18, then 35, against 34), so the bound is
+                # its LONGEST gap -- no zerobas gap may be longer.
+                if _gaps(ref[0]) == 0:
+                    more = _gaps(zb[0]) > 0
+                else:
+                    more = _maxgap(zb[0]) > _maxgap(ref[0])
                 if name in KNOWN_GAPS:
                     any_more = any_more or more
                     note = f"  (gaps KNOWN: {KNOWN_GAPS[name]})" if more else \

@@ -40,6 +40,14 @@ ROWS = {
               '10 DIM N$(9):FOR I=1 TO 9:N$(I)=STRING$(19,64+I):NEXT\n'
               '20 FOR R=1 TO 40:FOR I=1 TO 8:N$(I)=N$(I+1):NEXT:N$(9)=N$(1):NEXT\n'
               '30 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$);FRE("")\n'),
+    # READ's DATA scan (the readdata tenant, D-GCDI3): RESTORE before every READ
+    # makes each one walk 60 REM lines to the DATA at the end, ~90 ms in DI before
+    "read": ('1 REM @ANSWERS HOW VEXINGLY QUICK DAFT ZEBRAS\n'
+             '10 FOR K=1 TO 25:RESTORE:READ A,B$:NEXT\n'
+             '20 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$);A;B$\n'
+             '30 END\n'
+             + "".join(f"{100 + i} REM {'FILLER TEXT ' * 3}\n" for i in range(60))
+             + '900 DATA 42,FOUND\n'),
     # the math tenants (math_wrap, D-GCDI2): `^` by a negative power and RND, each
     # one long sub-ROM call -- a single `^` held DI for 165 ms in L1_loan
     "math": ('1 REM @ANSWERS PACK MY BOX WITH JUGS\n'

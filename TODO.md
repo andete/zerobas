@@ -129,6 +129,18 @@ item — do **one item per session** to keep context lean.
       `tok_skip` / `ds_lp` -- `READ`'s DATA scan, the readdata tenant (sub page-0
       index 10). Line 140, `PLAY` with two voices: ~35 ms, the PLAY parse tenant
       (page 1).
+      ✅ **THE `READ` / `VAL` HALF FIXED 2026-10-29:** `readdata_tenant`
+      (sub/readdata.asm) is `ei / call read_one_value / ... / di / ret` -- 2 B, not
+      the 5 B a generic wrapper costs, because the tenant already was a call and a
+      ret (sub page 0: 3 -> 1 B free). It carries tok_skip, so `VAL`'s scan went
+      with it: L2_adven and L3_report 0 gaps, out of KNOWN_GAPS. New
+      gcdi-acceptance row `read` (RESTORE before each READ, 60 REM lines to walk)
+      and knife K-R ([`gcdi_knife.out`](scratchpad/gcdi_knife.out)).
+      ⏳ **STILL OPEN: the PLAY parser** (L4_sprite line 140, one ~40 ms gap). NOT
+      just an `ei`: the parse tenant fills the PLAY queues that `play_service`
+      drains, and since D-GCDI2 the ISR runs `play_service` inside page-1 code --
+      with the parse interrupt-live the two would race on the queues. Needs the
+      enqueue made atomic (or the queue writes moved out) first.
       📏 Also (2026-10-29): L2_adven line 40 (`READ` over 20 DATA items), one ~90 ms
       stretch in `ds_lp` / `tok_skip`, interrupts off throughout -- on HEAD too
       (see D-GCDI2's instrument note); L3_report, 1-2 gaps up to 65 ms. Both are
@@ -7321,7 +7333,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9812 (T-6FE392)8 (T-529ABE)` from `TODO.md:15485 (T-529ABE)`: a
+      `TODO.md:9824 (T-6FE392)8 (T-529ABE)` from `TODO.md:15497 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10272,7 +10284,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15485 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15497 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
