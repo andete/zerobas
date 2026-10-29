@@ -1,0 +1,10 @@
+L2_hexmon
+  Philips_VG_8020                ENDED t=32.0 gaps=0 max=0  lpt 9 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=35.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=35.4 gaps=0 max=0  SAME
+L3_editor
+  Philips_VG_8020                ENDED t=43.5 gaps=0 max=0  lpt 26 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=50.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=50.4 gaps=0 max=0  SAME
+
+PASS: 2 program(s), 0 divergent run(s)
