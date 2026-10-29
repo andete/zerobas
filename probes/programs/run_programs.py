@@ -229,7 +229,7 @@ def run(machine, name, text, gaps=False, typing="inject"):
 # and fails once they come back clean on EVERY target (so the entry cannot outlive
 # its fix; one target can be clean while another is not).
 KNOWN_GAPS = {
-    "L4_sprite": "D-GCDI3", # PLAY's parser (line 140): one ~40 ms gap
+    # empty since D-GCDI5 (2026-10-29): every ladder program keeps the frame interrupt
 }
 
 

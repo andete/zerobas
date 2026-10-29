@@ -1,19 +1,22 @@
-sub.rom db7ea7f8 (clean)
-K-S sub.rom 78a36f9e (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 0
+sub.rom d3478148 (clean)
+K-S sub.rom bf28eb13 (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 0
    scalar  C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=389 max=0.059    DIVERGES
    scalar  C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=389 max=0.058    DIVERGES
-K-A sub.rom 231c3230 (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
+K-A sub.rom c07f5b5a (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
    array   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=23.4 gaps=56 max=0.034  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
    array   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=23.4 gaps=55 max=0.035  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
-K-R sub.rom 9f1c0991 (CHANGED)  rc=1  read red on 2/2 zerobas rows, other rows red 0
+K-R sub.rom 6cdedf89 (CHANGED)  rc=1  read red on 2/2 zerobas rows, other rows red 0
    read    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=42.6 gaps=24 max=0.049  CP 1 [O VXIGLY QUICK DAFT ZEBRAS] 26  42 FOUND  DIVERGES
    read    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=42.6 gaps=24 max=0.049  CP 1 [OW EINGLY QUICK DAFT ZEBRAS] 27  42 FOUND  DIVERGES
-K-C sub.rom ae5989ab (CHANGED)  rc=1  circle red on 2/2 zerobas rows, other rows red 0
+K-C sub.rom 31cb1f42 (CHANGED)  rc=1  circle red on 2/2 zerobas rows, other rows red 0
    circle  C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=60 max=0.053    DIVERGES
    circle  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=16.4 gaps=58 max=0.049  CP 1 [PHINX O BLACK QUARTZ JUDGE MYVOW] 32  DIVERGES
-K-M sub.rom de7151bc (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
+K-P sub.rom f02af34b (CHANGED)  rc=1  play red on 2/2 zerobas rows, other rows red 0
+   play    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=14.5 gaps=4 max=0.17  CP 1 [WALTZ BAD NYMPH FOR QUICK JIGS VEX] 34  DIVERGES
+   play    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=14.5 gaps=4 max=0.17  CP 1 [WALTZ BAD NYMPH FOR QUICK JIGS VEX] 34  DIVERGES
+K-M sub.rom 81c30387 (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
    math    C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
    math    C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
-K-H main e06f10c2 (CHANGED)  rc=1  di_safety red: 1
+K-H main 39c1234a (CHANGED)  rc=1  di_safety red: 1
    FAIL  di_safety notes-advanced=[]
-restored sub.rom db7ea7f8 == clean
+restored sub.rom d3478148 == clean

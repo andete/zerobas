@@ -49,6 +49,43 @@ play_parse_tenant:
                 ld      a,(VCBA + VCX_TEMPO)
                 or      a
                 call    z,pt_init           ; cold-boot seed of the PLAY work area (once)
+                ; D-GCDI5 (2026-10-29): parse with interrupts LIVE. Under DI a
+                ; two-voice PLAY held the frame interrupt ~40 ms (the program
+                ; ladder's L4_sprite). Since D-GCDI2 htimi_guard runs play_service
+                ; inside page-1 code, so a voice being re-parsed must not be
+                ; drained meanwhile: pause exactly the MENTIONED voices that are
+                ; playing (play_service skips a voice whose MUSICF bit is clear,
+                ; basic/playsvc.asm), parse, then put back the bits nothing
+                ; re-committed -- an empty-string voice's, or all of them on an
+                ; error, which is what the old all-DI parse left. The others keep
+                ; playing, where the whole drain used to stop.
+                ld      a,(AUDIO_VMASK)
+                ld      hl,MUSICF
+                and     (hl)                ; the mentioned voices that are playing
+                ld      e,a
+                cpl
+                and     (hl)
+                ld      (hl),a              ; paused (DI still)
+                push    de                  ; [E = the paused voices]
+                ei
+                call    pt_parse
+                di                          ; the trampoline contract: DI before ret
+                pop     de
+                push    af                  ; the body's result: A and CF
+                ld      a,(AUDIO_VMASK)
+                jr      c,ppt_err
+                cpl                         ; ok: a re-committed voice is already set
+                and     e
+                jr      ppt_put
+ppt_err:
+                ld      a,e                 ; an error committed nothing: all of them
+ppt_put:
+                ld      hl,MUSICF
+                or      (hl)
+                ld      (hl),a
+                pop     af
+                ret
+pt_parse:
                 ld      bc,$0001            ; B = voice index 0, C = voice-0 mask bit
 pt_vloop:
                 ld      a,(AUDIO_VMASK)
@@ -117,8 +154,8 @@ pi_lp:
 ; last amplitude, and PLAY(2) read idle under an audible tone. Both references
 ; keep the unmentioned voice playing (scratchpad/musicf_probe.py r.drop:
 ; -1/-1/0 before, 4/4 SAME after). Voices being REPLACED are in both masks, so
-; OR is exact; the drain is suspended throughout the tenant (htimi_guard), so
-; no torn read.
+; OR is exact. No torn read: the voices being replaced are PAUSED for the whole
+; parse (play_parse_tenant, D-GCDI5) -- it used to be the whole drain, under DI.
 pt_commit:
                 ld      a,(AUDIO_VMASK)
                 ld      hl,MUSICF

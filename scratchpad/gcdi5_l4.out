@@ -1,0 +1,7 @@
+L4_sprite
+  Philips_VG_8020                ENDED t=37.4 gaps=0 max=0  lpt 10 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=48.0 gaps=0 max=0  SAME  (gaps clean on this target)
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=48.0 gaps=0 max=0  SAME  (gaps clean on this target)
+  gaps now clean on every target: remove KNOWN_GAPS['L4_sprite']
+
+FAIL: 1 program(s), 1 divergent run(s)

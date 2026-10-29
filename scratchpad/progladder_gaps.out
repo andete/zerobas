@@ -36,8 +36,8 @@ L3_sheet
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=55.7 gaps=0 max=0  SAME
 L4_sprite
   Philips_VG_8020                ENDED t=37.4 gaps=0 max=0  lpt 10 lines
-  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=48.1 gaps=1 max=0.041  SAME  (gaps KNOWN: D-GCDI3)
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=48.1 gaps=1 max=0.041  SAME  (gaps KNOWN: D-GCDI3)
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=48.0 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=48.0 gaps=0 max=0  SAME
 L5_stock
   National_CF-3300               ENDED t=49.6 gaps=34 max=0.223  lpt 20 lines
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=62.9 gaps=34 max=0.135  SAME

@@ -52,6 +52,12 @@ ROWS = {
     "circle": ('1 REM @ANSWERS SPHINX OF BLACK QUARTZ JUDGE MY VOW\n'
                '10 SCREEN 2:FOR K=1 TO 30:CIRCLE (128,96),20+K,15,K/10,K/5:NEXT:SCREEN 0\n'
                '20 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$)\n'),
+    # PLAY's MML parser (play_parse_tenant, page 1, D-GCDI5): three voices of 20
+    # notes; L4_sprite's two short voices held DI ~40 ms
+    "play": ('1 REM @ANSWERS WALTZ BAD NYMPH FOR QUICK JIGS VEX\n'
+             '10 A$="T255L64O4CDEFGABO5CDEFGABO4CDEFGA":B$="T255L64O3"+MID$(A$,10)\n'
+             '20 FOR K=1 TO 4:PLAY A$,B$,A$:NEXT\n'
+             '30 LINE INPUT C$:LPRINT "CP 1 [";C$;"]";LEN(C$)\n'),
     # the math tenants (math_wrap, D-GCDI2): `^` by a negative power and RND, each
     # one long sub-ROM call -- a single `^` held DI for 165 ms in L1_loan
     "math": ('1 REM @ANSWERS PACK MY BOX WITH JUGS\n'

@@ -118,7 +118,7 @@ item — do **one item per session** to keep context lean.
       candidate is a disk-side H.TIMI duty (a timeout or motor counter) that the
       old skip starved -- unverified, so not claimed.
 
-- [ ] 🔴 **`READ` AND `PLAY` HOLD THE FRAME INTERRUPT OFF FOR 35-50 MS IN THE
+- [x] 🔴 **`READ` AND `PLAY` HOLD THE FRAME INTERRUPT OFF FOR 35-50 MS IN THE
       PROGRAM LADDER'S SPRITE DEMO (D-GCDI3, found 2026-10-29).**
       🎚️ TIER 1 — the D-GCDI symptom (frames missed: keys and TIME), smaller.
       🤖 **AUTONOMOUS** — measure each tenant, then wrap it `ei / call / di / ret`.
@@ -159,7 +159,17 @@ item — do **one item per session** to keep context lean.
       ➡️ Not measured yet: the other always-copy sites (`DEF FN` string arguments,
       basic/deffn.asm; str-engine's H1 path; basic/vars.asm) -- each has its own
       stated reason; a ladder program will tell whether any costs a program room.
-      ⏳ **STILL OPEN: the PLAY parser** (L4_sprite line 140, one ~40 ms gap). NOT
+      ✅ **D-GCDI5, FIXED 2026-10-29: the PLAY parser.** `play_parse_tenant`
+      (sub/playparse.asm) now parses with interrupts live. It first pauses exactly
+      the MENTIONED voices that are playing (clears their MUSICF bits under DI --
+      play_service skips such a voice, basic/playsvc.asm), so the queue it rewrites
+      is never drained mid-write; after the parse (DI again) it puts back the bits
+      nothing re-committed: an empty-string voice's, or all of them on an error --
+      what the old all-DI parse left. Unmentioned voices now keep playing during
+      the parse, where the whole drain used to stop. L4_sprite 0 gaps;
+      play-trace-acceptance green; gcdi-acceptance row `play`, knife K-P. The
+      ladder's KNOWN_GAPS is EMPTY: every ladder program keeps the frame interrupt.
+      ⏳ (history) **the PLAY parser** (L4_sprite line 140, one ~40 ms gap). NOT
       just an `ei`: the parse tenant fills the PLAY queues that `play_service`
       drains, and since D-GCDI2 the ISR runs `play_service` inside page-1 code --
       with the parse interrupt-live the two would race on the queues. Needs the
@@ -7356,7 +7366,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9847 (T-6FE392)8 (T-529ABE)` from `TODO.md:15529 (T-529ABE)`: a
+      `TODO.md:9857 (T-6FE392)8 (T-529ABE)` from `TODO.md:15539 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10316,7 +10326,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15529 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15539 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

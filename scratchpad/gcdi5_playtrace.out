@@ -1,0 +1,19 @@
+--- PLAY note sequence (differential vs VG-8020) ---
+PASS  scale    v0  ref=[(428, 8), (381, 8), (339, 8), (320, 8), (285, 8), (254, 8)]
+PASS  rest     v0  ref=[(428, 8), (428, 0), (428, 8), (428, 0)]
+PASS  dots     v0  ref=[(428, 8), (285, 8)]
+PASS  multi    v0  ref=[(428, 8), (339, 8)]
+PASS  multi    v1  ref=[(339, 8)]
+PASS  multi    v2  ref=[]
+PASS  octaves  v0  ref=[(1711, 8), (428, 8)]
+
+--- envelope registers (S8 M2000; R11/12/13 + amp $10|vol) ---
+PASS  env       ref=[(8, 2000, 184, 24)]
+
+--- R7 mixer never touched (stays $B8) ---
+PASS  mixer     ref=['0xb8'] zb=['0xb8']
+
+--- DI-safety: PLAY then a tight SIN loop (page-1 tenant) ---
+PASS  di_safety notes-advanced=[(428, 8), (381, 8), (339, 8), (320, 8), (285, 8)]
+
+ALL PASS — the live PLAY servicer matches the VG-8020
