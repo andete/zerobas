@@ -1,0 +1,49 @@
+D-CATCOPY (2026-10-29): T$+" " with T$ 96 chars and FRE("") 104, default 200-byte string space.
+Program: scratchpad/catcopy_probe.bas (LPRINT capture via probes/programs/run_programs.py run()).
+
+== Philips_VG_8020 ENDED t=16.4
+CP 0 104 
+CP 1 96  104 
+CP 2 99 
+CP 3 1  95  9 
+CP 9 ERR 14 IN 50  9 
+CP 9 ERR 14 IN 50  9 
+CP 3 2  95  9 
+CP 9 ERR 14 IN 50  9 
+CP 9 ERR 14 IN 50  9 
+CP 3 3  95  9 
+CP 9 ERR 14 IN 50  9 
+CP 9 ERR 14 IN 50  9 
+CP 3 4  95  9 
+CP 9 ERR 14 IN 50  9 
+CP 9 ERR 14 IN 50  9 
+CP 3 5  95  9 
+CP 9 ERR 14 IN 60  9 
+CP 4 96  9 
+CP 9 ERR 14 IN 70  9 
+CP 5 96  9 
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=16.0
+CP 0 104 
+CP 9 ERR 14 IN 30  104 
+CP 1 0  104 
+CP 2 99 
+CP 9 ERR 14 IN 50  99 
+CP 9 ERR 5 IN 50  99 
+CP 3 1  5  99 
+CP 9 ERR 14 IN 50  99 
+CP 9 ERR 5 IN 50  99 
+CP 3 2  5  99 
+CP 9 ERR 14 IN 50  99 
+CP 9 ERR 5 IN 50  99 
+CP 3 3  5  99 
+CP 9 ERR 14 IN 50  99 
+CP 9 ERR 5 IN 50  99 
+CP 3 4  5  99 
+CP 9 ERR 14 IN 50  99 
+CP 9 ERR 5 IN 50  99 
+CP 3 5  5  99 
+CP 9 ERR 14 IN 60  99 
+CP 4 96  99 
+CP 9 ERR 14 IN 70  99 
+CP 5 0  99 

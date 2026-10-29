@@ -48,6 +48,10 @@ ROWS = {
              '30 END\n'
              + "".join(f"{100 + i} REM {'FILLER TEXT ' * 3}\n" for i in range(60))
              + '900 DATA 42,FOUND\n'),
+    # CIRCLE's arc arithmetic (circleparse_tenant, page 1, D-GCDI4): ~41 ms in DI
+    "circle": ('1 REM @ANSWERS SPHINX OF BLACK QUARTZ JUDGE MY VOW\n'
+               '10 SCREEN 2:FOR K=1 TO 30:CIRCLE (128,96),20+K,15,K/10,K/5:NEXT:SCREEN 0\n'
+               '20 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$)\n'),
     # the math tenants (math_wrap, D-GCDI2): `^` by a negative power and RND, each
     # one long sub-ROM call -- a single `^` held DI for 165 ms in L1_loan
     "math": ('1 REM @ANSWERS PACK MY BOX WITH JUGS\n'

@@ -9,6 +9,7 @@ gate.
   K-S  strheap_engine's ei (sub/strheap.asm)  -> the `scalar` row red
   K-A  aeng_copy_str's ei (sub/arrays.asm)       -> the `array` row red
   K-R  readdata_tenant's ei (sub/readdata.asm)  -> the `read` row red
+  K-C  circleparse_tenant's ei (sub/circleparse.asm) -> the `circle` row red
   K-M  math_wrap's ei (sub/mathwrap.asm)        -> the `math` row red
   K-H  htimi_guard skips again (basic/subromcall.asm) -> play-trace di_safety red
 """
@@ -22,6 +23,8 @@ KNIVES = [
      "aeng_copy_str:\n                                            ; D-GCDI", "array"),
     ("K-R", "sub/readdata.asm", "readdata_tenant:\n                ei                          ; D-GCDI3",
      "readdata_tenant:\n                                            ; D-GCDI3", "read"),
+    ("K-C", "sub/circleparse.asm", "                ei\n                call    cpt_body",
+     "                call    cpt_body", "circle"),
     ("K-M", "sub/mathwrap.asm", "math_wrap:\n                ei                          ; D-GCDI2",
      "math_wrap:\n                                            ; D-GCDI2", "math"),
 ]

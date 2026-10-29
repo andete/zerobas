@@ -35,6 +35,17 @@ P_ASPECT        equ     5
 
 ; --- circleparse_tenant: the co-routine entry (sub_p1_table index 19) --------
 circleparse_tenant:
+                ; D-GCDI4 (2026-10-29): CIRCLE's angle arithmetic (an arc's start /
+                ; end) held DI ~41 ms -- the program ladder's L3_chart line 200.
+                ; Page-1 tenant: since D-GCDI2 htimi_guard serves the frame (PLAY,
+                ; traps) with main's page 1 mapped back. No I/O here; only GFX_*
+                ; work cells, which nothing in the ISR reads. The trampoline
+                ; contract: EI after entry, DI before ret.
+                ei
+                call    cpt_body
+                di
+                ret
+cpt_body:
                 ld      a,(GFX_DRESUME)
                 or      a
                 jr      nz,cpt_resume
