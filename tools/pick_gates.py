@@ -74,7 +74,21 @@ EXCLUDED5 = ("input-devices-acceptance", "lnblank-say-acceptance",
 # suites ride along as a DISK CANARY rather than forcing the whole battery.
 GENERATED = tuple(run_gates.REGENERATED) + ("disk/basic-resident-abi.inc",)
 DISK_CANARY = ("diskbasic-acceptance", "bdos-acceptance", "fat-error-acceptance")
-MODULE_DIRS = ("probes/lib", "probes/basic", "probes/disk", "tools", "scratchpad")
+MODULE_DIRS = ("probes/lib", "probes/basic", "probes/disk", "probes/programs", "tools",
+               "scratchpad")
+# 🔴 D-PLANDATA (2026-10-29): a BASIC program a suite RUNS is an input too, and no
+# `import` names it. Two shapes, both found the day the program ladder gained two
+# programs and the plan ran ZERO emulator suites:
+#   * the ladder: run_programs.py GLOBS probes/programs/L*.bas -- a changed program
+#     there plans every suite whose OWN script is run_programs.py;
+#   * a literal path: basic_probe_catcopy.py names "scratchpad/catcopy_temp.bas" --
+#     a changed .bas named that way in a suite's closure plans that suite.
+# `.bas` only: a broader "a probe reads this file" rule would catch
+# kwsweep-rig-carry.json, which changes in nearly every commit, and drag the
+# 10-minute sweep into every plan. (`probes/programs` above: gcdi-acceptance
+# imports run_programs, and the closure could not resolve it.)
+LADDER_DIR, LADDER_RUNNER = "probes/programs/", "probes/programs/run_programs.py"
+DATA_EXT = (".bas",)
 IMPORT = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_]\w*)", re.M)
 # 🔴 D-PLANCHILD (2026-09-27): an acceptance WRAPPER can run its child probes
 # as SUBPROCESSES, by path -- `STRING = os.path.join(HERE, "basic_probe_string.py")`
@@ -183,6 +197,13 @@ def changed_handlers(path, text=None, hunks=None):
     return kws
 
 
+def _text(p):
+    try:
+        return open(os.path.join(ROOT, p), errors="replace").read()
+    except OSError:
+        return ""
+
+
 def mentions(files, word, read=None):
     if read is None:
         def read(p):
@@ -250,6 +271,7 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
     shared = [f for f in changed if f in SHARED
               or any(f.startswith(s) for s in SHARED if s.endswith("/"))]
     code = [f for f in changed if f.endswith(".py") or f.endswith(".tcl")]
+    data = [f for f in changed if f.endswith(DATA_EXT)]
     if handoff:
         reasons.append("--handoff: every hand-off runs the full battery")
     if shared:
@@ -274,7 +296,7 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
     if reasons:
         return "FULL", reasons, sorted(suites), sorted(
             EXCLUDED5 if (rom or shared) else ())
-    if not rom and not code and not disk_moved:
+    if not rom and not code and not data and not disk_moved:
         return "STATIC", ["no ROM, probe or tool change"], [], []
     if disk_moved:
         pick |= set(DISK_CANARY)
@@ -285,6 +307,11 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
             pick.add(t)
         if kws and any(mentions(own.get(t, ()), k, read) for k in kws):
             pick.add(t)
+        for f in data:   # D-PLANDATA
+            if f.startswith(LADDER_DIR) and LADDER_RUNNER in own.get(t, ()):
+                pick.add(t)
+            elif any(f in (read(g) if read else _text(g)) for g in files):
+                pick.add(t)
     if rom:
         pick |= set(c for c in CANARY if c in suites)
         if kws:
@@ -294,6 +321,8 @@ def plan(changed, suites, handlers_of, since, handoff=False, read=None, own=None
                            "the daily FULL backs it): " + " ".join(unknown))
     if code:
         reasons.append("probe/tool change: " + " ".join(code))
+    if data:
+        reasons.append("program (data) change: " + " ".join(data))
     emu = sorted(t for t in pick if t not in EXCLUDED5)
     x5 = sorted(t for t in pick if t in EXCLUDED5)
     return "SCOPED", reasons, emu, x5
@@ -356,6 +385,23 @@ def selftest():
     arm("P7b 23.5 h since the last full green -> still SCOPED", m == "SCOPED")
     m, r, e, x = plan(["TODO.md"], files, h_width, 99.0, read=rd)
     arm("P7c a docs-only change never triggers the daily FULL by itself", m == "STATIC")
+    # D-PLANDATA: a program a suite runs is an input
+    fl = dict(files, **{"programs-acceptance": {"probes/programs/run_programs.py"},
+                        "catcopy-acceptance": {"probes/basic/basic_probe_catcopy.py",
+                                               "probes/programs/run_programs.py"}})
+    ow = dict(files, **{"programs-acceptance": {"probes/programs/run_programs.py"},
+                        "catcopy-acceptance": {"probes/basic/basic_probe_catcopy.py"}})
+    tx = dict(text, **{"probes/basic/basic_probe_catcopy.py": '"scratchpad/catcopy_temp.bas"'})
+    rdx = lambda p: tx.get(p, "")
+    m, r, e, x = plan(["probes/programs/L9_new.bas"], fl, h_width, 0, read=rdx, own=ow)
+    arm("P16 a new ladder program -> SCOPED with programs-acceptance only (the "
+        "catcopy probe IMPORTS the runner but does not run the ladder)",
+        m == "SCOPED" and e == ["programs-acceptance"])
+    m, r, e, x = plan(["scratchpad/catcopy_temp.bas"], fl, h_width, 0, read=rdx, own=ow)
+    arm("P16b a .bas a probe names by path -> that suite",
+        m == "SCOPED" and e == ["catcopy-acceptance"])
+    m, r, e, x = plan(["scratchpad/kwsweep-rig-carry.json"], fl, h_width, 0, read=rdx, own=ow)
+    arm("P16c NEGATIVE: a non-.bas data file plans nothing (STATIC)", m == "STATIC")
     m, r, e, x = plan(["basic/screen.asm"], files, h_width, None, read=rd)
     arm("P8 NEGATIVE: no full green on record -> FULL, never 'assume recent'",
         m == "FULL")
