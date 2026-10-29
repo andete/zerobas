@@ -53,6 +53,10 @@ item — do **one item per session** to keep context lean.
       ([`progladder_l1.out`](scratchpad/progladder_l1.out)). Time ratios: guess
       x1.02, loan x1.17, **dice x2.13** — 1200 `RND(1)` + array updates; a TIER 5
       reading, filed here only (speed is paused for ROM space).
+      ✅ **L4 (2026-10-29): sprite demo, SAME** — sprites, ON SPRITE (2 hits),
+      ON INTERVAL, two-voice PLAY, frame-locked; printer log identical. Its 2 gaps
+      are KNOWN (D-GCDI3). The first draft's `PLAY "...AB>C"` was ERR 5 on BOTH
+      machines (written as O5C now).
       ✅ **L3 (2026-10-29): spreadsheet + sales report, SAME** in output; the
       report's RND gaps are KNOWN (D-GCDI2). Sheet x1.36 time, report x1.44
       ([`progladder_l3.out`](scratchpad/progladder_l3.out)).
@@ -80,6 +84,22 @@ item — do **one item per session** to keep context lean.
       ⚠️ RESIDUAL, NOT MEASURED: the other DI tenants (PRINT USING, READ/DATA,
       LIST's detokeniser, PLAY parse, FILES, ...) -- the ladder's gap watch is the
       instrument.
+
+- [ ] 🔴 **`READ` AND `PLAY` HOLD THE FRAME INTERRUPT OFF FOR 35-50 MS IN THE
+      PROGRAM LADDER'S SPRITE DEMO (D-GCDI3, found 2026-10-29).**
+      🎚️ TIER 1 — the D-GCDI symptom (frames missed: keys and TIME), smaller.
+      🤖 **AUTONOMOUS** — measure each tenant, then wrap it `ei / call / di / ret`.
+      📏 [`L4_sprite.bas`](probes/programs/L4_sprite.bas): 2 gaps (max 48 ms) where
+      the VG-8020 has none; sampled with the BASIC line
+      ([`progladder_l4.out`](scratchpad/progladder_l4.out)). Line 60, a
+      `FOR`/`READ` loop building a sprite pattern: ~45 ms, PCs in page-0
+      `tok_skip` / `ds_lp` -- `READ`'s DATA scan, the readdata tenant (sub page-0
+      index 10). Line 140, `PLAY` with two voices: ~35 ms, the PLAY parse tenant
+      (page 1).
+      ⚠️ THE WALL: the wrapper costs 5 B and sub page 0 had 3 B free on
+      2026-10-29 (after D-GCDI). Carve first, or move the scan's long loop.
+      A page-1 `ei` lets htimi_guard skip PLAY for the frames inside it -- for the
+      PLAY parser that is the music it is about to queue; measure.
 
 - [ ] 🔴 **THE MATH FUNCTIONS HOLD THE FRAME INTERRUPT OFF: ONE `^` FOR 165 MS, RND
       IN 41 MS GAPS (D-GCDI2, found 2026-10-28 by the program ladder).**
@@ -7247,7 +7267,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9733 (T-6FE392)8 (T-529ABE)` from `TODO.md:15406 (T-529ABE)`: a
+      `TODO.md:9753 (T-6FE392)8 (T-529ABE)` from `TODO.md:15426 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10193,7 +10213,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15406 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15426 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

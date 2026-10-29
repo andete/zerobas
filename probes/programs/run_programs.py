@@ -184,6 +184,7 @@ KNOWN_GAPS = {
     "L1_loan": "D-GCDI2",   # one `^` holds DI for 165 ms (math_wrap, TODO.md)
     "L1_dice": "D-GCDI2",   # RND's loop: 41 ms gaps
     "L3_report": "D-GCDI2", # 180 RND calls: 68 gaps <= 40 ms (also a few in VAL's tok_skip)
+    "L4_sprite": "D-GCDI3", # READ's DATA scan (line 60) and PLAY's parser (line 140)
 }
 
 
