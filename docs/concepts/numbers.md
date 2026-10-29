@@ -171,9 +171,16 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **Division by a long divisor: the last digit.** zerobas rounds correctly;
-  the VG-8020 is a few units low in the 14th digit once the divisor has more
-  than 10 significant digits (`2/1.4142135623731`: …731 here, …729 there).
+- **Division: the last digit.** zerobas rounds correctly; the VG-8020 is
+  often a unit or more low in the 14th digit — by a few units once the divisor
+  has more than 10 significant digits (`2/1.4142135623731`: …731 here, …729
+  there), but short divisors are affected too (`1/1.00625`: …578 here, …577
+  there; the true value is …57763, measured 2026-10-29). Both machines compute
+  a negative power as `1/(x^n)`, so negative powers inherit it: `.5^-23` is
+  8388608.0000001 here and 8388608 there, because the 14-digit `.5^23` both
+  machines compute has the reciprocal 8388608.000000088
+  ([`powneg_measure.out`](../../scratchpad/powneg_measure.out): of 191 differing
+  powers, zerobas is the closer in 182).
   Copying it was tried on 2026-07-13 and stopped at about 80 %: the deciding
   digit lies below the 14 the machine prints. Joost decided the same day to
   keep correct rounding and record the difference

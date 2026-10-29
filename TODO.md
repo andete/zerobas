@@ -100,7 +100,7 @@ item — do **one item per session** to keep context lean.
 
       🐛 **Found by the (reverted) `math` row: D-POWNEG** (below).
 
-- [ ] 🔴 **`1.00625^-40` IS .77940693361363 ON THE VG-8020 AND .77940693361365 HERE
+- [x] 🔴 **`1.00625^-40` IS .77940693361363 ON THE VG-8020 AND .77940693361365 HERE
       (D-POWNEG, found 2026-10-28 by a gcdi-acceptance row since dropped with D-GCDI2).**
       🎚️ TIER 1 — a printed number's last digit differs in a plain calculation
       (compound interest); the ladder's loan program agreed only because it
@@ -108,6 +108,20 @@ item — do **one item per session** to keep context lean.
       🤖 **AUTONOMOUS** — measure first: which exponents (negative integers only?
       every non-small integer? fractional?), and whether it is the integer-power
       path or EXP / LOG. Then match the reference's digits.
+      ✅ **MEASURED 2026-10-29 — INSIDE TWO RULED CLASSES, NOTHING TO CHANGE IN
+      THE ROM** ([`powneg_measure.out`](scratchpad/powneg_measure.out)). 688 powers:
+      positive integer exponents 0/328 differ; negative integer 156/320;
+      fractional 30/32. BOTH machines compute `x^-n` as `1/(x^n)` (320/320 each),
+      so every negative-power difference is the reference's DIVISION landing low
+      in the last digit -- Joost's 2026-07-13 ruling keeps correct rounding
+      (docs/concepts/numbers.md). The fractional ones are the EXP / LOG class,
+      also ruled (docs/keywords/EXP.md). Against exact arithmetic zerobas is the
+      closer in 182 of 191; the 8 the other way are truncation luck on an
+      already-rounded operand, the visible one `.5^-23`: 8388608 there,
+      8388608.0000001 here (true reciprocal of the 14-digit `.5^23`:
+      8388608.000000088). 🔴 THE DOC WAS WRONG: numbers.md said the division
+      difference needs a divisor of more than 10 digits; `1/1.00625` (6 digits)
+      differs too. Corrected.
 
 - [ ] 🔴 **STUDY: DEFERRED ERRORS VS RAISING AT THE POINT OF DETECTION — HOW MUCH OF
       THE PER-COMMAND "WHICH ERROR WINS" CODE EXISTS ONLY BECAUSE ZEROBAS DEFERS?
@@ -7226,7 +7240,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9712 (T-6FE392)8 (T-529ABE)` from `TODO.md:15385 (T-529ABE)`: a
+      `TODO.md:9726 (T-6FE392)8 (T-529ABE)` from `TODO.md:15399 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10172,7 +10186,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15385 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15399 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
