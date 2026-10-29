@@ -172,7 +172,7 @@ item — do **one item per session** to keep context lean.
       Gate puneglead-acceptance (11 rows), knives K-Z / K-S / K-L / K-D
       ([`puneglead_knife.out`](scratchpad/puneglead_knife.out)).
 
-- [ ] 🔬 **`COS(4*ATN(1#)/2)` IS `-6.2831853071796E-14` ON THE VG-8020 AND
+- [x] 🔬 **`COS(4*ATN(1#)/2)` IS `-6.2831853071796E-14` ON THE VG-8020 AND
       `-3.3808E-15` HERE (D-COSHALFPI, found 2026-10-29 measuring D-PUTINY).**
       🎚️ TIER 1 — a printed number differs in a plain calculation (as D-POWNEG).
       Both are rounding noise around 0, but they are not the same noise, and
@@ -180,6 +180,19 @@ item — do **one item per session** to keep context lean.
       ([`putiny_measure.out`](scratchpad/putiny_measure.out) row G).
       🤖 **AUTONOMOUS** — measure COS / SIN / TAN near their zeros, single and
       double, before touching the math pack.
+      ✅ **MEASURED 2026-10-29 — INSIDE THE RULED CLASS, NOTHING TO CHANGE IN THE
+      ROM** ([`coshalfpi_measure.out`](scratchpad/coshalfpi_measure.out)). Near
+      their zeros the VG-8020's SIN / COS / TAN come in whole steps of
+      2π·1E-14 (COS(π/2) -1 step, SIN(π) -2, COS(1.5707963267948) +1, also in
+      single precision): it reduces the angle as x·(1/2π) in 14 digits and
+      keeps the fraction, and its cosine is a quarter turn added in those units
+      (a Python model of that reduction matches SIN(100), SIN(π/6), COS(π) to
+      1E-12 -- scratchpad session model, not kept). zerobas's `-3.3808E-15` IS
+      the true value to its digits (cos(1.5707963267949) = -3.38076868E-15);
+      it prints 5 digits because the angle itself carries no more. Joost's
+      2026-07-13 ruling (COS.md / SIN.md, Differences 1) keeps the accurate
+      answer. 🔴 MY FILING'S "zerobas's prints only 5 significant digits of a
+      double" read as a defect; it is the information the 14-digit angle holds.
 
 - [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
       TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
@@ -7567,7 +7580,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10058 (T-6FE392)8 (T-529ABE)` from `TODO.md:15740 (T-529ABE)`: a
+      `TODO.md:10071 (T-6FE392)8 (T-529ABE)` from `TODO.md:15753 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10527,7 +10540,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15740 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15753 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

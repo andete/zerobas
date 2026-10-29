@@ -89,6 +89,13 @@ scratch cells of its own for the calculation.
 
 ## What we found, and how
 
+- **Near π/2 the two machines give different small numbers, as ruled**
+  (measured 2026-10-29, D-COSHALFPI). `COS(4*ATN(1#)/2)` is
+  `-6.2831853071796E-14` on the VG-8020 and `-3.3808E-15` here. The angle in
+  14 digits is 3.4E-15 past π/2, so the true cosine is -3.38076868E-15; the
+  VG-8020's answers near the zeros of `SIN`, `COS` and `TAN` come in whole
+  steps of 2π·1E-14 instead ([readings](../../scratchpad/coshalfpi_measure.out)).
+  Found by a table-printing program written for the program ladder.
 - **`COS` arrived with `SIN` and `TAN` on 2026-07-14**, built on one shared
   calculation; a review the same day added the rows that pin the huge-angle
   answers ([spec-basic-mathpack-slice2.md](../spec-basic-mathpack-slice2.md)
