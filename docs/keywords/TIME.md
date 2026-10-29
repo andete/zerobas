@@ -86,10 +86,7 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-- **The math functions still hold the interrupt off** (open, D-GCDI2). One
-  `^` can stop the counter for up to 165 ms, and a loop of `RND` calls loses
-  frames, so `TIME` falls a little behind during heavy math. The VG-8020 counts
-  every frame.
+None known.
 
 The one rung not yet proven is **RAM usage**: reading or setting `TIME` uses
 the same amount of free memory on both machines, but the work-area cells each
@@ -117,6 +114,12 @@ side writes along the way differ.
   through a loop of `STRING$` assignments `TIME` advanced 72% as fast as the
   clock, where the VG-8020 counted every frame. See
   [Strings and string space](../concepts/strings-and-string-space.md).
+- **…and during math** (fixed 2026-10-29, D-GCDI2). One `^` held the
+  interrupt off for 165 ms, and a loop of `RND` calls lost frames. Letting the
+  math run with interrupts on first stopped `PLAY` during a `SIN` loop, because
+  the interrupt then skipped the music while the math code was mapped in; the
+  interrupt now maps the main ROM back for the music and the traps, and gives
+  the math its page back.
 
 ## Where it lives
 
@@ -136,4 +139,4 @@ tail with `ERL`; the assignment is `ex_time_assign` in
 - `make kwsweep` — a counter-advances row, a write-and-read-back row with two
   different values, and the error rows for {6, 13, 24}.
 - `make kwram` — the RAM-usage comparison.
-- `make gcdi-acceptance` — `TIME` keeps counting through string work.
+- `make gcdi-acceptance` — `TIME` keeps counting through string work and math.

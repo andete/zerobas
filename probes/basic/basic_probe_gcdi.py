@@ -7,7 +7,7 @@ Found by the program ladder (probes/programs/, L2_addr): zerobas ran its string
 garbage collector -- reached from the string-heap tenant AND from the arrays
 tenant's string-element store -- with interrupts disabled, so frame interrupts
 were missed. The ladder's gap watch then found the math tenants (`^`, RND, ...)
-doing the same; that half is NOT fixed (D-GCDI2) -- see sub/mathwrap.asm. TIME ran slow, and a key typed meanwhile was lost (a RETURN
+doing the same (D-GCDI2, fixed 2026-10-29 with htimi_guard serving the frame). TIME ran slow, and a key typed meanwhile was lost (a RETURN
 vanished, two answers ran together). The VG-8020 kept every frame.
 
 Each row runs a string-churning program under a JIFFY write watchpoint and
@@ -40,8 +40,11 @@ ROWS = {
               '10 DIM N$(9):FOR I=1 TO 9:N$(I)=STRING$(19,64+I):NEXT\n'
               '20 FOR R=1 TO 40:FOR I=1 TO 8:N$(I)=N$(I+1):NEXT:N$(9)=N$(1):NEXT\n'
               '30 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$);FRE("")\n'),
-    # NO math row: math_wrap still holds DI (D-GCDI2, TODO.md) -- an `ei` there
-    # starved PLAY (play-trace-acceptance di_safety) and was reverted.
+    # the math tenants (math_wrap, D-GCDI2): `^` by a negative power and RND, each
+    # one long sub-ROM call -- a single `^` held DI for 165 ms in L1_loan
+    "math": ('1 REM @ANSWERS PACK MY BOX WITH JUGS\n'
+             '10 FOR K=1 TO 40:X=1.00625^-K:Y=RND(1)*K:NEXT\n'
+             '20 LINE INPUT A$:LPRINT "CP 1 [";A$;"]";LEN(A$)\n'),
 }
 
 

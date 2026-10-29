@@ -139,15 +139,20 @@ def answers(text):
 # openMSX is held 1/15 s, so a gap past ~66 ms can lose it (D-GCDI).
 GAP_TCL = r"""
 set ::__jt 0
+set ::__jrun 0
 set ::__gaps {}
 proc __jw {} {
-  if {$::__ph != 2} return
+  # both ends of an interval must be inside the run (CURLIN out of direct mode),
+  # decided HERE per write: the polled phase lags by up to 0.1 s, and a gap that
+  # straddled that switch went uncounted (L2_adven's 90 ms READ scan, D-GCDI3)
   set t [machine_info time]
-  if {$::__jt > 0} {
+  set run [expr {$::__ph >= 1 && [__rd16 0xF41C] != 0xFFFF}]
+  if {$run && $::__jrun} {
     set g [expr {$t - $::__jt}]
     if {$g > 0.03} { lappend ::__gaps [format %.3f $g] }
   }
   set ::__jt $t
+  set ::__jrun $run
 }
 debug set_watchpoint write_mem 0xFC9E {} __jw
 """
@@ -220,13 +225,12 @@ def run(machine, name, text, gaps=False, typing="inject"):
 
 # Programs whose zerobas run is KNOWN to have more frame-interrupt gaps than the
 # reference, by a filed item: the gap rule reports them KNOWN instead of failing,
-# and fails if they ever come back clean (so the entry cannot outlive its fix).
+# and fails once they come back clean on EVERY target (so the entry cannot outlive
+# its fix; one target can be clean while another is not).
 KNOWN_GAPS = {
-    "L1_loan": "D-GCDI2",   # one `^` holds DI for 165 ms (math_wrap, TODO.md)
-    "L1_dice": "D-GCDI2",   # RND's loop: 41 ms gaps
-    "L3_report": "D-GCDI2", # 180 RND calls: 68 gaps <= 40 ms (also a few in VAL's tok_skip)
+    "L2_adven": "D-GCDI3",  # READ's DATA scan: ~90 ms in line 40
+    "L3_report": "D-GCDI3", # VAL's tok_skip: one ~31 ms gap on the DISK target
     "L4_sprite": "D-GCDI3", # READ's DATA scan (line 60) and PLAY's parser (line 140)
-    "L5_stock": "D-DISKDI", # FDC transfer waits under DI: 43 gaps <= 404 ms vs 34 <= 223 ms
 }
 
 
@@ -262,6 +266,7 @@ def main():
         name = os.path.basename(path)[:-4]
         text = open(path).read()
         ref_m, zbs = (DISK_REF, DISK_ZB) if needs_disk(text) else (REF, ZB)
+        any_more = False
         ref = run(ref_m, name, text, gaps)
         print(f"{name}")
         print(f"  {ref_m:30} {ref[0]}  lpt {len(ref[1].splitlines())} lines")
@@ -274,9 +279,9 @@ def main():
             if gaps:   # no more frame-interrupt gaps than the reference (D-GCDI)
                 more = _gaps(zb[0]) > _gaps(ref[0])
                 if name in KNOWN_GAPS:
-                    ok = ok and more   # still known; clean means: drop the entry
+                    any_more = any_more or more
                     note = f"  (gaps KNOWN: {KNOWN_GAPS[name]})" if more else \
-                        f"  (gaps now clean: remove KNOWN_GAPS[{name!r}])"
+                        "  (gaps clean on this target)"
                 else:
                     ok = ok and not more
             bad += not ok
@@ -293,6 +298,9 @@ def main():
             if not ok:
                 print("    ref screen:  " + " | ".join(ref[2][-6:]))
                 print("    zb screen:   " + " | ".join(zb[2][-6:]))
+        if gaps and name in KNOWN_GAPS and not any_more:
+            bad += 1   # a KNOWN entry must not outlive its fix
+            print(f"  gaps now clean on every target: remove KNOWN_GAPS[{name!r}]")
     print(f"\n{'PASS' if not bad else 'FAIL'}: {len(progs)} program(s), {bad} divergent run(s)")
     return 1 if bad else 0
 

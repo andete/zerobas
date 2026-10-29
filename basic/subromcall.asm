@@ -253,8 +253,9 @@ sc_call:
 ; tenant, and the $0038 sub-ROM trampoline has mapped main page 0 back before
 ; its `call $0038` during a page-1... page-0 tenant). It reads the page-1
 ; primary-slot field and only falls through to play_service when main-ROM is
-; mapped there; otherwise it skips PLAY this frame (an inaudible <=1-frame drain
-; deferral during the rare tenant window). Register-transparent (only AF), DI.
+; mapped there; otherwise (D-GCDI2, 2026-10-29) it maps main ROM's page 1 in
+; for the call and the tenant's page 1 back after -- it used to SKIP that frame.
+; Register-transparent (only AF), DI.
 ;
 ; MAIN-ROM = PRIMARY SLOT 0 (page-1 field bits 3-2 == 00) is a standing merged-
 ; machine invariant (C-BIOS boots our 32 KB ROM from slot 0; same assumption
@@ -283,8 +284,22 @@ htimi_guard:
                                             ; (htimi_service is basic/traps.asm; before it
                                             ; was wired this jumped straight to play_service.)
 htg_skip:
+                ; D-GCDI2 (2026-10-29): SERVE the frame instead of skipping it. This
+                ; code is page 0, so it can map main ROM's page 1 back (primary
+                ; slot 0, the invariant above) without paging itself out, run the
+                ; traps poll + PLAY, and give page 1 back to the tenant. Skipping
+                ; was harmless only while page-1 tenants ran DI; math_wrap now runs
+                ; EI (a long `^` held DI for 165 ms, losing frames and keys), and a
+                ; skip on every frame inside it starved PLAY in a tight SIN loop.
+                in      a,(PSLTREG)
+                push    af                  ; the tenant's slot layout
+                and     %11110011           ; page 1 -> primary slot 0: main ROM
+                out     (PSLTREG),a
+                call    htimi_service       ; traps poll, then PLAY; runs DI (ISR)
                 pop     af
-                ret                         ; skip PLAY (+ trap poll) this frame; -> ISR
+                out     (PSLTREG),a         ; page 1 back to the tenant
+                pop     af
+                ret                         ; -> ISR
 
 ; ===========================================================================
 ; Interrupt trampoline — install + template (docs/spec-basic-subrom-trampoline.md)

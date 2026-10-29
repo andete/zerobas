@@ -8,6 +8,8 @@ gate.
 
   K-S  strheap_engine's ei (sub/strheap.asm)  -> the `scalar` row red
   K-A  aeng_copy_str's ei (sub/arrays.asm)       -> the `array` row red
+  K-M  math_wrap's ei (sub/mathwrap.asm)        -> the `math` row red
+  K-H  htimi_guard skips again (basic/subromcall.asm) -> play-trace di_safety red
 """
 import hashlib, os, subprocess, sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,7 +19,14 @@ KNIVES = [
      "                call    she_dispatch", "scalar"),
     ("K-A", "sub/arrays.asm", "aeng_copy_str:\n                ei                          ; D-GCDI",
      "aeng_copy_str:\n                                            ; D-GCDI", "array"),
+    ("K-M", "sub/mathwrap.asm", "math_wrap:\n                ei                          ; D-GCDI2",
+     "math_wrap:\n                                            ; D-GCDI2", "math"),
 ]
+# K-H: htimi_guard back to SKIPPING the frame while a page-1 tenant owns page 1.
+# Its witness is play-trace-acceptance (di_safety: PLAY starves in a SIN loop).
+KH = ("basic/subromcall.asm",
+      "htg_skip:\n                ; D-GCDI2 (2026-10-29): SERVE the frame",
+      "htg_skip:\n                pop     af\n                ret\n                ; D-GCDI2 (2026-10-29): SERVE the frame")
 
 
 def hashes():
@@ -55,6 +64,36 @@ for tag, path, old, new, row in KNIVES:
     for ln in red + other:
         print("   " + ln)
 build()
+# K-H, against the PLAY trace gate; the main ROM is what moves
+def mhash():   # every built image: whichever one carries the low region moves
+    h = hashlib.sha256()
+    for f in sorted(os.listdir("build")):
+        if f.endswith(".rom"):
+            h.update(open(os.path.join("build", f), "rb").read())
+    return h.hexdigest()[:8]
+mbase = mhash()
+path, old, new = KH
+src = open(path).read()
+if src.count(old) != 1:
+    sys.exit("K-H: anchor not found exactly once")
+open(path, "w").write(src.replace(old, new))
+try:
+    build()
+    mcut = mhash()
+    if mcut == mbase:   # the build did not happen: an inert knife must not pass
+        open(path, "w").write(src)
+        sys.exit(f"K-H: main ROM did not move ({mcut}) -- refusing an inert knife")
+    r = subprocess.run([sys.executable, "-u", "probes/basic/basic_probe_playtrace.py"],
+                       capture_output=True, text=True)
+finally:
+    open(path, "w").write(src)
+red = [ln for ln in r.stdout.splitlines() if "FAIL" in ln and "di_safety" in ln]
+print(f"K-H main {mcut} (CHANGED)  rc={r.returncode}  di_safety red: {len(red)}")
+for ln in red:
+    print("   " + ln)
+build()
+if mhash() != mbase:
+    sys.exit("restore did not reproduce the clean main ROM")
 after = hashes()
 print(f"restored sub.rom {after} {'== clean' if after == base else '!= CLEAN'}")
 if after != base:

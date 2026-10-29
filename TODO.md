@@ -97,7 +97,7 @@ item — do **one item per session** to keep context lean.
       LIST's detokeniser, PLAY parse, FILES, ...) -- the ladder's gap watch is the
       instrument.
 
-- [ ] 🔴 **DISK I/O HOLDS THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: 43 GAPS UP
+- [x] 🔴 **DISK I/O HOLDS THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: 43 GAPS UP
       TO 404 MS AGAINST 34 UP TO 223 MS (D-DISKDI, found 2026-10-29).**
       🎚️ TIER 5 — timing parity: both machines miss frames during disk transfers
       (TIME lags, a key pressed meanwhile can be lost), zerobas more and longer.
@@ -110,6 +110,13 @@ item — do **one item per session** to keep context lean.
       RSET / PUT in place). Candidates: a whole multi-sector transfer under one DI
       where the reference re-enables between sectors, or the seek / settle wait
       under DI. Black-box only on the reference side (its gaps, never its code).
+      ✅ **GONE AFTER D-GCDI2 (2026-10-29), MECHANISM NOT ESTABLISHED.** With
+      `htimi_guard` serving the frame inside page-1 code, L5_stock measures 18
+      gaps up to 136 ms against the CF-3300's 34 up to 223 ms, so it left
+      KNOWN_GAPS and the ladder now holds it to the reference. Why the guard
+      change shortened the disk ROM's waits was not measured; the plausible
+      candidate is a disk-side H.TIMI duty (a timeout or motor counter) that the
+      old skip starved -- unverified, so not claimed.
 
 - [ ] 🔴 **`READ` AND `PLAY` HOLD THE FRAME INTERRUPT OFF FOR 35-50 MS IN THE
       PROGRAM LADDER'S SPRITE DEMO (D-GCDI3, found 2026-10-29).**
@@ -122,12 +129,16 @@ item — do **one item per session** to keep context lean.
       `tok_skip` / `ds_lp` -- `READ`'s DATA scan, the readdata tenant (sub page-0
       index 10). Line 140, `PLAY` with two voices: ~35 ms, the PLAY parse tenant
       (page 1).
+      📏 Also (2026-10-29): L2_adven line 40 (`READ` over 20 DATA items), one ~90 ms
+      stretch in `ds_lp` / `tok_skip`, interrupts off throughout -- on HEAD too
+      (see D-GCDI2's instrument note); L3_report, 1-2 gaps up to 65 ms. Both are
+      in KNOWN_GAPS under this item.
       ⚠️ THE WALL: the wrapper costs 5 B and sub page 0 had 3 B free on
       2026-10-29 (after D-GCDI). Carve first, or move the scan's long loop.
       A page-1 `ei` lets htimi_guard skip PLAY for the frames inside it -- for the
       PLAY parser that is the music it is about to queue; measure.
 
-- [ ] 🔴 **THE MATH FUNCTIONS HOLD THE FRAME INTERRUPT OFF: ONE `^` FOR 165 MS, RND
+- [x] 🔴 **THE MATH FUNCTIONS HOLD THE FRAME INTERRUPT OFF: ONE `^` FOR 165 MS, RND
       IN 41 MS GAPS (D-GCDI2, found 2026-10-28 by the program ladder).**
       🎚️ TIER 1 — the same symptom as D-GCDI: keys typed during heavy math can be
       lost and `TIME` falls behind (L1_loan, L1_dice; KNOWN_GAPS in
@@ -146,6 +157,23 @@ item — do **one item per session** to keep context lean.
       comment says they rely on the skip ("htimi_guard makes that safe while page
       1 is ours", sub/bload.asm). Measure what PLAY and the traps do during each
       before choosing.
+      ✅ **FIXED 2026-10-29.** `htimi_guard` (basic/subromcall.asm) no longer skips
+      a frame that lands inside a page-1 tenant: it maps main's page 1 in (primary
+      slot 0, the invariant it already relied on), calls `htimi_service`, and puts
+      the tenant's page 1 back -- 13 B of the low region (32 -> 19 B free).
+      `math_wrap` is `ei / call / di / ret`. L1_loan / L1_dice now 0 gaps;
+      play-trace-acceptance green (PLAY advances in the SIN loop); math row back in
+      gcdi-acceptance; knives K-M (math row red) and K-H (guard skipping again:
+      play-trace di_safety red) in [`gcdi_knife.out`](scratchpad/gcdi_knife.out).
+      The 13 cas suites and the 42 tapes are re-run (tape engines run EI between
+      bytes; PLAY can now run there).
+      🔴 **AN INSTRUMENT HOLE FOUND ON THE WAY:** the gap watch counted only while
+      the polled phase said "running", which lags up to 0.1 s -- L2_adven's 90 ms
+      `READ` scan straddled it on HEAD and went uncounted, then counted on the
+      new build when timing shifted 20 ms, and read as a regression until every
+      JIFFY write was logged on both builds. The watch now decides per write
+      (both ends of an interval inside the run). KNOWN entries are judged per
+      program (clean on EVERY target = drop the entry).
       📏 2026-10-29, L3_report (180 `RND` calls): 68 gaps up to 40 ms; sampled,
       almost all in RND's loop (`rabl_*`, `rdm_lp`), a few in page-0 `tok_skip`
       (VAL's number parser) and `scv_ceil_fits` -- two more DI tenants for the
@@ -7293,7 +7321,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9784 (T-6FE392)8 (T-529ABE)` from `TODO.md:15457 (T-529ABE)`: a
+      `TODO.md:9812 (T-6FE392)8 (T-529ABE)` from `TODO.md:15485 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10244,7 +10272,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15457 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15485 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
