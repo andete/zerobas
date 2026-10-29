@@ -1,0 +1,10 @@
+L3_screen1
+  Philips_VG_8020                ENDED t=32.6 gaps=0 max=0  lpt 3 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=40.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=40.4 gaps=0 max=0  SAME
+L4_errors
+  Philips_VG_8020                ENDED t=23.7 gaps=0 max=0  lpt 20 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=25.5 gaps=1 max=0.03  SAME  (gaps KNOWN: D-LATEINT)
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=25.5 gaps=0 max=0  SAME  (gaps clean on this target)
+
+PASS: 2 program(s), 0 divergent run(s)

@@ -229,7 +229,9 @@ def run(machine, name, text, gaps=False, typing="inject"):
 # and fails once they come back clean on EVERY target (so the entry cannot outlive
 # its fix; one target can be clean while another is not).
 KNOWN_GAPS = {
-    # empty since D-GCDI5 (2026-10-29): every ladder program keeps the frame interrupt
+    # D-GCDI5 (2026-10-29) emptied this; then:
+    "L4_errors": "D-LATEINT",  # NODISK only: two ~10 ms LATE interrupts (26.5 / 30.3 ms)
+                               # in line 1000's LPRINT, interrupts ENABLED -- not lost
 }
 
 

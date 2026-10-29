@@ -2520,6 +2520,10 @@ gcdi-acceptance: repack-machine
 catcopy-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_catcopy.py
 
+# --- nodev-acceptance: no disk, a name with a ':' is Bad file name (D-NODEV) --------
+nodev-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_nodev.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

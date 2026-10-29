@@ -26,6 +26,25 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
+- [ ] 🔴 **ON THE DISKLESS TARGET, `SAVE "LPT:"` / `"CRT:"` / `"GRP:"` ARE NOT THE
+      VG-8020'S (D-SAVEDEV, found 2026-10-29 measuring D-NODEV).**
+      🎚️ TIER 3 — a device name in SAVE, the VG-8020 with no disk: `SAVE "LPT:"`
+      LISTS the program to the printer; `SAVE "GRP:"` is ERR 5; `SAVE "CRT:"` showed
+      nothing visible. zerobas NODISK took all three as tape names (the program
+      stopped silently, a tape save); since D-NODEV they are ERR 56. Both wrong.
+      🤖 **AUTONOMOUS** — measure each (screen, printer, what follows) on the
+      VG-8020, then implement; the CF-3300 for the DISK target.
+
+- [ ] 🔬 **TWO LATE (NOT LOST) FRAME INTERRUPTS IN AN LPRINT, DISKLESS TARGET ONLY
+      (D-LATEINT, found 2026-10-29 by the program ladder's L4_errors).**
+      🎚️ TIER 5 — timing: no frame is lost (26.5 and 30.3 ms between JIFFY writes,
+      one interrupt ~10 ms late), but the ladder's gap rule counts > 30 ms.
+      🤖 **AUTONOMOUS** — L4_errors line 1000 (the ON ERROR handler's
+      `LPRINT "ERR";ERR;"IN";ERL;"ST";ST`); the VG-8020 and the DISK target: no
+      interval over 25.5 ms. Sampled at 1 ms: interrupts ENABLED (iff=7) almost
+      throughout, PCs in LPRINT's expression / output path -- so not a DI window
+      in BASIC; suspect the interrupt path itself on NODISK. In KNOWN_GAPS.
+
 - [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
       TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
       🎚️ TIER 1 — it finds what a real user hits first, so its findings are
@@ -65,6 +84,24 @@ item — do **one item per session** to keep context lean.
       programs -> programs-acceptance, a runner edit -> programs + gcdi + catcopy,
       catcopy's data -> catcopy. (Those two programs were run by hand before that
       commit: [`progladder_l7.out`](scratchpad/progladder_l7.out).)
+      ✅ **L3_screen1 and L4_errors (2026-10-29).** SCREEN 1 with VPOKEd characters
+      and colours, BASE / VDP / VPEEK checksums: SAME. The error-handling program
+      (RESUME / RESUME NEXT / RESUME line, ERROR n, errors inside GOSUB, ON..GOSUB
+      out of range, a retry count): SAME on the DISK target and, after D-NODEV, on
+      NODISK except D-LATEINT's two late interrupts. It FOUND D-NODEV: `OPEN "NUL:"`
+      on the diskless target went to the tape. (My first L3_screen1 had a MOD
+      overflow, ERR 6 on both machines.)
+      🔧 **D-NODEV, FIXED 2026-10-29 (TIER 3).** With no disk, any name with a `:`
+      that is not a known device is ERR 56 on the VG-8020 (`"NUL:"`, `"AB:"`,
+      `":X"`, `"FOO:BAR"`, `"ABCDEFGHI:X"`); zerobas tested only a drive's second
+      character, so those went to the cassette -- FOR OUTPUT opened it, FOR INPUT
+      waited ~4.5 s with interrupts off and gave ERR 19
+      ([`nodev_measure.out`](scratchpad/nodev_measure.out)). `nodisk_dev` now scans
+      the whole staged name; the scan sits at the low region's END (`ndd_scan`,
+      basic/main.asm), past the $3297 pin whose pad was 4 B -- the low region is
+      now 1 B free plus that pad's 10 B (reusable, Joost 2026-10-20). Gate
+      nodev-acceptance (the diskless target only: the DISK target's reference is
+      the CF-3300), knife K-N ([`nodev_knife.out`](scratchpad/nodev_knife.out)).
       ✅ **More rungs (2026-10-29): L3_chart, L2_calendar, L3_editor, L2_hexmon, all
       SAME.** The chart (SCREEN 2, 24 POINT checksums) found D-GCDI4 (CIRCLE's arc
       maths under DI); the calendar found D-CATCOPY (INSTR copied its operands). The
@@ -7385,7 +7422,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9876 (T-6FE392)8 (T-529ABE)` from `TODO.md:15558 (T-529ABE)`: a
+      `TODO.md:9913 (T-6FE392)8 (T-529ABE)` from `TODO.md:15595 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10345,7 +10382,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15558 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15595 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

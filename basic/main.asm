@@ -315,6 +315,33 @@ seu_lp:
                 ret     c                   ; a string operand -> HL is already past it
                 ex      de,hl               ; declined: the cursor goes back ON it
                 ret                         ; CF clear, exactly as str_eval_one left it
+; nodisk_dev's tail (basic/str-engine.asm), sited here, after every low-region
+; pin: that routine sits in front of the $3297 pin, whose pad was 4 B, and the
+; scan is 9 B longer than the test it replaces. A hole in front of a pin is free
+; space (Joost 2026-10-20); code grown past one is a broken image.
+                ; D-NODEV (2026-10-29): a `:` ANYWHERE in the name is 56 -- not
+                ; just a drive's second-character one. Measured on the VG-8020 with
+                ; no disk: `OPEN "NUL:"`, `"AB:"`, `":X"`, `"FOO:BAR"`,
+                ; `"ABCDEFGHI:X"` FOR OUTPUT are all 56 (a known device -- CAS:, and
+                ; for OPEN LPT: / CRT: / GRP: -- was matched before this); only a
+                ; colon-free name is the tape. Here those went to the cassette:
+                ; FOR OUTPUT opened it, FOR INPUT waited ~4.5 s for a header, then
+                ; ERR 19 (scratchpad/nodev_measure.out).
+ndd_scan:
+                push    hl
+ndd_lp:
+                ld      a,(hl)
+                inc     hl
+                cp      ':'
+                jp      z,pdf_badname       ; raises: the pushed HL is discarded with it
+                cp      '"'                 ; the staged copy's terminator
+                jr      z,ndd_tape
+                or      a
+                jr      nz,ndd_lp
+ndd_tape:
+                pop     hl
+                cp      a                   ; Z: the cassette
+                ret
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

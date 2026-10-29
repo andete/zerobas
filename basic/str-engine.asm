@@ -261,17 +261,12 @@ alr_no:
 ;   in : HL = the staged name, past any device prefix the caller matched
 ;   out: NZ -- a disk is present: the caller's disk arm (HL unchanged);
 ;        Z  -- no disk, a device-less name: the caller's CASSETTE arm;
-;        a `d:` name with no disk RAISES 56 and does not return.
+;        a name with a `:` anywhere (no disk) RAISES 56 and does not return.
 nodisk_dev:
                 call    diskslot_test
                 ret     nz
-                inc     hl
-                ld      a,(hl)
-                dec     hl
-                cp      ':'
-                jr      z,pdf_badname
-                cp      a                   ; Z: the cassette
-                ret
+                jp      ndd_scan            ; D-NODEV: the scan is past the $3297 pin
+                                            ; (basic/main.asm, low region's end)
 ; pdf_baddrive -- a drive past B: -> ERR 62 `Bad drive name` (D-DRVNAME; the full
 ; story is at its old site in basic/files.asm). Moved here 2026-09-28 (D-NEWARG).
 pdf_baddrive:

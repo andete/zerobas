@@ -178,6 +178,14 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **Without a disk, `OPEN "NUL:"` went to the cassette** (fixed 2026-10-29,
+  D-NODEV). The VG-8020 with no disk answers `Bad file name` for any name with a
+  `:` in it that is not a device it knows (`"NUL:"`, `"AB:"`, `":X"`,
+  `"FOO:BAR"`); zerobas only caught a drive letter (`"A:X"`), so the others were
+  taken as tape file names — `FOR OUTPUT` opened the cassette, and `FOR INPUT`
+  waited about 4.5 seconds for a tape before reporting a device error. Found by
+  an error-handling program written for the project's program ladder
+  ([`nodev_measure.out`](../../scratchpad/nodev_measure.out)).
 - **An open file was matched in any case** (fixed 2026-10-28; Joost ruled on
   2026-10-27 for an exact match that costs no more memory than the reference).
   The CF-3300 checks whether a file is open by the name as it was typed, upper
@@ -279,6 +287,8 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Tests that cover it
 
+- `make nodev-acceptance` — a device-like name is `Bad file name` with no disk
+  (D-NODEV).
 - `make kwsweep` — each of the four modes, a second channel with
   `MAXFILES=2`, `MAXFILES` clearing the variables, numeric and string
   `INPUT #`, the end-of-file rules, and every error row of `OPEN`.
