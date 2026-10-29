@@ -58,6 +58,30 @@ item — do **one item per session** to keep context lean.
       throughout, PCs in LPRINT's expression / output path -- so not a DI window
       in BASIC; suspect the interrupt path itself on NODISK. In KNOWN_GAPS.
 
+- [ ] 🔴 **`PRINT USING "**$##.##"` PUTS THE `$` AT THE FIELD'S LEFT EDGE; THE VG-8020
+      FLOATS IT AGAINST THE DIGITS (D-PUSTARDOL, found 2026-10-29 by the program
+      ladder's ledger).**
+      🎚️ TIER 1 — a common money format prints `$***5.00` where the reference prints
+      `***$5.00`; twelve shapes measured, ALL differ the same way
+      ([`pustardol_measure.out`](scratchpad/pustardol_measure.out)): the `$` sits
+      right before the digits AFTER any sign (`**-$5.00`, `+**$` -> `***+$5.00`),
+      `**$.##` floats too (`*$0.50`), overflow is `%$123456.00`.
+      🤖 **AUTONOMOUS** — but it needs ROOM FIRST.
+      ➡️ **The change is known (~22 B):** in basic/pu-render.inc `ptf_star`, after
+      the `**` pair, a `$` followed by `#` or `.` sets PU_TYPE bit2 (the floating
+      `$` the emitter already handles for `$$`) plus a NEW bit3 "single dollar",
+      and is consumed; `ptf_num_fill` adds 1 column, not 2, when bit3 is set
+      (PU_TYPE's readers all mask `and $03` / `and $04`, and the per-field reset
+      clears the byte); `ptf_plus` accepts `*` after the `+` as it accepts `#`
+      and `$`.
+      🔴 **THE WALL:** the scanner is included ONLY in sub page 0 (sub/printusing.asm),
+      which had **1 B free** on 2026-10-29, and a page-0 tenant cannot reach sub
+      page 1. Carve options, unpriced: an instruction-pair factoring of sub page 0
+      (the main-ROM pair scan once found 113 B), or move a small page-0 tenant
+      (keystr_tenant, ~284 B incl. its 160-B image) to sub2 -- which needs a sub2
+      inline call stub in main, and main's low region had 1 B free on 2026-10-29.
+      The ledger avoids `**$` meanwhile (L3_ledger.bas line 350).
+
 - [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
       TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
       🎚️ TIER 1 — it finds what a real user hits first, so its findings are
@@ -97,6 +121,10 @@ item — do **one item per session** to keep context lean.
       programs -> programs-acceptance, a runner edit -> programs + gcdi + catcopy,
       catcopy's data -> catcopy. (Those two programs were run by hand before that
       commit: [`progladder_l7.out`](scratchpad/progladder_l7.out).)
+      ✅ **L3_ledger (2026-10-29): SAME** (string DEF FNs for dates, a stable sort,
+      PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
+      round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
+      ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
       ✅ **L3_screen1 and L4_errors (2026-10-29).** SCREEN 1 with VPOKEd characters
       and colours, BASE / VDP / VPEEK checksums: SAME. The error-handling program
       (RESUME / RESUME NEXT / RESUME line, ERROR n, errors inside GOSUB, ON..GOSUB
@@ -7435,7 +7463,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9926 (T-6FE392)8 (T-529ABE)` from `TODO.md:15608 (T-529ABE)`: a
+      `TODO.md:9954 (T-6FE392)8 (T-529ABE)` from `TODO.md:15636 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10395,7 +10423,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15608 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15636 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

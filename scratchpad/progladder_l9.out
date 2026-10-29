@@ -1,0 +1,6 @@
+L3_ledger
+  Philips_VG_8020                ENDED t=34.0 gaps=0 max=0  lpt 12 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=41.8 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=41.8 gaps=0 max=0  SAME
+
+PASS: 1 program(s), 0 divergent run(s)

@@ -118,13 +118,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**Two `PRINT USING` formats with `$$` in an unusual place still differ**
-(recorded with D-USING on 2026-09-09, not re-measured since):
+**Three `PRINT USING` formats with a `$` beside `**` or in an unusual place
+still differ** (the first two recorded with D-USING on 2026-09-09, not
+re-measured since; `**$` measured 2026-10-29 in twelve shapes, D-PUSTARDOL,
+[`pustardol_measure.out`](../../scratchpad/pustardol_measure.out) — on the
+VG-8020 the `$` sits right before the digits, after any sign: `**-$5.00`):
 
 | format, value | VG-8020 | zerobas |
 |---|---|---|
 | `###$$`, 42 | ` 42` — the trailing pair is swallowed | ` 42$$` |
 | `**$$###`, 42 | `$42$` | `****$42` |
+| `**$##.##`, 5 | `***$5.00` — asterisks, then a floating `$` | `$***5.00` |
 
 The National CF-3300 gives a third answer for the second. Why the VG-8020
 prints `$42$` has not been worked out; the ordinary `$$` in front of the
