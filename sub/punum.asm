@@ -89,6 +89,11 @@ pnt_int:
                 inc     c
                 jr      pnt_int
 pnt_intdone:
+                ; D-PUNEGLEAD: `$$.##` HAS an integer column -- `$0.50` on the
+                ; VG-8020 -- although the scanner marked it D-PULEAD's way
+                ld      a,(PU_TYPE)
+                and     $04
+                jr      nz,pnt_int_col
                 ; --- D-PULEAD: `.##` has NO integer column ---------------------
                 ; so it prints neither a leading zero of our own NOR flt_fmt's:
                 ; `.##` with .5 is `.50` and with 0 is `.00`, while `#.##` -- one
@@ -293,6 +298,55 @@ pnt_term:
                 ld      hl,PU_NUM
                 ld      a,e
                 sub     l
+; --- D-PUNEGLEAD: a sign with no room takes the column's `0` -----------------
+; `#.##` with -.5 is `-.50` on the VG-8020, not `%-0.50`; -.004 is `-.00`, `#.#`
+; with -.04 is `-.0`, and `+.##` with .5 is `+.50`
+; (scratchpad/puneglead_measure.out, puneglead_gate.out). With room (`##.##`)
+; it is `-0.50`, and a value with a real integer digit still overflows (-.996
+; rounds to `%-1.00`). So a lone `0.` loses its `0`, and only when the FINISHED
+; field would not fit: the emitter's own test, with a floating `$` counted as a
+; column and the sign tenant's coming `+` (or trailing character) counted as
+; one more for a value that has no `-` yet. The `0` is the one pnt_int_col put
+; there for the column (D-PULEAD's rule).
+                ld      c,a                 ; C = the length
+                ld      b,a
+                ld      a,(PU_TYPE)
+                and     $04
+                jr      z,pnt_lz_s
+                inc     b                   ; the floating `$`
+pnt_lz_s:
+                ld      a,(PU_FLAGS)
+                bit     3,a
+                jr      z,pnt_lz_w          ; no sign specifier
+                ld      a,(PU_NUM)
+                cp      '-'
+                jr      z,pnt_lz_w          ; the `-` is already counted
+                inc     b                   ; the `+` (or trailing char) to come
+pnt_lz_w:
+                ld      a,(PU_W)
+                cp      b
+                jr      nc,pnt_lz_ok        ; it fits
+                call    pnt_digstart        ; HL = the first digit
+                ld      a,(hl)
+                cp      '0'
+                jr      nz,pnt_lz_ok
+                inc     hl
+                ld      a,(hl)
+                cp      '.'
+                jr      nz,pnt_lz_ok
+                ld      d,h
+                ld      e,l
+                dec     de                  ; DE = the `0`
+                dec     c                   ; one char shorter
+pnt_lz_mv:
+                ld      a,(hl)              ; move the rest down, the 0 included
+                ld      (de),a
+                inc     hl
+                inc     de
+                or      a
+                jr      nz,pnt_lz_mv
+pnt_lz_ok:
+                ld      a,c
                 ret
 
 ; pnt_digstart -- HL = PU_NUM's first DIGIT, stepping past a leading `-`.

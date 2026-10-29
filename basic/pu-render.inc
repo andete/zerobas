@@ -236,23 +236,23 @@ ptf_num_sign:
                 call    pu_fmtp             ; D-PULONG: HL = the format's body
                 add     hl,de
                 ld      a,(hl)
+                ld      e,$38               ; bit3 a sign, bit4 TRAILING, bit5 `+`
                 cp      '+'
-                jr      z,ptf_num_tplus
+                jr      z,ptf_num_tsgn
+                ld      e,$18               ; bit3 a sign, bit4 TRAILING
                 cp      '-'
                 jr      nz,ptf_num_fill
+ptf_num_tsgn:
+                ; D-PUNEGLEAD: a LEADING sign already claimed the field, so this
+                ; one is a literal after it -- `+.##+`;-.25 is `-.25+` and
+                ; `+#.##-`;.25 is `+0.25-` on the VG-8020
+                ; (scratchpad/puneglead_both.out). It used to take over.
                 ld      a,(PU_FLAGS)
-                set     3,a                 ; a sign specifier is present
-                set     4,a                 ; ...and it is TRAILING
+                bit     3,a
+                jr      nz,ptf_num_fill
+                or      e
                 ld      (PU_FLAGS),a
                 inc     c                   ; consume it
-                jr      ptf_num_fill
-ptf_num_tplus:
-                ld      a,(PU_FLAGS)
-                set     3,a
-                set     4,a
-                set     5,a                 ; ...and the character is `+`
-                ld      (PU_FLAGS),a
-                inc     c
 ptf_num_fill:
                 ; D-PUDOLLAR: the two dollars count toward the width exactly as
                 ; the two asterisks do -- `$$###` with 42 is `  $42` on the
@@ -429,7 +429,10 @@ ptf_dollar:
                 inc     hl
                 ld      a,(hl)
                 cp      '#'
+                jr      z,ptf_dollar_go
+                cp      '.'                 ; D-PUNEGLEAD: `$$.##`;-.5 is `-$.50`
                 jr      nz,ptf_dollar_lit   ; not a numeric field -> literal
+ptf_dollar_go:
                 ld      a,(PU_TYPE)
                 or      $04
                 ld      (PU_TYPE),a
@@ -471,6 +474,8 @@ ptf_plus:
                 ; count catches and an error code cannot.
                 cp      '*'                 ; D-PUSTARDOL: `+**$##.##`;5 is
                 jr      z,ptf_plus_sign     ; `***+$5.00` -- the `+` is the sign
+                cp      '.'                 ; D-PUNEGLEAD: `+.##`;-.5 is `-.50`
+                jr      z,ptf_plus_sign
                 cp      '$'
                 jr      nz,ptf_plus_lit
 ptf_plus_sign:

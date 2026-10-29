@@ -1,0 +1,36 @@
+K-Z ROMs f9d8c4a9 -> bfad2b2e  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'A -.50 B -.00 C %-1.00 D %-1.50 E 0.00'  zb 'A %-0.50 B %-0.00 C %-1.00 D %-1.50 E 0.00'
+   ref 'I *-0.50 J -0.50 K -$.50 L -$0.50'  zb 'I *-0.50 J -0.50 K %-$0.50 L -$0.50'
+   ref 'M 0.50- N -0.50 O -.50 P %-.50'  zb 'M 0.50- N -0.50 O %-0.50 P %-.50'
+   ref 'T -.0'  zb 'T %-0.0'
+   ref 'U -.50'  zb 'U %-0.50'
+   ref 'V +.50 W $0.50 X +.0 Y $0.0'  zb 'V %+0.50 W $0.50 X %+0.0 Y $0.0'
+   ref 'Z +.25+ -$.25'  zb 'Z %+0.25+ %-$0.25'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA %-0.25+ BB %-0.25- BC -0.25+ BD -0.25-'
+   ref 'BE +.25+ BF +0.25+ BG +0.25-'  zb 'BE %+0.25+ BF +0.25+ BG +0.25-'
+   ref 'A -.50 B -.00 C %-1.00 D %-1.50 E 0.00'  zb 'A %-0.50 B %-0.00 C %-1.00 D %-1.50 E 0.00'
+   ref 'I *-0.50 J -0.50 K -$.50 L -$0.50'  zb 'I *-0.50 J -0.50 K %-$0.50 L -$0.50'
+   ref 'M 0.50- N -0.50 O -.50 P %-.50'  zb 'M 0.50- N -0.50 O %-0.50 P %-.50'
+   ref 'T -.0'  zb 'T %-0.0'
+   ref 'U -.50'  zb 'U %-0.50'
+   ref 'V +.50 W $0.50 X +.0 Y $0.0'  zb 'V %+0.50 W $0.50 X %+0.0 Y $0.0'
+   ref 'Z +.25+ -$.25'  zb 'Z %+0.25+ %-$0.25'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA %-0.25+ BB %-0.25- BC -0.25+ BD -0.25-'
+   ref 'BE +.25+ BF +0.25+ BG +0.25-'  zb 'BE %+0.25+ BF +0.25+ BG +0.25-'
+K-S ROMs f9d8c4a9 -> 1dbfdd16  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'M 0.50- N -0.50 O -.50 P %-.50'  zb 'M 0.50- N -0.50 O +%-.50 P %-.50'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA +.25- BB +.25- BC -0.25+ BD -0.25-'
+   ref 'M 0.50- N -0.50 O -.50 P %-.50'  zb 'M 0.50- N -0.50 O +%-.50 P %-.50'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA +.25- BB +.25- BC -0.25+ BD -0.25-'
+K-L ROMs f9d8c4a9 -> 43afd58d  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'Z +.25+ -$.25'  zb 'Z .25+ -$.25'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA .25- BB .25- BC 0.25- BD 0.25-'
+   ref 'BE +.25+ BF +0.25+ BG +0.25-'  zb 'BE .25+ BF 0.25+ BG 0.25+'
+   ref 'Z +.25+ -$.25'  zb 'Z .25+ -$.25'
+   ref 'BA -.25+ BB -.25- BC -0.25+ BD -0.25-'  zb 'BA .25- BB .25- BC 0.25- BD 0.25-'
+   ref 'BE +.25+ BF +0.25+ BG +0.25-'  zb 'BE .25+ BF 0.25+ BG 0.25+'
+K-D ROMs f9d8c4a9 -> ce011d04  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'V +.50 W $0.50 X +.0 Y $0.0'  zb 'V +.50 W  $.50 X +.0 Y  $.0'
+   ref 'V +.50 W $0.50 X +.0 Y $0.0'  zb 'V +.50 W  $.50 X +.0 Y  $.0'
+restored ROMs f9d8c4a9 == clean
+4/4 knives HIT

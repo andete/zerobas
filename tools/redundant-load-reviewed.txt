@@ -26,6 +26,7 @@
 
 fch_modes_ptr    POINTER  returns HL = FCH_MODES + A; the load reads the mode byte
 pu_deref_body    POINTER  returns HL = RVDESC / the body pointer it just built
+pnt_digstart     POINTER  returns HL = PU_NUM, or PU_NUM+1 past a `-` (sub/punum.asm); the load reads the first digit (2026-10-29, D-PUNEGLEAD)
 ztrap_entry      POINTER  returns HL = ZTRAP + 3A; the load reads the trap state
 she_src          POINTER  returns HL = the source descriptor's address from the S16 stack block (sub/strheap.asm); the load reads its length (2026-10-16)
 she_dest         POINTER  returns HL = the destination descriptor's address from the S16 stack block; the load reads its length (2026-10-16)

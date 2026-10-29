@@ -147,15 +147,30 @@ item — do **one item per session** to keep context lean.
       12 B). Gate putiny-acceptance, knives K-T / K-B
       ([`putiny_knife.out`](scratchpad/putiny_knife.out)).
 
-- [ ] 🔴 **A NEGATIVE FRACTION WITH NO ROOM FOR `-0` OVERFLOWS; THE VG-8020 DROPS THE
+- [x] 🔴 **A NEGATIVE FRACTION WITH NO ROOM FOR `-0` OVERFLOWS; THE VG-8020 DROPS THE
       ZERO (D-PUNEGLEAD, found 2026-10-29 measuring D-PUTINY).**
       🎚️ TIER 1 — `PRINT USING "#.##";-.5` is `-.50` on the VG-8020 and `%-0.50`
       here; `#.#`;-.04 is `-.0` / `%-0.0`; with room (`##.#`) both print `-0.5`
       ([`putiny_lead.out`](scratchpad/putiny_lead.out)). Also `+.#`;-.5 is `-.5`
       there and `+%-.5` here: the scanner takes `+.` apart.
-      🤖 **AUTONOMOUS** — next. The leading `0` belongs to the column (D-PULEAD's
-      rule), so it is the one thing to give up when `-` needs it; measure `**`,
-      `$$` and the trailing-sign forms first.
+      🤖 **AUTONOMOUS.** Measured 2026-10-29 with `**`, `$$`, commas, `^^^^`
+      and the sign forms ([`puneglead_measure.out`](scratchpad/puneglead_measure.out),
+      [`puneglead_both.out`](scratchpad/puneglead_both.out)).
+      ✅ **FIXED 2026-10-29: ONE RULE AND TWO SCANNER GAPS.**
+      - A lone `0.` loses its `0` when the FINISHED field would not fit -- a
+        positive value's coming `+` counts too (`+.##`;.5 is `+.50`), a real
+        integer digit still overflows (-.996 is `%-1.00`). sub/punum.asm
+        `pnt_term`, sub page 1.
+      - `+.##` and `$$.##` are fields: basic/pu-render.inc `ptf_plus` /
+        `ptf_dollar` accept a `.`; `$$` keeps its integer column (`$0.50`,
+        punum's `pnt_intdone`).
+      - After a LEADING sign, a trailing `+` / `-` is a literal (`+.##+`;-.25
+        is `-.25+`); it used to replace the leading sign, which was wrong
+        before today too (`+#.##-`;.25 gave `0.25+`). The two trailing-sign
+        arms now share one body, which paid for the test: sub page 0 went
+        4 -> 14 B.
+      Gate puneglead-acceptance (11 rows), knives K-Z / K-S / K-L / K-D
+      ([`puneglead_knife.out`](scratchpad/puneglead_knife.out)).
 
 - [ ] 🔬 **`COS(4*ATN(1#)/2)` IS `-6.2831853071796E-14` ON THE VG-8020 AND
       `-3.3808E-15` HERE (D-COSHALFPI, found 2026-10-29 measuring D-PUTINY).**
@@ -7552,7 +7567,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10043 (T-6FE392)8 (T-529ABE)` from `TODO.md:15725 (T-529ABE)`: a
+      `TODO.md:10058 (T-6FE392)8 (T-529ABE)` from `TODO.md:15740 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10512,7 +10527,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15725 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15740 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
