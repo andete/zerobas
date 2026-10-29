@@ -1,0 +1,4 @@
+K-L ROMs db0e58a2  rc=1  red ['"LPT:"', '"LPT:"']  want ["LPT:", "LPT:"]  HIT
+K-C ROMs 35928453  rc=1  red ['"CRT:"', '"CRT:"']  want ["CRT:", "CRT:"]  HIT
+K-G ROMs 858c27ae  rc=1  red ['"GRP:"', '"GRP:"']  want ["GRP:", "GRP:"]  HIT
+restored ROMs dad70c7b == clean

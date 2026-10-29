@@ -111,6 +111,14 @@ sector with interrupts on (D-FDCDI).
 
 ## What we found, and how
 
+- **`SAVE "LPT:"`, `"CRT:"` and `"GRP:"` were `Bad file name`** (fixed
+  2026-10-29, D-SAVEDEV). On both references the program stops first; then
+  `SAVE "LPT:"` prints the listing on the printer, `SAVE "CRT:"` lists it on
+  the screen as `LIST` does, and `SAVE "GRP:"` is `Illegal function call` —
+  reported as happening outside the program (line 65535), yet still caught by
+  `ON ERROR`. Found while measuring how a diskless machine treats device names
+  for an error-handling program written for the project's program ladder
+  ([`savedev_gate.out`](../../scratchpad/savedev_gate.out)).
 - **A tape name of four or more letters was written corrupted** (fixed
   2026-10-17, D-TSVOVL; broken the day before): `SAVE "CAS:PDXY"` put
   `PDXYPD` on the tape. The bytes the name was built in overlapped the copy of
@@ -183,6 +191,8 @@ sector with interrupts on (D-FDCDI).
 
 ## Tests that cover it
 
+- `make savedev-acceptance` — `SAVE` to the printer, the screen and `GRP:`, on
+  both targets against their references (D-SAVEDEV).
 - `make kwsweep` — a tokenised save read back with `LOF`, the text save ending
   the run, the error rows, and `SAVE` followed by more statements.
 - `make savetail-acceptance` — the option errors, on disk and on cassette.

@@ -26,7 +26,7 @@ item — do **one item per session** to keep context lean.
 
 ## Open — standing residuals (INDEX; this is the pickup list)
 
-- [ ] 🔴 **ON THE DISKLESS TARGET, `SAVE "LPT:"` / `"CRT:"` / `"GRP:"` ARE NOT THE
+- [x] 🔴 **ON THE DISKLESS TARGET, `SAVE "LPT:"` / `"CRT:"` / `"GRP:"` ARE NOT THE
       VG-8020'S (D-SAVEDEV, found 2026-10-29 measuring D-NODEV).**
       🎚️ TIER 3 — a device name in SAVE, the VG-8020 with no disk: `SAVE "LPT:"`
       LISTS the program to the printer; `SAVE "GRP:"` is ERR 5; `SAVE "CRT:"` showed
@@ -34,6 +34,19 @@ item — do **one item per session** to keep context lean.
       stopped silently, a tape save); since D-NODEV they are ERR 56. Both wrong.
       🤖 **AUTONOMOUS** — measure each (screen, printer, what follows) on the
       VG-8020, then implement; the CF-3300 for the DISK target.
+      ✅ **FIXED 2026-10-29.** Measured on BOTH references (the VG-8020 with no disk,
+      the CF-3300): the run ENDS first; `SAVE "LPT:"` (and `"LPT:X"`) lists the
+      program to the printer, `SAVE "CRT:"` lists it on the screen as LIST does,
+      `SAVE "GRP:"` is ERR 5 in 65535 -- and the ON ERROR handler still runs. Both
+      zerobas targets said 56. sub2/loadsave.asm `ls_save` now matches the three
+      device names before the tape / disk arms (`lsv_lpt` / `lsv_crt` /
+      `lsv_grp`): DIRECTF=1, then `list_all` into LLIST's printer sink or LIST's
+      screen sink, or ERR 5. Gate savedev-acceptance (each device on each target
+      against its reference); knives K-L / K-C / K-G each turn exactly their own
+      two rows red ([`savedev_knife.out`](scratchpad/savedev_knife.out)).
+      (A probe that ends within 0.1 s is invisible to the ladder runner, which
+      polls CURLIN: the first measurements here all TIMEOUT -- a delay loop
+      first is the workaround.)
 
 - [ ] 🔬 **TWO LATE (NOT LOST) FRAME INTERRUPTS IN AN LPRINT, DISKLESS TARGET ONLY
       (D-LATEINT, found 2026-10-29 by the program ladder's L4_errors).**
@@ -7422,7 +7435,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9913 (T-6FE392)8 (T-529ABE)` from `TODO.md:15595 (T-529ABE)`: a
+      `TODO.md:9926 (T-6FE392)8 (T-529ABE)` from `TODO.md:15608 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10382,7 +10395,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15595 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15608 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

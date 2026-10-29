@@ -238,8 +238,28 @@ ls_bload:
 ; the rest of the line runs. Tape: ALWAYS ASCII ($EA), `,A` or not (D-CASSAVE).
 ls_save:
                 inc     hl                  ; past the SAVE token (main's ex_save)
-                call    ls_fname_dev
-                jr      z,lsv_cas           ; matched "CAS:" -> tape (HL past the prefix)
+                ld      ix,p0_fname_expr
+                call    p0cb                ; HL -> the staged '"'-terminated copy
+                ; D-SAVEDEV (2026-10-29): SAVE to the printer, the screen and the
+                ; graphics screen. Measured on the VG-8020 (no disk) and the
+                ; CF-3300 alike: the run ENDS first, then `SAVE "LPT:"` lists the
+                ; program to the printer, `SAVE "CRT:"` to the screen (as LIST),
+                ; and `SAVE "GRP:"` is ERR 5 -- in 65535, the run already over.
+                ; Here all three were 56 (and tape names before D-NODEV).
+                ld      de,p0_dev_lpt
+                ld      ix,p0_dev_cmp
+                call    p0cb                ; Z iff "LPT:" (HL past it; else unchanged)
+                jp      z,lsv_lpt
+                ld      de,p0_dev_crt
+                ld      ix,p0_dev_cmp
+                call    p0cb
+                jp      z,lsv_crt
+                ld      de,p0_dev_grp
+                ld      ix,p0_dev_cmp
+                call    p0cb
+                jp      z,lsv_grp
+                call    ls_fname_cas
+                jp      z,lsv_cas           ; matched "CAS:" -> tape (HL past the prefix)
                 ld      ix,p0_pdfcb_resume
                 call    p0cb                ; DISK_FCB; HL -> the tail
                 ld      ix,p0_skip_comma
@@ -283,6 +303,42 @@ lsv_ascii_flag:
                 call    p0cb                ; (a HOOK: its CALLF is main's RST 30h)
                 ei                          ; a CALLF returns DI (cg_back's note)
                 jp      ls_end_line         ; D-KWSAVEEND: the run stops, as LIST's does
+; --- D-SAVEDEV: the three device arms (see ls_save) ----------------------
+lsv_lpt:
+                ld      b,1                 ; PRDEST 1 + PRDEV 1: the printer (LLIST's)
+                jr      lsv_list
+lsv_crt:
+                ld      b,0                 ; PRDEST 0: the screen (LIST's)
+lsv_list:
+                push    bc
+                call    lsv_dev_tail        ; `,A` or the end of the statement, else 2
+                pop     bc
+                ld      a,1
+                ld      (DIRECTF),a         ; the run ends FIRST (as a tape SAVE's)
+                ld      a,b
+                ld      (PRDEST),a
+                ld      (PRDEV),a
+                ld      ix,p0_list_all
+                call    p0cb                ; the whole program, as SAVE ,A writes it
+                xor     a
+                ld      (PRDEST),a          ; the screen sink back
+                ld      (PRDEV),a           ; the default device back
+                jp      ls_end_line
+lsv_grp:
+                call    lsv_dev_tail
+                ld      a,1
+                ld      (DIRECTF),a         ; the run is over: ERR 5 in 65535
+                jp      fo_fail_ifc         ; ERR 5
+lsv_dev_tail:
+                ld      hl,(FN_RESUME)      ; past the name EXPRESSION, in the text
+                ld      ix,p0_skip_comma
+                call    p0cb
+                jp      z,ls_flag_a         ; `,A`, its end checked (a tail call)
+                dec     hl                  ; stmt_bare_end opens with rst $10
+                ld      ix,p0_stmt_bare_end
+                call    p0cb                ; Z iff 0 or ':'
+                jp      nz,fs_syntax        ; junk: ERR 2
+                ret
 lsv_cas:
                 call    ls_tape_parse_cut   ; TSV_NAME; a . ends the name (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
@@ -518,6 +574,8 @@ lcsp_apply:
 ls_fname_dev:
                 ld      ix,p0_fname_expr
                 call    p0cb                ; HL -> the staged '"'-terminated copy
+ls_fname_cas:                               ; SAVE joins here: its name is staged and
+                                            ; its device arms checked (D-SAVEDEV)
                 ld      de,p0_dev_cas       ; main's data: dev_cmp reads it
                 ld      ix,p0_dev_cmp
                 call    p0cb                ; Z + HL past the prefix iff it matched

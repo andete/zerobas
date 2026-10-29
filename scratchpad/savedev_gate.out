@@ -1,0 +1,8 @@
+SAVE "LPT:"  C-BIOS_MSX1_EU_REPACK_NODISK   printer 'S\r\n10 ON ERROR GOTO 90\r\n15 FOR I=1 TO 500:NEXT\r\n20 LP  listed 0  SAME
+SAVE "LPT:"  C-BIOS_MSX1_EU_REPACK_DISK     printer 'S\r\n1 REM @DISK\r\n10 ON ERROR GOTO 90\r\n15 FOR I=1 TO 50  listed 0  SAME
+SAVE "CRT:"  C-BIOS_MSX1_EU_REPACK_NODISK   printer 'S\r\n'  listed 6  SAME
+SAVE "CRT:"  C-BIOS_MSX1_EU_REPACK_DISK     printer 'S\r\n'  listed 7  SAME
+SAVE "GRP:"  C-BIOS_MSX1_EU_REPACK_NODISK   printer 'S\r\nERR 5  65535 \r\n'  listed 0  SAME
+SAVE "GRP:"  C-BIOS_MSX1_EU_REPACK_DISK     printer 'S\r\nERR 5  65535 \r\n'  listed 0  SAME
+
+PASS: SAVE to LPT: / CRT: / GRP: as on the VG-8020 and the CF-3300

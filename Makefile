@@ -2524,6 +2524,11 @@ catcopy-acceptance: repack-machine
 nodev-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_nodev.py
 
+# --- savedev-acceptance: SAVE to LPT: / CRT: / GRP: (D-SAVEDEV) --------------------
+# The run ends, then LPT: lists to the printer, CRT: to the screen; GRP: is 5 in 65535.
+savedev-acceptance: repack-machine $(DISK_TEST_DSK)
+	python3 -u probes/basic/basic_probe_savedev.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.
