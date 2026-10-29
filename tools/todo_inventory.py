@@ -73,8 +73,9 @@ KIND = [
 ]
 
 
-def blocks(path=None):
-    lines = (Path(path) if path else TODO).read_text().split("\n")
+def blocks(path=None, text=None):
+    """`text` instead of a file: tools/tier_table.py parses a selftest's fake TODO."""
+    lines = (text if text is not None else (Path(path) if path else TODO).read_text()).split("\n")
     out, section, bold, cur = [], None, None, None
 
     def close(end):

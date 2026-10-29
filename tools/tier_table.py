@@ -64,6 +64,17 @@ _spec = _ilu.spec_from_file_location("check_todo_markers",
 _ctm = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(_ctm)
 GATE_MARKER = _ctm.MARKER            # {emoji: compiled regex}, the gate's own
+# The Markdown table names each item by its CONTENT-DERIVED id (a digest of the
+# headline, tools/todo_inventory.py -- the id the citation gate trusts), not its
+# line: a line number moved with every TODO.md edit, so the generated sheet went
+# stale on nearly every commit (Joost, 2026-10-29: "maybe use todo ids instead?").
+_spec = _ilu.spec_from_file_location("todo_inventory",
+                                     os.path.join(ROOT, "tools", "todo_inventory.py"))
+_inv = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_inv)
+
+
+_IDS = {}   # TODO.md line -> T-id, filled by items() for the text it last parsed
 BOX = re.compile(r"^- \[ \] ")
 HEAD_END = re.compile(r"^(#{2,3} )|^- \[")
 # 🔴 A 🎚️ LINE THAT DOES NOT PARSE IS WORSE THAN A MISSING ONE, because the
@@ -152,6 +163,11 @@ def items(text):
         head = head.replace("**", "")
         res.append(dict(line=a + 1, tier=tier, tag=tag_text, marker=marker,
                         head=head, body="\n".join(blk), badtags=bad))
+    # each item's content-derived id, from the SAME text (a selftest passes a fake TODO)
+    ids = {b["start"]: b["id"] for b in _inv.blocks(text=text)}
+    for it in res:
+        it["id"] = ids.get(it["line"])
+        _IDS[it["line"]] = it["id"]
     return res
 
 
@@ -551,7 +567,7 @@ def kw_evidence(kw, forms_seen, connected, gap_tier, lines):
         # citations spanning tiers 2/2/4/6 read as four TIER 2 items.
         n = len(lines)
         bits.append("%s open, worst TIER %s (%s)"
-                    % (n, gap_tier, " ".join("TODO.md:%d" % l
+                    % (n, gap_tier, " ".join(_IDS.get(l) or "TODO.md line %d" % l
                                              for l in sorted(lines))))
     return " · ".join(bits)
 
@@ -1627,8 +1643,9 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     out += _composite_section(kws, evidence, conn, forms)
     out += ["",
             "## Open items, keyword first", "",
-            "| keyword | tier | who | what is open | TODO.md |", "|---|---|---|---|---|"]
+            "| keyword | tier | who | what is open | TODO.md id |", "|---|---|---|---|---|"]
     kwset = set(kws)
+
     rows = []
     for it in its:
         if base_tier(it["tier"]) in TIERS:
@@ -1638,7 +1655,10 @@ def fmt_markdown(its, kws, evidence=None, t3=None, connected=None, forms=None,
     for _, _, _, it, k in rows:
         kw = ", ".join(f"`{x}`" for x in k) or "—"
         w = what_is_open(it).replace("|", "\\|")
-        out.append(f"| {kw} | {base_tier(it['tier'])} | {it['marker']} | {w} | {it['line']} |")
+        bid = it.get("id")
+        if bid is None:   # a block boundary the two parsers disagree on: say so loudly
+            sys.exit(f"tier_table: no todo_inventory block starts at TODO.md line {it['line']}")
+        out.append(f"| {kw} | {base_tier(it['tier'])} | {it['marker']} | {w} | {bid} |")
     return "\n".join(out) + "\n"
 
 
@@ -2060,7 +2080,7 @@ def selftest():
             # -- both of which a reader needs to know what to do about it.
             ("LOF row",
              "| `LOF` | \U0001f534 GAP | level 0 \u00b7 T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
-             "knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst TIER 1 (TODO.md:2) |" in md),
+             "knife \u2717 \u00b7 1/1 forms \u00b7 1 open, worst TIER 1 (%s) |" % _IDS[2] in md),
             ("ZZZ row",
              "| `ZZZ` | \u26aa UNPROVEN | level 0 \u00b7 T1\u2014 T2\u2014 T3\u2014 T4\u2014 T5\u2014 T6\u2014 | "
              "knife \u2717 \u00b7 no form list |" in md),
@@ -2081,7 +2101,11 @@ def selftest():
             ("proven column header", "| keyword | known against | proven | evidence |" in md),
             ("the rung summary is printed", "### What has been PROVEN, per rung" in md),
             ("honesty footer", "not \"verified\"" in md),
-            ("open-items row", "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | 2 |" in md)]
+            # the last column is the item's content-derived id, not its line
+            # (a line moved with every TODO.md edit)
+            ("open-items row", "| `LOF`, `PUT` | TIER 1 | 🤖 | `LOF` and `PUT#1,255` | %s |"
+             % _IDS[2] in md),
+            ("id, not line", str(_IDS.get(2)).startswith("T-"))]
     for _n, _c in _s14:
         if not _c:
             print("   S14 clause failed:", _n)
