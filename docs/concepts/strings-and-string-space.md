@@ -190,6 +190,17 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 - **Dead intermediate results stayed until the next compaction** (narrowed
   2026-09-27, D-S2BHEAP): one released at the edge is now handed back at once,
   as on the reference; 4 of 8 rows differed, 1 does now (the generous one).
+- **Collecting the garbage stopped the clock** (fixed 2026-10-28, D-GCDI).
+  An address-book program written for the project's program ladder
+  ([`L2_addr.bas`](../../probes/programs/L2_addr.bas)) lost a typed RETURN
+  while it sorted its cards, so two answers ran together. The collector ran with
+  interrupts off, both when a string operation ran out of room and when a
+  string was stored into an array element. Frame interrupts were missed for up
+  to 107 ms at a time, so `TIME` ran slow (72% of real time through a
+  `STRING$` loop) and keys pressed meanwhile were never seen. The VG-8020
+  missed none. Both paths now run with interrupts on
+  ([`gcdi_before.out`](../../scratchpad/gcdi_before.out),
+  [`gcdi_gate.out`](../../scratchpad/gcdi_gate.out)).
 
 ## How zerobas does it
 
@@ -238,6 +249,8 @@ disagree with this page, this page is current.
 
 ## Tests that cover it
 
+- `make gcdi-acceptance` — string work keeps the frame interrupt, and a
+  line typed meanwhile arrives whole.
 - `make clearpool-acceptance` and `make binfre-acceptance` — the size `CLEAR`
   sets and keeps, what each string costs in both pools, `Out of string space`.
 - `make readref-acceptance` and `make litref-acceptance` — `DATA` strings,

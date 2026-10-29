@@ -114,6 +114,23 @@
 ; value; SH_ERR always 0.
 ; Clobbers everything (tenant convention).
 strheap_engine:
+                ; D-GCDI (2026-10-28): interrupts LIVE for every op. sr_slot enters
+                ; tenants under DI, and a GC or a long copy here held it long enough
+                ; that zerobas MISSED VBLANKs: TIME ran 72% of real time through a
+                ; STRING$ churn loop, and keys typed meanwhile were lost (the
+                ; VG-8020 kept both; scratchpad/gcdi_before.out). This is a page-0
+                ; tenant, so an IRQ takes the $0038 trampoline (sub/sub.asm) back
+                ; to the BIOS ISR; that ISR touches only the PSG, the PLAY queues,
+                ; KEYBUF and trap flags -- never a string body or a descriptor --
+                ; and every SP frame below is reserved under SP, as an IRQ needs.
+                ; The trampoline contract (docs/spec-basic-subrom-trampoline.md
+                ; §2.2): EI after entry, DI before ret, so CALSLT's slot
+                ; transitions stay interrupts-off -- hence the call, as bload does.
+                ei
+                call    she_dispatch
+                di
+                ret
+she_dispatch:
                 ; D-WSZERO S16.0(b) (2026-10-16): a JUMP TABLE on SH_OP, where a
                 ; 20-deep `cp n / jp z` chain stood (~106 B -> 60 B of sub page 0,
                 ; and every op reaches its handler in the same time). No handler

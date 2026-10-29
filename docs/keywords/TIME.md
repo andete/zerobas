@@ -86,7 +86,10 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None known.
+- **The math functions still hold the interrupt off** (open, D-GCDI2). One
+  `^` can stop the counter for up to 165 ms, and a loop of `RND` calls loses
+  frames, so `TIME` falls a little behind during heavy math. The VG-8020 counts
+  every frame.
 
 The one rung not yet proven is **RAM usage**: reading or setting `TIME` uses
 the same amount of free memory on both machines, but the work-area cells each
@@ -109,6 +112,11 @@ side writes along the way differ.
 - **A read could be torn.** The counter is two bytes and the interrupt can
   change it between them; zerobas reads and writes it with interrupts briefly
   off (D-TIME-2).
+- **`TIME` fell behind during string work** (fixed 2026-10-28, D-GCDI). The
+  string collector ran with interrupts off, so frames went uncounted:
+  through a loop of `STRING$` assignments `TIME` advanced 72% as fast as the
+  clock, where the VG-8020 counted every frame. See
+  [Strings and string space](../concepts/strings-and-string-space.md).
 
 ## Where it lives
 
@@ -128,3 +136,4 @@ tail with `ERL`; the assignment is `ex_time_assign` in
 - `make kwsweep` — a counter-advances row, a write-and-read-back row with two
   different values, and the error rows for {6, 13, 24}.
 - `make kwram` — the RAM-usage comparison.
+- `make gcdi-acceptance` — `TIME` keeps counting through string work.

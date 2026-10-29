@@ -53,6 +53,61 @@ item — do **one item per session** to keep context lean.
       ([`progladder_l1.out`](scratchpad/progladder_l1.out)). Time ratios: guess
       x1.02, loan x1.17, **dice x2.13** — 1200 `RND(1)` + array updates; a TIER 5
       reading, filed here only (speed is paused for ROM space).
+      ✅ **L2 (2026-10-28): address book + text adventure, SAME** after D-GCDI
+      ([`progladder_gaps.out`](scratchpad/progladder_gaps.out), which also shows 0
+      interrupt gaps on all five programs). The address book found D-GCDI: its
+      4th `CHOICE?` read `AMAES` -- a typed RETURN lost.
+      🔧 **D-GCDI, FIXED 2026-10-28 (TIER 1: typed keys were lost) -- the GC half.**
+      Sub-ROM tenants run under `sr_slot`'s DI. Two of them reach a whole string GC:
+      the string-heap engine and the arrays engine's string-element store. zerobas
+      missed frames for up to 107 ms; `TIME` ran 72% of the clock through a
+      `STRING$` loop; keys typed meanwhile were lost. The VG-8020: 0 gaps. Fix:
+      `strheap_engine` and `aeng_copy_str` are now `ei / call body / di / ret`
+      (the trampoline contract, spec-basic-subrom-trampoline.md §2.2, as `bload`
+      does), page-0 tenants whose IRQ takes the $0038 trampoline; page 1 stays
+      main, so `htimi_guard` keeps serving PLAY. Not at `ary_engine`'s entry:
+      scalar lookups share it and are the hot path (+10 T a NEXT, test_forint I3).
+      Gate `gcdi-acceptance` (JIFFY-watchpoint gaps + a line typed during the
+      churn; [`gcdi_gate.out`](scratchpad/gcdi_gate.out)); knives K-S / K-A each
+      turn their own row red, ROM hashed around each plant
+      ([`gcdi_knife.out`](scratchpad/gcdi_knife.out)); before:
+      [`gcdi_before.out`](scratchpad/gcdi_before.out). `programs-acceptance` runs
+      `--gaps`: more gaps than the reference diverges, except the KNOWN_GAPS
+      entries (D-GCDI2), which must STAY gappy until their fix removes them.
+      ⚠️ RESIDUAL, NOT MEASURED: the other DI tenants (PRINT USING, READ/DATA,
+      LIST's detokeniser, PLAY parse, FILES, ...) -- the ladder's gap watch is the
+      instrument.
+
+- [ ] 🔴 **THE MATH FUNCTIONS HOLD THE FRAME INTERRUPT OFF: ONE `^` FOR 165 MS, RND
+      IN 41 MS GAPS (D-GCDI2, found 2026-10-28 by the program ladder).**
+      🎚️ TIER 1 — the same symptom as D-GCDI: keys typed during heavy math can be
+      lost and `TIME` falls behind (L1_loan, L1_dice; KNOWN_GAPS in
+      [`run_programs.py`](probes/programs/run_programs.py)).
+      🤖 **AUTONOMOUS** — but the fix touches every interrupt-live page-1 tenant.
+      📏 **Why the obvious fix was reverted.** An `ei` in `math_wrap`
+      (sub/mathwrap.asm) closed every gap, and play-trace-acceptance went red: a
+      page-1 tenant owns page 1, so `htimi_guard` SKIPS PLAY for every frame that
+      lands inside it, and a tight `SIN` loop starved PLAY completely
+      (`di_safety notes-advanced=[]`). Under DI the frame waits and is served on
+      the way out, late but served.
+      ➡️ **The candidate:** `htimi_guard` (low region, always mapped) maps the main
+      ROM into page 1 itself, runs `htimi_service`, and maps the tenant back,
+      ~13 B of the low region (estimated 2026-10-29, not built). ⚠️ That changes EVERY interrupt-live page-1
+      tenant: graphics draws, the line editor, BEEP, and the tape engines, whose
+      comment says they rely on the skip ("htimi_guard makes that safe while page
+      1 is ours", sub/bload.asm). Measure what PLAY and the traps do during each
+      before choosing.
+
+      🐛 **Found by the (reverted) `math` row: D-POWNEG** (below).
+
+- [ ] 🔴 **`1.00625^-40` IS .77940693361363 ON THE VG-8020 AND .77940693361365 HERE
+      (D-POWNEG, found 2026-10-28 by a gcdi-acceptance row since dropped with D-GCDI2).**
+      🎚️ TIER 1 — a printed number's last digit differs in a plain calculation
+      (compound interest); the ladder's loan program agreed only because it
+      rounds to cents.
+      🤖 **AUTONOMOUS** — measure first: which exponents (negative integers only?
+      every non-small integer? fractional?), and whether it is the integer-power
+      path or EXP / LOG. Then match the reference's digits.
 
 - [ ] 🔴 **STUDY: DEFERRED ERRORS VS RAISING AT THE POINT OF DETECTION — HOW MUCH OF
       THE PER-COMMAND "WHICH ERROR WINS" CODE EXISTS ONLY BECAUSE ZEROBAS DEFERS?
@@ -7171,7 +7226,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9657 (T-6FE392)8 (T-529ABE)` from `TODO.md:15330 (T-529ABE)`: a
+      `TODO.md:9712 (T-6FE392)8 (T-529ABE)` from `TODO.md:15385 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10117,7 +10172,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15330 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15385 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -176,6 +176,10 @@ class Pair:
         self.old, self.new = machines()
         assert self.old.sym["DIVREM"] == self.new.sym["DIVREM"]
         self.dead = dead_set(self.new.sym)
+        # HORNER_PTR is left pointing into a sub-ROM coefficient table, so it moves
+        # with the sub ROM's layout (D-GCDI's `ei` in math_wrap shifted it 1 byte);
+        # both readers, fp_atan and fp_log, write it before they read it.
+        self.dead |= {self.new.sym["HORNER_PTR"], self.new.sym["HORNER_PTR"] + 1}
         self.s = self.new.sym
         self.untouched = (list(range(self.s["DIVPAD"] + 8, self.s["DIVPAD"] + 15))
                           + list(range(self.s["DIVREM"] + 12, self.s["DIVREM"] + 15)))

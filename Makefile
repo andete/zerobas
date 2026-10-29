@@ -2503,9 +2503,16 @@ cloadverr-acceptance: repack-machine
 # --- programs-acceptance: the program ladder (D-PROGLADDER) -----------------------
 # Whole original 1980s-style BASIC programs (probes/programs/L<n>_*.bas) run from an
 # ASCII tape on the VG-8020 and on both zerobas targets; the LPRINT checkpoints
-# and the final screen must match.
+# and the final screen must match, with no more frame-interrupt gaps than the
+# reference (D-GCDI).
 programs-acceptance: repack-machine
-	python3 -u probes/programs/run_programs.py
+	python3 -u probes/programs/run_programs.py --gaps
+
+# --- gcdi-acceptance: string work keeps the frame interrupt (D-GCDI) -------------
+# A string GC under the sub-ROM tenants' DI missed VBLANKs: TIME ran slow and typed
+# keys were lost. JIFFY watchpoint gaps + a line typed during the churn, vs the VG-8020.
+gcdi-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_gcdi.py
 
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is

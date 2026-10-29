@@ -18,8 +18,15 @@
 ; switched out); every math error is DEFERRED through FPERR (penderr_set), so each
 ; body returns -- none of sub/fp_*.asm raises or jumps to an error tail.
 ; WHY THE SHADOW SET IS SAFE: the caller's DE / HL (^'s n and j, D-WSZERO S14e)
-; ride in it across the save copy; the tenant runs under DI (subrom_call), and
-; C-BIOS's KEYINT pushes the shadow set anyway.
+; ride in it across the save copy, and C-BIOS's KEYINT pushes the shadow set
+; (exx / ex af,af' / push x4) before anything else, so an IRQ cannot touch it.
+; ⚠️ NOT INTERRUPT-LIVE, AND THAT IS A KNOWN COST (D-GCDI2): a long `^` holds DI
+; for up to 165 ms and RND's loop leaves 41 ms gaps (frames, keys, TIME lost --
+; the program ladder's L1_loan / L1_dice). An `ei` here was tried on 2026-10-28
+; and REVERTED: with page 1 = this ROM, htimi_guard skips PLAY on every frame
+; that lands inside the tenant, and a tight SIN loop then STARVED PLAY completely
+; (play-trace-acceptance di_safety, notes-advanced=[]), where under DI the frame
+; is served late on the way out. The fix belongs in htimi_guard, not here.
 ; COST (TIER 5, unmeasured here): two 39-byte LDIRs, ~1.7k T per call.
 ; Clean-room: own design.
 ; -----------------------------------------------------------------------------

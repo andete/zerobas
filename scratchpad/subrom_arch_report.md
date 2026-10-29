@@ -202,7 +202,7 @@ ROM/sym pair and hard-codes the anchors (:67) — parameterise the anchors or
 run it twice with a second anchor set; `check_kwtable_identity.py` is ROM-1
 only (kwtable lives there); `gen_resident_abi.py` unchanged (same .inc,
 included by both); `check_knife_rom_guard.py` `IMAGE_HINTS` + the knife runners
-that hash images must hash `sub2.rom` too (the D-KNIFEROM class, TODO.md:3128 (T-169379)-
+that hash images must hash `sub2.rom` too (the D-KNIFEROM class, TODO.md:3183 (T-169379)-
 8041, bit exactly this way when the keyword table moved); `install-repack-
 machine.py` gains `--sub2-rom` and the NODISK machine must get it too
 (`diskless-is-an-official-target`); `probes/basic/basic_probe_subrom_boot.py`

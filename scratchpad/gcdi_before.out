@@ -1,0 +1,10 @@
+D-GCDI before the fix (2026-10-28), probes run through probes/programs/run_programs.py's run():
+string churn  10 T0=TIME:DIM S$(20):FOR I=1 TO 60:FOR J=1 TO 20:S$(J)=STRING$(8,64+J)+"X":NEXT J,I:LPRINT TIME-T0
+  Philips_VG_8020               t=96.7 (loop ~84 s emulated)  TIME advanced 4183 jiffies = 83.7 s  (~99%)
+  C-BIOS_MSX1_EU_REPACK_NODISK  t=54.0 (loop ~44 s emulated)  TIME advanced 1589 jiffies = 31.8 s  (~72%)
+plain FOR     10 T0=TIME:FOR I=1 TO 1200:A=A+1:NEXT:LPRINT TIME-T0
+  Philips_VG_8020               t=18.8  TIME 277  ;  zerobas t=20.7  TIME 489  (both track the clock)
+type-ahead during the same churn, LINE INPUT of "THE QUICK BROWN FOX" typed by openMSX `type` (15 Hz):
+  Philips_VG_8020               [THE QUICK BROWN FOX] 19
+  C-BIOS_MSX1_EU_REPACK_NODISK  [THE QUCK BRWN FX] 16      <- I, O, O lost
+(loop durations = run time minus boot + tape load, ~12.3 s VG / ~9.7 s zb from autorun-acceptance)

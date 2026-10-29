@@ -299,6 +299,22 @@ aer_notfound:
 ; stored into an array) is picked up correctly by str_body_copy's own re-read
 ; contract. Clobbers A,B,C,D,E,H,L.
 aeng_copy_str:
+                ei                          ; D-GCDI: heap_alloc can run a whole GC,
+                                            ; and under sr_slot's DI that lost VBLANKs
+                                            ; (107 ms gaps, a typed RETURN dropped).
+                                            ; Page-0 tenant: the $0038 trampoline
+                                            ; serves the IRQ (strheap_engine has the
+                                            ; full argument); this op's SP frames sit
+                                            ; below SP. HERE and not at ary_engine:
+                                            ; scalar lookups (ops 4/5) share the entry
+                                            ; and are the hottest path in BASIC; with
+                                            ; CLEARPOOL no other op reaches a GC.
+                                            ; DI before ret (the trampoline contract,
+                                            ; spec-basic-subrom-trampoline.md §2.2).
+                call    acs_body
+                di
+                ret
+acs_body:
     IF CLEARPOOL
                 ; --- D-CLP: ADOPT a temp's body, exactly as sh_var_store does -
                 ; The scalar store (str_set_key -> op 12) and this array-element
