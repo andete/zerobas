@@ -1,6 +1,6 @@
 1 REM @ANSWERS 2|1986|Y|7|1969|Y|2|2000|Y|13|N
 10 REM ** PERPETUAL CALENDAR **
-15 CLEAR 400:REM without it the note wrap ran out of the default 200 bytes -- zerobas a month early (D-CATCOPY, TODO.md)
+15 CLEAR 400:REM the note wrap needs it; without it zerobas ran out a month early (D-CATCOPY, fixed)
 20 CLS:KEY OFF:WIDTH 37:DIM D(12)
 30 FOR I=1 TO 12:READ D(I):NEXT:N$="JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC"
 40 INPUT "MONTH (1-12)";M:IF M<1 OR M>12 THEN PRINT "NO SUCH MONTH":LPRINT "CP 9 BAD";M:GOTO 200

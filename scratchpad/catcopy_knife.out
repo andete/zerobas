@@ -1,0 +1,4 @@
+ROMs 041ea724 (clean)
+K-1 ROMs 503764dd (CHANGED)  rc=1  red rows ['temp', 'var']  want ['temp', 'var']  HIT
+K-2 ROMs 238f20ba (CHANGED)  rc=1  red rows ['var']  want ['var']  HIT
+restored ROMs 041ea724 == clean

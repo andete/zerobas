@@ -2114,8 +2114,8 @@ sfg_reject2:
 ; two-arg form; p defaults to 1); CF clear -> it's the numeric p (reparse via
 ; `eval`, then read ',' then str_eval for a$).
 ;
-; Both a$ and b$ are snapshotted into their OWN owned temp (str_snapshot_to_temp)
-; immediately after being parsed, so evaluating the second string can't clobber
+; Both a$ and b$ are snapshotted (str_snapshot_ro: a scalar variable or an owned
+; temp is used as it is, D-CATCOPY; anything else is copied) right after parsing, so evaluating the second string can't clobber
 ; the first via STRSCR or the token stream -- the same snapshot-then-operate
 ; discipline the substring verbs and ev_rel_str's LHS snapshot use. p<1 is a
 ; function error (ev_f_err); the search itself (empty b$ / p past LEN(a$)) is
@@ -2173,7 +2173,10 @@ efi_have_a:
                 push    de                  ; guard p                             [p]
 efi_dup_a:
                 push    hl                  ; guard cursor (past a$)              [p][cursor]
-                call    str_snapshot_to_temp ; HL = aT (a$ snapshot); STRPTR=aT
+                call    str_snapshot_ro     ; HL = aT (a$ snapshot); STRPTR=aT.
+                                            ; D-CATCOPY: a scalar or an owned temp is
+                                            ; used as it is, not copied: INSTR only
+                                            ; reads it (basic/strvar.asm).
                 ex      (sp),hl             ; HL=cursor(restored); top:=aT        [p][aT]
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
                                             ; SKIPS SPACES first, which a bare
@@ -2184,7 +2187,8 @@ efi_dup_a:
                                             ; HL advanced; CF=ok
                 jr      nc,efi_tm_pa        ; D-INSTRTM: b$ present but NOT a string
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
-                call    str_snapshot_to_temp ; HL = bT (b$ snapshot); STRPTR=bT
+                call    str_snapshot_ro     ; HL = bT (b$ snapshot); STRPTR=bT
+                                            ; (D-CATCOPY, as a$ above)
                 ex      (sp),hl             ; HL=cursor(restored); top:=bT        [p][aT][bT]
                 ld      a,(hl)
                 cp      ')'

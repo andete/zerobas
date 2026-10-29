@@ -12,16 +12,16 @@ L1_loan
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=29.0 gaps=0 max=0  SAME
 L2_addr
   Philips_VG_8020                ENDED t=67.1 gaps=0 max=0  lpt 42 lines
-  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=73.4 gaps=0 max=0  SAME
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=73.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=73.3 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=73.3 gaps=0 max=0  SAME
 L2_adven
   Philips_VG_8020                ENDED t=52.2 gaps=0 max=0  lpt 34 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=65.4 gaps=0 max=0  SAME
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=65.4 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=65.3 gaps=0 max=0  SAME
 L2_calendar
-  Philips_VG_8020                ENDED t=36.7 gaps=0 max=0  lpt 16 lines
-  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=43.3 gaps=0 max=0  SAME
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=43.3 gaps=0 max=0  SAME
+  Philips_VG_8020                ENDED t=36.6 gaps=0 max=0  lpt 16 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=43.0 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=43.0 gaps=0 max=0  SAME
 L3_chart
   Philips_VG_8020                ENDED t=141.7 gaps=0 max=0  lpt 25 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=107.4 gaps=0 max=0  SAME
@@ -32,14 +32,14 @@ L3_report
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=72.8 gaps=0 max=0  SAME
 L3_sheet
   Philips_VG_8020                ENDED t=43.3 gaps=0 max=0  lpt 26 lines
-  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=56.3 gaps=0 max=0  SAME
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=56.3 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=56.2 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=55.7 gaps=0 max=0  SAME
 L4_sprite
   Philips_VG_8020                ENDED t=37.4 gaps=0 max=0  lpt 10 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=48.1 gaps=1 max=0.041  SAME  (gaps KNOWN: D-GCDI3)
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=48.1 gaps=1 max=0.041  SAME  (gaps KNOWN: D-GCDI3)
 L5_stock
   National_CF-3300               ENDED t=49.6 gaps=34 max=0.223  lpt 20 lines
-  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=62.9 gaps=35 max=0.135  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=62.9 gaps=34 max=0.135  SAME
 
 PASS: 11 program(s), 0 divergent run(s)

@@ -1,8 +1,6 @@
-=== INSTR: PASS
-
-PASS 1
-refcache: 1 hit, 1 miss, 1 stored
-"
+--- INSTR: reference Philips_VG_8020
+Ok
+10 A$="HELLO WORLD"
 20 PRINT INSTR(A$,"O");INSTR(6,A$,"O")
 30 PRINT INSTR(A$,"Z");INSTR(A$,"")
 40 PRINT INSTR(20,A$,"O")

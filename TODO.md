@@ -142,6 +142,23 @@ item — do **one item per session** to keep context lean.
       `circleparse_tenant` doing the angle maths with main's float multiply under
       DI. Wrapped `ei / call cpt_body / di / ret` (no I/O; GFX_* cells only);
       gcdi-acceptance row `circle`, knife K-C.
+      ✅ **D-CATCOPY, FIXED 2026-10-29 (TIER 1): INSTR copied the operands it only
+      reads.** The calendar's note wrap ran out of the default string space a month
+      early. `INSTR` snapshotted both strings with `str_snapshot_to_temp` (always a
+      copy): `INSTR(1,T$+" "," ")` (96-char T$, 104 B free) and `INSTR(T$," ")`
+      (122-char T$, 78 B free) were ERR 14 here, fine on the VG-8020. Now
+      `str_snapshot_ro` (basic/files.asm, in the free pad in front of the $6CF3
+      pin): a scalar variable is used in place, an owned temp kept, anything else
+      copied as before (an array element's slot can shift). Gate
+      catcopy-acceptance; knives K-1 (always copy: both rows red) and K-2 (no
+      scalar keep: `var` only) ([`catcopy_knife.out`](scratchpad/catcopy_knife.out)).
+      🔴 First placed at the end of basic/strvar.asm -- in front of the $4EF8 pin,
+      whose pad is 1 B: the overrun made pasmo write an EMPTY image with rc 0, and
+      split_islands reported "image base $8000". Read the pin pads before siting
+      page-1 code.
+      ➡️ Not measured yet: the other always-copy sites (`DEF FN` string arguments,
+      basic/deffn.asm; str-engine's H1 path; basic/vars.asm) -- each has its own
+      stated reason; a ladder program will tell whether any costs a program room.
       ⏳ **STILL OPEN: the PLAY parser** (L4_sprite line 140, one ~40 ms gap). NOT
       just an `ei`: the parse tenant fills the PLAY queues that `play_service`
       drains, and since D-GCDI2 the ISR runs `play_service` inside page-1 code --
@@ -7339,7 +7356,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9830 (T-6FE392)8 (T-529ABE)` from `TODO.md:15514 (T-529ABE)`: a
+      `TODO.md:9847 (T-6FE392)8 (T-529ABE)` from `TODO.md:15529 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9858,18 +9875,16 @@ list. **When a slice lands, grep this list for what it just shipped.**
       uses, or (c) accept the body copy and fix the PRECEDENCE some other way.
       Each touches a load-bearing subsystem whose internal invariant has no
       external oracle — which is why this is now 🙋 and not 🤖.
-      🎚️ TIER 1 — re-tagged from TIER 6 on 2026-10-29 on new evidence (D-CATCOPY): the
-      same body copy makes a WORKING program fail, not just pick the other error:
-      `Q=INSTR(1,T$+" "," ")` with `T$` 96 characters and `FRE("")` 104 (the
-      default 200-byte space) is fine on the VG-8020 (Q=96) and `Out of string
-      space` here; the error then cascades (Q=0, `MID$` ERR 5). Found by the
-      program ladder's calendar (word-wrapping a 95-character note: the VG-8020
-      ran out one month later, at a different line). Tier 1 by its definition
-      ("works correctly in the happy path"), not by judgement
-      ([`catcopy_measure.out`](scratchpad/catcopy_measure.out),
-      [`catcopy_probe.bas`](scratchpad/catcopy_probe.bas)).
-      ⚠️ PRICE FIRST: the GC lives in sub page 0, which had 1 B free on
-      2026-10-29; any new root kind needs a carve.
+      🎚️ TIER 6 — which of two applicable errors wins (`String too long` precedence)
+      🔴 **RE-TAGGED TIER 1 ON 2026-10-29 BY MISTAKE, AND BACK.** The program
+      ladder's calendar showed `INSTR(1,T$+" "," ")` Out of string space here and
+      fine on the VG-8020, and I tied it to THIS item's operand-1 body copy. It
+      was not: assignment, `LEN`, `LEFT$` and `ASC` of the same `T$+" "` all fit
+      (concatenation already extends in place, D-CONCATPEAK); only `INSTR`
+      failed, because INSTR copied its own arguments. Fixed there as D-CATCOPY
+      ([`catcopy_measure.out`](scratchpad/catcopy_measure.out)). This item is
+      the error-precedence residual it always was
+      [[a-mechanism-inferred-from-one-observation]].
       ~~🙋 **NEEDS-JOOST**~~ — a refactor of the string heap's ownership rules.
       🏗️ **RULED BY JOOST 2026-09-27 (his "ask me in detail" pass): YES — THE OWNERSHIP REFACTOR.** The length check must see the
       operands before any copy; design around the GC hazard above.
@@ -10301,7 +10316,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15514 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15529 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -2514,6 +2514,12 @@ programs-acceptance: repack-machine
 gcdi-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_gcdi.py
 
+# --- catcopy-acceptance: INSTR does not copy an operand it only reads (D-CATCOPY) --
+# A temp (`T$+" "`) or a variable as INSTR's argument with less free string space
+# than its length: the VG-8020 searches it in place.
+catcopy-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_catcopy.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

@@ -546,6 +546,33 @@ sep_eval:
 ; the $73E5 pin in basic/field.asm, then here.)
 dev_cas:
                 db      "CAS:",0
+; --- str_snapshot_ro (D-CATCOPY, 2026-10-29): a READ-ONLY operand's snapshot --
+; For a function that only READS its string arguments (INSTR): a SCALAR variable
+; is used in place, an owned temp is kept (op 16), anything else -- an array
+; element, a literal, RVDESC -- is copied as before. Measured on the VG-8020:
+; `INSTR(T$," ")` with T$ 122 characters and 78 bytes free is 121 there and was
+; Out of string space here; `INSTR(1,T$+" "," ")` the same with a concatenation
+; (scratchpad/catcopy_measure.out). A scalar's slot cannot move while the next
+; argument is evaluated: a new scalar is added AFTER the existing ones (only the
+; arrays shift, which is why an element is still copied), and a GC rewrites the
+; descriptor in place. Page 1, in the free pad in front of the $6CF3 pin (it
+; first went at the end of basic/strvar.asm, which is in front of the $4EF8 pin,
+; whose pad is 1 B: the overrun emptied pasmo's image). Callers: low region.
+;   in: STRPTR = the operand.  out: HL = STRPTR = the descriptor to use.
+str_snapshot_ro:
+                ld      hl,(STRPTR)
+                ld      de,(VARTAB)
+                or      a
+                sbc     hl,de
+                jp      c,str_snapshot_arg  ; below the scalars -> copy unless a temp
+                ld      hl,(STRPTR)
+                ld      de,(ARYTAB)
+                or      a
+                sbc     hl,de
+                jp      nc,str_snapshot_arg ; an array element or above -> as before
+                ld      hl,(STRPTR)         ; a scalar: use it where it is
+                ret
+
 ; (oo_fail_syn, oo_fail_bfname, oo_fail_ifc, oo_fail_e and the LPT: / CRT: arms
 ; moved to sub2/filestmt.asm, D-P0CB slice C1, 2026-10-21. The CRT: arm used to
 ; run THROUGH the pin below on a `jr` bridge; nothing flows into it now, so the

@@ -1,0 +1,8 @@
+temp  Philips_VG_8020                ENDED t=16.0  'CP 0 104 \r\nCP 1 97  7 \r\nCP 2 97  104 \r\nCP 3 96  104 \r\nCP 4 96  104 \r\nCP 5 96  104 \r\nCP 6 104 \r\nCP 7 65  104'
+temp  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=16.1  SAME
+temp  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=16.1  SAME
+var   Philips_VG_8020                ENDED t=15.9  'CP 0 78  122 \r\nCP 1 121  78 \r\nCP 2 122  78 \r\nCP 3 0  78 \r\nCP 4 4  78 \r\nCP 5 121  78'
+var   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=15.7  SAME
+var   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=15.7  SAME
+
+PASS: INSTR reads its operands without copying a temp or a variable, as the VG-8020 does

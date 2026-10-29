@@ -93,6 +93,16 @@ program can observe through `FRE` differs. No keyword has this rung yet.
 
 ## What we found, and how
 
+- **`INSTR` ran out of string space with room to spare** (fixed 2026-10-29,
+  D-CATCOPY). It copied both of its strings before searching, even a
+  concatenation that was already a fresh temporary and even a plain variable,
+  so `INSTR(1,T$+" "," ")` with a 96-character `T$` and 104 bytes free, and
+  `INSTR(T$," ")` with a 122-character `T$` and 78 bytes free, were
+  `Out of string space` here and fine on the VG-8020, which copies neither.
+  Found by a calendar program written for the project's program ladder, which
+  word-wraps a note and ran out a month early
+  ([`catcopy_measure.out`](../../scratchpad/catcopy_measure.out),
+  [`catcopy_gate.out`](../../scratchpad/catcopy_gate.out)).
 - **`INSTR` found nothing in a string of 128 characters or more** (fixed
   2026-10-12, D-INSTR128): `INSTR(S$,"F")` with an `F` at position 3 of a
   128-character `S$` read 0, where the VG-8020 reads 3. The search compared the
@@ -121,13 +131,16 @@ program can observe through `FRE` differs. No keyword has this rung yet.
 ## Where it lives
 
 `ev_f_instr` in [basic/str-engine.asm](../../basic/str-engine.asm) reads the
-arguments; the start position is checked by the shared `eval_pos_arg` in
+arguments, keeping a variable or a temporary where it is (`str_snapshot_ro`, in
+[basic/files.asm](../../basic/files.asm)); the start position is checked by the shared `eval_pos_arg` in
 [basic/interp.asm](../../basic/interp.asm), the same check `MID$` uses. The
 search itself is `sh_instr_search` in [sub/strheap.asm](../../sub/strheap.asm),
 in the sub-ROM.
 
 ## Tests that cover it
 
+- `make catcopy-acceptance` — `INSTR` copies neither a temporary nor a variable
+  (D-CATCOPY).
 - `make string-acceptance` — found, not found, empty, start in the middle and
   past the end, against the reference.
 - `make str-domain-acceptance` — the start position's range, both error kinds.
