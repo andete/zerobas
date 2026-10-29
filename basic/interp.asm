@@ -1451,6 +1451,11 @@ rerr_msg:                                  ; D-ONERR0 (docs/spec-basic-onerr0.md
 ; survives to the abort path. Take the trap iff a handler is armed (ONELIN!=0) and
 ; we are not already inside one (ONEFLG==0); otherwise fall to ra_abort with HL.
 raise_error_hl:
+                ei                           ; D-LATEINT: a raise through p0cb (an OPEN /
+                                             ; SAVE / trap statement in sub2) abandons its
+                                             ; CALSLT, so sr_slot's `ei` never ran: the whole
+                                             ; ON ERROR handler went on under DI (11.7 ms in
+                                             ; the ladder's L4_errors). BASIC runs EI.
                 ld      a,(ONEFLG)
                 or      a
                 jr      nz,ra_abort          ; inside a handler, no RESUME -> forced abort

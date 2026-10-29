@@ -48,17 +48,37 @@ item — do **one item per session** to keep context lean.
       polls CURLIN: the first measurements here all TIMEOUT -- a delay loop
       first is the workaround.)
 
-- [ ] 🔬 **TWO LATE (NOT LOST) FRAME INTERRUPTS IN AN LPRINT, DISKLESS TARGET ONLY
+- [x] 🔬 **TWO LATE (NOT LOST) FRAME INTERRUPTS IN AN LPRINT, DISKLESS TARGET ONLY
       (D-LATEINT, found 2026-10-29 by the program ladder's L4_errors).**
       🎚️ TIER 5 — timing: no frame is lost (26.5 and 30.3 ms between JIFFY writes,
       one interrupt ~10 ms late), but the ladder's gap rule counts > 30 ms.
       🤖 **AUTONOMOUS** — L4_errors line 1000 (the ON ERROR handler's
       `LPRINT "ERR";ERR;"IN";ERL;"ST";ST`); the VG-8020 and the DISK target: no
-      interval over 25.5 ms. Sampled at 1 ms: interrupts ENABLED (iff=7) almost
-      throughout, PCs in LPRINT's expression / output path -- so not a DI window
-      in BASIC; suspect the interrupt path itself on NODISK. In KNOWN_GAPS.
+      interval over 25.5 ms. The first reading (1 ms samples, "interrupts ENABLED
+      almost throughout") was wrong: it missed the window.
+      ✅ **FIXED 2026-10-29: THREE INTERRUPTS-OFF WINDOWS, NOT THE INTERRUPT PATH.**
+      D-PUSTARDOL's string-heap carves moved the timing and L3_report got a gap too,
+      so the window was hunted with a 0.25 ms (PC, iff, slot) ring and an iff-edge
+      log -- zerobas's own ROM only:
+      - **An error raised inside a sub2 statement left interrupts off.** `OPEN
+        "NUL:"` on the diskless target is 56, raised from sub2's file tenant
+        through p0cb; a raise never returns, so sr_slot's `ei` after CALSLT never
+        ran, and the ON ERROR handler ran under DI until its first variable
+        lookup (a tenant call): 11.7 ms here. basic/interp.asm `raise_error_hl`
+        now starts with `ei` -- BASIC always runs with interrupts on. The DISK
+        target raises that OPEN on the disk path and was clean.
+      - **A new scalar shifted the whole array region up in one LDDR under DI**
+        (~10 ms for 1.7 KB in L3_report), and **ERASE slid it down** in one
+        LDIR: both in sub/arrays.asm, now `ei` / `di` around the move. The ISR
+        touches none of the moved bytes, which stay below the live SP.
+      - **DIM's zero-fill** (sub/arrays.asm `aal_zero_lp`): 11 ms for a big
+        array, the same fix.
+      L3_report and L4_errors: 0 gaps on both targets. KNOWN_GAPS is empty again.
+      New gcdi-acceptance rows `dimshift` (all three moves) and `raise`; knives
+      K-E / K-V / K-Z / K-X ([`lateint_knife.out`](scratchpad/lateint_knife.out)).
+      The first `raise` row (MAXFILES) was blind: that error is raised in main.
 
-- [ ] 🔴 **`PRINT USING "**$##.##"` PUTS THE `$` AT THE FIELD'S LEFT EDGE; THE VG-8020
+- [x] 🔴 **`PRINT USING "**$##.##"` PUTS THE `$` AT THE FIELD'S LEFT EDGE; THE VG-8020
       FLOATS IT AGAINST THE DIGITS (D-PUSTARDOL, found 2026-10-29 by the program
       ladder's ledger).**
       🎚️ TIER 1 — a common money format prints `$***5.00` where the reference prints
@@ -81,6 +101,29 @@ item — do **one item per session** to keep context lean.
       (keystr_tenant, ~284 B incl. its 160-B image) to sub2 -- which needs a sub2
       inline call stub in main, and main's low region had 1 B free on 2026-10-29.
       The ledger avoids `**$` meanwhile (L3_ledger.bas line 350).
+      📏 **Route D measured 2026-10-29 for this wall: shut.** jp -> jr over the cold
+      page-0 files (sub/deffn.asm 18 sites, sub/tkfloat.asm 10, sub/keystr.asm 1,
+      sub/printusing.asm 1): 1 of 30 in range, worth 1 B (built, reverted). The hot
+      ones (graphics, strheap, arrays) were left out on purpose -- a taken `jr` costs
+      2 T more. The next try is the instruction-pair factoring or the tenant move.
+      ✅ **FIXED 2026-10-29, AFTER TWO CARVES IN sub/strheap.asm** (sub page 0:
+      1 -> 32 -> 60 B free before the fix, 16 B after it): the instruction-pair
+      factoring did it. `ld (iy+SHB_ERR),a / ret` stood at 27 sites -> one shared
+      tail `she_seterr_ret` (8 sites reach it with `jr`, 19 with `jp`: +31 B);
+      `ld l,(ix+12) / ld h,(ix+13)` (8 sites) and its store (6) -> `she_ldhl_ix12`
+      / `she_sthl_ix12` (+28 B). Pairs were counted only when strictly adjacent
+      (no label between), so no jump lands inside one. Then the change as planned,
+      including `**$.##` and `+**$`: 12 of 12 shapes now match
+      ([`pustardol_after.out`](scratchpad/pustardol_after.out)). Gate
+      pustardol-acceptance (both targets against the VG-8020: the CF-3300 lacks
+      the floating dollar), knife K-D ([`pustardol_knife.out`](scratchpad/pustardol_knife.out)).
+      The ledger uses `**$` again.
+      🔁 **THE CARVE COST SPEED, AND THE LADDER CAUGHT IT.** `she_ldhl_ix12` /
+      `she_sthl_ix12` sat in the garbage collector's per-element loops (the sweep,
+      the array walk, the shellsort): L3_report ran 0.4 s slower and gained a late
+      interrupt. Those loops now keep the pointer in HL or on the stack (neither
+      sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
+      carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
 - [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
       TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
@@ -129,7 +172,7 @@ item — do **one item per session** to keep context lean.
       and colours, BASE / VDP / VPEEK checksums: SAME. The error-handling program
       (RESUME / RESUME NEXT / RESUME line, ERROR n, errors inside GOSUB, ON..GOSUB
       out of range, a retry count): SAME on the DISK target and, after D-NODEV, on
-      NODISK except D-LATEINT's two late interrupts. It FOUND D-NODEV: `OPEN "NUL:"`
+      NODISK (D-LATEINT's late interrupts are fixed). It FOUND D-NODEV: `OPEN "NUL:"`
       on the diskless target went to the tape. (My first L3_screen1 had a MOD
       overflow, ERR 6 on both machines.)
       🔧 **D-NODEV, FIXED 2026-10-29 (TIER 3).** With no disk, any name with a `:`
@@ -7463,7 +7506,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9954 (T-6FE392)8 (T-529ABE)` from `TODO.md:15636 (T-529ABE)`: a
+      `TODO.md:9997 (T-6FE392)8 (T-529ABE)` from `TODO.md:15679 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10423,7 +10466,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15636 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15679 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

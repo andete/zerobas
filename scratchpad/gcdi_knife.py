@@ -14,7 +14,7 @@ gate.
   K-M  math_wrap's ei (sub/mathwrap.asm)        -> the `math` row red
   K-H  htimi_guard skips again (basic/subromcall.asm) -> play-trace di_safety red
 """
-import hashlib, os, subprocess, sys
+import hashlib, os, subprocess, sys, time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(REPO)
 KNIVES = [
@@ -33,9 +33,12 @@ KNIVES = [
 ]
 # K-H: htimi_guard back to SKIPPING the frame while a page-1 tenant owns page 1.
 # Its witness is play-trace-acceptance (di_safety: PLAY starves in a SIN loop).
+# BYTE-NEUTRAL since 2026-10-29: `pop af / ret` (2 B) REPLACES `in a,(PSLTREG)`
+# (2 B). Inserting them overran the low region (1 B free after D-NODEV) and
+# pasmo refused the build.
 KH = ("basic/subromcall.asm",
-      "htg_skip:\n                ; D-GCDI2 (2026-10-29): SERVE the frame",
-      "htg_skip:\n                pop     af\n                ret\n                ; D-GCDI2 (2026-10-29): SERVE the frame")
+      "starved PLAY in a tight SIN loop.\n                in      a,(PSLTREG)\n",
+      "starved PLAY in a tight SIN loop.\n                pop     af\n                ret\n")
 
 
 def hashes():
@@ -46,12 +49,16 @@ def build():
     r = subprocess.run(["make", "repack-machine"], capture_output=True, text=True)
     if r.returncode:
         sys.exit("build failed:\n" + r.stdout[-2000:] + r.stderr[-2000:])
+    # make compares mtimes to the SECOND here: a source written in the second this
+    # build finished is not "newer", and the next build silently skips it (it hit
+    # K-S on 2026-10-29). Let the clock tick before anything is written.
+    time.sleep(1.1)
 
 
 build()
 base = hashes()
 print(f"sub.rom {base} (clean)")
-for tag, path, old, new, row in KNIVES:
+for tag, path, old, new, row in ([] if "--kh-only" in sys.argv else KNIVES):
     src = open(path).read()
     if src.count(old) != 1:
         sys.exit(f"{tag}: anchor not found exactly once in {path}")

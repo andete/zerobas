@@ -2529,6 +2529,10 @@ nodev-acceptance: repack-machine
 savedev-acceptance: repack-machine $(DISK_TEST_DSK)
 	python3 -u probes/basic/basic_probe_savedev.py
 
+# --- pustardol-acceptance: PRINT USING "**$" floats the dollar (D-PUSTARDOL) --------
+pustardol-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_pustardol.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

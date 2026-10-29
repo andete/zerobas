@@ -143,6 +143,11 @@ usage** rung, which is not yet proven.
   [`edgesafe_probe.py`](../../scratchpad/edgesafe_probe.py)). With the reserve cut
   to 16 bytes, the second probe saw the stack write into the array, so it can
   tell ([knife](../../scratchpad/edgesafe_knife.out)).
+- **A large `DIM` held the frame interrupt off** (fixed 2026-10-29,
+  D-LATEINT). Clearing a new array, and moving the arrays up when a new
+  variable appears after them, ran with the interrupt off: over 10 ms
+  each with large arrays, so a frame came late. The VG-8020 keeps it on;
+  zerobas now does too.
 
 ## Where it lives
 
@@ -168,3 +173,5 @@ usage** rung, which is not yet proven.
 - `make kwsweep` — one- and multi-dimensional rows (the second reads the cell
   with its subscripts swapped) and the error rows.
 - `make kwram` — the RAM-usage comparison.
+- `make gcdi-acceptance`, row `dimshift` — large `DIM`, `ERASE` and new
+  variables keep the frame interrupt, against the VG-8020.

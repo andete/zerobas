@@ -136,6 +136,12 @@ been able to rate `ERROR`'s test programs.
 - **Every test raised code 7** (2026-09-14, D-KWBREADTH). An `ERROR` that
   ignored its argument and always raised 7 would have passed them all; a row
   raising 53 and reading both `ERR` and `ERL` was added.
+- **A handler could run with the frame interrupt off** (fixed
+  2026-10-29, D-LATEINT). Without a disk, an error raised inside `OPEN`
+  (`OPEN "NUL:"` is `Bad file name`) left the interrupt off, and the
+  `ON ERROR` handler ran that way until it first used a variable. Every
+  raised error now switches the interrupt back on, as BASIC always
+  runs with it on.
 
 ## Where it lives
 
@@ -160,3 +166,5 @@ live in the sub-ROM, [sub/errmsg.asm](../../sub/errmsg.asm).
 - `make missing-acceptance` — `ERROR 1,1` and `ERROR 0,1` under `ON ERROR`
   (rows `er-extra`, `er-zero`).
 - `make kwram` — the RAM-usage comparison.
+- `make gcdi-acceptance`, row `raise` — an `ON ERROR` handler keeps the
+  frame interrupt, against the VG-8020.

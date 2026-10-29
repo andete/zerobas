@@ -120,6 +120,12 @@ side writes along the way differ.
   the interrupt then skipped the music while the math code was mapped in; the
   interrupt now maps the main ROM back for the music and the traps, and gives
   the math its page back.
+- **…and in an error handler and during large array moves** (fixed
+  2026-10-29, D-LATEINT). An error raised inside `OPEN` without a disk left
+  the interrupt off for the `ON ERROR` handler, and `DIM`, `ERASE` and a new
+  variable moved or cleared the arrays with it off; with large arrays a frame
+  came 10 ms late. See
+  [Interrupts and traps](../concepts/interrupts-and-traps.md).
 
 ## Where it lives
 

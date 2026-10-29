@@ -193,6 +193,15 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   no frame interrupt waits long while a program is typed
   ([before](../../scratchpad/irqlat_probe.out),
   [after](../../scratchpad/irqlat_after.out)).
+- **An error handler ran with the interrupt off** (fixed 2026-10-29,
+  D-LATEINT, found by a test program). Without a disk, `OPEN "NUL:"` is
+  `Bad file name`, raised from inside a statement zerobas keeps in its second
+  sub-ROM. The error left that code without switching the interrupt back on,
+  so the `ON ERROR` handler ran with it off until the handler first used a
+  variable, and a frame interrupt came about 10 ms late. Three array moves held
+  it off as well: `DIM` clearing a new array, a new variable moving the arrays
+  up, and `ERASE` moving them down. Each took over 10 ms with large arrays; the
+  VG-8020 keeps the interrupt on through all four.
 - **Keys typed in the first seconds after power-on were lost** (fixed
   2026-10-09, D-BOOTSCAN, reported by Joost). The interrupt scans the keyboard
   only when a countdown cell (`SCNCNT`, `&HF3F6`) reaches 0; the VG-8020's
@@ -294,4 +303,7 @@ the trap back on. `trap_init` empties the table at power-on, `RUN`, `NEW` and
 - `make time-acceptance`; `make play-acceptance`, `make play-trace-acceptance`
   and `make gicini-acceptance` — `TIME`, `PLAY`, `PLAY(n)`, what stops music.
 - `make direct-ctrl-acceptance` — Ctrl-STOP and `STOP` at the prompt.
+- `make gcdi-acceptance` — the frame interrupt keeps coming during string
+  work, math, `READ`, `CIRCLE`, `PLAY`, array moves and an error handler,
+  and a line typed meanwhile arrives whole; the VG-8020 is the reference.
 - `make unit-test` — the trap state machine (`tests/test_traps.py`).

@@ -1,0 +1,6 @@
+K-E ROMs ee7e5cf8 -> f02f88a3  red [('raise', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  want [('raise', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  HIT
+K-V ROMs ee7e5cf8 -> 5704c3d7  red [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  want [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  HIT
+K-Z ROMs ee7e5cf8 -> cf462727  red [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  want [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  HIT
+K-X ROMs ee7e5cf8 -> ad28a38d  red [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  want [('dimshift', 'C-BIOS_MSX1_EU_REPACK_DISK'), ('dimshift', 'C-BIOS_MSX1_EU_REPACK_NODISK')]  HIT
+restored ROMs ee7e5cf8 == clean
+4/4 knives HIT

@@ -253,6 +253,8 @@ aer_top:
                 ; -- a FIELDed element's descriptor IS the element slot, and the
                 ; LDIR below carries it down with every other one, pointer and
                 ; all. There is no key to re-aim.)
+                ei                          ; D-LATEINT: as scv's LDDR -- the
+                                            ; array region, interrupts on
                 ldir                        ; slide [SRC..SRC+COUNT) down onto
                                             ; DST -- moves every following
                                             ; descriptor AND the terminator in
@@ -261,6 +263,7 @@ aer_top:
                                             ; standard ascending-LDIR
                                             ; shift-left idiom -- no byte is
                                             ; written before it has been read)
+                di
                 xor     a
                 ld      (ARY_ERR),a         ; 0 ok
                 ret
@@ -752,7 +755,14 @@ scv_ceil_fits:
                 ld      d,(iy+16)           ; DE = DST_LAST
                 ld      c,(iy+17)
                 ld      b,(iy+18)           ; BC = COUNT
+                ; D-LATEINT: the move is the whole array region (1.7 KB took
+                ; ~10 ms in the ladder's L3_report) and the VG-8020 makes it
+                ; with interrupts on. A page-0 tenant may run EI (the $0038
+                ; trampoline); the ISR touches nothing in [OLDBASE, DST_LAST],
+                ; which stays below the live SP (sp_ceil above).
+                ei
                 lddr
+                di
                 ; --- write the new scalar entry at OLDBASE (the freed hole) -
                 ld      l,(iy+4)
                 ld      h,(iy+5)            ; HL = OLDBASE = new entry addr
@@ -1224,6 +1234,8 @@ aal_bounds_done:
                 ld      a,b
                 or      c
                 jr      z,aal_zero_done     ; (defensive; data is never 0 in practice)
+                ei                          ; D-LATEINT: a big DIM's fill took ~11 ms
+                                            ; under DI; the ISR touches none of it
 aal_zero_lp:
                 ld      (hl),0
                 inc     hl
@@ -1232,6 +1244,7 @@ aal_zero_lp:
                 or      c
                 jr      nz,aal_zero_lp
 aal_zero_done:
+                di
                 ld      l,(iy+3)
                 ld      h,(iy+4)            ; HL = the new descriptor's base
                 inc     sp

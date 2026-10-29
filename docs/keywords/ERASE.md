@@ -88,6 +88,10 @@ The one rung not yet proven is **RAM usage**.
   prints just as well. The row that counts now reads the effect — after
   `ERASE`, a second `DIM` succeeds and the element reads 0, where without it
   the `DIM` is `Redimensioned array`.
+- **`ERASE` held the frame interrupt off** (fixed 2026-10-29,
+  D-LATEINT). Moving the arrays after the erased one down ran with the
+  interrupt off, over 10 ms for a few kilobytes of arrays; the VG-8020
+  keeps it on, and zerobas now does too.
 
 ## Where it lives
 
@@ -105,3 +109,5 @@ the array and closes the gap it leaves.
   error.
 - `make kwsweep` — the effect row and the error rows for {2, 5}.
 - `make kwram` — the RAM-usage comparison.
+- `make gcdi-acceptance`, row `dimshift` — `ERASE` keeps the frame
+  interrupt, against the VG-8020.

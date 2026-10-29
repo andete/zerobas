@@ -262,6 +262,9 @@ ptf_num_fill:
                 and     $04
                 jr      z,ptf_num_nodol
                 inc     b
+                ld      a,(PU_TYPE)
+                and     $08                 ; D-PUSTARDOL: `**$` is ONE column
+                jr      nz,ptf_num_nodol
                 inc     b
 ptf_num_nodol:
                 ; D-PUSTAR: the two asterisks COUNT toward the field width --
@@ -346,9 +349,35 @@ ptf_star:
                 ld      a,(PU_FLAGS)
                 set     2,a
                 ld      (PU_FLAGS),a
+                inc     c                   ; C = index past BOTH asterisks
+                ; D-PUSTARDOL (2026-10-29): `**$` -- the asterisk fill with a
+                ; FLOATING dollar. On the VG-8020 the `$` sits right before the
+                ; digits, after any sign: `**$##.##`;5 is `***$5.00`, -5 is
+                ; `**-$5.00` (scratchpad/pustardol_measure.out). So a `$` right
+                ; after the pair, followed by `#` or `.`, is the D-PUDOLLAR float
+                ; (PU_TYPE bit2) of ONE column (bit3), consumed with the pair.
+                ld      a,(PU_FMTLEN)
+                sub     c
+                cp      2
+                jr      c,ptf_star_go       ; fewer than 2 chars left: no `$#`
+                inc     hl
+                ld      a,(hl)
+                cp      '$'
+                jr      nz,ptf_star_go
+                inc     hl
+                ld      a,(hl)
+                cp      '#'
+                jr      z,ptf_star_dol
+                cp      '.'
+                jr      nz,ptf_star_go
+ptf_star_dol:
+                ld      a,(PU_TYPE)
+                or      $0C                 ; bit2 the floating `$`, bit3 just one
+                ld      (PU_TYPE),a
+                inc     c                   ; past the `$`
+ptf_star_go:
                 ld      a,c
-                inc     a
-                ld      (PU_POS),a          ; past BOTH asterisks
+                ld      (PU_POS),a          ; past the asterisks (and the `$`)
                 jp      ptf_scan
 ptf_star_lit:
                 ld      a,'*'
@@ -440,6 +469,8 @@ ptf_plus:
                 ; LITERAL and produced `+  $42` -- the same six characters in the
                 ; wrong order, which is exactly the kind of near-miss a column
                 ; count catches and an error code cannot.
+                cp      '*'                 ; D-PUSTARDOL: `+**$##.##`;5 is
+                jr      z,ptf_plus_sign     ; `***+$5.00` -- the `+` is the sign
                 cp      '$'
                 jr      nz,ptf_plus_lit
 ptf_plus_sign:

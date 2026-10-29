@@ -229,9 +229,9 @@ def run(machine, name, text, gaps=False, typing="inject"):
 # and fails once they come back clean on EVERY target (so the entry cannot outlive
 # its fix; one target can be clean while another is not).
 KNOWN_GAPS = {
-    # D-GCDI5 (2026-10-29) emptied this; then:
-    "L4_errors": "D-LATEINT",  # NODISK only: two ~10 ms LATE interrupts (26.5 / 30.3 ms)
-                               # in line 1000's LPRINT, interrupts ENABLED -- not lost
+    # D-GCDI5 emptied this, then D-LATEINT (2026-10-29) closed L4_errors' entry: an
+    # error raised through sub2's p0cb skipped sr_slot's `ei`, and the ON ERROR
+    # handler ran under DI.
 }
 
 

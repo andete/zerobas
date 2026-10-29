@@ -22,7 +22,7 @@
 320 FOR I=1 TO N:B#=B#+A#(I):IF A#(I)>0 THEN IN#=IN#+A#(I) ELSE OU#=OU#-A#(I)
 330 LPRINT USING "\        \ \          \ #####.## ######.##";FND$(D$(I));T$(I);A#(I);B#
 340 NEXT
-350 LPRINT USING "IN  $$#####.##   OUT **#####.##";IN#;OU#:REM **$ differs: D-PUSTARDOL
+350 LPRINT USING "IN  **$#####.##   OUT **$#####.##";IN#;OU#
 360 LPRINT USING "BALANCE +#####.##  ##,###.##  ###.##-";B#;B#*10;-B#
 370 LPRINT "CP 2";N;STR$(B#);VAL(STR$(B#))=B#;FNY$(D$(1));FNM(D$(N))
 380 PRINT "BALANCE";B#:END

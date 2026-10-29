@@ -1,22 +1,54 @@
-sub.rom d3478148 (clean)
-K-S sub.rom bf28eb13 (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 0
-   scalar  C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=389 max=0.059    DIVERGES
-   scalar  C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=389 max=0.058    DIVERGES
-K-A sub.rom c07f5b5a (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
-   array   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=23.4 gaps=56 max=0.034  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
-   array   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=23.4 gaps=55 max=0.035  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
-K-R sub.rom 6cdedf89 (CHANGED)  rc=1  read red on 2/2 zerobas rows, other rows red 0
-   read    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=42.6 gaps=24 max=0.049  CP 1 [O VXIGLY QUICK DAFT ZEBRAS] 26  42 FOUND  DIVERGES
-   read    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=42.6 gaps=24 max=0.049  CP 1 [OW EINGLY QUICK DAFT ZEBRAS] 27  42 FOUND  DIVERGES
-K-C sub.rom 31cb1f42 (CHANGED)  rc=1  circle red on 2/2 zerobas rows, other rows red 0
+sub.rom 034e6a81 (clean)
+K-S sub.rom aa8be891 (CHANGED)  rc=1  scalar red on 2/2 zerobas rows, other rows red 1
+   scalar  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=38.3 gaps=390 max=0.056  CP 1 [THE QICK BRON FOX] 17  DIVERGES
+   scalar  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=38.3 gaps=390 max=0.056  CP 1 [THE QICK BRON FOX] 17  DIVERGES
+   array   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=23.0 gaps=1 max=0.031  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
+K-A sub.rom 1b79cda1 (CHANGED)  rc=1  array red on 2/2 zerobas rows, other rows red 0
+   array   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=22.9 gaps=49 max=0.034  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
+   array   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=22.9 gaps=42 max=0.034  CP 1 [JUMPS OVER THE LAZY DOG] 23  6  DIVERGES
+K-R sub.rom a520bec0 (CHANGED)  rc=1  read red on 2/2 zerobas rows, other rows red 0
+   read    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=42.6 gaps=24 max=0.049  CP 1 [O VXINGLY QUICK DAFT ZEBRAS] 27  42 FOUND  DIVERGES
+   read    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=42.6 gaps=24 max=0.049  CP 1 [O VXIGLY QUICK DAFT ZEBRAS] 26  42 FOUND  DIVERGES
+K-C sub.rom bf5916a9 (CHANGED)  rc=1  circle red on 2/2 zerobas rows, other rows red 0
    circle  C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=60 max=0.053    DIVERGES
-   circle  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=16.4 gaps=58 max=0.049  CP 1 [PHINX O BLACK QUARTZ JUDGE MYVOW] 32  DIVERGES
-K-P sub.rom f02af34b (CHANGED)  rc=1  play red on 2/2 zerobas rows, other rows red 0
+   circle  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=16.4 gaps=58 max=0.05  CP 1 [PHINX O BLACK QUARTZ JUDGE MYVOW] 32  DIVERGES
+K-P sub.rom 18a51dd4 (CHANGED)  rc=1  play red on 2/2 zerobas rows, other rows red 0
    play    C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=14.5 gaps=4 max=0.17  CP 1 [WALTZ BAD NYMPH FOR QUICK JIGS VEX] 34  DIVERGES
-   play    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=14.5 gaps=4 max=0.17  CP 1 [WALTZ BAD NYMPH FOR QUICK JIGS VEX] 34  DIVERGES
-K-M sub.rom 81c30387 (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
+   play    C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=14.4 gaps=4 max=0.17  CP 1 [WALTZ BAD NYMPH FOR QUICK JIGS VEX] 34  DIVERGES
+K-M sub.rom d54d6d1f (CHANGED)  rc=1  math red on 2/2 zerobas rows, other rows red 0
    math    C-BIOS_MSX1_EU_REPACK_NODISK   TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
    math    C-BIOS_MSX1_EU_REPACK_DISK     TIMEOUT t=900.0 gaps=39 max=0.198    DIVERGES
-K-H main 39c1234a (CHANGED)  rc=1  di_safety red: 1
+build failed:
+zerobas/cbios-repack/eu-drop-dead-strings.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/ctrl-keys.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/linttb-scroll.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/vdp-reg7.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/calpat-de.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/bios-regs.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/bios-keyscan.patch
+  git -C /tmp/zerobas/cbios-repack-7so09o0x apply /Users/joost/projects/zerobas/cbios-repack/key-repeat.patch
+  make -s -C /tmp/zerobas/cbios-repack-7so09o0x derived/bin/cbios_main_msx1_eu.rom
+OK: repacked C-BIOS -> /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-repacked.rom  (sha1 eaf3fae8ddd06c8ec4726e31f848207ae770038c)
+  git -C /tmp/zerobas/cbios-repack-7so09o0x checkout -q -- .
+  make -s -C /tmp/zerobas/cbios-repack-7so09o0x clean
+  make -s -C /tmp/zerobas/cbios-repack-7so09o0x derived/bin/cbios_main_msx1_eu.rom
+OK: pristine C-BIOS -> /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-pristine.rom  (sha1 baf2e9c69252fd9b350b488d89c71887b9d05eec)
+  git -C /Users/joost/projects/cbios worktree remove --force /tmp/zerobas/cbios-repack-7so09o0x
+building repacked + pristine C-BIOS from the pinned tag...
+  /opt/homebrew/opt/python@3.14/bin/python3.14 /Users/joost/projects/zerobas/tools/build_repacked_cbios.py --cbios /Users/joost/projects/cbios -o /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-repacked.rom --pristine /Users/joost/projects/zerobas/build/cbios_main_msx1_eu-pristine.rom
+assembling relocated BASIC ($2765) + its C-BIOS-padding islands + tape...
+  pasmo --bin /Users/joost/projects/zerobas/basic/main.asm /tmp/zerobas/tmpglxkyb4d/basic-full.bin
+le main.asm
+WARNING: Var vdpsta is never used on line 1490 of file video.asm
+WARNING: Var wrtvdp_nosav is never used on line 99 of file video.asm
+WARNING: Var wrtvdp_sav is never used on line 94 of file video.asm
+WARNING: 64KB limit passed inside instruction on line 356 of file /Users/joost/projects/zerobas/basic/main.asm
+WARNING: Switching to 3 pass mode on line 728 of file basic/sysvars.inc
+WARNING: looks like a non existent instruction on line 1114 of file basic/float-arith.asm
+WARNING: looks like a non existent instruction on line 1166 of file basic/float-arith.asm
+ERROR: Symbol 'STRING_ENGINE_OVERRAN_4000_HEADER__LOW_REGION_FULL__TRIM_OR_SPLIT' is undefined  on line 351 of file /Users/joost/projects/zerobas/basic/main.asm
+# 2026-10-29: the run above stopped at K-H, whose cut (2 B inserted) no longer
+# fit the low region; the cut is byte-neutral now, and K-H ran alone (--kh-only):
+K-H main 261ae1c6 (CHANGED)  rc=1  di_safety red: 1
    FAIL  di_safety notes-advanced=[]
-restored sub.rom d3478148 == clean
+restored sub.rom 034e6a81 == clean
