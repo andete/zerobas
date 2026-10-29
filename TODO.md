@@ -53,6 +53,18 @@ item — do **one item per session** to keep context lean.
       ([`progladder_l1.out`](scratchpad/progladder_l1.out)). Time ratios: guess
       x1.02, loan x1.17, **dice x2.13** — 1200 `RND(1)` + array updates; a TIER 5
       reading, filed here only (speed is paused for ROM space).
+      ✅ **L5 (2026-10-29): random-access stock file, SAME against the CF-3300**
+      (`@DISK`: the CF-3300 and the DISK target, each on a private copy of
+      `disk/empty720.dsk`, the boot's `Enter date` answered with RETURN) —
+      FIELD / LSET / RSET / MKI$ / MKS$ / CVI / CVS, PUT / GET with and without a
+      record number, LOF, a sequential export read back with EOF / LOC / LOF, ON
+      ERROR + RESUME on a missing file, KILL; printer and screen identical. Its
+      gaps are KNOWN (D-DISKDI). Draft mistakes, all mine and all identical on both
+      machines: MAXFILES left at 1 (ERR 52), `WRITE #` (not MSX BASIC: ERR 2), and
+      `\ \` string fields, which the CF-3300 does not take (recorded under the
+      PRINT USING item). The runner now INJECTS answers into KEYBUF
+      (`omsx_repl.key_proc`): openMSX's `type` lost keys on BOTH machines after disk
+      I/O.
       ✅ **L4 (2026-10-29): sprite demo, SAME** — sprites, ON SPRITE (2 hits),
       ON INTERVAL, two-voice PLAY, frame-locked; printer log identical. Its 2 gaps
       are KNOWN (D-GCDI3). The first draft's `PLAY "...AB>C"` was ERR 5 on BOTH
@@ -84,6 +96,20 @@ item — do **one item per session** to keep context lean.
       ⚠️ RESIDUAL, NOT MEASURED: the other DI tenants (PRINT USING, READ/DATA,
       LIST's detokeniser, PLAY parse, FILES, ...) -- the ladder's gap watch is the
       instrument.
+
+- [ ] 🔴 **DISK I/O HOLDS THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: 43 GAPS UP
+      TO 404 MS AGAINST 34 UP TO 223 MS (D-DISKDI, found 2026-10-29).**
+      🎚️ TIER 5 — timing parity: both machines miss frames during disk transfers
+      (TIME lags, a key pressed meanwhile can be lost), zerobas more and longer.
+      🤖 **AUTONOMOUS** — measure per operation first.
+      📏 The program ladder's [`L5_stock.bas`](probes/programs/L5_stock.bas) (random
+      file, sequential export, KILL), CF-3300 vs the DISK target; sampled with the
+      BASIC line ([`progladder_l5.out`](scratchpad/progladder_l5.out)): almost all
+      in disk.rom's sector-transfer waits -- `fdc_rd_wait` (125 of 240 samples),
+      `fwd_wait` (49), `fdc_rd_byte`, `fwd_byte` -- most on line 160 (GET / LSET /
+      RSET / PUT in place). Candidates: a whole multi-sector transfer under one DI
+      where the reference re-enables between sectors, or the seek / settle wait
+      under DI. Black-box only on the reference side (its gaps, never its code).
 
 - [ ] 🔴 **`READ` AND `PLAY` HOLD THE FRAME INTERRUPT OFF FOR 35-50 MS IN THE
       PROGRAM LADDER'S SPRITE DEMO (D-GCDI3, found 2026-10-29).**
@@ -7267,7 +7293,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9753 (T-6FE392)8 (T-529ABE)` from `TODO.md:15426 (T-529ABE)`: a
+      `TODO.md:9784 (T-6FE392)8 (T-529ABE)` from `TODO.md:15457 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -9526,6 +9552,11 @@ list. **When a slice lands, grep this list for what it just shipped.**
       observation and is NOT the basis of anything here; the measured fact is only
       that the CF-3300 raises ERR 5 where the VG-8020 renders
       [[a-mechanism-inferred-from-one-observation]].
+      📏 **A SECOND OBSERVATION (2026-10-29, the program ladder's L5 draft):**
+      `LPRINT USING "## \          \ ####";1;N$;Q` on the CF-3300 printed
+      `` 1 \          \ `` LITERALLY, then handed N$ to `####`: ERR 13. So the
+      backslash pair is not a string field there -- the hypothesis above, now seen
+      directly. zerobas's DISK target renders the field, as the VG-8020 does.
       🔴 **AND THE FRAMING ABOVE IS WRONG — THIS IS NOT A PRESENTATIONAL
       SPLIT AT ALL (2026-09-09, answering Joost's *"what makes the most sense
       given the intent of the format string?"*).** The row is `$$###`, the
@@ -10213,7 +10244,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15426 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15457 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

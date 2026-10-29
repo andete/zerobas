@@ -48,10 +48,10 @@ ROWS = {
 def main():
     bad = 0
     for row, text in ROWS.items():
-        ref = run_programs.run(run_programs.REF, f"gcdi_{row}", text, gaps=True)
+        ref = run_programs.run(run_programs.REF, f"gcdi_{row}", text, gaps=True, typing="type")
         print(f"{row:7} {run_programs.REF:30} {ref[0]}  {ref[1].strip()}")
         for m in run_programs.ZB:
-            zb = run_programs.run(m, f"gcdi_{row}", text, gaps=True)
+            zb = run_programs.run(m, f"gcdi_{row}", text, gaps=True, typing="type")
             mx = float(zb[0].split("max=")[1].split()[0]) if "max=" in zb[0] else 99.0
             n = int(zb[0].split("gaps=")[1].split()[0]) if "gaps=" in zb[0] else 999
             n_ref = int(ref[0].split("gaps=")[1].split()[0]) if "gaps=" in ref[0] else 0

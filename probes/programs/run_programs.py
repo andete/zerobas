@@ -10,33 +10,39 @@ listing `probes/programs/L<n>_<name>.bas`; its first line may carry
 
   1 REM @ANSWERS 50|25|37
 
-the keyboard input, one INPUT answer per `|` (each typed with a RETURN). The
+(with `@DISK` on that line, the program runs against the CF-3300 and on the DISK
+target only, each with a private copy of disk/empty720.dsk) the keyboard input, one INPUT answer per `|` (each typed with a RETURN). The
 listing goes on an ASCII tape and openMSX's autorun loads it with RUN"CAS:", so
 each machine tokenises it ITSELF. Once the program runs (CURLIN leaves direct
 mode, after the prompt has held 2 s) the answers are typed ONE AT A TIME, each
-into an empty keyboard buffer: openMSX's `type` holds a key for a fixed 1/15 s
-and never waits for the machine, so typing everything up front overflowed the
-39-key buffer on BOTH machines. The run is over when CURLIN is back in direct mode (the
+straight into an empty keyboard buffer (omsx_repl.key_proc, the project's
+injector), once the program has stayed on one line for 0.5 s (it waits in
+INPUT). Not openMSX's `type`: it holds each key for a fixed 1/15 s and never
+waits, so a key pressed during a long interrupt-off stretch is lost -- the L5
+draft lost keys on BOTH machines after disk I/O (FDC gaps up to 202 ms on the
+CF-3300); D-GCDI's gate still types with `type`, ON PURPOSE, because a lost key
+is what it measures. The run is over when CURLIN is back in direct mode (the
 program ended, or stopped on an error).
 
 Two things are compared:
   * the printer log: a program LPRINTs numbered checkpoints (`CP 3 ...`), which
     never scroll away -- the first checkpoint that differs names the area;
-  * the text screen at the end (row stride 40, or 32 in SCREEN 1; the prompt
+  * the text screen at the end (SCREEN 0's TXTNAM, row stride 40, or SCREEN 1's T32NAM,
+    stride 32; the prompt
     row `ZB` reads as `Ok`).
 The emulated seconds each machine took are printed beside them. With `--gaps`
 (the gate runs that way) a JIFFY watchpoint also counts frame-interrupt gaps,
 and a zerobas run with MORE of them than the reference diverges (D-GCDI).
 
 Clean-room: typed keys and a tape in; the printer port, the text screen and
-work-area RAM (CURLIN, TXTNAM, SCRMOD) out. No reference ROM byte is read.
+work-area RAM (CURLIN, TXTNAM / T32NAM, SCRMOD) out. No reference ROM byte is read.
 
   python3 -u probes/programs/run_programs.py            # every program
   python3 -u probes/programs/run_programs.py L1_guess   # some (name substring)
   ... --keep DIR    # keep each run's printer log (.lpt) and screen (.scr) in DIR
   ... --gaps        # also report frame-interrupt gaps (see GAP_TCL)
 """
-import glob, os, signal, subprocess, sys, time
+import glob, os, shutil, signal, subprocess, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
@@ -44,10 +50,15 @@ import cas_encode                                    # noqa: E402
 import omsx_preflight                                # noqa: E402
 import probe_tmp                                     # noqa: E402
 from omsx_run import _tcl_dquote                     # noqa: E402
+from omsx_repl import key_proc                       # noqa: E402
 
 OMSX = os.environ.get("OPENMSX", "/opt/homebrew/bin/openmsx")
 REF = "Philips_VG_8020"
 ZB = ["C-BIOS_MSX1_EU_REPACK_NODISK", "C-BIOS_MSX1_EU_REPACK_DISK"]
+# a program whose line 1 says `@DISK` needs a drive: the CF-3300 is the reference
+# and only the DISK target runs, each with its own copy of disk/empty720.dsk (no MSX-DOS on it, so both boot to BASIC)
+DISK_REF = "National_CF-3300"
+DISK_ZB = ["C-BIOS_MSX1_EU_REPACK_DISK"]
 LIMIT = 900.0      # emulated seconds
 KEEP = None        # --keep DIR: copy each run's printer log and screen there
 
@@ -62,16 +73,20 @@ after time 0.3 {
   AUTORUN_FIX
 }
 GAPWATCH
+KEYPROC
 proc __rd16 {a} { expr {[debug read memory $a] + 256*[debug read memory [expr {$a+1}]]} }
 # phases: 0 booting (CURLIN is not yet meaningful) -> 1 the prompt held for 2 s
 # (direct mode, the load is typed) -> 2 the program runs -> ended
 set ::__ph 0
 set ::__keys [list ANSWERS]
 set ::__next 0
+set ::__cl -1
+set ::__clt 0
 set ::__ff 0
 proc __done {r} {
   set w [expr {[debug read memory 0xFCAF] == 1 ? 32 : 40}]
-  binary scan [debug read_block VRAM [__rd16 0xF3B3] 960] a* t
+  set nam [expr {[debug read memory 0xFCAF] == 1 ? [__rd16 0xF3BD] : [__rd16 0xF3B3]}]
+  binary scan [debug read_block VRAM $nam 960] a* t
   set f [open {OUT} w]
   puts $f "$r t=[format %.1f [machine_info time]] GAPOUT w=$w"
   puts -nonewline $f $t
@@ -89,12 +104,16 @@ proc __poll {} {
   # one answer at a time: only into an EMPTY keyboard buffer (GETPNT == PUTPNT)
   # and after the previous answer's `type` is done (15 Hz, a release between
   # repeated keys: <= 2/15 s a key) -- a 39-key buffer never overflows
+  # ... and only once CURLIN has held one line for 0.5 s (the program waits in
+  # INPUT): a key-wait that also keeps answers out of a busy stretch
+  if {$cl != $::__cl} { set ::__cl $cl; set ::__clt [machine_info time] }
   if {$::__ph == 2 && [llength $::__keys] > 0 && [machine_info time] >= $::__next
+      && [machine_info time] - $::__clt >= 0.5
       && [__rd16 0xF3FA] == [__rd16 0xF3F8]} {
     set k [lindex $::__keys 0]
     set ::__keys [lrange $::__keys 1 end]
-    type $k
-    set ::__next [expr {[machine_info time] + 2.0 * ([string length $k] + 1) / 15 + 0.3}]
+    TYPECMD $k
+    set ::__next [expr {[machine_info time] + 0.3}]
   }
   if {$::__ph == 2 && $cl == 0xFFFF} {
     set ::__ph 3
@@ -135,7 +154,22 @@ debug set_watchpoint write_mem 0xFC9E {} __jw
 GAP_OUT = "gaps=[llength $::__gaps] max=[expr {[llength $::__gaps] ? [lindex [lsort -real -decreasing $::__gaps] 0] : 0}]"
 
 
-def run(machine, name, text, gaps=False):
+# A data disk in the drive makes the disk ROM ask `Enter date` at power-on, on the
+# CF-3300 as on zerobas: answer it with RETURN, early, before the BASIC prompt.
+DATE_TCL = r"""
+after time 6 { type "\r" }
+after time 10 { type "\r" }
+"""
+
+
+def needs_disk(text):
+    return "@DISK" in (text.splitlines()[0] if text else "")
+
+
+def run(machine, name, text, gaps=False, typing="inject"):
+    """typing="inject": answers go into KEYBUF (key_proc) and cannot be lost;
+    typing="type": openMSX's `type`, a real 1/15 s key press per character --
+    for a gate whose subject IS whether a pressed key gets seen (gcdi)."""
     cas = probe_tmp.tmp(f"prog_{name}.cas")
     open(cas, "wb").write(cas_encode.build_cas_ascii("PROG", text))
     log = probe_tmp.tmp(f"prog_{machine}_{name}.lpt")
@@ -149,11 +183,18 @@ def run(machine, name, text, gaps=False):
                          .replace("{CAS}", "{" + cas + "}").replace("{LOG}", "{" + log + "}")
                          .replace("{OUT}", "{" + out + "}").replace("LIMIT", str(LIMIT))
                          .replace("ANSWERS", keys)
-                         .replace("GAPWATCH", GAP_TCL if gaps else "")
+                         .replace("KEYPROC", key_proc())
+                         .replace("TYPECMD", "__key" if typing == "inject" else "type")
+                         .replace("GAPWATCH", (GAP_TCL if gaps else "") +
+                                  (DATE_TCL if needs_disk(text) else ""))
                          .replace("GAPOUT", GAP_OUT if gaps else ""))
-    proc = subprocess.Popen(omsx_preflight.guarded(
-                                [OMSX, "-machine", machine, "-command",
-                                 "set renderer none; set sound_driver null", "-script", tcl]),
+    cmd = [OMSX, "-machine", machine, "-command",
+           "set renderer none; set sound_driver null", "-script", tcl]
+    if needs_disk(text):
+        dsk = probe_tmp.tmp(f"prog_{machine}_{name}.dsk")
+        shutil.copyfile(os.path.join(REPO, "disk", "empty720.dsk"), dsk)
+        cmd += ["-diska", dsk]
+    proc = subprocess.Popen(omsx_preflight.guarded(cmd),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                             start_new_session=True)
     deadline = time.time() + 600
@@ -185,6 +226,7 @@ KNOWN_GAPS = {
     "L1_dice": "D-GCDI2",   # RND's loop: 41 ms gaps
     "L3_report": "D-GCDI2", # 180 RND calls: 68 gaps <= 40 ms (also a few in VAL's tok_skip)
     "L4_sprite": "D-GCDI3", # READ's DATA scan (line 60) and PLAY's parser (line 140)
+    "L5_stock": "D-DISKDI", # FDC transfer waits under DI: 43 gaps <= 404 ms vs 34 <= 223 ms
 }
 
 
@@ -219,10 +261,11 @@ def main():
     for path in progs:
         name = os.path.basename(path)[:-4]
         text = open(path).read()
-        ref = run(REF, name, text, gaps)
+        ref_m, zbs = (DISK_REF, DISK_ZB) if needs_disk(text) else (REF, ZB)
+        ref = run(ref_m, name, text, gaps)
         print(f"{name}")
-        print(f"  {REF:30} {ref[0]}  lpt {len(ref[1].splitlines())} lines")
-        for m in ZB:
+        print(f"  {ref_m:30} {ref[0]}  lpt {len(ref[1].splitlines())} lines")
+        for m in zbs:
             zb = run(m, name, text, gaps)
             d_lpt = first_diff(ref[1], zb[1])
             d_scr = first_diff("\n".join(ref[2]), "\n".join(zb[2]))
