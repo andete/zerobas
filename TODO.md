@@ -125,6 +125,47 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **`PRINT USING` PRINTED A TINY NUMBER'S DIGITS AS IF IT WERE NOT TINY
+      (D-PUTINY, found 2026-10-29 by the program ladder's L4_tables).**
+      🎚️ TIER 1 — a trig table printed COS(90°) as `-3.38082` where the VG-8020
+      prints `-0.00000`: any value that PRINT writes in E form (` 3.38081E-15 `)
+      reached the fixed renderer, whose walk read digits, a point and digits and
+      stopped at the `E` (also `F #.#`;1D-20 gave `1.1`). A LARGE one did the
+      same: `#######`;1D+15 gave `      2`.
+      🤖 **AUTONOMOUS.** Measured on the VG-8020
+      ([`putiny_measure.out`](scratchpad/putiny_measure.out),
+      [`putiny_big.out`](scratchpad/putiny_big.out),
+      [`putiny_neg.out`](scratchpad/putiny_neg.out),
+      [`putiny_wide.out`](scratchpad/putiny_wide.out)): a small value rounds
+      half-up into the places like any other (`5D-6` -> `+0.00001`, `4D-6` ->
+      `+0.00000`); a large one is `%`, a space and PRINT's own E text, in ANY
+      field: unpadded, its `-` dropped, `+` / trailing `-` / `**` / `$$` ignored.
+      ✅ **FIXED 2026-10-29.** sub/punum.asm `pnt_norm` (sub page 1) rewrites
+      flt_fmt's `E-nn` text as `.000ddd` (n-1 zeros, at most 28 digits) before the
+      walk, and turns `E+nn` into the finished `% ` + text; the sign and emit
+      tenants pass a PU_NUM that starts with `%` through untouched (sub page 0,
+      12 B). Gate putiny-acceptance, knives K-T / K-B
+      ([`putiny_knife.out`](scratchpad/putiny_knife.out)).
+
+- [ ] 🔴 **A NEGATIVE FRACTION WITH NO ROOM FOR `-0` OVERFLOWS; THE VG-8020 DROPS THE
+      ZERO (D-PUNEGLEAD, found 2026-10-29 measuring D-PUTINY).**
+      🎚️ TIER 1 — `PRINT USING "#.##";-.5` is `-.50` on the VG-8020 and `%-0.50`
+      here; `#.#`;-.04 is `-.0` / `%-0.0`; with room (`##.#`) both print `-0.5`
+      ([`putiny_lead.out`](scratchpad/putiny_lead.out)). Also `+.#`;-.5 is `-.5`
+      there and `+%-.5` here: the scanner takes `+.` apart.
+      🤖 **AUTONOMOUS** — next. The leading `0` belongs to the column (D-PULEAD's
+      rule), so it is the one thing to give up when `-` needs it; measure `**`,
+      `$$` and the trailing-sign forms first.
+
+- [ ] 🔬 **`COS(4*ATN(1#)/2)` IS `-6.2831853071796E-14` ON THE VG-8020 AND
+      `-3.3808E-15` HERE (D-COSHALFPI, found 2026-10-29 measuring D-PUTINY).**
+      🎚️ TIER 1 — a printed number differs in a plain calculation (as D-POWNEG).
+      Both are rounding noise around 0, but they are not the same noise, and
+      zerobas's prints only 5 significant digits of a double
+      ([`putiny_measure.out`](scratchpad/putiny_measure.out) row G).
+      🤖 **AUTONOMOUS** — measure COS / SIN / TAN near their zeros, single and
+      double, before touching the math pack.
+
 - [ ] 🔴 **THE PROGRAM LADDER: WHOLE 1980s-STYLE BASIC PROGRAMS AS INTEGRATION
       TESTS (D-PROGLADDER, Joost's idea 2026-10-28).**
       🎚️ TIER 1 — it finds what a real user hits first, so its findings are
@@ -168,6 +209,11 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L4_tables (2026-10-29)**: integer `\` / MOD / AND / OR / XOR / NOT,
+      HEX$ / OCT$ / BIN$ and back, INT / FIX / CINT, single against double,
+      PRINT USING tables of SQR / LOG / EXP / `^^^^`, trig through a DEF FN,
+      compound interest with a double DEF FN, SWAP sort, STR$ of huge values,
+      an int overflow trapped. It FOUND D-PUTINY; SAME after it.
       ✅ **L3_screen1 and L4_errors (2026-10-29).** SCREEN 1 with VPOKEd characters
       and colours, BASE / VDP / VPEEK checksums: SAME. The error-handling program
       (RESUME / RESUME NEXT / RESUME line, ERROR n, errors inside GOSUB, ON..GOSUB
@@ -7506,7 +7552,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9997 (T-6FE392)8 (T-529ABE)` from `TODO.md:15679 (T-529ABE)`: a
+      `TODO.md:10043 (T-6FE392)8 (T-529ABE)` from `TODO.md:15725 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10466,7 +10512,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15679 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15725 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

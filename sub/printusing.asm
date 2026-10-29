@@ -125,6 +125,9 @@ pu_tail_tenant:
 ; trailing form only MOVES that byte, while the leading form prepends to at most
 ; "32767" -> 6 + terminator.
 pu_sign_tenant:
+                ld      a,(PU_NUM)
+                cp      '%'                 ; D-PUTINY: an E-form overflow is final
+                jr      z,pst_len
                 ld      a,(PU_FLAGS)
                 bit     4,a
                 jr      nz,pst_trail
@@ -218,6 +221,9 @@ psh_done:
 pu_emit_tenant:
                 call    db_begin0           ; D-DETOKBUF: cursor -> the window, no skip
                 ld      hl,PU_NUM           ; length, measured here rather than
+                ld      a,(hl)
+                cp      '%'                 ; D-PUTINY: an E-form overflow prints as
+                jr      z,pet_cp            ; it is -- no pad, no fill, no `$`
                 ld      b,0                 ; passed -- a marshalled byte would be
 pet_len:                                    ; one more thing to keep in step
                 ld      a,(hl)

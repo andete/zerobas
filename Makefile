@@ -2533,6 +2533,12 @@ savedev-acceptance: repack-machine $(DISK_TEST_DSK)
 pustardol-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_pustardol.py
 
+# --- putiny-acceptance: PRINT USING fixed fields with E-form values (D-PUTINY) -------
+# A small value rounds into the places (COS(PI/2) is -0.00000); a large one is
+# `% ` + PRINT's E text, whatever the field. Both targets vs the VG-8020.
+putiny-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_putiny.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

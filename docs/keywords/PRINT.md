@@ -130,6 +130,15 @@ The National CF-3300 gives a third answer for the second. Why the VG-8020
 prints `$42$` has not been worked out; the ordinary `$$` in front of the
 digits is implemented and matches.
 
+**A negative fraction in a field with no room for `-0`** (D-PUNEGLEAD,
+measured 2026-10-29): the VG-8020 drops the leading zero, zerobas overflows.
+
+| format, value | VG-8020 | zerobas |
+|---|---|---|
+| `#.##`, -.5 | `-.50` | `%-0.50` |
+| `#.#`, -.04 | `-.0` | `%-0.0` |
+| `+.#`, -.5 | `-.5` | `+%-.5` |
+
 Two rungs are not yet proven. **Every error**: the error sets of `TAB(` and
 `SPC(` are measured and agree, but those of the separator forms (`;`, `,`,
 trailing separator) have not been measured on the reference. **RAM usage**:
@@ -137,6 +146,17 @@ the set of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
 
+- **A number too small or too large for `PRINT`'s plain form printed its
+  digits as if it were neither** (fixed 2026-10-29, D-PUTINY). `PRINT` writes
+  such a value in E form (` 3.38081E-15 `), and `PRINT USING`'s fixed fields
+  read those digits and stopped at the `E`: a trigonometry table printed
+  COS(90°) as `-3.38082` where the VG-8020 prints `-0.00000`, and
+  `"#######"` with 1E+15 printed `2`. On the VG-8020 a small value is rounded
+  into the places like any other; a large one prints `%`, a space and the E
+  form, whatever the field (`% 1E+15`, and its minus sign is dropped). Found by
+  a table-printing program written for the program ladder
+  ([measured](../../scratchpad/putiny_measure.out),
+  [large values](../../scratchpad/putiny_big.out)).
 - **`PRINT USING "**$##.##"` put the `$` at the left edge** (fixed
   2026-10-29, D-PUSTARDOL): `$***5.00` here, `***$5.00` on the VG-8020,
   which floats the `$` right before the digits and after any sign
@@ -200,6 +220,8 @@ the set of documented work-area cells each machine writes is not the same.
 ## Tests that cover it
 
 - `make pustardol-acceptance` — `**$` floats the dollar (D-PUSTARDOL).
+- `make putiny-acceptance` — values `PRINT` shows in E form in fixed
+  `PRINT USING` fields (D-PUTINY).
 - `make cursor-acceptance` — `TAB(`, `SPC(` and the comma zones, read as the
   position of a marker on the screen.
 - `make prnumwrap-acceptance` — numbers and a string at the end of a line.

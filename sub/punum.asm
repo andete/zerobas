@@ -67,6 +67,7 @@ pu_num_tenant:
                 and     a                   ; bit7 = D-PUEXP's `^^^^` marker
                 jp      m,pnt_exp
                 call    flt_fmt             ; HL -> FOUTBUF
+                call    pnt_norm            ; D-PUTINY: HL -> the text in FIXED form
                 ld      de,PU_NUM
                 ld      a,(hl)
                 cp      '-'
@@ -297,6 +298,106 @@ pnt_term:
 ; pnt_digstart -- HL = PU_NUM's first DIGIT, stepping past a leading `-`.
 ; Clobbers AF and HL only, which is why it can be called from inside the carry
 ; walk without disturbing DE, BC or the count in C.
+; --- pnt_norm (D-PUTINY): flt_fmt's text in fixed notation -------------------
+; flt_fmt writes what PRINT shows, and PRINT switches to E form for a small or a
+; large magnitude (` 3.38081E-15 `, ` 1E+15 `). The fixed-point walk above reads
+; digits, a point and digits, and stopped at the `E`: `USING"+#.#####"` printed
+; COS(PI/2) as `-3.38082` where the VG-8020 prints `-0.00000`
+; (scratchpad/putiny_measure.out, found by the ladder's L4_tables).
+;   in   HL = FOUTBUF (the sign column first)
+;   out  no `E`:  HL unchanged
+;        `E-nn`:  HL = PU_DIG, the same value as `[sign].000ddd ` -- n-1 zeros,
+;                 then the mantissa's digits, at most 28 digits in all (the
+;                 walk needs places + 1, and PU_DIG is 32 B)
+;        `E+nn`:  RETURNS FROM pu_num_tenant with PU_NUM = `% ` + the E text,
+;                 A = its length. Measured on the VG-8020 (putiny_neg.out,
+;                 putiny_wide.out): any field, any width -- `%`, a space where
+;                 the sign would be (a `-` is DROPPED), PRINT's own text,
+;                 unpadded; `+`, a trailing `-`, `**` and `$$` do nothing. The
+;                 sign and emit tenants pass a PU_NUM that starts with `%`
+;                 through as it is (sub/printusing.asm).
+pnt_norm:
+                push    hl
+                inc     hl                  ; past the sign column (a SPACE when +)
+pnn_find:
+                ld      a,(hl)
+                cp      ' ' + 1             ; the trailing space, or the 0
+                jr      c,pnn_plain
+                inc     hl
+                cp      'E'
+                jr      nz,pnn_find
+                ld      a,(hl)
+                cp      '-'
+                jr      z,pnn_small
+                pop     hl                  ; --- E+: the raw overflow form
+                inc     hl                  ; past the sign column: it is DROPPED
+                ld      de,PU_NUM
+                ld      a,'%'
+                ld      (de),a
+                inc     de
+                ld      a,' '
+pnn_big:
+                ld      (de),a
+                inc     de
+                ld      a,(hl)
+                inc     hl
+                cp      ' ' + 1
+                jr      nc,pnn_big
+                xor     a
+                ld      (de),a
+                ld      a,e
+                sub     low PU_NUM          ; A = the length (PU_NUM is 32 B,
+                                            ; inside one page)
+                pop     hl                  ; drop pnt_norm's return: this ends
+                ret                         ; pu_num_tenant
+pnn_plain:
+                pop     hl
+                ret
+pnn_small:
+                inc     hl
+                call    pnt_x_e2            ; A = n
+                pop     hl                  ; FOUTBUF
+                ld      de,PU_DIG
+                ld      c,a
+                ld      a,(hl)              ; the sign column, as flt_fmt wrote it
+                ld      (de),a
+                inc     de
+                inc     hl
+                ld      a,'.'
+                ld      (de),a
+                inc     de
+                ld      b,28                ; digits still allowed
+                dec     c                   ; n-1 leading zeros
+                jr      z,pnn_mant
+pnn_zero:
+                ld      a,'0'
+                ld      (de),a
+                inc     de
+                dec     b
+                jr      z,pnn_end
+                dec     c
+                jr      nz,pnn_zero
+pnn_mant:
+                ld      a,(hl)
+                inc     hl
+                cp      '.'
+                jr      z,pnn_mant          ; the mantissa's own point
+                cp      '0'
+                jr      c,pnn_end           ; the `E`, or anything else
+                cp      '9' + 1
+                jr      nc,pnn_end
+                ld      (de),a
+                inc     de
+                djnz    pnn_mant
+pnn_end:
+                ld      a,' '
+                ld      (de),a
+                inc     de
+                xor     a
+                ld      (de),a
+                ld      hl,PU_DIG
+                ret
+
 pnt_digstart:
                 ld      hl,PU_NUM
                 ld      a,(hl)

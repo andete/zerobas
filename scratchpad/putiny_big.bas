@@ -1,0 +1,7 @@
+10 REM PRINT USING, fixed format, values printed in E form by PRINT
+20 FOR K=1 TO 300:NEXT
+30 DATA 1E15,1.5D20,-2.5E17,1.23456789D16,9.99999E18,1D30
+40 FOR I=1 TO 6:READ D#:LPRINT USING "A ####### B ##.##";D#;D#:NEXT
+50 LPRINT USING "C #######.###";1D-3;5D-4;4.9999D-4;-5D-4
+60 LPRINT USING "D ##.#^^^^ ##.##";1D-20;1D-20
+70 LPRINT USING "E **#.## $$#.## +#.##";-1D-9;-1D-9;-1D-9
