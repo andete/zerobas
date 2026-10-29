@@ -53,6 +53,9 @@ item — do **one item per session** to keep context lean.
       ([`progladder_l1.out`](scratchpad/progladder_l1.out)). Time ratios: guess
       x1.02, loan x1.17, **dice x2.13** — 1200 `RND(1)` + array updates; a TIER 5
       reading, filed here only (speed is paused for ROM space).
+      ✅ **L3 (2026-10-29): spreadsheet + sales report, SAME** in output; the
+      report's RND gaps are KNOWN (D-GCDI2). Sheet x1.36 time, report x1.44
+      ([`progladder_l3.out`](scratchpad/progladder_l3.out)).
       ✅ **L2 (2026-10-28): address book + text adventure, SAME** after D-GCDI
       ([`progladder_gaps.out`](scratchpad/progladder_gaps.out), which also shows 0
       interrupt gaps on all five programs). The address book found D-GCDI: its
@@ -97,6 +100,10 @@ item — do **one item per session** to keep context lean.
       comment says they rely on the skip ("htimi_guard makes that safe while page
       1 is ours", sub/bload.asm). Measure what PLAY and the traps do during each
       before choosing.
+      📏 2026-10-29, L3_report (180 `RND` calls): 68 gaps up to 40 ms; sampled,
+      almost all in RND's loop (`rabl_*`, `rdm_lp`), a few in page-0 `tok_skip`
+      (VAL's number parser) and `scv_ceil_fits` -- two more DI tenants for the
+      D-GCDI residual list ([`progladder_l3.out`](scratchpad/progladder_l3.out)).
 
       🐛 **Found by the (reverted) `math` row: D-POWNEG** (below).
 
@@ -7240,7 +7247,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:9726 (T-6FE392)8 (T-529ABE)` from `TODO.md:15399 (T-529ABE)`: a
+      `TODO.md:9733 (T-6FE392)8 (T-529ABE)` from `TODO.md:15406 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10186,7 +10193,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15399 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15406 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

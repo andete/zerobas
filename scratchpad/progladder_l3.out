@@ -1,0 +1,30 @@
+L1_dice
+  Philips_VG_8020                ENDED t=46.0 gaps=0 max=0  lpt 18 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=97.9 gaps=582 max=0.041  SAME  (gaps KNOWN: D-GCDI2)
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=97.9 gaps=577 max=0.041  SAME  (gaps KNOWN: D-GCDI2)
+L1_guess
+  Philips_VG_8020                ENDED t=25.7 gaps=0 max=0  lpt 8 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=26.1 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=26.1 gaps=0 max=0  SAME
+L1_loan
+  Philips_VG_8020                ENDED t=25.7 gaps=0 max=0  lpt 6 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=29.7 gaps=1 max=0.165  SAME  (gaps KNOWN: D-GCDI2)
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=29.7 gaps=1 max=0.165  SAME  (gaps KNOWN: D-GCDI2)
+L2_addr
+  Philips_VG_8020                ENDED t=75.5 gaps=0 max=0  lpt 42 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=80.7 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=80.7 gaps=0 max=0  SAME
+L2_adven
+  Philips_VG_8020                ENDED t=59.1 gaps=0 max=0  lpt 34 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=69.3 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=69.3 gaps=0 max=0  SAME
+L3_report
+  Philips_VG_8020                ENDED t=50.7 gaps=0 max=0  lpt 76 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=72.8 gaps=68 max=0.039  SAME  (gaps KNOWN: D-GCDI2)
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=72.8 gaps=71 max=0.04  SAME  (gaps KNOWN: D-GCDI2)
+L3_sheet
+  Philips_VG_8020                ENDED t=39.9 gaps=0 max=0  lpt 26 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=54.3 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=54.3 gaps=0 max=0  SAME
+
+PASS: 7 program(s), 0 divergent run(s)
