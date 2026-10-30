@@ -377,6 +377,15 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **G1_snake and C2_euler (2026-10-30).** G1, the first in the hobbyist
+      game-contest style: a self-playing snake in crunched 10-liner form --
+      keywords run into names (`IFC=129ORC=128THEND=`, `FXANDNY`, `GOSUB9ELSESOUND8,0`),
+      `:`-packed lines, VPOKEd characters and colours, PUT SPRITE, SOUND in the loop,
+      a seeded 400-move demo, a VRAM checksum: SAME. C2: Project Euler 1, 2, 5, 6, 9,
+      15, 18, 19, 20 and 28 at full size (Joost 2026-10-30: PE 1-100 may be
+      published), in doubles where the answers pass 32767 and base-10000 limbs for
+      100!: all ten answers match Joost's own solutions on the VG-8020; zerobas
+      SAME. 📏 TIER 5: 299 s against 161.
       ✅ **C1_numbers (2026-10-30), THE FIRST CONTEST-STYLE PROGRAM** (Joost: "the kind
       of program competitive programmers write"; series C*, and G* for hobbyist
       game-contest style, both 2026-10-30). Sieve below 2000, GCD / MOD / `\`
@@ -7753,7 +7762,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10244 (T-6FE392)8 (T-529ABE)` from `TODO.md:15926 (T-529ABE)`: a
+      `TODO.md:10253 (T-6FE392)8 (T-529ABE)` from `TODO.md:15935 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10713,7 +10722,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15926 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15935 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
