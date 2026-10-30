@@ -2557,6 +2557,11 @@ usrstr-acceptance: repack-machine
 fullclash-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_fullclash.py
 
+# --- playeq-acceptance: PLAY's =name; (D-PLAYEQ) ------------------------------------
+# T V N O L S M R take a variable, cut as CINT cuts. Both targets vs the VG-8020.
+playeq-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_playeq.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

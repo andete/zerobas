@@ -379,7 +379,7 @@ pt_cmd_rest:
                 call    pt_put              ; amplitude = 0 (silent)
                 ret     c
                 ld      (PLY_LASTDUR),de    ; save the write pointer (pt_length clobbers DE)
-                call    pt_length
+                call    pt_length_eq
                 ret     c
                 ld      de,(PLY_LASTDUR)
                 ld      a,l
@@ -392,7 +392,7 @@ pt_cmd_rest:
 
 ; --- pt_cmd_n: N n -> note by absolute number (0 = rest) --------------------
 pt_cmd_n:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -413,7 +413,7 @@ pt_cmd_n:
 
 ; --- octave / length / tempo / volume / envelope setters -------------------
 pt_cmd_octave:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -426,7 +426,7 @@ pt_cmd_octave:
                 ld      (ix+VCX_OCTAVE),a
                 jp      pt_ch_loop
 pt_cmd_length:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -439,7 +439,7 @@ pt_cmd_length:
                 ld      (ix+VCX_NOTEL),a
                 jp      pt_ch_loop
 pt_cmd_tempo:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -450,7 +450,7 @@ pt_cmd_tempo:
                 ld      (ix+VCX_TEMPO),a
                 jp      pt_ch_loop
 pt_cmd_volume:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -464,7 +464,7 @@ pt_cmd_volume:
                 ld      (ix+VCX_ENVSH),a
                 jp      pt_ch_loop
 pt_cmd_env_shape:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,h
                 or      a
@@ -476,7 +476,7 @@ pt_cmd_env_shape:
                 ld      (ix+VCX_ENVSH),a
                 jr      pt_emit_env
 pt_cmd_env_per:
-                call    pt_number
+                call    pt_numeq    
                 jp      nc,pt_illegal
                 ld      a,(PLY_NUMOVF)
                 or      a
@@ -510,8 +510,12 @@ pt_emit_env:
 
 ; --- pt_length: parse optional length digits + dots -> HL = frame count ------
 ;   uses IX (VCX_TEMPO/VCX_NOTEL), MCLPTR/B. CF=1 (+ AUDIO_STATUS) on a bad length.
+pt_length_eq:                               ; D-PLAYEQ: R takes `=name;`, a note does not
+                call    pt_numeq
+                jr      pt_length_k
 pt_length:
                 call    pt_number
+pt_length_k:
                 jr      c,pl_have
                 ld      a,(ix+VCX_NOTEL)    ; no explicit length -> default
                 jr      pl_val
@@ -699,6 +703,257 @@ pn_ret:
                 or      a
                 ret     z                   ; no digits -> CF=0, HL = 0
                 scf                         ; digits present -> CF=1
+                ret
+
+; --- pt_numeq (D-PLAYEQ): a command's number, or `=name;` -----------------------
+; `PLAY "T=T;V=V;"` was ERR 5 here in every form. Measured on the VG-8020
+; (scratchpad/playeq_measure.out): T V N O L S M R take `=name;`, a note does not
+; (`C=I%;` is 5, and it still is: notes call pt_number); the value is cut the way
+; CINT cuts (O=8.6 is O8) and past an int16 is 6 (M=65535); an undefined name is
+; 0, a string 13, a missing `;` 5, spaces are skipped, a literal or `(` is 5.
+; The name is looked up the way `X` looks up its string -- the tenant walks the
+; scalar chain itself (Joost 2026-09-24) -- matching name AND type, since A% and
+; A! are separate variables. An ARRAY ELEMENT (`V=I%(1);`, which the VG-8020
+; takes) is 5 here: its subscript needs the expression evaluator
+; (D-PLAYEQARR, TODO.md).
+;   in/out as pt_number: HL = value, CF=1. An error never returns here: it
+;   drops this call's return address and leaves the way a command's own error
+;   exit does (pt_illegal / px_err), so it lands in pt_vparse.
+pt_numeq:
+                ld      a,b
+                or      a
+                jp      z,pt_number
+                push    hl
+                ld      hl,(MCLPTR)
+                ld      a,(hl)
+                pop     hl
+                cp      '='
+                jp      nz,pt_number
+                call    px_getc             ; the `=`
+                call    px_nosp
+                jp      c,pqe_bad
+                call    px_letter
+                jp      nc,pqe_bad          ; a name starts with a letter
+                ld      h,a                 ; H = name0
+                ld      l,0                 ; L = name1 (none yet)
+pqe_name:
+                call    px_nosp
+                jp      c,pqe_bad           ; ended before `;`
+                cp      ';'
+                jr      z,pqe_deft          ; no suffix: DEFTBL decides the type
+                ld      c,2
+                cp      '%'
+                jr      z,pqe_suf
+                ld      c,4
+                cp      '!'
+                jr      z,pqe_suf
+                ld      c,8
+                cp      '#'
+                jr      z,pqe_suf
+                cp      '$'
+                jp      z,pqe_tm            ; a string: Type mismatch
+                call    px_letter
+                jr      c,pqe_id
+                cp      '0'
+                jp      c,pqe_bad
+                cp      '9'+1
+                jp      nc,pqe_bad          ; `(`, an operator, ...: 5
+pqe_id:
+                inc     l
+                dec     l
+                jr      nz,pqe_name         ; 3rd+ characters are ignored
+                ld      l,a                 ; name1
+                jr      pqe_name
+pqe_suf:
+                call    px_nosp             ; the `;` must follow the suffix (spaces
+                                            ; between are fine: `V=I% ;`)
+                jp      c,pqe_bad
+                cp      ';'
+                jp      nz,pqe_bad
+                jr      pqe_walk
+pqe_deft:
+                ld      a,h
+                sub     'A'
+                push    hl
+                ld      hl,DEFTBL
+                add     a,l
+                ld      l,a
+                jr      nc,pqe_d1
+                inc     h
+pqe_d1:
+                ld      a,(hl)
+                pop     hl
+                cp      DEFTBL_STR
+                jp      z,pqe_tm
+                ld      c,a                 ; C = the type: 2, 4 or 8
+pqe_walk:
+                push    de                  ; DE = the queue write pointer
+                push    bc                  ; B = bytes left, C = the type
+                ex      de,hl               ; DE = key (D = name0, E = name1)
+                ld      hl,(PRGEND)
+                inc     hl
+                inc     hl                  ; the scalar region's base
+pqe_lp:
+                push    hl
+                ld      bc,(ARYTAB)
+                or      a
+                sbc     hl,bc
+                pop     hl
+                jr      nc,pqe_undef        ; reached ARYTAB: not defined
+                ld      a,(hl)
+                cp      d
+                jr      nz,pqe_skip
+                inc     hl
+                ld      a,(hl)
+                dec     hl
+                cp      e
+                jr      nz,pqe_skip
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; this entry's type
+                dec     hl
+                dec     hl
+                pop     bc
+                push    bc
+                cp      c
+                jr      z,pqe_found
+pqe_skip:
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; this entry's type -> its stride
+                inc     hl
+                cp      1
+                jr      nz,pqe_st
+                ld      a,3                 ; a string's value is a 3-byte descriptor
+pqe_st:
+                add     a,l
+                ld      l,a
+                jr      nc,pqe_lp
+                inc     h
+                jr      pqe_lp
+pqe_undef:
+                ld      hl,0                ; an undefined name is 0
+                jr      pqe_ok
+pqe_found:
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> the value
+                ld      a,c
+                cp      2
+                jr      nz,pqe_flt
+                ld      a,(hl)              ; an integer: as it is
+                inc     hl
+                ld      h,(hl)
+                ld      l,a
+                jr      pqe_ok
+pqe_flt:
+                ; BCD (docs/concepts/numbers.md): byte 0 = sign | exponent+64,
+                ; then two digits a byte, value .d1d2... x 10^(exponent).
+                ; Cut toward 0 to (exponent) digits, as CINT does.
+                ld      a,(hl)
+                and     $7F
+                sub     65                  ; integer digits - 1; carry: |x| < 1
+                jr      c,pqe_undef         ; (byte 0 = 0, the value 0, too)
+                cp      5
+                jp      nc,pqe_ovf          ; six or more digits
+                inc     a
+                ld      c,a                 ; C = the digits to take
+                push    hl                  ; the value (its sign is in byte 0)
+                inc     hl
+                ld      de,0
+pqe_dig:
+                ld      a,(hl)
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F                 ; the high digit
+                call    pqe_acc
+                jr      c,pqe_ovf_h
+                dec     c
+                jr      z,pqe_mag
+                ld      a,(hl)
+                and     $0F                 ; the low digit
+                call    pqe_acc
+                jr      c,pqe_ovf_h
+                inc     hl
+                dec     c
+                jr      nz,pqe_dig
+pqe_mag:
+                pop     hl
+                ld      a,d
+                cp      $80
+                jr      c,pqe_sign          ; < 32768
+                jp      nz,pqe_ovf
+                ld      a,e
+                or      a
+                jp      nz,pqe_ovf          ; > 32768
+                bit     7,(hl)
+                jp      z,pqe_ovf           ; +32768
+pqe_sign:
+                ld      a,(hl)              ; byte 0: the sign
+                ex      de,hl               ; HL = the magnitude
+                rlca
+                jr      nc,pqe_ok
+                xor     a
+                sub     l
+                ld      l,a
+                sbc     a,a
+                sub     h
+                ld      h,a                 ; HL = -HL
+pqe_ok:
+                pop     bc
+                pop     de
+                scf
+                ret
+pqe_ovf_h:
+                pop     hl
+pqe_ovf:
+                pop     bc
+                pop     de
+                pop     hl                  ; drop pt_numeq's return address
+                ld      a,6                 ; Overflow
+                jp      px_err
+pqe_tm:
+                pop     hl                  ; drop pt_numeq's return address
+                ld      a,13                ; Type mismatch
+                jp      px_err
+pqe_bad:
+                pop     hl                  ; drop pt_numeq's return address
+                jp      pt_illegal
+; pqe_acc: DE = DE*10 + A (a digit). CF=1 when that would pass 32769 -- DE was
+; already 3277 or more -- which the caller turns into 6. Preserves HL, C.
+pqe_acc:
+                push    hl
+                push    af
+                ld      a,d
+                cp      $0C
+                jr      c,pa_ok             ; < 3072
+                jr      nz,pa_ovf           ; >= 3328
+                ld      a,e
+                cp      $CD
+                jr      nc,pa_ovf           ; >= 3277
+pa_ok:
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                push    hl
+                add     hl,hl
+                add     hl,hl
+                pop     de
+                add     hl,de               ; HL = 10 * DE
+                pop     af
+                ld      e,a
+                ld      d,0
+                add     hl,de
+                ex      de,hl
+                pop     hl
+                or      a
+                ret
+pa_ovf:
+                pop     af
+                pop     hl
+                scf
                 ret
 
 ; --- PLAY X<var>; -- substring execution (docs/spec-basic-audio-play.md §7.12) --

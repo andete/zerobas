@@ -146,8 +146,8 @@ item — do **one item per session** to keep context lean.
       has 13 rmw cases, six of them the full-byte ones. Gate fullclash-acceptance,
       knife K-F ([`fullclash_knife.out`](scratchpad/fullclash_knife.out)).
 
-- [ ] 🔴 **PLAY'S `=var;` IS ERROR 5 HERE (D-PLAYEQ, found 2026-10-30 by the program
-      ladder's L3_turtle, still parked in the session's scratch until this lands).**
+- [x] 🔴 **PLAY'S `=var;` IS ERROR 5 HERE (D-PLAYEQ, found 2026-10-30 by the program
+      ladder's L3_turtle).**
       🎚️ TIER 1 — `PLAY "T=T;V=V;O=O;"` is ordinary MML; every one of 30 rows was 5
       ([`playsub_measure.out`](scratchpad/playsub_measure.out),
       [`playeq_measure.out`](scratchpad/playeq_measure.out)).
@@ -161,6 +161,28 @@ item — do **one item per session** to keep context lean.
       array element needs its subscript evaluated: DRAW's `=` does that through
       the resident (`gdrw_sub_scan` / `gdo_want`, re-parse on re-entry) -- PLAY
       commits only at the end (pt_commit), so a re-run parse is safe; price both.
+      ✅ **FIXED 2026-10-30, SCALARS.** sub/playparse.asm `pt_numeq` (sub page 1):
+      the seven number-taking commands call it, and R through a `pt_length_eq`
+      entry (notes keep `pt_length`, so `C=I%;` is still 5). It parses the name
+      as `X` does, walks the scalar chain matching name AND type, and cuts a
+      BCD value toward 0 into an int16 (6 past it). Gate playeq-acceptance (30
+      rows; `O=X9;` / `T=Y1;` prove the value is read), knife K-Q
+      ([`playeq_knife.out`](scratchpad/playeq_knife.out)). L3_turtle is in the
+      ladder now and SAME.
+      📏 The measurement also read `PLAY(0)` / `PLAY(n)` -1 on the VG-8020 where
+      zerobas reads 0 straight after a PLAY with no note, or for a voice given
+      `""` ([`play0_err.out`](scratchpad/play0_err.out)): that is the window Joost
+      declined on 2026-09-27 (PLAY.md, Differences), not a new item.
+
+- [ ] 🔴 **PLAY `=name;` WITH AN ARRAY ELEMENT IS ERROR 5 HERE (D-PLAYEQARR, split
+      from D-PLAYEQ 2026-10-30).**
+      🎚️ TIER 1 — `PLAY "V=A(1);"` works on the VG-8020
+      ([`playeq_measure.out`](scratchpad/playeq_measure.out) row 27).
+      🤖 **AUTONOMOUS** — measure first whether the subscript may be an
+      expression or a variable (`A(J)`, `A(J+1)`); then the subscript needs
+      main's evaluator: DRAW's `=` goes through the resident (`gdrw_sub_scan` /
+      `gdo_want`, the command re-parsed on re-entry), and PLAY commits only at
+      the end (`pt_commit`), so a re-run parse is safe.
 
 - [x] 🔴 **`USR(S$)` WAS TYPE MISMATCH; THE VG-8020 HANDS THE ROUTINE THE STRING'S
       DESCRIPTOR (D-USRSTR, found 2026-10-29 by the program ladder's L4_machine).**
@@ -318,6 +340,10 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L3_turtle (2026-10-30).** DRAW with `X` substrings, `=var;` for
+      angle / colour / lengths, `S` scale, `N` / `B`, relative `M`, then POINT
+      samples and VRAM checksums; PLAY with `=var;` and `X`, and DRAW / PLAY
+      errors. It FOUND D-FULLCLASH and D-PLAYEQ; SAME after both.
       ✅ **L2_codebreak and L4_machine (2026-10-29).** A seeded-RND code game
       (`MID$(...)=`, INSTR, ASC / CHR$, STRING$ / SPACE$, `\  \` and `&` USING,
       INPUT validation, ON..GOTO): SAME. Machine code from BASIC (DEFUSR /
@@ -7666,7 +7692,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10157 (T-6FE392)8 (T-529ABE)` from `TODO.md:15839 (T-529ABE)`: a
+      `TODO.md:10183 (T-6FE392)8 (T-529ABE)` from `TODO.md:15865 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10626,7 +10652,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15839 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

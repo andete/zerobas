@@ -177,7 +177,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `PAINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.3× border-colour T5 1.5× border-colour T6✓ | knife ✓ · 3/3 forms |
 | `PDL` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `PEEK` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.38× address-read T5 1.1× address-read T6✓ | knife ✓ · 1/1 forms |
-| `PLAY` | 🔴 GAP | level 0 · T1— T2✓ T3✓ T4— 1.3× notes T5 1.1× multi-voice T6✓ | knife ✓ · 10/10 forms · 2 open, worst TIER 1 (T-B6A2DA T-06346A) |
+| `PLAY` | 🔴 GAP | level 0 · T1— T2✓ T3✓ T4— 1.3× notes T5 1.2× multi-voice T6✓ | knife ✓ · 10/10 forms · 2 open, worst TIER 1 (T-0A7633 T-06346A) |
 | `POINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× pixel-read T5 2× pixel-read T6✓ | knife ✓ · 1/1 forms |
 | `POKE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× address-value T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `POS` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× column-read T5 1.1× column-read T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (T-DC4845) |
@@ -260,7 +260,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 
 | keyword | tier | who | what is open | TODO.md id |
 |---|---|---|---|---|
-| `PLAY` | TIER 1 | 🤖 | `PLAY "T=T;V=V;O=O;"` is ordinary MML; every one of 30 rows was 5 | T-B6A2DA |
+| `PLAY` | TIER 1 | 🤖 | `PLAY "V=A(1);"` works on the VG-8020 | T-0A7633 |
 | — | TIER 1 | 🤖 | on the VG-8020 a routine that leaves VALTYP 3 makes USR a | T-D78C3D |
 | — | TIER 1 | 🤖 | it finds what a real user hits first, so its findings are | T-EF6711 |
 | — | TIER 1 | 🤖 | *"it doesn't really fit the tiers I | T-8E1A3B |
