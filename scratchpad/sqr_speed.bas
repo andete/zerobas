@@ -1,0 +1,5 @@
+10 REM speed of SQR on doubles and on singles: 200 calls each, in jiffies
+20 DEFDBL A-H:TIME=0:FOR I=1 TO 200:H=SQR(I*I+7):NEXT:T1=TIME
+30 TIME=0:FOR I=1 TO 200:S!=SQR(I*I+7):NEXT:T2=TIME
+40 TIME=0:FOR I=1 TO 200:H=I*I+7:NEXT:T3=TIME
+50 LPRINT "DBL";T1;"SNG";T2;"LOOP";T3

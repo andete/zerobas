@@ -394,6 +394,14 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **C4_euler (2026-10-30)**: Project Euler 16 (2^100), 25 (50 digits), 48
+      (1..100, five digits), 92 (below 1000), 39 (p <= 120), all scaled and said
+      so: base-10000 limbs, a Fibonacci pair of limb arrays, modular powers in
+      doubles, a memoised chain in an integer array, Euclid's formula for the
+      triangles. All five match; SAME. Two of my drafts failed the same way on
+      all three machines: 2400 SQRs took 5 minutes on the VG-8020 (P39 now uses
+      Euclid's formula), and a FOR whose start was already past its end ran its
+      body once, as MSX BASIC does, and indexed past the array.
       ✅ **G3_life (2026-10-30)**: Conway's Life on a 16x12 board in SCREEN 3
       (multicolour: PSET blocks, a LINE frame, POINT read back for a checksum),
       rows as strings with `MID$(...)=` and `MID$` neighbour counts, crunched
@@ -417,6 +425,9 @@ item — do **one item per session** to keep context lean.
       building 2.1x, LOG 2.2x, an INTEGER array sieve (`D%(M)=D%(M)+K`) 2.5x, a
       Pascal row in a DOUBLE array 2.8x, the partition DP (`P(K)=P(K)+P(K-M)`)
       3.0x. ARRAY ELEMENT ACCESS is the hotspot, well ahead of the arithmetic.
+      And SQR (C4, [`sqr_speed.out`](scratchpad/sqr_speed.out)): 268 ms a call here
+      against 134 on the VG-8020, 2.0x, the same for singles and doubles -- slow on
+      BOTH machines, so a ladder program avoids it in a loop.
       ✅ **G1_snake and C2_euler (2026-10-30).** G1, the first in the hobbyist
       game-contest style: a self-playing snake in crunched 10-liner form --
       keywords run into names (`IFC=129ORC=128THEND=`, `FXANDNY`, `GOSUB9ELSESOUND8,0`),
@@ -7802,7 +7813,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10293 (T-6FE392)8 (T-529ABE)` from `TODO.md:15975 (T-529ABE)`: a
+      `TODO.md:10304 (T-6FE392)8 (T-529ABE)` from `TODO.md:15986 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10762,7 +10773,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15975 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15986 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
