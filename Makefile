@@ -2545,6 +2545,12 @@ putiny-acceptance: repack-machine
 puneglead-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_puneglead.py
 
+# --- usrstr-acceptance: USR with a string argument (D-USRSTR) ------------------------
+# DAC+2 = the string's own descriptor, VALTYP 3; a string result in a numeric
+# place is 13. Both targets vs the VG-8020.
+usrstr-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_usrstr.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

@@ -125,6 +125,36 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **`USR(S$)` WAS TYPE MISMATCH; THE VG-8020 HANDS THE ROUTINE THE STRING'S
+      DESCRIPTOR (D-USRSTR, found 2026-10-29 by the program ladder's L4_machine).**
+      🎚️ TIER 1 — passing a string to machine code is ordinary USR use.
+      🤖 **AUTONOMOUS.** Measured ([`usrstr_measure.out`](scratchpad/usrstr_measure.out)):
+      DAC+2 = the [len][ptr] descriptor, for a variable its OWN one
+      (`USR(S$)=VARPTR(S$)`), VALTYP 3; temporaries live during the call; a
+      routine that leaves VALTYP 3 in a numeric place is 13.
+      ✅ **FIXED 2026-10-29.** basic/usr.asm `ev_usr` probes the argument with
+      `str_eval` from a saved IX: a string that is the WHOLE argument goes in as
+      above, anything else (`USR("A"="A")`, a number) the numeric way from the
+      same start. `usr_ret` answers VALTYP 3 with the deferred 13. Main page 1,
+      from a pin pad. Gate usrstr-acceptance (9 rows), knife K-U
+      ([`usrstr_knife.out`](scratchpad/usrstr_knife.out)). The ladder runner's
+      prompt normaliser now also takes `ZB` drawn over a line the program filled.
+
+- [ ] 🔴 **A USR ROUTINE CANNOT RETURN A STRING (D-USRSTRRES, found 2026-10-29 with
+      D-USRSTR).**
+      🎚️ TIER 1 — on the VG-8020 a routine that leaves VALTYP 3 makes USR a
+      string: `PRINT USR1("ABC")` prints `ABC`, `B$=USR1(S$)` is `HELLO`
+      ([`usrstr_measure.out`](scratchpad/usrstr_measure.out) rows C / D); zerobas
+      says 13.
+      🤖 **AUTONOMOUS** — but it is architecture. USR's type is known only after the
+      routine runs, and zerobas evaluates strings and numbers in two parsers that
+      PROBE (`str_eval` declines, the numeric parse starts again from the same
+      cursor). A string-context USR must run the routine inside `str_eval`; when
+      the routine then returns a NUMBER (`PRINT USR(5)`), the numeric re-parse
+      must not run it a second time (catusr-acceptance pins "exactly once"). A
+      one-shot cache keyed on the cursor -- the result and the cursor after it --
+      is the cheapest shape found; price it before building.
+
 - [x] 🔴 **`PRINT USING` PRINTED A TINY NUMBER'S DIGITS AS IF IT WERE NOT TINY
       (D-PUTINY, found 2026-10-29 by the program ladder's L4_tables).**
       🎚️ TIER 1 — a trig table printed COS(90°) as `-3.38082` where the VG-8020
@@ -237,6 +267,11 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L2_codebreak and L4_machine (2026-10-29).** A seeded-RND code game
+      (`MID$(...)=`, INSTR, ASC / CHR$, STRING$ / SPACE$, `\  \` and `&` USING,
+      INPUT validation, ON..GOTO): SAME. Machine code from BASIC (DEFUSR /
+      USR0-2 with DAC and VALTYP, VARPTR into a number and a string, a routine
+      that calls FILVRM): it FOUND D-USRSTR; SAME after it.
       ✅ **L4_tables (2026-10-29)**: integer `\` / MOD / AND / OR / XOR / NOT,
       HEX$ / OCT$ / BIN$ and back, INT / FIX / CINT, single against double,
       PRINT USING tables of SQR / LOG / EXP / `^^^^`, trig through a DEF FN,
@@ -7580,7 +7615,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10071 (T-6FE392)8 (T-529ABE)` from `TODO.md:15753 (T-529ABE)`: a
+      `TODO.md:10106 (T-6FE392)8 (T-529ABE)` from `TODO.md:15788 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10540,7 +10575,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15753 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15788 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

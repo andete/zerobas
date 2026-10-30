@@ -38,6 +38,10 @@ USR[<n>](<argument>)
   and its type in `VALTYP` (`&HF663`: 2 integer, 4 single, 8 double). An
   integer sits at `DAC+2` and `DAC+3`, low byte first. The routine is entered
   with HL pointing at `DAC` and A holding the type.
+- **A string argument** comes as type 3, with `DAC+2` holding the address of
+  the string's descriptor: its length, then the address of its characters.
+  For a variable that is the variable's own descriptor, so `USR(S$)` hands
+  the routine `VARPTR(S$)`.
 - **How the result comes back:** whatever `DAC` holds when the routine
   returns, read according to `VALTYP` — a routine may change the type. A
   routine that only returns hands back its argument unchanged; what it leaves
@@ -84,12 +88,20 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-None recorded. The last one is under *What we found*.
+**A routine cannot hand back a string** (D-USRSTRRES). On the VG-8020 a
+routine that leaves the type at 3 makes `USR` a string: `PRINT USR1("ABC")`
+prints `ABC` and `B$=USR1(S$)` copies `S$`. zerobas answers 13,
+`Type mismatch`, in both places; in a numeric place (`X=USR1("AB")`) both
+machines say 13.
 
 The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 
 ## What we found, and how
 
+- **A string argument was `Type mismatch`** (fixed 2026-10-29, D-USRSTR),
+  where the VG-8020 hands the routine the string's descriptor. Found by a
+  machine-code program written for the program ladder
+  ([measured](../../scratchpad/usrstr_measure.out)).
 - **An address past 65535 was accepted** (fixed 2026-10-27, D-DEFUSRRANGE).
   `DEF USR=70000` is `Overflow` on the VG-8020, for every slot; zerobas stored
   part of the number and ran on. It now reads the address the way `POKE` does
@@ -137,6 +149,8 @@ The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
   calling a one-byte routine that returns its argument, and the error rows.
 - `make unit-test` — the entry state a routine sees, and the returned value.
 - `make catusr-acceptance` — the evaluation count.
+- `make usrstr-acceptance` — a string argument, and a string result in a
+  numeric place (D-USRSTR).
 - `make missing-acceptance` — `DEF USR9=70000` under `ON ERROR` (row `du-ovf`).
 - `make missing-acceptance` — a bare `USR` and `USR1+1`, caught by `ON ERROR`
   and not caught (rows `us-trap`, `us-plus`).

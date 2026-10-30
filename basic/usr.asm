@@ -152,6 +152,33 @@ ev_usr:
                 cp      '('
                 jr      nz,ev_usr_err
                 inc     ix
+                ; --- D-USRSTR: a STRING argument ------------------------------
+                ; `X=USR(S$)` is Type mismatch here and works on the VG-8020:
+                ; DAC+2 = the string's [len][ptr] descriptor -- for a variable its
+                ; OWN one (`USR(S$)=VARPTR(S$)`) -- with VALTYP 3
+                ; (scratchpad/usrstr_measure.out, found by the ladder's
+                ; L4_machine). Probe for a string that is the WHOLE argument;
+                ; anything else (`USR("A"="B")`, a number) goes the numeric way
+                ; from the same start, IX restored -- str_eval may decline with
+                ; IX moved (the BUG C note at ev_logic's own probe).
+                push    ix                  ; the argument's start
+                call    str_eval_ix         ; CF = a string, HL past it
+                jr      nc,evu_num
+                push    hl
+                pop     ix
+                call    ev_sp
+                cp      ')'
+                jr      nz,evu_num          ; more after it: not ours
+                inc     ix
+                pop     af                  ; drop the start
+                ld      hl,(STRPTR)
+                ld      (DAC+2),hl          ; the descriptor's address
+                ld      a,3
+                ld      (FACTYP),a          ; usr_call passes it on as VALTYP 3
+                pop     af                  ; A = index
+                jr      usr_call
+evu_num:
+                pop     ix                  ; back to the argument's start
                 call    ev_logic            ; DE = argument (full expression)
                 call    ev_sp
                 cp      ')'
@@ -227,12 +254,17 @@ usr_ret:
                 ; the RESULT is DAC, typed by VALTYP (the routine may change both)
                 pop     ix                  ; restore the cursor
                 ld      a,(VALTYP_PUB)
+                cp      3                   ; D-USRSTR: a STRING result in a numeric
+                jr      z,ur_str            ; place is 13, as on the VG-8020
                 cp      4
                 jr      z,ur_flt
                 cp      8
                 jr      z,ur_flt
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
+ur_str:
+                call    set_factyp2         ; a number-shaped 0 behind the error
+                jp      ev_f_tmm
 ur_flt:
                 jp      fac_typ_int16       ; the float result is already in FAC (= DAC):
                                             ; FACTYP := A, DE = the rounded int (D-TAILIX2)

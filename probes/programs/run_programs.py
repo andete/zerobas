@@ -243,10 +243,22 @@ def _gaps(head):
     return int(head.split("gaps=")[1].split()[0]) if "gaps=" in head else 10 ** 6
 
 
+def _prompt(x, ref):
+    if x.strip() == "ZB":                     # the prompt on a line of its own
+        return x.replace("ZB", "Ok")
+    k = len(x) - len(x.lstrip())              # the screen rows keep their indent
+    if x[k:k + 2] == "ZB" and ref[:k] == x[:k] and ref[k:k + 2] == "Ok" and ref[k + 2:] == x[k + 2:]:
+        return ref                            # drawn over a line the program filled
+    return x
+
+
 def first_diff(a, b):
     la, lb = a.splitlines(), b.splitlines()
-    # the prompt is deliberately "ZB", not "Ok" (basic/repl.asm, D-ZBCRLF)
-    lb = [x.replace("ZB", "Ok") if x.strip() == "ZB" else x for x in lb]
+    # the prompt is deliberately "ZB", not "Ok" (basic/repl.asm, D-ZBCRLF) -- a
+    # line of its own, or drawn over the start of a line the program filled
+    # (L4_machine's FILVRM row: `ZB####...` where the reference has `Ok####...`;
+    # only where the reference's line starts `Ok` at the same place)
+    lb = [_prompt(x, la[i] if i < len(la) else "") for i, x in enumerate(lb)]
     for i in range(max(len(la), len(lb))):
         x = la[i] if i < len(la) else "<none>"
         y = lb[i] if i < len(lb) else "<none>"

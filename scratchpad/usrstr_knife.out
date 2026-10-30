@@ -1,0 +1,21 @@
+K-U ROMs 71163399 -> 94eb8cce  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'A-1  5 H'  zb 'ERR 13 IN 60 '
+   ref 'H 0  4  6 '  zb 'A 0  243 \x00'
+   ref 'ERR 13 IN 80 '  zb 'HERR 13 IN 70 '
+   ref 'E 0 '  zb 'ERR 13 IN 80 '
+   ref 'F 5 '  zb 'E 0 '
+   ref 'ERR 13 IN 90 '  zb 'F 5 '
+   ref 'G '  zb 'ERR 13 IN 90 '
+   ref 'I-7 -1 '  zb 'G '
+   ref 'Z END'  zb 'I-7 -1 '
+   ref 'A-1  5 H'  zb 'ERR 13 IN 60 '
+   ref 'H 0  4  6 '  zb 'A 0  243 \x00'
+   ref 'ERR 13 IN 80 '  zb 'HERR 13 IN 70 '
+   ref 'E 0 '  zb 'ERR 13 IN 80 '
+   ref 'F 5 '  zb 'E 0 '
+   ref 'ERR 13 IN 90 '  zb 'F 5 '
+   ref 'G '  zb 'ERR 13 IN 90 '
+   ref 'I-7 -1 '  zb 'G '
+   ref 'Z END'  zb 'I-7 -1 '
+restored ROMs 71163399 == clean
+1/1 knives HIT

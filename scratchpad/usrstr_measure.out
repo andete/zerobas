@@ -1,0 +1,32 @@
+# scratchpad/usrstr_measure.bas
+== Philips_VG_8020 ENDED t=18.9
+A-1  5 H
+B 1  
+C ABC 2 
+D HELLO 5 
+ERR 13 IN 100 
+E 0 
+F 5 
+ERR 13 IN 110 
+G 
+H 0  4 
+Z END
+
+== National_CF-3300 TIMEOUT t=900.0
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=20.0
+ERR 13 IN 60 
+A 0  243 2
+ERR 13 IN 70 
+B 243 2
+C ERR 13 IN 80 
+ERR 13 IN 90 
+D  0 
+ERR 13 IN 100 
+E 0 
+F 5 
+ERR 13 IN 110 
+G 
+HERR 13 IN 120 
+Z END
+
