@@ -2585,6 +2585,12 @@ playarr-acceptance: repack-machine
 prstr2x-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_prstr2x.py
 
+# --- resnextend-acceptance: RESUME NEXT after the last statement ends the run (D-RESNEXTDIRECT)
+# The last program line, and a direct line with ON ERROR still set. Both
+# targets vs the VG-8020.
+resnextend-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_resnextend.py
+
 # --- prstrfn-acceptance: every string item prints as one (D-PRSTRFN) ------------
 # INPUT$ / SPRITE$ as bare PRINT items; an operator after a string function is
 # Type mismatch before anything prints. Both targets vs the VG-8020.

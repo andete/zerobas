@@ -1770,26 +1770,20 @@ ex_resume:
 ; tenant needs the same ERRRESUME read anyway for its own input. It reports
 ; via SSE_OUT alone (CALSLT clobbers all registers, and A specifically is not
 ; reliable back across it -- the math-pack-subrom-tenant lesson -- so the
-; result goes through RAM, not A): a plain 2-byte pointer, with $0000 doing
-; double duty as the one failure sentinel (a real statement/line pointer is
-; never $0000) -- one RAM cell instead of a pointer-plus-flag pair. The
-; tenant does the FULL job, including the EOL->next-line advance (it reads/
-; writes CURLINE directly): SSE_OUT<>0 means it is the correct resume
-; pointer AND CURLINE is already correct (unchanged for a same-line colon,
-; advanced by the tenant itself for an end-of-line roll to the next line);
-; SSE_OUT=0 is the degenerate case (the erroring line's own link was $0000
-; -- program ends there, nothing to resume to; no ERR-21 site this slice,
-; err_msgtab's own comment). subrom_call returns CF=1 only if the sub-ROM is
-; absent (never on the merged machine).
+; result goes through RAM, not A): a plain 2-byte pointer, always the resume
+; point, with CURLINE the erroring line's. After an end-of-line it is that
+; line's own $00, and the run loop steps to the next line itself -- which is
+; what makes RESUME NEXT on a program's LAST line, or in a DIRECT line, end
+; the run (D-RESNEXTDIRECT, 2026-10-30: the tenant advanced CURLINE itself,
+; tested the wrong line's link for the end, and ran the bytes past the end
+; marker; the $0000 "degenerate" sentinel this tested for could not occur).
+; subrom_call returns CF=1 only if the sub-ROM is absent (never on the merged
+; machine).
 res_next:
                 call    sc_inl1             ; D-STUBINL: reduced build w/o sub-ROM (never on
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_SCANSTMT)
                                             ; the merged machine, which always ships it)
-                ld      hl,(SSE_OUT)        ; next statement -- CURLINE already correct
-                ld      a,h
-                or      l
-                jr      z,ex_goto_undef     ; degenerate (see header) -- reuses GOTO's
-                                            ; own "Undefined line number" report
+                ld      hl,(SSE_OUT)        ; the resume point -- CURLINE already correct
                 jr      res_setptr
 ; --- res_ctx: LEAVE the handler and restore the erroring statement's context -
 ; ONEFLG:=0, CURLINE:=the erroring statement's CURLINE, HL:=its own text pointer

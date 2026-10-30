@@ -41,21 +41,16 @@
 ;      raise_error): [0..1] = the erroring line's own CURLINE value, [2..3] =
 ;      the erroring statement's own start pointer (a SAVTXT value: tokenised
 ;      program-text RAM, never BIOS/low-region).
-; out: SSE_OUT<>0 is the correct resume pointer, with CURLINE already correct
-;      too -- either the next statement just past a COLON on the SAME line
-;      (CURLINE untouched), or (if the erroring statement ran to end-of-line)
-;      the FOLLOWING line's first statement, in which case THIS tenant does
-;      the CURLINE advance itself (CURLINE is plain RAM, always visible from
-;      either sub-ROM page, docs/subrom-tenant-playbook.md §2 -- no need to
-;      hand that arithmetic back to main). This collapses what would
-;      otherwise be two different main-side cases into one: after a
-;      successful call, the main stub always just does `ld hl,(SSE_OUT)` and
-;      treats a nonzero result as the resume pointer.
-;      SSE_OUT=0 is the one case the tenant CANNOT resolve on its own: the
-;      erroring line's own link field was $0000 (the program ends there,
-;      nothing to resume to -- degenerate; no ERR-21 site this slice,
-;      err_msgtab's own comment) -- the main stub reports "Undefined line
-;      number" (reusing GOTO's own path).
+; out: SSE_OUT = the resume pointer, CURLINE = the erroring line's -- either
+;      the next statement just past a COLON on the SAME line, or (if the
+;      erroring statement ran to end-of-line) that line's own $00, an empty
+;      statement after which the run loop steps to the next line by its own
+;      link walk, end of program and direct mode included. The main stub
+;      always just does `ld hl,(SSE_OUT)`.
+;      (D-RESNEXTDIRECT, 2026-10-30: this tenant used to do the end-of-line
+;      advance itself and report $0000 for a "degenerate" case -- "the
+;      erroring line's own link was $0000", which cannot happen -- while the
+;      real end, the NEXT line being the end marker, went unhandled.)
 ;      Clobbers A, HL (sub-side only; the caller relies on nothing surviving
 ;      back through subrom_call/CALSLT except the RAM cell above -- see the
 ;      math-pack-subrom-tenant lesson on A specifically).
@@ -71,8 +66,8 @@ scan_stmt_end:
                 xor     a
                 ld      (ONEFLG),a          ; leaving the handler (RESUME NEXT commits)
                 ld      hl,(ERRRESUME)
-                ld      (CURLINE),hl        ; restore the erroring line (sse_eol below
-                                            ; reads this back to find the NEXT line)
+                ld      (CURLINE),hl        ; restore the erroring line (the run loop
+                                            ; steps on from it after an end-of-line)
                 ld      hl,(ERRRESUME_TXT)    ; the erroring statement's own start
 sse_lp:
                 ld      a,(hl)
@@ -106,29 +101,20 @@ sse_toeol:                                  ; REM/DATA/ELSE -- consume verbatim 
                 jr      sse_toeol
 sse_colon:
                 inc     hl                  ; HL -> the next statement (same line)
-                ld      (SSE_OUT),hl
-                ret
-sse_eol:                                    ; erroring statement ran to end-of-line ->
-                                            ; advance CURLINE to the FOLLOWING line and
-                                            ; hand back ITS first statement (CURLINE is
-                                            ; plain RAM -- the header's whole point)
-                ld      hl,(CURLINE)        ; the erroring line's own link field
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = link to the next line
-                ex      de,hl               ; HL = next line's link-field address
-                ld      a,h
-                or      l
-                jr      z,sse_degenerate    ; $0000 link -> nothing to resume to
-                ld      (CURLINE),hl        ; advance CURLINE to the next line
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL -> next line's token body
-                ld      (SSE_OUT),hl
-                ret
-sse_degenerate:                            ; HL is already $0000 here (the failed
-                                            ; link-field test above) -- the sentinel
-                                            ; the main stub checks for
+sse_eol:                                    ; (or HL on the line's own $00)
+                ; 🔴 D-RESNEXTDIRECT (2026-10-30): AT END OF LINE, RESUME AT THE LINE'S
+                ; OWN TERMINATOR AND LET THE RUN LOOP STEP TO THE NEXT LINE. This
+                ; advanced CURLINE itself and handed back the next line's body --
+                ; testing the ERRORING line's link for $0000, which a line that ran
+                ; never has, and never the NEXT line's. After the LAST program line
+                ; the next "line" is the end marker, and in direct mode it is
+                ; dir_line's (basic/field.asm): both ran the bytes past it as
+                ; statements, and the handler caught each error forever (`E 8 0` /
+                ; `E 2 1800` ..., scratchpad/resnextlast_measure.out,
+                ; resnextdirect_measure.out; the VG-8020 ends the run and says Ok).
+                ; Resuming on the $00 is an empty statement: exec returns at once,
+                ; the run loop follows CURLINE's link exactly as after any line, and
+                ; the end marker ends the run its usual way (cont_record) -- one
+                ; path, none of it here. CURLINE is already the erroring line's.
                 ld      (SSE_OUT),hl
                 ret

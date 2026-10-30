@@ -562,10 +562,14 @@ def v2_corpus(r, n, vals=VALS):
               ("loop wall", prog("10 FOR I=32760 TO 32767:A=I+1:B=-I-1:C=B-1:NEXT:PRINT A;B;C")),
               ("loop sgl", prog("10 FOR I!=1 TO 20:A!=I!*3:B#=A!-I!:NEXT:PRINT A!;B#")),
               ("loop frac", prog("10 FOR I=0 TO 3 STEP .5:A=I+7:B=I*2:NEXT:PRINT A;B")),
-              # a string operand where a number belongs (Type mismatch, resumed)
+              # a string operand where a number belongs (Type mismatch, resumed).
+              # `:G=0` keeps every RESUME NEXT on line 20: since D-RESNEXTDIRECT an
+              # end-of-line resume steps through the run loop (one empty statement,
+              # as the VG-8020's TRON shows), which the old image does not, and this
+              # case is about the arithmetic, not RESUME.
               ("string operand", prog("""
                   10 ON ERROR GOTO 900
-                  20 I=5:A=I+"X":B="X"*I:C=I-"7":D=7*"Y":E=I#*"Z":F=I%+"Q"
+                  20 I=5:A=I+"X":B="X"*I:C=I-"7":D=7*"Y":E=I#*"Z":F=I%+"Q":G=0
                   30 PRINT A;B;C;D;E;F:END
                   900 PRINT "E";ERR;ERL:RESUME NEXT
               """)),

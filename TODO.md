@@ -170,16 +170,37 @@ item — do **one item per session** to keep context lean.
       ([`prstrfn_knife.out`](scratchpad/prstrfn_knife.out)). `DSKI$` takes the
       same path; it is not in the gate (a disk-only row).
 
-- [ ] 🔴 **AFTER A PROGRAM ENDS WITH `ON ERROR GOTO` STILL SET, AN ERROR AT THE PROMPT
-      LOOPS FOREVER WITH NONSENSE LINE NUMBERS (D-RESNEXTDIRECT, found 2026-10-30).**
-      🎚️ TIER 3 — a typo after running a program that set an error handler.
-      🤖 **AUTONOMOUS** — measure a minimal case first. Seen in
-      `prstrfn_measure.bas`'s first version (handler `LPRINT ...:RESUME NEXT`, the
-      program ENDs, one unread answer key + RETURN are typed at the prompt): the
-      VG-8020 printed `ERR 2 AT 65535` once and stopped; zerobas printed it, then
-      `ERR 2 AT 1800`, `44850`, `26051`, `259`, ... until the 900 s timeout.
-      RESUME NEXT from a direct-mode error resumes into something that is not
-      the typed line.
+- [x] 🔴 **`RESUME NEXT` AFTER THE LAST STATEMENT -- OF THE PROGRAM, OR OF A LINE TYPED
+      WITH A PROGRAM'S `ON ERROR GOTO` STILL SET -- LOOPED FOREVER (D-RESNEXTDIRECT,
+      found 2026-10-30).**
+      🎚️ TIER 3 — an error handler on the last line, or a typo at the prompt after
+      such a program, hangs the machine in its own handler.
+      🤖 **AUTONOMOUS.** Measured: a program whose last line errs, with a handler
+      that does `RESUME NEXT`, prints `E 5 40` and ends on the VG-8020, and here
+      went on to `E 8 0` forever
+      ([`resnextlast_measure.out`](scratchpad/resnextlast_measure.out)); `FOO`
+      typed at the prompt with the handler still set gives `E 2 65535` once on the
+      VG-8020, and here `E 2 1800`, `44850`, `26051` ... until the 900 s timeout
+      ([`resnextdirect_measure.out`](scratchpad/resnextdirect_measure.out)). Cause:
+      at end of line, scan_stmt_end (sub/errtrap.asm) advanced CURLINE itself and
+      took the NEXT line's body unchecked; it tested the ERRORING line's link for
+      $0000, which a line that ran never has, so the end marker -- the program's,
+      or direct mode's `dir_line` -- was run as a line.
+      ✅ **FIXED 2026-10-30.** At end of line RESUME NEXT resumes on the line's own
+      $00: an empty statement, after which the run loop steps on by its own link
+      walk, and the end marker ends the run the usual way. The main stub's dead
+      $0000 test went with it (+3 B net: an expr.asm `jr` the $4EF8 pin pad pushed
+      out of range became `jp`). 🔴 The first cut ENDed straight from RESUME
+      (`jp end_line_end`) instead: the last-line row matched, but in direct mode the
+      handler then ran a SECOND time, on a "line" at $C300 -- one path, the run
+      loop's own, is what holds. And it is the VG-8020's path: TRON across an
+      end-of-line RESUME NEXT shows `[100][40]` on both machines now
+      ([`resnexttron_measure.out`](scratchpad/resnexttron_measure.out)); the old
+      jump into line 40's body skipped its trace. tests/test_intfast.py's
+      "string operand" case resumed at an end of line and counted that step as a
+      new statement; `:G=0` keeps it on its subject. Gate resnextend-acceptance
+      (three programs; each run must END, a TIMEOUT fails); knives K-C / K-L
+      ([`resnextend_knife.out`](scratchpad/resnextend_knife.out)).
 
 - [ ] 🔍 **AN ERROR INSIDE `LPRINT` STARTS A NEW PRINTER LINE ON THE VG-8020, NOT HERE
       (D-LPTERRNL, found 2026-10-30).**
@@ -7968,7 +7989,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10459 (T-6FE392)8 (T-529ABE)` from `TODO.md:16141 (T-529ABE)`: a
+      `TODO.md:10480 (T-6FE392)8 (T-529ABE)` from `TODO.md:16162 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10928,7 +10949,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16162 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

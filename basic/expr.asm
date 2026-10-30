@@ -1193,7 +1193,8 @@ ev_ff_ckdone:
                 cp      INP_TOKEN
                 jr      z,ev_ff_inp
                 cp      EOF_TOKEN
-                jr      z,ev_ff_eof
+                jp      z,ev_ff_eof         ; `jp`: the $4EF8 pin pad between grows with
+                                            ; every byte saved ahead of it (D-RESNEXTDIRECT)
                 cp      LOF_TOKEN
                 jp      z,ev_ff_lof         ; `jp` since D-LOC (again since D-BASICINT's $4EF8 pin, 2026-10-24): the LOC test below
                                             ; sits between this and its target

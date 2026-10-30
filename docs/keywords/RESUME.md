@@ -6,9 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # `RESUME` — leave an error handler and carry on
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-30):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No
-> known difference (`RESUME NEXT` past a numeric constant fixed 2026-10-09).
+> known difference (`RESUME NEXT` after the last statement fixed 2026-10-30).
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -37,6 +37,9 @@ RESUME <line number>
 - **`RESUME NEXT` continues with the statement after the failing one** — on
   the same line if the failing statement was followed by `:`, otherwise on the
   next line. A `:` inside a string in the failing statement does not confuse it.
+  When the failing statement was the last one of the program — or of a line
+  typed at the prompt, with a program's `ON ERROR GOTO` still set — the run
+  simply ends and `Ok` appears.
 - **`RESUME <line>` continues at the start of that line.**
 - **Every `RESUME` sets `ERR` back to 0 but leaves `ERL` alone**: read after
   the `RESUME`, they give `0` and the line that failed.
@@ -110,6 +113,15 @@ been able to rate `RESUME`'s test programs.
 
 ## What we found, and how
 
+- **`RESUME NEXT` after the last statement never stopped** (fixed 2026-10-30,
+  D-RESNEXTDIRECT). After an error on a program's last line, or in a line
+  typed at the prompt while a program's `ON ERROR GOTO` was still set,
+  zerobas went on past the end of the program, ran whatever bytes followed as
+  statements, and caught its own errors there forever. The VG-8020 ends the
+  run. Found when a test program left an unread key, which reached the
+  prompt and raised an error there. `RESUME NEXT` now resumes on the failing
+  line's own end, and the ordinary step to the next line ends the run.
+
 - **`RESUME NEXT` skipped the rest of the line after some errors** (fixed
   2026-10-09, D-RESNEXTOVF). With `20 PRINT 1E62*9:PRINT "A"` the VG-8020
   resumes at `PRINT "A"`; zerobas went on at the next line
@@ -169,6 +181,8 @@ been able to rate `RESUME`'s test programs.
   references.
 - `make resnext-acceptance` — `RESUME NEXT` after a fault in a statement that
   holds numbers stored with zero or `:`-like bytes, and four controls.
+- `make resnextend-acceptance` — `RESUME NEXT` after an error on the last
+  program line and in a typed line, each run to its end (D-RESNEXTDIRECT).
 - `make kwsweep` — one row per form (bare, `NEXT`, line), and `RESUME` typed
   with no error (22).
 - `make kwram` — the RAM-usage comparison.

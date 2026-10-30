@@ -64,7 +64,7 @@ NEAR = 6                       # comment lines either side to read slice names f
 # would be fitting the answer. They may shrink; a stale one is a defect.
 ALLOW = {
     "D-RECLEN2":
-        "TODO.md:3714 (T-E47041) files it exactly right -- `D-RECLEN2 2026-08-30 -- THE "
+        "TODO.md:3735 (T-E47041) files it exactly right -- `D-RECLEN2 2026-08-30 -- THE "
         "FACE SHIPPED, THE DOMAIN DID NOT`. The face (ERR 5, not Syntax error) "
         "IS shipped; the domain widening is what went back, and opr_lowbyte's "
         "note is about that half. The entry that DID claim the whole thing "

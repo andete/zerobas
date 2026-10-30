@@ -1,0 +1,29 @@
+== Philips_VG_8020 ENDED t=14.0
+'A X\r\nE 2  65535 \r\n'
+  MSX BASIC version 1.0
+  Copyright 1983 by Microsoft
+  28815 Bytes free
+  Ok
+  RUN"CAS:"
+  Found:PROG
+  GO
+  Ok
+  FOO
+  Ok
+  Ã¿
+
+
+
+
+
+
+
+
+
+
+
+
+   color  auto   goto   list   run
+== C-BIOS_MSX1_EU_REPACK_NODISK TIMEOUT t=900.0
+'A X\r\nE 2  65535 \r\nE 2  1800 \r\nE 2  1800 \r\nE 2  1800 \r\nE 2  44805 \r\nE 13  17619 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  44850 \r\nE 2  2304 \r\nE 2  4392 \r\nE 2  50163 \r\nE 2  10085 \r\nE 2  65535 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  259 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  259 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  259 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  257 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  259 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  12861 \r\nE 2  26051 \r\nE 2  258 \r\nE 2  49944 \r\nE 2  128
+... TRIMMED for size-check: 638373 more characters of the same loop, until the 900 s timeout (D-RESNEXTDIRECT, before the fix) ...
