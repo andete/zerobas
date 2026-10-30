@@ -394,6 +394,12 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **G3_life (2026-10-30)**: Conway's Life on a 16x12 board in SCREEN 3
+      (multicolour: PSET blocks, a LINE frame, POINT read back for a checksum),
+      rows as strings with `MID$(...)=` and `MID$` neighbour counts, crunched
+      style: all eight populations match a Python simulation, SAME. (My first
+      draft numbered an inner-loop line 51 meaning "5 1/2"; BASIC sorts it after
+      6 and 7 -- the same wrong run on all three machines.)
       ✅ **G2_runner (2026-10-30)**: a side-scrolling runner in crunched style --
       MID$ windows of a DATA map, a scripted jump table, VPEEK collisions, `VDP(7)`
       border flashes written and read back, PLAY with `X`, a VRAM checksum. It
@@ -7796,7 +7802,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10287 (T-6FE392)8 (T-529ABE)` from `TODO.md:15969 (T-529ABE)`: a
+      `TODO.md:10293 (T-6FE392)8 (T-529ABE)` from `TODO.md:15975 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10756,7 +10762,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15969 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15975 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
