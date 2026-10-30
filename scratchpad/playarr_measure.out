@@ -1,0 +1,47 @@
+# scratchpad/playarr_measure.bas: each PLAY's error code (0 = accepted)
+== Philips_VG_8020 ENDED t=22.2
+ 1 O=A(1); 0 
+ 2 O=A(2); 5 
+ 3 O=A(J); 0 
+ 4 O=A(J+1); 2 
+ 5 O=A(3); 0 
+ 6 V=B%(1,2); 0 
+ 7 V=B%(J,2); 0 
+ 8 O=A(6); 9 
+ 9 O=Q(1); 5 
+ 10 V=S$(1); 13 
+ 11 O=A( 1 ); 0 
+ 12 O=A(1) ; 0 
+ 13 O=A(1);C 0 
+ 14 O=A(1 5 
+ 15 O=A(); 2 
+ 16 O=A(1,1); 9 
+ 17 O=A(-1); 2 
+ 18 O=A(1.6); 0 
+ 19 V=A(J*0+1)*2; 2 
+ 20 O=A(2-1); 2 
+Z END
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=23.2
+ 1 O=A(1); 5 
+ 2 O=A(2); 5 
+ 3 O=A(J); 5 
+ 4 O=A(J+1); 5 
+ 5 O=A(3); 5 
+ 6 V=B%(1,2); 5 
+ 7 V=B%(J,2); 5 
+ 8 O=A(6); 5 
+ 9 O=Q(1); 5 
+ 10 V=S$(1); 13 
+ 11 O=A( 1 ); 5 
+ 12 O=A(1) ; 5 
+ 13 O=A(1);C 5 
+ 14 O=A(1 5 
+ 15 O=A(); 5 
+ 16 O=A(1,1); 5 
+ 17 O=A(-1); 5 
+ 18 O=A(1.6); 5 
+ 19 V=A(J*0+1)*2; 5 
+ 20 O=A(2-1); 5 
+Z END
+

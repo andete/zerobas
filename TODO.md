@@ -183,6 +183,21 @@ item — do **one item per session** to keep context lean.
       main's evaluator: DRAW's `=` goes through the resident (`gdrw_sub_scan` /
       `gdo_want`, the command re-parsed on re-entry), and PLAY commits only at
       the end (`pt_commit`), so a re-run parse is safe.
+      📏 **MEASURED 2026-10-30** ([`playarr_measure.out`](scratchpad/playarr_measure.out),
+      20 rows): the subscripts are SIMPLE -- each a number (a fraction cut:
+      `A(1.6)` is `A(1)`, spaces fine) or a plain variable (`A(J)`, `B%(J,2)`);
+      an expression (`J+1`, `2-1`, `-1`, `()`) is 2; out of range or the wrong
+      count (`A(6)`, `A(1,1)`) is 9; a never-dimensioned array reads 0 inside the
+      automatic bound of 10 (`O=Q(1);` is 5 only because O0 is). So NO evaluator
+      is needed: the tenant can do it alone, like the scalar path.
+      🔴 **A FIRST DRAFT WAS REVERTED UNBUILT (2026-10-30)**, on review: it kept
+      the dimension count and the bound pointer in two NEW RAM cells (D-WSZERO is
+      emptying that area), and clobbered B -- PLAY's bytes-left count -- in the
+      bound arithmetic and around the subscript-variable lookup. Next try: an IX
+      frame for the locals (`push ix / ld ix,0 / add ix,sp`, pop at the end; the
+      tenant's IX is the VCB, so it must come back), pqe_mul preserving BC, and
+      the error exit kept as `ld sp,(PLY_XSP)-2 / jp px_err`, which unwinds any
+      depth the way `X`'s levels are unwound.
 
 - [x] 🔴 **`USR(S$)` WAS TYPE MISMATCH; THE VG-8020 HANDS THE ROUTINE THE STRING'S
       DESCRIPTOR (D-USRSTR, found 2026-10-29 by the program ladder's L4_machine).**
@@ -7692,7 +7707,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10183 (T-6FE392)8 (T-529ABE)` from `TODO.md:15865 (T-529ABE)`: a
+      `TODO.md:10198 (T-6FE392)8 (T-529ABE)` from `TODO.md:15880 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10652,7 +10667,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15865 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15880 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
