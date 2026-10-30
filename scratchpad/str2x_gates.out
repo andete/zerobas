@@ -262,3 +262,14 @@ warm-up 10s
 GATES: 242/242 green
 hashes: 7cae5a53 aab64f9b c4131e43 543bf8df 35ef2d8f
 recorded: this full green battery is now the baseline a future skip must prove itself against
+GATE TIER: FULL
+  why: --handoff: every hand-off runs the full battery
+  why: the gate harness changed: Makefile tools/run_gates.py
+  hours since the last full green: 4.1 (full once a day, at every hand-off, and on a RAM-address move)
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance input-devices-acceptance lnblank-say-acceptance
+bdos-acceptance exit=0
+diskbasic-acceptance exit=0
+fat-error-acceptance exit=0
+input-devices-acceptance exit=0
+lnblank-say-acceptance exit=0
+GATE TIER RAN: FULL
