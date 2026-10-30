@@ -1,0 +1,40 @@
+# scratchpad/prstrfn_op_measure.bas
+== Philips_VG_8020 ENDED t=18.3
+A [
+ERR 13 AT 30 
+B [
+ERR 13 AT 40 
+C [
+ERR 13 AT 50 
+D [
+ERR 13 AT 60 
+E [EF]
+F [
+ERR 13 AT 80 
+G [ 0  1 -1 ]
+H [ 8  4 ]
+I [
+ERR 5 AT 110 
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=17.7
+A [AERR 2 AT 30 
+B [BB-1 ]
+C [CERR 2 AT 50 
+D [ERR 2 AT 60 
+E [EF]
+F [GERR 2 AT 80 
+G [ 0  1 -1 ]
+H [ 8  4 ]
+I [ 0 ]
+
+== C-BIOS_MSX1_EU_REPACK_DISK ENDED t=17.7
+A [AERR 2 AT 30 
+B [BB-1 ]
+C [CERR 2 AT 50 
+D [ERR 2 AT 60 
+E [EF]
+F [GERR 2 AT 80 
+G [ 0  1 -1 ]
+H [ 8  4 ]
+I [ 0 ]
+

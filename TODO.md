@@ -142,21 +142,62 @@ item — do **one item per session** to keep context lean.
       the ranking rots with every carve); `gates-fast`, then the full battery, one
       commit per routine; record the yield per batch and STOP when it falls below
       ~2 B a routine. A rewrite that changes behaviour is filed and measured, never
-      applied (D-PRSTRFN below came out of the first batch).
+      applied (D-PRSTRFN below came out of the first batch -- and its fix was the
+      held-back rewrite: another 52 B, measured 2026-10-30).
 
-- [ ] 🔴 **`PRINT INPUT$(n)` / `DSKI$(…)` / `SPRITE$(n)` MAY DEFER A TYPE MISMATCH
-      (D-PRSTRFN, found 2026-10-30 by READING, during D-REREAD).**
-      🎚️ TIER 1 — if real, `PRINT INPUT$(1)` is the happy path of every "press a key"
-      line.
-      🤖 **AUTONOMOUS** — measure first. PRINT's item dispatch (`exp_loop`,
-      basic/print.asm) sends `$FF` functions, `STRING$` and `INKEY$` to the string
-      path, but `INPUT$`, `DSKI$` and `SPRITE$` to `exp_num` -> `eval` -> `cl_str`,
-      which by reading defers ERR 13 when no relop follows -- the shape that once
-      broke `PRINT INKEY$`. `str_eval_one` already handles all three. No row prints
-      any of them bare (the ladder's L2_keys assigns `T$=INPUT$(3)`). If real, the
-      fix is the held-back rewrite in the reread sample: let `str_eval_one`
-      classify every item (~53 B smaller, and an operator after `CHR$(65)` then gets
-      the Type mismatch check it lacks today).
+- [x] 🔴 **`PRINT INPUT$(n)` / `PRINT SPRITE$(n)` WERE TYPE MISMATCH, AND `PRINT CHR$(65)
+      AND 1` PRINTED BEFORE IT ERRED: PRINT'S OWN COPY OF THE STRING CLASSIFICATION
+      HAD DRIFTED (D-PRSTRFN, found 2026-10-30 by READING, during D-REREAD).**
+      🎚️ TIER 1 — `PRINT INPUT$(1)` is the happy path of every "press a key" line.
+      🤖 **AUTONOMOUS.** Measured ([`prstrfn_measure.bas`](scratchpad/prstrfn_measure.bas),
+      [`prstrfn_op_measure.out`](scratchpad/prstrfn_op_measure.out)): before the fix
+      every bare `INPUT$` item (alone, after a string, with `+`, compared) and
+      `PRINT SPRITE$(1)` were ERR 13 here and printed on the VG-8020, and the keys
+      they never read were then typed at the prompt; `PRINT CHR$(65) AND 1`,
+      `STRING$(2,66)-1`, `LEFT$("CD",1)*2`, `INKEY$ OR 3` and `MID$(...) MOD 2`
+      printed the string and then gave ERR 2 here, ERR 13 with nothing printed on
+      the VG-8020. Cause: exp_loop (basic/print.asm) classified items with its own
+      copy of str_eval_one's classification; `INPUT$` / `SPRITE$` / `DSKI$` were
+      missing from it, and its `$FF` / `STRING$` / `INKEY$` arm
+      (`exp_maybe_strfn`) skipped the operator check.
+      ✅ **FIXED 2026-10-30.** Every item that is not punctuation, `"`, `TAB(` or
+      `SPC(` now enters `exp_strvar`: `str_eval_one` classifies, and declines a
+      number with HL untouched (the contract `(A$)`, `FNA$` and `+A$` already
+      used). 53 B of chain and `exp_maybe_strfn` gone: +17 B low region, +35 B
+      main page 1, measured 2026-10-30. Gate prstrfn-acceptance (9 + 7 rows,
+      [`prstrfn_op2_measure.bas`](scratchpad/prstrfn_op2_measure.bas) reads the
+      screen back instead of the printer, see D-LPTERRNL); knives K-J / K-O
+      ([`prstrfn_knife.out`](scratchpad/prstrfn_knife.out)). `DSKI$` takes the
+      same path; it is not in the gate (a disk-only row).
+
+- [ ] 🔴 **AFTER A PROGRAM ENDS WITH `ON ERROR GOTO` STILL SET, AN ERROR AT THE PROMPT
+      LOOPS FOREVER WITH NONSENSE LINE NUMBERS (D-RESNEXTDIRECT, found 2026-10-30).**
+      🎚️ TIER 3 — a typo after running a program that set an error handler.
+      🤖 **AUTONOMOUS** — measure a minimal case first. Seen in
+      `prstrfn_measure.bas`'s first version (handler `LPRINT ...:RESUME NEXT`, the
+      program ENDs, one unread answer key + RETURN are typed at the prompt): the
+      VG-8020 printed `ERR 2 AT 65535` once and stopped; zerobas printed it, then
+      `ERR 2 AT 1800`, `44850`, `26051`, `259`, ... until the 900 s timeout.
+      RESUME NEXT from a direct-mode error resumes into something that is not
+      the typed line.
+
+- [ ] 🔍 **AN ERROR INSIDE `LPRINT` STARTS A NEW PRINTER LINE ON THE VG-8020, NOT HERE
+      (D-LPTERRNL, found 2026-10-30).**
+      🎚️ TIER 6 — what the printer gets on an error path.
+      🤖 **AUTONOMOUS** — measure. `LPRINT "A [";:LPRINT CHR$(65) AND 1` with a
+      handler that LPRINTs `ERR`: the VG-8020's printer log has `A [`, a new line,
+      then `ERR 13 ...`; zerobas's has `A [ERR 13 ...` on one line
+      ([`prstrfn_op_measure.out`](scratchpad/prstrfn_op_measure.out), the same
+      before and after D-PRSTRFN). Not yet known whether it is the error routine
+      or the handler's `LPRINT` that ends the line.
+
+- [ ] 🔍 **`USR(0)` WITH NO `DEFUSR` IS ILLEGAL FUNCTION CALL ON THE VG-8020 AND 0 HERE
+      (D-USRDEF, found 2026-10-30).**
+      🎚️ TIER 6 — an error a program only meets by forgetting DEFUSR.
+      🤖 **AUTONOMOUS** — measure what `USRTAB` holds at power-on on both machines
+      (`PEEK(&HF39A)`, a RAM read) and what each `USR0..9` does unset.
+      [`prstrfn_op_measure.out`](scratchpad/prstrfn_op_measure.out) row I:
+      `LPRINT USR(0) AND 0` is ERR 5 on the VG-8020 and prints `0` here.
 
 - [x] 🔴 **`PRINT INKEY$=""` READ TWO KEYS: A STRING ITEM WITH A RELOP AFTER IT WAS
       EVALUATED TWICE (D-PRSTR2X, found 2026-10-30 by the program ladder's L2_keys).**
@@ -7927,7 +7968,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10418 (T-6FE392)8 (T-529ABE)` from `TODO.md:16100 (T-529ABE)`: a
+      `TODO.md:10459 (T-6FE392)8 (T-529ABE)` from `TODO.md:16141 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10887,7 +10928,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16100 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16141 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

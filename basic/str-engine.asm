@@ -2230,28 +2230,12 @@ efi_reject_pab:
                 pop     hl                  ; discard [p]                         [ ]
                 jp      ev_f_empty          ; BUG C class: missing ')' -> deferred syntax error
 
-; --- exp_maybe_strfn: PRINT hook for the string-VALUED $FF functions --------
-; Reached from exp_loop (basic/print.asm) when a PRINT item begins with a $FF
-; function token (repack build only). Try the string path first — CHR$/STR$/LEFT$/
-; RIGHT$/MID$/MKI$ succeed and print; a numeric $FF function (PEEK/…) fails cleanly
-; (str_func_ff restores HL to the $FF), so we fall back to exp_num.
-;
-; S2 (spec-basic-print-unparen-compare.md §3): after a successful string-function
-; parse, remember the operand START (push hl BEFORE str_eval) and peek the token
-; that follows the value for a relational operator. If one follows, this item is
-; really the LHS of an unparenthesized comparison (`PRINT LEFT$(A$,1)="H"`); restore
-; the operand start and re-drive it through eval/ev_rel instead of printing it.
-; UNCHANGED from pre-4a — format-agnostic (only ever calls str_eval/print_strval).
-exp_maybe_strfn:
-                push    hl                  ; operand START (peek may reparse via eval)
-                call    str_eval            ; STRPTR -> value; HL advanced; CF=ok
-                jr      nc,ems_fallback     ; not a string function -> numeric factor
-                call    skip_spaces
-                call    relop_peek          ; ZF=1 iff (HL) is a relop token
-                jr      nz,ems_print        ; no relop -> plain PRINT (below)
-                jp      exp_num_slhs        ; D-PRSTR2X: a relop follows -- compare with
-                                            ; the string ALREADY read; re-driving the item
-                                            ; through eval read INKEY$ a second time
+; --- ems_print / ems_fallback: PRINT's string-item tails (basic/print.asm) -----
+; exps_print and exps_fallback land here. ems_print prints the string str_eval
+; just read (the operand start is still pushed); ems_fallback hands a declined
+; item to exp_num with the cursor str_eval restored. (exp_maybe_strfn, PRINT's
+; separate entry for $FF / STRING$ / INKEY$ items, went in D-PRSTRFN: every item
+; now enters through exp_strvar.)
 ems_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE)

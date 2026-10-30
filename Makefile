@@ -2585,6 +2585,12 @@ playarr-acceptance: repack-machine
 prstr2x-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_prstr2x.py
 
+# --- prstrfn-acceptance: every string item prints as one (D-PRSTRFN) ------------
+# INPUT$ / SPRITE$ as bare PRINT items; an operator after a string function is
+# Type mismatch before anything prints. Both targets vs the VG-8020.
+prstrfn-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_prstrfn.py
+
 # --- keyrepaint-acceptance: KEY n,"..." repaints the shown key row (D-KEYREPAINT) --
 # SCREEN 0 / 1 with the row on, KEY OFF, SCREEN 2 (no paint). Both targets vs
 # the VG-8020.

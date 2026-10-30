@@ -118,6 +118,11 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`PRINT SPRITE$(1)` was a `Type mismatch`** (fixed 2026-10-30, D-PRSTRFN),
+  while `S$=SPRITE$(1)` and `PRINT LEFT$(SPRITE$(1),3)` worked. `PRINT` kept
+  its own list of which items are strings, and `SPRITE$` was not on it; it now
+  asks the string reader about every item.
+
 - **`SPRITE$` and `PUT SPRITE` arrived on 2026-07-22** (graphics slice G7),
   every rule above measured on the VG-8020 first
   ([spec-basic-graphics-g7.md](../spec-basic-graphics-g7.md)). `SPRITE ON`,
@@ -155,6 +160,8 @@ in [sub/graphics.asm](../../sub/graphics.asm):
 
 ## Tests that cover it
 
+- `make prstrfn-acceptance` — `SPRITE$(n)` printed bare, inside `LEFT$` and
+  `MID$`, and through `LEN` (D-PRSTRFN).
 - `make graphics-acceptance` — the pattern and attribute tables read back
   against the VG-8020, sprite sizes included.
 - `make sprite-trap-acceptance` — arming, enabling, `STOP`, disarming and the

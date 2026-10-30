@@ -186,57 +186,26 @@ exp_loop:
                 jp      z,exp_tab
                 cp      SPC_TOKEN           ; $DF -> SPC(n): n spaces
                 jp      z,exp_spc
-                cp      PEEK_PREFIX         ; $FF function token -> maybe a string function
-                jp      z,exp_maybe_strfn   ; (repack: CHR$/STR$/LEFT$/…; falls back to exp_num)
-                cp      STRING_TOKEN        ; $E3 STRING$(n,c) -> string (single-byte token,
-                jp      z,exp_maybe_strfn   ;  not $FF-prefixed; str_eval handles it, prints)
-                cp      INKEY_TOKEN         ; $EC INKEY$ -> string (single-byte token; str_eval
-                jp      z,exp_maybe_strfn   ;  reads the key, prints it — else PRINT INKEY$ mismatches)
-                ; ✅ D-STRPAREN: `PRINT (A$)`. This is the ONE item shape a peek
-                ; cannot classify -- `(A$)` is a string and `(A+1)` is not, and
-                ; nothing short of evaluating the inside can say which. So it is
-                ; not classified: the STRING path is TRIED and allowed to
-                ; decline. `str_eval_paren` (basic/strvar.asm) restores HL and
-                ; returns CF clear on a non-string inside, and `exp_strvar`
-                ; already has `jr nc,exps_fallback` -- whose own comment states
-                ; the contract this relies on: "str_eval left HL unmoved on
-                ; failure, so this restores the same cursor exp_num would see
-                ; un-gated". So the numeric path is reached with exactly the
-                ; cursor it would have had, and `PRINT (A+1)` is untouched --
-                ; which is the GATED control `p.numprint`, not an assumption.
-                ; ⚠️ `(` is $28 and collides with no token, so its position in
-                ; this chain is free; it sits with the other string operands.
-                ; 🎯 D-DEFFN JOINS THE `(` CASE, NOT THE INKEY$ ONE, AND THAT IS
-                ; THE WHOLE REASON IT IS HERE. `FNA$("hi")` and `FNA(2)` share a
-                ; token, so a PEEK cannot classify the item any more than it can
-                ; classify `(A$)` versus `(A+1)` -- only the FN's own NAME can,
-                ; and reading it is str_ev_fn's job. So the string path is TRIED
-                ; and str_ev_fn DECLINES a numeric FN by restoring HL and
-                ; returning CF clear, which is exactly the contract
-                ; `jr nc,exps_fallback` below already relies on.
-                ; 🔴 WITHOUT THIS ARM `PRINT FNA$("hi")` IS ERR 13, and it looks
-                ; like a DEF FN defect rather than a PRINT classification one:
-                ; the item fell through to `is_letter` -> exp_num -> ev_fn, whose
-                ; own guard correctly refuses a `$` function in a numeric factor.
-                ; b.str / o.defstr / o.quotedcolon are the three rows.
-                cp      FN_TOKEN            ; $DE FN<name>[$] -> maybe a string
-                jr      z,exp_strvar
-                cp      '('
-                jr      z,exp_strvar
-                ; 🎯 D-UPSTR: `PRINT +A$`. THE THIRD SITE, and it joins the `(`
-                ; case rather than the `"` one for the same reason `(` does -- a
-                ; leading `+` classifies NOTHING (`+A$` is a string, `+1` is not),
-                ; so the string path is TRIED and allowed to decline. str_eval ->
-                ; str_eval_one -> str_eval_plus consumes the `+`, and on a numeric
-                ; operand puts the cursor BACK ON it and returns CF clear, which is
-                ; the contract `jp nc,exps_fallback` below already relies on. So
-                ; `PRINT +1` reaches exp_num with exactly the cursor it had before.
-                cp      PLUS_TOKEN          ; $F1 -> maybe a string (unary plus is the
-                jr      z,exp_strvar        ; identity on both references)
-                call    is_letter           ; a `$`-suffixed string variable?
-                jr      nc,exp_num
-                call    var_str_type        ; A=1 / CF set iff a string name
-                jr      c,exp_strvar        ; string variable -> print its value
+                ; 🎯 D-PRSTRFN (2026-10-30): EVERY OTHER ITEM TRIES THE STRING PATH,
+                ; and str_eval_one (basic/strvar.asm) does the classifying. This
+                ; chain used to repeat it -- $FF functions, STRING$ and INKEY$ to
+                ; exp_maybe_strfn; FN, `(` and `+` to exp_strvar; a letter through
+                ; var_str_type -- and the copy had drifted from the original:
+                ; `PRINT INPUT$(1)` and `PRINT SPRITE$(1)` reached exp_num and were
+                ; Type mismatch where the VG-8020 prints them
+                ; (scratchpad/prstrfn_measure.out), and a string FUNCTION skipped
+                ; the operator check below, so `PRINT CHR$(65) AND 1` printed `A`
+                ; and then gave Syntax error where the VG-8020 raises Type
+                ; mismatch first (scratchpad/prstrfn_op_measure.out).
+                ; The arms this chain had are all still served, by the
+                ; contract they already relied on: str_eval_one DECLINES a
+                ; non-string with HL untouched and CF clear, and exps_fallback
+                ; goes on to exp_num with the same cursor. That is how `(A$)` vs
+                ; `(A+1)` (D-STRPAREN), `FNA$` vs `FNA` (D-DEFFN) and `+A$` vs
+                ; `+1` (D-UPSTR) were already decided -- by TRYING, because a
+                ; peek cannot tell them apart. Every numeric item now pays that
+                ; try (TIER 5 is paused); the chain cost 53 B.
+                jr      exp_strvar
 exp_num:
                 call    eval                ; numeric expression -> DE = value
 exp_num_got:

@@ -121,6 +121,11 @@ keyboard form.
 
 ## What we found, and how
 
+- **`PRINT INPUT$(1)` was a `Type mismatch`** (fixed 2026-10-30, D-PRSTRFN).
+  `A$=INPUT$(1)` worked, but `PRINT` sorted its items with its own list of
+  which ones are strings, and `INPUT$` was missing from it. The list is gone:
+  `PRINT` now asks the string reader about every item, the same one `A$=`
+  uses. Found by rereading the code, then measured on the VG-8020.
 - **Too few values started the statement over, and a redo lost the prompt**
   (fixed 2026-10-30, D-INPUTCONT). Answering `JONES` to
   `INPUT "NAME, AGE";N$,G` was `?Redo from start` here, and every later answer
@@ -198,6 +203,8 @@ keyboard form.
 
 ## Tests that cover it
 
+- `make prstrfn-acceptance` — `INPUT$(n)` as a bare `PRINT` item, alone, after
+  a string, joined with `+` and compared (D-PRSTRFN).
 - `make inputcont-acceptance` — `?? ` for missing values, the prompt after a
   `?Redo`, and a `,` after the prompt (D-INPUTCONT, D-INPUTCOMMA).
 - `make casrbrk-acceptance` — `LINE INPUT #` from tape broken with Ctrl-STOP.

@@ -37,8 +37,8 @@ Oracle basis:
 Also covers the unparenthesized-PRINT-lead follow-on slice
 (spec-basic-print-unparen-compare.md, its own S2): `PRINT A$="YES"` and friends
 (var/literal/function/concat leads, all six operators, the D-2 abort, and a
-plain-PRINT regression watch) -- the dispatch decision (`exp_strvar` /
-`exp_maybe_strfn`'s `relop_peek` gate in print.asm/str-engine.asm) and the
+plain-PRINT regression watch) -- the dispatch decision (`exp_strvar`'s
+`relop_peek` gate in print.asm; every item enters there since D-PRSTRFN) and the
 printed bytes are both BIOS-independent (CHPUT is trapped, not the real BIOS),
 so the full behaviour is exercised here; the openMSX probe
 (basic_probe_str_cmp.py) additionally reference-locks it on real hardware.

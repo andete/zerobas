@@ -137,6 +137,14 @@ the set of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
 
+- **`PRINT` kept its own list of which items are strings, and it had drifted**
+  (fixed 2026-10-30, D-PRSTRFN; found by rereading the code). `PRINT INPUT$(1)`
+  and `PRINT SPRITE$(1)` were `Type mismatch`, and `PRINT CHR$(65) AND 1`
+  printed `A` and then gave `Syntax error`, where the VG-8020 raises
+  `Type mismatch` before printing anything. `PRINT` now hands every item to
+  the string reader first and treats it as a number only when that declines,
+  which is how `(A$)`, `FNA$` and `+A$` were already decided.
+
 - **A string compared inside `PRINT` was worked out twice** (fixed 2026-10-30,
   D-PRSTR2X). `PRINT INKEY$="";A$="X"` reads the string, sees the `=`, and
   prints the comparison's -1 or 0. zerobas did that by starting the item again
@@ -242,6 +250,8 @@ the set of documented work-area cells each machine writes is not the same.
   string space being reorganised between values) and the 24-column limit.
 - `make kwsweep` — one row per form (`;`, `,`, trailing separator, `TAB(`,
   `SPC(`), the `Type mismatch` row, and the error rows for `TAB(` and `SPC(`.
+- `make prstrfn-acceptance` — `INPUT$` / `SPRITE$` items, and an operator
+  after a string function (D-PRSTRFN).
 - `make prstr2x-acceptance` — strings compared inside `PRINT`, keys read by
   `INKEY$` / `INPUT$` there, and a number variable (D-PRSTR2X).
 - `make kwram` — the RAM-usage comparison.
