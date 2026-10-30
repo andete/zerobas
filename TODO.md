@@ -404,6 +404,11 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **C6_wordsort (2026-10-30)**: Project Euler 22 and 42 on the first 120 names /
+      150 words of their published lists (said in the program): a Shell sort of
+      120 strings, letter values by ASC, a score past 32767 in a double, triangle
+      tests -- string compare and heap churn under CLEAR 3000. Both answers match
+      Python on the same subsets; SAME.
       ✅ **G4_sokoban (2026-10-30)**: a Sokoban level as strings, a 35-move script
       decoded by INSTR and dispatched by `ON K GOSUB`, blocked moves, pushes, a box
       leaving its goal, VPOKEd tiles from custom characters, a VRAM-checksum per
@@ -7834,7 +7839,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10325 (T-6FE392)8 (T-529ABE)` from `TODO.md:16007 (T-529ABE)`: a
+      `TODO.md:10330 (T-6FE392)8 (T-529ABE)` from `TODO.md:16012 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10794,7 +10799,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16007 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16012 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
