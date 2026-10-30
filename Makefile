@@ -2574,6 +2574,11 @@ inputcont-acceptance: repack-machine
 postty-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_postty.py
 
+# --- playarr-acceptance: PLAY's =name; with an array element (D-PLAYEQARR) ----------
+# Subscripts are numbers or plain variables; 2 / 9 / 13 / 0 as on the VG-8020.
+playarr-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_playarr.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

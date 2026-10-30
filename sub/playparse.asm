@@ -740,7 +740,9 @@ pqe_name:
                 call    px_nosp
                 jp      c,pqe_bad           ; ended before `;`
                 cp      ';'
-                jr      z,pqe_deft          ; no suffix: DEFTBL decides the type
+                jr      z,pqe_dscal         ; no suffix: DEFTBL decides the type
+                cp      '('
+                jr      z,pqe_darr          ; D-PLAYEQARR: an array, no suffix
                 ld      c,2
                 cp      '%'
                 jr      z,pqe_suf
@@ -757,7 +759,7 @@ pqe_name:
                 cp      '0'
                 jp      c,pqe_bad
                 cp      '9'+1
-                jp      nc,pqe_bad          ; `(`, an operator, ...: 5
+                jp      nc,pqe_bad          ; an operator, ...: 5
 pqe_id:
                 inc     l
                 dec     l
@@ -765,49 +767,78 @@ pqe_id:
                 ld      l,a                 ; name1
                 jr      pqe_name
 pqe_suf:
-                call    px_nosp             ; the `;` must follow the suffix (spaces
-                                            ; between are fine: `V=I% ;`)
+                call    px_nosp             ; `;` or `(` must follow the suffix
+                jp      c,pqe_bad           ; (spaces between are fine: `V=I% ;`)
+                cp      ';'
+                jr      z,pqe_scal
+                cp      '('
+                jr      z,pqe_arr
+                jp      pqe_bad
+pqe_darr:
+                call    pqe_dtype
+pqe_arr:
+                ; --- D-PLAYEQARR: `=A(i,j);` ----------------------------------
+                push    de                  ; the queue write pointer
+                call    pqe_elem            ; HL = the element's value (0: never
+                                            ; dimensioned), C = the type
+                call    px_nosp
                 jp      c,pqe_bad
                 cp      ';'
-                jp      nz,pqe_bad
-                jr      pqe_walk
-pqe_deft:
+                jp      nz,pqe_bad          ; `=A(1)` not followed by `;`
+                jr      pqe_conv
+pqe_dscal:
+                call    pqe_dtype
+pqe_scal:
+                push    de
+                call    pqe_find            ; HL = the scalar's value, or 0
+pqe_conv:
+                call    pqe_cut             ; HL = the int16
+                pop     de
+                scf
+                ret
+
+; pqe_dtype: H = name0 -> C = DEFTBL's type (2 / 4 / 8); a string is 13.
+pqe_dtype:
+                push    hl
                 ld      a,h
                 sub     'A'
-                push    hl
                 ld      hl,DEFTBL
                 add     a,l
                 ld      l,a
-                jr      nc,pqe_d1
+                jr      nc,pqd_1
                 inc     h
-pqe_d1:
+pqd_1:
                 ld      a,(hl)
                 pop     hl
                 cp      DEFTBL_STR
                 jp      z,pqe_tm
-                ld      c,a                 ; C = the type: 2, 4 or 8
-pqe_walk:
-                push    de                  ; DE = the queue write pointer
-                push    bc                  ; B = bytes left, C = the type
-                ex      de,hl               ; DE = key (D = name0, E = name1)
+                ld      c,a
+                ret
+
+; pqe_find: HL = key (H name0, L name1), C = type -> HL = the scalar's value
+; address, or 0 when there is no such variable. Preserves BC, DE.
+pqe_find:
+                push    de
+                push    bc
+                ex      de,hl               ; DE = key
                 ld      hl,(PRGEND)
                 inc     hl
                 inc     hl                  ; the scalar region's base
-pqe_lp:
+pqf_lp:
                 push    hl
                 ld      bc,(ARYTAB)
                 or      a
                 sbc     hl,bc
                 pop     hl
-                jr      nc,pqe_undef        ; reached ARYTAB: not defined
+                jr      nc,pqf_none         ; reached ARYTAB: not defined
                 ld      a,(hl)
                 cp      d
-                jr      nz,pqe_skip
+                jr      nz,pqf_skip
                 inc     hl
                 ld      a,(hl)
                 dec     hl
                 cp      e
-                jr      nz,pqe_skip
+                jr      nz,pqf_skip
                 inc     hl
                 inc     hl
                 ld      a,(hl)              ; this entry's type
@@ -816,44 +847,54 @@ pqe_lp:
                 pop     bc
                 push    bc
                 cp      c
-                jr      z,pqe_found
-pqe_skip:
+                jr      nz,pqf_skip
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> the value
+                jr      pqf_ret
+pqf_skip:
                 inc     hl
                 inc     hl
                 ld      a,(hl)              ; this entry's type -> its stride
                 inc     hl
                 cp      1
-                jr      nz,pqe_st
+                jr      nz,pqf_st
                 ld      a,3                 ; a string's value is a 3-byte descriptor
-pqe_st:
+pqf_st:
                 add     a,l
                 ld      l,a
-                jr      nc,pqe_lp
+                jr      nc,pqf_lp
                 inc     h
-                jr      pqe_lp
-pqe_undef:
-                ld      hl,0                ; an undefined name is 0
-                jr      pqe_ok
-pqe_found:
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL -> the value
+                jr      pqf_lp
+pqf_none:
+                ld      hl,0
+pqf_ret:
+                pop     bc
+                pop     de
+                ret
+
+; pqe_cut: HL = a value's address (0: undefined, the value 0), C = its type ->
+; HL = the int16, cut toward 0 as CINT cuts; past an int16 is 6 (pqe_abort).
+; Preserves B. Clobbers C, DE.
+pqe_cut:
+                ld      a,h
+                or      l
+                ret     z                   ; undefined: 0
                 ld      a,c
                 cp      2
-                jr      nz,pqe_flt
+                jr      nz,pqc_flt
                 ld      a,(hl)              ; an integer: as it is
                 inc     hl
                 ld      h,(hl)
                 ld      l,a
-                jr      pqe_ok
-pqe_flt:
+                ret
+pqc_flt:
                 ; BCD (docs/concepts/numbers.md): byte 0 = sign | exponent+64,
                 ; then two digits a byte, value .d1d2... x 10^(exponent).
-                ; Cut toward 0 to (exponent) digits, as CINT does.
                 ld      a,(hl)
                 and     $7F
                 sub     65                  ; integer digits - 1; carry: |x| < 1
-                jr      c,pqe_undef         ; (byte 0 = 0, the value 0, too)
+                jr      c,pqc_zero          ; (byte 0 = 0, the value 0, too)
                 cp      5
                 jp      nc,pqe_ovf          ; six or more digits
                 inc     a
@@ -861,7 +902,7 @@ pqe_flt:
                 push    hl                  ; the value (its sign is in byte 0)
                 inc     hl
                 ld      de,0
-pqe_dig:
+pqc_dig:
                 ld      a,(hl)
                 rrca
                 rrca
@@ -869,70 +910,53 @@ pqe_dig:
                 rrca
                 and     $0F                 ; the high digit
                 call    pqe_acc
-                jr      c,pqe_ovf_h
                 dec     c
-                jr      z,pqe_mag
+                jr      z,pqc_mag
                 ld      a,(hl)
                 and     $0F                 ; the low digit
                 call    pqe_acc
-                jr      c,pqe_ovf_h
                 inc     hl
                 dec     c
-                jr      nz,pqe_dig
-pqe_mag:
+                jr      nz,pqc_dig
+pqc_mag:
                 pop     hl
                 ld      a,d
                 cp      $80
-                jr      c,pqe_sign          ; < 32768
+                jr      c,pqc_sign          ; < 32768
                 jp      nz,pqe_ovf
                 ld      a,e
                 or      a
                 jp      nz,pqe_ovf          ; > 32768
                 bit     7,(hl)
                 jp      z,pqe_ovf           ; +32768
-pqe_sign:
+pqc_sign:
                 ld      a,(hl)              ; byte 0: the sign
                 ex      de,hl               ; HL = the magnitude
                 rlca
-                jr      nc,pqe_ok
+                ret     nc
                 xor     a
                 sub     l
                 ld      l,a
                 sbc     a,a
                 sub     h
                 ld      h,a                 ; HL = -HL
-pqe_ok:
-                pop     bc
-                pop     de
-                scf
                 ret
-pqe_ovf_h:
-                pop     hl
-pqe_ovf:
-                pop     bc
-                pop     de
-                pop     hl                  ; drop pt_numeq's return address
-                ld      a,6                 ; Overflow
-                jp      px_err
-pqe_tm:
-                pop     hl                  ; drop pt_numeq's return address
-                ld      a,13                ; Type mismatch
-                jp      px_err
-pqe_bad:
-                pop     hl                  ; drop pt_numeq's return address
-                jp      pt_illegal
-; pqe_acc: DE = DE*10 + A (a digit). CF=1 when that would pass 32769 -- DE was
-; already 3277 or more -- which the caller turns into 6. Preserves HL, C.
+pqc_zero:
+                ld      hl,0
+                ret
+
+; pqe_acc: DE = DE*10 + A (a digit). Past 32769 -- DE already 3277 or more --
+; is 6 (pqe_abort). Preserves HL, BC.
 pqe_acc:
                 push    hl
                 push    af
                 ld      a,d
                 cp      $0C
                 jr      c,pa_ok             ; < 3072
-                jr      nz,pa_ovf           ; >= 3328
+                jp      nz,pqe_ovf          ; >= 3328
                 ld      a,e
                 cp      $CD
-                jr      nc,pa_ovf           ; >= 3277
+                jp      nc,pqe_ovf          ; >= 3277
 pa_ok:
                 ld      h,d
                 ld      l,e
@@ -948,13 +972,314 @@ pa_ok:
                 add     hl,de
                 ex      de,hl
                 pop     hl
+                ret
+
+; pqe_elem (D-PLAYEQARR): HL = key, C = type, the `(` read -> HL = the element's
+; value address, 0 for an array never dimensioned; C = the type; the `)` read.
+; Measured (scratchpad/playarr_measure.out): each subscript a number (its
+; fraction cut) or a plain variable; an expression is 2; out of range or the
+; wrong count is 9; a never-dimensioned array reads 0 within the automatic bound
+; of 10. Column-major (sub/arrays.asm header): off += i_k * M; M *= b_k + 1.
+; Its locals live in an IX FRAME on the stack -- no RAM cell (D-WSZERO) -- and
+; IX, DE and B (PLAY's bytes left, which only px_getc moves) come back.
+;   frame: +0 type  +1 dimensions still to take ($FF: never dimensioned)
+;          +2/3 off  +4/5 M  +6/7 the next bound (0: never dimensioned)
+pqe_elem:
+                push    de
+                push    ix
+                ld      ix,-8
+                add     ix,sp
+                ld      sp,ix               ; 8 bytes of locals
+                ld      (ix+0),c
+                ex      de,hl               ; DE = key
+                ld      hl,(ARYTAB)
+pqa_find:
+                ld      a,(hl)
                 or      a
-                ret
-pa_ovf:
+                jr      z,pqa_none          ; the terminator: never dimensioned
+                cp      d
+                jr      nz,pqa_skip
+                inc     hl
+                ld      a,(hl)
+                inc     hl
+                cp      e
+                jr      nz,pqa_skip2
+                ld      a,(hl)              ; this array's type
+                dec     hl
+                dec     hl
+                cp      (ix+0)
+                jr      z,pqa_have
+pqa_skip:
+                inc     hl
+                inc     hl
+pqa_skip2:
+                inc     hl
+                inc     hl                  ; HL -> the stride (+4)
+                push    de
+                ld      e,(hl)
+                inc     hl
+                ld      d,(hl)              ; DE = the stride
+                dec     hl
+                dec     hl
+                dec     hl
+                dec     hl
+                dec     hl                  ; HL -> the descriptor again
+                add     hl,de
+                pop     de
+                jr      pqa_find
+pqa_none:
+                ld      (ix+1),$FF
+                ld      hl,0
+                jr      pqa_set
+pqa_have:
+                inc     hl
+                inc     hl
+                inc     hl
+                ld      a,(hl)              ; ndim
+                ld      (ix+1),a
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> bound0
+pqa_set:
+                ld      (ix+6),l
+                ld      (ix+7),h
+                xor     a
+                ld      (ix+2),a
+                ld      (ix+3),a            ; off = 0
+                ld      (ix+5),a
+                inc     a
+                ld      (ix+4),a            ; M = 1
+pqa_sub:
+                call    pqe_subscript       ; DE = i, A = `,` or `)`
+                push    af
+                ld      a,(ix+1)
+                or      a
+                jp      z,pqe_r9            ; more subscripts than dimensions
+                dec     a
+                ld      (ix+1),a
+                ld      l,(ix+6)
+                ld      h,(ix+7)
+                ld      a,h
+                or      l
+                jr      nz,pqa_b1
+                ld      hl,10               ; never dimensioned: the bound is 10
+                jr      pqa_b2
+pqa_b1:
+                ld      a,(hl)
+                inc     hl
+                push    af
+                ld      a,(hl)
+                inc     hl
+                ld      (ix+6),l
+                ld      (ix+7),h            ; the next bound
+                ld      h,a
                 pop     af
+                ld      l,a                 ; HL = this dimension's bound
+pqa_b2:
+                push    hl
+                or      a
+                sbc     hl,de               ; bound - i
                 pop     hl
-                scf
+                jp      c,pqe_r9            ; i > bound: Subscript out of range
+                inc     hl                  ; HL = bound + 1
+                push    hl
+                ld      l,(ix+4)
+                ld      h,(ix+5)            ; HL = M, DE = i
+                call    pqe_mul             ; HL = M * i
+                ld      e,(ix+2)
+                ld      d,(ix+3)
+                add     hl,de
+                ld      (ix+2),l
+                ld      (ix+3),h            ; off += M * i
+                pop     de                  ; DE = bound + 1
+                ld      l,(ix+4)
+                ld      h,(ix+5)
+                call    pqe_mul
+                ld      (ix+4),l
+                ld      (ix+5),h            ; M *= bound + 1
+                pop     af                  ; A = the terminator
+                cp      ','
+                jr      z,pqa_sub
+                ld      a,(ix+6)
+                or      (ix+7)
+                jr      z,pqa_out           ; never dimensioned: HL = 0 below
+                ld      a,(ix+1)
+                or      a
+                jp      nz,pqe_r9           ; fewer subscripts than dimensions
+                ld      l,(ix+0)
+                ld      h,0                 ; elsize = the type: 2, 4 or 8
+                ld      e,(ix+2)
+                ld      d,(ix+3)
+                call    pqe_mul             ; HL = elsize * off
+                ld      e,(ix+6)
+                ld      d,(ix+7)            ; the bound pointer has walked onto
+                add     hl,de               ; the element data
+pqa_out:
+                ld      a,(ix+6)
+                or      (ix+7)
+                jr      nz,pqa_ret
+                ld      hl,0
+pqa_ret:
+                ld      c,(ix+0)
+                ex      de,hl
+                ld      hl,8
+                add     hl,sp
+                ld      sp,hl               ; drop the locals
+                ex      de,hl
+                pop     ix
+                pop     de
                 ret
+
+; pqe_subscript: -> DE = the subscript, A = the char after it (`,` or `)`; else
+; Syntax error 2). A number (its fraction skipped) or a plain variable.
+; Preserves B's meaning (only px_getc moves it), IX, and the caller's C? no: C is
+; reloaded by pqe_elem from its frame.
+pqe_subscript:
+                call    px_nosp
+                jp      c,pqe_bad
+                cp      '0'
+                jr      c,pqs_notdig
+                cp      '9'+1
+                jr      nc,pqs_notdig
+                sub     '0'
+                ld      e,a
+                ld      d,0
+pqs_dig:
+                call    pqs_peek
+                jr      c,pqs_end
+                cp      '0'
+                jr      c,pqs_dot
+                cp      '9'+1
+                jr      nc,pqs_dot
+                call    px_getc
+                sub     '0'
+                call    pqe_acc
+                jr      pqs_dig
+pqs_dot:
+                cp      '.'
+                jr      nz,pqs_end
+                call    px_getc             ; the fraction is cut
+pqs_frac:
+                call    pqs_peek
+                jr      c,pqs_end
+                cp      '0'
+                jr      c,pqs_end
+                cp      '9'+1
+                jr      nc,pqs_end
+                call    px_getc
+                jr      pqs_frac
+pqs_end:
+                call    px_nosp
+                jp      c,pqe_bad
+                jr      pqs_term
+pqs_notdig:
+                call    px_letter
+                jp      nc,pqs_syn          ; `-1`, `(`, `)` ...: Syntax error
+                ld      h,a
+                ld      l,0
+pqs_nm:
+                call    px_nosp
+                jp      c,pqe_bad
+                call    px_letter
+                jr      c,pqs_id
+                cp      '0'
+                jr      c,pqs_nmend
+                cp      '9'+1
+                jr      nc,pqs_nmend
+pqs_id:
+                inc     l
+                dec     l
+                jr      nz,pqs_nm
+                ld      l,a
+                jr      pqs_nm
+pqs_nmend:
+                ld      c,2
+                cp      '%'
+                jr      z,pqs_suf
+                ld      c,4
+                cp      '!'
+                jr      z,pqs_suf
+                ld      c,8
+                cp      '#'
+                jr      z,pqs_suf
+                cp      '$'
+                jp      z,pqe_tm
+                push    af
+                call    pqe_dtype           ; C = DEFTBL's type
+                pop     af
+                jr      pqs_look
+pqs_suf:
+                call    px_nosp
+                jp      c,pqe_bad
+pqs_look:
+                push    af                  ; the char after the name
+                call    pqe_find
+                call    pqe_cut             ; HL = the value
+                pop     af
+                ex      de,hl               ; DE = the subscript
+                bit     7,d
+                jp      nz,pqe_r9           ; a negative variable: out of range
+pqs_term:
+                cp      ','
+                ret     z
+                cp      ')'
+                ret     z
+pqs_syn:
+                ld      a,2                 ; an operator or anything else: Syntax error
+                jr      pqe_abort
+; pqs_peek: A = the next source char without taking it; CF=1 at the end.
+pqs_peek:
+                ld      a,b
+                or      a
+                scf
+                ret     z
+                push    hl
+                ld      hl,(MCLPTR)
+                ld      a,(hl)
+                pop     hl
+                or      a                   ; CF=0
+                ret
+
+; pqe_mul: HL = HL * DE (16 bits: the arrays fit in 64 KB). Preserves BC.
+pqe_mul:
+                push    bc
+                ld      b,h
+                ld      c,l                 ; BC = multiplicand
+                ld      hl,0
+                ld      a,16
+pqm_lp:
+                add     hl,hl
+                ex      de,hl
+                add     hl,hl
+                ex      de,hl
+                jr      nc,pqm_no
+                add     hl,bc
+pqm_no:
+                dec     a
+                jr      nz,pqm_lp
+                pop     bc
+                ret
+
+; --- the error exits: back to pt_voice's caller from ANY depth -------------------
+; SP := PLY_XSP-2, pt_voice's own return, the frame `X`'s levels unwind to; then
+; px_err stores the code and returns CF=1, the way a command's error exit does.
+pqe_r9:
+                ld      a,9                 ; Subscript out of range
+                jr      pqe_abort
+pqe_ovf:
+                ld      a,6                 ; Overflow
+                jr      pqe_abort
+pqe_tm:
+                ld      a,13                ; Type mismatch
+                jr      pqe_abort
+pqe_bad:
+                ld      a,5                 ; Illegal function call
+pqe_abort:
+                ld      hl,(PLY_XSP)
+                dec     hl
+                dec     hl
+                ld      sp,hl
+                jp      px_err
 
 ; --- PLAY X<var>; -- substring execution (docs/spec-basic-audio-play.md §7.12) --
 ; 🏗️ Joost, 2026-09-24: *"Tenant walks the chain"*. The tenant resolves the name

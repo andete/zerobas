@@ -10,6 +10,10 @@ C3_euler
   Philips_VG_8020                ENDED t=224.2 gaps=0 max=0  lpt 9 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=467.0 gaps=0 max=0  SAME
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=466.9 gaps=0 max=0  SAME
+C4_euler
+  Philips_VG_8020                ENDED t=176.1 gaps=0 max=0  lpt 6 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=382.3 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=382.3 gaps=0 max=0  SAME
 G1_snake
   Philips_VG_8020                ENDED t=40.7 gaps=0 max=0  lpt 3 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=60.2 gaps=0 max=0  SAME
@@ -18,6 +22,10 @@ G2_runner
   Philips_VG_8020                ENDED t=27.2 gaps=0 max=0  lpt 3 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=31.5 gaps=0 max=0  SAME
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=31.5 gaps=0 max=0  SAME
+G3_life
+  Philips_VG_8020                ENDED t=147.8 gaps=0 max=0  lpt 9 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=241.8 gaps=0 max=0  SAME
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=241.7 gaps=0 max=0  SAME
 L1_dice
   Philips_VG_8020                ENDED t=46.0 gaps=0 max=0  lpt 18 lines
   C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=98.0 gaps=0 max=0  SAME
@@ -106,4 +114,4 @@ L5_stock
   National_CF-3300               ENDED t=49.6 gaps=34 max=0.223  lpt 20 lines
   C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=62.5 gaps=37 max=0.135  SAME
 
-PASS: 27 program(s), 0 divergent run(s)
+PASS: 29 program(s), 0 divergent run(s)

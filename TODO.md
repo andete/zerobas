@@ -213,7 +213,7 @@ item — do **one item per session** to keep context lean.
       `""` ([`play0_err.out`](scratchpad/play0_err.out)): that is the window Joost
       declined on 2026-09-27 (PLAY.md, Differences), not a new item.
 
-- [ ] 🔴 **PLAY `=name;` WITH AN ARRAY ELEMENT IS ERROR 5 HERE (D-PLAYEQARR, split
+- [x] 🔴 **PLAY `=name;` WITH AN ARRAY ELEMENT IS ERROR 5 HERE (D-PLAYEQARR, split
       from D-PLAYEQ 2026-10-30).**
       🎚️ TIER 1 — `PLAY "V=A(1);"` works on the VG-8020
       ([`playeq_measure.out`](scratchpad/playeq_measure.out) row 27).
@@ -237,6 +237,16 @@ item — do **one item per session** to keep context lean.
       tenant's IX is the VCB, so it must come back), pqe_mul preserving BC, and
       the error exit kept as `ld sp,(PLY_XSP)-2 / jp px_err`, which unwinds any
       depth the way `X`'s levels are unwound.
+      ✅ **FIXED 2026-10-30, IN THAT SHAPE.** sub/playparse.asm: the tail of
+      `pt_numeq` is now small routines -- `pqe_dtype`, `pqe_find` (the scalar
+      walk), `pqe_cut` (the CINT cut, preserving B), `pqe_elem` (the array walk and
+      column-major offset with its locals in an 8-byte IX frame -- no RAM cell;
+      IX, DE and B come back), `pqe_subscript` (a number with its fraction cut, or
+      a variable), `pqe_mul` (preserving BC) -- and EVERY error leaves through
+      `pqe_abort` (SP := PLY_XSP-2), correct from any depth. All 20 measured rows
+      match; playeq-acceptance's 31 stay SAME. Gate playarr-acceptance, knives
+      K-A / K-B ([`playarr_knife.out`](scratchpad/playarr_knife.out)); D-PLAYEQ's
+      K-Q re-run on the new code, HIT.
 
 - [x] 🔴 **`USR(S$)` WAS TYPE MISMATCH; THE VG-8020 HANDS THE ROUTINE THE STRING'S
       DESCRIPTOR (D-USRSTR, found 2026-10-29 by the program ladder's L4_machine).**
@@ -7813,7 +7823,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10304 (T-6FE392)8 (T-529ABE)` from `TODO.md:15986 (T-529ABE)`: a
+      `TODO.md:10314 (T-6FE392)8 (T-529ABE)` from `TODO.md:15996 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10773,7 +10783,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15986 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15996 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

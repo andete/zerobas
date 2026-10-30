@@ -69,6 +69,11 @@ leaves that voice alone, so `PLAY "","","C"` plays on the third voice only.
   32767 is `Overflow` (6). An undefined variable is 0, a string variable is
   `Type mismatch` (13), and a missing `;`, a number written in place of the
   name or a bracketed name is error 5. Spaces inside are allowed.
+- **An array element works too**: `PLAY "V=A(1);"`, `"O=B%(J,2);"`. Each
+  subscript must be a number or a plain variable (an expression such as
+  `A(J+1)` is `Syntax error`); out of range, or the wrong number of
+  subscripts, is `Subscript out of range` (9); an array never dimensioned
+  reads 0.
 - **The music outlives the program.** A clean `END` leaves it playing, and so
   do `NEW` and a trapped error. An *untrapped* error or `STOP` stops
   it and silences the sound chip; `CONT` does not bring it back. `BEEP` stops
@@ -122,9 +127,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**An array element after `=`.** `PLAY "V=A(1);"` works on the VG-8020;
-zerobas answers error 5 (D-PLAYEQARR). A plain variable works on both.
-
 **`PLAY(n)` on the very next statement after a `PLAY`.** At every `PLAY` the
 VG-8020 marks all three voices busy in its work area, and its interrupt then
 clears the idle ones within a tick; zerobas marks only the voices it was given.
@@ -141,6 +143,9 @@ the ten test programs also showed a different amount of free string space.
 
 ## What we found, and how
 
+- **An array element after `=` was error 5** (fixed 2026-10-30,
+  D-PLAYEQARR); twenty forms measured
+  ([readings](../../scratchpad/playarr_measure.out)).
 - **`=name;` was error 5 in every form** (fixed 2026-10-30, D-PLAYEQ), where
   the VG-8020 takes it for eight commands. Found by a turtle-graphics program
   written for the program ladder; thirty forms measured
@@ -214,6 +219,7 @@ the ten test programs also showed a different amount of free string space.
   against the VG-8020.
 - `make playeq-acceptance` — `=name;` for every command that takes it, and the
   ways it fails (D-PLAYEQ).
+- `make playarr-acceptance` — `=name;` with an array element (D-PLAYEQARR).
 - `make play-trace-acceptance` — the sound chip's registers, frame by frame,
   while music plays.
 - `make gicini-acceptance` — what stops the music and what does not.
