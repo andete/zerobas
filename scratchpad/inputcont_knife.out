@@ -1,0 +1,11 @@
+K-C ROMs 7dbb0e2f -> 38d12cbb  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+K-R ROMs 7dbb0e2f -> 0ec79370  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref '|  P1? 5                                 '  zb '|  ? 5                                   '
+   ref '|  P5? 9,8                               '  zb '|  ? 9,8                                 '
+   ref '|  P6? 4,5                               '  zb '|  ? 4,5                                 '
+   ref '|  P1? 5                                 '  zb '|  ? 5                                   '
+   ref '|  P5? 9,8                               '  zb '|  ? 9,8                                 '
+   ref '|  P6? 4,5                               '  zb '|  ? 4,5                                 '
+K-M ROMs 7dbb0e2f -> 2fdc3034  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+restored ROMs 7dbb0e2f == clean
+3/3 knives HIT

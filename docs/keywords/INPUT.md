@@ -37,16 +37,21 @@ A variable may be an array element: `INPUT A(3)`.
 ### `INPUT`
 
 - **The prompt is `? `.** With a prompt string and `;`, the string is printed
-  first: `INPUT "Name";N$` shows `Name? `. (A `,` in place of the `;` prints
-  the string without the `? ` here; that form has not been compared with the
-  reference yet.)
+  first: `INPUT "Name";N$` shows `Name? `. A `,` in place of the `;` is
+  `Syntax error`, for `INPUT` and `LINE INPUT` alike, and nothing is printed
+  before the error.
 - **One typed line feeds the whole list**, split at commas: `INPUT X,Y`
   answered `3,4` gives `X=3`, `Y=4`.
 - **Numbers are read the way `VAL` reads them**: `1.5`, `40000`, `1E3`,
   `-.025`, `&H10` (16) and `1D2` (100) all work. Blanks inside a number are
   ignored (`1 2` is 12). Only blanks may follow the number; `1-2` or `ABC` gets
-  `?Redo from start`, and the whole line is asked for again with `? `. An empty
-  field is 0.
+  `?Redo from start`, and the whole statement starts again: its prompt is
+  shown again (`Name? `, or `? ` when it has none) and every variable is read
+  again. An empty field is 0.
+- **Too few values**: when the line ends before the list does, the next value
+  is asked for with `?? ` on a line of its own, once for each one missing:
+  `INPUT X,Y,Z` answered `1`, `2`, `3` on three lines gives 1, 2 and 3. A bad
+  value on a `??` line is `?Redo from start` for the whole statement.
 - **Too many values**: the extra ones are dropped with `?Extra ignored`, and
   the program carries on with what fitted.
 - **Strings**: leading blanks are dropped, blanks inside and at the end are
@@ -116,6 +121,17 @@ keyboard form.
 
 ## What we found, and how
 
+- **Too few values started the statement over, and a redo lost the prompt**
+  (fixed 2026-10-30, D-INPUTCONT). Answering `JONES` to
+  `INPUT "NAME, AGE";N$,G` was `?Redo from start` here, and every later answer
+  then landed in the wrong question; the VG-8020 asks `?? ` for the age. And
+  after a `?Redo` zerobas showed a bare `? ` where the reference shows the
+  prompt again. Found by a survey program written for the program ladder,
+  which types the answers people type
+  ([measured](../../scratchpad/inputcont_measure.out)).
+- **A `,` after the prompt was accepted** (fixed 2026-10-30, D-INPUTCOMMA);
+  both references say `Syntax error`
+  ([measured](../../scratchpad/inputcomma_measure.out)).
 - **An `INPUT$` inside another's channel number broke the outer one** (fixed
   2026-10-16, D-WSZERO S14g-c). `A$=INPUT$(3,#VAL(INPUT$(1)))` with `1` typed
   and a file open as #1: the VG-8020 reads 3 bytes from the file; zerobas
@@ -182,6 +198,8 @@ keyboard form.
 
 ## Tests that cover it
 
+- `make inputcont-acceptance` — `?? ` for missing values, the prompt after a
+  `?Redo`, and a `,` after the prompt (D-INPUTCONT, D-INPUTCOMMA).
 - `make casrbrk-acceptance` — `LINE INPUT #` from tape broken with Ctrl-STOP.
 - `make input-acceptance` — numbers, strings, several variables, `LINE INPUT`,
   the prompt, `?Redo from start` and `?Extra ignored`, typed into both

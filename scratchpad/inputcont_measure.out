@@ -1,0 +1,67 @@
+# scratchpad/inputcont_measure.bas (the screen is VPEEKed to the printer at the end)
+== Philips_VG_8020 ENDED t=36.8
+A 5 
+C 7 
+D 1  2  3 
+E 9  8  1 
+F 4  5  6 
+G 2 
+H 2 
+|  P1? X                                 
+|  ?Redo from start                      
+|  P1? 5                                 
+|  ? Z                                   
+|  ?Redo from start                      
+|  ? 7                                   
+|  P4? 1                                 
+|  ?? 2                                  
+|  ?? 3                                  
+|  P5? 1,2                               
+|  ?? X                                  
+|  ?Redo from start                      
+|  P5? 9,8                               
+|  ?? 1                                  
+|  P6? A                                 
+|  ?Redo from start                      
+|  P6? 4,5                               
+|  ?? 6                                  
+|                                        
+|                                        
+|                                        
+|                                        
+|                                        
+|  color  auto   goto   list   run       
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=47.2
+A 5 
+C 7 
+D 1  2  3 
+E 9  8  1 
+F 4  5  6 
+G 2 
+H 2 
+|  P1? X                                 
+|  ?Redo from start                      
+|  P1? 5                                 
+|  ? Z                                   
+|  ?Redo from start                      
+|  ? 7                                   
+|  P4? 1                                 
+|  ?? 2                                  
+|  ?? 3                                  
+|  P5? 1,2                               
+|  ?? X                                  
+|  ?Redo from start                      
+|  P5? 9,8                               
+|  ?? 1                                  
+|  P6? A                                 
+|  ?Redo from start                      
+|  P6? 4,5                               
+|  ?? 6                                  
+|  P7P8                                  
+|                                        
+|                                        
+|                                        
+|                                        
+|  color  auto   goto   list   run       
+

@@ -558,6 +558,33 @@ dev_cas:
 ; descriptor in place. Page 1, in the free pad in front of the $6CF3 pin (it
 ; first went at the end of basic/strvar.asm, which is in front of the $4EF8 pin,
 ; whose pad is 1 B: the overrun emptied pasmo's image). Callers: low region.
+; --- inpc_cont / inpc_redo_p1 (D-INPUTCONT): INPUT's two re-reads ----------------
+; Sited HERE, in main page 1's pad, because basic/input.asm is the low region.
+; inpc_cont: the variable list wants more and the typed line ran out. The
+; VG-8020 asks for the REST with `?? ` and goes on with the NEXT variable:
+; `INPUT "P4";D,E,F` typed `1`, `2`, `3` on three lines is 1 2 3 there
+; (scratchpad/inputcont_measure.out). HL = the program text at that variable.
+inpc_cont:
+                ld      a,'?'
+                call    CHPUT
+                call    inpc_print_q        ; `?? `
+                push    hl
+                call    inp_readline
+                pop     hl
+                jp      inpc_vloop
+; inpc_redo_p1: ?Redo from start, then the WHOLE statement again -- its prompt
+; included: the VG-8020 shows `P1? ` after the ?Redo where zerobas showed a bare
+; `? `. SAVTXT is this statement's untouched start (exec_stmt captures it on
+; entry), so re-executing it prints the prompt exactly as the first time. A bad
+; field on a `??` line comes here too, and starts over from the first
+; variable, as on the VG-8020. Stack: [varstart] over the return-free jp.
+inpc_redo_p1:
+                ld      hl,msg_redo
+                call    print_msg           ; "?Redo from start" (CRLF emitted)
+                pop     bc                  ; drop varstart
+                ld      hl,(SAVTXT)
+                jp      exec_stmt
+
 ;   in: STRPTR = the operand.  out: HL = STRPTR = the descriptor to use.
 str_snapshot_ro:
                 ld      hl,(STRPTR)

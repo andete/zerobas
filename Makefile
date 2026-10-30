@@ -2562,6 +2562,12 @@ fullclash-acceptance: repack-machine
 playeq-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_playeq.py
 
+# --- inputcont-acceptance: INPUT's ?? continuation and redo prompt (D-INPUTCONT) ------
+# Too few values: `?? ` and the rest; a ?Redo re-runs the statement, prompt and
+# all. Both targets vs the VG-8020.
+inputcont-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_inputcont.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

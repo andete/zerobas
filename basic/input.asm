@@ -45,31 +45,37 @@ input_console:
                 cp      '"'
                 jr      nz,inpc_noprompt
                 inc     hl                  ; past the opening quote
-inpc_plit:
+                ; D-INPUTCOMMA (2026-10-30): the separator is checked BEFORE the
+                ; prompt is shown. A `,` after the literal was taken here, with no
+                ; "? "; both references say Syntax error for INPUT and LINE INPUT
+                ; alike -- and print NOTHING first, where echoing while scanning
+                ; showed the prompt (scratchpad/inputcomma_measure.out).
+                push    hl                  ; the literal's first char
+inpc_pscan:
                 ld      a,(hl)
                 or      a
                 jp      z,stmt_error        ; unterminated prompt literal
                 inc     hl
                 cp      '"'
-                jr      z,inpc_psep
-                call    CHPUT               ; echo the prompt char to the screen
-                jr      inpc_plit
-inpc_psep:
+                jr      nz,inpc_pscan
                 call    skip_spaces
                 cp      ';'
-                jr      z,inpc_psemi
-                cp      ','
-                jr      z,inpc_pcomma
-                jp      stmt_error          ; a prompt must be followed by ';' or ','
-inpc_psemi:
-                inc     hl                  ; ';' : INPUT adds "? ", LINE INPUT nothing
+                jp      nz,stmt_error       ; a prompt must be followed by ';'
+                inc     hl                  ; past the ';'
+                ex      (sp),hl             ; HL = the literal, [past the ';']
+inpc_plit:
+                ld      a,(hl)
+                inc     hl
+                cp      '"'
+                jr      z,inpc_pdone
+                call    CHPUT               ; echo the prompt char to the screen
+                jr      inpc_plit
+inpc_pdone:
+                pop     hl                  ; past the ';': INPUT adds "? ", LINE INPUT nothing
                 ld      a,(FCH_RDMODE)
                 or      a
                 jr      nz,inpc_dispatch
                 call    inpc_print_q
-                jr      inpc_dispatch
-inpc_pcomma:
-                inc     hl                  ; ',' : never "? "
                 jr      inpc_dispatch
 inpc_noprompt:
                 ld      a,(FCH_RDMODE)      ; no prompt: INPUT adds "? ", LINE INPUT nothing
@@ -175,12 +181,13 @@ inpc_morevars:
                 call    inpc_more_input     ; ZF=1 iff a field is available for the next var
                 pop     hl
                 jr      z,inpc_vloop        ; more input -> read the next variable
-                ; the list wants another variable but the line ran out -> too few.
+                ; --- D-INPUTCONT: the list wants another variable, the line ran out:
+                ; `?? ` and the rest, not a ?Redo. Both bodies are in main page 1
+                ; (basic/files.asm, inpc_cont / inpc_redo_p1): this is the low
+                ; region, which had 1 B.
+                jp      inpc_cont
 inpc_redo0:
-                ld      hl,msg_redo
-                call    print_msg           ; "?redo from start" (D-MSGENC: CRLF emitted)
-                call    inpc_print_q
-                jr      inpc_reread         ; re-read the whole line (stack: varstart)
+                jp      inpc_redo_p1        ; ?Redo, then the WHOLE statement again
 inpc_redo3:
                 pop     hl                  ; drop textcur
                 pop     bc                  ; drop key

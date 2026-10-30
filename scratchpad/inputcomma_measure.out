@@ -1,0 +1,25 @@
+# scratchpad/inputcomma_measure.bas (@DISK for the CF-3300 and the DISK target; the same program without @DISK for the VG-8020 and NODISK)
+== Philips_VG_8020 ENDED t=16.0
+ERR 2 IN 30 
+A 0  2 
+ERR 2 IN 40 
+B [] 2 
+Z END
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=15.0
+A 5  0 
+B [HI] 0 
+Z END
+
+== National_CF-3300 ENDED t=20.8
+ERR 2 IN 30 
+A 0  2 
+ERR 2 IN 40 
+B [] 2 
+Z END
+
+== C-BIOS_MSX1_EU_REPACK_DISK ENDED t=18.7
+A 5  0 
+B [HI] 0 
+Z END
+

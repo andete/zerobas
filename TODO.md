@@ -125,6 +125,28 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **INPUT WITH TOO FEW VALUES SAID ?REDO; THE VG-8020 ASKS `?? ` FOR THE REST --
+      AND A ?REDO LOST THE PROMPT (D-INPUTCONT, found 2026-10-30 by the program
+      ladder's L2_survey).**
+      🎚️ TIER 1 — `INPUT "NAME, AGE";N$,G` answered `JONES` went to ?Redo here, and
+      every later answer landed in the wrong question.
+      🤖 **AUTONOMOUS.** Measured ([`inputcont_measure.out`](scratchpad/inputcont_measure.out)):
+      a list longer than the line asks `?? ` once per missing value and goes on;
+      a bad field on a `??` line is a ?Redo of the WHOLE statement; a ?Redo shows
+      the statement's own prompt again (`P1? `), zerobas a bare `? `.
+      ✅ **FIXED 2026-10-30.** basic/input.asm (low region) jumps to two bodies in
+      main page 1's pad (basic/files.asm): `inpc_cont` prints `?? `, reads a line
+      and goes on with the next variable; `inpc_redo_p1` prints the ?Redo and
+      RE-EXECUTES the statement from SAVTXT, so the prompt comes out exactly as
+      the first time. Gate inputcont-acceptance (31 rows: values and the whole
+      screen, VPEEKed), knives K-C / K-R / K-M
+      ([`inputcont_knife.out`](scratchpad/inputcont_knife.out)).
+      ✅ **AND D-INPUTCOMMA, the same day:** `INPUT "P",X` and `LINE INPUT "P",A$`
+      were accepted here; both references say Syntax error and print nothing
+      first ([`inputcomma_measure.out`](scratchpad/inputcomma_measure.out)). The
+      prompt literal is now scanned for its `;` BEFORE it is echoed. Low region
+      pad 10 -> 15 B over the whole change.
+
 - [x] 🔴 **IN SCREEN 2, A PIXEL THAT FILLS ITS 8-PIXEL BYTE IN ANOTHER COLOUR REPAINTED
       ALL EIGHT; THE VG-8020 KEEPS BOTH COLOURS (D-FULLCLASH, found 2026-10-30 by the
       program ladder's L3_turtle).**
@@ -355,6 +377,11 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L2_survey (2026-10-30)**: INPUT the way people type into it --
+      letters for a number, half a pair wrong, one value too many, a quoted name
+      with a comma, a missing value, an empty answer, LINE INPUT with a comma,
+      `1E2` / `-0` / `&H1F` / padded numbers. It FOUND D-INPUTCONT (and, while
+      measuring, D-INPUTCOMMA); SAME after both.
       ✅ **L4_recurse (2026-10-30)**: recursion by GOSUB with arrays as the frame
       stack -- towers of Hanoi (63 moves), a quicksort of 40 seeded-RND values
       (depth 9), a 4-way flood count on a string grid with `MID$(...)=` -- and a
@@ -7714,7 +7741,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10205 (T-6FE392)8 (T-529ABE)` from `TODO.md:15887 (T-529ABE)`: a
+      `TODO.md:10232 (T-6FE392)8 (T-529ABE)` from `TODO.md:15914 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10674,7 +10701,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15914 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -15,14 +15,14 @@ fp_sub equ 0348AH
 fp_mul equ 034C7H
 fp_div equ 035A3H
 fp_cmp equ 03679H
-dig15_iszero equ 0321CH
+dig15_iszero equ 03217H
 arga_pack_fac equ 0331CH
 widen_fac_to equ 0379FH
 widen_uint_to equ 03A95H
-flt_to_int16 equ 031D4H
+flt_to_int16 equ 031CFH
 vars_reset equ 03D04H
 penderr_set equ 0282FH
-flt_fmt equ 0307AH
+flt_fmt equ 03075H
 rl_vpeek equ 03BDEH
 rl_vpoke equ 03BE9H
 rl_vaddr equ 03BF6H
@@ -44,7 +44,7 @@ p0_onoff_decode equ 06EC0H   ; main's onoff_decode
 p0_set_state equ 05D33H   ; main's set_state
 p0_trap_pend equ 05C6CH   ; main's trap_pend
 p0_skip_eq equ 042D6H   ; main's skip_eq
-p0_eval_addr equ 02F6BH   ; main's eval_addr
+p0_eval_addr equ 02F66H   ; main's eval_addr
 p0_check_fperr_only equ 04423H   ; main's check_fperr_only
 p0_ztrap_entry equ 05D27H   ; main's ztrap_entry
 p0_skip_comma equ 042D0H   ; main's skip_comma
