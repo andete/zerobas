@@ -1,0 +1,31 @@
+# scratchpad/playsub_measure.bas
+== Philips_VG_8020 ENDED t=20.3
+A ok
+B ok
+C ok
+D ok
+E ok
+F ok
+G ok
+H ok
+I ok
+Z END
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=23.8
+ERR 5 ROW 1 
+A ok
+B ok
+C ok
+ERR 5 ROW 4 
+D ok
+ERR 5 ROW 5 
+E ok
+ERR 5 ROW 6 
+F ok
+ERR 5 ROW 7 
+G ok
+H ok
+ERR 5 ROW 9 
+I ok
+Z END
+

@@ -1,0 +1,17 @@
+K-F ROMs e059b152 -> e74fe498  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref ' 0 FF 21 22222222'  zb ' 0 7C 21 12222211'
+   ref ' 1 7F 23 32222222'  zb ' 1 FB 31 33333133'
+   ref ' 2 FF 21 22222222'  zb ' 2 FB 21 22222122'
+   ref ' 3 FF 21 22222222'  zb ' 3 7C 21 12222211'
+   ref ' 4 FE 23 22222223'  zb ' 4 7C 31 13333311'
+   ref ' 5 7F 53 35555555'  zb ' 5 FA 51 55555151'
+   ref ' 6 7F 21 12222222'  zb ' 6 7C 21 12222211'
+   ref ' 0 FF 21 22222222'  zb ' 0 7C 21 12222211'
+   ref ' 1 7F 23 32222222'  zb ' 1 FB 31 33333133'
+   ref ' 2 FF 21 22222222'  zb ' 2 FB 21 22222122'
+   ref ' 3 FF 21 22222222'  zb ' 3 7C 21 12222211'
+   ref ' 4 FE 23 22222223'  zb ' 4 7C 31 13333311'
+   ref ' 5 7F 53 35555555'  zb ' 5 FA 51 55555151'
+   ref ' 6 7F 21 12222222'  zb ' 6 7C 21 12222211'
+restored ROMs e059b152 == clean
+1/1 knives HIT

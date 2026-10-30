@@ -125,6 +125,43 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **IN SCREEN 2, A PIXEL THAT FILLS ITS 8-PIXEL BYTE IN ANOTHER COLOUR REPAINTED
+      ALL EIGHT; THE VG-8020 KEEPS BOTH COLOURS (D-FULLCLASH, found 2026-10-30 by the
+      program ladder's L3_turtle).**
+      🎚️ TIER 1 — two squares of different colours meeting at a corner: the first
+      square's edge turned the second colour here.
+      🤖 **AUTONOMOUS.** Measured ([`drawclash_measure.out`](scratchpad/drawclash_measure.out),
+      [`drawclash_count.out`](scratchpad/drawclash_count.out),
+      [`drawclash_vram.out`](scratchpad/drawclash_vram.out)): ONLY when setting the
+      pixel would make the pattern byte $FF and the colour differs from the
+      byte's fg, the VG-8020 CLEARS the pixel's bit and puts the colour in the
+      BACKGROUND nibble (a full colour-2 byte + `PSET(40,40),3` is $7F / $23);
+      one bit short of full, the same colour, or c = bg: the ordinary rules. PSET,
+      LINE and DRAW alike (one pixel writer). DRAW's angles were measured
+      identical first ([`drawangle_measure.out`](scratchpad/drawangle_measure.out)).
+      ✅ **FIXED 2026-10-30.** sub/graphics.asm `gfx_color_rmw` returns the colour
+      AND the pattern (D = mask, E = pattern in), and `gfx_rmw_at` writes both;
+      PSET's own copy of that read-modify-write (gp_g2) now calls it under one DI
+      -- which paid for the rule: sub page 0 14 -> 49 B. tests/test_graphics.py
+      has 13 rmw cases, six of them the full-byte ones. Gate fullclash-acceptance,
+      knife K-F ([`fullclash_knife.out`](scratchpad/fullclash_knife.out)).
+
+- [ ] 🔴 **PLAY'S `=var;` IS ERROR 5 HERE (D-PLAYEQ, found 2026-10-30 by the program
+      ladder's L3_turtle, still parked in the session's scratch until this lands).**
+      🎚️ TIER 1 — `PLAY "T=T;V=V;O=O;"` is ordinary MML; every one of 30 rows was 5
+      ([`playsub_measure.out`](scratchpad/playsub_measure.out),
+      [`playeq_measure.out`](scratchpad/playeq_measure.out)).
+      🤖 **AUTONOMOUS** — the VG-8020's rules, measured: T V N O L S M R take
+      `=name;` (a note does not: `C=I%;` is 5); the value is cut to an integer
+      the way CINT cuts (O=8.6 is O8; M=65535 and 65536 are 6, Overflow); an
+      undefined name is 0, a string 13, a missing `;` 5, spaces allowed, an ARRAY
+      ELEMENT works (`V=I%(1);`), a literal or `(I%)` is 5. Shape: PLAY's `X`
+      already walks the scalar chain in the tenant (Joost 2026-09-24, "tenant walks
+      the chain"); scalars can do the same plus a truncating BCD -> int16. An
+      array element needs its subscript evaluated: DRAW's `=` does that through
+      the resident (`gdrw_sub_scan` / `gdo_want`, re-parse on re-entry) -- PLAY
+      commits only at the end (pt_commit), so a re-run parse is safe; price both.
+
 - [x] 🔴 **`USR(S$)` WAS TYPE MISMATCH; THE VG-8020 HANDS THE ROUTINE THE STRING'S
       DESCRIPTOR (D-USRSTR, found 2026-10-29 by the program ladder's L4_machine).**
       🎚️ TIER 1 — passing a string to machine code is ordinary USR use.
@@ -154,6 +191,20 @@ item — do **one item per session** to keep context lean.
       must not run it a second time (catusr-acceptance pins "exactly once"). A
       one-shot cache keyed on the cursor -- the result and the cursor after it --
       is the cheapest shape found; price it before building.
+      📏 **PRICED 2026-10-30.** ROM ~80 B main page 1 (345 free): a
+      `cp USR_TOKEN` row in `str_eval_one` (5 B, ~17 T on every string operand),
+      `str_usr` (~50 B: run the routine through `ev_usr` in a string-context
+      mode; VALTYP 3 -> STRPTR := (DAC+2); a number -> cache [cursor AT USR,
+      cursor after, DE] and decline), a cache hit at `ev_usr`'s entry (~25 B), a
+      clear in `raise_error_hl`. `str_usr` must ALSO decline at once when the
+      cache already names its cursor, or `USR(USR(5))` runs the inner routine
+      twice (the outer's numeric fallback probes the inner again).
+      🔴 **THE BLOCKER IS RAM, NOT ROM: the cache is 6 B, and D-WSZERO (TIER 1) is
+      emptying exactly the private work area a new cell would go in.** Before
+      building, find a published scratch cell that is provably idle between a
+      `str_eval` decline and the numeric re-parse of the same cursor (the
+      window is one probe), or price a 2-B variant (cursor only, the result
+      left in DAC -- safe only if nothing touches DAC/FACTYP in that window).
 
 - [x] 🔴 **`PRINT USING` PRINTED A TINY NUMBER'S DIGITS AS IF IT WERE NOT TINY
       (D-PUTINY, found 2026-10-29 by the program ladder's L4_tables).**
@@ -7615,7 +7666,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10106 (T-6FE392)8 (T-529ABE)` from `TODO.md:15788 (T-529ABE)`: a
+      `TODO.md:10157 (T-6FE392)8 (T-529ABE)` from `TODO.md:15839 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10575,7 +10626,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15788 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15839 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,20 @@
+# scratchpad/drawclash_vram.bas: VPEEK pattern, colour of the byte at (40..47,40)
+# 0 full c2 | 1 +PSET40,3 | 2 +PSET40,2 | 3 seven c2 +PSET47,2 | 4 seven c2 +PSET47,3 | 5 full c2 +PSET40,3 +PSET41,5 | 6 full c2 +PSET40,1 (bg)
+== Philips_VG_8020 ENDED t=20.6
+ 0 FF 21
+ 1 7F 23
+ 2 FF 21
+ 3 FF 21
+ 4 FE 23
+ 5 7F 53
+ 6 7F 21
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=20.1
+ 0 FF 21
+ 1 FF 31
+ 2 FF 21
+ 3 FF 21
+ 4 FF 31
+ 5 FF 51
+ 6 7F 21
+

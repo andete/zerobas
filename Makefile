@@ -2551,6 +2551,12 @@ puneglead-acceptance: repack-machine
 usrstr-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_usrstr.py
 
+# --- fullclash-acceptance: the SCREEN 2 full-byte colour clash (D-FULLCLASH) ---------
+# A pixel that would fill its 8-pixel byte in another colour becomes the byte's
+# background; the others keep theirs. Both targets vs the VG-8020.
+fullclash-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_fullclash.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

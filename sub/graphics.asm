@@ -442,58 +442,23 @@ gfx_plot:
                 ld      d,a
                 jr      gfx_rmw_at_mc       ; tail: publishes CLOC/CMASK itself
 gp_g2:
+                ; D-FULLCLASH (2026-10-30): the SAME read-modify-write as LINE's
+                ; gfx_rmw_at, which this body duplicated with per-write DI. One
+                ; DI around the whole RMW (as gfx_plot_cur does) instead; the
+                ; ~38 B paid for the full-byte clash rule in gfx_color_rmw.
                 ld      a,(GXPOS)           ; x (low byte; 0..255 guaranteed in-range)
                 ld      e,a
                 ld      a,(GYPOS)           ; y (low byte; 0..191)
                 ld      d,a
-                call    gfx_calc_addr       ; HL = pattern addr, C = mask (B clobbered)
-                ld      (CLOC),hl           ; publish the computed pixel address
-                ld      a,c
-                ld      (CMASK),a           ; publish the mask
-                call    gfx_rd_raw          ; A = current pattern byte (HL preserved)
-                ld      e,a                 ; E = pattern byte (D=y no longer needed)
-                ld      a,h                 ; colour addr = pattern addr + $2000
-                add     a,$20               ; pattern high <= $17 -> no carry out
-                ld      h,a
-                call    gfx_rd_raw          ; A = current colour byte (cur); HL = colour addr
-                ld      b,a                 ; B = cur colour byte
-                ld      a,(GFX_C)           ; A = resolved plot colour c (0..15)
-                call    gfx_color_rmw       ; CF=1 -> set (A=new colour); CF=0 -> clear
-                jr      nc,gp_clear
-                ; --- SET: write the new colour byte, then set the pattern bit ---
-                ld      c,a                 ; C = new colour byte = (c<<4)|(cur&$0F)
-                call    gfx_vram_wr         ; colour[HL] = C   (HL = colour addr)
-                ld      a,h                 ; back to the pattern addr
-                sub     $20
-                ld      h,a
-                ld      a,(CMASK)
-                or      e                   ; pattern (E) |= mask
-                ld      c,a
-                jp      gfx_vram_wr         ; pattern[HL] = C ; ret
-gp_clear:
-                ; --- CLEAR: colour byte untouched, clear the pattern bit (§3 branch 3) ---
-                ld      a,h                 ; HL is the colour addr -> back to pattern addr
-                sub     $20
-                ld      h,a
-                ld      a,(CMASK)
-                cpl                         ; A = ~mask
-                and     e                   ; pattern (E) &= ~mask
-                ld      c,a
-                jp      gfx_vram_wr         ; pattern[HL] = C ; ret
+    IF GFX_UNGUARDED = 0
+                di
+    ENDIF
+                call    gfx_rmw_at
+    IF GFX_UNGUARDED = 0
+                ei
+    ENDIF
+                ret
 
-; ===========================================================================
-; gfx_point — GFX_OP=2: read one pixel's colour into GFX_RES (POINT). The resident
-; stub has range-checked (off-screen -> -1 without calling us) and passes the
-; target in E = x, D = y (D-WSZERO S14g-d; it used two RAM cells). Reads the pattern bit and the group colour byte and
-; returns the fg nibble if the bit is set, else the bg nibble. Read-only: writes
-; no work-area cell (POINT does not move the last-referenced point).
-; ⚠️ D-GIRDOM: this arm used to read GXPOS/GYPOS, like GFX_OP=1 still does. It
-; does not any more, and the difference is not cosmetic: GXPOS/GYPOS is
-; BASIC-visible, so the resident write that fed this read was a MEASURABLE side
-; effect of a function that both references keep read-only (rows w.pt.on /
-; w.pt.step). GFX_OP=1 keeps GXPOS/GYPOS because PSET/PRESET move the work area
-; anyway -- the cells are the marshalling AND the contract there.
-; ===========================================================================
 gfx_point:                                  ; E = x, D = y (gfx_is_mc keeps them)
                 ; D-SCREEN3. ⚠️ POINT HAS NO MODE GATE -- the plotting ops are gated
                 ; by gfx_point_gate, POINT is not -- so before this branch existed a
@@ -524,32 +489,70 @@ gpt_g2:
 
 ; ===========================================================================
 ; gfx_color_rmw — the SCREEN-2 colour-clash decision (pure leaf; §3/§11.3).
-;   in:  A = plot colour c (0..15), B = current colour byte `cur`.
-;   out: CF = 1 -> SET the pixel bit; A = new colour byte = (c<<4) | (cur & $0F).
-;        CF = 0 -> CLEAR the pixel bit; colour byte left untouched.
-; Rule: if c equals cur's low (bg) nibble -> the pixel reads as background, so
-; CLEAR the bit and leave the colour byte alone; else SET the bit AND write the
-; hi (fg) nibble = c, PRESERVING the lo (bg) nibble -- the 8-pixel colour clash
-; (a later pixel in the group rewrites the shared fg nibble). PSET never writes
-; the bg nibble. Host-unit-tested (tests/test_graphics.py). Clobbers A/B/C.
+;   in:  A = plot colour c (0..15), B = current colour byte `cur`,
+;        D = the pixel's mask, E = the current pattern byte.
+;   out: A = the colour byte to write, E = the pattern byte to write.
+;        Clobbers C.
+; Rules, all measured on the VG-8020:
+;   * c == cur's bg nibble -> CLEAR the bit; colour unchanged.
+;   * setting the bit would make the pattern $FF while c != cur's fg nibble ->
+;     D-FULLCLASH (2026-10-30, found by the program ladder): the VG-8020 keeps
+;     the old pixels in fg and gives the NEW one the BACKGROUND -- the bit is
+;     CLEARED and bg := c. A full colour-2 byte plus `PSET(40,40),3` is pattern
+;     $7F, colour $23 there; seven pixels plus the eighth is $FE / $23
+;     (scratchpad/drawclash_vram.out). Then the byte shows two colours, where
+;     rewriting the fg (the rule below) recoloured all eight.
+;   * otherwise SET the bit AND write fg = c, PRESERVING bg -- the 8-pixel
+;     colour clash (a later pixel in the group rewrites the shared fg nibble).
+; Host-unit-tested (tests/test_graphics.py).
 ; ===========================================================================
 gfx_color_rmw:
                 ld      c,a                 ; C = c (plot colour)
                 ld      a,b
-                and     $0F                 ; A = bg nibble = cur & $0F
+                and     $0F                 ; A = bg nibble
                 cp      c
-                jr      z,gcr_clear         ; c == bg -> clear the pixel, colour untouched
+                jr      z,gcr_clear         ; c == bg -> clear the pixel
+                ld      a,d
+                or      e                   ; the pattern with the bit set
+                inc     a
+                jr      z,gcr_full          ; ... would be $FF
+                dec     a
+                ld      e,a                 ; E = the new pattern
+gcr_fg:
+                ld      a,b
+                and     $0F
                 ld      b,a                 ; B = bg nibble
                 ld      a,c
                 rlca
                 rlca
                 rlca
-                rlca                        ; A = c << 4 (c<=15 -> hi nibble=c, lo=0)
+                rlca                        ; A = c << 4
                 or      b                   ; A = (c<<4) | bg
-                scf                         ; CF = 1 -> set the bit, write A as the colour
+                ret
+gcr_full:
+                dec     a
+                ld      e,a                 ; E = $FF, for the c == fg case
+                ld      a,c
+                rlca
+                rlca
+                rlca
+                rlca                        ; A = c << 4
+                xor     b
+                and     $F0
+                jr      z,gcr_fg            ; c == fg: the ordinary set (no change)
+                ld      a,d
+                cpl
+                ld      e,a                 ; E = ~mask: every other pixel stays set
+                ld      a,b
+                and     $F0
+                or      c                   ; A = fg | c: c becomes the background
                 ret
 gcr_clear:
-                or      a                   ; CF = 0 -> clear the bit; colour untouched
+                ld      a,d
+                cpl
+                and     e                   ; pattern &= ~mask
+                ld      e,a
+                ld      a,b                 ; colour unchanged
                 ret
 
 ; ===========================================================================
@@ -676,7 +679,7 @@ gfx_plot_cur:
 ; range, caller-checked), GFX_C = colour 0..15. Caller HOLDS DI. Uses gfx_rd_raw
 ; (VDP fetch-window settle) for reads and gfx_wr_raw for writes -- so the di bracket
 ; is the caller's alone (no premature ei). Updates CLOC/CMASK. Clobbers A/BC/HL.
-; This is G2 gfx_plot's body with raw writes; G2's gfx_plot is left untouched.
+; G2's gfx_plot (PSET) calls it too since D-FULLCLASH, under one DI.
 ; ---------------------------------------------------------------------------
 gfx_rmw_at:
                 ; D-SCREEN3: one branch here covers LINE, CIRCLE, DRAW and PAINT's
@@ -694,27 +697,17 @@ gfx_rmw_at:
                 ld      h,a
                 call    gfx_rd_raw          ; A = colour byte (HL = colour addr)
                 ld      b,a
+                ld      a,(CMASK)
+                ld      d,a                 ; D = mask (y is no longer needed)
                 ld      a,(GFX_C)
-                call    gfx_color_rmw       ; CF=1 set (A=new colour) / CF=0 clear
-                jr      nc,gra_clear
-                ld      c,a                 ; new colour byte
-                call    gfx_wr_raw          ; colour[HL] = C
+                call    gfx_color_rmw       ; A = colour byte, E = pattern byte
+                ld      c,a
+                call    gfx_wr_raw          ; colour[HL] = C (unchanged on a clear)
                 ld      a,h
                 sub     $20                 ; back to pattern addr
                 ld      h,a
-                ld      a,(CMASK)
-                or      e                   ; pattern |= mask
-                ld      c,a
-                jp      gfx_wr_raw          ; pattern[HL] = C ; ret
-gra_clear:
-                ld      a,h
-                sub     $20
-                ld      h,a
-                ld      a,(CMASK)
-                cpl                         ; ~mask
-                and     e                   ; pattern &= ~mask
-                ld      c,a
-                jp      gfx_wr_raw
+                ld      c,e
+                jp      gfx_wr_raw          ; pattern[HL] = E ; ret
 
 ; ---------------------------------------------------------------------------
 ; gfx_bres_init -- set up Bresenham state from GFX_X1/Y1/GFX_X2/Y2 (spec §4.1).

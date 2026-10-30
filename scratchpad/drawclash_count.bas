@@ -1,0 +1,9 @@
+10 REM the clash rule by how many pixels of the byte are already set (colour 2)
+20 SCREEN 2:COLOR 15,1,1:DEFINT A-Z:DIM R$(17)
+30 FOR K=0 TO 17:CLS:N=(K MOD 9)
+40 IF N>0 THEN LINE (40,40)-(39+N,40),2
+50 IF K<9 THEN PSET (47,40),3 ELSE PSET (40,40),3
+60 R$(K)="":FOR X=40 TO 47:R$(K)=R$(K)+CHR$(48+POINT(X,40)):NEXT
+70 NEXT
+80 SCREEN 0:FOR K=0 TO 17:P=47:IF K>8 THEN P=40
+90 LPRINT "N";K MOD 9;"AT";P;R$(K):NEXT:END

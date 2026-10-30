@@ -59,7 +59,10 @@ the same statements. A point off the screen is skipped without an error by
   byte — foreground in the high four bits, background in the low four — for
   each row of 8 pixels. Setting a pixel in a new colour therefore recolours
   every set pixel in its 8-pixel group: the *colour clash*, reproduced
-  exactly. `SCREEN 2` clears every group to the background colour.
+  exactly. One exception, measured (D-FULLCLASH): a pixel that would complete
+  its group in another colour becomes the group's background instead, so the
+  other seven keep their colour. `SCREEN 2` clears every group to the
+  background colour.
 - **`SCREEN 3`** has no pattern bits: each 4 × 4 block of coordinates is one
   dot with its own colour, so there is no clash. `PSET(0,0),7` colours the
   whole block, and `POINT(3,3)` reads 7. An unset dot or pixel reads back as

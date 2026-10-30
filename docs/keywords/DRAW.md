@@ -114,6 +114,10 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Where two colours meet, the VG-8020 keeps both** (fixed 2026-10-30,
+  D-FULLCLASH). `DRAW` draws with the same pixel rule as `PSET`, so a stroke ending on a
+  full row of another colour now leaves that row's colour alone, as on the
+  reference; see [`PSET`](PSET.md).
 - **A program that loaded data high in memory lost the scale and angle**
   (fixed 2026-10-15, D-WSZERO S8). `DRAW"S8A1"`, then a `BLOAD` over
   `&HECF8`–`&HF37F` (RAM a diskless VG-8020 leaves to programs), then a

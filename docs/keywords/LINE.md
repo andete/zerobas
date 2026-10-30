@@ -111,6 +111,10 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **Where two colours meet, the VG-8020 keeps both** (fixed 2026-10-30,
+  D-FULLCLASH). Lines and boxes draw with the same pixel rule as `PSET`, so a line that
+  crosses a full row of another colour now leaves that row's colour alone, as on the
+  reference; see [`PSET`](PSET.md).
 - **`LINE` arrived on 2026-07-21** (graphics slice G3). Its stepping rule was
   fitted to four bitmaps captured from the VG-8020 (shallow, steep, diagonal
   and falling lines) until it reproduced all four exactly

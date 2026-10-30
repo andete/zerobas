@@ -344,21 +344,28 @@ ADDR_CASES = [
     (0,   191, 5895,   0x80),
 ]
 
-# --- gfx_color_rmw (G2): in A=c, B=cur -> CF(set/clear) + A(new colour) --------
-# Oracle: spec-basic-graphics.md §11.3. cur = hi(fg)|lo(bg); if c == bg nibble
-# -> CLEAR (CF=0, colour untouched); else SET (CF=1, new = (c<<4)|bg).
-#   (c,   cur,   set?, new_colour_if_set)
+# --- gfx_color_rmw (G2): in A=c, B=cur, D=mask, E=pattern -> A=colour, E=pattern --
+# Oracle: spec-basic-graphics.md §11.3, and D-FULLCLASH's VRAM readings
+# (scratchpad/drawclash_vram.out). cur = hi(fg)|lo(bg).
+#   c == bg               -> clear the bit, colour unchanged
+#   (pattern|mask) == $FF and c != fg -> clear the bit, bg := c (fg kept)
+#   otherwise             -> set the bit, colour (c<<4)|bg
+#   (c, cur, mask, pattern, want_colour, want_pattern)
 RMW_CASES = [
-    (15, 0x04, True,  0xF4),   # PSET(0,0),15 after COLOR15,4 -> $F4 (§11.3)
-    (6,  0xF4, True,  0x64),   # clash: PSET(1,0),6 rewrites the shared fg nibble -> $64
-    (4,  0xF4, False, None),   # c == bg(4) -> clear the bit, colour untouched
-    (1,  0x04, True,  0x14),   # disambiguation: bg=4, c=1 -> set, $14
-    (13, 0x04, True,  0xD4),   # omitted-c PSET uses FORCLR=13 -> $D4
-    (6,  0x64, True,  0x64),   # PRESET(0,0),6 == PSET,6 (§11.3)
-    (0,  0x40, True,  0x00),   # c=0 (bg nibble 0) differs from cur bg(0)? bg=0,c=0 -> clear
+    (15, 0x04, 0x80, 0x00, 0xF4, 0x80),  # PSET(0,0),15 after COLOR15,4 -> $F4 (§11.3)
+    (6,  0xF4, 0x40, 0x80, 0x64, 0xC0),  # clash: PSET(1,0),6 rewrites the shared fg
+    (4,  0xF4, 0x80, 0x80, 0xF4, 0x00),  # c == bg(4) -> clear the bit, colour untouched
+    (1,  0x04, 0x80, 0x00, 0x14, 0x80),  # bg=4, c=1 -> set, $14
+    (13, 0x04, 0x80, 0x00, 0xD4, 0x80),  # omitted-c PSET uses FORCLR=13 -> $D4
+    (6,  0x64, 0x80, 0x00, 0x64, 0x80),  # PRESET(0,0),6 == PSET,6 (§11.3)
+    (0,  0x40, 0x80, 0x80, 0x40, 0x00),  # c=0 == bg 0 -> clear
+    (3,  0x21, 0x80, 0xFF, 0x23, 0x7F),  # D-FULLCLASH: full byte, new colour -> bg
+    (3,  0x21, 0x01, 0xFE, 0x23, 0xFE),  # seven set + the eighth -> $FE / $23
+    (2,  0x21, 0x80, 0xFF, 0x21, 0xFF),  # full byte, SAME colour -> unchanged
+    (2,  0x21, 0x01, 0xFE, 0x21, 0xFF),  # the eighth in the same colour -> $FF
+    (5,  0x23, 0x40, 0x7F, 0x53, 0x7F),  # not full -> the ordinary clash ($7F / $53)
+    (1,  0x21, 0x80, 0xFF, 0x21, 0x7F),  # c == bg on a full byte -> clear
 ]
-# fix the last case: cur=0x40 -> bg nibble = 0, c=0 == bg -> CLEAR
-RMW_CASES[-1] = (0, 0x40, False, None)
 
 # --- gfx_point_extract (G2): in A=pattern, B=mask, C=colour -> A=nibble --------
 #   bit set -> hi (fg) nibble ; bit clear -> lo (bg) nibble
@@ -737,13 +744,12 @@ def run():
               f"gfx_calc_addr x={x:>3} y={y:>3} -> addr={cpu.hl:>5} "
               f"(want {want_addr:>5}) mask=${cpu.c:02X} (want ${want_mask:02X})")
 
-    for c, cur, want_set, want_new in RMW_CASES:
-        cpu = m.call("gfx_color_rmw", a=c, b=cur)
-        got_set = carry(cpu)
-        ok = got_set == want_set and (not want_set or cpu.a == want_new)
-        detail = f"CF={int(got_set)} A=${cpu.a:02X}" if got_set else f"CF={int(got_set)} (clear)"
-        check(ok, f"gfx_color_rmw c={c:>2} cur=${cur:02X} -> {detail}"
-                  + ("" if ok else f"  want set={want_set} new={want_new}"))
+    for c, cur, mask, pat, want_col, want_pat in RMW_CASES:
+        cpu = m.call("gfx_color_rmw", a=c, b=cur, d=mask, e=pat)
+        ok = cpu.a == want_col and cpu.e == want_pat
+        check(ok, f"gfx_color_rmw c={c:>2} cur=${cur:02X} mask=${mask:02X} pat=${pat:02X} "
+                  f"-> col=${cpu.a:02X} pat=${cpu.e:02X}"
+                  + ("" if ok else f"  want col=${want_col:02X} pat=${want_pat:02X}"))
 
     for pat, mask, col, want in POINT_CASES:
         cpu = m.call("gfx_point_extract", a=pat, b=mask, c=col)

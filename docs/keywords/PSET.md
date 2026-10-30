@@ -40,6 +40,12 @@ graphics statement used.
   machines.
 - **A colour equal to the group's background clears the pixel** instead of
   setting it, and leaves the group's colours alone.
+- **A pixel that would fill its group in another colour becomes the
+  background instead.** When the other seven pixels are already set,
+  recolouring the foreground would repaint all eight; so the pixel's bit is
+  cleared and its colour goes into the background half, and the seven keep
+  theirs. After `LINE (40,40)-(47,40),2:PSET (40,40),3` the pixel at 40 is
+  colour 3 and 41 to 47 stay 2.
 - **Off-screen points are skipped silently.** `PSET(300,100)` or `PSET(-1,0)`
   draws nothing and raises no error; nothing is drawn at the edge either. The
   last point still moves to the unclipped `(300,100)`, so a following
@@ -99,6 +105,12 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **A pixel filling its group repainted the whole group** (fixed 2026-10-30,
+  D-FULLCLASH). Two squares of different colours meeting at a corner showed
+  the second colour along the first square's edge, where the VG-8020 keeps
+  both. Found by a turtle-graphics program written for the program ladder
+  ([readings](../../scratchpad/drawclash_count.out),
+  [the video memory](../../scratchpad/drawclash_vram.out)).
 - **`PSET` arrived on 2026-07-21** (graphics slice G2) after the VG-8020 was
   measured byte by byte: which bit, which colour byte, what happens when two
   colours meet in one group. The test reads back both the pixel and the colour
@@ -139,6 +151,8 @@ written by the graphics tenant in [sub/graphics.asm](../../sub/graphics.asm):
 
 ## Tests that cover it
 
+- `make fullclash-acceptance` — a pixel that fills its group in another
+  colour (D-FULLCLASH).
 - `make graphics-acceptance` — pixel and colour tables read back on both
   machines: single pixels, the clash, off-screen points, `STEP`.
 - `make lineerr-acceptance` — the error order, the colour range and the last
