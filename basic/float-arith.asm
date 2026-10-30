@@ -1102,21 +1102,25 @@ fpd_go:
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,DIVREM
                 call    fpd_pack            ; C = low (DIVREM + LA)
-                ld      a,c
-                ld      (FPD_SH),a
+                push    bc                  ; [LA]
                 ld      hl,ARGB+FPNUM_DIG
                 ld      de,DIVPAD
-                call    fpd_pack            ; C = low (DIVPAD + LB)
-                ld      l,c
-                ld      h,high DIVPAD
-                ld      (FPD_PB),hl
+                call    fpd_pack            ; C = low (DIVPAD + LB); D untouched
+                ld      e,c                 ; DE = DIVPAD + LB (fpd_pack never writes D)
+                ld      (FPD_PB),de
                 ld      a,c
                 add     a,(low DIVREM) - (low DIVPAD)
-                ld      hl,FPD_SH
-                cp      (hl)
-                jr      c,fpd_shok
-                ld      (hl),a              ; FPD_SH = low (DIVREM + max(LA,LB))
+                pop     bc                  ; C = low (DIVREM + LA)
+                cp      c
+                jr      nc,fpd_shok
+                ld      a,c
 fpd_shok:
+    IF FPD_SLOT != FPD_SH+1
+                db      FPD_GO_STORES_FPD_SH_AND_FPD_SLOT_AS_ONE_WORD
+    ENDIF
+                ld      l,a                 ; FPD_SH = low (DIVREM + max(LA,LB))
+                ld      h,low (ARGA+FPNUM_DIG) ; FPD_SLOT = the first quotient slot
+                ld      (FPD_SH),hl
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,ARGB+FPNUM_DIG
                 ld      b,14
@@ -1127,8 +1131,6 @@ fpd_shok:
                 dec     hl                  ; quotient < 1: one less, digit 0 shifts
 fpd_ge:
                 ld      (ARGA+FPNUM_DEXP),hl
-                ld      a,low (ARGA+FPNUM_DIG)
-                ld      (FPD_SLOT),a
                 jr      nz,fpd_trial        ; (flags still from the `dec a`)
 fpd_digit:
                 ld      a,(FPD_SH)          ; R *= 10: one nibble left over bytes
@@ -1183,17 +1185,14 @@ fpd_one:
                 ; fraction below 1 and cannot change the quotient -- and the
                 ; remainder (< b0 <= 9) is that byte's new value, already BCD.
                 ld      a,(DIVREM)
-                ld      c,a
+                ld      c,a                 ; C = byte = 16*hi + lo
                 and     $F0                 ; 16 * hi
                 rrca
                 ld      b,a                 ; 8 * hi
                 rrca
-                rrca
-                add     a,b                 ; 10 * hi
-                ld      b,a
-                ld      a,c
-                and     $0F
-                add     a,b                 ; byte 0 as a binary number
+                rrca                        ; 2 * hi
+                sub     b                   ; -6 * hi (mod 256)
+                add     a,c                 ; byte - 6*hi = 10*hi + lo: byte 0 as binary
                 ld      l,low DIVPAD        ; (HL) = b0
                 ld      c,$FF
 fpo_lp:

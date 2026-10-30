@@ -10,12 +10,12 @@
 ; main ROM, read out of our own build's symbol file. Nothing here is derived
 ; from a disassembly or byte-copy of any reference ROM.
 
-widen_int_to equ 037FFH
-widen_fac_to equ 0379FH
+widen_int_to equ 037F6H
+widen_fac_to equ 03796H
 round_single_and_pack equ 0339BH
 round_and_finalize equ 03347H
 pu_deref_body equ 0286BH
-subrom_call equ 03B2AH
+subrom_call equ 03B21H
 ARGA equ 0F806H   ; operand A / working result, FPNUM record (18)
 STRSCR equ 0F55EH   ; = BUF ($F55E): [len][bytes:STRMAX] staging (256 B)
 FN_RESUME equ 0F6BCH   ; D-FNEXPR: cursor past a filename expr (2 B) -- published TEMP2 (D-WSZERO)
@@ -91,8 +91,8 @@ SUBROM_IDX_FORMAT equ 0000AH   ; format_tenant (CALL FORMAT eviction, sub/
 ; --- page-1 call-back targets: reached by an INTER-SLOT call (MSX2 TH), not an absolute one ---
 fname_expr equ 06D25H
 pdfcb_resume equ 06D1EH
-parse_disk_fcb equ 06413H
-eval equ 04ADFH
+parse_disk_fcb equ 063F0H
+eval equ 04ADCH
 fch_check equ 06EE3H
 fch_mode_class equ 04F88H
 field_item equ 072F6H
@@ -108,7 +108,7 @@ type_mismatch_error equ 0430AH
 stmt_error equ 042FCH
 lrset_finish equ 07079H
 fch_ctx_addr equ 06E68H
-disk_error equ 066D6H
+disk_error equ 066B3H
 read_line equ 045F8H
 fch_close_all equ 06F28H
 eval_int16_checked equ 04547H

@@ -235,9 +235,8 @@ exp_loop:
                 jr      z,exp_strvar        ; identity on both references)
                 call    is_letter           ; a `$`-suffixed string variable?
                 jr      nc,exp_num
-                call    var_str_type        ; A=1 if `$` suffix
-                or      a
-                jr      nz,exp_strvar       ; string variable -> print its value
+                call    var_str_type        ; A=1 / CF set iff a string name
+                jr      c,exp_strvar        ; string variable -> print its value
 exp_num:
                 call    eval                ; numeric expression -> DE = value
 exp_num_got:

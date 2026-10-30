@@ -170,13 +170,11 @@ lst_lp:
                 ld      e,(hl)              ; DE = link to next line
                 inc     hl
                 ld      d,(hl)
-                dec     hl
+                inc     hl                  ; HL -> line number
                 ld      a,d
-                or      e
+                or      e                   ; (also CF=0 for the sbc below)
                 ret     z                   ; $0000 link -> end of program
                 push    de                  ; guard the link across the print
-                inc     hl                  ; skip link (2) -> line number
-                inc     hl
                 ld      c,(hl)              ; line number, LE
                 inc     hl
                 ld      b,(hl)
@@ -186,24 +184,21 @@ lst_lp:
                 ; STOPS rather than skipping on. Both exits reuse the link this
                 ; loop has already pushed. (D-LSTRNG; for the whole-program
                 ; callers lst_setall has made this 0..65535, above.)
-                ld      de,(LST_HI)
-                ld      a,e                 ; hi - number: CF set -> past the top
-                sub     c
-                ld      a,d
-                sbc     a,b
-                jr      c,lst_stop
-                ld      de,(LST_LO)
-                ld      a,c                 ; number - lo: CF set -> not yet at the
-                sub     e                   ; range. The walk starts at the first
-                ld      a,b                 ; stored line >= lo; neither end has to
-                sbc     a,d                 ; name a stored line (lst-lomid: `LIST
-                jr      c,lst_skip          ; 25-30` prints only line 30).
-                push    hl                  ; guard the body pointer
-                ld      d,b                 ; list_num wants the value in DE
-                ld      e,c
+                ex      de,hl               ; DE = body; the link is on the stack
+                ld      hl,(LST_HI)         ; hi - number: CF set -> past the top
+                sbc     hl,bc               ;   (CF=0 from `or e`; nothing between
+                jr      c,lst_stop          ;   touches the flags)
+                ld      hl,(LST_LO)         ; lo - number - 1: NC -> not yet at the
+                scf                         ; range. The walk starts at the first
+                sbc     hl,bc               ; stored line >= lo; neither end has to
+                jr      nc,lst_skip         ; name a stored line (lst-lomid: `LIST
+                                            ; 25-30` prints only line 30).
+                push    de                  ; guard the body pointer
+                ld      h,b                 ; ln_div_entry wants the value in HL
+                ld      l,c
                 ; D-DOTLINE writer (b) (docs/spec-basic-dotline.md §2 R-DOT3b):
                 ; `.` records the LAST LINE THE WALK PRINTED. Three measured
-                ; rules fall out of this ONE placement, which is why it is four
+                ; rules fall out of this ONE placement, which is why it is three
                 ; bytes and not sixteen:
                 ;   * LAST printed, not the argument and not either end --
                 ;     `LIST 10-30` records 30 (cln-listrng) and bare `LIST`
@@ -222,8 +217,8 @@ lst_lp:
                 ;     data-loss bug -- and inheriting that answer here would have
                 ;     cost ~16 B to be measurably WRONG. Same routine, two
                 ;     shared-code questions, opposite answers.
-                ld      (DOT),de
-                call    list_num            ; print the line number (no extra spaces)
+                ld      (DOT),hl
+                call    ln_div_entry        ; print the line number (no extra spaces)
                 ld      a,' '               ; one space between number and body
                 rst     $18
                 pop     hl                  ; HL = token body

@@ -125,6 +125,39 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
+      (2026-10-30).**
+      🎚️ BUDGET — ROM space toward the reference; the space every later tier spends.
+      🤖 **AUTONOMOUS** — Joost noticed that the zerobas fixes he ported into C-BIOS
+      nearly all came out a few bytes smaller on a second look. The carve routes
+      tried so far (`jp`→`jr`, dup spans, promotion, instruction pairs) are
+      mechanical; this one reads a whole routine, writes its contract (registers
+      and flags at every exit, callers, fall-through, internal labels reached from
+      elsewhere) and rewrites it.
+      ✅ **SAMPLE, 10 routines** ([`reread_sample.md`](scratchpad/reread_sample.md)):
+      measured 2026-10-30: +23 B low region, +59 B main page 1; every premise checked in the source,
+      layout facts pinned by assembly-time guards; no common path slower.
+      ➡️ **THE ROUTE:** batches of ~10, largest first
+      ([`reread_spans.out`](scratchpad/reread_spans.out) ranks them -- re-derive it,
+      the ranking rots with every carve); `gates-fast`, then the full battery, one
+      commit per routine; record the yield per batch and STOP when it falls below
+      ~2 B a routine. A rewrite that changes behaviour is filed and measured, never
+      applied (D-PRSTRFN below came out of the first batch).
+
+- [ ] 🔴 **`PRINT INPUT$(n)` / `DSKI$(…)` / `SPRITE$(n)` MAY DEFER A TYPE MISMATCH
+      (D-PRSTRFN, found 2026-10-30 by READING, during D-REREAD).**
+      🎚️ TIER 1 — if real, `PRINT INPUT$(1)` is the happy path of every "press a key"
+      line.
+      🤖 **AUTONOMOUS** — measure first. PRINT's item dispatch (`exp_loop`,
+      basic/print.asm) sends `$FF` functions, `STRING$` and `INKEY$` to the string
+      path, but `INPUT$`, `DSKI$` and `SPRITE$` to `exp_num` -> `eval` -> `cl_str`,
+      which by reading defers ERR 13 when no relop follows -- the shape that once
+      broke `PRINT INKEY$`. `str_eval_one` already handles all three. No row prints
+      any of them bare (the ladder's L2_keys assigns `T$=INPUT$(3)`). If real, the
+      fix is the held-back rewrite in the reread sample: let `str_eval_one`
+      classify every item (~53 B smaller, and an operator after `CHR$(65)` then gets
+      the Type mismatch check it lacks today).
+
 - [x] 🔴 **`PRINT INKEY$=""` READ TWO KEYS: A STRING ITEM WITH A RELOP AFTER IT WAS
       EVALUATED TWICE (D-PRSTR2X, found 2026-10-30 by the program ladder's L2_keys).**
       🎚️ TIER 1 — a menu loop that tests `INKEY$` inside a PRINT or IF line loses
@@ -7894,7 +7927,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10385 (T-6FE392)8 (T-529ABE)` from `TODO.md:16067 (T-529ABE)`: a
+      `TODO.md:10418 (T-6FE392)8 (T-529ABE)` from `TODO.md:16100 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10854,7 +10887,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16100 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

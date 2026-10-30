@@ -882,6 +882,7 @@ ex_let_arr:
                 ld      a,(VARTYPE)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
+ela_rterr:                                  ; (ex_let_arr_str's error exit joins here)
                 jp      nz,fp_runtime_error ; [CURSOR] already consumed by
                                             ; ary_op0_resolve -- nothing to pop
                 call    ary_snapshot_offset ; §13a: push [OFFSET]=ARYTAB-ADDR
@@ -910,6 +911,7 @@ ex_let_arr:
                 push    ix
                 pop     hl                  ; HL = cursor restored
                 call    check_fperr_only    ; coercion-time overflow (D-F2-1 pattern)
+ela_done:                                   ; (ex_let_arr_str's exits join here by jr)
                 jp      exec_stmt
 ; (`ela_parse_abort` — `pop [CURSOR]; jp fp_runtime_error` — stood here and is
 ; GONE with D-ARR-C: ary_parse_call owns its whole frame and has already
@@ -1042,7 +1044,7 @@ ex_let_arr_str:
                                             ; a `$` name)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
-                jp      nz,fp_runtime_error ; [CURSOR] already consumed by
+                jr      nz,ela_rterr        ; [CURSOR] already consumed by
                                             ; ary_op0_resolve -- nothing to pop
                 call    ary_snapshot_offset ; §13a: push [OFFSET] -- guarded
                                             ; across str_eval exactly like the
@@ -1070,7 +1072,7 @@ ex_let_arr_str:
                 ld      (ARY_ADDR),de       ; re-publish as op=3's INPUT (STRPTR
                                             ; already holds the stable RHS)
                 call    ary_let_ref         ; D-LITREF: a RHS in the program text is
-                jp      z,exec_stmt         ; stored by reference (the VG-8020: `aryl`)
+                jr      z,ela_done          ; stored by reference (the VG-8020: `aryl`)
                 ld      a,3
                 ld      (ARY_OP),a          ; op = 3 (COPY_STR, pure-RAM leaf)
                 push    hl                  ; [CURSOR] -- ary_engine_call/CALSLT
@@ -1102,7 +1104,7 @@ ex_let_arr_str:
                 pop     hl                  ; [CURSOR] restored -- POP touches no flag,
                                             ; so a caller wanting the Z above could
                                             ; still read it here
-                jp      exec_stmt
+                jr      ela_done            ; ex_let_arr's exec_stmt tail
 ; elas_err/elas_abort_fp RELOCATED to basic/vars.asm (page-1, §13a space
 ; fix) — reached via `jp` (was `jr`, now out of branch range) above; each
 ; still discards exactly ONE stack word ([OFFSET], same as the pre-fix

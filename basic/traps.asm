@@ -460,7 +460,8 @@ check_traps:
                 pop     hl                  ; HL = resume ptr
                 push    de                  ; save handler link across gosub_push
                 call    gosub_push          ; push [CURLINE][resume=HL]; BC(idx) kept; CF=full
-                jr      c,ct_gsfull
+                jp      c,gosub_stk_over    ; ERR 7; the handler link stays pushed --
+                                            ; raise_error re-bases SP (as ex_for's ef_over)
                 ; D-CTLPOOL: the service record goes on the pool, pushed AFTER the
                 ; GOSUB frame so it lands at a LOWER address -- newer than the
                 ; frame, and therefore freed by the one `CSP := GSP + GOSUB_FRAME`
@@ -472,18 +473,15 @@ check_traps:
                 ld      hl,TRAP_FRAME
                 call    ctl_alloc
                 pop     bc
-                jr      c,ct_gsfull
-                ex      de,hl               ; DE = the record's base
-                ld      hl,(TSP)
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a              ; [0..1] prevTSP -- the record chain
-                inc     de
-                ld      a,c
-                ld      (de),a              ; [2] the trap index
-                ld      hl,(CSP)
+                jp      c,gosub_stk_over    ; pool full -> ERR 7 (one arm, not two)
+                ld      de,(TSP)            ; HL = the record's base = CSP (ctl_alloc's out)
+                push    hl
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d              ; [0..1] prevTSP -- the record chain
+                inc     hl
+                ld      (hl),c              ; [2] the trap index
+                pop     hl                  ; HL = the base again = the new TSP
                 ld      (TSP),hl
                 ; ⚠️ AND FSP MOVES WITH IT. FSP is the FOR run's floor; leaving it
                 ; at the GOSUB frame's base would put this 3-byte record INSIDE the
@@ -497,15 +495,10 @@ check_traps:
                 ; entered — is not a fresh edge and cannot re-latch. That is the whole job
                 ; the grace was doing, without its one-frame expiry, which was aborting
                 ; handlers the reference never aborts.)
-                pop     de                  ; DE = handler link
-                ld      (CURLINE),de        ; branch: rp_lp runs the handler line fresh
+                pop     hl                  ; HL = handler link
+                ld      (CURLINE),hl        ; branch: rp_lp runs the handler line fresh
                 scf                         ; (leave TRAPPEND set: a 2nd pending trap
                 ret                         ;  fires next boundary; ct_none clears it)
-ct_gsfull:
-                pop     de                  ; discard handler
-                jp      gosub_stk_over      ; control-pool overflow -> ERR 7
-                                            ; (ct_svc_full is retired with
-                                            ;  TRAPSTK_MAX -- one arm, not two)
 ct_none:
                 pop     hl                  ; restore resume ptr (unchanged)
                 xor     a

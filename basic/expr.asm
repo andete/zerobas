@@ -591,8 +591,8 @@ ev_f_notword:
                 jp      c,ev_f_digit        ; jp: D-ASCIINUM's arm pushed it past jr
                 ; fall through: letter -> variable (or error)
 ev_f_var:
-                ld      a,(ix+0)
-                call    is_letter           ; must start with a letter
+                call    is_letter           ; must start with a letter (A = (ix+0):
+                                            ; ev_sp's, kept by ev_f's cp chain)
                 jr      nc,ev_f_nonlet      ; an ASCII number (D-ASCIINUM), else
                                             ; D-MISSOP: THE missing-operand site
                 push    ix
@@ -866,9 +866,8 @@ ev_f_uword:                                 ; HL = an unsigned 0..65535 -> FAC (
                 ret
 
 ; constant decoders --------------------------------------------------------
-ev_f_digit:                                 ; $11..$1A -> value 0..9
-                ld      a,(ix+0)
-                sub     INT_DIGIT_BASE
+ev_f_digit:                                 ; $11..$1A -> value 0..9 (A = the token:
+                sub     INT_DIGIT_BASE      ; ev_f's cp chain leaves it there)
                 jr      ev_ret_e_ix
 
 ; --- stk_guard: the evaluator's STACK FLOOR (D-STACKFLOOR) -------------------
@@ -933,13 +932,11 @@ ev_f_byte:                                  ; $0F,<byte>
                 ld      a,(ix+0)
                 jr      ev_ret_e_ix
 ev_f_word:                                  ; $0C/$1C,<word LE>
+                ld      e,(ix+1)            ; value low
+                ld      d,(ix+2)            ; value high
                 inc     ix
-                ld      a,(ix+0)
-                ld      e,a                 ; value low
                 inc     ix
-                ld      a,(ix+0)
-                ld      d,a                 ; value high
-                inc     ix
+                inc     ix                  ; past the token and its word
                 ret
 
 ; --- ev_f_float: SNG_TOKEN/DBL_TOKEN factor -> FAC/FACTYP + DE (§9.4) ------
@@ -947,20 +944,16 @@ ev_f_word:                                  ; $0C/$1C,<word LE>
 ; FACTYP (4/8), and returns DE = the value rounded to int16 (flt_to_int16,
 ; basic/float.asm) so every existing int consumer keeps working unchanged
 ; (interim divergence D-F1-2: float into an int context rounds silently).
-ev_f_float:
-                ld      a,(ix+0)            ; SNG_TOKEN or DBL_TOKEN
-                ld      c,4                 ; C = value byte count (single)
-                ld      b,4                 ; B = FACTYP value (single)
-                cp      DBL_TOKEN
-                jr      nz,eff_sz
-                ld      c,8
-                ld      b,8
-eff_sz:
-                inc     ix                  ; past the token
-                ld      a,b
+ev_f_float:                                 ; A = SNG_TOKEN ($1D) / DBL_TOKEN ($1F)
+    IF DBL_TOKEN-SNG_TOKEN != 2
+                db      EV_F_FLOAT_NEEDS_DBL_TOKEN_EQ_SNG_TOKEN_PLUS_2
+    ENDIF
+                sub     SNG_TOKEN-2         ; 2 / 4
+                add     a,a                 ; 4 / 8: FACTYP AND the value byte count
+                ld      b,a                 ; B = copy count
                 ld      (FACTYP),a
+                inc     ix                  ; past the token
                 ld      hl,FAC
-                ld      b,c                 ; B = copy count
 eff_cp:
                 ld      a,(ix+0)
                 ld      (hl),a

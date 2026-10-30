@@ -111,9 +111,8 @@ str_eval_one:
                                             ; had 4 B and this pair is 5.
                 call    is_letter           ; a `$`-suffixed variable?
                 jr      nc,str_eval_no
-                call    var_str_type        ; A=1 if `$` suffix
-                or      a
-                jr      z,str_eval_no       ; numeric name -> not a string operand
+                call    var_str_type        ; A=1 / CF set iff a string name
+                jr      nc,str_eval_no      ; numeric name -> not a string operand
                 ; string variable: key it and point STRPTR at its stored value.
                 call    var_name_key        ; BC = key, HL past name + `$`
                 ld      a,(hl)
@@ -140,7 +139,13 @@ str_eval_one:
                 call    str_get_key         ; HL -> [len][ptr] descriptor
                 ld      (STRPTR),hl
                 pop     hl
-                jr      str_eval_ok
+; str_eval_ok -- every string arm's success exit (A = 1, CF set). It sits here so
+; the variable arm above falls into it.
+str_eval_ok:
+                ld      a,1                 ; (VALTYP's store went in D-WSZERO S9:
+                                            ; nothing read it, in any image)
+                scf
+                ret
 ; Arrays slice-4a: the repack str_eval_lit (zero-copy literal-lift into
 ; RVDESC) lives in the low region (basic/str-engine.asm) — page 1 is byte-
 ; full; str_eval_one reaches it by the jp above.
@@ -237,12 +242,7 @@ str_eval_no:
 ; it published the element and let fld_lookup overwrite it. With no table there
 ; is nothing to overwrite: a FIELDed element's own descriptor points into the
 ; record, so str_eval_arr (basic/arrays.asm) publishes it and joins str_eval_ok
-; on both of its arms again, as before D-FLDARY.)
-str_eval_ok:
-                ld      a,1                 ; (VALTYP's store went in D-WSZERO S9:
-                                            ; nothing read it, in any image)
-                scf
-                ret
+; (below str_eval_one) on both of its arms again, as before D-FLDARY.)
 
 ; --- INPUT$(n,#f): read EXACTLY n raw bytes from file channel f as a string ------
 ; Reached from str_eval when the operand is the INPUT token ($85). "INPUT$" crunches

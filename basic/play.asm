@@ -16,8 +16,10 @@
 ; Marshalling is faithful (Q2): each voice's MML (ptr,len) go into the standard MSX
 ; VCB fields VCXPTR/VCXLEN (basic/sysvars.inc), and AUDIO_VMASK (reusing DISKOP_OP
 ; -- audio and disk are never in flight together) carries the voices-present mask.
-; IY runs along the three VCBs (VCBA/VCBB/VCBC, VCB_STRIDE apart); C carries the
-; current voice's mask bit (1/2/4), B the voice count for the 3-voice cap.
+; DE runs along the three VCBs' [len][ptr] slots (VCBA/VCBB/VCBC, VCB_STRIDE
+; apart, all in page $FB): the slot has a descriptor's layout, so one 3-byte ldir
+; fills it; AUDIO_VMASK takes 1/3/7 as voices fill in order; the 3-voice cap is
+; E passing VCBC's slot.
 ;
 ; Clean-room: original code. PLAY *syntax* (comma-separated per-voice MML strings)
 ; is the public MSX-BASIC language reference; the work-area layout is the MSX2
@@ -34,8 +36,13 @@ ex_play:
 pl_args:
                 xor     a
                 ld      (AUDIO_VMASK),a     ; no voices present yet
-                ld      iy,VCBA             ; IY = running VCB base (voice 0)
-                ld      bc,$0001            ; B = voice count 0; C = voice-0 mask bit
+                ld      de,VCBA+VCX_VCXLEN  ; DE = this voice's [len][ptr] slot
+    IF (VCBA+VCX_VCXLEN)/256 != (VCBC+VCB_STRIDE+VCX_VCXLEN)/256
+                db      PL_VOICE_STEPS_E_ALONE_VCB_SLOTS_MUST_SHARE_A_PAGE
+    ENDIF
+    IF VCX_VCXPTR != VCX_VCXLEN+1
+                db      PL_VOICE_COPIES_LEN_PTR_WHOLE_VCXPTR_MUST_FOLLOW_VCXLEN
+    ENDIF
                 ; Each voice is a REQUIRED string expression (empty "" is allowed),
                 ; commas separate voices. A numeric operand is a Type mismatch
                 ; (PLAY 5), and PLAY"","E" is fine -- both still as the old header
@@ -73,31 +80,26 @@ pl_voice:
                 jr      z,pl_syntax         ; bare comma (PLAY ,"E") -> Syntax error,
                                             ; measured 2 on both references at BOTH
                                             ; entry conditions -- this one does NOT move
-                push    bc                  ; str_eval clobbers BC (voice count + bit)
+                push    de                  ; str_eval clobbers DE (the VCB slot)
                 call    str_eval            ; STRPTR -> [len][ptr]; VALTYP=1; CF=1 ok;
-                pop     bc                  ;   HL advanced past the operand
+                pop     de                  ;   HL advanced past the operand
                 jr      nc,pl_typeerr       ; not a string form (numeric) -> Type mismatch
                 push    hl                  ; save the line cursor
-                ld      hl,(STRPTR)         ; HL = descriptor address
-                ld      a,(hl)              ; A = string length
-                ld      (iy+VCX_VCXLEN),a
-                call    pu_deref_body       ; HL = string body address (A preserved)
-                ld      (iy+VCX_VCXPTR),l
-                ld      (iy+VCX_VCXPTR+1),h
+                ld      hl,(STRPTR)         ; HL = descriptor [len][ptr]
+                ld      bc,3                ; VCXLEN/VCXPTR have the SAME layout:
+                ldir                        ;   copy it whole; DE -> slot + 3
+                ld      hl,AUDIO_VMASK
+                scf                         ; voices fill in order: mask 0->1->3->7
+                rl      (hl)
                 pop     hl                  ; restore the line cursor
-                ld      a,(AUDIO_VMASK)
-                or      c                   ; mark this voice present
-                ld      (AUDIO_VMASK),a
                 ; after a string, an optional ',' introduces the next voice
                 call    skip_comma
                 jr      nz,pl_dispatch      ; no separator -> argument list done
                 inc     hl                  ; consume the ',' separator
-                ld      de,VCB_STRIDE
-                add     iy,de               ; IY -> next voice's VCB
-                rlc     c                   ; next voice's mask bit (1->2->4)
-                inc     b
-                ld      a,b
-                cp      3
+                ld      a,e                 ; all three VCBs sit in page $FB:
+                add     a,VCB_STRIDE-3      ;   step E alone to the next voice's slot
+                ld      e,a
+                cp      low (VCBC+VCB_STRIDE+VCX_VCXLEN)
                 jr      c,pl_voice          ; a 4th voice string falls into Syntax error
 pl_syntax:
                 ld      a,2                 ; Syntax error. D-PLAYOP: NOT "missing/bad

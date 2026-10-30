@@ -1757,44 +1757,34 @@ mid_own:
                 inc     hl
                 ld      e,(hl)
                 inc     hl
-                ld      d,(hl)              ; DE = A$'s body
-                dec     hl
-                dec     hl                  ; HL = A$ again (D-WSZERO S16: it rides
-                                            ; the stack across the nested op 0)
+                ld      d,(hl)              ; DE = A$'s body, HL = A$+2 (D-WSZERO S16:
+                                            ; it rides the stack across the nested op 0)
                 ld      a,c
                 or      a
                 ret     z
-                push    hl                  ; [A$]
+                push    hl                  ; [A$+2]
                 ld      hl,(VARTAB)
-                or      a
-                sbc     hl,de
-                pop     hl                  ; HL = A$ (pop keeps the flags)
-                ret     c                   ; above VARTAB: owned
-                ret     z
-                push    hl                  ; [A$]
+                scf
+                sbc     hl,de               ; CF iff body >= VARTAB
+                pop     hl                  ; HL = A$+2 (pop keeps the flags)
+                ret     c                   ; at/above VARTAB: owned
+                push    hl                  ; [A$+2]
                 ld      l,c                 ; blk+0 = La
                 xor     a                   ; op 0 (ALLOC): HL = the fresh body
-                call    sh_go
-                pop     de                  ; DE = A$ (pop keeps the flags)
+                call    sh_go               ; DE (the text body) and C (La) come back
+                                            ; as passed: op 0 writes only PTR / ERR
+                ex      de,hl               ; HL = the text body, DE = the fresh one
+                ex      (sp),hl             ; HL = A$+2, [text body] (flags kept)
                 jr      nz,mo_oom
-                ex      de,hl               ; HL = A$, DE = the fresh body
-                ld      c,(hl)
-                ld      b,0                 ; BC = La
-                inc     hl
-                ld      a,(hl)
-                inc     hl
-                push    hl                  ; [-> the ptr's high byte]
-                ld      h,(hl)
-                ld      l,a                 ; HL = the body in the program text
-                push    de                  ; [ptrhi][fresh]
-                ldir
-                pop     de                  ; DE = the fresh body
-                pop     hl                  ; HL -> the ptr's high byte
                 ld      (hl),d
                 dec     hl
                 ld      (hl),e              ; A$ -> its own heap copy
+                pop     hl                  ; HL = the text body
+                ld      b,0                 ; BC = La
+                ldir
                 ret
 mo_oom:
+                pop     hl                  ; discard the text body -> stack balanced
                 ld      a,14                ; Out of string space
                 jp      raise_error         ; resets SP
                                             ; raise_error: interp.asm's tail, C4 2026-10-03)

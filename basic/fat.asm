@@ -301,8 +301,8 @@ ef_havestep:
                 push    hl                  ; D-NXARY: and it rides the stack to the
                                             ; tail below instead of being re-loaded --
                                             ; ldir does not touch the stack (-1 B)
-                ld      de,(CURLINE)
-                ld      (FOR_LINE),de       ; CURLINE
+                ld      hl,(CURLINE)        ; HL is free: the body rides the stack and
+                ld      (FOR_LINE),hl       ; HL is reloaded with FOR_FRAME just below
                 ; D-CTLPOOL: the FOR_STK_END bound test is gone with the array.
                 ; ⚠️ FSP IS NOT TOUCHED HERE, and that is the invariant the whole
                 ; NEXT walk rests on: the FOR run is [CSP, FSP), so lowering the
