@@ -14,8 +14,8 @@ SPDX-License-Identifier: 0BSD
 
 ## Summary
 
-`POS(0)` is the text cursor's column, counted from 0 at the left edge of the
-text area. The argument is a dummy: it must be there, and its value is
+`POS(0)` is the column BASIC will print at next, counted from 0 at the left
+edge of the text area. The argument is a dummy: it must be there, and its value is
 ignored. [`CSRLIN`](CSRLIN.md) gives the row; [`LPOS`](LPOS.md) is the same
 thing for the printer. zerobas behaves like the Philips VG-8020 in every case
 we have measured except one: a string as the dummy argument.
@@ -39,6 +39,11 @@ The parentheses and one argument are required.
   `PRINT "AB";"[";POS(0)` it is 3, because `AB[` has already been printed by
   then.
 - **It follows `LOCATE`.** After `LOCATE 9,3` it is 9.
+- **`CLS` and `SCREEN` do not reset it.** They put the cursor in the top left
+  corner, but `POS(0)` still gives the column the last `PRINT` left: after
+  `LOCATE 10,5:PRINT "AB";:CLS`, `POS(0)` is 12 and `CSRLIN` 0. `WIDTH` does
+  reset it to 0. It is also why the `Ok` that follows such a program comes on
+  the second row, after an empty one.
 - **Errors**, the same on both machines:
 
 | you write | you get |
@@ -89,6 +94,12 @@ writes is not the same.
 
 ## What we found, and how
 
+- **`POS(0)` read the screen cursor, so `CLS` and `SCREEN` reset it** (fixed
+  2026-10-30, D-POSTTY). The VG-8020 reads BASIC's print column instead, which
+  they leave alone; so after a game drew in `SCREEN 1` and switched back to
+  `SCREEN 0`, its `Ok` came one row lower than zerobas's. Found by a
+  game-contest-style program written for the program ladder
+  ([measured](../../scratchpad/screencsr_measure.out)).
 - **`POS` used to be silently wrong** (fixed 2026-07-27, the cursor slice
   [spec-basic-cursor-cluster.md](../spec-basic-cursor-cluster.md)). Without its
   own keyword, `POS(0)` was read as element 0 of an array called `POS`, which
@@ -104,13 +115,16 @@ writes is not the same.
 
 ## Where it lives
 
-`ev_ff_pos` in [basic/expr.asm](../../basic/expr.asm). It reads the BIOS
-cursor column and subtracts 1, because the BIOS counts from 1. `POS` is in the
+`ev_ff_pos` in [basic/expr.asm](../../basic/expr.asm). It reads BASIC's own
+print column, the published `TTYPOS` cell (`&HF661`), which the screen output
+keeps up to date and `LOCATE` and `WIDTH` set. `POS` is in the
 one-argument function table in [basic/islands.asm](../../basic/islands.asm)
 and deliberately left out of the range-check chain.
 
 ## Tests that cover it
 
+- `make postty-acceptance` — `POS(0)` after `CLS`, `SCREEN` and `WIDTH`
+  (D-POSTTY).
 - `make cursor-acceptance` — the column at line start, after text, with the
   four dummy values, and without parentheses.
 - `make kwsweep` — the everyday row (text first, so the answer is a known

@@ -125,6 +125,23 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **POS(0) READ THE SCREEN CURSOR, SO CLS AND SCREEN RESET IT; THE VG-8020 READS
+      BASIC'S PRINT COLUMN (D-POSTTY, found 2026-10-30 by the program ladder's
+      G2_runner).**
+      🎚️ TIER 1 — after a game drew in SCREEN 1 (`PRINT ...;`) and went back to
+      SCREEN 0, the VG-8020's `Ok` came on row 2 and zerobas's on row 1.
+      🤖 **AUTONOMOUS.** Measured ([`screencsr_measure.out`](scratchpad/screencsr_measure.out)):
+      after CLS or SCREEN the VG-8020 has CSRLIN 0 but POS(0) still the column the
+      last PRINT left (12 after `LOCATE 10,5:PRINT "AB";`); WIDTH resets it to 0.
+      That is TTYPOS ($F661), already kept right since D-ADDR29.
+      ✅ **FIXED 2026-10-30.** POS(0) reads TTYPOS (basic/expr.asm, 1 B smaller);
+      the prompt opens a new line when TTYPOS is not 0 (basic/repl.asm), as the
+      VG-8020 does; WIDTH clears it after its CHGMOD (sub2/scrstmt.asm). Gate
+      postty-acceptance; knives K-P / K-W, and K-O with G2 as its witness
+      ([`postty_knife.out`](scratchpad/postty_knife.out)) -- K-O first MISSED:
+      swapping only the load made the prompt ALWAYS open a line, which G2's own
+      ending needs anyway; the cut that restores the old pair hits.
+
 - [x] 🔴 **INPUT WITH TOO FEW VALUES SAID ?REDO; THE VG-8020 ASKS `?? ` FOR THE REST --
       AND A ?REDO LOST THE PROMPT (D-INPUTCONT, found 2026-10-30 by the program
       ladder's L2_survey).**
@@ -377,6 +394,10 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **G2_runner (2026-10-30)**: a side-scrolling runner in crunched style --
+      MID$ windows of a DATA map, a scripted jump table, VPEEK collisions, `VDP(7)`
+      border flashes written and read back, PLAY with `X`, a VRAM checksum. It
+      FOUND D-POSTTY (the prompt row after SCREEN 0); SAME after it.
       ✅ **C3_euler (2026-10-30)**: Project Euler 3, 17, 24, 40, 63 at full size, 76 for
       60, 21 below 1000, 36 below 500 (said in the program) -- trial division of a
       12-digit double up to its root, number words by string building, the
@@ -7775,7 +7796,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10266 (T-6FE392)8 (T-529ABE)` from `TODO.md:15948 (T-529ABE)`: a
+      `TODO.md:10287 (T-6FE392)8 (T-529ABE)` from `TODO.md:15969 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10735,7 +10756,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15948 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15969 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

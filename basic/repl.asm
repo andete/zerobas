@@ -85,9 +85,10 @@ repl:
                                             ; would leave the PROMPT polling and a
                                             ; Ctrl-STOP there dispatching a stale
                                             ; buffer -- D-EDITVERB §3.3)
-                ld      a,(CSRX)            ; CSRX is 1-BASED, so 1 == column 0 ==
-                dec     a                   ; already at the start of a line
-                call    nz,print_crlf       ; mid-row -> open a line first
+                ld      a,(TTYPOS)          ; D-POSTTY: BASIC's print column decides,
+                or      a                   ; not the cursor: after `PRINT "X";` then
+                call    nz,print_crlf       ; SCREEN 0 the VG-8020 opens a line first
+                                            ; (the prompt on row 2, row 1 blank)
                 call    txt_mode            ; D-SCREDIT: the prompt after a graphics program is
                                             ; read in SCREEN 0 on both references
                 call    curlin_direct       ; D-CURLIN: back at the prompt is

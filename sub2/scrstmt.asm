@@ -438,6 +438,10 @@ scw_bound:
                 push    hl
                 ld      ix,CHGMOD
                 call    p0cb                ; re-init the screen at the new width
+                xor     a                   ; D-POSTTY: and BASIC's print column with it
+                ld      (TTYPOS),a          ; (POS(0) is 0 after WIDTH on the VG-8020,
+                                            ; where CLS and SCREEN leave it alone --
+                                            ; scratchpad/screencsr_measure.out)
                 ld      ix,p0_key_repaint
                 call    p0cb                ; D-KEYCLS: the re-init cleared row 23
                 jp      fs_pop_exec         ; main's `jp pop_exec`

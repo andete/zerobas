@@ -2568,6 +2568,12 @@ playeq-acceptance: repack-machine
 inputcont-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_inputcont.py
 
+# --- postty-acceptance: POS(0) is BASIC's print column (D-POSTTY) -------------------
+# CLS and SCREEN home the cursor and keep POS(0); WIDTH resets it. Both targets
+# vs the VG-8020.
+postty-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_postty.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

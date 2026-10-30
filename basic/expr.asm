@@ -1248,8 +1248,12 @@ ev_ff_pos:                                 ; POS(n): the cursor COLUMN, 0-based.
                 ; `POS(-1)` must not raise. The parentheses are still REQUIRED --
                 ; bare `POS` is a Syntax error, which ev_ff_arg's missing-'(' path
                 ; already produces.
-                ld      a,(CSRX)
-                dec     a                   ; CSRX is 1-based, POS 0-based
+                ; D-POSTTY (2026-10-30): BASIC's print column TTYPOS, NOT the
+                ; screen cursor. After `PRINT "AB";` at column 10 and then CLS or
+                ; SCREEN, the VG-8020 reads POS(0)=12 with CSRLIN=0 -- the clear
+                ; homes the cursor and leaves TTYPOS alone; WIDTH resets it
+                ; (scratchpad/screencsr_measure.out, found by the ladder's G2).
+                ld      a,(TTYPOS)          ; 0-based already
                 jr      ev_ret_e            ; D-RETTAIL: DE = A (0..255)
 ev_ff_lpos:                                 ; LPOS(n): the PRINTER column, 0-based.
                 ; D-LPTVERB, docs/lptverb-msx1-characterization.md §3. Every rule

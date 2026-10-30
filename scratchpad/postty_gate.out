@@ -1,0 +1,14 @@
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --disk-rom build/disk.rom \
+	  --sub-rom build/sub.rom --sub2-rom build/sub2.rom
+wrote C-BIOS_MSX1_EU_REPACK_DISK  (-> machine "C-BIOS_MSX1_EU_REPACK_DISK": merged repack ROM in slot 0, zerobas-disk in slot 3-1, zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_DISK.xml
+python3 tools/install-repack-machine.py --merged build/zerobas-main-eu.rom --sub-rom build/sub.rom \
+	  --sub2-rom build/sub2.rom --no-disk
+wrote C-BIOS_MSX1_EU_REPACK_NODISK  (-> machine "C-BIOS_MSX1_EU_REPACK_NODISK": merged repack ROM in slot 0, slot 3-1 EMPTY (diskless target), zerobas-sub in slot 3-2, zerobas-sub2 in slot 3-3)
+     /Users/joost/.openMSX/share/machines/C-BIOS_MSX1_EU_REPACK_NODISK.xml
+python3 -u probes/basic/basic_probe_postty.py
+Philips_VG_8020                ENDED t=18.5  1 rows
+C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=16.5  0 differ  SAME
+C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=16.5  0 differ  SAME
+
+PASS: POS(0) keeps the print column through CLS and SCREEN, as on the VG-8020

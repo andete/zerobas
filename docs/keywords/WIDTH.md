@@ -99,6 +99,8 @@ not the same.
 
 ## What we found, and how
 
+- **`WIDTH` resets `POS(0)` to 0** (fixed 2026-10-30, D-POSTTY); `CLS` and
+  `SCREEN` do not. See [`POS`](POS.md).
 - **Five ways to break the screen without an error** (fixed 2026-07-28,
   D-WID). `WIDTH 0`, `WIDTH 41` to `255`, `WIDTH "40"` and a bare `WIDTH` were
   all accepted and left the machine with no readable screen, where the
