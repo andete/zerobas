@@ -1,0 +1,41 @@
+10 REM ** RECURSION BY GOSUB - HANOI, QUICKSORT AND A FLOOD COUNT **
+20 KEY OFF:CLS:DEFINT A-Z:DIM N(20),F(20),T(20),V(40),LO(40),HI(40),A2(40),B2(40),G$(8)
+30 F0=FRE(0)
+40 REM 1: towers of Hanoi, 6 discs, explicit stack of (n,from,to)
+50 SP=1:N(1)=6:F(1)=1:T(1)=3:MV=0:CK=0:GOSUB 500
+60 LPRINT "CP 1 MOVES";MV;"CHECK";CK;"STACK";SP
+70 REM 2: quicksort of 40 pseudo-random numbers, recursion by GOSUB
+80 X=RND(-7):FOR I=1 TO 40:V(I)=INT(RND(1)*1000):NEXT
+90 D=0:MD=0:LO(1)=1:HI(1)=40:SP=1:GOSUB 600
+100 OK=-1:FOR I=1 TO 39:IF V(I)>V(I+1) THEN OK=0
+110 NEXT:LPRINT "CP 2 SORTED";OK;"FIRST";V(1);"LAST";V(40);"DEPTH";MD
+120 S=0:FOR I=1 TO 40 STEP 7:S=S+V(I):NEXT:LPRINT "CP 3 SAMPLE";S
+130 REM 3: flood count on a grid of characters, recursive GOSUB on (r,c)
+140 FOR R=1 TO 8:READ G$(R):NEXT:C=0:BEST=0
+150 FOR R=1 TO 8:FOR K=1 TO 8:IF MID$(G$(R),K,1)="#" THEN Z=0:GOSUB 700:C=C+1:IF Z>BEST THEN BEST=Z
+160 NEXT K,R:LPRINT "CP 4 REGIONS";C;"LARGEST";BEST
+170 REM 4: the stack is clean afterwards
+180 LPRINT "CP 5 NO LEAK";F0-FRE(0)<300
+190 LPRINT "CP 9 END":END
+500 REM hanoi(n,f,t): iterative frames on our own stack, one GOSUB level per call
+510 IF N(SP)=0 THEN RETURN
+520 N(SP+1)=N(SP)-1:F(SP+1)=F(SP):T(SP+1)=6-F(SP)-T(SP):SP=SP+1:GOSUB 500:SP=SP-1
+530 MV=MV+1:CK=(CK*3+F(SP)*7+T(SP)) MOD 9973
+540 N(SP+1)=N(SP)-1:F(SP+1)=6-F(SP)-T(SP):T(SP+1)=T(SP):SP=SP+1:GOSUB 500:SP=SP-1
+550 RETURN
+600 REM quicksort(lo,hi)
+610 D=D+1:IF D>MD THEN MD=D
+620 L=LO(SP):H=HI(SP):IF L>=H THEN D=D-1:RETURN
+630 P=V((L+H)\2):I=L:J=H
+640 IF V(I)<P THEN I=I+1:GOTO 640
+650 IF V(J)>P THEN J=J-1:GOTO 650
+660 IF I<=J THEN SWAP V(I),V(J):I=I+1:J=J-1
+670 IF I<=J THEN 640
+680 A2(SP)=I:B2(SP)=H:LO(SP+1)=L:HI(SP+1)=J:SP=SP+1:GOSUB 600:LO(SP)=A2(SP-1):HI(SP)=B2(SP-1):GOSUB 600:SP=SP-1
+690 D=D-1:RETURN
+700 REM fill(r,k): mark '#' as '.', count cells, recurse into the 4 neighbours
+710 IF R<1 OR R>8 OR K<1 OR K>8 THEN RETURN
+720 IF MID$(G$(R),K,1)<>"#" THEN RETURN
+730 MID$(G$(R),K,1)=".":Z=Z+1
+740 K=K+1:GOSUB 700:K=K-2:GOSUB 700:K=K+1:R=R+1:GOSUB 700:R=R-2:GOSUB 700:R=R+1:RETURN
+900 DATA "##..#...","#...##..","....#...","###.....","..#..###","..#....#","....#..#","####...#"
