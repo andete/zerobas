@@ -276,7 +276,8 @@ def main():
         del args[i:i + 2]
     gaps = "--gaps" in args
     pick = [a for a in args if a != "--gaps"]
-    progs = sorted(glob.glob(os.path.join(HERE, "L*.bas")))
+    # L* 80s-style programs, C* contest algorithms, G* hobbyist game-contest style
+    progs = sorted(glob.glob(os.path.join(HERE, "[LCG]*.bas")))
     progs = [p for p in progs if not pick or any(s in os.path.basename(p) for s in pick)]
     bad = 0
     for path in progs:

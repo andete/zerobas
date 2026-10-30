@@ -377,6 +377,18 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **C1_numbers (2026-10-30), THE FIRST CONTEST-STYLE PROGRAM** (Joost: "the kind
+      of program competitive programmers write"; series C*, and G* for hobbyist
+      game-contest style, both 2026-10-30). Sieve below 2000, GCD / MOD / `\`
+      with negatives, modular power through doubles, 30! in base-10000 limbs,
+      Fibonacci(80) by string addition, Collatz in doubles, a coin-change DP, an
+      O(n log n) LIS: every answer but the seeded LIS was ALSO computed in Python
+      first, and the VG-8020 matches all of them; zerobas SAME. The runner globs
+      `[LCG]*.bas` now. 📏 Speed (TIER 5, paused): zerobas took 263 s where the
+      VG-8020 took 139; the Collatz loop alone in doubles (divide, INT, compare)
+      is 1.7x ([`collatz_speed.bas`](scratchpad/collatz_speed.bas): 2698 jiffies
+      against 1574 for N = 1..60). The first draft took 561 s on the VG-8020 and
+      timed out here; it was trimmed, not left to time out.
       ✅ **L2_survey (2026-10-30)**: INPUT the way people type into it --
       letters for a number, half a pair wrong, one value too many, a quoted name
       with a comma, a missing value, an empty answer, LINE INPUT with a comma,
@@ -7741,7 +7753,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10232 (T-6FE392)8 (T-529ABE)` from `TODO.md:15914 (T-529ABE)`: a
+      `TODO.md:10244 (T-6FE392)8 (T-529ABE)` from `TODO.md:15926 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10701,7 +10713,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:15914 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:15926 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
