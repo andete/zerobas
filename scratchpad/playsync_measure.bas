@@ -1,0 +1,12 @@
+10 REM D-PLAYQUEUE: does a voice wait for the others at the end of a PLAY (sync)?
+20 REM A: C4 then D4 (ends at 50 alone); B: C2 then D4 (75). A still busy at 60 = sync.
+30 TIME=0:PLAY "T120C4","T120C2":PLAY "D4","D4"
+40 IF TIME<60 THEN 40
+50 A=PLAY(1):B=PLAY(2)
+60 IF PLAY(0) THEN 60
+70 LPRINT "SYNC";A;B;TIME
+80 TIME=0:PLAY "T120C4","T120C2":PLAY "D4"
+90 IF TIME<35 THEN 90
+100 A=PLAY(1):B=PLAY(2)
+110 IF PLAY(0) THEN 110
+120 LPRINT "ONE";A;B;TIME

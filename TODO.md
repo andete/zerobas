@@ -125,6 +125,52 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [ ] 🔴 **A `PLAY` WHILE A VOICE IS STILL PLAYING REPLACES ITS QUEUE; THE VG-8020 APPENDS,
+      BLOCKS WHEN THE 128-BYTE QUEUE IS FULL, AND SYNCS THE VOICES AT EACH PLAY'S END
+      (D-PLAYQUEUE, found 2026-10-31 by the program ladder's L4_music).**
+      🎚️ TIER 1 — a song played bar by bar from DATA, the ordinary way a program plays
+      music, keeps only the last bar here.
+      🤖 **AUTONOMOUS** — measured on the VG-8020 (registers and documented work-area
+      RAM only -- QUETAB's put/get, `PLAY(n)`, TIME):
+      * **Append + block** ([`playqueue_measure.out`](scratchpad/playqueue_measure.out)):
+        twelve 7-note bars PLAYed in a loop return at TIME 2, 5, 7, then 39, 137,
+        235 ... -- the first three fit, every later one waits about a bar -- and the
+        song lasts 1178 jiffies. Here every PLAY returns at once and REPLACES the
+        queue: 115. A voice-A-only PLAY while A plays lengthens A (113 against 52).
+      * **Queue bytes** ([`playqbytes_measure.out`](scratchpad/playqbytes_measure.out),
+        [`playqbytes2_measure.out`](scratchpad/playqbytes2_measure.out)): a note 5 B,
+        a rest 3 B, and 1 B per PLAY per voice (its end marker); O / L / T / V / S
+        cost nothing of their own, an `M` period adds 2 B to the next note; the ring
+        is 128 B (QUESIZ 127). Here a note is 6 B, an ENV packet 4 B, and the buffer
+        restarts at 0 on every PLAY.
+      * **Sync at each PLAY's end** ([`playsync_measure.out`](scratchpad/playsync_measure.out)):
+        a voice that reaches a PLAY's end marker waits until every other voice still
+        playing reaches one too, reading `PLAY(n)` = 0 while it waits -- even when
+        the next PLAY named only that voice. Here there is no such wait.
+      ➡️ **DESIGN** (own encoding, the reference's byte COUNTS): NOTE 5 B (a tag +
+      period high, period low, amplitude or `$10|shape`, duration), two bytes more when an `M`
+      changed since the last note, REST 3 B, END 1 B; QUETAB put/get as a true
+      128-byte ring the drain wraps; the drain stops a voice at END until all
+      playing voices are at an END, then all step past it. Blocking cannot happen in
+      the parser (a page-1 tenant must not wait): a dry-run pass sizes each voice's
+      output, and main writes it in windows -- wait (EI) for room, call the tenant to
+      emit the next window of bytes into the ring -- so PLAY returns when its last
+      byte is in, as on the VG-8020. Unmeasured, measure before relying on it:
+      whether an envelope note re-triggers PSG register 13 at every note (the PSG
+      registers are readable I/O state).
+
+- [ ] 🙋 **SHORT NOTES ARE FASTER HERE: THE VG-8020 NEVER PLAYS A NOTE SHORTER THAN ~5
+      JIFFIES (D-PLAYRATE, found 2026-10-31 by L4_music).**
+      🎚️ TIER 5 — note timing at fast tempos; long notes agree to a jiffy or two.
+      🙋 **NEEDS-JOOST** — matching it means slowing zerobas's MML parse to the
+      reference's rate. Measured ([`playlen_measure.out`](scratchpad/playlen_measure.out)):
+      8 x `L64` at T255 take 46 jiffies on the VG-8020 (the tempo says ~6) and 10
+      here; 6 x `L16` at T200 33 against 20; from L16 at T120 (6.25 jiffies a note)
+      up, both follow the tempo. The pattern is a per-note floor, consistent with the
+      reference's PLAY parse rate limiting how fast its queue is filled -- which
+      D-PLAYQUEUE's blocking will make visible in the same place. Ask whether to
+      reproduce it (an imposed per-note floor) or keep the written tempo.
+
 - [ ] 💰 **D-REREAD — REREAD EACH ROUTINE AGAINST ITS CONTRACT: 82 B FROM THE FIRST TEN
       (2026-10-30).**
       🎚️ BUDGET — ROM space toward the reference; the space every later tier spends.
@@ -7989,7 +8035,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10480 (T-6FE392)8 (T-529ABE)` from `TODO.md:16162 (T-529ABE)`: a
+      `TODO.md:10526 (T-6FE392)8 (T-529ABE)` from `TODO.md:16208 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10949,7 +10995,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16162 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

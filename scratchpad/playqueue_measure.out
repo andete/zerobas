@@ -1,0 +1,16 @@
+# scratchpad/playqueue_measure.bas
+== Philips_VG_8020 ENDED t=41.6
+ 2  5  7  39  137  235  333  431  529  627  725  823 
+END 1178 
+MIX 3  4  113 
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=17.8
+ 2  3  4  6  7  8  10  11  13  14  16  17 
+END 115 
+MIX 1  2  52 
+
+== C-BIOS_MSX1_EU_REPACK_DISK ENDED t=17.8
+ 2  3  4  6  7  8  10  11  13  14  16  17 
+END 115 
+MIX 1  2  52 
+
