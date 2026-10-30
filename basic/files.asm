@@ -558,6 +558,24 @@ dev_cas:
 ; descriptor in place. Page 1, in the free pad in front of the $6CF3 pin (it
 ; first went at the end of basic/strvar.asm, which is in front of the $4EF8 pin,
 ; whose pad is 1 B: the overrun emptied pasmo's image). Callers: low region.
+; eval_slhs (D-PRSTR2X) -- sited HERE, in front of the $6CF3 pin: eval's
+; neighbourhood (basic/expr.asm) sits in front of the $4EF8 pin, whose pad is 1 B.
+; `eval` for an expression whose FIRST operand, a string,
+; the caller has already evaluated -- STRPTR = it, HL = the relop after it. Joins
+; ev_logic exactly where its own string probe would: the sentinel, a [guard] for
+; cl_str to drop, then the relational level and looser (`INKEY$="A" AND X` too).
+eval_slhs:
+                push    ix
+                call    set_factyp2
+                call    evl_slhs
+                jp      eval_tail           ; basic/expr.asm: eval's own exit
+evl_slhs:
+                push    hl                  ; the cursor
+                ld      h,1
+                ex      (sp),hl             ; [sentinel]: ev_logic's, every level joins
+                push    hl                  ; [guard], dropped by cl_str
+                jp      cl_str
+
 ; --- inpc_cont / inpc_redo_p1 (D-INPUTCONT): INPUT's two re-reads ----------------
 ; Sited HERE, in main page 1's pad, because basic/input.asm is the low region.
 ; inpc_cont: the variable list wants more and the typed line ran out. The

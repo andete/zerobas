@@ -39,5 +39,5 @@ list.
  run
 Error 5
 ZB
-color   auto    goto    list    run
+HELLO   auto    goto    list    run
 === KEY: PASS

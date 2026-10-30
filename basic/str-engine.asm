@@ -2259,8 +2259,9 @@ exp_maybe_strfn:
                 call    skip_spaces
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,ems_print        ; no relop -> plain PRINT (below)
-                pop     hl                  ; relop follows -> restore the operand START
-                jp      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+                jp      exp_num_slhs        ; D-PRSTR2X: a relop follows -- compare with
+                                            ; the string ALREADY read; re-driving the item
+                                            ; through eval read INKEY$ a second time
 ems_print:
                 pop     de                  ; drop the saved operand-start (balances the
                                              ;  push above; str_eval already clobbers DE)

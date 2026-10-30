@@ -53,6 +53,7 @@ eval:
                 call    set_factyp2
                                            ; §9.4: eval() sets FACTYP=2 (int) on entry
                 call    ev_logic            ; lowest precedence layer
+eval_tail:
                 push    ix
                 pop     hl                  ; HL = cursor (advanced)
                 pop     ix

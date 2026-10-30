@@ -198,14 +198,23 @@ ks_clr:         ld      (hl),a
                 ld      a,(hl)              ; A = staged length
                 inc     hl                  ; HL -> the bytes
                 or      a
-                ret     z                   ; empty string: the slot is already clear
+                jr      z,ks_stored         ; empty string: the slot is already clear
                 cp      KEYMAX+1
                 jr      c,ks_len
                 ld      a,KEYMAX            ; truncate to 15 (measured)
 ks_len:         ld      c,a
                 ld      b,0
                 ldir
-                ret
+ks_stored:      ; D-KEYREPAINT: with the line ON in a text mode the references
+                ; repaint it the moment a definition changes (L2_keys CP 1);
+                ; key_repaint's own two tests, then the KEY ON paint.
+                ld      a,(CNSDFG)
+                or      a
+                ret     z
+                ld      a,(SCRMOD)
+                cp      2
+                ret     nc
+                jp      ks_paint
 ks_defaults:    ; --- cold boot: the measured image, all 160 bytes -------------
                 ld      hl,keystr_image
                 ld      de,FNKSTR

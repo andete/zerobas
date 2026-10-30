@@ -1,0 +1,52 @@
+== Philips_VG_8020 ENDED t=21.6
+'A [LIST    RUN 100 goto    list            ]\r\nB [  LIST  RUN 1 ABCDE list        ]\r\nC [                                        ]\r\nD 0 \r\nE [color   auto    goto    list            ]\r\n'
+Ok
+Ã¿
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ color   auto    goto    list
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=21.8
+'A [LIST    RUN 100 goto    list            ]\r\nB [  LIST  RUN 1 ABCDE list        ]\r\nC [                                        ]\r\nD\r\n'
+Type mismatch in 100
+ZB
+Ã¿
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ LIST    RUN 100 ABCDEFG QQQQ

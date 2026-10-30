@@ -137,6 +137,15 @@ the set of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
 
+- **A string compared inside `PRINT` was worked out twice** (fixed 2026-10-30,
+  D-PRSTR2X). `PRINT INKEY$="";A$="X"` reads the string, sees the `=`, and
+  prints the comparison's -1 or 0. zerobas did that by starting the item again
+  from its beginning, so `INKEY$`, `INPUT$` or a string `DEF FN` ran a second
+  time: `PRINT INKEY$=""` with keys waiting took two of them. It now carries on
+  from the string it already has. The first version of the fix broke
+  `PRINT T` for every number variable (a `Type mismatch`); the test written
+  for the fix has a row for that now.
+
 - **A sign with no room gave up nothing** (fixed 2026-10-29, D-PUNEGLEAD).
   When a sign has no column of its own, the VG-8020 lets it take the place of
   the `0` in front of the point: `PRINT USING "#.##";-.5` prints `-.50`, and
@@ -233,4 +242,6 @@ the set of documented work-area cells each machine writes is not the same.
   string space being reorganised between values) and the 24-column limit.
 - `make kwsweep` — one row per form (`;`, `,`, trailing separator, `TAB(`,
   `SPC(`), the `Type mismatch` row, and the error rows for `TAB(` and `SPC(`.
+- `make prstr2x-acceptance` — strings compared inside `PRINT`, keys read by
+  `INKEY$` / `INPUT$` there, and a number variable (D-PRSTR2X).
 - `make kwram` — the RAM-usage comparison.

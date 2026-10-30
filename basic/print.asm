@@ -240,6 +240,7 @@ exp_loop:
                 jr      nz,exp_strvar       ; string variable -> print its value
 exp_num:
                 call    eval                ; numeric expression -> DE = value
+exp_num_got:
                 call    check_expr_errors   ; D-2/D-F2-1 (interp.asm): abort the whole
                                             ; line before the newline/next item
                 call    factyp_is2         ; §9.4: exp_num dispatches on FACTYP after eval
@@ -254,6 +255,18 @@ exp_num_put:
                 call    print_string        ; does not fit the rest of this one
                 pop     hl
                 jr      exp_loop
+; exp_num_slhs (D-PRSTR2X, 2026-10-30): an item that STARTED as a string and has a
+; relational operator after it. It used to rewind to the item's start and run the
+; whole item through `eval` -- evaluating the string a SECOND time: `LPRINT
+; INKEY$="C"` read two keys and compared the second (scratchpad/inkeycmp_measure.out,
+; found by the ladder's L2_keys); INPUT$ and an FN alike. The VG-8020 reads once.
+; eval_slhs carries on from the string in hand. Stack: [the item's START].
+; It sits behind an unconditional jump: the first cut put it where the numeric-
+; variable test FALLS THROUGH to exp_num, and every `PRINT T` was Type mismatch.
+exp_num_slhs:
+                pop     de                  ; drop the item's START
+                call    eval_slhs           ; the comparison and anything after it
+                jr      exp_num_got
 exp_strvar:
                 ; S2 (spec-basic-print-unparen-compare.md §3): remember the
                 ; operand START before str_eval consumes it -- if a relational
@@ -266,8 +279,8 @@ exp_strvar:
                 call    skip_spaces
                 call    relop_peek          ; ZF=1 iff (HL) is a relop token
                 jr      nz,exps_notrel      ; no relop -> maybe an operator (below)
-                pop     hl                  ; relop follows -> restore the operand START
-                jr      exp_num             ; re-drive via eval -> ev_rel (-1/0, or D-2 abort)
+                jr      exp_num_slhs        ; relop follows: D-PRSTR2X, compare with the
+                                            ; string already read (no second evaluation)
 ; --- an OPERATOR after a string value is a Type mismatch ---------------------
 ; MEASURED (docs/logicops-vg8020-characterization.md §6): the reference rejects
 ; EVERY operator here -- `"A" AND 1`, and equally `- * / ^ \ MOD` and the rest.

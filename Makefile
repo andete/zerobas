@@ -2579,6 +2579,18 @@ postty-acceptance: repack-machine
 playarr-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_playarr.py
 
+# --- prstr2x-acceptance: a PRINT string item with a relop after it is read once (D-PRSTR2X)
+# INKEY$ / INPUT$(1) compared inline consume one key, not two; string relops,
+# AND / OR and a plain numeric variable. Both targets vs the VG-8020.
+prstr2x-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_prstr2x.py
+
+# --- keyrepaint-acceptance: KEY n,"..." repaints the shown key row (D-KEYREPAINT) --
+# SCREEN 0 / 1 with the row on, KEY OFF, SCREEN 2 (no paint). Both targets vs
+# the VG-8020.
+keyrepaint-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_keyrepaint.py
+
 # --- filesbare-acceptance: FILES with a blank or drive-only pattern (D-FILESBARE)
 # `FILES " "` / `"A:"` / `"a:"` / `"A: "` list the disk on the CF-3300; `""` is
 # 56 and `"Q:"` 62 there too.

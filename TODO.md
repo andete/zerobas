@@ -125,6 +125,45 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
+- [x] 🔴 **`PRINT INKEY$=""` READ TWO KEYS: A STRING ITEM WITH A RELOP AFTER IT WAS
+      EVALUATED TWICE (D-PRSTR2X, found 2026-10-30 by the program ladder's L2_keys).**
+      🎚️ TIER 1 — a menu loop that tests `INKEY$` inside a PRINT or IF line loses
+      every other key.
+      🤖 **AUTONOMOUS.** Measured ([`inkeycmp_measure.out`](scratchpad/inkeycmp_measure.out)):
+      `LPRINT "B";INKEY$="";INKEY$="C";INKEY$<>""` with `ABCDEFGH` typed gives
+      `B 0 -1 -1` on the VG-8020 and `B 0 0 -1` here. PRINT read the string, saw the
+      relop, then went back to the item's START and ran it all through `eval` --
+      a second INKEY$ (or INPUT$, or string FN) call. The VG-8020 reads once.
+      ✅ **FIXED 2026-10-30.** `eval_slhs` (basic/files.asm) carries on from the
+      string already in hand: it builds ev_logic's sentinel frame and enters the
+      string comparison, leaving through `eval`'s own exit (`eval_tail`, a 0-byte
+      label in basic/expr.asm). PRINT's string-variable and string-function relop
+      branches (basic/print.asm, basic/str-engine.asm) go to `exp_num_slhs`.
+      🔴 **THE FIRST CUT MADE `PRINT T` A TYPE MISMATCH.** The new block sat where
+      the numeric-variable test FALLS THROUGH to exp_num, so every numeric variable
+      printed went into it. L2_keys was SAME on that build -- it prints no plain
+      numeric variable; the gate written next found it at once. The block now sits
+      behind an unconditional jump, and the gate has the row.
+      Gate prstr2x-acceptance ([`prstr2x_measure.bas`](scratchpad/prstr2x_measure.bas):
+      INKEY$ and INPUT$(1) compared inline, string relops with AND / OR, a numeric
+      variable); knife K-R puts the rewind back
+      ([`str2x_knife.out`](scratchpad/str2x_knife.out)).
+
+- [x] 🔴 **`KEY n,"..."` DID NOT REPAINT THE SHOWN KEY ROW (D-KEYREPAINT, found
+      2026-10-30 by the program ladder's L2_keys).**
+      🎚️ TIER 1 — the first thing a program that sets its own function keys shows
+      is the bottom row; here it kept `color auto ...` until the next CLS.
+      🤖 **AUTONOMOUS.** Measured ([`keyrepaint_measure.bas`](scratchpad/keyrepaint_measure.bas)):
+      with KEY ON the VG-8020 repaints at once, in SCREEN 0 and SCREEN 1; with KEY
+      OFF and in SCREEN 2 nothing is drawn (CNSDFG stays $FF in SCREEN 2:
+      [`keyscr2_measure.out`](scratchpad/keyscr2_measure.out)).
+      ✅ **FIXED 2026-10-30.** The keystr tenant (sub/keystr.asm) tests CNSDFG and a
+      text mode after storing a definition and paints the row, the same two tests
+      as key_repaint. Gate keyrepaint-acceptance; knives K-K (never repaint) and
+      K-M (paint in SCREEN 2 too) ([`str2x_knife.out`](scratchpad/str2x_knife.out)).
+      K-M first MISSED: in SCREEN 2 NAMBAS is $1800, so a stray paint lands at
+      $1800+920, where row D did not look; row D reads both places now.
+
 - [x] 🔴 **POS(0) READ THE SCREEN CURSOR, SO CLS AND SCREEN RESET IT; THE VG-8020 READS
       BASIC'S PRINT COLUMN (D-POSTTY, found 2026-10-30 by the program ladder's
       G2_runner).**
@@ -404,6 +443,11 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L2_keys (2026-10-30)**: function keys the way a menu program sets them --
+      `KEY n,"..."` with CHR$(13), an empty key, a 16-character one cut to 15, the
+      row read back by VPEEK with KEY ON and OFF, KEY LIST, an INKEY$ menu loop,
+      INPUT$(3) and `INKEY$=""` in a PRINT. It FOUND D-PRSTR2X and D-KEYREPAINT;
+      SAME after them.
       ✅ **L3_forms (2026-10-30)**: a data-entry screen drawn with control codes only --
       ESC Y positioning, TAB, cursor left / right / up / down, backspace, home,
       ESC K / ESC J erase, ESC L / ESC M insert and delete line -- then the screen
@@ -7850,7 +7894,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10341 (T-6FE392)8 (T-529ABE)` from `TODO.md:16023 (T-529ABE)`: a
+      `TODO.md:10385 (T-6FE392)8 (T-529ABE)` from `TODO.md:16067 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10810,7 +10854,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16023 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16067 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

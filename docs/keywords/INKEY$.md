@@ -43,7 +43,8 @@ No arguments and no parentheses.
   That is the one error the tier sweep checks for `INKEY$`, and both machines
   raise it.
 - **It works inside a string expression**, `PRINT INKEY$` included — that is
-  how the empty case is tested.
+  how the empty case is tested. Each `INKEY$` in a line reads at most one key:
+  `PRINT INKEY$=""` takes one key and compares it.
 
 ## Example
 
@@ -75,6 +76,15 @@ the other does not. Nothing a program can observe through `FRE` differs.
 
 ## What we found, and how
 
+- **`PRINT INKEY$=""` read two keys** (fixed 2026-10-30, D-PRSTR2X; found by a
+  test program with a key menu). `PRINT` read the string, saw the `=`, then
+  started the item again from the beginning as a comparison, so `INKEY$` ran
+  twice and the comparison used the second key. The VG-8020 reads once. The
+  same was true of `INPUT$` and of a string `DEF FN` at the start of a
+  compared `PRINT` item. The first fix moved a piece of `PRINT` into a place
+  where a plain number variable also went, so `PRINT T` became a
+  `Type mismatch`; the test written next caught it before it was kept.
+
 - **`PRINT INKEY$` was a `Type mismatch`** at first (fixed 2026-07-10, the day
   `INKEY$` was built). `A$=INKEY$` worked, but `PRINT` evaluates strings by a
   second route that did not know the new token. The first run against the
@@ -98,4 +108,6 @@ the BIOS whether a key is waiting (`CHSNS`) and, only if one is, takes it
 - `make string-acceptance` — its `INKEY$` part: the empty case, and a key
   typed while a polling loop runs, against the VG-8020.
 - `make kwsweep` — the stuffed-buffer row and the error row for {13}.
+- `make prstr2x-acceptance` — `INKEY$` and `INPUT$(1)` compared inside a
+  `PRINT` with keys waiting: one key each, against the VG-8020.
 - `make kwram` — the RAM-usage comparison.

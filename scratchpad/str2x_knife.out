@@ -1,0 +1,19 @@
+K-R ROMs 97a98b32 -> b2fe52c5  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'B 0 -1 -1 '  zb 'B 0  0 -1 '
+   ref 'C YES'  zb 'C NO'
+   ref 'D-1 -1 '  zb 'D 0 '
+   ref 'B 0 -1 -1 '  zb 'B 0  0 -1 '
+   ref 'C YES'  zb 'C NO'
+   ref 'D-1 -1 '  zb 'D 0 '
+K-K ROMs 97a98b32 -> 8d8527bc  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'A [LIST    RUN 100 goto    list            ]'  zb 'A [color   auto    goto    list    run     ]'
+   ref 'B [  LIST  RUN 1 ABCDE list        ]'  zb 'B [  LIST  RUN 1 goto  list        ]'
+   ref 'E [color   auto    goto    list            ]'  zb 'E [LIST    RUN 100 ABCDEFG QQQQ            ]'
+   ref 'A [LIST    RUN 100 goto    list            ]'  zb 'A [color   auto    goto    list    run     ]'
+   ref 'B [  LIST  RUN 1 ABCDE list        ]'  zb 'B [  LIST  RUN 1 goto  list        ]'
+   ref 'E [color   auto    goto    list            ]'  zb 'E [LIST    RUN 100 ABCDEFG QQQQ            ]'
+K-M ROMs 97a98b32 -> 1a8a3ed4  red ['C-BIOS_MSX1_EU_REPACK_DISK', 'C-BIOS_MSX1_EU_REPACK_NODISK']  HIT
+   ref 'D 0 '  zb 'D 2114 '
+   ref 'D 0 '  zb 'D 2114 '
+restored ROMs 97a98b32 == clean
+3/3 knives HIT

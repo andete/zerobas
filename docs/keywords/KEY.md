@@ -51,7 +51,8 @@ statement: they control the function-key interrupt used by `ON KEY GOSUB`
   the two reference machines (2026-09-04: *"when there is stylish differences
   (color, screen) between the oracles, pick the VG8020"*).
 - **`KEY n,text` keeps at most 15 characters**; a longer text is cut. An empty
-  text is allowed. The new text is what the key types from then on.
+  text is allowed. The new text is what the key types from then on, and when
+  the function-key line is on in a text screen it is redrawn at once.
 - **`KEY LIST` prints the ten texts, one per line**, with control characters
   shown as blanks: F10's form feed shows as a leading space.
 - **The function-key line** shows the first characters of F1 to F5 on the
@@ -122,6 +123,12 @@ of documented work-area cells each machine writes is not the same.
 
 ## What we found, and how
 
+- **`KEY n,text` left the old text on the line** (fixed 2026-10-30,
+  D-KEYREPAINT; found by a test program that sets its own keys). The new text
+  was stored but the bottom row kept showing `color auto ...` until the next
+  `CLS`; the VG-8020 redraws it at once, in `SCREEN 0` and `SCREEN 1`. Under
+  `KEY OFF`, and in the graphics screens, nothing is drawn on either machine.
+
 - **SHIFT did not switch the line to F6 to F10** (fixed 2026-10-12,
   D-KEYSHIFT; reported by Joost). An earlier measurement (2026-09-26) had
   called the switch refuted: it held SHIFT during a busy loop, where the
@@ -179,4 +186,6 @@ key-string tenant in [sub/keystr.asm](../../sub/keystr.asm).
 - `make keyshift-acceptance` — SHIFT held at the prompt, in `INPUT`,
   `LINE INPUT`, `INPUT$`, an `INKEY$` loop, a busy loop and under `KEY OFF`,
   read while held and after release, against the VG-8020.
+- `make keyrepaint-acceptance` — the line read back after `KEY n,text` in
+  `SCREEN 0`, `SCREEN 1`, under `KEY OFF` and in `SCREEN 2`, against the VG-8020.
 - `make kwram` — the RAM-usage comparison.
