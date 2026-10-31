@@ -2585,6 +2585,12 @@ playarr-acceptance: repack-machine
 prstr2x-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_prstr2x.py
 
+# --- playqueue-acceptance: PLAY appends, blocks when full, syncs voices (D-PLAYQUEUE)
+# Queue bytes per MML element, a pending M across PLAY / BEEP, the block points'
+# spacing and the sync. Both targets vs the VG-8020.
+playqueue-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_playqueue.py
+
 # --- resnextend-acceptance: RESUME NEXT after the last statement ends the run (D-RESNEXTDIRECT)
 # The last program line, and a direct line with ON ERROR still set. Both
 # targets vs the VG-8020.

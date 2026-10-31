@@ -621,7 +621,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F958` | 1 B | `basic` | `GFX_SFLAGS` | $F958: which arguments were GIVEN -- (1 B) |  |
 | `$F959` | 6 B | `basic` | `QUETAB` | 4 x 6-byte ring descriptors (3 voice + 1 RS232) |  |
 | `$F971` |  | `basic` | `PLY_LASTDUR` | QUEBAK+0 (2): saved write pointer across pt_length |  |
-| `$F973` |  | `basic` | `PLY_BUFEND` | QUEBAK+2 (2): current voice buffer end (overflow guard) |  |
+| `$F973` |  | `basic` | `PLY_PKMODE` | QUEBAK+2 (1): pt_put writes (1) or skips (0) the |  |
 | `$F975` | 128 B | `basic` | `VOICAQ` | voice-0 packet buffer (128 B) |  |
 | `$F9F5` | 128 B | `basic` | `VOICBQ` | voice-1 packet buffer (128 B) |  |
 | `$FA75` | 128 B | `basic` | `VOICCQ` | voice-2 packet buffer (128 B) |  |

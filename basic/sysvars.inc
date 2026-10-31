@@ -3699,7 +3699,8 @@ VCB_STRIDE      equ     VCBB - VCBA         ; $25 = 37 B between voice blocks
 ; QUETAB per-voice ring descriptor field offsets (base = QUETAB + 6*voice):
 QD_PUT          equ     0       ; put (write) position within the buffer
 QD_GET          equ     1       ; get (read) position -- 0 in Slice 2a (no drain)
-QD_PUTBAK       equ     2       ; putback flag (unused in 2a)
+QD_PUTBAK       equ     2       ; D-PLAYQUEUE: 1 = the voice is WAITING at an end
+                                ; marker for the other voices (PLAY(n) reads 0)
 QD_SIZE         equ     3       ; buffer size (128)
 QD_ADDR         equ     4       ; buffer base address (VOICxQ), 2 B
 QD_STRIDE       equ     6       ; bytes per descriptor
@@ -3719,6 +3720,18 @@ VCX_ENVSH       equ     19      ; ENVLPX: envelope shape 0..15 ($10 bit = env mo
 ; no disassembly). Seeded to 0 by the parser's queue reset so the first VBLANK fetches
 ; packet 0; play_service loads it with a note's `dur` and decrements once per frame.
 VCX_FRAMES      equ     20      ; frames remaining for this voice's current note, 2 B
+; D-PLAYQUEUE (2026-10-31): own-design fields in the VCB's unused tail (37 B a
+; voice, the reference's size -- no RAM beyond it). The parse is WINDOWED: when a
+; voice's ring is full the tenant stops, main waits a frame, and the next call
+; re-parses the string from its start with the state restored from VCX_SNAP,
+; skipping the VCX_DONE bytes already queued (X substrings nest on the stack,
+; so a parse cannot be suspended in the middle -- re-parsing is deterministic).
+VCX_ENVDIRTY    equ     22      ; bit 0: an S or M since the last note; bit 1: an M
+VCX_DONE        equ     23      ; bytes of this PLAY's string already queued, 2 B
+VCX_SNAP        equ     25      ; +13..+19 and +22 at the PLAY's start, 8 B
+VCX_WPUT        equ     33      ; the window's write position (published to QD_PUT)
+VCX_CNT         equ     34      ; bytes this pass has generated so far, 2 B
+VCX_ROOM        equ     36      ; free ring bytes left in this window
 ; H.TIMI ($FD9F) timer-interrupt hook -- the seam play_service installs at boot (a
 ; JP; the hook is C9-free on our target so no chain). It is our entry into C-BIOS's
 ; $0038 ISR; play_service is main-ROM page-1 resident (reached by a near JP, mapped
@@ -3915,11 +3928,27 @@ PLY_NUMOVF      equ     $F82C        ; $F82C (1): pt_number 16-bit overflow latc
 ;                 referenced -- the accumulator rides HL. D-PLAYCORNER repurposes the
 ;                 byte: a wrapped number literal must REJECT, not alias into range)
 PLY_LASTDUR     equ     $F971           ; QUEBAK+0 (2): saved write pointer across pt_length
-PLY_BUFEND      equ     $F973           ; QUEBAK+2 (2): current voice buffer end (overflow guard)
-; Queue packet opcodes (own-design; docs spec §6). A voice buffer is a stream of:
-PLAY_OP_NOTE    equ     $00     ; + amp:1, tone_lo:1, tone_hi:1, dur:2  (rest = amp 0)
-PLAY_OP_ENV     equ     $01     ; + shape:1, per_lo:1, per_hi:1         (S/M envelope)
-PLAY_OP_END     equ     $FF     ; end of this voice's queue
+PLY_PKMODE      equ     $F973           ; QUEBAK+2 (1): pt_put writes (1) or skips (0) the
+                                        ; current packet -- D-PLAYQUEUE's windowed parse
+                                        ; (was PLY_BUFEND, the linear buffer's end)
+; Queue packets (own encoding, D-PLAYQUEUE 2026-10-31). The voice queue is a
+; 128-byte RING (QUETAB put/get, QD_SIZE 127 as on the VG-8020), and the packet
+; SIZES are the reference's, measured from its QUETAB put pointer
+; (scratchpad/playqbytes_measure.out, playqbytes2_measure.out): a note 5 B,
+; plus 2 when an M period changed since the last note, a rest 3 B, and 1 B per
+; PLAY per voice -- the end marker, where the voices sync. The tag is byte 0's
+; top two bits:
+;   NOTE   [tag|shape<<2|envset<<1, per_lo, amp, dur_lo, per_hi<<4|dur_hi]
+;   NOTEP  NOTE + [envper_lo, envper_hi]  (an M since the last note)
+;   REST   [tag, dur_lo, dur_hi]
+;   END    [tag]
+; envset: an S or M since the last note -- the drain re-writes PSG R13 (shape).
+PK_NOTE         equ     $00
+PK_NOTEP        equ     $40
+PK_REST         equ     $80
+PK_END          equ     $C0
+PLAY_MORE       equ     $FE     ; AUDIO_STATUS: a voice's ring is full -- main waits a
+                                ; frame and calls the tenant again (the next window)
 
 ; --- Phase 2: MAXFILES per-channel context blocks --------------------------
 ; A channel's live streaming state spans TWO global regions: the 512-byte data

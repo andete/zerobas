@@ -1,0 +1,40 @@
+# scratchpad/playqbytes2_measure.bas
+== Philips_VG_8020 ENDED t=34.7
+ 1  1  6 S1C
+ 2  1  8 M100C
+ 3  1  8 S1M100C
+ 4  1  6 V8C
+ 5  1  9 CR
+ 6  1  9 RC
+ 7  1  6 T255L64C
+ 8  2  12 C
+ 9  3  18 C
+ 10  2  32 CDE
+CAP 22  4  127 
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=27.0
+ 1  1  6 S1C
+ 2  1  8 M100C
+ 3  1  8 S1M100C
+ 4  1  6 V8C
+ 5  1  9 CR
+ 6  1  9 RC
+ 7  1  6 T255L64C
+ 8  2  12 C
+ 9  3  18 C
+ 10  2  32 CDE
+CAP 22  4  127 
+
+== C-BIOS_MSX1_EU_REPACK_DISK ENDED t=27.0
+ 1  1  6 S1C
+ 2  1  8 M100C
+ 3  1  8 S1M100C
+ 4  1  6 V8C
+ 5  1  9 CR
+ 6  1  9 RC
+ 7  1  6 T255L64C
+ 8  2  12 C
+ 9  3  18 C
+ 10  2  32 CDE
+CAP 22  4  127 
+

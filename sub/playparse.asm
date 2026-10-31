@@ -49,86 +49,130 @@ play_parse_tenant:
                 ld      a,(VCBA + VCX_TEMPO)
                 or      a
                 call    z,pt_init           ; cold-boot seed of the PLAY work area (once)
-                ; D-GCDI5 (2026-10-29): parse with interrupts LIVE. Under DI a
-                ; two-voice PLAY held the frame interrupt ~40 ms (the program
-                ; ladder's L4_sprite). Since D-GCDI2 htimi_guard runs play_service
-                ; inside page-1 code, so a voice being re-parsed must not be
-                ; drained meanwhile: pause exactly the MENTIONED voices that are
-                ; playing (play_service skips a voice whose MUSICF bit is clear,
-                ; basic/playsvc.asm), parse, then put back the bits nothing
-                ; re-committed -- an empty-string voice's, or all of them on an
-                ; error, which is what the old all-DI parse left. The others keep
-                ; playing, where the whole drain used to stop.
-                ld      a,(AUDIO_VMASK)
-                ld      hl,MUSICF
-                and     (hl)                ; the mentioned voices that are playing
-                ld      e,a
-                cpl
-                and     (hl)
-                ld      (hl),a              ; paused (DI still)
-                push    de                  ; [E = the paused voices]
+                ; 🔴 D-PLAYQUEUE (2026-10-31): PLAY APPENDS. This tenant used to
+                ; reset each mentioned voice's buffer and PAUSE it while parsing
+                ; (D-GCDI5); a PLAY while a voice played threw its queue away -- a
+                ; song played bar by bar from DATA kept only the last bar (396
+                ; jiffies on the VG-8020, 104 here: scratchpad/playqueue_measure.out).
+                ; Now each voice's packets go into its 128-byte RING after what is
+                ; queued, nothing is paused (the drain only reads up to QD_PUT,
+                ; which is published once a window is written), and a full ring
+                ; returns PLAY_MORE: main waits a frame and calls again, because a
+                ; page-1 tenant must not wait. A call with AUDIO_STATUS = PLAY_MORE
+                ; is such a continuation; any other value starts a new PLAY.
                 ei
+                ld      a,(AUDIO_STATUS)
+                cp      PLAY_MORE
+                call    nz,pt_fresh         ; a new PLAY: snapshot each voice's state
                 call    pt_parse
                 di                          ; the trampoline contract: DI before ret
-                pop     de
-                push    af                  ; the body's result: A and CF
-                ld      a,(AUDIO_VMASK)
-                jr      c,ppt_err
-                cpl                         ; ok: a re-committed voice is already set
-                and     e
-                jr      ppt_put
-ppt_err:
-                ld      a,e                 ; an error committed nothing: all of them
-ppt_put:
-                ld      hl,MUSICF
-                or      (hl)
-                ld      (hl),a
-                pop     af
                 ret
-pt_parse:
+; --- pt_fresh: a new PLAY -- per mentioned voice: drop an empty string (D-PLAYEMPTY:
+; no queue, no bit; the reference's MUSICF reads 0 right after `PLAY""`), else
+; snapshot the parse state (+13..+19, +22) into VCX_SNAP and zero VCX_DONE.
+pt_fresh:
                 ld      bc,$0001            ; B = voice index 0, C = voice-0 mask bit
-pt_vloop:
+pf_lp:
                 ld      a,(AUDIO_VMASK)
-                and     c                   ; is this voice present?
-                jr      z,pt_vnext
-                ; D-PLAYEMPTY (2026-09-11, gicini m.empty): an EMPTY string queues
-                ; nothing, and the reference's MUSICF reads 0 right after `PLAY""`.
-                ; Here the voice's bit was set and cleared only by the next ISR
-                ; tick -- a race the row won for months because RUN left a tick
-                ; pending at the tenant's EI, and lost once the screen editor's
-                ; own tenant call consumed that tick first. Drop the voice from
-                ; the commit mask instead: no queue, no bit.
+                and     c
+                jr      z,pf_next
                 push    bc
                 call    pt_vcb_ix           ; IX = VCB base (preserves B)
-                ld      a,(ix+VCX_VCXLEN)
                 pop     bc
+                ld      a,(ix+VCX_VCXLEN)
                 or      a
-                jr      nz,pt_vparse
+                jr      nz,pf_snap
                 ld      a,c
                 cpl
                 ld      hl,AUDIO_VMASK
                 and     (hl)
-                ld      (hl),a              ; this voice is not in the commit
-                jr      pt_vnext
-pt_vparse:
+                ld      (hl),a              ; an empty string: not in this PLAY
+                jr      pf_next
+pf_snap:
+                xor     a
+                ld      (ix+VCX_DONE),a
+                ld      (ix+VCX_DONE+1),a
+                push    bc
+                push    ix
+                pop     hl
+                ld      de,VCX_ENVPER
+                add     hl,de               ; HL = +13
+                push    hl
+                ld      de,VCX_SNAP-VCX_ENVPER
+                add     hl,de
+                ex      de,hl               ; DE = the snapshot
+                pop     hl
+                ld      bc,VCX_ENVSH-VCX_ENVPER+1
+                ldir                        ; +13..+19
+                ld      a,(ix+VCX_ENVDIRTY)
+                ld      (de),a              ; +22, the eighth byte
+                pop     bc
+pf_next:
+                rlc     c
+                inc     b
+                ld      a,b
+                cp      3
+                jr      c,pf_lp
+                ret
+; --- pt_parse: one WINDOW over the voices still in AUDIO_VMASK -------------------
+; A finished voice leaves AUDIO_VMASK; a full ring ends the window (PLAY_MORE).
+pt_parse:
+                ld      bc,$0001            ; B = voice index 0, C = voice-0 mask bit
+pt_vloop:
+                ld      a,(AUDIO_VMASK)
+                and     c                   ; is this voice still to do?
+                jr      z,pt_vnext
                 push    bc                  ; pt_voice reuses B (source count) + clobbers C
                 ld      (PLY_XSP),sp        ; PLAY X (§7.12): SP here = "depth 0"
-                call    pt_voice            ; parse voice B -> its VOICxQ; CF=1 on error
-                ld      sp,(PLY_XSP)        ; drop any X levels an ERROR exit left behind
+                call    pt_voice            ; parse voice B into its ring; CF=1 on error/full
+                ld      sp,(PLY_XSP)        ; drop any X levels an early exit left behind
                 pop     bc                  ; (ld sp does not touch the flags)
-                ret     c                   ; parse error -> AUDIO_STATUS already set, bail
+                push    af                  ; the voice's result
+                push    bc
+                call    pt_publish          ; QD_PUT := the window's; start an idle voice
+                pop     bc
+                pop     af
+                ret     c                   ; error, or PLAY_MORE -- AUDIO_STATUS says which
+                ld      a,c
+                cpl
+                ld      hl,AUDIO_VMASK
+                and     (hl)
+                ld      (hl),a              ; this voice is done
 pt_vnext:
                 rlc     c                   ; next voice's mask bit (1->2->4)
                 inc     b
                 ld      a,b
                 cp      3
                 jr      c,pt_vloop
-                call    pt_commit           ; MUSICF (LAST) + PLYCNT
+                ld      hl,PLYCNT
+                inc     (hl)                ; a PLAY statement queued
                 xor     a
                 ld      (AUDIO_STATUS),a    ; 0 = ok
                 ret
+; --- pt_publish: B = voice, C = its bit. QD_PUT := VCX_WPUT; an idle voice (bit
+; clear, not waiting at an end marker) that has data starts. DI around MUSICF's
+; read-modify-write: the drain clears bits in it.
+pt_publish:
+                call    pt_vcb_ix
+                call    pt_qd
+                ld      a,(ix+VCX_WPUT)
+                ld      (iy+QD_PUT),a
+                cp      (iy+QD_GET)
+                ret     z                   ; nothing queued
+                ld      a,(iy+QD_PUTBAK)
+                or      a
+                ret     nz                  ; waiting: the sync releases it
+                di
+                ld      hl,MUSICF
+                ld      a,(hl)
+                or      c
+                ld      (hl),a              ; playing (frames are 0: the next tick fetches)
+                ei
+                ret
 
-; --- pt_init: seed the cold-boot PLAY defaults into all three VCBs ----------
+; --- pt_init: seed the PLAY defaults into all three VCBs and empty the rings --
+; At cold boot, and again after BEEP / a break / an abort (psv_flush zeroes the
+; tempo, basic/playsvc.asm).
 pt_init:
                 ld      ix,VCBA
                 ld      b,3
@@ -138,34 +182,38 @@ pi_lp:
                 ld      (ix+VCX_TEMPO),PLAY_DEF_TEMPO
                 ld      (ix+VCX_VOLUME),PLAY_DEF_VOLUME
                 ld      (ix+VCX_ENVSH),0
+                ld      (ix+VCX_ENVDIRTY),0 ; no S / M pending (BEEP drops one, measured)
+                ld      (ix+VCX_FRAMES),0   ; no note running
+                ld      (ix+VCX_FRAMES+1),0
                 ld      de,VCB_STRIDE
                 add     ix,de
                 djnz    pi_lp
                 xor     a
                 ld      (MUSICF),a
                 ld      (PLYCNT),a
+                ; the three ring descriptors (D-PLAYQUEUE: once, at the cold seed --
+                ; a PLAY no longer resets them; BEEP / a break empty them through
+                ; psg_silence, basic/sound.asm)
+                ld      iy,QUETAB
+                ld      hl,VOICAQ
+                ld      b,3
+pi_q:
+                ld      (iy+QD_PUT),a
+                ld      (iy+QD_GET),a
+                ld      (iy+QD_PUTBAK),a
+                ld      (iy+QD_SIZE),127    ; the VG-8020's value (a mask), measured
+                ld      (iy+QD_ADDR),l
+                ld      (iy+QD_ADDR+1),h
+                ld      de,128
+                add     hl,de
+                ld      de,QD_STRIDE
+                add     iy,de
+                djnz    pi_q
                 ret
 
-; --- pt_commit: publish the parsed queues (MUSICF set LAST) ------------------
-; 🔴 OR, NOT STORE (D-MUSICF, 2026-08-31). This was `ld (MUSICF),a` -- a
-; wholesale overwrite -- and a PLAY naming FEWER voices than were sounding
-; cleared a still-playing voice's bit: its drain stopped, psv_end (the only
-; writer of amplitude 0) became unreachable, the channel kept sounding at its
-; last amplitude, and PLAY(2) read idle under an audible tone. Both references
-; keep the unmentioned voice playing (scratchpad/musicf_probe.py r.drop:
-; -1/-1/0 before, 4/4 SAME after). Voices being REPLACED are in both masks, so
-; OR is exact. No torn read: the voices being replaced are PAUSED for the whole
-; parse (play_parse_tenant, D-GCDI5) -- it used to be the whole drain, under DI.
-pt_commit:
-                ld      a,(AUDIO_VMASK)
-                ld      hl,MUSICF
-                or      (hl)                ; unmentioned voices keep playing
-                ld      (hl),a
-                ld      a,(PLYCNT)
-                inc     a
-                ld      (PLYCNT),a
-                ret
-
+; (pt_commit -- MUSICF ORed in after the whole parse, D-MUSICF -- went in
+; D-PLAYQUEUE: pt_publish starts each voice once its window is in the ring, and
+; never touches a bit it did not set.)
 ; --- pt_voice: parse voice B's MML string into its ring buffer --------------
 ;   in:  B = voice index 0..2 (its VCB has VCXPTR/VCXLEN marshalled by ex_play)
 ;   out: CF=0 ok / CF=1 error (AUDIO_STATUS = ERR code). Clobbers everything.
@@ -174,7 +222,8 @@ pt_voice:
                 ld      (VOICEN),a
                 ld      (QUEUEN),a
                 call    pt_vcb_ix           ; IX = VCB base (preserves B)
-                call    pt_buf              ; IY = ring desc, DE = buffer base (preserves B)
+                call    pt_qd               ; IY = ring desc (preserves B)
+                call    pt_window           ; state from the snapshot, CNT 0, the room
                 ld      l,(ix+VCX_VCXPTR)
                 ld      h,(ix+VCX_VCXPTR+1)
                 ld      (MCLPTR),hl         ; MML source cursor
@@ -232,18 +281,11 @@ pt_illegal:
                 ret                         ; abort the voice (CF=1)
 
 pt_voice_end:
-                ld      a,PLAY_OP_END
-                call    pt_put
+                ld      a,1
+                call    pt_pkt              ; END: 1 B, where the voices sync
                 ret     c
-                ld      l,(iy+QD_ADDR)      ; put = write pointer - buffer base
-                ld      h,(iy+QD_ADDR+1)
-                ex      de,hl               ; HL = write ptr, DE = base
-                or      a
-                sbc     hl,de
-                ld      a,l
-                ld      (iy+QD_PUT),a       ; store the queue's byte count
-                or      a                   ; CF=0 success
-                ret
+                ld      a,PK_END
+                jp      pt_put              ; CF=0
 
 ; --- pt_note_letter: A = 'A'..'G' -> compute the note number, then emit ------
 ; 🔴 ACCIDENTAL FIRST, MOD 12, INSIDE THE OCTAVE (D-CLAMPPITCH, 2026-08-31).
@@ -326,28 +368,51 @@ pt_emit_pitch:
                 inc     hl
                 ld      h,(hl)
                 ld      l,a                 ; HL = tone period
-                ld      a,PLAY_OP_NOTE
-                call    pt_put
+                ld      (PLY_LASTDUR),hl    ; kept across pt_length (it clobbers DE)
+                call    pt_length           ; HL = frame duration
                 ret     c
+                ex      de,hl               ; DE = frames
+                ld      hl,(PLY_LASTDUR)    ; HL = period
+                ld      a,(ix+VCX_ENVDIRTY)
+                and     2                   ; an M since the last note: +2 B
+                add     a,5
+                call    pt_pkt
+                ret     c
+                ld      a,(ix+VCX_ENVSH)
+                and     $0F
+                add     a,a
+                add     a,a                 ; shape << 2
+                ld      c,(ix+VCX_ENVDIRTY)
+                bit     0,c
+                jr      z,pep_set
+                or      2                   ; envset: an S or M since the last note
+pep_set:
+                bit     1,c
+                jr      z,pep_tag
+                or      PK_NOTEP            ; an M: the period follows
+pep_tag:
+                call    pt_put              ; [tag | shape<<2 | envset<<1]
                 ld      a,l
                 call    pt_put              ; period low
-                ret     c
-                ld      a,h
-                call    pt_put              ; period high
-                ret     c
                 call    pt_note_amp         ; A = amplitude (envelope-mode or volume)
                 call    pt_put
-                ret     c
-                ld      (PLY_LASTDUR),de    ; save the write pointer (pt_length clobbers DE)
-                call    pt_length           ; HL = frame duration; clobbers DE
-                ret     c
-                ld      de,(PLY_LASTDUR)    ; restore the write pointer (= frames field)
-                ld      a,l
+                ld      a,e
                 call    pt_put              ; frames low
-                ret     c
                 ld      a,h
-                call    pt_put              ; frames high
-                ret     c
+                add     a,a
+                add     a,a
+                add     a,a
+                add     a,a                 ; period high << 4
+                or      d                   ; | frames high (< 16: 4095 frames)
+                call    pt_put
+                bit     1,c
+                jr      z,pep_done
+                ld      a,(ix+VCX_ENVPER)
+                call    pt_put
+                ld      a,(ix+VCX_ENVPER+1)
+                call    pt_put
+pep_done:
+                ld      (ix+VCX_ENVDIRTY),0 ; the envelope is carried
                 jp      pt_ch_loop
 
 ; --- pt_note_amp: A = amplitude byte for the current voice ------------------
@@ -364,30 +429,19 @@ pna_env:
                 or      $10                 ; but the VG-8020 still writes the volume nibble
                 ret                         ; alongside bit 4 (measured: S8 default-V -> $18)
 
-; --- pt_cmd_rest: emit a silent OP_NOTE (amp 0) for the parsed length --------
+; --- pt_cmd_rest: queue a REST packet (3 B: tag, duration) for the parsed length
 pt_cmd_rest:
-                ld      a,PLAY_OP_NOTE
+                call    pt_length_eq        ; HL = frames
+                ret     c
+                ld      a,3
+                call    pt_pkt              ; REST: 3 B
+                ret     c
+                ld      a,PK_REST
                 call    pt_put
-                ret     c
-                xor     a
-                call    pt_put              ; period low = 0
-                ret     c
-                xor     a
-                call    pt_put              ; period high = 0
-                ret     c
-                xor     a
-                call    pt_put              ; amplitude = 0 (silent)
-                ret     c
-                ld      (PLY_LASTDUR),de    ; save the write pointer (pt_length clobbers DE)
-                call    pt_length_eq
-                ret     c
-                ld      de,(PLY_LASTDUR)
                 ld      a,l
                 call    pt_put
-                ret     c
                 ld      a,h
                 call    pt_put
-                ret     c
                 jp      pt_ch_loop
 
 ; --- pt_cmd_n: N n -> note by absolute number (0 = rest) --------------------
@@ -474,6 +528,7 @@ pt_cmd_env_shape:
                 jp      nc,pt_illegal
                 or      $80                 ; set envelope-mode bit
                 ld      (ix+VCX_ENVSH),a
+                ld      a,1                 ; S: the next note re-writes the shape
                 jr      pt_emit_env
 pt_cmd_env_per:
                 call    pt_numeq    
@@ -489,23 +544,14 @@ pt_cmd_env_per:
                 jp      z,pt_illegal        ; M0 -> ERR 5 on both refs (m.zero)
                 ld      (ix+VCX_ENVPER),l
                 ld      (ix+VCX_ENVPER+1),h
-                jr      pt_emit_env
+                ld      a,3                 ; M: the period too (NOTEP)
 
-; --- pt_emit_env: OP_ENV = [op, shape, per_lo, per_hi] ---------------------
+; --- pt_emit_env: S / M queue nothing of their own (D-PLAYQUEUE: measured, an S
+; costs the reference's queue 0 B and an M 2 B, on the NEXT note). A = the
+; dirty bits to add; the next note carries them (pt_emit_pitch).
 pt_emit_env:
-                ld      a,PLAY_OP_ENV
-                call    pt_put
-                ret     c
-                ld      a,(ix+VCX_ENVSH)
-                and     $0F                 ; shape (drop the mode bit)
-                call    pt_put
-                ret     c
-                ld      a,(ix+VCX_ENVPER)
-                call    pt_put
-                ret     c
-                ld      a,(ix+VCX_ENVPER+1)
-                call    pt_put
-                ret     c
+                or      (ix+VCX_ENVDIRTY)
+                ld      (ix+VCX_ENVDIRTY),a
                 jp      pt_ch_loop
 
 ; --- pt_length: parse optional length digits + dots -> HL = frame count ------
@@ -1518,63 +1564,122 @@ pt_vcb_ix:
                 add     ix,de
                 ret
 
-; --- pt_buf: B = voice -> IY = ring desc, DE = buffer base, PLY_BUFEND set ---
-;   also (re)initialises the QUETAB ring descriptor for this voice.
-pt_buf:
+; --- pt_qd: B = voice -> IY = its QUETAB ring descriptor (preserves B) ------
+pt_qd:
                 ld      iy,QUETAB
                 ld      a,b
                 or      a
-                jr      z,pb_addr
+                ret     z
                 ld      de,QD_STRIDE
                 add     iy,de
                 dec     a
-                jr      z,pb_addr
+                ret     z
                 add     iy,de
-pb_addr:
-                ld      hl,VOICAQ
-                ld      a,b
-                or      a
-                jr      z,pb_init
-                ld      de,128
-                add     hl,de
-                dec     a
-                jr      z,pb_init
-                add     hl,de
-pb_init:
-                ld      (iy+QD_PUT),0
-                ld      (iy+QD_GET),0
-                ld      (ix+VCX_FRAMES),0   ; Slice 3: reset drain counter so the first
-                ld      (ix+VCX_FRAMES+1),0 ;   VBLANK fetches packet 0 (IX = this voice's VCB)
-                ld      (iy+QD_PUTBAK),0
-                ld      (iy+QD_SIZE),128
-                ld      (iy+QD_ADDR),l
-                ld      (iy+QD_ADDR+1),h
-                ld      de,128
-                push    hl
-                add     hl,de
-                ld      (PLY_BUFEND),hl     ; buffer base + 128
-                pop     hl
-                ex      de,hl               ; DE = buffer base (write pointer)
                 ret
 
-; --- pt_put: append A to (DE); DE++. Overflow -> CF=1 + AUDIO_STATUS=15 ------
-;   Preserves HL, BC, IX, IY (and the input A on the success path is consumed).
+; --- pt_window: IX = VCB, IY = ring. Restore the parse state from the snapshot
+; (a no-op on a voice's first window), CNT := 0, WPUT := QD_PUT, ROOM := the
+; ring's free bytes (one is always left empty: put = get means EMPTY).
+pt_window:
+                push    bc
+                push    ix
+                pop     hl
+                ld      de,VCX_SNAP
+                add     hl,de               ; HL = the snapshot
+                push    ix
+                pop     de
+                push    hl
+                ld      hl,VCX_ENVPER
+                add     hl,de
+                ex      de,hl               ; DE = +13
+                pop     hl
+                ld      bc,VCX_ENVSH-VCX_ENVPER+1
+                ldir
+                ld      a,(hl)
+                ld      (ix+VCX_ENVDIRTY),a
+                pop     bc
+                xor     a
+                ld      (ix+VCX_CNT),a
+                ld      (ix+VCX_CNT+1),a
+                ld      a,(iy+QD_PUT)
+                ld      (ix+VCX_WPUT),a
+                ld      e,a
+                ld      a,(iy+QD_GET)
+                scf
+                sbc     a,e                 ; get - put - 1
+                and     127
+                ld      (ix+VCX_ROOM),a
+                ret
+
+; --- pt_pkt: A = the next packet's size. Decide whether pt_put writes it:
+;   already queued by an earlier window (CNT+size <= DONE): skip it (PKMODE 0);
+;   else it must FIT this window's room: write it (PKMODE 1, DONE and ROOM move);
+;   else the ring is full: AUDIO_STATUS = PLAY_MORE, CF=1 (unwinds like an error).
+;   Preserves BC, DE, HL.
+pt_pkt:
+                push    hl
+                push    de
+                ld      e,a
+                ld      d,0
+                ld      l,(ix+VCX_CNT)
+                ld      h,(ix+VCX_CNT+1)
+                add     hl,de               ; HL = CNT + size
+                ld      (ix+VCX_CNT),l
+                ld      (ix+VCX_CNT+1),h
+                ld      a,(ix+VCX_DONE)
+                sub     l
+                ld      a,(ix+VCX_DONE+1)
+                sbc     a,h                 ; CF iff DONE < CNT + size: not queued yet
+                ld      a,0
+                jr      nc,pk_mode          ; queued already: skip it
+                ld      a,(ix+VCX_ROOM)
+                sub     e
+                jr      c,pk_full
+                ld      (ix+VCX_ROOM),a
+                ld      (ix+VCX_DONE),l
+                ld      (ix+VCX_DONE+1),h
+                ld      a,1
+pk_mode:
+                ld      (PLY_PKMODE),a
+                pop     de
+                pop     hl
+                or      a                   ; CF=0
+                ret
+pk_full:
+                ld      a,PLAY_MORE
+                ld      (AUDIO_STATUS),a
+                pop     de
+                pop     hl
+                scf
+                ret
+
+; --- pt_put: A = a packet byte -> the ring at VCX_WPUT (when PKMODE says write).
+;   Preserves BC, DE, HL, IX, IY; CF=0.
 pt_put:
                 push    hl
-                ld      hl,(PLY_BUFEND)
-                scf
-                ccf                         ; clear carry without touching A
-                sbc     hl,de               ; end - write ptr: <=0 means full
+                push    de
+                ld      e,a
+                ld      a,(PLY_PKMODE)
+                or      a
+                jr      z,pp_done           ; a packet an earlier window queued
+                ld      l,(iy+QD_ADDR)
+                ld      h,(iy+QD_ADDR+1)
+                ld      a,(ix+VCX_WPUT)
+                ld      d,a
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL = base + WPUT
+                ld      (hl),e
+                ld      a,d
+                inc     a
+                and     127
+                ld      (ix+VCX_WPUT),a
+pp_done:
+                pop     de
                 pop     hl
-                jr      z,pp_ovf
-                jr      c,pp_ovf
-                ld      (de),a
-                inc     de
-                ret                         ; CF=0 (sbc left it clear)
-pp_ovf:
-                ld      a,15                ; String too long
-                ld      (AUDIO_STATUS),a
-                scf
+                or      a
                 ret
 
 ; --- data: semitone map, octave*12 table, note->period table ----------------

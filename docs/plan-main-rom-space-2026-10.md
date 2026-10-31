@@ -173,7 +173,7 @@ After phase B: about **740 B**, before overlaps.
 - C-2 then **SBH-1** (77 B; record or fix the pending-DSKIO-after-APPEND
   difference, ~3 B sub; fix `fiawalked-body.inc:10`, `fatprim.asm:74`,
   `spec-eviction-g7-space.md` §4, `spec-basic-append-missing-refuse.md` F1,
-  ../TODO.md:2254 (T-7C1E8E)).
+  ../TODO.md:2291 (T-7C1E8E)).
 - ✅ **C-3 C5-LOW DONE 2026-10-12** -- +90 B main (low region 0 -> 47 B, page 1
   0 -> 43 B), -102 B sub page 1 as costed, after D-SUBJRP1 made the room; C-2
   SBH-1 is MOOT (APPEND left main for disk.rom on 2026-10-06, S10.B). The plan

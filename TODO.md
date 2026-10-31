@@ -125,7 +125,7 @@ item — do **one item per session** to keep context lean.
       sg_move_one nor sg_visit touches ix+12..15), which is FASTER than before the
       carve and gave 14 B more: sub page 0 has 24 B free after D-LATEINT's 6.
 
-- [ ] 🔴 **A `PLAY` WHILE A VOICE IS STILL PLAYING REPLACES ITS QUEUE; THE VG-8020 APPENDS,
+- [x] 🔴 **A `PLAY` WHILE A VOICE IS STILL PLAYING REPLACES ITS QUEUE; THE VG-8020 APPENDS,
       BLOCKS WHEN THE 128-BYTE QUEUE IS FULL, AND SYNCS THE VOICES AT EACH PLAY'S END
       (D-PLAYQUEUE, found 2026-10-31 by the program ladder's L4_music).**
       🎚️ TIER 1 — a song played bar by bar from DATA, the ordinary way a program plays
@@ -158,6 +158,36 @@ item — do **one item per session** to keep context lean.
       byte is in, as on the VG-8020. Unmeasured, measure before relying on it:
       whether an envelope note re-triggers PSG register 13 at every note (the PSG
       registers are readable I/O state).
+      ✅ **FIXED 2026-10-31.** As designed: the parser tenant (sub/playparse.asm)
+      writes whole packets into the ring in windows (pt_window / pt_pkt / pt_put;
+      a re-parse skips VCX_DONE bytes, state from VCX_SNAP), publishes QD_PUT and
+      starts an idle voice (pt_publish); main waits a frame on PLAY_MORE
+      (basic/play.asm, Ctrl-STOP leaves); the drain reads the ring, and at an END
+      the voice waits silent (QD_PUTBAK, MUSICF bit clear) until no voice plays
+      (psv_sync, basic/playsvc.asm). Measured after
+      ([`playqueue_gate.out`](scratchpad/playqueue_gate.out)): all 30 byte rows
+      SAME, the block points 98 jiffies apart on both, the sync rows SAME; totals
+      within 1-2 jiffies (the reference's PLAY starts a little later --
+      D-PLAYRATE). Re-trigger left as before: R13 is written only after an S or
+      M (the envset bit), still unmeasured per note.
+      🔴 **AND BEEP RESETS PLAY'S SETTINGS** on the VG-8020 (T120 L4 after
+      `T255L16`+BEEP: 27 jiffies there, 3 here --
+      [`playbeepstate_measure.out`](scratchpad/playbeepstate_measure.out)); a
+      trapped error keeps them on both. psg_silence -> psv_flush zeroes the tempo,
+      so the next PLAY re-runs pt_init (defaults, rings, frame counters, the
+      pending S/M -- which BEEP drops too:
+      [`plaympend_measure.out`](scratchpad/plaympend_measure.out)). A break and an
+      untrapped abort reach psv_flush as well; not measured separately.
+      🔴 Two bugs in the first build, both caught by EXISTING gates: psv_flush
+      clobbered HL, BEEP's statement cursor (`BEEP:SOUND 8,0` printed a garbage
+      error); the drain's envelope-period reads used HL after H held the
+      amplitude, so a NOTEP played at volume $F9 (play-trace-acceptance's env
+      row). Cost: ~119 B main page 1, 3 B low region, ~140 B sub page 1.
+      Gate playqueue-acceptance (four programs); knives K-A / K-S / K-F / K-Z
+      ([`playqueue_knife.out`](scratchpad/playqueue_knife.out),
+      [`playqueue_knife_kz.out`](scratchpad/playqueue_knife_kz.out) -- the first
+      K-Z declared a note 6 B to pt_pkt and MISSED: that moved the window's
+      bookkeeping, never the bytes in the ring that QUETAB's put pointer shows).
 
 - [ ] 🙋 **SHORT NOTES ARE FASTER HERE: THE VG-8020 NEVER PLAYS A NOTE SHORTER THAN ~5
       JIFFIES (D-PLAYRATE, found 2026-10-31 by L4_music).**
@@ -584,6 +614,13 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L4_music (2026-10-31)**: a jukebox -- PLAY in one and three voices with
+      lengths, dots, rests, `X` substrings and `N` notes, tempo / length / volume
+      from variables, an envelope, PLAY(n) while three voices run, an ON INTERVAL
+      clock during a tune, a SOUND drum timed by TIME, and a song table played
+      bar by bar from DATA, each tune timed against the VG-8020's length. It FOUND
+      D-PLAYQUEUE (the bars replaced each other) and D-PLAYRATE (short notes),
+      and showed `<` / `>` are ERR 5 on both machines. SAME after D-PLAYQUEUE.
       ✅ **L2_keys (2026-10-30)**: function keys the way a menu program sets them --
       `KEY n,"..."` with CHR$(13), an empty key, a 16-character one cut to 15, the
       row read back by VPEEK with KEY ON and OFF, KEY LIST, an INKEY$ menu loop,
@@ -8035,7 +8072,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10526 (T-6FE392)8 (T-529ABE)` from `TODO.md:16208 (T-529ABE)`: a
+      `TODO.md:10563 (T-6FE392)8 (T-529ABE)` from `TODO.md:16245 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -10995,7 +11032,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16208 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

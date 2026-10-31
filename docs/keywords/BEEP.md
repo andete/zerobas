@@ -41,6 +41,8 @@ No arguments, ever. There are no other forms.
   shows this.
 - **`BEEP` stops music.** If a `PLAY` is still playing in the background, `BEEP`
   stops it, on both machines. `SOUND`, even a write to the mixer, does not.
+  It also empties what was queued and puts `PLAY`'s tempo, octave, length,
+  volume and envelope back to their defaults.
 - **Anything after `BEEP`** other than `:` or the end of the line is
   `Syntax error` (error 2): `BEEP 1`.
 - `PRINT CHR$(7)` also beeps, but that is the screen driver's bell, a separate
@@ -84,6 +86,11 @@ other does not. Nothing a program can observe through `FRE` differs.
 
 ## What we found, and how
 
+- **`BEEP` kept `PLAY`'s settings** (fixed 2026-10-31). On the VG-8020 a
+  `BEEP` also puts `PLAY`'s tempo, octave, length, volume and envelope back to
+  their defaults: after `PLAY "T255L16"` and `BEEP`, a `C` lasts a quarter
+  note at T120. zerobas kept T255 L16 until D-PLAYQUEUE.
+
 - **zerobas makes the tone itself** (2026-07-21). The obvious route was to
   call the BIOS's beep routine, but on the C-BIOS that zerobas runs on, a
   register trace of that routine showed no sound-chip activity at all. So `BEEP` writes the sound chip
@@ -117,6 +124,7 @@ room for the line-length check in the crunch (D-TOKOVF).
 
 ## Tests that cover it
 
+- `make playqueue-acceptance` — `PLAY`'s settings after `BEEP` (D-PLAYQUEUE).
 - `make beep-acceptance` — the register trace against the VG-8020, including
   `BEEP:BEEP` and mixer and volume values set by `SOUND` before the beep.
 - `make gicini-acceptance` — `BEEP` stops background music.

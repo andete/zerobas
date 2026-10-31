@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `PLAY` — play music in the background
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-10-31):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. One recorded
 > difference: what `PLAY(n)` reads on the very statement after a `PLAY`
 > (below).
@@ -17,8 +17,8 @@ SPDX-License-Identifier: 0BSD
 
 `PLAY "mml"` plays music written in MML, a small music language of note
 letters and commands, on up to three voices of the sound chip at once. The
-statement returns straight away and the music plays on in the background
-while the program runs. `PLAY(n)` asks whether a voice is still playing.
+statement returns straight away — unless the music already waiting fills the
+queue — and the music plays on in the background while the program runs. `PLAY(n)` asks whether a voice is still playing.
 zerobas plays the same notes, at the same pitch, volume and length, as the
 Philips VG-8020, and raises the same errors, in every case we have measured.
 
@@ -80,6 +80,19 @@ leaves that voice alone, so `PLAY "","","C"` plays on the third voice only.
   it too; `SOUND` does not.
 - **A `PLAY` that names fewer voices than are playing** leaves the others
   playing: `PLAY "C"` while voice 2 is busy does not cut voice 2 off.
+- **A `PLAY` while a voice is still playing adds to it.** The notes queue up
+  behind the ones still waiting, so a song can be played one bar per `PLAY`,
+  straight from `DATA`. Each voice queues up to 128 bytes: a note takes 5, a
+  rest 3, and each `PLAY` 1 more; an `M` adds 2 to the next note, and the
+  other settings take nothing. When the queue is full, `PLAY` waits until the
+  music has played enough to take the rest: twelve bars of seven notes in a
+  loop return at once three times, then each `PLAY` about one bar later.
+- **The voices meet at the end of each `PLAY`.** A voice that finishes its
+  part waits, silent, until every other voice still playing has finished
+  too, and only then goes on to what was queued after it — even when the next
+  `PLAY` names that voice alone. While it waits, `PLAY(n)` for it is 0.
+- **`BEEP` starts `PLAY` afresh**: the queues are emptied and tempo, octave,
+  length, volume and envelope go back to their defaults (T120 O4 L4 V8).
 
 ### `PLAY(n)`
 
@@ -142,6 +155,20 @@ differ between the machines, and in the last comparison (2026-10-01) three of
 the ten test programs also showed a different amount of free string space.
 
 ## What we found, and how
+
+- **A `PLAY` while a voice was playing replaced its music** (fixed
+  2026-10-31, D-PLAYQUEUE; found by a jukebox test program). A song played
+  bar by bar kept only its last bar: four bars took 396 jiffies on the
+  VG-8020 and 104 here. Now the music queues as on the VG-8020, with the same
+  number of bytes per note, rest and `PLAY` (measured by watching the queue's
+  pointers in the documented work area), `PLAY` waits when the queue is full,
+  and the voices meet at the end of each `PLAY`. Two bugs in the first version
+  were caught by the existing tests: `BEEP` lost its place in the line, and
+  an envelope note with a new `M` was played at a wrong volume.
+- **`BEEP` kept the tempo and the other `PLAY` settings** (fixed 2026-10-31,
+  found with D-PLAYQUEUE). After `PLAY "T255L16"` and `BEEP`, a `C` lasted 3
+  jiffies here and 27 on the VG-8020, which goes back to its defaults; a
+  trapped error keeps them on both.
 
 - **An array element after `=` was error 5** (fixed 2026-10-30,
   D-PLAYEQARR); twenty forms measured
@@ -215,6 +242,9 @@ the ten test programs also showed a different amount of free string space.
 
 ## Tests that cover it
 
+- `make playqueue-acceptance` — the bytes each MML element takes in the queue,
+  an `M` left over across `PLAY` and `BEEP`, a song queued bar by bar (when
+  `PLAY` waits), the voices meeting, and `BEEP`'s reset (D-PLAYQUEUE).
 - `make play-acceptance` — MML parsing and errors, and the `PLAY(n)` values,
   against the VG-8020.
 - `make playeq-acceptance` — `=name;` for every command that takes it, and the

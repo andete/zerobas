@@ -95,6 +95,9 @@ psv_loop:
                 sla     c                   ; advance to the next voice's mask bit
                 jr      psv_loop
 psv_ret:
+                ld      a,(MUSICF)
+                or      a
+                call    z,psv_sync          ; nobody playing: release the waiting voices
                 pop     iy
                 pop     ix
                 pop     hl
@@ -119,57 +122,81 @@ psv_voice:
                 or      l
                 jr      nz,psv_tick         ; still running -> just count this frame down
 psv_fetch:
-                ld      l,(iy+QD_ADDR)
-                ld      h,(iy+QD_ADDR+1)
+                ; 🔴 D-PLAYQUEUE (2026-10-31): THE QUEUE IS A RING NOW, read up to
+                ; QD_PUT and wrapped at 128 (sysvars.inc, PK_*: the reference's
+                ; packet sizes). An empty ring is not the end -- a PLAY still being
+                ; written (main waiting for room) may not have reached its end
+                ; marker yet -- so the voice stays on and looks again next frame.
                 ld      a,(iy+QD_GET)
-                add     a,l
-                ld      l,a
-                ld      a,h
-                adc     a,0
-                ld      h,a                 ; HL = read pointer (buffer base + get)
-                ld      a,(hl)              ; packet opcode
-                cp      PLAY_OP_END
-                jr      z,psv_end
-                cp      PLAY_OP_ENV
-                jr      z,psv_env
-                ; --- OP_NOTE [op, per_lo, per_hi, amp, dur_lo, dur_hi] --------
-                inc     hl
-                ld      e,(hl)              ; period lo
-                inc     hl
-                ld      d,(hl)              ; period hi   (DE = 12-bit tone period)
-                inc     hl                  ; -> amp byte
-                ld      a,d
-                or      e
-                jr      z,psv_amp           ; period 0 -> REST: leave the tone regs (§2)
+                cp      (iy+QD_PUT)
+                ret     z                   ; nothing queued yet
+                call    psv_get
+                cp      PK_END
+                jp      nc,psv_end
+                cp      PK_REST
+                jr      nc,psv_rest
+                push    af                  ; [byte 0: tag | shape<<2 | envset<<1]
+                call    psv_get
+                ld      e,a                 ; E = period low
+                call    psv_get
+                ld      d,a                 ; D = amplitude
+                push    de                  ; [b0][amp:per_lo]
+                call    psv_get
+                ld      e,a                 ; frames low
+                call    psv_get             ; per_hi<<4 | frames_hi
+                ld      d,a
+                and     $0F
+                ld      (ix+VCX_FRAMES+1),a
+                ld      (ix+VCX_FRAMES),e
                 ld      a,b
                 add     a,a                 ; A = 2v = tone-period LOW register
                 out     ($A0),a
-                ld      a,e
+                pop     hl                  ; H = amplitude, L = period low
+                ld      a,l
                 out     ($A1),a
                 ld      a,b
                 add     a,a
                 inc     a                   ; A = 2v+1 = tone-period HIGH register
                 out     ($A0),a
                 ld      a,d
+                rrca
+                rrca
+                rrca
+                rrca
+                and     $0F
                 out     ($A1),a
-psv_amp:
-                ld      a,(hl)              ; amplitude byte (0..15, or $10 = follow env)
+                pop     af                  ; A = byte 0
                 ld      e,a
+                cp      PK_NOTEP
+                jr      c,psv_noper         ; NOTE: no envelope period follows
+                push    hl                  ; H = the amplitude (psv_get uses HL --
+                                            ; the first cut wrote the buffer's high
+                                            ; byte, $F9, as an envelope note's volume)
+                ld      a,11
+                out     ($A0),a
+                call    psv_get
+                out     ($A1),a             ; envelope period fine
+                ld      a,12
+                out     ($A0),a
+                call    psv_get
+                out     ($A1),a             ; envelope period coarse
+                pop     hl
+psv_noper:
+                bit     1,e
+                jr      z,psv_amp           ; no S or M since the last note
+                ld      a,13
+                out     ($A0),a
+                ld      a,e
+                rrca
+                rrca
+                and     $0F
+                out     ($A1),a             ; shape last -> restart the envelope
+psv_amp:
                 ld      a,b
                 add     a,8                 ; A = 8+v = amplitude register
                 out     ($A0),a
-                ld      a,e
+                ld      a,h
                 out     ($A1),a
-                inc     hl
-                ld      e,(hl)              ; dur lo
-                inc     hl
-                ld      d,(hl)              ; dur hi   (DE = frame duration)
-                ld      (ix+VCX_FRAMES),e   ; counter = dur
-                ld      (ix+VCX_FRAMES+1),d
-                ld      a,(iy+QD_GET)
-                add     a,6                 ; step past the 6-byte NOTE packet
-                ld      (iy+QD_GET),a
-                ; fall through: consume this frame as the note's first frame
 psv_tick:
                 ld      l,(ix+VCX_FRAMES)
                 ld      h,(ix+VCX_FRAMES+1)
@@ -177,40 +204,43 @@ psv_tick:
                 ld      (ix+VCX_FRAMES),l
                 ld      (ix+VCX_FRAMES+1),h
                 ret
-
-; OP_ENV [op, shape, per_lo, per_hi]: program the PSG envelope (R11/R12 = period,
-; R13 = shape, written last so it triggers). Consumes NO frame -> loop to fetch the
-; following packet in the same VBLANK (S/M always precede a note).
-psv_env:
-                inc     hl
-                ld      d,(hl)              ; D = envelope shape (kept across the period writes)
-                inc     hl
-                ld      a,11
-                out     ($A0),a
-                ld      a,(hl)              ; envelope period fine
-                out     ($A1),a
-                inc     hl
-                ld      a,12
-                out     ($A0),a
-                ld      a,(hl)              ; envelope period coarse
-                out     ($A1),a
-                ld      a,13
-                out     ($A0),a
-                ld      a,d
-                out     ($A1),a             ; shape last -> restart the envelope
+psv_rest:
+                call    psv_get
+                ld      (ix+VCX_FRAMES),a
+                call    psv_get
+                ld      (ix+VCX_FRAMES+1),a
+                ld      h,0                 ; amplitude 0: silent (the tone registers stay)
+                jr      psv_amp
+; psv_get: A = the ring's next byte; QD_GET steps on, wrapping at 128. Uses HL.
+psv_get:
+                ld      l,(iy+QD_ADDR)
+                ld      h,(iy+QD_ADDR+1)
                 ld      a,(iy+QD_GET)
-                add     a,4                 ; step past the 4-byte ENV packet
+                add     a,l
+                ld      l,a
+                adc     a,h
+                sub     l
+                ld      h,a                 ; HL = base + get
+                ld      a,(iy+QD_GET)
+                inc     a
+                and     127
                 ld      (iy+QD_GET),a
-                jr      psv_fetch
-
-; OP_END: the voice's queue is drained. Silence its channel (amp 0; the reference
-; leaves the tone period as-is) and clear its MUSICF bit. Leaves VCX_FRAMES at 0.
+                ld      a,(hl)
+                ret
+; psv_end: a PLAY's end marker. The voice goes silent and WAITS (QD_PUTBAK = 1,
+; its MUSICF bit clear, so PLAY(n) reads 0 -- measured, scratchpad/
+; playsync_measure.out) until no voice is playing; play_service then releases
+; every waiting voice together (psv_sync). That is the VG-8020's sync: a voice
+; reaching its end marker waits for every voice still playing, even when the
+; next PLAY named only that voice.
 psv_end:
                 ld      a,b
                 add     a,8                 ; amplitude register 8+v
                 out     ($A0),a
                 xor     a
                 out     ($A1),a             ; amplitude 0 -> channel silent
+                inc     a
+                ld      (iy+QD_PUTBAK),a    ; waiting
                 ld      a,c
                 cpl                         ; ~(this voice's bit)
                 ld      e,a
@@ -218,4 +248,39 @@ psv_end:
                 and     e
                 ld      (MUSICF),a          ; clear the voice's MUSICF bit
                 ret
-
+; psv_sync: no voice is playing -- every voice waiting at an end marker steps on
+; together; one with more queued plays it from the next frame (its frames are 0).
+psv_sync:
+                ld      iy,QUETAB
+                ld      bc,$0301            ; B = 3 voices, C = voice-0 bit
+pss_lp:
+                ld      a,(iy+QD_PUTBAK)
+                or      a
+                jr      z,pss_next
+                xor     a
+                ld      (iy+QD_PUTBAK),a
+                ld      a,(iy+QD_GET)
+                cp      (iy+QD_PUT)
+                jr      z,pss_next          ; nothing after the end marker: idle
+                ld      a,(MUSICF)
+                or      c
+                ld      (MUSICF),a
+pss_next:
+                ld      de,QD_STRIDE
+                add     iy,de
+                sla     c
+                djnz    pss_lp
+                ret
+; psv_flush: BEEP, a break, an abort (psg_silence, basic/sound.asm, under its DI)
+; reset PLAY as the VG-8020 does: the queues EMPTY -- they are rings kept across
+; PLAYs now (D-PLAYQUEUE), so stopped music must not resume -- and the PLAY
+; settings go back to their defaults: after `PLAY"T255L16"` and BEEP, a `C`
+; lasts 27 jiffies on the VG-8020 (T120 L4) and lasted 3 here; a TRAPPED error
+; keeps them on both (scratchpad/playbeepstate_measure.out; a break and an
+; untrapped abort reach here too and were not measured separately). A zero
+; tempo is the parser's cold-boot sign: the next PLAY re-runs pt_init
+; (sub/playparse.asm), which seeds the defaults and the rings. Clobbers A.
+psv_flush:
+                xor     a
+                ld      (VCBA+VCX_TEMPO),a
+                ret

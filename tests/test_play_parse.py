@@ -48,7 +48,8 @@ AUDIO_VMASK = AUDIO_STATUS = None   # read from SUB_SYM by build(): they sit in 
 QD_STRIDE = 6
 QD_PUT, QD_GET, QD_PUTBAK, QD_SIZE, QD_ADDR = 0, 1, 2, 3, 4
 
-OP_NOTE, OP_ENV, OP_END = 0x00, 0x01, 0xFF
+# D-PLAYQUEUE packet tags (byte 0's top two bits; basic/sysvars.inc PK_*)
+PK_NOTE, PK_NOTEP, PK_REST, PK_END = 0x00, 0x40, 0x80, 0xC0
 SRC = 0x8200  # where we place MML source strings (RAM, visible to a page-1 tenant)
 
 
@@ -60,30 +61,45 @@ def build():
     AUDIO_VMASK, AUDIO_STATUS = s["AUDIO_VMASK"], s["AUDIO_STATUS"]
 
 
-def decode_queue(m, voice):
-    """Walk VOICxQ[voice] as a PLAY_OP_* stream -> list of decoded packets."""
+def decode_queue(m, voice, start=None):
+    """Walk voice's RING (QUETAB get .. put, wrapping at 128) -> decoded packets.
+    D-PLAYQUEUE's encoding, read back into the old tuple shapes: a REST is a silent
+    ("NOTE", 0, 0, frames); an S or M carried by a note comes first as
+    ("ENV", shape, envelope period) -- the period None when only S changed."""
     base = VOICAQ + voice * 128
-    p = base
+    q = QUETAB + voice * 6
+    p = m.mem[q + QD_GET] if start is None else start
+    put = m.mem[q + QD_PUT]
+
+    def byte():
+        nonlocal p
+        b = m.mem[base + p]
+        p = (p + 1) & 127
+        return b
     out = []
     for _ in range(200):  # guard
-        op = m.mem[p]
-        if op == OP_END:
+        if p == put:
+            break
+        b0 = byte()
+        tag = b0 & 0xC0
+        if tag == PK_END:
             out.append(("END",))
-            break
-        if op == OP_NOTE:
-            per = m.mem[p + 1] | (m.mem[p + 2] << 8)
-            amp = m.mem[p + 3]
-            fr = m.mem[p + 4] | (m.mem[p + 5] << 8)
-            out.append(("NOTE", per, amp, fr))
-            p += 6
-        elif op == OP_ENV:
-            shape = m.mem[p + 1]
-            period = m.mem[p + 2] | (m.mem[p + 3] << 8)
-            out.append(("ENV", shape, period))
-            p += 4
+        elif tag == PK_REST:
+            lo = byte()
+            out.append(("NOTE", 0, 0, lo | (byte() << 8)))
         else:
-            out.append(("BAD", op))
-            break
+            plo = byte()
+            amp = byte()
+            flo = byte()
+            b4 = byte()
+            per = plo | ((b4 >> 4) << 8)
+            fr = flo | ((b4 & 0x0F) << 8)
+            if tag == PK_NOTEP:
+                elo = byte()
+                out.append(("ENV", (b0 >> 2) & 0x0F, elo | (byte() << 8)))
+            elif b0 & 2:
+                out.append(("ENV", (b0 >> 2) & 0x0F, None))
+            out.append(("NOTE", per, amp, fr))
     return out
 
 
@@ -135,7 +151,7 @@ def run():
     check("PLAY \"CDE\" queue", decode_queue(m, 0),
           [note(C4), note(D4), note(E4), ("END",)])
     check("PLAY \"CDE\" MUSICF bit0", m.mem[MUSICF] & 1, 1)
-    check("PLAY \"CDE\" QUETAB put=byte count", m.mem[QUETAB + QD_PUT], 3 * 6 + 1)
+    check("PLAY \"CDE\" QUETAB put=byte count", m.mem[QUETAB + QD_PUT], 3 * 5 + 1)
     check("PLAY \"CDE\" QUETAB addr=VOICAQ",
           m.mem[QUETAB + QD_ADDR] | (m.mem[QUETAB + QD_ADDR + 1] << 8), VOICAQ)
 
@@ -215,12 +231,13 @@ def run():
     m, st = parse([b"C&C"])
     check("'&' tie unsupported -> ERR 5", st, 5)
 
-    # --- S/M envelope emits OP_ENV; S sets envelope-mode amplitude $10|volume ----
+    # --- S/M ride on the next note (D-PLAYQUEUE: the reference queues S at 0 B,
+    # M at 2 B, measured); S sets envelope-mode amplitude $10|volume ------------
     # (bit4 = follow envelope; the VG-8020 also writes the volume nibble -> default
     # V8 gives $18. The PSG ignores bits 0-3 in envelope mode; the byte is faithful.)
     m, st = parse([b"S3M1000C"])
-    check("S3 M1000 C -> ENV packets + envelope-mode note", decode_queue(m, 0),
-          [("ENV", 3, 0), ("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x18,
+    check("S3 M1000 C -> the note carries shape and period", decode_queue(m, 0),
+          [("ENV", 3, 1000), ("NOTE", mml_ref.note_period(C4), 0x18,
            mml_ref.note_frames(120, 4)), ("END",)])
 
     # --- three voices ----------------------------------------------------------
@@ -248,8 +265,9 @@ def run():
     check("O9 out of range -> ERR 5", st, 5)
     m, st = parse([b"T10"])
     check("T10 (<32) -> ERR 5", st, 5)
-    m, st = parse([b"C" * 40])           # 40 notes * 6 B = 240 > 128 buffer
-    check("overflow (40 notes) -> ERR 15 String too long", st, 15)
+    m, st = parse([b"C" * 40])           # 40 notes * 5 B = 200 > the 127 a ring holds
+    check("a full ring -> PLAY_MORE (main waits a frame, D-PLAYQUEUE)", st, 0xFE)
+    check("... with the 25 notes that fit queued", len(decode_queue(m, 0)), 25)
 
     # --- persistence across PLAY statements (D4-B) -----------------------------
     m = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
@@ -263,8 +281,9 @@ def run():
         mach.poke_w(vcb + VCX_VCXPTR, SRC)
         mach.mem[AUDIO_VMASK] = 1 << voice
         mach.mem[AUDIO_STATUS] = 0xEE
+        before = mach.mem[QUETAB + voice * 6 + QD_PUT]
         mach.call("play_parse_tenant")
-        return decode_queue(mach, voice)
+        return decode_queue(mach, voice, before)    # this PLAY's bytes (it appends)
 
     play_on(m, b"O6L8C")                  # sets octave 6, length 8
     q = play_on(m, b"C")                  # a bare C should reuse octave 6, length 8

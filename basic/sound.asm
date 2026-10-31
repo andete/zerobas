@@ -157,6 +157,8 @@ psgs_lp:        ld      a,b
                 ld      a,b
                 cp      11
                 jr      c,psgs_lp
+                call    psv_flush           ; D-PLAYQUEUE: the queues empty and the
+                                            ; PLAY settings reset (basic/playsvc.asm)
                 ei
                 ret
 

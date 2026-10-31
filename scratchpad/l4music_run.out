@@ -1,0 +1,6 @@
+L4_music
+  Philips_VG_8020                ENDED t=55.2  lpt 10 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=58.0  SAME  x1.05 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=58.0  SAME  x1.05 time
+
+PASS: 1 program(s), 0 divergent run(s)

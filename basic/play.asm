@@ -115,6 +115,9 @@ pl_syntax:
                                             ; VG-8020 traps this; stmt_error would not)
 pl_dispatch:
                 call    check_expr_errors   ; surface a deferred string error (FPERR/TMISMATCH)
+                xor     a
+                ld      (AUDIO_STATUS),a    ; a NEW PLAY (PLAY_MORE would continue one)
+pld_go:
                 push    hl                  ; save the statement cursor -- CALSLT clobbers HL
                 call    sr_inl1             ; D-STUBINL: CF=1 iff the sub-ROM is absent (no call made)
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PLAY_PARSE)
@@ -122,7 +125,23 @@ pl_dispatch:
                 jp      c,pl_absent
                 ld      a,(AUDIO_STATUS)    ; tenant result (RAM; subrom_call's CF is absence)
                 or      a
-                jp     nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
+                jr      z,pld_done
+                cp      PLAY_MORE
+                jp      nz,pl_parse_err     ; nonzero = the ERR code the tenant chose
+                ; 🎯 D-PLAYQUEUE: a voice's ring is FULL. The VG-8020's PLAY waits
+                ; here until the music has played enough to take the rest -- twelve
+                ; bars in a loop: the first three return at once, each later one
+                ; about a bar later (scratchpad/playqueue_measure.out). Main waits,
+                ; not the tenant (a page-1 tenant must not wait): one frame, then
+                ; the next window. Ctrl-STOP leaves PLAY; the run loop's own check
+                ; at the next statement sees the key still down and breaks.
+                ei
+                halt
+                push    hl
+                call    BREAKX
+                pop     hl
+                jr      nc,pld_go
+pld_done:
                 jp      pl_exit             ; PLAY returns immediately: chain the next
                                             ; stmt -- or back to a $73E5 caller. NOT a
                                             ; `ret` + a pushed exec_stmt: this file sits

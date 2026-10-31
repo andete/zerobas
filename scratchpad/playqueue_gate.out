@@ -1,0 +1,22 @@
+# scratchpad/playqueue_gate.bas
+== Philips_VG_8020 ENDED t=52.6
+Q-1 -1 -1 -1  98  98  98  98  98  98  98  98 -1 
+MIX-1 -1 -1 
+SYNC-1 -1 -1 
+ONE 0 -1 -1 
+BEEP-1 
+
+== C-BIOS_MSX1_EU_REPACK_NODISK ENDED t=53.7
+Q-1 -1 -1 -1  98  98  98  98  98  98  98  98 -1 
+MIX-1 -1 -1 
+SYNC-1 -1 -1 
+ONE 0 -1 -1 
+BEEP-1 
+
+== C-BIOS_MSX1_EU_REPACK_DISK ENDED t=53.7
+Q-1 -1 -1 -1  98  98  98  98  98  98  98  98 -1 
+MIX-1 -1 -1 
+SYNC-1 -1 -1 
+ONE 0 -1 -1 
+BEEP-1 
+
