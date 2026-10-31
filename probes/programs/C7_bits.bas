@@ -1,0 +1,32 @@
+10 REM ** C7 - CONTEST STYLE: BIT TRICKS WITH INTEGERS **
+20 CLS:CLEAR 500:DEFINT A-Z:DIM S(15),MK(15):FOR I=0 TO 14:MK(I)=2^I:NEXT:MK(15)=&H8000
+30 REM 1: popcount of 0..255 by n AND n-1, summed; the parity of 1..1000
+40 T=0:FOR N=0 TO 255:M=N:C=0
+50 IF M THEN M=M AND M-1:C=C+1:GOTO 50
+60 T=T+C:NEXT:P=0:FOR N=1 TO 1000:P=P XOR N:NEXT:LPRINT "CP 1";T;P
+70 REM 2: Gray code of 0..15 and back, as binary strings
+80 G$="":E=0:FOR N=0 TO 15:G=N XOR N\2:G$=G$+RIGHT$("000"+BIN$(G),4)+" ":B=G:R=0
+90 IF B THEN R=R XOR B:B=B\2:GOTO 90
+100 IF R<>N THEN E=E+1
+110 NEXT:LPRINT "CP 2 ";LEFT$(G$,40):LPRINT "CP 2b";E
+120 REM 3: every subset of {3,5,9,14,20} whose sum is 23, by a bit mask
+130 FOR I=0 TO 4:READ W(I):NEXT:K=0:L$=""
+140 FOR M=1 TO 31:U=0:FOR I=0 TO 4:IF M AND 2^I THEN U=U+W(I)
+150 NEXT:IF U=23 THEN K=K+1:L$=L$+HEX$(M)+" "
+160 NEXT:LPRINT "CP 3";K;L$
+170 REM 4: a prime sieve of 1..239 packed 16 to an integer (bit 15 by the sign)
+180 FOR I=0 TO 14:S(I)=-1:NEXT:S(0)=S(0) AND NOT 3
+190 FOR N=2 TO 15:IF S(N\16) AND MK(N MOD 16) THEN FOR J=N*N TO 239 STEP N:S(J\16)=S(J\16) AND NOT MK(J MOD 16):NEXT
+200 NEXT:C=0:Q=0:FOR N=0 TO 239:IF S(N\16) AND MK(N MOD 16) THEN C=C+1:Q=N
+210 NEXT:LPRINT "CP 4";C;Q;HEX$(S(0));" ";OCT$(S(1))
+220 REM 5: number bases both ways
+230 LPRINT "CP 5";&HFF;&B1010;&O17;&HFFFF;&H8000;VAL("&H7F");VAL("&B111");VAL("&O777")
+240 LPRINT "CP 6 ";HEX$(-1);" ";BIN$(255);" ";OCT$(-8);" ";HEX$(32767);" ";BIN$(-32768)
+250 REM 6: logic on negatives, and integer division and MOD on negatives
+260 LPRINT "CP 7";-6 AND 13;-6 OR 13;-6 XOR 13;NOT -6;5 EQV 3;5 IMP 3;&HF0F0 AND &H0FF0
+270 LPRINT "CP 8";-7\2;-7 MOD 2;7\-2;7 MOD -2;-7\-2;-7 MOD -2;32767\-1;-32768\1
+280 REM 7: an XOR swap, a bit reversal, and the lowest set bit by n AND -n
+290 A=1234:B=-567:A=A XOR B:B=A XOR B:A=A XOR B:V=0:X=&B1101001
+300 FOR I=0 TO 7:V=V*2 OR (X AND 1):X=X\2:NEXT:LPRINT "CP 9";A;B;V;96 AND -96;-32768 AND 32767
+310 LPRINT "CP 10 END":END
+330 DATA 3,5,9,14,20

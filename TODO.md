@@ -614,6 +614,13 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **C7_bits (2026-10-31)**: contest-style bit tricks on DEFINT integers --
+      popcount by `n AND n-1`, a running XOR, Gray codes through `BIN$`, subsets by
+      a bit mask, a prime sieve packed 16 to an integer (bit 15 is the sign:
+      `&H8000`), `&H` / `&B` / `&O` literals and `VAL("&H..")`, `HEX$` / `OCT$` /
+      `BIN$` of negatives, AND / OR / XOR / NOT / EQV / IMP on negatives, `\` and
+      MOD with negative operands, an XOR swap, `n AND -n`. SAME (every answer
+      checked by hand). TIER 5 reading only: 80 s against 49 on the VG-8020.
       ✅ **L4_music (2026-10-31)**: a jukebox -- PLAY in one and three voices with
       lengths, dots, rests, `X` substrings and `N` notes, tempo / length / volume
       from variables, an envelope, PLAY(n) while three voices run, an ON INTERVAL
@@ -8072,7 +8079,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10563 (T-6FE392)8 (T-529ABE)` from `TODO.md:16245 (T-529ABE)`: a
+      `TODO.md:10570 (T-6FE392)8 (T-529ABE)` from `TODO.md:16252 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11032,7 +11039,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16245 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16252 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
