@@ -313,6 +313,27 @@ item — do **one item per session** to keep context lean.
       name head (reviewer's count on 2026-10-31: ~45 B low for 22 B on page 1), esa_release_int taking the
       success tail, cl_str's DIM-style VALTYP question (H1), CVI / LEN sharing a
       close helper, the dead `inc sp` pair in ixsp_unwind.
+      ✅ **BATCH 7 (2026-10-31), the first with z80flow, measured 2026-10-31: low region free
+      368 -> 422 B and its $3297 pad 259 -> 287 B; main page 1 free 356 -> 362 B and its pads
+      +17 B -- ~105 B from ten spans** (candidates ranked against z80flow's routine list, briefs
+      carrying `make contract` output; hot paths exec / ex_next left out). INPUT's console path
+      tests the read mode once, not three times (17), and keeps textcur under the key (4);
+      fp_div / fp_mul / fp_cmp / `/` / `^` share an `argb_dig_iszero` fall-in (12),
+      check_preexp_bounds stores FP_TMP_B itself (9), xor_sign stores the sign (6), fp_div's
+      zero divisor calls check_preexp_bounds' abort (`cpb_err`, a `; z80flow:
+      call-never-returns` marker), combine_pow's classification (19); STR$'s two arms (8);
+      stk_guard moved above ev_f_defer and unary `+` falls into ev_f (8); EXP / the math
+      tenants share one overflow raise (6); VARPTR's `(` test (3); ON ERROR GOTO trusts rst
+      $10's Z (6). `make contract-diff BASE=27d01d05`: 0 broken, xor_sign changes HL instead
+      of B ([`b7_contract.out`](scratchpad/b7_contract.out)). Knife pins unchanged; tapes:
+      every title's class as on HEAD, Boulder Dash II on line 3341. HELD BACK: the
+      ON GOTO/GOSUB list scan as one loop (41-50 B page 1, reviewer's count 2026-10-31 -- it drops `rst $10` on trailing
+      entries, so a hooked H.CHRG sees fewer calls: the dl_cmd fold's question); SQR/LOG's
+      shared sign test with a block reorder (8 B page 1, reviewer's count 2026-10-31); the full stk_guard inline (3 B more,
+      two test rows move). QUEUED as batch 7b: the shx_finish / str_lr_count spans' reviewer
+      (~76 B low, reviewer's count 2026-10-31: str_lr_count / MID$ / str_min_bc, shx_finish as an alias of sst_op's tail,
+      INKEY$ through the FILL op). To measure first: `STRING$(3, "A")` with a space after
+      the comma (str_eval_one does not skip spaces -- D-RELSPACE's class).
 
 - [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
@@ -8245,7 +8266,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10736 (T-6FE392)8 (T-529ABE)` from `TODO.md:16418 (T-529ABE)`: a
+      `TODO.md:10757 (T-6FE392)8 (T-529ABE)` from `TODO.md:16439 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11205,7 +11226,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16418 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16439 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

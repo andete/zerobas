@@ -26,8 +26,14 @@ session and the loop resumes exactly where it stopped.
   - **Editing a line next to a `; z80flow:` marker:** keep it true (the tool names a stale one).
   - `z80flow-selftest` (0.2 s) is now a STATIC gate unit.
   - **Cost check:** if batch 7 under this step does not finish faster than batch 6, say so and make
-    it optional. PROPOSED to Joost, NOT ruled: a clean contract-diff keeps a shared-code ROM change
-    at SCOPED instead of FULL. Until he rules, the tiers are unchanged.
+    it optional.
+  - 🏗️ **RULED (Joost 2026-10-31, "as long as we eventually run the full gates we're good"):** a
+    rework with a clean contract-diff runs the tier `make gates-plan` picks -- do NOT escalate to
+    FULL on your own because the code is shared. 🔴 The loop prompt's "FULL (+ the five excluded)
+    for shared code, an unknown blast radius, the 5th commit since the last full green" is STALE:
+    since 2026-10-13 the picker plans those SCOPED (+ the canary), and FULL comes only from a
+    gate-harness change, a RAM-address move, a hand-off, or 24 h since the last full green. BELIEVE
+    THE PICKER over the prompt. The daily / hand-off FULL is the "eventually".
   - 🔴 **What it does NOT see -- measured, not assumed:** batch 6's withdrawn fp_trunc rewrite
     (the one that hung Boulder Dash II) diffs as `fewer_clob: fp_trunc DE`, 0 broken. Memory,
     arithmetic and timing are outside it; the tapes and the battery still own that class.
@@ -1971,7 +1977,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12725 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12746 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

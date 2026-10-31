@@ -339,9 +339,8 @@ ndd_lp:
                 or      a
                 jr      nz,ndd_lp
 ndd_tape:
-                pop     hl
-                cp      a                   ; Z: the cassette
-                ret
+                pop     hl                  ; Z already (the cassette): both arrivals set
+                ret                         ; it, and pop keeps F
 
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent

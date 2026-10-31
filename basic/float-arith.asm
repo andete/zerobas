@@ -164,8 +164,12 @@ zf_lp:
                 djnz    zf_lp
                 ret
 
+; --- argb_dig_iszero: dig15_iszero over ARGB's digits, by fall-through (five
+; sites wrote `ld hl,ARGB+FPNUM_DIG / call dig15_iszero` out; D-REREAD batch 7).
+argb_dig_iszero:
+                ld      hl,ARGB+FPNUM_DIG
 ; --- dig15_iszero: HL -> 15-byte digit array. ZF set iff all 15 are 0. -------
-; HL preserved. Clobbers A, B.
+; HL preserved. Clobbers A, B. On the Z exit A = 0 (combine_pow relies on it).
 dig15_iszero:
                 push    hl
                 ld      b,15
@@ -511,7 +515,6 @@ round_and_finalize:
                 call    arga_carry_renorm
 raf_noround:
                 ld      hl,(ARGA+FPNUM_DEXP)
-                ld      (FP_TMP_B),hl
                 call    check_preexp_bounds ; shared bound-check gate (defined below,
                                             ; with fp_mul): out of bounds -> aborts this
                                             ; ENTIRE round_and_finalize call, returning
@@ -628,7 +631,6 @@ round_single_and_pack:
                 call    arga_renorm6
 rsp_noround:
                 ld      hl,(ARGA+FPNUM_DEXP)
-                ld      (FP_TMP_B),hl
                 call    check_preexp_bounds ; shared -63..63 bound gate (defined above,
                                             ; with round_and_finalize); out of bounds ->
                                             ; aborts straight to OUR caller (see its own
@@ -792,7 +794,8 @@ fp_sub:
 ; (which re-checks the bound as a backstop against a round-carry pushing
 ; dexp past 63). Clobbers A, B, C, D, E, H, L.
 ; --- check_preexp_bounds: HL = a pre-normalisation exponent sum/difference -
-; (the caller has already stashed it into FP_TMP_B) -> on overflow/underflow,
+; (stashed into FP_TMP_B here, for the underflow test and the callers that read
+; it after; D-REREAD batch 7, was each caller's) -> on overflow/underflow,
 ; aborts the WHOLE fp_add/fp_sub/fp_mul/fp_div operation: sets FAC=0/
 ; FACTYP=8/DE=0 (+FPERR=1 on overflow; untouched, i.e. still silent, on
 ; underflow) via the shared raf_zero_ok tail, and returns not to the direct
@@ -813,13 +816,16 @@ fp_sub:
 ; Falls through with a normal ret (to the direct caller, computation
 ; continues) if in bounds. Clobbers A, D, E, H, L.
 check_preexp_bounds:
+                ld      (FP_TMP_B),hl
                 ld      de,63
                 call    cmp16_bits
                 cp      4
                 jr      nz,cpb_check_uf
                 ld      a,1
-                call    penderr_set
-                jr      cpb_abort
+cpb_err:                                    ; A = an FPERR code: defer it, then abort.
+                call    penderr_set         ; fp_div's zero divisor CALLs here: cpb_abort
+                jr      cpb_abort           ; pops that call's return address as it pops
+                                            ; check_preexp_bounds' own
 cpb_check_uf:
                 ld      hl,(FP_TMP_B)
                 ld      de,$FFC1            ; -63
@@ -836,10 +842,9 @@ fp_mul:
                 add     hl,de               ; HL = preExp; range -126..126, no
                                             ; special overflow handling needed for
                                             ; this plain 16-bit add itself
-                ld      (FP_TMP_B),hl
                 call    check_preexp_bounds
-                call    xor_sign
-                ld      (ARGA+FPNUM_SIGN),a ; the multiply reads ARGA's DIGITS only
+                call    xor_sign            ; -> ARGA's sign: the multiply reads ARGA's
+                                            ; DIGITS only
                 ld      hl,MULPROD
                 ld      b,28
                 call    zero_fill
@@ -986,22 +991,21 @@ fpk_z:
 ; by its every reader first). The sign goes straight to ARGA (xor_sign has
 ; read it; nothing reads ARGA's sign again before round_and_finalize).
 fp_div:
-                ld      hl,ARGB+FPNUM_DIG
-                call    dig15_iszero
+                call    argb_dig_iszero
                 jr      nz,fpd_go
-                ld      a,2
-                call    penderr_set
-                jp      raf_zero_ok         ; shared zero-pack tail (round_and_finalize)
+                ld      a,2                 ; Division by zero: FPERR=2 deferred, then
+                ; check_preexp_bounds' abort pops THIS call's return address and
+                ; raf_zero_ok returns to fp_div's caller
+                ; z80flow: call-never-returns
+                call    cpb_err
 fpd_go:
                 ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,(ARGB+FPNUM_DEXP)
                 or      a
                 sbc     hl,de
                 inc     hl
-                ld      (FP_TMP_B),hl
                 call    check_preexp_bounds ; shared with fp_mul (above)
-                call    xor_sign
-                ld      (ARGA+FPNUM_SIGN),a
+                call    xor_sign            ; -> ARGA's sign
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,DIVREM
                 call    fpd_pack            ; C = low (DIVREM + LA)
@@ -1087,6 +1091,7 @@ fpd_one:
                 ; read as the number 0..99) / b0 -- the bytes past it are a
                 ; fraction below 1 and cannot change the quotient -- and the
                 ; remainder (< b0 <= 9) is that byte's new value, already BCD.
+                ld      l,a                 ; (HL) = b0: A = low DIVPAD (fpd_trial's cp was Z)
                 ld      a,(DIVREM)
                 ld      c,a                 ; C = byte = 16*hi + lo
                 and     $F0                 ; 16 * hi
@@ -1096,7 +1101,6 @@ fpd_one:
                 rrca                        ; 2 * hi
                 sub     b                   ; -6 * hi (mod 256)
                 add     a,c                 ; byte - 6*hi = 10*hi + lo: byte 0 as binary
-                ld      l,low DIVPAD        ; (HL) = b0
                 ld      c,$FF
 fpo_lp:
                 inc     c
@@ -1132,8 +1136,7 @@ ftr_done:
 fp_cmp:
                 call    arga_dig_iszero
                 jr      z,fcmp_a_zero
-                ld      hl,ARGB+FPNUM_DIG
-                call    dig15_iszero
+                call    argb_dig_iszero
                 jr      z,fcmp_b_zero
                 ld      a,(ARGA+FPNUM_SIGN)
                 ld      b,a                 ; B = the sign, read again at the digits
@@ -1166,8 +1169,7 @@ fcmp_dig:
                 ld      b,14                ; compare only the 14 significant digits
                 jp      dig15_cmp           ; tail call: A = 1/2/4
 fcmp_a_zero:
-                ld      hl,ARGB+FPNUM_DIG
-                call    dig15_iszero
+                call    argb_dig_iszero
                 jp      z,c16_eq            ; both zero -> 2
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
@@ -1584,15 +1586,15 @@ widen_both_operands:
                 ld      de,(FP_TMP_B)
                 jr      widen_rhs_operand   ; tail call
 
-; --- xor_sign: A = ARGA_SIGN XOR ARGB_SIGN, masked to bit 7 — the standard -
-; "result sign" for * and / (spec §10.2). Shared by fp_mul and fp_div.
-; Clobbers A, B.
+; --- xor_sign: ARGA_SIGN := A = ARGA_SIGN XOR ARGB_SIGN, masked to bit 7 — the
+; standard "result sign" for * and / (spec §10.2). Shared by fp_mul and fp_div,
+; which both stored it right after the call (D-REREAD batch 7). Clobbers A, HL.
 xor_sign:
-                ld      a,(ARGA+FPNUM_SIGN)
-                ld      b,a
+                ld      hl,ARGA+FPNUM_SIGN
                 ld      a,(ARGB+FPNUM_SIGN)
-                xor     b
+                xor     (hl)
                 and     $80
+                ld      (hl),a
                 ret
 
 ; =============================================================================
@@ -1868,9 +1870,9 @@ combine_div_float:
                 call    pop_lhs_and_probe   ; ZF result ignored -- '/' is always
                                             ; float regardless (spec §10.1)
                 call    widen_both_operands
-                ld      hl,ARGB+FPNUM_DIG   ; D-DEFERRSTUDY: a zero divisor is raised
-                call    dig15_iszero        ; HERE, at once (the VG-8020 never evaluates
-                ld      a,2                 ; past it: scratchpad/deferr_side_run.out);
+                call    argb_dig_iszero     ; D-DEFERRSTUDY: a zero divisor is raised HERE,
+                ld      a,2                 ; at once (the VG-8020 never evaluates past it:
+                                            ; scratchpad/deferr_side_run.out);
                 jp      z,raise_now8        ; VALTYP 8, as there; fp_div's own test stays
                 jp      fp_div_raise        ; overflow at once (D-DEFERRSTUDY, expr.asm)
 
@@ -1915,11 +1917,9 @@ combine_pow:
                 call    widen_both_operands ; ARGA := x (lhs), ARGB := y (rhs)
 
                 ; --- 1) y == 0 -> result 1.0 (double), incl. 0^0=1 ---------
-                ld      hl,ARGB+FPNUM_DIG
-                call    dig15_iszero
+                call    argb_dig_iszero
                 jr      nz,cpow_y_nonzero
-                ld      hl,ARGA
-                xor     a
+                ld      hl,ARGA             ; A = 0: dig15_iszero's Z exit
                 ld      de,1
                 call    widen_uint_to       ; ARGA := 1.0 (exact)
                 jp      round_and_finalize  ; FAC:=1.0 double, FACTYP:=8, DE
@@ -1954,9 +1954,9 @@ cpow_x_nonzero:
                 cp      6
                 jr      nc,cpow_frac        ; dexp>5 -> out of int16 -> frac
                 ; 1<=dexp<=5: integer-valued iff dig[dexp..13] are all 0
-                ld      c,a                 ; C := dexp (survives the scan)
-                ld      e,a
-                ld      d,0
+                ex      de,hl               ; DE := dexp (H = 0 here: wsrc_nz makes it 0
+                                            ; or $FF, and $FF went to cpow_frac above)
+                ld      c,e                 ; C := dexp (survives the scan)
                 ld      hl,ARGB+FPNUM_DIG
                 add     hl,de               ; HL -> dig[dexp]
                 ld      a,14
@@ -1970,12 +1970,7 @@ cpow_intscan:
                 djnz    cpow_intscan
                 ld      a,c
                 cp      5
-                jr      z,cpow_dexp5
-                ; 1<=dexp<=4: n := digits[0..dexp-1] (always <= 9999)
-                ld      hl,ARGB+FPNUM_DIG
-                ld      b,c
-                call    dig_to_word         ; DE := n
-                jr      cpow_int_have_n
+                jr      nz,cpow_int_word    ; 1<=dexp<=4: n <= 9999, no bound to clear
 cpow_dexp5:
                 ; dexp==5: asymmetric bound compare vs 32767(y>=0)/32768(y<0)
                 ; (own float.asm resident tkf_ref32767/32768 tables, the same
@@ -1994,34 +1989,27 @@ cpow_d5_cmp:
                 pop     de
                 cp      4
                 jr      z,cpow_frac         ; > bound -> fractional path
+                ld      c,5                 ; C := dexp again (dig15_cmp clobbered it)
+cpow_int_word:
                 ld      hl,ARGB+FPNUM_DIG
-                ld      b,5
+                ld      b,c                 ; n := digits[0..dexp-1]
                 call    dig_to_word         ; DE := n (0..32768)
-cpow_int_have_n:
                                             ; DE = n rides to the tenant in DE
                                             ; (D-WSZERO S14e: MATH_N is math_wrap's)
                 ld      a,(ARGB+FPNUM_SIGN)
-                or      a
-                jr      z,cpow_j_int_pos
-                ld      a,1
-                jr      cpow_j_int_store
-cpow_j_int_pos:
-                xor     a
-cpow_j_int_store:
-                                            ; A = j: bit0 = y negative, bit7 = 0 (int)
+                rlca                        ; A = j: the sign 0/$80 -> bit0 = y negative,
+                                            ; bit7 = 0 (int)
                 jr      cpow_dispatch
 cpow_frac:
                 ; --- 4) fractional y (or int-valued y outside int16) -------
                 ld      a,(ARGA+FPNUM_SIGN)
-                or      a
-                jr      z,cpow_frac_ok
+                xor     $80                 ; x > 0: A = j = $80 (bit7: frac path), NZ
+                jr      nz,cpow_dispatch
                 ld      a,3
                 jp      raise_now8          ; (-x)^frac: at once, VALTYP 8 (D-DEFERRSTUDY)
                 ; (penderr_de0, D-PENDTAIL's shared "defer code A, return DE=0" tail,
                 ; stood here: D-DEFERRSTUDY families 1 and 2 converted all four of its
                 ; sites to an immediate raise, the last one EXP, so it went -- 6 B.)
-cpow_frac_ok:
-                ld      a,$80               ; j: bit7 = 1 (frac path)
 cpow_dispatch:
                 ld      l,a                 ; D-WSZERO S14e: j rides to the tenant in L
                 push    ix                  ; save the parser's text-position

@@ -1210,7 +1210,8 @@ sas_decline:
                 ; damage. K-AO1 moves rows; the pop it replaced moved none.
                 pop     af                  ; discard str_arg_snap's return address
                 pop     af                  ; ...and str_arg_open's
-                jp      str_eval_no         ; now declines out of the VERB, as before
+                or      a                   ; = str_eval_no inlined: declines out of
+                ret                         ; the VERB, as before (CF clear)
 
 ; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
 ; Reached from str_eval_maybe_mki (basic/strvar.asm) via `jp str_func_ff` on a
@@ -1295,13 +1296,14 @@ str_fn_str:
                 call    factyp_is2         ; §9.4: dispatch after eval, exactly as
                                            ; print.asm's exp_num does
                 jr      nz,sfs_float
-                ld      c,0                 ; C = leading-space count
-                bit     7,d                 ; sign of n
-                jr      nz,sfs_conv         ; negative -> no leading space
-                inc     c                   ; non-negative -> one leading space
-sfs_conv:
-                call    pu_fmt_int          ; NUMBUF="[-]digits",0; B=digit count; C preserved
-                ld      hl,NUMBUF           ; HL = the source text
+                ld      a,d                 ; C = leading-space count: CF = n's sign,
+                rlca                        ; sbc a,a = $FF (negative) / 0, and inc
+                sbc     a,a                 ; -> 0 (negative: no leading space) or
+                inc     a                   ; 1 (non-negative: one)
+                ld      c,a
+                call    pu_fmt_int          ; NUMBUF="[-]digits",0; B=digit count; C preserved;
+                                            ; DE = NUMBUF (its pfi_done): the source text
+                push    de                  ; guard the SOURCE               [CURSOR][SRC]
                 jr      sfs_build
                 ; --- the float arm: flt_fmt's text, MINUS PRINT's trailing space
                 ; ⚠️ THE TRAILING SPACE IS THE WHOLE DIFFERENCE BETWEEN PRINT AND
@@ -1314,20 +1316,18 @@ sfs_conv:
                 ; both references keep it -- which is why C is 0 on this arm.
 sfs_float:
                 call    flt_fmt             ; HL = FOUTBUF, NUL-terminated
-                ld      b,255               ; -> B = length INCLUDING the trailing
-sfs_flen:                                   ;    space (first `inc b` makes it 0)
-                inc     b
+                push    hl                  ; guard the SOURCE               [CURSOR][SRC]
+                ld      bc,$FF00            ; B = 255 -> length INCLUDING the trailing
+sfs_flen:                                   ;    space (first `inc b` makes it 0); C = 0:
+                inc     b                   ;    the text carries its own sign/space
                 ld      a,(hl)
                 inc     hl
                 or      a
                 jr      nz,sfs_flen
                 dec     b                   ; drop it
-                ld      c,0                 ; the text carries its own sign/space
-                ld      hl,FOUTBUF
-sfs_build:                                  ; HL = source, B = length, C = leading spaces
+sfs_build:                                  ; SOURCE pushed, B = length, C = leading spaces
                 ld      a,c
                 add     a,b                 ; total length
-                push    hl                  ; guard the SOURCE               [CURSOR][SRC]
                 push    bc                  ; guard B(len),C(leadspace)  [CURSOR][SRC][BC]
                 call    str_temp_alloc      ; A=total -> HL=temp desc, DE=body (or 0)
                 pop     bc                  ; B=len, C=leadspace             [CURSOR][SRC]
@@ -1369,7 +1369,8 @@ str_arg_empty:
                 ld      a,4
 str_arg_err:                                ; A = the code: STRING$'s empty x$ (3) joins
                 call    penderr_set
-                jp      str_eval_no
+                or      a                   ; = str_eval_no inlined: CF clear,
+                ret                         ; not a string operand
 ; --- str_arg_open: the prologue LEFT$ / RIGHT$ / MID$ all share (D-ARGOPEN) --
 ; 16 instructions, open-coded three times: the `(` test, both empty-argument
 ; tests, str_arg_snap, the `,` test, and the temp-address capture. Only what

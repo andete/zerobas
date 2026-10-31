@@ -127,3 +127,15 @@ value and RAM on 800 INT / FIX cases and still taken out: Boulder Dash II hung
 with it (D-BD2FRAGILE). A reviewer's side note found a real tier-1 divergence
 that predates the batch: a space after `<=` / `>=` / `<>` before a string is a
 Type mismatch here (D-RELSPACE). Running total ~875 B across six batches.
+
+## Batch 7 (2026-10-31)
+
+The first batch with z80flow. Candidates were ranked by span against z80flow's routine list
+(1,733 routines), and each brief carried `make contract NAME=...` output in place of a
+hand-written register contract. Ten spans, five reviewers. Applied ~105 B: low region free
+368 -> 422 B, its pad 259 -> 287 B; page 1 free 356 -> 362 B, its pads +17 B. Largest:
+INPUT's console mode test (17), combine_pow (19), the float helpers (argb_dig_iszero 12,
+check_preexp_bounds 9, xor_sign 6). `make contract-diff BASE=27d01d05`: 0 broken, one
+contract changed (xor_sign: HL for B). A reviewer report for two more spans (~76 B low) is
+queued as batch 7b to keep the bisect small. Running total ~980 B across seven batches.
+

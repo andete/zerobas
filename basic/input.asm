@@ -71,22 +71,15 @@ inpc_plit:
                 call    CHPUT               ; echo the prompt char to the screen
                 jr      inpc_plit
 inpc_pdone:
-                pop     hl                  ; past the ';': INPUT adds "? ", LINE INPUT nothing
-                ld      a,(FCH_RDMODE)
-                or      a
-                jr      nz,inpc_dispatch
-                call    inpc_print_q
-                jr      inpc_dispatch
+                pop     hl                  ; past the ';' -- then exactly the no-prompt path
 inpc_noprompt:
-                ld      a,(FCH_RDMODE)      ; no prompt: INPUT adds "? ", LINE INPUT nothing
-                or      a
-                jr      nz,inpc_dispatch
-                call    inpc_print_q
-inpc_dispatch:
-                ; HL -> the first variable. Branch on the read mode.
+                ; HL -> the first variable. Branch on the read mode: LINE INPUT adds
+                ; nothing, INPUT adds "? " (with or without a prompt) and reads a
+                ; variable list (D-REREAD batch 7: one test of FCH_RDMODE, was three).
                 ld      a,(FCH_RDMODE)
                 or      a
                 jr      nz,inpc_line        ; LINE INPUT -> whole line into one $-var
+                call    inpc_print_q        ; INPUT: "? "
                 ; --- INPUT: comma-separated variable list ---
                 push    hl                  ; [stack: varstart] — survives every ?redo
 inpc_reread:
@@ -112,14 +105,13 @@ inpc_vloop:
                                             ; (D-CUR-D), so raising here is
                                             ; DEPTH-INDEPENDENT -- and the ON ERROR trap
                                             ; branch resets SP the same way.
-                push    bc                  ; [stack: varstart, key]
-                push    hl                  ; [stack: varstart, key, textcur]
+                push    hl                  ; [stack: varstart, textcur]
+                push    bc                  ; [stack: varstart, textcur, key]
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
                 call    inp_num             ; D-INPNUM: STRSCR -> a number; CF = ?redo
                 jr      c,inpc_redo3        ; bad numeric field -> ?redo
-                pop     hl                  ; textcur
-                pop     bc                  ; key
-                push    hl                  ; guard textcur across the store
+                pop     bc                  ; key; textcur stays guarded across the
+                                            ; store (INPUT #'s inu_got shape)
                 call    inp_store           ; D-ARYLV: var[key] := the number, or the
                                             ; resolved ELEMENT := it, coerced either way
                 pop     hl
@@ -131,12 +123,10 @@ inpc_vstr:
                                             ; holds the mode (1) it wants
                                            ; same depth-independent abort as the numeric
                                             ; arm above
+                push    hl                  ; guard textcur across the read AND the store
                 push    bc
-                push    hl
                 call    read_into_strscr    ; STRSCR <- the next field (mode 0)
-                pop     hl
                 pop     bc
-                push    hl                  ; guard textcur across the store
                 call    tgt_store_str       ; D-ARYLV: var$[key] = the field bytes, or
                                             ; the resolved element (op=3 COPY_STR)
                 pop     hl
@@ -151,7 +141,7 @@ inpc_vstr:
                 ; whether one happens at all. Reuses check_expr_errors_popbc
                 ; (interp.asm) rather
                 ; than a bespoke checker: [stack: varstart] is live here
-                ; (pushed at inpc_dispatch, line 83), matching that routine's
+                ; (pushed after the read-mode test in input_console), matching that routine's
                 ; own "discard our return addr + ONE caller word" abort
                 ; contract exactly (TMISMATCH is always 0 here -- INPUT never
                 ; sets it -- so only its FPERR half ever fires). OK path is a
@@ -182,8 +172,8 @@ inpc_morevars:
                 ; region, which had 1 B.
                 jp      inpc_cont
 inpc_redo3:
-                pop     hl                  ; drop textcur
                 pop     bc                  ; drop key
+                pop     hl                  ; drop textcur
                 jp      inpc_redo_p1        ; ?Redo, then the WHOLE statement again
 ; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
 ; ex_let_err and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
@@ -204,7 +194,7 @@ inpc_line:
                                             ; rather than sharing the list driver above,
                                             ; which is why it was a THIRD divergent
                                             ; INPUT arm and needs its own call here.
-                                            ; inpc_dispatch pushes [varstart] only on the
+                                            ; input_console pushes [varstart] only on the
                                             ; INPUT path, AFTER the branch to here
                 push    hl                  ; guard the text cursor across the read
                 push    bc                  ; save the key

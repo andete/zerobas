@@ -2989,14 +2989,12 @@ ex_on_error:
                 ; and would have made `ON ERROR GOTO` an untrapped Syntax error --
                 ; a NEW divergence, in a row the old code got right by accident.
                 ; [[two-rules-that-coincide-on-every-row-you-have]]
-                or      a
-                jr      z,oe_disable        ; `ON ERROR GOTO` <eol>  == GOTO 0
-                cp      COLON
-                jr      z,oe_disable        ; `ON ERROR GOTO :`      == GOTO 0
+                jr      z,oe_disable        ; `ON ERROR GOTO` <eol> or `:` == GOTO 0
+                                            ; (rst $10's own Z: a 0 or a ':')
                 call    is_lref
                 jr      nz,oe_badop         ; present, not a line number (D-SCRBAUD
                                             ; carve: jr range, per jr_mapper.py)
-                call    req_lineno          ; D-NGRAM10: $0E,lo,hi expected (GOTO's
+                call    lref_bc             ; D-NGRAM10: $0E,lo,hi (is_lref said so; GOTO's
                                             ; own operand shape) -- BC = the line,
                                             ; HL past the $0E operand
                 ld      a,b
@@ -3009,9 +3007,8 @@ ex_on_error:
                 ld      (ONELIN),hl         ; ONELIN := the handler line's LINK address
                                             ; (find_line_bc's return convention -- exactly
                                             ; what raise_error's trap / rp_goto expect)
-                pop     hl                  ; HL = cursor again (ON ERROR GOTO does not
-                                            ; redirect flow -- continue the same line)
-                jp      exec_stmt
+                jp      pop_exec            ; pop hl = cursor again (ON ERROR GOTO does
+                                            ; not redirect flow -- continue the same line)
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to ers_undef,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
 ; escaping relative jump, not entered by fallthrough, same ROM region).

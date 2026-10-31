@@ -143,8 +143,7 @@ cl_not:
                 push    hl                  ; [entry]
                 jr      cl_opnd_lo          ; unary, right-assoc (NOT NOT x)
 cl_not_oom:
-                ld      e,FPERR_OOM
-                call    ev_f_defer          ; ERR 7 deferred, DE = 0, $DD
+                call    stk_oom             ; E = FPERR_OOM: ERR 7 deferred, DE = 0, $DD
                 jr      cl_after
 
 ; --- a string comparison: ev_rel_str (str-engine.asm) -----------------------
@@ -477,6 +476,9 @@ ev_sp:
                 inc     ix
                 jr      ev_sp
 
+ev_f_pos:                                   ; unary '+' (D-UNARYPLUS; its notes are with
+                inc     ix                  ; ev_f_neg): consume it, then the operand is
+                                            ; the next factor -- falls into ev_f
 ; --- ev_f: factor ----------------------------------------------------------
 ; Decodes the crunched tokens (spec §3): constant tokens carry their binary
 ; value; '(' / ')' stay verbatim; PEEK is $FF $97; a bare upcased letter is a
@@ -498,8 +500,7 @@ ev_f:
                 cp      MINUS_TOKEN         ; unary minus
                 jp      z,ev_f_neg
                 cp      PLUS_TOKEN          ; unary plus (D-UNARYPLUS)
-                jp      z,ev_f_pos          ; ⚠️ `jp`, not `jr`: ev_f_pos sits
-                                            ; beside ev_f_neg, ~390 B away
+                jr      z,ev_f_pos          ; just above ev_f, falls into it
                 cp      '('
                 jp      z,ev_f_paren
                 cp      PEEK_PREFIX         ; $FF -> PEEK / VPEEK / INP function token
@@ -769,6 +770,65 @@ ev_f_empty:                                 ; D-F2-3: the empty parenthesised/ar
                 ; (scratchpad/deferr3_run.out). Pending-first, as every raise_now.
                 ld      a,4
                 jp      raise_now
+; --- stk_guard: the evaluator's STACK FLOOR (D-STACKFLOOR) -------------------
+; Sited right above ev_f_defer, which its refusal falls into (D-REREAD batch 7:
+; it sat after ev_f_digit while ev_f's `jr c,ev_f_digit` needed the room, and
+; that jump has been a `jp` since D-ASCIINUM). stk_oom is the refusal's tail,
+; shared with cl_not's.
+; Called as the FIRST instruction of ev_f -- the place every unbounded expression
+; recursion passes through (a parenthesis, a function argument, a unary minus,
+; every operand after a pending operator). The other place the stack grows with
+; no factor in between, a `NOT NOT ...` chain, tests the same floor inline in the
+; climber's cl_not since D-EVALSLOPE (2026-10-20); it was ev_not_do's first
+; `call stk_guard` before -- a call this guard's dropping exit needs, and the
+; one loop no longer makes.
+; in: nothing. out: returns (CF set) while SP is more than STK_EVAL_RESERVE above
+; CTLLIM (= ARYEND+2, the arrays' first free byte). Clobbers HL and F only.
+;
+; 🔴 WHY IT EXISTS: since D-SPMERGE the machine stack descends from the pool's
+; frontier into the free gap, and the ONLY floor was ctl_alloc's static 256 B
+; margin -- tested when a FRAME is pushed, never while an expression recurses.
+; MEASURED 2026-09-27 (scratchpad/stackhw_run.out): 20 nested parentheses reach
+; 756 B below the frontier, 32 nested ABS 1332 B. So an array DIM'd to the edge
+; was OVERWRITTEN by a later formula: `A(X)` read garbage after `B=(((...)))` with
+; 300 B free, and an 8-deep formula wrecked the machine
+; (scratchpad/stackcorrupt_run.out). The VG-8020 answers every one of those rows
+; and raises Out of memory at 24 nested ABS: it checks as it recurses.
+;
+; 🎯 THE STOP IS A DEFERRED ERROR, NOT AN UNWIND. The evaluator has no
+; mid-expression abort (fp_runtime_error's header); every factor that fails
+; defers an FPERR and yields 0, and the statement boundary raises it. So the
+; guard drops ITS OWN return address -- the word under it is the return point of
+; whoever entered ev_f (the climber's cl_after) -- and leaves as a failed factor would:
+; FPERR_OOM deferred (first error wins, penderr_set), DE = 0, no deeper call.
+; The levels above it then unwind normally, each seeing a cursor it cannot
+; consume, and their own deferrals lose to the first.
+;
+; ⚠️ THE RESERVE IS NOT ctl_alloc's 256. It must hold only what runs BELOW a
+; factor that passed: the deepest LEAF (a transcendental, a sub-ROM tenant's
+; CALSLT frames) plus an interrupt. 🔴 The first cut used the 256 (`inc h`, 1 B)
+; and every expression at the DIM edge refused, flat `B=1` included -- DIM keeps
+; 256 below the FRONTIER, and the statement's own stack already sits under that.
+; STK_EVAL_RESERVE (basic/sysvars.inc) is the evaluator's own number.
+; 🔴 BC IS PRESERVED, AND test_sound.py IS WHY. eval's header says it clobbers
+; BC, but a LITERAL factor never touched it, and ex_sound keeps the register
+; number in C across `call eval` for the value -- the first cut (`ld bc,` bare)
+; latched register 128 on every `SOUND n,v`. A contract its callers do not keep
+; is the contract the code must keep; the push/pop is 2 B.
+stk_guard:
+                ld      hl,(CTLLIM)
+                push    bc
+                ld      bc,STK_EVAL_RESERVE
+                add     hl,bc               ; HL = the floor + the reserve; CF = 0
+                                            ; (CTLLIM is a RAM address far below
+                                            ; $FF80, so the add cannot carry)
+                pop     bc                  ; (POP touches no flag)
+                sbc     hl,sp               ; CF iff SP is above it: room to recurse
+                ret     c
+                pop     hl                  ; drop our return: leave AS the factor
+stk_oom:
+                ld      e,FPERR_OOM         ; -> ERR 7 at the statement boundary;
+                                            ; falls into ev_f_defer
 ev_f_defer:                                 ; shared tail: E = FPERR code to defer.
                 ld      a,e                 ; D-F2-4 first-error-wins: if the argument
                 call    penderr_set         ; expression ALREADY raised a hard error
@@ -879,63 +939,6 @@ ev_f_digit:                                 ; $11..$1A -> value 0..9 (A = the to
                 sub     INT_DIGIT_BASE      ; ev_f's cp chain leaves it there)
                 jr      ev_ret_e_ix
 
-; --- stk_guard: the evaluator's STACK FLOOR (D-STACKFLOOR) -------------------
-; ⚠️ SITED AFTER ev_f_digit, NOT beside ev_f_defer: 15 B between ev_f's dispatch
-; and ev_f_digit put that `jr c,ev_f_digit` out of range. Its own `jr` reaches
-; back to ev_f_defer from here.
-; Called as the FIRST instruction of ev_f -- the place every unbounded expression
-; recursion passes through (a parenthesis, a function argument, a unary minus,
-; every operand after a pending operator). The other place the stack grows with
-; no factor in between, a `NOT NOT ...` chain, tests the same floor inline in the
-; climber's cl_not since D-EVALSLOPE (2026-10-20); it was ev_not_do's first
-; `call stk_guard` before -- a call this guard's dropping exit needs, and the
-; one loop no longer makes.
-; in: nothing. out: returns (CF set) while SP is more than STK_EVAL_RESERVE above
-; CTLLIM (= ARYEND+2, the arrays' first free byte). Clobbers HL and F only.
-;
-; 🔴 WHY IT EXISTS: since D-SPMERGE the machine stack descends from the pool's
-; frontier into the free gap, and the ONLY floor was ctl_alloc's static 256 B
-; margin -- tested when a FRAME is pushed, never while an expression recurses.
-; MEASURED 2026-09-27 (scratchpad/stackhw_run.out): 20 nested parentheses reach
-; 756 B below the frontier, 32 nested ABS 1332 B. So an array DIM'd to the edge
-; was OVERWRITTEN by a later formula: `A(X)` read garbage after `B=(((...)))` with
-; 300 B free, and an 8-deep formula wrecked the machine
-; (scratchpad/stackcorrupt_run.out). The VG-8020 answers every one of those rows
-; and raises Out of memory at 24 nested ABS: it checks as it recurses.
-;
-; 🎯 THE STOP IS A DEFERRED ERROR, NOT AN UNWIND. The evaluator has no
-; mid-expression abort (fp_runtime_error's header); every factor that fails
-; defers an FPERR and yields 0, and the statement boundary raises it. So the
-; guard drops ITS OWN return address -- the word under it is the return point of
-; whoever entered ev_f (the climber's cl_after) -- and leaves as a failed factor would:
-; FPERR_OOM deferred (first error wins, penderr_set), DE = 0, no deeper call.
-; The levels above it then unwind normally, each seeing a cursor it cannot
-; consume, and their own deferrals lose to the first.
-;
-; ⚠️ THE RESERVE IS NOT ctl_alloc's 256. It must hold only what runs BELOW a
-; factor that passed: the deepest LEAF (a transcendental, a sub-ROM tenant's
-; CALSLT frames) plus an interrupt. 🔴 The first cut used the 256 (`inc h`, 1 B)
-; and every expression at the DIM edge refused, flat `B=1` included -- DIM keeps
-; 256 below the FRONTIER, and the statement's own stack already sits under that.
-; STK_EVAL_RESERVE (basic/sysvars.inc) is the evaluator's own number.
-; 🔴 BC IS PRESERVED, AND test_sound.py IS WHY. eval's header says it clobbers
-; BC, but a LITERAL factor never touched it, and ex_sound keeps the register
-; number in C across `call eval` for the value -- the first cut (`ld bc,` bare)
-; latched register 128 on every `SOUND n,v`. A contract its callers do not keep
-; is the contract the code must keep; the push/pop is 2 B.
-stk_guard:
-                ld      hl,(CTLLIM)
-                push    bc
-                ld      bc,STK_EVAL_RESERVE
-                add     hl,bc               ; HL = the floor + the reserve; CF = 0
-                                            ; (CTLLIM is a RAM address far below
-                                            ; $FF80, so the add cannot carry)
-                pop     bc                  ; (POP touches no flag)
-                sbc     hl,sp               ; CF iff SP is above it: room to recurse
-                ret     c
-                pop     hl                  ; drop our return: leave AS the factor
-                ld      e,FPERR_OOM         ; -> ERR 7 at the statement boundary
-                jr      ev_f_defer
 ev_f_byte:                                  ; $0F,<byte>
                 inc     ix
                 ld      a,(ix+0)
@@ -1008,9 +1011,6 @@ eff_cp:
 ; ⚠️ `A=+2^2` reads 4 under BOTH bindings, so it does not separate them; it
 ; is recorded as a row that agrees without discriminating
 ; [[a-case-that-agrees-can-agree-for-the-wrong-reason]].
-ev_f_pos:
-                inc     ix                  ; consume the '+'
-                jp      ev_f                ; the operand is the next factor
 
 ev_f_neg:
                 inc     ix
@@ -2420,9 +2420,6 @@ evmc_exp_huge:
                 xor     a
                 ld      (FAC),a             ; EXP(-huge) -> 0, not an error (§12.9)
                 jp      fac_dbl_int16       ; D-NGRAM14
-evmc_exp_overflow:
-                ld      a,1
-                jp      raise_now           ; EXP(huge): at once (D-DEFERRSTUDY family 2)
 
 ; --- fp_mul_raise / fp_div_raise: main's float * and /, OVERFLOW raised at once ---
 ; 🎯 D-DEFERRSTUDY family 2 (2026-10-28): the VG-8020 raises `1E38*1E38` and
@@ -2444,11 +2441,9 @@ mt_back:
                 push    af
                 ld      a,(FPERR)
                 cp      1
-                jr      z,mtb_raise
+                jr      z,fpr_raise         ; Overflow, now (FPERR already 1: it stays)
                 pop     af
                 jp      fac_dbl_int16
-mtb_raise:
-                jp      raise_now           ; Overflow, now (FPERR already 1: it stays)
 
 fp_mul_raise:
                 call    fp_mul
@@ -2462,7 +2457,9 @@ fpr_check:
                 jr      z,fpr_raise
                 pop     af
                 ret
-fpr_raise:
+evmc_exp_overflow:                          ; EXP(huge): at once (D-DEFERRSTUDY family 2)
+                ld      a,1
+fpr_raise:                                  ; A = 1 on every path here
                 jp      raise_now           ; Overflow, now (FPERR already 1: it stays)
 
 ; ATN / SIN / COS / TAN / RND have no stubs of their own any more -- see
@@ -2562,10 +2559,10 @@ vptr_gottype:
                 ; the scalar path below hands back a scalar's value-field
                 ; address. Type in E across the '(' peek (which clobbers A).
                 ld      e,a                 ; E = resolved type
-                ld      a,(ix+0)
-                cp      '('
+                ld      a,'('
+                cp      (hl)                ; HL = IX (push hl / pop ix above)
+                ld      a,e                 ; A = type, either way (LD touches no flag)
                 jr      z,vptr_arr          ; subscript -> array element
-                ld      a,e                 ; scalar: A = type
                 call    var_find_typed      ; D-VPTRDOM: FIND, never allocate.
                                             ; Same BC,A -> CF/HL contract as
                                             ; var_alloc_or_find and it guards IX
@@ -2591,8 +2588,8 @@ vptr_close:
 vptr_arr:
                 ; HL is still the cursor at '(' (var_name_key left it here and
                 ; nothing since -- push hl/pop ix copies, the type select and
-                ; the peek read via IX -- has touched it), BC = key, E = type.
-                ld      a,e                 ; A = type (ary_op0_resolve wants it in A)
+                ; the peek reads (HL) -- has touched it), BC = key, A = E = type
+                ; (set before the jr here).
                 call    ary_op0_resolve     ; Z: HL=cursor past ')', DE=elem addr
                                             ; NZ: FPERR mapped+set (subscript out of
                                             ; range / illegal fn call / syntax error),
