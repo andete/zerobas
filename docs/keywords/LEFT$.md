@@ -41,8 +41,8 @@ Both arguments are required.
   that error wins.
 - **A missing or extra argument** (`LEFT$("AB")`, `LEFT$()`,
   `LEFT$("AB",1,1)`) is `Syntax error` (error 2).
-- **Spaces are allowed** before the parenthesis and before the comma:
-  `LEFT$ ("ABCDE" ,2)` is `"AB"`.
+- **Spaces are allowed** before the parenthesis, after it and before the
+  comma: `LEFT$ ( "ABCDE" ,2)` is `"AB"`.
 - **A short slice of a long string needs room only for the slice.** With
   little string space left, `LEFT$` of a 50-character string still works as
   on the reference.
@@ -112,6 +112,11 @@ program can observe through `FRE` differs. No keyword has this rung yet.
   before slicing it, needing 53 bytes where the reference needs 3. Now only
   the result is allocated, for a plain variable and for an array element
   ([`sliceoom_run.out`](../../scratchpad/sliceoom_run.out)).
+- **A space in front of the string argument was a Type mismatch** (fixed
+  2026-10-31, D-ARGSPACE). Both reference machines accept `LEFT$( "ABCDE",2)`; zerobas
+  stepped past the delimiter without skipping the spaces after it
+  ([`argspace_run.out`](../../scratchpad/argspace_run.out),
+  [`argspace_after.out`](../../scratchpad/argspace_after.out)).
 
 ## Where it lives
 
@@ -130,3 +135,4 @@ made by `she_snap_slice` and `she_slice_new` in
   `LEFT$` of a concatenation.
 - `make kwsweep` — the everyday row and the error rows for {2, 5, 6, 13}.
 - `make kwram` — the RAM-usage comparison.
+- `make argspace-acceptance` — a space in front of the string argument.

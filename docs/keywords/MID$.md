@@ -46,7 +46,8 @@ MID$(<string variable>,<position>[,<count>])=<string>    statement
 - **Arguments are checked left to right**, each completely before the next:
   `MID$(a$,99999,-1)` is error 6 (the position fails first), and
   `MID$(a$,0,99999)` is error 5.
-- **Spaces are allowed** before the parenthesis and around the commas.
+- **Spaces are allowed** before and after the parenthesis and around the
+  commas.
 
 ### The statement
 
@@ -150,6 +151,11 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 - **`READ` strings began pointing at the program text** (2026-10-07,
   D-READREF), as on the references. `MID$` now copies such a string out before
   writing into it; on the VG-8020 a re-`READ` and `LIST` show the original.
+- **A space in front of the string argument was a Type mismatch** (fixed
+  2026-10-31, D-ARGSPACE). Both reference machines accept `MID$( "ABCDE",2,2)`; zerobas
+  stepped past the delimiter without skipping the spaces after it
+  ([`argspace_run.out`](../../scratchpad/argspace_run.out),
+  [`argspace_after.out`](../../scratchpad/argspace_after.out)).
 
 ## Where it lives
 
@@ -181,3 +187,4 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 - `make kwram` — the RAM-usage comparison.
 - `make missing-acceptance`, row `me-extra` — the extra argument and the
   target that is not a variable.
+- `make argspace-acceptance` — a space in front of the string argument.

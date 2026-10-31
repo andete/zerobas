@@ -2596,6 +2596,12 @@ playqueue-acceptance: repack-machine
 relspace-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_relspace.py
 
+# --- argspace-acceptance: a space before a string function's string argument (D-ARGSPACE) ---
+# STRING$ / LEFT$ / MID$ / RIGHT$ / SPRITE$= with a space after ( , or =; both
+# targets vs the VG-8020.
+argspace-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_argspace.py
+
 # --- resnextend-acceptance: RESUME NEXT after the last statement ends the run (D-RESNEXTDIRECT)
 # The last program line, and a direct line with ON ERROR still set. Both
 # targets vs the VG-8020.

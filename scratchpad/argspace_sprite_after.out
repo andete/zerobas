@@ -1,0 +1,7 @@
+s.ctl vg8020 ('0', 'AB')
+s.ctl cf3300 ('0', 'AB')
+s.ctl zb ('0', 'AB')
+s.sp vg8020 ('0', 'AB')
+s.sp cf3300 ('0', 'AB')
+s.sp zb ('0', 'AB')
+refcache: 4 hit, 2 miss, 2 stored

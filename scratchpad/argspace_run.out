@@ -1,0 +1,27 @@
+  f.ctl    LEFT$("ABCDE",2)     vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=0 R$=AB      
+  a.strn   STRING$(2, "AB")     vg=ERR=0 R$=AA       cf=ERR=0 R$=AA       zb=ERR=13 R$=-         🔴 DIFF
+  a.strnv  STRING$(2, R$)       vg=ERR=0 R$=--       cf=ERR=0 R$=--       zb=ERR=13 R$=-         🔴 DIFF
+  a.strnn  STRING$(2, 65)       vg=ERR=0 R$=AA       cf=ERR=0 R$=AA       zb=ERR=0 R$=AA      
+  a.left   LEFT$( "ABCDE",2)    vg=ERR=0 R$=AB       cf=ERR=0 R$=AB       zb=ERR=13 R$=-         🔴 DIFF
+  a.mid    MID$( "ABCDE",2,2)   vg=ERR=0 R$=BC       cf=ERR=0 R$=BC       zb=ERR=13 R$=-         🔴 DIFF
+  a.right  RIGHT$( "ABCDE",2)   vg=ERR=0 R$=DE       cf=ERR=0 R$=DE       zb=ERR=13 R$=-         🔴 DIFF
+  a.instr  CHR$(64+INSTR("AB", "B")) vg=ERR=0 R$=B        cf=ERR=0 R$=B        zb=ERR=0 R$=B       
+  a.instr3 CHR$(64+INSTR(1, "AB","B")) vg=ERR=0 R$=B        cf=ERR=0 R$=B        zb=ERR=0 R$=B       
+  a.len    CHR$(64+LEN( "AB"))  vg=ERR=0 R$=B        cf=ERR=0 R$=B        zb=ERR=0 R$=B       
+  a.asc    CHR$(ASC( "A"))      vg=ERR=0 R$=A        cf=ERR=0 R$=A        zb=ERR=0 R$=A       
+  a.val    CHR$(64+VAL( "2"))   vg=ERR=0 R$=B        cf=ERR=0 R$=B        zb=ERR=0 R$=B       
+
+=== 5 divergence(s): ['a.strn', 'a.strnv', 'a.left', 'a.mid', 'a.right'] ===
+   f.ctl    vg ('0', 'AB')   cf ('0', 'AB')   zb ('0', 'AB')
+   a.strn   vg ('0', 'AA')   cf ('0', 'AA')   zb ('13', '-')
+   a.strnv  vg ('0', '--')   cf ('0', '--')   zb ('13', '-')
+   a.strnn  vg ('0', 'AA')   cf ('0', 'AA')   zb ('0', 'AA')
+   a.left   vg ('0', 'AB')   cf ('0', 'AB')   zb ('13', '-')
+   a.mid    vg ('0', 'BC')   cf ('0', 'BC')   zb ('13', '-')
+   a.right  vg ('0', 'DE')   cf ('0', 'DE')   zb ('13', '-')
+   a.instr  vg ('0', 'B')   cf ('0', 'B')   zb ('0', 'B')
+   a.instr3 vg ('0', 'B')   cf ('0', 'B')   zb ('0', 'B')
+   a.len    vg ('0', 'B')   cf ('0', 'B')   zb ('0', 'B')
+   a.asc    vg ('0', 'A')   cf ('0', 'A')   zb ('0', 'A')
+   a.val    vg ('0', 'B')   cf ('0', 'B')   zb ('0', 'B')
+refcache: 0 hit, 36 miss, 36 stored

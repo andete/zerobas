@@ -36,8 +36,8 @@ Both arguments are required.
 - **A number as the string, or a string as the count**, is `Type mismatch`
   (error 13).
 - **A missing or extra argument** is `Syntax error` (error 2).
-- **Spaces are allowed** before the parenthesis and before the comma:
-  `RIGHT$ ("ABCDE",2)` is `"DE"`.
+- **Spaces are allowed** before the parenthesis, after it and before the
+  comma: `RIGHT$ ( "ABCDE",2)` is `"DE"`.
 
 | you write | you get |
 |---|---|
@@ -100,6 +100,11 @@ applies here too; the [`LEFT$`](LEFT$.md) page has the details.
   the three slicing functions share; the tight-memory rows were measured on
   `LEFT$` and `MID$`
   ([`sliceoom_run.out`](../../scratchpad/sliceoom_run.out)).
+- **A space in front of the string argument was a Type mismatch** (fixed
+  2026-10-31, D-ARGSPACE). Both reference machines accept `RIGHT$( "ABCDE",2)`; zerobas
+  stepped past the delimiter without skipping the spaces after it
+  ([`argspace_run.out`](../../scratchpad/argspace_run.out),
+  [`argspace_after.out`](../../scratchpad/argspace_after.out)).
 
 ## Where it lives
 
@@ -114,3 +119,4 @@ shares `str_arg_open` with `LEFT$` and `MID$`, and `str_lr_count` with
 - `make string-acceptance` — `RIGHT$("HELLO",2)` among the core string verbs.
 - `make kwsweep` — the everyday row and the error rows for {2, 5, 6, 13}.
 - `make kwram` — the RAM-usage comparison.
+- `make argspace-acceptance` — a space in front of the string argument.

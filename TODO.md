@@ -332,8 +332,8 @@ item — do **one item per session** to keep context lean.
       shared sign test with a block reorder (8 B page 1, reviewer's count 2026-10-31); the full stk_guard inline (3 B more,
       two test rows move). QUEUED as batch 7b: the shx_finish / str_lr_count spans' reviewer
       (~76 B low, reviewer's count 2026-10-31: str_lr_count / MID$ / str_min_bc, shx_finish as an alias of sst_op's tail,
-      INKEY$ through the FILL op). To measure first: `STRING$(3, "A")` with a space after
-      the comma (str_eval_one does not skip spaces -- D-RELSPACE's class).
+      INKEY$ through the FILL op). Measured the same day: `STRING$(3, "A")` with a space
+      after the comma WAS a divergence, with four relatives -- D-ARGSPACE, fixed.
 
 - [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
@@ -354,6 +354,28 @@ item — do **one item per session** to keep context lean.
       ([`basic_probe_relspace.py`](probes/basic/basic_probe_relspace.py), the
       program [`relspace_measure.bas`](scratchpad/relspace_measure.bas): eight
       rows, both targets SAME). Docs: docs/concepts/strings-and-string-space.md.
+
+- [x] 🐛 **A SPACE IN FRONT OF A STRING FUNCTION'S STRING ARGUMENT IS A TYPE MISMATCH
+      (D-ARGSPACE, found 2026-10-31 by a D-REREAD batch 7 reviewer).**
+      🎚️ TIER 1 — `STRING$(2, "AB")` and `LEFT$( A$,1)` are ordinary typed BASIC.
+      🤖 **AUTONOMOUS** — measured ([`argspace_probe.py`](scratchpad/argspace_probe.py)
+      -> [`argspace_run.out`](scratchpad/argspace_run.out), and
+      [`argspace_sprite_probe.py`](scratchpad/argspace_sprite_probe.py)): the VG-8020 and
+      the CF-3300 accept `STRING$(2, "AB")`, `STRING$(2, R$)`, `LEFT$( "ABCDE",2)`,
+      `MID$( "ABCDE",2,2)`, `RIGHT$( "ABCDE",2)` and `SPRITE$(0)= "AB"`; zerobas raised
+      ERR 13 for all six. D-FNSPACE (2026-09-09) had measured spaces BEFORE `(` and
+      before a comma, never after. INSTR / LEN / ASC / VAL agreed already (their
+      arguments go through eval, which skips spaces).
+      ✅ **FIXED 2026-10-31**: three sites stepped past the delimiter with `inc hl`, which
+      skips nothing, then asked str_eval: str_arg_open (LEFT$ / MID$ / RIGHT$) now uses
+      `rst $10`; STRING$'s second argument and SPRITE$='s value use str_eval_next. -2 B
+      low region. Both probes read 0 divergences after
+      ([`argspace_after.out`](scratchpad/argspace_after.out)). Rows: `make
+      argspace-acceptance` ([`basic_probe_argspace.py`](probes/basic/basic_probe_argspace.py),
+      the program [`argspace_measure.bas`](scratchpad/argspace_measure.bas): eight rows,
+      both targets SAME; knifed back to `inc hl` at str_arg_open, it FAILS on both
+      targets, [`argspace_knife.out`](scratchpad/argspace_knife.out)). Docs: the
+      LEFT$ / MID$ / RIGHT$ / STRING$ / SPRITE keyword pages.
 
 - [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
       (D-BD2FRAGILE, 2026-10-31).**
@@ -8266,7 +8288,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10757 (T-6FE392)8 (T-529ABE)` from `TODO.md:16439 (T-529ABE)`: a
+      `TODO.md:10779 (T-6FE392)8 (T-529ABE)` from `TODO.md:16461 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11226,7 +11248,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16439 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16461 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

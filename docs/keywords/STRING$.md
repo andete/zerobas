@@ -43,8 +43,8 @@ Which form you wrote is decided by the type of the second argument.
   (error 13).
 - **A missing or extra argument** (`STRING$(2)`, `STRING$()`,
   `STRING$(2,"A","A")`) is `Syntax error` (error 2).
-- **Spaces are allowed** before the parenthesis and before the comma:
-  `STRING$ (2,65)` is `"AA"`.
+- **Spaces are allowed** before the parenthesis, before the comma and after
+  it: `STRING$ (2,65)` and `STRING$(2, "AB")` are both `"AA"`.
 
 | you write | you get |
 |---|---|
@@ -116,6 +116,11 @@ differs ([`kwram_full.out`](../../scratchpad/kwram_full.out)).
 - **`STRING$ (2,65)` and `STRING$(2 ,65)` were syntax errors** (fixed
   2026-09-09, D-FNSPACE)
   ([`fnspace_after2.out`](../../scratchpad/fnspace_after2.out)).
+- **A space in front of the string argument was a Type mismatch** (fixed
+  2026-10-31, D-ARGSPACE). Both reference machines accept `STRING$(2, "AB")`; zerobas
+  stepped past the delimiter without skipping the spaces after it
+  ([`argspace_run.out`](../../scratchpad/argspace_run.out),
+  [`argspace_after.out`](../../scratchpad/argspace_after.out)).
 
 ## Where it lives
 
@@ -140,3 +145,4 @@ number. Both numbers are checked by the shared `get_byte_arg` in
 - `make kwram` — the RAM-usage comparison.
 - `make missing-acceptance`, row `se-empty` — the empty fill string, and the
   missing parenthesis that outranks it.
+- `make argspace-acceptance` — a space in front of the string argument.

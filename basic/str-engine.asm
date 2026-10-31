@@ -1417,8 +1417,10 @@ str_arg_open:
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
                 jr      nz,sao_empty
-                inc     hl
-                ld      a,(hl)              ; empty first arg -> deferred syntax error
+                rst     $10                 ; D-ARGSPACE: past '(' AND any spaces --
+                                            ; both references read `LEFT$( "AB",1)`
+                                            ; (scratchpad/argspace_run.out); A = the byte.
+                                            ; Empty first arg -> deferred syntax error
                 cp      ')'
                 ret     z                   ; Z from an equal cp => CF clear: malformed
                 cp      ','
@@ -2028,9 +2030,10 @@ str_fn_string:
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
                                             ; 3 B for 3 B.
                 jr      nz,sfg_reject1      ; unbalance-safe: pop [count] first
-                inc     hl
                 ; --- resolve the fill byte: probe for a string 2nd arg (D-4) ---
-                call    str_eval            ; CF set -> string 2nd arg; STRPTR->desc
+                call    str_eval_next       ; D-ARGSPACE: past ',' AND any spaces (both
+                                            ; references read `STRING$(2, "AB")`); CF set
+                                            ; -> string 2nd arg; STRPTR->desc
                 jr      c,sfg_str2
                 ; numeric 2nd arg: re-parse via eval, CHECK the byte domain (D-F2-2 stage B)
                 call    eval_byte_arg       ; A = E = char code 0..255 (256.. ERR 5, >int16

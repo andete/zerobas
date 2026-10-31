@@ -137,6 +137,11 @@ The one rung not yet proven is **RAM usage**.
 - **Every sprite test used pattern 0**, so a `SPRITE$` that ignored its index
   would have passed. A test now writes pattern 3, then pattern 0, and reads
   pattern 3 back.
+- **A space in front of the string argument was a Type mismatch** (fixed
+  2026-10-31, D-ARGSPACE). Both reference machines accept `SPRITE$(0)= "AB"`; zerobas
+  stepped past the delimiter without skipping the spaces after it
+  ([`argspace_run.out`](../../scratchpad/argspace_run.out),
+  [`argspace_after.out`](../../scratchpad/argspace_after.out)).
 
 ## Where it lives
 
@@ -169,3 +174,4 @@ in [sub/graphics.asm](../../sub/graphics.asm):
 - `make kwsweep` — the pattern write, `SPRITE ON` and `SPRITE OFF`/`STOP`
   with two real overlapping sprites, the attribute bytes, and the error rows.
 - `make kwram` — the RAM-usage comparison.
+- `make argspace-acceptance` — a space in front of the string argument.

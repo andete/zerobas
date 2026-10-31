@@ -1118,8 +1118,9 @@ spr_assign:
                 call    spr_parse_index     ; GFX_SN = n; HL past ')'
                 call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,gfx_syntax       ; `SPRITE$(0)` with no `=` -> ERR 2
-                inc     hl
-                call    str_eval            ; STRPTR -> [len][ptr]; CF=1 iff a string
+                call    str_eval_next       ; D-ARGSPACE: past '=' AND any spaces
+                                            ; (`SPRITE$(0)= "AB"` on both references);
+                                            ; STRPTR -> [len][ptr]; CF=1 iff a string
                 jp      nc,gfx_typeerr      ; SPRITE$(0)=5 -> ERR 13 (measured)
                 call    check_expr_errors
                 push    hl                  ; guard the statement cursor
