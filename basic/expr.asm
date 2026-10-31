@@ -151,8 +151,7 @@ cl_not_oom:
 ; Its result is a NUMBER, so the chain goes on -- `"A" = "A" = -1` is -1
 ; (MEASURED) -- but only at the relational level and looser: an arithmetic
 ; operator after it is not ours (`"A"="B"-1` ends the expression at the `-`, as
-; the old ev_rel's return did). Both of its exits come back HERE: the D-2 arm
-; returns, and the success tail's `jp evr_scan` lands on the `ret` below.
+; the old ev_rel's return did). Both of its exits come back HERE by returning.
 cl_str:
                 pop     af                  ; drop the [guard]
                 call    ev_rel_str          ; DE = -1 / 0 (or 0, ERR 13 deferred)
@@ -167,8 +166,6 @@ cl_after_rel:                               ; ... the relational level and loose
 cl_rel_none:                                ; MOD \ (and $FD+: no operator anyway)
                 xor     a                   ; a token that is no operator
                 jr      cl_after_tok
-evr_scan:                                   ; ev_rel_str's success tail jumps here
-                ret                         ; -> cl_after_rel, via its own call
 
 ; --- entry points: push the sentinel, then the operand ----------------------
 ; ev_logic: a full expression. ev_e: the arithmetic levels only (str-engine's

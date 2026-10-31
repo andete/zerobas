@@ -265,3 +265,13 @@ warm-up 11s
 GATES: 245/245 green
 hashes: 16834988 a86ee06b 68766de1 e3846106 d36b67a6
 recorded: this full green battery is now the baseline a future skip must prove itself against
+GATE TIER: FULL
+  why: --handoff: every hand-off runs the full battery
+  hours since the last full green: 1.0 (full once a day, at every hand-off, and on a RAM-address move)
+  excluded-five suites: bdos-acceptance diskbasic-acceptance fat-error-acceptance input-devices-acceptance lnblank-say-acceptance
+bdos-acceptance exit=0
+diskbasic-acceptance exit=0
+fat-error-acceptance exit=0
+input-devices-acceptance exit=0
+lnblank-say-acceptance exit=0
+GATE TIER RAN: FULL

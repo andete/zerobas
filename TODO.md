@@ -285,6 +285,49 @@ item — do **one item per session** to keep context lean.
       sidr_done fold (6 B). test_fpdiv_fast counts MUL_ADIG / MUL_CARRY / MUL_I /
       MUL_PP as dead scratch now. Tapes: the two Boulder Dash snapshots moved again
       (SAME -> NEAR 24, NEAR 30 -> 114): timing, as noted at batch 4.
+      ✅ **BATCH 6 (2026-10-31), measured 2026-10-31: low region free 320 -> 368 B, its
+      pad 191 -> 260 B, page-1 pads +7 B -- ~124 B** (ev_f_arr joins var_load_fac's
+      value read at a new vlf_value, 27+6; STRING$ 22: eval_byte_arg, the count
+      carried in H by `ex (sp),hl`, str_arg_err; INSTR 15: ev_f_empty RAISES since
+      D-DEFERRSTUDY family 3, so the reject tails' pops were dead, and the guard
+      words go [aT][p]; zkey_hook 18: the KEY band and TRAPPEND share ZTRAP's page,
+      so only L is computed and BC / DE are untouched; ev_rel_str 9; ctl_alloc 8:
+      the one-page margin folded into the floor with `inc b`; HEX$/OCT$/BIN$ 7:
+      eval_addr; ERASE 6: var_name_key's VARTYPE already says DEFTBL_STR for a `$`
+      or DEFSTR name; pop_lhs_and_probe 4: our caller's return address carried
+      down the frame, PLF_RA2 no longer written; LEN/ASC/VAL 1). Each layout fact is
+      pinned by an assembly-time guard. 🔴 **fp_trunc (24 B) WAS APPLIED AND TAKEN
+      OUT AGAIN**: Boulder Dash II then hung at line 10 (PC looping in $FCE0-$FD69,
+      the reference on line 3341 by T180); a file bisect named float-arith.asm, and
+      800 INT / FIX cases were identical in value AND RAM old-vs-new
+      (test_fpdiv_fast's Pair, HEAD as the old tree) -- layout or timing, not a
+      wrong answer. D-BD2FRAGILE. Knife pins unchanged; tapes: the tally as batch 5,
+      Boulder Dash NEAR 117, Boulder Dash II NEAR 27. Held back: ERASE+DIM's shared
+      name head (reviewer's count on 2026-10-31: ~45 B low for 22 B on page 1), esa_release_int taking the
+      success tail, cl_str's DIM-style VALTYP question (H1), CVI / LEN sharing a
+      close helper, the dead `inc sp` pair in ixsp_unwind.
+
+- [ ] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
+      MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
+      🎚️ TIER 1 — `IF A$<= "B"` is ordinary typed BASIC.
+      🤖 **AUTONOMOUS** — measured ([`relspace_probe.py`](scratchpad/relspace_probe.py)
+      -> [`relspace_run.out`](scratchpad/relspace_run.out)): the VG-8020 answers -1 / 0
+      for `"A"<= "B"`, `"A"<>  "B"`, `"A">= "B"`, `A$ <= "B"` and `"A"< = "B"`;
+      zerobas raises ERR 13 for all five, on HEAD as well (not batch 6's doing).
+      `"A"< "B"` and `"A"<="B"` agree. The reviewer's reading: ev_rel_str steps past
+      a second relop with a bare `inc ix` where the one-character path uses ixsp,
+      and str_eval_one does not skip spaces either.
+
+- [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
+      (D-BD2FRAGILE, 2026-10-31).**
+      🎚️ TIER 1 — a program that runs on the reference stops running.
+      🤖 **AUTONOMOUS** — registers / RAM only, the tape is RUN, never decoded. With batch 6's fp_trunc (identical INT / FIX in value and
+      RAM) the title sits at line 10 with the PC in $FCE0-$FD69 from T120 on; without
+      it, on the reference's line 3341. Batches 4 and 5 moved its snapshot distance
+      too (30 -> 114 -> 27). Earlier history: D-WSZERO's DISKSLOT reset and the S15
+      stack collision (docs/TODO-done.md). Measure first: where SP runs during the
+      load on both builds against the region the game loads into, and which cells in
+      $FC00-$FDFF zerobas writes after the load that the reference does not.
 
 - [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
       FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
@@ -8154,7 +8197,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10645 (T-6FE392)8 (T-529ABE)` from `TODO.md:16327 (T-529ABE)`: a
+      `TODO.md:10688 (T-6FE392)8 (T-529ABE)` from `TODO.md:16370 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11114,7 +11157,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16327 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16370 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

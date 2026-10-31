@@ -116,11 +116,9 @@ ctl_alloc:
                 ld      hl,(CSP)
                 or      a
                 sbc     hl,de               ; HL = the frame's base
-                jr      c,ca_full           ; CSP wrapped -> refuse (an
-                                            ; uninitialised pool cannot push)
+                ret     c                   ; CSP wrapped -> refuse, CF=1 (an
+                                            ; uninitialised pool, CSP=0, cannot push)
                 ld      bc,(CTLLIM)         ; the variable region's first free byte
-                sbc     hl,bc               ; (CF is clear from the jr above)
-                jr      c,ca_full           ; base < floor -> collided
                 ; 🔴 AND THE FLOOR NEEDS A MARGIN NOW THAT `SP` IS IN HERE. Before the
                 ; merge the only thing below the frontier was nothing at all, so
                 ; `base >= CTLLIM` was the whole test. Now the MACHINE STACK lives
@@ -133,11 +131,16 @@ ctl_alloc:
                 ; state and taken the machine with it. The suite read that as "CTLLIM
                 ; stale-LOW", which is what this corruption looks like from outside;
                 ; the floor is correct and the reservation was missing.
-                ; HL is base-CTLLIM here, so one byte of it is the whole test.
-                ld      a,h
-                cp      high CTL_FRAME_MARGIN ; D-STACKFLOOR: a frame's own margin,
-                                            ; bigger than DIM's (sysvars.inc)
-                jr      c,ca_full           ; less than the reserve left -> pool full
+                ; The margin is folded into the floor: BC = CTLLIM + CTL_FRAME_MARGIN
+                ; (D-STACKFLOOR: a frame's own margin, bigger than DIM's, sysvars.inc),
+                ; one page, so `inc b`. No wrap: CTLLIM < $FF00 whenever CSP is live
+                ; (sh_ctl_reset writes both; CSP = 0 refuses at the `ret c` above).
+    IF CTL_FRAME_MARGIN != 256
+                db      CTL_ALLOC_INC_B_ASSUMES_A_ONE_PAGE_MARGIN
+    ENDIF
+                inc     b
+                sbc     hl,bc               ; (CF is clear from the ret above)
+                ret     c                   ; base < floor + margin -> pool full, CF=1
                 add     hl,bc               ; HL = the base again. `add` back rather
                                             ; than push/pop -- the relocation this
                                             ; tail-jumps to moves the stack out from
@@ -147,9 +150,6 @@ ctl_alloc:
                 jp      ctl_reloc           ; -> main page 1, which has the room; a
                                             ; TAIL jump, so its `ret` goes to OUR
                                             ; caller and no extra word rides the stack
-ca_full:
-                scf
-                ret
 ; --- pdf_badname: a structurally malformed 8.3 filename -> ERR 56 ----------
 ; D-FSPEC. `parse_disk_fcb` used `jp bl_load_error` here, and load_error PRINTS
 ; AND RETURNS -- from inside the parser, so the `ret` landed in the CALLER and
@@ -1019,8 +1019,9 @@ ev_str_arg:
                 ; caller's stale-STRPTR read can print a garbage length/byte
                 ; (spec-basic-empty-expr-syntax-error.md).
                 cp      ')'
-                jp      z,ev_f_empty
+                jr      z,esa_empty         ; Z still set: the jp below takes it
                 cp      ','
+esa_empty:
                 jp      z,ev_f_empty
                 call    str_eval_ix            ; STRPTR -> desc; HL advanced; CF=ok
                 ; BUG C class (Fable 2026-07-17): a NON-string arg -- LEN(5), or a
@@ -1366,6 +1367,7 @@ sfs_finish:
 ; at all) is UNTOUCHED -- see spec-basic-penderr.md §8.
 str_arg_empty:
                 ld      a,4
+str_arg_err:                                ; A = the code: STRING$'s empty x$ (3) joins
                 call    penderr_set
                 jp      str_eval_no
 ; --- str_arg_open: the prologue LEFT$ / RIGHT$ / MID$ all share (D-ARGOPEN) --
@@ -1844,26 +1846,23 @@ ems_err_pop1:
 ; NOT in SH_OP, which a nested string operation inside the argument would
 ; clobber (`HEX$(LEN(A$))`).
 str_fn_hex:
-                ld      a,6                 ; op = 6 (HEX_BUILD)
+                ld      c,6                 ; op = 6 (HEX_BUILD)
                 jr      str_fn_radix
 str_fn_oct:
-                ld      a,7                 ; op = 7 (OCT_BUILD)
+                ld      c,7                 ; op = 7 (OCT_BUILD)
                 jr      str_fn_radix
 str_fn_bin:
-                ld      a,14                ; op = 14 (BIN_BUILD; 8 is sh_fill)
-str_fn_radix:
-                ld      c,a                 ; C = the build op
+                ld      c,14                ; op = 14 (BIN_BUILD; 8 is sh_fill)
+str_fn_radix:                               ; C = the build op (rst $10 keeps it)
                 call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
                 jp      nz,str_arg_empty
                 inc     hl
-                push    bc                  ; guard the op across eval
-                call    eval                ; DE = n (unsigned-16 view, D-2); HL advanced
-                push    hl                  ; guard cursor across the checked conversion
-                call    fac_to_int_addr     ; the int argument is the ADDRESS domain,
-                pop     hl                  ; CHECKED (FPERR on overflow) — overrides
-                pop     bc                  ; eval's silent DE when n was a float.
+                push    bc                  ; [op] across eval
+                call    eval_addr           ; DE = n: the ADDRESS domain, CHECKED
+                                            ; (FPERR on overflow) — overrides eval's
+                                            ; silent DE when n was a float.
                                             ; D-BF-2: OCT$ never had this, so
                                             ; OCT$(65536) silently printed OCT$(0).
                 ; D-BF-1 stood HERE and is GONE with D-PENDERR (-17 B, low region).
@@ -1878,10 +1877,10 @@ str_fn_radix:
                 ; halves are the normal case and neither costs a byte here.
                 ld      a,(hl)
                 cp      ')'
-                jp      nz,str_arg_empty
+                jp      nz,sfg_reject1      ; pops [op], then str_arg_empty
                 inc     hl                  ; HL past ')'
-                push    hl                  ; guard cursor
-                ld      a,c                 ; op = 6 HEX / 7 OCT / 14 BIN
+                ex      (sp),hl             ; [cursor]; L = the op
+                ld      a,l                 ; op = 6 HEX / 7 OCT / 14 BIN
                 ld      b,d
                 ld      c,e                 ; BC = the number (blk+6)
                 ; ...and FALLS THROUGH into shx_op_tail (the `jr` here was to the
@@ -2017,8 +2016,8 @@ str_fn_string:
                                             ; drive never reaches ev_ff_strnum's deferred
                                             ; error, so a bare str_eval_no INFINITE-LOOPED
                                             ; (screen fills with " 0"). Defer FPERR=4 here.
-                call    inc_eval            ; DE = n; HL advanced (IX preserved)
-                call    get_byte_arg        ; D-F2-2 stage B: STRING$ count is a byte 0..255
+                inc     hl
+                call    eval_byte_arg       ; D-F2-2 stage B: STRING$ count is a byte 0..255
                                             ; (>int16 ERR 6, 256.. ERR 5, negative ERR 5) —
                                             ; replaces the clamp + D-3 negative hang-fix
                                             ; (STRMAX=255 == byte ceiling). A = fill count.
@@ -2033,9 +2032,22 @@ str_fn_string:
                 call    str_eval            ; CF set -> string 2nd arg; STRPTR->desc
                 jr      c,sfg_str2
                 ; numeric 2nd arg: re-parse via eval, CHECK the byte domain (D-F2-2 stage B)
-                call    eval                ; DE = char code; HL advanced past it
-                call    get_byte_arg        ; char code is a byte 0..255 (256.. ERR 5, >int16 ERR 6)
-                jr      sfg_close
+                call    eval_byte_arg       ; A = E = char code 0..255 (256.. ERR 5, >int16
+                                            ; ERR 6); HL advanced past it
+sfg_close:                                  ; E = fill byte, HL = cursor       [count]
+                ld      a,(hl)
+                cp      ')'
+                jr      nz,sfg_reject1      ; unbalance-safe: pop [count] first
+                inc     hl                  ; HL = cursor, past ')'
+                ex      (sp),hl             ; [cursor]; H = the count (pushed as A)
+                ld      l,h                 ; blk+0 = the count (sh_go puts the op in H)
+                ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up
+                                            ; (same move as SPACE$ above)
+                jp      shx_tail
+sfg_reject1:
+                pop     af                  ; discard [count] (or str_fn_radix's [op])
+                jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / ')')
+                                            ; -- STRING$ single-byte token would else hang
 sfg_str2:
                 push    hl                  ; guard the str_eval-advanced cursor across
                                             ; the descriptor dereference (which uses HL)
@@ -2047,7 +2059,8 @@ sfg_str2:
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = ptr (body address)
-                ld      a,(de)              ; A = fill byte (first byte of x$)
+                ld      a,(de)              ; fill byte (first byte of x$)
+                ld      e,a                 ; blk+4 = the fill byte
                 pop     hl                  ; HL = cursor (restored)
                 jr      sfg_close
 sfg_str2_empty:
@@ -2062,32 +2075,7 @@ sfg_str2_empty:
                 jr      nz,sfg_reject1      ; no `)`: Syntax error wins
                 pop     af                  ; discard [count]
                 ld      a,3                 ; Illegal function call (deferred)
-                call    penderr_set
-                jp      str_eval_no
-sfg_close:
-                push    af                  ; guard fill byte                  [count][fill]
-                ld      a,(hl)
-                cp      ')'
-                jr      nz,sfg_reject2      ; unbalance-safe: pop [count][fill] first
-                inc     hl                  ; HL = cursor, past ')'
-                push    hl
-                pop     ix                  ; IX = cursor (parked)
-                pop     af                  ; A = fill byte                    [count]
-                ld      e,a                 ; blk+4 = the fill byte
-                pop     af                  ; A = clamped count                [ ]
-                ld      l,a                 ; blk+0 = the count
-                ld      a,8                 ; op = 8 (FILL) -- shape-C follow-up
-                                            ; (same move as SPACE$ above)
-                push    ix                  ; guard the parked cursor across the call
-                jp      shx_tail
-sfg_reject1:
-                pop     af                  ; discard [count]
-                jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ',' / empty
-                                            ; x$) -- STRING$ single-byte token would else hang
-sfg_reject2:
-                pop     af                  ; discard [fill]
-                pop     af                  ; discard [count]
-                jp      str_arg_empty       ; BUG C class: defer FPERR=4 (missing ')')
+                jp      str_arg_err         ; penderr_set, then str_eval_no
 
 ; ev_f_instr: INSTR([p,]a$,b$) -> 1-based position of b$ within a$, searching
 ; from position p (default 1); 0 if not found. Entered from ev_f (basic/expr.asm)
@@ -2121,15 +2109,16 @@ ev_f_instr:
                 call    eval_pos_arg        ; DE = p, 1..255 (D-MISS-2; or aborts)
                 push    de                  ; guard p                             [p]
                 call    skip_comma
-                jr      nz,efi_reject_p
+                jp      nz,ev_f_empty       ; 3-arg form missing ',': ev_f_empty RAISES
+                                            ; (D-DEFERRSTUDY family 3) and raise_error
+                                            ; re-bases SP, so [p] needs no discard.
+                                            ; 🔴 If ev_f_empty ever defers again, the
+                                            ; three INSTR sites that jump to it with
+                                            ; words pushed break (D-REREAD batch 6).
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> a$;
                                             ; HL advanced; CF=ok
                 jr      nc,efi_tm_p         ; D-INSTRTM: a$ present but NOT a string
                 jr      efi_dup_a
-efi_reject_p:
-                pop     de                  ; discard [p]
-                jp      ev_f_empty          ; BUG C class: 3-arg form missing ','
-                                            ; -> deferred syntax error
 ; --- D-INSTRTM: an operand that is NOT A STRING is a TYPE MISMATCH ----------
 ; (docs/spec-basic-instrtm.md.) These two tails used to be reached BOTH by the
 ; `jr nz` that means "the ',' is missing" and by the `jr nc` that means "there IS
@@ -2146,9 +2135,9 @@ efi_reject_p:
 ; ⚠️ The discards use DE, not HL: HL is the cursor, still ON the operand, and
 ; `eval` needs it.
 efi_tm_pa:
-                pop     de                  ; discard [aT]                        [p]
+                pop     de                  ; discard [p]                         [aT]
 efi_tm_p:
-                pop     de                  ; discard [p]                         [ ]
+                pop     de                  ; discard [aT] (or [p], from efi_tm_p) [ ]
                 call    eval                ; the operand, numerically -- it arms its
                                             ; OWN fault first if it has one
                 ld      e,FPERR_TYPEMM      ; -> ERR 13, unless the operand beat us
@@ -2162,28 +2151,29 @@ efi_dup_a:
                                             ; D-CATCOPY: a scalar or an owned temp is
                                             ; used as it is, not copied: INSTR only
                                             ; reads it (basic/strvar.asm).
-                ex      (sp),hl             ; HL=cursor(restored); top:=aT        [p][aT]
+                pop     de                  ; DE = cursor                         [p]
+                ex      (sp),hl             ; HL = p; top := aT                   [aT]
+                push    hl                  ;                                     [aT][p]
+                ex      de,hl               ; HL = cursor (restored)
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
                                             ; 3 B for 3 B.
-                jr      nz,efi_reject_pa    ; malformed -> discard [p][aT]
+                jp      nz,ev_f_empty       ; malformed (raises; SP re-based, see above)
                 call    str_eval_next       ; D-NGRAM11: past ',', STRPTR -> b$;
                                             ; HL advanced; CF=ok
                 jr      nc,efi_tm_pa        ; D-INSTRTM: b$ present but NOT a string
                 push    hl                  ; guard cursor (past b$)              [p][aT][cursor]
                 call    str_snapshot_ro     ; HL = bT (b$ snapshot); STRPTR=bT
                                             ; (D-CATCOPY, as a$ above)
-                ex      (sp),hl             ; HL=cursor(restored); top:=bT        [p][aT][bT]
+                ex      (sp),hl             ; HL=cursor(restored); top:=bT        [aT][p][bT]
                 ld      a,(hl)
                 cp      ')'
-                jr      nz,efi_reject_pab
+                jp      nz,ev_f_empty       ; missing ')' (raises; SP re-based, see above)
                 inc     hl                  ; HL = cursor, past ')'
                 ; --- everything parsed: search ---
-                pop     iy                  ; IY = bT                             [p][aT]
-                pop     ix                  ; IX = aT                             [p]
-                pop     bc                  ; BC = p                              [ ]
-                ; HL still = the real final cursor (untouched by the pops above)
+                pop     de                  ; DE = bT                             [aT][p]
+                pop     bc                  ; BC = p                              [aT]
                 ; D-MISS-2: the two hand-rolled p<1 tests that stood here (a
                 ; `bit 7,b` and an `or c`, each with its own IX-restore dance and
                 ; `jp ev_f_ifc`) are GONE -- eval_pos_arg above subsumes both and
@@ -2200,11 +2190,8 @@ efi_p_ok:
                 ; CURRENT bodies, was inline-bodied) moved to the sub-ROM
                 ; (sub/strheap.asm sh_instr_search) once this low region ran
                 ; out of room for it.
-                push    hl                  ; guard the real cursor               [cursor]
-                push    iy
-                pop     de                  ; DE = b$ temp descriptor address
-                push    ix
-                pop     hl                  ; HL = a$ temp descriptor address; BC = p
+                ex      (sp),hl             ; HL = aT; top := the real cursor     [cursor]
+                                            ; (DE = bT, BC = p)
                 ld      a,11
                 call    sh_go_g             ; op = 11 (INSTR_SEARCH): HL = the result
                 ; 🎯 D-DEEPEXPR P3 (2026-10-20): a SKIPPED search must read 0, not
@@ -2218,17 +2205,6 @@ efi_skipped:
                 jp      flt_int_result      ; INSTR returns an int even when a float rode
                                             ; in via p or a nested STR$ arg (float.asm F1;
                                             ; clobbers A only, then ret to the caller)
-efi_reject_pa:
-                pop     hl                  ; discard [aT]                        [p]
-                pop     hl                  ; discard [p]                         [ ]
-                jp      ev_f_empty          ; BUG C class: malformed a$/b$ or missing ','
-                                            ; (INSTR("AB")) -> deferred syntax error, not the
-                                            ; silent ev_f_err (stale STRPTR + dropped tail)
-efi_reject_pab:
-                pop     hl                  ; discard [bT]                        [p][aT]
-                pop     hl                  ; discard [aT]                        [p]
-                pop     hl                  ; discard [p]                         [ ]
-                jp      ev_f_empty          ; BUG C class: missing ')' -> deferred syntax error
 
 ; --- ems_print / ems_fallback: PRINT's string-item tails (basic/print.asm) -----
 ; exps_print and exps_fallback land here. ems_print prints the string str_eval
@@ -2416,8 +2392,8 @@ type_mismatch_set:
 ; HL = cursor past the LHS operand, STRPTR -> the LHS descriptor.
 ; 🔁 D-EVALSLOPE (2026-10-20): ev_rel is gone; the one climber (expr.asm cl_str)
 ; now CALLS this, and both exits come back to that call -- the D-2 arm's `ret`
-; directly, the success tail's `jp evr_scan` through the `ret` that label now
-; names. Not a byte of this routine changed (it sits in front of the $3297 pin).
+; directly, the success tail through flt_int_result's own `ret` (D-REREAD batch 6:
+; 9 B, all in front of the $3297 pin).
 ;
 ; Snapshots the LHS into an OWNED temp (str_snapshot_to_temp — was str_dup_temp
 ; pre-4a, same calling convention) so evaluating the RHS can't clobber it via
@@ -2446,9 +2422,8 @@ ev_rel_str:
                                             ; a temp is a fixed-address GC root, safe
                                             ; across the RHS). The copy was the second
                                             ; descriptor per compare the probe measured.
-                ex      (sp),hl             ; [LHStemp]; HL = cursor
-                push    hl
                 pop     ix                  ; IX = cursor (for the relop reads)
+                push    hl                  ; [LHStemp] (HL is dead until str_eval_ix)
                 call    ev_sp
                 call    relop_bit
                 jr      nc,ers_mismatch     ; bare string LHS, no relop -> D-2 ([LHStemp])
@@ -2467,29 +2442,25 @@ ers_rhs:
                 pop     bc                  ; C = bits            [LHStemp][cursor]
                 jr      nc,ers_rhs_mismatch ; RHS not a string -> D-2 (`A$ < 5`)
                 ; HL = new cursor (past RHS). STRPTR = RHS descriptor.
-                ex      (sp),hl             ; [LHStemp][newcursor]; HL = old cursor (dead)
-                ld      hl,(STRPTR)         ; HL = RHS descriptor addr
-                ex      de,hl               ; DE = RHS descriptor addr
-                pop     ix                  ; IX = newcursor       [LHStemp]
-                pop     hl                  ; HL = LHS temp addr   [ ]
-                push    ix                  ; [newcursor] (str_cmp_bits CALSLT clobbers IX)
+                pop     de                  ; drop the old cursor  [LHStemp]
+                ex      (sp),hl             ; HL = LHS temp addr   [newcursor] (str_cmp_bits
+                                            ; CALSLT clobbers IX)
+                ld      de,(STRPTR)         ; DE = RHS descriptor addr
                 call    str_cmp_bits        ; A = actual bit (1/2/4); preserves BC (C=reqbits)
                 pop     ix                  ; IX = newcursor (ev_rel's "advanced cursor")
-                ld      de,0                ; false = 0
                 and     c                   ; intersect requested with actual
-                jr      z,ers_done
-                dec     de                  ; true = -1 ($FFFF)
-ers_done:
-                call    flt_int_result      ; the -1/0 result is an int even when a float
-                                            ; rode in via a nested STR$ operand (float.asm
-                                            ; F1; clobbers A only, preserves IX)
+                add     a,$FF               ; CF iff any requested bit matched
+                sbc     a,a                 ; $FF true / 0 false
+                ld      e,a
+                ld      d,a                 ; DE = -1 / 0
                 ; A string comparison's result is a NUMBER, so a chain that starts
                 ; with strings continues in the numeric loop: `"A" = "A" = -1` is
-                ; `("A" = "A") = -1` = -1 (MEASURED). IX is the advanced cursor and
-                ; flt_int_result preserves it, which is exactly what evr_scan wants.
-                ; (evr_scan is a bare `ret` back to expr.asm's cl_str since
-                ; D-EVALSLOPE, which goes on at the relational level and looser.)
-                jp      evr_scan
+                ; `("A" = "A") = -1` = -1 (MEASURED). The tail call returns to
+                ; expr.asm's cl_str (D-EVALSLOPE), which goes on at the relational
+                ; level and looser; cl_after_rel's ev_sp rewrites A and F first.
+                jp      flt_int_result      ; the -1/0 result is an int even when a float
+                                            ; rode in via a nested STR$ operand (float.asm
+                                            ; F1; clobbers A only, preserves IX)
 ers_rhs_mismatch:
                 pop     ix                  ; BUG C lesser: RESTORE the cursor (the RHS
                                             ; str_eval CALSLT trashed IX) instead of

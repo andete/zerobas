@@ -178,6 +178,9 @@ def dead_set(sym):
     for k in ("MUL_ADIG", "MUL_CARRY", "MUL_I"):
         d.add(sym[k])
     d |= set(range(sym["MUL_PP"], sym["MUL_PP"] + 2))
+    # pop_lhs_and_probe's caller-return stash: D-REREAD batch 6 (2026-10-31) carries
+    # that address down the frame in HL instead, so PLF_RA2 is no longer written.
+    d |= set(range(sym["PLF_RA2"], sym["PLF_RA2"] + 2))
     return d
 
 

@@ -116,3 +116,14 @@ MUL_* cells as dead scratch; every value identical, SQR 2.5x and the other
 transcendentals 1.5x faster as a side effect. Two Boulder Dash tape snapshots moved
 (timing). Filed: fp_mul with a BCD nibble above 9 (D-FPMULBCD), reachable only
 through CVD/CVS of crafted bytes. Running total ~750 B across five batches.
+
+## Batch 6 (2026-10-31)
+
+Eleven low-region routines, five reviewers. Applied ~124 B: ev_f_arr (+vlf_value,
+33), STRING$ (22), INSTR (15), zkey_hook (18), ev_rel_str (9), ctl_alloc (8),
+HEX$/OCT$/BIN$ (7), ERASE (6), pop_lhs_and_probe (4), LEN/ASC/VAL (1). Low region
+free 320 -> 368 B, its pad 191 -> 260 B. fp_trunc's rewrite (24 B) was correct in
+value and RAM on 800 INT / FIX cases and still taken out: Boulder Dash II hung
+with it (D-BD2FRAGILE). A reviewer's side note found a real tier-1 divergence
+that predates the batch: a space after `<=` / `>=` / `<>` before a string is a
+Type mismatch here (D-RELSPACE). Running total ~875 B across six batches.

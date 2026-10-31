@@ -78,47 +78,16 @@
 ; own decode, which is more faithful than replicating the VG-8020's constants.
 zkey_hook:
                 push    hl
-                push    de
-                push    bc
                 ld      hl,NEWKEY+6         ; matrix row 6, bit 0 = SHIFT
                 bit     0,(hl)              ; the matrix is ACTIVE LOW: 0 = down
                 jr      nz,zkh_noshift
                 add     a,5                 ; F1..F5 + SHIFT -> F6..F10 (D-T3-7)
 zkh_noshift:
-                ld      c,a                 ; C = the folded index (the A-out value)
-                call    key_entry_index     ; A = ZTRAP index for this key (REVERSED
-                                            ; band: KEY 10 lowest -- see §6/D-T3-4)
-                ; HL = ZTRAP + 3*A. Inlined rather than calling ztrap_entry, which
-                ; is page-1 resident and therefore unreachable from here when a
-                ; page-1 tenant owns the page -- the very hazard this file avoids.
-                ld      l,a
-                ld      h,0
-                ld      d,h
-                ld      e,l
-                add     hl,hl               ; 2A
-                add     hl,de               ; 3A  (ZTRAP_ENTSZ = 3)
-                ld      de,ZTRAP
-                add     hl,de               ; HL -> the entry's state byte
-                ld      a,c                 ; A = the folded index again (A-out)
-                bit     0,(hl)              ; ON or SERVICING -> this key is trapped
-                jr      z,zkh_pass          ; OFF / STOP -> deliver it normally
-                set     7,(hl)              ; ZTS_PENDING: an event is awaiting dispatch
-                ld      hl,TRAPPEND
-                ld      (hl),1              ; wake the run-loop dispatcher
-                pop     bc
-                pop     de
-                pop     hl
-                scf                         ; CF=1 -> swallow the delivery
-                ret
-zkh_pass:
-                pop     bc
-                pop     de
-                pop     hl
-                or      a                   ; CF=0 -> expand FNKSTR[A] as usual
-                ret
-
-; key_entry_index: 0-based function-key slot -> ZTRAP entry index.
-;   IN: A = slot 0..9 (0 = KEY 1).   OUT: A = ZTRAP index.  Clobbers B.
+                ; HL = the entry of KEY k+1 = ZTRAP + 3*(ZTI_KEY1+9-k), all on ZTRAP's
+                ; page (guard below), so only L is computed: no page-1 ztrap_entry
+                ; (unreachable when a page-1 tenant owns the page), and BC / DE are
+                ; never touched (D-REREAD batch 6, was key_entry_index + a 16-bit
+                ; multiply).
 ; THE BAND IS LAID OUT REVERSED — KEY 10 at ZTI_KEY1, KEY 1 at ZTI_KEY1+9. The
 ; reference services the family HIGH-NUMBERED FIRST (spec §1.3 V2: F1+F2+F3 in
 ; one frame are serviced 3 -> 2 -> 1), while ct_find scans ZTRAP ASCENDING and
@@ -126,10 +95,28 @@ zkh_pass:
 ; for ZERO bytes in ct_find and, crucially, without touching the scan direction
 ; that T2's already-landed STRIG band depends on. D-T3-4 requires this match
 ; unconditionally, so it is not gated on a byte count.
-key_entry_index:
-                ld      b,a
-                ld      a,ZTI_KEY1+9
-                sub     b
+                ld      h,a                 ; H = the folded index k (the A-out value)
+                ld      a,low (ZTRAP+(ZTI_KEY1+9)*ZTRAP_ENTSZ)
+                sub     h
+                sub     h
+                sub     h                   ; 3k <= 27: no borrow out of the band
+                ld      l,a
+                ld      a,h                 ; A = the folded index again (A-out)
+                ld      h,high ZTRAP
+                bit     0,(hl)              ; ON or SERVICING -> this key is trapped
+                jr      nz,zkh_trap
+                or      a                   ; CF=0 -> expand FNKSTR[A] as usual
+zkh_out:
+                pop     hl
                 ret
+zkh_trap:
+                set     7,(hl)              ; ZTS_PENDING: an event is awaiting dispatch
+                ld      l,low TRAPPEND      ; same page as ZTRAP (guard below)
+                ld      (hl),1              ; wake the run-loop dispatcher
+                scf                         ; CF=1 -> swallow the delivery
+                jr      zkh_out
+    IF ZTRAP_ENTSZ != 3 || (high ZTRAP) != (high (ZTRAP+(ZTI_KEY1+9)*ZTRAP_ENTSZ)) || (high TRAPPEND) != (high ZTRAP)
+                db      ZKEY_HOOK_ASSUMES_THE_KEY_BAND_AND_TRAPPEND_ON_ZTRAPS_PAGE
+    ENDIF
 
     ENDIF

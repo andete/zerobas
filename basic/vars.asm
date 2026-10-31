@@ -668,24 +668,22 @@ var_load_fac:
 ; (vlf_unset_int = vptr_none: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
 vlf_found:
                 pop     af                  ; A = type (== the entry's own stored type)
+                inc     hl
+                inc     hl
+                inc     hl                  ; HL -> value field (entry+3)
+; vlf_value: A = type (2/4/8), HL = a value field -> FACTYP = A, DE = the int16
+; (type 2) or FAC = the float + flt_to_int16's DE. ev_f_arr (arrays.asm) joins
+; here with an array element's address (D-REREAD batch 6).
+vlf_value:
                 ld      (FACTYP),a
                 cp      2
                 jr      z,vlf_found_int
                 ld      c,a                 ; C = byte count (4 single / 8 double)
                 ld      b,0
-                push    hl
-                pop     de
-                inc     de
-                inc     de
-                inc     de                  ; DE -> value field (entry+3)
-                ld      hl,FAC
-                ex      de,hl               ; HL=value field(source), DE=FAC(dest)
-                ldir
+                ld      de,FAC
+                ldir                        ; HL = value field (source), DE = FAC
                 jp      flt_to_int16        ; DE = int16 fast path (tail call)
 vlf_found_int:
-                inc     hl
-                inc     hl
-                inc     hl                  ; HL -> value field (entry+3, 2 bytes LE)
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)

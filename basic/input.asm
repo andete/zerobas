@@ -524,13 +524,14 @@ ary_engine_call:
 ; time combine_* is running (an earlier version of this fix only accounted
 ; for one level and got the frame data wrong as a result -- caught by the
 ; eval() integration tests reading back a corrupted LHS_FACTYP). Fixed by
-; stashing BOTH in RAM (PLF_RA = ours, PLF_RA2 = our caller's -- neither is
-; a register, since DE and BC must both stay live across this call for
-; various combine_* callers) before touching the frame, then restoring
-; PLF_RA2 to the stack first (so it's sitting exactly where combine_* will
-; expect its own eventual return address to be) and finally jumping to
-; PLF_RA (a "jp (hl)" is equivalent to a "ret" here but doesn't need the
-; target on the stack first). Note LD/PUSH/JP(HL) never touch flags on the
+; stashing ours in RAM (PLF_RA -- not a register, since DE and BC must both
+; stay live across this call for various combine_* callers) and CARRYING our
+; caller's down the frame in HL: each `ex (sp),hl` takes one frame word out and
+; leaves the return address in its slot, so it ends in the frame's last slot,
+; exactly where combine_* expects its own eventual return address to be
+; (D-REREAD batch 6: PLF_RA2 is no longer written). Then jump to PLF_RA (a
+; "jp (hl)" is equivalent to a "ret" here but doesn't need the target on the
+; stack first). Note LD/PUSH/JP(HL) never touch flags on the
 ; Z80, so the ZF the final "cp 2" sets for our caller survives this restore
 ; untouched. out: ZF set iff both LHS_FACTYP and the current (rhs) FACTYP
 ; are int (==2); ZF clear otherwise (no caller reads A after a NZ: each one
@@ -542,35 +543,34 @@ pop_lhs_and_probe:
                 pop     hl                  ; HL = our own return address
                 ld      (PLF_RA),hl
                 pop     hl                  ; HL = our direct caller's (combine_*'s
-                                            ; own) return address
-                ld      (PLF_RA2),hl
+                                            ; own) return address: carried DOWN the
+                                            ; frame by `ex (sp),hl`, so it ends in the
+                                            ; frame's last slot
                 pop     af
                 ld      (LHS_FACTYP),a
                 cp      2
                 jr      z,plap_int          ; an int16 lhs: only its DE is there
-                pop     hl
+                ex      (sp),hl
                 ld      (LHS_FAC+0),hl
                 pop     hl
+                ex      (sp),hl
                 ld      (LHS_FAC+2),hl
                 cp      5
                 jr      c,plap_ret          ; a single: done, NZ
                 pop     hl
+                ex      (sp),hl
                 ld      (LHS_FAC+4),hl
                 pop     hl
+                ex      (sp),hl
                 ld      (LHS_FAC+6),hl      ; a double: NZ (A > 5)
 plap_ret:
-                ld      hl,(PLF_RA2)        ; does not affect flags
-                push    hl                  ; restore our caller's (combine_*'s
-                                            ; own) return address to the stack,
-                                            ; exactly where it needs to be for
-                                            ; ITS eventual ret/tail-jump home
                 ld      hl,(PLF_RA)         ; does not affect flags
                 jp      (hl)                ; jump to OUR return address directly
                                             ; (cheaper than push+ret); does not
                                             ; affect flags -- ZF from the cp above
                                             ; reaches our caller intact
 plap_int:
-                pop     hl
+                ex      (sp),hl
                 ld      (FP_LHSVAL),hl
                 call    factyp_is2          ; ZF set iff the rhs is int16 too
                 jr      plap_ret

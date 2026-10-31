@@ -738,41 +738,24 @@ ee_lp:
                                             ; leading/trailing/double comma (','),
                                             ; and a numeric argument (digit) --
                                             ; none of those set CF.
-                call    var_str_type        ; A=1 / CF set iff this is a STRING name --
-                                            ; the unifying detector for BOTH an explicit
-                                            ; `$` suffix AND a DEFSTR-defaulted bare name
-                                            ; (basic/vars.asm). HL is NOT advanced. Needed
-                                            ; because var_name_key's own (VARTYPE) can't
-                                            ; distinguish a `$` name from a default DOUBLE:
-                                            ; vnk_dollar hardcodes VARTYPE=8 (== type 8,
-                                            ; double), so keying on (VARTYPE) alone would
-                                            ; make `ERASE A$` match+free the numeric `A`
-                                            ; (F1, 2026-07-15). Same var_str_type-first
-                                            ; idiom ex_dim/LET/PRINT use to pick the
-                                            ; string path before the real name advance.
-                push    af                  ; [STRFLAG] -- CF/A survive var_name_key
-                                            ; (which clobbers everything, incl. the flags
-                                            ; and var_str_type's own B/DE scratch)
-                call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
+                call    var_name_key        ; BC=key, HL past name; (VARTYPE) = 2/4/8, or
+                                            ; DEFTBL_STR for a `$` name AND a DEFSTR-bare
+                                            ; one alike (D-FORVAR's vnk_dollar) -- the
+                                            ; same answer var_str_type's CF used to give
+                                            ; here, so that call went (D-REREAD batch 6)
                 call    skip_spaces
                 cp      '('
-                jr      z,ee_synerr_pop     ; Tier A: 'ERASE A(' -- subscript/paren form
+                jr      z,ee_synerr         ; Tier A: 'ERASE A(' -- subscript/paren form
                                             ; (ERASE A(1)/A()) is a syntax error, not a
-                                            ; lookup. Must POP [STRFLAG] first (below).
+                                            ; lookup
                 ld      (ARY_KEY),bc
-                pop     af                  ; recover string-ness (CF set iff string).
-                                            ; LD (below) doesn't touch flags, so CF
-                                            ; survives to the jr nc.
-                ld      a,(VARTYPE)         ; numeric default: type 2/4/8 as-is
-                jr      nc,ee_settype
-                ld      a,1                 ; STRING name -> force type=1: no numeric
-                                            ; array (2/4/8) can carry it, so ary_find
-                                            ; never matches -> Tier-B IFC. Reference-
-                                            ; faithful for slice 2 (string arrays don't
-                                            ; exist yet, §1 divergence): explicit `$`
-                                            ; AND DEFSTR-bare both land here uniformly.
-                                            ; Slice 3 makes string arrays real and this
-                                            ; key starts matching them.
+                ld      a,(VARTYPE)         ; numeric: type 2/4/8 as-is
+                cp      DEFTBL_STR
+                jr      nz,ee_settype
+                ld      a,1                 ; STRING name -> type=1: no numeric array
+                                            ; (2/4/8) can carry it, so ary_find never
+                                            ; matches a numeric one; explicit `$` AND
+                                            ; DEFSTR-bare both land here uniformly
 ee_settype:
                 ld      (ARY_TYPE),a
                 ld      a,2
@@ -796,10 +779,9 @@ ee_settype:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 ee_done         equ     ed_done
-ee_synerr_pop:
-                pop     af                  ; discard [STRFLAG] (balance the stack) before
-                                            ; the Tier-A abort -- the '(' check is the one
-                                            ; exit that happens with [STRFLAG] still live
+ee_synerr_pop:                              ; ex_def_err (usr.asm) aliases this and
+                pop     af                  ; still arrives with AF pushed; ERASE no
+ee_synerr:                                  ; longer pushes anything (D-REREAD batch 6)
                 jp      stmt_error
 
 ; --- ary_store_write: HL=element address, A=type(2/4/8); DE valid iff the -
@@ -943,36 +925,21 @@ ela_done:                                   ; (ex_let_arr_str's exits join here 
 ; immediate `jp` out of the evaluator, the same D-F2-1 discipline the WIP's
 ; ary_load already followed. ary_op0_resolve's own error return (NZ, HL=
 ; cursor, whether from a parse-time deferred FPERR — ev_f_empty — or a
-; resolve-time one) lands exactly on eva_deferred below with nothing further to
+; resolve-time one) lands exactly on the `jp nz,ret_de0` below with nothing further to
 ; unwind (D-ARR-C: there is no [CURSOR] stack word left to unwind).
 ev_f_arr:
                 ld      a,(VARTYPE)
                 call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set (deferred)
-                jr      nz,eva_deferred
                 push    hl
-                pop     ix                  ; IX = cursor (ev_f_var's own return contract)
-                ex      de,hl               ; HL = elem addr (DE dead)
+                pop     ix                  ; IX = cursor (ev_f_var's own return contract,
+                                            ; on BOTH exits; push/pop keep F)
+                jp      nz,ret_de0          ; deferred error: DE=0, NZ kept (ret_de0 is
+                                            ; flag-transparent) -- ev_f_err's convention
+                ex      de,hl               ; HL = elem addr = the value field (DE dead)
                 ld      a,(ARY_TYPE)
-                cp      2
-                jr      z,eva_int
-                ld      (FACTYP),a
-                ld      c,a
-                ld      b,0
-                ld      de,FAC
-                ldir                        ; (HL=elem addr) -> (DE=FAC), elsize bytes
-                jp      flt_to_int16        ; DE = int16 fast path (FACTYP untouched)
-eva_int:
-                ld      (FACTYP),a
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = the loaded value
-                ret
-eva_deferred:
-                push    hl
-                pop     ix                  ; IX = cursor (ev_f_var's contract even on
-                                            ; a deferred error)
-                jp      ret_de0     ; matches ev_f_err's own convention
+                jp      vlf_value           ; var_load_fac's own value-field read (D-REREAD):
+                                            ; FACTYP, then DE = int16 or FAC + flt_to_int16
 
 ; =============================================================================
 ; Arrays slice 3 — STRING arrays (docs/spec-basic-arrays-slice3-strings.md).
