@@ -334,6 +334,18 @@ item — do **one item per session** to keep context lean.
       (~76 B low, reviewer's count 2026-10-31: str_lr_count / MID$ / str_min_bc, shx_finish as an alias of sst_op's tail,
       INKEY$ through the FILL op). Measured the same day: `STRING$(3, "A")` with a space
       after the comma WAS a divergence, with four relatives -- D-ARGSPACE, fixed.
+      ✅ **BATCH 7b (2026-10-31), measured 2026-10-31: low region pin pad 289 -> 338 B --
+      49 B, as predicted, from four of the queued reviewer's items**: str_lr_count clamps with
+      `cp e` and keeps BC / HL (LEFT$ / RIGHT$ drop their reloads; 11), MID$'s tail with an
+      8-bit count and E = $FF for the 2-argument form (15), str_min_bc deleted (7),
+      shx_finish an `equ` of sst_op's identical tail (16). `make contract-diff BASE=HEAD`:
+      0 broken; str_lr_count changes fewer registers (BC, HL) and no longer reads D
+      ([`b7b_contract.out`](scratchpad/b7b_contract.out)). Knife pins unchanged; tapes:
+      every class as on HEAD, Boulder Dash II on line 3341. STILL QUEUED (reviewer's counts,
+      2026-10-31): INKEY$ through the FILL op with a shared shx_fill entry (~23 B; it moves
+      the stk_room depth for INKEY$ -- run the deepexpr rows), STRING$'s first byte via
+      pu_deref_body (2 B), ems_print's `ex (sp),hl` (1 B), INSTR's `ld de,1` hoist (1 B),
+      an inc_eval_byte fall-in (4 B low for 1 B page 1, counted 2026-10-31).
 
 - [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
@@ -8288,7 +8300,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10779 (T-6FE392)8 (T-529ABE)` from `TODO.md:16461 (T-529ABE)`: a
+      `TODO.md:10791 (T-6FE392)8 (T-529ABE)` from `TODO.md:16473 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11248,7 +11260,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16461 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16473 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

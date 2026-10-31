@@ -139,3 +139,9 @@ check_preexp_bounds 9, xor_sign 6). `make contract-diff BASE=27d01d05`: 0 broken
 contract changed (xor_sign: HL for B). A reviewer report for two more spans (~76 B low) is
 queued as batch 7b to keep the bisect small. Running total ~980 B across seven batches.
 
+## Batch 7b (2026-10-31)
+
+Four of the deferred reviewer's items, 49 B low region (pad 289 -> 338 B): str_lr_count's
+`cp e` clamp (11), MID$'s 8-bit tail (15), str_min_bc deleted (7), shx_finish as an alias of
+sst_op's tail (16). contract-diff: 0 broken. Running total ~1,030 B across the batches.
+

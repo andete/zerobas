@@ -736,6 +736,7 @@ sst_op:
                 call    sh_go_g             ; HL = the owned slot, A = ERR. D-DEEPEXPR:
                                             ; guarded -- a skip publishes STR_EMPTY
                                             ; below, never the SOURCE (P1)
+sst_tail:                                   ; shx_finish IS this decision (alias below)
                 jr      z,sst_ok
                 cp      2
                 jr      z,sst_overflow
@@ -923,19 +924,6 @@ sct_ae_set:
 ; ===========================================================================
 
 ; --- helpers ---------------------------------------------------------------
-
-; str_min_bc: A = min(A, BC), treating A as a 0..255 length and BC as a 0..65535
-; requested count. Used to clamp a LEFT$/RIGHT$/MID$ count to the bytes available.
-; Preserves BC, DE, HL. Clobbers A + flags. Unchanged from pre-4a (a pure
-; length compare, no descriptor-format dependency).
-str_min_bc:
-                inc     b
-                dec     b                   ; test B (high byte of the count)
-                ret     nz                  ; count >= 256 -> min is the length (A<=STRMAX)
-                cp      c                   ; length - count(low)
-                ret     c                   ; length < count -> length is the min (A)
-                ld      a,c                 ; else the count is the min
-                ret
 
 ; str_temp_slice: in the temp descriptor at BC, keep E bytes starting at
 ; offset D (0-based) of its CURRENT body, moving them to the front of that
@@ -1450,10 +1438,8 @@ str_fn_left:
                 jr      nz,str_arg_empty
                 inc     hl                  ; HL = cursor past ')'
                 push    hl                  ; save cursor
-                call    str_lr_count        ; HL = temp, E = count (D-SAVECOLON carve)
-                ld      d,0                 ; D = start = 0 (LEFT$ -> pure truncation)
-                ld      b,h
-                ld      c,l                 ; BC = temp addr
+                call    str_lr_count        ; BC = temp (kept), E = count; D = 0 still
+                                            ; (eval_byte_arg's high byte) = the start
                 ; 🎯 D-CARVE2: the canonical "slice into a temp and publish" tail,
                 ; shared by three MID$/RIGHT$-family arms. Contract: BC = the
                 ; source, D = the length, one saved cursor on the stack.
@@ -1474,36 +1460,32 @@ str_fn_right:
                 jr      nz,str_arg_empty
                 inc     hl
                 push    hl
-                call    str_lr_count        ; HL = temp, E = count (D-SAVECOLON carve)
-                ld      a,(hl)              ; templen (HL still = temp base)
+                call    str_lr_count        ; BC = temp (kept), E = count, A = templen
                 sub     e                   ; A = start = templen - count
                 ld      d,a                 ; D = start
-                ld      b,h
-                ld      c,l                 ; BC = temp addr
                 jr      str_slice_done      ; D-CARVE2 (-4 B, low region)
 
 ; str_lr_count -- the clamp LEFT$ and RIGHT$ both ran verbatim (D-SAVECOLON carve,
 ; 2026-09-28, -5 B low region; scratchpad/ngram_sweep.py --main ranked the pair).
-;   in : BC = the temp copy [len][bytes], DE = n (the requested count)
-;   out: HL = temp, (STRPTR) = temp, E = min(templen, n). Clobbers A, BC.
+;   in : BC = the temp copy [len][bytes], E = n (the requested count; D = 0,
+;        eval_byte_arg's, is not read)
+;   out: (STRPTR) = temp, E = min(templen, n), A = templen. BC, D, HL kept.
+;        (D-REREAD batch 7b: was HL = temp through str_min_bc; no caller needs HL.)
 ; 🔴 ONLY THIS MIDDLE SPAN IS SHARED, AND THAT IS THE WHOLE CONSTRAINT. The prefix
 ; before it is just as identical, but its `jr nc/nz,str_arg_empty` exits reach
 ; str_eval_no, a DEFERRED error that RETURNS to the evaluator -- a helper's return
 ; address (or a selector flag parked on the stack) would be left under it. This
 ; span starts after both sites' own `push hl` and has no exit, so a call is exact.
 str_lr_count:
-                ld      l,c
-                ld      h,b                 ; HL = temp addr (kept through the clamp)
-                ld      (STRPTR),hl         ; STRPTR = temp (eval may have moved it)
-                ld      a,(bc)              ; A = templen
-                ld      b,d
-                ld      c,e                 ; BC = n (the requested count)
-                call    str_min_bc          ; A = min(templen, n) ; preserves HL=temp
-                ld      e,a                 ; E = count
+                ld      (STRPTR),bc         ; STRPTR = temp (eval may have moved it)
+                ld      a,(bc)              ; A = templen (returned on both paths)
+                cp      e                   ; templen - n
+                ret     nc                  ; templen >= n: E = n is the count
+                ld      e,a                 ; else E = templen
                 ret
 
 ; MID$(a$,p[,n]): count bytes from 1-based position p (or to end if n omitted).
-; p<1 is clamped to the start; p>len yields "". Snapshot, then slice.
+; p is 1..255 (eval_pos_arg raises on 0); p>len yields "". Snapshot, then slice.
 str_fn_mid:
                 call    str_arg_open        ; BC = temp addr; HL past the ','
                 jr      nc,str_arg_empty    ; malformed -> raise HERE, not one frame in
@@ -1516,52 +1498,36 @@ str_fn_mid:
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
                                             ; 3 B for 3 B.
-                jr      z,sfm_haveN
-                ld      de,$FFFF            ; n omitted -> "to end" (clamps to avail)
-                jr      sfm_close
-sfm_haveN:
-                ; ⚠️ the count is checked HERE and not at sfm_close: the 2-arg
-                ; form synthesises DE=$FFFF ("to end") below, and $FFFF is not a
-                ; legal count — checking it would reject every MID$(a$,p).
-                ; (eval_byte_arg reads FAC, not DE, so it cannot see a synthetic
-                ; value anyway.)
+                ld      e,$FF               ; n omitted -> 255 >= any avail (<= 255);
+                jr      nz,sfm_close        ; (ld keeps skip_comma's Z) -- only a REAL
+                                            ; n goes through eval_byte_arg's check
                 inc     hl
-                call    eval_byte_arg       ; DE = n, 0..255 (D-MISS-2; or aborts)
+                call    eval_byte_arg       ; E = n, 0..255 (D-MISS-2; or aborts)
 sfm_close:
                 ld      a,(hl)
                 cp      ')'
                 jr      nz,sfm_reject2      ; unbalance-safe: pop [temp][p] first
                 inc     hl                  ; HL = cursor past ')'
-                ld      b,d
-                ld      c,e                 ; BC = requested count (n or $FFFF)
-                pop     de                  ; DE = p           stack: [temp]
-                ld      a,d
-                or      e
-                jr      z,sfm_start         ; p==0 -> start 0 (DE already 0)
-                dec     de                  ; DE = p-1 (desired 0-based start)
-sfm_start:
+                ld      c,e                 ; C = n (or 255)
+                pop     de                  ; E = p, 1..255 (eval_pos_arg)  stack: [temp]
                 ex      (sp),hl             ; HL = temp addr; stack top := cursor
+                ld      (STRPTR),hl         ; STRPTR = temp (eval may have moved it)
                 ld      a,(hl)              ; A = templen
-                push    hl                  ; [cursor][temp]
-                ld      h,a                 ; H = templen (scratch)
-                ld      a,d
-                or      a
-                jr      nz,sfm_clampmax     ; start high byte set -> beyond end
-                ld      a,e
-                cp      h                   ; start(low) - templen
-                jr      c,sfm_starthave     ; start < templen
-sfm_clampmax:
-                ld      a,h                 ; start = templen (avail becomes 0 -> "")
-sfm_starthave:
-                ld      d,a                 ; D = clamped start (0..templen)
-                ld      a,h                 ; templen
-                sub     d                   ; A = avail = templen - start
-                call    str_min_bc          ; A = count = min(avail, requested)
+                dec     e                   ; E = p-1, the 0-based start
+                sub     e                   ; A = avail = templen - start
+                jr      nc,sfm_start        ; start <= templen
+                add     a,e                 ; start past the end: A = templen,
+                ld      e,a                 ; start := templen,
+                xor     a                   ; avail := 0 ("")
+sfm_start:
+                ld      d,e                 ; D = start
+                cp      c
+                jr      c,sfm_count         ; avail < n -> count = avail
+                ld      a,c                 ; else count = n
+sfm_count:
                 ld      e,a                 ; E = count
-                pop     bc                  ; BC = temp addr    stack: [cursor]
-                ld      l,c
-                ld      h,b
-                ld      (STRPTR),hl         ; STRPTR = temp (before the slice clobbers BC)
+                ld      b,h
+                ld      c,l                 ; BC = temp addr      stack: [cursor]
                 jr      str_slice_done      ; D-CARVE2 (-4 B, low region)
 sfm_reject2:
                 pop     bc                  ; discard p
@@ -1922,27 +1888,13 @@ shx_tail:
 ; and STR_EMPTY, else publishes SH_PTR as the new STRPTR (SH_ERR=1, heap OOM,
 ; is honoured too — FPERR=6 — though a <=6-byte alloc essentially never hits
 ; it). Clobbers A, HL.
-shx_finish:                                 ; A = ERR and Z from sh_go, HL = the slot
-                jp      z,shxf_ok           ; D-DUPSPAN2: widened from `jr` --
-                cp      2                   ; the alias targets are in sst_*'s
-                jp      z,shxf_overflow     ; span, out of `jr` reach from here
-                ld      a,FPERR_STROOM
-                call    penderr_set         ; heap OOM (sysvars.inc)
-                jp      sh_publish          ; D-CARVE2 (-4 B, low region)
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sst_ok,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-shxf_ok         equ     sst_ok
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to sst_overflow,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-shxf_overflow   equ     sst_overflow
+; D-REREAD batch 7b: an ALIAS of sst_op's own tail -- the same decision (Z ->
+; publish; ERR 2 -> FPERR 9 + STR_EMPTY; else heap OOM, FPERR_STROOM, publish),
+; once. Was a 16 B copy that jumped into that tail's arms (D-DUPSPAN2).
+shx_finish      equ     sst_tail
 
 ; str_fn_space: SPACE$(n) -> n space ($20) bytes, clamped to STRMAX (D-3); a
-; negative n is a function error (own-design, mirrors ASC ""). The clamp reuses
-; str_min_bc (A=STRMAX ceiling, BC=n), exactly like LEFT$/RIGHT$/MID$'s count clamp.
+; negative n is a function error (own-design, mirrors ASC "").
 ; Length is known upfront -> allocate once, fill directly.
 str_fn_space:
                 call    inc_skip_paren     ; D-FNSPACE: past the name AND any
