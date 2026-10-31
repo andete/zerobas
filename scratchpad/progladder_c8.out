@@ -1,0 +1,6 @@
+C8_floats
+  Philips_VG_8020                ENDED t=46.8  lpt 13 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=71.6  SAME  x1.53 time
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=71.6  SAME  x1.53 time
+
+PASS: 1 program(s), 0 divergent run(s)

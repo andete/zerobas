@@ -860,6 +860,18 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **C8_floats (2026-10-31)**: the float paths D-REREAD batch 7 rewrote, in a
+      program -- a 4x4 Gauss-Jordan solve with partial pivoting and its determinant,
+      `^` with integer / negative / fractional exponents and negative bases, `/` in
+      each precision, SQR, INT / FIX / CINT at the halves, PRINT USING (`##.###`,
+      `+`, `^^^^`, `,`, `$$`, `**`, trailing `-`, `&`), divide-by-zero / overflow /
+      `(-8)^(1/3)` under ON ERROR, single vs double drift over 1000 adds. First run:
+      3 lines differed ONLY in the 14th digit (the determinant -165.99999999999 there,
+      -166 here; `16^.25` 1.9999999999998 there, 2 here; `SQR(2)`) -- the classes ruled
+      2026-07-13 (correct rounding; D-POWNEG measured them). Those values now print
+      through `DEF FNR` to 8 places, as L1_loan rounds to cents; then SAME
+      ([`progladder_c8.out`](scratchpad/progladder_c8.out)). TIER 5 reading only:
+      72 s against 47 on the VG-8020.
       ✅ **C7_bits (2026-10-31)**: contest-style bit tricks on DEFINT integers --
       popcount by `n AND n-1`, a running XOR, Gray codes through `BIN$`, subsets by
       a bit mask, a prime sieve packed 16 to an integer (bit 15 is the sign:
@@ -8325,7 +8337,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10816 (T-6FE392)8 (T-529ABE)` from `TODO.md:16498 (T-529ABE)`: a
+      `TODO.md:10828 (T-6FE392)8 (T-529ABE)` from `TODO.md:16510 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11285,7 +11297,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16498 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16510 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
