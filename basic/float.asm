@@ -161,71 +161,38 @@ flo_notfixed:
 ; --- flo_emit_fixed: write the FIXED-form digits at (HL), HL advanced -----
 ; dec_exp<=0: '.' + (-dec_exp) zeros + digits. dec_exp>0 & s<=dec_exp:
 ; digits + (dec_exp-s) zeros, no point. Else: digits[0..dec_exp) + '.' +
-; digits[dec_exp..s). Clobbers A, B, C, D, E.
+; digits[dec_exp..s). Entered only after flo_is_fixed (-1 <= dec_exp <= 14).
+; Clobbers A, B, C, D, E.
 flo_emit_fixed:
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      de,0
-                call    cmp16_bits
-                pop     hl
-                cp      4
-                jr      z,flo_fx_bc
-                ld      (hl),'.'
-                inc     hl
-                ld      de,(ARGA+FPNUM_DEXP)
-                call    neg_de              ; DE = -dec_exp (>=0)
-                ld      a,d
-                or      e
-                jr      z,flo_fx_a_digits
-                ld      b,e
-flo_fx_a_zloop:
-                ld      (hl),'0'
-                inc     hl
-                djnz    flo_fx_a_zloop
-flo_fx_a_digits:
-                jr      flo_write_digits
-flo_fx_bc:
+                ; 💰 D-REREAD batch 4b (2026-10-31, -55 B low region): dec_exp's low
+                ; byte is all of it here (flo_is_fixed, the only way in, bounds it
+                ; to -1..14), so it is read once with `ld a,(nn)`; the (b)/(c)
+                ; split is one `sub`; case (a) writes at most one zero.
+                ld      a,(ARGA+FPNUM_DEXP)
+                dec     a                   ; 1..14 -> 0..13 (P); 0/-1 -> $FF/$FE (M)
+                jp      m,flo_fx_a          ; dec_exp <= 0: the '.'-led form
+                inc     a
+                ld      c,a                 ; C = dec_exp (1..14)
                 ld      a,(FOSIGCOUNT)
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      c,l
-                pop     hl
-                cp      c
-                jr      c,flo_fx_case_b
-                jr      z,flo_fx_case_b
+                ld      b,a                 ; B = s
+                ld      a,c
+                sub     b                   ; A = dec_exp - s; NC iff dec_exp >= s
+                jr      nc,flo_fx_case_b
                 ; case (c): 0 < dec_exp < s
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,l
-                pop     hl
+                neg                         ; A = s - dec_exp (> 0)
                 ld      b,a
+                push    bc                  ; B = tail count, C = dec_exp
+                ld      b,c
                 ld      c,0
                 call    flo_write_digits_range   ; digits[0..dec_exp)
                 ld      (hl),'.'
                 inc     hl
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,l
-                pop     hl
-                ld      c,a
-                ld      a,(FOSIGCOUNT)
-                sub     c
-                ld      b,a
+                pop     bc
                 jr      flo_write_digits_range   ; digits[dec_exp..s)
-flo_fx_case_b:
-                ld      a,(FOSIGCOUNT)
-                ld      b,a
-                ld      c,0
-                call    flo_write_digits_range   ; all s digits
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,l
-                pop     hl
-                ld      c,a
-                ld      a,(FOSIGCOUNT)
-                ld      b,a
-                ld      a,c
-                sub     b                   ; A = dec_exp - s
+flo_fx_case_b:                              ; A = dec_exp - s, Z iff s = dec_exp
+                push    af
+                call    flo_write_digits    ; all s digits
+                pop     af
                 ret     z
                 ld      b,a
 flo_fx_b_zloop:
@@ -233,6 +200,14 @@ flo_fx_b_zloop:
                 inc     hl
                 djnz    flo_fx_b_zloop
                 ret
+flo_fx_a:                                   ; A = $FF (dec_exp 0) / $FE (-1)
+                ld      (hl),'.'
+                inc     hl
+                inc     a                   ; Z iff dec_exp = 0
+                jr      z,flo_write_digits
+                ld      (hl),'0'            ; dec_exp = -1: one leading zero
+                inc     hl
+                ; ...and FALLS THROUGH into flo_write_digits
 
 ; --- flo_write_digits: write all FOSIGCOUNT digits from ARGA's digits[0..] (C8)
 flo_write_digits:

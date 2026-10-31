@@ -274,7 +274,7 @@ dig15_shr:
                 or      a
                 ret     z
                 cp      15
-                jr      nc,dshr_allzero
+                jp      nc,dig15_zero15     ; (jp: the $3297 pad between grew past jr reach)
                 ld      c,a                 ; C = shift
                 ld      a,l
                 add     a,14                ; no carry: the array never crosses a page

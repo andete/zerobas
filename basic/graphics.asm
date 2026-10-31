@@ -742,9 +742,12 @@ ex_paint:
                 ; --- optional ",[C][,[B]]" ---
                 call    skip_comma
                 jr      nz,ep_default_b     ; no fields at all -> C=FORCLR, B=C
-                rst    $10                ; consume the comma
+                rst    $10                ; consume the comma; Z iff end of statement
+                jp      z,loc_missing       ; dangling comma -> ERR 24 (D-PAINTMISS, below;
+                                            ; CHRGTR's own Z since D-REREAD batch 4b)
                 cp      ','
-                jr      z,ep_c_empty        ; ",," -> C omitted; this comma intros B
+                jr      z,ep_parse_b        ; ",," -> C omitted; HL on the comma that
+                                            ; introduces B (ep_parse_b consumes it)
                 ; 🔴 D-PAINTMISS (docs/spec-basic-paintmiss.md). THE COMMA IS
                 ; ALREADY CONSUMED, so end-of-statement HERE is a DANGLING
                 ; comma, not an omitted argument -- `PAINT(50,50),` is ERR 24
@@ -755,11 +758,8 @@ ex_paint:
                 ; statement completed silently. Same mechanism as CIRCLE's
                 ; (D-CIRCMISS) -- the verb's own grammar swallows the comma
                 ; before `eval` is ever reached, so D-MISSOPFIX's deferred
-                ; ERR 24 cannot see it.
-                or      a
-                jr      z,ep_missing        ; dangling comma -> ERR 24
-                cp      COLON
-                jr      z,ep_missing
+                ; ERR 24 cannot see it. (The test is the `jp z` right after the
+                ; `rst $10` above: CHRGTR's Z is exactly 0 or ':'.)
                 ; --- given C: the MSX2 tile$ form -> ERR 13 (spec §5); else
                 ; eval + range-check 0..15 -> ERR 5 (the CIRCLE/PAINT rule) ---
                 call    str_eval_one        ; CF=1 iff a string operand (HL past it)
@@ -768,22 +768,17 @@ ex_paint:
                 call    gfx_store_colour_checked  ; ERR 5 if outside 0..15; GFX_C=value
                 call    skip_comma
                 jr      nz,ep_default_b     ; no ",B" -> B = C
-                inc     hl                  ; consume the comma introducing B
-                jr      ep_parse_b
-ep_c_empty:
-                inc     hl                  ; consume the shared comma
+                ; ...falls into ep_parse_b with HL on the comma introducing B
 ep_parse_b:
                 ; 🔴 D-PAINTMISS: as above, and this slot is reached by BOTH of
                 ; its routes -- the comma that ends a GIVEN C (`PAINT(x,y),15,`)
-                ; and ep_c_empty's shared comma (`PAINT(x,y),,`). Rows p.b /
+                ; and the `,,` route's shared comma (`PAINT(x,y),,`). Rows p.b /
                 ; p.kb and p.cc / p.kcc are what prove the second route, and
                 ; both are ERR 24 on both references. ⚠️ NOT the `cp ','` arm
                 ; three lines down: a THIRD comma is a fourth argument and is
                 ; ERR 2, measured (od2.b16c / od3.b15c, D-PAINTBORD).
-                call    skipsp_test
-                jr      z,ep_missing        ; dangling comma -> ERR 24
-                cp      COLON
-                jr      z,ep_missing
+                rst     $10                 ; consume the comma introducing B; Z iff end
+                jp      z,loc_missing       ; dangling comma -> ERR 24
                 cp      ','
                 jp      z,ep_syntax         ; a 3rd comma here => a 4th argument -> ERR 2
                 ; --- given B: eval, then RANGE-CHECK against the MODE'S domain ---
@@ -835,7 +830,6 @@ ep_parse_b:
                 xor     a                   ; SCREEN 2: B is a whole byte, 0..255
 ep_b_dom:
                 call    gfx_chk_dom         ; A = E; ERR 5 outside the mode's domain
-                ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
                 ; NO trailing-token check here, DELIBERATELY (D-PAINT4, -8 B carve).
                 ; A complete `PAINT(x,y),C,B` FILLS, then any leftover token (`,`,
                 ; `,X`, `,:`) is rejected by exec_stmt's boundary guard as ERR 2 --
@@ -847,7 +841,7 @@ ep_b_dom:
                 ; `jp exec_stmt`s, so the cursor lands on the leftover token. The
                 ; :748 site KEEPS ep_syntax: a doubled comma raises before B is
                 ; complete (ERR 2, no fill -- agrees on both refs, pa.ccomma).
-                jr      ep_draw
+                jr      ep_store_b          ; GFX_B := A, shared with the default arm
                 ; 🔴 D-PAINTMISS: the dangling-comma raiser gets its OWN label,
                 ; reached only from the four sites that MEAN it. ep_default_b
                 ; below is a SHARED TAIL and two of its jumps -- `PAINT(x,y)`
@@ -855,14 +849,14 @@ ep_b_dom:
                 ; the LEGITIMATE omissions, which must keep painting (rows
                 ; p.none / p.plain, `0 15` on all three machines, pinned by
                 ; knives K-PM1 / K-PM2). [[a-shared-tail-is-not-a-decision]]
-                ; A trampoline rather than an inline `ld a,24 / jp raise_error`
-                ; because the four sites are `jr`s: 3 B against 5, and main
-                ; page 1 had 4 B free (2026-08-23, e23e350).
-ep_missing:
-                jp      loc_missing         ; ERR 24 (Missing operand)
+                ; It WAS a trampoline (`ep_missing: jp loc_missing`) while four
+                ; `jr` sites shared it; D-REREAD batch 4b left two, each a
+                ; `jp z,loc_missing` after CHRGTR, and the trampoline cost more
+                ; than it saved. The rule stands: only those two sites raise 24.
 ep_default_b:
-                ld      a,(GFX_C)
-                ld      (GFX_B),a
+                ld      a,(GFX_C)           ; B omitted -> B = C
+ep_store_b:
+                ld      (GFX_B),a           ; low byte only (spec §6: GFX_B is 1 B)
 ep_draw:
                 ; D-LINERR: the work area moved UP to gfx_point_gate, above the
                 ; field parses (measured -- see the entry comment), which is

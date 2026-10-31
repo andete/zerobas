@@ -261,6 +261,15 @@ item — do **one item per session** to keep context lean.
       knife moved to register D. Tapes: Boulder Dash NEAR -> SAME, Boulder Dash
       II NEAR 24 -> 120 cells -- a snapshot taken at a fixed time moves with
       BASIC's speed.
+      ✅ **BATCH 4b (2026-10-31), measured 2026-10-31: the $3297 pad 98 -> 152 B, page-1
+      pads 2106 -> 2131 B -- ~79 B** (flo_emit_fixed 55: dec_exp read once, its
+      -1..14 bound from flo_is_fixed, the only way in; ex_paint 19: CHRGTR's Z for
+      both dangling commas, the ep_missing trampoline gone, one GFX_B store;
+      evmc_csng / evmc_cdbl 6 via evmc_prologue). dig15_shr's `jr` to
+      dshr_allzero became `jp` (the grown pad). STILL OPEN: try_text_slot (12 B;
+      changes its island-1 caller -- its own small slice), PAINT's mode-mask
+      arithmetic (behaviour change if a USR pokes SCRMOD mid-statement). The
+      scratchpad knives in paintmiss_knives.py anchor on the old PAINT text.
 
 - [x] 🔴 **`PRINT INPUT$(n)` / `PRINT SPRITE$(n)` WERE TYPE MISMATCH, AND `PRINT CHR$(65)
       AND 1` PRINTED BEFORE IT ERRED: PRINT'S OWN COPY OF THE STRING CLASSIFICATION
@@ -8120,7 +8129,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10611 (T-6FE392)8 (T-529ABE)` from `TODO.md:16293 (T-529ABE)`: a
+      `TODO.md:10620 (T-6FE392)8 (T-529ABE)` from `TODO.md:16302 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11080,7 +11089,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

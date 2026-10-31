@@ -2226,19 +2226,17 @@ evmc_cint:
 ; the live FACTYP (int/single/double), so no int early-out is needed here —
 ; an int operand is always exact at 6 digits anyway.
 evmc_csng:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                call    arga_widen          ; D-ARGAWIDEN
-                jp      round_single_and_pack
+                call    evmc_prologue       ; the D-F2-4 gate + arga_widen (D-REREAD
+                ret     nz                  ; batch 4b: the shared prologue; its `cp a`
+                jp      round_single_and_pack   ; leaves A / Z, which this tail ignores)
 
 ; --- evmc_cdbl: CDBL(x) -> widen to double, exact (spec §11.2's "double: ---
 ; exact" rule). Same widen_rhs_operand + round_and_finalize composition CSNG
 ; uses above, just the double pack (no digit loss possible from any source).
 evmc_cdbl:
-                call    ev_mc_arg_checked   ; D-F2-4 gate
-                ret     nz                  ; malformed/empty arg -> deferred syntax error
-                call    arga_widen          ; D-ARGAWIDEN
-                jp      round_and_finalize
+                call    evmc_prologue       ; the D-F2-4 gate + arga_widen (D-REREAD
+                ret     nz                  ; batch 4b: the shared prologue; its `cp a`
+                jp      round_and_finalize   ; leaves A / Z, which this tail ignores)
 
 ; --- evmc_sqr: SQR(x) -> non-negative square root, DOUBLE (math pack slice --
 ; 1b, docs/spec-basic-math-pack.md §10.5). Same arg-parse + widen shape as
