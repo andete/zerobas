@@ -83,7 +83,7 @@ pl_voice:
                 push    de                  ; str_eval clobbers DE (the VCB slot)
                 call    str_eval            ; STRPTR -> [len][ptr]; VALTYP=1; CF=1 ok;
                 pop     de                  ;   HL advanced past the operand
-                jr      nc,pl_typeerr       ; not a string form (numeric) -> Type mismatch
+                jp      nc,pl_typeerr       ; not a string form (numeric) -> Type mismatch
                 push    hl                  ; save the line cursor
                 ld      hl,(STRPTR)         ; HL = descriptor [len][ptr]
                 ld      bc,3                ; VCXLEN/VCXPTR have the SAME layout:
@@ -153,9 +153,8 @@ pld_done:
 ; escaping relative jump, not entered by fallthrough, same ROM region).
 ; The NAME and every call site survive; un-alias here for a distinct face.
 pl_parse_err    equ     tm_raise
-pl_typeerr:
-                ld      a,13                ; Type mismatch (a PLAY argument was not a string)
-                jp      raise_error
+pl_typeerr      equ     type_mismatch_error ; ERR 13 (interp.asm: `ld a,13 / jr raise_error`;
+                                            ; D-REREAD batch 8, was a 5 B copy)
 ; D-DUPSPAN: an ALIAS, not a second copy -- the two instructions were
 ; byte-identical to interp.asm's gb_illegal, on gfx_absent's own precedent.
 ; The NAME and every call site survive; un-alias here to give this site a
@@ -190,12 +189,9 @@ ev_f_play:
                 call    g8_open_paren       ; DE = n, HL past ')'; ERR 13 on a string
                 push    hl
                 pop     ix
-                ld      a,d
-                or      a
-                jp      nz,gb_illegal       ; ERR 5 -- n is not in 0..3
-                ld      a,e
-                cp      4
-                jp      nc,gb_illegal
+                ld      a,$FC               ; 0..3: only the low two bits may be set
+                call    gfx_chk_dom         ; A = E; ERR 5 (gfx_err5 = gb_illegal) if not
+                                            ; (D-REREAD batch 8, was an 11 B open check)
                 ld      hl,pl_fn_mask
                 add     hl,de               ; D is 0, checked above
                 ld      a,(hl)

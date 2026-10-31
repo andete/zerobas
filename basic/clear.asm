@@ -58,7 +58,7 @@
 ; still read variables), then everything is wiped.
 ex_clear:
                 call    stmt_bare_end       ; D-BAREEND: Z iff the statement ends here
-                jp      z,clr_done
+                jr      z,clr_done
                 ; 🔴 D-CLRFIX (docs/spec-basic-clrfix.md). THE TWO LINES THAT USED
                 ; TO STAND HERE ARE DELETED, AND THIS IS A CARVE, NOT A COST:
                 ;
@@ -91,8 +91,12 @@ ex_clear:
                 ; leave the OLD size: the himem arm's own ERR 7 used to leave the
                 ; new one stored behind it. Pushed in BOTH builds, so clr_h_store's
                 ; pop balances whatever CLEARPOOL says.
-                ld      bc,(POOLSIZE)
-                push    bc                  ; [old pool size]
+                ; 🔴 D-REREAD batch 8: THE PARAGRAPH ABOVE IS HOW IT WORKED, NOT HOW
+                ; IT WORKS. The OLD size no longer rides the stack: POOLSIZE is not
+                ; written at all until CLEAR is ACCEPTED, so a rejected CLEAR leaves
+                ; it untouched with nothing to restore. The NEW size rides the stack
+                ; instead ([new], pushed below in BOTH builds) and clr_floor reads it
+                ; from there. -42 B.
     IF CLEARPOOL
                 ; --- D-CLP: the argument is RECORDED, and checked first ---------
                 ; It used to be evaluated and thrown away, so `CLEAR -1`,
@@ -118,24 +122,21 @@ ex_clear:
                 bit     7,d                 ; the sign bit, tested in place: 2 B
                 jp      nz,gb_illegal       ; against `ld a,d`/`rla`/`jr c` + a
                                             ; local `jp` (7 B). Negative -> ERR 5.
-                push    de                  ; [old][new] -- D-DEFERRSTUDY: stored only
-                                            ; once the memory-top argument has been read,
-                                            ; so a fault RAISED inside it leaves POOLSIZE
-                                            ; as it was (the pool floor is derived sub-side)
     ELSE
                 call    eval                ; <string-space>, evaluated and ignored
+                ld      de,(POOLSIZE)       ; ...so the "new" size is the current one
     ENDIF
+                push    de                  ; [new] -- D-DEFERRSTUDY: NOT stored until
+                                            ; CLEAR is accepted, so a fault RAISED in the
+                                            ; memory-top argument, the range check or the
+                                            ; fit check leaves POOLSIZE as it was (the
+                                            ; pool floor is derived sub-side)
                 call    skip_comma          ; a second (memory-top) arg?
                 jr      z,clr_himem         ; yes -> the memory-top arm
                 ; D-CLEARFIT: NO second argument -- the ceiling stays where it is, and
                 ; the new string space must fit UNDER it by the same rule the
                 ; memory-top arm applies (floor = PRGEND + POOLSIZE + margin); the
-                ; ERR 7, the restore and the (unchanged) HIMEM store are all its.
-    IF CLEARPOOL
-                pop     bc                  ; the new pool size, stored now
-                ld      (POOLSIZE),bc
-    ENDIF
-                push    hl                  ; the cursor, as clr_floor's caller holds it
+                ; ERR 7 and the (unchanged) HIMEM store are all its.
                 ld      de,(HIMEM)          ; "value" = the CURRENT ceiling
                 jr      clr_chk             ; (in range: only CLEAR, boot and the disk
                                             ; kernel store HIMEM, all inside the window)
@@ -184,8 +185,9 @@ clr_himem:
                 ;   $8000 <= value < floor -> ERR 7 (no room for prog + strings)
                 ;   floor <= value <= $F380-> accepted, HIMEM moves
                 ; floor = PRGEND + POOLSIZE + CLR_HIMEM_MARGIN -- it tracks the
-                ; program TEXT (PRGEND) and the requested string space (POOLSIZE,
-                ; stored by the string-space arm above BEFORE we get here), as the
+                ; program TEXT (PRGEND) and the requested string space (the NEW
+                ; size, read off the stack since D-REREAD batch 8 -- it was POOLSIZE,
+                ; stored by the string-space arm above), as the
                 ; reference does; variables do NOT count because CLEAR wipes them
                 ; (rows p.dim*).
                 ; ⚠️ THE UPPER EDGE IS A CONSTANT $F380 ON BOTH MACHINES despite
@@ -197,16 +199,13 @@ clr_himem:
                 ; exactly as -1 does yet is ACCEPTED on all three -- the domain is
                 ; a RANGE, not a sign (docs/spec-basic-clrfix.md STILL OPEN note).
                 call    eval_addr           ; DE = -32768..65535, FPERR=1 past it
-    IF CLEARPOOL
-                pop     bc                  ; the new pool size, stored now (above)
-                ld      (POOLSIZE),bc
-    ENDIF
                 call    fperr_test          ; D-FPCARVE: -1 B
-                jr      nz,clr_h_store      ; >=65536 overflow already pending -> ERR 6;
+                jr      nz,clr_h_raise      ; >=65536 overflow already pending -> ERR 6;
                                             ; skip the range check (DE is 0 here anyway)
                                             ; and HL is still the statement cursor.
+clr_chk:                                    ; both arms: [new] stacked, HL = cursor
                 push    hl                  ; guard the cursor across the arithmetic
-clr_chk:                                    ; D-CLEAR3ARG (2026-10-24): the statement must
+                                            ; D-CLEAR3ARG (2026-10-24): the statement must
                 dec     hl                  ; END here before the value is range-checked or
                 call    stmt_bare_end       ; acted on. VG-8020: `CLEAR 1,2,3` / `CLEAR 1,2 X`
                 ld      a,4                 ; are ERR 2, not 5; `CLEAR 200,&H8100,3` is 2,
@@ -215,25 +214,24 @@ clr_chk:                                    ; D-CLEAR3ARG (2026-10-24): the stat
                                             ; first, and a VALID `CLEAR 200,&HF000,3` acted
                                             ; -- wiping ON ERROR -- before the junk raised,
                                             ; untrapped (scratchpad/clear3_run.out). FPERR 4
-                                            ; through clr_h_set keeps the D-CLEARFIT restore.
-                ld      hl,CLR_HIMEM_TOP    ; value > $F380 -> ERR 5
-                or      a
-                sbc     hl,de
+                                            ; through clr_h_set leaves POOLSIZE untouched.
+                ld      hl,CLR_HIMEM_TOP    ; value > $F380 -> ERR 5. No `or a`: both
+                sbc     hl,de               ; of stmt_bare_end's Z exits leave CF = 0
                 jr      c,clr_h_ill
-                ld      hl,$7FFF            ; value <= $7FFF (< $8000) -> ERR 5
-                or      a
-                sbc     hl,de
-                jr      nc,clr_h_ill
+                bit     7,d                 ; value <= $7FFF (< $8000) -> ERR 5
+                jr      z,clr_h_ill
 clr_floor:
-                ld      hl,(PRGEND)         ; floor = PRGEND + POOLSIZE + margin
-                ld      bc,(POOLSIZE)
+                pop     bc                  ; the cursor
+                pop     hl                  ; HL = the NEW pool size
+                push    hl
+                push    bc                  ; [new][cursor] again
+                ld      bc,(PRGEND)         ; floor = PRGEND + POOLSIZE + margin
                 add     hl,bc
                 ld      bc,CLR_HIMEM_MARGIN
                 add     hl,bc
-                or      a
-                sbc     hl,de               ; floor - value
-                jr      c,clr_h_ok          ; value > floor  -> accepted
-                jr      z,clr_h_ok          ; value == floor -> accepted
+                scf
+                sbc     hl,de               ; floor - value - 1: CF iff value >= floor
+                jr      c,clr_h_ok          ; value >= floor -> accepted
                 ld      a,6                 ; value < floor -> ERR 7 Out of memory
                 jr      clr_h_set           ; (fperr_to_err[6] = 7)
 clr_h_ill:
@@ -242,13 +240,8 @@ clr_h_set:                                  ; (fperr_to_err[3] = 5)
                 call    penderr_set         ; preserves DE and the pushed cursor
 clr_h_ok:
                 pop     hl                  ; restore the statement cursor
-clr_h_store:
-                pop     bc                  ; BC = the OLD pool size (D-CLEARFIT)
-                call    fperr_test          ; a fault is pending -> CLEAR is REJECTED,
-                jr      z,clr_h_fits        ; so the old pool size goes back BEFORE
-                ld      (POOLSIZE),bc       ; the raise; nothing else was stored yet
-clr_h_fits:
-                call    check_expr_errors   ; raise BEFORE the store and the wipe
+clr_h_raise:                                ; [new] still stacked -- a raise re-bases SP
+                call    check_expr_errors   ; raise BEFORE any store and the wipe
                 ; 🔴 D-CLEARCLOSE (2026-10-06): AN ACCEPTED CLEAR CLOSES EVERY FILE,
                 ; as on the CF-3300 (scratchpad/clearopen_probe.py: after `CLEAR
                 ; 500`, `CLEAR 200,&HE000` or a bare `CLEAR`, `PRINT#1` is 59 and
@@ -256,16 +249,14 @@ clr_h_fits:
                 ; (ERR 5 / 7, raised just above) leaves them open, there and here.
                 ; The channels close under the OLD pool size and ceiling: each
                 ; channel's 265 B block is located from both (sub/strheap.asm
-                ; sh_chan_addr), and the new pool size is already stored.
-                push    de                  ; the new ceiling
-                ld      de,(POOLSIZE)
-                push    de                  ; the new pool size
-                ld      (POOLSIZE),bc       ; the OLD one while the files close
+                ; sh_chan_addr) -- and both cells still hold the old values here,
+                ; since nothing has stored the new ones yet.
+                push    de                  ; [new][ceiling]
                 call    clr_files
                 pop     de
-                ld      (POOLSIZE),de
-                pop     de
                 ld      (HIMEM),de          ; record CLEAR's ceiling
+                pop     bc
+                ld      (POOLSIZE),bc       ; and its string space
                 jr      clr_wipe
 clr_done:                                   ; a bare CLEAR: nothing moved yet
                 call    clr_files

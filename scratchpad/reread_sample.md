@@ -145,3 +145,11 @@ Four of the deferred reviewer's items, 49 B low region (pad 289 -> 338 B): str_l
 `cp e` clamp (11), MID$'s 8-bit tail (15), str_min_bc deleted (7), shx_finish as an alias of
 sst_op's tail (16). contract-diff: 0 broken. Running total ~1,030 B across the batches.
 
+## Batch 8 (2026-10-31 -> 11-01)
+
+Ten spans, five reviewers, z80flow contracts in the briefs. ~130 B: low region +78 B (the array
+store now runs var_store_at's coercion, 48 B), page 1 +52 B net (CLEAR's pool size kept on the
+stack, 42 B). contract-diff: 0 broken, one `wider_in` (ex_clear's B into a raise) read and
+accepted. Two possible live bugs filed for measurement (CLEAR's 16-bit fit sum; DI after
+FIELD / LSET / RSET). Running total ~1,160 B.
+

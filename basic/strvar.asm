@@ -391,8 +391,7 @@ mkf_back:
                 ld      a,3                 ; Illegal function call, DEFERRED --
                 call    penderr_set         ; first-error-wins outranks the syntax
                                             ; error the decline would otherwise raise
-                pop     hl                  ; balance the guarded cursor
-                jr      str_eval_no         ; `jr` (D-SCRARITY carve): 1 B
+                jr      sep_decline         ; pop the guarded cursor, CF clear (D-REREAD b8)
 mkf_have:
                 ; 🎯 D-DISKABI + D-MKINT: NO COERCION AND NO DISCRIMINATION HERE
                 ; ANY MORE, FOR ANY OF THE THREE. For MKS$/MKD$ the hook WAS the
@@ -421,12 +420,12 @@ str_eval_maybe_inputd:
                 cp      '$'
                 jr      z,str_inputd
                 dec     hl                  ; not INPUT$ -> restore, not a string operand
-                jp      str_eval_no
+                jr      str_eval_no
 str_inputd:
                 call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
-                jp      nz,str_eval_no
+                jr      nz,str_eval_no
                 inc     hl
                 ; D-INPUTDN: the count is a BYTE argument, typed at the eval -- a
                 ; string is 13, 70000 is 6, 256 / -1 are 5, ALL before the channel
@@ -585,17 +584,15 @@ sidr_done:
 ; back to oo_fail_syn went out of range). The pin's pad stays 0 (Joost: no growing
 ; holes). (pin_plan --check's "pad in front 2 B" at $6CF3 is its `jr` bridge.)
 pl_exit:
-                push    hl                  ; the statement cursor
-                ld      hl,2
-                add     hl,sp               ; HL -> the word under it
-                ld      a,(hl)
+                ex      (sp),hl             ; HL = the word under the cursor, which
+                                            ; is parked in its place (D-REREAD batch 8)
+                ld      a,l
                 cp      low bp_ret
                 jr      nz,ple_stmt
-                inc     hl
-                ld      a,(hl)
+                ld      a,h
                 cp      high bp_ret
 ple_stmt:
-                pop     hl
+                ex      (sp),hl             ; the word back, HL = the cursor
                 ret     z                   ; called from basicint_play -> bp_ret
                 jp      exec_stmt           ; the PLAY statement: chain the next one
 

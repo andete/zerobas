@@ -29,8 +29,6 @@ flt_int_result  equ     evsgn_settype
                                 ; (was basic/float.asm)
 inpc_synpop     equ     ex_let_err
                                 ; (was basic/input.asm)
-raf_zero_ok     equ     cpow_x0_pos
-                                ; (was basic/float-arith.asm)
 vlf_unset_int   equ     vptr_none
                                 ; (was basic/vars.asm)
 ; (rn_in -- `equ in_msg`, D-ISLDATA2 -- left with RENUM's report loop for

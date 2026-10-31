@@ -665,13 +665,23 @@ fzm_lp:         ld      (hl),a
                 djnz    fzm_lp
                 ret
 
-rsp_zero_ok:
+; --- the ZERO-RESULT tails (D-REREAD batch 8): FAC+0..7 := 0, FACTYP := A := E,
+; DE := 0, B = 0, HL = FAC+8, C untouched, F = `xor a`'s. raf_zero_ok was
+; combine_pow's cpow_x0_pos (and an alias); rsp_zero_ok differed only in the 4.
+rsp_zero_ok:                                ; A = 0 and F = `xor a`'s already:
+                ld      e,4                 ; arga_dig_iszero's Z exit (`or a`, A = 0)
+                jr      fzt_a0
+raf_zero_ok:
+                ld      e,8
                 xor     a
+fzt_a0:
                 ld      (FAC),a
-                call    fac_zero_mantissa   ; D-FACZERO: and the mantissa too
-                ld      a,4
+                call    fac_zero_mantissa   ; B := 0, HL := FAC+8
+                ld      a,e
+                ld      d,b
+                ld      e,b                 ; DE := 0 (B = 0: fac_zero_mantissa's djnz)
                 ld      (FACTYP),a
-                jp      ret_de0
+                ret
 
 ; =============================================================================
 ; fp_add / fp_sub — double BCD add/subtract (spec §10.2)
@@ -688,31 +698,26 @@ fp_add:
                 ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,(ARGB+FPNUM_DEXP)
                 or      a
-                sbc     hl,de               ; HL = dexpA - dexpB
-                ld      a,h
-                or      a
+                sbc     hl,de               ; HL = dexpA - dexpB; S = its bit 15
                 jp      p,fpa_agtb          ; diff>=0 -> dexpA>=dexpB
                 ; dexpA < dexpB: shift ARGA_DIG right by |diff|, adopt dexpB
                 ld      a,l
                 neg
-                ld      (FP_SHIFTAMT),a
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_shr
-                ld      hl,(ARGB+FPNUM_DEXP)
-                ld      (ARGA+FPNUM_DEXP),hl
-                jr      fpa_combine
+                ld      (ARGA+FPNUM_DEXP),de ; adopt dexpB (DE still holds it; dig15_shr
+                ld      hl,ARGA+FPNUM_DIG   ; touches only the 15 digit bytes)
+                jr      fpa_shr
 fpa_agtb:
                 ; dexpA >= dexpB: shift ARGB_DIG right by diff; ARGA_DEXP
                 ; (=dexpA) is already the common exponent, no update needed
                 ld      a,l
-                ld      (FP_SHIFTAMT),a
                 ld      hl,ARGB+FPNUM_DIG
+fpa_shr:
+                ld      (FP_SHIFTAMT),a
                 call    dig15_shr
 fpa_combine:
-                ld      a,(ARGA+FPNUM_SIGN)
-                ld      b,a
+                ld      hl,ARGA+FPNUM_SIGN
                 ld      a,(ARGB+FPNUM_SIGN)
-                cp      b
+                cp      (hl)
                 jr      nz,fpa_diffsign
                 call    dig15_add_inplace
                 call    c,arga_carry_renorm
@@ -1818,10 +1823,9 @@ fx_tail:
                 ret
 fxt_int:
                 pop     hl                  ; (the int path's AF: dead)
-                push    de
                 xor     a
-                call    fac_zero_mantissa   ; FAC+1..7 := 0 (A = 0)
-                pop     hl                  ; HL = the answer
+                call    fac_zero_mantissa   ; FAC+1..7 := 0 (A = 0); DE untouched
+                ex      de,hl               ; HL = the answer
                 ld      a,h
                 or      l
                 ld      c,a                 ; a zero: C = 0, as the BCD path's
@@ -1929,19 +1933,9 @@ cpow_y_nonzero:
                 jr      nz,cpow_x_nonzero
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
-                jr      z,cpow_x0_pos
+                jp      z,raf_zero_ok       ; x = 0, y > 0: the shared zero tail
                 ld      a,2
                 jp      raise_now           ; Division by zero, at once (D-DEFERRSTUDY)
-cpow_x0_pos:
-                xor     a
-                ld      (FAC),a             ; FAC := 0 (double lead byte)
-                call    fac_zero_mantissa   ; D-FACZERO: ...and its mantissa.
-                                            ; This label IS `raf_zero_ok`, the
-                                            ; shared zero-pack tail every
-                                            ; fp_* underflow jumps to.
-                ld      a,8
-                ld      (FACTYP),a
-                jp      ret_de0
 cpow_x_nonzero:
                 ; --- 3) classify y (ARGB record; no fp_* calls needed) -----
                 ld      hl,(ARGB+FPNUM_DEXP)

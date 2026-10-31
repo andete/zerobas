@@ -1648,11 +1648,10 @@ ev_ff_cv:
                 ; resulting descriptor. (IX is reloaded from str_eval's advanced HL, so
                 ; an inner eval clobbering IX is harmless.) Entered with IX on the
                 ; CVI selector byte.
-                call    ixsp_paren_req     ; D-IXSP
+                call    ixsp_open           ; D-IXSP
                                            ; BUG C class (Fable 2026-07-17): CVI missing
                                             ; '(' -> deferred syntax error (was silent
                                             ; ev_f_err -> " 0"); ref = Syntax error
-                call    ixsp                ; D-IXSP
                 ; 🎯 `CVI()` NEEDS NO TEST OF ITS OWN. D-CVITM added a `cp ')'` here
                 ; because routing every decline straight to `ev_f_tmm` turned the
                 ; reference's Syntax error into Type mismatch. Once `cvi_tmm`
@@ -1796,9 +1795,8 @@ cvi_tmm:
 ; holds open at this FRE (ev_fre_close -> fre_go, basic/main.asm; the
 ; re-scan is sub2/frelive.asm). FRE(s$) is unchanged.
 ev_ff_fre:
-                call    ixsp_paren_req     ; D-IXSP
+                call    ixsp_open           ; D-IXSP
                                            ; bare FRE -> deferred syntax error
-                call    ixsp                ; D-IXSP
                 push    ix                  ; guard the cursor for the numeric retry:
                 call    str_eval_ix         ; a STRING argument? (repack str_eval
                                             ; CALSLTs and can exit NC with GARBAGE IX --
@@ -2504,7 +2502,7 @@ ev_f_varptr:
                 ld      c,a                 ; C = VARPTR_TOKEN (the dispatch's `cp`
                                             ; left it in A): ev_ff_arg's selector for
                                             ; the `#` form below; ixsp keeps C
-                call    ixsp_paren_req     ; D-IXSP
+                call    ixsp_open           ; D-IXSP
                 ; D-EVFERR: both these sites are Syntax error (2) on both
                 ; references, and BOTH LOOKED GREEN because ev_f_err leaves the
                 ; cursor UNADVANCED -- `A=VARPTR 5` / `A=VARPTR(5)` answered 2
@@ -2512,7 +2510,6 @@ ev_f_varptr:
                 ; the expression layer saying nothing at all. The rows with
                 ; NOTHING left over separate them: `A=VARPTR` and `A=VARPTR(`
                 ; COMPLETED SILENTLY. Byte-neutral retargets.
-                call    ixsp                ; D-IXSP
                 cp      '#'                 ; D-VARPTRCH: VARPTR(#n) is a channel's
                 jp      z,ev_ff_arg_in      ; FCB address -- the int-argument path
                                             ; EOF/LOF/LOC take, selector in C
@@ -2855,6 +2852,13 @@ factyp_is2:
                 cp      2
                 ret
 
+; --- ixsp_open: `(` REQUIRED, then past it and its blanks (D-REREAD batch 8) --
+; The pair `call ixsp_paren_req / call ixsp` stood at five sites. NZ: the shared
+; ixsp_unwind (its `ret z` not taken) drops OUR return -- the site's frame, as
+; ixsp_paren_req dropped its own -- then ev_f_empty. Z: falls into ixsp.
+ixsp_open:
+                call    ixsp_paren
+                jp      nz,ixsp_unwind
 ; --- ixsp: step the evaluator cursor, then skip blanks ----------------------
 ; D-IXSP. `inc ix / call ev_sp` stood at SIXTEEN sites -- ten in expr.asm, six in
 ; str-engine.asm -- 5 B each. It was ranked ELEVENTH until D-IXSIZE corrected the

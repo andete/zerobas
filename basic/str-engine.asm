@@ -998,8 +998,7 @@ evff_strnum_tm:
 ; other factor error. Entered with IX on the function selector byte. UNCHANGED
 ; from pre-4a (format-agnostic — it only ever hands off to str_eval).
 ev_str_arg:
-                call    ixsp_paren_req     ; D-IXSP
-                call    ixsp                ; D-IXSP
+                call    ixsp_open           ; D-IXSP
                 ; empty string-argument (LEN()/ASC()/VAL(), or a trailing ','):
                 ; the same missing-operand syntax error as ev_f's ')'/',' gate
                 ; (D-F2-3). Route to ev_f_empty so FPERR=4 is set on THIS eval --
@@ -2055,10 +2054,9 @@ sfg_str2_empty:
 ; by then, and is bridged back into IX only right before the return, so ev_f's
 ; "IX = cursor advanced past the call" convention still holds.
 ev_f_instr:
-                call    ixsp_paren_req     ; D-IXSP
+                call    ixsp_open           ; D-IXSP
                                            ; BUG C class: INSTR without '(' -> deferred
                                             ; syntax error (was silent ev_f_err)
-                call    ixsp                ; D-IXSP
                 call    str_eval_ix            ; CF set -> a$ (2-arg form); STRPTR->desc
                 jr      c,efi_have_a
                 ; --- not a string: the leading numeric p (3-arg form) ---

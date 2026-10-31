@@ -346,6 +346,31 @@ item — do **one item per session** to keep context lean.
       the stk_room depth for INKEY$ -- run the deepexpr rows), STRING$'s first byte via
       pu_deref_body (2 B), ems_print's `ex (sp),hl` (1 B), INSTR's `ld de,1` hoist (1 B),
       an inc_eval_byte fall-in (4 B low for 1 B page 1, counted 2026-10-31).
+      ✅ **BATCH 8 (2026-10-31 -> 11-01), measured 2026-11-01: low region free 422 -> 494 B and
+      its $3297 pad 338 -> 344 B (+78 B); main page 1 free 362 -> 351 B, its pads 2183 -> 2246 B
+      (+52 B net) -- ~130 B**. The array element store (ary_store_write, 48 B low, measured 2026-11-01) is
+      var_store_at's own coercion, entered below D-FORFAST at a new vsa_dwiden, so an element is
+      still widened + repacked (+11 B page 1, 2026-11-01); CLEAR keeps the NEW pool size on the stack and
+      writes POOLSIZE only when it accepts -- nothing to restore on a reject (42 B page 1, 2026-11-01); one
+      zero-result tail for rsp_zero_ok / raf_zero_ok (9), fp_add's alignment + sign test (11),
+      fxt_int (1); `ixsp_open` folds `call ixsp_paren_req / call ixsp` at five sites (9);
+      fre_abort_low's ENDFLAG via `inc a` and e21_no_resume falling into it (3); pl_exit compares
+      through `ex (sp),hl` (5); mkf_back / INPUT$ declines (3); PLAY(n)'s 0..3 check through
+      gfx_chk_dom (6); pl_typeerr an `equ` of type_mismatch_error (4). `make contract-diff
+      BASE=HEAD`: 0 broken, ONE `wider_in` -- ex_clear now reads B on entry: on a REJECTED CLEAR
+      the dispatcher's B reaches raise_error where the old POOLSIZE load sat; only a user H.ERRO
+      hook can see it (the reviewers' "registers unspecified at a raise" class), accepted
+      ([`b8_contract.out`](scratchpad/b8_contract.out)). 🧰 z80flow lists the DATA label
+      `err_syntax` (`db "Syntax error",0`) as a routine and decodes its text -- a tool finding.
+      Knife pins unchanged; tapes: every class as before, Boulder Dash II on line 3341.
+      🔍 **TWO REVIEWER FINDINGS TO MEASURE (2026-11-01, unmeasured):** (a) CLEAR's fit check
+      adds PRGEND + size + 680 in 16 bits with no carry test, so `CLEAR 32100` .. `CLEAR 32767`
+      may be ACCEPTED where both references say Out of memory (D-CLEARFIT's hang class);
+      (b) chan_gate_bare's return has no `ei`, so FIELD / LSET / RSET / CALL FORMAT may come
+      back with interrupts OFF. HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
+      (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
+      interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
+      the $72D4 pad), E2 / E3 / HB-a..f.
 
 - [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
@@ -8337,7 +8362,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10828 (T-6FE392)8 (T-529ABE)` from `TODO.md:16510 (T-529ABE)`: a
+      `TODO.md:10853 (T-6FE392)8 (T-529ABE)` from `TODO.md:16535 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11297,7 +11322,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16510 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16535 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

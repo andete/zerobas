@@ -1746,6 +1746,9 @@ var_store_at:
                 ld      a,(FACTYP)          ; 🐌 D-FORFAST: a double already in FAC is
                 cp      8                   ; already packed and rounded
                 jr      z,vsa_dbl
+vsa_dwiden:                                 ; ary_store_write enters here: an array
+                                            ; element is always widened + repacked
+                                            ; (no D-FORFAST skip; D-REREAD batch 8)
                 call    arga_widen          ; D-ARGAWIDEN
                 call    round_and_finalize  ; exact widen + pack as double
 vsa_dbl:
@@ -1776,6 +1779,20 @@ vsa_int:
                 inc     hl
                 ld      (hl),d
                 ret
+; --- ary_store_write: an ARRAY element's store (ex_let_arr, and READ / INPUT /
+; INPUT # through tgt_store_fac). HL = the element's value field, A = its type
+; (2/4/8); DE / FAC = the RHS, var_store_fac's RHS contract. It is var_store_at
+; past its entry-type read -- the same frame ([value] pushed, A = type) -- and the
+; double arm enters at vsa_dwiden, BELOW D-FORFAST's FACTYP==8 skip, so an element
+; is widened + repacked exactly as before. Overflow: FPERR set, nothing written.
+; (D-REREAD batch 8: was a 48 B copy of this coercion in the low region.)
+ary_store_write:
+                push    hl
+                cp      2
+                jr      z,vsa_int
+                cp      4
+                jr      z,vsa_single
+                jr      vsa_dwiden
 
 ; --- slot_store / slot_load: a FOR frame's typed limit/step slot (D-FORFLOAT) --
 ; A slot is [FACTYP][8]: an int16 in its first two bytes, or FAC's eight. Its

@@ -754,10 +754,9 @@ vsf_coerced:
                 ld      a,(VS_TARGET_TYPE)
                 cp      2
                 jp     z,vsf_wb_int
-; vsf_wb_copy -- a ZERO-BYTE label: arrays.asm's element store ended in these
-; exact 11 bytes (A = the byte count, HL = the destination) and jumps here now
-; (D-SEQEOF funding carve, 2026-09-28, -8 B). The SCALAR store keeps the inline
-; copy; the array store pays the one `jp`.
+; vsf_wb_copy -- a ZERO-BYTE label: the array element store used to end in these
+; exact 11 bytes (D-SEQEOF funding carve, 2026-09-28); since D-REREAD batch 8 it is
+; var_store_at's own coercion (basic/program.asm) and nothing outside jumps here.
 vsf_wb_copy:
                 ld      c,a                 ; C = byte count (4 single / 8 double)
                 ld      b,0

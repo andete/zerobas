@@ -83,132 +83,6 @@ err_syntax:                                 ; interp.asm's own stmt_error + fre_
                                             ; slice-3, docs/spec-basic-arrays-slice3-
                                             ; strings.md §5.3).
 
-; --- fre_abort_low: the PRDEST-zero + fresh-line + print tail of ------------
-; fp_runtime_error/type_mismatch_error (interp.asm page 1 jumps here; the
-; body lives in the low region to keep page 1 shrinking, not growing). The
-; reference starts every runtime error message at column 0 — if the aborted
-; statement left the cursor mid-line (e.g. `PRINT"[";B(-1)` printed the `[`),
-; it emits a CRLF first; at column 0 it prints no blank line. Oracle: the
-; §9.7 differential tails ('[' then the message on its OWN row). CSRX is the
-; 1-based cursor column (C-BIOS sysvar, same source print_comma_zone uses).
-; HL = message string; pchar preserves all registers.
-fre_abort_low:
-                ; D-CUR-D (docs/spec-basic-abort-depth.md §4): the abort is
-                ; DEPTH-INDEPENDENT, exactly like the trap branch four
-                ; instructions away in raise_error_hl. Without this the chain
-                ; printed and `ret`ed, which only unwinds correctly when the
-                ; error was raised at the STATEMENT HANDLER's own depth; one
-                ; `call` deeper (get_byte_arg, get_vram_arg, fac_to_int_addr,
-                ; the ev_ff_arg leaves) the `ret` consumed THAT frame and
-                ; landed back inside the helper's caller with A = the error
-                ; code -- `ex_width` then did `ld (LINLEN),a` with A=5 and
-                ; re-inited the screen, so `WIDTH 300` printed NO error and
-                ; left the display unusable.
-                ;
-                ; The `ret` at the end of the print tail below is exactly right
-                ; rather than merely safe, in BOTH modes: run_prog and dl_cmd
-                ; each do `ld (SAVSTK),sp` immediately before entering the run
-                ; loop, and the loop's own normal exit is a `ret` at that same
-                ; depth. So this reset plus the tail's `ret` IS the ordinary
-                ; end-of-RUN / end-of-line exit, reached early.
-                ;
-                ; ⚠️ THE CITATION MOVED, THE DEPTH ARGUMENT DID NOT (D-RETZ,
-                ; 2026-08-21). This used to name the instruction: "(rp_lp's
-                ; `ret z` on the $0000 link)". There is no `ret z` there any
-                ; more -- D-CONTR replaced it with `jp cont_record` and D-ERR21
-                ; put the ONEFLG test above that. The exit is now
-                ; `jp cont_record`, a TAIL CALL, so cont_record's own `ret` IS
-                ; the loop's exit `ret` and it is at the same depth the `ret z`
-                ; was (basic/program.asm's own note at that site says so).
-                ; The argument above is unchanged and still load-bearing; only
-                ; the instruction it pointed at is gone. A comment that names a
-                ; specific instruction is a CLAIM, and this one went stale
-                ; without a single gate noticing -- no gate reads prose.
-                ;
-                ; Reset FIRST, before the message is printed: the printing
-                ; routines push and pop BELOW the new SP, and never touch the
-                ; word AT it -- which is the return address the tail consumes.
-                ld      sp,(SAVSTK)
-                ; D-GICINI (docs/spec-basic-gicini.md): an UNTRAPPED abort stops
-                ; the music on both references -- rows e.untrap / e.errnat /
-                ; e.errdir, in run mode AND in direct mode, which is why it sits
-                ; in the funnel and not at a mode-specific site. A TRAPPED error
-                ; does NOT (row m.err), and that branch left at raise_error_hl
-                ; several instructions ago, so this site is already the right
-                ; side of that fork. HL (the message) is preserved by the call.
-                call    psg_silence
-                ld      a,1
-                ld      (ENDFLAG),a         ; D-1 (docs/spec-basic-error-handling.md
-                                            ; S1): an untrapped runtime error ABORTS the
-                                            ; RUN. The run loop's post-`call exec`
-                                            ; ENDFLAG check (program.asm rp_exec) then
-                                            ; unwinds to the REPL; without this the loop
-                                            ; found ENDFLAG clear and ran on past the
-                                            ; error (the D-1 bug). Harmless in direct
-                                            ; mode (run_prog + ex_cont re-clear ENDFLAG
-                                            ; before any run). This is now the single
-                                            ; abort funnel: the program.asm/interp.asm
-                                            ; error sites `jp fre_abort_low` too.
-                xor     a
-                ; D-ONEFLG site A (docs/spec-basic-oneflg-reset-scope.md §4): an
-                ; ABORT ends the handler context. Without this, ONEFLG stayed 1
-                ; all the way back to the prompt and the NEXT error force-aborted
-                ; instead of trapping -- measured against the VG-8020 six ways
-                ; (spec §2). UNCONDITIONAL, and the missing DIRECTF gate is the
-                ; measurement, not an oversight: c10 pinned that a DIRECT-mode
-                ; error kills the handler context of a merely SUSPENDED run too
-                ; (the reference then reports "RESUME without error in <line>"
-                ; from inside the CONTinued handler). The raisers that never set
-                ; the flag store an already-0 value here, which is a no-op.
-                ld      (ONEFLG),a
-                ld      (PRDEST),a          ; error text always goes to the screen
-                ld      a,(CSRX)
-                cp      2                   ; CSRX is 1-BASED: 1 = column 0. CF for
-                                            ; 0 too -- CSRX=0 never occurs on real
-                                            ; hardware, but the host unit-test
-                                            ; harness (tests/msxtest.py) runs with
-                                            ; zeroed RAM and no screen, and must not
-                                            ; grow a phantom leading CRLF there.
-                call    nc,print_crlf       ; mid-line (CSRX>=2) -> fresh line first;
-                                            ; byte-for-byte the old inline
-                                            ; ld a,13/pchar/ld a,10/pchar (print.asm
-                                            ; print_crlf IS that pair), reclaiming the
-                                            ; funnel's ENDFLAG cost.
-                ; D-2 (docs/spec-basic-error-handling.md §5.4): a RUN-mode error
-                ; appends " in <line>"; a DIRECT-mode error prints unchanged (no line
-                ; to name). DIRECTF is DERIVED at rp_exec from CURLINE (program.asm,
-                ; docs/spec-basic-direct-ctrl.md §5) -- the single point every line
-                ; entry and every mid-line resume passes through -- so it is valid
-                ; here and, unlike a carried flag, cannot be stale.
-                ; This test stays even though print_in_lineno now gates on DIRECTF
-                ; too. It used to pick print_string vs print_string_stopcr, so it had
-                ; to branch BEFORE printing; since D-MSGENC (below) both arms print
-                ; the same body, so it follows the print (D-REREAD batch 4).
-                ; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.2/§4.3): the CRLF is
-                ; no longer baked into the message, so print_msg IS "body + CRLF" and
-                ; print_msg_stopcr IS the body alone -- the same two-way split, but
-                ; the stop condition is now the string's own terminator instead of a
-                ; sentinel CR that had to be scanned for.
-                ; 🔴 D-READERL (2026-10-10): THE LINE NAMED IS ERRLIN, NOT THE
-                ; CURRENT ONE, AND ERRLIN ALSO DECIDES WHETHER ONE IS NAMED. The two
-                ; agree for every error but a bad DATA item, which the VG-8020
-                ; reports in the DATA line -- `Syntax error in 20` from line 30, and
-                ; from a `READ A` TYPED at the prompt too (scratchpad/readerl_run.out).
-                ; record_errline writes ERRLIN = 65535 for every other direct-mode
-                ; error, so that value is the "direct: no line" test the DIRECTF read
-                ; was. The re-raise (`ON ERROR GOTO 0`) keeps the original ERRLIN and
-                ; printed that line already (`reraise` row). The body is printed
-                ; first, so ERRLIN is read into HL afterwards.
-                call    print_msg_stopcr    ; the body alone, on both arms (D-REREAD
-                                            ; batch 4: the test can follow the print --
-                                            ; D-MSGENC took the CRLF out of the body)
-                ld      hl,(ERRLIN)
-                ld      a,h
-                and     l
-                inc     a                   ; Z iff ERRLIN = 65535
-                jp      nz,print_in_hl      ; " in <ERRLIN>" + CRLF (program.asm)
-                jp      print_crlf          ; no line: the CRLF print_msg would add
-
 ; --- e21_no_resume: ERR 21 "no resume" -- the run fell off the END of the ----
 ; program while still owing a RESUME. docs/spec-basic-err21-no-resume.md §3.2.
 ; Reached ONLY by `jp nz` from rp_lp's $0000-link exit (basic/program.asm §3.1),
@@ -279,11 +153,139 @@ e21_last:
                 call    set_errflg          ; D-HERRO
                 call    record_errline      ; ERL := that line (run mode; DIRECTF==0
                                             ; is exactly what the gate above proved)
-                ld      hl,err_no_resume
-                jr      fre_abort_low       ; D-ONEFLG site A clears ONEFLG on the way
+                ld      hl,err_no_resume    ; falls into fre_abort_low (D-REREAD batch 8):
+                                            ; D-ONEFLG site A clears ONEFLG on the way
                                             ; through, which is why rp_lp's site C could
                                             ; be deleted (spec §2.2); then the message
                                             ; and " in <line>"
+; --- fre_abort_low: the PRDEST-zero + fresh-line + print tail of ------------
+; fp_runtime_error/type_mismatch_error (interp.asm page 1 jumps here; the
+; body lives in the low region to keep page 1 shrinking, not growing). The
+; reference starts every runtime error message at column 0 — if the aborted
+; statement left the cursor mid-line (e.g. `PRINT"[";B(-1)` printed the `[`),
+; it emits a CRLF first; at column 0 it prints no blank line. Oracle: the
+; §9.7 differential tails ('[' then the message on its OWN row). CSRX is the
+; 1-based cursor column (C-BIOS sysvar, same source print_comma_zone uses).
+; HL = message string; pchar preserves all registers.
+fre_abort_low:
+                ; D-CUR-D (docs/spec-basic-abort-depth.md §4): the abort is
+                ; DEPTH-INDEPENDENT, exactly like the trap branch four
+                ; instructions away in raise_error_hl. Without this the chain
+                ; printed and `ret`ed, which only unwinds correctly when the
+                ; error was raised at the STATEMENT HANDLER's own depth; one
+                ; `call` deeper (get_byte_arg, get_vram_arg, fac_to_int_addr,
+                ; the ev_ff_arg leaves) the `ret` consumed THAT frame and
+                ; landed back inside the helper's caller with A = the error
+                ; code -- `ex_width` then did `ld (LINLEN),a` with A=5 and
+                ; re-inited the screen, so `WIDTH 300` printed NO error and
+                ; left the display unusable.
+                ;
+                ; The `ret` at the end of the print tail below is exactly right
+                ; rather than merely safe, in BOTH modes: run_prog and dl_cmd
+                ; each do `ld (SAVSTK),sp` immediately before entering the run
+                ; loop, and the loop's own normal exit is a `ret` at that same
+                ; depth. So this reset plus the tail's `ret` IS the ordinary
+                ; end-of-RUN / end-of-line exit, reached early.
+                ;
+                ; ⚠️ THE CITATION MOVED, THE DEPTH ARGUMENT DID NOT (D-RETZ,
+                ; 2026-08-21). This used to name the instruction: "(rp_lp's
+                ; `ret z` on the $0000 link)". There is no `ret z` there any
+                ; more -- D-CONTR replaced it with `jp cont_record` and D-ERR21
+                ; put the ONEFLG test above that. The exit is now
+                ; `jp cont_record`, a TAIL CALL, so cont_record's own `ret` IS
+                ; the loop's exit `ret` and it is at the same depth the `ret z`
+                ; was (basic/program.asm's own note at that site says so).
+                ; The argument above is unchanged and still load-bearing; only
+                ; the instruction it pointed at is gone. A comment that names a
+                ; specific instruction is a CLAIM, and this one went stale
+                ; without a single gate noticing -- no gate reads prose.
+                ;
+                ; Reset FIRST, before the message is printed: the printing
+                ; routines push and pop BELOW the new SP, and never touch the
+                ; word AT it -- which is the return address the tail consumes.
+                ld      sp,(SAVSTK)
+                ; D-GICINI (docs/spec-basic-gicini.md): an UNTRAPPED abort stops
+                ; the music on both references -- rows e.untrap / e.errnat /
+                ; e.errdir, in run mode AND in direct mode, which is why it sits
+                ; in the funnel and not at a mode-specific site. A TRAPPED error
+                ; does NOT (row m.err), and that branch left at raise_error_hl
+                ; several instructions ago, so this site is already the right
+                ; side of that fork. HL (the message) is preserved by the call.
+                call    psg_silence
+                ; ENDFLAG := 1 is the `inc a` after PRDEST below (D-REREAD batch 8).
+                ; D-1 (docs/spec-basic-error-handling.md
+                                            ; S1): an untrapped runtime error ABORTS the
+                                            ; RUN. The run loop's post-`call exec`
+                                            ; ENDFLAG check (program.asm rp_exec) then
+                                            ; unwinds to the REPL; without this the loop
+                                            ; found ENDFLAG clear and ran on past the
+                                            ; error (the D-1 bug). Harmless in direct
+                                            ; mode (run_prog + ex_cont re-clear ENDFLAG
+                                            ; before any run). This is now the single
+                                            ; abort funnel: the program.asm/interp.asm
+                                            ; error sites `jp fre_abort_low` too.
+                xor     a
+                ; D-ONEFLG site A (docs/spec-basic-oneflg-reset-scope.md §4): an
+                ; ABORT ends the handler context. Without this, ONEFLG stayed 1
+                ; all the way back to the prompt and the NEXT error force-aborted
+                ; instead of trapping -- measured against the VG-8020 six ways
+                ; (spec §2). UNCONDITIONAL, and the missing DIRECTF gate is the
+                ; measurement, not an oversight: c10 pinned that a DIRECT-mode
+                ; error kills the handler context of a merely SUSPENDED run too
+                ; (the reference then reports "RESUME without error in <line>"
+                ; from inside the CONTinued handler). The raisers that never set
+                ; the flag store an already-0 value here, which is a no-op.
+                ld      (ONEFLG),a
+                ld      (PRDEST),a          ; error text always goes to the screen
+                inc     a                   ; A = 1
+                ld      (ENDFLAG),a         ; D-1 (above): the run stops
+                ld      a,(CSRX)
+                cp      2                   ; CSRX is 1-BASED: 1 = column 0. CF for
+                                            ; 0 too -- CSRX=0 never occurs on real
+                                            ; hardware, but the host unit-test
+                                            ; harness (tests/msxtest.py) runs with
+                                            ; zeroed RAM and no screen, and must not
+                                            ; grow a phantom leading CRLF there.
+                call    nc,print_crlf       ; mid-line (CSRX>=2) -> fresh line first;
+                                            ; byte-for-byte the old inline
+                                            ; ld a,13/pchar/ld a,10/pchar (print.asm
+                                            ; print_crlf IS that pair), reclaiming the
+                                            ; funnel's ENDFLAG cost.
+                ; D-2 (docs/spec-basic-error-handling.md §5.4): a RUN-mode error
+                ; appends " in <line>"; a DIRECT-mode error prints unchanged (no line
+                ; to name). DIRECTF is DERIVED at rp_exec from CURLINE (program.asm,
+                ; docs/spec-basic-direct-ctrl.md §5) -- the single point every line
+                ; entry and every mid-line resume passes through -- so it is valid
+                ; here and, unlike a carried flag, cannot be stale.
+                ; This test stays even though print_in_lineno now gates on DIRECTF
+                ; too. It used to pick print_string vs print_string_stopcr, so it had
+                ; to branch BEFORE printing; since D-MSGENC (below) both arms print
+                ; the same body, so it follows the print (D-REREAD batch 4).
+                ; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.2/§4.3): the CRLF is
+                ; no longer baked into the message, so print_msg IS "body + CRLF" and
+                ; print_msg_stopcr IS the body alone -- the same two-way split, but
+                ; the stop condition is now the string's own terminator instead of a
+                ; sentinel CR that had to be scanned for.
+                ; 🔴 D-READERL (2026-10-10): THE LINE NAMED IS ERRLIN, NOT THE
+                ; CURRENT ONE, AND ERRLIN ALSO DECIDES WHETHER ONE IS NAMED. The two
+                ; agree for every error but a bad DATA item, which the VG-8020
+                ; reports in the DATA line -- `Syntax error in 20` from line 30, and
+                ; from a `READ A` TYPED at the prompt too (scratchpad/readerl_run.out).
+                ; record_errline writes ERRLIN = 65535 for every other direct-mode
+                ; error, so that value is the "direct: no line" test the DIRECTF read
+                ; was. The re-raise (`ON ERROR GOTO 0`) keeps the original ERRLIN and
+                ; printed that line already (`reraise` row). The body is printed
+                ; first, so ERRLIN is read into HL afterwards.
+                call    print_msg_stopcr    ; the body alone, on both arms (D-REREAD
+                                            ; batch 4: the test can follow the print --
+                                            ; D-MSGENC took the CRLF out of the body)
+                ld      hl,(ERRLIN)
+                ld      a,h
+                and     l
+                inc     a                   ; Z iff ERRLIN = 65535
+                jp      nz,print_in_hl      ; " in <ERRLIN>" + CRLF (program.asm)
+                jp      print_crlf          ; no line: the CRLF print_msg would add
+
 ; House-style lowercase (D-2), like err_resume_noerr's "resume without error";
 ; the reference prints "No RESUME". No D-MSGENC phrase hits it -- a "resume"
 ; phrase would net 2 B across both messages and is not worth a shared-decoder
@@ -786,46 +788,8 @@ ee_synerr_pop:                              ; ex_def_err (usr.asm) aliases this 
 ee_synerr:                                  ; longer pushes anything (D-REREAD batch 6)
                 jp      stmt_error
 
-; --- ary_store_write: HL=element address, A=type(2/4/8); DE valid iff the -
-; current FACTYP==2, else FAC/FACTYP hold the RHS's float value (the SAME
-; RHS contract var_store_fac's own tail uses). Coerces into `type` and
-; writes elsize bytes at HL — mirrors var_store_fac's own coercion +
-; value-field write exactly (fac_to_int_strict / round_single_and_pack /
-; round_and_finalize), just addressed directly instead of via
-; var_alloc_or_find. On a coercion-time Overflow, sets FPERR and returns
-; WITHOUT writing (mirrors var_store_fac's own D-F2-1 contract). Reuses
-; vars.asm's VS_TARGET_TYPE/VS_INT_VAL scratch — dead here (var_store_fac
-; isn't concurrently running; single-threaded interpreter). Unchanged from
-; the WIP. Clobbers A,B,C,D,E,H,L.
-ary_store_write:
-                ld      (VS_TARGET_TYPE),a
-                push    hl                  ; guard the element address across coercion
-                cp      2
-                jr      z,asw_int
-                cp      4
-                jr      z,asw_single
-                call    arga_widen          ; D-ARGAWIDEN
-                call    round_and_finalize
-                jr      asw_coerced
-asw_single:
-                call    arga_widen          ; D-ARGAWIDEN
-                call    round_single_and_pack
-                jr      asw_coerced
-asw_int:
-                call    fac_to_int_strict   ; -> DE (truncate, strict int16);
-                                            ; sets FPERR=1 on overflow
-                ld      (VS_INT_VAL),de     ; stash: var_store_fac's own comment applies
-                                            ; verbatim (DE must survive to the write-back)
-asw_coerced:
-                pop     hl                  ; element address restored
-                call    fperr_test          ; D-FPCARVE: -1 B
-                ret     nz                  ; coercion overflow -> drop the store
-                ld      a,(VS_TARGET_TYPE)
-                cp      2
-                jp      nz,vsf_wb_copy      ; A = byte count (4 single / 8 double),
-                                            ; HL = the element: FAC -> it verbatim.
-                                            ; vars.asm's scalar store ran the same 11
-                                            ; bytes (D-SEQEOF funding carve, -8 B)
+; asw_wb_int: reached only as vars.asm's `vsf_wb_int` (D-XREG alias); the array
+; store itself is ary_store_write in basic/program.asm (D-REREAD batch 8).
 asw_wb_int:
                 ld      de,(VS_INT_VAL)     ; the coerced value
                 ld      (hl),e
