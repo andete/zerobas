@@ -250,6 +250,9 @@ uc_go:                                      ; VALTYP_PUB IS FACTYP ($F663): A is
                 ld      de,usr_ret          ; continuation after the routine RETs
                 push    de
                 push    bc                  ; routine entry
+                ; USR: user machine code in RAM; the published convention hands it HL = DAC,
+                ; A = VALTYP (the argument itself is in DAC, memory)
+                ; z80flow: targets external reads=HL,A
                 ret                         ; -> routine; its RET -> usr_ret
 usr_ret:
                 ; the RESULT is DAC, typed by VALTYP (the routine may change both)

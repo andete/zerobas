@@ -1510,6 +1510,8 @@ widen_int_to:
 ; shift holds the relation bits in C across this call). Returns A = 2.
 ; GA-LHSTYP2 (2026-10-03): the reset to FACTYP 2 happens HERE, after the capture;
 ; FOR's two sites get the store for free (their very next call is slot_load).
+; returns ON TOP of a frame sized by FACTYP (int 4 B, single 6 B, double 10 B)
+; z80flow: stack-effect var
 push_lhs_frame:
                 pop     hl                  ; HL = our own return address
                 ld      a,(FACTYP)
@@ -1691,9 +1693,14 @@ arga_dig_iszero:
 ; differs only in adc-vs-sbc (both set P/V on signed 16-bit overflow, unlike
 ; plain ADD HL,ss) and which BCD op to promote into; the float path differs
 ; only in which BCD op to call. Clobbers A, B, C, D, E, H, L.
+; each combine_* starts with pop_lhs_and_probe, which takes push_lhs_frame's typed
+; frame off its caller's stack: a data-dependent effect for the caller
+; z80flow: stack-effect var
 combine_add:
                 xor     a
                 jr      caddsub_go
+; as combine_add
+; z80flow: stack-effect var
 combine_sub:
                 ld      a,1
 caddsub_go:
@@ -1751,6 +1758,8 @@ caddsub_disp:
 ; against the sign-dependent bound (32767 positive / 32768 negative) via a
 ; full unsigned 32-bit magnitude product (mul16x16_32) — mul16's low-16-only
 ; result can't distinguish "exact" from "wrapped".
+; as combine_add
+; z80flow: stack-effect var
 combine_mul:
                 call    pop_lhs_and_probe
                 jr      nz,cmul_float
@@ -1853,6 +1862,8 @@ fxc_rint:
 
 ; --- combine_div_float: ev_t's '/' site. ALWAYS float ----------------------
 ; (spec §10.1: "'/' is always real division, always double").
+; as combine_add
+; z80flow: stack-effect var
 combine_div_float:
                 call    pop_lhs_and_probe   ; ZF result ignored -- '/' is always
                                             ; float regardless (spec §10.1)
@@ -1897,6 +1908,8 @@ combine_div_float:
 ; FACTYP:=8 + flt_to_int16, unconditionally, after the CALSLT -- a FPERR set
 ; inside the tenant is caught by the interpreter's own statement-boundary
 ; check (D-F2-1), not here.
+; as combine_add
+; z80flow: stack-effect var
 combine_pow:
                 call    pop_lhs_and_probe   ; ZF ignored -- ^ is always float
                 call    widen_both_operands ; ARGA := x (lhs), ARGB := y (rhs)
@@ -2042,6 +2055,8 @@ cpow_tail:
 ; review by the full differential gate: with C trashed to a constant that
 ; happened to hold the =/> bits, every float `=`/`>` compare passed and
 ; every float `<`/`<>`/`<=` compare answered wrong — `1.5<1.4` -> -1.)
+; as combine_add
+; z80flow: stack-effect var
 combine_cmp:
                 call    pop_lhs_and_probe
                 jr      nz,ccmp_float
@@ -2196,6 +2211,8 @@ wu_rev_lp:
                 ld      (de),a
                 inc     de
                 djnz    wu_rev_lp
+                ; wu_digloop pushed one AF per digit, counted in C; wu_rev_lp popped B = C
+                ; z80flow: depth 0
                 ret
 
 ; =============================================================================

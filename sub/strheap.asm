@@ -151,6 +151,8 @@ she_dispatch:
                 inc     hl
                 ld      h,(hl)
                 ld      l,a
+                ; HL = she_table[(iy+SHB_OP)], 22 rows with CLEARPOOL = 1
+                ; z80flow: table she_table 22
                 jp      (hl)
 she_table:
                 dw      she_alloc           ; 0  ALLOC

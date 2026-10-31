@@ -565,6 +565,8 @@ fnf_full1:      pop     hl                  ; HL = base (pop keeps the flags)
                 ld      e,l                 ; DE = source
                 or      a
                 sbc     hl,bc               ; HL = destination = SP - frame
+                ; as main's ctl_reloc: the block moves whole, frames and return addresses with it
+                ; z80flow: ld-sp same
                 ld      sp,hl               ; SP moves BEFORE the copy
                 ex      de,hl               ; HL = source, DE = destination
                 push    hl                  ; below the destination: safe

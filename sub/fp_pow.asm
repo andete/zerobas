@@ -276,6 +276,8 @@ fpwf_restore:
                 ld      (hl),e
                 inc     hl
                 djnz    fpwf_restore        ; ARGB := y (restored, byte-exact)
+                ; fpwf_save pushed 9 words, fpwf_restore popped 9 (ld b,9 / djnz each)
+                ; z80flow: depth 0
                 call    fp_mul              ; FAC/ARGA := ln(x)*y = t (the
                                             ; pre-check on a huge-magnitude y
                                             ; IS the right disposition: a

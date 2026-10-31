@@ -1186,6 +1186,10 @@ DIRECTF         equ     $F73C   ; 1 = executing a DIRECT-mode line, 0 = running 
 ;              already uses). Another direct-mode line will not do it.
 ;   ⚠️ Until then, "zerobas' SAVSTK is an SP anchor and the published one might
 ;      not be" stays an OPEN question, not an answered one.
+; every `ld (SAVSTK),sp` (rp_lp, direct mode) is at its routine's entry depth; its other
+; writes (ctl_reloc, the DEF FN frame copy) move it with the block it points into;
+; every reset through it abandons the running statement (unwind)
+; z80flow: stack-anchor unwind
 SAVSTK          equ     $F6B1   ; 2 B: SP anchor for the trap unwind. Written by
                                   ; D-WSZERO S8: the reference's SAVSTK (was $EFC2)
                                 ; run_prog / dispatch_line's direct-exec path

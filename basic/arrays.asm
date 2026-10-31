@@ -547,6 +547,8 @@ apc_release:
                 ld      l,a
                 ld      h,0
                 add     hl,sp
+                ; the whole frame released: 2n value words + [KEY] + [TYPE:OP]
+                ; z80flow: ld-sp 0
                 ld      sp,hl               ; SP -> the return address
                 ld      hl,(ARY_CUR)        ; HL = cursor past ')'
                 jp      fperr_test          ; D-FPCARVE: tail call, -2 B
@@ -872,6 +874,9 @@ ex_let_arr:
 ela_rterr:                                  ; (ex_let_arr_str's error exit joins here)
                 jp      nz,fp_runtime_error ; [CURSOR] already consumed by
                                             ; ary_op0_resolve -- nothing to pop
+                ; the jp nz above is taken on every path that arrives with [TYPE][OFFSET]
+                ; pushed (the jr nz,ela_rterr from ex_let_arr_str): only Z falls through, at entry depth
+                ; z80flow: depth 0
                 call    ary_snapshot_offset ; §13a: push [OFFSET]=ARYTAB-ADDR
                                             ; (page-1); HL=cursor preserved
                 ld      a,(ARY_TYPE)

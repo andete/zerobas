@@ -626,6 +626,8 @@ dos_handoff_keep:
                 ld      de, $F368           ; D-BOOTREGS: the boot code is entered with
                 ld      hl, $F323           ; DE = $F368, HL = $F323, as on the CF-3300
                 scf                         ; Cy = 1 -> step-7 "load the system" entry
+                ; the boot sector's step-7 call, as at hsy_boot
+                ; z80flow: targets external reads=DE,HL,F
                 call    BOOT_ENTRY          ; DOS disk JPs into MSXDOS.SYS (no return)
                 pop     af                  ; data disk returned: recover host $F23B
                 ld      ($F23B), a

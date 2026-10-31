@@ -686,7 +686,10 @@ es_idx:
                 ld      a,(hl)              ; contract is HL = cursor, A = the token,
                 cp      (hl)                ; Z set (as the `jp z` chain left it) -- and
                 push    de                  ; B/C untouched. The address goes via the
-                ret                         ; stack, since HL is spoken for.
+                                            ; stack, since HL is spoken for.
+                ; DE = a stmt_table row: one dw per statement token $81..$D8 (STMT_TABLE_ROWS)
+                ; z80flow: table stmt_table 88
+                ret
 
 ; --- stmt_table: statement token -> handler, INDEXED (D-STMTIDX, 2026-10-03) ---
 ; One `dw <handler>` per keyword statement token, IN TOKEN ORDER, $81 (END) to

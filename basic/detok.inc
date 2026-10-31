@@ -443,6 +443,8 @@ dde_wr:
                 inc     de
                 jr      dde_wr
 dde_tail:
+                ; the digits are popped up to the $FF sentinel, as in main's ln_div_entry
+                ; z80flow: depth 0
                 xor     a
                 ld      (de),a
                 ld      hl,NUMBUF

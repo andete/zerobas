@@ -480,6 +480,9 @@ rp_lp:
                 ; frontier, in [CSP, CTLTOP), so an interrupt landing in the two
                 ; instructions pushes into stack territory and pops back out.
                 pop     de                  ; run_prog's return address
+                ; the frame is rebuilt at the frontier: after this ld nothing of run_prog's
+                ; frame is left; the push below puts the return address back
+                ; z80flow: ld-sp -2
                 ld      sp,(CSP)            ; the frontier, re-read every line so the
                                             ; stack follows CLEAR/RUN for free
                 push    de
@@ -2160,6 +2163,8 @@ nx_slow:
                 call    slot_load           ; the step as the rhs; A = its sign byte
                 ld      (FOR_SIGN),a
                 call    combine_add         ; var + step
+                ; as after combine_cmp below
+                ; z80flow: depth 4
                 call    for_set_typed       ; stored, and left in FAC/DE as stored
                 call    check_expr_errors   ; a `%` loop's Overflow is ERR 6 HERE, on
                                             ; the NEXT line (row edgeint) -- not at the
@@ -2172,6 +2177,9 @@ nx_slow:
                 ; D-NXLIST §4.4: the two directions differ ONLY in which verdict ends
                 ; the loop. Row m.step (`FOR A=3 TO 1 STEP -1` inside a list) guards
                 ; the negative arm in THIS battery.
+                ; each push_lhs_frame / combine_* pair is balanced: back to nx_slow's depth,
+                ; the post-NEXT cursor (nx_find) and the frame base (nx_have) pushed
+                ; z80flow: depth 4
                 ld      b,a
 nx_cmpd:                                    ; (nx_fast joins here: B = its verdict)
                 ld      a,(FOR_SIGN)
@@ -3169,6 +3177,9 @@ ex_sub2:
                 call    subrom2_call        ; HL / C in; DE / HL out
                 jp      c,subrom_absent_error
                 push    de
+                ; DE = sub2's continuation: every `ld de,p0_X / ret` exit of the tenants trap_tenant
+                ; reaches (trapstmt, filestmt, loadsave, scrstmt, pgmedit; sub2.sym: p0_X = main's X)
+                ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop
                 ret                         ; -> the continuation, HL = its cursor
 
 ; --- trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements ----

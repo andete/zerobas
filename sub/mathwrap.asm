@@ -77,4 +77,6 @@ mw_body:
                 add     hl,sp
                 ld      sp,hl               ; the reservation released
                 ret
+; IX = the body each math_wrap entry stub loads
+; z80flow: targets fp_sqrt fp_atan fp_exp fp_log fp_pow fp_sin fp_cos fp_tan fp_rnd
 mw_jpix:        jp      (ix)

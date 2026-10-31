@@ -185,6 +185,25 @@ release config.
 Assembler is pasmo. A linter hook auto-adds SPDX / copyright headers to new
 source files — don't hand-write them.
 
+## Register contracts (z80flow) — before and after reworking a routine
+
+`tools/z80flow` infers every routine's register contract from the build: what it
+reads on entry, what it changes, and which of those changes its callers read
+afterwards. Emulator-free, about a minute a run. Details:
+[`tools/z80flow/README.md`](../tools/z80flow/README.md).
+
+1. **Before** reworking a routine: `make contract NAME=<routine>` — "a rewrite
+   must keep" lists the registers its callers rely on it preserving.
+2. **While** editing: a `; z80flow:` marker states a fact the analysis relies on
+   at that line (a jump's targets, a stack depth, an abort). Keep the markers on
+   the lines you change true, and add one when the tool asks for it.
+3. **Before committing**: `make contract-diff BASE=<the commit you started
+   from>`. `broken` (a caller reads a register the routine now changes) is the
+   finding to act on; `broken_unwind_only` is read only after an error reset and
+   is usually harmless; MISMATCH means a marker no longer fits its code.
+
+It checks interfaces, not behaviour: the battery still decides correctness.
+
 ## Knives — falsification runners (READ THIS BEFORE WRITING ONE)
 
 Every slice here falsifies its own claim by **deleting the code under test** and

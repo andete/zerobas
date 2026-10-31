@@ -84,6 +84,8 @@ fatprim_tenant:
                 add     ix,bc
                 add     ix,bc
                 add     ix,bc               ; IX = fp_table + 3*op
+                ; fp_table is 25 `jp`s, op 0..24
+                ; z80flow: table fp_table 25 stride=3 inplace
                 jp      (ix)
 
 fp_table:

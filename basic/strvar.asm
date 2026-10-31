@@ -383,6 +383,8 @@ mkf_hook:
                 ld      de,mkf_back
                 push    de
                 or      a                   ; CF clear = "nobody claimed it"
+                ; HL = the MKI$ / MKS$ / MKD$ hook cell, by width (mkf_sel)
+                ; z80flow: targets H_MKI H_MKS H_MKD
                 jp      (hl)
 mkf_back:
                 jr      c,mkf_have

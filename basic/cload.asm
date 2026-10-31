@@ -868,6 +868,9 @@ ctl_reloc:
                                             ; check_traps, which rp_trapchk calls from
                                             ; the run loop -- the ISR itself only sets
                                             ; TRAPPEND and never allocates.
+                ; the block between SP and the old frontier moves whole: frames and
+                ; return addresses with it
+                ; z80flow: ld-sp same
                 ld      sp,hl               ; ⚠️ SP MOVES BEFORE THE COPY.
                 ; 🔴 SAVSTK POINTS INTO THE BLOCK, SO IT MOVES WITH IT (§3 hazard 3).
                 ; It is a saved SP -- the depth an abort or RESUME unwinds to, and the

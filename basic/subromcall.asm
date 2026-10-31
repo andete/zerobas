@@ -59,6 +59,8 @@
 deffn_subcall:
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_DEFFN
 
+; as sc_call
+; z80flow: inline
 subrom_call:
                 ld      a,(SUBSLOT_OK)
                 or      a
@@ -99,6 +101,8 @@ sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
 ; subrom_call AFTER that one's slot load, so ROM 1's path is unchanged by a
 ; single T-state. 8 B, low: a sub page-1 tenant may call it too (the low
 ; region is visible from every context that runs main code).
+; as sc_call
+; z80flow: inline
 subrom2_call:
                 ld      a,(SUBSLOT2)
                 or      a
@@ -114,6 +118,9 @@ subrom_absent_error:
                 xor     a
                 ld      (PRDEST),a
                 ld      hl,err_subrom_absent
+                ; ends the statement: for detok_emit (6 bytes of its own frame pushed) and the
+                ; routines it is inlined into, it never returns to their caller
+                ; z80flow: abort in=detok_emit,detok,pu_emit_tail,key_drain
                 jp      print_msg           ; D-MSGENC: err_subrom_absent aliases
                                             ; err_illegal_fn, which is now encoded
 ; (err_subrom_absent = err_illegal_fn: its equ is in basic/aliases-early.inc -- pasmo 0.5.3, D-PASMO053)
@@ -176,15 +183,23 @@ zks_p2:
                 pop     bc
                 ret
 
+; as sc_call
+; z80flow: inline
 sr_inl1:
                 ld      a,$80 | STUBINL_P1H/2   ; raw call, page-1 table
                 jr      inl_go
+; as sc_call
+; z80flow: inline
 sr_inl0:
                 ld      a,$80                   ; raw call, page-0 table
                 jr      inl_go
+; as sc_call
+; z80flow: inline
 sc_inl1:
                 ld      a,STUBINL_P1H/2         ; raise if absent, page-1 table
                 jr      inl_go
+; as sc_call
+; z80flow: inline
 sc_inl0:
                 xor     a                       ; raise if absent, page-0 table
 inl_go:
@@ -235,6 +250,9 @@ inl_go:
 ; the inline-index stubs above, which FALL INTO this body. Direct users left: two
 ; `call sc_call` (ary_engine_call, str_set_key) and one `jp sc_call`
 ; (call_strheap) -- the hot paths, kept open-coded for speed.
+; the sub-ROM call wrappers: analysed inside each caller, the tenant (IX
+; or the inline byte) and the slot cell are constants at the CALSLT
+; z80flow: inline
 sc_call:
                 call    subrom_call
                 jr      c,subrom_absent_error   ; jr: both low, same file (B-11)

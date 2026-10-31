@@ -4495,3 +4495,33 @@ gates-plan:
 
 gates-scoped:
 	python3 tools/pick_gates.py --run $(if $(HANDOFF),--handoff,)
+
+# --- z80flow: register contracts (tools/z80flow/README.md) --------------------
+# Static control-flow + liveness analysis of the built images (main, both sub-ROMs,
+# disk.rom): what each routine reads, what it changes, and which of those changes
+# its callers rely on. Hand facts the analysis cannot settle are `; z80flow:`
+# markers next to the code they describe. Opt-in, emulator-free, ~1 min a run.
+#   make contract NAME=cmp16_bits     one routine's contract, before reworking it
+#   make contract-diff BASE=<rev>     what changed since <rev>; exit 1 on `broken`
+#   make contracts                    every routine -> build/contracts.json
+Z80FLOW       := PYTHONPATH=tools/z80flow python3 -m z80flow
+Z80FLOW_DEPS  := $(MAIN_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB2_ROM) $(DISK_ROM)
+
+contract: $(Z80FLOW_DEPS)
+	@test -n "$(NAME)" || { echo "usage: make contract NAME=<routine> [NAME='a b']"; exit 2; }
+	$(Z80FLOW).contracts show . $(NAME)
+
+contracts: $(Z80FLOW_DEPS)
+	$(Z80FLOW).contracts dump . $(BUILD)/contracts.json
+
+contract-diff: $(Z80FLOW_DEPS)
+	@test -n "$(BASE)" || { echo "usage: make contract-diff BASE=<rev>"; exit 2; }
+	$(Z80FLOW).contracts diff-rev . $(BASE) $(CBIOS)
+
+z80flow-report: $(Z80FLOW_DEPS)
+	$(Z80FLOW).run_zerobas --zerobas . --out $(BUILD)/z80flow
+
+z80flow-selftest:
+	cd tools/z80flow && python3 -m unittest discover -s tests
+
+.PHONY: contract contracts contract-diff z80flow-report z80flow-selftest

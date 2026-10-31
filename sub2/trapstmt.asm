@@ -62,6 +62,8 @@ trap_tenant:
                 ld      d,(hl)
                 ex      de,hl               ; HL = the arm
                 ex      (sp),hl             ; HL = the cursor, the arm on the stack
+                ; the arm is a tt_tab row (TT_COUNT = 8; C >= 8 went to file_tenant)
+                ; z80flow: table tt_tab 8
                 ret                         ; -> the arm
 tt_tab:
                 dw      tt_on_stop, tt_on_sprite, tt_on_key, tt_on_strig

@@ -84,6 +84,9 @@ The firewall is easiest to keep if you separate, in time and inputs, the two rol
    same check over every tracked file.
 2. Build: `make`. Test: `make unit-test` (emulator-free) — and the differential probes
    where applicable. Don't regress the byte-identical crunch probe.
+   Reworking a routine? `make contract NAME=<routine>` first, `make contract-diff
+   BASE=<rev>` before committing, and keep the `; z80flow:` markers true (see
+   [`tools/z80flow/README.md`](tools/z80flow/README.md)).
 3. Follow the per-feature checklist in `docs/dev-workflow.md`, including the
    `PROVENANCE.md` row and inline citations.
 4. **Sign off every commit** (`git commit -s`) — see below.

@@ -263,6 +263,8 @@ exps_notrel:
                                             ; harmless on some paths and a hard crash into
                                             ; garbage VRAM on others (`PRINT "A" IMP 1`).
                 call    type_mismatch_set   ; deferred mark (ERRMARK + TMISMATCH)
+                ; the error was set on the line before: check_expr_errors aborts
+                ; z80flow: call-never-returns
                 call    check_expr_errors   ; ... surfaced HERE; never returns
 ; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
 ; ems_print and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
@@ -401,6 +403,8 @@ pn_wr:
                 inc     de
                 jr      pn_wr
 pn_tail:
+                ; the digits dgt_push left are popped up to its $FF sentinel
+                ; z80flow: depth 0
                 ld      a,' '               ; trailing space (MSX number format)
                 ld      (de),a
                 inc     de
@@ -475,6 +479,8 @@ pnf_len:
 ;   in:  HL = magnitude (unsigned)
 ;   out: digits on the stack, least-significant first, with $FF beneath them;
 ;        HL = 0, A/B clobbered, DE clobbered.
+; leaves the $FF sentinel and 1..5 digit words pushed for its caller
+; z80flow: stack-effect var
 dgt_push:
                 pop     de                  ; the return address, out of the way
                 ld      a,$FF               ; stack sentinel (not a digit)

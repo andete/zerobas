@@ -105,6 +105,9 @@ lh_back:                                    ; D-BASICINT: $6CF3's target -- a ga
                 jp      lh_adopt            ; the rest of the line runs, ,R or not --
                                             ; after adopting a VARTAB the code moved
 lh_jphl:
+                ; BLOAD ,R: user machine code in RAM, entered with HL = its own address and
+                ; nothing else handed over (a program relying on more is outside this contract)
+                ; z80flow: targets external reads=HL
                 jp      (hl)
 
 ; build_83_name — convert the filename at HL into the 11-byte 8.3 field at

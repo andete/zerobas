@@ -125,6 +125,8 @@ pt_vloop:
                 push    bc                  ; pt_voice reuses B (source count) + clobbers C
                 ld      (PLY_XSP),sp        ; PLAY X (§7.12): SP here = "depth 0"
                 call    pt_voice            ; parse voice B into its ring; CF=1 on error/full
+                ; back to where PLY_XSP saved SP, after the push bc above: depth 2
+                ; z80flow: ld-sp 2
                 ld      sp,(PLY_XSP)        ; drop any X levels an early exit left behind
                 pop     bc                  ; (ld sp does not touch the flags)
                 push    af                  ; the voice's result
@@ -217,6 +219,9 @@ pi_q:
 ; --- pt_voice: parse voice B's MML string into its ring buffer --------------
 ;   in:  B = voice index 0..2 (its VCB has VCXPTR/VCXLEN marshalled by ex_play)
 ;   out: CF=0 ok / CF=1 error (AUDIO_STATUS = ERR code). Clobbers everything.
+; X<var>; pushes a level per nested string, and an early exit may leave
+; levels pending (pt_parse drops them with ld sp,(PLY_XSP))
+; z80flow: stack-effect var
 pt_voice:
                 ld      a,b
                 ld      (VOICEN),a
@@ -1324,6 +1329,9 @@ pqe_abort:
                 ld      hl,(PLY_XSP)
                 dec     hl
                 dec     hl
+                ; back to pt_voice's caller from ANY depth: for every routine nested
+                ; inside pt_voice this never returns to its own caller
+                ; z80flow: abort
                 ld      sp,hl
                 jp      px_err
 

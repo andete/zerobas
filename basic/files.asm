@@ -157,7 +157,11 @@ cg_cross:
                 ld      de,cg_back          ; call THROUGH HL: the cell is
                 push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
                 or      a                   ; `ret` lands here; unclaimed it is a
-                jp      (hl)                ; bare `ret` and lands here at once
+                                            ; bare `ret` and lands here at once
+                ; the hook cells chan_gate's callers load into HL: fopen_cross, DSKF, and verb_run's
+                ; COPY / FILES / KILL / NAME
+                ; z80flow: targets H_FOPEN H_DSKF H_COPY H_FILE H_KILL H_NAME
+                jp      (hl)
 cg_back:
                 ; S10.B: C-BIOS's CALSLT -- which a hook's CALLF is -- RETURNS WITH
                 ; INTERRUPTS OFF (cbios src/slot.asm calslt_restore: `di`, no `ei`).
@@ -239,7 +243,11 @@ chan_gate_bare:
                 ld      de,cgb_back
                 push    de
                 or      a                   ; CF = 0; unclaimed the cell is a
-                jp      (hl)                ; bare `ret` and lands below at once
+                                            ; bare `ret` and lands below at once
+                ; the hook cells chan_gate_bare's callers load: FIELD (LSET / RSET), GET / PUT,
+                ; CALL FORMAT, and dsk_core's DSKO$ / DSKI$
+                ; z80flow: targets H_FIELD H_LSET H_RSET H_DGET H_FORM H_DSKO H_DSKI
+                jp      (hl)
 cgb_back:
                 ret     c                   ; claimed -> back to the caller
                 jr      cg_unclaimed        ; ERR 5, same face as the full gate
@@ -521,6 +529,8 @@ bp_ret:
                 ret                         ; back to the game's `call $73E5`
 arl_getbyte:
                 ld      hl,(ARL_GETBYTE)
+                ; every store to ARL_GETBYTE: the byte sources of ascii_read_lines
+                ; z80flow: targets dsk_agetbyte cal_getbyte linebuf_getbyte fat_io_seqbyte cas_in_getbyte chget_getbyte
                 jp      (hl)
 ; 📌 REFILL, D-DISKREST slice 2 (2026-10-20): MKS$ / MKD$'s widen (12 B) moved
 ; from basic/strvar.asm to disk.rom's hk_mkfloat, AHEAD of the $6CF3 pin. A pad is

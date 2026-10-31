@@ -539,6 +539,8 @@ ary_engine_call:
 ; 🎯 THE NZ OF A FLOAT LHS IS `cp 5`'s: A < 5 (a single) jumps with NZ, A > 5 (a
 ; double) falls through with it, and nothing below touches the flags. It
 ; holds because no type is 5 (push_lhs_frame's header).
+; takes push_lhs_frame's typed frame (4 / 6 / 10 B) off the stack
+; z80flow: stack-effect var
 pop_lhs_and_probe:
                 pop     hl                  ; HL = our own return address
                 ld      (PLF_RA),hl
@@ -565,6 +567,8 @@ pop_lhs_and_probe:
                 ld      (LHS_FAC+6),hl      ; a double: NZ (A > 5)
 plap_ret:
                 ld      hl,(PLF_RA)         ; does not affect flags
+                ; the return address went through PLF_RA: a return to RA+0
+                ; z80flow: return
                 jp      (hl)                ; jump to OUR return address directly
                                             ; (cheaper than push+ret); does not
                                             ; affect flags -- ZF from the cp above

@@ -1133,6 +1133,8 @@ boot_call0:
                 ld      de, $F368       ; D-BOOTREGS: DE / HL as the CF-3300 hands them
                 ld      hl, $F323       ; to the boot code at both steps (fray_c01e.out)
                 or      a               ; Cy = 0 -> step-5 "custom boot" call
+                ; the boot sector's step-5 call, as at hsy_boot
+                ; z80flow: targets external reads=DE,HL,F
                 call    BOOT_ENTRY      ; (data-disk default RET NC returns here)
                 pop     hl
                 ld      (BASENT_REQ), hl
@@ -2366,6 +2368,9 @@ dwr_fail:
                 ld      (DISKOP_ERR), a
 dwr_raise:
                 ld      ix, disk_error
+                ; the code was just stored in DISKOP_ERR, so main's disk_error raises:
+                ; an unwind (raise_error), never a return
+                ; z80flow: abort unwind
                 jp      calbak              ; raises; does not return
 
 ; hk_chclose -- CLOSE of a disk channel (H_CHCLOSE), B = its mode. OUTPUT /
@@ -3260,6 +3265,9 @@ hsy_rd:
                 jr      nz,hsy_syn
 hsy_boot:
                 or      a                   ; Cy = 0: the step-5 call
+                ; CALL SYSTEM calls the boot sector it just read: code from the disk, in no image;
+                ; the boot protocol hands it Cy, and DE / HL as on the CF-3300 (D-BOOTREGS)
+                ; z80flow: targets external reads=DE,HL,F
                 call    BOOT_ENTRY
                 di
                 call    page0_ram_in
@@ -5439,6 +5447,8 @@ hkds_go:                                    ; hk_dpbsave enters here, HL = bsv_o
 ; is disk_error and raises; here it now unwinds to hk_dpsave the same way.
 hkds_run:
                 ld      (DPSAVE_SP),sp      ; = the return address into hk_dpsave
+                ; hk_dpsave loads HL = sav_disk_write, the BSAVE entry HL = bsv_open
+                ; z80flow: targets sav_disk_write bsv_open
                 jp      (hl)                ; sav_disk_write, or BSAVE's bsv_open
 ; (sited here, beside its unwind point, since D-SAVEFULLSTAMP grew the engine
 ; above past the shared `disk_write_end`'s `jr c,sv_load_error` reach)

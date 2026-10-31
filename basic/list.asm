@@ -266,6 +266,9 @@ detok:
 ; they are re-runnable (pure over the line / the key table); PRINT USING's
 ; tenants cannot, and sub/printusing.asm asserts they fit one window. An
 ; ordinary line renders once, as before.
+; its callers pick the tenant in IX (key_drain, pu_emit_tail, LIST):
+; analysed inside each, the CALSLT in its subrom_call sees that caller's constant
+; z80flow: inline
 detok_emit:
                 ld      bc,0                ; skip total
 de_win:
@@ -314,6 +317,8 @@ dde_wr:
                 inc     de
                 jr      dde_wr
 dde_tail:
+                ; the digits dgt_push left are popped up to its $FF sentinel
+                ; z80flow: depth 0
                 jp      num_publish         ; D-CARVE3 (-5 B, main page 1)
 
 ; (Arrays slice-4a: the resident hex_digit/oct_digit copies that used to live

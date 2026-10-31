@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: 0BSD
+# Copyright (c) 2026 Joost Yervante Damad
+#
+# z80flow annotations for the C-BIOS part of zerobas's merged main ROM
+# (build/zerobas-main-eu.rom, $0000..$2780). Used by the whole-image pass only.
+#
+# There is no symbol file for the repacked C-BIOS bytes, so addresses are
+# hex. Each annotation names the C-BIOS source it rests on
+# (/Users/joost/projects/cbios/src, BSD licensed) and how the address was
+# matched to it. The tool re-checks every table target decodes as code.
+#
+# Format: see z80flow/annotate.py.
+
+# C-BIOS util.asm:56 `table_jump: ld c,(hl) / inc hl / ld h,(hl) / ld l,c /
+# jp (hl)` -- the one dispatcher behind jump_table ($0200, util.asm:31, word
+# table indexed by A) and search_table ($0208, util.asm:47, (byte, word)
+# pairs searched for A). Its targets are the union of the five tables that
+# reach it in this ROM. Found as every `jp/call $0200|$0208` with the
+# preceding `ld hl,table` (and `ld b,n` for search_table), each matched to
+# its source line and entry count below. Each line names (in=) the routine
+# whose analysis reaches table_jump with that table in HL, so no caller gets
+# another's handlers (the INLIN handlers that abort INLIN by returning to its
+# caller's caller would otherwise turn up inside CHPUT). jump_table is
+# `inline` (below) so its three callers can be told apart; search_table is
+# only ever jumped to, so it is already part of chput_decode_char ($11DA).
+#
+# 1. video.asm:348 chgmod: `ld hl,chgmod_tbl / jp jump_table` at $02AF/$02B2;
+#    the table follows at $02B5: initxt, init32, inigrp, inimlt (4 entries,
+#    VDP = TMS99X8 build, `cp 4 / ret nc` guards the index).
+table $0215 $02B5 4 in=CHGMOD
+# 2. video.asm:1918 cls: `ld hl,cls_table / call jump_table` at $07B8/$07BB;
+#    cls_table at $07C0: cls_screen0..3 (4 entries, `cp 4 / ret nc` before).
+#    $07B1 is cls_z (video.asm:1905, `ret nz`), which falls into cls.
+table $0215 $07C0 4 in=$07B1
+# 3. ($11DA is chput_decode_char, chput.asm:57: `call cnvchr / ret nc`.)
+#    chput.asm:99 chput_ctrl_search: `ld b,12 / ld hl,chput_ctrl_table /
+#    jp search_table` at $1217..$121C; chput_ctrl_table (chput.asm:565) at
+#    $148B: 12 (code byte, handler word) entries -> words at offset 1, stride 3.
+table $0215 $148B 12 stride=3 offset=1 in=$11DA
+# 4. chput.asm:233 chput_escape: `ld b,15 / ld hl,chput_esc_table / jp
+#    search_table` at $12C5..$12CA; chput_esc_table (chput.asm:592) at $14AF:
+#    15 (letter, handler) entries ('j','E','K','J','l','L','M','Y','A','B',
+#    'C','D','H','x','y' -- the bytes in the ROM match the source order).
+table $0215 $14AF 15 stride=3 offset=1 in=$11DA
+# 5. inlin.asm:81 inlin_loop: `ld b,20 / ld hl,inlin_table / call
+#    jump_table` at $1571..$1576, reached only for A < $20 (`cp $20 / jr nc`
+#    before it); inlin_table (inlin.asm:193) at $15E8: 32 words, one per
+#    control code ($0018 = RST 18h OUTDO for the ones it does not handle).
+#    (`ld b,20` is dead: jump_table overwrites B.)
+table $0215 $15E8 32 in=PINLIN,INLIN,QINLIN
+
+# C-BIOS util.asm:31 jump_table ($0200): `ld c,a / ld b,0 / add hl,bc / add
+# hl,bc / jp table_jump`. Called from cls and inlin, jumped to from chgmod.
+# Analysed inside each of them so the table qualifiers above (in=) can give
+# each caller only its own table.
+inline $0200

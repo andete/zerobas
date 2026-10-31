@@ -221,6 +221,10 @@ cl_cmp:                                     ; B = the incoming code, C = its id
                 cp      b
                 jr      c,cl_shift          ; the top binds looser: shift
                 rra
+                ; the sentinel test: every operator entry cl_shift / cl_sh_int / cl_sh_rel
+                ; pushes has an even code (cl_lvtab), the caller's sentinel an odd one, so this
+                ; ret is taken exactly at the routine's entry depth
+                ; z80flow: depth 0
                 ret     c                   ; the sentinel: the token is our caller's
 ; --- reduce the top entry: its left operand is under it, the right is in hand
                 ld      a,l
@@ -298,6 +302,8 @@ cl_not_int:                                 ; CVT_MODE scratch write.
                 cpl
                 ld      d,a                 ; DE = ~DE (ones complement)
                 jr      cl_cmp
+; reached only from cl_red_div with HL = the MOD / \ leaf (cl_leaf rows 13, 14)
+; z80flow: targets signed_mod_de_bc signed_div_de_bc
 cl_jphl:
                 jp      (hl)
 
@@ -390,7 +396,13 @@ lg_apply:
                 ld      h,a
                 ex      de,hl               ; DE = result
                 ret
+; analysed inside each caller, so the table lines below can tell them apart
+; z80flow: inline
 lg_go:          push    bc
+                ; BC = a cl_leaf row: the climber's typed reduce (+ - * / ^) uses rows 0-4;
+                ; cl_red_int, through lg_apply, rows 5-9 (AND OR XOR EQV IMP)
+                ; z80flow: table cl_leaf 5 in=ev_logic,ev_e,ev_pw,evl_slhs
+                ; z80flow: table cl_leaf+10 5 in=lg_apply
                 ret                         ; jump to (BC); the leaf rets to us
 
 lg_and:         and     e
@@ -1724,7 +1736,10 @@ ev_cv_hook:
                 ld      de,ev_cv_back       ; call THROUGH HL: the cell is
                 push    de                  ; `F7 <slot> <lo> <hi> C9`, so its own
                 or      a                   ; `ret` lands here; unclaimed it is a
-                jp      (hl)                ; bare `ret` and lands here at once
+                                            ; bare `ret` and lands here at once
+                ; HL = the CVI / CVS / CVD hook cell, by width
+                ; z80flow: targets H_CVI H_CVS H_CVD
+                jp      (hl)
 ev_cv_back:
                 pop     bc
                 pop     ix
@@ -1967,6 +1982,9 @@ evmc_ts_hit:
                 ; decides the `ret nz` below, exactly as in the five stubs this
                 ; replaces. The pop MUST precede the `ret nz`, or the error exit
                 ; would return INTO the guarded entry address.
+                ; HL = SUBROM_ENTRY_BASE_P1 >> 8 : the entry-low byte of the evmc_total_tab row
+                ; the search loop stopped on (EVMC_TOTAL_N = 5 rows of `db token, entry-low`)
+                ; z80flow: values HL evmc_total_tab 5 stride=2 offset=1 hi=$40
                 push    hl
                 call    evmc_prologue
                 pop     hl

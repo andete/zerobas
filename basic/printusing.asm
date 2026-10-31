@@ -379,6 +379,8 @@ pfi_wr:
                 inc     hl
                 jr      pfi_wr
 pfi_done:
+                ; the digits dgt_push left are popped up to its $FF sentinel
+                ; z80flow: depth 0
                 ld      (hl),0              ; terminate
                 ld      de,NUMBUF
                 or      a
