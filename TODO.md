@@ -328,6 +328,38 @@ item — do **one item per session** to keep context lean.
       stack collision (docs/TODO-done.md). Measure first: where SP runs during the
       load on both builds against the region the game loads into, and which cells in
       $FC00-$FDFF zerobas writes after the load that the reference does not.
+      📏 **FIRST MEASUREMENTS (2026-10-31, [`bd2_probe.py`](scratchpad/bd2_probe.py);
+      zerobas HEAD vs HEAD + batch 6's fp_trunc, the same tape; RAM images kept OUTSIDE
+      the repo, only addresses compared):**
+      (1) **Not a wrong value**: 800 INT / FIX cases identical in value and RAM.
+      (2) **The game does not read BASIC ROM bytes**: a read-watch on $0000-$7FFF
+      for code running in RAM logged nothing on either build, and its positive
+      control (the same watch on $C000-$CFFF) fired 3,772,896 times.
+      (3) **Identical up to the game's own loader**: CURLIN runs 140 -> ... -> 265 ->
+      10 on the same 0.25 s samples (line 10 at T57.75 on both); the tape-call log
+      (TAPION / TAPIN, callers, CF, LOWLIM) is identical to T36.75. 🔴 That log
+      then goes BLIND on both builds (nothing after T36.75, where the game's loads
+      are) -- the return-address breakpoints break; fix before reading it.
+      (4) **Then the block cadence shifts**: the game's loader alternates C-BIOS
+      tape reading ($0A00-$0BFF) and a zerobas page-1 step ($6A9x) every ~2.75 s,
+      first at T64.25 (good) vs T65.75 (bad). The earliest RAM differences (T60)
+      are single bytes in the loader's stack ($C0BF / $C0C3 / $C0C9 / $C0DB /
+      $C0DF) differing in bits 5 / 3 / 6 -- F of a pushed AF.
+      (5) **The bad build goes off the rails when the game starts** (SP -> $FFxx,
+      ~T100): the game hooks H.KEYI to a different target (good $D422 then $D5BD,
+      bad $C6FB), and zerobas's H.TIMI service (htimi_guard) runs 2442 times in
+      T95-150 on the good build against 10 on the bad, whose PC sits in $FCE0-$FD69.
+      (6) The VG-8020 enters the game's line 10 at T54.50 and line 3341 at T140.25
+      (zerobas, good: T57.75 / T143.00).
+      🧭 **READING**: the class TODO.md already names for Punch & Judy (D-TAPLEAD) --
+      the game leaves the motor running while BASIC works, so WHERE on the tape its
+      own loader starts listening depends on BASIC's speed, and every speed change
+      (batches 4-6 made the math 1.5-3x faster) moves it. The good build is on the
+      right side of a margin, not correct by construction. ➡️ NEXT: repair the
+      tape-call log (one-shot breakpoints on TAPION's return only, plus openMSX's
+      cassette position at each TAPION) and run it on BOTH machines -- whether
+      zerobas's TAPION locks on a block the VG-8020's would skip, or the game's
+      loader asks at a different tape position, is the split.
 
 - [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
       FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
@@ -8197,7 +8229,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10688 (T-6FE392)8 (T-529ABE)` from `TODO.md:16370 (T-529ABE)`: a
+      `TODO.md:10720 (T-6FE392)8 (T-529ABE)` from `TODO.md:16402 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11157,7 +11189,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16370 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16402 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
