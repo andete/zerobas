@@ -4486,6 +4486,12 @@ gates-fast:
 gates-full:
 	python3 tools/run_gates.py --full $(GATE_ARGS)
 
+# ⏱ (Joost 2026-10-31) kwtime / kwram, ~36 min each, are no battery's units any
+# more -- they set FULL's whole wall. Run them ALONE once a day (gates-plan says
+# when their pins are older than that); the tier sheet reads their last pins.
+gates-sweeps:
+	python3 tools/run_gates.py --full --slow-sweeps $(GATE_ARGS)
+
 # --- D-GATESCOPE (Joost, 2026-09-24): scoped batteries, FULL only on risk ------
 # `gates-plan` prints which tier THIS change needs and why; `gates-scoped` runs
 # it. STATIC for docs; SCOPED (static + the emulator suites a changed file or a
@@ -4494,7 +4500,8 @@ gates-full:
 # 5th commit since the last full green, and every hand-off (`HANDOFF=1`).
 # ⏱ RE-RULED 2026-10-13 (Joost: "a tradeoff allowing to move faster"): FULL once
 # a day, at every hand-off, on a RAM-address move and on a gate-harness change;
-# every other ROM change is SCOPED; kwtime / kwram run only in FULL.
+# every other ROM change is SCOPED; kwtime / kwram run only in FULL -- and since
+# 2026-10-31 not even there: `make gates-sweeps`, alone, daily (Joost).
 # Every commit message states the tier that ran (`GATE TIER RAN:` line).
 gates-plan:
 	python3 tools/pick_gates.py $(if $(HANDOFF),--handoff,)

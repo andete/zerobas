@@ -100,6 +100,13 @@ SWEEP_STAMP = "build/sweeps-rom.txt"
 # net -- is per ROM now; kwtime / kwram run in FULL (daily, and every hand-off,
 # tools/pick_gates.py) and their pins are carried between runs, kept in
 # SLOW_PIN_KEEP as well so a knife's `rm -rf build` cannot take them.
+# ⏱ OUT OF FULL TOO (Joost, 2026-10-31: "do 1, that costs nothing"): the two were
+# ~36 minutes each and set a FULL battery's whole ~38-minute wall; the next unit
+# is kwsweep at ~15. They are measurements for the tier sheet, not regression
+# gates (neither has ever printed a RED of its own; tiers-md-check reads them).
+# Every battery now leaves them out and carries their pins; `make gates-sweeps`
+# (--slow-sweeps) runs ONLY them (+ the static tier), alone, once a day --
+# tools/pick_gates.py says when their pins are older than that.
 PER_ROM_SWEEPS = ("kwsweep",)
 SLOW_SWEEPS = ("kwtime", "kwram")
 SLOW_PIN_KEEP = "scratchpad/gate_pins"
@@ -730,6 +737,9 @@ def main():
                          "iterating; never records a green battery")
     ap.add_argument("--full", action="store_true",
                     help="run the emulator tier even when it is provably inert")
+    ap.add_argument("--slow-sweeps", action="store_true",
+                    help="run ONLY the daily measurements kwtime / kwram (+ the "
+                         "static tier); every other run leaves them out")
     a = ap.parse_args()
     excl = set(x for x in a.exclude.split(",") if x)
     solo = set(x for x in a.solo.split(",") if x)
@@ -803,6 +813,13 @@ def main():
         excl |= set(EMULATOR)
         print(f"=== SKIPPING {len(EMULATOR)} emulator target(s): {skip_why} ===",
               flush=True)
+    # ⏱ 2026-10-31: kwtime / kwram are their own run (`make gates-sweeps`).
+    if a.slow_sweeps:
+        excl |= set(EMULATOR) - set(SLOW_SWEEPS)
+        print("=== --slow-sweeps: ONLY kwtime / kwram of the emulator tier ===",
+              flush=True)
+    else:
+        excl |= set(SLOW_SWEEPS)
     # D-STATICEMU: a run that does not re-measure the sweeps checks the tier sheet
     # against the pins the LAST run wrote -- said out loud -- and, with none on
     # record at all, does not run the check rather than have it refuse.

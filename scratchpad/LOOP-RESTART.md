@@ -34,6 +34,13 @@ session and the loop resumes exactly where it stopped.
     since 2026-10-13 the picker plans those SCOPED (+ the canary), and FULL comes only from a
     gate-harness change, a RAM-address move, a hand-off, or 24 h since the last full green. BELIEVE
     THE PICKER over the prompt. The daily / hand-off FULL is the "eventually".
+  - ⏱ **RULED (Joost 2026-10-31, "do 1, that costs nothing"): kwtime / kwram are OUT of every
+    battery, FULL included** (~36 min each, they set FULL's whole ~38-53 min wall; neither ever
+    printed a RED of its own -- they are tier-sheet measurements). `make gates-plan` prints
+    "⏱ kwtime / kwram are due" once their pins are > 24 h old: then run `make gates-sweeps`
+    ALONE (nothing else on the machine), stage docs/tier-status.md, commit. Proposed and NOT
+    ruled yet: a mutation sweep over the 180 of 254 units that never went red in 913 saved
+    battery logs (64% of serial time), to demote the ones that catch nothing unique.
   - 🔴 **What it does NOT see -- measured, not assumed:** batch 6's withdrawn fp_trunc rewrite
     (the one that hung Boulder Dash II) diffs as `fewer_clob: fp_trunc DE`, 0 broken. Memory,
     arithmetic and timing are outside it; the tapes and the battery still own that class.

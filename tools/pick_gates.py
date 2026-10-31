@@ -7,6 +7,8 @@ batteries, the full one on risk, and at least every 5th commit.
 ⏱ RE-RULED BY JOOST, 2026-10-13 (*"yes, do 1 and 2, it is a tradeoff allowing to
 move faster"*): the FULL battery runs **once a day** and at every hand-off, and
 per commit only when RAM ADDRESSES MOVE; kwtime / kwram left the per-ROM canary
+(and, 2026-10-31, FULL itself: `make gates-sweeps`, alone, daily -- this plan
+says when they are due)
 (they run in FULL). A day can now carry a commit that only FULL would catch.
 
   change                              runs
@@ -471,6 +473,19 @@ def main(argv):
     print(f"  hours since the last full green: "
           f"{'unknown' if since is None else f'{since:.1f}'} (full once a day, "
           f"at every hand-off, and on a RAM-address move)")
+    # ⏱ (Joost 2026-10-31) kwtime / kwram left every battery: say when they are due.
+    import time
+    ages = []
+    for p in ("kwtime.json", "kwram.json"):
+        try:
+            ages.append((time.time() - os.path.getmtime(
+                os.path.join(ROOT, run_gates.SLOW_PIN_KEEP, p))) / 3600)
+        except OSError:
+            ages.append(None)
+    if any(h is None or h >= DAILY_HOURS for h in ages):
+        print("  ⏱ kwtime / kwram are due (last measured "
+              + ", ".join("never" if h is None else f"{h:.0f} h ago" for h in ages)
+              + "): run `make gates-sweeps` ALONE, not beside a battery")
     if mode == "SCOPED":
         print(f"  emulator suites ({len(emu)}): {' '.join(emu) or '-'}")
     if x5:
