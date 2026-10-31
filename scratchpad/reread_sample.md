@@ -65,3 +65,19 @@ About 9% of the code read came out, and every reviewer found something. The
 sample is biased upward (the largest routines carry the most history), so a
 whole-ROM pass would find less per byte, but it is a different and open route
 where the mechanical ones are measured shut.
+
+## Batch 2 (2026-10-31)
+
+Ten more routines, weighted to the low region (10 B free before it). Applied:
+widen_uint_to (42 B), fp_cmp (19), apsub_close (8), ex_let_arr (4), dig15_shr
+(6, into the $3297 pin pad) in the low region; ex_print (35), parse_coord (17),
+trap_return_check (15) on main page 1. Measured: low region free 10 -> 83 B, its
+pin pad 44 -> 50, page-1 pin pads +65 B: **~144 B**, about 16 B a routine --
+more than batch 1, because the largest routines were not the only ones carrying
+history. Held back: the dl_cmd / is_cmd fold (it would call the H.CHRG hook at
+the prompt), an interface change to dig15_shr, and 3 B that would only widen a
+pad. Every premise checked in the source (cmp16_bits keeps B and DE; zero_fill
+keeps C and DE; div10 uses B, so the count lives in C; fch_mode_class's CF;
+trap_pend reads no HL; the ARY_* and mode / trap-state layouts pinned by
+assembly-time guards). One test expectation moved: test_fpdiv_fast's old-vs-new
+RAM compare now lists WIDIG as dead scratch.

@@ -91,75 +91,62 @@ ex_print:
                 ; PRINTS AND CONTINUES. The CF-3300 raises a trappable ERR 59 (and
                 ; so does zerobas's own LOF(1) on the very same closed channel).
                 ; Calling the shared classifier is the fix AND 4 bytes smaller.
-                ; fch_mode_class preserves E (the `ld a,e / call fch_select` below
-                ; needs it) and clobbers only A/HL, which the push/pop already
-                ; guards; D no longer has to be zeroed and is not read after this.
-                ; Raising from between the push and the pop is safe: raise_error
-                ; resets SP from SAVSTK on BOTH the trap and the abort arm.
-                push    hl                  ; save the text cursor (the call clobbers HL)
-                call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open
-                pop     hl                  ; restore the text cursor
-                cp      LPT_MODE
-                jr      z,exp_dev_lpt
-                cp      CRT_MODE
-                jr      z,exp_dev_crt
-                cp      GRP_MODE
-                jr      z,exp_dev_grp       ; D-OPENGRP
-                cp      CAS_OUT_MODE
-                jr      z,exp_dev_cas
-                cp      CAS_IN_MODE
-                ; 🔴 D-CASPRDIR (2026-10-08): 52, RAISED -- the VG-8020's answer
-                ; (probes/basic/basic_probe_casprdir.py `pin`: `52 in 30` under
-                ; ON ERROR). This was `jp z,load_error`, which prints and RETURNS:
-                ; untrappable, and the program ran on to its next line. The same
-                ; code the disk arm below gives an INPUT channel (D-CHDIR); and
-                ; INPUT# from a tape OUTPUT channel already said 52 on both.
-                jp      z,err_badfnum_raise ; (never fch_select it: no fat ctx exists)
-                ; --- disk file channel (unchanged) ---
-                push    hl                  ; guard text cursor
+                ; fch_mode_class keeps E (the `ld a,e / call fch_select` below needs
+                ; it), fch_select keeps DE; both clobber only A/HL. ONE push spans
+                ; both and every raise between: raise_error resets SP from SAVSTK on
+                ; BOTH the trap and the abort arm.
+                ; 💰 D-REREAD batch 2 (2026-10-31, -35 B): the class comes from
+                ; fch_mode_class's own CF (disk iff A < LPT_MODE), and the device
+                ; sink code is COMPUTED from the mode (adc below) instead of four
+                ; compare-and-load arms.
+                push    hl                  ; the text cursor, popped at exp_dev_set
+                call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open;
+                                            ; CF iff a disk channel (A < LPT_MODE)
+                jr      nc,exp_dev          ; 5..9: a device channel, owns no fat ctx
+                ; --- disk file channel ---
                 ld      a,e
                 call    fch_select          ; make channel e live; A = its mode
-                pop     hl                  ; (2026-10-19: no FCH_MODE re-read)
                 ; 🔴 D-CHDIR (2026-10-06): the CF-3300 RAISES here, trappably --
                 ; PRINT# to a channel open FOR INPUT is 52, to a RANDOM one 61
                 ; (scratchpad/chdir_run.out). load_error printed and went on, so
                 ; an ON ERROR handler never saw it.
                 cp      4
                 jp      z,sid_badmode       ; RANDOM: 61 (Bad file mode)
-                cp      DOUT_MODE           ; must be open FOR OUTPUT / APPEND (S10.B;
+                sub     DOUT_MODE           ; must be open FOR OUTPUT / APPEND (S10.B;
                                             ; mode 2 is not stored -- D-MODE2DEAD)
                 jp      nz,err_badfnum_raise ; INPUT: 52 (Bad file number)
-                xor     a
-                ld      (PRDEV),a           ; 0 = disk sink
-                jr      exp_sep
-exp_dev_lpt:
-                ld      a,1                 ; 1 = LPT: printer sink
-                jr      exp_dev_set
-exp_dev_crt:
-                ld      a,2                 ; 2 = CRT: screen sink
-                jr      exp_dev_set
-exp_dev_grp:
-                ld      a,4                 ; 4 = GRP: graphics-screen sink (D-OPENGRP)
-                jr      exp_dev_set
-exp_dev_cas:
-                ld      a,3                 ; 3 = cassette sink (cas_wbyte, buffered)
+                jr      exp_dev_set         ; A = 0 = the disk sink
+exp_dev:
+                cp      CAS_IN_MODE         ; CF iff LPT / CRT / CAS-out (5..7)
+                ; 🔴 D-CASPRDIR (2026-10-08): 52, RAISED -- the VG-8020's answer
+                ; (probes/basic/basic_probe_casprdir.py `pin`: `52 in 30` under
+                ; ON ERROR). This was `jp z,load_error`, which prints and RETURNS:
+                ; untrappable, and the program ran on to its next line. The same
+                ; code the disk arm above gives an INPUT channel (D-CHDIR); and
+                ; INPUT# from a tape OUTPUT channel already said 52 on both.
+                jp      z,err_badfnum_raise ; (never fch_select it: no fat ctx exists)
+                adc     a,-5                ; the sink: LPT 5 / CRT 6 / CAS-out 7 (CF)
+                                            ; -> 1 / 2 / 3, GRP 9 (NC) -> 4 (D-OPENGRP)
+    IF LPT_MODE != 5 || CRT_MODE != 6 || CAS_OUT_MODE != 7 || CAS_IN_MODE != 8 || GRP_MODE != 9
+                db      EXP_DEV_ADC_ASSUMES_MODES_5_6_7_8_9
+    ENDIF
 exp_dev_set:
-                ld      (PRDEV),a
-exp_sep:
+                pop     hl                  ; the text cursor
+                ld      (PRDEV),a           ; 0 disk / 1 LPT / 2 CRT / 3 cassette / 4 GRP
+                ld      a,1
+                ld      (PRDEST),a          ; items now stream to the channel
                 call    skip_comma          ; consume the separator after #n (','/';')
                 jr      z,exp_hash_sep
                 cp      ';'
                 jr      nz,exp_hash_go      ; PRINT#1  (no items) -> just the CRLF
 exp_hash_sep:
-                inc     hl
+                rst     $10                 ; CHRGTR: past it, skip spaces, A = byte
 exp_hash_go:
-                ld      a,1
-                ld      (PRDEST),a          ; items now stream to the file channel
                 ; PRINT #n[,] USING "fmt"; … — the file form. PRDEST is already 1, so
                 ; the USING formatter (which emits through pchar / print_crlf) writes
                 ; to the channel. The comma after #n was consumed above; USING may also
                 ; follow #n directly (no comma) — both crunch to … 23 <ch> [2C] E4 ….
-                call    skip_spaces
+                ; A is the byte at HL already (skip_comma / CHRGTR left it there).
                 cp      USING_TOKEN
                 jp      z,ex_print_using
                 ; fall through into the shared item loop

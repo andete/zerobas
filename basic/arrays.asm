@@ -515,19 +515,23 @@ apsub_close:
                 add     hl,sp               ; HL = &subscript 0 — the HIGH end, since
                                             ; subscript 0 was pushed FIRST
                 ld      (ARY_IDXP),hl
-                push    hl
-                pop     ix                  ; IX = the same, to reach OVER the value
-                                            ; block at constant displacements: the
-                                            ; guards are above it (pushed before eval,
-                                            ; which is unavoidable)
-                ld      l,(ix+2)
-                ld      h,(ix+3)
-                ld      (ARY_KEY),hl        ; [KEY] — L=C,H=B reproduces exactly what
-                                            ; `ld (ARY_KEY),bc` would have stored
-                ld      a,(ix+4)
+                inc     hl
+                inc     hl                  ; HL = &[KEY], just OVER the value block
+                                            ; (the guards were pushed before eval)
+    IF ARY_TYPE != ARY_KEY+2
+                db      APSUB_CLOSE_NEEDS_ARY_TYPE_EQ_ARY_KEY_PLUS_2
+    ENDIF
+                ld      de,ARY_KEY
+                ldi
+                ldi                         ; [KEY] -> ARY_KEY, low byte first: what
+                                            ; `ld (ARY_KEY),bc` stores; DE = ARY_TYPE.
+                                            ; LDI's BC decrement is dead: B (n) is
+                                            ; already in ARY_NIDX (D-REREAD batch 2,
+                                            ; -8 B: this went through IX)
+                ld      a,(hl)
                 ld      (ARY_OP),a          ; [TYPE:OP] low  = E = op
-                ld      a,(ix+5)
-                ld      (ARY_TYPE),a        ; [TYPE:OP] high = D = type
+                inc     hl
+                ldi                         ; [TYPE:OP] high = D = type -> ARY_TYPE
                 call    fperr_test          ; D-FPCARVE: -1 B
                 jr      nz,apc_release      ; a subscript expression already failed —
                                             ; first-error-wins, no engine call
@@ -893,23 +897,22 @@ ela_rterr:                                  ; (ex_let_arr_str's error exit joins
                 jp      nz,ela_err
                 call    inc_eval            ; DE=RHS value, HL=cursor advanced
                 call    fperr_test          ; D-FPCARVE: -1 B
-                jp      nz,ela_abort_fp     ; is now one test (-7 B, low region). A type
-                                            ; fault reaches ela_abort_fp as FPERR_TYPEMM,
-                                            ; and fp_runtime_error maps it to the same
-                                            ; ERR 13 ela_abort_tm used to raise directly.
-                push    hl                  ; [CURSOR]
-                pop     ix                  ; IX = cursor (free to reuse here — nothing
-                                            ; in this statement chain relies on the
-                                            ; caller's IX surviving through ex_let_arr)
+                jr      nz,ela_rterr        ; a type fault arrives as FPERR_TYPEMM ->
+                                            ; ERR 13. [TYPE],[OFFSET] are NOT popped:
+                                            ; raise_error re-bases SP (SAVSTK / repl)
+                                            ; (D-REREAD batch 2: was jp ela_abort_fp,
+                                            ; whose two pops were dead)
                 pop     af                  ; TYPE
+                ex      (sp),hl             ; [CURSOR] takes [OFFSET]'s slot; HL=OFFSET
+                push    hl                  ; [OFFSET] back on top for the apply
                 call    ary_apply_offset    ; §13a: pops [OFFSET], HL = the
                                             ; CORRECTED element address (DE
                                             ; holds the live RHS value/FAC,
                                             ; untouched, which ary_store_write
                                             ; reads)
                 call    ary_store_write     ; HL=elem addr,A=type; DE/FAC=RHS -> writes
-                push    ix
-                pop     hl                  ; HL = cursor restored
+                pop     hl                  ; [CURSOR] restored (it rode the stack, not
+                                            ; IX: D-REREAD batch 2, -4 B)
                 call    check_fperr_only    ; coercion-time overflow (D-F2-1 pattern)
 ela_done:                                   ; (ex_let_arr_str's exits join here by jr)
                 jp      exec_stmt
@@ -919,7 +922,9 @@ ela_done:                                   ; (ex_let_arr_str's exits join here 
 ; `jp nz,fp_runtime_error` and there is no cursor word left to discard.)
 ; ela_err/ela_abort_tm/ela_abort_fp themselves RELOCATED to basic/vars.asm
 ; (page-1, §13a space fix) — reached via the `jp` (not `jr`, now out of
-; branch range) above. Each still discards exactly TWO stack words
+; branch range) above. (ela_abort_fp is gone since D-REREAD batch 2: the RHS
+; fault takes ela_rterr, raise_error re-basing SP.) ela_err still discards
+; exactly TWO stack words
 ; ([TYPE],[OFFSET] — the SAME word count as the pre-fix [TYPE],[ADDR] frame,
 ; since ary_snapshot_offset collapses the old two-word ADDR+ARYTAB-snapshot
 ; into one), so their bodies are byte-identical to the pre-fix ones, only

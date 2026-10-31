@@ -516,39 +516,44 @@ trap_return_check:
                 ; D-CTLPOOL: the top record is at TSP, and it is the CURRENT
                 ; RETURN's own iff it sits immediately below that RETURN's GOSUB
                 ; frame. No stored gsp key, no multiply, no array base.
-                ld      hl,(TSP)
-                ld      de,TRAP_FRAME
-                add     hl,de
-                ld      de,(GSP)
-                or      a
-                sbc     hl,de
-                ret     nz                  ; a normal or nested RETURN -- leave all
+                ; 💰 D-REREAD batch 2 (2026-10-31, -15 B): the record is read
+                ; first (TSP is valid: the caller tested TRAPSVC != 0), and its end
+                ; is compared with GSP; on a match GSP-1 IS the idx byte.
                 ld      hl,(TSP)
                 ld      e,(hl)
                 inc     hl
                 ld      d,(hl)              ; DE = prevTSP
-                inc     hl
-                ld      c,(hl)              ; C = trap idx
+                inc     hl                  ; (the idx byte)
+                inc     hl                  ; HL = TSP + TRAP_FRAME
+    IF TRAP_FRAME != 3
+                db      TRAP_RETURN_CHECK_WALKS_A_3_BYTE_RECORD
+    ENDIF
+                ld      bc,(GSP)
+                or      a
+                sbc     hl,bc
+                ret     nz                  ; a normal or nested RETURN -- leave all
                 ld      (TSP),de            ; pop the record (its POOL space is
                                             ; reclaimed by ret_frame's single
                                             ; CSP := GSP + GOSUB_FRAME, below it)
                 ld      hl,TRAPSVC
                 dec     (hl)
-                ld      a,c
+                dec     bc                  ; BC = GSP-1 = the record's idx byte
+                ld      a,(bc)
                 call    ztrap_entry         ; HL = &ZTRAP[idx]
                 ld      a,(hl)
+                cpl                         ; state bits 11 (SERVICING) -> 00
                 and     ZTS_STATE_MASK
-                cp      ZTS_SERVICING
                 ret     nz                  ; handler changed the state -> leave it
-                ld      a,(hl)
-                and     $FC                 ; clear state bits, KEEP PENDING (bit 7)
-                or      ZTS_ON              ; SERVICING -> ON (auto-resume)
-                ld      (hl),a
-                ld      a,(TRAPENA)         ; 🔴 NOT `ld hl,TRAPENA / inc (hl)`
-                inc     a                   ; (D-PEEPHOLE): the very next
-                ld      (TRAPENA),a         ; instruction READS (hl).
-                ld      a,(hl)
-                and     ZTS_PENDING         ; re-latched during the handler?
-                ret     z
-                jp      trap_pend   ; yes -> fire again at the next boundary
+                res     1,(hl)              ; SERVICING (3) -> ON (1); PENDING kept
+    IF ZTS_SERVICING != 3 || ZTS_ON != 1 || ZTS_PENDING != $80
+                db      TRAP_RETURN_CHECK_NEEDS_SERVICING_3_ON_1_PENDING_BIT7
+    ENDIF
+                ld      a,(hl)              ; bit 7 = PENDING, read BEFORE HL moves (the
+                                            ; D-PEEPHOLE hazard: the old `inc (hl)` would
+                                            ; have hit the wrong byte)
+                ld      hl,TRAPENA
+                inc     (hl)                ; one more trap ON (inc keeps CF)
+                rla                         ; CF = PENDING: re-latched in the handler?
+                ret     nc
+                jp      trap_pend           ; yes -> fire again at the next boundary
 

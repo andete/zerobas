@@ -1882,7 +1882,8 @@ cepb_fp:
 ; jp fp_runtime_error", k in {1,2}. They are now ONE 5 B chain -- the 2-word
 ; entry falls through into the 1-word one, exactly the shape ems_err_pop2 ->
 ; ems_err_pop1 has carried in str-engine.asm all along -- and vars.asm's
-; ela_abort_fp / elas_abort_fp are `equ`s onto these two labels. -13 B, page 1.
+; elas_abort_fp is an `equ` onto these labels (ela_abort_fp was too, until
+; D-REREAD batch 2 sent ex_let_arr's fault to ela_rterr). -13 B, page 1.
 ;
 ; 🎯 WHY `pop de` IS THE NORMALISATION, AND WHY THE REGISTER WAS FREE TO CHANGE.
 ; The four sites popped into HL, BC, AF and DE, which is what made them look

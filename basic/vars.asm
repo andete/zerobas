@@ -936,7 +936,8 @@ ela_err         equ     ems_err_pop2
 ; cepb's "our resume address plus the caller's saved key", and that is the
 ; point: the meanings differ, the mechanism does not, and only the mechanism is
 ; code. -5 B of page 1. Witnessed alone by K-PR3 (f.ary), see interp.asm.
-ela_abort_fp    equ     cepb_abort_fp
+; (ela_abort_fp, an alias here, went in D-REREAD batch 2: ex_let_arr's RHS
+; fault now jumps to ela_rterr, since raise_error re-bases SP anyway.)
 
 ; --- elas_err/elas_abort_fp: ex_let_arr_str's error tails -------------------
 ; (basic/arrays.asm), RELOCATED here for the identical reason (above). Each

@@ -67,6 +67,7 @@ cmp16_bits:
                 ld      a,l
                 cp      e
                 jr      nz,c16_ne
+c16_eq:
                 ld      a,2                 ; equal
                 ret
 c16_ne:
@@ -273,28 +274,23 @@ dig15_shr:
                 ret     z
                 cp      15
                 jr      nc,dshr_allzero
-                push    hl
-                ld      c,a
-                ld      d,h
-                ld      e,l
-                ld      a,e
-                add     a,14
-                ld      e,a                 ; DE = base+14 (dst end)
+                ld      c,a                 ; C = shift
                 ld      a,l
-                add     a,14
+                add     a,14                ; no carry: the array never crosses a page
+                ld      e,a
+                ld      d,h                 ; DE = base+14 (dst end)
                 sub     c
                 ld      l,a                 ; HL = base+(14-shift) (src end)
                 ld      a,15
                 sub     c
                 ld      b,0
                 ld      c,a                 ; BC = 15-shift
-                lddr
-                pop     hl                  ; HL = base (needed to start the zero-fill;
-                                            ; no caller relies on HL after this routine,
-                                            ; so no final restore is needed before ret)
-                ld      a,(FP_SHIFTAMT)
-                ld      b,a
-                jr      zero_fill           ; tail call
+                lddr                        ; DE = base+shift-1, HL = base-1
+                ld      a,e
+                sub     l                   ; A = shift: lddr stepped DE and HL alike
+                ld      b,a                 ; (D-REREAD batch 2, -6 B: no push/pop of
+                inc     hl                  ;  HL, no second FP_SHIFTAMT read)
+                jr      zero_fill           ; tail call: HL = base, B = shift
 ; 📌 D-BASICINT PIN $3297 (2026-10-15): games (Harry Fox) jump to the reference's
 ; $3297, which the VG-8020 measured as `pop hl / ret` (scratchpad/basicint_pop.out:
 ; HL = the pushed word, BC / DE untouched). FIXED ADDRESS -- placed by
@@ -1224,8 +1220,8 @@ ftr_done:
 ; --- fp_cmp: ARGA vs ARGB -> A = 1 (A<B) / 2 (A==B) / 4 (A>B), same relation-
 ; bit convention as expr.asm's cmp16_bits. Handles zero operands (canonical
 ; sign=0 from every widen_*/fp_* producer) and cross-sign ordering before
-; falling to a magnitude compare (dexp, then digits). Clobbers A, B, C, D, E,
-; H, L.
+; falling to a magnitude compare (dexp, then digits), operands swapped when
+; both are negative. Clobbers A, B, C, D, E, H, L.
 fp_cmp:
                 call    arga_dig_iszero
                 jr      z,fcmp_a_zero
@@ -1233,83 +1229,51 @@ fp_cmp:
                 call    dig15_iszero
                 jr      z,fcmp_b_zero
                 ld      a,(ARGA+FPNUM_SIGN)
-                ld      b,a
+                ld      b,a                 ; B = the sign, read again at the digits
                 ld      a,(ARGB+FPNUM_SIGN)
                 cp      b
-                jr      nz,fcmp_diffsign
-                ; same sign, both nonzero: compare magnitude (dexp, then digits)
+                jr      nz,fcmp_b_zero      ; signs differ: A's sign decides, as vs 0
+                ; same sign, both nonzero: compare magnitudes (dexp, then digits)
+                ; with the OPERANDS SWAPPED when negative (bigger magnitude =
+                ; smaller value), so the relation bit comes out final.
+                ; 💰 D-REREAD batch 2 (2026-10-31, -19 B low region): this
+                ; compared, then swapped the answer 1<->4 for a negative sign --
+                ; a block, three alias tails and a push/pop around dig15_cmp.
+                ; cmp16_bits keeps B and DE, so B is still the sign below.
                 ld      hl,(ARGA+FPNUM_DEXP)
                 ld      de,(ARGB+FPNUM_DEXP)
-                call    cmp16_bits          ; A=1/2/4 for magA vs magB
+                or      a                   ; A = the common sign
+                jr      z,fcmp_dexp
+                ex      de,hl
+fcmp_dexp:
+                call    cmp16_bits          ; A = 1/2/4; keeps B and DE
                 cp      2
-                jr      nz,fcmp_have_mag
+                ret     nz
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,ARGB+FPNUM_DIG
-                push    bc
-                ld      b,14                ; compare only the 14 significant digits
-                call    dig15_cmp
-                pop     bc
-fcmp_have_mag:
-                ; A = 1(magA<magB)/2(eq)/4(magA>magB). Positive sign: same
-                ; ordering. Negative sign: reversed (bigger magnitude = smaller
-                ; value) — swap 1<->4, keep 2.
-                ld      c,a
                 ld      a,b
                 or      a
-                jr      z,fcmp_ret_c        ; positive: relation bit as computed
-                ld      a,c
-                cp      1
-                jp     z,fcmp_neg_swap4
-                cp      4
-                jp     z,fcmp_neg_swap1
-                ld      a,2
-                ret
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_gt,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-fcmp_neg_swap4  equ     c16_gt
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_lt,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-fcmp_neg_swap1  equ     c16_lt
-fcmp_ret_c:
-                ld      a,c
-                ret
-fcmp_diffsign:
-                ; different sign, both nonzero: positive > negative. Same
-                ; sign-to-relation shape as fcmp_b_zero below (ARGA vs an
-                ; implicit 0 on the right) — share its tail rather than
-                ; re-testing the already-loaded B register.
-                jr      fcmp_b_zero
+                jr      z,fcmp_dig
+                ex      de,hl
+fcmp_dig:
+                ld      b,14                ; compare only the 14 significant digits
+                jp      dig15_cmp           ; tail call: A = 1/2/4
 fcmp_a_zero:
                 ld      hl,ARGB+FPNUM_DIG
                 call    dig15_iszero
-                jr      z,fcmp_both_zero
+                jp      z,c16_eq            ; both zero -> 2
                 ld      a,(ARGB+FPNUM_SIGN)
                 or      a
-                jp     z,fcmp_a_lt         ; B positive -> A(0)<B
-                ld      a,4                 ; B negative -> A(0)>B
+                ld      a,1                 ; B positive -> A(0) < B
+                ret     z
+                ld      a,4                 ; B negative -> A(0) > B
                 ret
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_lt,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-fcmp_a_lt       equ     c16_lt
 fcmp_b_zero:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
-                jp     z,fcmp_a_gt2        ; A positive -> A>B(0)
-                ld      a,1                 ; A negative -> A<B(0)
-                ret
-; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to c16_gt,
-; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
-; escaping relative jump, not entered by fallthrough, same ROM region).
-; The NAME and every call site survive; un-alias here for a distinct face.
-fcmp_a_gt2      equ     c16_gt
-fcmp_both_zero:
-                ld      a,2
+                ld      a,4                 ; A positive -> A > B(0) (or a negative B)
+                ret     z
+                ld      a,1                 ; A negative -> A < B(0) (or a positive B)
                 ret
 
 ; =============================================================================
@@ -2339,72 +2303,47 @@ signed_mod_de_bc:
                 jp      neg_de              ; DE = -DE (float.asm)
 
 ; --- widen_uint_to: HL = dest FPNUM base, A = sign (0/$80), DE = UNSIGNED --
-; magnitude (0..65535) -> fills dest. Same digit-collection technique as
-; widen_int_to, but takes an already-separated sign+magnitude pair (needed
-; for the -32768\-1 escape quirk above, whose true magnitude is 32768 — a
-; value a SIGNED int16 register cannot hold, so widen_int_to's own sign-
-; from-bit15 derivation cannot be used here). Clobbers A, B, C, D, E, H, L.
+; magnitude (0..65535) -> fills dest. Takes an already-separated sign+magnitude
+; pair (needed for the -32768\-1 escape quirk above, whose true magnitude is
+; 32768 -- a value a SIGNED int16 register cannot hold, so widen_int_to's own
+; sign-from-bit15 derivation cannot be used here). Clobbers A, B, C, D, E, H, L.
+; 💰 D-REREAD batch 2 (2026-10-31, -42 B low region): the record is zeroed FIRST
+; (which is also the whole answer for 0), and the digits div10 produces least
+; significant first are PUSHED and popped back most significant first -- no
+; WIDIG buffer, no MUL_I round trips, no second zero_fill. Five digits at most:
+; the stack peaks 10 B deeper than before.
 widen_uint_to:
-                push    hl
-                push    af
+                ld      c,a                 ; C = sign (zero_fill keeps C and DE)
+                push    hl                  ; dest base
+                ld      b,18
+                call    zero_fill           ; dest := +0.0, all 18 bytes; B = 0
                 ld      a,d
                 or      e
-                jr      nz,wu_nz0
-                pop     af
-                pop     hl                  ; HL = dest base (no caller needs it back
-                                            ; after this routine, so no final restore)
-                ld      b,18
-                jp      zero_fill           ; tail call
-wu_nz0:
-                ex      de,hl               ; HL = magnitude
-                ld      de,WIDIG
-                ld      c,0                 ; C = digit count (NOT B: div10, print.asm,
-                                            ; clobbers B internally for its own 16-step
-                                            ; loop, which would silently reset a B-held
-                                            ; counter here every iteration — found live
-                                            ; in review, see the F2 close-out report)
+                pop     hl                  ; HL = dest base
+                ret     z                   ; magnitude 0: +0.0, never -0.0
+                ld      a,c
+                and     $80
+                ld      (hl),a              ; sign
+                inc     hl                  ; HL -> dexp lo (dexp hi is 0 already)
+                ex      de,hl               ; HL = magnitude, DE -> dexp lo
+                ld      c,b                 ; C = digit count := 0 (B = 0 after zero_fill;
+                                            ; not B itself: div10 clobbers it)
 wu_digloop:
-                call    div10
-                ld      (de),a
-                inc     de
+                call    div10               ; HL /= 10, A = next digit, LSD first
+                push    af                  ; stacked: the pops come back MSD first
                 inc     c
                 ld      a,h
                 or      l
                 jr      nz,wu_digloop
                 ld      a,c
-                ld      (MUL_I),a
-                pop     af                  ; sign
-                pop     hl                  ; dest base
-                and     $80
-                ld      (hl),a
-                inc     hl
-                ld      a,(MUL_I)
-                ld      e,a
-                ld      d,0
-                ld      (hl),e
-                inc     hl
-                ld      (hl),0
-                inc     hl
-                push    hl
-                ld      b,15
-                call    zero_fill
-                pop     hl
-                ld      a,(MUL_I)
-                ld      c,a
-                dec     a
-                ld      e,a
-                ld      d,0
-                push    hl
-                ld      hl,WIDIG
-                add     hl,de
-                ex      de,hl
-                pop     hl
+                ld      (de),a              ; dexp lo = N (1..5)
+                inc     de
+                inc     de                  ; DE -> dig[0]
                 ld      b,c
 wu_rev_lp:
-                ld      a,(de)
-                ld      (hl),a
-                inc     hl
-                dec     de
+                pop     af
+                ld      (de),a
+                inc     de
                 djnz    wu_rev_lp
                 ret
 

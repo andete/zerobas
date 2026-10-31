@@ -168,6 +168,10 @@ def dead_set(sym):
     d |= set(range(sym["DIVPAD"], sym["DIVPAD"] + 15))
     for k in ("FP_LHSVAL", "FP_SHIFTAMT", "MUL_CARRY", "FP_RSIGN"):
         d.add(sym[k])
+    # WIDIG: widen_uint_to's digit buffer, which it no longer writes since
+    # D-REREAD batch 2 (2026-10-31: the digits ride the stack) -- the OLD image's
+    # int widening fills it, the new one leaves it as it was.
+    d |= set(range(sym["WIDIG"], sym["WIDIG"] + 5))
     return d
 
 

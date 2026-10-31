@@ -351,15 +351,13 @@ ibk_term:
 ; -- so the pushed x need not be balanced on the error path. Own-design.
 parse_coord:
                 call    skip_spaces
-                cp      STEP_TOKEN          ; $DC -> relative coordinate
-                jr      nz,pc_absolute
+                sub     STEP_TOKEN          ; $DC -> relative: A = 0, ZF = 1
+                jr      nz,pc_flag
                 inc     hl                  ; consume STEP
-                ld      a,1
-                jr      pc_flag
-pc_absolute:
-                xor     a
 pc_flag:
-                ld      (GFX_REL),a
+                push    af                  ; ZF = STEP, kept across both evals (a
+                                            ; raise resets SP, as for the x below;
+                                            ; D-REREAD batch 2: was the GFX_REL cell)
                 call    skip_spaces
                 cp      '('
                 jp      nz,pc_syntax
@@ -375,22 +373,18 @@ pc_flag:
                 jp      nz,pc_syntax
                 inc     hl
                 pop     bc                  ; BC = x ; DE = y
-                ld      a,(GFX_REL)
-                or      a
-                ret     z                   ; absolute -> done
-                ; --- STEP: add the last-referenced point (HL is the cursor, untouched) ---
-                ld      a,(GRPACX)
-                add     a,c
-                ld      c,a
-                ld      a,(GRPACX+1)
-                adc     a,b
-                ld      b,a                 ; BC = x + GRPACX
-                ld      a,(GRPACY)
-                add     a,e
-                ld      e,a
-                ld      a,(GRPACY+1)
-                adc     a,d
-                ld      d,a                 ; DE = y + GRPACY
+                pop     af                  ; ZF = STEP (pushed at pc_flag)
+                ret     nz                  ; absolute -> done
+                ; --- STEP: add the last-referenced point (HL is the cursor, kept) ---
+                push    hl
+                ld      hl,(GRPACX)
+                add     hl,bc
+                ld      b,h
+                ld      c,l                 ; BC = x + GRPACX
+                ld      hl,(GRPACY)
+                add     hl,de
+                ex      de,hl               ; DE = y + GRPACY
+                pop     hl
                 ret
 ; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
 ; pl_syntax, which is the family's canonical tail because its four callers
