@@ -34,6 +34,7 @@ replace it.
 import ast
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -192,7 +193,10 @@ def main(argv):
         cbios = argv[3] if len(argv) > 3 else os.path.expanduser("~/projects/cbios")
         base = build_rev(argv[1], argv[2], cbios)
         print(f"base {argv[2]} built in {base}", file=sys.stderr)
-        a = {"rows": rows(*analyse(base))}
+        try:
+            a = {"rows": rows(*analyse(base))}
+        finally:
+            shutil.rmtree(base, ignore_errors=True)
         p, A = analyse(argv[1])
         b = {"rows": rows(p, A), "errors": p.annotations.errors, "ann": annotation_rows(p)}
         return report(a, b)
