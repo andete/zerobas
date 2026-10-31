@@ -307,7 +307,7 @@ item — do **one item per session** to keep context lean.
       success tail, cl_str's DIM-style VALTYP question (H1), CVI / LEN sharing a
       close helper, the dead `inc sp` pair in ixsp_unwind.
 
-- [ ] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
+- [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
       🎚️ TIER 1 — `IF A$<= "B"` is ordinary typed BASIC.
       🤖 **AUTONOMOUS** — measured ([`relspace_probe.py`](scratchpad/relspace_probe.py)
@@ -317,6 +317,15 @@ item — do **one item per session** to keep context lean.
       `"A"< "B"` and `"A"<="B"` agree. The reviewer's reading: ev_rel_str steps past
       a second relop with a bare `inc ix` where the one-character path uses ixsp,
       and str_eval_one does not skip spaces either.
+      ✅ **FIXED 2026-10-31**: that `inc ix` is `call ixsp` (+1 B, low region): past
+      the second relop AND its spaces, as the one-character path already did. The
+      numeric path's `inc ix` stays -- its operand parse skips spaces itself. The
+      probe now reads -1 / 0 for all seven on zerobas, as on the VG-8020. Rows:
+      test_str_compare's D-RELSPACE block (five expressions, value + FPERR; knifed
+      back to `inc ix`, 7 of its 10 checks fail) and `make relspace-acceptance`
+      ([`basic_probe_relspace.py`](probes/basic/basic_probe_relspace.py), the
+      program [`relspace_measure.bas`](scratchpad/relspace_measure.bas): eight
+      rows, both targets SAME). Docs: docs/concepts/strings-and-string-space.md.
 
 - [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
       (D-BD2FRAGILE, 2026-10-31).**
@@ -8229,7 +8238,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10720 (T-6FE392)8 (T-529ABE)` from `TODO.md:16402 (T-529ABE)`: a
+      `TODO.md:10729 (T-6FE392)8 (T-529ABE)` from `TODO.md:16411 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11189,7 +11198,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16402 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16411 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

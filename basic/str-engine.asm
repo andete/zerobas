@@ -2434,7 +2434,15 @@ ev_rel_str:
                 ld      a,c
                 or      b
                 ld      c,a                 ; merge the two relation bits
-                inc     ix
+                call    ixsp                ; D-RELSPACE: past the second relop AND the
+                                            ; spaces after it. A bare `inc ix` stood
+                                            ; here, and str_eval_ix does not skip, so
+                                            ; `"A"<= "B"` was a Type mismatch where the
+                                            ; VG-8020 answers -1 (relspace_run.out).
+                                            ; The one-character path already skipped:
+                                            ; its ixsp above runs before relop_bit.
+                                            ; (The numeric path's `inc ix` is fine: its
+                                            ; operand parse skips spaces itself.)
 ers_rhs:
                 push    ix                  ; [LHStemp][cursor]
                 push    bc                  ; [LHStemp][cursor][bits]

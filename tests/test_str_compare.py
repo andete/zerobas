@@ -224,6 +224,16 @@ def run():
     ck_num('"B"<="A" (false)', num_expr('"B"<="A"'), 0)
     ck_num('"B">="A" (true)', num_expr('"B">="A"'), -1)
 
+    print("# --- D-RELSPACE: spaces after a compound relop, before a string RHS ---")
+    # The VG-8020's answers (scratchpad/relspace_run.out): a space after `<=` /
+    # `>=` / `<>`, or between its two halves, is ignored. zerobas raised Type
+    # mismatch for all of these until 2026-10-31; the one-character form was fine.
+    for text, want in (('"A"<= "B"', -1), ('"A">= "B"', 0), ('"A"<>  "B"', -1),
+                       ('"A"< = "B"', -1), ('"A"< "B"', -1)):
+        got = num_expr(text)
+        ck_num(f"{text} (no type mismatch)", got, want)
+        check(f"{text}: FPERR clean", m.peek(FPERR)[0] == 0)
+
     print("# --- string VARIABLE operands ---")
     reset_strtab()
     set_var("A", b"AB")

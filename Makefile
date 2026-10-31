@@ -2591,6 +2591,11 @@ prstr2x-acceptance: repack-machine
 playqueue-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_playqueue.py
 
+# --- relspace-acceptance: a space after <= / >= / <> before a string (D-RELSPACE) ---
+# Seven comparisons, one per row, and an IF; both targets vs the VG-8020.
+relspace-acceptance: repack-machine
+	python3 -u probes/basic/basic_probe_relspace.py
+
 # --- resnextend-acceptance: RESUME NEXT after the last statement ends the run (D-RESNEXTDIRECT)
 # The last program line, and a direct line with ON ERROR still set. Both
 # targets vs the VG-8020.

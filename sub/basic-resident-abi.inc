@@ -15,14 +15,14 @@ fp_sub equ 03469H
 fp_mul equ 03495H
 fp_div equ 03518H
 fp_cmp equ 035E5H
-dig15_iszero equ 03127H
+dig15_iszero equ 03128H
 arga_pack_fac equ 0331CH
 widen_fac_to equ 036C9H
 widen_uint_to equ 0399FH
-flt_to_int16 equ 030DFH
+flt_to_int16 equ 030E0H
 vars_reset equ 03BCFH
 penderr_set equ 02827H
-flt_fmt equ 02FD7H
+flt_fmt equ 02FD8H
 rl_vpeek equ 03ABEH
 rl_vpoke equ 03AC9H
 rl_vaddr equ 03AD6H
@@ -44,7 +44,7 @@ p0_onoff_decode equ 06EBDH   ; main's onoff_decode
 p0_set_state equ 05D31H   ; main's set_state
 p0_trap_pend equ 05C6AH   ; main's trap_pend
 p0_skip_eq equ 042D6H   ; main's skip_eq
-p0_eval_addr equ 02EF4H   ; main's eval_addr
+p0_eval_addr equ 02EF5H   ; main's eval_addr
 p0_check_fperr_only equ 0441DH   ; main's check_fperr_only
 p0_ztrap_entry equ 05D25H   ; main's ztrap_entry
 p0_skip_comma equ 042D0H   ; main's skip_comma
@@ -103,7 +103,7 @@ p0_list_all equ 0627AH   ; main's list_all
 p0_cas_ascii_finish equ 065B4H   ; main's cas_ascii_finish
 p0_cas_capture_name equ 06449H   ; main's cas_capture_name
 p0_cas_name_cut equ 03E30H   ; main's cas_name_cut
-p0_req_comma equ 02DD9H   ; main's req_comma
+p0_req_comma equ 02DDAH   ; main's req_comma
 p0_check_expr_errors equ 0441DH   ; main's check_expr_errors
 p0_key_drain equ 05A7CH   ; main's key_drain
 p0_req_operand equ 04129H   ; main's req_operand

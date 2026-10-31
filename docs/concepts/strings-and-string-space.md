@@ -202,6 +202,15 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   ([`gcdi_before.out`](../../scratchpad/gcdi_before.out),
   [`gcdi_gate.out`](../../scratchpad/gcdi_gate.out)).
 
+- **A space after `<=`, `>=` or `<>` broke a string comparison** (fixed
+  2026-10-31, D-RELSPACE). `IF A$<= "B"` was `Type mismatch` here, and so were
+  `"A">= "B"`, `"A"<>  "B"` and `"A"< = "B"`; the VG-8020 compares all of them.
+  zerobas stepped past the second character of the operator without skipping
+  the spaces after it, and the string on the right is read without a skip of
+  its own. `"A"< "B"` was always fine. It was found by reading the comparison
+  routine for something else (D-REREAD), not by a program
+  ([`relspace_run.out`](../../scratchpad/relspace_run.out)).
+
 ## How zerobas does it
 
 The **main ROM** side is [basic/str-engine.asm](../../basic/str-engine.asm):
@@ -249,6 +258,8 @@ disagree with this page, this page is current.
 
 ## Tests that cover it
 
+- `make relspace-acceptance` — spaces after a two-character comparison
+  operator before a string, row for row against the VG-8020.
 - `make gcdi-acceptance` — string work keeps the frame interrupt, and a
   line typed meanwhile arrives whole.
 - `make clearpool-acceptance` and `make binfre-acceptance` — the size `CLEAR`
