@@ -41,7 +41,8 @@ def run(machine, cas, outdir, watches=True):
              "proc __s {t} {",
              f"  set f [open {{{samples}}} a]",
              "  binary scan [debug read_block memory 0xF41C 2] su cl",
-             "  puts $f \"$t [reg pc] [reg sp] $cl\"",
+             "  if {[catch {cassetteplayer getpos} tp]} { set tp - }",
+             "  puts $f \"$t [reg pc] [reg sp] $cl $tp\"",
              "  close $f",
              "}",
              "proc __d {t} {",
@@ -158,7 +159,7 @@ def summary(d):
     """Per run: when CURLIN first changes after 10, the PC / SP ranges per CURLIN."""
     rows = [ln.split() for ln in open(os.path.join(d, "samples.txt"))]
     by = {}
-    for t, pc, sp, cl in rows:
+    for t, pc, sp, cl, *_ in rows:
         by.setdefault(int(cl), []).append((float(t), int(pc), int(sp)))
     for cl, v in sorted(by.items(), key=lambda kv: kv[1][0][0]):
         ts = [x[0] for x in v]; pcs = [x[1] for x in v]; sps = [x[2] for x in v]
@@ -181,6 +182,23 @@ def romcalls(d):
     if not os.path.exists(p):
         return {}
     return {int(a): int(n) for a, n in (ln.split() for ln in open(p))}
+
+
+def tapepos(a, b):
+    """D-BD2FRAGILE, 2026-10-31: the cassette position (seconds into the tape, openMSX's
+    own `cassetteplayer getpos` -- emulator state, not the machine's) at every sample,
+    and the first sample at which each run's PC is in RAM with the game's stack."""
+    rows = {}
+    for d in (a, b):
+        rows[d] = [ln.split() for ln in open(os.path.join(d, "samples.txt"))]
+        first = next((r for r in rows[d] if int(r[1]) >= 0x8000 and int(r[2]) >= 0xFF00), None)
+        print(f"{os.path.basename(d)}: first PC-in-RAM with SP >= $FF00 at "
+              + (f"T{float(first[0]):.2f}, tape {first[4]}" if first else "never"))
+    ta = {r[0]: r for r in rows[a]}
+    for r in rows[b]:
+        o = ta.get(r[0])
+        if o and (float(r[0]) * 4) % 4 == 0:
+            print(f"  T{float(r[0]):6.1f}  tape {o[4]:>9} {r[4]:>9}   CURLIN {o[3]:>5} {r[3]:>5}")
 
 
 def compare(a, b):
@@ -214,12 +232,20 @@ def main():
     r.add_argument("--dump", required=True)
     r.add_argument("--machine", default=TC.ZB)
     r.add_argument("--dir", default=os.environ.get("TAPECORPUS_DIR"))
+    r.add_argument("--plain", action="store_true",
+                   help="no watches on zerobas either: PC / SP / CURLIN / tape position only")
     c = sub.add_parser("compare")
     c.add_argument("a")
     c.add_argument("b")
+    tp = sub.add_parser("tapepos")
+    tp.add_argument("a")
+    tp.add_argument("b")
     a = ap.parse_args()
     if a.cmd == "compare":
         compare(a.a, a.b)
+        return
+    if a.cmd == "tapepos":
+        tapepos(a.a, a.b)
         return
     if os.path.realpath(a.dump).startswith(os.path.realpath(os.path.dirname(HERE))):
         raise SystemExit("REFUSING: --dump must be outside the repo (the bytes are the game's)")
@@ -228,7 +254,7 @@ def main():
         cas = TC.unpack(os.path.join(a.dir, TITLE + ".zip"), td)
         # the watches count ROM addresses: zerobas's only. On the reference only
         # PC / SP / CURLIN are sampled (clean room: never trace its ROM).
-        run(a.machine, cas, os.path.join(a.dump, a.label), watches=(a.machine == TC.ZB))
+        run(a.machine, cas, os.path.join(a.dump, a.label), watches=(a.machine == TC.ZB and not a.plain))
     finally:
         shutil.rmtree(td, ignore_errors=True)
 

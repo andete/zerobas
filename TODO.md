@@ -431,6 +431,31 @@ item — do **one item per session** to keep context lean.
       cassette position at each TAPION) and run it on BOTH machines -- whether
       zerobas's TAPION locks on a block the VG-8020's would skip, or the game's
       loader asks at a different tape position, is the split.
+      📏 **SECOND MEASUREMENTS (2026-10-31, the cassette position instead of the call log:
+      [`bd2_probe.py`](scratchpad/bd2_probe.py) `--plain` samples openMSX's own `cassetteplayer
+      getpos` -- emulator state -- with PC / SP / CURLIN every 0.25 s; `tapepos A B` compares
+      two runs, [`bd2_tapepos.out`](scratchpad/bd2_tapepos.out),
+      [`bd2_tapepos_bad.out`](scratchpad/bd2_tapepos_bad.out)):**
+      (7) **The game's own loader starts at the SAME tape position on both machines**:
+      first PC in RAM with SP >= $FF00 at tape 88.5749 s on the VG-8020 (T99.00) and on
+      zerobas (T101.75) -- it waits for its own header, which re-aligns them.
+      (8) **zerobas spends ~3 s longer in BASIC between tape blocks with the motor OFF**
+      (the tape stands at 38.386 s for ~4 s on zerobas, ~1 s on the VG-8020; lines
+      110 / 265 / 290 / 310) -- speed (tier 5), harmless there.
+      (9) **Line 265 and then line 10 run with the motor ON** (tape advancing 1 s/s from
+      ~39 s to 88.6 s): there BASIC's speed sets the offset between the program and the
+      tape. HEAD + batch 6's fp_trunc sits a constant 4.3 ms of tape behind HEAD from
+      line 265 on.
+      (10) 🔴 **On TODAY's HEAD (after batch 7) that same fp_trunc build runs the game**:
+      line 3341 at T147, as HEAD (it hung on batch 6's base). The margin is a few
+      milliseconds of tape in the motor-on phase, and its side moves with every low-region
+      change: fp_trunc (24 B) is applicable again today and could tip again tomorrow.
+      ➡️ **NEXT**: the margin itself -- how many ms of offset in the line-265 / line-10
+      phase the game tolerates, and where the VG-8020 sits inside it (its tape position at
+      the line 265 -> 10 entry against ours). A faithful fix is the reference's timing in
+      that phase (tier 5 speed work, paused); until then, run Boulder Dash II on every
+      low-region change (the tape corpus does) and treat a hang there as this item, not
+      as a wrong value.
 
 - [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
       FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
@@ -8300,7 +8325,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10791 (T-6FE392)8 (T-529ABE)` from `TODO.md:16473 (T-529ABE)`: a
+      `TODO.md:10816 (T-6FE392)8 (T-529ABE)` from `TODO.md:16498 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11260,7 +11285,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16473 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16498 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
