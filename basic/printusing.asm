@@ -104,8 +104,8 @@ ex_print_using:
                 jp      nz,stmt_error       ; ',' / EOL / a bare value -> ERR 2
                 inc     hl
                 xor     a
-                ld      (PU_POS),a
-                ld      (PU_FLAGS),a
+                ld      (PU_POS),a          ; (PU_FLAGS: pu_to_field clears it
+                                            ; before any reader runs)
                 ; 🔴 A FIELD-LESS FORMAT IS AN ERROR IN EVERY CASE, NOT "literal
                 ; text, well-defined". `PRINT USING"abc";` and `PRINT USING"abc";5`
                 ; are BOTH ERR 5 on both references, and `PRINT USING"abc"` is
@@ -128,9 +128,6 @@ pu_main:
                 jr      z,pu_endlist        ; end of line
                 cp      COLON
                 jr      z,pu_endlist        ; next statement
-                ld      a,(PU_FLAGS)
-                and     $FE                 ; a value follows -> clear trailing-sep
-                ld      (PU_FLAGS),a
                 push    hl                  ; pu_to_field clobbers HL (the token cursor)
                 call    pu_to_field         ; emit literals up to the next field
                 pop     hl
@@ -153,19 +150,19 @@ pu_msep_chk:
                 jr      nz,pu_endlist       ; no separator -> value list done
 pu_msep:
                 inc     hl
-                ld      a,(PU_FLAGS)
-                or      1                   ; possibly-dangling trailing separator
-                ld      (PU_FLAGS),a
                 jr      pu_main
 pu_endlist:
+                ; Z = the list ended on a TRAILING separator: only pu_main's EOL/':'
+                ; exits arrive Z, and pu_main is re-entered only from pu_msep
+                ; (req_operand refused EOL/':' on the first pass). `jr nz` (no
+                ; separator) and pu_to_field's no-field exit (A=1, `or a`) arrive
+                ; NZ. This replaces PU_FLAGS bit0, no longer kept (D-REREAD batch 5).
+                push    af                  ; Z = suppress the newline
                 push    hl                  ; pu_emit_tail clobbers HL (the token cursor)
                 call    pu_emit_tail        ; trailing literals up to the next field
                 pop     hl
-                ld      a,(PU_FLAGS)
-                bit     0,a
-                jr      nz,pu_skipnl
-                call    print_crlf
-pu_skipnl:
+                pop     af
+                call    nz,print_crlf       ; (pchar keeps every register: HL survives)
                 call    skip_spaces
                 cp      COLON
                 jp      z,exec_stmt         ; HL on ':' -> step into the next statement

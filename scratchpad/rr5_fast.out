@@ -1,0 +1,74 @@
+python3 tools/run_gates.py --static 
+=== warm-up (serial build of shared artifacts) ===
+warm-up 14s
+=== refcache OFF for every unit: a gate measures, it never replays (docs/spec-refcache.md §7) ===
+=== SKIPPING 195 emulator target(s): --static: the emulator tier was NOT run ===
+=== D-PINSTALE: the kwsweep pin was measured on ROM 19debd00 ec4f7603 c3c6a8a1 36f06851 1eee3ee8, this build is 16834988 a86ee06b 68766de1 e3846106 d36b67a6: kwsweep RUNS (kwtime / kwram are daily: their last pins are kept) ===
+=== ⏱ kwtime / kwram not in this run (daily, Joost 2026-10-13): the tier sheet reads their last pins and says which build they describe ===
+=== emulator tier RUNS: ROM images differ from the last green battery ===
+=== 4 tree-mutating unit(s), SERIAL (they rewrite a shared tracked file) ===
+  rc=0              1s  switch-build-check
+  rc=0             16s  diskdep-check
+  rc=0              0s  wall-literal-check
+  rc=0            150s  selftest-check
+  (post-mutator refresh 13s -- the plants moved mtimes, so the pool would otherwise race a rebuild)
+=== 46 units, J=8, lineerr in 8 shards, nice=0 solo=None ===
+  rc=0              8s  basic-reloc
+  rc=0              0s  deps-check
+  rc=0              0s  subrom-abi-check
+  rc=0              0s  diskrom-abi-check
+  rc=0              0s  rom-parts-check
+  rc=0              2s  subrom-closure-check
+  rc=2            565s  unit-test
+  rc=0              1s  deadcode
+  rc=0              8s  wall-assertion-check
+  rc=0              0s  ram-claim-check
+  rc=0              4s  ram-map-check
+  rc=0              8s  pin-check
+  rc=0              0s  build-assert-check
+  rc=0              9s  needle-case-check
+  rc=0              0s  redundant-load-check
+  rc=0              0s  stubinl-check
+  rc=0              3s  rowshape-check
+  rc=0             12s  injector-check
+  rc=0              1s  dead-alias-check
+  rc=0              1s  alias-order-check
+  rc=0              1s  size-check
+  rc=0              4s  hostkill-check
+  rc=0              3s  session-path-check
+  rc=0              2s  temp-root-check
+  rc=0              0s  tracked-inputs-check
+  rc=0              6s  todo-citation-check
+  rc=0              1s  todo-marker-check
+  rc=0              0s  deferral-pin-check
+  rc=0              2s  error-alphabet-check
+  rc=0              5s  chokepoint-check
+  rc=0              0s  filed-pin-check
+  rc=0              5s  disk-mount-check
+  rc=0              0s  shared-body-check
+  rc=0              0s  probe-reach-check
+  rc=0              0s  battery-membership-check
+  rc=0              1s  fixture-integrity-check
+  rc=0              0s  hook-equate-check
+  rc=0              2s  preflight-check
+  rc=0             14s  latch-check
+  rc=0             16s  patch-freshness-check
+  rc=0              5s  refcache-check
+  rc=0              0s  knife-guard-check
+  rc=0              1s  knife-rom-guard-check
+  rc=0              0s  deffn-selftest
+  rc=0              0s  probe-sides-selftest
+  rc=0            694s  kwsweep
+=== 1 post-pool unit(s), SERIAL (they read what the pool just wrote) ===
+  rc=2              0s  tiers-md-check
+
+=== retrying 1 red unit(s) SERIALLY (flake vs real) ===
+  retry unit-test: rc 2->2  REAL (still red)
+
+=== wall 1247s (14s build + 1234s gates) ===
+GATES: 49/51 green [STATIC TIER ONLY]
+  ⚠️  195 EMULATOR TARGET(S) NOT RUN — --static: the emulator tier was NOT run
+  ⚠️  this is NOT a full battery; `make gates-full` to force one
+RED: unit-test tiers-md-check
+hashes: 16834988 a86ee06b 68766de1 e3846106 d36b67a6
+make: *** [gates-fast] Error 1

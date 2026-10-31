@@ -946,11 +946,9 @@ input_common:
                 ; no longer zeroed and not read before `ld de,fat_io_getbyte`.
                 push    hl                  ; guard text cursor
                 call    fch_mode_class      ; A = FCH_MODES[ch]; ERR 59 if not open
-                pop     hl
-                cp      CAS_IN_MODE
+                cp      CAS_IN_MODE         ; (text cursor still pushed)
                 jr      z,inp_setsrc        ; cassette: A = CAS_IN_MODE already, and
                                             ; NO fch_select (see above)
-                push    hl                  ; guard text cursor
                 ld      a,e
                 call    fch_select          ; make channel e live; A = its mode
                 pop     hl                  ; (2026-10-19: the `ld a,(FCH_MODE)`
@@ -962,10 +960,10 @@ input_common:
                 jp      z,sid_badmode
                 cp      1                   ; a channel must be open for INPUT
                 jp      nz,err_badfnum_raise
-inp_setsrc:
                 ; D-CASINP: the two-way source choice moved to arl_set_src
                 ; (basic/input.asm) so INPUT$ can make it too. -11 B here.
                 push    hl                  ; HL is the text cursor; arl_set_src uses it
+inp_setsrc:                                 ; (the cassette arm arrives with it pushed)
                 call    arl_set_src         ; A = the mode (1 disk / CAS_IN_MODE tape)
                 pop     hl
 inp_readvar:
@@ -975,9 +973,8 @@ inp_readvar:
                 ; every value -- `PRINT #1,5` read back with `INPUT #1,X` is 5 on the
                 ; CF-3300 (scratchpad/inpnum_run.out). input.asm's inp_numitem reads
                 ; it; LINE INPUT # comes straight back to inp_str from there.
-                call    var_str_type        ; A = 1 if the name carries a '$'
-                or      a
-                jp      z,inp_numitem
+                call    var_str_type        ; CF = the name is a string ('$'/DEFSTR)
+                jp      nc,inp_numitem
 inp_str:
                 call    str_target_parse    ; string-var target: type-check, parse,
                                             ; raise -- D-NGRAM9

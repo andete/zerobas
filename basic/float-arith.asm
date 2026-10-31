@@ -783,37 +783,6 @@ fp_sub:
 ; fp_mul — double BCD multiply (spec §10.2)
 ; =============================================================================
 
-; --- digit_mul: A=i(0-9), C=j(0-9) -> A=i*j(0-81), via i repeated adds of j -
-; (own design: a lookup table was considered but ROM bytes, not cycles, are
-; the binding constraint here — a BASIC multiply statement runs this at most
-; 196 times once, not in a hot loop). Preserves B, HL. Clobbers C, D, E.
-digit_mul:
-                ; D-MULZERO (2026-09-11): count down J, not I -- i*j is symmetric, and
-                ; the two operands are NOT symmetric in practice. The outer loop walks
-                ; ARGA (the variable: `X=I*2` has up to 9 in a digit), the inner walks
-                ; ARGB (the literal: ONE non-zero digit and thirteen zeros). Counting
-                ; the inner digit makes `*2` two iterations instead of up to nine, and
-                ; gives j=0 an early-out that the old shape could not have: it spun i
-                ; times adding zero, thirteen times per pass. Two bytes, and the
-                ; header's "not in a hot loop" was the claim this refutes -- 392,000
-                ; calls in the loop D-SPEEDPROF profiled.
-                ld      d,c                 ; D = j (countdown)
-                ld      e,a                 ; E = i (addend)
-                ld      c,0                 ; C = accumulator
-                or      a
-                ret     z                   ; i=0 -> A is already 0
-                ld      a,d
-                or      a
-                ret     z                   ; j=0 -> the product is 0, and A is it
-dmul_lp:
-                ld      a,c
-                add     a,e
-                ld      c,a
-                dec     d
-                jr      nz,dmul_lp
-                ld      a,c
-                ret
-
 ; --- fp_mul: ARGA * ARGB -> ARGA -> round_and_finalize. Overflow/underflow -
 ; PRE-CHECK on the stored dec_exps (spec §10.2: "even when the normalised
 ; result would fit"): e(a)+e(b) > 63 -> Overflow; < -63 -> silent 0. Then a
@@ -870,129 +839,80 @@ fp_mul:
                 ld      (FP_TMP_B),hl
                 call    check_preexp_bounds
                 call    xor_sign
-                push    af                  ; stash result sign (ARGA_DIG is still
-                                            ; needed below as a multiply INPUT)
+                ld      (ARGA+FPNUM_SIGN),a ; the multiply reads ARGA's DIGITS only
                 ld      hl,MULPROD
                 ld      b,28
                 call    zero_fill
-                ld      a,13
-                ld      (MUL_I),a
+                ; 💰 D-REREAD (2026-10-31): ALL STATE IN REGISTERS, digit_mul INLINED.
+                ; Outer: HL walks A[13..0]. Inner: HL = MULPROD cursor (MULPROD+i+14
+                ; down to +i+1), DE walks B[13..0], C = A[i], B = j then the carry.
+                ; The carry is FOLDED into the next cell left at once (`(hl-1) += q`)
+                ; instead of being held: a cell is then <= 9+9 when it is next read,
+                ; so t = cell + i*j <= 99 as before, and the pass's last fold lands
+                ; in cell i, which is 0 before pass i (the product of A[i+1..13]
+                ; occupies cells i+1..27) -- so no carry ever propagates further,
+                ; and the old fpm_carry_lp is gone. Same t, same digit, same carry
+                ; at every step for digits 0..9; MUL_I/MUL_PP/MUL_ADIG/MUL_CARRY
+                ; are no longer written. D-MULZERO's two speedups are kept: a zero
+                ; A[i] skips the pass, and the i*j adds count down J (the literal
+                ; in `X=I*2` has one nonzero digit, so `*2` is two adds).
+                ld      hl,ARGA+FPNUM_DIG+13
 fpm_outer:
-                ; (no zero-digit skip: the inner loop is code-size-bound, not
-                ; speed-bound, here -- digit_mul(0,j)=0 makes a zero pass a
-                ; correct no-op through the accumulation anyway, so the extra
-                ; branch to skip it would only cost bytes, not save them)
-                ld      a,(MUL_I)
-                ld      hl,ARGA+FPNUM_DIG
-                ld      e,a
-                ld      d,0
-                add     hl,de
                 ld      a,(hl)
-                ; D-MULZERO (2026-09-11): a ZERO multiplicand digit contributes
-                ; nothing from a 14-digit pass, and there is no carry to propagate
-                ; because every partial product is 0 -- so skip the whole pass.
-                ; `FOR I=1 TO 2000:X=I*2:NEXT` costs 2719 jiffies of marginal time
-                ; here against the CF-3300's 577 (4.7x, the interpreter's single
-                ; biggest constant -- D-SPEEDPROF's profile puts ~47% of that loop
-                ; in this multiply), and I is 1-4 significant digits of 14.
                 or      a
-                jr      z,fpm_outer_next
-                ld      (MUL_ADIG),a
-                ld      a,(MUL_I)
-                add     a,(MULPROD & $FF)+14 ; bug fix: MUL_PP = MULPROD+MUL_I+14, not
-                                            ; $F000+MUL_I+14 -- MULPROD's low byte
-                                            ; (low MULPROD) plus the max offset (27) never
-                                            ; carries past $FF, so the low-byte-only
-                                            ; add stays correct and H is always MULPROD's page
-                ld      l,a
-                ld      h,high MULPROD      ; MULPROD's page -- was the literal $F0, which no idiom scan sees (D-WSZERO s6 moved it)
-    IF (MULPROD & $FF) + 14 + 27 > $FF
-                db      MULPROD_TOO_CLOSE_TO_A_PAGE_END__LOW_BYTE_ADD_WOULD_CARRY
-    ENDIF
-                ld      (MUL_PP),hl
-                ld      hl,ARGB+FPNUM_DIG+13
-                ld      b,14
-                xor     a
-                ld      (MUL_CARRY),a
+                jr      z,fpm_outer_next    ; A[i] = 0: the pass adds nothing
+                push    hl                  ; A cursor
+                ld      c,a                 ; C = A[i]
+                ld      de,MULPROD+14-(ARGA+FPNUM_DIG)
+                add     hl,de               ; HL = MULPROD+i+14
+                ld      de,ARGB+FPNUM_DIG+13
 fpm_inner:
-                ld      a,(hl)
-                ld      c,a
-                ld      a,(MUL_ADIG)
-                call    digit_mul           ; A = i*j (0..81); preserves B, C, HL
-                ld      d,a
-                ld      a,(MUL_CARRY)
-                add     a,d                 ; A = i*j + carry_in (<= 81+9 = 90)
-                push    hl                  ; save PB (about to clobber HL for MUL_PP)
-                ld      hl,(MUL_PP)
-                add     a,(hl)              ; A = MULPROD[pos] + i*j + carry_in (<=99)
-                ld      d,0
+                ld      a,(de)
+                ld      b,a                 ; B = j
+                ld      a,(hl)              ; A = cell (+ the carry folded in)
+                inc     b
+                jr      fpm_mul_test
+fpm_mul_lp:
+                add     a,c                 ; A += i, j times
+fpm_mul_test:
+                djnz    fpm_mul_lp          ; A = cell + i*j (<= 99); B = 0
 fpm_reduce:
                 cp      10
                 jr      c,fpm_reduce_done
                 sub     10
-                inc     d
+                inc     b                   ; B = carry
                 jr      fpm_reduce
 fpm_reduce_done:
                 ld      (hl),a
-                ld      a,d
-                ld      (MUL_CARRY),a
                 dec     hl
-                ld      (MUL_PP),hl
-                pop     hl                  ; HL = PB restored
-                dec     hl
-                djnz    fpm_inner
-                ; propagate any leftover MUL_CARRY (0..9) further left
-                ld      a,(MUL_CARRY)
-                or      a
-                jr      z,fpm_outer_next
-                ld      hl,(MUL_PP)
-                ld      d,a
-fpm_carry_lp:
                 ld      a,(hl)
-                add     a,d
-                cp      10
-                jr      c,fpm_carry_st
-                sub     10
-                ld      d,1
-                jr      fpm_carry_st2
-fpm_carry_st:
-                ld      d,0
-fpm_carry_st2:
-                ld      (hl),a
-                ld      a,d
-                or      a
-                jr      z,fpm_outer_next
-                dec     hl
-                jr      fpm_carry_lp
+                add     a,b
+                ld      (hl),a              ; carry folded into the next cell left
+                ld      a,e
+                dec     de
+                cp      low (ARGB+FPNUM_DIG)
+                jr      nz,fpm_inner        ; until B[0] is done
+                pop     hl                  ; HL = A cursor
 fpm_outer_next:
-                ld      a,(MUL_I)
-                or      a
-                jr      z,fpm_after
-                dec     a
-                ld      (MUL_I),a
-                jr      fpm_outer
+                ld      a,l
+                dec     hl
+                cp      low (ARGA+FPNUM_DIG)
+                jr      nz,fpm_outer        ; until A[0] is done
 fpm_after:
-                pop     af                  ; result sign, stashed above
-                ld      (ARGA+FPNUM_SIGN),a
-                ld      a,(MULPROD)
-                ld      hl,MULPROD          ; default (mantissa>=.1) copy source
+                ; product mantissa < .1 -> window = MULPROD[1..15], dexp = preExp-1
+                ld      hl,(FP_TMP_B)       ; HL = preExp
+                ld      de,MULPROD          ; default (mantissa>=.1) copy source
+                ld      a,(de)
                 or      a
                 jr      nz,fpm_norm_go
-                ; product mantissa < .1 -> window = MULPROD[1..15], dexp = preExp-1
-                ; (adjusted in place in FP_TMP_B -- round_and_finalize overwrites
-                ; it fresh from ARGA_DEXP right after, so no caller downstream
-                ; ever sees this pre-decrement; own simplification merging what
-                ; used to be two near-duplicate copy+store+tail-call blocks)
-                ld      hl,MULPROD+1
-                ld      de,(FP_TMP_B)
-                dec     de
-                ld      (FP_TMP_B),de
+                dec     hl
+                inc     de
 fpm_norm_go:
+                ld      (ARGA+FPNUM_DEXP),hl
+                ex      de,hl               ; HL = copy source
                 ld      de,ARGA+FPNUM_DIG
                 ld      bc,15
                 ldir
-                ld      hl,(FP_TMP_B)
-                ld      (ARGA+FPNUM_DEXP),hl
                 jp      round_and_finalize
 
 ; =============================================================================

@@ -1,90 +1,140 @@
- 1445 $674E str_snapshot_ro              basic/files.asm:607
+ 1476 $672F str_snapshot_ro              basic/files.asm:607
   517 $70CF gp_raise                     basic/field.asm:321
-  177 $3F5F ndd_tape                     basic/main.asm:341
+  233 $3F27 ndd_tape                     basic/main.asm:341
+  184 $31DF dig15_shr                    basic/float-arith.asm:272
   176 $417D stmt_table                   basic/interp.asm:711
-  111 $733D lrset_common                 basic/field.asm:534
+  116 $7338 lrset_common                 basic/field.asm:535
   110 $4C4B ev_f                         basic/expr.asm:475
    99 $4010 init                         basic/interp.asm:17
-   93 $5B97 psv_fetch                    basic/playsvc.asm:124
-   84 $3243 dig15_shr                    basic/float-arith.asm:272
+   93 $5B8B psv_fetch                    basic/playsvc.asm:124
    76 $493C str_eval_one                 basic/strvar.asm:77
    74 $4079 bh_himem                     basic/interp.asm:214
-   69 $6341 ex_for                       basic/program.asm:1887
+   69 $6322 ex_for                       basic/program.asm:1887
    69 $4E64 ev_ff_ckdone                 basic/expr.asm:1182
-   62 $5DAA check_traps                  basic/traps.asm:443
-   58 $6001 ex_paint                     basic/graphics.asm:689
+   62 $5D9E check_traps                  basic/traps.asm:443
    56 $7465 dl_cmd                       basic/program.asm:38
    55 $3592 fpd_go                       basic/float-arith.asm:1075
    54 $4FBC ev_ff_cv                     basic/expr.asm:1635
    52 $7005 try_text_slot                basic/basicrom.asm:25
-   52 $3E21 ex_let_arr_str               basic/arrays.asm:1046
+   52 $3DE9 ex_let_arr_str               basic/arrays.asm:1047
+   52 $36A4 domain_convert_core          basic/float-arith.asm:1277
+   51 $5FF5 ex_paint                     basic/graphics.asm:689
    51 $44D7 tok_skip                     basic/tokskip-body.inc:19
-   50 $62B7 lst_lp                       basic/list.asm:169
-   50 $5F23 pc_flag                      basic/graphics.asm:352
+   50 $6298 lst_lp                       basic/list.asm:169
+   50 $5F17 pc_flag                      basic/graphics.asm:352
    50 $506C ev_ff_mathconv               basic/expr.asm:1912
    50 $4136 exec_stmt                    basic/interp.asm:582
-   49 $5460 ev_usr                       basic/usr.asm:147
-   47 $72F6 field_item                   basic/field.asm:394
-   47 $5EC0 elg_second                   basic/graphics.asm:231
+   49 $545A ev_usr                       basic/usr.asm:147
+   47 $5EB4 elg_second                   basic/graphics.asm:231
    46 $7DF8 err_msgtab                   basic/missing.asm:697
    46 $751D run_prog_at                  basic/program.asm:392
-   46 $5DEE trap_return_check            basic/traps.asm:515
-   46 $3884 cmul_int                     basic/float-arith.asm:1887
+   46 $5DE2 trap_return_check            basic/traps.asm:515
    46 $2A5A str_func_ff                  basic/str-engine.asm:1223
    45 $434F raise_error_hl               basic/interp.asm:1453
-   45 $3C19 fre_abort_low                basic/arrays.asm:95
-   45 $2BDC ems_close                    basic/str-engine.asm:1661
+   45 $2BAC ex_mid_stmt                  basic/str-engine.asm:1613
    44 $7733 gosub_push                   basic/program.asm:1446
    44 $6DEA ris_lp                       basic/files.asm:1061
-   44 $62F8 de_win                       basic/list.asm:271
-   44 $61ED g8_fn                        basic/graphics.asm:1318
-   44 $5AB3 pl_voice                     basic/play.asm:66
+   44 $62D9 de_win                       basic/list.asm:271
+   44 $61CE g8_fn                        basic/graphics.asm:1312
+   44 $5AA7 pl_voice                     basic/play.asm:66
    44 $4E06 ev_ff_arg_in                 basic/expr.asm:1094
-   44 $3026 m32_lp                       basic/input.asm:604
-   44 $2BAC ex_mid_stmt                  basic/str-engine.asm:1613
    43 $6D8B input_common                 basic/files.asm:910
-   43 $3CD5 apsub_close                  basic/arrays.asm:502
-   43 $36BF domain_convert_core          basic/float-arith.asm:1304
-   43 $30EB flo_fx_bc                    basic/float.asm:187
-   42 $6245 g8_assign                    basic/graphics.asm:1409
-   42 $58B5 ex_print_using               basic/printusing.asm:83
-   42 $57B3 str_release_top              basic/print.asm:514
-   42 $5640 ex_print                     basic/print.asm:68
+   43 $3C9D apsub_close                  basic/arrays.asm:503
+   43 $2BD9 ems_close                    basic/str-engine.asm:1660
+   42 $72F6 field_item                   basic/field.asm:394
+   42 $6226 g8_assign                    basic/graphics.asm:1403
+   42 $58A9 ex_print_using               basic/printusing.asm:83
+   42 $57A7 str_release_top              basic/print.asm:514
+   42 $5634 ex_print                     basic/print.asm:68
+   42 $3BE4 fre_abort_low                basic/arrays.asm:95
    41 $7A99 exr_lp                       basic/program.asm:2548
-   41 $6172 ex_put_sprite                basic/graphics.asm:1225
-   41 $6129 ev_f_sprite                  basic/graphics.asm:1151
+   41 $6153 ex_put_sprite                basic/graphics.asm:1219
+   41 $610A ev_f_sprite                  basic/graphics.asm:1145
    41 $426E ex_let                       basic/interp.asm:939
    40 $7BF3 ex_on_error                  basic/program.asm:2959
    40 $754B rp_lp                        basic/program.asm:458
    40 $42A4 ex_let_str                   basic/interp.asm:992
+   40 $3855 cmul_int                     basic/float-arith.asm:1838
    39 $7D34 ex_swap                      basic/missing.asm:413
    39 $7B43 ex_on                        basic/program.asm:2722
    39 $7A37 npk_pos                      basic/program.asm:2433
-   39 $6386 ef_havestep                  basic/program.asm:1929
-   39 $5CDA ep_stop_held                 basic/traps.asm:203
-   39 $5B10 ev_f_play                    basic/play.asm:186
+   39 $6367 ef_havestep                  basic/program.asm:1929
+   39 $5CCE ep_stop_held                 basic/traps.asm:203
+   39 $5B04 ev_f_play                    basic/play.asm:186
    39 $45F5 rl_loop                      basic/repl.asm:148
-   39 $36EA dcc_dexp5                    basic/float-arith.asm:1330
-   38 $522F ev_f_varptr                  basic/expr.asm:2493
+   38 $5229 ev_f_varptr                  basic/expr.asm:2491
    38 $4DDC ev_f_ff                      basic/expr.asm:1058
    37 $78E6 nx_slow                      basic/program.asm:2147
    37 $767C ex_cont                      basic/program.asm:1127
-   37 $659E ctl_reloc                    basic/cload.asm:833
-   37 $6079 ex_draw                      basic/graphics.asm:909
-   37 $5689 exp_loop                     basic/print.asm:153
-   37 $5420 ex_def                       basic/usr.asm:72
-   37 $535B ex_clear                     basic/clear.asm:59
-   37 $3DBF ela_rterr                    basic/arrays.asm:889
+   37 $657F ctl_reloc                    basic/cload.asm:833
+   37 $605A ex_draw                      basic/graphics.asm:903
+   37 $567D exp_loop                     basic/print.asm:153
+   37 $541A ex_def                       basic/usr.asm:72
+   37 $5355 ex_clear                     basic/clear.asm:59
+   37 $3D87 ela_rterr                    basic/arrays.asm:890
    37 $34C5 fpm_outer                    basic/float-arith.asm:880
-   37 $2E77 inpc_vloop                   basic/input.asm:96
+   37 $2E72 inpc_vloop                   basic/input.asm:96
    36 $798E nx_demote                    basic/program.asm:2302
-   36 $73C1 run_kw                       basic/field.asm:611
-   36 $60FF spr_assign                   basic/graphics.asm:1119
-   36 $5CAE ep_live                      basic/traps.asm:127
-   36 $58DF pu_main                      basic/printusing.asm:126
-   36 $3B35 sub_int_template             basic/subromcall.asm:353
-   36 $2FE0 pop_lhs_and_probe            basic/input.asm:548
-   36 $2C0D mid_own                      basic/str-engine.asm:1756
+   36 $73C1 run_kw                       basic/field.asm:612
+   36 $60E0 spr_assign                   basic/graphics.asm:1113
+   36 $5CA2 ep_live                      basic/traps.asm:127
+   36 $58D3 pu_main                      basic/printusing.asm:126
+   36 $3B00 sub_int_template             basic/subromcall.asm:353
+   36 $2FDB pop_lhs_and_probe            basic/input.asm:548
+   36 $2C08 mid_own                      basic/str-engine.asm:1755
    35 $70A2 gp_nochan                    basic/field.asm:287
    35 $6E80 ret_frame                    basic/files.asm:1299
-   35 $5934 pu_hold_fmt                  basic/printusing.asm:208
+   35 $5928 pu_hold_fmt                  basic/printusing.asm:208
+   35 $33D8 fp_add                       basic/float-arith.asm:681
+   35 $2AFA str_arg_open                 basic/str-engine.asm:1410
+   34 $7782 ex_return                    basic/program.asm:1543
+   34 $5E54 ev_f_point                   basic/graphics.asm:141
+   34 $4ED6 ev_ret_e                     basic/expr.asm:1319
+   34 $4568 try_sub_slot                 basic/subrom-boot.asm:51
+   34 $3E4A ex_sound                     basic/sound.asm:55
+   34 $364F fp_cmp                       basic/float-arith.asm:1212
+   33 $75E4 rp_break                     basic/program.asm:747
+   33 $75B6 rp_run                       basic/program.asm:636
+   33 $74B4 dl_lnok                      basic/program.asm:128
+   33 $6F63 arl_charloop                 basic/files.asm:1744
+   33 $5F9B cp_loop                      basic/graphics.asm:618
+   33 $52D4 ex_time_assign               basic/time.asm:54
+   33 $4B48 cl_cmp                       basic/expr.asm:221
+   33 $3DAF ev_f_arr                     basic/arrays.asm:948
+   33 $3099 flo_emit_fixed               basic/float.asm:166
+   32 $7587 rp_exec                      basic/program.asm:574
+   32 $551B exdf_run                     basic/deffn.asm:79
+   32 $4B76 cl_red_int                   basic/expr.asm:261
+   32 $45B5 repl                         basic/repl.asm:31
+   32 $43DD ex_resume                    basic/interp.asm:1704
+   32 $3B89 zkh_noshift                  basic/keytrap.asm:87
+   32 $3077 flo_is_fixed                 basic/float.asm:140
+   32 $2CBD str_fn_string                basic/str-engine.asm:2011
+   32 $29BF ev_str_arg                   basic/str-engine.asm:1012
+   31 $7E55 fre_go                       basic/main.asm:627
+   31 $5978 pu_to_field                  basic/printusing.asm:264
+   31 $34A6 fp_mul                       basic/float-arith.asm:864
+   31 $2DD4 ers_rhs                      basic/str-engine.asm:2463
+   31 $2D47 efi_dup_a                    basic/str-engine.asm:2159
+   30 $79C4 nx_pki                       basic/program.asm:2338
+   30 $704B brom_run                     basic/basicrom.asm:70
+   30 $6D25 fname_expr                   basic/files.asm:790
+   30 $5A10 pu_do_string                 basic/printusing.asm:402
+   30 $54B0 usr_call                     basic/usr.asm:223
+   30 $4AA1 str_dski                     basic/strvar.asm:613
+   30 $4A2C sid_fnum                     basic/strvar.asm:467
+   30 $4A08 str_inputd                   basic/strvar.asm:423
+   30 $2DB6 ev_rel_str                   basic/str-engine.asm:2440
+   29 $7866 nx_head                      basic/program.asm:2008
+   29 $617C pspr_coords                  basic/graphics.asm:1238
+   29 $5ADF pld_go                       basic/play.asm:120
+   29 $4CD6 ev_f_var                     basic/expr.asm:593
+   29 $4CB9 ev_f_notword                 basic/expr.asm:579
+   29 $48AE str_get_key                  basic/vars.asm:1021
+   29 $46E5 vst_suffix                   basic/vars.asm:211
+   29 $3D10 ee_lp                        basic/arrays.asm:734
+   29 $3A2F fp_trunc                     basic/float-arith.asm:2300
+   29 $2C46 str_fn_radix                 basic/str-engine.asm:1854
+   29 $27A0 ctl_alloc                    basic/str-engine.asm:114
+   28 $7CAF ex_locate                    basic/missing.asm:153
+   28 $7AD4 exr_nan                      basic/program.asm:2605

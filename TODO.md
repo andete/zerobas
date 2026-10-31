@@ -270,6 +270,31 @@ item — do **one item per session** to keep context lean.
       changes its island-1 caller -- its own small slice), PAINT's mode-mask
       arithmetic (behaviour change if a USR pokes SCRMOD mid-statement). The
       scratchpad knives in paintmiss_knives.py anchor on the old PAINT text.
+      ✅ **BATCH 5 (2026-10-31), measured 2026-10-31: low region free 214 -> 320 B, its
+      pad 152 -> 191 B, page-1 pads +27 B -- ~172 B** (fp_mul ~105: state in
+      registers, digit_mul inlined, its carry folded into the next cell -- a Python
+      model matched the true product on 200,000 random 14x14 pairs; flo_is_fixed
+      27: `inc a / cp 16`; ex_print_using 24: the trailing-separator flag is the Z
+      on arrival at pu_endlist; read_into_strscr + input_common 12; inpc's ?Extra
+      / trampoline 9; str_arg_open 3). 📏 TIER 5 reading only (test_fpdiv_fast,
+      against its fixed pre-D-DIVPACK baseline, every value identical): SQR 2.5x
+      faster, EXP / LOG / SIN / COS / TAN / ATN / `^` 1.5x. HELD BACK: inpc_vloop's
+      merged arms (16 B; reshuffles INPUT's stack), ev_ff_arg_in's shared bound in L
+      (11 B; came as a line range), de_win (7-10 B; moves the reduced-build
+      absent-sub-ROM path), FP_LHSVAL = LHS_FAC (4 B; a RAM-map change), the
+      sidr_done fold (6 B). test_fpdiv_fast counts MUL_ADIG / MUL_CARRY / MUL_I /
+      MUL_PP as dead scratch now. Tapes: the two Boulder Dash snapshots moved again
+      (SAME -> NEAR 24, NEAR 30 -> 114): timing, as noted at batch 4.
+
+- [ ] 🔍 **fp_mul WITH AN INVALID BCD DIGIT (> 9): THE NEW LOOP'S LEFTMOST CELL CAN DIFFER
+      FROM THE OLD ONE (D-FPMULBCD, found 2026-10-31 by D-REREAD batch 5).**
+      🎚️ TIER 6 — only reachable through `CVD` / `CVS` of arbitrary bytes or a POKE
+      into a float variable.
+      🤖 **AUTONOMOUS** — measure first: what the VG-8020 prints for a product of a
+      double whose mantissa holds a nibble above 9 (`CVD` of a crafted string). Valid
+      digits give identical results (the batch-5 model; test_fpdiv_fast). The OLD
+      loop could also write one byte BELOW MULPROD in pass 0 with such a digit; the
+      new one cannot.
 
 - [x] 🔴 **`PRINT INPUT$(n)` / `PRINT SPRITE$(n)` WERE TYPE MISMATCH, AND `PRINT CHR$(65)
       AND 1` PRINTED BEFORE IT ERRED: PRINT'S OWN COPY OF THE STRING CLASSIFICATION
@@ -8129,7 +8154,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10620 (T-6FE392)8 (T-529ABE)` from `TODO.md:16302 (T-529ABE)`: a
+      `TODO.md:10645 (T-6FE392)8 (T-529ABE)` from `TODO.md:16327 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11089,7 +11114,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16302 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16327 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

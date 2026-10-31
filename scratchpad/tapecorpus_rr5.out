@@ -1,0 +1,43 @@
+[ 1/42] NEAR            54  ref S2 L140  zb S2 L140  A View to a Kill
+[ 2/42] SAME             0  ref S2 L64764  zb S2 L64764  Alien 8
+[ 3/42] NEAR            67  ref S2 L10  zb S2 L10  Arkanoid
+[ 4/42] RUNS?        12544  ref S2 L50  zb S2 L14592  BMX Simulator
+[ 5/42] RUNS?          791  ref S2 L65535  zb S2 L65535  Ballblazer
+[ 6/42] RUNS?         2840  ref S1 L10  zb S1 L10  Blagger
+[ 7/42] RUNS?         3529  ref S1 L132  zb S1 L132  Blocker
+[ 8/42] RUNS?         1030  ref S2 L43234  zb S2 L43234  Blow Up
+[ 9/42] NEAR            24  ref S2 L3341  zb S2 L3341  Boulder Dash
+[10/42] NEAR           114  ref S2 L3341  zb S2 L3341  Boulder Dash II
+[11/42] RUNS?          349  ref S2 L65535  zb S2 L65535  Buzz Off
+[12/42] RUNS?         6290  ref S2 L65535  zb S2 L65535  Chuckie Egg
+[13/42] SAME             0  ref S2 L70  zb S2 L70  City Connection
+[14/42] NEAR            27  ref S2 L10  zb S2 L10  Colony
+[15/42] RUNS?          267  ref S2 L50  zb S2 L50  Demonia
+[16/42] NEAR            37  ref S2 L10  zb S2 L10  Disc Warrior
+[17/42] SAME             0  ref S2 L50  zb S2 L50  Elidon
+[18/42] RUNS?          187  ref S2 L65535  zb S2 L65535  Elite
+[19/42] NEAR             3  ref S2 L6  zb S2 L6  Exterminator
+[20/42] SAME             0  ref S2 L50  zb S2 L50  Finders Keepers
+[21/42] SAME             0  ref S2 L40  zb S2 L40  Formula 1 Simulator
+[22/42] RUNS?          351  ref S2 L310  zb S2 L310  Fruit Panic
+[23/42] SAME             0  ref S2 L20  zb S2 L20  Game Over
+[24/42] NEAR            53  ref S1 L10  zb S1 L10  Grog's Revenge
+[25/42] NEAR           113  ref S2 L90  zb S2 L90  Harry Fox
+[26/42] NEAR           107  ref S2 L140  zb S2 L140  Head over Heels
+[27/42] NEAR            41  ref S2 L65535  zb S2 L65535  Hustler
+[28/42] RUNS?          384  ref S2 L150  zb S2 L150  Jump Jet
+[29/42] SAME             0  ref S2 L20  zb S2 L20  Knight Tyme
+[30/42] RUNS?         3689  ref S1 L210  zb S1 L210  Lazer Bykes
+[31/42] RUNS?          677  ref S2 L180  zb S2 L180  Lazy Jones
+[32/42] RUNS?         6762  ref S2 L8  zb S2 L8  Manic Miner
+[33/42] NEAR             1  ref S2 L65535  zb S2 L65535  Mutant Monty
+[34/42] RUNS?          224  ref S2 L22781  zb S2 L22781  Navy Moves
+[35/42] RUNS?         1074  ref S2 L70  zb S2 L70  Ninja 2
+[36/42] SAME             0  ref S2 L80  zb S2 L80  Oil's Well
+[37/42] RUNS?          941  ref S1 L3080  zb S1 L3080  Punch & Judy
+[38/42] SAME             0  ref S1 L65535  zb S1 L65535  River Raid
+[39/42] RUNS?         2468  ref S2 L65535  zb S2 L65535  Shark Hunter
+[40/42] RUNS?          453  ref S1 L2  zb S1 L2  Sorcery
+[41/42] RUNS?         3302  ref S1 L2190  zb S1 L2250  Space
+[42/42] RUNS?         3996  ref S2 L65535  zb S2 L65535  Space Shuttle
+TALLY {"NEAR": 12, "RUNS?": 21, "SAME": 9}

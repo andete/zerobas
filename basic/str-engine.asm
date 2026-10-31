@@ -1409,7 +1409,7 @@ str_arg_empty:
 ; already costs a snapshot and a slice, well over 1500 T).
 str_arg_open:
                 call    stk_room            ; D-DEEPEXPR R3: room for one more level?
-                jr      nc,sao_empty        ; no -> ERR 7 deferred, decline as malformed
+                ret     nc                  ; no -> ERR 7 deferred, CF clear: malformed
                 call    inc_skip_paren     ; D-FNSPACE: past the name AND any
                                             ; spaces before '(' — both references
                                             ; accept `LEFT$ ("AB",1)`
@@ -1417,9 +1417,9 @@ str_arg_open:
                 inc     hl
                 ld      a,(hl)              ; empty first arg -> deferred syntax error
                 cp      ')'
-                jr      z,sao_empty
+                ret     z                   ; Z from an equal cp => CF clear: malformed
                 cp      ','
-                jr      z,sao_empty
+                ret     z                   ; (same: CF clear)
                 call    str_arg_snap        ; STRPTR -> an OWNED temp; HL = cursor
                 call    skip_comma          ; D-FNSPACE: Z iff ',' — and it
                                             ; SKIPS SPACES first, which a bare

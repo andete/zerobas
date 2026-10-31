@@ -87,7 +87,7 @@ flt_fmt:
                 ; pass (~82 cycles): `PRINT VAL("1E3")` paid 9 extra passes and its
                 ; whole-row time went 1.8x -> 2.2x the VG-8020's. ~40 cycles a pass
                 ; here, so 14 passes cost about what the old 5 did, and 7 B less.
-                ; DE is no longer written; flo_is_fixed sets it before any read.
+                ; DE is no longer written; flo_emit_fixed / flo_emit_e write it before any read.
                 ld      hl,ARGA+FPNUM_DIG+14
                 ld      c,15
 flo_strip:
@@ -136,26 +136,14 @@ flo_zero:
                                             ; funding carve, -7 B)
 
 ; --- flo_is_fixed: CF set iff -1 <= dec_exp <= 14. Preserves HL. -----------
-; Clobbers A, DE.
+; Clobbers A. 💰 D-REREAD (2026-10-31): dec_exp is -64..63 here (widen_fac_to,
+; just before, makes it `(lead & $7F) - 64`), so its low byte is all of it:
+; +1 maps -1..14 onto 0..15 and every other value onto 16..64 or $C1..$FF --
+; one unsigned compare instead of two cmp16_bits calls.
 flo_is_fixed:
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      de,14
-                call    cmp16_bits
-                pop     hl
-                cp      4
-                jr      z,flo_notfixed
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      de,$FFFF            ; -1
-                call    cmp16_bits
-                pop     hl
-                cp      1
-                jr      z,flo_notfixed
-                scf
-                ret
-flo_notfixed:
-                or      a
+                ld      a,(ARGA+FPNUM_DEXP)
+                inc     a
+                cp      16                  ; CF iff dec_exp+1 in 0..15
                 ret
 
 ; --- flo_emit_fixed: write the FIXED-form digits at (HL), HL advanced -----

@@ -164,13 +164,8 @@ inpc_after:
                 ; end of the variable list: any leftover input -> ?extra ignored.
                 push    hl                  ; guard textcur across inpc_more_input
                 call    inpc_more_input     ; ZF=1 iff LINEBUF still has an unread field
-                jr      z,inpc_extra
-                pop     hl
-                pop     bc                  ; drop varstart
-                jp      exec_stmt
-inpc_extra:
-                ld      hl,msg_extra
-                call    print_msg           ; "?extra ignored" — warn, keep what matched
+                ld      hl,msg_extra        ; (ld touches no flag)
+                call    z,print_msg         ; "?extra ignored" — warn, keep what matched
                                             ; (D-MSGENC: print_msg emits the CRLF)
                 pop     hl                  ; textcur
                 pop     bc                  ; drop varstart
@@ -186,12 +181,10 @@ inpc_morevars:
                 ; (basic/files.asm, inpc_cont / inpc_redo_p1): this is the low
                 ; region, which had 1 B.
                 jp      inpc_cont
-inpc_redo0:
-                jp      inpc_redo_p1        ; ?Redo, then the WHOLE statement again
 inpc_redo3:
                 pop     hl                  ; drop textcur
                 pop     bc                  ; drop key
-                jr      inpc_redo0
+                jp      inpc_redo_p1        ; ?Redo, then the WHOLE statement again
 ; D-XREG: an ALIAS across the low <-> page-1 boundary. Byte-identical to
 ; ex_let_err and POSITION-INDEPENDENT (tools/dupspan_indep.py), and the
 ; REGION question -- is this label reached from a tenant whose mapping

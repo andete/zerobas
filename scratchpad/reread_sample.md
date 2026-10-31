@@ -104,3 +104,15 @@ Applied ~112 B: domain_convert_core (44), mul16x16_32 + cmul_int (46), fre_abort
 only partly verbatim: ex_paint, flo_emit_fixed, evmc_csng/cdbl, try_text_slot).
 Yield ~11 B a routine applied, ~20 found. Two old-vs-new unit tests moved to
 comparing DE only: they compared registers the contracts call clobbered.
+
+## Batch 5 (2026-10-31)
+
+Applied ~172 B: fp_mul (~105: state in registers, digit_mul inlined, its carry
+folded into the next cell; a Python model matched the true product on 200,000
+random 14x14-digit pairs), flo_is_fixed (27), ex_print_using (24), input_common +
+read_into_strscr (12), inpc's ?Extra / trampoline (9), str_arg_open (3). Low region
+free 214 -> 320 B, its pad 152 -> 191, page-1 pads +27. test_fpdiv_fast lists the
+MUL_* cells as dead scratch; every value identical, SQR 2.5x and the other
+transcendentals 1.5x faster as a side effect. Two Boulder Dash tape snapshots moved
+(timing). Filed: fp_mul with a BCD nibble above 9 (D-FPMULBCD), reachable only
+through CVD/CVS of crafted bytes. Running total ~750 B across five batches.

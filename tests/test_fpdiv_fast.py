@@ -172,6 +172,12 @@ def dead_set(sym):
     # D-REREAD batch 2 (2026-10-31: the digits ride the stack) -- the OLD image's
     # int widening fills it, the new one leaves it as it was.
     d |= set(range(sym["WIDIG"], sym["WIDIG"] + 5))
+    # fp_mul's old scratch cells: D-REREAD batch 5 (2026-10-31) keeps its state in
+    # registers (digit_mul inlined), so the new image no longer writes them; the
+    # old one's SQR / EXP / LOG / SIN do. Every value stays identical.
+    for k in ("MUL_ADIG", "MUL_CARRY", "MUL_I"):
+        d.add(sym[k])
+    d |= set(range(sym["MUL_PP"], sym["MUL_PP"] + 2))
     return d
 
 
