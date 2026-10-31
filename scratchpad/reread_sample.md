@@ -95,3 +95,12 @@ SOUND's single latch, RUN's DATA-cursor stores, CVI's hook arithmetic,
 ems_close's pre-raise pops. One test moved: test_intfast's register compare is
 A / F / DE (BC and HL are documented clobbers; the new code left different dead
 values there).
+
+## Batch 4 (2026-10-31)
+
+Applied ~112 B: domain_convert_core (44), mul16x16_32 + cmul_int (46), fre_abort_low
+(3), ex_mid_stmt (5) low region; field_item (5), ev_usr (9) page 1. Low region free
+158 -> 214 B, pad 53 -> 98. ~90 B more found but not yet applied (proposals given
+only partly verbatim: ex_paint, flo_emit_fixed, evmc_csng/cdbl, try_text_slot).
+Yield ~11 B a routine applied, ~20 found. Two old-vs-new unit tests moved to
+comparing DE only: they compared registers the contracts call clobbered.

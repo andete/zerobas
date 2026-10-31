@@ -429,23 +429,24 @@ field_item:
                 ; Returns D=0, E=width and PRESERVES HL (get_int16_checked
                 ; push/pops it), which is what the comment on the `pop de` below
                 ; always claimed and nothing enforced.
-                call    eval_byte_checked   ; DE = field width; HL advanced
+                call    eval_byte_checked   ; DE = field width; HL advanced PAST any
+                                            ; trailing spaces (ev_logic returns only
+                                            ; after an ev_sp), so no skip_spaces here
                 push    de                  ; save width across the "AS" + name parse
-                call    skip_spaces
-                call    upcase
-                cp      'A'
+                ld      a,(hl)
+                and     $DF                 ; x & $DF = 'A' iff x is 'A' or 'a': exact
+                cp      'A'                 ; for an equality test, no upcase needed
                 jp      nz,exf_syn
                 inc     hl
                 ld      a,(hl)
-                call    upcase
+                and     $DF                 ; 'S' or 's'
                 cp      'S'
                 jp      nz,exf_syn
                 rst    $10     
                 call    is_letter           ; a string variable name?
                 jp      nc,exf_syn
-                call    var_str_type        ; A=1 if `$` suffix
-                or      a
-                jp      z,type_mismatch_error
+                call    var_str_type        ; A=1 + CF if a string, A=0 + NC if not
+                jp      nc,type_mismatch_error
                                             ; D-FLDWIDTH spec §4.3: a NUMERIC
                                             ; TARGET is ERR 13, not ERR 2 --
                                             ; measured, `FIELD#1,10 AS A` is

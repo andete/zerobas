@@ -245,6 +245,22 @@ item — do **one item per session** to keep context lean.
       ems_close's pops before raise_error (a filed item). tests/test_intfast.py
       compares A / F / DE now (BC and HL are combine_*'s documented clobbers);
       its register knife moved from C to E.
+      ✅ **BATCH 4 (2026-10-31), measured 2026-10-31: low region free 158 -> 214 B and
+      its pad 53 -> 98 B, page-1 pads +11 B -- ~112 B** (domain_convert_core 44:
+      dcc_bound5 folded in, one tail; mul16x16_32 40 + its caller 6: the product in
+      DE:HL, ~3x faster a bit, MULCAND / MULTPLR / MUL32 no longer written;
+      fre_abort_low 3; ex_mid_stmt 5; field_item 5; ev_usr 9). NOT YET APPLIED (the
+      reviews gave them only partly verbatim; next batch): ex_paint (~19 B),
+      flo_emit_fixed (~55 B), evmc_csng / evmc_cdbl (4 B), try_text_slot (12 B,
+      touches its island-1 caller). HELD BACK: fre_abort_low's reuse of
+      psg_silence's undocumented A = 0, ex_mid_stmt's STRPTR re-read, a table for
+      ev_ff_mathconv (ABS 17 T -> ~100 T), PAINT's mode-mask arithmetic and
+      domain_convert_core's zero-test drop (behaviour changes), D-POPRAISE Q1's
+      pops (Joost). tests/test_intfast.py and test_fpdiv_fast.py compare DE only
+      now -- every value identical, the dead A / F / BC / HL not; their flag
+      knife moved to register D. Tapes: Boulder Dash NEAR -> SAME, Boulder Dash
+      II NEAR 24 -> 120 cells -- a snapshot taken at a fixed time moves with
+      BASIC's speed.
 
 - [x] 🔴 **`PRINT INPUT$(n)` / `PRINT SPRITE$(n)` WERE TYPE MISMATCH, AND `PRINT CHR$(65)
       AND 1` PRINTED BEFORE IT ERRED: PRINT'S OWN COPY OF THE STRING CLASSIFICATION
@@ -8104,7 +8120,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10595 (T-6FE392)8 (T-529ABE)` from `TODO.md:16277 (T-529ABE)`: a
+      `TODO.md:10611 (T-6FE392)8 (T-529ABE)` from `TODO.md:16293 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11064,7 +11080,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16277 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16293 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

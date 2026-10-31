@@ -181,8 +181,9 @@ fre_abort_low:
                 ; entry and every mid-line resume passes through -- so it is valid
                 ; here and, unlike a carried flag, cannot be stale.
                 ; This test stays even though print_in_lineno now gates on DIRECTF
-                ; too: it picks print_string vs print_string_stopcr, so it must
-                ; branch BEFORE it prints, not after.
+                ; too. It used to pick print_string vs print_string_stopcr, so it had
+                ; to branch BEFORE printing; since D-MSGENC (below) both arms print
+                ; the same body, so it follows the print (D-REREAD batch 4).
                 ; D-MSGENC (docs/spec-basic-msgenc-carve.md §4.2/§4.3): the CRLF is
                 ; no longer baked into the message, so print_msg IS "body + CRLF" and
                 ; print_msg_stopcr IS the body alone -- the same two-way split, but
@@ -196,17 +197,17 @@ fre_abort_low:
                 ; record_errline writes ERRLIN = 65535 for every other direct-mode
                 ; error, so that value is the "direct: no line" test the DIRECTF read
                 ; was. The re-raise (`ON ERROR GOTO 0`) keeps the original ERRLIN and
-                ; printed that line already (`reraise` row). HL is the message, so
-                ; ERRLIN rides in DE.
-                ld      de,(ERRLIN)
-                ld      a,d
-                and     e
+                ; printed that line already (`reraise` row). The body is printed
+                ; first, so ERRLIN is read into HL afterwards.
+                call    print_msg_stopcr    ; the body alone, on both arms (D-REREAD
+                                            ; batch 4: the test can follow the print --
+                                            ; D-MSGENC took the CRLF out of the body)
+                ld      hl,(ERRLIN)
+                ld      a,h
+                and     l
                 inc     a                   ; Z iff ERRLIN = 65535
-                jp      z,print_msg         ; no line: message + the emitted CRLF
-                push    de
-                call    print_msg_stopcr    ; the body alone
-                pop     hl
-                jp      print_in_hl         ; " in <ERRLIN>" + CRLF (program.asm)
+                jp      nz,print_in_hl      ; " in <ERRLIN>" + CRLF (program.asm)
+                jp      print_crlf          ; no line: the CRLF print_msg would add
 
 ; --- e21_no_resume: ERR 21 "no resume" -- the run fell off the END of the ----
 ; program while still owing a RESUME. docs/spec-basic-err21-no-resume.md §3.2.

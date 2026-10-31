@@ -1267,33 +1267,6 @@ fcmp_b_zero:
 ; Converters: fac_to_int_strict / fac_to_int_addr (spec §10.3)
 ; =============================================================================
 
-; --- dcc_bound5: DE = a 5-entry unpacked-digit bound table (tkf_ref32767/ --
-; 32768/65535, basic/float.asm) -> CF set iff CVT's 5 leading digits are <=
-; bound, AND DE := their value (dig_to_word, unconditionally — callers that
-; got CF clear ignore it). Reuses dig15_cmp (this file, B=5) rather than
-; basic/float.asm's tkf_cmp5, which hardcodes `ld hl,TKDIG` internally and
-; silently ignores any HL the caller sets — NOT what CVT-based callers need
-; (caught in review: calling tkf_cmp5 with CVT+FPNUM_DIG in HL was actually
-; comparing stale TKDIG data). Shared by every dexp==5 bound check in
-; domain_convert_core below. Clobbers A, B, C, D, E, H, L.
-dcc_bound5:
-                ld      hl,CVT+FPNUM_DIG
-                ld      b,5
-                call    dig15_cmp           ; A=1(<)/2(=)/4(>); clobbers DE (bound ptr)
-                cp      4
-                jr      z,dcc_bound5_over
-                scf                         ; <= bound
-                jr      dcc_bound5_go
-dcc_bound5_over:
-                or      a                   ; > bound
-dcc_bound5_go:
-                push    af
-                ld      hl,CVT+FPNUM_DIG
-                ld      b,5
-                call    dig_to_word
-                pop     af
-                ret
-
 ; --- domain_convert_core: shared unpack+classify body for BOTH converters --
 ; (CVT_MODE, own scratch: 0 = the STRICT int16 domain for \/MOD/AND/OR/XOR/
 ; NOT, -32769<x<32768, no wrap; 1 = the ADDRESS domain for POKE/VPOKE/HEX$
@@ -1302,90 +1275,68 @@ dcc_bound5_go:
 ; decides whether that means FPERR or plain silence). Does NOT check
 ; FACTYP==2 (every caller gates that itself). Clobbers A, B, C, D, E, H, L.
 domain_convert_core:
+                ; 💰 D-REREAD batch 4 (2026-10-31, -44 B low region): dcc_bound5
+                ; folded in, one dig_to_word tail for every dexp 1..5, the bound
+                ; verdict straight from dig15_cmp's `cp 4` CF, the wrap test as
+                ; D's bit 7, and every dcc_zero entry already CF-clear.
                 ld      hl,CVT
                 call    widen_fac_to
                 ld      hl,CVT+FPNUM_DIG
-                call    dig15_iszero
+                call    dig15_iszero        ; Z iff 0; HL kept; CF = 0 (its `or a`)
                 jr      z,dcc_zero
-                ld      hl,(CVT+FPNUM_DEXP)
-                ld      a,h
-                or      a
-                jp      m,dcc_zero          ; dexp<0 -> |x|<1 -> 0, in domain (dexp
-                                            ; fits a signed byte, so H is pure sign
-                                            ; extension: bit7 set iff dexp<0)
-                ld      a,l
-                or      a
-                jr      z,dcc_zero          ; dexp==0 -> also |x|<1 -> 0
-                ; dexp is confirmed positive here (H=0), so L alone (1..63) is
-                ; the whole value — no need to reload (CVT+FPNUM_DEXP) or call
-                ; the general cmp16_bits just to compare it against 5.
-                cp      6
-                jr      nc,dcc_overflow     ; dexp>=6 -> dexp>5
+                ld      a,(CVT+FPNUM_DEXP)  ; dexp -64..63: the low byte is all of it
+                dec     a                   ; dexp<=0 -> bit 7 set (dec keeps CF = 0)
+                jp      m,dcc_zero          ; |x|<1 -> 0, in domain
                 cp      5
-                jr      z,dcc_dexp5
-                ld      b,a                 ; B = dexp (1..4)
-                ld      hl,CVT+FPNUM_DIG
-                call    dig_to_word
-                jr      dcc_applysign
-dcc_dexp5:
-                ; pick the symmetric (no-wrap) bound table: 32768 if negative
-                ; (both modes share this), else 32767 if strict, else fall
-                ; into the address-domain positive/wrap path below.
-                ld      de,tkf_ref32768
+                jr      nc,dcc_overflow     ; dexp>=6
+                inc     a
+                ld      b,a                 ; B = dexp 1..5 (dig_to_word's count)
+                cp      5
+                jr      nz,dcc_word         ; 1..4: <=9999, in every domain
+                ld      de,tkf_ref32768     ; negative (both modes)
                 ld      a,(CVT+FPNUM_SIGN)
                 or      a
-                jr      nz,dcc_bound_pick   ; negative -> tkf_ref32768
-                ld      de,tkf_ref32767
+                jr      nz,dcc_bound
+                ld      de,tkf_ref32767     ; strict, positive
                 ld      a,(CVT_MODE)
                 or      a
-                jr      z,dcc_bound_pick    ; strict, positive -> tkf_ref32767
-                ; address domain, positive: bound 65535, plus the wrap
-                ld      de,tkf_ref65535
-                call    dcc_bound5          ; DE := the truncated value (dig_to_word)
+                jr      z,dcc_bound
+                ld      de,tkf_ref65535     ; address, positive (wraps below)
+dcc_bound:
+                push    hl                  ; dig15_cmp clobbers HL / B
+                call    dig15_cmp           ; A = 1/2/4 vs the bound
+                pop     hl                  ; HL = CVT+FPNUM_DIG
+                ld      b,5
+                cp      4                   ; CF iff <= bound
                 jr      nc,dcc_overflow
-                ; wrap iff DE>32767 -- DE already holds the actual VALUE (not
-                ; just digits), so a plain 16-bit compare against the literal
-                ; bound replaces the second digit-level dig15_cmp entirely
-                ; (own simplification found in review: no need to re-compare
-                ; digits when the value itself is sitting right there).
-                ld      hl,32767
-                or      a
-                sbc     hl,de
-                jr      nc,dcc_ret_ok       ; 32767>=DE -> no wrap, DE is already right
-                ; wrap: bump DE by 1 iff any fractional digit (dig[5..13]) is
-                ; nonzero (spec §10.3: "any fraction rounds UP in the high
-                ; half"; DE-65536 == DE unchanged, DE-65535 == DE+1, both mod
-                ; 65536 — so the whole wrap collapses to this one check).
+dcc_word:
+                call    dig_to_word         ; DE = value
+                ld      a,(CVT+FPNUM_SIGN)
+                or      a                   ; CF = 0
+                jr      nz,dcc_neg
+                ld      a,d                 ; wrap iff DE>32767: only the address
+                or      a                   ; domain's 65535 bound lets bit 15 through
+                ret     p
                 ld      hl,CVT+FPNUM_DIG+5
-                ld      b,9
+                ld      b,9                 ; any of dig[5..13] nonzero -> DE+1
 dcc_frac_lp:
                 ld      a,(hl)
-                or      a
+                or      a                   ; CF = 0 on both exits
                 jr      nz,dcc_frac_yes
                 inc     hl
                 djnz    dcc_frac_lp
-                jr      dcc_ret_ok
+                ret
 dcc_frac_yes:
                 inc     de
-                jr      dcc_ret_ok
-dcc_bound_pick:
-                call    dcc_bound5
-                jr      nc,dcc_overflow
-dcc_applysign:
-                ld      a,(CVT+FPNUM_SIGN)
-                or      a
-                jr      z,dcc_ret_ok
-                call    neg_de              ; DE = -DE (float.asm)
-dcc_ret_ok:
-                or      a                  ; CF clear
                 ret
-dcc_zero:
-                ld      de,0
-                or      a
+dcc_neg:
+                call    neg_de              ; DE = -DE
+                or      a                   ; CF clear
                 ret
 dcc_overflow:
-                ld      de,0
                 scf
+dcc_zero:                                   ; every entry arrives with CF = 0
+                ld      de,0
                 ret
 
 ; --- fac_to_int_addr (statement/function int arguments: POKE, VPOKE, HEX$) /
@@ -1899,12 +1850,11 @@ cmul_int:                                   ; D-INTFAST: HL = the lhs, DE = the 
                 ld      c,a                 ; C = the product's sign
                 ex      de,hl               ; DE = |rhs|
                 pop     hl                  ; HL = |lhs|
-                call    mul16x16_32         ; -> MUL32 (32-bit unsigned product)
-                ld      hl,(MUL32+2)
-                ld      a,h
-                or      l
+                call    mul16x16_32         ; DE:HL = the 32-bit unsigned product
+                ld      a,d
+                or      e
                 jr      nz,cmul_overflow    ; high word nonzero -> definitely > 32768
-                ld      de,(MUL32)          ; DE = P
+                ex      de,hl               ; DE = P
                 ld      hl,32768
                 ld      a,c
                 cp      $80                 ; CF = a positive product

@@ -236,15 +236,16 @@ usr_call:
                 ; VG-8020 measures -- the argument in DAC with its type in VALTYP,
                 ; HL = DAC, A = VALTYP. The HL-argument convention this replaces
                 ; was zerobas's own; machine code written for MSX reads DAC.
-                ld      a,(FACTYP)
-                cp      2
-                jr      nz,uc_go            ; a float is ALREADY in DAC: FAC IS DAC
-                                            ; (sysvars.inc); A = FACTYP = 4 or 8
+    IF VALTYP_PUB != FACTYP
+                db      VALTYP_PUB_IS_NOT_FACTYP__USR_CALL_MUST_STORE_IT
+    ENDIF
+                call    factyp_is2          ; A = FACTYP, Z iff an int (F as `cp 2`)
+                jr      nz,uc_go            ; a float/string is ALREADY in DAC: FAC IS
+                                            ; DAC (sysvars.inc); A = FACTYP = 3, 4 or 8
                 ld      hl,0
                 ld      (DAC),hl            ; DAC+0..1 read 00 00 on the reference
                 ld      (DAC+2),de          ; the integer argument
-uc_go:
-                ld      (VALTYP_PUB),a
+uc_go:                                      ; VALTYP_PUB IS FACTYP ($F663): A is published
                 ld      hl,DAC              ; HL = DAC on entry, as the reference
                 ld      de,usr_ret          ; continuation after the routine RETs
                 push    de
@@ -257,17 +258,14 @@ usr_ret:
                 cp      3                   ; D-USRSTR: a STRING result in a numeric
                 jr      z,ur_str            ; place is 13, as on the VG-8020
                 cp      4
-                jr      z,ur_flt
-                cp      8
-                jr      z,ur_flt
+                jp      z,fac_typ_int16     ; a float result is already in FAC (= DAC):
+                cp      8                   ; FACTYP := A, DE = the rounded int (D-TAILIX2)
+                jp      z,fac_typ_int16
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
 ur_str:
                 call    set_factyp2         ; a number-shaped 0 behind the error
                 jp      ev_f_tmm
-ur_flt:
-                jp      fac_typ_int16       ; the float result is already in FAC (= DAC):
-                                            ; FACTYP := A, DE = the rounded int (D-TAILIX2)
 usr_undef:
                 pop     ix                  ; restore the cursor
                 jp      errmark_ret0        ; expression-error marker, DE = 0

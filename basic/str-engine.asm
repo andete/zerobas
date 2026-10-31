@@ -1647,10 +1647,9 @@ ex_mid_stmt:                                ; (traps T2) entered with HL already
                                             ; SKIPS SPACES first, which a bare
                                             ; `ld a,(hl)` did not. BYTE-NEUTRAL:
                                             ; 3 B for 3 B.
-                jr      z,ems_have_m
-                ld      de,$00FF            ; m omitted -> a cap larger than any avail (<=255)
-                jr      ems_close
-ems_have_m:
+                ld      e,$FF               ; m omitted -> cap $00FF (D = n's high
+                                            ; byte = 0; any D>0 also caps at avail)
+                jr      nz,ems_close        ; (ld keeps skip_comma's Z)
                 inc     hl
                 call    eval_byte_arg       ; DE = m, 0..255 (D-MISS-2; or aborts).
                                             ; Replaces a hand-rolled `bit 7,d` that
@@ -1733,8 +1732,8 @@ ems_close:
                 ld      a,9
                 call    sh_go               ; op = 9 (MID_STORE); n is blk+10
                 pop     bc                  ; drop n                 [cursor]
-                cp      3
-                jp      nz,pop_exec         ; HL = continue cursor; else the range
+                jp      z,pop_exec          ; ERR 0: HL = continue cursor; op 9 writes
+                                            ; only 0 / 3 (sh_go: Z iff 0), so the range
                                             ; error (n<1/n>255/n>La) falls into
 ems_range:
                 ; The only range error the tenant still reports is n > LEN(A$)

@@ -281,11 +281,12 @@ class Pair:
             s = m.sym
             st = {"FAC": bytes(m.peek(s["FAC"], 8)), "FACTYP": m.peek(s["FACTYP"])[0],
                   "FPERR": m.peek(s["FPERR"])[0],
-                  # A, F and DE: BC and HL are clobbers in combine_*'s contract
-                  # ("Clobbers A, B, C, D, E, H, L"; cl_after reloads B and C and
-                  # pops HL). D-REREAD batch 3 (2026-10-31) left different but
-                  # dead values there: cmul_int's sign in C, fp_add's x-x path.
-                  "regs": (cpu.a, cpu.f, cpu.de)}
+                  # DE only: A, F, BC and HL are clobbers in combine_*'s contract
+                  # ("Clobbers A, B, C, D, E, H, L"; cl_after's ev_sp reloads A
+                  # and F, it sets B and C, and pops HL). D-REREAD batches 3-4
+                  # (2026-10-31) left different but dead values there: cmul_int's
+                  # sign in C, fp_add's x-x path, domain_convert_core's exits.
+                  "regs": (cpu.de,)}
             out.append((st, _T["t"]))
         (so, to), (sn, tn) = out
         diff = self._ram_diff()
@@ -641,7 +642,7 @@ def run():
     s0 = pair.s
     knives = [("register E", lambda m: setattr(m.cpu, "e", m.cpu.e ^ 1)),  # was C:
               # BC left the compared set (D-REREAD batch 3) -- DE is the result
-              ("flag byte", lambda m: setattr(m.cpu, "f", m.cpu.f ^ 0x10)),
+              ("register D", lambda m: setattr(m.cpu, "d", m.cpu.d ^ 1)),  # was the flag byte: F left the compared set
               ("FAC+7", lambda m: m.poke(s0["FAC"] + 7, m.peek(s0["FAC"] + 7)[0] ^ 1)),
               ("FACTYP", lambda m: m.poke(s0["FACTYP"], 2)),
               ("CVT_MODE", lambda m: m.poke(s0["CVT_MODE"], m.peek(s0["CVT_MODE"])[0] ^ 1)),

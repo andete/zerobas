@@ -250,7 +250,12 @@ class Pair:
             _T["on"] = False
             st = self._state(m, cpu)
             if regs:
-                st["regs"] = (cpu.a, cpu.f, cpu.bc, cpu.de, cpu.hl)
+                # DE only: fp_div's contract is "Clobbers A, B, C, D, E, H, L"
+                # and DE is the one register a caller reads (the int result of a
+                # following flt_to_int16). D-REREAD batch 4 (2026-10-31) rewrote
+                # domain_convert_core's exits: identical values, different dead
+                # A / F / BC / HL.
+                st["regs"] = (cpu.de,)
             out.append((st, _T["t"]))
         (so, to), (sn, tn) = out
         diff = self._ram_diff()

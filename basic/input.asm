@@ -586,40 +586,34 @@ plap_int:
 ; self-contained (entered only by label), to refill bytes the stack parameter
 ; block freed in front of the $3297 pin -- tools/pin_plan.py's exact fill.
 ; --- mul16x16_32: HL(multiplicand, unsigned) * DE(multiplier, unsigned) ----
-; -> 32-bit unsigned product in (MUL32) [low16][high16], LE. Classic shift-
-; double-and-add over 16 iterations, MSB-first on the multiplier; own-design
-; extension of expr.asm's mul16 (which only keeps the low 16 bits) to the
-; full width, needed to detect MSX-signed 16-bit multiply overflow (spec
-; §10.2 int-overflow promotion) exactly rather than by wraparound. All
-; working state in RAM except the loop counter (register pressure: operand +
-; operand + 32-bit accumulator exceeds the comfortable register budget).
-; Clobbers A, B, HL, DE.
+; -> 32-bit unsigned product in DE:HL (high:low). Classic shift-double-and-add
+; over 16 iterations, MSB-first on the multiplier; own-design extension of
+; expr.asm's mul16 (which only keeps the low 16 bits) to the full width,
+; needed to detect MSX-signed 16-bit multiply overflow (spec §10.2 int-
+; overflow promotion) exactly rather than by wraparound. (Until D-REREAD
+; batch 4 its working state lived in RAM -- MULCAND / MULTPLR / MUL32 -- for
+; "register pressure"; the accumulator fits DE:HL once the multiplier is
+; kept in DE's top as the product shifts in.) Keeps BC; A = 0 on return.
 mul16x16_32:
-                ld      (MULCAND),hl
-                ld      (MULTPLR),de
-                ld      hl,MUL32
-                ld      b,4
-                call    zero_fill
-                ld      b,16
+                ; 💰 D-REREAD batch 4 (2026-10-31, -40 B; ~3x faster a bit): the
+                ; 32-bit accumulator lives in DE:HL, the multiplier shifting out of
+                ; DE's top as the product shifts in (MULCAND / MULTPLR / MUL32 are
+                ; no longer written). out: DE:HL = the product; BC kept; A = 0.
+                push    bc                  ; C = the caller's sign: kept
+                ld      b,h
+                ld      c,l                 ; BC = multiplicand
+                ld      hl,0                ; DE:HL = accumulator; DE = multiplier
+                ld      a,16
 m32_lp:
-                ld      hl,(MUL32)
                 add     hl,hl
-                ld      (MUL32),hl
-                ld      hl,(MUL32+2)
-                adc     hl,hl
-                ld      (MUL32+2),hl
-                ld      hl,(MULTPLR)
-                add     hl,hl
-                ld      (MULTPLR),hl
+                rl      e
+                rl      d                   ; CF = the next multiplier bit
                 jr      nc,m32_skip
-                ld      hl,(MUL32)
-                ld      de,(MULCAND)
-                add     hl,de
-                ld      (MUL32),hl
+                add     hl,bc
                 jr      nc,m32_skip
-                ld      hl,(MUL32+2)
-                inc     hl
-                ld      (MUL32+2),hl
+                inc     de                  ; carry into the high word
 m32_skip:
-                djnz    m32_lp
+                dec     a
+                jr      nz,m32_lp
+                pop     bc
                 ret
