@@ -77,7 +77,8 @@ preflight-check latch-check diskdep-check switch-build-check
 patch-freshness-check refcache-check knife-guard-check knife-rom-guard-check
 selftest-check
 deffn-selftest
-probe-sides-selftest""".split()
+probe-sides-selftest
+z80flow-selftest""".split()
 
 # 🔴 D-STATICEMU (2026-10-08): kwsweep / kwtime / kwram BOOT THE REFERENCES AND
 # OURS FOR EVERY ROW, and they sat in STATIC -- ~26 of its ~27 minutes, and

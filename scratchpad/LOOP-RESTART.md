@@ -4,7 +4,40 @@ A `ScheduleWakeup` loop is SESSION-LOCAL and dies with the session. This file is
 the durable half: paste the command in `## The command` below into a fresh
 session and the loop resumes exactly where it stopped.
 
-## 🟢 STATE AS OF 2026-10-28 — THE CURRENT ONE (the 2026-10-23 section below and every RULINGS table it points to still hold; the 2026-10-27 rulings rows are in the 2026-10-09 rulings table, look for "(2026-10-27")
+## 🟢 STATE AS OF 2026-10-31 — THE CURRENT ONE (the 2026-10-28 section below and every RULINGS table it points to still hold)
+
+- **z80flow LANDED (Joost, 383475d9 / be177f0f) — THE LOOP NOW USES IT (wired in 2026-10-31):**
+  `tools/z80flow` infers every routine's register contract from the build (reads on entry,
+  changes, which changes its callers read after it); hand facts are `; z80flow:` markers in the
+  asm. README: [tools/z80flow/README.md](../tools/z80flow/README.md); workflow:
+  docs/dev-workflow.md §"Register contracts".
+  - **New loop step, REWORKS ONLY (D-REREAD batches, refactors of existing routines -- NOT behaviour
+    fixes or new code; Joost 2026-10-31 does not want the cycle burdened):** after `make gates-fast`, BEFORE `make gates-plan`:
+    `make contract-diff BASE=HEAD > scratchpad/<slice>_contract.out 2>&1` (BASE=HEAD = the
+    uncommitted work; a multi-commit batch diffs against its start commit). It must say
+    `broken: 0` and report no marker MISMATCH / unused / error (either exits 1). Read every
+    `broken_unwind_only`, `wider_in` and `exits` row and justify it in the commit message, which
+    states the contract-diff counts next to the gate tier. About 3 minutes; it REBUILDS `build/`,
+    so it is part of "touch nothing" -- never during a battery or a probe.
+  - **Before reworking a routine:** `make contract NAME=<routine>`. Its "a rewrite must keep"
+    line goes into every D-REREAD reviewer brief, replacing the hand-written register contract;
+    the reviewer's premises about REGISTERS are then checked by the tool, and the premises about
+    memory / layout / timing are still checked by hand in the source.
+  - **Editing a line next to a `; z80flow:` marker:** keep it true (the tool names a stale one).
+  - `z80flow-selftest` (0.2 s) is now a STATIC gate unit.
+  - **Cost check:** if batch 7 under this step does not finish faster than batch 6, say so and make
+    it optional. PROPOSED to Joost, NOT ruled: a clean contract-diff keeps a shared-code ROM change
+    at SCOPED instead of FULL. Until he rules, the tiers are unchanged.
+  - 🔴 **What it does NOT see -- measured, not assumed:** batch 6's withdrawn fp_trunc rewrite
+    (the one that hung Boulder Dash II) diffs as `fewer_clob: fp_trunc DE`, 0 broken. Memory,
+    arithmetic and timing are outside it; the tapes and the battery still own that class.
+- **Shipped 10-30/10-31:** D-REREAD batches 2-6 (~875 B in all), D-PRSTRFN, D-PLAYQUEUE,
+  D-RELSPACE. Filed: D-BD2FRAGILE (tier 1, next step in its block: repair the tapelog, run both
+  machines), D-FPMULBCD (tier 6).
+- ➡️ **NEXT:** D-REREAD batch 7 under the new step (its brief carries `make contract` output);
+  D-BD2FRAGILE's tapelog; then by tier (`python3 tools/tier_table.py --all`).
+
+## 🟢 STATE AS OF 2026-10-28 — history since 2026-10-31 (the 2026-10-23 section below and every RULINGS table it points to still hold; the 2026-10-27 rulings rows are in the 2026-10-09 rulings table, look for "(2026-10-27")
 
 - **Shipped 10-27/10-28 (all pushed, FULL-gated where ROM code moved):** D-BOOTKEYS CTRL RAM half
   (the disk block moved up $443, CTRL boot HIMEM $E48D); D-DEFFNPARAM; D-STRINGEMPTY; D-MIDEXTRA;
@@ -1938,7 +1971,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12718 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12725 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

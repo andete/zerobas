@@ -220,6 +220,13 @@ item — do **one item per session** to keep context lean.
       ~2 B a routine. A rewrite that changes behaviour is filed and measured, never
       applied (D-PRSTRFN below came out of the first batch -- and its fix was the
       held-back rewrite: another 52 B, measured 2026-10-30).
+      🧬 **SINCE 2026-10-31, WITH z80flow** (tools/z80flow/README.md): each reviewer brief
+      carries `make contract NAME=<routine>` for every routine in the batch (the register
+      premises are then the tool's; memory / layout / timing are still checked by hand), and
+      the batch closes with `make contract-diff BASE=<batch start>` at `broken: 0`, its counts
+      in the commit message. It does NOT see timing: batch 6's withdrawn fp_trunc diffs as
+      `fewer_clob: fp_trunc DE`, 0 broken (measured 2026-10-31) -- the tapes still run. If
+      batch 7 is not faster than batch 6 with it, the step becomes optional.
       ✅ **BATCH 2 (2026-10-31), measured 2026-10-31: low region free 10 -> 83 B plus
       6 B of its pin pad, main page-1 pin pads +65 B -- ~144 B from nine
       routines** (widen_uint_to 42: digits ride the stack, no WIDIG; fp_cmp 19:
@@ -8238,7 +8245,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10729 (T-6FE392)8 (T-529ABE)` from `TODO.md:16411 (T-529ABE)`: a
+      `TODO.md:10736 (T-6FE392)8 (T-529ABE)` from `TODO.md:16418 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11198,7 +11205,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16411 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16418 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
