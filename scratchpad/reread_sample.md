@@ -81,3 +81,17 @@ keeps C and DE; div10 uses B, so the count lives in C; fch_mode_class's CF;
 trap_pend reads no HL; the ARY_* and mode / trap-state layouts pinned by
 assembly-time guards). One test expectation moved: test_fpdiv_fast's old-vs-new
 RAM compare now lists WIDIG as dead scratch.
+
+## Batch 3 (2026-10-31)
+
+Ten more (five low region). Applied: cmul_int (26 B), fp_add's opposite-sign
+span (34), ex_sound (16), str_func_ff (2), ems_close (1) in the low region;
+LINE's first endpoint (18, into the $6CF3 pad), gosub_push (7), run_prog_at (4),
+raise_error_hl (2), ev_ff_cv (3) on page 1. Measured: low region free 83 -> 158
+B, its pad +3, page-1 pads +24, page-1 tail +11: **~113 B**, ~11 B a routine. The
+yield per routine is falling (16 -> 11) but stays far above the 2 B stop line.
+Held back (each would change something observable or close a filed item):
+SOUND's single latch, RUN's DATA-cursor stores, CVI's hook arithmetic,
+ems_close's pre-raise pops. One test moved: test_intfast's register compare is
+A / F / DE (BC and HL are documented clobbers; the new code left different dead
+values there).

@@ -54,8 +54,7 @@ PSG_DATR        equ     $A2                 ; PSG data-read port
 
 ex_sound:
                 rst    $10                ; past the SOUND token
-                call    eval                ; DE = register (silent flt_to_int16)
-                call    get_byte_arg        ; A = register 0..255 (ERR6 >int16, ERR5 >255/neg)
+                call    eval_byte_arg       ; A = register 0..255 (ERR6 >int16, ERR5 >255/neg)
                 cp      14                  ; registers 0..13 are the writable PSG set;
                 jp      nc,snd_illegal      ; 14..255 -> Illegal function call (ERR5)
                 ; 🔴 D-SNDVAR (2026-09-27): THE REGISTER RIDES THE STACK, NOT C. It was
@@ -66,33 +65,28 @@ ex_sound:
                 ; whose first cut clobbered BC for literals too and test_sound caught it.
                 push    af                  ; [register]
                 call    req_comma           ; D-NGRAM17
-                call    eval                ; DE = value (silent flt_to_int16)
-                call    get_byte_arg        ; A = value 0..255 (ERR6 >int16, ERR5 >255/neg)
+                call    eval_byte_arg       ; A = value 0..255 (ERR6 >int16, ERR5 >255/neg)
                 ld      b,a                 ; B = value byte to write
                 pop     af                  ; A = register number
-                cp      7                   ; register 7 (mixer) preserves its I/O bits
-                jr      nz,snd_nomask
                 ; The latch+access below must be atomic against play_service, which
                 ; also programs the PSG from the $0038 ISR (audio Slice 3) -- a VBLANK
                 ; landing between a latch and its access would misdirect the write.
                 ; DI/EI mirrors the reference WRTPSG (Slice-1's "no DI needed" premise
                 ; held only while nothing in the ISR touched the PSG latch).
+                ; 💰 D-REREAD batch 3 (2026-10-31, -10 B): one latch before the test;
+                ; R7's merge is ((cur ^ v) & $C0) ^ v. The R7 latch is repeated so the
+                ; port sequence stays latch, latch, data (tests/test_sound.py pins it).
                 di
-                ld      a,7                 ; --- R7 read-modify-write: keep top 2 bits ---
-                out     (PSG_ADDR),a        ; latch register 7
-                in      a,(PSG_DATR)        ; A = current R7 (BIOS I/O-direction bits in 6-7)
-                and     $C0                 ; keep only the two I/O-direction bits
-                ld      c,a                 ; C = preserved top bits
-                ld      a,b
-                and     $3F                 ; value contributes only bits 0..5
-                or      c                   ; merge: (curR7 & $C0) | (val & $3F)
-                ld      b,a                 ; B = merged byte to write
-                ld      a,7                 ; A = register 7 again (snd_write latches A)
-                jr      snd_write
-snd_nomask:
-                di                          ; single write, likewise atomic vs play_service
-snd_write:                                  ; A = the register (D-SNDVAR: no longer C)
                 out     (PSG_ADDR),a        ; latch the register number
+                cp      7                   ; register 7 (mixer) preserves its I/O bits
+                jr      nz,snd_nomask
+                out     (PSG_ADDR),a        ; latch 7 again (latch, latch, data, as before)
+                in      a,(PSG_DATR)        ; A = current R7 (BIOS I/O-direction bits in 6-7)
+                xor     b
+                and     $C0
+                xor     b                   ; = (curR7 & $C0) | (val & $3F)
+                ld      b,a                 ; B = merged byte to write
+snd_nomask:
                 ld      a,b
                 out     (PSG_DATW),a        ; write the data byte
                 ei

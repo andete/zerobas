@@ -1740,13 +1740,10 @@ ev_cv_back:
                 ; only ever set FACTYP := 2, and the body sets FACTYP itself in
                 ; both arms -- so its page-1 address stopped being a dependency
                 ; of a routine that has to run in another slot.
-                ld      a,c
-                cp      2
-                jr      nz,ev_cv_float
+                bit     1,c                 ; C = 2 (CVI) has bit 1; 4 / 8 do not
+                jp      z,flt_to_int16      ; float: tail, sets DE, returns to OUR caller
                 ld      de,(FAC)            ; the int the body produced (LE)
                 ret
-ev_cv_float:
-                jp      flt_to_int16        ; tail: sets DE, returns to OUR caller
 
 ; --- cvi_tmm: CVI's non-string decline, with the OPERAND'S OWN FAULT FIRST ----
 ; 🔴 D-CVISTRTM. D-CVITM pointed this decline at `ev_f_tmm` and that is the bug

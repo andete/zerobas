@@ -233,6 +233,18 @@ item — do **one item per session** to keep context lean.
       grow the $4EF8 pad). tests/test_fpdiv_fast.py counts WIDIG as dead scratch
       now; the `ela_abort_fp` alias went with ex_let_arr's change. Write-up:
       [`reread_sample.md`](scratchpad/reread_sample.md).
+      ✅ **BATCH 3 (2026-10-31), measured 2026-10-31: low region free 83 -> 158 B plus
+      3 B of its pad, main page-1 pads +24 B and its tail 345 -> 356 B -- ~113 B
+      from ten routines** (cmul_int 26: the sign in C, one borrow for the bound;
+      fp_add's opposite-sign span 34: one subtract for both orders; ex_sound 16,
+      the latch/latch/data port order kept; LINE 18 into the $6CF3 pad; gosub_push
+      7; run_prog_at 4 -- clear_vars already runs trap_init; raise_error_hl 2;
+      ev_ff_cv 3; str_func_ff 2; ems_close 1). HELD BACK: SOUND's single latch
+      (changes the port sequence), RUN's DATA-cursor stores (PEEK($F6A5) would
+      read 3 after RUN), CVI/CVS/CVD's hook arithmetic (CVI slower),
+      ems_close's pops before raise_error (a filed item). tests/test_intfast.py
+      compares A / F / DE now (BC and HL are combine_*'s documented clobbers);
+      its register knife moved from C to E.
 
 - [x] 🔴 **`PRINT INPUT$(n)` / `PRINT SPRITE$(n)` WERE TYPE MISMATCH, AND `PRINT CHR$(65)
       AND 1` PRINTED BEFORE IT ERRED: PRINT'S OWN COPY OF THE STRING CLASSIFICATION
@@ -8092,7 +8104,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10583 (T-6FE392)8 (T-529ABE)` from `TODO.md:16265 (T-529ABE)`: a
+      `TODO.md:10595 (T-6FE392)8 (T-529ABE)` from `TODO.md:16277 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11052,7 +11064,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16265 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16277 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

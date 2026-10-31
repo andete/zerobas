@@ -208,8 +208,6 @@ ex_line_gfx:
                 jr      z,elg_from_grpac
                 ; --- explicit first endpoint ---
                 call    parse_coord         ; BC = x1, DE = y1 (STEP rel current GRPAC)
-                ld      (GFX_X1),bc
-                ld      (GFX_Y1),de
                 ; stage running ref = p1 (STEP chain, §3.3). 🔴 D-LINERR: this
                 ; used to write GRPACX/GRPACY ONLY, and the row that caught it
                 ; is `w.s0.tm` -- `LINE (11,12)-((Q$<5),21)`, whose GRPAC twin
@@ -222,14 +220,14 @@ ex_line_gfx:
                 call    skip_spaces
                 cp      MINUS_TOKEN         ; '-' between the two coordinates is mandatory
                 jp      nz,elg_syntax
-                inc     hl                  ; consume '-'
-                jr      elg_second
+                ; falls into elg_from_grpac: gfx_work_area just staged p1 into GRPAC,
+                ; so reading it back gives p1 (D-REREAD batch 3, -11 B)
 elg_from_grpac:
                 inc     hl                  ; consume '-'
-                ld      bc,(GRPACX)         ; p1 = last-referenced point
+                ld      bc,(GRPACX)         ; p1 = last-referenced point (or the explicit
+                ld      de,(GRPACY)         ; one, just staged there)
                 ld      (GFX_X1),bc
-                ld      bc,(GRPACY)
-                ld      (GFX_Y1),bc         ; GRPAC already = p1 -> p2's STEP resolves vs it
+                ld      (GFX_Y1),de         ; GRPAC = p1 -> p2's STEP resolves vs it
 elg_second:
                 call    parse_coord         ; BC = x2, DE = y2 (STEP rel GRPAC = p1)
                 ld      (GFX_X2),bc
@@ -267,9 +265,7 @@ elg_second:
                 ld      (GFX_MODE),a        ; default: segment
                 call    skip_comma
                 jr      nz,elg_draw         ; no options
-                rst    $10                ; consume the 1st comma
-                cp      ','                 ; ",," -> colour omitted, straight to box field
-                jr      z,elg_box_comma
+                rst    $10                ; consume the 1st comma; Z = 0 or ':'
                 ; 🔴 D-LINERR: a list that ENDS where the colour was required is
                 ; `Missing operand` (ERR 24), not Syntax error -- `LINE (0,0)-
                 ; (9,9),` and `LINE (0,0)-(9,9),:V=1` are both 24 on BOTH
@@ -278,10 +274,10 @@ elg_second:
                 ; MEASURED here rather than copied from ex_screen's shape -- and
                 ; it does NOT extend to the box slot one field along, which is
                 ; ERR 2 for the same two shapes (a.boxc / a.boxcolon).
-                or      a                   ; end of line -> Missing operand
-                jp      z,loc_missing
-                cp      COLON               ; next statement -> the same
-                jp      z,loc_missing
+                ; (CHRGTR's own Z is that test: D-REREAD batch 3, -5 B.)
+                jp      z,loc_missing       ; end of line / next statement -> ERR 24
+                cp      ','                 ; ",," -> colour omitted, straight to box field
+                jr      z,elg_box_comma
                 call    is_box_kw           ; single-comma box (",B"/",BF") ?
                 jr      z,elg_box_read
                 ; --- colour expression ---
@@ -299,14 +295,13 @@ elg_box_read:
                 cp      'B'                 ; box keyword
                 jp      nz,elg_syntax
                 inc     hl
-                ld      c,1                 ; ,B -> outline
                 ld      a,(hl)
                 cp      'F'
+                ld      a,1                 ; ,B -> outline (ld keeps the flags)
                 jr      nz,elg_box_set
                 inc     hl
-                ld      c,2                 ; ,BF -> fill
+                inc     a                   ; ,BF -> 2 = fill
 elg_box_set:
-                ld      a,c
                 ld      (GFX_MODE),a
 elg_draw:
                 ; The work-area writes (GXPOS/GYPOS + GRPACX/GRPACY = p2, §11.5)

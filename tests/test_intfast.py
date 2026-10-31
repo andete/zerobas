@@ -281,7 +281,11 @@ class Pair:
             s = m.sym
             st = {"FAC": bytes(m.peek(s["FAC"], 8)), "FACTYP": m.peek(s["FACTYP"])[0],
                   "FPERR": m.peek(s["FPERR"])[0],
-                  "regs": (cpu.a, cpu.f, cpu.bc, cpu.de, cpu.hl)}
+                  # A, F and DE: BC and HL are clobbers in combine_*'s contract
+                  # ("Clobbers A, B, C, D, E, H, L"; cl_after reloads B and C and
+                  # pops HL). D-REREAD batch 3 (2026-10-31) left different but
+                  # dead values there: cmul_int's sign in C, fp_add's x-x path.
+                  "regs": (cpu.a, cpu.f, cpu.de)}
             out.append((st, _T["t"]))
         (so, to), (sn, tn) = out
         diff = self._ram_diff()
@@ -635,7 +639,8 @@ def run():
     # ------------------------------------------------------------------ K
     print("# --- K: knives -- a planted difference is reported ---")
     s0 = pair.s
-    knives = [("register C", lambda m: setattr(m.cpu, "c", m.cpu.c ^ 1)),
+    knives = [("register E", lambda m: setattr(m.cpu, "e", m.cpu.e ^ 1)),  # was C:
+              # BC left the compared set (D-REREAD batch 3) -- DE is the result
               ("flag byte", lambda m: setattr(m.cpu, "f", m.cpu.f ^ 0x10)),
               ("FAC+7", lambda m: m.poke(s0["FAC"] + 7, m.peek(s0["FAC"] + 7)[0] ^ 1)),
               ("FACTYP", lambda m: m.poke(s0["FACTYP"], 2)),

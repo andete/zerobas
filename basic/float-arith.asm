@@ -236,7 +236,8 @@ dai_st:
 
 ; --- dig15_sub_inplace: (HL@idx14) -= (DE@idx14), 15-byte arrays, in place --
 ; into the HL (minuend) array. Assumes minuend>=subtrahend (no final borrow;
-; callers pre-compare via dig15_cmp). Clobbers A, B, C, HL, DE.
+; callers pre-compare via dig15_cmp). out: HL, DE = each array's idx0-1, B = 0
+; (fp_add's copy starts from there). Clobbers A, B, C, HL, DE.
 dig15_sub_inplace:
                 ld      b,15
                 or      a                   ; CF=0: no borrow into the LSD
@@ -372,8 +373,9 @@ dtw_lp:
                 ret
 
 ; --- arga_find_first_nonzero: scan ARGA_DIG[0..14] for the first nonzero ---
-; digit. out: CF clear + A = index (0..14) of the first nonzero digit; CF set
-; if all 15 are zero. Clobbers A, B, HL.
+; digit. out: CF clear + A = index (0..14) of the first nonzero digit, Z iff it
+; is 0; CF set AND Z set if all 15 are zero (fp_add's fpa_leadzero relies on
+; both). Clobbers A, B, HL.
 arga_find_first_nonzero:
                 ld      hl,ARGA+FPNUM_DIG
                 ld      b,0
@@ -711,60 +713,45 @@ fpa_combine:
                 cp      b
                 jr      nz,fpa_diffsign
                 call    dig15_add_inplace
-                jr      nc,fpa_done
-                call    arga_carry_renorm
-                jr      fpa_done
+                call    c,arga_carry_renorm
+                jp      round_and_finalize
 fpa_diffsign:
+                ; 💰 D-REREAD batch 3 (2026-10-31, -34 B low region): one subtract
+                ; for both orders (ex de,hl when B is bigger), the dig15_cmp CF
+                ; carried across it; equal digits subtract to all-zero rather
+                ; than a separate zero-fill; the copy reuses the subtract's end
+                ; pointers (idx0-1, B = 0); the dexp update before dig15_shl.
                 ld      hl,ARGA+FPNUM_DIG
                 ld      de,ARGB+FPNUM_DIG
                 ld      b,15
-                call    dig15_cmp
-                cp      2
-                jr      z,fpa_zero_result
-                cp      4
-                jr      z,fpa_a_bigger
-                ; B bigger: ARGB_DIG -= ARGA_DIG in place, then adopt B's sign
-                ; and copy ARGB_DIG -> ARGA_DIG.
-                ld      hl,ARGB+FPNUM_DIG+14
-                ld      de,ARGA+FPNUM_DIG+14
-                call    dig15_sub_inplace
-                ld      a,(ARGB+FPNUM_SIGN)
-                ld      (ARGA+FPNUM_SIGN),a
-                ld      hl,ARGB+FPNUM_DIG
-                ld      de,ARGA+FPNUM_DIG
-                ld      bc,15
-                ldir
-                jr      fpa_leadzero
-fpa_a_bigger:
+                call    dig15_cmp           ; A = 1 (A<B) / 2 (A=B) / 4 (A>B)
+                cp      2                   ; CF: ARGB's digits are the larger
                 ld      hl,ARGA+FPNUM_DIG+14
                 ld      de,ARGB+FPNUM_DIG+14
-                call    dig15_sub_inplace   ; sign stays ARGA's (already correct)
+                jr      nc,fpa_sub          ; equal digits subtract to all-zero
+                ex      de,hl               ; B bigger: ARGB_DIG -= ARGA_DIG
+fpa_sub:
+                push    af
+                call    dig15_sub_inplace   ; HL/DE = each array's idx0-1, B = 0
+                pop     af
+                jr      nc,fpa_leadzero     ; A >= B: the sign stays ARGA's
+                ld      a,(ARGB+FPNUM_SIGN) ; adopt B's sign and copy ARGB_DIG
+                ld      (ARGA+FPNUM_SIGN),a ; -> ARGA_DIG
+                inc     hl
+                inc     de
+                ld      c,15                ; B = 0 (dig15_sub_inplace's djnz)
+                ldir
 fpa_leadzero:
                 call    arga_find_first_nonzero
-                jr      c,fpa_zero_result
-                                            ; arga_find_first_nonzero's own
-                                            ; affn_found path already does its
-                                            ; own "or a" right before ret, so Z
-                                            ; here already reflects A (=k) --
-                                            ; ret/jr don't touch flags, so no
-                                            ; need to re-test
-                jr      z,fpa_sub_finalize  ; k=0: already normalised
-                ld      (FP_SHIFTAMT),a
-                ld      hl,ARGA+FPNUM_DIG
-                call    dig15_shl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,(FP_SHIFTAMT)
+                jr      z,fpa_sub_finalize  ; k=0, or all 15 zero (CF and Z): no shift
+                ld      (FP_SHIFTAMT),a     ; NC here: affn_found's `or a`
                 ld      e,a
                 ld      d,0
-                or      a
-                sbc     hl,de
+                ld      hl,(ARGA+FPNUM_DEXP)
+                sbc     hl,de               ; dexp -= k
                 ld      (ARGA+FPNUM_DEXP),hl
-                jr      fpa_sub_finalize
-fpa_zero_result:
                 ld      hl,ARGA+FPNUM_DIG
-                call    dig15_zero15
-fpa_done:
-                jp      round_and_finalize
+                call    dig15_shl           ; falls into fpa_sub_finalize
 
 ; --- fpa_sub_finalize: effective-subtraction (opposite-sign combine) tail --
 ; bug-for-bug reference-compat (docs/spec-float-subtract-tie-compat.md §3):
@@ -772,9 +759,9 @@ fpa_done:
 ; effective subtraction, vs round_and_finalize's blanket half-up (which stays
 ; correct for effective addition). Pre-nudge the tie 5->4 so the unchanged
 ; half-up tail drops it, then fall into the shared, byte-identical tail.
-; Only the two fpa_leadzero exits (k=0 and post-shift) route here; the
-; same-sign add exits (dig15_add_inplace's jr nc/call arga_carry_renorm)
-; keep going straight to fpa_done, unchanged.
+; Every opposite-sign exit routes here (k=0, post-shift by fallthrough, and an
+; all-zero difference, whose guard 0 is no tie); the same-sign add exits go
+; straight to round_and_finalize.
 fpa_sub_finalize:
                 ld      a,(ARGA+FPNUM_DIG+14)   ; guard digit
                 cp      5
@@ -1898,43 +1885,37 @@ combine_mul:
                 jr      nz,cmul_float
                 ld      hl,(FP_LHSVAL)
 cmul_int:                                   ; D-INTFAST: HL = the lhs, DE = the rhs
-                ld      (FP_TMP_B),de
+                ; 💰 D-REREAD batch 3 (2026-10-31, -26 B low region): the product's
+                ; sign rides C (abs16 and mul16x16_32 keep it) and the rhs the
+                ; stack, not FP_RSIGN / FP_TMP_B; the 32767/32768 bound is one
+                ; borrow (`cp $80` -> CF = positive, then 32768 - P - CF).
+                push    de                  ; the rhs, for cmul_overflow
+                push    de
                 call    abs16               ; HL=|lhs|, A=lhs sign (0/$80)
-                ld      (FP_RSIGN),a
-                push    hl                  ; |lhs|
-                ld      hl,(FP_TMP_B)
+                ld      c,a
+                ex      (sp),hl             ; HL = the rhs, (SP) = |lhs|
                 call    abs16               ; HL=|rhs|, A=rhs sign
+                xor     c
+                ld      c,a                 ; C = the product's sign
                 ex      de,hl               ; DE = |rhs|
-                ld      hl,FP_RSIGN         ; D-INTFAST carve: the product's sign is
-                xor     (hl)                ; lhs XOR rhs -- one `xor (hl)` where an
-                ld      (hl),a              ; `or a` / `jr z` / flip took 11 B (-6)
                 pop     hl                  ; HL = |lhs|
                 call    mul16x16_32         ; -> MUL32 (32-bit unsigned product)
                 ld      hl,(MUL32+2)
                 ld      a,h
                 or      l
                 jr      nz,cmul_overflow    ; high word nonzero -> definitely > 32768
-                ld      hl,(MUL32)
-                ld      a,(FP_RSIGN)
-                ld      de,32768
-                or      a                   ; (and CF = 0 for the sbc below: the
-                jr      nz,cmul_boundcmp    ; second `or a` that stood there was
-                dec     de                  ; redundant, D-INTFAST carve -1 B)
-cmul_boundcmp:
-                sbc     hl,de               ; unsigned compare (a signed cmp16_bits
-                                            ; would misread the 32768 bound as negative)
-                jr      z,cmul_inrange
-                jr      nc,cmul_overflow    ; HL>DE, no borrow -> over the bound
-cmul_inrange:
-                ld      de,(MUL32)
-                ld      a,(FP_RSIGN)
-                or      a
-                jr      z,cmul_int_ok
-                call    neg_de              ; DE = -DE (float.asm)
-cmul_int_ok:
+                ld      de,(MUL32)          ; DE = P
+                ld      hl,32768
+                ld      a,c
+                cp      $80                 ; CF = a positive product
+                sbc     hl,de               ; 32768-P-CF: borrows iff P is over the
+                jr      c,cmul_overflow     ; sign's bound (32767 / 32768 negative)
+                pop     hl                  ; drop the rhs
+                or      a                   ; A = the sign still: NZ = negative
+                call    nz,neg_de           ; DE = -DE (float.asm)
                 jp      set_factyp_int_ret
 cmul_overflow:
-                ld      de,(FP_TMP_B)       ; DE = the rhs, as widen_both_operands
+                pop     de                  ; DE = the rhs, as widen_both_operands
 cmul_old:                                   ; wants it (the float path's is live)
                 call    widen_both_operands
                 jp      fp_mul_raise        ; overflow at once (D-DEFERRSTUDY, expr.asm)

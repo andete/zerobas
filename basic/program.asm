@@ -406,15 +406,17 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                                             ; fresh RUN has no live scalars/arrays
                                             ; either; PRGEND is already correct here
                                             ; (unlike at boot -- see ary_alloc's own
-                                            ; ceiling note, sub/arrays.asm). Redundant
-                                            ; with clear_vars's own vars_reset just
-                                            ; above (same PRGEND, same result) --
-                                            ; harmless, kept for the "four call sites"
-                                            ; symmetry (§3b).
+                                            ; ceiling note, sub/arrays.asm). NOT
+                                            ; redundant: clear_vars does not call
+                                            ; vars_reset (§13a-F1) -- this is RUN's.
                 xor     a
                 ld      (CONTVALID),a       ; a fresh RUN has no CONT resume point yet
-                ld      (GOTOFLAG),a
-                ld      (ENDFLAG),a
+                ld      h,a                 ; GOTOFLAG and ENDFLAG are adjacent:
+                ld      l,a                 ;  one word store clears both
+                ld      (GOTOFLAG),hl
+    IF ENDFLAG != GOTOFLAG+1
+                db      RUN_CLEARS_GOTOFLAG_AND_ENDFLAG_AS_ONE_WORD
+    ENDIF
                 ld      (RESUMEFLAG),a
                 ld      (DIRECTF),a         ; D-2: run mode (0) — errors get " in <line>"
                 ; 🔴 THE ANCHOR STORE THAT SAT HERE IS DELETED (D-SPMERGE step 5).
@@ -441,14 +443,10 @@ run_prog_at:                                ; RUN <lineno>: GOTOTGT = that line
                                             ; still 0 from the xor a above -- nothing
                                             ; since touches it: the ERR-reset-on-RESUME
                                             ; follow-up reclaimed the redundant xor a)
-                call    trap_init           ; interrupt-traps T1: RUN re-arm — clear the
-                                            ; ZTRAP table so a prior run's traps never
-                                            ; leak into this one (traps.asm). Inert until
-                                            ; the arming statements land (TRAPENA==0).
-                                            ; three lines up) so cold boot / NEW /
-                                            ; CLEAR reset the control stacks too --
-                                            ; docs/spec-basic-direct-ctrl.md §4.
-                                            ; Net zero bytes.
+                ; (RUN's own `call trap_init` went in D-REREAD batch 3: clear_vars,
+                ; above, already runs it -- D-CLRTRAP -- and nothing between touches
+                ; ZTRAP..TRAPPEND; an interrupt meanwhile takes event_poll's
+                ; fast-out, TRAPENA / TRAPSVC / ZINTVAL all 0.)
                 xor     a                   ; DATA pointer unpositioned (read seeks
                 ld      (DATASTATE),a       ;  from the program start on first READ)
                 ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
@@ -1458,14 +1456,10 @@ gosub_push:
                 call    ctl_put             ; [2..3] where in it
                 ld      hl,(FSP)
                 call    ctl_put             ; [4..5] prevFSP -- D-FORRET's field
-                ex      de,hl               ; HL = the cursor, DE = FSP
-                push    hl
-                ld      hl,(GSP)
-                or      a
-                sbc     hl,de               ; GSP - FSP: 0, or 3 under a trap record
-                ld      a,l
-                pop     hl
-                ld      (hl),a              ; [6] gdelta -- the frame chain
+                ld      a,(GSP)             ; HL = FSP still (ctl_put keeps HL), DE = [6]
+                sub     l                   ; low (GSP - FSP): 0, or 3 under a trap record
+                ld      (de),a              ; [6] gdelta -- the frame chain (D-REREAD
+                                            ; batch 3: a byte subtract, -6 B)
                 ; 🎯 GSP AND FSP BOTH BECOME THE FRAME'S BASE, and the second one
                 ; is what D-CTLCROSS needs: FSP is the FOR run's FLOOR, so every
                 ; FOR frame opened BEFORE this GOSUB is now below it and invisible
@@ -1480,9 +1474,8 @@ gosub_push:
                 ret
 gp_full:
                 pop     hl                  ; discard resume ptr
-                pop     bc                  ; discard target
-                scf                         ; CF = 1 -> pool full
-                ret
+                pop     bc                  ; restore BC (the caller's)
+                ret                         ; CF = 1 still: ctl_alloc's (pops keep flags)
 ; ctl_put / ctl_get: store/load HL at (DE), DE += 2. Four call sites each in the
 ; two routines below -- open-coding them costs 21 bytes of main page 1 apiece,
 ; which this region does not have (`make basic-reloc` reports the wall).

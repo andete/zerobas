@@ -1456,13 +1456,13 @@ raise_error_hl:
                                              ; CALSLT, so sr_slot's `ei` never ran: the whole
                                              ; ON ERROR handler went on under DI (11.7 ms in
                                              ; the ladder's L4_errors). BASIC runs EI.
-                ld      a,(ONEFLG)
-                or      a
-                jr      nz,ra_abort          ; inside a handler, no RESUME -> forced abort
                 ld      de,(ONELIN)          ; DE = handler line LINK addr (kept to the end)
                 ld      a,d
                 or      e
                 jr      z,ra_abort           ; no handler armed -> abort with HL's message
+                ld      a,(ONEFLG)           ; tested SECOND: the trap arm leaves with
+                or      a                    ; A = 0, which its RESUMEFLAG store reuses
+                jr      nz,ra_abort          ; inside a handler, no RESUME -> forced abort
                 ; take the trap (HL message discarded -- a trap prints nothing):
                 ; 🔴 UNWIND TO THE FRONTIER, NOT TO THE ANCHOR (D-SPMERGE §9). This was
                 ; `ld sp,(SAVSTK)`, and with the machine stack merged into the pool that
@@ -1495,16 +1495,13 @@ raise_error_hl:
                                              ; consumed by rp_goto's POST-exec arm, never by
                                              ; rp_lp; a plain jp rp_lp would re-run the ERRORING
                                              ; line and, ONEFLG now 1, force-abort)
-                ld      a,$FF                ; D-REHOME: the references store $FF
+                ld      (RESUMEFLAG),a       ; A = 0 (the ONEFLG test): rp_lp runs
+                                             ; CURLINE (the handler) fresh
+                dec     a                    ; D-REHOME: the references store $FF
                                              ; here, MEASURED (sysvarsweep
                                              ; s7-fired). Both readers test it
-                                             ; with `or a`, so this is a
-                                             ; zero-byte, control-flow-neutral
-                                             ; change that makes PEEK($F6BB)
-                                             ; match the reference exactly.
+                                             ; with `or a`; PEEK($F6BB) matches.
                 ld      (ONEFLG),a           ; inside a handler now
-                xor     a
-                ld      (RESUMEFLAG),a       ; rp_lp runs CURLINE (the handler) fresh
                 jp      rp_lp
 ra_abort:                                    ; the S1/S2a abort body (HL = message)
                 ; D-CONTR (docs/spec-basic-cont-record.md §3.4): AN UNTRAPPED ABORT

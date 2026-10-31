@@ -1213,15 +1213,15 @@ sas_decline:
 
 ; --- CHR$/STR$/LEFT$/RIGHT$/MID$: string-VALUED $FF functions ---------------
 ; Reached from str_eval_maybe_mki (basic/strvar.asm) via `jp str_func_ff` on a
-; non-MKI$ $FF token (repack build only). Entered with HL on the selector byte and
+; non-MKI$ $FF token (repack build only). Entered with HL on the selector byte, A = that byte, and
 ; a string context wanting a value. On success each pushes its result as a new
 ; temp-descriptor-stack entry, points STRPTR at it, and joins str_eval_ok
 ; (VALTYP=1, CF set, HL past the call). A malformed call or a non-string $FF
 ; token falls to str_eval_no (CF clear) so the caller treats it as "not a
 ; string operand" (an error, or — in the numeric/PRINT path — a retry as a
 ; numeric factor). Dispatch shell UNCHANGED from pre-4a.
-str_func_ff:
-                ld      a,(hl)
+str_func_ff:                                ; A = (HL): the sole caller's cp chain
+                                            ; (str_eval_maybe_mki) leaves it there
                 cp      CHRD_TOKEN          ; $96 -> CHR$
                 jr      z,str_fn_chr
                 cp      STRD_TOKEN          ; $93 -> STR$
@@ -1241,7 +1241,8 @@ str_func_ff:
                 cp      SPACED_TOKEN        ; $99 -> SPACE$
                 jp      z,str_fn_space
                 dec     hl                  ; restore HL to the $FF prefix
-                jp      str_eval_no         ; unknown $FF function -> not a string operand
+                or      a                   ; = str_eval_no inlined: CF clear -> not a
+                ret                         ; string operand (A = token, NZ, as before)
 
 ; CHR$(n): a 1-byte string of the character code n, which is 0..255 (D-MISS-2).
 ; This used to be documented as an own-design leniency that "takes E" — it was
@@ -1713,9 +1714,9 @@ ems_close:
                 ; SH_ERR=3 signals the range error) — shape-C follow-up, this
                 ; low region ran out of room for the arithmetic too.
                 pop     de                  ; DE = m           stack: [n]
-                pop     bc                  ; BC = n           stack: []
-                push    hl                  ; [cursor] guard across the call
-                push    bc                  ; [cursor][n]: n (full 16-bit; sub-side range-
+                ex      (sp),hl             ; HL = n, stack: [cursor] (guarded
+                                            ; across the call)
+                push    hl                  ; [cursor][n]: n (full 16-bit; sub-side range-
                                             ; checks 1..255 itself)
                 push    de                  ; [cursor][n][m]
                 ld      hl,(STRPTR)
