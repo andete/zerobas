@@ -59,7 +59,15 @@ session and the loop resumes exactly where it stopped.
   off longer than the CF-3300), the disk collection re-scored in full (143/143 in their class;
   diskcorpus_run re-run rows now carry the reference). Picking ladder rungs by "keywords no
   program uses" is EXHAUSTED (what is left is direct-mode / device keywords).
-  🙋 **OPEN QUESTIONS PUT TO JOOST 2026-11-01 (read his answers before picking work):**
+  🏗️ **ANSWERED BY JOOST 2026-11-01 (same day):** (1) **(b) then (a)** -- D-REREAD-EDGES (tool
+  first) -> D-SUB2RETIRE, then RAM usage; speed stays paused. (2)+(3) "see if these titles
+  run at all on e.g. an MSX2 or other different MSX" -- MEASURED the same day: they run on
+  the Toshiba HX-10 and Canon V-20 and RESET on the NMS 8250 (D-TAPELOAD's (A1) block); the
+  scope ruling itself is still his. (D-BASICPUB already had a STANDING ruling, 10-16: build
+  an entry when a measured title calls it -- the question should not have been re-asked.)
+  (4) **mutation sweep: YES** -- output a LIST for him to rule on, no automatic removals.
+  (5) **yes**: USR's row B and D-BD2FRAGILE stay as they are.
+  The questions as asked:
   (1) the next campaign -- RAM usage (tier 4) / D-REREAD-EDGES -> D-SUB2RETIRE (budget; my
   recommendation, then RAM) / un-pause speed (tier 5: D-ASAVEDI, D-BD2FRAGILE's real fix);
   (2) should the repacked C-BIOS provide the reference BIOS's INTERNAL entries (Buzz Off,
@@ -2013,7 +2021,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13137 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13159 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

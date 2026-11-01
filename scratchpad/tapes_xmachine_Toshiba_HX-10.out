@@ -1,0 +1,5 @@
+[ 1/4] RUNS?          349  ref S2 L65535  zb S2 L65535  Buzz Off
+[ 2/4] NEAR           113  ref S2 L90  zb S2 L90  Harry Fox
+[ 3/4] RUNS?          941  ref S1 L3080  zb S1 L3080  Punch & Judy
+[ 4/4] NEAR            98  ref S2 L65535  zb S2 L65535  Shark Hunter
+TALLY {"NEAR": 2, "RUNS?": 2}

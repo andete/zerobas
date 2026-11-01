@@ -154,13 +154,17 @@ def main():
     ap.add_argument("--times", default="60,180,300,420")
     ap.add_argument("--out", default="/tmp/tapecorpus.json")
     ap.add_argument("--resume", action="store_true")
+    # Joost 2026-11-01 (D-BASICINT / D-BASICPUB scope): does a title run on OTHER
+    # MSX models at all? --ref puts another machine in the reference's place.
+    ap.add_argument("--ref", default=REF)
     a = ap.parse_args()
     if not a.dir or not os.path.isdir(a.dir):
         sys.exit("give the collection with TAPECORPUS_DIR or --dir")
     times = [float(x) for x in a.times.split(",")]
     last = f"T{int(times[-1])}"
     titles = [ln.strip() for ln in open(PICK) if ln.strip() and not ln.startswith("#")]
-    titles = [t for t in titles if a.only.lower() in t.lower()]
+    only = [o.strip().lower() for o in a.only.split(",") if o.strip()]
+    titles = [t for t in titles if not only or any(o in t.lower() for o in only)]
     results, tally = [], {}
     if a.resume and os.path.exists(a.out):
         results = json.load(open(a.out))["results"]
@@ -174,7 +178,7 @@ def main():
         td = tempfile.mkdtemp(prefix="tcorpz_")
         try:
             cas = unpack(zpath, td) if os.path.exists(zpath) else None
-            ref = run_one(REF, cas, times) if cas else None
+            ref = run_one(a.ref, cas, times) if cas else None
             zb = run_one(ZB, cas, times) if cas else None
         finally:
             shutil.rmtree(td, ignore_errors=True)

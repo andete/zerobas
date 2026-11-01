@@ -1,0 +1,5 @@
+[ 1/4] REF-PROMPT   12535  ref S0 L65535  zb S2 L65535  Buzz Off
+[ 2/4] REF-PROMPT   11984  ref S0 L65535  zb S2 L90  Harry Fox
+[ 3/4] REF-LOADING   9392  ref S0 L65535  zb S1 L3080  Punch & Judy
+[ 4/4] REF-PROMPT   13687  ref S0 L65535  zb S2 L65535  Shark Hunter
+TALLY {"REF-LOADING": 1, "REF-PROMPT": 3}

@@ -3698,6 +3698,25 @@ item — do **one item per session** to keep context lean.
       (which covers the BASIC ROM's undocumented entries): should the repacked
       C-BIOS provide the reference BIOS's internal entry points at their
       addresses? (Black-box only, like D-BASICINT; a large surface.)
+      📏 **DO THESE TITLES RUN ON OTHER MSX MODELS? (Joost 2026-11-01: "it may be interesting
+      to see if these titles run at all on e.g. an MSX2 or other different MSX" -- asked
+      before ruling on (A1) and D-BASICPUB's scope.)** Measured 2026-11-01 with
+      `tapecorpus_run.py --ref <machine>` (the tape RUN, never decoded; its state at
+      T60..T420): on the **Toshiba HX-10** and the **Canon V-20** (European MSX1s) Buzz Off,
+      Shark Hunter, Harry Fox and Punch & Judy end in the SAME states as on the VG-8020
+      (the HX-10 even at the same distances) -- they RUN
+      ([`tapes_xmachine_Toshiba_HX-10.out`](scratchpad/tapes_xmachine_Toshiba_HX-10.out),
+      [`tapes_xmachine_Canon_V-20.out`](scratchpad/tapes_xmachine_Canon_V-20.out)). On the
+      **Philips NMS 8250** (MSX2) Buzz Off, Shark Hunter and Harry Fox RESET after loading
+      (`Disk BASIC version 1.0` / `Ok` by T180), and Punch & Judy stops at `Disk offline in
+      10` (the disk drive's default device, not MSX2 as such)
+      ([`tapes_xmachine_Philips_NMS_8250.out`](scratchpad/tapes_xmachine_Philips_NMS_8250.out)).
+      The **Sony HB-75P** run is NOT a reading: all four rows sit at `S2 L0`, the machine's
+      built-in firmware rather than BASIC, so the tape never loaded
+      ([`tapes_xmachine_Sony_HB-75P.out`](scratchpad/tapes_xmachine_Sony_HB-75P.out)).
+      Loopy Laundry is not in the tape pick list (not run). 🔮 HIT both ways ("MSX1s run
+      them, the MSX2 does not"). ➡️ So these internals are STABLE ACROSS THE MSX1 BASIC 1.0
+      FAMILY and broke with MSX2 -- input for Joost's scope ruling, not a ruling.
       (A2) **Loopy Laundry (pick_martos's copy) calls ~25 BASIC-ROM internals**
       besides the pinned $73AC: $4604 $4649 $4669 $4B02 $4C70 $4CA9 $4DDC $593F
       $5EAC $629D $62A4 $62B2 $62F3 $6686 $67F1 $6AB6 $6AF9 $6B12 $6C48 $6F18
@@ -4289,6 +4308,9 @@ item — do **one item per session** to keep context lean.
       🔁 **STANDING** — Joost 2026-10-16, *"maybe later, as needed for now"*: no bulk
       layout project; an entry is built (D-BASICINT's method) when a measured
       title calls it. ~~🙋 NEEDS-JOOST~~.
+      📏 2026-11-01: the titles that call these internals run on two other European MSX1s
+      and reset on an MSX2 -- see D-TAPELOAD's (A1) block for the runs; Joost asked for that
+      measurement before deciding (A1) and this item's scope.
       📚 MSX2 Technical Handbook (allowed source B): App. 2 publishes ~70
       math-pack entries with their contracts ($268C DECSUB ... $383F INTEXP; DAC
       $F7F6, ARG $F847), ch. 2 eight interpreter internals for CALL-statement
@@ -8657,7 +8679,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11148 (T-6FE392)8 (T-529ABE)` from `TODO.md:16830 (T-529ABE)`: a
+      `TODO.md:11170 (T-6FE392)8 (T-529ABE)` from `TODO.md:16852 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11617,7 +11639,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16852 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
