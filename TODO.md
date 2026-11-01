@@ -444,18 +444,28 @@ item — do **one item per session** to keep context lean.
       would only grow the $72D4 pin pad (520 B already), a hole, not usable space.
       ➡️ **WHAT IS LEFT FOR D-REREAD** is the held-back lists of batches 7-11 (rulings, tool
       checks, stack-depth reviews) and spans under ~50 B. Total over eleven batches: ~1,360 B.
-- [ ] 🔍 **`VDP(n)=POINT(x,y)` / `BASE(n)=ASC(SPRITE$(0))` MAY RUN THE WRONG GRAPHICS OP (D-G8OPCLOB,
-      filed 2026-11-01 by a D-REREAD batch 11 reviewer, UNMEASURED).**
-      🎚️ TIER 6 — a function that itself uses the graphics tenant inside a VDP / BASE assignment.
-      🤖 **AUTONOMOUS** — g8_assign parks GFX_OP (13 VDP / 14 BASE) BEFORE parsing the index and
-      the value, and g8_run hands it to the tenant afterwards; POINT (op 2) and SPRITE$ (op 8,
-      through spr_tenant) write GFX_OP while they evaluate. Measure on the VG-8020 and zerobas:
-      `SCREEN 2:VDP(1)=POINT(0,0)`, `VDP(POINT(0,0)+1)=...`, `BASE(5)=ASC(SPRITE$(0))`, reading
-      VDP(n) / BASE(n) back; then the fix is to park the op after the value (the D-REREAD
-      batch 11 C change kept the round trip exact, so it is neutral to this). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
+      HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
+
+- [x] 🐛 **`VDP(n)=POINT(x,y)` / `BASE(n)=…SPRITE$(…)…` RAN THE WRONG GRAPHICS OP (D-G8OPCLOB,
+      filed 2026-11-01 by a D-REREAD batch 11 reviewer).**
+      🎚️ TIER 6 — a function that itself uses the graphics tenant inside a VDP / BASE assignment.
+      🤖 **AUTONOMOUS** — g8_assign parked GFX_OP (13 VDP / 14 BASE) BEFORE parsing the index and
+      the value; POINT (op 2) and SPRITE$ (op 8, through spr_tenant) write GFX_OP while they
+      evaluate. Measured 2026-11-01 ([`g8opclob_probe.py`](scratchpad/g8opclob_probe.py) ->
+      [`g8opclob_probe.out`](scratchpad/g8opclob_probe.out)): the VG-8020 and the CF-3300 agree on
+      all six rows; zerobas answered ERR 4 for `VDP(7)=POINT(0,0)` and `VDP(POINT(0,0)+2)=4`, and
+      stored 6144 (not 2048) for `BASE(5)=2048+ASC(SPRITE$(0))` and `BASE(5+ASC(SPRITE$(0)))=2048`.
+      Older than batch 11 (that change re-stored the same value, a no-op for this).
+      ✅ **FIXED 2026-11-01**: the op rides the STACK from g8_assign to g8_run (`push af` /
+      `pop af`, then `call spr_tenant`, which stores GFX_OP) -- raise_error unwinds SP, so an
+      error exit strands nothing; spr_tenant_go went. All six rows agree after
+      ([`g8opclob_fix.out`](scratchpad/g8opclob_fix.out)). Rows: graphics-acceptance
+      vdp_point_val / vdp_point_idx / base_spr_val / base_spr_idx; knife (HEAD's graphics.asm)
+      -> exactly those four red ([`g8_gfx_knife.out`](scratchpad/g8_gfx_knife.out)).
+      Docs: docs/keywords/VDP.md, BASE.md.
 
 - [x] 🐛 **A SPACE AFTER A TWO-CHARACTER RELATIONAL OPERATOR BEFORE A STRING IS A TYPE
       MISMATCH (D-RELSPACE, found 2026-10-31 by a D-REREAD batch 6 reviewer).**
@@ -8461,7 +8471,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10952 (T-6FE392)8 (T-529ABE)` from `TODO.md:16634 (T-529ABE)`: a
+      `TODO.md:10962 (T-6FE392)8 (T-529ABE)` from `TODO.md:16644 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11421,7 +11431,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16634 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16644 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

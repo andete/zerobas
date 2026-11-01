@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `VDP` — read or write a video chip register
 
-> **Status (2026-10-13):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -88,6 +88,14 @@ The one rung not yet proven is **RAM usage**.
 
 ## What we found, and how
 
+- **`POINT` inside `VDP(...)=` ran `POINT` instead of the write** (fixed
+  2026-11-01, D-G8OPCLOB). `VDP(7)=POINT(0,0)` and `VDP(POINT(0,0)+2)=4`
+  ended in `Out of DATA` on zerobas and wrote the register on both
+  reference machines. The statement noted which operation it was before
+  reading its index and value, in a cell that `POINT` itself writes while it
+  is evaluated. The operation is now carried on the stack until both are
+  read ([`g8opclob_probe.out`](../../scratchpad/g8opclob_probe.out)). Found
+  by a code review, not by a program.
 - **An array element in `VDP(...)=` ran a different graphics operation**
   (fixed 2026-10-13, D-ARYCUR). `VDP(B(1))=5` left register 7 unchanged:
   the array lookup's 2-byte pointer overlapped the cell naming the operation,

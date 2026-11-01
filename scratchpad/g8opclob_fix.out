@@ -1,0 +1,7 @@
+v.ctl zb ERR=0 R=5
+v.point zb ERR=0 R=5
+v.idx zb ERR=0 R=4
+b.ctl zb ERR=0 R=2048
+b.spr zb ERR=0 R=2048
+b.idx zb ERR=0 R=2048
+refcache: 0 hit, 6 miss, 6 stored

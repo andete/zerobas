@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `BASE` — where each screen mode keeps its tables in video memory
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. No known divergence.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -107,6 +107,13 @@ cells on each side.
 
 ## What we found, and how
 
+- **`SPRITE$` inside `BASE(...)=` ran the wrong operation** (fixed
+  2026-11-01, D-G8OPCLOB). `BASE(5)=2048+ASC(SPRITE$(0))` and
+  `BASE(5+ASC(SPRITE$(0)))=2048` stored 6144 on zerobas and 2048 on both
+  reference machines: `SPRITE$` overwrote the cell where the assignment had
+  noted its own operation. It is the same fault as `POINT` inside
+  [`VDP(...)=`](VDP.md), and the same fix
+  ([`g8opclob_probe.out`](../../scratchpad/g8opclob_probe.out)).
 - **`BASE` used to answer 0 for everything** (fixed 2026-07-22, graphics slice
   G8). It was a placeholder from the time zerobas had no per-mode table.
   Measuring the VG-8020 showed its table and zerobas's were already identical

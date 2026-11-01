@@ -1198,7 +1198,6 @@ spr_parse_index:
 ; shipping ROM does not move a byte.
 spr_tenant:
                 ld      (GFX_OP),a
-spr_tenant_go:                              ; GFX_OP already set (g8_run parks it at entry)
                 xor     a
                 ld      (GFX_RES),a         ; 0 = no error; the tenant sets 5 on a domain miss
                 call    gfx_tenant  ; CF=1 iff the sub-ROM is absent (clobbers all --
@@ -1408,9 +1407,17 @@ ex_vdp_assign:
 ex_base_assign:
                 ld      a,14                ; GFX_OP = 14 -> tenant BASE write + reprogram
 g8_assign:
-                ld      (GFX_OP),a          ; parked in the selector cell itself rather
-                                            ; than on the stack: the parse below can exit
-                                            ; through raise_error, which unwinds SP
+                push    af                  ; [OP] -- D-G8OPCLOB: carried on the STACK,
+                                            ; not parked in GFX_OP. The index and the
+                                            ; value are full expressions, and POINT (op 2)
+                                            ; / SPRITE$ (op 8) write GFX_OP while they
+                                            ; evaluate: `VDP(7)=POINT(0,0)` ran POINT
+                                            ; again (ERR 4) and `BASE(5)=2048+ASC(
+                                            ; SPRITE$(0))` stored 6144, where both
+                                            ; references store the value (measured
+                                            ; 2026-11-01, scratchpad/g8opclob_probe.out).
+                                            ; An error below exits through raise_error,
+                                            ; which unwinds SP -- the push is never stranded.
                 inc     hl                  ; past the VDP / BASE token
                 call    g8_open_paren       ; DE = n, HL past ')'
                 ld      (GFX_G8N),de
@@ -1425,6 +1432,7 @@ g8_assign:
                 cp      ':'
                 jp      nz,gfx_syntax       ; `VDP(0)=1,2` -> a TRAPPABLE ERR 2, not the
 g8_run:                                     ; run-aborting stmt_error exec_stmt would give
+                pop     af                  ; A = OP, now that nothing else can write GFX_OP
                 push    hl                  ; keep the cursor across the tenant call
                 ; 🔴 NOT `jp spr_stmt_done`: that canonical lives under
                 ; IF G7_RESIDENT and THIS arm is under IF G8_RESIDENT. The two
@@ -1432,7 +1440,7 @@ g8_run:                                     ; run-aborting stmt_error exec_stmt 
                 ; under this jump whenever G7 is off. `make switch-build-check`
                 ; caught it; a shared tail across two switches needs a home
                 ; outside BOTH, and there is none to be had for free here.
-                call    spr_tenant_go       ; GFX_OP is still the op g8_assign parked
+                call    spr_tenant          ; GFX_OP := A, then the tenant
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 g8_missing:
                 ld      a,24                ; Missing operand (measured, spec §3)

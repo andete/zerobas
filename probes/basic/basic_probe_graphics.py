@@ -148,6 +148,20 @@ BEHAV_CASES = [
     # "V" on the screen, and without a clear that is the echoed `VDP(B(1))` --
     # the first run read a bare 'V' on BOTH machines and passed, vacuously.
     ("vdp_arr_idx",   ["DIM B(2):B(1)=7:VDP(B(1))=5", 'CLS:PRINT"V";VDP(7)'], "V"),
+    # D-G8OPCLOB (2026-11-01): VDP(n)= / BASE(n)= parked their op in GFX_OP
+    # BEFORE parsing the index and the value, and POINT / SPRITE$ write GFX_OP
+    # while they evaluate -- so the assignment ran THEIR op: VDP read ERR 4 and
+    # BASE stored 6144 where both references store the value
+    # (scratchpad/g8opclob_probe.out). Each row reads the cell back before
+    # SCREEN0 (which reprograms register 7, and clears the echoed program).
+    ("vdp_point_val", ["SCREEN2:PSET(0,0),5:VDP(7)=POINT(0,0):R=VDP(7)",
+                       'SCREEN0:PRINT"G";R'], "G"),
+    ("vdp_point_idx", ["SCREEN2:PSET(0,0),5:VDP(POINT(0,0)+2)=4:R=VDP(7)",
+                       'SCREEN0:PRINT"H";R'], "H"),
+    ("base_spr_val",  ['SCREEN2:SPRITE$(0)=CHR$(0):BASE(5)=2048+ASC(SPRITE$(0)):R=BASE(5)',
+                       'SCREEN0:PRINT"J";R'], "J"),
+    ("base_spr_idx",  ['SCREEN2:SPRITE$(0)=CHR$(0):BASE(5+ASC(SPRITE$(0)))=2048:R=BASE(5)',
+                       'SCREEN0:PRINT"K";R'], "K"),
     # D-DRAWSUBVAR (2026-10-13): after `=` / `X` the reference takes a VARIABLE
     # REFERENCE only; a number, a string literal, an empty substitution and a
     # sign are ERR 5 there. zerobas accepted the first two and answered the
