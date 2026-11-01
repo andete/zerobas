@@ -465,6 +465,14 @@ item — do **one item per session** to keep context lean.
       NOT the ~3 KB D-SUB2RETIRE needs** -- that needs the structural routes too (tenant
       merges, main / sub duplicates). Next: hand-exclude the ABI edges, take the rows top
       down, each a FULL battery.
+      🔴 **THE FIRST TOP ROW WAS NOT FOLDABLE (same day):** skip_eq's shared prelude ended in
+      `ex (sp),hl`, which swaps with the CALLER's pushed cursor -- inside a called routine
+      (sp) is the return address. The tool now refuses any shared run that touches the stack
+      (push / pop / ex (sp) / sp loads); upper bound after: ~910 B (main 501, sub 162,
+      sub2 131, disk 116). First concrete candidate it leaves: `call var_alloc_or_find` /
+      `jp nc,fp_runtime_error` at ~6 sites (deffn, fat, missing, interp x2, program) -> a
+      `vaof_oom` helper (`call var_alloc_or_find / ret c / jp fp_runtime_error`, 7 B), ~11 B
+      net, unmeasured; then the rows top down, the mid-label sub / sub2 ones read first.
       HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
@@ -8738,7 +8746,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11229 (T-6FE392)8 (T-529ABE)` from `TODO.md:16911 (T-529ABE)`: a
+      `TODO.md:11237 (T-6FE392)8 (T-529ABE)` from `TODO.md:16919 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11698,7 +11706,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16911 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16919 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

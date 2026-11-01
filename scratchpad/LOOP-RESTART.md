@@ -67,6 +67,12 @@ session and the loop resumes exactly where it stopped.
   an entry when a measured title calls it -- the question should not have been re-asked.)
   (4) **mutation sweep: YES** -- output a LIST for him to rule on, no automatic removals.
   (5) **yes**: USR's row B and D-BD2FRAGILE stay as they are.
+  ➡️ **WHERE THE CAMPAIGN STANDS (2026-11-01 ~16:45):** D-SUITESWEEP step 2a done (18/18 never-red
+  suites catch a knife in their own subject -- stable, not blind; cadence / redundancy are
+  Joost's call, recorded in the item). D-REREAD-EDGES: the ranking tool is in
+  (scratchpad/edges_rank.py, ~910 B upper bound across all ROMs after refusing stack-touching
+  runs) -- NEXT: build `vaof_oom` (~11 B, FULL battery), then the rows top down, reading the
+  mid-label sub / sub2 rows first. EDGES alone cannot close D-SUB2RETIRE's ~3 KB.
   The questions as asked:
   (1) the next campaign -- RAM usage (tier 4) / D-REREAD-EDGES -> D-SUB2RETIRE (budget; my
   recommendation, then RAM) / un-pause speed (tier 5: D-ASAVEDI, D-BD2FRAGILE's real fix);
@@ -2021,7 +2027,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13218 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13226 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

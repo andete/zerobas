@@ -73,6 +73,11 @@ def key(ins):
     return ins.mnem
 
 
+def touches_stack(ins):
+    m = ins.mnem.lower()
+    return m.startswith(("push", "pop", "ex (sp", "ld sp", "inc sp", "dec sp")) or ins.stack is not None
+
+
 def best_shared(seqs, longest=4, reverse_text=False):
     """-> (k, L, bytes, text): the most bytes saved by one sequence of L instrs
     that k of the given instruction lists share (pre: their LAST L; the caller
@@ -81,7 +86,11 @@ def best_shared(seqs, longest=4, reverse_text=False):
     for L in range(1, longest + 1):
         groups = collections.defaultdict(list)
         for s in seqs:
-            if len(s) >= L:
+            # 🔴 a shared run that touches the STACK (push / pop / ex (sp),..) is not a
+            # 0-byte fold: inside a called routine (sp) is the RETURN ADDRESS. The first
+            # top row (skip_eq's `... / ex (sp),hl` prelude, 2026-11-01) was exactly
+            # that -- z80flow's stack-depth blind spot, now refused here.
+            if len(s) >= L and not any(touches_stack(x) for x in s[-L:]):
                 groups[tuple(key(x) for x in s[-L:])].append(s)
         for k_seq, members in groups.items():
             k = len(members)

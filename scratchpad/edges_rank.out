@@ -1,36 +1,31 @@
 labels walked: 4630; call targets with >= 2 sites: 492
-candidate bytes (overlapping, an UPPER bound): prelude 543, postlude 627
+candidate bytes (overlapping, an UPPER bound): prelude 417, postlude 493
 per ROM context (prelude + postlude, upper bound):
-  main      674 B
-  subp0     131 B
-  subp1      74 B
-  sub2p0    148 B
+  main      501 B
+  subp0     101 B
+  subp1      61 B
+  sub2p0    127 B
   sub2p1      4 B
-  disk      139 B
+  disk      116 B
 
 kind  saved  k/n   L  ctx     target                     jp-in  shared instructions
 PRE     48   7/17  4  sub2p0  fo_dev_cas+34                 0   call $0544 / xor a / call $0544 / xor a
 POST    48   7/17  4  sub2p0  fo_dev_cas+34                 0   xor a / call $0544 / xor a / call $0544
 PRE     30   7/14  3  subp0   tk_copy_up+3                  0   xor a / call $0544 / xor a
 POST    28   8/14  2  subp0   tk_copy_up+3                  0   xor a / call $0544
-POST    18   7/14  3  subp0   dtf_fx+12                     0   pop af / pop hl / ret
-POST    18   7/7   3  sub2p0  ls_bsave+9                    0   pop af / pop hl / ret
-PRE     14   3/8   3  main    skip_eq                       0   call $47C0 / jp nc,$42FE / ex (sp),hl
-POST    14   3/9   3  main    var_alloc_or_find             0   jp nc,$42FE / ex (sp),hl / call $42C6
 POST    12   3/44  3  main    skip_spaces                   1   cp $29 / jp nz,$5AED / inc hl
-POST    12   4/7   2  main    fch_check                     0   push hl / call $4F88
-PRE     12   4/6   2  main    fch_mode_class                0   call $6EDD / push hl
 POST    10   6/7   1  main    evsp_close                    0   inc ix
 POST    10   3/12  2  main    var_name_key                  0   call $42D5 / cp $28
 POST    10   3/12  2  sub2p0  tt_trap_in+1                  0   ld a,($F3E0) / and $E7
 POST    10   3/21  2  disk    dskio_err+2                   1   cp $29 / jp nz,$5AED
 POST     9   4/11  1  main    req_letter                    0   call $46CD
 PRE      9   4/13  1  main    var_str_type                  0   call $40E6
+POST     9   4/9   1  main    var_alloc_or_find             0   jp nc,$42FE
 POST     9   4/10  1  main    arga_widen                    0   call $3347
 PRE      9   4/5   1  main    round_and_finalize            8   call $529E
-PRE      8   3/34  2  main    skip_comma                    0   call $4541 / push de
-POST     8   3/3   2  main    eval_pos_arg                  0   push de / call $42C0
 POST     8   5/12  1  main    ev_sp                         2   cp $29
 POST     8   2/4   4  main    evmc_arg_int                  0   ret c / ret z / call $529E / call $3969
 PRE      8   2/2   4  main    fp_trunc                      0   call $50E8 / ret c / ret z / call $529E
-POST     8   3/4   2  disk    fdcr_secloop+11               0   push hl / call $4F88
+POST     7   2/6   4  main    evmc_prologue                 0   ret nz / ld a,($F806) / or a / jr nz,$51B2
+PRE      6   3/44  1  main    skip_spaces                   1   call $4683
+POST     6   3/20  1  main    eval                          0   call $4410
