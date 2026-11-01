@@ -531,6 +531,15 @@ item — do **one item per session** to keep context lean.
       (as kwtime / kwram) -- the costliest never-red ones are ctrlkeys (~8.5 min), screenerr,
       lnblank, programs, the lineerr shards; (b) STEP 2b, which cheaper suites catch the same
       18 knives (redundancy) -- a whole battery per knife, ~7-8 h for all 18.
+      🏗️ **RULED (Joost, 2026-11-01): "run the long stable suites daily".** DONE the same day:
+      tools/run_gates.py `DAILY_SUITES` -- the never-red-in-a-gate-run suites averaging >= 60 s
+      (ctrlkeys, screenerr, lnblank, math, ifsem, deffn-strict, deffn, width, lineerr (8
+      shards), arrdim, castail, nodisk, pusing, penderr) leave every battery, FULL included;
+      a SCOPED plan still RUNS one it picks for what changed (`--keep`, passed by
+      pick_gates.py); `make gates-sweeps` runs them with kwtime / kwram, and a green run
+      writes a `daily_suites.stamp` beside the kept sweep pins (run_gates.SLOW_PIN_KEEP; not
+      committed -- it is per-machine state), which gates-plan reads for its "due"
+      line. Step 2b (redundancy) stays open, for a quiet day / overnight.
       📏 **SIDE FINDING (same day): a docs-only commit is SCOPED, not STATIC, because every
       TODO edit rewrites cited line numbers inside scratchpad/missop3_probe.py,
       playop_probe.py and revertsweep.py** -- the planner then schedules their emulator
@@ -8769,7 +8778,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11260 (T-6FE392)8 (T-529ABE)` from `TODO.md:16942 (T-529ABE)`: a
+      `TODO.md:11269 (T-6FE392)8 (T-529ABE)` from `TODO.md:16951 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11729,7 +11738,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16942 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16951 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

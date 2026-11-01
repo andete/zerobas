@@ -109,6 +109,18 @@ SWEEP_STAMP = "build/sweeps-rom.txt"
 # tools/pick_gates.py says when their pins are older than that.
 PER_ROM_SWEEPS = ("kwsweep",)
 SLOW_SWEEPS = ("kwtime", "kwram")
+# ⏱ Joost 2026-11-01: "run the long stable suites daily" (D-SUITESWEEP). The
+# suites that never went red in a logged gate run (scratchpad/suite_census.out)
+# and average >= 60 s. Each DID catch a knife in its own subject
+# (suitesweep_knives.out: stable, not blind), so they are not dropped: a SCOPED
+# run still runs one the planner PICKS for what changed (`--keep`), and
+# `make gates-sweeps` runs them all, once a day.
+DAILY_SUITES = ("ctrlkeys-acceptance", "screenerr-acceptance", "lnblank-acceptance",
+                "math-acceptance", "ifsem-acceptance", "deffn-strict",
+                "deffn-acceptance", "width-acceptance", "lineerr-acceptance",
+                "arrdim-acceptance", "castail-acceptance", "nodisk-acceptance",
+                "pusing-acceptance", "penderr-acceptance")
+DAILY_STAMP = "daily_suites.stamp"
 SLOW_PIN_KEEP = "scratchpad/gate_pins"
 
 
@@ -732,6 +744,8 @@ def main():
     ap.add_argument("--serial", action="store_true",
                     help="run gates one at a time (no parallelism)")
     ap.add_argument("--exclude", default="")
+    ap.add_argument("--keep", default="",
+                    help="daily suites to run in THIS battery anyway (the planner's picks)")
     ap.add_argument("--static", action="store_true",
                     help="run ONLY the static tier (~20s) -- the fast loop for "
                          "iterating; never records a green battery")
@@ -814,12 +828,20 @@ def main():
         print(f"=== SKIPPING {len(EMULATOR)} emulator target(s): {skip_why} ===",
               flush=True)
     # ⏱ 2026-10-31: kwtime / kwram are their own run (`make gates-sweeps`).
+    keep = set(x for x in a.keep.split(",") if x)
     if a.slow_sweeps:
-        excl |= set(EMULATOR) - set(SLOW_SWEEPS)
-        print("=== --slow-sweeps: ONLY kwtime / kwram of the emulator tier ===",
-              flush=True)
+        excl |= set(EMULATOR) - set(SLOW_SWEEPS) - set(DAILY_SUITES)
+        print("=== --slow-sweeps: ONLY kwtime / kwram and the daily suites of the "
+              "emulator tier ===", flush=True)
     else:
         excl |= set(SLOW_SWEEPS)
+        _daily_out = set(DAILY_SUITES) - keep
+        excl |= _daily_out
+        if _daily_out:
+            print(f"=== ⏱ {len(_daily_out)} daily suite(s) not in this run (Joost "
+                  "2026-11-01; `make gates-sweeps` runs them)"
+                  + (f"; kept as picked: {' '.join(sorted(keep & set(DAILY_SUITES)))}"
+                     if keep & set(DAILY_SUITES) else "") + " ===", flush=True)
     # D-STATICEMU: a run that does not re-measure the sweeps checks the tier sheet
     # against the pins the LAST run wrote -- said out loud -- and, with none on
     # record at all, does not run the check rather than have it refuse.
@@ -960,6 +982,11 @@ def main():
     if all(results.get(g, (1,))[0] == 0 for g in PER_ROM_SWEEPS):
         with open(SWEEP_STAMP, "w") as fh:
             fh.write(rom_now + "\n")
+    if a.slow_sweeps and all(results.get(g, (1,))[0] == 0 for g in DAILY_SUITES
+                             if g in results):
+        os.makedirs(SLOW_PIN_KEEP, exist_ok=True)
+        with open(os.path.join(SLOW_PIN_KEEP, DAILY_STAMP), "w") as fh:
+            fh.write(" ".join(hashes()) + "\n")
     for _g, _p in zip(SWEEPS, SWEEP_PINS):          # ⏱ keep a measured slow pin
         if _g in SLOW_SWEEPS and results.get(_g, (1,))[0] == 0 and os.path.exists(_p):
             os.makedirs(SLOW_PIN_KEEP, exist_ok=True)

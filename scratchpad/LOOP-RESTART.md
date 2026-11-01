@@ -73,6 +73,10 @@ session and the loop resumes exactly where it stopped.
   (scratchpad/edges_rank.py, ~910 B upper bound across all ROMs after refusing stack-touching
   runs) -- NEXT: build `vaof_oom` (~11 B, FULL battery), then the rows top down, reading the
   mid-label sub / sub2 rows first. EDGES alone cannot close D-SUB2RETIRE's ~3 KB.
+  ⏱ **CADENCE (Joost 2026-11-01): 14 long, stable suites are DAILY now** (run_gates.py DAILY_SUITES;
+  `make gates-sweeps` runs them with kwtime / kwram -- ALONE, not beside a battery; gates-plan says
+  when they are due). A FULL no longer contains them; a SCOPED plan still runs one it picks. At a
+  hand-off the daily sweep should be current too.
   The questions as asked:
   (1) the next campaign -- RAM usage (tier 4) / D-REREAD-EDGES -> D-SUB2RETIRE (budget; my
   recommendation, then RAM) / un-pause speed (tier 5: D-ASAVEDI, D-BD2FRAGILE's real fix);
@@ -2027,7 +2031,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13249 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13258 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

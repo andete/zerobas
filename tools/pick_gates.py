@@ -522,6 +522,15 @@ def main(argv):
                 os.path.join(ROOT, run_gates.SLOW_PIN_KEEP, p))) / 3600)
         except OSError:
             ages.append(None)
+    try:
+        dh = (time.time() - os.path.getmtime(os.path.join(
+            ROOT, run_gates.SLOW_PIN_KEEP, run_gates.DAILY_STAMP))) / 3600
+    except OSError:
+        dh = None
+    if dh is None or dh >= DAILY_HOURS:
+        print(f"  ⏱ the {len(run_gates.DAILY_SUITES)} daily suites are due (last green "
+              + ("never" if dh is None else f"{dh:.0f} h ago")
+              + "): run `make gates-sweeps` ALONE, not beside a battery")
     if any(h is None or h >= DAILY_HOURS for h in ages):
         print("  ⏱ kwtime / kwram are due (last measured "
               + ", ".join("never" if h is None else f"{h:.0f} h ago" for h in ages)
@@ -542,8 +551,9 @@ def main(argv):
                             cwd=ROOT).returncode
     else:
         skip = ",".join(t for t in run_gates.EMULATOR if t not in emu)
+        keep = ",".join(t for t in emu if t in run_gates.DAILY_SUITES)
         rc = subprocess.run(["python3", "tools/run_gates.py", "--full",
-                             "--exclude", skip], cwd=ROOT).returncode
+                             "--exclude", skip, "--keep", keep], cwd=ROOT).returncode
     for t in x5:
         r = subprocess.run(["make", t], cwd=ROOT, capture_output=True, text=True)
         print(f"{t} exit={r.returncode}")
