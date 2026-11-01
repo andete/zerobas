@@ -973,6 +973,39 @@ item — do **one item per session** to keep context lean.
       `str_eval` decline and the numeric re-parse of the same cursor (the
       window is one probe), or price a 2-B variant (cursor only, the result
       left in DAC -- safe only if nothing touches DAC/FACTYP in that window).
+      📐 **THE WINDOW, TRACED BY READING (2026-11-01; a read-only design study, its
+      load-bearing claims re-checked by hand):**
+      (a) The decline is consumed at the SAME cursor by cl_opnd_lo's probe (basic/expr.asm,
+      then ev_f -> ev_usr) and, one level up, by every `str probe -> eval` caller: PRINT
+      (exp_strvar -> exp_num), concatenation's sct_err2 (catusr's u.cat / u.catl), fn_ev,
+      els_tc_common. Each `eval` runs set_factyp2 (FACTYP := 2) BEFORE ev_logic's probe --
+      checked -- so **the 2-B variant is OUT**: the result's type would be lost. DAC itself
+      is not written in any window (by reading). Minimum **5 B**: key = cursor AT the
+      USR token (2), cursor after the call (2), the result type (1); the value stays in DAC.
+      (b) 🔴 **A HAZARD THE 10-30 PRICE MISSED: cl_rel_rhs** probes the comparison's RIGHT
+      side with str_eval_ix while the LEFT operand is still only in FAC / FACTYP
+      (push_lhs_frame comes after -- checked). A str_usr run there destroys the lhs
+      (`PRINT 1.5<USR(5)`). str_usr must NOT run at that site; a string rhs there is ERR
+      13 either way (ev_usr's ur_str gives 13), so skipping changes no answer. ~5-7 B.
+      (c) **Cells:** key RN_NEW ($F6AB) + cursor-after RN_INC ($F6AD) -- RENUM / AUTO only
+      (sub/lineedit.asm, AU_NUM / AU_INC aliases -- checked), both re-initialised on entry,
+      and RENUM parses numbers with ldr_num, never eval; type byte $F7FF TKDCOUNT (set on
+      tk_float entry; write the cache AFTER usr_ret's fac_typ_int16, which uses CVT_MODE).
+      REJECTED: PLN_* / MRG_PTR / TKLNUM (inside FN_PAREA's 9th parameter slot), RN_PTR /
+      RN_OLD (inside BUF), TEMP* / SWPTMP (live across a statement), AUTFLG (C-BIOS INLIN
+      reads it), TKVALEND (must rest at 0).
+      (d) **Stale keys are the real risk:** AUTO / RENUM leave a line number in RN_NEW that
+      could equal a cursor. Keep its HIGH byte < $80 while idle: clear in raise_error (A is
+      already $56 there, 3 B), AUTO's exa_stop (A = 0, 3 B), RENUM's normal exit (sub-ROM),
+      and on every cache hit.
+      ⚠️ **NOT YET VERIFIED** (the study's own list): every deferred-error decline (DRAW,
+      PLAY, PRINT USING, ers_rhs_mismatch, the LEN family, CVI) reaching raise_error; AUTO
+      running a line typed without its number; the BUG C class (a nested USR evaluated
+      inside a string probe that then declines runs twice, error paths only); RN_NEW's boot
+      value. catusr-acceptance's four rows (1 / 1 / 1 / 0 runs) trace unchanged.
+      ➡️ **NEXT: build it** -- str_usr + ev_usr's cache hit + the cl_rel_rhs skip + the four
+      clears; rows for `PRINT USR1("ABC")`, `B$=USR1(S$)`, `PRINT USR(5)` (once),
+      `USR(USR(5))` (inner once), `PRINT 1.5<USR(5)`; price against `make basic-reloc`.
 
 - [x] 🔴 **`PRINT USING` PRINTED A TINY NUMBER'S DIGITS AS IF IT WERE NOT TINY
       (D-PUTINY, found 2026-10-29 by the program ladder's L4_tables).**
@@ -8593,7 +8626,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11084 (T-6FE392)8 (T-529ABE)` from `TODO.md:16766 (T-529ABE)`: a
+      `TODO.md:11117 (T-6FE392)8 (T-529ABE)` from `TODO.md:16799 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11553,7 +11586,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16766 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16799 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
