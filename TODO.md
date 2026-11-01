@@ -473,11 +473,21 @@ item — do **one item per session** to keep context lean.
       arrdim, nodisk, intarg, string, inputary, sound and more. ⚠️ CANDIDATES, not a verdict:
       saved logs are the runs someone kept; some knife scripts print their own red rows
       instead of failing through make; never red can mean "guards something nobody broke".
-      ➡️ **STEP 2, THE SWEEP:** per candidate, one same-length knife in the code it is NAMED
-      for (hash the ROM around each plant), run the battery, record which suites go red:
-      the candidate itself (alive), only others (redundant against this battery), nothing
-      (the subject is unguarded -- a finding of its own). Budget: the never-red set's summed
-      time is ~6255 s; at the battery's parallelism that is ~13 min per knife.
+      📏 **STEP 2a, DONE 2026-11-01 -- EVERY MEASURED SUITE CATCHES A KNIFE IN ITS OWN
+      SUBJECT: 18 / 18** ([`suitesweep_knives.py`](scratchpad/suitesweep_knives.py) ->
+      [`suitesweep_knives.out`](scratchpad/suitesweep_knives.out); one same-length instruction
+      per suite, designed by a read-only study, every anchor unique, every plant moved the
+      ROM hashes, base restored byte-identical): math, ifsem, width, lineerr, arrdim, nodisk,
+      dout, intarg, pulong, catterm, basicint, inputary, string, binfre, instr128, loaddi,
+      caswbrk, sound -- all RED. NO READING for ctrlkeys and biosregs: their subjects live only
+      in cbios-repack/*.patch, and the edited patch failed the main-ROM build (unexamined).
+      🔮 MISS: predicted ~16 / 20 with caswbrk / loaddi / nodisk the likely misses -- all
+      three caught. ➡️ **So "never red" here means STABLE, not BLIND**: the census alone
+      would have been read the wrong way. The waste question becomes CADENCE and
+      REDUNDANCY, which is Joost's call: (a) move long, stable suites to the daily sweep
+      (as kwtime / kwram) -- the costliest never-red ones are ctrlkeys (~8.5 min), screenerr,
+      lnblank, programs, the lineerr shards; (b) STEP 2b, which cheaper suites catch the same
+      18 knives (redundancy) -- a whole battery per knife, ~7-8 h for all 18.
       📏 **SIDE FINDING (same day): a docs-only commit is SCOPED, not STATIC, because every
       TODO edit rewrites cited line numbers inside scratchpad/missop3_probe.py,
       playop_probe.py and revertsweep.py** -- the planner then schedules their emulator
@@ -8714,7 +8724,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11205 (T-6FE392)8 (T-529ABE)` from `TODO.md:16887 (T-529ABE)`: a
+      `TODO.md:11215 (T-6FE392)8 (T-529ABE)` from `TODO.md:16897 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11674,7 +11684,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16887 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16897 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

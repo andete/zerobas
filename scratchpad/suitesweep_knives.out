@@ -1,0 +1,24 @@
+base roms b6842a878382
+ctrlkeys-acceptance      NO READING: the build FAILED
+   make: *** [build/zerobas-main-eu.rom] Error 1
+math-acceptance          roms 407ec63c3172  CAUGHT (red)   last line: make: *** [math-acceptance] Error 1
+ifsem-acceptance         roms c0a4104d811a  CAUGHT (red)   last line: make: *** [ifsem-acceptance] Error 1
+width-acceptance         roms fb6928743ff8  CAUGHT (red)   last line: make: *** [width-acceptance] Error 1
+lineerr-acceptance       roms 3f17bb48635e  CAUGHT (red)   last line: make: *** [lineerr-acceptance] Error 1
+arrdim-acceptance        roms 90d3386f911c  CAUGHT (red)   last line: make: *** [arrdim-acceptance] Error 1
+nodisk-acceptance        roms 62cdbf8d01d2  CAUGHT (red)   last line: make: *** [nodisk-acceptance] Error 1
+dout-acceptance          roms 7e6623a4a57e  CAUGHT (red)   last line: make: *** [dout-acceptance] Error 1
+intarg-acceptance        roms ce5641271b5b  CAUGHT (red)   last line: make: *** [intarg-acceptance] Error 1
+pulong-acceptance        roms 655fc43354bc  CAUGHT (red)   last line: make: *** [pulong-acceptance] Error 1
+catterm-acceptance       roms a6e7b5f2833f  CAUGHT (red)   last line: make: *** [catterm-acceptance] Error 1
+basicint-acceptance      roms c118d3c4209f  CAUGHT (red)   last line: make: *** [basicint-acceptance] Error 1
+inputary-acceptance      roms 0607e0e64864  CAUGHT (red)   last line: make: *** [inputary-acceptance] Error 2
+string-acceptance        roms f64a2e009001  CAUGHT (red)   last line: make: *** [string-acceptance] Error 1
+binfre-acceptance        roms 2532afa30744  CAUGHT (red)   last line: make: *** [binfre-acceptance] Error 1
+biosregs-acceptance      NO READING: the build FAILED
+   make: *** [build/zerobas-main-eu.rom] Error 1
+instr128-acceptance      roms 3f0b2a129096  CAUGHT (red)   last line: make: *** [instr128-acceptance] Error 1
+loaddi-acceptance        roms 44575f8bb034  CAUGHT (red)   last line: make: *** [loaddi-acceptance] Error 1
+caswbrk-acceptance       roms 33a421b5f66d  CAUGHT (red)   last line: make: *** [caswbrk-acceptance] Error 1
+sound-acceptance         roms ca59fd38e054  CAUGHT (red)   last line: make: *** [sound-acceptance] Error 1
+restored roms b6842a878382 (base b6842a878382)
