@@ -667,8 +667,10 @@ pch_done:
 exp_tab:
                 call    exp_pos_arg         ; A = n (0..255); HL past the ')'
                 ld      c,a
-                ld      a,(CSRX)
-                dec     a                   ; 0-based current column
+                call    sink_col            ; A = the ACTIVE SINK's 0-based column
+                                            ; (D-LPRTAB: this read CSRX, so `LPRINT
+                                            ; "CP 2 ADA";TAB(12)` padded 12 spaces from
+                                            ; printer column 8; both references pad 4)
                 ld      b,a
                 ld      a,c
                 sub     b                   ; n - column
@@ -719,31 +721,7 @@ exp_pos_arg:
 ; at 28 and 28+14=42 exceeds every legal SCREEN 0 width, so both predict a wrap
 ; everywhere. The two-item row is what settles it.
 print_comma_zone:
-                ; 🔴 D-LPTVERB: THE ZONE IS COUNTED FROM THE *ACTIVE SINK'S* COLUMN.
-                ; This read CSRX unconditionally, which is the SCREEN cursor -- and
-                ; printing to the printer moves neither CSRX nor LINLEN. Measured,
-                ; `LPRINT"A","B"` padded to 14 spaces where both references pad to
-                ; 13, because the screen cursor was still at column 0 while the
-                ; printer head was at 1. R-LP5 says the zones are PRINT's, and that
-                ; means PRINT's arithmetic over the printer's own column.
-                ld      a,(PRDEST)
-                or      a
-                jr      z,pcz_screen        ; screen sink -> CSRX
-                ld      a,(PRDEV)
-                ; D-OPENGRP: on a GRP: channel the column NEVER advances -- `PRINT
-                ; #1,"AB","C";` moves the cursor 17 glyphs on the VG-8020 (round 5:
-                ; 14 spaces after any item), so the zone is counted from column 0.
-                sub     4                   ; PRDEV 4 = GRP: -> A = 0 = the column
-                jr      z,pcz_col
-                add     a,3                 ; back to PRDEV - 1
-                jr      nz,pcz_screen       ; a FILE/CRT/tape channel keeps CSRX,
-                                            ; which is what it did before this slice
-                ld      a,(LPTPOS)          ; already 0-based
-                jr      pcz_col
-pcz_screen:
-                ld      a,(CSRX)
-                dec     a                   ; 0-based column
-pcz_col:
+                call    sink_col            ; A = the active sink's 0-based column
                 ld      c,a                 ; C = current column (for the fit test
 pcz_mod:
                 cp      14
@@ -765,4 +743,34 @@ pcz_pad:
                 ld      a,' '
                 rst     $18                 ; screen or file (PRDEST); preserves BC
                 djnz    pcz_pad
+                ret
+
+; --- sink_col: A = the 0-based column of the sink PRINT is writing to --------
+; Shared by the comma zones and TAB (D-LPRTAB, 2026-11-01: TAB still read CSRX
+; after D-LPTVERB had moved the zones off it). Clobbers A and F only.
+sink_col:
+                ; 🔴 D-LPTVERB: THE ZONE IS COUNTED FROM THE *ACTIVE SINK'S* COLUMN.
+                ; This read CSRX unconditionally, which is the SCREEN cursor -- and
+                ; printing to the printer moves neither CSRX nor LINLEN. Measured,
+                ; `LPRINT"A","B"` padded to 14 spaces where both references pad to
+                ; 13, because the screen cursor was still at column 0 while the
+                ; printer head was at 1. R-LP5 says the zones are PRINT's, and that
+                ; means PRINT's arithmetic over the printer's own column.
+                ld      a,(PRDEST)
+                or      a
+                jr      z,pcz_screen        ; screen sink -> CSRX
+                ld      a,(PRDEV)
+                ; D-OPENGRP: on a GRP: channel the column NEVER advances -- `PRINT
+                ; #1,"AB","C";` moves the cursor 17 glyphs on the VG-8020 (round 5:
+                ; 14 spaces after any item), so the zone is counted from column 0.
+                sub     4                   ; PRDEV 4 = GRP: -> A = 0 = the column
+                ret     z
+                add     a,3                 ; back to PRDEV - 1
+                jr      nz,pcz_screen       ; a FILE/CRT/tape channel keeps CSRX,
+                                            ; which is what it did before this slice
+                ld      a,(LPTPOS)          ; already 0-based
+                ret
+pcz_screen:
+                ld      a,(CSRX)
+                dec     a                   ; 0-based column
                 ret

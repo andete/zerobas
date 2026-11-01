@@ -1,0 +1,12 @@
+L4_marks
+  Philips_VG_8020                ENDED t=32.5  lpt 19 lines
+  C-BIOS_MSX1_EU_REPACK_NODISK   ENDED t=38.9  DIFFERS  x1.20 time
+    screen:  line 1: ref '  [260][270][280][270][280]' / zb '  [260][270][280][270][280]Break in 300'
+    ref screen:    [260][270][280][270][280] |   Break in 300 |   Ok |   Ã¿
+    zb screen:     [260][270][280][270][280]Break in 300 |  |   ZB |   Ã¿
+  C-BIOS_MSX1_EU_REPACK_DISK     ENDED t=38.9  DIFFERS  x1.20 time
+    screen:  line 1: ref '  [260][270][280][270][280]' / zb '  [260][270][280][270][280]Break in 300'
+    ref screen:    [260][270][280][270][280] |   Break in 300 |   Ok |   Ã¿
+    zb screen:     [260][270][280][270][280]Break in 300 |  |   ZB |   Ã¿
+
+FAIL: 1 program(s), 2 divergent run(s)

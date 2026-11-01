@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `LPRINT` — print to the printer
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error not yet proven. No known
 > divergence.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -39,7 +39,8 @@ All measured with a printer attached, on both reference machines:
   sign and a trailing space. `LPRINT 5` sends ` 5 `, `LPRINT -5` sends `-5 `.
 - **`;` joins, `,` moves to the next 14-column zone**, counted from the
   printer head's own column: `LPRINT "A","B"` sends `A`, 13 spaces, `B`.
-- **`TAB(n)` pads to column n and `SPC(n)` sends n spaces.**
+- **`TAB(n)` pads to column n and `SPC(n)` sends n spaces.** `TAB` counts
+  from the printer head's column too, as `,` does.
 - **`LPRINT USING` formats exactly like `PRINT USING`**: `LPRINT USING"##";5`
   sends ` 5`.
 - **It does not end the program line.** `LPRINT "A":B=9` runs the `B=9`, and
@@ -95,6 +96,15 @@ The rungs not yet proven are **RAM usage**, which has not been compared for
 
 ## What we found, and how
 
+- **`TAB` in an `LPRINT` counted from the screen cursor** (fixed 2026-11-01,
+  D-LPRTAB). `LPRINT "CP 2 ADA";TAB(12);T` sent 12 spaces where both
+  reference machines send 4, because the screen cursor was still at
+  column 0. D-LPTVERB had fixed the same mistake for `,` and left `TAB`
+  behind; they now share one routine. Found by a whole program, the class
+  marks rung of the program ladder
+  ([`progladder_marks.out`](../../scratchpad/progladder_marks.out)). The
+  existing `TAB` row could not see it: the printer and the screen both
+  started at column 0.
 - **`LPRINT` arrived on 2026-08-06** (D-LPTVERB), after 38 rows were measured
   on both reference machines
   ([lptverb-msx1-characterization.md](../lptverb-msx1-characterization.md)).

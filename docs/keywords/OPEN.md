@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `OPEN` — open a file or device on a numbered channel
 
-> **Status (2026-10-12):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors ✓ · RAM usage not yet proven · every error ✓. `OPEN "GRP:"`, text on
 > the graphics screen, works since 2026-10-12. Recorded differences, all in
 > the channel table: one file opened twice under names that differ only in
@@ -76,7 +76,7 @@ the channel number may be left out.
   carriage return starts a new line; every other code below 32, line feed
   included, is ignored; `CHR$(1)` followed by a code from 64 to 95 draws
   graphic character 0 to 31 (`CHR$(1);"A"` is the smiley). A comma in
-  `PRINT #` always pads 14 spaces. Only one `GRP:` channel may be open.
+  `PRINT #` always pads 14 spaces, and `TAB(n)` always pads n. Only one `GRP:` channel may be open.
 
 ### Writing and reading
 
@@ -178,6 +178,11 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## What we found, and how
 
+- **`TAB` on a `GRP:` channel padded from the text cursor's column** (fixed
+  2026-11-01, D-LPRTAB). With the text cursor at column 11, `PRINT #1,"A";TAB(5);"B"`
+  padded nothing on zerobas and 5 spaces on the VG-8020, which counts `TAB`
+  from column 0 here exactly as it counts the `,` zones. Found while fixing
+  `TAB` in [`LPRINT`](LPRINT.md); `TAB` and `,` now share one routine.
 - **Without a disk, `OPEN "NUL:"` went to the cassette** (fixed 2026-10-29,
   D-NODEV). The VG-8020 with no disk answers `Bad file name` for any name with a
   `:` in it that is not a device it knows (`"NUL:"`, `"AB:"`, `":X"`,

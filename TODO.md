@@ -444,10 +444,60 @@ item — do **one item per session** to keep context lean.
       would only grow the $72D4 pin pad (520 B already), a hole, not usable space.
       ➡️ **WHAT IS LEFT FOR D-REREAD** is the held-back lists of batches 7-11 (rulings, tool
       checks, stack-depth reviews) and spans under ~50 B. Total over eleven batches: ~1,360 B.
+      ⏩ **NEXT PHASE: D-REREAD-EDGES (Joost 2026-11-01)** -- reread a routine TOGETHER WITH
+      ITS EDGES (its callers' call sites, its callees' contracts): a prelude or postlude
+      every caller repeats (fold into the callee / a second entry), a check done on both
+      sides of the call (POKE's dead check_fperr_only was one), a result convention every
+      caller converts, a one-caller wrapper. Tool first: rank clusters from
+      build/contracts.json + the call graph by bytes x sites, EXCLUDING the ABI edges (sub
+      tenants' callees, published BASIC entries, the low-region forced set). 🔴 z80flow is
+      blind to stack depth and an edge change is where it bites (batch 10's dimedge, batch
+      11's DIM crash): a cluster change runs the FULL battery. Feeds D-SUB2RETIRE.
       HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
+
+- [ ] 💰 **RETIRE SUB2 — "HAVING A NEED FOR A SUB2 FEELS LIKE A FAILURE" (D-SUB2RETIRE, Joost
+      2026-11-01).**
+      🎚️ BUDGET — elegance and speed: fewer ROMs, fewer slot crossings.
+      🤖 **AUTONOMOUS** — a standing goal, not a ban: correctness and completeness come first
+      (Joost, same day), so a feature still lands wherever it fits, sub2 included. Rules:
+      a commit that grows sub2 states its bytes; a feature that could go in sub OR sub2 goes
+      in sub; space a carve frees goes to sub2 tenants first; carving runs as its own
+      campaign, never as a tax on a fix. 📏 Measured 2026-11-01 (`make basic-reloc`): sub2
+      holds ~5.5 KB in ~12 tenants (grpprt, edctrl, frelive, p0cb, trapstmt, filestmt,
+      loadsave, scrstmt, tapeprog, pgmedit, beep, tokpay); sub has ~2.7 KB free (35 B page 0,
+      2691 B page 1) -> ~3 KB more to free across main + sub. RE-MEASURE, never quote.
+      ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
+      routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
+      main / sub duplicate removal.
+      ⏩ **Second half, TIER 5 (speed is paused for ROM space):** promote HOT tenants into
+      main page 0 / 1 once the walls allow. The 2026-07-30 de-eviction refutation priced
+      BYTES at a 0 B wall; this prices TIME: count each tenant's entries over the program
+      ladder (a trampoline watchpoint -- registers / RAM only), x the round-trip cost, / the
+      main bytes the move costs; promote from the top, re-rank after each move. Suspect #1:
+      ary_engine (scalar lookups share it, the hot path). Only into page 1 unless a low
+      label's forced set allows it; nothing a tenant calls back into.
+
+- [x] 🐛 **`LPRINT …;TAB(n)` COUNTED FROM THE SCREEN CURSOR, NOT THE PRINTER HEAD; `TAB` ON
+      `GRP:` FROM THE TEXT CURSOR, NOT COLUMN 0 (D-LPRTAB, found 2026-11-01 by the program
+      ladder's L4_marks).**
+      🎚️ TIER 1 — a printed report's columns are wrong in ordinary typed-in BASIC.
+      🤖 **AUTONOMOUS** — exp_tab read CSRX for every sink; D-LPTVERB had moved the comma
+      zones to the ACTIVE SINK's column (printer -> LPTPOS, GRP: -> 0) and left TAB behind.
+      L4_marks' `LPRINT "CP 2 ";NS(I);TAB(12);T;LPOS(0)` sent 12 spaces from printer column 8
+      where the VG-8020 sends 4 ([`progladder_marks.out`](scratchpad/progladder_marks.out)).
+      lptverb's `lpr-tab` could not see it: printer and screen both at column 0.
+      ✅ **FIXED 2026-11-01**: the zones' column logic is now `sink_col` (basic/print.asm),
+      called by print_comma_zone AND exp_tab. Rows: lptverb `lpr-tabmid` (printer mid-line,
+      screen at 0) / `lpr-tabscr` (screen mid-line, printer at 0), both references agree;
+      opengrp `tab` (text cursor at 11: the VG-8020 pads from column 0). Knife (HEAD's
+      print.asm): exactly those red ([`lprtab_knife.out`](scratchpad/lprtab_knife.out),
+      [`lprtab_knife_grp.out`](scratchpad/lprtab_knife_grp.out)). L4_marks' printer log is
+      SAME after ([`progladder_marks2.out`](scratchpad/progladder_marks2.out)); its other
+      finding, STOP's `Break in` not starting a fresh line, is the next item.
+      Docs: docs/keywords/LPRINT.md, OPEN.md.
 
 - [x] 🐛 **`VDP(n)=POINT(x,y)` / `BASE(n)=…SPRITE$(…)…` RAN THE WRONG GRAPHICS OP (D-G8OPCLOB,
       filed 2026-11-01 by a D-REREAD batch 11 reviewer).**
@@ -8471,7 +8521,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10962 (T-6FE392)8 (T-529ABE)` from `TODO.md:16644 (T-529ABE)`: a
+      `TODO.md:11012 (T-6FE392)8 (T-529ABE)` from `TODO.md:16694 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11431,7 +11481,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16644 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16694 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

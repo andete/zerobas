@@ -126,6 +126,12 @@ LPR = [
     ("lpr-sink",    ['LPRINT"A":PRINT"SCR"']),
     ("lpr-using",   ['LPRINT USING"##";5']),
     ("lpr-tab",     ['LPRINT TAB(5);"A"']),
+    # D-LPRTAB (2026-11-01): lpr-tab starts with the printer AND the screen at
+    # column 0, so "TAB from the printer's column" and "TAB from CSRX" coincide.
+    # These two separate them: the printer mid-line with the screen at 0, and
+    # the screen mid-line with the printer at 0.
+    ("lpr-tabmid",  ['LPRINT"ABCDEFGH";TAB(12);"X"']),
+    ("lpr-tabscr",  ['PRINT"ABCDEFGH";:LPRINT TAB(12);"X"']),
     ("lpr-spc",     ['LPRINT SPC(3);"A"']),
     # Does LPRINT accept a #channel like PRINT does?
     ("lpr-hash",    ['LPRINT#1,"A"']),

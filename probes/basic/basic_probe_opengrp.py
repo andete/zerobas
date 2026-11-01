@@ -111,6 +111,11 @@ CASES = {
     "zones": prog(2, [at(40, 0, 8, "12;-3"), at(41, 0, 8, '"A","B"'),
                       at(42, 0, 8, '"AB","C"'), at(43, 0, 8, '"A","B","C"'),
                       '44 POKE &HF3DD,11:PSET(0,8),4:PRINT #1,"A","B";:GOSUB 510']),
+    # D-LPRTAB (2026-11-01): TAB on GRP: -- the same column question as the
+    # zones. 40 moves the TEXT cursor to column 11 first, so "TAB from CSRX"
+    # (nothing to pad) and "TAB from column 0" (5 spaces) give different X.
+    "tab": prog(2, ['40 POKE &HF3DD,11:PSET(0,8),4:PRINT #1,"A";TAB(5);"B";:GOSUB 510',
+                    at(41, 0, 8, '"AB";TAB(3);"C"'), at(42, 0, 8, 'TAB(2);"C"')]),
     "sweepLo": prog(2, ["40 FOR C=0 TO 127:PSET(16,16),4:PRINT #1,CHR$(C);", SW_CUR,
                         SWEEP, "50 NEXT"]),
     "sweepHi": prog(2, ["40 FOR C=128 TO 255:PSET(16,16),4:PRINT #1,CHR$(C);", SW_CUR,
