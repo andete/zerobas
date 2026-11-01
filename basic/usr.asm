@@ -144,7 +144,78 @@ usr_setslot:
 
 ; --- ev_usr: USR[n](arg) factor (called from expr.asm ev_f, IX = cursor) ----
 ; in:  IX -> the USR token. out: DE = result, IX advanced past ')'.
+; --- str_usr: a USR met by a STRING probe (D-USRSTRRES) -------------------
+; in: HL = cursor AT the USR token. The VG-8020 makes USR a string when the
+; routine leaves VALTYP 3 (`PRINT USR1("ABC")` prints ABC, usrstr_measure.out
+; rows C / D), and only the routine can say so -- so it runs HERE, ONCE:
+;   a string -> CF set, STRPTR = its descriptor, HL past `USR(...)`;
+;   a number -> the cache [USRC_KEY = HL, USRC_AFTER, USRC_TYPE] and a DECLINE
+;   (CF clear, HL as given); the numeric re-parse of this cursor reaches
+;   ev_usr, which takes the cached result instead of calling again.
+; Declines at once when the cache already names HL: `USR(USR(5))`'s outer
+; fallback probes the inner USR a second time. IX is the caller's: kept.
+str_usr:
+                ld      de,(USRC_KEY)
+                or      a
+                sbc     hl,de
+                add     hl,de               ; Z iff HL = the key (add keeps Z),
+                ret     z                   ; and CF clear: decline, cache kept
+                push    ix
+                push    hl                  ; [ix][key]
+                push    hl
+                pop     ix
+                call    set_factyp2         ; as `eval` would: ev_usr is normally
+                                            ; reached INSIDE eval, and usr_call reads
+                                            ; FACTYP != 2 as "a float is already in
+                                            ; DAC" -- a stale 8 from `Y=5` handed the
+                                            ; routine Y instead of the argument
+                call    ev_usr              ; the routine runs; FACTYP 3 = a string
+                ld      a,(FACTYP)
+                cp      3
+                jr      z,su_str
+                ld      (USRC_TYPE),a
+                ld      (USRC_AFTER),ix
+                pop     hl                  ; HL = the key
+                ld      (USRC_KEY),hl       ; written LAST: now the cache is live
+                pop     ix
+                or      a                   ; CF clear: not a string operand
+                ret
+su_str:
+                ld      hl,(DAC+2)          ; the descriptor the routine left
+                ld      (STRPTR),hl
+                push    ix
+                pop     hl                  ; HL past `USR(...)`
+                pop     de                  ; drop the key
+                pop     ix
+                scf
+                ret
+
+; ev_usr_num: USR in a NUMBER's place. A string result is 13, as on the VG-8020
+; (D-USRSTR); ev_usr itself now hands a string back as FACTYP 3.
+ev_usr_num:
+                call    ev_usr
+                ld      a,(FACTYP)
+                cp      3
+                ret     nz
+                call    set_factyp2         ; a number-shaped 0 behind the error
+                jp      ev_f_tmm
+
 ev_usr:
+                ; D-USRSTRRES: the cache hit -- str_usr already ran this USR for
+                ; a string probe that then declined; take its result, ONCE.
+                push    ix
+                pop     hl
+                ld      de,(USRC_KEY)
+                or      a
+                sbc     hl,de
+                jr      nz,evu_run
+                ld      ix,(USRC_AFTER)     ; past `USR(...)`
+                xor     a
+                ld      (USRC_KEY+1),a      ; consumed (high byte < $80)
+                ld      a,(USRC_TYPE)
+                ld      (VALTYP_PUB),a      ; eval reset FACTYP in the window
+                jp      ur_disp             ; the value is still in DAC
+evu_run:
                 inc     ix                  ; past USR token
                 call    ev_usr_index        ; A = index 0..9 (IX advanced)
                 push    af                  ; save index
@@ -210,9 +281,9 @@ ev_usr_err:
 ev_usr_index:
                 call    ev_sp
                 cp      INT_DIGIT_BASE      ; $11
-                jr      c,usi_dflt
+                jp      c,usi_dflt
                 cp      $1A+1
-                jr      nc,usi_dflt
+                jp      nc,usi_dflt
                 sub     INT_DIGIT_BASE
                 inc     ix
                 ret
@@ -257,18 +328,17 @@ uc_go:                                      ; VALTYP_PUB IS FACTYP ($F663): A is
 usr_ret:
                 ; the RESULT is DAC, typed by VALTYP (the routine may change both)
                 pop     ix                  ; restore the cursor
+ur_disp:
                 ld      a,(VALTYP_PUB)
-                cp      3                   ; D-USRSTR: a STRING result in a numeric
-                jr      z,ur_str            ; place is 13, as on the VG-8020
+                cp      3                   ; a STRING result: FACTYP 3, DAC+2 the
+                ret     z                   ; descriptor -- the CALLER decides
+                                            ; (str_usr: the string; ev_usr_num: 13)
                 cp      4
                 jp      z,fac_typ_int16     ; a float result is already in FAC (= DAC):
                 cp      8                   ; FACTYP := A, DE = the rounded int (D-TAILIX2)
                 jp      z,fac_typ_int16
                 ld      de,(DAC+2)          ; an integer result
                 jp      flt_int_result      ; FACTYP := 2
-ur_str:
-                call    set_factyp2         ; a number-shaped 0 behind the error
-                jp      ev_f_tmm
 usr_undef:
                 pop     ix                  ; restore the cursor
                 jp      errmark_ret0        ; expression-error marker, DE = 0

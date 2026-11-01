@@ -945,7 +945,7 @@ item — do **one item per session** to keep context lean.
       ([`usrstr_knife.out`](scratchpad/usrstr_knife.out)). The ladder runner's
       prompt normaliser now also takes `ZB` drawn over a line the program filled.
 
-- [ ] 🔴 **A USR ROUTINE CANNOT RETURN A STRING (D-USRSTRRES, found 2026-10-29 with
+- [x] 🔴 **A USR ROUTINE CANNOT RETURN A STRING (D-USRSTRRES, found 2026-10-29 with
       D-USRSTR).**
       🎚️ TIER 1 — on the VG-8020 a routine that leaves VALTYP 3 makes USR a
       string: `PRINT USR1("ABC")` prints `ABC`, `B$=USR1(S$)` is `HELLO`
@@ -1003,9 +1003,33 @@ item — do **one item per session** to keep context lean.
       running a line typed without its number; the BUG C class (a nested USR evaluated
       inside a string probe that then declines runs twice, error paths only); RN_NEW's boot
       value. catusr-acceptance's four rows (1 / 1 / 1 / 0 runs) trace unchanged.
-      ➡️ **NEXT: build it** -- str_usr + ev_usr's cache hit + the cl_rel_rhs skip + the four
-      clears; rows for `PRINT USR1("ABC")`, `B$=USR1(S$)`, `PRINT USR(5)` (once),
-      `USR(USR(5))` (inner once), `PRINT 1.5<USR(5)`; price against `make basic-reloc`.
+      ✅ **BUILT 2026-11-01.** str_eval_one dispatches USR to `str_usr` (basic/usr.asm),
+      which runs the routine with FACTYP reset as `eval` would: VALTYP 3 -> a string
+      (STRPTR := DAC+2); a number -> the cache (USRC_KEY = RN_NEW, USRC_AFTER = RN_INC,
+      USRC_TYPE = TKDCOUNT, basic/sysvars.inc) and a decline. `ev_usr` takes a hit once
+      (key cleared), `usr_ret` hands a string back as FACTYP 3 and the numeric dispatch
+      `ev_usr_num` turns that into 13. cl_rel_rhs skips the probe at a USR. Two clears
+      (`repl`, raise_error), the other two in the study were not needed: every way out of
+      AUTO / RENUM passes `repl`. 📏 Walls after (2026-11-01, this tree): page 1 380 B
+      free, its pin pads 2176 B; the low region unchanged at 539 B.
+      🔴 **A BUG THE GATE'S OLD ROW CAUGHT:** str_usr first ran the routine with a stale
+      FACTYP (8 after `Y=5`): usr_call reads FACTYP != 2 as "a float is already in DAC" and
+      handed the routine Y (`PRINT USR1(7)` printed 5) -- the old row I (`USR1(-7)` after
+      `Y=USR1(5)`) went -90 / -5. Fix: `call set_factyp2` before ev_usr; row O pins it.
+      Rows: usrstr-acceptance 9 -> 17 (C / D / M strings; J / K / N run counts through a
+      self-counting USR2; L `5.5>USR2(5)`; O stale FACTYP), all SAME against the VG-8020
+      on both targets; catusr-acceptance unchanged. Knives
+      ([`usrres_knife.out`](scratchpad/usrres_knife.out),
+      [`usrres_knife_k3.out`](scratchpad/usrres_knife_k3.out)): K1 (no FACTYP reset) -> I O;
+      K2 (no USR in the string probe) -> C D J K L M N O Z; K4 (hit never taken) -> J K N;
+      K3 (no comparison skip) -> NOTHING with row L as `1.5<USR2(5)` -- a lost lhs still
+      compared below 5 -- so L became `5.5>USR2(5)`, and K3 -> L. 🔮 MISSES: K2 wider than
+      predicted (C D M); K3's first row blind.
+      ⚠️ STILL NOT VERIFIED from the study's list: every deferred-error decline reaching
+      raise_error, and the BUG C class (a nested USR inside a string probe that then
+      declines, error paths only). Row B of usrstr_measure (a temporary's descriptor read
+      AFTER its statement) differs (VG-8020 `1`, zerobas `3 X`): reading freed memory the
+      reference has reused, outside this item.
 
 - [x] 🔴 **`PRINT USING` PRINTED A TINY NUMBER'S DIGITS AS IF IT WERE NOT TINY
       (D-PUTINY, found 2026-10-29 by the program ladder's L4_tables).**
@@ -8626,7 +8650,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11117 (T-6FE392)8 (T-529ABE)` from `TODO.md:16799 (T-529ABE)`: a
+      `TODO.md:11141 (T-6FE392)8 (T-529ABE)` from `TODO.md:16823 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11586,7 +11610,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16799 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16823 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

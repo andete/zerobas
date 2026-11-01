@@ -357,6 +357,13 @@ cl_rel_rhs:
                 ; parse reads it -- ev_f_var would otherwise silently read A$'s
                 ; name-keyed numeric shadow cell instead of erroring. BUG C: the
                 ; same IX guard as the lhs probe, restored on BOTH exits.
+                ; D-USRSTRRES: the lhs is still ONLY in FAC here (push_lhs_frame
+                ; comes after the probe), so a USR must not run inside the
+                ; probe: `PRINT 1.5<USR(5)` would lose the 1.5. A string rhs is
+                ; 13 either way, and ev_usr_num gives exactly that.
+                call    ev_sp
+                cp      USR_TOKEN
+                jr      z,cl_rel_num
                 push    bc
                 push    de
                 push    ix                  ; [bc][de][guard]
@@ -365,6 +372,7 @@ cl_rel_rhs:
                 pop     de
                 pop     bc
                 jr      c,cl_rel_mm         ; rhs a string, lhs numeric -> D-2
+cl_rel_num:
                 call    push_lhs_frame      ; the lhs frame (FACTYP := 2)
                 ld      b,CL_REL
                 set     4,c                 ; L = $10 | the bits
@@ -506,7 +514,7 @@ ev_f:
                 cp      PEEK_PREFIX         ; $FF -> PEEK / VPEEK / INP function token
                 jp      z,ev_f_ff
                 cp      USR_TOKEN           ; $DD -> USR[n](arg) function
-                jp      z,ev_usr
+                jp      z,ev_usr_num        ; (D-USRSTRRES: 13 on a string result)
                 cp      FN_TOKEN            ; $DE -> FN<name>[(args)] (D-DEFFN)
                 jp      z,ev_fn
                 cp      VARPTR_TOKEN        ; $E7 -> VARPTR(var) function

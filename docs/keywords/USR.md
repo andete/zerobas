@@ -6,9 +6,8 @@ SPDX-License-Identifier: 0BSD
 
 # `USR` and `DEF USR` — call a machine-code routine
 
-> **Status (2026-10-27):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. No recorded difference
-> since 2026-10-27 (below).
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. No known difference.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
 
@@ -45,7 +44,9 @@ USR[<n>](<argument>)
 - **How the result comes back:** whatever `DAC` holds when the routine
   returns, read according to `VALTYP` — a routine may change the type. A
   routine that only returns hands back its argument unchanged; what it leaves
-  in the HL register means nothing.
+  in the HL register means nothing. Type 3 makes the result a **string**
+  (`DAC+2` the address of its descriptor) -- `PRINT USR1("ABC")` prints `ABC`;
+  in a number's place that is error 13, `Type mismatch`.
 - **The address may be given as a negative number**, as for `POKE`:
   `DEF USR=-8192` is `&HE000`; `DEF USR=-1` is accepted.
 - **Each `USR` call runs the routine exactly once**, even inside an
@@ -88,16 +89,25 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
 
 ## Differences from the reference
 
-**A routine cannot hand back a string** (D-USRSTRRES). On the VG-8020 a
-routine that leaves the type at 3 makes `USR` a string: `PRINT USR1("ABC")`
-prints `ABC` and `B$=USR1(S$)` copies `S$`. zerobas answers 13,
-`Type mismatch`, in both places; in a numeric place (`X=USR1("AB")`) both
-machines say 13.
+None known.
 
 The rung not yet proven is **RAM usage**: it has not been rated for `USR`.
 
 ## What we found, and how
 
+- **A routine could not hand back a string** (fixed 2026-11-01,
+  D-USRSTRRES). On the VG-8020 a routine that leaves the type at 3 makes
+  `USR` a string: `PRINT USR1("ABC")` prints `ABC` and `B$=USR1(S$)` copies
+  `S$`; zerobas answered 13. The type is known only after the routine has
+  run, and zerobas tries an item as a string before it tries it as a number,
+  so the routine now runs during the string attempt. When it turns out to be
+  a number, that attempt keeps the result for the number attempt that
+  follows, so the routine still runs once: a routine that counts its calls
+  shows the same count on both machines, `USR(USR(7))` included. Two
+  pitfalls came up while building it, each with a test row: a comparison
+  could lose its left side (`5.5>USR(5)` read 0), and the string attempt
+  handed the routine the previous number in the accumulator instead of its
+  argument (`Y=5` then `PRINT USR1(7)` printed 5).
 - **A string argument was `Type mismatch`** (fixed 2026-10-29, D-USRSTR),
   where the VG-8020 hands the routine the string's descriptor. Found by a
   machine-code program written for the program ladder

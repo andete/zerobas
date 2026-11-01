@@ -404,8 +404,8 @@ extents the standard already fixes would be noise, not rigour.
 | `$F6A6` | 1 B | `disk` | `FCH_RDMODE` | current read: 0=INPUT# (stop at ','/CR), 1=LINE (1) |  |
 | `$F6A7` | 2 B | `basic` | `BL_PTR` | 2 B: main -> tenant, the token cursor after BLOAD -- published TEMP (D-WSZERO) |  |
 | `$F6A9` | 1 B | `basic` | `RDV_MODE` | $F6A9: main -> tenant MODE (1 B), D-READVAR: |  |
-| `$F6AB` | 2 B | `basic` | `AU_NUM/RN_NEW` | AUTO: the line number being prompted (2) |  |
-| `$F6AD` | 2 B | `basic` | `AU_INC/RN_INC` | AUTO: the increment (2) |  |
+| `$F6AB` | 2 B | `basic` | `AU_NUM/RN_NEW/USRC_KEY` | AUTO: the line number being prompted (2) |  |
+| `$F6AD` | 2 B | `basic` | `AU_INC/RN_INC/USRC_AFTER` | USR cache: cursor after `USR(...)` (2) |  |
 | `$F6AF` | 2 B | `basic` | `SAVTXT` | 2 B: the CURRENT statement's text pointer, |  |
 | `$F6B1` | 2 B | `basic` | `SAVSTK` | 2 B: SP anchor for the trap unwind. Written by |  |
 | `$F6B3` | 2 B | `basic` | `ERRLIN` | 2 B: last error's line number, or 65535 if it |  |
@@ -555,7 +555,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$F7F6` | 8 B | `basic` | `DAC/FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7F6` | 8 B | `disk` | `FAC` | float accumulator = DAC: value bytes as tokenised (8) |  |
 | `$F7FE` | 1 B | `basic` | `CVT_MODE/TKNZPOS` | domain_convert_core: 0 = the strict signed domain, |  |
-| `$F7FF` | 1 B | `basic` | `TKDCOUNT` | classification digit count = D, saturating (1) |  |
+| `$F7FF` | 1 B | `basic` | `TKDCOUNT/USRC_TYPE` | classification digit count = D, saturating (1) |  |
 | `$F800` | 1 B | `basic` | `TKSTORED/VS_TARGET_TYPE` | digits actually written to TKDIG, capped 24 (1) |  |
 | `$F801` |  | `basic` | `TKFLAGS/VS_INT_VAL` | bit0=dot bit1=exp bit2=expD bit3=! bit4=# bit5=% (1) |  |
 | `$F802` | 1 B | `basic` | `TKPC` | target precision digit count: 6 / 14 (1) |  |

@@ -77,6 +77,9 @@ repl:
                 xor     a                   ; the prompt + any output go to the
                 ld      (PRDEST),a          ; screen (defensive after a PRINT#)
                 ld      (RL_AUTO),a         ; ...and the line editor blocks again
+                ld      (USRC_KEY+1),a      ; D-USRSTRRES: AUTO / RENUM leave a line
+                                            ; number in this cell; a stale key must
+                                            ; never match a cursor
                                             ; (defensive after an AUTO session:
                                             ; a typed line that ERRORS out of one
                                             ; unwinds straight to here, so clearing

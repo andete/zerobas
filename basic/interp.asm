@@ -1368,6 +1368,12 @@ raise_error:
                 ; rerr_msg below reloads it from (ERRFLG).
                 ld      a,low FN_PAREA
                 ld      (FN_FEND),a
+                ld      (USRC_KEY+1),a      ; D-USRSTRRES: drop the USR cache -- a
+                                            ; probe whose decline an error cut off
+                                            ; must not answer a later RESUME
+    IF (FN_PAREA & $FF) >= $80
+                db      USRC_KEY_CLEAR_NEEDS_A_HIGH_BYTE_BELOW_80
+    ENDIF
                 ; D-FNPOOL: the frame itself is in the POOL now, and nothing
                 ; unwinds `fn_leave` on this path -- so the frames would stand
                 ; until the next RUN/CLEAR and `FRE(0)` would shrink after a

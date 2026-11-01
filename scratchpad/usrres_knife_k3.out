@@ -1,0 +1,3 @@
+base rom 13f0903000f4
+K3 no comparison-site skip       rom 1912fc1531ba (differs)  gate rc=2  red rows: L
+restored rom 13f0903000f4 (base 13f0903000f4)

@@ -1,0 +1,6 @@
+base rom 13f0903000f4
+K1 no set_factyp2 in str_usr     rom 715b9e013afd (differs)  gate rc=2  red rows: I O
+K2 no USR in the string probe    rom ac7131f08815 (differs)  gate rc=2  red rows: C D J K L M N O Z
+K3 no comparison-site skip       rom 1912fc1531ba (differs)  gate rc=0  red rows: -
+K4 cache hit never taken         rom a2d493f6c452 (differs)  gate rc=2  red rows: J K N
+restored rom 13f0903000f4 (base 13f0903000f4)

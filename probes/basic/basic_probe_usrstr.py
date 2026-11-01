@@ -9,8 +9,14 @@ routine gets DAC+2 = the string's [len][ptr] descriptor -- for a variable its
 OWN one, `USR(S$)=VARPTR(S$)` -- with VALTYP 3; temporaries are live during the
 call (`PEEK(USR(MID$(S$,2)))` is 4); a routine that leaves VALTYP 3 in a
 numeric place is 13. One program, scratchpad/usrstr_probe.bas; both zerobas
-targets against the VG-8020. A STRING RESULT (`PRINT USR1("ABC")` prints ABC
-there) is not covered: D-USRSTRRES.
+targets against the VG-8020. D-USRSTRRES (2026-11-01) added the STRING RESULT
+(rows C / D / M: `PRINT USR1("ABC")` prints ABC) and USR2, a routine that counts
+its own calls: each USR runs exactly as often as on the reference even when a
+string probe met it first (J: once, K: `USR(USR(7))` twice, N: two USRs), and
+a comparison keeps its lhs (L: `5.5>USR2(5)` is -1 -- `1.5<` could not
+see a lost lhs, which still compared below 5); O: a string probe that
+runs USR must reset FACTYP as eval would, or a stale 8 (`Y#=5`) hands the
+routine DAC instead of the argument (`PRINT USR1(7)` printed 5).
 
 Clean-room: typed keys and a tape in; the printer port out. The machine code
 is the program's own six bytes.
@@ -22,7 +28,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "programs"))
 import run_programs                                  # noqa: E402
 
 PROG = "scratchpad/usrstr_probe.bas"
-ROWS = 9
+ROWS = 17
 
 
 def main():

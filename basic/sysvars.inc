@@ -3623,6 +3623,17 @@ RN_INC          equ     $F6AD           ; RENUM: increment (2)
 ; together (each ends the line and the program on its way out).
 AU_NUM          equ     RN_NEW          ; AUTO: the line number being prompted (2)
 AU_INC          equ     RN_INC          ; AUTO: the increment (2)
+; D-USRSTRRES: a SIXTH tenant of these cells, the one-shot USR result cache. A
+; USR met by a STRING probe runs its routine there (str_usr); a NUMBER result is
+; parked for the numeric re-parse of the same cursor, which must not run the
+; routine again. Idle between a decline and that re-parse (traced 2026-11-01):
+; RENUM reads numbers with ldr_num, never eval, and AUTO / RENUM both write
+; their defaults on entry. Key = the cursor AT the USR token; its HIGH byte is
+; kept < $80 while idle (no text cursor is that low): `repl` and raise_error
+; clear it, and so does every hit.
+USRC_KEY        equ     RN_NEW          ; USR cache: cursor at the token (2)
+USRC_AFTER      equ     RN_INC          ; USR cache: cursor after `USR(...)` (2)
+USRC_TYPE       equ     TKDCOUNT        ; USR cache: the result's type 2/4/8 (1)
 ; read_line's mode flag. 0 = block in CHGET (the REPL); 1 = poll CHSNS and
 ; BREAKX (an AUTO session), because Ctrl-STOP is NOT a character and can never
 ; arrive through CHGET -- R-AU8. Cleared defensively at the top of `repl`, so a

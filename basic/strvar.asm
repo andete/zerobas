@@ -100,6 +100,8 @@ str_eval_one:
                 cp      SPRITE_TOKEN        ; $C7 -> SPRITE$(n) (graphics G7; the `$` is
                 jp      z,ev_f_sprite       ; separate ASCII after the token)
     ENDIF
+                cp      USR_TOKEN           ; D-USRSTRRES: a USR is a string iff its
+                jp      z,str_usr           ; routine leaves VALTYP 3 -- run it here
                 cp      PLUS_TOKEN          ; D-UPSTR: unary plus on a STRING is the
                 jp      z,str_eval_plus     ; identity on both references (`B$=+A$`
                                             ; reads `X`, not Type mismatch). Sited
