@@ -617,6 +617,16 @@ vft_notfound:
 ; across ary_engine_call — see var_find_typed's own header just above for
 ; why (the SAME caller-held-cursor hazard; var_store_fac's own caller,
 ; ex_let, needs its cursor to survive var_store_fac intact).
+; --- vaof_oom: var_alloc_or_find, Out of memory raised on a failure ----------
+; D-REREAD-EDGES (2026-11-01, scratchpad/edges_rank.py): six callers followed
+; `call var_alloc_or_find` with the same `jp nc,fp_runtime_error` (FPERR already
+; set by the engine). raise_error resets SP, so raising one call deeper is the
+; same raise. Out: as var_alloc_or_find on success (CF set, HL = the entry).
+vaof_oom:
+                call    var_alloc_or_find
+                ret     c
+                jp      fp_runtime_error
+
 var_alloc_or_find:
                 ld      (ARY_KEY),bc
                 ld      (ARY_TYPE),a

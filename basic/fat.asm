@@ -260,11 +260,11 @@ ex_for:
                                             ; the RESOLVED type, not on the `$` char,
                                             ; because f.defstr says the rule is.
                 push    hl                  ; [cursor]
-                call    var_alloc_or_find   ; D-LETNEWFIRST: A = the type, BC = the key
+                call    vaof_oom            ; D-LETNEWFIRST: A = the type, BC = the key
                                             ; (for_name's out) -> HL = the variable's
                                             ; entry, created zero-valued if new, BEFORE
-                                            ; the start expression -- FOR's ONE lookup
-                jp      nc,fp_runtime_error ; Out of memory, FPERR already set
+                                            ; the start expression -- FOR's ONE lookup;
+                                            ; Out of memory raised inside (vaof_oom)
                 ex      (sp),hl             ; HL = cursor, [entry] across '=' + eval
                 call    skip_eq             ; '=' -> $EF
                 jp      nz,stmt_error

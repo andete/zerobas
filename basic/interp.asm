@@ -939,14 +939,13 @@ ex_let:
                                             ; basic/arrays.asm)
                 ld      a,(VARTYPE)         ; the LHS's resolved type, read before eval
                 push    hl                  ; [cursor]
-                call    var_alloc_or_find   ; D-LETNEWFIRST: HL = the target's entry,
+                call    vaof_oom            ; D-LETNEWFIRST: HL = the target's entry,
                                             ; created zero-valued if new -- the LET's
                                             ; ONE lookup. (Its type byte is what the
                                             ; store reads back, so the F3 latch of
                                             ; (VARTYPE) across eval, LHS_VARTYPE, is
                                             ; gone: A%=A# can no longer mis-type it.)
-                jp      nc,fp_runtime_error ; Out of memory: FPERR already set, and
-                                            ; raise_error resets SP
+                                            ; Out of memory is raised inside vaof_oom.
                 ex      (sp),hl             ; HL = cursor, [entry] across '=' + eval
                 call    skip_eq             ; '=' crunches to $EF (spec §4)
                 jr      nz,ex_let_err
@@ -991,9 +990,9 @@ ex_let_str:
                                             ; '(' peek right above
                 push    hl                  ; [cursor]
                 ld      a,1                 ; type 1 -- the `$` unifier
-                call    var_alloc_or_find   ; D-LETNEWFIRST: HL = the entry (created
-                                            ; empty if new), the ONE lookup
-                jp      nc,fp_runtime_error ; Out of memory, FPERR already set
+                call    vaof_oom            ; D-LETNEWFIRST: HL = the entry (created
+                                            ; empty if new), the ONE lookup; Out of
+                                            ; memory raised inside
                 ex      (sp),hl             ; HL = cursor, [entry] across '=' + str_eval
                 call    skip_eq             ; '=' -> $EF
                 jr      nz,ex_let_err

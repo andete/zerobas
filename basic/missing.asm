@@ -486,8 +486,7 @@ sw_typed:
                 or      a
                 ld      a,e                 ; A = type (both routines want it there)
                 jr      nz,sw_must_exist
-                call    var_alloc_or_find
-                jp      nc,fp_runtime_error ; OOM -- FPERR already set by the engine
+                call    vaof_oom            ; OOM raised inside -- FPERR set by the engine
                 jr      sw_value
 sw_must_exist:
                 call    var_find_typed

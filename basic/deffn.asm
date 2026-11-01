@@ -143,9 +143,8 @@ dfv_next:
                 ld      a,(VARTYPE)
 dfv_alloc:
                 push    hl
-                call    var_alloc_or_find   ; created zero-valued if new
-                pop     hl
-                jp      nc,fp_runtime_error ; Out of memory: FPERR already set
+                call    vaof_oom            ; created zero-valued if new; Out of
+                pop     hl                  ; memory raised inside (the raise resets SP)
                 call    skip_spaces         ; A = the character after the name
                 cp      ','
                 jr      z,dfv_next
