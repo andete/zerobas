@@ -197,6 +197,11 @@ def rerun_zb(a, names, times) -> int:
                "zb_curlin": zb[last]["curlin"] if last else None,
                "zb_files": files_listed(zb["F"]) if zb and "F" in zb else None,
                "zb_text": screen_text(zb[last]) if last else None}
+        # the reference fields travel with every row (2026-11-01): a re-run's
+        # output used to drop them, so each later re-run leaned on the FIRST full
+        # run's file -- in /tmp, cleaned, and the whole chain went with it
+        row.update({k: old[k] for k in ("ref_curlin", "ref_pc", "ref_mode", "ref_files")
+                    if k in old})
         rows.append(row)
         print(f"[{i:3d}/{len(names)}] {old['class']:10s} -> {cls:10s} zb {row['zb_mode']} "
               f"pc={row['zb_pc']!s:>5s} curlin={row['zb_curlin']!s:>5s}  {n}", flush=True)

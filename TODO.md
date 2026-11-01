@@ -3004,6 +3004,13 @@ item — do **one item per session** to keep context lean.
       The CF-3300 asks `Enter date ( - - ):` for it; zerobas starts BASIC. Not a program: filed
       here, not chased. ➡️ If it is ever taken up: does the VG-8020 + NMS 1200 ask too (the
       style split's authority), and what does the CF-3300 do with a blank but FORMATTED disk?
+      📊 **RE-SCORED 2026-11-01, FULL (both machines; [`diskcorpus_full_1101.out`](scratchpad/diskcorpus_full_1101.out))**:
+      BOTH-RUN 118, ZB-NOBOOT 1, ZB-ONLY 4, FILES-DIFF 8, FILES-SAME 11, FILES-EMPTY 1 -- every one of
+      the 143 images in the class it had on 10-28 (🔮 HIT), across D-REREAD batches 7-11, D-G8OPCLOB,
+      D-LPRTAB, D-BRKFRESH and D-USRSTRRES. 🔧 Apparatus: a `--reuse-ref` run wrote rows WITHOUT the
+      reference fields, so every re-run leaned on the first full run's /tmp file; it was cleaned and
+      the chain broke (`KeyError: 'ref_curlin'`). Re-run rows now carry ref_curlin / ref_pc /
+      ref_mode / ref_files forward (scratchpad/diskcorpus_run.py), and this full run is the new base.
       📏 2026-10-23 (D-STEP7DATE's re-run, [`diskcorpus_rerun5.out`](scratchpad/diskcorpus_rerun5.out)):
       ss-final.dsk went FILES-EMPTY -> ZB-ONLY between re-run 4 and HEAD, independent of the ROM
       half (today's ROM does the same). The CF-3300 and re-run 4's zerobas stop at its own
@@ -8650,7 +8657,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11141 (T-6FE392)8 (T-529ABE)` from `TODO.md:16823 (T-529ABE)`: a
+      `TODO.md:11148 (T-6FE392)8 (T-529ABE)` from `TODO.md:16830 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11610,7 +11617,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16823 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16830 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
