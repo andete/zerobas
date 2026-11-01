@@ -898,10 +898,6 @@ ex_poke:
 ex_vpoke:
                 inc     hl                  ; HL -> args (past the VPOKE token)
                 jp      do_vpoke
-ex_out:
-                inc     hl                  ; HL -> args (past the OUT token)
-                jp      do_out
-
 ; --- ex_let: variable assignment  <var> = <expr> --------------------------
 ; The name may be multi-character (significant to 2 chars; see vars.asm). A
 ; `$`-suffixed name (A$) is a string variable: the RHS is a string operand (a

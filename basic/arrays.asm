@@ -449,12 +449,11 @@ ary_reset:
 ary_parse_call:
                 push    de                  ; [TYPE:OP] guarded across eval
                 push    bc                  ; [KEY]
-                inc     hl                  ; past '('
                 ld      b,0
                 push    bc                  ; [COUNT] = 0 (C = don't-care)
 apsub_lp:
-                call    skip_spaces
-                call    eval                ; DE=value, HL=cursor advanced
+                call    inc_eval            ; past '(' / ',' (eval skips the blanks):
+                                            ; DE=value, HL=cursor advanced
                 push    hl                  ; guard the cursor: fac_to_int_strict
                                             ; CLOBBERS HL on the float path (FACTYP
                                             ; 4/8 -> domain_convert_core) while the
@@ -476,32 +475,13 @@ apsub_lp:
                                             ; 255-char line only reaches 123)
                 push    bc                  ; [COUNT] back on top
                 call    skip_comma
-                jr      z,apsub_comma
+                jr      z,apsub_lp          ; inc_eval steps past the ','
                 cp      ')'
-                jr      z,apsub_close
-                pop     bc                  ; malformed list: unwind [COUNT]+values
-                ld      (ARY_CUR),hl        ; the cursor at the offending char. Every
-                                            ; caller abandons it (fp_runtime_error)
-                                            ; because FPERR is set below, but
-                                            ; apc_release RETURNS (ARY_CUR) in HL, so
-                                            ; leaving it stale here would hand back a
-                                            ; cursor from a PREVIOUS parse rather than
-                                            ; an obviously-dead one
-apsub_mf_drop:
-                pop     de                  ; (B>=1 here — a value was just pushed)
-                djnz    apsub_mf_drop
-                xor     a
-                ld      (ARY_NIDX),a        ; ⚠️ the values are ALREADY unwound here, so
-                                            ; apc_release must not release them again —
-                                            ; and (ARY_NIDX) still holds whatever the
-                                            ; PREVIOUS parse left, which would corrupt
-                                            ; SP by exactly that much. Zero = release
-                                            ; the two guard words and nothing else
-                call    ev_f_empty          ; -> deferred syntax error (FPERR=4)
-                jr      apc_release
-apsub_comma:
-                inc     hl
-                jr      apsub_lp
+                jp      nz,ev_f_empty       ; malformed list: ev_f_empty RAISES at once
+                                            ; (D-DEFERRSTUDY family 3) and raise_error
+                                            ; re-bases SP, so the frame is never unwound
+                                            ; here (D-REREAD batch 9: the old unwind,
+                                            ; ARY_CUR / ARY_NIDX writes were dead code)
 apsub_close:
                 inc     hl                  ; past ')'
                 ld      (ARY_CUR),hl        ; park the cursor: CALSLT clobbers HL and

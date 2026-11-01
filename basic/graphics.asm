@@ -64,14 +64,19 @@ gfx_call:
 ; --- ex_pset / ex_preset: the pixel-plot statements -------------------------
 ; Entry: HL on the PSET/PRESET token. The two differ ONLY in the default colour
 ; used when `,c` is omitted (FORCLR vs BAKCLR); both marshal GFX_OP=1.
+    IF (BAKCLR - FORCLR) != (PRESET_TOKEN - PSET_TOKEN) || (high FORCLR) != (high BAKCLR)
+                db      PSET_DEFAULT_COLOUR_LOOKUP_NEEDS_BAKCLR_AT_FORCLR_PLUS_TOKEN_DELTA
+    ENDIF
 ex_pset:
-                inc     hl                  ; past the PSET token
-                ld      a,(FORCLR)          ; PSET default colour = foreground
-                jr      gfx_plot_stmt
 ex_preset:
-                inc     hl                  ; past the PRESET token
-                ld      a,(BAKCLR)          ; PRESET default colour = background
-gfx_plot_stmt:
+                ; A = the statement token (exec_stmt's dispatch contract, asserted
+                ; per token by tests/test_stmt_dispatch.py): PSET -> FORCLR, PRESET
+                ; -> BAKCLR, the default colour (D-REREAD batch 9: one entry)
+                add     a,low (FORCLR - PSET_TOKEN)
+                ld      e,a
+                ld      d,high FORCLR       ; DE = FORCLR / BAKCLR (DE is dead here)
+                ld      a,(de)
+                inc     hl                  ; past the PSET/PRESET token
                 and     $0F                 ; colour is a 4-bit nibble
                 ld      (GFX_C),a           ; provisional default (overridden by ,c below)
                 call    parse_coord         ; BC = x, DE = y (int16, STEP resolved); HL past ')'
@@ -89,7 +94,8 @@ gfx_plot_stmt:
                 inc     hl                  ; consume the ','
                 push    bc                  ; save x across the colour eval (eval clobbers all)
                 push    de                  ; save y
-                call    gfx_eval_int16   ; DE = colour, ERR 6 if > int16
+                call    gfx_eval_colour  ; DE = colour; ERR 6 > int16, ERR 5 outside
+                                         ; 0..15; GFX_C = value (D-REREAD batch 9)
                 ; 🔴 D-LINERR: a RANGE CHECK, not the `and $0F` mask that used to
                 ; be here. `PSET(20,21),16` is Illegal function call on BOTH
                 ; references (row k.pset16) -- the same 0..15 rule CIRCLE and
@@ -105,7 +111,6 @@ gfx_plot_stmt:
                 ; restated as a measurement on a named machine. The domain is
                 ; now stated where it belongs, spec-basic-graphics-g2.md §3.5,
                 ; with the rows behind it -- spec-basic-lineerr.md §5.1.
-                call    gfx_store_colour_checked   ; ERR 5 outside 0..15; GFX_C=value
                 pop     de                  ; restore y
                 pop     bc                  ; restore x
 gfx_plot_go:
@@ -281,11 +286,10 @@ elg_second:
                 call    is_box_kw           ; single-comma box (",B"/",BF") ?
                 jr      z,elg_box_read
                 ; --- colour expression ---
-                call    gfx_eval_int16   ; ERR 6 if > int16
+                call    gfx_eval_colour     ; ERR 6 if > int16, ERR 5 outside 0..15
                 ; 🔴 D-LINERR: 0..15 RANGE CHECK, not the old `and $0F` mask --
                 ; `LINE (0,0)-(9,9),16` is ERR 5 on both references (k.16 /
                 ; k.b16), matching CIRCLE/PAINT and now PSET.
-                call    gfx_store_colour_checked
                 call    skip_comma
                 jr      nz,elg_draw         ; ",c" only
 elg_box_comma:
@@ -553,6 +557,11 @@ gfx_chk_dom:
 ; REVERTED at PSET/LINE/CIRCLE/parse_coord, and all of those sites call
 ; gfx_eval_int16 today. Both notes outlived the two-build tree whose $8000
 ; hard-stop they describe. Clobbers A.
+gfx_eval_colour:                            ; eval + strict int16 + 0..15 + GFX_C, the
+                call    eval                ; three colour sites' pair (D-REREAD batch 9);
+                call    get_int16_checked   ; DE = int16, ERR 6 -- two calls, not
+                                            ; gfx_eval_int16, so the depth under eval
+                                            ; is unchanged; falls into the check + store
 gfx_store_colour_checked:
                 ld      a,$F0               ; the 0..15 domain
                 call    gfx_chk_dom         ; A = E; ERR 5 if outside
@@ -620,18 +629,20 @@ cp_loop:
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_CIRCLEPARSE)
                 jp      c,gfx_absent
                 ld      a,(GFX_DREQ)
+                ld      hl,(GFX_DPTR)       ; the cursor (ld sets no flags): the request's
+                                            ; resolution point AND cp_done's continuation
                 or      a
                 jr      z,cp_done           ; 0 = the tenant finished parsing
-                ld      hl,(GFX_DPTR)       ; resolve the request from the cursor
                 dec     a
                 jr      z,cp_req_coord      ; DREQ=1: parse centre (x,y)
                 dec     a
                 jr      z,cp_req_int        ; DREQ=2: eval int16 (r / c)
                 ; DREQ=3: eval a float expression (angle / aspect) -> ARGA canonical
                 call    eval                ; HL advanced; value in FAC
-                ld      (GFX_DPTR),hl
-                call    arga_widen          ; D-ARGAWIDEN
-                jr      cp_resume
+                push    hl                  ; arga_widen clobbers HL (ld hl,ARGA); it
+                call    arga_widen          ; D-ARGAWIDEN -- cannot raise, so GFX_DPTR is
+                pop     hl                  ; stored after it with nothing observable lost
+                jr      cp_store
 cp_req_coord:
                 call    parse_coord         ; BC=cx, DE=cy (STEP resolved), HL advanced
                 ld      (GFX_CXC),bc
@@ -639,17 +650,16 @@ cp_req_coord:
                 call    gfx_work_area       ; D-LINERR: work area := the CENTRE, before
                                             ; the radius is even requested (v.circ0.rt
                                             ; reads ' 13 , 20 , 21 ' on both references)
-                ld      (GFX_DPTR),hl
-                jr      cp_resume
+                jr      cp_store            ; gfx_work_area preserves HL
 cp_req_int:
                 call    gfx_eval_int16      ; DE=value, HL advanced (ERR 6 if > int16)
                 call    gfx_mode_gate       ; D-LINERR: the gate, AFTER the value. Runs on
                                             ; every int request rather than only the
                                             ; radius: gating twice is gating once, and
                                             ; that is cheaper than a "which argument" flag
-                ld      (GFX_DPTR),hl
                 ld      (GFX_DVAL),de
-cp_resume:
+cp_store:                                   ; (D-REREAD batch 9: one store, three requests)
+                ld      (GFX_DPTR),hl       ; the advanced cursor
                 ld      a,1
                 ld      (GFX_DRESUME),a
                 jr      cp_loop
@@ -659,10 +669,10 @@ cp_done:
                 jp      nz,raise_error      ; the tenant's ERR code (ERR 2/5/6 sites)
                 ld      a,4                 ; GFX_OP = 4 -> tenant CIRCLE geometry
                 call    gfx_call            ; B4: GFX_OP := A, gfx_tenant, gfx_absent on
-                                            ; CF. Its push/pop of HL is harmless: HL is
-                                            ; reloaded from GFX_DPTR on the next line
-                ld      hl,(GFX_DPTR)       ; continue the statement stream after CIRCLE
-                jp      exec_stmt
+                                            ; CF. Its push/pop of HL keeps HL = GFX_DPTR,
+                                            ; loaded at the top of cp_loop's dispatch (the
+                                            ; geometry op never writes GFX_DPTR)
+                jp      exec_stmt           ; continue the statement stream after CIRCLE
 
 ; =============================================================================
 ; G5 -- PAINT (SCREEN-2 flood fill). docs/spec-basic-graphics-g5.md. Entry: HL
@@ -764,8 +774,7 @@ ex_paint:
                 ; eval + range-check 0..15 -> ERR 5 (the CIRCLE/PAINT rule) ---
                 call    str_eval_one        ; CF=1 iff a string operand (HL past it)
                 jp      c,gfx_typeerr       ; a string colour operand -> Type mismatch
-                call    gfx_eval_int16      ; DE = value (silent int16); ERR 6 if > int16
-                call    gfx_store_colour_checked  ; ERR 5 if outside 0..15; GFX_C=value
+                call    gfx_eval_colour     ; ERR 6 if > int16, ERR 5 outside 0..15; GFX_C=value
                 call    skip_comma
                 jr      nz,ep_default_b     ; no ",B" -> B = C
                 ; ...falls into ep_parse_b with HL on the comma introducing B
@@ -977,20 +986,19 @@ ex_draw:
                 ld      (GFX_DRESUME),a     ; the first entry is a fresh parse
 gdw_call:
                 call    gfx_tenant  ; CF=1 iff the sub-ROM is absent
-                jr      c,gdw_absent
+                jp      c,gfx_absent        ; raise_error resets SP: the pushed cursor goes
                 ld      a,(GFX_DREQ)
                 or      a
                 jr      z,gdw_finish        ; the tenant is done
-                dec     a
+                ld      hl,GFX_DEXP         ; both requests evaluate the scratch text
+                dec     a                   ; (ld sets no flags; dec a sets Z)
                 jr      z,gdw_want_int
                 ; --- the tenant wants a STRING (the X command) ---
-                ld      hl,GFX_DEXP
                 call    str_eval
                 jp      nc,gfx_typeerr      ; X of a numeric expression -> Type mismatch
                 call    gdw_hand_string
                 jr      gdw_resume
 gdw_want_int:
-                ld      hl,GFX_DEXP
                 call    gfx_eval_int16      ; DE = the coerced int16 (ERR 6 if > int16)
                 ld      (GFX_DVAL),de
 gdw_resume:
@@ -1003,9 +1011,6 @@ gdw_finish:
                 or      a
                 jp      nz,raise_error      ; the tenant's ERR code (the §5 table)
                 jp      exec_stmt
-gdw_absent:
-                pop     hl                  ; defensive: merged ROM always ships the tenant
-                jp      gfx_absent
 
 ; --- gdw_hand_string: the just-evaluated string (STRPTR) -> GFX_DVAL/GFX_DVLEN.
 ; The tenant reads that body IN PLACE (D-DRAWINPLACE, 2026-10-13): a later eval

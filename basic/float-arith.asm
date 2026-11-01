@@ -1385,41 +1385,34 @@ wsrc_go:
                 ld      (WSRC),de
                 ld      b,a                 ; B = the type until the mantissa count:
                                             ; nothing below touches B before then
-                push    hl                  ; dest base
-                ld      a,(de)
-                or      a
+                ld      a,(de)              ; HL (dest base) is never touched here,
+                or      a                   ; so it is not guarded (D-REREAD batch 9)
                 jr      nz,wsrc_nz
-                pop     hl
                 ld      b,18
                 jp      zero_fill           ; tail call
 wsrc_nz:
-                ld      c,a
-                pop     hl                  ; HL = dest base
+                ld      c,a                 ; C = the lead byte
                 and     $80
+                ld      (hl),a              ; sign: 0 / $80
+                inc     hl
+                xor     c                   ; A = lead AND $7F (sign bit cleared)
+                sub     64                  ; CF iff dexp < 0 (exponent below 64);
+                ld      (hl),a              ; `ld` / `inc hl` leave CF alone
+                inc     hl
+                sbc     a,a                 ; dexp's high byte: $FF iff negative, else 0
                 ld      (hl),a
-                inc     hl
-                ld      a,c
-                and     $7F
-                sub     64
-                ld      e,a
-                ld      d,0
-                bit     7,a
-                jr      z,wsrc_dexp_ok
-                ld      d,$FF
-wsrc_dexp_ok:
-                ld      (hl),e
-                inc     hl
-                ld      (hl),d
                 inc     hl                  ; HL -> dest dig[0]
+                                            ; DE is still the source (nothing above moves it)
                 ld      a,b
-                cp      8
+                cp      8                   ; Z = a double
                 ld      b,7
+                ld      a,1                 ; pad: dig[14] alone
                 jr      z,wsrc_mbytes_ok
                 ld      b,3
+                ld      a,9                 ; pad: dig[6..14]
 wsrc_mbytes_ok:
-                push    af                  ; Z = double, kept across the loop
+                push    af                  ; A = the pad count, kept across the loop
                                             ; (it makes no call)
-                ld      de,(WSRC)
                 inc     de                  ; DE -> source's mantissa byte 0
                 ld      c,$0F               ; D-NEXTCOST: the nibble mask, hoisted
 wsrc_unpack:
@@ -1452,11 +1445,8 @@ wsrc_unpack:
                 inc     hl
                 inc     de
                 djnz    wsrc_unpack
-                pop     af                  ; Z = double
-                ld      b,9
-                jr      nz,wsrc_padcount
-                ld      b,1
-wsrc_padcount:
+                pop     af
+                ld      b,a                 ; B = the pad count
                 jp      zero_fill           ; tail call
 
 ; --- widen_int_to: HL = dest FPNUM base, DE = SIGNED int16 value -> fills --

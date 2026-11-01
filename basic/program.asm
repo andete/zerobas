@@ -2586,25 +2586,25 @@ exr_lp:
                                             ; routing this to stmt_error would answer
                                             ; what the tree said BEFORE the fix, so the
                                             ; row would read as untouched, spec §5.3)
-                push    bc                  ; [stack: key]
-                push    hl                  ; [stack: key, exec cursor]
-                call    read_one_value      ; A = status; STRSCR = the item
+                push    hl                  ; [stack: exec cursor] -- guarded across
+                                            ; the read AND the store (D-REREAD batch 9)
+                push    bc                  ; [stack: exec cursor, key]
+                call    read_one_value      ; A = status; STRSCR = the item; DE = its
+                                            ; first byte (tgt_store_ref's input)
                 dec     a
                 jr      nz,exr_bad          ; 0 -> out of data
-                pop     hl                  ; exec cursor
-                pop     bc                  ; key
-                push    hl                  ; guard the cursor across the store
                 ld      a,(RDV_MODE)
                 or      a
                 jr      nz,exr_str
-                push    bc                  ; the key (inp_num clobbers BC)
                 call    inp_num             ; D-READFLT: VAL's parse of the item --
-                pop     bc                  ; `1.5`, `2E3`, `&H10`, `&B101`, 40000;
+                pop     bc                  ; the key (inp_num clobbers BC); `1.5`,
+                                            ; `2E3`, `&H10`, `&B101`, 40000;
                 jr      c,exr_nan           ; only blanks may follow the number
                 call    inp_store           ; int16 or float -> the target, coerced
                                             ; (D-ARYLV: a scalar or the resolved ELEMENT)
                 jr      exr_chk             ; `99999` into A% is Overflow: the check below
 exr_str:
+                pop     bc                  ; the key
                 call    tgt_store_ref       ; D-READREF: var$[key] -> the DATA text itself
                                             ; (was tgt_store_str -- D-ARYLV: var$[key] = the DATA item's bytes,
                                             ; or the resolved element (op=3 COPY_STR)
@@ -2620,15 +2620,13 @@ exr_chk:
                 ; site variant (TMISMATCH is always 0 -- READ never sets it).
                 ; D-READFLT: the numeric store joins here, for its Overflow.
                 call    check_expr_errors
-exr_after:
                 call    skip_comma          ; more variables to fill?
-                jr      z,exr_more
-                jp      exec_stmt           ; READ statement done
-exr_more:
-                inc     hl
-                jr      exr_lp
+                jp      nz,exec_stmt        ; READ statement done
+                jr      ex_read             ; a comma: ex_read's own `inc hl` steps
+                                            ; past it, then the next variable
 exr_nan:                                    ; D-READFLT: the item is not a number.
-                ld      c,a                 ; C = inp_num's A: VAL's code, or 0
+                cp      5                   ; VAL's code 5: `1E99` -> Overflow (6). The
+                                            ; flags ride over the loads and stores below
                 ld      hl,(RDV_VAL)        ; Leave it UNREAD, as the VG-8020 does: a
                 ld      (DATAPTR),hl        ; second READ refuses it again (`again`
                                             ; row).
@@ -2642,8 +2640,6 @@ exr_nan:                                    ; D-READFLT: the item is not a numbe
                 ld      (DATALINE),hl       ; HL stays the item's line for exr_syn
                 ld      a,1
                 ld      (DATASTATE),a
-                ld      a,c
-                cp      5                   ; VAL's code 5: `1E99` -> Overflow (6)
                 jr      nz,exr_syn          ; `12X`, `"5"`, `HELLO` -> ERR 2 on both
                 ld      a,6
                 jp      raise_error
@@ -2668,9 +2664,7 @@ exr_syn:
                 ld      a,2                 ; Syntax error
                 call    set_errflg          ; D-HERRO
                 jp      rerr_msg
-exr_bad:
-                pop     hl                  ; discard the exec cursor and the key
-                pop     hl                  ; (balance the stack)
+exr_bad:                                    ; no `pop` -- raise_error resets SP
                 ld      a,$CA               ; "out of data" landmark
                 ld      (ERRMARK),a
                 ld      a,4                 ; ERR 4: out of data (error-handling S2a)

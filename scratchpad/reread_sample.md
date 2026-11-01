@@ -153,3 +153,9 @@ stack, 42 B). contract-diff: 0 broken, one `wider_in` (ex_clear's B into a raise
 accepted. Two possible live bugs filed for measurement (CLEAR's 16-bit fit sum; DI after
 FIELD / LSET / RSET). Running total ~1,160 B.
 
+## Batch 9 (2026-11-01)
+
+~72 B: low region +40 B (widen_fac_to 18, ary_parse_call's dead unwind 22), page 1 ~+32 B
+(READ, CIRCLE, DRAW, PSET / PRESET, a colour helper, OUT). contract-diff: 0 broken. The merged
+DIM / ERASE loop (27 B low) waits on a ruling (ERASE +20 T). Running total ~1,230 B.
+

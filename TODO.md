@@ -373,7 +373,29 @@ item — do **one item per session** to keep context lean.
       after FIELD / LSET / RSET exactly as after a plain assignment, on the CF-3300 (58-59) and
       zerobas (68-70) alike -- interrupts are ON (something on the way back re-enables them; the
       reviewer read one return path). The 58 vs 70 is speed (tier 5). A first control row used
-      `REM`, which comments out the rest of the line and read 0 on both -- caught, replaced. HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
+      `REM`, which comments out the rest of the line and read 0 on both -- caught, replaced.
+      ✅ **BATCH 9 (2026-11-01), measured 2026-11-01: low region free 494 -> 534 B (+40 B);
+      main page 1 free 351 -> 361 B and its pads +18 B net of D-CLEARWRAP's 4 -- ~72 B**.
+      widen_fac_to: sign by `xor c`, the exponent's high byte by `sbc a,a` off `sub 64`'s
+      borrow, no HL guard, no WSRC reload, the pad count rides the stack (18 B low, 2026-11-01, every path
+      faster); ary_parse_call: `inc_eval` per subscript and the malformed-list unwind dropped --
+      ev_f_empty raises at once and raise_error re-bases SP (22 B low, 2026-11-01); READ keeps [cursor, key]
+      in place across the item and exr_bad drops its pops (10 B); CIRCLE loads GFX_DPTR once and
+      shares one store (7 B); DRAW loads GFX_DEXP once and jumps straight to gfx_absent (6 B);
+      PSET / PRESET share one entry, the default colour from the token in A (3 B); one
+      gfx_eval_colour for PSET / LINE / PAINT (3 B); OUT's trampoline moved into vdpio.asm
+      (3 B). `make contract-diff BASE=HEAD`: 0 broken; ex_preset now reads A (the token the
+      dispatcher supplies, asserted per token by test_stmt_dispatch) and no longer DE
+      ([`b9_contract.out`](scratchpad/b9_contract.out)). Knife pins unchanged; tapes: every
+      class as before. 🧰 The ranking is now [`reread_rank.py`](scratchpad/reread_rank.py) with
+      the reviewed names in [`reread_reviewed.md`](scratchpad/reread_reviewed.md).
+      HELD BACK (reviewers' counts, 2026-11-01): the merged DIM / ERASE loop (27 B low -- a
+      one-item ERASE gets 20 T slower: needs a ruling against "no common path slower"), DIM
+      alone reading VARTYPE (6 B low, counted 2026-11-01, faster), ary_parse_call keeping the cursor on the stack
+      and releasing through ARY_IDXP (14 B low, counted 2026-11-01, retires ARY_CUR -- a new `ld-sp` marker),
+      READ's R3 and LSET / RSET's shared FIELD head (pin-adjacent), PSET's P2 / P3 (knife
+      anchors, stack depth under the colour eval), SPRITE's P5, DRAW's D2 (a malformed
+      DRAW string changes from a likely hang to a clean resume). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
@@ -8382,7 +8404,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10873 (T-6FE392)8 (T-529ABE)` from `TODO.md:16555 (T-529ABE)`: a
+      `TODO.md:10895 (T-6FE392)8 (T-529ABE)` from `TODO.md:16577 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11342,7 +11364,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16555 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16577 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

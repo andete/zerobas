@@ -101,6 +101,8 @@ wt_lp:
                 jp      exec_stmt           ; `in` preserves HL, so no guard is
                                             ; needed -- the do_out precedent below
 
+ex_out:                                     ; (D-REREAD batch 9: was a trampoline in
+                inc     hl                  ; interp.asm) HL -> args (past the OUT token)
 do_out:
                 ; 🟢 THE PORT STAYS ADDRESS-DOMAIN, AND THAT IS MEASURED, NOT
                 ; INHERITED. `OUT 256,0` and `OUT -1,0` are BOTH accepted on the
