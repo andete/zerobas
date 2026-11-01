@@ -227,11 +227,16 @@ clr_floor:
                 push    bc                  ; [new][cursor] again
                 ld      bc,(PRGEND)         ; floor = PRGEND + POOLSIZE + margin
                 add     hl,bc
-                ld      bc,CLR_HIMEM_MARGIN
-                add     hl,bc
+                jr      c,clr_oom           ; 🔴 D-CLEARWRAP: the floor is past 65535 --
+                ld      bc,CLR_HIMEM_MARGIN ; no ceiling fits. Without these two carry
+                add     hl,bc               ; tests `CLEAR 32100`..`CLEAR 32767` wrapped
+                jr      c,clr_oom           ; to a small floor, were ACCEPTED, and hung
+                                            ; (both references: ERR 7;
+                                            ; scratchpad/clearwrap_run.out)
                 scf
                 sbc     hl,de               ; floor - value - 1: CF iff value >= floor
                 jr      c,clr_h_ok          ; value >= floor -> accepted
+clr_oom:
                 ld      a,6                 ; value < floor -> ERR 7 Out of memory
                 jr      clr_h_set           ; (fperr_to_err[6] = 7)
 clr_h_ill:

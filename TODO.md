@@ -363,7 +363,8 @@ item — do **one item per session** to keep context lean.
       ([`b8_contract.out`](scratchpad/b8_contract.out)). 🧰 z80flow lists the DATA label
       `err_syntax` (`db "Syntax error",0`) as a routine and decodes its text -- a tool finding.
       Knife pins unchanged; tapes: every class as before, Boulder Dash II on line 3341.
-      🔍 **TWO REVIEWER FINDINGS TO MEASURE (2026-11-01, unmeasured):** (a) CLEAR's fit check
+      🔍 **TWO REVIEWER FINDINGS TO MEASURE (2026-11-01; (a) measured and FIXED the same day,
+      D-CLEARWRAP):** (a) CLEAR's fit check
       adds PRGEND + size + 680 in 16 bits with no carry test, so `CLEAR 32100` .. `CLEAR 32767`
       may be ACCEPTED where both references say Out of memory (D-CLEARFIT's hang class);
       (b) chan_gate_bare's return has no `ei`, so FIELD / LSET / RSET / CALL FORMAT may come
@@ -413,6 +414,20 @@ item — do **one item per session** to keep context lean.
       both targets SAME; knifed back to `inc hl` at str_arg_open, it FAILS on both
       targets, [`argspace_knife.out`](scratchpad/argspace_knife.out)). Docs: the
       LEFT$ / MID$ / RIGHT$ / STRING$ / SPRITE keyword pages.
+
+- [x] 🐛 **`CLEAR 32100` .. `CLEAR 32767` HUNG ZEROBAS: THE FIT SUM WRAPPED PAST 65535
+      (D-CLEARWRAP, found 2026-11-01 by a D-REREAD batch 8 reviewer).**
+      🎚️ TIER 3 — a common error (asking for more string space than there is) hung the
+      machine instead of raising.
+      🤖 **AUTONOMOUS** — measured ([`clearwrap_probe.py`](scratchpad/clearwrap_probe.py)
+      -> [`clearwrap_run.out`](scratchpad/clearwrap_run.out)): the VG-8020 and the CF-3300
+      answer ERR 7 for `CLEAR 30000` / `32000` / `32100` / `32500` / `32767`; zerobas gave
+      ERR 7 up to 32000 and NO OUTPUT from 32100 on. clr_floor summed PRGEND + the size +
+      CLR_HIMEM_MARGIN in 16 bits with no carry test (D-CLEARFIT's own check, wrapped).
+      ✅ **FIXED 2026-11-01**: a `jr c` after each add goes to the ERR 7 arm (+4 B page 1).
+      All six rows agree on all three machines after
+      ([`clearwrap_after.out`](scratchpad/clearwrap_after.out)). Row: kwsweep `t6clearss7w`
+      (`CLEAR 32767`, PROVES-T6:7). Docs: docs/keywords/CLEAR.md.
 
 - [ ] 🔍 **BOULDER DASH II IS FRAGILE TO LOW-REGION CHANGES THAT PRESERVE EVERY VALUE
       (D-BD2FRAGILE, 2026-10-31).**
@@ -8362,7 +8377,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10853 (T-6FE392)8 (T-529ABE)` from `TODO.md:16535 (T-529ABE)`: a
+      `TODO.md:10868 (T-6FE392)8 (T-529ABE)` from `TODO.md:16550 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11322,7 +11337,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16535 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16550 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -130,6 +130,13 @@ That belongs to the **RAM usage** rung, which is not yet proven.
   D-CLEARFIT). `CLEAR 30000` gave no prompt at all, and `CLEAR 25000` filled
   the screen with garbage. Both are now a clean `Out of memory` that keeps the
   old string space, as on the reference.
+- **A string space just under 32768 still hung zerobas** (fixed 2026-11-01,
+  D-CLEARWRAP). The room check adds the program size, the requested string
+  space and a margin, and for `CLEAR 32100` to `CLEAR 32767` that sum passed
+  65535 and wrapped round to a small number, so the request looked as if it
+  fit. Both references answer `Out of memory`; zerobas now does too
+  ([`clearwrap_run.out`](../../scratchpad/clearwrap_run.out) before,
+  [`clearwrap_after.out`](../../scratchpad/clearwrap_after.out) after).
 - **Files stayed open after `CLEAR`** on the disk build (fixed 2026-10-06,
   D-CLEARCLOSE): the CF-3300 closes them, so the next `PRINT #` is
   error 59, `File not OPEN`; zerobas kept writing.
@@ -156,7 +163,7 @@ That belongs to the **RAM usage** rung, which is not yet proven.
   `NEW` and `RUN` keep, and `Out of string space`.
 - `make clearclose-acceptance` — files closed by `CLEAR` on the disk build.
 - `make kwsweep` — the bare form (a variable really reset), the string-space
-  form, the memory-top form, and the error rows.
+  form, the memory-top form, and the error rows (`CLEAR 32767` among them).
 - `make missing-acceptance` — something after the last argument, with and
   without a good value, under `ON ERROR` (rows `cl-bad3`, `cl-ok3`,
   `cl-onejunk`, and `cl-colon` as the control).

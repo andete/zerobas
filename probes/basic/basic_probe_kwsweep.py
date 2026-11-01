@@ -3905,6 +3905,10 @@ SWEEP: list[tuple[str, str, str | None, str, str]] = [
      "PROVES-T6:6 FORM:string-space"),
     ("t6clearss7", 'clear 30000', 'CLEAR 30000', "stored",
      "PROVES-T6:7 FORM:string-space"),
+    # D-CLEARWRAP (2026-11-01): the fit sum wrapped past 65535 and `CLEAR 32767`
+    # was ACCEPTED and hung zerobas (scratchpad/clearwrap_run.out).
+    ("t6clearss7w", 'clear 32767', 'CLEAR 32767', "stored",
+     "PROVES-T6:7 FORM:string-space"),
     ("t6clearss13", 'clear "A"', 'CLEAR "A"', "stored",
      "PROVES-T6:13 FORM:string-space"),
     ("t6clearh5", 'clear 200,&H7000', 'CLEAR 200,&H7000', "stored",
