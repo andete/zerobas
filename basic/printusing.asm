@@ -264,8 +264,7 @@ pu_to_field:
                                             ; set PU_TYPE/PU_W/PU_POS, A = no-field flag
                 jp      c,subrom_absent_error
                 push    af                  ; guard the tenant's answer across the drain
-                ld      hl,DB_WIN          
-                call    print_string        ; drain literals -> pchar (PRDEST sink)
+                call    print_dbwin         ; drain literals -> pchar (PRDEST sink)
                 ld      a,(DB_MORE)         ; D-PULONG: the scanner stopped because the
                 or      a                   ; 96 B window was full, not at a field --
                 pop     bc                  ; B = 0 field found / 1 none / 2 too wide
@@ -305,8 +304,7 @@ pu_do_number:
                 and     $C0                 ; bit6 `.` or bit7 `,` -- either one
                 jr      z,pu_num_int        ; needs the renderer, and `and` costs
                                             ; exactly what the old `bit 6,a` did
-                call    arga_widen          ; D-ARGAWIDEN
-                call    round_and_finalize
+                call    widen_and_finalize  ; D-ARGAWIDEN + round_and_finalize
 pu_num_flt:
                 call    sc_inl1             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_PUNUM)
@@ -347,8 +345,7 @@ pu_num_nosign:
                 ; on. docs/spec-basic-pufloat.md.
                 call    sc_inl0             ; D-STUBINL: D-SCCALL: tenant call + absent raise
                 db      low (SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_PUEMIT)
-                ld      hl,DB_WIN          
-                call    print_string
+                call    print_dbwin
                 pop     hl
                 ret
 

@@ -959,8 +959,7 @@ input_common:
                 cp      CAS_IN_MODE         ; (text cursor still pushed)
                 jr      z,inp_setsrc        ; cassette: A = CAS_IN_MODE already, and
                                             ; NO fch_select (see above)
-                ld      a,e
-                call    fch_select          ; make channel e live; A = its mode
+                call    fch_select_e        ; make channel e live; A = its mode
                 ; D-CHDIR (2026-10-06): as PRINT#'s -- 61 on a RANDOM channel, 52
                 ; on one open FOR OUTPUT / APPEND, both trappable on the CF-3300
                 ; (scratchpad/chdir_run.out); load_error printed and went on.
@@ -977,12 +976,13 @@ inp_setsrc:                                 ; (both arms arrive with the cursor 
                 pop     hl
 inp_readvar:
                 call    req_comma           ; D-NGRAM17
-                call    req_letter          ; D-NGRAM: a variable name must follow
+                call    rl_vst              ; D-NGRAM: a variable name must follow, then
+                                            ; var_str_type (D-REREAD-EDGES)
                 ; 🔴 D-INPNUM (2026-09-29): a NUMERIC target was Type mismatch here for
                 ; every value -- `PRINT #1,5` read back with `INPUT #1,X` is 5 on the
                 ; CF-3300 (scratchpad/inpnum_run.out). input.asm's inp_numitem reads
                 ; it; LINE INPUT # comes straight back to inp_str from there.
-                call    var_str_type        ; CF = the name is a string ('$'/DEFSTR)
+                ; (rl_vst above: CF = the name is a string ('$'/DEFSTR))
                 jp      nc,inp_numitem
 inp_str:
                 call    str_target_parse    ; string-var target: type-check, parse,
@@ -1285,6 +1285,10 @@ le_call_op:
 ; 6 / 8), so all five are this one body. (D-FCH S-FCH-1's write-back cache --
 ; fch_flush_active / fch_restage over fat_detach_channel / fat_restage_channel
 ; in basic/fat-prim-body.inc -- had already gone with D-MODE2DEAD and S10.C.)
+; D-REREAD-EDGES: fch_select_e = A := E, then fall in (five callers hold the
+; channel in E; fch_park still enters at fch_select with A = 0).
+fch_select_e:
+                ld      a,e
 fch_select:
                 ld      (FCH_ACTIVE),a
                 call    fch_modes_ptr
@@ -1532,8 +1536,7 @@ fdcc_cas_in:
                 push    hl
                 jr      fdcc_motor_off      ; motor off (input channel: nothing to flush)
 fdcc_disk:
-                ld      a,e
-                call    fch_select          ; make the channel live; A = its mode
+                call    fch_select_e        ; make the channel live; A = its mode
                 ; 🧭 S10.C (2026-10-15): EVERY disk mode crosses H_CHCLOSE now --
                 ; INPUT too, which the CF-3300 does ($FE62 at an INPUT channel's
                 ; CLOSE, s10c_hook_run.out). Its row is disk.rom's FCB since OPEN

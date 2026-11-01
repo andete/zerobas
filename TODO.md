@@ -480,6 +480,22 @@ item — do **one item per session** to keep context lean.
       unchanged. 🔮 ~11 B: MISS by ~3. `make contract-diff BASE=HEAD`: no rows
       ([`vaof_contract.out`](scratchpad/vaof_contract.out)); knife pins unchanged; tapes: all
       42 classes as before.
+      ✅ **BATCH 2 SHIPPED (2026-11-01): seven folds, 52 B** -- designed and applied by a
+      read-only-then-scoped agent, every anchor unique, reviewed: `close_paren` (a label in
+      g8_open_paren; graphics + print), and fall-through ENTRIES placed only after an
+      unconditional exit: `rl_vst` (req_letter -> var_str_type), `widen_and_finalize`
+      (arga_widen -> round_and_finalize), `print_dbwin` (HL := DB_WIN -> print_string),
+      `seterr_rec` (set_errflg -> record_errline), `fch_select_e` (A := E -> fch_select); and
+      the helper `vnk_paren` (var_name_key / skip_spaces / cp '('). 📏 Low 539 -> 543, page 1
+      383 -> 395 free, its pin pads 2181 -> 2217 B -- +52 B
+      ([`edges_b2_reloc.out`](scratchpad/edges_b2_reloc.out)); 🔮 the agent's -52 B: HIT.
+      Contract-diff: no breaks; its only row is `ary_errmap`, a db table decoded as code that
+      vnk_paren now follows ([`edges_b2_contract.out`](scratchpad/edges_b2_contract.out)).
+      redundant-load-check clean; knife pins unchanged; tapes: all 42 classes as before.
+      REJECTED (and why) in the agent's report: evsp_close (its error path drops its own return
+      address), every `ret c / ret z` run (a conditional ret returns to the SITE), vars_reset
+      (ctl_reset shares the machine stack), the ev_f_err family, and everything under 4 B.
+      ➡️ Batching is the way: ~50 B per FULL battery instead of ~8.
       HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
@@ -8753,7 +8769,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11244 (T-6FE392)8 (T-529ABE)` from `TODO.md:16926 (T-529ABE)`: a
+      `TODO.md:11260 (T-6FE392)8 (T-529ABE)` from `TODO.md:16942 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11713,7 +11729,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16926 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16942 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

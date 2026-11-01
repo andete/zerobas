@@ -128,8 +128,8 @@ exdf_run:
                 jr      nz,dfv_done         ; `DEF FNA=..`: no list
 dfv_next:
                 inc     hl
-                call    req_letter          ; a formal is a NAME, or Syntax error
-                call    var_str_type        ; A = 1 for a string name (HL kept)
+                call    rl_vst              ; a formal is a NAME, or Syntax error; then
+                                            ; var_str_type: A = 1 for a string name (HL kept)
                 push    af
                 call    var_name_key        ; BC = key, HL past name + suffix
                 pop     af

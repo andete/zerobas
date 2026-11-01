@@ -1555,8 +1555,7 @@ ex_resume_noerr:                    ; ERR 22 "resume without error" entry — fa
                                     ; fix: raise_error_forced's ONLY caller, so the
                                     ; separate `ld a,22`/`jp` block is merged in here)
 raise_error_forced:                          ; reached ONLY via ex_resume_noerr, A=22
-                call    set_errflg          ; D-HERRO
-                call    record_errline
+                call    seterr_rec          ; D-HERRO + record_errline
                 ld      hl,err_subhosted     ; ERR 22's message, sub-hosted (D-MSGMIGRATE:
                 jr      ra_abort             ; ERR-22-only) -> ALWAYS abort, never trap.
                                              ; D-CONTR: via ra_abort, not straight to
@@ -1574,6 +1573,11 @@ raise_error_forced:                          ; reached ONLY via ex_resume_noerr,
 ; fetch (program.asm) byte-for-byte. 65535 is the ERL-in-direct-mode
 ; sentinel (spec-basic-error-handling-s2.md §9 Q2, black-box-pinned GW/MSX
 ; convention). Clobbers A, DE, HL.
+; D-REREAD-EDGES: seterr_rec = set_errflg (A = the code), then fall in -- the
+; three abort arms that record ERR and ERL back to back (raise_error_forced,
+; arrays.asm's e21_last, program.asm's oe_badop).
+seterr_rec:
+                call    set_errflg
 record_errline:
                 ; D-STMTPEND: CONSUME the pending-error code. Every raise passes
                 ; through here exactly once (raise_error, and arrays.asm's

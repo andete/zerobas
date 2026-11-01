@@ -198,6 +198,11 @@ vnk_eat:
 ; explicit `% ! #` suffix is always numeric. Used by LET / PRINT / the factor
 ; layer to choose the string path before delegating the real advance to
 ; var_name_key.
+; D-REREAD-EDGES: rl_vst = req_letter, then fall into var_str_type (DIM, DEF FN
+; formals, INPUT#, READ). req_letter's Syntax error is stmt_error -> raise_error,
+; which resets SP, so raising one frame deeper is the same raise.
+rl_vst:
+                call    req_letter
 var_str_type:
                 ld      a,(hl)              ; F3 S3b: capture name0 for the DEFtbl
                 call    upcase              ; default lookup below (the walk preserves
@@ -295,7 +300,8 @@ vst_yes:
 ; ([[a-shared-engine-fix-must-measure-its-other-callers]]).
 tgt_parse:
                 push    af                  ; the mode must survive var_name_key
-                call    var_name_key        ; BC=key, HL past name+suffix, (VARTYPE)
+                call    vnk_paren           ; BC=key, HL past name+suffix, (VARTYPE);
+                                            ; + skip_spaces / cp '(' (D-REREAD-EDGES)
                 ; D-TGTSPC (docs/spec-basic-tgtspc.md, 28 rows on three sides with
                 ; BOTH references agreeing): the `(` may be separated from the name
                 ; by SPACES. `NEXT A (1)` / `READ A (1)` / `LSET A$ (1)=` all target
@@ -307,7 +313,9 @@ tgt_parse:
                 ; is +2 B (skip_spaces returns exactly what `ld a,(hl)` returned when
                 ; there is no space, with HL on the byte in A); eight per-caller
                 ; skips would be >= 16 B into a 5 B wall and would still be wrong for
-                ; the next caller anyone adds.
+                ; the next caller anyone adds. (D-REREAD-EDGES: the skip and its `cp '('`
+                ; now run inside vnk_paren, arrays.asm, shared with DIM and ERASE --
+                ; still one copy, still right after var_name_key, still before the test.)
                 ; ⚠️ AND IT CONSUMES A TRAILING SPACE ON THE SCALAR PATH TOO, WHICH IS
                 ; A SECOND FIX AND NOT A SIDE EFFECT. Eight of the nine callers cannot
                 ; see it -- each does its own skip_spaces before its next delimiter.
@@ -318,8 +326,8 @@ tgt_parse:
                 ; the `$` suffix is a different and far wider rule (rows x.dollar /
                 ; x.name, both DEFERRED -- the reference's whole name scan skips
                 ; spaces, so `NEXT A B` closes a `FOR AB` loop). Spec §5.2.
-                call    skip_spaces         ; A = the first non-space, HL on it
-                cp      '('                 ; a `(` after a name (spaces aside) is
+                ; (vnk_paren above: A = the first non-space, HL on it; a `(` after a
+                ; name (spaces aside) is)
                 jr      z,tp_ary            ; unambiguously a subscript -- ev_f_var/
                                             ; str_eval_one rely on the same
                                             ; disambiguation (arrays §9.4)
@@ -732,10 +740,10 @@ var_store_fac:
                 ld      a,(FACTYP)
                 cp      8
                 jr      z,vsf_coerced
-                call    arga_widen          ; D-ARGAWIDEN
+                call    widen_and_finalize  ; D-ARGAWIDEN
                                             ; double) into a 14-digit ARGA (float-
-                                            ; arith.asm)
-                call    round_and_finalize  ; no-op round (guard digit is 0) + pack as
+                                            ; arith.asm), then round_and_finalize:
+                                            ; no-op round (guard digit is 0) + pack as
                                             ; double + FACTYP=8 + DE
                 jr      vsf_coerced
 vsf_single:

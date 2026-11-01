@@ -1756,8 +1756,7 @@ var_store_at:
 vsa_dwiden:                                 ; ary_store_write enters here: an array
                                             ; element is always widened + repacked
                                             ; (no D-FORFAST skip; D-REREAD batch 8)
-                call    arga_widen          ; D-ARGAWIDEN
-                call    round_and_finalize  ; exact widen + pack as double
+                call    widen_and_finalize  ; D-ARGAWIDEN: exact widen + pack as double
 vsa_dbl:
                 ld      a,8                 ; the byte count
                 jr      vsa_copy
@@ -2356,8 +2355,7 @@ nxd_slot:
                 ret     nz                  ; already BCD (or not a number)
                 push    hl
                 call    slot_load           ; FACTYP = 2, DE = the int16
-                call    arga_widen          ; -> a packed double, FACTYP = 8
-                call    round_and_finalize
+                call    widen_and_finalize  ; -> a packed double, FACTYP = 8
                 pop     hl
                 jp      sst_go              ; [8][FAC] into the slot
 
@@ -2578,8 +2576,8 @@ err_stack       equ     err_mem             ; share sl_oom's "out of memory" (D-
 ex_read:
                 inc     hl                  ; past the READ token
 exr_lp:
-                call    req_letter          ; D-NGRAM: READ needs a variable
-                call    var_str_type        ; A = 1 iff the name carries a '$' (or its
+                call    rl_vst              ; D-NGRAM: READ needs a variable, then
+                                            ; var_str_type: A = 1 iff the name carries a '$' (or its
                 ld      (RDV_MODE),a        ; DEFtbl default is a string) -- and that
                                             ; is exactly the DATA-item read mode
                 call    tgt_parse_req      ; D-ARYLV: BC = key, HL past the whole
@@ -3042,8 +3040,7 @@ oe_undef        equ     ers_undef
 ; raise_error_forced (ERR 22) has always used.
 oe_badop:
                 ld      a,2
-                call    set_errflg          ; D-HERRO
-                call    record_errline      ; ERRLIN := this line (ERL reads 30)
+                call    seterr_rec          ; D-HERRO + ERRLIN := this line (ERL reads 30)
                 ld      hl,err_syntax       ; err_msgtab entry 2, low-region pool
                 jp      ra_abort            ; PAST raise_error_hl -> never traps
 

@@ -121,6 +121,10 @@ repl_read:
                 jr      repl
 
 ; --- print_string: CHPUT a 0-terminated string at (HL) --------------------
+; D-REREAD-EDGES: print_dbwin = HL := DB_WIN, then fall in (LIST and PRINT
+; USING drain the detok/literal window at three sites).
+print_dbwin:
+                ld      hl,DB_WIN
 print_string:
                 ld      a,(hl)
                 or      a

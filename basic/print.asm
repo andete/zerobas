@@ -91,7 +91,7 @@ ex_print:
                 ; PRINTS AND CONTINUES. The CF-3300 raises a trappable ERR 59 (and
                 ; so does zerobas's own LOF(1) on the very same closed channel).
                 ; Calling the shared classifier is the fix AND 4 bytes smaller.
-                ; fch_mode_class keeps E (the `ld a,e / call fch_select` below needs
+                ; fch_mode_class keeps E (the `call fch_select_e` below needs
                 ; it), fch_select keeps DE; both clobber only A/HL. ONE push spans
                 ; both and every raise between: raise_error resets SP from SAVSTK on
                 ; BOTH the trap and the abort arm.
@@ -104,8 +104,7 @@ ex_print:
                                             ; CF iff a disk channel (A < LPT_MODE)
                 jr      nc,exp_dev          ; 5..9: a device channel, owns no fat ctx
                 ; --- disk file channel ---
-                ld      a,e
-                call    fch_select          ; make channel e live; A = its mode
+                call    fch_select_e        ; make channel e live; A = its mode
                 ; 🔴 D-CHDIR (2026-10-06): the CF-3300 RAISES here, trappably --
                 ; PRINT# to a channel open FOR INPUT is 52, to a RANDOM one 61
                 ; (scratchpad/chdir_run.out). load_error printed and went on, so
@@ -696,10 +695,7 @@ exp_pos_arg:
                 call    inc_eval            ; DE = argument, HL advanced
                 call    get_byte_arg        ; A = n, or abort (ERR 6 / ERR 5)
                 push    af
-                call    skip_spaces
-                cp      ')'
-                jp      nz,exp_pos_syn      ; `jp`: pl_syntax is out of jr range (B4)
-                inc     hl
+                call    close_paren         ; D-REREAD-EDGES: skip, `)` or ERR 2, past it
                 pop     af
                 ret
 ; B4: an ALIAS, not a second copy -- byte-identical to play.asm's pl_syntax

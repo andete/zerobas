@@ -1399,8 +1399,7 @@ ev_ff_eof:                                  ; EOF(n): -1 at end of the input fil
                 ; 61 raise is the tail: no private copy.
                 dec     a
                 jp      nz,sid_badmode
-                ld      a,e
-                call    fch_select
+                call    fch_select_e
                 call    fat_io_eof         ; D-SEQEOF: CF = at the end -- Ctrl-Z
                                             ; NEXT counts (R1). Only mode 1 gets
                                             ; here (the 61 above), so the byte-

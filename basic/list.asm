@@ -285,8 +285,7 @@ de_win:
                                             ; (0-terminated); CF=1 if the sub-ROM is absent
                 jp      c,subrom_absent_error ; reduced build w/o sub-ROM (never on the
                                             ; merged machine, which always ships it)
-                ld      hl,DB_WIN
-                call    print_string        ; drain the window -> pchar (PRDEST sink)
+                call    print_dbwin         ; drain the window -> pchar (PRDEST sink)
                 pop     ix
                 pop     hl
                 pop     bc

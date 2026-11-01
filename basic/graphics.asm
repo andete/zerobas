@@ -367,10 +367,7 @@ pc_flag:
                 jp      nz,pc_syntax
                 inc     hl
                 call    gfx_eval_int16   ; DE = value; ERR 6 if > int16
-                call    skip_spaces
-                cp      ')'
-                jp      nz,pc_syntax
-                inc     hl
+                call    close_paren         ; D-REREAD-EDGES: skip, `)` or ERR 2, past it
                 pop     bc                  ; BC = x ; DE = y
                 pop     af                  ; ZF = STEP (pushed at pc_flag)
                 ret     nz                  ; absolute -> done
@@ -1378,6 +1375,11 @@ g8_open_paren:
                 jp      nz,gfx_syntax
                 inc     hl
                 call    g8_num_operand      ; DE = n (ERR 13 on a string, ERR 6 > int16)
+; D-REREAD-EDGES: close_paren = skip_spaces / cp ')' / jp nz,ERR 2 / inc hl, also
+; called by pc_ (graphics) and exp_pos_arg (print). gfx_syntax = pc_syntax =
+; exp_pos_syn = pl_syntax (one address); raise_error resets SP, so raising one
+; frame deeper is the same raise.
+close_paren:
                 call    skip_spaces
                 cp      ')'
                 jp      nz,gfx_syntax

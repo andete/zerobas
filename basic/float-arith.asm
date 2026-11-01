@@ -504,6 +504,10 @@ apf_lp:
 ; -> silent zero, both ops' underflow convention). A pre-round ARGA that is
 ; ALREADY all-zero (genuine zero result, or fp_mul/fp_div's underflow/
 ; div-by-zero shortcuts) skips rounding and the bound check entirely.
+; D-REREAD-EDGES: widen_and_finalize = arga_widen, then fall in -- four callers
+; widened the live RHS into ARGA and packed it as a double back to back.
+widen_and_finalize:
+                call    arga_widen
 round_and_finalize:
                 call    arga_dig_iszero
                 jp     z,raf_zero_ok

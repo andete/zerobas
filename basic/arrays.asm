@@ -150,8 +150,7 @@ e21_walk:
 e21_last:
                 ld      (CURLINE),bc
                 ld      a,21
-                call    set_errflg          ; D-HERRO
-                call    record_errline      ; ERL := that line (run mode; DIRECTF==0
+                call    seterr_rec          ; D-HERRO + ERL := that line (run mode; DIRECTF==0
                                             ; is exactly what the gate above proved)
                 ld      hl,err_no_resume    ; falls into fre_abort_low (D-REREAD batch 8):
                                             ; D-ONEFLG site A clears ONEFLG on the way
@@ -575,6 +574,16 @@ ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispo
                                             ;   pre-partition `Out of memory`, exactly
                                             ;   as the five str-engine.asm sites do.
 
+; --- vnk_paren: var_name_key, then skip_spaces / cp '(' (D-REREAD-EDGES) -----
+; DIM, ERASE and tgt_parse (vars.asm) all asked "is a `(` next, spaces aside?"
+; right after the name. Out: as var_name_key (BC = key, VARTYPE) + A = the
+; first non-space, HL on it, Z iff '('. No stack use, no error exit.
+vnk_paren:
+                call    var_name_key
+                call    skip_spaces
+                cp      '('
+                ret
+
 ; --- ex_dim: DIM statement. HL enters on the DIM token. ---------------------
 ; For each comma-separated NAME[(b0[,b1...])]: parse the name (a `$` string
 ; name is now LIVE, arrays slice 3, docs/spec-basic-arrays-slice3-strings.md
@@ -598,21 +607,20 @@ ary_errmap:                                 ; ARY_ERR 1..5 -> FPERR (§4.1 dispo
 ex_dim:
                 inc     hl                  ; past the DIM token
 ed_lp:
-                call    req_letter          ; D-NGRAM: a DIM target must START with a
+                call    rl_vst              ; D-NGRAM: a DIM target must START with a
                                             ; letter -- reject a bare `$` or a digit
                                             ; name (D1, slice-3 adversarial catch:
                                             ; `DIM $(5)`
                                             ; and `DIM 1(5)` were silently accepted
                                             ; -- the deleted slice-2 `$`-reject had
                                             ; masked exactly this). Mirrors ex_erase's
-                                            ; own is_letter guard below.
-                call    var_str_type        ; A=1/CF set iff a `$` suffix (or a
+                                            ; own is_letter guard below. rl_vst then runs
+                                            ; var_str_type: A=1/CF set iff a `$` suffix (or a
                                             ; DEFSTR-defaulted bare name) --
                                             ; string array. HL NOT advanced.
                 push    af                  ; [STR?] -- survives var_name_key
-                call    var_name_key        ; BC=key, HL past name; (VARTYPE)=type
-                call    skip_spaces
-                cp      '('
+                call    vnk_paren           ; BC=key, HL past name; (VARTYPE)=type;
+                                            ; then skip_spaces / cp '(' (D-REREAD-EDGES)
                 jr      z,ed_haveparen
                 ; D-DIMBARE (docs/spec-basic-dimbare.md): A DIM ITEM WITH NO
                 ; BOUND LIST IS ACCEPTED AND IGNORED. This used to be
@@ -722,13 +730,12 @@ ee_lp:
                                             ; leading/trailing/double comma (','),
                                             ; and a numeric argument (digit) --
                                             ; none of those set CF.
-                call    var_name_key        ; BC=key, HL past name; (VARTYPE) = 2/4/8, or
+                call    vnk_paren           ; BC=key, HL past name; (VARTYPE) = 2/4/8, or
                                             ; DEFTBL_STR for a `$` name AND a DEFSTR-bare
                                             ; one alike (D-FORVAR's vnk_dollar) -- the
                                             ; same answer var_str_type's CF used to give
-                                            ; here, so that call went (D-REREAD batch 6)
-                call    skip_spaces
-                cp      '('
+                                            ; here, so that call went (D-REREAD batch 6);
+                                            ; vnk_paren also does skip_spaces / cp '('
                 jr      z,ee_synerr         ; Tier A: 'ERASE A(' -- subscript/paren form
                                             ; (ERASE A(1)/A()) is a syntax error, not a
                                             ; lookup
