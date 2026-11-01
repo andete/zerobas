@@ -453,6 +453,18 @@ item — do **one item per session** to keep context lean.
       tenants' callees, published BASIC entries, the low-region forced set). 🔴 z80flow is
       blind to stack depth and an edge change is where it bites (batch 10's dimedge, batch
       11's DIM crash): a cluster change runs the FULL battery. Feeds D-SUB2RETIRE.
+      🧰 **THE RANKING TOOL EXISTS (2026-11-01):** [`edges_rank.py`](scratchpad/edges_rank.py)
+      -> [`edges_rank.out`](scratchpad/edges_rank.out) -- every ROM context through z80flow's
+      loader; per call target the PRELUDE / POSTLUDE that k of its n call sites share (a
+      prelude folds behind a new entry label at 0 B cost; a postlude needs the callee's exits
+      read). 📏 UPPER BOUNDS, overlapping, before ABI exclusions: main 674 B, sub 205 B
+      (p0 131 + p1 74), sub2 152 B, disk 139 B -- ~1.2 KB in all; top real-looking rows are
+      12-14 B each (skip_eq's prelude 3/8 sites, fch_mode_class 4/6, fch_check 4/7). ⚠️ The
+      biggest sub / sub2 rows land MID-label (`fo_dev_cas+34`, `tk_copy_up+3`): a missing
+      label, read them before believing them. ➡️ **So EDGES is worth a few hundred bytes,
+      NOT the ~3 KB D-SUB2RETIRE needs** -- that needs the structural routes too (tenant
+      merges, main / sub duplicates). Next: hand-exclude the ABI edges, take the rows top
+      down, each a FULL battery.
       HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
@@ -507,6 +519,8 @@ item — do **one item per session** to keep context lean.
       holds ~5.5 KB in ~12 tenants (grpprt, edctrl, frelive, p0cb, trapstmt, filestmt,
       loadsave, scrstmt, tapeprog, pgmedit, beep, tokpay); sub has ~2.7 KB free (35 B page 0,
       2691 B page 1) -> ~3 KB more to free across main + sub. RE-MEASURE, never quote.
+      📏 2026-11-01: D-REREAD-EDGES' ranking puts that route at ~1.2 KB upper bound across all
+      ROMs (a few hundred real) -- not enough alone.
       ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
       routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
       main / sub duplicate removal.
@@ -8724,7 +8738,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11215 (T-6FE392)8 (T-529ABE)` from `TODO.md:16897 (T-529ABE)`: a
+      `TODO.md:11229 (T-6FE392)8 (T-529ABE)` from `TODO.md:16911 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11684,7 +11698,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16897 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16911 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
