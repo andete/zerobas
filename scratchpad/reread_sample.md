@@ -159,3 +159,10 @@ FIELD / LSET / RSET). Running total ~1,160 B.
 (READ, CIRCLE, DRAW, PSET / PRESET, a colour helper, OUT). contract-diff: 0 broken. The merged
 DIM / ERASE loop (27 B low) waits on a ruling (ERASE +20 T). Running total ~1,230 B.
 
+## Batch 10 (2026-11-01)
+
+~104 B: low region +73 B (the float formatter 70, ary_op0_vt 3; ary_op0_resolve's fall-through
+into the parser was taken out -- it moved dimedge's OOM edge by 2 B), page 1 +31 B (LOCATE 20,
+INPUT, VPOKE / RUN trampolines, SWAP, ON). contract-diff: 0 broken; the wider_in rows are the
+formatter's own new inputs. Running total ~1,335 B.
+

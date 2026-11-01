@@ -102,6 +102,8 @@
 ; here -- they load nothing. CAS_VERIFY is cleared on the name arm now (it was
 ; cleared here first): only the tape reader reads it, and these two arms never
 ; reach it.
+ex_run:                                     ; (D-REREAD batch 10: was a trampoline in
+                inc     hl                  ; interp.asm) HL -> args (past the RUN token)
 do_run:
                 call    skipsp_test ; A = the first non-space byte
                 jr      z,dr_stored         ; end of statement -> bare RUN

@@ -889,15 +889,9 @@ exd_step:
 ; sub2/loadsave.asm, D-P0CB slice C2 -- their labels share ex_open's one byte
 ; in front of ex_sub2, basic/program.asm, and the tenant steps the token. So do
 ; ex_screen / ex_color / ex_width / ex_key since slice D: sub2/scrstmt.asm.)
-ex_run:
-                inc     hl                  ; HL -> args (past the RUN token)
-                jp      do_run
 ex_poke:
                 inc     hl                  ; HL -> args (past the POKE token)
                 jp      do_poke
-ex_vpoke:
-                inc     hl                  ; HL -> args (past the VPOKE token)
-                jp      do_vpoke
 ; --- ex_let: variable assignment  <var> = <expr> --------------------------
 ; The name may be multi-character (significant to 2 chars; see vars.asm). A
 ; `$`-suffixed name (A$) is a string variable: the RHS is a string operand (a

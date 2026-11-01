@@ -1,25 +1,25 @@
 {
  "note": "kwsweep NEEDS-RIG: verdicts from the last run that FOUND the rigfw board; board-less runs carry these (Joost 2026-09-26). Written by basic_probe_kwsweep.py.",
- "rom_fingerprint": "git=6af2bc7b zerobas-main-eu.rom=095d572f231d sub.rom=9558591214c6 disk.rom=f3d2ee492f80",
+ "rom_fingerprint": "git=5b59a6b5 zerobas-main-eu.rom=35557fe042bf sub.rom=77a5477d0311 disk.rom=53710d234d96",
  "rows": {
   "onstrig_rig": {
-   "measured": "2026-11-01 02:34:19",
+   "measured": "2026-11-01 04:41:46",
    "verdict": "SUPPORTED"
   },
   "stick_rig": {
-   "measured": "2026-11-01 02:34:19",
+   "measured": "2026-11-01 04:41:46",
    "verdict": "SUPPORTED"
   },
   "stick_rig_b": {
-   "measured": "2026-11-01 02:34:19",
+   "measured": "2026-11-01 04:41:46",
    "verdict": "SUPPORTED"
   },
   "strig_rig": {
-   "measured": "2026-11-01 02:34:19",
+   "measured": "2026-11-01 04:41:46",
    "verdict": "SUPPORTED"
   },
   "strig_rig_b": {
-   "measured": "2026-11-01 02:34:19",
+   "measured": "2026-11-01 04:41:46",
    "verdict": "SUPPORTED"
   }
  }

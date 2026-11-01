@@ -87,34 +87,70 @@ flt_fmt:
                 ; pass (~82 cycles): `PRINT VAL("1E3")` paid 9 extra passes and its
                 ; whole-row time went 1.8x -> 2.2x the VG-8020's. ~40 cycles a pass
                 ; here, so 14 passes cost about what the old 5 did, and 7 B less.
-                ; DE is no longer written; flo_emit_fixed / flo_emit_e write it before any read.
-                ld      hl,ARGA+FPNUM_DIG+14
-                ld      c,15
+                ; DE is no longer written; the emitters below write it before any read.
+                dec     hl                  ; widen_fac_to's zero_fill left HL = ARGA+18 -> dig[14]
+                ld      b,15                ; (D-REREAD batch 10)
 flo_strip:
                 ld      a,(hl)
                 or      a
                 jr      nz,flo_strip_done
                 dec     hl
-                dec     c
-                jr      nz,flo_strip
+                djnz    flo_strip
 flo_strip_done:
-                ld      a,c
+                ld      a,b                 ; B = s: the emitters read B, not FOSIGCOUNT
                 ld      (FOSIGCOUNT),a
                 ; --- sign char, then dispatch fixed vs E form ---
                 ld      hl,FOUTBUF
+                ld      (hl),' '
                 ld      a,(ARGA+FPNUM_SIGN) ; 0 / $80 -- widen_fac_to masked it
                 or      a
                 jr      z,flo_possign
-                ld      a,'-'
-                jr      flo_signwr
+                ld      (hl),'-'
 flo_possign:
-                ld      a,' '
-flo_signwr:
+                inc     hl
+                ; 💰 D-REREAD (2026-10-31): dec_exp is -64..63 here (widen_fac_to makes it
+                ; `(lead & $7F) - 64`), so its low byte is all of it: +1 maps -1..14 onto
+                ; 0..15 and every other value onto 16..64 or $C1..$FF -- one unsigned
+                ; compare. (Was flo_is_fixed; inlined, with the E emitter, in batch 10.)
+                ld      a,(ARGA+FPNUM_DEXP)
+                inc     a
+                cp      16                  ; CF iff -1 <= dec_exp <= 14: FIXED form
+                jr      c,flo_do_fixed      ; A = dec_exp+1, B = s: flo_emit_fixed's inputs
+                ; --- E form: digit0 [+ '.' + digits[1..s)] + 'E' + sign + 2-digit |dec_exp-1|
+                ld      de,ARGA+FPNUM_DIG
+                ld      a,(de)
+                add     a,'0'
                 ld      (hl),a
                 inc     hl
-                call    flo_is_fixed
-                jr      c,flo_do_fixed
-                call    flo_emit_e
+                inc     de                  ; DE -> digit[1]
+                ld      a,b                 ; B = s (flo_strip)
+                dec     a
+                jr      z,flo_e_nodp        ; s = 1: no point
+                ld      (hl),'.'
+                inc     hl
+                ld      b,a                 ; s-1 digits from digit[1]
+                call    flo_write_digits_range
+flo_e_nodp:
+                ld      (hl),'E'
+                inc     hl
+                ld      a,(ARGA+FPNUM_DEXP)
+                dec     a                   ; A = dec_exp-1: -65..62, never 0; S = its sign
+                ld      (hl),'+'            ; `ld (hl),n` leaves S alone
+                jp      p,flo_e_pos
+                ld      (hl),'-'
+                neg                         ; 3..65
+flo_e_pos:
+                inc     hl
+                ld      b,'0'-1
+flo_e_tens:
+                inc     b
+                sub     10
+                jr      nc,flo_e_tens       ; B = tens digit in ASCII, A = units-10
+                add     a,'0'+10
+                ld      (hl),b
+                inc     hl
+                ld      (hl),a
+                inc     hl
                 jr      flo_finish
 flo_do_fixed:
                 call    flo_emit_fixed
@@ -135,49 +171,30 @@ flo_zero:
                                             ; HL = FOUTBUF, verbatim (D-SEQEOF
                                             ; funding carve, -7 B)
 
-; --- flo_is_fixed: CF set iff -1 <= dec_exp <= 14. Preserves HL. -----------
-; Clobbers A. 💰 D-REREAD (2026-10-31): dec_exp is -64..63 here (widen_fac_to,
-; just before, makes it `(lead & $7F) - 64`), so its low byte is all of it:
-; +1 maps -1..14 onto 0..15 and every other value onto 16..64 or $C1..$FF --
-; one unsigned compare instead of two cmp16_bits calls.
-flo_is_fixed:
-                ld      a,(ARGA+FPNUM_DEXP)
-                inc     a
-                cp      16                  ; CF iff dec_exp+1 in 0..15
-                ret
-
 ; --- flo_emit_fixed: write the FIXED-form digits at (HL), HL advanced -----
 ; dec_exp<=0: '.' + (-dec_exp) zeros + digits. dec_exp>0 & s<=dec_exp:
 ; digits + (dec_exp-s) zeros, no point. Else: digits[0..dec_exp) + '.' +
 ; digits[dec_exp..s). Entered only after flo_is_fixed (-1 <= dec_exp <= 14).
 ; Clobbers A, B, C, D, E.
-flo_emit_fixed:
-                ; 💰 D-REREAD batch 4b (2026-10-31, -55 B low region): dec_exp's low
-                ; byte is all of it here (flo_is_fixed, the only way in, bounds it
-                ; to -1..14), so it is read once with `ld a,(nn)`; the (b)/(c)
-                ; split is one `sub`; case (a) writes at most one zero.
-                ld      a,(ARGA+FPNUM_DEXP)
-                dec     a                   ; 1..14 -> 0..13 (P); 0/-1 -> $FF/$FE (M)
-                jp      m,flo_fx_a          ; dec_exp <= 0: the '.'-led form
-                inc     a
+flo_emit_fixed:                             ; A = dec_exp+1 (0..15), B = s (D-REREAD b10)
+                cp      2
+                jr      c,flo_fx_a          ; dec_exp <= 0: the '.'-led form
+                dec     a
                 ld      c,a                 ; C = dec_exp (1..14)
-                ld      a,(FOSIGCOUNT)
-                ld      b,a                 ; B = s
-                ld      a,c
                 sub     b                   ; A = dec_exp - s; NC iff dec_exp >= s
                 jr      nc,flo_fx_case_b
                 ; case (c): 0 < dec_exp < s
                 neg                         ; A = s - dec_exp (> 0)
                 ld      b,a
-                push    bc                  ; B = tail count, C = dec_exp
-                ld      b,c
-                ld      c,0
-                call    flo_write_digits_range   ; digits[0..dec_exp)
+                push    bc                  ; B = tail count
+                ld      b,c                 ; dec_exp (> 0)
+                ld      de,ARGA+FPNUM_DIG
+                call    flo_write_digits_range   ; digits[0..dec_exp); DE -> digit[dec_exp]
                 ld      (hl),'.'
                 inc     hl
                 pop     bc
-                jr      flo_write_digits_range   ; digits[dec_exp..s)
-flo_fx_case_b:                              ; A = dec_exp - s, Z iff s = dec_exp
+                jr      flo_write_digits_range   ; digits[dec_exp..s), DE already there
+flo_fx_case_b:                              ; A = dec_exp - s, Z iff s = dec_exp; B = s
                 push    af
                 call    flo_write_digits    ; all s digits
                 pop     af
@@ -188,114 +205,32 @@ flo_fx_b_zloop:
                 inc     hl
                 djnz    flo_fx_b_zloop
                 ret
-flo_fx_a:                                   ; A = $FF (dec_exp 0) / $FE (-1)
+flo_fx_a:                                   ; A = 1 (dec_exp 0) / 0 (-1); B = s
                 ld      (hl),'.'
                 inc     hl
-                inc     a                   ; Z iff dec_exp = 0
+                dec     a                   ; Z iff dec_exp = 0
                 jr      z,flo_write_digits
                 ld      (hl),'0'            ; dec_exp = -1: one leading zero
                 inc     hl
                 ; ...and FALLS THROUGH into flo_write_digits
 
-; --- flo_write_digits: write all FOSIGCOUNT digits from ARGA's digits[0..] (C8)
+; --- flo_write_digits: B = s -> write all s digits from ARGA's digits[0..]
 flo_write_digits:
-                ld      a,(FOSIGCOUNT)
-                ld      b,a
-                ld      c,0
-                ; ...and FALLS THROUGH into flo_write_digits_range (the `jr` here
-                ; was to the very next instruction: -2 B, GA-CROSS-ROMSCAN)
-
-; --- flo_write_digits_range: write B ASCII digits from ARGA's digits[C..] at (HL) (C8)
-; out: HL advanced past the written digits. Clobbers A, B, D, E.
-flo_write_digits_range:
                 ld      a,b
                 or      a
-                ret     z
-                push    hl
-                ld      hl,ARGA+FPNUM_DIG
-                ld      d,0
-                ld      e,c
-                add     hl,de
-                ex      de,hl               ; DE = ARGA digit[C] read cursor
-                pop     hl                  ; HL = write cursor
-fwdr_lp:
+                ret     z                   ; s = 0 (degenerate): nothing, as before
+                ld      de,ARGA+FPNUM_DIG
+                ; ...and FALLS THROUGH into flo_write_digits_range
+
+; --- flo_write_digits_range: write B (> 0) ASCII digits from (DE) at (HL)
+; out: HL, DE advanced. Clobbers A, B.
+flo_write_digits_range:
                 ld      a,(de)
                 add     a,'0'
                 ld      (hl),a
                 inc     hl
                 inc     de
-                djnz    fwdr_lp
-                ret
-
-; --- flo_emit_e: write the E-FORM digits at (HL), HL advanced -------------
-; digit0 [+ '.' + digits[1..s) if s>1] + 'E' + sign + 2-digit |dec_exp-1|.
-; Clobbers A, B, C, D, E.
-flo_emit_e:
-                ld      a,(ARGA+FPNUM_DIG)
-                add     a,'0'
-                ld      (hl),a
-                inc     hl
-                ld      a,(FOSIGCOUNT)
-                cp      1
-                jr      z,flo_e_nodp
-                ld      (hl),'.'
-                inc     hl
-                dec     a
-                ld      b,a
-                ld      c,1
-                call    flo_write_digits_range
-flo_e_nodp:
-                ld      (hl),'E'
-                inc     hl
-                push    hl
-                ld      hl,(ARGA+FPNUM_DEXP)
-                ld      de,$FFFF            ; -1
-                add     hl,de               ; HL = dec_exp - 1
-                ld      a,h
-                and     $80
-                ld      d,a                 ; D = sign flag (0 pos / $80 neg)
-                jr      z,flo_e_magpos
-                xor     a
-                sub     l
-                ld      l,a
-                ld      a,0                 ; 🔴 NOT `xor a`: this is a 16-bit
-                                            ; NEGATE and the borrow from `sub l`
-                                            ; must reach the `sbc a,h` below.
-                                            ; xor would clear it (D-PEEPHOLE).
-                sbc     a,h
-                ld      h,a
-flo_e_magpos:
-                ld      a,l                 ; A = |dec_exp-1| (fits a byte)
-                pop     hl
-                push    af
-                ld      a,d
-                or      a
-                jr      z,flo_e_signpos
-                ld      a,'-'
-                jr      flo_e_signwr
-flo_e_signpos:
-                ld      a,'+'
-flo_e_signwr:
-                ld      (hl),a
-                inc     hl
-                pop     af
-                ld      b,0
-flo_e_tens:
-                cp      10
-                jr      c,flo_e_havetens
-                sub     10
-                inc     b
-                jr      flo_e_tens
-flo_e_havetens:
-                push    af
-                ld      a,b
-                add     a,'0'
-                ld      (hl),a
-                inc     hl
-                pop     af
-                add     a,'0'
-                ld      (hl),a
-                inc     hl
+                djnz    flo_write_digits_range
                 ret
 
 ; --- neg_de: DE = -DE (two's complement). Clobbers A. ----------------------

@@ -22,6 +22,8 @@
 
 ; --- do_vpoke: VPOKE addr,value -------------------------------------------
 ; addr = VRAM address (full 16-bit, 0..&H3FFF used on TMS9918); value low byte.
+ex_vpoke:                                   ; (D-REREAD batch 10: was a trampoline in
+                inc     hl                  ; interp.asm) HL -> args (past the VPOKE token)
 do_vpoke:
                 call    eval                ; D-F2-2 stage B: VPOKE's address is the VRAM
                 call    get_vram_arg        ; domain 0..16383 (NOT the 0..65535 address

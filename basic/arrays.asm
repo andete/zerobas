@@ -812,8 +812,7 @@ asw_wb_int:
 ; raw element address) — net LOW-REGION-NEGATIVE once ela_err/ela_abort_tm/
 ; ela_abort_fp relocate alongside them (below).
 ex_let_arr:
-                ld      a,(VARTYPE)
-                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                call    ary_op0_vt     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set
 ela_rterr:                                  ; (ex_let_arr_str's error exit joins here)
                 jp      nz,fp_runtime_error ; [CURSOR] already consumed by
@@ -877,8 +876,7 @@ ela_done:                                   ; (ex_let_arr_str's exits join here 
 ; resolve-time one) lands exactly on the `jp nz,ret_de0` below with nothing further to
 ; unwind (D-ARR-C: there is no [CURSOR] stack word left to unwind).
 ev_f_arr:
-                ld      a,(VARTYPE)
-                call    ary_op0_resolve     ; Z: HL=cursor,DE=elem_addr / NZ:
+                call    ary_op0_vt     ; Z: HL=cursor,DE=elem_addr / NZ:
                                             ; HL=cursor, FPERR already set (deferred)
                 push    hl
                 pop     ix                  ; IX = cursor (ev_f_var's own return contract,
@@ -923,6 +921,13 @@ ev_f_arr:
 ; more — ary_parse_call owns its whole frame and releases it before returning,
 ; so the cursor simply comes back in HL on both exits and no caller pops
 ; anything. Clobbers A,B,C,D,E,H,L,IX (ary_parse_call's own clobbers).
+; 🔴 ARY_OP0_RESOLVE MUST CALL ary_parse_call, NOT FALL INTO IT (D-REREAD batch 10:
+; a fall-through saved 5 B and moved dimedge-acceptance's eval-p5-133 row from
+; REFUSED to FITTED -- one call frame less under every array reference shifts the
+; out-of-memory edge by 2 B; the VG-8020 refuses there). The `ary_op0_vt` entry
+; (type = (VARTYPE)) falls into it and keeps that depth.
+ary_op0_vt:                                 ; the same, type = (VARTYPE) (ex_let_arr, ev_f_arr)
+                ld      a,(VARTYPE)
 ary_op0_resolve:
                 ld      d,a                 ; TYPE
                 ld      e,0                 ; op = 0 (RESOLVE, auto-dim)

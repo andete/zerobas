@@ -961,19 +961,18 @@ input_common:
                                             ; NO fch_select (see above)
                 ld      a,e
                 call    fch_select          ; make channel e live; A = its mode
-                pop     hl                  ; (2026-10-19: the `ld a,(FCH_MODE)`
-                                            ; reload here was dead since S10.E)
                 ; D-CHDIR (2026-10-06): as PRINT#'s -- 61 on a RANDOM channel, 52
                 ; on one open FOR OUTPUT / APPEND, both trappable on the CF-3300
                 ; (scratchpad/chdir_run.out); load_error printed and went on.
+                ; The cursor STAYS PUSHED across both raises, as at PRINT#'s:
+                ; raise_error resets SP from SAVSTK and reads no HL (D-REREAD b10).
                 cp      4
                 jp      z,sid_badmode
-                cp      1                   ; a channel must be open for INPUT
-                jp      nz,err_badfnum_raise
+                dec     a                   ; a channel must be open for INPUT (1);
+                jp      nz,err_badfnum_raise ; A = 0 still means "disk" to arl_set_src
                 ; D-CASINP: the two-way source choice moved to arl_set_src
                 ; (basic/input.asm) so INPUT$ can make it too. -11 B here.
-                push    hl                  ; HL is the text cursor; arl_set_src uses it
-inp_setsrc:                                 ; (the cassette arm arrives with it pushed)
+inp_setsrc:                                 ; (both arms arrive with the cursor pushed)
                 call    arl_set_src         ; A = the mode (1 disk / CAS_IN_MODE tape)
                 pop     hl
 inp_readvar:

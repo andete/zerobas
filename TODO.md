@@ -395,7 +395,33 @@ item — do **one item per session** to keep context lean.
       and releasing through ARY_IDXP (14 B low, counted 2026-11-01, retires ARY_CUR -- a new `ld-sp` marker),
       READ's R3 and LSET / RSET's shared FIELD head (pin-adjacent), PSET's P2 / P3 (knife
       anchors, stack depth under the colour eval), SPRITE's P5, DRAW's D2 (a malformed
-      DRAW string changes from a likely hang to a clean resume). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
+      DRAW string changes from a likely hang to a clean resume).
+      ✅ **BATCH 10 (2026-11-01), measured 2026-11-01: low region free 534 -> 537 B and its
+      $3297 pad 344 -> 414 B (+73 B); main page 1 free 361 -> 383 B and its pads 2264 -> 2273 B
+      (+31 B) -- ~104 B**. The float-to-text formatter (flt_fmt, 70 B low, 2026-11-01): the E-form emitter
+      inlined into flt_fmt with an 8-bit exponent (`neg`, an `inc b / sub 10` digit loop),
+      flo_is_fixed inlined, s carried in B from the strip, flo_write_digits_range takes DE, the
+      sign pre-written; every path faster and FOUTBUF / FOSIGCOUNT unchanged (unit tests and the
+      string / float suites). an `ary_op0_vt` entry for the two VARTYPE callers (3 B low,
+      2026-11-01). 🔴 **ary_op0_resolve FALLING INTO ary_parse_call (5 B) WAS APPLIED AND TAKEN
+      OUT**: the first scoped battery was 199/200 -- dimedge-acceptance's eval-p5-133 read FITTED
+      where the VG-8020 says REFUSED: one call frame less under every array reference moved the
+      out-of-memory edge by 2 B (`PRINT A(X)` at the DIM edge). contract-diff could not see it
+      (a stack-DEPTH change, not a register one); the gate did. A comment at the routine says why
+      it must CALL. LOCATE applies before the 4th-argument test, loc_next's
+      carry flipped, loc_more gone (20 B); INPUT #'s mode test keeps the cursor pushed and uses
+      `dec a` (3 B); the VPOKE and RUN trampolines moved beside their bodies (6 B); SWAP's
+      operand type from VARTYPE (2 B); ON's counter is `dec e` (4 B). `make contract-diff
+      BASE=HEAD`: 0 broken; the wider_in rows are the formatter's new inputs (flo_emit_fixed A B,
+      flo_write_digits B, flo_write_digits_range DE), every caller rewritten in the same batch
+      ([`b10_contract.out`](scratchpad/b10_contract.out)). 🧰 z80flow's data-label noise has a
+      third case: cl_leaf (a `dw` table) shows `exits` changes when its addresses move; iv_seq
+      (a `db` string) too. Knife pins unchanged; tapes: every class as before.
+      HELD BACK (reviewers' counts, 2026-11-01): ON's one list walker (20 B; removes K-OL3 / K-OL4's
+      anchors), the trap stubs' `ld c,N` at the dispatch (10 B; C into eval unverified), one
+      GOTO / GOSUB tail (5 B; GOTO +21 T), SWAP keeping operand 1 on the stack (14 B; PEEKable
+      SWPTMP cells, a 4 B deeper array resolve) and its 6 B ARGA-held cursor, POKE's trampoline
+      (moves 1 B into the low region), INPUT's `db $FE` skip (a first overlapping-opcode idiom). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
@@ -8404,7 +8430,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10895 (T-6FE392)8 (T-529ABE)` from `TODO.md:16577 (T-529ABE)`: a
+      `TODO.md:10921 (T-6FE392)8 (T-529ABE)` from `TODO.md:16603 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11364,7 +11390,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16577 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16603 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -2876,10 +2876,8 @@ esn_p1:
                                             ; one of this jump's two entry
                                             ; conditions and false for the other
                 call    lref_bc             ; BC = this entry's line number, HL past it
-                dec     de
-                ld      a,d
-                or      e
-                jr      z,esn_found         ; DE == 0 -> this was the Nth entry
+                dec     e                   ; D = 0 (get_byte_arg): E alone counts
+                jr      z,esn_found         ; E == 0 -> this was the Nth entry (D-REREAD b10)
                 ; still counting: expect a comma before the next entry
                 call    skip_comma
                 jr      nz,esn_nocf         ; no comma -> list shorter than N
@@ -2945,9 +2943,7 @@ esn_scan_lp:
 ; DE has not yet been decremented for the entry esn_p1 was about to read, so
 ; DE==1 is exactly "this is the one being sought". DE is dead on both exits.
 esn_notlineno:
-                dec     de
-                ld      a,d
-                or      e
+                dec     e                   ; D = 0: E alone counts (D-REREAD batch 10)
                 jr      nz,esn_nocf         ; still counting -> the list simply
                                             ; ENDS before position N: LEGAL, and
                                             ; the caller falls through silently

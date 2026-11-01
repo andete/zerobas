@@ -162,54 +162,46 @@ ex_locate:
                 dec     a
                 ld      (LOC_ROW),a
                 call    loc_next
-                jr      nc,loc_row          ; `LOCATE ,row` -- column omitted
+                jr      c,loc_row           ; `LOCATE ,row` -- column omitted
                 ld      (LOC_COL),a
-                call    loc_more
-                jr      nc,loc_apply
+                call    skip_comma          ; another argument? (Z: yes)
+                jr      nz,loc_apply
+                inc     hl                  ; consume its comma
 loc_row:
                 call    loc_next
-                jr      nc,loc_cur          ; `LOCATE col,,cursor` -- row omitted
+                jr      c,loc_cur           ; `LOCATE col,,cursor` -- row omitted
                 ld      (LOC_ROW),a
-                call    loc_more
-                jr      nc,loc_apply
+                call    skip_comma
+                jr      nz,loc_apply
+                inc     hl
 loc_cur:
                 call    loc_next            ; the cursor argument
-                jr      nc,loc_cur_done     ; OMITTED (`LOCATE 1,1,`) -> leave the
+                jr      c,loc_apply         ; OMITTED (`LOCATE 1,1,`) -> leave the
                                             ; switch alone; only a supplied value
                                             ; writes it
-                or      a                   ; 0 = off; anything else = on...
-                jr      z,loc_cur_set
-                ld      a,1                 ; ...FOLDED to 1, measured (`,,2` -> 1)
-loc_cur_set:
+                cp      1                   ; 0 = off; anything else = on, FOLDED
+                sbc     a,a                 ; to 1, measured (`,,2` -> 1):
+                inc     a                   ; 0 -> $FF -> 0, n -> 0 -> 1
                 ld      (CSRSW),a
-loc_cur_done:
-                call    loc_more
-                jr      nc,loc_apply
-                ; A FOURTH argument. Apply the first three FIRST, then reject --
-                ; measured: `LOCATE 1,1,1,1` moves the cursor to (1,1) and prints
-                ; `Syntax error` THERE.
-                call    loc_apply_pos
-                jp      stmt_error
+; loc_apply: write the parsed position, each axis clamped to the screen, THEN
+; look for a fourth argument (D-REREAD batch 10). Clamping is SEPARATE from the
+; domain check: 0..255 is accepted (loc_next), and only then squeezed onto the
+; console. The apply touches only RAM (and A/B) and the test only HL, so applying
+; first is the same as testing first -- and a 1- or 2-argument form re-runs
+; skip_comma on a byte it already found not to be a comma.
 loc_apply:
-                call    loc_apply_pos
-                jp      exec_stmt
-
-; loc_apply_pos: write the parsed position, each axis clamped to the screen.
-; Clamping is SEPARATE from the domain check: 0..255 is accepted (loc_next), and
-; only then squeezed onto the console.
-loc_apply_pos:
                 ; column -> clamp to the CURRENT WIDTH, not a fixed 40. Measured:
                 ; WIDTH 40 -> 40/41/255 all land at col 39; WIDTH 32 -> 32/39 both
                 ; land at col 31. LINLEN is the live width.
-                ld      a,(LOC_COL)
-                ld      b,a
                 ld      a,(LINLEN)
                 dec     a                   ; A = the last usable column
+                ld      b,a
+                ld      a,(LOC_COL)
                 cp      b
-                jr      nc,loc_col_set      ; wanted <= last -> keep it
-                ld      b,a                 ; else clamp to the last column
+                jr      c,loc_col_set       ; wanted < last -> keep it
+                ld      a,b                 ; else clamp (wanted == last is a
+                                            ; no-op through this same arm)
 loc_col_set:
-                ld      a,b
                 ld      (TTYPOS),a          ; D-ADDR29: the reference's LOCATE moves
                                             ; its 0-based print column too (5,5 -> 5)
                 inc     a                   ; CSRX is 1-BASED
@@ -235,7 +227,13 @@ loc_col_set:
 loc_row_set:
                 inc     a                   ; CSRY is 1-BASED
                 ld      (CSRY),a
-                ret
+                call    skip_comma
+                jp      nz,exec_stmt
+                ; A FOURTH argument. The first three are applied FIRST, then
+                ; rejected -- measured: `LOCATE 1,1,1,1` moves the cursor to (1,1)
+                ; and prints `Syntax error` THERE.
+                inc     hl                  ; past its comma (where the old loc_more left it)
+                jp      stmt_error
 
 ; loc_next: parse ONE argument position.
 ;   out: CF=1 -> A = the argument's byte value
@@ -313,16 +311,15 @@ loc_next:
                 ; ✅ LOC_RET IS GONE (D-LOCPARK). This call now runs two bytes
                 ; deeper than it used to, and the abort it may raise resets SP
                 ; from SAVSTK either way -- see the header.
-                call    eval_byte_checked   ; A = E = 0..255, or aborts:
+                jp      eval_byte_checked   ; A = E = 0..255 and CF = 0 (gba_byte's
+                                            ; `or a`), or aborts:
                                             ;   ERR 13 string, ERR 6 past int16,
                                             ;   ERR 5 outside 0..255, and a DEFERRED
                                             ;   expression error IN PREFERENCE to the
                                             ;   coercion's own overflow (the rule)
-                scf
-                ret                         ; CF=1, A = the accepted byte, HL advanced
 loc_omit:
                 inc     hl                  ; consume the comma
-                or      a                   ; A is ',' -> CF = 0
+                scf                         ; CF = 1: omitted (D-REREAD batch 10)
                 ret
 ; D-DUPSPAN2: an ALIAS, not a second copy -- byte-identical to g8_missing,
 ; and POSITION-INDEPENDENT by tools/dupspan_indep.py (terminates, no
@@ -348,16 +345,6 @@ loc_missing:
                 jp      raise_error
     ENDIF
 
-; loc_more: is another argument coming? CF=1 -> yes (its comma is consumed).
-loc_more:
-                call    skip_comma
-                jr      z,loc_more_yes
-                or      a                   ; CF = 0: no more arguments
-                ret
-loc_more_yes:
-                inc     hl
-                scf
-                ret
 
     IF SWAP_RESIDENT
 ; --- ex_swap: SWAP a,b -----------------------------------------------------
@@ -477,15 +464,14 @@ sw_xloop:
 ; already maps subscript-out-of-range / illegal-function-call / syntax onto FPERR
 ; (measured: `SWAP A,Q(9)` on `DIM Q(2)` is Subscript out of range).
 sw_operand:
-                call    var_str_type        ; A = 1 iff the name has a `$` suffix
-                ld      d,a                 ; (HL unmoved; D survives var_name_key --
-                                            ; deftbl_lookup preserves BC/DE/HL)
                 call    var_name_key        ; BC = key, HL past the name; (VARTYPE) =
-                                            ; the resolved NUMERIC type
-                ld      a,d
-                or      a
-                jr      nz,sw_typed         ; a `$` name is type 1, whatever VARTYPE says
+                                            ; 2/4/8, or DEFTBL_STR for a `$` name OR a
+                                            ; DEFSTR'd bare one -- var_str_type's exact set
+                                            ; (req_letter already ran; D-REREAD batch 10)
                 ld      a,(VARTYPE)
+                cp      DEFTBL_STR
+                jr      nz,sw_typed
+                ld      a,1                 ; string: type 1 (the engines' code)
 sw_typed:
                 ld      (SW_TYPE),a
                 ld      e,a                 ; E = type across the '(' peek
