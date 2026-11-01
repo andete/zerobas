@@ -259,6 +259,8 @@ KNOWN_GAPS = {
     # handler ran under DI.
     "L5_house": "D-ASAVEDI: SAVE \"Q.BAS\",A holds the frame off up to ~450 ms "
                 "(CF-3300 <= 223 ms over the whole run)",
+    "L5_chain": "D-ASAVEDI: RUN \"P2.BAS\" (an ASCII program) 258 ms, MERGE 233 ms "
+                "(CF-3300 <= 223 ms over the whole run)",
 }
 
 

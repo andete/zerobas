@@ -158,7 +158,7 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `LPRINT` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 0.33× print-to-printer T6— | knife ✓ · 1/1 forms · 1 open, worst TIER 6 (T-27D028) |
 | `LSET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.46× left-justify T5 3.8× left-justify T6✓ | knife ✓ · 1/1 forms |
 | `MAX` | ⚫ N/A | level 0 · T1— T2— T3— T4— T5— T6— | no BARE form — exercised only inside a composite |
-| `MERGE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms |
+| `MERGE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms · 1 open, worst TIER 5 (T-8BD9C2) |
 | `MID$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.91× assign T5 1.5× assign T6— | knife ✓ · 3/3 forms |
 | `MKD$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× double-to-string T5 1.1× double-to-string T6✓ | knife ✓ · 1/1 forms |
 | `MKI$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.67× int-to-string T5 0.57× int-to-string T6✓ | knife ✓ · 1/1 forms |
@@ -196,8 +196,8 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `RIGHT$` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.84× suffix T5 0.99× suffix T6✓ | knife ✓ · 1/1 forms |
 | `RND` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.1× reseeded-draw T5 2× reseeded-draw T6✓ | knife ✓ · 1/1 forms |
 | `RSET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.46× right-justify T5 1.1× right-justify T6✓ | knife ✓ · 1/1 forms |
-| `RUN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.74× line T5 0.73× line T6— | knife ✓ · 3/3 forms · 1 open, worst TIER 5 (T-8B4AF8) |
-| `SAVE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.42× tokenised T5 0.47× tokenised T6— | knife ✓ · 2/2 forms · 1 open, worst TIER 5 (T-B9B6EF) |
+| `RUN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.74× line T5 0.73× line T6— | knife ✓ · 3/3 forms · 2 open, worst TIER 5 (T-8BD9C2 T-8B4AF8) |
+| `SAVE` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.42× tokenised T5 0.47× tokenised T6— | knife ✓ · 2/2 forms · 1 open, worst TIER 5 (T-8BD9C2) |
 | `SCREEN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 1.6× key-click T5 0.33× sprite-size T6✓ | knife ✓ · 3/3 forms |
 | `SET` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— T5 ~ T6✓ | knife ✓ · 1/1 forms |
 | `SGN` | 🟢 NO KNOWN GAP | level 3 · T1✓ T2✓ T3✓ T4— 0.21× sign T5 0.67× sign T6✓ | knife ✓ · 1/1 forms |
@@ -280,10 +280,10 @@ A keyword's LEVEL is its highest UNBROKEN run of proven rungs from T1: `T1✓ T2
 | `FOR`, `GOTO` | TIER 5 | 🤖 | the interpreter is 2.5–3.8× slower (TIER 2, reasonable time, is met) — 17–26 % of it came back on 2026-09-11 (D-SPEEDPROF); measured on `FOR` `GOTO` `WHILE`, arithmetic and strings | T-706919 |
 | `LOAD` | TIER 5 | 🤖 | on-par speed, on `LOAD`. ⏱ **RE-TAGGED 2026-10-10 FROM TIER 2: | T-3A665D |
 | `LOAD` | TIER 5 | 🔭 | on-par speed, on `LOAD`. | T-084697 |
+| `MERGE`, `RUN`, `SAVE` | TIER 5 | 🤖 | frames missed during a disk transfer | T-8BD9C2 |
 | `PUT` | TIER 5 | 🤖 | `PUT` (its untrappable-hang half is TIER 3) | T-59C37A |
 | `REM` | TIER 5 | 🤖 | T5 is a ratio that never ticks, so no level moved, | T-A29296 |
 | `RUN` | TIER 5 | 🤖 | on-par speed of loading an ASCII program from tape (within T2's 10×) | T-8B4AF8 |
-| `SAVE` | TIER 5 | 🤖 | frames missed during a disk transfer | T-B9B6EF |
 | — | TIER 5 | 🙋 | note timing at fast tempos; long notes agree to a jiffy or two. | T-7C1DCF |
 | — | TIER 5 | 🤖 | re-tagged 2026-10-10 from TIER 2 (*"reasonable time; it is | T-206016 |
 | — | TIER 5 | 🤖 | `A=I+7` ×300 is ~137 ticks here against 70. | T-D2BDCA |

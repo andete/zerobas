@@ -480,9 +480,9 @@ item — do **one item per session** to keep context lean.
       ary_engine (scalar lookups share it, the hot path). Only into page 1 unless a low
       label's forced set allows it; nothing a tenant calls back into.
 
-- [ ] ⏱️ **AN ASCII `SAVE` TO DISK HOLDS THE FRAME INTERRUPT OFF UP TO ~450 MS; THE
-      CF-3300's LONGEST HOLE IN THE SAME PROGRAM IS 223 MS (D-ASAVEDI, found 2026-11-01 by
-      the program ladder's L5_house).**
+- [ ] ⏱️ **ASCII PROGRAM FILES ON DISK -- `SAVE ...,A`, `RUN "file"` / `MERGE` of a text
+      program -- HOLD THE FRAME INTERRUPT OFF LONGER THAN THE CF-3300: UP TO ~450 MS AGAINST
+      ITS 223 MS (D-ASAVEDI, found 2026-11-01 by the program ladder's L5_house and L5_chain).**
       🎚️ TIER 5 — timing parity, D-DISKDI's class: frames missed during a disk transfer
       (TIME lags, a key pressed meanwhile can be lost), zerobas longer than the reference.
       🤖 **AUTONOMOUS** — 📏 measured with the BASIC line at the end of each gap > 0.1 s
@@ -495,6 +495,14 @@ item — do **one item per session** to keep context lean.
       code, ours) -- D-DISKDI's candidates were a multi-sector transfer under one DI or a
       seek / settle wait under DI. Speed is paused for ROM space (Joost 10-20): filed,
       not scheduled.
+      📏 **L5_chain (same day) widens it to the CLASS:** its only zerobas gaps over the
+      CF-3300's 223 ms are `RUN "P2.BAS"` loading a text program (258 ms) and `MERGE
+      "P4.BAS"` (233 ms); everything else in the run (OPEN / PRINT # / CLOSE of the files)
+      is inside the reference's envelope. All three sites move a TEXT program through the
+      line tokeniser or detokeniser -- 🎯 hypothesis, unmeasured: those run as sub-ROM
+      tenants under sr_slot's DI between sector transfers (D-GCDI3 listed "LIST's
+      detokeniser" among the DI tenants it never measured). Test: PC samples during a hole,
+      then the D-GCDI wrap (`ei / call body / di / ret`). L5_chain is in KNOWN_GAPS too.
 
 - [x] 🐛 **`STOP` WITH THE CURSOR MID-ROW PRINTED `Break in` ON THAT ROW (D-BRKFRESH, found
       2026-11-01 by the program ladder's L4_marks).**
@@ -1078,6 +1086,13 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L5_chain (2026-11-01, `@DISK`): SAME in printer and screen** -- a program that
+      writes three more as text files (PRINT # with CHR$(34) quoting), then `RUN "P2.BAS"`
+      (variables cleared: `A` reads 0 in part two), DEFINT / `\` in the loaded part, a
+      second `RUN "file"`, and `MERGE` -- which ENDS a running program on both machines.
+      Its first draft found that `LLIST` (like LIST) ends a running program on both, so it
+      ran 3 printer lines and stopped; restructured with the stopping statements last
+      ([`progladder_chain.out`](scratchpad/progladder_chain.out)). Gaps: D-ASAVEDI's class.
       ✅ **L5_house (2026-11-01, `@DISK`): SAME in printer and screen** -- doubles in a
       random file through MKD$ / CVD (exact round trip), COPY, LFILES (whole and `*.DAT`),
       NAME, KILL, DSKF before / after, a tokenised SAVE that carries on and is read back
@@ -8578,7 +8593,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11069 (T-6FE392)8 (T-529ABE)` from `TODO.md:16751 (T-529ABE)`: a
+      `TODO.md:11084 (T-6FE392)8 (T-529ABE)` from `TODO.md:16766 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11538,7 +11553,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16766 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
