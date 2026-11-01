@@ -480,6 +480,22 @@ item — do **one item per session** to keep context lean.
       ary_engine (scalar lookups share it, the hot path). Only into page 1 unless a low
       label's forced set allows it; nothing a tenant calls back into.
 
+- [ ] ⏱️ **AN ASCII `SAVE` TO DISK HOLDS THE FRAME INTERRUPT OFF UP TO ~450 MS; THE
+      CF-3300's LONGEST HOLE IN THE SAME PROGRAM IS 223 MS (D-ASAVEDI, found 2026-11-01 by
+      the program ladder's L5_house).**
+      🎚️ TIER 5 — timing parity, D-DISKDI's class: frames missed during a disk transfer
+      (TIME lags, a key pressed meanwhile can be lost), zerobas longer than the reference.
+      🤖 **AUTONOMOUS** — 📏 measured with the BASIC line at the end of each gap > 0.1 s
+      (a temporary watch in the runner, not kept): every zerobas gap over 223 ms is at
+      L5_house line 190, `SAVE "Q.BAS",A` -- 341 / 287 / 292 / 450 / 362 ms -- where the
+      CF-3300's worst on that line is 197 ms. COPY, LFILES, KILL, a tokenised SAVE, the
+      random file: inside the reference's envelope on both. L5_house sits in KNOWN_GAPS
+      under this name (run_programs.py), which fails the gate once the gaps are clean and
+      the entry is still there. Next: sample the PC during the long holes (disk.rom's own
+      code, ours) -- D-DISKDI's candidates were a multi-sector transfer under one DI or a
+      seek / settle wait under DI. Speed is paused for ROM space (Joost 10-20): filed,
+      not scheduled.
+
 - [x] 🐛 **`STOP` WITH THE CURSOR MID-ROW PRINTED `Break in` ON THAT ROW (D-BRKFRESH, found
       2026-11-01 by the program ladder's L4_marks).**
       🎚️ TIER 1 — the screen after a plain program's STOP differs.
@@ -1062,6 +1078,22 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L5_house (2026-11-01, `@DISK`): SAME in printer and screen** -- doubles in a
+      random file through MKD$ / CVD (exact round trip), COPY, LFILES (whole and `*.DAT`),
+      NAME, KILL, DSKF before / after, a tokenised SAVE that carries on and is read back
+      (first byte 255, LOF 1207 on both), a trapped KILL of a missing file, FILES with
+      none left (ERR 53 on both), and a closing `SAVE ...,A` -- which ENDS a running
+      program on both machines (a tokenised SAVE does not). Its gaps found D-ASAVEDI
+      (above, KNOWN_GAPS). 🔧 **D-LADSETTLE (apparatus)**: the runner captured the screen
+      0.5 s after CURLIN returned to direct mode; after `SAVE ...,A` the CF-3300 prints
+      `Ok` ~4.5 s later, so a BASIC-identical run read as a screen divergence
+      ([`progladder_house.out`](scratchpad/progladder_house.out)). It now captures once
+      the last non-blank row of the 24 is the prompt (`Ok` / `ZB`, character 255 -- the
+      cursor -- ignored), at most 15 s on. Three wrong settles first: "two identical
+      reads" (the screen is as still during a disk write), the cursor's row read as the
+      last row, and width 32 scanning past the name table. All 40 programs re-run with
+      it: only L5_house's gaps differ
+      ([`ladsettle_programs.out`](scratchpad/ladsettle_programs.out)).
       ✅ **L4_marks (2026-11-01): SAME after two fixes it FOUND** -- DEFSTR (a string DEF FN
       typed by its letter), LET, ERASE + re-DIM + the Redimensioned trap, LPRINT TAB / LPOS
       columns, MID$= / INSTR, a SCREEN 2 chart rubbed out with PRESET and read with POINT,
@@ -8546,7 +8578,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11037 (T-6FE392)8 (T-529ABE)` from `TODO.md:16719 (T-529ABE)`: a
+      `TODO.md:11069 (T-6FE392)8 (T-529ABE)` from `TODO.md:16751 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11506,7 +11538,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16719 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16751 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

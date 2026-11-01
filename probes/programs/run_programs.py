@@ -84,10 +84,35 @@ set ::__next 0
 set ::__cl -1
 set ::__clt 0
 set ::__ff 0
-proc __done {r} {
-  set w [expr {[debug read memory 0xFCAF] == 1 ? 32 : 40}]
+proc __scr {} {
   set nam [expr {[debug read memory 0xFCAF] == 1 ? [__rd16 0xF3BD] : [__rd16 0xF3B3]}]
   binary scan [debug read_block VRAM $nam 960] a* t
+  return $t
+}
+# D-LADSETTLE (2026-11-01): the run is over when CURLIN is back in direct mode,
+# but the machine may still be DRAWING: after a `SAVE "P.BAS",A` in a program the
+# CF-3300 had not yet printed `Ok` 0.5 s later, and the screen read as a
+# divergence a settled read does not show (scratchpad/progladder_house.out ->
+# progladder_house3.out). "Two identical reads" is NOT settled: the screen is
+# just as still while the machine writes the disk. Idle is the PROMPT: capture
+# once the last non-blank row is `Ok` (or zerobas's `ZB`), at most 15 s later.
+set ::__sn 0
+proc __settle {} {
+  set w [expr {[debug read memory 0xFCAF] == 1 ? 32 : 40}]
+  set t [__scr]
+  set last ""
+  # 24 rows: at width 32 the 960-byte read runs past the name table
+  for {set r 0} {$r < 24} {incr r} {
+    # the cursor (character 255) sits on the row AFTER the prompt: not text
+    set row [string trim [string map [list \xff " "] [string range $t [expr {$r * $w}] [expr {$r * $w + $w - 1}]]]]
+    if {$row ne ""} { set last $row }
+  }
+  if {$last eq "Ok" || $last eq "ZB" || [incr ::__sn] >= 30} { __done ENDED; return }
+  after time 0.5 __settle
+}
+proc __done {r} {
+  set w [expr {[debug read memory 0xFCAF] == 1 ? 32 : 40}]
+  set t [__scr]
   set f [open {OUT} w]
   puts $f "$r t=[format %.1f [machine_info time]] GAPOUT w=$w"
   puts -nonewline $f $t
@@ -118,7 +143,7 @@ proc __poll {} {
   }
   if {$::__ph == 2 && $cl == 0xFFFF} {
     set ::__ph 3
-    after time 0.5 { __done ENDED }
+    after time 0.5 __settle
   }
   if {[machine_info time] > LIMIT} { __done TIMEOUT }
   after time 0.1 __poll
@@ -232,6 +257,8 @@ KNOWN_GAPS = {
     # D-GCDI5 emptied this, then D-LATEINT (2026-10-29) closed L4_errors' entry: an
     # error raised through sub2's p0cb skipped sr_slot's `ei`, and the ON ERROR
     # handler ran under DI.
+    "L5_house": "D-ASAVEDI: SAVE \"Q.BAS\",A holds the frame off up to ~450 ms "
+                "(CF-3300 <= 223 ms over the whole run)",
 }
 
 
