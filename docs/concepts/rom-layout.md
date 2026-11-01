@@ -236,6 +236,10 @@ never for the code it points at. The allowed sources are listed in the
   registers they do not document. No program is known to read them; filed as
   D-BIOSSCRATCH.
 - **Open:** a machine layout with more ROM is ruling R4 of the [space plan](../plan-main-rom-space-2026-10.md).
+- **Games that call undocumented addresses.** A few tape games call BIOS or
+  BASIC-ROM addresses that are not published entry points. The ones zerobas
+  supports, and the ones only recorded, are listed per game in
+  [game-internal-addresses.md](../game-internal-addresses.md).
 
 ## What we found, and how
 
@@ -323,6 +327,7 @@ that needs BASIC's evaluator calls back into slot 0 through `calbak`
 
 ## Related pages
 
+- [Games that call undocumented ROM addresses](../game-internal-addresses.md)
 - Concepts: [memory-map.md](memory-map.md), [interrupts-and-traps.md](interrupts-and-traps.md),
   [disk.md](disk.md), [msx-dos.md](msx-dos.md), [screen-editor.md](screen-editor.md).
 - Keywords: [`USR`](../keywords/USR.md) and [`DEF`](../keywords/DEF.md)

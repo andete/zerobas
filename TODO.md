@@ -3717,6 +3717,13 @@ item — do **one item per session** to keep context lean.
       Loopy Laundry is not in the tape pick list (not run). 🔮 HIT both ways ("MSX1s run
       them, the MSX2 does not"). ➡️ So these internals are STABLE ACROSS THE MSX1 BASIC 1.0
       FAMILY and broke with MSX2 -- input for Joost's scope ruling, not a ruling.
+      🏗️ **RULED (Joost, 2026-11-01):** *"record these expected internal addresses (game +
+      which address, no further investigation needed now) but we can't already be compatible
+      with all of them yet. We still have completeness and correctness and size constraints
+      already as big challenges."* -> RECORDED in
+      [`docs/game-internal-addresses.md`](docs/game-internal-addresses.md) (supported, recorded,
+      other models); no further investigation, no new entries. $2010 (the font) stays PARKED
+      (Joost, same day: "keep it parked").
       (A2) **Loopy Laundry (pick_martos's copy) calls ~25 BASIC-ROM internals**
       besides the pinned $73AC: $4604 $4649 $4669 $4B02 $4C70 $4CA9 $4DDC $593F
       $5EAC $629D $62A4 $62B2 $62F3 $6686 $67F1 $6AB6 $6AF9 $6B12 $6C48 $6F18
@@ -8679,7 +8686,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11170 (T-6FE392)8 (T-529ABE)` from `TODO.md:16852 (T-529ABE)`: a
+      `TODO.md:11177 (T-6FE392)8 (T-529ABE)` from `TODO.md:16859 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11639,7 +11646,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16852 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
