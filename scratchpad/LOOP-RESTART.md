@@ -52,6 +52,22 @@ session and the loop resumes exactly where it stopped.
   kwtime / kwram out of every battery (b68b1aaf: FULL 53 -> 27.5 min); D-BD2FRAGILE's second
   measurements (the margin is ms of tape in a motor-on phase; fp_trunc runs the game today);
   ladder C8_floats (38 programs). Refuted: DI after FIELD / LSET / RSET.
+- 🏁 **HAND-OFF 2026-11-01 ~14:30 (HEAD 5068d1ad + this note; `make gates-scoped HANDOFF=1` 246/246
+  green).** Shipped today after batch 11: D-G8OPCLOB, D-LPRTAB, D-BRKFRESH, D-USRSTRRES (USR
+  returns a string), ladder rungs L4_marks / L5_house / L5_chain, D-LADSETTLE (the ladder runner
+  waits for the prompt), D-ASAVEDI FILED (tier 5: ASCII program files on disk hold the frame
+  off longer than the CF-3300), the disk collection re-scored in full (143/143 in their class;
+  diskcorpus_run re-run rows now carry the reference). Picking ladder rungs by "keywords no
+  program uses" is EXHAUSTED (what is left is direct-mode / device keywords).
+  🙋 **OPEN QUESTIONS PUT TO JOOST 2026-11-01 (read his answers before picking work):**
+  (1) the next campaign -- RAM usage (tier 4) / D-REREAD-EDGES -> D-SUB2RETIRE (budget; my
+  recommendation, then RAM) / un-pause speed (tier 5: D-ASAVEDI, D-BD2FRAGILE's real fix);
+  (2) should the repacked C-BIOS provide the reference BIOS's INTERNAL entries (Buzz Off,
+  Shark Hunter; recommended: no for now); (3) D-BASICPUB's scope and tier (recommended:
+  tier 5, documented entries, per title); (4) a mutation sweep to find suites that never
+  catch anything (his "90% of our test suite is wasted time"; recommended: yes, output is a
+  list for him to rule); (5) leave USR's row B (a freed temporary read after its statement)
+  and D-BD2FRAGILE (guarded by the tape corpus) as they are.
 - ➡️ **NEXT (updated 2026-11-01 05:xx):** D-REREAD batches 9-11 shipped (~240 B more; ~1,360 B
   over eleven) and batch 11 hit the stop rule (~2 B / routine; DIM's VARTYPE read taken back out by lvfix f.ary2d) -- D-REREAD PAUSES; its held-back
   lists stay in TODO. Next by tier (`python3 tools/tier_table.py --all`): D-G8OPCLOB measured and FIXED
