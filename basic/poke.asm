@@ -15,6 +15,8 @@
 ; Entry: do_poke, HL -> the bytes after the POKE token. On success continues the
 ; statement loop (jp exec_stmt), so `poke ...:poke ...` chains on one line.
 
+ex_poke:                                    ; (D-REREAD batch 11: was a trampoline in
+                inc     hl                  ; interp.asm) HL -> args (past the POKE token)
 do_poke:
                 call    eval_addr           ; spec §10.3: POKE's arguments are the
                 push    de                  ; save address
@@ -39,7 +41,9 @@ do_poke:
                                             ; the row nobody had, because every existing
                                             ; row pairs a bad address with a legal value.
                 pop     bc                  ; BC = address
-                call    check_fperr_only
+                                            ; (no check_fperr_only: eval_byte_checked's own
+                                            ; check_expr_errors already raised any fault the
+                                            ; address left pending -- D-REREAD batch 11)
                 ld      a,e                 ; low byte of value
                 ld      (bc),a              ; the POKE
                 jp      exec_stmt           ; HL = cursor; run the next statement

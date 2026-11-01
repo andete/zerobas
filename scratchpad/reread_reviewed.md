@@ -7,3 +7,5 @@ batch9: ex_erase ary_parse_call widen_fac_to ex_out ex_read ex_rset ex_sprite ex
 batch9-skipped: ctl_get nx_pack evsgn_settype psv_voice basicint_4ef8 spr_tenant
 batch10: flo_emit_e ary_op0_resolve flt_fmt iv_seq sw_operand ex_vpoke ex_on ex_input ex_swap ex_locate
 batch10-skipped-hot-or-shared: rl_loop tok_skip cl_jphl nx_pki evmc_arg_int var_name_key var_store_fac play_install pcz_pad pu_do_string pu_do_number exa_loop usr_setslot build_83_name
+batch11: ex_poke ev_cv_back ex_cont list_walk detok_emit ex_base_assign ex_troff oo_parse_reclen ex_dim fch_do_close_ch
+batch11-skipped-hot: ex_return ex_if caddsub_int eval psv_get parse_disk_fcb zkey_install basicint_run

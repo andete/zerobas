@@ -1198,6 +1198,7 @@ spr_parse_index:
 ; shipping ROM does not move a byte.
 spr_tenant:
                 ld      (GFX_OP),a
+spr_tenant_go:                              ; GFX_OP already set (g8_run parks it at entry)
                 xor     a
                 ld      (GFX_RES),a         ; 0 = no error; the tenant sets 5 on a domain miss
                 call    gfx_tenant  ; CF=1 iff the sub-ROM is absent (clobbers all --
@@ -1415,11 +1416,8 @@ g8_assign:
                 ld      (GFX_G8N),de
                 call    skip_eq             ; D-SKIPEQ: skip_spaces + cp EQ_TOKEN
                 jp      nz,gfx_syntax       ; `VDP(0)` alone / `VDP(0),1` -> ERR 2
-                rst    $10     
-                or      a
-                jr      z,g8_missing        ; `VDP(0)=` at end of line -> ERR 24
-                cp      ':'
-                jr      z,g8_missing
+                rst    $10                  ; past '='; Z iff end of line or ':' (chrgtr)
+                jr      z,g8_missing        ; `VDP(0)=` / `VDP(0)=:` -> ERR 24 (D-REREAD b11)
                 call    g8_num_operand      ; DE = value (ERR 13 on a string)
                 ld      (GFX_G8V),de
                 call    skipsp_test
@@ -1428,14 +1426,13 @@ g8_assign:
                 jp      nz,gfx_syntax       ; `VDP(0)=1,2` -> a TRAPPABLE ERR 2, not the
 g8_run:                                     ; run-aborting stmt_error exec_stmt would give
                 push    hl                  ; keep the cursor across the tenant call
-                ld      a,(GFX_OP)
                 ; 🔴 NOT `jp spr_stmt_done`: that canonical lives under
                 ; IF G7_RESIDENT and THIS arm is under IF G8_RESIDENT. The two
                 ; switches are INDEPENDENT, so the shared tail would vanish from
                 ; under this jump whenever G7 is off. `make switch-build-check`
                 ; caught it; a shared tail across two switches needs a home
                 ; outside BOTH, and there is none to be had for free here.
-                call    spr_tenant
+                call    spr_tenant_go       ; GFX_OP is still the op g8_assign parked
                 jp      pop_exec            ; D-POPEXEC: pop hl + exec_stmt
 g8_missing:
                 ld      a,24                ; Missing operand (measured, spec §3)

@@ -1141,9 +1141,11 @@ ex_cont:
                 ; re-arm the run loop's flags and stacks are already intact from
                 ; the suspended run (we never cleared them on break); just point
                 ; the loop at the saved resume position and run.
-                xor     a
-                ld      (ENDFLAG),a
-                ld      (GOTOFLAG),a
+                ld      hl,0                ; GOTOFLAG and ENDFLAG are adjacent: one
+                ld      (GOTOFLAG),hl       ; word store clears both (D-REREAD batch 11)
+    IF ENDFLAG != GOTOFLAG+1
+                db      CONT_CLEARS_GOTOFLAG_AND_ENDFLAG_AS_ONE_WORD
+    ENDIF
                                             ; (an explicit `DIRECTF := 0` used to sit
                                             ; here. It is DEAD since the direct-mode
                                             ; slice: DIRECTF is DERIVED at rp_exec from

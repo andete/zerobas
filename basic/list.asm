@@ -224,11 +224,9 @@ lst_lp:
                 pop     hl                  ; HL = token body
                 call    detok               ; render the body through pchar (PRDEST)
                 call    print_crlf
+lst_skip:                                   ; below lo joins here: the guarded link IS
                 pop     hl                  ; HL = link -> next line's link field
-                jr      lst_lp
-lst_skip:
-                pop     hl                  ; below lo: the guarded link IS the next
-                jr      lst_lp              ; line's address -- step and try again
+                jr      lst_lp              ; (D-REREAD batch 11: one tail, two paths)
 lst_stop:
                 pop     de                  ; past hi: drop the guarded link and end
                 ret                         ; the walk (lines are ascending)
@@ -270,7 +268,14 @@ detok:
 ; analysed inside each, the CALSLT in its subrom_call sees that caller's constant
 ; z80flow: inline
 detok_emit:
-                ld      bc,0                ; skip total
+                ld      bc,-(DB_WINSZ-1)    ; the add below brings this to 0 (skip total;
+                                            ; D-REREAD batch 11: enter through de_fromstart)
+de_fromstart:
+                ld      a,c                 ; KEY LIST: re-run from the start
+                add     a,DB_WINSZ-1        ; skip past what was just drained
+                ld      c,a
+                jr      nc,de_win
+                inc     b
 de_win:
                 ld      (DB_SKIP),bc
                 push    bc
@@ -293,13 +298,6 @@ de_win:
                 jr      z,de_fromstart
                 ld      hl,(DB_RESPTR)      ; LIST: resume AT the token the window
                 ld      bc,(DB_RESSKIP)     ; stopped in, skipping what was drained
-                jr      de_win
-de_fromstart:
-                ld      a,c                 ; KEY LIST: re-run from the start
-                add     a,DB_WINSZ-1        ; skip past what was just drained
-                ld      c,a
-                jr      nc,de_win
-                inc     b
                 jr      de_win
 
 ; ln_div_entry (RESIDENT copy): print HL as bare unsigned decimal. list_num and

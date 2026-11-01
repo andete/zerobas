@@ -52,9 +52,12 @@ session and the loop resumes exactly where it stopped.
   kwtime / kwram out of every battery (b68b1aaf: FULL 53 -> 27.5 min); D-BD2FRAGILE's second
   measurements (the margin is ms of tape in a motor-on phase; fp_trunc runs the game today);
   ladder C8_floats (38 programs). Refuted: DI after FIELD / LSET / RSET.
-- ➡️ **NEXT:** D-REREAD batch 9 (`make contracts && python3 scratchpad/reread_rank.py`; add each
-  batch's names to scratchpad/reread_reviewed.md; leave hot paths out). The held-back lists in each batch's TODO record are
-  candidates too (fn_call F1-F3, DEFINT's verdict in A, PLAY P3). Then by tier.
+- ➡️ **NEXT (updated 2026-11-01 05:xx):** D-REREAD batches 9-11 shipped (~240 B more; ~1,360 B
+  over eleven) and batch 11 hit the stop rule (~2 B / routine; DIM's VARTYPE read taken back out by lvfix f.ary2d) -- D-REREAD PAUSES; its held-back
+  lists stay in TODO. Next by tier (`python3 tools/tier_table.py --all`): measure D-G8OPCLOB (filed
+  11-01); the program ladder (D-PROGLADDER) -- new programs find real tier-1 bugs; D-BD2FRAGILE's
+  margin. 🔴 Batch 10 lesson: z80flow is blind to STACK DEPTH -- dimedge caught a fall-through that
+  moved an OOM edge by 2 B; reviewer briefs now say so.
 - 🧰 **z80flow notes:** a `wider_in` row needs READING (batch 8's ex_clear B was a raise path,
   accepted); data labels show up as routines (err_syntax) -- ignore their contracts.
 
@@ -1992,7 +1995,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12910 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:12934 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

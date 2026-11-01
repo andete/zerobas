@@ -166,3 +166,10 @@ into the parser was taken out -- it moved dimedge's OOM edge by 2 B), page 1 +31
 INPUT, VPOKE / RUN trampolines, SWAP, ON). contract-diff: 0 broken; the wider_in rows are the
 formatter's own new inputs. Running total ~1,335 B.
 
+## Batch 11 (2026-11-01) -- the stop rule
+
+~20 B (low 2, page 1 18) from nine spans, ~2 B a routine (DIM's VARTYPE read taken back out:
+lvfix f.ary2d went unreadable, cause not understood): under the route's own ~2-3 B
+threshold, so D-REREAD pauses. contract-diff showed no rows at all. Total over eleven batches
+~1,360 B. A reviewer flagged a probable latent bug (D-G8OPCLOB, filed).
+

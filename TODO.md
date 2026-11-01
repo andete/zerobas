@@ -421,7 +421,31 @@ item — do **one item per session** to keep context lean.
       anchors), the trap stubs' `ld c,N` at the dispatch (10 B; C into eval unverified), one
       GOTO / GOSUB tail (5 B; GOTO +21 T), SWAP keeping operand 1 on the stack (14 B; PEEKable
       SWPTMP cells, a 4 B deeper array resolve) and its 6 B ARGA-held cursor, POKE's trampoline
-      (moves 1 B into the low region), INPUT's `db $FE` skip (a first overlapping-opcode idiom). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
+      (moves 1 B into the low region), INPUT's `db $FE` skip (a first overlapping-opcode idiom).
+      ✅ **BATCH 11 (2026-11-01), measured 2026-11-01: low region free 537 -> 539 B (+2 B); main
+      page 1 +18 B -- ~20 B, ~2 B a routine: THE STOP RULE IS REACHED, D-REREAD PAUSES HERE.**
+      TAKEN BACK OUT: DIM reading string-ness from VARTYPE == DEFTBL_STR, as ERASE and SWAP do (6 B low, 2026-11-01) --
+      lvfix's f.ary2d (`DIM A$(2,2)` then `INPUT#1,A$(1,1)`) went UNREADABLE with it and green without it
+      (bisected 2026-11-01, reproduced twice); contract-diff showed nothing, cause NOT understood. POKE's
+      check_fperr_only was dead (eval_byte_checked raises first; 3 B low, 2026-11-01) and its trampoline
+      moved into poke.asm (+1 B low, -4 B page 1, 2026-11-01); LIST's skip path shares the loop tail and
+      detok_emit enters through de_fromstart (5 B); VDP / BASE assignment trusts rst $10's Z and
+      skips a GFX_OP reload (8 B); CONT clears GOTOFLAG + ENDFLAG with one word store, guarded
+      (1 B). `make contract-diff BASE=HEAD`: no rows at all
+      ([`b11_contract.out`](scratchpad/b11_contract.out)). Knife pins unchanged; tapes: every
+      class as before. NOT TAKEN: 25 B in OPEN's LEN= parse and the channel close -- all of it
+      would only grow the $72D4 pin pad (520 B already), a hole, not usable space.
+      ➡️ **WHAT IS LEFT FOR D-REREAD** is the held-back lists of batches 7-11 (rulings, tool
+      checks, stack-depth reviews) and spans under ~50 B. Total over eleven batches: ~1,360 B.
+- [ ] 🔍 **`VDP(n)=POINT(x,y)` / `BASE(n)=ASC(SPRITE$(0))` MAY RUN THE WRONG GRAPHICS OP (D-G8OPCLOB,
+      filed 2026-11-01 by a D-REREAD batch 11 reviewer, UNMEASURED).**
+      🎚️ TIER 6 — a function that itself uses the graphics tenant inside a VDP / BASE assignment.
+      🤖 **AUTONOMOUS** — g8_assign parks GFX_OP (13 VDP / 14 BASE) BEFORE parsing the index and
+      the value, and g8_run hands it to the tenant afterwards; POINT (op 2) and SPRITE$ (op 8,
+      through spr_tenant) write GFX_OP while they evaluate. Measure on the VG-8020 and zerobas:
+      `SCREEN 2:VDP(1)=POINT(0,0)`, `VDP(POINT(0,0)+1)=...`, `BASE(5)=ASC(SPRITE$(0))`, reading
+      VDP(n) / BASE(n) back; then the fix is to park the op after the value (the D-REREAD
+      batch 11 C change kept the round trip exact, so it is neutral to this). HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
@@ -8430,7 +8454,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10921 (T-6FE392)8 (T-529ABE)` from `TODO.md:16603 (T-529ABE)`: a
+      `TODO.md:10945 (T-6FE392)8 (T-529ABE)` from `TODO.md:16627 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11390,7 +11414,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16603 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16627 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
