@@ -458,6 +458,33 @@ item — do **one item per session** to keep context lean.
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
       the $72D4 pad), E2 / E3 / HB-a..f.
 
+- [ ] 🔬 **WHICH GATE SUITES EARN THEIR TIME? A CENSUS, THEN A MUTATION SWEEP (D-SUITESWEEP, Joost
+      2026-11-01: "I have a feeling 90% of our test suite is wasted time" -- the sweep: "yes").**
+      🎚️ APPARATUS — every commit pays for the batteries (a FULL run is ~25-29 min today).
+      🤖 **AUTONOMOUS** — the OUTPUT is a LIST for Joost to rule on (drop / merge / move to a
+      daily sweep, as kwtime / kwram were); nothing is removed automatically.
+      📏 **STEP 1, THE CENSUS (2026-11-01, zero emulator time):**
+      [`suite_census.py`](scratchpad/suite_census.py) ->
+      [`suite_census.out`](scratchpad/suite_census.out). Of 252 suites with >= 20 logged gate
+      runs (1777 logs), 157 never went red in one (a red that came back green on its serial
+      retry counts as a flake) -- 48% of the summed suite seconds. 27 of the most expensive
+      never went red ANYWHERE recorded, knife and iteration logs included: kwram (already
+      out of the batteries), ctrlkeys (~8.5 min), math, ifsem, width, six lineerr shards,
+      arrdim, nodisk, intarg, string, inputary, sound and more. ⚠️ CANDIDATES, not a verdict:
+      saved logs are the runs someone kept; some knife scripts print their own red rows
+      instead of failing through make; never red can mean "guards something nobody broke".
+      ➡️ **STEP 2, THE SWEEP:** per candidate, one same-length knife in the code it is NAMED
+      for (hash the ROM around each plant), run the battery, record which suites go red:
+      the candidate itself (alive), only others (redundant against this battery), nothing
+      (the subject is unguarded -- a finding of its own). Budget: the never-red set's summed
+      time is ~6255 s; at the battery's parallelism that is ~13 min per knife.
+      📏 **SIDE FINDING (same day): a docs-only commit is SCOPED, not STATIC, because every
+      TODO edit rewrites cited line numbers inside scratchpad/missop3_probe.py,
+      playop_probe.py and revertsweep.py** -- the planner then schedules their emulator
+      suites (~9 min) for a comment change. Every TODO commit today paid it. Candidate fix:
+      the planner treats a probe whose diff is ONLY `TODO.md:<n>` citation numbers as
+      unchanged.
+
 - [ ] 💰 **RETIRE SUB2 — "HAVING A NEED FOR A SUB2 FEELS LIKE A FAILURE" (D-SUB2RETIRE, Joost
       2026-11-01).**
       🎚️ BUDGET — elegance and speed: fewer ROMs, fewer slot crossings.
@@ -8686,7 +8713,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11177 (T-6FE392)8 (T-529ABE)` from `TODO.md:16859 (T-529ABE)`: a
+      `TODO.md:11204 (T-6FE392)8 (T-529ABE)` from `TODO.md:16886 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11646,7 +11673,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16859 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16886 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

@@ -1,0 +1,141 @@
+gate logs read: 1777; suites with >= 20 logged runs: 252
+never red in a logged gate run: 157 suites, 6255 of 13026 summed avg seconds (48%)
+
+NEVER RED IN A GATE RUN, most expensive first (top 40): avg s, runs, red elsewhere (knife / iteration logs)
+    1995s   366  kwram                          NONE
+     511s   238  ctrlkeys-acceptance            NONE
+     215s   697  screenerr-acceptance           6 log(s), e.g. scrbaud_after.out
+     172s   671  lnblank-acceptance             1 log(s), e.g. crf_before.out
+     145s    60  programs-acceptance            1 log(s), e.g. ladsettle_programs.out
+     132s   699  math-acceptance                NONE
+     132s   654  ifsem-acceptance               NONE
+     117s   701  deffn-strict                   1 log(s), e.g. de_knife_cut.out
+     116s   663  deffn-acceptance               1 log(s), e.g. deffnvar_knife.out
+     103s   659  width-acceptance               NONE
+     102s   696  lineerr#2/8                    NONE
+     100s   696  lineerr#3/8                    NONE
+     100s   696  lineerr#1/8                    NONE
+      97s   696  lineerr#4/8                    NONE
+      95s   696  lineerr#5/8                    NONE
+      90s   661  arrdim-acceptance              NONE
+      85s   662  castail-acceptance             5 log(s), e.g. casrelock_knife.out
+      85s   658  nodisk-acceptance              NONE
+      81s   696  lineerr#7/8                    NONE
+      78s   656  pusing-acceptance              1 log(s), e.g. k_dgt_pusing-acceptance.out
+      65s   699  penderr-acceptance             2 log(s), e.g. kpe1_full.out
+      55s   245  dout-acceptance                NONE
+      53s   696  intarg-acceptance              NONE
+      50s   658  locarg-acceptance              1 log(s), e.g. zs_arm.out
+      46s   693  logicops-acceptance            1 log(s), e.g. climb_knife.out
+      41s   155  pulong-acceptance              NONE
+      39s   651  catterm-acceptance             NONE
+      39s   150  basicint-acceptance            NONE
+      38s   187  casrbrk-acceptance             1 log(s), e.g. noautorun_verify_casrbrk.out
+      37s   377  perf-pin-check                 NONE
+      35s   663  inputary-acceptance            NONE
+      31s   727  string-acceptance              NONE
+      29s   240  diskfull-acceptance            1 log(s), e.g. asd_diskfull-acceptance.out
+      28s   284  wprotect-acceptance            1 log(s), e.g. wprotect_knife.out
+      28s   657  binfre-acceptance              NONE
+      28s   149  biosregs-acceptance            NONE
+      26s   171  instr128-acceptance            NONE
+      25s   195  loaddi-acceptance              NONE
+      25s   187  caswbrk-acceptance             NONE
+      25s   652  sound-acceptance               NONE
+
+RED IN A GATE RUN AT LEAST ONCE (red / runs):
+   283/1186  tiers-md-check
+   247/1722  todo-citation-check
+    31/1752  wall-assertion-check
+    28/1752  unit-test
+    26/1058  ram-map-check
+    20/1714  selftest-check
+    17/1660  todo-marker-check
+     8/1752  redundant-load-check
+     8/703   graphics-acceptance
+     6/1752  diskdep-check
+     6/1735  temp-root-check
+     6/1723  patch-freshness-check
+     4/1720  chokepoint-check
+     4/1365  filed-pin-check
+     4/661   stop-trap-acceptance
+     3/1752  preflight-check
+     3/1714  knife-rom-guard-check
+     3/700   array-acceptance
+     3/654   ramfree-acceptance
+     3/661   gicini-acceptance
+     3/658   linemax-acceptance
+     3/651   play-trace-acceptance
+     3/566   session-path-check
+     2/1714  rom-parts-check
+     2/1117  dead-alias-check
+     2/1365  disk-mount-check
+     2/1714  probe-reach-check
+     2/1714  battery-membership-check
+     2/708   missing-acceptance
+     2/704   float-acceptance
+     2/700   interval-trap-acceptance
+     2/656   ctllim-acceptance
+     2/610   txtceil-acceptance
+     2/660   badfnum-acceptance
+     2/661   editverb-acceptance
+     2/660   fldwidth-acceptance
+     2/660   lvfix-acceptance
+     2/659   sprite-trap-acceptance
+     2/661   tgtspc-acceptance
+     2/696   lineerr#8/8
+     2/159   wszero-acceptance
+     2/202   dimedge-acceptance
+     1/1752  switch-build-check
+     1/1303  deps-check
+     1/1700  ram-claim-check
+     1/1752  rowshape-check
+     1/1752  injector-check
+     1/1714  shared-body-check
+     1/1714  fixture-integrity-check
+     1/1752  latch-check
+     1/1471  kwsweep
+     1/1714  knife-guard-check
+     1/699   strparen-acceptance
+     1/701   error-trap-acceptance
+     1/696   onerr0-acceptance
+     1/701   tmfp-acceptance
+     1/701   stmtpend-acceptance
+     1/697   abort-acceptance
+     1/700   clearpool-acceptance
+     1/658   stackpool-acceptance
+     1/657   trapdepth-acceptance
+     1/540   trapsvc-acceptance
+     1/656   ctlcross-acceptance
+     1/513   loc-acceptance
+     1/507   screditor-acceptance
+     1/371   diskascii-acceptance
+     1/659   time-acceptance
+     1/666   namspc-acceptance
+     1/659   arylv-acceptance
+     1/661   direct-ctrl-acceptance
+     1/660   dskmsg-acceptance
+     1/659   fldary-acceptance
+     1/659   forvar-acceptance
+     1/656   key-trap-acceptance
+     1/659   lof-acceptance
+     1/663   lptverb-acceptance
+     1/661   lrvar-acceptance
+     1/660   nxary-acceptance
+     1/658   nxlist-acceptance
+     1/657   play-acceptance
+     1/657   runtail-acceptance
+     1/659   strig-trap-acceptance
+     1/649   subrom-acceptance
+     1/696   lineerr#6/8
+     1/530   kwtime
+     1/254   wrblkalt-acceptance
+     1/573   alias-order-check
+     1/256   size-check
+     1/444   tracked-inputs-check
+     1/149   gosuboom-acceptance
+     1/185   fdcdi-acceptance
+     1/192   geteject-acceptance
+     1/179   autorun-acceptance
+     1/166   sub2-acceptance
+     1/177   opengrp-acceptance
