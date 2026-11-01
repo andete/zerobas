@@ -426,7 +426,14 @@ item — do **one item per session** to keep context lean.
       page 1 +18 B -- ~20 B, ~2 B a routine: THE STOP RULE IS REACHED, D-REREAD PAUSES HERE.**
       TAKEN BACK OUT: DIM reading string-ness from VARTYPE == DEFTBL_STR, as ERASE and SWAP do (6 B low, 2026-11-01) --
       lvfix's f.ary2d (`DIM A$(2,2)` then `INPUT#1,A$(1,1)`) went UNREADABLE with it and green without it
-      (bisected 2026-11-01, reproduced twice); contract-diff showed nothing, cause NOT understood. POKE's
+      (bisected 2026-11-01, reproduced twice); contract-diff showed nothing, cause NOT understood.
+      NARROWED 2026-11-01: NOT an address shift (D1 + 6 B of pad in front of ex_dim, every later
+      address as HEAD: still red); the type D1 computes is HEAD's (vnk_dollar writes DEFTBL_STR).
+      With D1 it breaks ONLY as `DIM A$(2,2)` / next LINE `INPUT#1,A$(1,1)` after an OPEN -- DIM
+      before the OPEN, any statement between (even `:` on one line) and a 1-D A$(2) all read [HI];
+      what D1 changes is the stack below SP and the flags. HEAD after ten different predecessor
+      statements: no crash. 🔴 DO NOT RETRY D1 until the crash is explained -- a correct-looking
+      edit that crashes the NEXT line suggests something reads state it never wrote. POKE's
       check_fperr_only was dead (eval_byte_checked raises first; 3 B low, 2026-11-01) and its trampoline
       moved into poke.asm (+1 B low, -4 B page 1, 2026-11-01); LIST's skip path shares the loop tail and
       detok_emit enters through de_fromstart (5 B); VDP / BASE assignment trusts rst $10's Z and
@@ -8454,7 +8461,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:10945 (T-6FE392)8 (T-529ABE)` from `TODO.md:16627 (T-529ABE)`: a
+      `TODO.md:10952 (T-6FE392)8 (T-529ABE)` from `TODO.md:16634 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11414,7 +11421,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16627 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16634 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
