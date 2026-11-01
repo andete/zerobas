@@ -3188,7 +3188,7 @@ badfnum-acceptance: repack-machine $(DISK_TEST_DSK)
 # ⚠️ A make target only fixes the path someone remembers to use; the preflight in
 # probes/lib/omsx_preflight.py covers the one they type by hand.
 msgexact-gate: repack-machine $(DISK_TEST_DSK)
-	python3 probes/basic/basic_probe_msgexact.py --gate $(if $(V),--verify,)
+	python3 probes/basic/basic_probe_msgexact.py --gate $(if $(V),--walk verify,)
 
 msgexact-relock: repack-machine $(DISK_TEST_DSK)
 	python3 probes/basic/basic_probe_msgexact.py --relock

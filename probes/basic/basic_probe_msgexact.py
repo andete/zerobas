@@ -205,6 +205,11 @@ DISK_CODES = list(range(50, 65))
 EXTRA = [
     ("brk",      "direct", ["STOP"],                        "STOP"),
     ("brk-run",  "direct", ["10 STOP", "RUN"],              "RUN"),
+    # D-BRKFRESH (2026-11-01): STOP with the cursor MID-ROW starts `Break in` on
+    # its own row on the reference, as an error message does; zerobas appended it
+    # to the row (found by the program ladder's L4_marks, after a TRON trace).
+    # Scored on BOTH rows (EXTRA_TEXT's `|`), since head() alone reads `AB`.
+    ("brk-mid",  "direct", ['10 PRINT"AB";:STOP', "RUN"],   "RUN"),
     ("redo",     "direct", ["10 INPUT A", "RUN", "X"],      "X"),
     ("extra",    "direct", ["10 INPUT A", "RUN", "1,2"],    "1,2"),
     ("cont-bare", "direct", ["CONT"],                       "CONT"),
@@ -364,7 +369,7 @@ REF_TEXT = {
 CF_ONLY_CODES = frozenset(range(60, 65))
 
 EXTRA_TEXT = {
-    "brk": "Break", "brk-run": "Break in 10",
+    "brk": "Break", "brk-run": "Break in 10", "brk-mid": "AB|Break in 10",
     "redo": "?Redo from start", "extra": "?Extra ignored",
     # D-MSGMIGRATE's three direct-path witnesses (see EXTRA above).
     "cont-bare": "Can't CONTINUE",
@@ -807,7 +812,9 @@ def run_gate(*, omsx: str | None = None, with_verify: bool = False) -> int:
                 continue
         fails.append(f"  code {n:3d}: want {want!r}, got {show(have)}")
     for label, _, _, _ in EXTRA:
-        want, have = EXTRA_TEXT[label], head(got_x.get(label))
+        want = EXTRA_TEXT[label]
+        # a `|` in the expected text scores the WHOLE reading, not its head row
+        have = (got_x.get(label) if "|" in want else head(got_x.get(label)))
         if have == want:
             npass += 1
         else:

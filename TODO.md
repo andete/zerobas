@@ -480,6 +480,24 @@ item — do **one item per session** to keep context lean.
       ary_engine (scalar lookups share it, the hot path). Only into page 1 unless a low
       label's forced set allows it; nothing a tenant calls back into.
 
+- [x] 🐛 **`STOP` WITH THE CURSOR MID-ROW PRINTED `Break in` ON THAT ROW (D-BRKFRESH, found
+      2026-11-01 by the program ladder's L4_marks).**
+      🎚️ TIER 1 — the screen after a plain program's STOP differs.
+      🤖 **AUTONOMOUS** — do_break printed `Break` without the fresh-line test the error
+      path makes (CSRX >= 2 -> CRLF first). L4_marks stops after a TRON trace: the
+      VG-8020 shows `Break in 300` on its own row; zerobas appended it to the trace row
+      (and the 39-character row then wrapped into a blank one). Both references measured:
+      `10 PRINT"AB";:STOP` reads `AB|Break in 10`
+      ([`brkfresh_refs.out`](scratchpad/brkfresh_refs.out)).
+      ✅ **FIXED 2026-11-01**: the same three instructions in do_break (+7 B). Row:
+      msgexact `brk-mid`, scored on BOTH rows (EXTRA_TEXT now compares the whole reading
+      when the expected text has a `|`; head() alone reads `AB` either way). Knife (HEAD's
+      program.asm): exactly brk-mid red, `ABBreak in 10`
+      ([`brkfresh_knife.out`](scratchpad/brkfresh_knife.out)). L4_marks SAME on both
+      targets after ([`progladder_marks3.out`](scratchpad/progladder_marks3.out)) and joins
+      programs-acceptance. Apparatus: `make msgexact-gate V=1` passed `--verify`, which the
+      probe no longer takes (`--walk verify` now). Docs: docs/keywords/STOP.md.
+
 - [x] 🐛 **`LPRINT …;TAB(n)` COUNTED FROM THE SCREEN CURSOR, NOT THE PRINTER HEAD; `TAB` ON
       `GRP:` FROM THE TEXT CURSOR, NOT COLUMN 0 (D-LPRTAB, found 2026-11-01 by the program
       ladder's L4_marks).**
@@ -1044,6 +1062,13 @@ item — do **one item per session** to keep context lean.
       PRINT USING `$$` / `**` / `+` / `,` / trailing `-` / `%` overflow, STR$ / VAL
       round trips), apart from `**$`, which it FOUND: D-PUSTARDOL
       ([`progladder_l9.out`](scratchpad/progladder_l9.out)).
+      ✅ **L4_marks (2026-11-01): SAME after two fixes it FOUND** -- DEFSTR (a string DEF FN
+      typed by its letter), LET, ERASE + re-DIM + the Redimensioned trap, LPRINT TAB / LPOS
+      columns, MID$= / INSTR, a SCREEN 2 chart rubbed out with PRESET and read with POINT,
+      `VDP(7)=POINT(..)`, TRON across three lines, STOP. Picked by the keywords NO ladder
+      program used (38 of 159 on 2026-11-01). Found D-LPRTAB and D-BRKFRESH
+      ([`progladder_marks.out`](scratchpad/progladder_marks.out) ->
+      [`progladder_marks3.out`](scratchpad/progladder_marks3.out)).
       ✅ **C8_floats (2026-10-31)**: the float paths D-REREAD batch 7 rewrote, in a
       program -- a 4x4 Gauss-Jordan solve with partial pivoting and its determinant,
       `^` with integer / negative / fractional exponents and negative bases, `/` in
@@ -8521,7 +8546,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11012 (T-6FE392)8 (T-529ABE)` from `TODO.md:16694 (T-529ABE)`: a
+      `TODO.md:11037 (T-6FE392)8 (T-529ABE)` from `TODO.md:16719 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11481,7 +11506,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16694 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16719 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

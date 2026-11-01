@@ -55,7 +55,9 @@ session and the loop resumes exactly where it stopped.
 - ➡️ **NEXT (updated 2026-11-01 05:xx):** D-REREAD batches 9-11 shipped (~240 B more; ~1,360 B
   over eleven) and batch 11 hit the stop rule (~2 B / routine; DIM's VARTYPE read taken back out by lvfix f.ary2d) -- D-REREAD PAUSES; its held-back
   lists stay in TODO. Next by tier (`python3 tools/tier_table.py --all`): D-G8OPCLOB measured and FIXED
-  11-01 (POINT / SPRITE$ inside VDP()= / BASE()= ran their own op); the program ladder (D-PROGLADDER) -- new programs find real tier-1 bugs; D-BD2FRAGILE's
+  11-01 (POINT / SPRITE$ inside VDP()= / BASE()= ran their own op); L4_marks found and fixed
+  D-LPRTAB + D-BRKFRESH (pick a rung by the keywords no program uses yet); Joost filed
+  D-SUB2RETIRE + D-REREAD-EDGES (budget campaigns, not ahead of tier 1); the program ladder (D-PROGLADDER) -- new programs find real tier-1 bugs; D-BD2FRAGILE's
   margin. 🔴 Batch 10 lesson: z80flow is blind to STACK DEPTH -- dimedge caught a fall-through that
   moved an OOM edge by 2 B; reviewer briefs now say so.
 - 🧰 **z80flow notes:** a `wider_in` row needs READING (batch 8's ex_clear B was a raise path,
@@ -1995,7 +1997,7 @@ cut of this control was served from cache and agreed BY CONSTRUCTION.
 📋 **THEN** the APPARATUS bucket, which is deep (~35 items) and nearly all
 `🤖`: citation tooling, knife roster, filed-face rot, probes that exit 0 on a
 divergence, the error-message alphabet, temp-root literals.
-📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13001 (T-7F8654)).
+📋 **AND the keyword-completeness remainder** (TIER 1, `🤖`, ~TODO.md:13026 (T-7F8654)).
 
 ### 🙋 JOOST'S — DO NOT START ANY OF THESE
 

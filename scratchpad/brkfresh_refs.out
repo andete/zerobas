@@ -1,0 +1,17 @@
+# measuring vg8020 extra battery (8 cases, boot-per-case) ...
+# measuring cf3300 extra battery (8 cases, boot-per-case) ...
+
+EXTRA   | vg8020                       | cf3300                      
+--------+------------------------------+-----------------------------
+brk     | Break                        | Break                       
+brk-run | Break in 10                  | Break in 10                 
+brk-mid | AB|Break in 10               | AB|Break in 10              
+redo    | ?Redo from start|?||||||||||||||||||color  auto   goto   list   run | ?Redo from start|?||||||||||||||||||color   auto    goto    list    run
+extra   | ?Extra ignored               | ?Extra ignored              
+cont-bare | Can't CONTINUE               | Can't CONTINUE              
+res-noerr | RESUME without error in 10   | RESUME without error in 10  
+ovf-line | Line buffer overflow         | Line buffer overflow        
+verify  | <not-measured>               | <not-measured>              
+
+references agree on 0/0 codes
+refcache: 0 hit, 2 miss, 2 stored

@@ -6,7 +6,7 @@ SPDX-License-Identifier: 0BSD
 
 # `STOP` — pause the program with a `Break` message
 
-> **Status (2026-10-24):** level 3 — happy path ✓ · reasonable time ✓ · common
+> **Status (2026-11-01):** level 3 — happy path ✓ · reasonable time ✓ · common
 > errors: not applicable · RAM usage not yet proven · every error not yet
 > proven. No recorded difference since `STOP 1` was fixed on 2026-10-24.
 > Speed is deliberately left out of these docs until on-par speed is
@@ -74,6 +74,14 @@ The rungs not yet proven are **RAM usage** and **every error**.
 
 ## What we found, and how
 
+- **`Break in` did not start a new row when the cursor was mid-row** (fixed
+  2026-11-01, D-BRKFRESH). After `PRINT"AB";:STOP` both reference machines
+  show `AB` and then `Break in 10` on the next row, as they do for an error
+  message; zerobas printed `ABBreak in 10`. Found by a whole program -- the
+  class marks rung of the program ladder stops after a `TRON` trace
+  ([`progladder_marks.out`](../../scratchpad/progladder_marks.out)) -- and
+  pinned by a row of its own
+  ([`brkfresh_refs.out`](../../scratchpad/brkfresh_refs.out)).
 - **`STOP 1` broke the program where it should be an error** (fixed
   2026-10-24, D-BAREEXTRA, found 2026-09-27 by the every-error enumeration,
   [t6enum_b7.out](../../scratchpad/t6enum_b7.out)). The VG-8020 raises

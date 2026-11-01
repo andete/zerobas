@@ -867,6 +867,11 @@ do_break:
                                             ; screen, as ra_abort does for an error --
                                             ; in SCREEN 2 it went into the bitmap and
                                             ; only `ZB` showed (VG-8020: `Break in 10`)
+                ld      a,(CSRX)            ; D-BRKFRESH: a fresh line first when the
+                cp      2                   ; cursor is mid-row (CSRX is 1-based), as
+                call    nc,print_crlf       ; an error message does -- after a TRON
+                                            ; trace both references start `Break in`
+                                            ; on its own row (program ladder L4_marks)
                 ld      hl,brk_msg
                 call    print_string
                 ; repack (D-2): the " in <lineno>" + CRLF tail is the SHARED

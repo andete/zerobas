@@ -36,10 +36,10 @@ p0_skip_spaces equ 042D5H   ; main's skip_spaces
 p0_exec_stmt equ 04136H   ; main's exec_stmt
 p0_pl_syntax equ 05A8DH   ; main's pl_syntax
 p0_gb_illegal equ 04553H   ; main's gb_illegal
-p0_ers_undef equ 07B3FH   ; main's ers_undef
+p0_ers_undef equ 07B47H   ; main's ers_undef
 p0_req_gosub equ 040F0H   ; main's req_gosub
 p0_lref_bc equ 04104H   ; main's lref_bc
-p0_find_line_bc equ 076B6H   ; main's find_line_bc
+p0_find_line_bc equ 076BEH   ; main's find_line_bc
 p0_onoff_decode equ 06EBAH   ; main's onoff_decode
 p0_set_state equ 05CF8H   ; main's set_state
 p0_trap_pend equ 05C31H   ; main's trap_pend
@@ -115,9 +115,9 @@ p0_cas_ascii_load equ 06457H   ; main's cas_ascii_load
 p0_load_commit_prog equ 06437H   ; main's load_commit_prog
 p0_dpl_err equ 064C4H   ; main's dpl_err
 p0_dpl_oom equ 064D6H   ; main's dpl_oom
-p0_print_msg equ 0765AH   ; main's print_msg
+p0_print_msg equ 07662H   ; main's print_msg
 p0_err_verify equ 0644AH   ; main's err_verify
-p0_exa_loop equ 076D6H   ; main's exa_loop
+p0_exa_loop equ 076DEH   ; main's exa_loop
 p0_le_call_op equ 06E68H   ; main's le_call_op
 p0_print_string equ 045DBH   ; main's print_string
 p0_list_num equ 0625EH   ; main's list_num
