@@ -1,0 +1,5 @@
+  ctl    A=0                  cf3300=58  zb=70
+  field  FIELD #1,8 AS B$     cf3300=59  zb=70
+  lset   LSET A$="X"          cf3300=58  zb=68
+  rset   RSET A$="X"          cf3300=58  zb=68
+refcache: 0 hit, 8 miss, 8 stored
