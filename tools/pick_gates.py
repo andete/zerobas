@@ -112,6 +112,38 @@ def changed_files():
     return sorted({l for l in git("diff", "--name-only", "HEAD").splitlines() if l})
 
 
+# D-SUITESWEEP side finding (2026-11-01): `check_todo_citations.py --fix` rewrites
+# the `TODO.md:<n>` line numbers that probes cite in their comments whenever
+# TODO.md moves, so EVERY TODO edit changed three probes and a docs-only commit
+# planned SCOPED (~9 min of emulator suites for a comment). A diff whose removed
+# and added lines are equal once those numbers are normalised changes nothing a
+# suite runs.
+CITE_NUM = re.compile(r"(TODO(?:-done)?\.md):\d+")
+
+
+def citation_only(diff_text):
+    """True iff a unified diff (-U0) only rewrites TODO(-done).md:<n> numbers."""
+    old, new = [], []
+    for ln in diff_text.splitlines():
+        if ln.startswith(("---", "+++", "@@", "diff ", "index ")):
+            continue
+        if ln.startswith("-"):
+            old.append(CITE_NUM.sub(r"\1:N", ln[1:]))
+        elif ln.startswith("+"):
+            new.append(CITE_NUM.sub(r"\1:N", ln[1:]))
+    return bool(old or new) and sorted(old) == sorted(new)
+
+
+def drop_citation_only(changed):
+    """`changed` minus the .py / .tcl files whose diff is citation numbers only."""
+    keep = []
+    for f in changed:
+        if f.endswith((".py", ".tcl")) and citation_only(git("diff", "-U0", "HEAD", "--", f)):
+            continue
+        keep.append(f)
+    return keep
+
+
 def module_file(name):
     for d in MODULE_DIRS:
         p = os.path.join(d, name + ".py")
@@ -452,6 +484,14 @@ def selftest():
     arm("P13 D-WIDTHKEEP's real shape (a handler + the regenerated ABI + patches) "
         "is SCOPED with the disk canary, not FULL",
         m == "SCOPED" and "width-acceptance" in e and set(DISK_CANARY) <= set(x))
+    cite = ("--- a/x.py\n+++ b/x.py\n@@ -3 +3 @@\n-# see TODO.md:12236 (T-1)\n"
+            "+# see TODO.md:12238 (T-1)\n")
+    arm("P17 a probe whose diff only renumbers TODO.md citations is NOT a change",
+        citation_only(cite))
+    arm("P17b NEGATIVE: a real line change beside a citation renumber IS a change",
+        not citation_only(cite + "@@ -9 +9 @@\n-x = 1\n+x = 2\n"))
+    arm("P17c NEGATIVE: an empty diff is not 'citation only' (nothing to drop)",
+        not citation_only(""))
     print("selftest:", "GREEN" if ok else "🔴 RED")
     return 0 if ok else 2
 
@@ -460,7 +500,7 @@ def main(argv):
     if "--selftest" in argv:
         return selftest()
     handoff = "--handoff" in argv
-    changed = changed_files()
+    changed = drop_citation_only(changed_files())
     targets = list(run_gates.EMULATOR) + list(EXCLUDED5)
     suites, own = suite_files(targets)
     since = hours_since_full()
