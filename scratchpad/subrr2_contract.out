@@ -1,0 +1,102 @@
+PYTHONPATH=tools/z80flow python3 -m z80flow.contracts diff-rev . HEAD ~/projects/cbios
+base HEAD built in /tmp/zerobas/z80flow-k_4eax_a
+1704 routines in both builds, 29 gone, 42 new
+  broken: 0
+  broken_unwind_only: 0
+  wider_in: 1
+       pu_to_field [main] DE HL
+  wider_in_unwind_only: 0
+  status: 81
+       $434F [main] inferred unknown-via-callee
+       $6422 [main] inferred unknown-via-callee
+       $6429 [main] inferred unknown-via-callee
+       $76A5 [main] inferred unknown-via-callee
+       DSKIO_ENTRY [main] conservative-boundary unknown-via-callee
+       arl_newline [main] inferred unknown-via-callee
+       autoexec_run [main] inferred unknown-via-callee
+       basicint_6cf3 [main] inferred unknown-via-callee
+       basicint_73e5 [main] inferred unknown-via-callee
+       bload_cont [main] inferred unknown-via-callee
+       brom_run [main] inferred unknown-via-callee
+       cas_ascii_drive [main] inferred unknown-via-callee
+       cas_ascii_load [main] inferred unknown-via-callee
+       clr_wipe [main] inferred unknown-via-callee
+       disk_prog_load [main] inferred unknown-via-callee
+       dispatch_line [main] inferred unknown-via-callee
+       do_tape_prog [sub2p0] inferred unknown-via-callee
+       dsk_ascii_drive [main] inferred unknown-via-callee
+       ex_auto [main] inferred unknown-via-callee
+       ex_base_assign [main] inferred unknown-via-callee
+       ex_beep [main] inferred unknown-via-callee
+       ex_call [main] inferred unknown-via-callee
+       ex_circle [main] inferred unknown-via-callee
+       ex_clear [main] inferred unknown-via-callee
+       ex_cls [main] inferred unknown-via-callee
+       ex_copy [main] inferred unknown-via-callee
+       ex_data [main] inferred unknown-via-callee
+       ex_def [main] inferred unknown-via-callee
+       ex_deftype [main] inferred unknown-via-callee
+       ex_dim [main] inferred unknown-via-callee
+       ex_draw [main] inferred unknown-via-callee
+       ex_dsko [main] inferred unknown-via-callee
+       ex_erase [main] inferred unknown-via-callee
+       ex_field [main] inferred unknown-via-callee
+       ex_files [main] inferred unknown-via-callee
+       ex_for [main] inferred unknown-via-callee
+       ex_get [main] inferred unknown-via-callee
+       ex_if [main] inferred unknown-via-callee
+       ex_input [main] inferred unknown-via-callee
+       ex_kill [main] inferred unknown-via-callee
+       ex_letkw [main] inferred unknown-via-callee
+       ex_line [main] inferred unknown-via-callee
+       ex_locate [main] inferred unknown-via-callee
+       ex_lprint [main] inferred unknown-via-callee
+       ex_lset [main] inferred unknown-via-callee
+       ex_motor [main] inferred unknown-via-callee
+       ex_name [main] inferred unknown-via-callee
+       ex_next [main] inferred unknown-via-callee
+       ex_on [main] inferred unknown-via-callee
+       ex_out [main] inferred unknown-via-callee
+       ex_paint [main] inferred unknown-via-callee
+       ex_play [main] inferred unknown-via-callee
+       ex_poke [main] inferred unknown-via-callee
+       ex_preset [main] inferred unknown-via-callee
+       ex_print [main] inferred unknown-via-callee
+       ex_put [main] inferred unknown-via-callee
+       ex_read [main] inferred unknown-via-callee
+       ex_restore [main] inferred unknown-via-callee
+       ex_rset [main] inferred unknown-via-callee
+       ex_run [main] inferred unknown-via-callee
+       ex_sound [main] inferred unknown-via-callee
+       ex_sprite [main] inferred unknown-via-callee
+       ex_stop [main] inferred unknown-via-callee
+       ex_swap [main] inferred unknown-via-callee
+       ex_time_assign [main] inferred unknown-via-callee
+       ex_troff [main] inferred unknown-via-callee
+       ex_tron [main] inferred unknown-via-callee
+       ex_vdp_assign [main] inferred unknown-via-callee
+       ex_vpoke [main] inferred unknown-via-callee
+       ex_wait [main] inferred unknown-via-callee
+       exa_loop [main] inferred unknown-via-callee
+       exec [main] inferred unknown-via-callee
+       iv_seq [main] conservative-boundary unknown-via-callee
+       key_drain [main] inferred unknown-via-callee
+       mrg_storeline [main] inferred unknown-via-callee
+       pl_args [main] inferred unknown-via-callee
+       pt_parse [subp1] inferred unknown-via-callee
+       pt_voice [subp1] inferred unknown
+       pu_to_field [main] inferred unknown
+       sub2p0:$0049 [sub2p0] inferred unknown-via-callee
+       subp1:$403A [subp1] inferred unknown-via-callee
+  exits: 0
+  more_clob: 5
+       fexp_tbl18addr [subp1] F(S,Z,PV)
+       flog_jarg [subp1] F(S,Z)
+       flog_jarg_a [subp1] F(S,Z)
+       gdrw_rotate [subp0] DE
+       rnd_reverse14 [subp1] C
+  fewer_clob: 3
+       fexp_tbl18addr [subp1] D
+       pu_to_field [main] DE
+       rnd_reverse14 [subp1] F(S,Z,PV)
+  narrower_in: 0

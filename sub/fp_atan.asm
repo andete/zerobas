@@ -116,13 +116,10 @@ fp_poly_horner:
                 dec     a                   ; remaining lower-order terms
                                             ; after taking c[top]
                 ld      (HORNER_CNT),a
-                ld      (HORNER_PTR),hl     ; HL now on c[top]'s record
                 call    cpy_to_r    ; acc := c[top] (a FPCONST record
                                             ; is already canonical, guard=0,
-                                            ; per gen_math_coeffs.py)
-                ld      hl,(HORNER_PTR)
-                ld      de,18
-                add     hl,de
+                                            ; per gen_math_coeffs.py); the
+                                            ; ldir leaves HL = c[top]+18
                 ld      (HORNER_PTR),hl     ; advance past c[top]
 fph_loop:
                 ld      a,(HORNER_CNT)
@@ -140,24 +137,23 @@ fph_loop:
                 ld      hl,(HORNER_PTR)
                 call    cpy_argb    ; ARGB := c[i] (raw table copy,
                                             ; canonical per the generator)
+                ld      (HORNER_PTR),hl     ; advance the table pointer (the
+                                            ; ldir left HL = c[i]+18; nothing
+                                            ; below touches FOUTBUF+19)
                 call    fp_add              ; FAC/ARGA := acc + c[i] (rounded)
                 call    widen_to_arga
                                             ; ARGA := clean widen
                 call    cpy_to_r    ; acc := acc + c[i]
-                ; --- advance the table pointer, decrement remaining count -
-                ld      hl,(HORNER_PTR)
-                ld      de,18
-                add     hl,de
-                ld      (HORNER_PTR),hl
+                ; --- decrement remaining count ----------------------------
                 ld      a,(HORNER_CNT)
                 dec     a
                 ld      (HORNER_CNT),a
                 jr      fph_loop
 fph_done:
                 call    cpy_r_arga  ; ARGA := final acc (canonical)
-                call    arga_pack_fac       ; FAC := acc (guaranteed correct
-                                            ; regardless of loop-pass count)
-                ret
+                jp      arga_pack_fac       ; tail: FAC := acc (guaranteed
+                                            ; correct regardless of loop-pass
+                                            ; count)
 
 ; --- fp_atan: ARGA (an already-widened FPNUM: the caller's x, dig[14]=0 -----
 ; fresh per widen_rhs_operand's contract) -> FAC (double). TOTAL function --
@@ -173,13 +169,10 @@ fph_done:
 fp_atan:
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_iszero
-                jr      nz,fat_nonzero
                 ; x==0 -> FAC:=0 (double), exact (§11.2 step 0 / §6 "ATN(0)=0
-                ; exact")
-                xor     a
-                ld      (FAC),a
-                ret
-fat_nonzero:
+                ; exact"): fsc_pack_zero (fp_sin.asm) is `xor a / ld (FAC),a /
+                ; ret`
+                jp      z,fsc_pack_zero
                 ; --- step 1: sign-fold (atan is odd) ------------------------
                 ld      a,(ARGA+FPNUM_SIGN)
                 ld      (MATH_SIGN),a       ; s := sign(x)
@@ -188,23 +181,16 @@ fat_nonzero:
                 ld      (MATH_A+FPNUM_SIGN),a   ; MATH_A := |x| (a >= 0 now)
 
                 ; --- step 2: reduction 1 -- |x|>1 -> a:=1/a -----------------
-                xor     a
-                ld      (MATH_RECIP),a      ; default: no reduction-1
+                ld      (MATH_RECIP),a      ; default: no reduction-1 (A = 0)
                 call    cpy_y_arga  ; ARGA := a
-                ld      hl,ARGB
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGB := 1.0 (clean)
+                call    one_to_argb         ; ARGB := 1.0 (clean)
                 call    fp_cmp              ; A=cmp(a,1)
                 cp      4
                 jr      nz,fat_r1_done      ; a<=1 -> skip
                 ld      a,1
                 ld      (MATH_RECIP),a
                 call    cpy_y_argb  ; ARGB := a (denominator)
-                ld      hl,ARGA
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGA := 1.0 (numerator)
+                call    one_to_arga         ; ARGA := 1.0 (numerator)
                 call    fp_div              ; FAC/ARGA := 1/a (rounded)
                 call    widen_to_arga
                                             ; ARGA := clean widen
@@ -228,12 +214,8 @@ fat_r1_done:
                 ld      hl,SQRT3
                 call    cpy_argb    ; ARGB := SQRT3
                 call    fp_mul              ; FAC/ARGA := a*SQRT3
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen
-                ld      hl,ARGB
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGB := 1.0
+                call    widen_to_arga       ; ARGA := clean widen
+                call    one_to_argb         ; ARGB := 1.0
                 call    fp_sub              ; FAC/ARGA := a*SQRT3 - 1
                 call    widen_to_arga
                                             ; ARGA := clean widen (numerator)
@@ -304,5 +286,4 @@ fat_no_recip:
                                             ; this path), so a direct sign
                                             ; overwrite is safe -- no
                                             ; canonical-zero corner case
-                call    arga_pack_fac       ; FAC := signed result
-                ret
+                jp      arga_pack_fac       ; tail: FAC := signed result

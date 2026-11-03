@@ -41,7 +41,7 @@
 ; 2026-09-29.) EXP and LOG are
 ; delivered as a matched pair in this one slice and already share the
 ; math-coeffs.inc table set, so sharing this file's own new helpers
-; (fexp_cmp16/fexp_tbl18addr below) with fp_log.asm is the same kind of
+; (fexp_tbl18addr below) with fp_log.asm is the same kind of
 ; reuse, not a new precedent. Resident-ABI surface is the SAME SUBSET of
 ; fp_sqrt's fp_atan already uses (fp_add/fp_sub/fp_mul/fp_div/fp_cmp/
 ; dig15_iszero/arga_pack_fac/widen_fac_to/widen_uint_to) -- no new page-0
@@ -124,63 +124,31 @@
 ; routines it calls).
 ; =============================================================================
 
-; --- fexp_cmp16: own local duplicate of the resident cmp16_bits body -------
-; (basic/float-arith.asm) -- deliberately NOT added to the resident-ABI
-; surface: this is a plain 16-bit SIGNED integer compare for the n8 vs +-552
-; bound check (§12.4 step 3), not an FPNUM operation, so importing the
-; resident cmp16_bits would be an unjustified new relocation (§12.8 "NO new
-; page-0 relocations" -- the whole point of keeping this tenant-local).
-; HL=lhs, DE=rhs -> A = 1(lhs<rhs) / 2(equal) / 4(lhs>rhs). Clobbers A, HL.
-fexp_cmp16:
-                ld      a,h
-                cp      d
-                jr      nz,fc16_ne
-                ld      a,l
-                cp      e
-                jr      nz,fc16_ne
-                ld      a,2
-                ret
-fc16_ne:
-                or      a
-                sbc     hl,de
-                jp      pe,fc16_vset
-                jp      m,fc16_lt
-                jr      fc16_gt
-fc16_vset:
-                jp      p,fc16_lt
-                jr      fc16_gt
-fc16_lt:
-                ld      a,1
-                ret
-fc16_gt:
-                ld      a,4
-                ret
-
 ; --- fexp_tbl18addr: HL=table base, A=0-based record index -> HL := base + --
-; 18*index (18*A computed as 16A+2A: two doublings then a third, saving the
-; A/2A partial before continuing to 4A/8A/16A, then adding the saved 2A back
-; in -- §12.4/§12.5 "Table record addressing: HL := base + 18*m (compute
-; m*16 + m*2)"). Own local helper (tenant-local, NOT resident-ABI) for
+; 18*index, DE := 18*index (§12.4/§12.5 "Table record addressing: HL := base
+; + 18*m"). Own local helper (tenant-local, NOT resident-ABI) for
 ; POW8_TBL/EXP_TCOR/LNK_TBL/NEGLNK_TBL/LOG_BP addressing. Shared verbatim by
 ; fp_log.asm (same assembly unit, called directly -- the EXP/LOG matched-pair
-; reuse this file's own header explains). Clobbers A, D, E, H, L.
+; reuse this file's own header explains). D-REREAD sub batch 2: every index is
+; 0..8 (exp's m / m-1, log's j / j-1), so 18*index <= 144 fits in A and the
+; product is formed there ((8a+a)*2); A leaves as 18*index, and every caller
+; goes on into an ldir copy and an fp_* entry that reads no register. Clobbers
+; A, D, E, H, L.
 fexp_tbl18addr:
-                push    hl                  ; save table base
-                ld      e,a
-                ld      d,0                 ; DE := index
-                ld      h,d
-                ld      l,e                 ; HL := index (8-bit-load copy, no
-                                            ; native 16-bit reg-reg move)
-                add     hl,hl               ; 2*index
-                ld      d,h
-                ld      e,l                 ; DE := 2*index (stashed)
-                add     hl,hl               ; 4*index
-                add     hl,hl               ; 8*index
-                add     hl,hl               ; 16*index
-                add     hl,de               ; 16*index + 2*index = 18*index
-                ex      de,hl               ; DE := 18*index
-                pop     hl                  ; HL := table base
-                add     hl,de               ; HL := base + 18*index
+                ld      e,a                 ; E := index (A is given back --
+                                            ; fp_log's flog_jarg_a callers and
+                                            ; fp_exp keep j/m in it)
+                add     a,a
+                add     a,a
+                add     a,a                 ; 8*index
+                add     a,e                 ; 9*index
+                add     a,a                 ; 18*index (<= 144)
+                add     a,l
+                ld      l,a
+                jr      nc,fexp_t18_nc
+                inc     h                   ; HL := base + 18*index
+fexp_t18_nc:
+                ld      a,e                 ; A := index again
                 ret
 
 ; --- fp_exp: ARGA (an already-widened FPNUM: the caller's x, dig[14]=0 -----
@@ -195,18 +163,22 @@ fp_exp:
                 ld      hl,EXP_RC
                 call    cpy_argb    ; ARGB := EXP_RC (ARGA already x)
                 call    fp_mul              ; FAC/ARGA := x*EXP_RC = q
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of q
+                call    widen_to_arga       ; ARGA := clean widen of q
 
                 ; --- step 2: n8 := nearest-int(q), hand-extracted -----------
+                ld      hl,0                ; HL := magnitude accumulator (also
+                                            ; the dexp<0 answer: < 0.1, rounds
+                                            ; to 0, no digit check needed)
+                ld      de,ARGA+FPNUM_DIG   ; DE -> dig[0] (the dexp==0 rounding
+                                            ; digit, and the loop's pointer)
                 ld      a,(ARGA+FPNUM_DEXP) ; low byte -- safe as a signed
                                             ; 8-bit read: widen_fac_to's own
                                             ; header guarantees dexp in
                                             ; -64..63, so the high byte is
                                             ; always pure sign-extension
                 or      a
-                jp      m,fexp_dexp_le0     ; dexp<0 -> magnitude 0
-                jr      z,fexp_dexp_eq0     ; dexp==0 -> magnitude 0, round
+                jp      m,fexp_mag_done     ; dexp<0 -> magnitude 0
+                jr      z,fexp_round        ; dexp==0 -> magnitude 0, round
                                             ; via dig[0]
                 cp      5
                 jp      p,fexp_dexp_gt4     ; dexp-5>=0 <=> dexp>=5 (defensive
@@ -216,8 +188,6 @@ fp_exp:
                 ; 1<=dexp<=4: magnitude := digits d[0..dexp-1] as decimal,
                 ; round-half-away via d[dexp]
                 ld      b,a                 ; B := dexp (loop count 1..4)
-                ld      hl,0                ; HL := magnitude accumulator
-                ld      de,ARGA+FPNUM_DIG   ; DE -> dig[0]
 fexp_magloop:
                 push    bc                  ; save the outer loop counter
                 add     hl,hl               ; HL*2
@@ -234,23 +204,12 @@ fexp_magloop:
                 pop     bc                  ; restore the outer loop counter
                 djnz    fexp_magloop
                 ; DE now -> dig[dexp] (the first digit NOT yet consumed) --
-                ; the rounding digit
+                ; the rounding digit (dexp==0 enters here: DE -> dig[0])
+fexp_round:
                 ld      a,(de)
                 cp      5
                 jr      c,fexp_mag_done
                 inc     hl
-                jr      fexp_mag_done
-fexp_dexp_eq0:
-                ld      hl,0
-                ld      a,(ARGA+FPNUM_DIG)
-                cp      5
-                jr      c,fexp_mag_done
-                inc     hl
-                jr      fexp_mag_done
-fexp_dexp_le0:
-                ld      hl,0                ; dexp<0: value < 0.1 strictly,
-                                            ; always rounds to 0 (no digit
-                                            ; check needed)
 fexp_mag_done:
                 ld      a,(ARGA+FPNUM_SIGN)
                 or      a
@@ -263,27 +222,18 @@ fexp_mag_done:
                 ld      h,a                 ; HL := -HL (two's complement)
 fexp_n8_signed:
                 ld      (MATH_N),hl         ; MATH_N := n8
-                jr      fexp_bounds
-fexp_dexp_gt4:
-                ; defensive: |n8| would be far beyond 552 regardless of sign
-                ; -- dispatch directly to the matching bound-breach tail
-                ld      a,(ARGA+FPNUM_SIGN)
-                or      a
-                jp      z,fexp_overflow
-                jp      fexp_underflow
 
                 ; --- step 3: bounds -552..552 (16-bit signed) ---------------
-fexp_bounds:
-                ld      hl,(MATH_N)
+                ; |n8| <= 10000 (at most 4 integer digits + the round-up), so
+                ; n8+552 is in -9448..10552 and cannot overflow: n8<-552 <=>
+                ; n8+552 < 0; n8>552 <=> n8+552 >= 1105 (unsigned, once >= 0).
                 ld      de,552
-                call    fexp_cmp16
-                cp      4
-                jp      z,fexp_overflow     ; n8>552
-                ld      hl,(MATH_N)
-                ld      de,-552
-                call    fexp_cmp16
-                cp      1
-                jp      z,fexp_underflow    ; n8<-552
+                add     hl,de               ; HL := n8+552
+                bit     7,h
+                jp      nz,fexp_underflow   ; n8<-552
+                ld      de,-1105
+                add     hl,de               ; CF <=> n8+552 >= 1105
+                jp      c,fexp_overflow     ; n8>552
 
                 ; --- step 4: m := n8&7; n8fp := widen(|n8|)+sign -> MATH_T; -
                 ; n := n8>>3 (arithmetic), overwriting MATH_N -------------
@@ -291,8 +241,7 @@ fexp_bounds:
                 ld      a,l
                 and     7
                 ld      (MATH_J),a          ; m
-                ld      a,h
-                bit     7,a
+                bit     7,h
                 jr      z,fexp_n8pos
                 xor     a
                 sub     l
@@ -306,20 +255,11 @@ fexp_n8pos:
                 ex      de,hl               ; DE := n8 (already >=0)
                 xor     a
 fexp_n8widen:
-                push    af                  ; stash the sign flag across the
-                                            ; widen_uint_to call (clobbers
-                                            ; everything)
                 ld      hl,MATH_T
-                xor     a
-                call    widen_uint_to       ; MATH_T := widen(|n8|), sign
-                                            ; forced 0 (mirrors fp_atan's
-                                            ; "xor a" widen shape)
-                pop     af
-                or      a
-                jr      z,fexp_n8_nosign
-                ld      a,$80
-                ld      (MATH_T+FPNUM_SIGN),a   ; poke the real sign
-fexp_n8_nosign:
+                call    widen_uint_to       ; MATH_T := widen(|n8|) with sign A
+                                            ; (0/$80; n8<0 means |n8|>=1, so
+                                            ; widen_uint_to's +0 rule never
+                                            ; drops a $80)
                 ld      hl,(MATH_N)         ; reload the ORIGINAL n8 (still
                                             ; intact -- untouched above)
                 sra     h
@@ -351,23 +291,19 @@ fexp_n8_nosign:
                 call    cpy_argb    ; ARGB := product2
                 call    cpy_r_arga  ; ARGA := r1
                 call    fp_sub              ; FAC/ARGA := r1 - product2 = r2
-                ld      hl,ARGA
-                call    widen_fac_to
+                call    widen_to_arga       ; (HL = ARGA on return)
 
                 ld      a,(MATH_J)
                 or      a
                 jr      z,fexp_no_tcor
-                ld      hl,ARGA
-                call    cpy_to_r    ; MATH_R := r2 (stash)
-                ld      a,(MATH_J)
+                call    cpy_to_r    ; MATH_R := r2 (stash; an ldir copy: A = m kept)
                 dec     a                   ; m-1 (0-based EXP_TCOR index)
                 ld      hl,EXP_TCOR
                 call    fexp_tbl18addr
                 call    cpy_argb    ; ARGB := EXP_TCOR[m-1]
                 call    cpy_r_arga  ; ARGA := r2
                 call    fp_sub              ; FAC/ARGA := r2 - EXP_TCOR[m-1]
-                ld      hl,ARGA
-                call    widen_fac_to
+                call    widen_to_arga
 fexp_no_tcor:
                 ; final r -> HORNER_G (=MATH_T, n8fp now dead)
                 call    cpy_arga_x    ; HORNER_G := r
@@ -388,8 +324,7 @@ fexp_no_tcor:
                 ld      a,(MATH_J)
                 or      a
                 jr      z,fexp_m_zero
-                ; m<>0: v := That[m]*w; p := That[m] + v
-                ld      a,(MATH_J)
+                ; m<>0: v := That[m]*w; p := That[m] + v (A = m still)
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*m
                 call    cpy_arga    ; ARGA := That[m]
@@ -401,20 +336,15 @@ fexp_no_tcor:
                 ld      hl,POW8_TBL
                 call    fexp_tbl18addr      ; HL := POW8_TBL + 18*m (re-fetch)
                 call    cpy_arga    ; ARGA := That[m]
-                call    fp_add              ; FAC/ARGA := That[m]+v = p
-                call    widen_to_arga
-                call    cpy_to_y    ; MATH_A := p (x long dead)
-                jr      fexp_scale
+                jr      fexp_p              ; p := That[m]+v (the shared tail)
 fexp_m_zero:
                 ; m==0: p := 1.0 + w
-                ld      hl,ARGA
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGA := 1.0
+                call    one_to_arga         ; ARGA := 1.0
                 call    cpy_r_argb  ; ARGB := w
-                call    fp_add              ; FAC/ARGA := 1.0+w = p
+fexp_p:
+                call    fp_add              ; FAC/ARGA := That[m]+v / 1.0+w = p
                 call    widen_to_arga
-                call    cpy_to_y    ; MATH_A := p
+                call    cpy_to_y    ; MATH_A := p (x long dead)
 
 fexp_scale:
                 ; --- step 8: FAC := p rescaled by 10^n. A power-of-ten -----
@@ -461,27 +391,13 @@ fexp_scale:
                 ld      de,(MATH_N)         ; n
                 add     hl,de
                 ld      (MATH_A+FPNUM_DEXP),hl  ; MATH_A's dexp += n (exact)
+                ex      de,hl               ; DE := the rescaled p's own dexp
+                ld      hl,ARGB
+                xor     a                   ; dig[0] := 0: sign 0, dig[0..14] 0
+                call    fsq_mk_small        ; ARGB := 0 with dexp SAME as p's
+                                            ; (not the canonical-zero 0 --
+                                            ; see above)
                 call    cpy_y_arga  ; ARGA := p, rescaled
-                ld      hl,(ARGA+FPNUM_DEXP)    ; = the rescaled p's own dexp
-                ld      de,ARGB
-                xor     a
-                ld      (de),a              ; ARGB sign := 0
-                inc     de
-                ld      a,l
-                ld      (de),a
-                inc     de
-                ld      a,h
-                ld      (de),a              ; ARGB dexp := SAME as ARGA (not
-                                            ; the canonical-zero 0 -- see
-                                            ; above); Z80 has no `ld (de),l`/
-                                            ; `ld (de),h` -- route through A
-                inc     de
-                xor     a
-                ld      b,15                ; dig[0..13] + guard, all zero
-fexp_scale_zero:
-                ld      (de),a
-                inc     de
-                djnz    fexp_scale_zero
                 jp      fp_add              ; tail: FAC := p_rescaled + 0
                                             ; (dexp-matched zero -> alignment
                                             ; is a no-op; round_and_finalize
@@ -489,12 +405,6 @@ fexp_scale_zero:
                                             ; magnitude overflow/underflow on
                                             ; the TRUE dexp). COMPUTE-ONLY --
                                             ; evmc_exp sets FACTYP/DE.
-fexp_overflow:
-                ld      a,1
-                call    penderr_set
-                xor     a
-                ld      (FAC),a
-                ret
 ; ⛔ UNDERFLOW IS SILENT ON PURPOSE, AND IT IS NOT THE SAME AS OVERFLOW HERE.
 ; The true answer underflows to 0 and zerobas returns it; both references throw
 ; `Overflow` instead, which docs/spec-basic-mathpack-slice2.md §12.9 records as
@@ -528,7 +438,16 @@ fexp_overflow:
 ; references, AND WAS REVERTED. Measuring the references is not the same as
 ; checking whether the divergence was already DECIDED; here it was, fifteen days
 ; earlier (docs/spec-basic-ngram14.md §7).
-fexp_underflow:
+fexp_dexp_gt4:
+                ; defensive: |n8| would be far beyond 552 regardless of sign
+                ; -- dispatch directly to the matching bound-breach tail
+                ld      a,(ARGA+FPNUM_SIGN)
+                or      a
+                jr      nz,fexp_underflow
+fexp_overflow:
+                ld      a,1
+                call    penderr_set         ; (keeps every register and flag)
+fexp_underflow:                             ; overflow falls in: FAC := 0 too
                 xor     a
                 ld      (FAC),a
                 ret

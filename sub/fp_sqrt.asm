@@ -53,10 +53,11 @@ DECIDE_MAX_ITER equ     1           ; hard cap on the final decision loop
 
 ; --- fsq_mk_small: HL=dest FPNUM base, A=leading digit (1), DE=dexp --------
 ; (16-bit signed) -> dest := {sign=0, dexp=DE, dig[0]=A, dig[1..14]=0}, an
-; EXACT single-digit-magnitude FPNUM. Used only by the final decision loop
-; (fsq_stop, below) to build the "ulp"/"ulp_down" probe values that step the
-; Heron+Newton candidate by exactly one representable unit -- own design, not
-; a general-purpose primitive. Clobbers A, B, HL; preserves D, E.
+; EXACT single-digit-magnitude FPNUM. Built for the final decision loop
+; (fsq_stop, below: fsqn_ulp, the "ulp"/"ulp_down" probe values that step the
+; Heron+Newton candidate by exactly one representable unit); D-REREAD sub batch
+; 2 also uses it for fp_exp's dexp-matched +0 and fp_sin's 0.5 (both exact
+; one-digit records). Clobbers A, B, HL; preserves C, D, E.
 fsq_mk_small:
                 ld      (hl),0              ; FPNUM_SIGN = 0 (always positive
                                             ; -- sqrt args are non-negative)
@@ -119,6 +120,21 @@ fsq_copy18:
                 ld      bc,18
                 ldir
                 ret
+
+; --- one_to_arga / one_to_argb / one_to_hl / uint_to_argb: +1.0 (or +DE) ----
+; -> an FPNUM record via widen_uint_to, sign 0. D-REREAD sub batch 2: the math
+; tenants built 1.0 with the same `ld hl,<dst> / xor a / ld de,1 / call
+; widen_uint_to` ten bytes at seven sites (fp_exp, fp_atan x3, fp_pow x2,
+; fp_sin) and fp_sqrt built 2.0 twice. A tail `jp`: widen_uint_to's own exit
+; registers and flags are the caller's, exactly as the inline call left them
+; (it only runs one return address deeper; it reads no stack depth).
+one_to_argb:    ld      de,1                ; ARGB := +1.0
+uint_to_argb:   ld      hl,ARGB             ; ARGB := +DE
+                jr      uint_pos
+one_to_arga:    ld      hl,ARGA             ; ARGA := +1.0
+one_to_hl:      ld      de,1                ; (HL) := +1.0
+uint_pos:       xor     a                   ; sign 0
+                jp      widen_uint_to
 
 ; --- fp_sqrt: ARGA (an already-widened FPNUM: the caller's x, dig[14]=0 -----
 ; fresh per widen_rhs_operand's contract) -> FAC (double) + A=status (0 ok,
@@ -199,40 +215,24 @@ fp_sqrt:
 fsq_nonneg:
                 ld      hl,ARGA+FPNUM_DIG
                 call    dig15_iszero
-                jr      nz,fsq_nonzero
                 ; x==0: FAC:=0 (double), status ok (FACTYP/DE set by the
                 ; caller, evmc_sqr, after a successful subrom_call return --
-                ; see this cluster's header)
-                xor     a
-                ld      (FAC),a
-                xor     a
-                ret
-fsq_nonzero:
+                ; see this cluster's header). fsc_pack_zero (fp_sin.asm) is
+                ; exactly `xor a / ld (FAC),a / ret`: A=0, status ok.
+                jp      z,fsc_pack_zero
                 ; x==1 exactly? (dexp==1, dig[0]==1, dig[1..13]==0 -- dig[14]
                 ; already 0, the caller's widen contract)
                 ld      hl,(ARGA+FPNUM_DEXP)
+                dec     hl
                 ld      a,h
-                or      a
+                or      l
+                jr      nz,fsq_notone       ; dexp != 1
+                ld      hl,ARGA+FPNUM_DIG
+                call    fsq_is_one
                 jr      nz,fsq_notone
-                ld      a,l
-                cp      1
-                jr      nz,fsq_notone
-                ld      a,(ARGA+FPNUM_DIG)
-                cp      1
-                jr      nz,fsq_notone
-                ld      hl,ARGA+FPNUM_DIG+1
-                ld      b,13
-fsq_one_chk:
-                ld      a,(hl)
-                or      a
-                jr      nz,fsq_notone
-                inc     hl
-                djnz    fsq_one_chk
                 ; exactly 1.0 -- ARGA already IS the FPNUM for it; pack as-is
                 ; (FACTYP/DE set by the caller, evmc_sqr, after return)
-                call    arga_pack_fac
-                xor     a
-                ret
+                jp      fsq_pack_ok
 fsq_notone:
                 ; --- efficiency-normalize: dexp -> {1,2} in +-2 steps -------
                 xor     a
@@ -248,22 +248,19 @@ fsq_norm_lp:
                 cp      1
                 jr      nc,fsq_norm_done    ; dexp in {1,2} -> done
                                             ; (falls through: dexp==0 -> too low)
-fsq_norm_lo:
-                ld      hl,(ARGA+FPNUM_DEXP)
+fsq_norm_lo:                                ; HL = dexp still (fsq_norm_lp's load)
                 inc     hl
                 inc     hl
-                ld      (ARGA+FPNUM_DEXP),hl
-                ld      a,(SQRT_K)
-                dec     a
-                ld      (SQRT_K),a
-                jr      fsq_norm_lp
+                ld      b,-1                ; K -= 1
+                jr      fsq_norm_st
 fsq_norm_hi:
-                ld      hl,(ARGA+FPNUM_DEXP)
                 dec     hl
                 dec     hl
+                ld      b,1                 ; K += 1
+fsq_norm_st:
                 ld      (ARGA+FPNUM_DEXP),hl
                 ld      a,(SQRT_K)
-                inc     a
+                add     a,b
                 ld      (SQRT_K),a
                 jr      fsq_norm_lp
 fsq_norm_done:
@@ -284,12 +281,9 @@ fsq_iter_lp:
                 call    cpy_y_arga  ; ARGA := y (already canonical)
                 call    fp_add              ; FAC/ARGA := y+t (rounded)
                 ; --- y_new := sum/2 -----------------------------------------
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of sum
-                ld      hl,ARGB
-                xor     a
+                call    widen_to_arga       ; ARGA := clean widen of sum
                 ld      de,2
-                call    widen_uint_to       ; ARGB := 2.0 (clean)
+                call    uint_to_argb        ; ARGB := 2.0 (clean)
                 call    fp_div              ; FAC/ARGA := sum/2 = y_new (rounded)
                 ; --- stop rule (suppressed on iteration 1) ------------------
                 ld      a,(SQRT_ITER)
@@ -309,8 +303,8 @@ fsq_no_check:
                 inc     a
                 ld      (SQRT_ITER),a
                 cp      SQRT_MAX_ITER+1
-                jr      nc,fsq_stop         ; safety cap -- current y_new stands
-                jr      fsq_iter_lp
+                jr      c,fsq_iter_lp       ; else the safety cap: current y_new
+                                            ; stands (falls into fsq_stop)
 fsq_stop:
                 ; --- final correction (spec §10.4 step 4, REVISED 2026-07-13):
                 ; the Heron loop above lands the candidate within 1 ulp of
@@ -392,26 +386,21 @@ fsq_stop:
                                             ; Heron-loop candidate y
                 call    cpy_to_y    ; SQRT_Y := canonical candidate y
                 ; --- Newton step: c := (x'-y*y)/(2*y); y := y+c -----------
-                call    cpy_y_arga
+                ; (ARGA already IS y: cpy_to_y just copied it to SQRT_Y)
                 call    cpy_y_argb
                 call    fp_mul              ; FAC/ARGA := y*y (rounded)
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of y*y
                 call    cpy_x_arga  ; ARGA := x' (already canonical)
                 call    fp_sub              ; FAC/ARGA := x'-y*y (signed)
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of the diff
+                call    widen_to_arga       ; ARGA := clean widen of the diff
                 call    cpy_y_argb  ; ARGB := y (canonical)
                 call    fp_div              ; FAC/ARGA := diff/y (rounded)
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of diff/y
-                ld      hl,ARGB
-                xor     a
+                call    widen_to_arga       ; ARGA := clean widen of diff/y
                 ld      de,2
-                call    widen_uint_to       ; ARGB := 2.0 (clean)
+                call    uint_to_argb        ; ARGB := 2.0 (clean)
                 call    fp_div              ; FAC/ARGA := c = (x'-y*y)/(2y)
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of c
+                call    widen_to_arga       ; ARGA := clean widen of c
                 call    cpy_y_argb  ; ARGB := y (canonical, pre-step)
                 call    fp_add              ; FAC/ARGA := y+c
                 call    widen_to_arga
@@ -441,12 +430,7 @@ fsqn_loop:
                 ; --- Y0*Y0 (exact) ------------------------------------------
                 call    cpy_y_arga  ; ARGA := y (raw copy)
                 ld      hl,ARGA+FPNUM_DIG+7
-                ld      b,7
-                xor     a
-fsqn_trunc1:
-                ld      (hl),a
-                inc     hl
-                djnz    fsqn_trunc1         ; ARGA := Y0 (7 sig digits + 7*0)
+                call    fsqn_trunc          ; ARGA := Y0 (7 sig digits + 7*0)
                 ld      hl,ARGA
                 call    cpy_argb    ; ARGB := Y0 too
                 call    fp_mul              ; FAC/ARGA := Y0*Y0 (EXACT)
@@ -458,14 +442,7 @@ fsqn_trunc1:
                                             ; ARGA := clean widen of r1
                 call    cpy_to_r    ; SQRT_R := r1 (retained)
                 ; --- e := y-Y0 (Y0 rebuilt fresh into ARGB) -----------------
-                call    cpy_y_argb
-                ld      hl,ARGB+FPNUM_DIG+7
-                ld      b,7
-                xor     a
-fsqn_trunc2:
-                ld      (hl),a
-                inc     hl
-                djnz    fsqn_trunc2         ; ARGB := Y0
+                call    fsqn_y0b            ; ARGB := Y0
                 call    cpy_y_arga  ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e = y-Y0 (exact)
                 ; --- corr := (2*e)*Y0 (Y0 rebuilt again) --------------------
@@ -473,16 +450,8 @@ fsqn_trunc2:
                                             ; ARGA := clean widen of e
                 call    cpy_argb    ; ARGB := copy of e
                 call    fp_add              ; FAC/ARGA := 2e
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := clean widen of 2e
-                call    cpy_y_argb
-                ld      hl,ARGB+FPNUM_DIG+7
-                ld      b,7
-                xor     a
-fsqn_trunc3:
-                ld      (hl),a
-                inc     hl
-                djnz    fsqn_trunc3         ; ARGB := Y0 (rebuilt)
+                call    widen_to_arga       ; ARGA := clean widen of 2e
+                call    fsqn_y0b            ; ARGB := Y0 (rebuilt)
                 call    fp_mul              ; FAC/ARGA := corr = 2e*Y0
                 ld      hl,ARGB
                 call    widen_fac_to        ; ARGB := clean widen of corr
@@ -512,14 +481,7 @@ fsqn_trunc3:
                 call    cpy_to_r    ; SQRT_R := r1-corr (retained)
 fsqn_e2:
                 ; --- e2 := e*e (Y0/e rebuilt a final time) ------------------
-                call    cpy_y_argb
-                ld      hl,ARGB+FPNUM_DIG+7
-                ld      b,7
-                xor     a
-fsqn_trunc4:
-                ld      (hl),a
-                inc     hl
-                djnz    fsqn_trunc4         ; ARGB := Y0
+                call    fsqn_y0b            ; ARGB := Y0
                 call    cpy_y_arga  ; ARGA := y
                 call    fp_sub              ; FAC/ARGA := e (rebuilt)
                 call    widen_to_arga
@@ -551,14 +513,7 @@ fsqn_r2_done:
 fsqn_up_check:
                 ; threshold := y*ulp (ulp = dig[0]=1, dexp=dexp_y-13, i.e.
                 ; 10^(dexp_y-14) -- the weight of y's own last digit)
-                ld      hl,(SQRT_Y+FPNUM_DEXP)
-                ld      de,13
-                or      a
-                sbc     hl,de
-                ex      de,hl               ; DE := dexp_y-13
-                ld      a,1
-                ld      hl,ARGB
-                call    fsq_mk_small        ; ARGB := ulp
+                call    fsqn_ulp            ; ARGB := ulp
                 call    cpy_y_arga
                 call    fp_mul              ; FAC/ARGA := threshold=y*ulp
                 ld      hl,ARGB
@@ -568,14 +523,7 @@ fsqn_up_check:
                 cp      1
                 jp      z,fsqn_done         ; r2<threshold -- y stays
                 ; r2>=threshold (incl. tie, ROUND-HALF-UP) -> step UP --------
-                ld      hl,(SQRT_Y+FPNUM_DEXP)
-                ld      de,13
-                or      a
-                sbc     hl,de
-                ex      de,hl
-                ld      a,1
-                ld      hl,ARGB
-                call    fsq_mk_small        ; ARGB := ulp (rebuilt)
+                call    fsqn_ulp            ; ARGB := ulp (rebuilt)
                 call    cpy_y_arga
                 call    fp_add              ; FAC/ARGA := y+ulp
                 call    widen_to_arga
@@ -595,38 +543,13 @@ fsqn_down_check:
                 ; all-9s carry up to a power of 10 is an ordinary exact carry
                 ; -- ; see fsqn_up_check, unconditional ulp).
                 ld      hl,SQRT_Y+FPNUM_DIG
-                ld      a,(hl)
-                cp      1
-                jr      nz,fsqn_down_go     ; leading digit != 1 -> not pow10
-                inc     hl
-                ld      b,13
-fsqn_pow10_chk:
-                ld      a,(hl)
-                or      a
-                jr      nz,fsqn_down_go     ; a nonzero trailing digit -> not pow10
-                inc     hl
-                djnz    fsqn_pow10_chk
-                ; SQRT_Y IS an exact power of 10 -- use the finer ulp
-                ld      a,1
-                ld      (SQRT_POW10),a
-                jr      fsqn_down_go2
+                call    fsq_is_one          ; Z = SQRT_Y IS an exact power of 10
+                ld      a,1                 ; -- use the finer ulp (POW10 := 1)
+                jr      z,fsqn_down_go
+                xor     a                   ; not pow10 (POW10 := 0)
 fsqn_down_go:
-                xor     a
-                ld      (SQRT_POW10),a
-fsqn_down_go2:
-                ld      hl,(SQRT_Y+FPNUM_DEXP)
-                ld      de,13
-                ld      a,(SQRT_POW10)
-                or      a
-                jr      z,fsqn_down_dexp_ok
-                inc     de                  ; pow10 -- one decade finer
-fsqn_down_dexp_ok:
-                or      a
-                sbc     hl,de
-                ex      de,hl               ; DE := ulp_down's dexp
-                ld      a,1
-                ld      hl,ARGB
-                call    fsq_mk_small        ; ARGB := ulp_down
+                ld      (SQRT_POW10),a      ; 0 / 1 only
+                call    fsqn_ulp_dn         ; ARGB := ulp_down
                 call    cpy_y_arga
                 call    fp_mul              ; FAC/ARGA := threshold=y*ulp_down
                 ld      hl,ARGB
@@ -652,19 +575,7 @@ fsqn_down_dexp_ok:
                 ; one, so trusting the residual's sign (move) beats the
                 ; textbook tie-break (stay) here. Gate-verified over the
                 ; whole broad battery -- no case needs the opposite.
-                ld      hl,(SQRT_Y+FPNUM_DEXP)
-                ld      de,13
-                ld      a,(SQRT_POW10)
-                or      a
-                jr      z,fsqn_down_dexp_ok2
-                inc     de
-fsqn_down_dexp_ok2:
-                or      a
-                sbc     hl,de
-                ex      de,hl
-                ld      a,1
-                ld      hl,ARGB
-                call    fsq_mk_small        ; ARGB := ulp_down (rebuilt)
+                call    fsqn_ulp_dn         ; ARGB := ulp_down (rebuilt)
                 call    cpy_y_arga
                 call    fp_sub              ; FAC/ARGA := y-ulp_down
                 call    widen_to_arga
@@ -675,29 +586,77 @@ fsqn_next:
                 inc     a
                 ld      (SQRT_ITER),a
                 cp      DECIDE_MAX_ITER+1
-                jr      nc,fsqn_done        ; safety cap -- current SQRT_Y
-                                            ; stands (never expected to fire)
-                jp      fsqn_loop
+                jp      c,fsqn_loop         ; else the safety cap: current SQRT_Y
+                                            ; stands (falls into fsqn_done)
 fsqn_done:
                 call    cpy_y_arga  ; ARGA := final correctly-rounded y
 
                 ; --- rescale by 10^SQRT_K (dexp+=SQRT_K -- exact) -----------
                 ld      a,(SQRT_K)
                 ld      l,a
-                or      a
-                jp      p,fsq_k_pos
-                ld      h,$FF
-                jr      fsq_k_ext_done
-fsq_k_pos:
-                ld      h,0
-fsq_k_ext_done:
+                rla
+                sbc     a,a
+                ld      h,a                 ; HL := sign-extended SQRT_K
                 ld      de,(ARGA+FPNUM_DEXP)
                 add     hl,de
                 ld      (ARGA+FPNUM_DEXP),hl
+fsq_pack_ok:
                 call    arga_pack_fac
                 ; FACTYP/DE set by the caller, evmc_sqr, after return
                 xor     a
                 ret
+
+; --- fsq_is_one: HL -> dig[0] of an FPNUM -> Z iff dig[0]==1 and ----------
+; dig[1..13]==0 (the x==1.0 test and the decision loop's power-of-10 test,
+; D-REREAD sub batch 2). On Z: A=0, B=0, HL=dig[14] -- what both inline loops
+; left. Clobbers A, B, HL.
+fsq_is_one:
+                ld      a,(hl)
+                cp      1
+                ret     nz
+                inc     hl
+                ld      b,13
+fio_lp:
+                ld      a,(hl)
+                or      a
+                ret     nz
+                inc     hl
+                djnz    fio_lp
+                ret
+
+; --- fsqn_y0b / fsqn_trunc: ARGB := SQRT_Y cut to Y0 (dig[7..13] := 0) / ---
+; zero the 7 digits at HL. A=0, B=0 on exit, as the four inline loops left them.
+fsqn_y0b:
+                call    cpy_y_argb
+                ld      hl,ARGB+FPNUM_DIG+7
+fsqn_trunc:
+                ld      b,7
+                xor     a
+fsqn_tz:
+                ld      (hl),a
+                inc     hl
+                djnz    fsqn_tz
+                ret
+
+; --- fsqn_ulp / fsqn_ulp_dn: ARGB := 1*10^(dexp_y-13 [-1 if SQRT_POW10]) ----
+; (dig[0]=1, dexp = dexp_y-13, or dexp_y-14 for the down step on an exact
+; power of 10 -- see fsqn_down_check). SQRT_POW10 holds only 0 / 1.
+fsqn_ulp_dn:
+                ld      a,(SQRT_POW10)
+                jr      fsqn_ulp_a
+fsqn_ulp:
+                xor     a
+fsqn_ulp_a:
+                add     a,13
+                ld      e,a
+                ld      d,0                 ; DE := 13 / 14
+                ld      hl,(SQRT_Y+FPNUM_DEXP)
+                or      a
+                sbc     hl,de
+                ex      de,hl               ; DE := the ulp's dexp
+                ld      a,1
+                ld      hl,ARGB
+                jp      fsq_mk_small
 
 ; --- widen_to_arga (D-CARVEFP, 2026-09-27): FAC -> ARGA widened, HL = ARGA ----
 ; `ld hl,ARGA / call widen_fac_to / ld hl,ARGA` stood verbatim at 46 sites

@@ -119,10 +119,7 @@ fp_pow:
 
 ; --- int path: LSB-first square-and-multiply (§13.1 rule 3, sim-proven) ----
                 call    cpy_arga_x    ; s := x
-                ld      hl,ARGA
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; acc := 1.0 (a REAL one -- the
+                call    one_to_arga         ; acc := 1.0 (a REAL one -- the
                                             ; 1D62^1 anchor needs acc=1*x)
 fpw_lp:
                 ld      hl,(MATH_N)
@@ -134,8 +131,7 @@ fpw_lp:
                 or      a
                 ret     nz                  ; overflow -- FPERR/FAC already
                                             ; set by fp_mul's own tail
-                ld      hl,ARGA
-                call    widen_fac_to        ; re-derive ARGA from FAC --
+                call    widen_to_arga       ; re-derive ARGA from FAC --
                                             ; REQUIRED (found live, 0.5^2000):
                                             ; fp_mul's own UNDERFLOW abort
                                             ; (silent, no FPERR -- check_
@@ -214,10 +210,7 @@ fpw_done:
                 jr      z,fpw_recip_zero
                 ld      hl,ARGA
                 call    cpy_argb    ; ARGB := p (acc)
-                ld      hl,ARGA
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; ARGA := 1.0
+                call    one_to_arga         ; ARGA := 1.0
                 jp      fp_div              ; tail: FAC/ARGA := 1/p, correctly
                                             ; rounded. fp_div's OWN
                                             ; round_and_finalize disposes a
@@ -242,11 +235,9 @@ fpw_done:
                                             ; FAC=0 Overflow result with 1.0.
                                             ; A tail-jp lets fp_div's own
                                             ; tail be the sole authority.
-fpw_recip_zero:
-                ld      a,1
-                call    penderr_set         ; reciprocal of underflowed 0 =
-                                            ; Overflow (pinned .5^-2000)
-                ret
+fpw_recip_zero:                             ; reciprocal of underflowed 0 =
+                jr      fpwf_overflow       ; Overflow (pinned .5^-2000): the
+                                            ; same `ld a,1 / penderr_set` tail
 
 ; --- frac path: EXP(y*LOG(x)) (§13.1 rule 4) --------------------------------
 ; y (ARGB, untouched by combine_pow's classification) must survive the
@@ -286,8 +277,7 @@ fpwf_restore:
                 ld      a,(FPERR)
                 or      a
                 ret     nz                  ; FAC/FPERR already set by fp_mul
-                ld      hl,ARGA
-                call    widen_fac_to        ; canonical t -- REQUIRED here
+                call    widen_to_arga       ; canonical t -- REQUIRED here
                                             ; (found live, `1^123456789`):
                                             ; fp_mul's own zero-PRODUCT path
                                             ; (fpm_after's ".1 branch", taken
@@ -328,5 +318,5 @@ fpwf_huge:
                 ret                         ; (no error -- matches EXP(-huge))
 fpwf_overflow:
                 ld      a,1
-                call    penderr_set         ; t >= 1000: e^t overflows
-                ret
+                jp      penderr_set         ; t >= 1000: e^t overflows (tail:
+                                            ; penderr_set keeps every register)

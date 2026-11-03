@@ -17,7 +17,6 @@ The ranking rots with every carve: re-run it, never quote it.
 import argparse
 import os
 import re
-import subprocess
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -32,13 +31,27 @@ def main():
         m = re.match(r"(\S+)\s+EQU\s+0?([0-9A-Fa-f]+)H", ln)
         if m:
             sym[m.group(1)] = int(m.group(2), 16)
-    # the files sub/sub.asm actually assembles: sub/*, plus the basic/ and sub2/
-    # bodies it includes by path
-    src = open(os.path.join(REPO, "sub", "sub.asm"), errors="replace").read()
-    inc = set(re.findall(r'include\s+"([^"]+)"', src))
-    files = [f for f in subprocess.check_output(["git", "ls-files", "sub/"], cwd=REPO)
-             .decode().split() if f.endswith((".asm", ".inc"))]
-    files += [f for f in inc if "/" in f and os.path.exists(os.path.join(REPO, f))]
+    # the files sub/sub.asm actually assembles, FOLLOWED RECURSIVELY (2026-11-03:
+    # the first cut read only sub.asm's own include lines, so every label of a
+    # body .inc pulled in by another sub file was missing and one "span" swallowed
+    # a whole body -- sd10_skip read as 941 B, all of basic/detok.inc). pasmo
+    # resolves a bare name against `-I sub` and the repo root.
+    def resolve(name):
+        for cand in (name, os.path.join("sub", name)):
+            if os.path.exists(os.path.join(REPO, cand)):
+                return cand
+        return None
+    files, todo = [], ["sub/sub.asm"]
+    while todo:
+        f = todo.pop()
+        if f in files:
+            continue
+        files.append(f)
+        text = open(os.path.join(REPO, f), errors="replace").read()
+        for name in re.findall(r'^\s*include\s+"([^"]+)"', text, re.M):
+            r = resolve(name)
+            if r and r.endswith((".asm", ".inc")):
+                todo.append(r)
     loc = {}
     for f in sorted(set(files)):
         for i, ln in enumerate(open(os.path.join(REPO, f), errors="replace"), 1):

@@ -2287,7 +2287,7 @@ GFX_DDX         equ     $FAFB           ; $FAFB: this command's dx (int16) (2)
 GFX_DDY         equ     $F7BA           ; $F7BA: ...dy (2)
 GFX_DTX         equ     $F410           ; $F410: move target X (2)
 GFX_DTY         equ     $F412           ; $F412: ...Y (2)
-GFX_DTMP        equ     $FAFE           ; $FAFE: mul/rotate/sign scratch (2)
+GFX_DTMP        equ     $FAFE           ; $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2)
 GFX_DSP         equ     $FB00           ; $FB00: tenant entry SP -- an error deep in the (2 B)
                                         ; parse restores it and exits, so every helper can
                                         ; just jump to the error tail instead of threading

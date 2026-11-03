@@ -88,14 +88,11 @@
 rnd_digmul:
                 ld      a,b
                 or      a
-                jr      z,rdm_zero
+                ret     z                   ; d1=0: A=0 (flags as `xor a` left them)
                 xor     a
 rdm_lp:
                 add     a,c
                 djnz    rdm_lp
-                ret
-rdm_zero:
-                xor     a
                 ret
 
 ; --- rnd_reverse14: HL=src base (14B), DE=dst base (14B, a DISTINCT --------
@@ -103,14 +100,11 @@ rdm_zero:
 ; src[13-i], i=0..13: a byte-order reversal, self-inverse, used BOTH ways
 ; (an MSD-first digit array -> its little-endian mirror before the
 ; multiply-add, and the little-endian result -> back to MSD-first after).
-; Clobbers A, B, HL, DE.
+; Clobbers A, B, C, HL, DE (C := 13; both callers go straight into a routine
+; that never reads C).
 rnd_reverse14:
-                ld      a,l
-                add     a,13
-                ld      l,a
-                ld      a,h
-                adc     a,0
-                ld      h,a                 ; HL := src+13 (descending read
+                ld      bc,13
+                add     hl,bc               ; HL := src+13 (descending read
                                             ; pointer; DE stays the ascending
                                             ; write pointer, dst+0..dst+13)
                 ld      b,14
@@ -192,8 +186,7 @@ rabl_zero:
                 ld      (hl),a
                 inc     hl
                 djnz    rabl_zero
-                ; for j := 0 to 13
-                xor     a
+                ; for j := 0 to 13 (A = 0 still)
                 ld      (RND_J),a
 rabl_jloop:
                 ld      a,(RND_J)
@@ -209,21 +202,19 @@ rabl_jloop:
                 ld      (RND_AJ),a
                 xor     a
                 ld      (RND_CARRY),a
-                xor     a
                 ld      (RND_I),a
                 ; for i := 0 to 13-j (i.e. while i+j<14)
 rabl_iloop:
                 ld      a,(RND_I)
+                ld      e,a
+                ld      d,0                 ; DE := i
                 ld      hl,RND_J
                 add     a,(hl)              ; A := i+j
                 cp      14
                 jr      nc,rabl_idone       ; i+j>=14 -> the rest falls off
                                             ; the top, dropped (mod 1e14)
                 ld      (RND_IJ),a          ; stash the target acc index
-                ld      a,(RND_I)
                 ld      hl,RND_LE
-                ld      e,a
-                ld      d,0
                 add     hl,de
                 ld      b,(hl)              ; B := S_le[i]
                 ld      a,(RND_AJ)
@@ -274,7 +265,6 @@ rabl_jdone:
                 ; the final carry out of index 13 is dropped (mod 1e14).
                 xor     a
                 ld      (RND_CARRY),a
-                xor     a
                 ld      (RND_I),a
 rabl_cadd_lp:
                 ld      a,(RND_I)
@@ -288,10 +278,7 @@ rabl_cadd_lp:
                 push    hl                  ; keep acc[i]'s address for the
                                             ; store below (the C_LE lookup
                                             ; below needs HL as scratch)
-                ld      a,(RND_I)
-                ld      hl,RND_C_LE
-                ld      e,a
-                ld      d,0
+                ld      hl,RND_C_LE         ; DE = i still
                 add     hl,de
                 ld      a,(hl)              ; A := C_le[i]
                 add     a,b                 ; + acc[i]
@@ -386,21 +373,14 @@ frnd_k_lp:
                 ld      (RND_K),a
                 djnz    frnd_k_lp
                 ; all 14 digits were zero: S=0 -> FAC:=0 directly
-                xor     a
-                ld      (FAC),a
-                ret
+                jp      fsc_pack_zero       ; (fp_sin.asm: xor a / ld (FAC),a / ret)
 frnd_k_found:
                 ; HL -> RND_STATE+k (the scan above stopped exactly here,
-                ; without advancing past the first nonzero digit); RND_K=k.
+                ; without advancing past the first nonzero digit); RND_K=k,
+                ; and B = 14-k (each djnz pass bumped RND_K once).
                 ld      de,ARGA+FPNUM_DIG
-                ld      a,14
-                ld      c,a
-                ld      a,(RND_K)
-                ld      b,a                 ; B := k
-                ld      a,c
-                sub     b                   ; A := 14-k (the copy count)
-                ld      c,a
-                ld      b,0                 ; BC := 14-k
+                ld      c,b
+                ld      b,0                 ; BC := 14-k (the copy count)
                 ldir                        ; ARGA_DIG[0..13-k] :=
                                             ; RND_STATE[k..13]; DE now ->
                                             ; ARGA_DIG+(14-k)
@@ -415,20 +395,14 @@ frnd_zpad:
                 ld      (de),a
                 inc     de
                 djnz    frnd_zpad
-                xor     a
-                ld      (ARGA+FPNUM_SIGN),a ; sign := 0 (RND's range is
-                                            ; [0,1), always non-negative)
+                ld      (ARGA+FPNUM_SIGN),a ; sign := 0 (A = 0 still; RND's
+                                            ; range is [0,1), never negative)
                 ld      a,(RND_K)
-                or      a
-                jr      z,frnd_dexp_zero
                 neg                         ; A := -k (two's-complement byte,
-                                            ; exact for 1<=k<=13)
+                                            ; exact for 0<=k<=13); CF := k<>0
                 ld      l,a
-                ld      h,$FF               ; sign-extend to a 16-bit dexp
-                jr      frnd_dexp_store
-frnd_dexp_zero:
-                ld      hl,0
-frnd_dexp_store:
+                sbc     a,a
+                ld      h,a                 ; sign-extend: H := $FF iff k<>0
                 ld      (ARGA+FPNUM_DEXP),hl
                 jp      fsc_pack_arga       ; tail: dig15_iszero-guarded
                                             ; pack -> FAC (fp_sin.asm, same

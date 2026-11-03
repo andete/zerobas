@@ -631,7 +631,7 @@ extents the standard already fixes would be noise, not rigour.
 | `$FAF9` | 2 B | `basic` | `PU_FMTD` | -> the format's [len][ptr] descriptor (2) |  |
 | `$FAFB` | 2 B | `basic` | `GFX_DDX` | $FAFB: this command's dx (int16) (2) |  |
 | `$FAFD` | 1 B | `basic` | `GFX_DFN` | $FAFD: 1 = N (no-update) prefix pending (1) |  |
-| `$FAFE` | 2 B | `basic` | `GFX_DTMP` | $FAFE: mul/rotate/sign scratch (2) |  |
+| `$FAFE` |  | `basic` | `GFX_DTMP` | $FAFE: mul/sign scratch (2) -- rotate no longer (D-REREAD sub batch 2) |  |
 | `$FB00` | 2 B | `basic` | `GFX_DSP` | $FB00: tenant entry SP -- an error deep in the (2 B) |  |
 | `$FB20` | 1 B | `disk` | `HOKVLD` | bit 0: the EXTBIO hook ($FFCA) is valid, MSX2 TH work area (1 B) |  |
 | `$FB21` | 1 B | `basic` | `DISKSLOT_OK` | 1 = DISKSLOT holds a valid disk-ROM slot id (1 B) |  |

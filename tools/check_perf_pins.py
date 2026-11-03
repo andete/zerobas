@@ -55,9 +55,11 @@ PINS = {
                                 "whole cell from one pattern/colour read; was 30.922748 "
                                 "(2026-09-16), 2.10x the VG-8020 -> 0.24x"),
     "paint.circle": (1.454911,  "2026-10-20", "same run; was 7.708053, 1.98x -> 0.37x"),
-    "circle":       (0.241185,  "2026-10-20", "faster than both references; pinned "
-                                "so it cannot quietly stop being (was 0.254279: the "
-                                "drift since 09-16 is other slices' speed work)"),
+    "circle":       (0.267453,  "2026-11-03", "RE-PINNED +10.9 % ON PURPOSE: the sub "
+                                "ROM's D-REREAD batch 2 folded CIRCLE's eight unrolled "
+                                "mirror emits into a table loop (~75 B for D-SUB2RETIRE; "
+                                "ROM space before speed, Joost 10-20); still 0.65x the "
+                                "references. Was 0.241185 (2026-10-20), 0.254279 before"),
     "line":         (0.114851,  "2026-10-20", "faster than both references (was 0.123786)"),
 }
 

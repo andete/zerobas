@@ -127,8 +127,7 @@ aeng_resolve:
                 ld      a,(ARY_TYPE)
                 call    ary_resolve         ; -> HL=elem addr, A=err (0 ok)
                 ld      (ARY_ADDR),hl
-                ld      (ARY_ERR),a
-                ret
+                jr      aeng_dim_err        ; ARY_ERR := A (D-REREAD: shared tail)
 
 ; --- aeng_dim: ARY_OP=1 (explicit DIM). BC/A resolved from ARY_KEY/ARY_TYPE;
 ; (ARY_NIDX)/(ARY_IDXP) locate the caller-parsed bound list (§9.4). ary_find
@@ -174,21 +173,23 @@ aeng_dim_neglp:
                                             ; silently mis-DIMing every array as
                                             ; elsize 0).
                 jr      c,aeng_dim_redim
-                ld      a,(ARY_TYPE)        ; TYPE reloaded (see above)
+                ld      a,d                 ; TYPE back: ary_find leaves D = the
+                                            ; target type on both exits (D-REREAD;
+                                            ; A itself is NOT preserved, see above)
                 ld      ix,(ARY_IDXP)       ; bounds source = the caller-parsed list
                 call    ary_alloc           ; BC,A,IX -> HL=new desc+CF; else A=err(4)
                 jr      nc,aeng_dim_err     ; A already holds the OOM err code (4)
-                xor     a
-                ld      (ARY_ERR),a         ; ok
-                ret
-aeng_dim_neg:
-                ld      a,2                 ; Illegal function call (negative bound)
-                ld      (ARY_ERR),a
-                ret
+                ; D-REREAD: the engine's shared exits. Every op ends here or in
+                ; asf_found's twin below; each path runs the same instructions it
+                ; did before, so A and the flags at `ret` are unchanged.
+aeng_ok:
+                xor     a                   ; ok
+                jr      aeng_dim_err
 aeng_dim_redim:
                 ld      a,3                 ; Redimensioned array
-                ld      (ARY_ERR),a
-                ret
+                jr      aeng_dim_err
+aeng_dim_neg:                               ; (also ERASE's not-found exit)
+                ld      a,2                 ; Illegal function call (negative bound)
 aeng_dim_err:
                 ld      (ARY_ERR),a
                 ret
@@ -207,7 +208,7 @@ aeng_erase:
                 call    ary_find            ; CF set+HL=desc base if found; CF
                                             ; clear if not (BC preserved, unused
                                             ; again here)
-                jr      nc,aer_notfound
+                jr      nc,aeng_dim_neg     ; not found -> ARY_ERR=2 (IFC)
                 ; found: HL = desc (= DST, the compaction target). src =
                 ; desc+stride; count = ARYTOP-src, where ARYTOP = the byte
                 ; past the current $0000 terminator, found by a stride-walk
@@ -264,13 +265,9 @@ aer_top:
                                             ; shift-left idiom -- no byte is
                                             ; written before it has been read)
                 di
-                xor     a
-                ld      (ARY_ERR),a         ; 0 ok
-                ret
-aer_notfound:
-                ld      a,2
-                ld      (ARY_ERR),a         ; 2 -> IFC (ary_errmap -> FPERR=8)
-                ret
+                jr      aeng_ok             ; ARY_ERR=0 ok. (Not found went to
+                                            ; aeng_dim_neg: 2 -> IFC, ary_errmap ->
+                                            ; FPERR=8.)
 
 ; --- (aer_fldfix -- D-LRVAR's slide of FLD_TAB's ELEMENT keys over an ERASE
 ; compaction -- is GONE with the table, D-FLDDESC 2026-10-17; see aeng_erase.)
@@ -341,9 +338,7 @@ acs_body:
                 ld      (hl),0
                 inc     hl
                 ld      (hl),0              ; temp.ptr = 0 -> no longer a GC root
-                xor     a
-                ld      (ARY_ERR),a         ; 0 ok
-                ret
+                jr      acs_ok              ; ARY_ERR=0 ok
 acs_copy:
     ENDIF
                 ld      hl,(STRPTR)         ; HL = source descriptor (stable address)
@@ -370,9 +365,9 @@ acs_copy:
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d              ; dest.ptr := the new heap body
-                xor     a
-                ld      (ARY_ERR),a         ; 0 ok
-                ret
+acs_ok:
+                xor     a                   ; 0 ok
+                jr      acs_set
 acs_oom:
                 ld      a,5                 ; D-ARYOOS: ARY_ERR 5 = OUT OF STRING
                                             ; SPACE, a code of its OWN. This was 4 --
@@ -398,6 +393,7 @@ acs_oom:
                                             ; Same instruction, same byte count: the
                                             ; whole price is ary_errmap's 5th entry,
                                             ; one byte of the main ROM's low region.
+acs_set:
                 ld      (ARY_ERR),a
                 ret
 
@@ -427,8 +423,9 @@ aeng_scalar_find:
                 ld      hl,0                ; not found -> ARY_ADDR=0
 asf_found:
                 ld      (ARY_ADDR),hl
-                xor     a
-                ld      (ARY_ERR),a         ; find never errors
+                xor     a                   ; find never errors
+asa_err:                                    ; (SCALAR_ALLOC's error exit: A = 4)
+                ld      (ARY_ERR),a
                 ret
 
 ; --- aeng_scalar_alloc: ARY_OP=5 (find-or-insert, §3a). Writes ARY_ADDR = --
@@ -440,14 +437,8 @@ aeng_scalar_alloc:
                 ld      bc,(ARY_KEY)
                 ld      a,(ARY_TYPE)
                 call    scv_alloc           ; BC,A -> CF+HL=addr / CF clear+A=err(4)
-                jr      nc,asa_err
-                ld      (ARY_ADDR),hl
-                xor     a
-                ld      (ARY_ERR),a
-                ret
-asa_err:
-                ld      (ARY_ERR),a         ; A already = 4 (OOM)
-                ret
+                jr      c,asf_found         ; ARY_ADDR=HL, ARY_ERR=0 -- find's own tail
+                jr      asa_err             ; A already = 4 (OOM)
 
 ; --- fn_shadow_find: D-DEFFN's shadow lookup, and it costs the MAIN ROM ZERO -
 ; BYTES. in: BC = key (name0,name1), A = type. out: CF set -> HL = the shadow
@@ -603,8 +594,9 @@ scvf_notfound:
 ; is spare here either):
 ;   +0 KEY_C(name1) +1 KEY_B(name0) +2 TYPE +3 STRIDE +4/5 OLDBASE(=old
 ;   ARYTAB) +6/7 OLDEND(=old array terminator addr) +8/9 NEWEND(=OLDEND+
-;   STRIDE) +10/11 CEND(=NEWEND+2) +12 RETRIED +13/14 SRC_LAST(=OLDEND+1)
-;   +15/16 DST_LAST(=SRC_LAST+STRIDE) +17/18 COUNT(=SRC_LAST-OLDBASE+1)
+;   STRIDE) +10/11 CEND(=NEWEND+2) +12 RETRIED +13..+18 UNUSED since D-REREAD
+;   (SRC_LAST / DST_LAST / COUNT now live in registers; the frame keeps its
+;   19 B so no SP-derived edge moves)
 ; Clobbers A,B,C,D,E,H,L,IX,IY.
 scv_alloc:
                 call    scv_find            ; BC,A -> CF/HL; BC preserved
@@ -706,7 +698,7 @@ scv_ceil_try:
                 sbc     hl,de               ; HL = CEND - ceiling
                 jr      c,scv_ceil_fits     ; CEND < ceiling -> fits
     IF CLEARPOOL
-                jp      scv_oom
+                jr      scv_oom
     ELSE
                 ld      a,(iy+12)
                 or      a
@@ -724,37 +716,32 @@ scv_ceil_fits:
                 ; SRC_LAST = OLDEND+1 ; DST_LAST = SRC_LAST+STRIDE ;
                 ; COUNT = SRC_LAST-OLDBASE+1  (the block to shift is
                 ; [OLDBASE, OLDEND+2), i.e. SRC_LAST is its last byte)
+                ; D-REREAD: computed in registers -- the frame's +13..+18 slots
+                ; are no longer written, but the frame stays 19 B (sp_ceil and
+                ; the variable-region edges are measured against its depth).
                 ld      l,(iy+6)
                 ld      h,(iy+7)            ; HL = OLDEND
                 inc     hl                  ; HL = SRC_LAST
-                ld      (iy+13),l
-                ld      (iy+14),h
+                ld      c,(iy+4)
+                ld      b,(iy+5)            ; BC = OLDBASE
+                push    hl
+                or      a
+                sbc     hl,bc               ; HL = SRC_LAST - OLDBASE
+                inc     hl                  ; HL = COUNT
+                ld      b,h
+                ld      c,l                 ; BC = COUNT
+                pop     hl                  ; HL = SRC_LAST
                 ld      e,(iy+3)
                 ld      d,0                 ; DE = STRIDE
-                add     hl,de               ; HL = DST_LAST
-                ld      (iy+15),l
-                ld      (iy+16),h
-                ld      e,(iy+4)
-                ld      d,(iy+5)            ; DE = OLDBASE
-                ld      l,(iy+13)
-                ld      h,(iy+14)           ; HL = SRC_LAST
-                or      a
-                sbc     hl,de               ; HL = SRC_LAST - OLDBASE
-                inc     hl                  ; HL = COUNT
-                ld      (iy+17),l
-                ld      (iy+18),h
+                ex      de,hl
+                add     hl,de
+                ex      de,hl               ; DE = DST_LAST = SRC_LAST+STRIDE
                 ; --- LDDR: (DE=DST_LAST) <- (HL=SRC_LAST), BC=COUNT --------
                 ; top-down (descending) to handle the growing overlap: the
                 ; destination is ABOVE the source throughout (dst = src +
                 ; STRIDE, STRIDE > 0), the textbook "shift right" idiom -- no
                 ; byte is written before it has been read (the SAME
                 ; direction discipline sg_move_one's own LDDR uses).
-                ld      l,(iy+13)
-                ld      h,(iy+14)           ; HL = SRC_LAST
-                ld      e,(iy+15)
-                ld      d,(iy+16)           ; DE = DST_LAST
-                ld      c,(iy+17)
-                ld      b,(iy+18)           ; BC = COUNT
                 ; D-LATEINT: the move is the whole array region (1.7 KB took
                 ; ~10 ms in the ladder's L3_report) and the VG-8020 makes it
                 ; with interrupts on. A page-0 tenant may run EI (the $0038
@@ -764,8 +751,8 @@ scv_ceil_fits:
                 lddr
                 di
                 ; --- write the new scalar entry at OLDBASE (the freed hole) -
-                ld      l,(iy+4)
-                ld      h,(iy+5)            ; HL = OLDBASE = new entry addr
+                inc     hl                  ; HL = OLDBASE = new entry addr (LDDR
+                                            ; left SRC_LAST-COUNT = OLDBASE-1)
                 ld      a,(iy+1)            ; name0
                 ld      (hl),a
                 inc     hl
@@ -803,9 +790,8 @@ scva_zero_lp:
                 add     hl,de
                 ld      (ARYTAB),hl
                 ; --- return HL = new entry base, CF set ---------------------
-                ld      l,(iy+4)
-                ld      h,(iy+5)
-                ex      de,hl               ; D-INPNUM funding: HL is the caller's
+                ld      e,(iy+4)
+                ld      d,(iy+5)            ; D-INPNUM funding: HL is the caller's
                 ld      hl,19               ; result, carried in DE (dead here; the
                 add     hl,sp               ; `scf` below sets the flag it returns)
                 ld      sp,hl               ; deallocate the 19-byte frame -- 7 B, not 19
@@ -924,15 +910,10 @@ ace_lp:
                 push    bc
                 pop     de                  ; DE=bound_k+1
                 call    ary_mul16_checked   ; HL(count)*DE(bound_k+1)->DE=count,CF=ovf
-                jr      c,ace_ovf
                 pop     hl                  ; advanced cursor restored
-                pop     bc                  ; ndim_remaining restored
-                jr      ace_lp
-ace_ovf:
-                pop     hl                  ; balance: discard advanced cursor
-                pop     bc                  ; balance: discard ndim_remaining
-                scf
-                ret
+                pop     bc                  ; ndim_remaining restored (POP: no flags)
+                jr      nc,ace_lp
+                ret                         ; CF set: overflow (stack balanced)
 
 ; --- elsize_from_type: A=type (1/2/4/8) -> A=elsize (bytes per element) ----
 ; (arrays slice-3, docs/spec-basic-arrays-slice3-strings.md §4/§5.1; REVISED
@@ -981,7 +962,8 @@ ary_stride:
 ; found; CF clear+HL=terminator/tail slot if not found. Preserves BC. Type is
 ; part of the key (A/A%/A! are distinct arrays, §4.1 #7). Unchanged from the
 ; WIP (ARYBASE is now derived here directly, same formula). Clobbers
-; A,D,E,H,L.
+; A,D,E,H,L -- but D = the target TYPE on BOTH exits, and aeng_dim /
+; ary_resolve rely on that (D-REREAD); keep it if this walk changes.
 ary_find:
                 ld      d,a                 ; D = target type
                 ld      hl,(ARYTAB)         ; HL = ARYBASE (arrays slice-4b:
@@ -1007,14 +989,11 @@ af_lp:
                 scf
                 ret
 af_skip:
-                push    bc                  ; guard key
-                ld      a,d
-                push    af                  ; guard target type (D)
+                push    de                  ; guard target type (D); ary_stride
+                                            ; touches only DE, so BC (key) survives
                 call    ary_stride          ; HL(preserved) -> DE=stride
                 add     hl,de               ; HL = next descriptor candidate
-                pop     af
-                ld      d,a                 ; target type restored
-                pop     bc                  ; key restored
+                pop     de                  ; target type restored
                 jr      af_lp
 af_notfound:
                 or      a                   ; CF clear
@@ -1040,16 +1019,10 @@ af_notfound:
 ; the heap once before retrying, reclaiming any slack the heap can give
 ; back). Clobbers A,B,C,D,E,H,L,IX,IY.
 ary_alloc:
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp
-                dec     sp                  ; reserve a 10-byte scratch frame
+                ld      hl,-10              ; D-REREAD: HL is dead on entry (ARYTAB
+                add     hl,sp               ; is loaded below) and so are the flags;
+                ld      sp,hl               ; reserve a 10-byte scratch frame -- same
+                                            ; depth as the 10 x `dec sp` it replaces
                 ld      iy,0
                 add     iy,sp               ; IY = frame base
                 ld      (iy+0),c            ; KEY name1 (C)
@@ -1183,8 +1156,8 @@ aal_ceil_fits:
                 or      a
                 sbc     hl,de               ; HL = stride (data_end - TAIL)
                 push    hl                  ; [STRIDE]  (stack, top->bottom: STRIDE,DEND)
-                ld      l,(iy+3)
-                ld      h,(iy+4)            ; HL = TAIL (new descriptor base)
+                ex      de,hl               ; HL = TAIL (new descriptor base; DE
+                                            ; still held it -- dead until pop de)
                 ld      a,(iy+1)            ; name0 (B, stashed at iy+1)
                 ld      (hl),a              ; name0
                 inc     hl
@@ -1202,8 +1175,7 @@ aal_ceil_fits:
                 inc     hl
                 ld      (hl),d              ; stride high
                 inc     hl                  ; HL -> bounds[0]
-                ld      a,(ARY_NIDX)
-                ld      b,a
+                ld      b,a                 ; A still = (ARY_NIDX), loaded for ndim
                 or      a
                 jr      z,aal_bounds_done
 aal_bounds_lp:
@@ -1245,19 +1217,14 @@ aal_zero_lp:
                 jr      nz,aal_zero_lp
 aal_zero_done:
                 di
-                ld      l,(iy+3)
-                ld      h,(iy+4)            ; HL = the new descriptor's base
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 10-byte frame (INC SP: no
-                                            ; register/flag effect other than SP)
+                ld      e,(iy+3)
+                ld      d,(iy+4)            ; DE = the new descriptor's base
+                ld      hl,10
+                add     hl,sp
+                ld      sp,hl               ; deallocate the 10-byte frame
+                ex      de,hl               ; HL = the descriptor base (DE is
+                                            ; clobbered by strheap_ctllim anyway;
+                                            ; `scf` below sets the flag returned)
                 ; D-CTLPOOL: same refresh as scv_ceil_fits' -- a new array moved
                 ; the region's end, so the pool's floor moved with it.
                 push    hl
@@ -1304,19 +1271,13 @@ aal_oom:
                 ld      a,4                 ; ARY_ERR: Out of memory
 aal_unframe:
                                             ; A is the ARY_ERR code and survives:
-                                            ; INC SP touches neither A nor any
-                                            ; flag, so the `or a` below still
-                                            ; clears CY for both entries.
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 10-byte frame
+                                            ; ADD HL,SP touches no A, and the `or a`
+                                            ; below clears CY for every entry. HL is
+                                            ; no result on this path (both callers
+                                            ; read only A; ary_resolve sets HL=0).
+                ld      hl,10
+                add     hl,sp
+                ld      sp,hl               ; deallocate the 10-byte frame
                 or      a                   ; CF clear
                 ret
 
@@ -1372,12 +1333,10 @@ sp_ceil:
 ; nesting conflict with this routine's own frame. Clobbers A,B,C,D,E,H,L,
 ; IX,IY.
 ary_resolve:
-                push    bc                  ; guard key across ary_find
-                push    af                  ; guard type
-                call    ary_find            ; BC,A -> CF/HL (BC preserved)
-                jr      c,aryr_found
-                pop     af
-                pop     bc
+                call    ary_find            ; BC,A -> CF/HL (BC preserved, D = type
+                                            ; on both exits -- D-REREAD dropped the
+                                            ; push/pop guards around this call)
+                jr      c,aryr_have_desc
                 ; D-ARR-C: auto-dim past FOUR subscripts is always the size rule,
                 ; so it is answered here instead of walking a longer bound table.
                 ; Auto-dim takes every bound to 10, so five subscripts ask for
@@ -1389,10 +1348,9 @@ ary_resolve:
                 ; control answers `Out of memory` (docs/arrdim-c-vg8020-
                 ; characterization.md §3). This is what keeps
                 ; ARY_AUTODIM_BOUNDS four words long.
-                ld      e,a                 ; stash TYPE across the count check
                 ld      a,(ARY_NIDX)
                 cp      5
-                ld      a,e                 ; TYPE back -- LD r,r' touches no flag,
+                ld      a,d                 ; TYPE (from ary_find) -- LD r,r' touches no flag,
                                             ; so the CP above still decides below
                 jp      nc,aryr_autodim_soor ; `jp`, not `jr`: the shared exit sits
                                             ; past the whole resolve loop
@@ -1404,11 +1362,9 @@ ary_resolve:
                                             ; list, and ndim<=4 is guaranteed above.
                 call    ary_alloc           ; BC,A,IX -> HL=new desc+CF; else A=err(4)
                 jp      nc,aryr_alloc_fail
-                jr      aryr_have_desc
-aryr_found:
-                pop     af                  ; discard (the descriptor's OWN stored
-                pop     bc                  ; ndim/type are authoritative from here)
-aryr_have_desc:
+                                            ; (falls into aryr_have_desc)
+aryr_have_desc:                             ; (the descriptor's OWN stored ndim/type
+                                            ; are authoritative from here)
                 ; HL = descriptor base (found or freshly auto-dim'd)
                 dec     sp
                 dec     sp
@@ -1513,45 +1469,26 @@ aryr_loop_done:
                 pop     hl                  ; HL = data start
                 add     hl,de               ; HL = element address
                 xor     a                   ; A = 0 (ok)
+aryr_unframe:
                 inc     sp
                 inc     sp
                 inc     sp
                 inc     sp
                 inc     sp
-                inc     sp                  ; deallocate the 6-byte frame
-                ret
-aryr_wrongdim:
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 6-byte frame
-                ld      a,1                 ; ARY_ERR: Subscript out of range
-                ld      hl,0
-                ret
+                inc     sp                  ; deallocate the 6-byte frame (INC SP:
+                ret                         ; no register or flag effect)
+; D-REREAD: the three error exits share the unframe above. SP, A, HL and the
+; flags at `ret` are what each one's own copy left.
 aryr_neg:
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 6-byte frame
                 ld      a,2                 ; ARY_ERR: Illegal function call (negative,
-                                            ; §4.1 #9)
-                ld      hl,0
-                ret
+                jr      aryr_err            ; §4.1 #9)
 aryr_oob:
                 pop     hl                  ; balance the one outstanding [BND] push
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp
-                inc     sp                  ; deallocate the 6-byte frame
+aryr_wrongdim:
                 ld      a,1                 ; ARY_ERR: Subscript out of range
+aryr_err:
                 ld      hl,0
-                ret
+                jr      aryr_unframe
 aryr_autodim_soor:
                 ld      a,1                 ; D-ARR-C: auto-dim past four subscripts
                                             ; -- ARY_ERR: Subscript out of range,

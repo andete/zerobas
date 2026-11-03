@@ -1248,7 +1248,7 @@ gfx_box_stash:
 ; when GFX_ARCF=1, a point is kept iff its (octant, in-octant step index)
 ; pair lies in the CLOSED cyclic interval between the two marshalled
 ; boundaries -- the STEP-INDEX WEDGE (gfx_circ_keep). The octant is STATIC
-; per mirror position (gco_emit8 passes it as a literal), the step index is
+; per mirror position (a gco_e8tab constant in gco_emit8), the step index is
 ; the loop's own qx, and the test runs on the RAW point BEFORE the minor
 ; scale -- measured: the reference masks pre-scale (the r=700 ASPS=35 arc row
 ; is byte-exact only that way). Boundaries, wrap flag and pending-spoke
@@ -1721,50 +1721,47 @@ gco_incx:
 ; ---------------------------------------------------------------------------
 ; Each mirror carries its STATIC octant (D-ARCMASK): the octant of a mirror
 ; position never depends on the point, so the mask needs no per-point atan --
-; the `ld a,N` immediately before each call IS the direction decomposition.
+; the octant field of each gco_e8tab entry IS the direction decomposition.
 ; (BASIC angle = atan2(-dy, dx); octant o covers [o*pi/4, (o+1)*pi/4).)
+; One table-driven loop instead of eight unrolled emits (D-REREAD sub batch 2).
 gco_emit8:
+                ld      hl,gco_e8tab
+gce8_lp:
+                push    hl                  ; [table cursor] -- the emit clobbers all
                 ld      bc,(GFX_QX)
                 ld      de,(GFX_QY)
-                ld      a,6
-                call    gfx_circ_emit_point ; (+x,+y)  octant 6
-                ld      bc,(GFX_QX)
-                ld      de,(GFX_QY)
-                call    gfx_neg16_de
-                ld      a,1
-                call    gfx_circ_emit_point ; (+x,-y)  octant 1
-                ld      bc,(GFX_QX)
-                call    gfx_neg16_bc
-                ld      de,(GFX_QY)
-                ld      a,5
-                call    gfx_circ_emit_point ; (-x,+y)  octant 5
-                ld      bc,(GFX_QX)
-                call    gfx_neg16_bc
-                ld      de,(GFX_QY)
-                call    gfx_neg16_de
-                ld      a,2
-                call    gfx_circ_emit_point ; (-x,-y)  octant 2
-                ld      bc,(GFX_QY)
-                ld      de,(GFX_QX)
-                ld      a,7
-                call    gfx_circ_emit_point ; (+y,+x)  octant 7
-                ld      bc,(GFX_QY)
-                ld      de,(GFX_QX)
-                call    gfx_neg16_de
-                ld      a,0
-                call    gfx_circ_emit_point ; (+y,-x)  octant 0
-                ld      bc,(GFX_QY)
-                call    gfx_neg16_bc
-                ld      de,(GFX_QX)
-                ld      a,4
-                call    gfx_circ_emit_point ; (-y,+x)  octant 4
-                ld      bc,(GFX_QY)
-                call    gfx_neg16_bc
-                ld      de,(GFX_QX)
-                call    gfx_neg16_de
-                ld      a,3
-                call    gfx_circ_emit_point ; (-y,-x)  octant 3
+                bit     7,(hl)
+                jr      z,gce8_nosw
+                push    bc                  ; swap: BC=QY, DE=QX (the (+-y,+-x) four)
+                push    de
+                pop     bc
+                pop     de
+gce8_nosw:
+                bit     6,(hl)
+                call    nz,gfx_neg16_bc     ; (the neg helpers touch A only)
+                bit     5,(hl)
+                call    nz,gfx_neg16_de
+                ld      a,(hl)
+                and     7                   ; A = the mirror's static octant
+                call    gfx_circ_emit_point
+                pop     hl
+                inc     hl
+                ld      a,(hl)
+                or      a
+                jr      nz,gce8_lp
                 ret
+; [bit 7 swap BC/DE][bit 6 negate BC][bit 5 negate DE][bits 0-2 octant], in the
+; old emit order; 0 ends. ~1000 T more per circle step, ROM over speed, Joost
+; 2026-10-20 / D-REREAD sub batch 2.
+gco_e8tab:      db      $06                 ; (+x,+y)  octant 6
+                db      $21                 ; (+x,-y)  octant 1
+                db      $45                 ; (-x,+y)  octant 5
+                db      $62                 ; (-x,-y)  octant 2
+                db      $87                 ; (+y,+x)  octant 7
+                db      $A0                 ; (+y,-x)  octant 0
+                db      $C4                 ; (-y,+x)  octant 4
+                db      $E3                 ; (-y,-x)  octant 3
+                db      0
 
 ; ---------------------------------------------------------------------------
 ; gfx_circ_emit_point -- IN: A = the mirror's static octant (0..7), BC=dx
@@ -2085,7 +2082,7 @@ gmr_rnd:
 ; gfx_circ_scale's "blessed r<=255" comment, which never existed as a rule. The
 ; verdict stands; the reason is different and is worth stating because it is the
 ; ONLY one of the five sites bounded by the radius rather than by a truncation:
-; the ONLY callers are gco_emit8's eight mirror emits, which pass GFX_QX / GFX_QY
+; the ONLY callers are gco_emit8's mirror loop (gco_e8tab), which passes GFX_QX / GFX_QY
 ; and nothing else. gfx_circ_init seeds QY=r, gfx_circ_next only ever decrements
 ; QY and increments QX, and gco_loop stops once QX>QY -- so both are in -1..r,
 ; and r is 0..32767 (sub/circleparse.asm cpt_after_r). The largest magnitude that
@@ -3247,12 +3244,7 @@ gdo_dscan:
 ; ATRBYT and writes it only here, which is what makes `LINE ..,4 : DRAW"BM..R8"`
 ; draw in 4 and `DRAW"C6.." : SCREEN2 : DRAW".."` still draw in 6 (both measured).
 gdo_c:
-                call    gdrw_arg_req
-                ld      hl,(GFX_DARG)
-                ld      a,h
-                or      a
-                jp      nz,gdrw_err5        ; >255 or negative -> ERR 5
-                ld      a,l
+                call    gdrw_arg_byte       ; >255 or negative -> ERR 5
                 cp      16
                 jp      nc,gdrw_err5        ; C > 15 -> ERR 5 (measured)
                 ld      (GFX_C),a           ; the colour this DRAW plots with
@@ -3265,12 +3257,7 @@ gdo_c:
 ; explicit `S` can ever store it, so "never set" and "S0" stay distinct even
 ; though S0 is otherwise indistinguishable from S4.
 gdo_s:
-                call    gdrw_arg_req
-                ld      hl,(GFX_DARG)
-                ld      a,h
-                or      a
-                jp      nz,gdrw_err5        ; S > 255 -> ERR 5 (measured: S255 ok, S256 not)
-                ld      a,l
+                call    gdrw_arg_byte       ; S > 255 -> ERR 5 (measured: S255 ok, S256 not)
                 or      a
                 jr      nz,gdo_s_set
                 ld      a,4                 ; S0 == S4
@@ -3280,12 +3267,7 @@ gdo_s_set:
 
 ; --- A n: angle 0..3 = 0/90/180/270 degrees.
 gdo_a:
-                call    gdrw_arg_req
-                ld      hl,(GFX_DARG)
-                ld      a,h
-                or      a
-                jp      nz,gdrw_err5
-                ld      a,l
+                call    gdrw_arg_byte
                 cp      4
                 jp      nc,gdrw_err5        ; A > 3 -> ERR 5 (measured)
                 ld      (GFX_DANGLE),a
@@ -3312,6 +3294,7 @@ gdo_dir:
                 ld      a,b
                 call    gdrw_axis           ; HL = sy * distance
                 ld      (GFX_DDY),hl
+gdo_rel_go:                                 ; (M's relative arm joins here too)
                 call    gdrw_rotate         ; the angle applies to RELATIVE motion (§4)
                 call    gdrw_move_rel
                 jr      gdo_next
@@ -3320,9 +3303,8 @@ gdo_dir:
 ; doubled ';;' or a ',' between commands is ERR 5 (measured) -- which falls out
 ; of consuming at most one here and letting the next dispatch reject the rest.
 gdo_next:
-                call    gdrw_peek     
+                call    gdrw_peek           ; A = the next char (peek does not advance)
                 jr      c,gdo_frame_end
-                call    gdrw_peek
                 cp      ';'
                 jp      nz,gdo_loop
                 call    gdrw_getc           ; consume the terminator
@@ -3448,7 +3430,7 @@ gdrw_sub_scan:
                 ld      b,GFX_DEXP_CAP
 gss_lp:
                 call    gdrw_peek_raw       ; the name is DATA: no upcasing
-                jp      c,gdrw_err5         ; frame ended with no ';'
+                jr      c,gdrw_err5         ; frame ended with no ';'
                 cp      ';'
                 jr      z,gss_end
                 ld      (de),a
@@ -3468,7 +3450,7 @@ gss_end:
                 ; name, upper or lower case, does not.
                 ld      a,(GFX_DEXP)
                 cp      'A'
-                jp      c,gdrw_err5
+                jr      c,gdrw_err5
                 ; --- is this position's value already resolved? ---
                 ld      a,(GFX_DSUBI)
                 ld      c,a
@@ -3495,37 +3477,25 @@ gss_end:
 ; '+'/'-' prefixed -- and then the SECOND operand's prefix is optional (measured:
 ; `M+20,10` is relative in both axes, `M20,+10` is absolute in both).
 gdo_m:
-                call    gdrw_arg_signed     ; -> GFX_DARG, A = 1 iff a sign was present
-                ld      hl,(GFX_DARG)
+                call    gdrw_arg_signed     ; HL = GFX_DARG, A = 1 iff a sign was present
                 ld      (GFX_DTX),hl        ; provisional: absolute target X
                 push    af
-                call    gdrw_peek     
-                jr      c,gdo_m_syn
-                call    gdrw_getc
+                call    gdrw_getc           ; (ran off the end -> ERR 5, inside getc)
                 cp      ','
-                jr      nz,gdo_m_syn        ; `M100` (no 2nd operand) -> ERR 5 (measured)
+                jr      nz,gdrw_err5        ; `M100` (no 2nd operand) -> ERR 5 (measured)
                 call    gdrw_arg_signed
-                ld      hl,(GFX_DARG)
                 ld      (GFX_DTY),hl
                 pop     af
                 or      a
                 jr      z,gdo_m_abs         ; no sign on operand 1 -> absolute move
                 ; --- relative: both operands are scaled AND rotated ---
                 ld      hl,(GFX_DTX)
-                ld      (GFX_DARG),hl
-                call    gdrw_scale
-                ld      hl,(GFX_DARG)
+                call    gdrw_scale_hl
                 ld      (GFX_DDX),hl
                 ld      hl,(GFX_DTY)
-                ld      (GFX_DARG),hl
-                call    gdrw_scale
-                ld      hl,(GFX_DARG)
+                call    gdrw_scale_hl
                 ld      (GFX_DDY),hl
-                call    gdrw_rotate
-                call    gdrw_move_rel
-                jp      gdo_next
-gdo_m_syn:
-                jr      gdrw_err5
+                jp      gdo_rel_go          ; rotate + move, shared with U..H
 gdo_m_abs:
                 ; absolute: neither the scale nor the angle applies (both measured)
                 call    gdrw_move_abs
@@ -3575,15 +3545,12 @@ gdrw_rotate:
                 ret     z
                 ld      b,a
 gdrw_rot_step:
-                push    bc
-                ld      hl,(GFX_DDX)
-                ld      (GFX_DTMP),hl       ; stash the old dx
+                ld      de,(GFX_DDX)        ; DE = the old dx
                 ld      hl,(GFX_DDY)
                 ld      (GFX_DDX),hl        ; dx' = dy
-                ld      hl,(GFX_DTMP)
-                call    gdrw_negate_hl
+                ex      de,hl
+                call    gdrw_negate_hl      ; (touches A/HL only: B survives)
                 ld      (GFX_DDY),hl        ; dy' = -dx
-                pop     bc
                 djnz    gdrw_rot_step
                 ret
 
@@ -3631,7 +3598,13 @@ gdrw_negate_hl:
 ; and the `=V;` substitution path enters both states exactly as a literal count
 ; does (`d.eq8193` == `d.def8193`). All nine rows agree on both references, so
 ; nothing here may be re-scoped per substring or re-armed per substitution.
+;
+; gdrw_scale_hl -- the same with HL in: stores HL to GFX_DARG first. BOTH entries
+; return HL = GFX_DARG (the never-set exit leaves the stored value in HL; the
+; arithmetic exit stores HL).
 ; ---------------------------------------------------------------------------
+gdrw_scale_hl:
+                ld      (GFX_DARG),hl
 gdrw_scale:
                 ld      a,(GFX_DSCALE)
                 or      a
@@ -3857,7 +3830,9 @@ gdrw_getc:
 ;   gdrw_arg_req    -- required: a missing argument is ERR 5 (bare `S`/`A`/`C`)
 ;   gdrw_arg_signed -- required, and returns A=1 iff a '+'/'-' sign was present
 ;                      (that presence is what makes `M` relative, spec §3)
-; All three leave the value in GFX_DARG. A value is either decimal digits or the
+;   gdrw_arg_byte   -- gdrw_arg_req, then 0..255 or ERR 5; A = the value, CF=0
+; All of them leave the value in GFX_DARG AND in HL (gdrw_arg_try's exit
+; contract -- the callers no longer reload it). A value is either decimal digits or the
 ; resident pre-pass's GFX_DESC escape (a resolved `=var;`), optionally signed.
 ; A decimal value above 65535 is ERR 5 (measured: `U99999`).
 ; ---------------------------------------------------------------------------
@@ -3876,15 +3851,23 @@ gdrw_arg_signed:
                 jp      nc,gdrw_err5
                 ld      a,(GFX_DTMP)        ; gdrw_arg_try stashed the sign-seen flag
                 ret
+gdrw_arg_byte:
+                call    gdrw_arg_req        ; HL = GFX_DARG
+                ld      a,h
+                or      a
+                jp      nz,gdrw_err5        ; >255 or negative -> ERR 5
+                ld      a,l
+                ret
 
-; gdrw_arg_try -- CF=1 if an argument was parsed (into GFX_DARG), CF=0 if the
-; next token is not one. GFX_DTMP = 1 iff a sign prefix was present.
+; gdrw_arg_try -- CF=1 if an argument was parsed (into GFX_DARG, and HL =
+; GFX_DARG), CF=0 if the next token is not one. Clobbers DE. GFX_DTMP = 1 iff a
+; sign prefix was present.
 gdrw_arg_try:
                 xor     a
                 ld      (GFX_DTMP),a        ; no sign seen yet
                 ld      (GFX_DTMP+1),a      ; ...and not negative
                 call    gdrw_peek
-                jp      c,gdrw_at_none      ; end of buffer -> there is no argument
+                jr      c,gdrw_at_none      ; end of buffer -> there is no argument
                 cp      '+'
                 jr      z,gdrw_at_sign
                 cp      '-'
@@ -3935,22 +3918,19 @@ gdrw_at_digit:
                 jp      c,gdrw_err5
                 ex      de,hl
                 jr      gdrw_at_digit
-gdrw_at_end:
-                ld      (GFX_DARG),de
-                jr      gdrw_at_sign_apply
 gdrw_at_sub:
                 call    gdrw_getc           ; consume the '='
                 call    gdrw_sub_scan       ; text -> GFX_DEXP; cursor past the ';'
                 jr      c,gdrw_at_sub_have
                 ld      a,1                 ; not resolved yet: ask the resident for an
                 jp      gdo_want            ; int16 and re-parse this command on re-entry
+gdrw_at_end:
+                ex      de,hl               ; HL = the decimal value (DE is clobbered)
 gdrw_at_sub_have:
                 ld      (GFX_DARG),hl       ; the banked, already-coerced int16
-gdrw_at_sign_apply:
-                ld      a,(GFX_DTMP+1)
+                ld      a,(GFX_DTMP+1)      ; (HL = GFX_DARG from here to the exit)
                 or      a
                 jr      z,gdrw_at_ok
-                ld      hl,(GFX_DARG)
                 call    gdrw_negate_hl
                 ld      (GFX_DARG),hl
 gdrw_at_ok:
@@ -3960,8 +3940,7 @@ gdrw_at_none:
                 ld      a,(GFX_DTMP)
                 or      a
                 jp      nz,gdrw_err5        ; a sign with no number -> ERR 5
-                or      a                   ; CF=0: there was no argument here
-                ret
+                ret                         ; CF=0 (the `or a`): no argument here
 
 ; ===========================================================================
 ; G7 -- sprites (docs/spec-basic-graphics-g7.md). GFX_OP = 7 / 8 / 9.

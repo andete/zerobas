@@ -165,16 +165,13 @@
 ; --- sc_select: A=q (0..3), HL=target FPNUM address (ARGA or ARGB) --------
 ; source := (q&1==0) ? MATH_A(sv) : MATH_R(cv); copy source->target (18
 ; bytes); if q&2 set -> flip target's sign byte in place (exact fp negate,
-; no renormalisation -- the record stays canonical). q's original value must
-; survive the fat_copy18 call (which clobbers A/B/C and advances HL/DE via
-; its own ldir), so it is stashed on the machine stack rather than a
-; register -- same reasoning fp_pow's frac path uses for its own y-stash
-; (this file's header). Clobbers A, B, C, D, E, H, L.
+; no renormalisation -- the record stays canonical). q's original value
+; survives in A: q&1 is tested with `bit`, and fat_copy18 is a bare `ld bc,18
+; / ldir` that never touches A (D-REREAD sub batch 2 dropped the AF stash).
+; Clobbers A, B, C, D, E, H, L.
 sc_select:
-                push    af                  ; stash q (AF only used locally
-                                            ; below, safe to push first)
                 ex      de,hl               ; DE := target address (was HL)
-                and     1
+                bit     0,a
                 jr      nz,scs_cv
                 ld      hl,MATH_A           ; source := sv
                 jr      scs_copy
@@ -188,8 +185,7 @@ scs_copy:
                                             ; stack for the sign-flip check
                 call    fat_copy18          ; target := source (18-byte copy)
                 pop     hl                  ; HL := target address (restored,
-                                            ; pre-advance)
-                pop     af                  ; A := q (restored)
+                                            ; pre-advance); A = q still
                 and     2
                 ret     z
                 ld      a,(hl)
@@ -229,29 +225,15 @@ sincos_kernel:
                 ld      hl,TWO_OVER_PI
                 call    cpy_argb    ; ARGB := TWO_OVER_PI
                 call    fp_mul              ; FAC/ARGA := a*TWO_OVER_PI = q
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := q, canonical
+                call    widen_to_arga       ; ARGA := q, canonical
 
                 ; --- step 3: q' := q+0.5; round(q)=floor(q') for q>=0 -------
                 ld      hl,ARGB
-                xor     a
-                ld      (hl),a              ; ARGB sign := 0
-                inc     hl
-                ld      (hl),a              ; ARGB dexp lo := 0
-                inc     hl
-                ld      (hl),a              ; ARGB dexp hi := 0
-                inc     hl
-                ld      (hl),5              ; dig[0] := 5 (value 5*10^-1=0.5)
-                inc     hl
-                ld      b,14                ; dig[1..13]+guard, all zero
-                xor     a
-sck_half_zero:
-                ld      (hl),a
-                inc     hl
-                djnz    sck_half_zero
+                ld      de,0                ; dexp 0
+                ld      a,5                 ; dig[0] := 5 (value 5*10^-1=0.5)
+                call    fsq_mk_small        ; ARGB := 0.5 (sign 0, dig[1..14] 0)
                 call    fp_add              ; FAC/ARGA := q+0.5 = q'
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := q', canonical (dexp in
+                call    widen_to_arga       ; ARGA := q', canonical (dexp in
                                             ; -64..63, widen_fac_to's own
                                             ; guarantee -- safe signed-byte
                                             ; read below)
@@ -323,9 +305,7 @@ sck_floor:
                 ld      de,0
                 call    widen_uint_to       ; MATH_A := 0.0 (sv)
                 ld      hl,MATH_R
-                xor     a
-                ld      de,1
-                call    widen_uint_to       ; MATH_R := 1.0 (cv)
+                call    one_to_hl           ; MATH_R := 1.0 (cv)
                 xor     a
                 ld      (MATH_J),a          ; quad := 0
                 ret
@@ -352,8 +332,7 @@ sck_reduce:
                 call    cpy_argb    ; ARGB := nf*SIN_C2
                 call    cpy_r_arga  ; ARGA := r1
                 call    fp_sub              ; FAC/ARGA := r1 - nf*C2 = r2 = r
-                ld      hl,ARGA
-                call    widen_fac_to        ; ARGA := r, canonical (nf now
+                call    widen_to_arga       ; ARGA := r, canonical (nf now
                                             ; dead, MATH_T free)
 sck_have_r:
                 ; --- step 5: u := r*r ---------------------------------------
@@ -383,8 +362,7 @@ sck_have_r:
                                             ; contract) -- the whole point of
                                             ; the shared kernel
                 call    widen_to_arga
-                call    cpy_to_r    ; MATH_R := cv
-                ret
+                jp      cpy_to_r    ; MATH_R := cv (tail: a bare ldir copy)
                 ; [MATH_A=sv, MATH_R=cv, MATH_J=quad]
 
 ; --- fp_sin: ARGA (widened x) -> FAC (double, sv/cv-derived, sign-corrected)

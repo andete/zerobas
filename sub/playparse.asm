@@ -234,17 +234,8 @@ pt_voice:
                 ld      (MCLPTR),hl         ; MML source cursor
                 ld      b,(ix+VCX_VCXLEN)   ; B = source bytes remaining
 pt_ch_loop:
-                ld      a,b
-                or      a
-                jp      z,px_eos            ; end of THIS string: pop an X level, or end the voice
-                push    hl                  ; fetch + advance the source cursor
-                ld      hl,(MCLPTR)
-                ld      a,(hl)
-                inc     hl
-                ld      (MCLPTR),hl
-                pop     hl
-                dec     b
-                call    pt_upcase
+                call    px_getc             ; fetch + advance the source cursor (upcased)
+                jp      c,px_eos            ; end of THIS string: pop an X level, or end the voice
                 cp      ' '
                 jr      z,pt_ch_loop        ; skip spaces
                 cp      'A'
@@ -281,9 +272,23 @@ pt_nn:
                 ; fall through: unrecognised MML command
 pt_illegal:
                 ld      a,5                 ; Illegal function call
-                ld      (AUDIO_STATUS),a
-                scf
-                ret                         ; abort the voice (CF=1)
+                jp      px_err              ; AUDIO_STATUS := 5, CF=1: abort the voice
+
+; --- pt_num8: the `=name;` / digit operand of N O L T V S -> A = L = 0..255; -
+; no digits or > 255 -> ERR 5. The error path drops this call's own return
+; address first, so pt_illegal's `ret` leaves at the same depth as the
+; inline `jp nc,pt_illegal / ... / jp nz,pt_illegal` it replaces (D-REREAD sub
+; batch 2). Flags on return: Z (H = 0) -- every caller re-tests A itself.
+pt_num8:
+                call    pt_numeq
+                jr      nc,pn8_bad
+                ld      a,h
+                or      a
+                ld      a,l
+                ret     z
+pn8_bad:
+                pop     af                  ; drop the command's return address
+                jr      pt_illegal
 
 pt_voice_end:
                 ld      a,1
@@ -309,17 +314,12 @@ pt_note_letter:
                 ld      hl,pt_semitab
                 add     a,l
                 ld      l,a
-                ld      a,0
                 adc     a,h
+                sub     l
                 ld      h,a
                 ld      c,(hl)              ; C = semitone 0..11
-                ld      a,b                 ; accidental? (only if a char remains)
-                or      a
-                jr      z,pnl_base
-                push    hl
-                ld      hl,(MCLPTR)
-                ld      a,(hl)
-                pop     hl
+                call    pqs_peek            ; accidental? (only if a char remains)
+                jr      c,pnl_base
                 cp      '#'
                 jr      z,pnl_sharp
                 cp      '+'
@@ -339,20 +339,15 @@ pnl_flat:
                 jp      p,pnl_eat
                 ld      c,11                ; C- -> B of the SAME octave
 pnl_eat:
-                push    hl                  ; consume the accidental
-                ld      hl,(MCLPTR)
-                inc     hl
-                ld      (MCLPTR),hl
-                pop     hl
-                dec     b
+                call    px_getc             ; consume the accidental (B > 0: peeked)
 pnl_base:
                 ld      a,(ix+VCX_OCTAVE)
                 dec     a
                 ld      hl,pt_oct12
                 add     a,l
                 ld      l,a
-                ld      a,0
                 adc     a,h
+                sub     l
                 ld      h,a
                 ld      a,(hl)              ; (octave-1)*12
                 add     a,c
@@ -366,8 +361,8 @@ pt_emit_pitch:
                 add     a,a
                 add     a,l
                 ld      l,a
-                ld      a,0
                 adc     a,h
+                sub     l
                 ld      h,a
                 ld      a,(hl)
                 inc     hl
@@ -421,18 +416,15 @@ pep_done:
                 jp      pt_ch_loop
 
 ; --- pt_note_amp: A = amplitude byte for the current voice ------------------
+; (its one caller hands A straight to pt_put, which reads no flags)
 pt_note_amp:
-                ld      a,(ix+VCX_ENVSH)
-                bit     7,a                 ; envelope mode?
-                jr      nz,pna_env
                 ld      a,(ix+VCX_VOLUME)
                 and     $0F
-                ret
-pna_env:
-                ld      a,(ix+VCX_VOLUME)
-                and     $0F                 ; the PSG ignores bits 0-3 in envelope mode,
-                or      $10                 ; but the VG-8020 still writes the volume nibble
-                ret                         ; alongside bit 4 (measured: S8 default-V -> $18)
+                bit     7,(ix+VCX_ENVSH)    ; envelope mode?
+                ret     z
+                or      $10                 ; envelope mode: the PSG ignores bits 0-3,
+                ret                         ; but the VG-8020 still writes the volume nibble
+                                            ; alongside bit 4 (measured: S8 default-V -> $18)
 
 ; --- pt_cmd_rest: queue a REST packet (3 B: tag, duration) for the parsed length
 pt_cmd_rest:
@@ -451,12 +443,7 @@ pt_cmd_rest:
 
 ; --- pt_cmd_n: N n -> note by absolute number (0 = rest) --------------------
 pt_cmd_n:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal       ; > 255
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      97
                 jp      nc,pt_illegal       ; > 96
                 or      a
@@ -472,12 +459,7 @@ pt_cmd_n:
 
 ; --- octave / length / tempo / volume / envelope setters -------------------
 pt_cmd_octave:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 or      a
                 jp      z,pt_illegal
                 cp      9
@@ -485,12 +467,7 @@ pt_cmd_octave:
                 ld      (ix+VCX_OCTAVE),a
                 jp      pt_ch_loop
 pt_cmd_length:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 or      a
                 jp      z,pt_illegal
                 cp      65
@@ -498,37 +475,20 @@ pt_cmd_length:
                 ld      (ix+VCX_NOTEL),a
                 jp      pt_ch_loop
 pt_cmd_tempo:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      32
                 jp      c,pt_illegal
                 ld      (ix+VCX_TEMPO),a
                 jp      pt_ch_loop
 pt_cmd_volume:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      16
                 jp      nc,pt_illegal
                 ld      (ix+VCX_VOLUME),a
-                ld      a,(ix+VCX_ENVSH)
-                and     $7F                 ; V disables envelope mode
-                ld      (ix+VCX_ENVSH),a
+                res     7,(ix+VCX_ENVSH)    ; V disables envelope mode
                 jp      pt_ch_loop
 pt_cmd_env_shape:
-                call    pt_numeq    
-                jp      nc,pt_illegal
-                ld      a,h
-                or      a
-                jp      nz,pt_illegal
-                ld      a,l
+                call    pt_num8             ; A = L = the 0..255 operand, or ERR 5
                 cp      16
                 jp      nc,pt_illegal
                 or      $80                 ; set envelope-mode bit
@@ -583,31 +543,19 @@ pl_val:
                 ld      e,a                 ; E = length
                 ld      c,0                 ; C = dot count
 pl_dots:
-                ld      a,b
-                or      a
-                jr      z,pl_calc
-                push    hl
-                ld      hl,(MCLPTR)
-                ld      a,(hl)
-                pop     hl
+                call    pqs_peek
+                jr      c,pl_calc
                 cp      '.'
                 jr      nz,pl_calc
-                push    hl                  ; consume the dot
-                ld      hl,(MCLPTR)
-                inc     hl
-                ld      (MCLPTR),hl
-                pop     hl
-                dec     b
+                call    px_getc             ; consume the dot (B > 0: peeked)
                 inc     c
                 jr      pl_dots
 pl_calc:
                 ld      d,(ix+VCX_TEMPO)    ; D = tempo, E = length, C = dots
                 jr      pt_getframes
 pl_bad:
-                ld      a,5
-                ld      (AUDIO_STATUS),a
-                scf
-                ret
+                jp      pt_illegal          ; AUDIO_STATUS := 5, CF=1, ret (the same
+                                            ; four instructions, one copy)
 
 ; --- pt_getframes: D=tempo, E=length, C=dots -> HL = frames -----------------
 ;   frames = 12000 / tl  (floor; tl = tempo*length), VG-8020-pinned
@@ -688,13 +636,8 @@ pt_number:
                 ld      hl,0                ; accumulator
                 ld      c,0                 ; digit count
 pn_lp:
-                ld      a,b
-                or      a
-                jr      z,pn_end
-                push    hl
-                ld      hl,(MCLPTR)
-                ld      a,(hl)
-                pop     hl
+                call    pqs_peek
+                jr      c,pn_end
                 cp      '0'
                 jr      c,pn_end
                 cp      '9'+1
@@ -735,12 +678,7 @@ pn_fits:
                 ld      d,0
                 add     hl,de               ; 10*v + digit
                 pop     de                  ; restore write pointer
-                push    hl                  ; advance the source cursor
-                ld      hl,(MCLPTR)
-                inc     hl
-                ld      (MCLPTR),hl
-                pop     hl
-                dec     b
+                call    px_getc             ; advance the source cursor (B > 0: peeked)
                 inc     c
                 jr      pn_lp
 pn_end:
@@ -771,13 +709,8 @@ pn_ret:
 ;   drops this call's return address and leaves the way a command's own error
 ;   exit does (pt_illegal / px_err), so it lands in pt_vparse.
 pt_numeq:
-                ld      a,b
-                or      a
-                jp      z,pt_number
-                push    hl
-                ld      hl,(MCLPTR)
-                ld      a,(hl)
-                pop     hl
+                call    pqs_peek
+                jp      c,pt_number
                 cp      '='
                 jp      nz,pt_number
                 call    px_getc             ; the `=`
@@ -850,20 +783,25 @@ pqe_conv:
 
 ; pqe_dtype: H = name0 -> C = DEFTBL's type (2 / 4 / 8); a string is 13.
 pqe_dtype:
-                push    hl
+                call    px_dtlook
+                jp      z,pqe_tm
+                ld      c,a
+                ret
+; px_dtlook: H = name0 -> A = DEFTBL[name0-'A'], Z iff a string type. Keeps HL.
+; Shared by pqe_dtype and pt_cmd_x's px_deftype (D-REREAD sub batch 2).
+px_dtlook:
                 ld      a,h
                 sub     'A'
+                push    hl
                 ld      hl,DEFTBL
                 add     a,l
                 ld      l,a
-                jr      nc,pqd_1
+                jr      nc,px_dt1
                 inc     h
-pqd_1:
+px_dt1:
                 ld      a,(hl)
                 pop     hl
                 cp      DEFTBL_STR
-                jp      z,pqe_tm
-                ld      c,a
                 ret
 
 ; pqe_find: HL = key (H name0, L name1), C = type -> HL = the scalar's value
@@ -1389,18 +1327,7 @@ px_ident:
                 ld      l,a                 ; name1
                 jr      px_name
 px_deftype:
-                ld      a,h
-                sub     'A'
-                push    hl
-                ld      hl,DEFTBL
-                add     a,l
-                ld      l,a
-                jr      nc,px_dt1
-                inc     h
-px_dt1:
-                ld      a,(hl)
-                pop     hl
-                cp      DEFTBL_STR
+                call    px_dtlook
                 jr      z,px_walk_go
 px_numeric:
                 ld      a,13                ; a numeric name -> Type mismatch

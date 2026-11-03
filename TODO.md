@@ -605,8 +605,43 @@ item — do **one item per session** to keep context lean.
       ([`subrr1_contract.out`](scratchpad/subrr1_contract.out)). Knife pins unchanged; tapes:
       all 42 classes as before. HELD BACK: detok's NUMBUF staging (~20 B; changes NUMBUF's RAM
       contents -- a ruling), fmt_menu_text (16 B; the dead-code gate's vacuity check), cm_six's
-      CHPUT push / pop (BIOS-dependent). 🔧 The ranking misses labels in NESTED .inc bodies, so
-      its spans overstate -- fix before batch 2.
+      CHPUT push / pop (BIOS-dependent). 🔧 The ranking missed labels in NESTED .inc bodies
+      (one span swallowed all of detok.inc) -- fixed before batch 2: it follows includes
+      recursively now.
+      ✅ **BATCH 2 (2026-11-03): +969 B** -- sub page 0 276 -> 722 B free, sub page 1 1374 ->
+      1897 B ([`subrr2_reloc.out`](scratchpad/subrr2_reloc.out); main unchanged). Three
+      read-only reviewers, then three scoped apply agents one after another: graphics.asm
+      (DRAW's digit-table emit loop, shared scale / argument / relative-move tails), arrays +
+      strheap (shared exits, the ceiling-fits test rewritten, hex tail shared), the math
+      bodies -- exp, sqrt (one-constant loaders `one_to_argb` / `one_to_arga` and friends),
+      sin, atan, pow, rnd -- and playparse (`pt_num8`). Contract-diff: the first cut BROKE two
+      rows -- `fexp_tbl18addr` now computed 18*index in A, and fp_log's batch-1 helper
+      `flog_jarg_a` plus fp_exp's callers keep j / m in A across it. Fixed, not reverted:
+      the shorter body saves the index in E and gives it back in A (13 B against the old
+      17). After: no breaks, more_clob rows the analyser finds no reader for
+      ([`subrr2_contract.out`](scratchpad/subrr2_contract.out); one `wider_in` row,
+      `pu_to_field [main]`, is the analyser's "inferred unknown" fallback -- the main ROM's
+      source is unchanged but for a comment). ⏱️ CIRCLE's eight unrolled mirror emits became a
+      table loop (~75 B): +10.9 % on CIRCLE, still 0.65x the references -- perf pin RE-PINNED
+      on purpose in tools/check_perf_pins.py (ROM space before speed, Joost 10-20). 🔴 **TAKEN
+      BACK: `ary_mul16_checked`'s reorder (7 B) -- it leaves every register and flag exactly as
+      before, yet `INPUT #1,A$(1,1)` after `DIM A$(2,2)` HANGS on the disk machine (lvfix's
+      f.ary2d; 1-D and MID$= on 2-D unaffected).** Bisected to that one hunk; padding the 7 B
+      back keeps it red, one `nop` in the old loop keeps it green, so it is not layout -- the
+      faster loop exposes something else. Filed as D-MULHANG below. Knife pins unchanged; tapes:
+      all 42 classes as before ([`subrr2_tapes.out`](scratchpad/subrr2_tapes.out)). HELD BACK: DRAW's verb
+      jump table (structural), POW's re-fetch of the table record and the sqrt decide loop
+      (RAM scratch -- a ruling), RND's register shuffle, playparse's two structural
+      duplicates, the arrays CLEARPOOL jump. 🎯 sub free is 2619 B against a ~3.99 KB sub2
+      page-0 payload: ~1.4 KB short, down from ~2.7 KB.
+      - [ ] 🔴 **D-MULHANG (found 2026-11-03): A FASTER, REGISTER-IDENTICAL `ary_mul16_checked`
+        HANGS `INPUT #1,A$(1,1)`.** 🎚️ TIER 3 until measured (a latent hang on a common
+        statement, reached today only by a timing change). 🤖 **AUTONOMOUS** -- reproduce:
+        apply the batch-2 reorder (shift DE:HL first, then `add ix,ix` / `jr nc`) and run
+        `make lvfix-acceptance` -- f.ary2d's screen shows the program and `RUN`, then nothing.
+        First question: is it a hang in the INPUT # path (sample PC -- registers only) or a
+        wrong element address that a slower loop happens to dodge? The second would mean the
+        current tree is wrong too, with the timing hiding it.
       ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
       routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
       main / sub duplicate removal.
@@ -8824,7 +8859,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11315 (T-6FE392)8 (T-529ABE)` from `TODO.md:16997 (T-529ABE)`: a
+      `TODO.md:11350 (T-6FE392)8 (T-529ABE)` from `TODO.md:17032 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11784,7 +11819,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16997 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17032 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

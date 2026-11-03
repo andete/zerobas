@@ -759,7 +759,8 @@ sub_p1_ping:
 ; fp_exp + fp_log (math pack slice 2b, docs/spec-basic-mathpack-slice2.md
 ; §12): the THIRD and FOURTH page-1 tenants, delivered as a matched pair --
 ; both reuse fp_atan.asm's fat_copy18/fp_poly_horner directly (same
-; assembly unit) and fp_exp.asm's own new fexp_cmp16/fexp_tbl18addr helpers
+; assembly unit) and fp_exp.asm's own fexp_tbl18addr helper (fexp_cmp16 went in
+; D-REREAD sub batch 2, 2026-11-03: a range test by offset arithmetic)
 ; (fp_log.asm calls the latter too, see each file's own header for the
 ; reuse rationale). Same math-coeffs.inc (already included above) supplies
 ; EXP_COEF/LOG_COEF/EXP_RC/EXP_C1/EXP_C2/LN10_C1/LN10_C2/POW8_TBL/EXP_TCOR/
