@@ -730,6 +730,12 @@ item — do **one item per session** to keep context lean.
         interval-trap-acceptance in `refs` mode 96 s -> 44 s (42 references replayed, 42 zerobas
         boots, the same rows); verify mode 0 mismatches on six probes; probe_refcache selftest 78
         arms green. The first battery under `refs` re-measures every reference once.
+        🔴 **AND THE NEXT FULL STILL MISSED 718 REFERENCE READINGS (2026-11-03): run_cases keyed a
+        disk / tape / cart argument by its PATH**, and the disk and tape probes copy their image
+        to a fresh temp file per run, so every run was a new key (905 replayed, 718 re-stored).
+        Now a media parameter is keyed by its bytes (`_param_key`, selftest KM1 / KM2).
+        Measured, refs mode twice: wszero 85 -> 40 s (74 / 74 replayed), namspc 91 -> 36 s
+        (201 / 201), zerobas measured on every run of both.
       - [ ] 🔭 **D-DISKWINDOW: SWEEP THE PROBES FOR DISK ROWS READ `step` AFTER `RUN` (found by
         D-MULHANG, 2026-11-03).** 🎚️ APPARATUS -- a row that passes by less than a disk
         revolution goes red on any unrelated carve and reads as a ROM defect. 🤖
@@ -8957,7 +8963,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11448 (T-6FE392)8 (T-529ABE)` from `TODO.md:17130 (T-529ABE)`: a
+      `TODO.md:11454 (T-6FE392)8 (T-529ABE)` from `TODO.md:17136 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11917,7 +11923,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17130 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17136 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

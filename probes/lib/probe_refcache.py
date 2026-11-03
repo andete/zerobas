@@ -361,14 +361,27 @@ def emulator_identity() -> str:
     return _EMU
 
 
+MEDIA_PARAMS = ("diska", "diskb", "cassette", "cart")
+
+
+def _param_key(k, v):
+    # 🔴 A MEDIA PARAMETER IS KEYED BY ITS BYTES, NOT ITS PATH (2026-11-03). The
+    # disk / tape probes copy their image to a fresh temp file per run, so the
+    # path made every run a new key: the first FULL under `refs` stored 718
+    # reference readings and the next FULL missed every one of them again.
+    # The bytes are what the machine reads; a path is only where they sat.
+    if k in MEDIA_PARAMS and isinstance(v, str) and os.path.isfile(v):
+        return {"sha256": _file_sha(v)}
+    return list(v) if isinstance(v, tuple) else v
+
+
 def key_for(machine: str, cases, params: dict) -> str:
     payload = {
         "v": 1,
         "machine_id": machine_identity(machine),
         "harness": harness_fingerprint(),
         "cases": [[c[0], list(c[1])] for c in cases],
-        "params": {k: (list(v) if isinstance(v, tuple) else v)
-                   for k, v in sorted(params.items())},
+        "params": {k: _param_key(k, v) for k, v in sorted(params.items())},
     }
     return _sha(json.dumps(payload, sort_keys=True, default=str).encode())
 
@@ -1632,6 +1645,26 @@ def _selftest() -> int:
         ROOT, VERIFY, ENABLED = saved_root, saved_v, saved_en
         _MACHINE_ID.pop("Fake_Direct", None)
         shutil.rmtree(tmp, ignore_errors=True)
+
+    # --- KM1 / KM2 a run_cases MEDIA parameter is keyed by its bytes ------
+    _md = tempfile.mkdtemp(prefix="refmedia-")
+    try:
+        pa, pb = os.path.join(_md, "a.dsk"), os.path.join(_md, "b.dsk")
+        for p_ in (pa, pb):
+            with open(p_, "wb") as fh:
+                fh.write(b"\x00" * 64)
+        cs = [("direct", ["PRINT 1"])]
+        ka = key_for("Fake_Media", cs, {"diska": pa})
+        kb = key_for("Fake_Media", cs, {"diska": pb})
+        arm("KM1 the same disk bytes at two temp paths give ONE key (the 718-miss bug)",
+            ka == kb)
+        with open(pb, "wb") as fh:
+            fh.write(b"\x00" * 63 + b"\x01")
+        arm("KM2 one changed disk byte gives a NEW key",
+            key_for("Fake_Media", cs, {"diska": pb}) != ka)
+    finally:
+        shutil.rmtree(_md, ignore_errors=True)
+        _MACHINE_ID.pop("Fake_Media", None)
 
     # --- KS9 refs mode END TO END through run_cases, on the REAL zerobas ---
     # Plant a LIE under the exact run_cases key of a zerobas reading, switch
