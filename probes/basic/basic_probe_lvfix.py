@@ -316,6 +316,14 @@ def run_side(side: str, only: list[str]) -> dict:
             dsk = probe_tmp.tmp(f"zb_lvfix_{side}_{label}.dsk")
             shutil.copy(TEST_DSK, dsk)
             kw["diska"] = dsk
+        if needs_disk:
+            # D-MULHANG (2026-11-03): a disk row's RUN does four file operations
+            # and takes ~3 s; the default capture lands `step` (2.5 s) after RUN,
+            # so a few cycles anywhere could move a sector request past the head
+            # and push the output past the capture -- a register-identical, 7 B
+            # faster multiply read as `INPUT #1,A$(1,1)` HANGING. It ran to the
+            # prompt every time (PC sampled under this exact timeline).
+            kw["run_gap"] = 8.0
         body = [f"{10 * (k + 1)} {ln}" for k, ln in enumerate(lines)]
         caps = omsx_repl.run_cases(
             cfg["machine"], [("direct", list(cfg["reset"]) + body + ["RUN"])],

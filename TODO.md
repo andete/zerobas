@@ -623,25 +623,38 @@ item — do **one item per session** to keep context lean.
       `pu_to_field [main]`, is the analyser's "inferred unknown" fallback -- the main ROM's
       source is unchanged but for a comment). ⏱️ CIRCLE's eight unrolled mirror emits became a
       table loop (~75 B): +10.9 % on CIRCLE, still 0.65x the references -- perf pin RE-PINNED
-      on purpose in tools/check_perf_pins.py (ROM space before speed, Joost 10-20). 🔴 **TAKEN
-      BACK: `ary_mul16_checked`'s reorder (7 B) -- it leaves every register and flag exactly as
-      before, yet `INPUT #1,A$(1,1)` after `DIM A$(2,2)` HANGS on the disk machine (lvfix's
-      f.ary2d; 1-D and MID$= on 2-D unaffected).** Bisected to that one hunk; padding the 7 B
-      back keeps it red, one `nop` in the old loop keeps it green, so it is not layout -- the
-      faster loop exposes something else. Filed as D-MULHANG below. Knife pins unchanged; tapes:
+      on purpose in tools/check_perf_pins.py (ROM space before speed, Joost 10-20). 🔴 The FULL
+      battery's other red, `INPUT #1,A$(1,1)` "hanging" after `ary_mul16_checked`'s 7 B reorder,
+      was the APPARATUS: see D-MULHANG below -- the reorder ships in the follow-up commit. Knife pins unchanged; tapes:
       all 42 classes as before ([`subrr2_tapes.out`](scratchpad/subrr2_tapes.out)). HELD BACK: DRAW's verb
       jump table (structural), POW's re-fetch of the table record and the sqrt decide loop
       (RAM scratch -- a ruling), RND's register shuffle, playparse's two structural
-      duplicates, the arrays CLEARPOOL jump. 🎯 sub free is 2619 B against a ~3.99 KB sub2
+      duplicates, the arrays CLEARPOOL jump. 🎯 sub free is 2626 B (after D-MULHANG) against a ~3.99 KB sub2
       page-0 payload: ~1.4 KB short, down from ~2.7 KB.
-      - [ ] 🔴 **D-MULHANG (found 2026-11-03): A FASTER, REGISTER-IDENTICAL `ary_mul16_checked`
-        HANGS `INPUT #1,A$(1,1)`.** 🎚️ TIER 3 until measured (a latent hang on a common
-        statement, reached today only by a timing change). 🤖 **AUTONOMOUS** -- reproduce:
-        apply the batch-2 reorder (shift DE:HL first, then `add ix,ix` / `jr nc`) and run
-        `make lvfix-acceptance` -- f.ary2d's screen shows the program and `RUN`, then nothing.
-        First question: is it a hang in the INPUT # path (sample PC -- registers only) or a
-        wrong element address that a slower loop happens to dodge? The second would mean the
-        current tree is wrong too, with the timing hiding it.
+      - [x] ✅ **D-MULHANG (2026-11-03): NOT A HANG -- lvfix's disk rows were read 2.5 s after
+        `RUN`, and the run takes ~3 s.** `ary_mul16_checked`'s reorder leaves every register
+        and flag as before, yet lvfix's f.ary2d (`INPUT #1,A$(1,1)` after `DIM A$(2,2)`) read
+        the program and `RUN`, then nothing. Bisected to that hunk; padding the bytes back kept
+        it red, a `nop` in the old loop kept it green -- which read as "the faster loop exposes
+        a hang". It was not: PC sampled under the probe's OWN timeline (registers only) shows
+        the program at the prompt again at ~36 s, while the screen is read at a fixed 35.5 s
+        (`RUN` + `step`; `cap_gap` does not move it, `run_gap` does). Four file operations on
+        a floppy take ~3 s, and a few cycles anywhere can move a sector request past the head
+        and cost a revolution. Fix: the probe's disk rows take `run_gap=8.0`
+        (probes/basic/basic_probe_lvfix.py); lvfix 22/22 with the reorder back in, sub page 0
+        722 -> 729 B free ([`mulhang_reloc.out`](scratchpad/mulhang_reloc.out)). Contract-diff
+        ([`mulhang_contract.out`](scratchpad/mulhang_contract.out)): one `broken` row,
+        `pu_to_field [main]`, against a main ROM that is BYTE-IDENTICAL to HEAD (sha 54cc8a2e
+        both) -- the analyser's view of that routine follows the sub ROM's layout (it was the
+        "inferred unknown" `wider_in` row one commit earlier). 🔭 The CLASS is open: any probe
+        row that runs disk I/O and is read `step` after `RUN` has the same thin window --
+        D-DISKWINDOW below.
+      - [ ] 🔭 **D-DISKWINDOW: SWEEP THE PROBES FOR DISK ROWS READ `step` AFTER `RUN` (found by
+        D-MULHANG, 2026-11-03).** 🎚️ APPARATUS -- a row that passes by less than a disk
+        revolution goes red on any unrelated carve and reads as a ROM defect. 🤖
+        **AUTONOMOUS** -- for each `run_cases(... diska=...)` caller without `run_gap` /
+        `sentinel`, measure the RUN-to-prompt time on zerobas and the references (PC at the
+        prompt's key wait, registers only) and give the thin ones a budget.
       ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
       routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
       main / sub duplicate removal.
@@ -8859,7 +8872,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11350 (T-6FE392)8 (T-529ABE)` from `TODO.md:17032 (T-529ABE)`: a
+      `TODO.md:11363 (T-6FE392)8 (T-529ABE)` from `TODO.md:17045 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11819,7 +11832,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17032 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17045 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

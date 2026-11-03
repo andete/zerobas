@@ -852,17 +852,12 @@ ary_mul16_checked:
                 ld      e,l                 ; DE:HL = 0 (32-bit acc; DE=hi, HL=lo)
                 ld      a,16
 amc_lp:
+                add     hl,hl               ; acc <<= 1 (both arms shift first;
+                rl      e                   ; IX and DE:HL are independent, so the
+                rl      d                   ; multiplier shift can follow -- D-REREAD)
                 add     ix,ix               ; shift the remaining multiplier left;
                                             ; CF = the bit just shifted out (MSB-first)
-                jr      c,amc_bit1
-                add     hl,hl               ; acc <<= 1 (bit=0: no add)
-                rl      e
-                rl      d
-                jr      amc_next
-amc_bit1:
-                add     hl,hl               ; acc <<= 1
-                rl      e
-                rl      d
+                jr      nc,amc_next         ; bit=0: no add
                 add     hl,bc               ; acc_lo += multiplicand
                 jr      nc,amc_next
                 inc     de                  ; propagate the carry into acc_hi
