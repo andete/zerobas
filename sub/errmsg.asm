@@ -75,13 +75,10 @@ em_scan:
                 ; the code prints as `Unprintable error` -- the VG-8020's own answer to
                 ; `ERROR 70`. Joost's "ERR extension mechanism in the Disk ROM": every
                 ; future disk code lives there, and main page 1 pays nothing.
-                ld      hl,H_ERRP
-                ld      de,em_back
-                push    de
-                ld      a,(ERRFLG)
+                ; A is still ERRFLG: the walk's `cp (hl)`, `ld r,(hl)`, `inc` and
+                ; `djnz` never write it. hk_errp reads A only.
                 or      a                   ; CF clear = not handled
-                jp      (hl)
-em_back:
+                call    H_ERRP
                 ret     c                   ; the disk ROM printed it
                 ld      de,em_unprintable   ; not one of ours -- 26..49, 65..255, and
                                             ; anything else main routes here. It

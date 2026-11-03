@@ -20,9 +20,10 @@
 ; load) — cold — so it is the right thing to page out (as is the whole loop).
 ;
 ; PURE-LEAF DISCIPLINE (§3b). The crunch may touch ONLY page-2/3 RAM + co-located
-; sub-ROM code: its two page-1 leaf callees `upcase` (basic/interp.asm) and
-; `cmp16_bits` (basic/expr.asm) are duplicated below as byte-identical own-design
-; clones; tk_loop / tk_end live in the co-located sub/tokenise.inc.
+; sub-ROM code: its page-1 leaf callee `upcase` (basic/interp.asm) is duplicated
+; below as a byte-identical own-design clone (the `cmp16_bits` clone that used to
+; sit beside it went when tkf_calc_and_round's range test became one add);
+; tk_loop / tk_end live in the co-located basic/tokenise.inc.
 ; The tkf_ref* bound tables live INSIDE this body (used by tkf_cmp32767); the
 ; resident float-arith needs them too, so basic/float.asm keeps its OWN copy —
 ; no cross-ROM reference either way.
@@ -41,16 +42,15 @@ DBL_DIGITS      equ     14      ; double mantissa digit count (MSX2 TH number fo
 
 tk_float:
                 push    de                  ; save the TOKBUF destination cursor
-                xor     a
-                ld      (TKPOS),a
-                ld      (TKHAVESIG),a
-                ld      (TKDCOUNT),a
-                ld      (TKSTORED),a
-                ld      (TKFLAGS),a
-                ld      (TKINTLEN),a
-                ld      (TKNZPOS),a
-                ld      (TKEXP),a
-                ld      (TKEXP+1),a
+                ld      bc,0                ; zero the scan state in PAIRS (BC is dead
+                ld      (TKPOS),bc          ; on both entries: tk_loop reloads B, and
+                ld      (TKHAVESIG),bc      ; VAL pushes BC around the call). These
+                ld      (TKEXP),bc          ; three cover TKPOS..TKEXP+1, five cells;
+                ld      (TKNZPOS),bc        ; TKNZPOS, TKDCOUNT
+                ld      (TKSTORED),bc       ; TKSTORED, TKFLAGS
+    IF TKINTLEN != TKPOS+1 || TKHAVESIG != TKPOS+2 || TKEXP != TKPOS+3 || TKDCOUNT != TKNZPOS+1 || TKFLAGS != TKSTORED+1
+                db      TKF_INIT_PAIRS_NOT_ADJACENT
+    ENDIF
                 ld      ix,TKDIG            ; TKDIG write cursor (own scratch)
                 call    tkf_scan_digits     ; integer-part digits
                 ld      a,(TKPOS)
@@ -64,8 +64,7 @@ tk_float:
 tkf_dot:
                 pop     af                  ; accept: the run belonged to the number
                 inc     hl
-                ld      a,(TKFLAGS)
-                or      1                   ; bit0 = has_dot
+                ld      a,1                 ; bit0 = has_dot (TKFLAGS is still 0 here)
                 ld      (TKFLAGS),a
                 call    tkf_scan_digits     ; fractional-part digits (pos continues)
 tkf_nodot:
@@ -82,15 +81,12 @@ tkf_classify:
                 ld      a,(TKFLAGS)
                 bit     5,a                 ; percent?
                 jr      nz,tkf_check_percent
-                bit     4,a                 ; hash?
-                jr      nz,tkf_double
-                bit     2,a                 ; expD?
-                jr      nz,tkf_double
-                bit     3,a                 ; bang?
-                jr      nz,tkf_single
-                bit     0,a                 ; dot?
-                jr      nz,tkf_bydcount
-                bit     1,a                 ; exponent (E, non-D)?
+                bit     3,a                 ; bang? Never set with hash (one suffix
+                jr      nz,tkf_single       ; char) or expD (no suffix scan after an
+                                            ; exponent), so testing it first is safe
+                cp      4                   ; bits 5/3 clear and 6/7 never set, so
+                jr      nc,tkf_double       ; A >= 4 <=> hash (bit4) or expD (bit2)
+                or      a                   ; dot (bit0) or E exponent (bit1)?
                 jr      nz,tkf_bydcount
                 ; plain literal, no forcing suffix/dot/exponent: maybe int
                 ld      a,(TKDCOUNT)
@@ -132,7 +128,7 @@ tkcp_pos:
                 jr      c,tkcp_set
                 ld      a,(hl)              ; never more digits than were stored
 tkcp_set:
-                ld      (TKDCOUNT),a
+                ld      (hl),a              ; HL = TKDCOUNT on both paths
                 cp      5
                 jr      c,tkf_go_int
                 jr      nz,tkf_overflow
@@ -146,11 +142,18 @@ tkf_bydcount:
                 ; falls through: D<=6 -> single
 tkf_single:
                 ld      a,SGL_DIGITS
+                jr      tkf_prec
+tkf_double:
+                ld      a,DBL_DIGITS
+tkf_prec:
                 ld      (TKPC),a
                 call    tkf_calc_and_round  ; -> TKLEAD + TKDIG[0..PC-1]; may not return
                                              ; (jp tkf_overflow on dec_exp>63); clobbers HL
                 pop     de
-                ld      a,SNG_TOKEN
+                ld      a,(TKPC)            ; the token FROM the precision: 6>>2 = 1 and
+                srl     a                   ; 14>>2 = 3, so SNG_TOKEN-1 + that is
+                srl     a                   ; SNG_TOKEN / DBL_TOKEN (asserted below)
+                add     a,SNG_TOKEN-1
                 ld      (de),a
                 inc     de
                 ld      a,(TKLEAD)
@@ -159,32 +162,14 @@ tkf_single:
                 call    tkf_emit_mantissa   ; also clobbers HL (own TKDIG walk)
                 ld      hl,(TKSRCSAVE)      ; restore the source cursor for tk_loop
                 jp      tkf_done             ; continue tokenising (HL/DE advanced)
-tkf_double:
-                ld      a,DBL_DIGITS
-                ld      (TKPC),a
-                call    tkf_calc_and_round
-                pop     de
-                ld      a,DBL_TOKEN
-                ld      (de),a
-                inc     de
-                ld      a,(TKLEAD)
-                ld      (de),a
-                inc     de
-                call    tkf_emit_mantissa
-                ld      hl,(TKSRCSAVE)
-                jp      tkf_done             ; continue tokenising (HL/DE advanced)
-tkf_go_int:
-                call    tkf_int_value       ; DE = value (0..32767); clobbers HL
-                ld      b,d
-                ld      c,e                 ; BC = value
-                pop     de                  ; DE = TOKBUF destination cursor
-                ld      hl,(TKSRCSAVE)      ; restore the source cursor for tk_loop
-                jp      tkf_emit_int_bc
+    IF DBL_TOKEN != SNG_TOKEN+2 || SGL_DIGITS != 6 || DBL_DIGITS != 14
+                db      TKF_PREC_TOKEN_ARITHMETIC_BROKEN
+    ENDIF
 tkf_overflow:
                 pop     de                  ; nothing of this literal was emitted yet,
                                              ; so DE is exactly the line-truncation point
                 ; 🔴 D-MSGMIGRATE: 6, NOT 1 -- AND THE 1 WAS A MEASURED DEFECT.
-                ; TKOVF's contract (basic/tokenise.inc tke_fits) is "the reject
+                ; TKOVF's contract (basic/tokenise.inc tk_end) is "the reject
                 ; reason IS the ERR code", which the LENGTH arm has always honoured
                 ; (=25). This arm stored a bare flag, so dl_overflow had to special-
                 ; case it -- and, because the special case skipped the `ld (ERRFLG),a`,
@@ -196,11 +181,52 @@ tkf_overflow:
                 ; readout could report it. The MESSAGE was always right -- `Overflow`
                 ; on all three -- which is exactly why nothing had ever noticed.)
                 ; Making it 6 costs nothing anywhere: tokenise zeroes TKOVF at entry
-                ; and tke_fits's "first reject wins" test is `or a`, a nonzero test.
+                ; and tk_end's "first reject wins" test is `or a`, a nonzero test.
                 ld      a,6
                 ld      (TKOVF),a
                 jp      tkf_rej              ; end the line here (TKOVF flags the reject;
                                              ; DE is the truncation point for the 0 term)
+tkf_go_int:
+                call    tkf_int_value       ; DE = value (0..32767); clobbers HL
+                ld      b,d
+                ld      c,e                 ; BC = value
+                pop     de                  ; DE = TOKBUF destination cursor
+                ld      hl,(TKSRCSAVE)      ; restore the source cursor for tk_loop
+                ; falls through into tkf_emit_int_bc
+; --- tkf_emit_int_bc: BC = value (0..32767) -> int token(s) at (DE) --------
+; Same encoding as tk_number's tail (interp.asm): $11+n / $0F,<byte> /
+; $1C,<word LE>. Tail-calls tkf_done.
+; tk_emit3 is ALSO the three-byte emitter of basic/tokenise.inc's &H/&O and
+; line-number references (A = token, BC = value): it ends in tkf_done, which is
+; `jp tk_loop` there because tokenise zeroes TKVALEND at entry.
+tkf_emit_int_bc:
+                ld      a,b
+                or      a
+                jr      nz,tei_w
+                ld      a,c
+                cp      10
+                jr      nc,tei_b
+                add     a,INT_DIGIT_BASE
+                jr      tei_last
+tei_w:
+                ld      a,INT2_TOKEN
+tk_emit3:                                   ; A = token, BC = value: emit A, C, B
+                ld      (de),a
+                inc     de
+                ld      a,c
+                ld      (de),a
+                inc     de
+                ld      a,b
+                jr      tei_last
+tei_b:
+                ld      a,INT1_TOKEN
+                ld      (de),a
+                inc     de
+                ld      a,c
+tei_last:
+                ld      (de),a
+                inc     de
+                jr      tkf_done             ; continue tokenising (HL/DE advanced)
 
 ; --- tkf_scan_digits: consume a run of ASCII digits at (HL) -----------------
 ; Shared by the integer-part and fractional-part scans (pos is continuous
@@ -217,10 +243,9 @@ tkf_overflow:
 tkf_scan_digits:
                 push    hl                  ; D-DECBLANK S2 (docs/spec-basic-decblank.md
                 call    tkf_fetch           ; §4): the digit run is blank-transparent --
-                cp      '0'                 ; `1 0` is the single literal 10 on BOTH
-                jr      c,tksd_stop         ; references, byte-identical to `1 0`'s
-                cp      '9'+1               ; unblanked form.
-                jr      nc,tksd_stop
+                call    is_digit_cf         ; `1 0` is the single literal 10 on BOTH
+                jr      nc,tksd_stop        ; references, byte-identical to `1 0`'s
+                                            ; unblanked form.
                 ; ⚠️ THE DISCARD COMES AFTER THE DIGIT IS EXTRACTED, AND THAT
                 ; ORDER IS THE WHOLE INSTRUCTION. `pop af` is how the pushed HL
                 ; is thrown away, but it LOADS A from the stack -- putting it
@@ -235,11 +260,8 @@ tkf_scan_digits:
                 ld      a,(TKHAVESIG)
                 or      a
                 jr      nz,tksd_have
-                ld      a,b
-                or      a
-                jr      nz,tksd_first
-                jr      tksd_advance        ; leading zero: not stored, not counted
-tksd_first:
+                or      b                   ; A was 0: A = the digit
+                jr      z,tksd_advance      ; leading zero: not stored, not counted
                 ld      a,1
                 ld      (TKHAVESIG),a
                 ld      a,(TKPOS)
@@ -299,11 +321,7 @@ tksd_stop:
 ; consume -- a decrementing counter would drift out of step with the cursor on
 ; every rejected run. Comparing HL against a stored end address cannot.
 tkf_fetch:
-                call    tkf_inrange
-                jr      nc,tkf_eos
-                ld      a,(hl)
-                cp      ' '
-                ret     nz
+                dec     hl                  ; pre-step: the loop's `inc` lands on (HL)
 tkf_f_lp:
                 inc     hl
                 call    tkf_inrange
@@ -321,24 +339,20 @@ tkf_eos:
                 ret
 ; CF set = HL is within the source. A zero TKVALEND means "no bound", which is
 ; every use except VAL's.
+; HL and DE are preserved (the compare is byte-wise, so HL is never consumed).
 tkf_inrange:
-                push    hl
                 push    de
                 ld      de,(TKVALEND)
                 ld      a,d
                 or      e
-                jr      z,tki_yes
-                or      a
-                sbc     hl,de               ; CF iff HL < TKVALEND
-                jr      c,tki_yes
+                scf                         ; no bound: always in range (SCF keeps Z)
+                jr      z,tki_out
+                ld      a,l
+                sub     e
+                ld      a,h
+                sbc     a,d                 ; CF iff HL < TKVALEND
+tki_out:
                 pop     de
-                pop     hl
-                or      a                   ; CF clear = past the end
-                ret
-tki_yes:
-                pop     de
-                pop     hl
-                scf
                 ret
 
 ; --- D-VALFLOAT: the two exits, which RETURN in VAL mode -------------------
@@ -526,32 +540,18 @@ tke_accum:
 tke_dloop:
                 push    hl                  ; D-DECBLANK: the EXPONENT's own digit
                 call    tkf_fetch           ; run is blank-transparent too --
-                cp      '0'                 ; `1E 2 3` is 1E23 on both references,
-                jr      c,tke_dstop         ; which the mantissa rows cannot say
-                cp      '9'+1
-                jr      nc,tke_dstop
+                call    is_digit_cf         ; `1E 2 3` is 1E23 on both references,
+                jr      nc,tke_dstop        ; which the mantissa rows cannot say
                 sub     '0'                 ; (extract BEFORE the discard: `pop af`
                 ld      c,a                 ;  loads A -- see tkf_scan_digits)
                 pop     af                  ; accept: commit the blank run
                 push    hl                  ; save source cursor
-                ld      h,d
-                ld      l,e
-                add     hl,hl
-                add     hl,hl
-                add     hl,de
-                add     hl,hl
-                ld      e,c
-                ld      d,0
-                add     hl,de               ; HL = DE_old*10 + digit
-                ld      de,9999
+                call    tkf_mul10           ; DE = DE_old*10 + digit (mod 65536)
+                ld      hl,9999
                 or      a
-                sbc     hl,de
-                jr      nc,tke_clamp
-                add     hl,de
-                ex      de,hl
-                jr      tke_dnext
-tke_clamp:
-                ld      de,9999
+                sbc     hl,de               ; CF <=> DE > 9999
+                jr      nc,tke_dnext
+                ld      de,9999             ; saturate
 tke_dnext:
                 pop     hl                  ; restore source cursor
                 inc     hl                  ; (HL is on the digit tkf_fetch found)
@@ -566,10 +566,12 @@ tke_dstop:
                 ld      a,(TKEXPSIGN)
                 or      a
                 jr      z,tke_esdone
-                call    neg_de              ; DE = -DE; HL is the SOURCE CURSOR here
-                                             ; (unlike flt_out's use of neg_de) -- must
-                                             ; NOT be touched, so this (not an HL-based
-                                             ; negate) is deliberate
+                xor     a                   ; DE = -DE, in A only: HL is the SOURCE
+                sub     e                   ; CURSOR here and must NOT be touched, so
+                ld      e,a                 ; this (not an HL-based negate) is
+                sbc     a,a                 ; deliberate. sbc a,a = -borrow, then
+                sub     d                   ; -d: the same 0 - d - borrow
+                ld      d,a
 tke_esdone:
                 ld      (TKEXP),de
                 ret
@@ -581,65 +583,48 @@ tke_esdone:
 ; D-DECBLANK S5: the suffix is reachable across a blank run, and it is not a
 ; spacing detail -- `20 A=1 #` stores a DOUBLE on both references where zerobas
 ; stored an integer and a stray '#', i.e. the divergence was in the token's TYPE.
-; The three arms converge on one accept tail, which costs fewer bytes than the
-; three `inc hl` / `ret` tails it replaces.
+; The three arms converge on one accept tail: each loads its flag bit into E
+; first, so there is one OR and one store. E, not B: DE is dead here (tkf_try_
+; exponent already clobbered it, and every tk_float exit pops the TOKBUF cursor
+; into DE), while B can reach a VAL-mode return on the `%`->overflow path.
+; Clobbers A, E.
 tkf_try_suffix:
                 push    hl
                 call    tkf_fetch
+                ld      e,8
                 cp      '!'
-                jr      z,tks_bang
+                jr      z,tks_set
+                ld      e,16
                 cp      '#'
-                jr      z,tks_hash
+                jr      z,tks_set
+                ld      e,32
                 cp      '%'
-                jr      z,tks_pct
+                jr      z,tks_set
                 pop     hl                  ; no suffix: every blank stays put
                 ret
-tks_bang:
+tks_set:
                 ld      a,(TKFLAGS)
-                or      8
-                jr      tks_done
-tks_hash:
-                ld      a,(TKFLAGS)
-                or      16
-                jr      tks_done
-tks_pct:
-                ld      a,(TKFLAGS)
-                or      32
-tks_done:
+                or      e
                 ld      (TKFLAGS),a
                 pop     af                  ; accept: the run belonged to the number
                 inc     hl
                 ret
 
 ; --- tkf_cmp32767: are the 5 stored digits TKDIG[0..4] <= 32767? -----------
-; out: CF set iff <=32767. Clobbers A, B, C, D, E, HL.
+; out: CF set iff <=32767. Clobbers A, B, D, E, HL.
 tkf_cmp32767:
                 ld      de,tkf_ref32767
-                ; falls through into the general 5-digit comparator
-; --- tkf_cmp5: are the 5 stored digits TKDIG[0..4] <= the bound at (DE)? ---
-; DE -> a 5-entry unpacked-digit bound table. out: CF set iff <= bound.
-; Clobbers A, B, C, D, E, HL.
-tkf_cmp5:
                 ld      hl,TKDIG
                 ld      b,5
 tkf_cmp_lp:
                 ld      a,(de)
-                ld      c,a
-                ld      a,(hl)
-                cp      c
-                jr      c,tkf_cmp_small     ; stored < ref -> <=32767 -> CF set
-                jr      nz,tkf_cmp_big      ; stored > ref -> >32767 -> CF clear
+                cp      (hl)                ; ref - stored: Z equal, CF iff stored > ref
+                ccf                         ; CF iff stored <= ref (Z unchanged)
+                ret     nz                  ; the first difference decides
                 inc     hl
                 inc     de
                 djnz    tkf_cmp_lp
-                scf                         ; all equal -> ==32767 -> <=
-                ret
-tkf_cmp_small:
-                scf
-                ret
-tkf_cmp_big:
-                or      a
-                ret
+                ret                         ; all equal: CF set by the last ccf
 tkf_ref32767:
                 db      3,2,7,6,7
 ; 🔴 tkf_ref65535 / tkf_ref32768 DELETED FROM THIS BUILD (D-DATASPAN, 10 B).
@@ -655,8 +640,7 @@ tkf_ref32767:
 ; --- tkf_int_value: TKDIG[0..D-1] (D=TKDCOUNT, <=5 here) -> DE = value -----
 ; Same *10+digit accumulation idiom as tk_number (interp.asm); safe from
 ; 16-bit overflow because every caller has already confirmed D<=5 and, for
-; D==5, value<=65535 at most (tkf_cmp5 against a caller-chosen bound: 32767
-; in tk_float's int classification, 65535/32768 in flt_to_int16).
+; D==5, value<=32767 (tkf_cmp32767, tk_float's int classification).
 ; Clobbers A, B, C, HL.
 tkf_int_value:
                 ld      de,0
@@ -666,57 +650,13 @@ tkf_int_value:
                 ld      b,a
                 ld      hl,TKDIG
 tiv_lp:
-                ld      a,(hl)
-                ld      c,a
+                ld      c,(hl)
                 push    hl
-                ld      h,d
-                ld      l,e
-                add     hl,hl
-                add     hl,hl
-                add     hl,de
-                add     hl,hl
-                ld      e,c
-                ld      d,0
-                add     hl,de
-                ex      de,hl
+                call    tkf_mul10
                 pop     hl
                 inc     hl
                 djnz    tiv_lp
                 ret
-
-; --- tkf_emit_int_bc: BC = value (0..32767) -> int token(s) at (DE) --------
-; Same encoding as tk_number's tail (interp.asm): $11+n / $0F,<byte> /
-; $1C,<word LE>. Tail-calls tk_loop.
-tkf_emit_int_bc:
-                ld      a,b
-                or      a
-                jr      nz,tei_w
-                ld      a,c
-                cp      10
-                jr      nc,tei_b
-                add     a,INT_DIGIT_BASE
-                ld      (de),a
-                inc     de
-                jp      tkf_done             ; continue tokenising (HL/DE advanced)
-tei_b:
-                ld      a,INT1_TOKEN
-                ld      (de),a
-                inc     de
-                ld      a,c
-                ld      (de),a
-                inc     de
-                jp      tkf_done             ; continue tokenising (HL/DE advanced)
-tei_w:
-                ld      a,INT2_TOKEN
-                ld      (de),a
-                inc     de
-                ld      a,c
-                ld      (de),a
-                inc     de
-                ld      a,b
-                ld      (de),a
-                inc     de
-                jp      tkf_done             ; continue tokenising (HL/DE advanced)
 
 ; --- tkf_calc_and_round: dec_exp + rounded mantissa -> TKLEAD/TKDIG --------
 ; in: TKPC = target precision (6/14), TKHAVESIG/TKINTLEN/TKNZPOS/TKEXP/
@@ -743,28 +683,16 @@ tcr_zero_lp:
                 ret
 tcr_go:
                 ld      a,(TKINTLEN)
+                ld      hl,TKNZPOS
+                sub     (hl)                ; A = P - f (mod 256), CF = borrow
                 ld      l,a
-                ld      h,0
-                ld      a,(TKNZPOS)
-                ld      e,a
-                ld      d,0
-                or      a
-                sbc     hl,de               ; HL = P - f
+                sbc     a,a                 ; 0 / $FF: P and f are both 0..255, so the
+                ld      h,a                 ; borrow is the exact sign -- HL = P - f
                 ld      de,(TKEXP)
                 add     hl,de               ; HL = dec_exp (pre-round)
                 ld      (TKDEXP),hl
                 call    tkf_round_mantissa  ; may bump TKDEXP by +1 (double carry-out)
                 ld      hl,(TKDEXP)
-                push    hl
-                ld      de,63
-                call    cmp16_bits          ; A=1/2/4 (lt/eq/gt); HL clobbered inside
-                pop     hl
-                cp      4
-                jr      z,tcr_ovf           ; dec_exp > 63
-                push    hl
-                ld      de,$FFC0            ; -64
-                call    cmp16_bits
-                pop     hl
                 ; --- D-VALUNDER: -65 IS AN OVERFLOW, -64 IS A ZERO -------------
                 ; The header above cited `1e-65` as "reads as value 0, no error",
                 ; and that row is real -- but it is the LAST one that is. Measured
@@ -774,16 +702,23 @@ tcr_go:
                 ; SILENT zero where the reference stops the line.
                 ; 🎯 In dec_exp terms the boundary is exactly the one already being
                 ; computed: dec_exp == -64 (which is `1E-65`) keeps the old answer
-                ; through tcr_leadok, whose `+64` makes TKLEAD 0 on its own -- so
+                ; through the `+64` below, which makes TKLEAD 0 on its own -- so
                 ; the forced-lead-0 arm was never doing anything the normal path
                 ; would not have done, and it cost 5 bytes to say so. Everything
                 ; BELOW -64 is the reject.
-                cp      1
-                jr      z,tcr_ovf           ; dec_exp <= -65 -> Overflow
-tcr_leadok:
+                ; One add decides both ends: the legal dec_exp range -64..63 is
+                ; exactly dec_exp+64 in 0..127, so H must be 0 (H=$FF is below -64)
+                ; and bit 7 of L must be clear (64..191 is above 63). dec_exp is
+                ; within +-10255 (P-f +-255, TKEXP saturated at +-9999, +1 from the
+                ; double carry-out), so the 16-bit add cannot wrap.
                 ld      de,64
                 add     hl,de
+                ld      a,h
+                or      a
+                jr      nz,tcr_ovf          ; dec_exp <= -65 (or far above 63)
                 ld      a,l
+                cp      128
+                jr      nc,tcr_ovf          ; dec_exp > 63
                 ld      (TKLEAD),a
                 ret
 
@@ -813,98 +748,60 @@ tcr_ovf:
 ; Clobbers A, B, C, HL, DE.
 tkf_round_mantissa:
                 ld      a,(TKPC)
-                ld      b,a
-                ld      a,(TKDCOUNT)
-                cp      b
-                jr      c,trm_pad
-                jr      z,trm_pad
+                ld      hl,TKDCOUNT
+                cp      (hl)
+                jr      nc,trm_pad          ; PC >= D: pad, no rounding
                 ; D > PC: round using TKDIG[PC]
-                ld      hl,TKDIG
-                ld      c,b
+                ld      c,a                 ; C = PC, kept to the end
                 ld      b,0
-                add     hl,bc
+                ld      hl,TKDIG
+                add     hl,bc               ; HL -> TKDIG[PC], the rounding digit
                 ld      a,(hl)
                 cp      5
                 ret     c                   ; rounding digit < 5 -> truncate as-is
-                call    trm_increment       ; CF set iff it carried out of all PC digits
-                ret     nc
-                call    trm_set_carried_mantissa
-                ld      a,(TKPC)
-                cp      14
+                ; TKDIG[0..PC-1] += 1 (big-decimal), right to left
+                ld      b,c
+trm_inc_lp:
+                dec     hl
+                ld      a,(hl)
+                inc     a
+                cp      10
+                jr      c,trm_inc_done
+                ld      (hl),0
+                djnz    trm_inc_lp
+                ; carried out of all PC digits: every one is 0 now and HL = TKDIG,
+                ; so the carried mantissa "1" + (PC-1) zeros is this one store
+                ld      (hl),1
+                ld      a,c
+                cp      DBL_DIGITS
                 ret     nz                  ; single: quirk -- dec_exp unchanged
                 ld      hl,(TKDEXP)
                 inc     hl
                 ld      (TKDEXP),hl
                 ret
-trm_pad:
-                ld      a,(TKDCOUNT)
-                ld      l,a
-                ld      h,0
-                ld      de,TKDIG
-                add     hl,de               ; HL -> first pad slot
-                ld      a,(TKPC)
-                ld      b,a
-                ld      a,(TKDCOUNT)
-                ld      c,a
-                ld      a,b
-                sub     c                   ; A = PC - D
+trm_inc_done:
+                ld      (hl),a
+                ret
+trm_pad:                                    ; A = PC, HL = TKDCOUNT
+                sub     (hl)                ; A = PC - D
                 ret     z
                 ld      b,a
+                ld      e,(hl)
+                ld      d,0
+                ld      hl,TKDIG
+                add     hl,de               ; HL -> first pad slot
 trm_pad_lp:
                 ld      (hl),0
                 inc     hl
                 djnz    trm_pad_lp
                 ret
 
-; --- trm_increment: TKDIG[0..PC-1] += 1 (big-decimal) ----------------------
-; out: CF set iff the increment carried out of the leftmost (index-0) digit.
-; Clobbers A, B, HL.
-trm_increment:
-                ld      a,(TKPC)
-                ld      b,a
-                ld      hl,TKDIG
-                dec     a
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; HL -> TKDIG[PC-1] (rightmost kept digit)
-trm_inc_lp:
-                ld      a,(hl)
-                inc     a
-                cp      10
-                jr      c,trm_inc_done
-                ld      (hl),0
-                dec     hl
-                djnz    trm_inc_lp
-                scf                         ; carried past index 0
-                ret
-trm_inc_done:
-                ld      (hl),a
-                or      a
-                ret
-
-; --- trm_set_carried_mantissa: TKDIG = "1" + (PC-1) zeros ------------------
-trm_set_carried_mantissa:
-                ld      a,(TKPC)
-                ld      b,a
-                ld      hl,TKDIG
-                ld      (hl),1
-                inc     hl
-                dec     b
-trm_scm_lp:
-                ld      a,b
-                or      a
-                ret     z
-                ld      (hl),0
-                inc     hl
-                dec     b
-                jr      trm_scm_lp
-
 ; --- tkf_emit_mantissa: TKDIG[0..PC-1] -> PC/2 packed-BCD bytes at (DE) ----
 ; 2 digits/byte, left-justified (MSX2 TH §9.1). Clobbers A, B, HL.
 tkf_emit_mantissa:
                 ld      a,(TKPC)
-                ld      b,a
-                srl     b                   ; B = PC/2 byte count
+                rrca                        ; PC is even: A = PC/2
+                ld      b,a                 ; B = byte count
                 ld      hl,TKDIG
 tem_lp:
                 ld      a,(hl)
@@ -920,19 +817,6 @@ tem_lp:
                 djnz    tem_lp
                 ret
 
-; --- sub-local neg_de (byte-identical clone of basic/float.asm neg_de) ------
-; DE = -DE (two's complement); used by the exponent-sign path (tke_esdone). The
-; resident copy stays with float-arith/flt_out in the low region (invisible
-; here). Clobbers A.
-neg_de:
-                xor     a
-                sub     e
-                ld      e,a
-                ld      a,0
-                sbc     a,d
-                ld      d,a
-                ret
-
 ; --- sub-local upcase (byte-identical clone of basic/interp.asm upcase) ----
 ; A -> uppercase if 'a'..'z'. Resident copy is in page 1 (invisible here).
 upcase:
@@ -943,29 +827,19 @@ upcase:
                 sub     $20
                 ret
 
-; --- sub-local cmp16_bits (byte-identical clone of basic/expr.asm cmp16_bits) -
-; Signed 16-bit compare HL?DE -> A: 2 equal / 1 less / 4 greater.
-cmp16_bits:
-                ld      a,h
-                cp      d
-                jr      nz,c16_ne
-                ld      a,l
-                cp      e
-                jr      nz,c16_ne
-                ld      a,2
-                ret
-c16_ne:
-                or      a
-                sbc     hl,de
-                jp      pe,c16_vset
-                jp      m,c16_lt
-                jr      c16_gt
-c16_vset:
-                jp      p,c16_lt
-                jr      c16_gt
-c16_lt:
-                ld      a,1
-                ret
-c16_gt:
-                ld      a,4
+; --- tkf_mul10: DE = DE*10 + C (mod 65536) ---------------------------------
+; The *10+digit accumulation shared by tkf_int_value, the exponent digit loop
+; (tke_dloop) and basic/tokenise.inc's line-number reference (bl_ac_char).
+; Clobbers HL only (A, B, C kept: tiv_lp's djnz counter rides B).
+tkf_mul10:
+                ld      h,d
+                ld      l,e
+                add     hl,hl
+                add     hl,hl
+                add     hl,de
+                add     hl,hl
+                ld      e,c
+                ld      d,0
+                add     hl,de
+                ex      de,hl
                 ret

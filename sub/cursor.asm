@@ -28,8 +28,8 @@
 cursor_tenant:
                 ld      a,e
                 or      a
-                jp      z,ct_off
-                ld      a,(CSR_ON)
+                ld      a,(CSR_ON)          ; (no flags: ct_off tests it itself)
+                jr      z,ct_off
                 or      a
                 ret     nz                  ; already shown
                 ld      a,(SCRMOD)
@@ -115,8 +115,7 @@ ct_put:
                 ld      a,1
                 ld      (CSR_ON),a
                 ret
-ct_off:
-                ld      a,(CSR_ON)
+ct_off:                                     ; A = CSR_ON, loaded at the top
                 or      a
                 ret     z                   ; nothing shown
                 xor     a

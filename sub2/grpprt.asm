@@ -42,10 +42,9 @@
 ; ===========================================================================
 grpprt_tenant:
                 ld      a,(SCRMOD)
-                and     1                   ; 0 = SCREEN 2, 1 = SCREEN 3
-                ld      c,a
-                add     a,a
-                add     a,c
+                rrca                        ; CF = bit 0: 0 = SCREEN 2, 1 = SCREEN 3
+                sbc     a,a
+                and     3
                 inc     a
                 ld      c,a                 ; C = the pixel pitch S: 1 or 4
                 ld      b,0                 ; BC = S, for 16-bit adds
@@ -106,11 +105,7 @@ gp_bit:
                 jr      nc,gp_clip          ; below the screen
                 ld      (GXPOS),hl
                 ld      (GYPOS),de
-                ld      a,(SUBSLOT)         ; ROM 1 (3-2): the graphics tenant
-                ld      h,a
-                ld      l,0
-                push    hl
-                pop     iy                  ; IYh = its slot (the CALSLT ABI)
+                ld      iy,(SUBSLOT-1)      ; IYh = ROM 1's slot (the CALSLT ABI)
                 ld      ix,SUBROM_ENTRY_BASE_P0 + 3*SUBROM_IDX_GRAPHICS
                 di                          ; as subrom_call: the plot's lean VDP
                 call    CALSLT              ; access must not race the ISR
@@ -132,16 +127,8 @@ gp_next:
                 djnz    gp_row
                 pop     bc                  ; C = S
                 ; --- advance: x += 8*S; reaching 256 is a new line ------------
-                ld      a,c
-                add     a,a
-                add     a,a
-                add     a,a                 ; 8 * S
                 ld      hl,(GRPACX)
-                add     a,l
-                ld      l,a
-                jr      nc,gp_xs
-                inc     h
-gp_xs:
+                call    gp_add8s
                 ld      (GRPACX),hl
                 ld      a,h
                 or      a
@@ -150,16 +137,8 @@ gp_xs:
 gp_cr:
                 ld      hl,0
                 ld      (GRPACX),hl
-                ld      a,c
-                add     a,a
-                add     a,a
-                add     a,a                 ; 8 * S
                 ld      hl,(GRPACY)
-                add     a,l
-                ld      l,a
-                jr      nc,gp_ys
-                inc     h
-gp_ys:
+                call    gp_add8s
                 ld      a,h
                 or      a
                 jr      nz,gp_top
@@ -170,4 +149,16 @@ gp_top:
                 ld      hl,0
 gp_sty:
                 ld      (GRPACY),hl
+                ret
+
+; gp_add8s: HL += 8*S (C = S). Out: A = L. Keeps BC, DE.
+gp_add8s:
+                ld      a,c
+                add     a,a
+                add     a,a
+                add     a,a                 ; 8 * S
+                add     a,l
+                ld      l,a
+                ret     nc
+                inc     h
                 ret

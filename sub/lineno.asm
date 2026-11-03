@@ -42,8 +42,12 @@
 ; move and the D-LNBLANK contract can be audited without re-reading it. The ONE
 ; edit is the entry label: `parse_lineno` stays the name of the RESIDENT STUB, and
 ; the body is entered here as `pln_scan`, so no label exists in both builds.
+; 🔧 NO LONGER A PURE MOVE (D-SUB2RETIRE batch 3, 6 B): both digit tests are
+; `sub '0' / cp 10 / jr nc` now (same non-digit set), so pl_blank sees A = the
+; byte - '0' and tests `' '-'0'`; the only observable difference is the A that
+; pln_scan returns on its not-a-blank exit, which parseln_tenant never reads.
 ;
-; Clean-room: own code, moved unchanged. The D-LNBLANK blank/zero-separator rules
+; Clean-room: own code, moved and since trimmed. The D-LNBLANK blank/zero-separator rules
 ; it implements were pinned black-box against the VG-8020 and the CF-3300
 ; (docs/lnblank-msx1-characterization.md); no ROM bytes lifted.
 
@@ -89,11 +93,9 @@ pln_scan:
                 ld      bc,0
 pl_lp:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,pl_blank
-                cp      '9'+1
-                jr      nc,pl_blank
                 sub     '0'
+                cp      10
+                jr      nc,pl_blank         ; not a digit (A = the byte - '0')
                 push    hl                  ; BC = BC*10 + A
                 ld      h,b
                 ld      l,c
@@ -137,7 +139,7 @@ pl_sat:
 pl_blank:
                 ; Not a digit. Only a blank can continue the number; anything else
                 ; ends it here, with HL on it (`20REMX`, `2 X=1`).
-                cp      ' '
+                cp      ' '-'0'
                 ret     nz
                 push    hl                  ; where the run of blanks starts
 pl_bl_lp:
@@ -145,9 +147,8 @@ pl_bl_lp:
                 ld      a,(hl)
                 cp      ' '
                 jr      z,pl_bl_lp          ; ANY run is transparent, not just one
-                cp      '0'
-                jr      c,pl_bl_end
-                cp      '9'+1
+                sub     '0'
+                cp      10
                 jr      nc,pl_bl_end
                 pop     af                  ; a digit follows -> the run belonged to
                 jr      pl_lp               ; the number; keep the advanced HL

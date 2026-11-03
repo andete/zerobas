@@ -36,14 +36,10 @@
 ; an editing key and is done, 1 if not ours -- subrom_call's closing `or a`
 ; turns that into main's Z / NZ, the flag ek_ctrl used to hand back in place.
 edctrl_tenant:
-                ld      a,(RL_KEY)
-                call    ek_ctrl
-                ld      a,0
-                ret     z                   ; handled
-                inc     a
-                ret                         ; not ours
+                ld      a,(RL_KEY)          ; falls into ek_ctrl
 
-; --- ek_ctrl: A = the key. Z = handled (main skips the tenant), NZ = not ours --
+; --- ek_ctrl: A = the key. Returns A = 0 (handled: every handled path ends at
+; ek_done's `xor a`) or A = 1 (not ours, ek_notours) -- the tenant's result.
 ek_ctrl:
                 cp      2
                 jr      z,ek_b
@@ -54,7 +50,7 @@ ek_ctrl:
                 cp      14
                 jp      z,ek_n              ; jp: past jr's reach
                 cp      21
-                ret     nz                  ; not an editing key: the tenant's
+                jr      nz,ek_notours       ; not an editing key: the tenant's
                 ; --- CTRL-U: to the line's start, then CTRL-E's erase ---
                 call    ek_firstrow         ; B = the logical line's first row
                 ld      a,(RL_ROW0)
@@ -66,6 +62,9 @@ ek_ctrl:
 eku_at:
                 call    ek_setcsr
                 jr      ek_erase
+ek_notours:
+                ld      a,1                 ; not ours (A = 1, NZ from the cp)
+                ret
 ek_e:
                 call    ek_getcsr
 ek_erase:                                   ; blank (B,C) .. the line's end
@@ -235,10 +234,10 @@ ek_hladd:                                   ; HL += A
                 ret     nc
                 inc     h
                 ret
-ek_getcsr:
-                ld      a,(CSRY)
-                ld      b,a
-                ld      a,(CSRX)
+ek_getcsr:                                  ; B = CSRY, C = CSRX, A = CSRX; no flags
+                ld      bc,(CSRY)           ; C = CSRY ($F3DC), B = CSRX ($F3DD)
+                ld      a,b
+                ld      b,c
                 ld      c,a
                 ret
 ek_setcsr:

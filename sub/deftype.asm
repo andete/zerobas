@@ -76,45 +76,11 @@ deftype_tenant:
                 ld      l,a                 ;  page: 4 bytes, see the align note)
                 ld      c,(hl)              ; C = DEFTBL type code for this verb
                 pop     hl
-                jr      edt_list
-; Type codes in TOKEN ORDER ($AB DEFSTR, $AC DEFINT, $AD DEFSNG, $AE DEFDBL) --
-; the same values the deleted mnemonic parser loaded (2 int / 4 single / 8
-; double / DEFTBL_STR string, basic/sysvars.inc). ⚠️ The index add above is
-; 8-bit (`add a,l`), so these four bytes must not cross a 256-byte boundary;
-; the build-time assert below is what makes a future edit that moves them say
-; so instead of reading garbage.
-; ⚠️ AND THE ASSERT FIRED, ON AN EDIT IN A DIFFERENT FILE (D-DEFFN, 2026-08-22 --
-; docs/deffn-impl-2026-08-22.md §4.5, branch `deffn-draft`). Adding a 40-byte
-; routine to sub/arrays.asm -- included AHEAD of this file -- shifted these four
-; bytes onto a page boundary and the BUILD said so, which is exactly what the
-; guard was for. 🎯 What the guard could NOT do was say what to do about it, and
-; "never let an unrelated sub-ROM edit relocate this table" is not a rule anyone
-; can keep: every future sub page-0 tenant re-rolls the dice. So the alignment is
-; now ENFORCED rather than asserted -- at most 3 bytes of page-0 padding, against
-; 3 KB free, buy the 8-bit `add a,l` index unconditionally. The assert stays
-; below as a PROOF that can no longer fire; if it ever does, this pad is what
-; broke. On today's tree the pad emits NOTHING, which is why sub.rom is
-; byte-identical across this change.
-    IF (low $) > 252
-                ds      256 - (low $), $00
-    ENDIF
-edt_codes:
-                db      DEFTBL_STR          ; $AB DEFSTR
-                db      2                   ; $AC DEFINT
-                db      4                   ; $AD DEFSNG
-                db      8                   ; $AE DEFDBL
-    IF (high edt_codes) != (high (edt_codes+3))
-                db      EDT_CODES_STRADDLES_A_PAGE__ADD_A_L_INDEX_IS_8_BIT
-    ENDIF
-edt_bad:
-                jr      edt_fail
+                ; fall into edt_list
 ; --- range-list parser: C = type code (preserved by skip_spaces/is_letter/upcase)
 edt_list:
 edt_item:
-                call    edt_skip_spaces
-                call    is_letter           ; each item must start with a letter
-                jr      nc,edt_bad
-                call    upcase
+                call    edt_letter          ; each item must start with a letter
                 ld      b,a                 ; B = range-start letter
                 inc     hl
                 ld      d,b                 ; D = range-end (default = start, single letter)
@@ -122,30 +88,19 @@ edt_item:
                 cp      MINUS_TOKEN         ; "X-Y" range? ('-' crunched to $F2)
                 jr      nz,edt_fill
                 inc     hl                  ; past '-'
-                call    edt_skip_spaces
-                call    is_letter
-                jr      nc,edt_bad
-                call    upcase
+                call    edt_letter
                 ld      d,a                 ; D = range-end letter
                 inc     hl
 edt_fill:
-                ld      a,b                 ; start must not exceed end
-                cp      d
-                jr      z,edt_fill_go
-                jr      nc,edt_bad          ; start > end -> reversed range, reject
-edt_fill_go:
-                push    hl                  ; guard the token cursor across the fill
                 ld      a,d
-                sub     b                   ; A = end - start (>= 0); compute the count
-                inc     a                   ; NOW, before ld de,DEFTBL clobbers D (end)
-                push    af                  ; count = span + 1, stashed across the addr calc
-                ld      a,b
-                sub     'A'
-                ld      l,a
-                ld      h,0
-                ld      de,DEFTBL
+                sub     b                   ; A = end - start
+                jr      c,edt_fail          ; start > end -> reversed range, reject
+                inc     a                   ; the count = span + 1
+                push    hl                  ; guard the token cursor across the fill
+                ld      e,b
+                ld      d,0
+                ld      hl,DEFTBL-'A'
                 add     hl,de               ; HL -> DEFTBL[start]
-                pop     af
                 ld      b,a                 ; B = count
 edt_fill_lp:
                 ld      (hl),c              ; DEFTBL[letter] = type code
@@ -177,6 +132,13 @@ edt_comma:
 edt_ok:
                 ld      (DEFT_PTR),hl       ; hand the advanced cursor back
                 ret
+; edt_letter: skip blanks; the letter at HL, upper-cased -> A (HL stays on it).
+; Not a letter: drop the caller's return and fail the statement.
+edt_letter:
+                call    edt_skip_spaces
+                call    is_letter
+                jp      c,upcase
+                pop     af
 edt_fail:
                 ld      a,1
                 ld      (DEFT_STATUS),a     ; -> the stub raises stmt_error
@@ -189,3 +151,33 @@ edt_skip_spaces:
                 ret     nz
                 inc     hl
                 jr      edt_skip_spaces
+
+; Type codes in TOKEN ORDER ($AB DEFSTR, $AC DEFINT, $AD DEFSNG, $AE DEFDBL) --
+; the same values the deleted mnemonic parser loaded (2 int / 4 single / 8
+; double / DEFTBL_STR string, basic/sysvars.inc). ⚠️ The index add in deftype_tenant is
+; 8-bit (`add a,l`), so these four bytes must not cross a 256-byte boundary;
+; the build-time assert below is what makes a future edit that moves them say
+; so instead of reading garbage.
+; ⚠️ AND THE ASSERT FIRED, ON AN EDIT IN A DIFFERENT FILE (D-DEFFN, 2026-08-22 --
+; docs/deffn-impl-2026-08-22.md §4.5, branch `deffn-draft`). Adding a 40-byte
+; routine to sub/arrays.asm -- included AHEAD of this file -- shifted these four
+; bytes onto a page boundary and the BUILD said so, which is exactly what the
+; guard was for. 🎯 What the guard could NOT do was say what to do about it, and
+; "never let an unrelated sub-ROM edit relocate this table" is not a rule anyone
+; can keep: every future sub page-0 tenant re-rolls the dice. So the alignment is
+; now ENFORCED rather than asserted -- at most 3 bytes of page-0 padding, against
+; 3 KB free, buy the 8-bit `add a,l` index unconditionally. The assert stays
+; below as a PROOF that can no longer fire; if it ever does, this pad is what
+; broke. On today's tree the pad emits NOTHING, which is why sub.rom is
+; byte-identical across this change.
+    IF (low $) > 252
+                ds      256 - (low $), $00
+    ENDIF
+edt_codes:
+                db      DEFTBL_STR          ; $AB DEFSTR
+                db      2                   ; $AC DEFINT
+                db      4                   ; $AD DEFSNG
+                db      8                   ; $AE DEFDBL
+    IF (high edt_codes) != (high (edt_codes+3))
+                db      EDT_CODES_STRADDLES_A_PAGE__ADD_A_L_INDEX_IS_8_BIT
+    ENDIF

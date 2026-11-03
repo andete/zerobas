@@ -51,7 +51,8 @@
 ; 1 or < $4000) confirms this is closure-clean.
 ;
 ; skip_to_eol + le_tok_skip (+ le_tsk1/le_tsk2/le_tsk4/le_tsk8/le_tsk_str/le_tsk_rem/le_tsk_data) are
-; DUPLICATED sub-locally, verbatim from basic/interp.asm: skip_to_eol itself
+; DUPLICATED sub-locally from basic/interp.asm (le_tok_skip's prefix tests since
+; folded into a range test -- same behaviour, its own header): skip_to_eol itself
 ; calls le_tok_skip (a token-aware skip, needed so a stored line's own operand
 ; bytes -- e.g. a float literal's $00 mantissa byte -- are never mistaken for
 ; the line/statement terminator), and le_tok_skip is a pure leaf (reads only the
@@ -126,8 +127,8 @@ le_dispatch:
                                                 ; is main-resident (it drives the line
                                                 ; editor and dispatch_line)
                 ld      a,2                     ; unreachable: an op with no arm
-                ld      (LE_STATUS),a           ; reports Syntax error rather than
-                ret                             ; running the verb that sits last
+                jr      le_st                   ; reports Syntax error rather than
+                                                ; running the verb that sits last
 
 ; --- le_store: store_line's own body (empty body -> delete; else bounds-
 ; check + insert), byte-for-byte the same logic as the pre-eviction
@@ -208,22 +209,25 @@ le_store:
                 or      a
                 sbc     hl,de                   ; (PRGEND+size) - the ceiling
                 jr      nc,le_oom               ; >= ceiling -> out of memory
+                push    bc                      ; the full size, for the copy below
+                                                ; (pushed AFTER the le_oom exit, so
+                                                ; that `ret` sees a balanced stack)
                 call    prog_find_del           ; SL_SLOT = insertion point (post-delete)
                 call    open_gap                ; make room of SL_SIZE at SL_SLOT
                 ld      hl,(SL_SLOT)
-                ld      (hl),0                  ; link placeholder (relink fills it)
+                xor     a
+                ld      (hl),a                  ; link placeholder (relink fills it)
                 inc     hl
-                ld      (hl),0
-                inc     hl
-                ld      a,(SL_NUM)              ; line number, LE
                 ld      (hl),a
                 inc     hl
-                ld      a,(SL_NUM+1)
-                ld      (hl),a
+                ld      de,(SL_NUM)             ; line number, LE
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
                 inc     hl
                 ld      de,(SL_TOK)             ; source = tokenised body
                 ex      de,hl                   ; HL = source, DE = dest (after lineno)
-                ld      bc,(SL_SIZE)            ; body length = full size - 4 header bytes
+                pop     bc                      ; body length = full size - 4 header bytes
                 dec     bc
                 dec     bc
                 dec     bc
@@ -238,9 +242,10 @@ le_ok:
                 ld      (LE_STATUS),a           ; 0 = ok
                 jp      relink_body             ; tail: vars_reset; ret
 le_oom:
-                ld      a,1
-                ld      (LE_STATUS),a           ; 1 = out of memory
-                ret
+                ld      a,1                     ; 1 = out of memory
+le_st:                                          ; the shared status tail: A -> LE_STATUS
+                ld      (LE_STATUS),a           ; (le_dispatch's guard and ldr_fail
+                ret                             ;  jr here)
 
 ; --- le_delrange: DELETE [<lo>][-[<hi>]] (LE_OP_DELRANGE, D-DELETE) --------
 ; docs/spec-basic-delete.md §2, measured in
@@ -282,11 +287,7 @@ ldr_endarg:
                 ; four lines still standing, even though the tokeniser happily
                 ; arms across the comma. A ':' IS accepted, and R-D8 then
                 ; abandons the rest of the line (dlt-tail: ERR 0, B unset).
-                call    ldr_skipsp
-                or      a
-                jr      z,ldr_check
-                cp      COLON
-                ld      a,2                     ; (no flags -- the `cp` still holds)
+                call    ldr_eos                 ; NZ + A=2 unless end-of-statement
                 jr      nz,ldr_fail
 ldr_check:
                 ; R-D4: lo > hi -> ERR 5. NOT the same rule as R-D2 below, and
@@ -310,8 +311,7 @@ ldr_check:
 ldr_fc:
                 ld      a,5                     ; ERR 5: illegal function call
 ldr_fail:
-                ld      (LE_STATUS),a
-                ret                             ; R-D7: a FAILED delete is a
+                jr      le_st                   ; R-D7: a FAILED delete is a
                                                 ; COMPLETE no-op -- no relink, no
                                                 ; vars_reset, and the head (sub2's
                                                 ; pe_delete) leaves CONTVALID alone. Measured
@@ -329,11 +329,7 @@ ldr_walk:
                 ; before any of this.
                 ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
 ldr_lp:
-                ld      a,(PRGEND)              ; HL == PRGEND -> the end marker
-                cp      l
-                jr      nz,ldr_line
-                ld      a,(PRGEND+1)
-                cp      h
+                call    le_atend                ; HL == PRGEND -> the end marker
                 jr      z,ldr_done
 ldr_line:
                 inc     hl
@@ -362,11 +358,7 @@ ldr_line:
                 ld      hl,(SL_SLOT)            ; slot, so HL now addresses the
                 jr      ldr_lp                  ; NEXT line and must NOT advance.
 ldr_skip:
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl                      ; past link(2) + lineno(2)
-                call    skip_to_eol             ; -> next line (token-aware, so a
+                call    le_skipline             ; -> next line (token-aware, so a
                 jr      ldr_lp                  ; float literal's $00 byte is not
                                                 ; mistaken for the terminator)
 ldr_done:
@@ -426,11 +418,7 @@ llr_end:
                 ; then abandons the rest of the line (lse-tail: ERR 0, B unset).
                 ; This is also the rule that answers `LIST .`, whose '.' is not
                 ; crunched -- see spec §6 for why that is pinned and not fixed.
-                call    ldr_skipsp
-                or      a
-                jr      z,llr_ok
-                cp      COLON
-                ld      a,2                     ; (no flags -- the `cp` still holds)
+                call    ldr_eos                 ; NZ + A=2 unless end-of-statement
                 jr      nz,llr_fail
 llr_ok:
                 xor     a
@@ -452,6 +440,30 @@ ldr_skipsp:
                 ret     nz
                 inc     hl
                 jr      ldr_skipsp
+
+; --- ldr_eos: the end-of-statement test every verb's parse ends with ----------
+; Z = end of statement (a $00, or a ':' whose tail the verb abandons); NZ with
+; A = 2 (Syntax error) for anything else. On the ':' path A is 2 too, but Z
+; still holds from the `cp` (an `ld` sets no flags), and every OK path reloads
+; A. HL is left on the non-blank byte, as the inline form left it.
+ldr_eos:
+                call    ldr_skipsp
+                or      a
+                ret     z
+                cp      COLON
+                ld      a,2
+                ret
+
+; --- le_atend: Z iff HL == PRGEND (the end marker). Clobbers A only. ----------
+; The EQUALITY test the walks below use; relink_body keeps its own `>=` form
+; on purpose (D-TRUNCLOAD, its header).
+le_atend:
+                ld      a,(PRGEND)
+                cp      l
+                ret     nz
+                ld      a,(PRGEND+1)
+                cp      h
+                ret
 
 ; --- ldr_num: read an OPTIONAL `$0E,lo,hi` line-number reference -----------
 ; out: DE = its value, or 0 when there is none -- R-D5, "an absent number is
@@ -599,11 +611,7 @@ pfd_next:
 ; shrinks PRGEND. Clobbers A, BC, DE, HL. Verbatim from basic/program.asm.
 delete_at:
                 ld      hl,(SL_SLOT)
-                inc     hl                      ; skip link(2)+lineno(2) -> body
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol             ; HL = next-line address (token-aware)
+                call    le_skipline             ; HL = next-line address (token-aware)
                 ex      de,hl                   ; DE = next-line address
                 ; count = (PRGEND+2) - next   (bytes to move, incl. end marker)
                 push    de                      ; next (move source)
@@ -696,11 +704,7 @@ rlb_lp:
                                                 ; resident, directly reachable here)
 rlb_more:
                 push    hl                      ; remember this link field
-                inc     hl                      ; skip link (2) + lineno (2)
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol             ; HL = next line (token-aware end-find)
+                call    le_skipline             ; HL = next line (token-aware end-find)
                 ex      de,hl                   ; DE = next-line address
                 pop     hl                      ; HL = link field to fill
                 ld      (hl),e
@@ -711,24 +715,29 @@ rlb_more:
 
 ; --- le_tok_skip: advance HL past one token, including its operand bytes ------
 ; Sub-local duplicate of basic/interp.asm le_tok_skip (own header: skip_to_eol's
-; own dependency, a pure leaf, safe to duplicate). Verbatim (the org is
+; own dependency, a pure leaf, safe to duplicate). Same token set and strides
+; as the original, but the ,word/,byte prefix tests are folded into one range
+; test (below) -- no longer byte-verbatim (the org is
 ; $2812 here too, so the repack-only SNG/DBL float-literal cases are
 ; included, matching this sub-ROM's repack-only existence).
 le_tok_skip:
                 ld      a,(hl)
                 inc     hl
-                cp      HEX_TOKEN               ; $0C ,word
-                jr      z,le_tsk2
+                ; The four ,word prefixes $0B..$0E and INT1's $0F are CONTIGUOUS,
+                ; so one range test replaces five compares; no token tested
+                ; below sits under $0B, so a byte there is a plain byte. (The
+                ; flags on return differ from the compare chain's; every caller
+                ; -- skip_to_eol, lrn_scan, errtrap's sse_lp -- re-reads (HL).)
+    IF OCT_TOKEN != $0B || HEX_TOKEN != $0C || LINEADDR_TOKEN != $0D || LINENO_TOKEN != $0E || INT1_TOKEN != $0F
+                db      LE_TOK_SKIP_NEEDS_0B_TO_0F_CONTIGUOUS
+    ENDIF
+                cp      OCT_TOKEN               ; < $0B: 0-operand / plain byte
+                ret     c
+                cp      INT1_TOKEN              ; $0B..$0E: OCT/HEX/LINEADDR/LINENO ,word
+                jr      c,le_tsk2
+                jr      z,le_tsk1               ; $0F: INT1 ,byte
                 cp      INT2_TOKEN              ; $1C ,word
                 jr      z,le_tsk2
-                cp      LINENO_TOKEN            ; $0E ,word
-                jr      z,le_tsk2
-                cp      LINEADDR_TOKEN          ; $0D ,word
-                jr      z,le_tsk2
-                cp      OCT_TOKEN               ; $0B ,word
-                jr      z,le_tsk2
-                cp      INT1_TOKEN              ; $0F ,byte
-                jr      z,le_tsk1
                 cp      PEEK_PREFIX             ; $FF ,function-token byte
                 jr      z,le_tsk1
                 cp      SNG_TOKEN               ; $1D ,4 float value bytes. A mantissa
@@ -788,6 +797,13 @@ le_tsk_data:                                       ; DATA body: verbatim ASCII t
 ; terminator. Token-aware (steps whole tokens via le_tok_skip above), so an
 ; operand byte equal to 00 is not mistaken for the terminator. Sub-local
 ; duplicate of basic/interp.asm skip_to_eol (verbatim).
+; le_skipline: HL on a line's LINK field -> past link(2) + lineno(2), then
+; falls into skip_to_eol: HL = the next line. Five walks share it.
+le_skipline:
+                inc     hl
+                inc     hl
+                inc     hl
+                inc     hl
 skip_to_eol:
                 ld      a,(hl)
                 or      a
@@ -864,11 +880,7 @@ lrn_end:
                 ; R-RN15: a fourth argument is Syntax error, and nothing is
                 ; renumbered -- `RENUM 10,1,10,7` leaves line 1 standing. A ':'
                 ; IS accepted and R-RN16 then abandons the rest of the line.
-                call    ldr_skipsp
-                or      a
-                jr      z,lrn_valid
-                cp      COLON
-                ld      a,2
+                call    ldr_eos                 ; NZ + A=2 unless end-of-statement
                 jr      nz,lrn_fail
 lrn_valid:
                 ; R-RN11: increment 0 is ERR 5. Checked before anything is read
@@ -882,8 +894,7 @@ lrn_valid:
 lrn_fc:
                 ld      a,5                     ; ERR 5: illegal function call
 lrn_fail:
-                ld      (LE_STATUS),a
-                ret                             ; a REFUSED renum is a complete no-op
+                jr      lrn_st                  ; a REFUSED renum is a complete no-op
 lrn_start:
                 ; Pass 2 begins at the FIRST stored line, not at RN_OLD -- R-RN7:
                 ; a reference in a line that is NOT itself renumbered is rewritten
@@ -894,11 +905,7 @@ lrn_line:
                 ; with the link chain: nothing here moves a byte, so either would
                 ; work -- PRGEND is used because the resume path (op 6) re-enters
                 ; in the MIDDLE of a body and has no link in hand.
-                ld      a,(PRGEND)
-                cp      l
-                jr      nz,lrn_body0
-                ld      a,(PRGEND+1)
-                cp      h
+                call    le_atend
                 jr      z,lrn_pass3             ; end of program -> renumber headers
 lrn_body0:
                 inc     hl
@@ -959,18 +966,14 @@ lrn_undef:
                 inc     hl                      ; resume PAST this reference, or the
                 ld      (RN_PTR),hl             ; re-entry reports it again forever
                 ld      a,1
-                ld      (LE_STATUS),a
+lrn_st:                                         ; RENUM's shared status tail (lrn_fail
+                ld      (LE_STATUS),a           ; and lrn_done jr here)
                 ret
 lrn_pass3:
                 ; Pass 3 -- the headers, now that every reference is resolved.
-                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
-                ld      de,(RN_NEW)
+                call    lrn_head                ; HL = TXTTAB, DE = RN_NEW
 lrn_p3lp:
-                ld      a,(PRGEND)
-                cp      l
-                jr      nz,lrn_p3line
-                ld      a,(PRGEND+1)
-                cp      h
+                call    le_atend
                 jr      z,lrn_done
 lrn_p3line:
                 push    hl
@@ -989,17 +992,19 @@ lrn_p3line:
                 ex      de,hl                   ; DE = the next number to assign
 lrn_p3next:
                 pop     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol
+                call    le_skipline
                 jr      lrn_p3lp
 lrn_done:
-                xor     a
-                ld      (LE_STATUS),a           ; 0 = done. No relink, no vars_reset:
-                ret                             ; nothing moved and R-RN17 says the
+                xor     a                       ; 0 = done. No relink, no vars_reset:
+                jr      lrn_st                  ; nothing moved and R-RN17 says the
                                                 ; variables and the CONT point stand.
+
+; --- lrn_head: HL = the first line (TXTTAB), DE = RN_NEW. Touches nothing else.
+; The start of all three RENUM walks (pass 3, lrn_map, lrn_order).
+lrn_head:
+                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
+                ld      de,(RN_NEW)
+                ret
 
 ; --- lrn_inspan: CF set when BC is at or past RN_OLD -----------------------
 ; The one place "is this line renumbered" is decided, so R-RN3's boundary has a
@@ -1029,14 +1034,9 @@ lrn_map:
                                                 ; so lrn_undef needs no store of
                                                 ; its own and BC is free to become
                                                 ; the walk's own line number
-                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
-                ld      de,(RN_NEW)             ; the next number to be assigned
+                call    lrn_head                ; DE = the next number to be assigned
 lrnm_lp:
-                ld      a,(PRGEND)
-                cp      l
-                jr      nz,lrnm_line
-                ld      a,(PRGEND+1)
-                cp      h
+                call    le_atend
                 jr      nz,lrnm_line
                 or      a                       ; end of program -> CF clear = there
                 ret                             ; is no such line (R-RN8/R-RN22)
@@ -1089,14 +1089,9 @@ lrnm_hit:
 ; literal ceiling in ldr_num does NOT cover -- `RENUM 65530` is a Syntax error
 ; from the tokeniser instead (R-RN14). Two rules, two messages, one verb.
 lrn_order:
-                ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
-                ld      de,(RN_NEW)
+                call    lrn_head
 lrno_lp:
-                ld      a,(PRGEND)
-                cp      l
-                jr      nz,lrno_line
-                ld      a,(PRGEND+1)
-                cp      h
+                call    le_atend
                 jr      z,lrno_ok               ; walked it all without overflowing
 lrno_line:
                 push    hl
@@ -1148,11 +1143,7 @@ lrno_set:
                 ex      de,hl
 lrno_next:
                 pop     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                inc     hl
-                call    skip_to_eol
+                call    le_skipline
                 jr      lrno_lp
 lrno_bad:
                 pop     hl
@@ -1195,29 +1186,25 @@ lau_comma:
                 cp      ','
                 jr      nz,lau_end
                 inc     hl
-                ; R-AU4: with a comma present and no start typed, the start is 0.
-                ld      a,b
-                or      a
-                jr      nz,lau_inc
-                ld      de,0
-                ld      (AU_NUM),de
-lau_inc:
-                ; R-AU5: and an absent increment AFTER the comma is 0, which the
+                ; R-AU5: an absent increment AFTER the comma is 0, which the
                 ; check below turns into ERR 5 -- that is the whole of why bare
                 ; `AUTO ,` is `Illegal function call` and needs no rule of its own.
                 ld      de,0
                 ld      (AU_INC),de
+                ; R-AU4: with a comma present and no start typed, the start is 0
+                ; (the same DE = 0).
+                ld      a,b
+                or      a
+                jr      nz,lau_inc
+                ld      (AU_NUM),de
+lau_inc:
                 call    ldr_num
                 jr      nc,lau_end
                 ld      (AU_INC),de
 lau_end:
                 ; R-AU9: a ':' tail is accepted and then abandoned (`AUTO 10:B=9`
                 ; prompts at 10 and leaves B at 0); anything else is ERR 2.
-                call    ldr_skipsp
-                or      a
-                jr      z,lau_ok
-                cp      COLON
-                ld      a,2
+                call    ldr_eos                 ; NZ + A=2 unless end-of-statement
                 jr      nz,lau_fail
 lau_ok:
                 ld      hl,(AU_INC)             ; R-AU5: increment 0 is ERR 5

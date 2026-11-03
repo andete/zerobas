@@ -79,9 +79,7 @@ pnt_nosign:
                 ld      c,0                 ; C = integer digits written
 pnt_int:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,pnt_intdone
-                cp      '9' + 1
+                call    pnt_isdig
                 jr      nc,pnt_intdone
                 ld      (de),a
                 inc     de
@@ -143,9 +141,7 @@ pnt_frac:
                 jr      z,pnt_round
 pnt_frlp:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,pnt_frpad
-                cp      '9' + 1
+                call    pnt_isdig
                 jr      nc,pnt_frpad
                 inc     hl                  ; a real source digit
                 jr      pnt_frput
@@ -161,34 +157,15 @@ pnt_round:
                 ld      a,(hl)              ; first source digit past the cut
                 cp      '5'
                 jr      c,pnt_comma         ; below half -> plain truncation
-                push    de                  ; the end of the digits
-                call    pnt_digstart        ; HL = first digit
-pnt_carry:
-                dec     de
-                ld      a,(de)
-                cp      '9'
-                jr      z,pnt_nine
-                inc     a
-                ld      (de),a
-                pop     de                  ; back to the end
-                jr      pnt_comma
-pnt_nine:
-                ld      a,'0'
-                ld      (de),a              ; 9 -> 0 and keep carrying
-                ld      a,d
-                cp      h
-                jr      nz,pnt_carry
-                ld      a,e
-                cp      l
-                jr      nz,pnt_carry
+                call    pnt_digstart        ; HL = first digit, the carry floor
+                call    pnt_cwalk
+                jr      nz,pnt_comma        ; absorbed
                 ; every digit carried: the number gains a place (9.5 -> 10.).
                 ; The run is all '0' now, so growing it is a write, not a move.
-                pop     de
                 ld      a,'0'
                 ld      (de),a
                 inc     de
-                call    pnt_digstart
-                ld      (hl),'1'
+                ld      (hl),'1'            ; HL is still the first digit
                 inc     c                   ; one more integer digit
 ; --- D-PUCOMMA: group the INTEGER digits in threes ---------------------------
 ; Runs after rounding (so a carry that grows the number regroups correctly) and
@@ -206,13 +183,11 @@ pnt_comma:
                 jr      z,pnt_point
                 ld      a,c                 ; K = (integer digits - 1) / 3
                 dec     a
-                ld      b,0
+                ld      b,-1
 pnt_ck:
+                inc     b                   ; B = the successful subtractions
                 sub     3
-                jr      c,pnt_ckd
-                inc     b
-                jr      pnt_ck
-pnt_ckd:
+                jr      nc,pnt_ck
                 ld      a,b
                 or      a
                 jr      z,pnt_point         ; 3 digits or fewer: no comma at all
@@ -273,25 +248,8 @@ pnt_point:
                 ld      a,e
                 sub     l
                 sub     c
-                ld      b,a                 ; B = fraction digits (may be 0)
-                push    de                  ; the shift moves DE
-                ld      h,d
-                ld      l,e
-                inc     hl                  ; HL = the new end
-                ld      a,b
-                or      a
-                jr      z,pnt_putdot        ; `##.` -- no fraction to move
-pnt_shift:
-                dec     de
-                dec     hl
-                ld      a,(de)
-                ld      (hl),a
-                djnz    pnt_shift
-pnt_putdot:
-                dec     hl
-                ld      (hl),'.'            ; lands where the fraction began
-                pop     de
-                inc     de                  ; one byte longer overall
+                ld      b,a                 ; B = fraction digits (may be 0: `##.`)
+                call    pnt_putpt
 pnt_term:
                 xor     a
                 ld      (de),a              ; 0-terminate
@@ -436,10 +394,8 @@ pnn_mant:
                 inc     hl
                 cp      '.'
                 jr      z,pnn_mant          ; the mantissa's own point
-                cp      '0'
-                jr      c,pnn_end           ; the `E`, or anything else
-                cp      '9' + 1
-                jr      nc,pnn_end
+                call    pnt_isdig
+                jr      nc,pnn_end          ; the `E`, or anything else
                 ld      (de),a
                 inc     de
                 djnz    pnn_mant
@@ -514,8 +470,7 @@ pnt_x_n:
                 ld      a,(hl)
                 cp      '-'
                 jr      nz,pnt_x_pos
-                ld      a,'-'
-                jr      pnt_x_put
+                jr      pnt_x_put           ; A is the '-' already
 pnt_x_pos:
                 ld      a,c
                 or      a
@@ -536,9 +491,7 @@ pnt_x_sgnd:
                 ld      b,0
 pnt_x_ip:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,pnt_x_ipd
-                cp      '9' + 1
+                call    pnt_isdig
                 jr      nc,pnt_x_ipd
                 ld      (de),a
                 inc     de
@@ -552,9 +505,7 @@ pnt_x_ipd:
                 inc     hl
 pnt_x_fp:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,pnt_x_ex
-                cp      '9' + 1
+                call    pnt_isdig
                 jr      nc,pnt_x_ex
                 ld      (de),a
                 inc     de
@@ -597,20 +548,19 @@ pnt_x_sl:
                 dec     b
                 jr      pnt_x_sl
 pnt_x_have:
-                ld      a,b
-                ld      (PU_COMMAS),a       ; P -- PU_COMMAS is free here, and
-                                            ; measurably so: `e.comma` shows the
-                                            ; exponent form never groups
-                pop     bc                  ; C = n, B = places
                 ld      a,(hl)
-                or      a
+                or      a                   ; Z = a ZERO value (no digit left)
+                ld      a,b                 ; A = P (ld keeps the flags)
+                pop     bc                  ; C = n, B = places
                 jr      nz,pnt_x_pnz
                 ld      a,c                 ; a ZERO value: force the exponent to
-                ld      (PU_COMMAS),a       ; 0 by taking P as n (row e.zero)
+                                            ; 0 by taking P as n (row e.zero)
 pnt_x_pnz:
-                ld      a,(PU_COMMAS)
                 sub     c
-                ld      (PU_COMMAS),a       ; the displayed exponent = P - n
+                ld      (PU_COMMAS),a       ; the displayed exponent = P - n.
+                                            ; PU_COMMAS is free here, and
+                                            ; measurably so: `e.comma` shows the
+                                            ; exponent form never groups
                 ld      a,b
                 add     a,c
                 ld      b,a                 ; B = wanted significant digits
@@ -637,30 +587,12 @@ pnt_x_round:
                 jr      c,pnt_x_pt
                 push    ix
                 pop     hl                  ; HL = the carry floor
-                push    de
-pnt_x_cw:
-                dec     de
-                ld      a,(de)
-                cp      '9'
-                jr      z,pnt_x_c9
-                inc     a
-                ld      (de),a
-                pop     de
-                jr      pnt_x_pt
-pnt_x_c9:
-                ld      a,'0'
-                ld      (de),a
-                ld      a,d
-                cp      h
-                jr      nz,pnt_x_cw
-                ld      a,e
-                cp      l
-                jr      nz,pnt_x_cw
+                call    pnt_cwalk
+                jr      nz,pnt_x_pt         ; absorbed
                 ld      (hl),'1'            ; 999 -> 100: one more integer digit,
                 ld      a,(PU_COMMAS)       ; which the EXPONENT absorbs rather
                 inc     a                   ; than the field (row e.round)
                 ld      (PU_COMMAS),a
-                pop     de
 pnt_x_pt:
                 ; --- the point, if the format carries one ----------------------
                 ld      a,(PU_FLAGS)
@@ -669,67 +601,36 @@ pnt_x_pt:
                 ld      a,(PU_DEC)
                 and     $3F
                 ld      b,a                 ; the fraction moves right by one
-                push    de
-                ld      h,d
-                ld      l,e
-                inc     hl
-                ld      a,b
-                or      a
-                jr      z,pnt_x_dot
-pnt_x_sh:
-                dec     de
-                dec     hl
-                ld      a,(de)
-                ld      (hl),a
-                djnz    pnt_x_sh
-pnt_x_dot:
-                dec     hl
-                ld      (hl),'.'
-                pop     de
-                inc     de
+                call    pnt_putpt
 pnt_x_e:
                 ; --- `E`, the sign, and two exponent digits --------------------
                 ld      a,'E'
                 ld      (de),a
                 inc     de
                 ld      a,(PU_COMMAS)
-                ld      c,a
+                ld      c,'+'
                 or      a
                 jp      p,pnt_x_epl
-                ld      a,'-'
-                ld      (de),a
-                inc     de
-                xor     a
-                sub     c
-                ld      c,a                 ; C = the magnitude
-                jr      pnt_x_ed
+                neg                         ; A = the magnitude
+                ld      c,'-'
 pnt_x_epl:
-                ld      a,'+'
-                ld      (de),a
-                inc     de
-pnt_x_ed:
+                ex      de,hl               ; HL = the write cursor
+                ld      (hl),c              ; the sign
+                inc     hl
                 ld      b,'0' - 1
 pnt_x_tens:
                 inc     b
-                ld      a,c
                 sub     10
-                ld      c,a
                 jr      nc,pnt_x_tens
-                ld      a,c
-                add     a,10
-                add     a,'0'
-                ld      c,a
-                ld      a,b
-                ld      (de),a              ; tens
-                inc     de
-                ld      a,c
-                ld      (de),a              ; units
-                inc     de
-                xor     a
-                ld      (de),a
+                add     a,10 + '0'
+                ld      (hl),b              ; tens
+                inc     hl
+                ld      (hl),a              ; units
+                inc     hl
+                ld      (hl),0
+                ld      a,l
                 ld      hl,PU_NUM
-                ld      a,e
-                sub     l
+                sub     l                   ; A = the length
                 ret
 
 ; pnt_x_e2 -- the two exponent digits at HL as a binary value in A; HL advances.
@@ -748,4 +649,63 @@ pnt_x_e2:
                 sub     '0'
                 add     a,c
                 inc     hl
+                ret
+
+; pnt_isdig -- CF set iff A is '0'..'9'; A kept. The digit test of every walk
+; above (pnt_int, pnt_frlp, pnn_mant, pnt_x_ip, pnt_x_fp).
+pnt_isdig:
+                cp      '0'
+                ccf                         ; below '0' -> CF clear
+                ret     nc
+                cp      '9' + 1             ; CF iff <= '9'
+                ret
+
+; pnt_cwalk -- round the digit run [HL, DE) up by one unit in its last place.
+; out: NZ = absorbed; Z = carried out of the first digit (the run is all '0'
+; now and the caller grows it). DE, HL, BC kept; A clobbered.
+pnt_cwalk:
+                push    de                  ; the end of the digits
+pnt_cw_lp:
+                dec     de
+                ld      a,(de)
+                cp      '9'
+                jr      z,pnt_cw_9
+                inc     a                   ; '1'..'9': NZ
+                ld      (de),a
+                pop     de
+                ret
+pnt_cw_9:
+                ld      a,'0'
+                ld      (de),a              ; 9 -> 0 and keep carrying
+                ld      a,d
+                cp      h
+                jr      nz,pnt_cw_lp
+                ld      a,e
+                cp      l
+                jr      nz,pnt_cw_lp
+                pop     de                  ; Z: carried out
+                ret
+
+; pnt_putpt -- insert the `.` B bytes before the end DE, moving the fraction
+; right by one. in: DE = end, B = fraction bytes (may be 0: `##.`).
+; out: DE = end + 1, HL = the `.`. Clobbers AF, B.
+pnt_putpt:
+                push    de                  ; the shift moves DE
+                ld      h,d
+                ld      l,e
+                inc     hl                  ; HL = the new end
+                ld      a,b
+                or      a
+                jr      z,pnt_pp_dot        ; no fraction to move
+pnt_pp_sh:
+                dec     de
+                dec     hl
+                ld      a,(de)
+                ld      (hl),a
+                djnz    pnt_pp_sh
+pnt_pp_dot:
+                dec     hl
+                ld      (hl),'.'            ; lands where the fraction began
+                pop     de
+                inc     de                  ; one byte longer overall
                 ret

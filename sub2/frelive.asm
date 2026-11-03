@@ -54,7 +54,8 @@
 ; ===========================================================================
 
 FL_STK_MARGIN   equ     48          ; bytes kept clear above CTLLIM (DI here: no
-                                    ; interrupt frame; our own calls nest 2 deep)
+                                    ; interrupt frame; our own calls nest 3 deep:
+                                    ; fl_cost_sub -> fl_cost + its push)
 
 ; The frame, IX-relative (pushed in this order, so the first is highest):
 ;   (ix+8,9) the result word's address   (ix+6,7) the mark
@@ -86,9 +87,10 @@ frelive_tenant:
                 jr      c,fl_target         ; a letter: an implicit LET
 fl_kw:
                 or      a                   ; an empty statement (never one with a
-                jp      z,fl_bail           ; FRE in it): never step past its end
+fl_bail_z:                                  ; (a `jr z` here from further on
+                jp      z,fl_bail           ;  still bails) FRE in it): never step past its end
                 cp      COLON
-                jp      z,fl_bail
+                jr      z,fl_bail_z         ; (Z holds: the jp z there bails)
                 inc     hl                  ; past the statement token
                 cp      LET_TOKEN
                 jr      z,fl_target
@@ -111,7 +113,7 @@ fl_target:                                  ; skip the target to its top-level `
                 ld      b,0                 ; B = subscript parenthesis depth
 fl_tg_lp:
                 call    fl_tok
-                jp      z,fl_bail           ; no `=`: not an assignment we know
+                jr      z,fl_bail_z         ; no `=`: not an assignment we know
                 cp      '('
                 jr      nz,fl_tg_1
                 inc     b
@@ -138,7 +140,7 @@ fl_loop:
                 pop     de
                 jp      nc,fl_bail
                 call    fl_tok
-                jp      z,fl_bail           ; the statement ended first
+                jr      z,fl_bail_z         ; the statement ended first
                 call    fl_issep
                 jp      z,fl_reset          ; `;` TO STEP THEN GOTO GOSUB USING
                 bit     0,(ix+1)
@@ -239,19 +241,18 @@ fl_usr_1:
 fl_fn:                                      ; FN <name>: a function, the name's type
                 call    fl_sp
                 cp      'A'
+fl_bail_c:
                 jp      c,fl_bail
                 cp      'Z'+1
+fl_bail_nc:
                 jp      nc,fl_bail
                 inc     hl
 fl_name:                                    ; A = the first letter, HL past it,
                 sub     'A'                 ; C = the class its `(` opens
                 push    hl
                 ld      hl,DEFTBL           ; the letter's DEF type: 2/3/4/8, the
-                add     a,l                 ; widths themselves
-                ld      l,a
-                jr      nc,fl_name_1
-                inc     h
-fl_name_1:
+                add     a,l                 ; widths themselves (no carry into H:
+                ld      l,a                 ; DEFTBL is in one page, asserted below)
                 ld      b,(hl)
                 pop     hl
 fl_name_lp:
@@ -297,16 +298,15 @@ fl_ff:                                      ; a $FF function: HL past its select
                 cp      FRE_TOKEN
                 jr      z,fl_needparen
                 sub     $81
-                jp      c,fl_bail
+fl_bail_c2:
+                jr      c,fl_bail_c
                 cp      fl_fftab_n
-                jp      nc,fl_bail
+fl_bail_nc2:
+                jr      nc,fl_bail_nc
                 push    hl
                 ld      hl,fl_fftab
                 add     a,l
                 ld      l,a
-                jr      nc,fl_ff_1
-                inc     h
-fl_ff_1:
                 ld      b,(hl)              ; its result type, 0 = the argument's
                 pop     hl
                 ld      c,$60
@@ -327,7 +327,7 @@ fl_push:
                 sbc     hl,sp               ; CF iff SP is above floor + margin
                 pop     de
                 pop     hl
-                jp      nc,fl_bail
+                jr      nc,fl_bail_nc
                 call    fl_cost
                 add     a,e
                 ld      e,a
@@ -347,7 +347,7 @@ fl_after:
                 cp      ','
                 jr      z,fl_reduce_bc
                 cp      GT_TOKEN
-                jp      c,fl_bail           ; nothing an operand may be followed by
+                jr      c,fl_bail_c2        ; nothing an operand may be followed by
                 cp      LT_TOKEN+1
                 jr      nc,fl_arith
 fl_rel:                                     ; `<>`, `<=`, `=>` ... are ONE operator
@@ -364,12 +364,12 @@ fl_rel_end:
 fl_arith:
                 sub     PLUS_TOKEN
                 cp      fl_optab_n
-                jp      nc,fl_bail
+                jr      nc,fl_bail_nc2
                 push    hl
                 ld      hl,fl_optab
                 add     a,l
                 ld      l,a
-                jr      nc,fl_arith_1
+                jr      nc,fl_arith_1       ; (kept: the table may straddle a page)
                 inc     h
 fl_arith_1:
                 ld      a,(hl)
@@ -391,8 +391,7 @@ fl_reduce:
                 jr      z,fl_red_stop       ; a bracket or the sentinel
                 cp      (ix+2)
                 jr      c,fl_red_stop       ; looser than the incoming operator
-                call    fl_cost
-                call    fl_sub
+                call    fl_cost_sub
                 ld      a,c                 ; the reduced value's type:
                 and     $F0
                 cp      $10
@@ -428,26 +427,25 @@ fl_red_stop:
                 ld      b,(ix+0)            ; LEFT operand's type
                 ld      a,c
                 cp      $B8
-                jp      nz,fl_push
+                jr      nz,fl_rs_push
                 ld      c,$18               ; `+`: arithmetic ...
                 ld      a,b
                 cp      3
-                jp      nz,fl_push
+                jr      nz,fl_rs_push
                 ld      c,$A8               ; ... or, on a string, concatenation
+fl_rs_push:
                 jp      fl_push
 fl_comma:                                   ; inside a bracket: its next argument;
                 ld      a,c                 ; at the top: a new item
                 or      a
                 jr      z,fl_reset
-                ld      (ix+1),1
-                jp      fl_loop
+                jr      fl_expect
 fl_close:
                 pop     bc                  ; the bracket this `)` closes
                 ld      a,c
                 or      a
                 jr      z,fl_bail           ; none: not an expression we follow
-                call    fl_cost
-                call    fl_sub
+                call    fl_cost_sub
                 ld      a,c
                 cp      $80
                 jr      nz,fl_close_1
@@ -466,19 +464,21 @@ fl_close_fre:
                 jr      fl_close_set
 fl_close_1:
                 cp      $50
-                jp      z,fl_loop           ; `(`: the value keeps its type
+                jr      z,fl_to_loop        ; `(`: the value keeps its type
                 inc     b
                 dec     b
-                jp      z,fl_loop           ; ABS / INT / FIX: the argument's type
+                jr      z,fl_to_loop        ; ABS / INT / FIX: the argument's type
 fl_close_set:
                 ld      (ix+0),b            ; a function's result, a subscript's type
-                jp      fl_loop
+                jr      fl_to_loop
 
 fl_reset:                                   ; a fresh expression: nothing pending
                 ld      sp,ix
                 ld      de,0
                 push    de                  ; the sentinel again
+fl_expect:
                 ld      (ix+1),1
+fl_to_loop:
                 jp      fl_loop
 
 fl_bail:
@@ -511,9 +511,6 @@ fl_cost:
                 ld      hl,fl_costtab
                 add     a,l
                 ld      l,a
-                jr      nc,fl_cost_1
-                inc     h
-fl_cost_1:
                 ld      a,(hl)
                 pop     hl
                 bit     7,a
@@ -525,17 +522,20 @@ fl_cost_1:
 ; subscript, FRE, / ^, concatenation. Bit 7: + the left operand's width.
 fl_costtab:
                 db      0, $80+8, $80+10, 8, 6, 6, 10, 18, 10, $80+8, 2
+    IF (high fl_costtab) != (high ($ - 1))
+                db      FL_COSTTAB_STRADDLES_A_PAGE
+    ENDIF
 
-; fl_sub: DE -= A.
+; fl_cost_sub: DE -= the cost of entry BC. fl_sub: DE -= A. Both keep BC, HL.
+fl_cost_sub:
+                call    fl_cost
 fl_sub:
-                push    hl
-                ld      l,a
-                ld      h,0
-                ex      de,hl
-                or      a
-                sbc     hl,de
-                ex      de,hl
-                pop     hl
+                cpl
+                scf
+                adc     a,e                 ; E + 256 - A: CF iff no borrow
+                ld      e,a
+                ret     c
+                dec     d
                 ret
 
 ; fl_sp: skip blanks; A = the byte at HL.
@@ -640,6 +640,9 @@ fl_fftab:
                 db      0, 2, 2, 2, 2, 2, 2, 2   ; $A1 FIX STICK STRIG PDL PAD DSKF FPOS CVI
                 db      4, 8, 2, 2, 2, 3, 3, 3   ; $A9 CVS CVD EOF LOC LOF MKI$ MKS$ MKD$
 fl_fftab_n      equ     $ - fl_fftab
+    IF (high fl_fftab) != (high ($ - 1))
+                db      FL_FFTAB_STRADDLES_A_PAGE
+    ENDIF
 ; The single-byte function tokens and pseudo-variables (two parallel rows, so
 ; cpir cannot match a type byte), and their types: bit 7 set = a function, its
 ; `(` must follow. ERL and TIME are a guess (single): no row measured them.
@@ -660,3 +663,6 @@ fl_sbtyp:
 fl_optab:
                 db      $B8, $18, $1B, $9B, $9D, $35, $34, $33, $32, $31, $39, $3A
 fl_optab_n      equ     $ - fl_optab
+    IF (high DEFTBL) != (high (DEFTBL + 25))
+                db      FL_DEFTBL_STRADDLES_A_PAGE
+    ENDIF

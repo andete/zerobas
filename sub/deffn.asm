@@ -80,7 +80,8 @@ deffn_tenant:
                 jr      dfn_actual
 dfn_stored:
                 call    dfn_is_result
-                jp      z,dfn_load          ; the RESULT slot -> load it and leave
+                ld      a,4                 ; the RESULT slot -> request 4: load the
+                ret     z                   ; coerced result, then leave
                 jp      dfn_delim           ; a FORMAL -> the delimiters must agree
 
 ; --- dfn_is_result: Z iff FN_KEY names the $FFFF result slot ---------------
@@ -155,7 +156,7 @@ dfn_formal:
                 ld      (FN_TYP),a
                 ld      (FN_KEY),bc
                 ld      a,1                 ; evaluate the actual at FN_PTR
-                jr      dfn_req
+                ret                         ; (A is the request -- see dfn_a_x)
 
 ; --- dfn_actual: the actual came back -- type-check it, open its slot -------
 ; 🎯 ONE `evaluate` REQUEST SERVES BOTH THE ACTUALS AND THE BODY, and BOTH
@@ -234,7 +235,6 @@ dfn_a_open:
                 ld      (hl),a              ; grow, never shrink
 dfn_a_x:
                 ld      a,2                 ; store the value into (FN_KEY, FN_TYP)
-dfn_req:
                 ret                         ; A **is** the request: subrom_call's
                                             ; documented result register, and the
                                             ; servicer's `ld l,a` next time round
@@ -288,7 +288,7 @@ dfn_b_noeq:
                 ld      hl,$FFFF
                 ld      (FN_KEY),hl         ; ...and this is the phase mark
                 ld      a,1
-                jr      dfn_req
+                ret
 
 ; --- dfn_bodydone: the body's value came back ------------------------------
 dfn_bodydone:                               ; B = $81/$82
@@ -320,16 +320,13 @@ dfn_bodydone:                               ; B = $81/$82
                 ld      a,low FN_PAREA + FN_SLOTSZ
                 ld      (FN_FEND),a
                 ld      a,2                 ; store the result into the $FFFF slot
-                jr      dfn_req
+                ret
 dfn_bd_str:
                 cp      $82
                 jr      nz,dfn_err13        ; a `$` function whose body is not a
                                             ; string is ERR 13 (o.strbody)
                 ld      a,3                 ; snapshot it off the frame, then leave
-                jp      dfn_req
-dfn_load:
-                ld      a,4                 ; load the coerced result, then leave
-                jp      dfn_req
+                ret
 
 ; --- the dispositions ------------------------------------------------------
 ; 🎯 EVERY ONE OF THESE IS RAISED BY THE SERVICER'S ONE `ld a,(FN_TYP) / jp
@@ -351,7 +348,7 @@ dfn_err18:
 dfn_raise:
                 ld      (FN_TYP),a
                 xor     a                   ; request 0 = raise FN_TYP
-                jp      dfn_req
+                ret
 
 ; ===========================================================================
 ; Sub-local clones (see the file header for why a page-0 tenant needs them)
@@ -392,29 +389,22 @@ dfn_nk_more:
                 inc     hl
                 jr      dfn_nk_more
 dfn_nk_suffix:
-                ld      a,(hl)              ; optional type suffix
-                cp      '%'
-                jr      z,dfn_nk_pct
+                ld      a,(hl)              ; optional type suffix; each arm loads its
+                ld      e,2                 ; type into E first (DE is clobbered on
+                cp      '%'                 ; the no-suffix path anyway, by dfn_deftbl)
+                jr      z,dfn_nk_eat
+                ld      e,4
                 cp      '!'
-                jr      z,dfn_nk_bang
+                jr      z,dfn_nk_eat
+                ld      e,8
                 cp      '#'
-                jr      z,dfn_nk_hash
+                jr      z,dfn_nk_eat
+                ld      e,DEFTBL_STR
                 cp      '$'
-                jr      z,dfn_nk_str
-                jr      dfn_deftbl          ; no suffix -> the DEFtbl default for
+                jr      nz,dfn_deftbl       ; no suffix -> the DEFtbl default for
                                             ; name0, and HL is NOT advanced
-dfn_nk_pct:
-                ld      a,2
-                jr      dfn_nk_eat
-dfn_nk_bang:
-                ld      a,4
-                jr      dfn_nk_eat
-dfn_nk_hash:
-                ld      a,8
-                jr      dfn_nk_eat
-dfn_nk_str:
-                ld      a,DEFTBL_STR
 dfn_nk_eat:
+                ld      a,e
                 inc     hl
                 ret
 
@@ -427,31 +417,32 @@ dfn_ident_cont:
                 call    skip_spaces         ; A = first non-space, HL on it
                 call    is_letter           ; letter -> CF set, A preserved
                 ret     c
+                ; falls through: digit -> CF set
+; --- is_digit_cf: CF set iff A is '0'..'9'; A kept (Z/S/H/N undefined) --------
+; The one page-0 digit test: also called by sub/tkfloat.asm (tkf_scan_digits,
+; tke_dloop) and basic/tokenise.inc (tk_loop, bl_ac_char, bl_ac_lp).
+is_digit_cf:
                 cp      '0'
-                jr      c,dfn_ic_no
-                cp      '9'+1
-                jr      nc,dfn_ic_no
-                scf                         ; digit -> CF set
-                ret
-dfn_ic_no:
-                or      a                   ; CF clear
+                ccf                         ; below '0' -> CF clear
+                ret     nc
+                cp      '9'+1               ; CF iff <= '9'
                 ret
 
 ; --- dfn_deftbl: basic/vars.asm's deftbl_lookup, sub-side ------------------
 ; in: B = upcased name0 letter. out: A = DEFTBL[B-'A'] (2/4/8/DEFTBL_STR).
 ; Preserves BC and HL -- the no-suffix path above needs the cursor NOT advanced
-; and the key intact.
+; and the key intact. Clobbers DE. The 26 entries sit inside one page (asserted),
+; so the index is a low-byte add with no carry for every letter.
 dfn_deftbl:
-                push    hl
                 ld      a,b
-                sub     'A'
-                ld      l,a
-                ld      h,0
-                ld      de,DEFTBL
-                add     hl,de
-                ld      a,(hl)
-                pop     hl
+                add     a,low (DEFTBL - 'A')
+                ld      e,a
+                ld      d,high DEFTBL
+                ld      a,(de)
                 ret
+    IF (high DEFTBL) != (high (DEFTBL + 25))
+                db      DFN_DEFTBL_CROSSES_A_PAGE
+    ENDIF
 
 ; ===========================================================================
 ; D-FNPOOL — the `DEF FN` frame lives in the CONTROL POOL (docs/spec-basic-fnpool.md)

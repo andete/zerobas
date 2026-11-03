@@ -49,27 +49,24 @@ cpt_body:
                 ld      a,(GFX_DRESUME)
                 or      a
                 jr      nz,cpt_resume
-                ; fresh parse: clear the error slot, request the centre (x,y)
-                xor     a
+                ; fresh parse: clear the error slot (A = 0 here), request the
+                ; centre (x,y)
                 ld      (GFX_RES),a
-                ld      a,P_CENTER
-                ld      (GFX_CPHASE),a
-                ld      a,1                 ; DREQ 1 = parse_coord
-                ld      (GFX_DREQ),a
-                ret
+                ld      bc,1*256+P_CENTER   ; DREQ 1 = parse_coord
+                jp      cpt_req
 
 cpt_resume:
                 ld      a,(GFX_CPHASE)
-                cp      P_CENTER
+                or      a                   ; P_CENTER .. P_ASPECT are 0..5
                 jr      z,cpt_after_center
-                cp      P_R
+                dec     a
                 jr      z,cpt_after_r
-                cp      P_C
+                dec     a
                 jr      z,cpt_after_c
-                cp      P_START
-                jp      z,cpt_after_start
-                cp      P_END
-                jp      z,cpt_after_end
+                dec     a
+                jr      z,cpt_after_start
+                dec     a
+                jr      z,cpt_after_end
                 jp      cpt_after_aspect    ; P_ASPECT
 
 ; --- after the centre: the mandatory ",r" then request r -------------------
@@ -78,11 +75,8 @@ cpt_after_center:
                 cp      ','                 ; the ",r" comma is mandatory
                 jp      nz,cpt_err2
                 call    cpt_advance         ; consume ','
-                ld      a,P_R
-                ld      (GFX_CPHASE),a
-                ld      a,2                 ; DREQ 2 = eval int16
-                ld      (GFX_DREQ),a
-                ret
+                ld      bc,2*256+P_R        ; DREQ 2 = eval int16
+                jr      cpt_req
 
 ; --- after r: r>=0 check, defaults, then the optional ",c" -----------------
 ; 🔴 THIS IS THE RADIUS DOMAIN, AND IT IS 0..32767 -- NOT 0..255 (D-CIRCDOM).
@@ -106,10 +100,7 @@ cpt_after_r:
                 res     7,h                 ; the sign bit dropped, as on the VG-8020
                 ld      (GFX_R),hl
                 call    cpt_defaults
-                call    cpt_skipsp
-                cp      ','
-                jp      nz,cpt_finish       ; no optional fields -> draw
-                call    cpt_advance         ; consume ','
+                call    cpt_comma           ; no optional fields -> draw
 ; 🔴 D-CIRCMISS: THE FOUR `cpt_at_*` LABELS ARE REACHED ONLY AFTER A COMMA
 ; HAS BEEN CONSUMED, so a statement that ENDS at one of them is a DANGLING
 ; comma, not an omitted argument -- `Missing operand` (ERR 24) on both
@@ -138,98 +129,87 @@ cpt_at_c:
                 call    cpt_skipsp
                 cp      ','
                 jr      z,cpt_start_intro   ; c omitted; this comma also intros start
-                or      a
-                jp      z,cpt_err24         ; a comma was CONSUMED: end of
-                cp      COLON               ; statement here is a DANGLING
-                jp      z,cpt_err24         ; comma -> Missing operand
-                ld      a,P_C
-                ld      (GFX_CPHASE),a
-                ld      a,2                 ; DREQ 2
-                ld      (GFX_DREQ),a
-                ret
+                ld      bc,2*256+P_C        ; DREQ 2
+                jr      cpt_req_chk
 
 ; --- after c: 0..15 range check, then the optional ",start" ----------------
 cpt_after_c:
                 ld      hl,(GFX_DVAL)       ; c
                 ld      a,h
                 or      a
-                jp      nz,cpt_err5         ; c<0 or >255 -> ERR 5
+                jr      nz,cpt_err5         ; c<0 or >255 -> ERR 5
                 ld      a,l
                 cp      16
-                jp      nc,cpt_err5         ; >15 -> ERR 5
+                jr      nc,cpt_err5         ; >15 -> ERR 5
                 ld      (GFX_C),a
-                call    cpt_skipsp
-                cp      ','
-                jp      nz,cpt_finish
-                ; fall into start_intro (the comma that ends c intros start)
 cpt_start_intro:
-                call    cpt_advance         ; consume the comma introducing start
+                call    cpt_comma           ; the comma introducing start, or draw
                 call    cpt_angle_defaults
 cpt_at_start:
                 call    cpt_skipsp
                 cp      ','
                 jr      z,cpt_start_empty   ; start empty; comma intros end
-                or      a
-                jp      z,cpt_err24         ; a comma was CONSUMED: end of
-                cp      COLON               ; statement here is a DANGLING
-                jp      z,cpt_err24         ; comma -> Missing operand
-                ld      a,P_START
-                ld      (GFX_CPHASE),a
-                ld      a,3                 ; DREQ 3 = eval float -> ARGA
-                ld      (GFX_DREQ),a
-                ret
+                ld      bc,3*256+P_START    ; DREQ 3 = eval float -> ARGA
+                jr      cpt_req_chk
 
 ; --- after start angle: boundary prep, then the optional ",end" ------------
 cpt_after_start:
                 ld      bc,GFX_SNEG
                 ld      de,GFX_SOCT
                 call    cpt_angle_from_arga
-                call    cpt_skipsp
-                cp      ','
-                jp      nz,cpt_finish
-                call    cpt_advance
+cpt_start_empty:
+                call    cpt_comma
 cpt_at_end:
                 call    cpt_skipsp
                 cp      ','
                 jr      z,cpt_end_empty     ; end empty; comma intros aspect
-                or      a
-                jp      z,cpt_err24         ; a comma was CONSUMED: end of
-                cp      COLON               ; statement here is a DANGLING
-                jp      z,cpt_err24         ; comma -> Missing operand
-                ld      a,P_END
-                ld      (GFX_CPHASE),a
-                ld      a,3
-                ld      (GFX_DREQ),a
-                ret
-cpt_start_empty:
-                call    cpt_advance         ; consume the comma, move into end
-                jr      cpt_at_end
+                ld      bc,3*256+P_END
+                jr      cpt_req_chk
 
 ; --- after end angle: boundary prep, then the optional ",aspect" -----------
 cpt_after_end:
                 ld      bc,GFX_ENEG
                 ld      de,GFX_EOCT
                 call    cpt_angle_from_arga
-                call    cpt_skipsp
-                cp      ','
-                jp      nz,cpt_finish
-                call    cpt_advance
+cpt_end_empty:
+                call    cpt_comma
 cpt_at_aspect:
                 call    cpt_skipsp
                 cp      ','
                 jr      z,cpt_err2          ; too many args -> Syntax error
-                or      a
-                jr      z,cpt_err24         ; a comma was CONSUMED: end of
-                cp      COLON               ; statement here is a DANGLING
-                jr      z,cpt_err24         ; comma -> Missing operand
-                ld      a,P_ASPECT
+                ld      bc,3*256+P_ASPECT
+cpt_req_chk:                                ; the four cpt_at_* slots: A = the byte
+                or      a                   ; after a CONSUMED comma -- end of
+                jr      z,cpt_err24         ; statement here is a DANGLING
+                cp      COLON               ; comma -> Missing operand
+                jr      z,cpt_err24
+cpt_req:                                    ; request: C = the phase, B = the DREQ
+                ld      a,c
                 ld      (GFX_CPHASE),a
-                ld      a,3
+                ld      a,b
                 ld      (GFX_DREQ),a
                 ret
-cpt_end_empty:
-                call    cpt_advance         ; consume the comma, move into aspect
-                jr      cpt_at_aspect
+
+; cpt_finish / cpt_err24 / cpt_err5 / cpt_err2: return control to the resident
+; servicer. DREQ 0 = done; GFX_RES carries the ERR code (0 = ok) and the
+; resident's cp_done raises it BEFORE the GFX_OP=4 draw, so a raising exit
+; never draws -- which is what the references do too (D-CIRCMISS: R=4, no
+; pixel, on all eight dangling-comma rows on BOTH machines). Clobbers A.
+cpt_err24:
+                ld      a,24
+                ld      (GFX_RES),a
+                jr      cpt_finish
+cpt_err5:
+                ld      a,5
+                ld      (GFX_RES),a
+                jr      cpt_finish
+cpt_err2:
+                ld      a,2
+                ld      (GFX_RES),a
+cpt_finish:
+                xor     a
+                ld      (GFX_DREQ),a
+                ret
 
 ; --- after aspect: the aspect float math, then finish ----------------------
 cpt_after_aspect:
@@ -237,9 +217,8 @@ cpt_after_aspect:
                 or      a
                 jr      nz,cpt_err5         ; aspect < 0 -> ERR 5
                 ld      hl,(ARGA+FPNUM_DEXP)
-                ld      a,h
-                or      a
-                jp      m,cpt_asp_le1       ; dexp<0 -> aspect<1
+                bit     7,h
+                jr      nz,cpt_asp_le1      ; dexp<0 -> aspect<1
                 ld      a,l
                 or      a
                 jr      z,cpt_asp_le1       ; dexp==0 -> aspect<1
@@ -297,6 +276,15 @@ css_done:
                 ld      (GFX_DPTR),hl
                 ret
 
+; cpt_comma: consume the `,` at the cursor (falls into cpt_advance) -- or, on
+; anything else, leave the WHOLE segment through cpt_finish (drops the caller's
+; return, as cpt_angle_from_arga's refusal does). Clobbers A, HL.
+cpt_comma:
+                call    cpt_skipsp
+                cp      ','
+                jr      z,cpt_advance
+                pop     hl
+                jr      cpt_finish
 ; cpt_advance: consume one token byte (HL=GFX_DPTR, inc, store). Clobbers HL.
 cpt_advance:
                 ld      hl,(GFX_DPTR)
@@ -304,40 +292,16 @@ cpt_advance:
                 ld      (GFX_DPTR),hl
                 ret
 
-; cpt_finish / cpt_err24 / cpt_err5 / cpt_err2: return control to the resident
-; servicer. DREQ 0 = done; GFX_RES carries the ERR code (0 = ok) and the
-; resident's cp_done raises it BEFORE the GFX_OP=4 draw, so a raising exit
-; never draws -- which is what the references do too (D-CIRCMISS: R=4, no
-; pixel, on all eight dangling-comma rows on BOTH machines). Clobbers A.
-cpt_err24:
-                ld      a,24
-                ld      (GFX_RES),a
-                jr      cpt_finish
-cpt_err5:
-                ld      a,5
-                ld      (GFX_RES),a
-                jr      cpt_finish
-cpt_err2:
-                ld      a,2
-                ld      (GFX_RES),a
-cpt_finish:
-                xor     a
-                ld      (GFX_DREQ),a
-                ret
-
 ; cpt_defaults: the pre-optional-field defaults (verbatim from ex_circle). ---
 cpt_defaults:
                 ld      a,(FORCLR)
                 and     $0F
                 ld      (GFX_C),a
-                xor     a
-                ld      (GFX_ASPMAJ),a
-                ld      bc,256
-                ld      (GFX_ASPS),bc
-                xor     a
-                ld      (GFX_ARCF),a
-                ld      (GFX_SNEG),a
-                ld      (GFX_ENEG),a
+                ld      hl,256
+                ld      (GFX_ASPS),hl
+                ld      h,l                 ; HL = 0
+                ld      (GFX_ASPMAJ),hl     ; ASPMAJ, ARCF (BUFTX+11, +12)
+                ld      (GFX_SNEG),hl       ; SNEG, ENEG   (BUFTX+13, +14)
                 ret
 
 ; cpt_angle_defaults: eager (oct,u14)=(0,0) for BOTH boundaries -------------
@@ -361,7 +325,8 @@ cpt_angle_from_arga:
                 ld      (GFX_CS_AX),bc      ; stash neg-flag cell addr
                 ld      (GFX_CS_AY),de      ; stash dest record base
                 ld      a,(ARGA+FPNUM_SIGN)
-                ld      hl,(GFX_CS_AX)
+                ld      h,b
+                ld      l,c                 ; HL = the neg-flag cell (BC)
                 ld      (hl),a              ; negative -> a spoke is drawn later
                 xor     a
                 ld      (ARGA+FPNUM_SIGN),a ; ARGA := |angle|
@@ -378,7 +343,7 @@ cpt_angle_from_arga:
                 dec     a
                 jr      z,cpt_ang_ok        ; |angle| < 6.283245
                 pop     hl                  ; drop our caller's return: the refusal
-                jr      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
+                jp      cpt_err5            ; leaves the whole segment (GFX_RES = 5)
 cpt_ang_ok:
                 call    cpt_boundary_prep   ; reads GFX_CS_AY for the dest base
                 ld      a,1
@@ -423,14 +388,17 @@ cpt_angmax:
 ; models come apart -- and it needs r >= 128 for the 1/256 to reach a whole
 ; pixel, while the gate's largest drawn radius was 20.
 cpt_asp_scale256:
-                ld      hl,ARGB
-                xor     a
                 ld      de,256
-                call    widen_uint_to       ; ARGB := 256.0
-                call    fp_mul              ; ARGA/FAC := minor_ratio*256
-                call    flt_to_int16        ; DE := TRUNC(...) -- not cpt_round
+                call    cpt_mul_trunc       ; DE := TRUNC(minor_ratio*256) -- not cpt_round
                 ld      (GFX_ASPS),de
                 ret
+; cpt_mul_trunc: ARGA/FAC := ARGA * DE (unsigned), then DE := TRUNC of it.
+cpt_mul_trunc:
+                ld      hl,ARGB
+                xor     a
+                call    widen_uint_to       ; ARGB := DE
+                call    fp_mul
+                jp      flt_to_int16
 
 ; cpt_boundary_prep: |angle| -> (oct_raw, u14) record at (GFX_CS_AY). ---------
 ; D-ARCMASK (2026-08-17, docs/arcmask-msx1-characterization.md §5.5): the
@@ -504,12 +472,8 @@ cbp_mul:
                 call    widen_uint_to
                 call    fp_add              ; ARGA/FAC := q - oct_raw
                 ; --- P5: u14 -> record +2/+3 --------------------------------
-                ld      hl,ARGB
-                xor     a
                 ld      de,16384
-                call    widen_uint_to       ; ARGB := 16384.0
-                call    fp_mul              ; ARGA/FAC := f * 16384
-                call    flt_to_int16        ; DE := trunc, 0..16383
+                call    cpt_mul_trunc       ; DE := trunc(f * 16384), 0..16383
                 ld      hl,(GFX_CS_AY)
                 inc     hl
                 inc     hl

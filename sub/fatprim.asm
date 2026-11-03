@@ -4,7 +4,7 @@
 ; zerobas-sub — fatprim.asm  (FAT12 primitive/sector-layer tenant)
 ; ===========================================================================
 ; 🗑️ 2026-10-19 (D-ROMSIZE step 1): WHAT FOLLOWS IS MOSTLY HISTORY. Every row
-; that reached a primitive is retired (fp_table, below): the resident shims in
+; that reached a primitive is retired (fatprim_tenant, below): the resident shims in
 ; basic/fat.asm that sent them are all gone, and the last sub-ROM writer through
 ; this engine -- BSAVE's disk engine in the save tenant -- moved to disk.rom. The
 ; tenant's one live row is 23 (t_fch_hdr, OPEN's FCB header stamp, a pure RAM
@@ -70,97 +70,47 @@
 ; ===========================================================================
 
 ; --- fatprim_tenant: the SUBROM_IDX_FATPRIM entry --------------------------
-; Read DISKOP_OP (RAM) and dispatch via fp_table, indexed by BC*3 (a `jp`
-; table entry is 3 bytes) so HL/DE -- the primitive's REAL inputs, passed
-; through CALSLT untouched by subrom_call -- survive intact into whichever
-; primitive body gets picked.
+; Read DISKOP_OP (RAM): row 23 (DISKOP_SEL_FCH_HDR) runs t_fch_hdr with the
+; caller's HL (passed through CALSLT untouched by subrom_call); every other op
+; is a retired row and goes straight to fp_stash_ok.
 fatprim_tenant:
                 xor     a
                 ld      (DISKOP_ERR),a      ; D-DISKERR: no DSKIO failure pending yet
                 ld      a,(DISKOP_OP)
-                ld      c,a
-                ld      b,0                 ; BC = op (0..24)
-                ld      ix,fp_table
-                add     ix,bc
-                add     ix,bc
-                add     ix,bc               ; IX = fp_table + 3*op
-                ; fp_table is 25 `jp`s, op 0..24
-                ; z80flow: table fp_table 25 stride=3 inplace
-                jp      (ix)
-
-fp_table:
-; --- 2026-10-19 (D-ROMSIZE step 1): EVERY PRIMITIVE ROW IS RETIRED. BSAVE's disk
-; write left the sub-ROM save tenant for disk.rom (hk_dpbsave), and with it went
-; the last reason to keep these rows: their senders were main's resident shims
-; (basic/fat.asm), and the last of those (fat_mount / fat_find) went earlier the
-; same day. Main's ONLY sender left is fatprim_op <- fatprim_bounce <- OPEN's
-; header stamp (basic/files.asm oo_hdr_tail, A = DISKOP_SEL_FCH_HDR, row 23);
-; disk.rom and sub2 never call SUBROM_IDX_FATPRIM. (The primitive BODIES stayed
-; for BLOAD's disk read path, which called them LOCALLY, not through this table,
-; until that path moved to disk.rom too -- the note at the end.) Each row keeps
-; its 3 B so 23 stays put (the table is append-only; the numbering is published).
-                jp      fp_stash_ok             ; 0  retired (was DISKOP_SEL_READ_SECTOR)
-                jp      fp_stash_ok             ; 1  retired (was DISKOP_SEL_WRITE_SECTOR)
-; (rows 2-3 retired earlier on 2026-10-19: AUTOEXEC.BAS's probe is disk.rom's
-; hk_auto, and NAME finds with that ROM's own FAT.)
-                jp      fp_stash_ok             ; 2  retired (was DISKOP_SEL_FAT_MOUNT)
-                jp      fp_stash_ok             ; 3  retired (was DISKOP_SEL_FAT_FIND)
-                jp      fp_stash_ok             ; 4  retired (was DISKOP_SEL_NAME_CMP)
-                jp      fp_stash_ok             ; 5  retired (was DISKOP_SEL_FAT_OPEN)
-                jp      fp_stash_ok             ; 6  retired (was DISKOP_SEL_FAT_READ_FAT_SECTOR)
-                jp      fp_stash_ok             ; 7  retired (was DISKOP_SEL_FAT_READ_FILE_SECTOR)
-                jp      fp_stash_ok             ; 8  retired (was DISKOP_SEL_FAT_ALLOC_CLUSTER)
-                jp      fp_stash_ok             ; 9  retired (was DISKOP_SEL_FAT_WRITE_FAT_ENTRY)
-                jp      fp_stash_ok             ; 10 retired (was DISKOP_SEL_FAT_COUNT_FREE;
-                                                ; D-DSKFLOCAL: DSKF counts in disk.rom)
-                jp      fp_stash_ok             ; 11 retired (D-ASAVEDOUT: no sender;
-                                                ; main's flush stub went with SAVE ,A)
-                jp      fp_stash_ok             ; 12 retired (was DISKOP_SEL_FAT_DIR_CREATE)
-                jp      fp_stash_ok             ; 13 retired (was DISKOP_SEL_FAT_DIR_UPDATE)
-                jp      fp_stash_ok             ; 14 retired (was DISKOP_SEL_FAT_DELETE;
-                                                ; KILL deletes in disk.rom, D-KILLLOCAL)
-; --- rows 15-17: RETIRED by S10.D (2026-10-15). They were the fat_rand_*
-; random-access record engine (docs/spec-eviction-g4-space.md §3, carve #1:
-; DISKOP_SEL_RAND_OPEN / GET / PUT, bodies in sub/randio.asm). RANDOM OPEN / GET
-; / PUT / CLOSE run in disk.rom now (hk_frnd / hk_dget / hk_chclose), so nothing
-; sends these; each keeps its 3 B so 18.. stay put (the table is append-only).
-                jp      fp_stash_ok             ; 15 retired (was DISKOP_SEL_RAND_OPEN)
-                jp      fp_stash_ok             ; 16 retired (was DISKOP_SEL_RAND_GET)
-                jp      fp_stash_ok             ; 17 retired (was DISKOP_SEL_RAND_PUT)
-; --- row 18: RETIRED 2026-10-19. It was fat_io_append's resume-point tail
-; (docs/spec-eviction-g7-space.md, carve 2; sub/fiawalk.asm over
-; basic/fiawalked-body.inc, 148 B). Its sender was main's fat_io_append, which
-; went with S10.B increment 2 (2026-10-06: APPEND is disk.rom's hk_fapp); the
-; row had no sender since, and the tenant and its body are deleted.
-                jp      fp_stash_ok             ; 18 retired (was DISKOP_SEL_FIA_WALKED)
-; --- row 19: the file-channel re-stage (D-FCH S-FCH-1, docs/spec-basic-
-; filechan-alloc.md §3.1) -- RETIRED by S10.C (2026-10-15). Its body,
-; fat_restage_channel, re-read an INPUT channel's staged sector (no other mode
-; ever staged one), and an INPUT channel is disk.rom's FCB now, its read-ahead the
-; block's record. No sender had used the row itself since D-FCBSHAPE S0 (the
-; shim went; t_fch_load called the body directly).
-                jp      fp_stash_ok             ; 19 retired (was DISKOP_SEL_FCH_RESTAGE)
-                jp      fp_stash_ok             ; 20 retired (D-MODE2DEAD: no sender;
-                                                ; the detach flushed mode 2 only)
-; --- rows 21-22: the channel context save/load (D-FCBSHAPE S0), main's
-; fch_save_active/fch_load_ctx bodies moved here so the block layout lived in
-; one ROM. RETIRED, both: row 21 by D-FLDDESC (2026-10-17) -- its last copy was
-; RANDOM's record, FSECTOR_BUF -> block+9, and that record lives at block+9 --
-; and row 22 by S10.E (2026-10-19): t_fch_load's last job was MIRRORING the live
-; channel's LOF / LOC (the FCB's +16 size and +33 random record) into main's
-; FAT_FILESIZE / FWR_BYTES on every channel switch, and LOF / LOC now ask
-; disk.rom for the FCB's own value (H_CHIN ops 6 / 8, disk/fat.asm din_lofloc).
-; main's fch_save_active / fch_load_ctx, their only senders, went with it. Each
-; row keeps its 3 B so 23.. stay put (the table is append-only).
-                jp      fp_stash_ok             ; 21 retired (was DISKOP_SEL_FCH_SAVE)
-                jp      fp_stash_ok             ; 22 retired (was DISKOP_SEL_FCH_LOAD)
-; SBH-3 (2026-10-03) made the sequential WRITE cursor's open/close rows 23/24;
-; S10 increment 3 (D-ASAVEDOUT, 2026-10-08) retired both -- main's stubs over
-; them were SAVE ,A's, and disk.rom writes that file now.
-                jp      t_fch_hdr               ; 23 DISKOP_SEL_FCH_HDR (D-FCBHDR; was
-                                                ; FAT_IO_CREATE, retired by D-ASAVEDOUT)
-                jp      fp_stash_ok             ; 24 retired (D-ASAVEDOUT)
-
+                cp      DISKOP_SEL_FCH_HDR
+                jr      nz,fp_stash_ok      ; every other row is retired
+; (fp_table -- 25 `jp` rows, op 0..24 by BC*3 -- is GONE, D-SUB2RETIRE batch 3,
+; 90 B: every row but 23 was `jp fp_stash_ok` (each retired by the slice named
+; in its DISKOP_SEL_* equate, basic/sysvars.inc, and in `git log -- sub/fatprim.asm`),
+; and 23 is the one live op (t_fch_hdr, its note below). An op that is not 23
+; still gets exactly the old retired-row result: fp_stash_ok with A = the op and
+; the caller's HL. The DISKOP_SEL_* numbering is unchanged; only 23 is decoded.)
+t_fch_hdr:
+                push    hl
+                ld      a,(OO_DEVTYPE)
+                add     a,a
+                ld      e,a
+                ld      d,0
+                ld      hl,fhd_tab-2        ; FCH_MODES 1.. -> row 0..
+                add     hl,de
+                ld      c,(hl)              ; the mode code
+                inc     hl
+                ld      a,(hl)              ; the device code, 0 = the drive
+                pop     hl
+                ld      (hl),c              ; +0
+                or      a
+                jr      nz,fhd_dev
+                ld      a,(DISK_FCB_DRV)
+fhd_dev:
+                ld      de,4
+                add     hl,de
+                ld      (hl),a              ; +4
+                inc     hl
+                inc     hl                  ; +6
+                ld      a,(OO_DEVTYPE)
+                cp      DOUT_MODE
+                jr      z,fp_stash_ok       ; disk.rom's position stands
+                ld      (hl),0
 ; --- uniform result-stash tails --------------------------------------------
 ; Persist {HL, A, STATUS} into the DISKOP block; STATUS=0 (ok) from
 ; fp_stash_ok, STATUS=1 (error) from fp_stash_err. A is saved BEFORE either
@@ -181,15 +131,15 @@ fp_stash_ok:
 ; t_fat_count_free, t_fat_dir_create, t_fat_dir_update and t_fat_delete each
 ; called a shared body and marshalled Cy / HL / A (or Z, or DE through
 ; FAT_WRTMP2) into the DISKOP block for a main-side shim. Every shim is gone
-; (basic/fat.asm's history block), so nothing reached a wrapper; the rows above
-; are `jp fp_stash_ok`. The marshalling convention they implemented is still
+; (basic/fat.asm's history block), so nothing reached a wrapper; their ops now
+; go straight to fp_stash_ok. The marshalling convention they implemented is still
 ; t_fch_hdr's exit and still fatprim_bounce's decode.
 
 ; (t_fch_restage, row 19's wrapper over fat_restage_channel, is gone with it:
-; S10.C, 2026-10-15 -- see the row.)
+; S10.C, 2026-10-15.)
 
-; (t_fch_load (D-FCBSHAPE S0) -- GONE with S10.E, 2026-10-19; row 22 is
-; `jp fp_stash_ok`. It was main's fch_load_ctx body, moved here whole so the
+; (t_fch_load (D-FCBSHAPE S0) -- GONE with S10.E, 2026-10-19; op 22 is a
+; retired op. It was main's fch_load_ctx body, moved here whole so the
 ; block's layout was known in one ROM, and it shrank slice by slice: S10.C took
 ; the arm that LDIR'd an INPUT row into the FCH_STATE0 globals and re-staged its
 ; sector (every disk channel's row is disk.rom's FCB since then), D-FLDDESC the
@@ -222,39 +172,11 @@ fp_stash_ok:
 ; there: not written.
 ;   in:  HL = the block (main's fch_ctx_addr), OO_DEVTYPE = the FCH_MODES value
 ;        (1 INPUT, 3 DOUT, 4 RANDOM, 5 LPT, 6 CRT, 7 CAS OUT, 8 CAS IN, 9 GRP).
-t_fch_hdr:
-                push    hl
-                ld      a,(OO_DEVTYPE)
-                dec     a
-                add     a,a
-                ld      e,a
-                ld      d,0
-                ld      hl,fhd_tab
-                add     hl,de
-                ld      c,(hl)              ; the mode code
-                inc     hl
-                ld      a,(hl)              ; the device code, 0 = the drive
-                pop     hl
-                ld      (hl),c              ; +0
-                or      a
-                jr      nz,fhd_dev
-                ld      a,(DISK_FCB_DRV)
-fhd_dev:
-                ld      de,4
-                add     hl,de
-                ld      (hl),a              ; +4
-                inc     hl
-                inc     hl                  ; +6
-                ld      a,(OO_DEVTYPE)
-                cp      DOUT_MODE
-                jp      z,fp_stash_ok       ; disk.rom's position stands
-                ld      (hl),0
-                jp      fp_stash_ok
 fhd_tab:        db      1,0, 2,0, 2,0, 4,0, 2,$FE, 2,$FD, 2,$FF, 1,$FF
                 db      2,$FC               ; 9 GRP: (D-OPENGRP: VARPTR(#1)+0 = 2,
                                             ; +4 = 252 on the VG-8020, round 5)
 
-; (t_fch_save -- GONE with D-FLDDESC, 2026-10-17; row 21 is `jp fp_stash_ok`.
+; (t_fch_save -- GONE with D-FLDDESC, 2026-10-17; op 21 is a retired op.
 ; D-MODE2DEAD had dropped its flush, S10.C its engine-state LDIR, and the last
 ; thing it did -- RANDOM's record, FSECTOR_BUF -> block+9 -- has no source now:
 ; the record lives in the block.)

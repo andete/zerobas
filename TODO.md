@@ -631,6 +631,29 @@ item — do **one item per session** to keep context lean.
       (RAM scratch -- a ruling), RND's register shuffle, playparse's two structural
       duplicates, the arrays CLEARPOOL jump. 🎯 sub free is 2626 B (after D-MULHANG) against a ~3.99 KB sub2
       page-0 payload: ~1.4 KB short, down from ~2.7 KB.
+      ✅ **BATCH 3 (2026-11-03): +891 B** -- sub page 0 729 -> 1155 B free, sub page 1 1897 ->
+      2362 B ([`subrr3_reloc.out`](scratchpad/subrr3_reloc.out); main unchanged). Three
+      read-only reviewers by file group, each then applying its own list, one after another:
+      the editor / input files (lineedit, readline, edctrl, cursor, keystr -- the function-key
+      default image is stored packed and unpacked into the same 160 bytes of RAM), the tenant
+      files (fatprim's 25-row dispatch table is one compare -- 24 rows were retired; frelive,
+      grpprt, circleparse, deftype, lineno) and the number / text files (tkfloat, tokenise.inc,
+      deffn, errmsg, punum: shared int emitter `tk_emit3`, `tkf_mul10`, `is_digit_cf`, an
+      operator table read by `cpir`). Page-straddle asserts guard every table lookup that
+      dropped its page carry; one (frelive's `fl_optab`) fired after the layout shifted and
+      keeps its carry. Contract-diff ([`subrr3_contract.out`](scratchpad/subrr3_contract.out)):
+      no breaks; `wider_in` rows are `ldi` decrementing BC in the tokeniser (C carries nothing
+      between characters) and `edt_codes`, a data table the analyser decodes as code. HELD
+      BACK for a ruling: cursor geometry through `rl_vaddr` (33 B; differs only when
+      TXTNAM / T32NAM is POKEd without SCREEN); the tokeniser's TKRADIX / TKRTOK /
+      TKHAVESIG / TKEXPD and deffn's FN_DPTR-on-error writes (cell contents change -- NUMBUF's
+      class); `branch_lineno` as a table and one deffn add (knives K6 / K-DF1 anchor there).
+      🎯 sub free is 3517 B against a ~3.99 KB sub2 page-0 payload: ~0.5 KB short.
+      - [ ] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
+        🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
+        `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
+        running value of 6554..9999 wraps below 9999 (6554 * 10 = 65540 -> 4). Measure first:
+        type `PRINT 1E65540` and `A=1E65540` on zerobas and both references.
       - [x] ✅ **D-MULHANG (2026-11-03): NOT A HANG -- lvfix's disk rows were read 2.5 s after
         `RUN`, and the run takes ~3 s.** `ary_mul16_checked`'s reorder leaves every register
         and flag as before, yet lvfix's f.ary2d (`INPUT #1,A$(1,1)` after `DIM A$(2,2)`) read
@@ -8872,7 +8895,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11363 (T-6FE392)8 (T-529ABE)` from `TODO.md:17045 (T-529ABE)`: a
+      `TODO.md:11386 (T-6FE392)8 (T-529ABE)` from `TODO.md:17068 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11832,7 +11855,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17045 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17068 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

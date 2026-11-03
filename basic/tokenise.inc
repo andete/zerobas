@@ -85,9 +85,7 @@ tk_loop:
                 jp      z,tk_string
                 cp      QUOTE_REM           ; "'" comment -> treat as REM
                 jp      z,tk_apos
-                cp      '0'                 ; a digit?
-                jr      c,tk_nondigit
-                cp      '9'+1
+                call    is_digit_cf         ; a digit? (A kept; sub/deffn.asm)
                 jr      nc,tk_nondigit
                 ; A digit continues a name (verbatim) only if we were in one;
                 ; otherwise it begins a numeric constant. This is why `A1` keeps
@@ -110,11 +108,8 @@ tk_namedig:
                 ld      a,1
                 ld      (TKNAME),a          ; the digit (or a '.', D-NAMDOT R-D1)
                                             ; extends the name
-                ld      a,(hl)              ; copy it verbatim
-                ld      (de),a
-                inc     de
-                inc     hl
-                jr      tk_loop
+                ldi                         ; copy it verbatim (BC is dead here:
+                jr      tk_loop             ; tk_loop re-derives B, C carries nothing)
 tk_nondigit:
                 cp      '.'
                 jr      nz,tk_nondot
@@ -196,26 +191,21 @@ tk_nondot:
                 jr      tk_loop
 tk_notkw:
                 ld      a,(hl)              ; not a keyword
-                cp      '='
-                jp      z,tk_op_eq
-                cp      '+'
-                jp      z,tk_op_plus
-                cp      '-'
-                jp      z,tk_op_minus
-                cp      '*'
-                jp      z,tk_op_star
-                cp      '<'
-                jp      z,tk_op_lt
-                cp      '>'
-                jp      z,tk_op_gt
-                cp      '/'
-                jp      z,tk_op_div
-                cp      '\'
-                jp      z,tk_op_idiv
-                ; math pack slice 2c (docs/spec-basic-mathpack-slice2.md
-                ; §13.3): '^' -> POW_TOKEN.
-                cp      '^'
-                jp      z,tk_op_pow
+                ; the nine symbolic operators, one table lookup (tk_optab): the
+                ; char's token sits TK_OPN bytes after it. BC is dead here --
+                ; match_kw has already clobbered it, and tk_loop re-derives B.
+                push    hl
+                ld      hl,tk_optab
+                ld      bc,TK_OPN
+                cpir                        ; Z <=> A is one of them; A kept
+                jr      nz,tk_noop
+                ld      c,TK_OPN-1          ; B = 0 (BC <= TK_OPN); HL = hit+1
+                add     hl,bc               ; -> hit+TK_OPN, the token
+                ld      a,(hl)
+                pop     hl
+                jp      tk_op_emit
+tk_noop:
+                pop     hl
                 cp      '?'                 ; '?' abbreviates PRINT
                 jp      z,tk_print_q
                 cp      '_'                 ; '_' abbreviates CALL: the name is verbatim
@@ -241,6 +231,7 @@ tk_copy:
                 ; the flags alone, so the `cp` still sees the copied byte.
                 cp      COLON
                 jp      nz,tk_loop
+tk_lnoff:
                 xor     a
                 ld      (TKLNUM),a
                 jp      tk_loop
@@ -256,10 +247,8 @@ tk_copy_up:
                 ; as a reserved word does -- `20 GOTO X,5` stores `<89> X,<16>`
                 ; with no $0E anywhere. Only the leading LETTER needs this:
                 ; tk_namedig is reachable only once a name is already open, so it
-                ; has always run through here first.
-                xor     a
-                ld      (TKLNUM),a
-                jp      tk_loop
+                ; has always run through here first. (tk_copy's tail does it.)
+                jr      tk_lnoff
 ; ⚠️ tk_blank LIVES HERE, NOT NEXT TO tk_copy, AND THAT IS NOT COSMETIC. tk_copy
 ; is entered by FALLTHROUGH from the `is_letter` test above, so a tk_blank
 ; placed just before it silently puts EVERY punctuation character through this
@@ -272,17 +261,12 @@ tk_blank:                                   ; a blank: the name survives it (R-N
                 ld      (TKNAME),a          ; verbatim -- `20 A= 1` keeps its blank
                 jr      tk_copy             ; AND still crunches the 1 (nam-eqnum)
 tk_string:
-                ld      a,(hl)              ; opening quote
-                ld      (de),a
-                inc     de
-                inc     hl
+                ldi                         ; opening quote (BC is dead)
 tk_str_loop:
                 ld      a,(hl)
                 or      a
                 jr      z,tk_end            ; unterminated string -> just end
-                ld      (de),a
-                inc     de
-                inc     hl
+                ldi                         ; (keeps A and the Z/C flags)
                 cp      '"'                 ; copy through the closing quote
                 jr      nz,tk_str_loop
                 jp      tk_loop
@@ -301,9 +285,7 @@ tk_rem_rest:
                 ld      a,(hl)              ; rest of line copied verbatim
                 or      a
                 jr      z,tk_end
-                ld      (de),a
-                inc     de
-                inc     hl
+                ldi                         ; (BC is dead: C is tk_data_rest's alone)
                 jr      tk_rem_rest
 ; 🔴 D-DATACOLON (2026-08-31): the old loop ended the body at the FIRST ':'
 ; with no quote state, under a comment claiming "no strings" -- while the READ
@@ -343,10 +325,7 @@ tk_underscore:                              ; '_' (CALL abbreviation): copy it, 
                 ; so it needs its own clear. Knife K7.
                 xor     a
                 ld      (TKLNUM),a
-                ld      a,(hl)              ; device name verbatim (no keyword crunch).
-                ld      (de),a
-                inc     de
-                inc     hl
+                ldi                         ; device name verbatim (no keyword crunch).
                 ; fall through into tk_call_name
 tk_call_name:                               ; the extended-statement device name.
                 ; D-CNAME (docs/spec-basic-cname.md). ⚠️ THIS IS A RANGE TEST, NOT
@@ -427,39 +406,27 @@ tk_end:
                 ld      hl,-(TOKBUF+TOKMAX_BODY+1)
                 add     hl,de               ; CF <=> DE >= TOKBUF+315, i.e. body > 314
                 pop     hl                  ; (pop preserves flags)
-                jr      nc,tke_fits
+                ret     nc                  ; it fits
                 ld      a,(TKOVF)           ; FIRST reject wins: sub/tkfloat.asm sets =6
                 or      a                   ; mid-line and jumps straight here, and that
-                jr      nz,tke_fits         ; overflow happened BEFORE the body ran long
+                ret     nz                  ; overflow happened BEFORE the body ran long
                 ld      a,25                ; the reject reason IS the ERR code (=25), so
                 ld      (TKOVF),a           ; dispatch_line needs no second constant --
-                                            ; page-1 room, see program.asm dl_overflow
-tke_fits:
-                ret
+                ret                         ; page-1 room, see program.asm dl_overflow
 
 ; --- tk_op_*: emit an operator token (spec §4) -----------------------------
-tk_op_eq:
-                ld      a,EQ_TOKEN
-                jr      tk_op_emit
-tk_op_plus:
-                ld      a,PLUS_TOKEN
-                jr      tk_op_emit
-tk_op_minus:
-                ld      a,MINUS_TOKEN
-                jr      tk_op_emit
-tk_op_star:
-                ld      a,STAR_TOKEN
-                jr      tk_op_emit
-tk_op_lt:
-                ld      a,LT_TOKEN
-                jr      tk_op_emit
-tk_op_gt:
-                ld      a,GT_TOKEN
 tk_op_emit:
                 ld      (de),a
                 inc     de
                 inc     hl
                 jp      tk_loop
+; The operator chars, then their tokens in the same order (tk_notkw's cpir).
+; math pack slice 2c (docs/spec-basic-mathpack-slice2.md §13.3): '^' -> POW_TOKEN.
+tk_optab:
+                db      '=','+','-','*','<','>','/','\','^'
+                db      EQ_TOKEN,PLUS_TOKEN,MINUS_TOKEN,STAR_TOKEN,LT_TOKEN
+                db      GT_TOKEN,DIV_TOKEN,IDIV_TOKEN,POW_TOKEN
+TK_OPN          equ     9
 tk_print_q:                                 ; '?' -> PRINT token (oracle: ? -> $91)
                 ; D-LNLIST R-L3, and this is the site rule "clear on match_kw"
                 ; alone gets WRONG. '?' is a SYMBOL that expands to a WORD token,
@@ -472,16 +439,6 @@ tk_print_q:                                 ; '?' -> PRINT token (oracle: ? -> $
                 ld      (TKLNUM),a
                 ld      a,PRINT_TOKEN
                 jr      tk_op_emit
-tk_op_div:
-                ld      a,DIV_TOKEN
-                jr      tk_op_emit
-tk_op_idiv:
-                ld      a,IDIV_TOKEN
-                jr      tk_op_emit
-tk_op_pow:
-                ld      a,POW_TOKEN
-                jr      tk_op_emit
-
 
 ; --- tk_hex: crunch "&H" hex / "&O" octal constants -> $0C / $0B,<word LE> ---
 ; Oracle (basic_probe_crunch.py): the reference crunches `&H<hex>` to
@@ -570,15 +527,9 @@ tk_hex_done:
                 ld      c,e                 ; BC = value
                 pop     de                  ; restore destination cursor
                 ld      a,(TKRTOK)          ; HEX_TOKEN ($0C) or OCT_TOKEN ($0B)
-                ld      (de),a
-                inc     de
-                ld      a,c                 ; value low
-                ld      (de),a
-                inc     de
-                ld      a,b                 ; value high
-                ld      (de),a
-                inc     de
-                jp      tk_loop
+                jp      tk_emit3            ; token, value LE (sub/tkfloat.asm); it
+                                            ; ends in tkf_done = tk_loop here, since
+                                            ; tokenise zeroes TKVALEND at entry
 
 ; --- match_kw: is a table keyword present at (HL)? -------------------------
 ; in:  HL = source position, DE = destination cursor
@@ -599,11 +550,9 @@ mk_entry:
                 inc     iy                  ; IY -> keyword chars
                 ld      b,a                 ; B = chars to compare
 mk_cmp:
-                ld      a,(iy+0)            ; keyword char (stored uppercase)
-                ld      c,a
                 ld      a,(hl)              ; source char
                 call    upcase              ; case-fold before comparing
-                cp      c
+                cp      (iy+0)              ; keyword char (stored uppercase)
                 jr      nz,mk_fail
                 inc     hl
                 inc     iy
@@ -626,14 +575,11 @@ mk_emit:
                 ret
 mk_fail:
                 pop     hl                  ; restore source start
-                ld      a,(ix+0)            ; klen
+                ld      c,(ix+0)            ; klen
                 ld      b,0
-                ld      c,a
                 inc     bc                  ; skip [klen][chars]
                 add     ix,bc               ; IX -> token-length byte
-                ld      a,(ix+0)            ; tlen
-                ld      b,0
-                ld      c,a
+                ld      c,(ix+0)            ; tlen (B is still 0: klen is small)
                 inc     bc                  ; skip [tlen][tokens]
                 add     ix,bc               ; IX -> next entry
                 jr      mk_entry
@@ -796,23 +742,12 @@ bl_acc:
                 jr      nc,bl_done
 bl_ac_char:
                 ld      a,(hl)
-                cp      '0'
-                jr      c,bl_ac_blank
-                cp      '9'+1
+                call    is_digit_cf
                 jr      nc,bl_ac_blank
                 sub     '0'
                 ld      c,a
-                push    hl                  ; DE = DE*10 + C
-                ld      h,d
-                ld      l,e
-                add     hl,hl
-                add     hl,hl
-                add     hl,de
-                add     hl,hl
-                ld      e,c
-                ld      d,0
-                add     hl,de
-                ex      de,hl
+                push    hl
+                call    tkf_mul10           ; DE = DE*10 + C (sub/tkfloat.asm)
                 pop     hl
                 inc     hl
                 jr      bl_acc
@@ -841,9 +776,7 @@ bl_ac_lp:
                 ld      a,(hl)
                 cp      ' '
                 jr      z,bl_ac_lp
-                cp      '0'
-                jr      c,bl_ac_end
-                cp      '9'+1
+                call    is_digit_cf
                 jr      nc,bl_ac_end
                 pop     af                  ; a digit follows -> keep the advanced HL
                 jr      bl_acc
@@ -854,14 +787,8 @@ bl_done:
                 ld      c,e                 ; BC = line number
                 pop     de                  ; restore dest cursor
                 ld      a,LINENO_TOKEN      ; $0E
-                ld      (de),a
-                inc     de
-                ld      a,c                 ; value low
-                ld      (de),a
-                inc     de
-                ld      a,b                 ; value high
-                ld      (de),a
-                inc     de
+                jp      tk_emit3            ; $0E, value LE (sub/tkfloat.asm), then
+                                            ; tkf_done = tk_loop (TKVALEND is 0 here)
                 ; 🔴 A BLANK BEFORE THE COMMA USED TO END THE LIST, and then a
                 ; `jr bl_yes` here went back to re-copy blanks and look for the
                 ; next ',' (D-LNBLANK's `ref-oncomma`). Both the bug and its fix
@@ -870,4 +797,3 @@ bl_done:
                 ; numbers -- blanks, a comma, an operator, a '.' -- is copied by the
                 ; code that already knew how. The mode is still armed, so the next
                 ; digit run comes straight back here.
-                jp      tk_loop

@@ -13,7 +13,7 @@
 ; of any reference ROM. Basis: basic/PROVENANCE.md.
 ;
 ; THREE OPERATIONS, selected by KEYARG (a page-3 cell, set by the caller):
-;   0        cold boot: copy the 160-byte image to $F87F (basic/interp.asm init)
+;   0        cold boot: unpack the 160-byte image to $F87F (basic/interp.asm init)
 ;   1..10    KEY n,"str": copy STRSCR's [len][bytes] (at most 15) into slot n,
 ;            NUL-terminated, the rest of the slot cleared. The caller has
 ;            already staged the string (fname_expr) and checked 1..10.
@@ -215,11 +215,27 @@ ks_stored:      ; D-KEYREPAINT: with the line ON in a text mode the references
                 cp      2
                 ret     nc
                 jp      ks_paint
-ks_defaults:    ; --- cold boot: the measured image, all 160 bytes -------------
+ks_defaults:    ; --- cold boot: the measured image, unpacked to all 160 bytes -
+                ; keystr_image holds each slot only up to its first NUL; every
+                ; slot is padded to KEYSTRIDE with NULs here, so the RAM written
+                ; is byte-identical to the measured 160-byte image.
                 ld      hl,keystr_image
                 ld      de,FNKSTR
-                ld      bc,KEYSLOTS*KEYSTRIDE
-                ldir
+ksd_lp:         ld      a,(hl)
+                ld      (de),a
+                inc     de
+                or      a
+                jr      z,ksd_pad
+                inc     hl                  ; a string byte: on to the next
+                jr      ksd_lp
+ksd_pad:        ld      a,e                 ; a NUL: HL stays ON it, so the rest of
+                xor     low FNKSTR          ; the slot fills with NULs from it
+                and     KEYSTRIDE-1
+                jr      nz,ksd_lp
+                inc     hl                  ; slot full: the next string
+                ld      a,e
+                cp      low (FNKSTR+KEYSLOTS*KEYSTRIDE)
+                jr      nz,ksd_lp
                 ret
 ks_list:        ; --- KEY LIST: ten lines into DETOKBUF; the resident stub drains --
                 ; The D-PUEMIT shape: `pchar` here is sub/detok.asm's sub-local
@@ -261,14 +277,17 @@ ks_eol:         ld      a,13
                 ret
 
 ; --- the measured image: scratchpad/keydef_probe.py, VG-8020, 2026-09-10 -----
+; PACKED: each slot's bytes up to and including its first NUL (the measured
+; slots are NUL-filled from there to 16); ks_defaults pads them back out. ⚠️ A
+; string must stay <= 15 bytes, so its NUL lands inside its own slot.
 keystr_image:
-                db      $63,$6F,$6C,$6F,$72,$20,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F1
-                db      $61,$75,$74,$6F,$20,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F2
-                db      $67,$6F,$74,$6F,$20,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F3
-                db      $6C,$69,$73,$74,$20,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F4
-                db      $72,$75,$6E,$0D,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F5
-                db      $63,$6F,$6C,$6F,$72,$20,$31,$35,$2C,$34,$2C,$34,$0D,$00,$00,$00    ; F6
-                db      $63,$6C,$6F,$61,$64,$22,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F7
-                db      $63,$6F,$6E,$74,$0D,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F8
-                db      $6C,$69,$73,$74,$2E,$0D,$1E,$1E,$00,$00,$00,$00,$00,$00,$00,$00    ; F9
-                db      $0C,$72,$75,$6E,$0D,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00    ; F10
+                db      $63,$6F,$6C,$6F,$72,$20,$00                                ; F1
+                db      $61,$75,$74,$6F,$20,$00                                    ; F2
+                db      $67,$6F,$74,$6F,$20,$00                                    ; F3
+                db      $6C,$69,$73,$74,$20,$00                                    ; F4
+                db      $72,$75,$6E,$0D,$00                                        ; F5
+                db      $63,$6F,$6C,$6F,$72,$20,$31,$35,$2C,$34,$2C,$34,$0D,$00    ; F6
+                db      $63,$6C,$6F,$61,$64,$22,$00                                ; F7
+                db      $63,$6F,$6E,$74,$0D,$00                                    ; F8
+                db      $6C,$69,$73,$74,$2E,$0D,$1E,$1E,$00                        ; F9
+                db      $0C,$72,$75,$6E,$0D,$00                                    ; F10

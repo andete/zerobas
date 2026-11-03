@@ -114,12 +114,10 @@ rl_ins:
                 ld      (INSFLG),a
                 jr      rl_more
 rl_ctl:
-                ld      c,a
-                xor     a
-                ld      (INSFLG),a          ; a cursor key / HOME / CLS ends insert mode
-                ld      a,c
-                call    rl_echo
-                jr      rl_more
+                ld      hl,INSFLG
+                ld      (hl),0              ; a cursor key / HOME / CLS ends insert mode
+                                            ; -- and falls into rl_char: with INSFLG 0,
+                                            ; rl_char1 goes straight to rl_echo (A kept)
 rl_char:
                 call    rl_char1
                 jr      rl_more
@@ -176,21 +174,9 @@ rl_del:
 rl_enter:
                 xor     a
                 ld      (INSFLG),a          ; Enter ends insert mode (measured)
-                ld      a,(CSRY)
-                ld      b,a                 ; B = candidate first row (1-based)
-rl_up:
-                ld      a,b
-                cp      2
-                jr      c,rl_first          ; row 1 has nothing above it
-                ld      hl,LINTTB-2
-                ld      e,a
-                ld      d,0
-                add     hl,de               ; LINTTB[row-2]: does the row above continue onto this one?
-                ld      a,(hl)
-                or      a
-                jr      nz,rl_first
-                dec     b
-                jr      rl_up
+                call    ek_firstrow         ; B = the logical line's first row (1-based):
+                                            ; the CTRL-U/N walk, sub2/edctrl.asm -- up
+                                            ; while LINTTB says the row above continues
 rl_first:
                 ld      a,(RL_ROW0)
                 cp      b
@@ -228,13 +214,10 @@ rl_full:
                 pop     af
                 jr      rl_chars
 rl_rowend:
-                push    de
                 ld      hl,LINTTB-1
-                ld      e,b
-                ld      d,0
-                add     hl,de               ; LINTTB[row-1]: does row B continue?
+                ld      a,b
+                call    ek_hladd            ; LINTTB[row-1]: does row B continue? (DE kept)
                 ld      a,(hl)
-                pop     de
                 or      a
                 jr      nz,rl_last
                 inc     b
@@ -261,11 +244,10 @@ rl_term:
                 ld      (RL_HL),de          ; publish the end: AUTO compares it with
                                             ; its preset to see an EMPTY entry (keep)
 rl_down:                                    ; the cursor: below the logical line's LAST row
-                ld      a,(RL_LAST)
-                ld      hl,CSRY
+                ld      a,(CSRY)
+                ld      hl,RL_LAST
                 cp      (hl)
-                jr      z,rl_crlf
-                jr      c,rl_crlf
+                jr      nc,rl_crlf          ; CSRY >= the last row: below it already
                 ld      a,$1F               ; cursor down
                 call    CHPUT
                 jr      rl_down
@@ -276,11 +258,9 @@ rl_crlf:
                 call    CHPUT
                 ld      a,(CRTCNT)
                 ld      hl,RL_LAST
-                cp      (hl)
-                jr      nz,rl_ok            ; the LF did not scroll: the table is intact
+                cp      (hl)                ; NZ: the LF did not scroll, the table is intact
                 ld      a,1
-                call    rl_botfix           ; it did: the line's last row moved up, and ENDS
-rl_ok:
+                call    z,rl_botfix         ; Z: it did: the line's last row moved up, and ENDS
                 ld      a,1                 ; 1: Enter -- the line is in the buffer
                 jp      rl_stat
 
@@ -296,9 +276,7 @@ rl_botfix:
                 ld      c,a
                 ld      a,(CRTCNT)
                 ld      hl,LINTTB-2
-                ld      e,a
-                ld      d,0
-                add     hl,de
+                call    ek_hladd            ; (clobbers A, HL only)
                 ld      (hl),c              ; [bottom-2]
                 inc     hl
                 ld      (hl),1              ; [bottom-1]
@@ -363,10 +341,8 @@ rl_shift_right:
                 ld      c,a
                 push    bc
                 ld      a,(CRTCNT)
-                ld      e,a
-                ld      d,0
                 ld      hl,LINTTB-1
-                add     hl,de               ; DE -> LINTTB[bottom row - 1]
+                call    ek_hladd            ; DE -> LINTTB[bottom row - 1]
                 ld      d,h
                 ld      e,l
                 dec     hl                  ; HL -> the entry above it
@@ -418,13 +394,8 @@ rsr_move:
                 ld      a,(LINLEN)
                 ld      c,a
 rsr_src:                                    ; BC = the source cell
-                call    rl_vpeek            ; A = the cell before (BC, DE kept)
-                push    bc
-                ld      b,d
-                ld      c,e
-                call    rl_vpoke            ; destination := A
-                pop     bc                  ; the source is the next destination
-                jr      rsr_lp
+                call    rl_mv               ; (D,E) := the cell before; BC kept: the
+                jr      rsr_lp              ; source is the next destination
 
 ; --- rl_shift_left: delete the cell at the cursor (DEL, and BS after a left) ----
 ; Every cell after the cursor moves one left; the logical line's last cell
@@ -433,10 +404,7 @@ rl_shift_left:
                 call    rl_lastrow
                 ld      a,b
                 ld      (RL_LAST),a         ; the last row (RL_LAST is Enter's, free here)
-                ld      a,(CSRY)
-                ld      b,a
-                ld      a,(CSRX)
-                ld      c,a                 ; (B,C) = the cursor
+                call    ek_getcsr           ; (B,C) = the cursor
 rsl_lp:
                 ld      a,(RL_LAST)
                 cp      b
@@ -456,10 +424,16 @@ rsl_move:
                 ld      c,0
 rsl_col:
                 inc     c                   ; BC = the source cell
-                call    rl_vpeek            ; A = the cell after (BC, DE kept)
+                call    rl_mv               ; (D,E) := the cell after; BC kept: the
+                jr      rsl_lp              ; source is the next destination
+
+; --- rl_mv: the cell at (B,C) is copied to (D,E). Preserves BC, DE; A = the byte.
+; The one cell move both shifts above make.
+rl_mv:
+                call    rl_vpeek            ; A = the source cell (BC, DE kept)
                 push    bc
                 ld      b,d
                 ld      c,e
                 call    rl_vpoke            ; destination := A
-                pop     bc                  ; the source is the next destination
-                jr      rsl_lp
+                pop     bc
+                ret
