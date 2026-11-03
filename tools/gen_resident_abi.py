@@ -548,10 +548,9 @@ REQUIRED_SUB2_P0CB: list[str] = [
     "p0_le_call_op=le_call_op",       # the lineedit tenant (LIST and the line store too)
     "p0_print_string=print_string",
     "p0_list_num=list_num",
-    "p0_print_crlf=print_crlf",
+    "p0_print_in_hl=print_in_hl",     # " in <HL>" + CRLF: RENUM's report tail
     # DATA in main's page-0 islands, read by main's print_string (through p0cb):
     "p0_rn_undefined=rn_undefined",   # "Undefined line "
-    "p0_rn_in=in_msg",                # " in " (DATA's error suffix shares it)
 ]
 
 # out-path -> Profile(code symbols, ram symbols, page-1 call-back symbols, what)

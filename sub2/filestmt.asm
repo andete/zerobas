@@ -64,25 +64,22 @@ file_tenant:                                ; A = C = the token (trap_tenant's h
                                             ; reaches it there, never through here
 
 ; --- the shared tails -------------------------------------------------------------
+; The plain raises are `ld a,N` into fs_raise: main's gb_illegal (5), pdf_badname
+; (56) and oo_fail_bfn (52) are each exactly `ld a,N / jp raise_error`.
 fs_syntax:                                  ; oo_synerr / oo_fail_syn: stmt_error, ERR 2
                 ld      ix,p0_stmt_error
                 jp      p0cb                ; raises; never returns
-fs_illegal:                                 ; gb_illegal: ERR 5
-                ld      ix,p0_gb_illegal
-                jp      p0cb
-fs_badname:                                 ; pdf_badname: ERR 56
-                ld      ix,p0_pdf_badname
-                jp      p0cb
-fs_bfn:                                     ; oo_fail_bfn: ERR 52
-                ld      ix,p0_oo_fail_bfn
-                jp      p0cb
 fs_dio:                                     ; dpl_dio: motor off, ERR 19
                 ld      ix,p0_dpl_dio
                 jp      p0cb
-fo_fail_ifc:                                ; LEN= out of 1..256: ERR 5 (D-RECLEN2)
-                ld      e,5
-fo_fail_e:                                  ; E = the ERR code
-                ld      a,e
+fs_badname:                                 ; pdf_badname: ERR 56
+                ld      a,56
+                jr      fs_raise
+fs_bfn:                                     ; oo_fail_bfn: ERR 52
+                ld      a,52
+                jr      fs_raise
+fs_illegal:                                 ; gb_illegal: ERR 5 (also LEN= out of
+                ld      a,5                 ; 1..256, D-RECLEN2; and trapstmt.asm's)
 fs_raise:                                   ; A = the ERR code (sub2/pgmedit.asm's)
                 ld      ix,p0_raise_error
                 jp      p0cb
@@ -95,7 +92,7 @@ fs_disk_error:                              ; main's `jp disk_error`: a continua
                 ld      de,p0_disk_error
                 ret
 fs_end_line:                                ; main's `jp end_line_end`: a continuation
-                ld      de,p0_end_line_end  ; (sub2/pgmedit.asm's; loadsave's
+                ld      de,p0_end_line_end  ; (sub2/pgmedit.asm's and MERGE's; loadsave's
                 ret                         ; ls_end_line until D-SUB2RETIRE)
 
 ; ===========================================================================
@@ -111,25 +108,15 @@ fs_open:
                 ; data: main's dev_cmp reads (DE) with main's page 0 mapped, and the
                 ; strings sit in main page 1.
                 ld      de,p0_dev_lpt
-                ld      ix,p0_dev_cmp
-                call    p0cb                ; Z + HL past the prefix iff it matched
+                call    fs_devcmp           ; Z + HL past the prefix iff it matched
                 jp      z,fo_dev_lpt
                 ld      de,p0_dev_crt
-                ld      ix,p0_dev_cmp
-                call    p0cb
+                call    fs_devcmp
                 jp      z,fo_dev_crt
                 ld      de,p0_dev_grp       ; D-OPENGRP: the graphics screen
-                ld      ix,p0_dev_cmp
-                call    p0cb
+                call    fs_devcmp
                 jp      z,fo_dev_grp
-                ld      de,p0_dev_cas
-                ld      ix,p0_dev_cmp
-                call    p0cb
-                jp      z,fo_dev_cas
-                ; D-NODISKOPEN: on a diskless machine the cassette is the default
-                ; device; a `d:` name raises 56 inside nodisk_dev
-                ld      ix,p0_nodisk_dev
-                call    p0cb
+                call    fs_iscas            ; CAS:, or no disk at all
                 jp      z,fo_dev_cas
                 ld      ix,p0_pdfcb_resume
                 call    p0cb                ; DISK_FCB_NAME built; HL resumes in the text
@@ -137,22 +124,17 @@ fs_open:
                 ; CF-3300, before any disk work
                 push    hl
                 ld      hl,DISK_FCB_NAME
-                ld      b,11
+                ld      bc,11
                 ld      a,'?'
-fo_wild:
-                cp      (hl)
-                jp      z,fs_badname        ; 56
-                inc     hl
-                djnz    fo_wild
+                cpir                        ; Z iff a '?' is among the 11
+                jr      z,fs_badname        ; 56
                 pop     hl
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    s2_skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,fo_random        ; no FOR clause -> RANDOM (OPEN..AS #n)
                 inc     hl
                 ; INPUT ($85); OUTPUT = OUT + PUT; APPEND = "APP" + END (crunched)
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    s2_skip_spaces
                 cp      INPUT_TOKEN
                 jr      z,fo_input
                 cp      OUT_TOKEN
@@ -177,11 +159,7 @@ fo_app_lp:
 fo_app_seq:
                 db      'A','P','P',END_TOKEN,0
 fo_output:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jp      nz,fs_syntax
-                inc     hl
+                call    fs_put
                 ld      a,2                 ; mode = OUTPUT
                 jr      fo_setmode
 fo_input:
@@ -198,30 +176,23 @@ fo_setmode:
                 ld      (OO_RECLEN_CHAN),a  ; the channel, across the LEN= eval
                 ld      ix,p0_oo_parse_reclen
                 call    p0cb                ; DE = reclen; CF = out of range
-                jp      c,fo_fail_ifc       ; ERR 5 (CF-3300: LEN=0/257/512)
+                jp      c,fs_illegal        ; ERR 5 (CF-3300: LEN=0/257/512)
                 ; D-OPENEND: the statement must END here, before any disk work
                 ; (`OPEN "X.TXT" FOR APPEND AS 1,2` is 2 even with X.TXT missing)
-                ld      ix,p0_skip_spaces
-                call    p0cb                ; A and HL only: DE survives
-                or      a
-                jr      z,fo_endok
-                cp      ':'
-                jp      nz,fs_syntax        ; junk after the clause: 2, nothing opened
-fo_endok:
+                call    fo_term             ; junk after the clause: 2, nothing opened
                 push    hl                  ; guard the text cursor
                 ld      a,(OO_RECLEN_CHAN)
-                add     a,a                 ; channel * 2 (word index)
                 ld      l,a
                 ld      h,0
+                push    hl                  ; DE-to-be: the channel (D = 0)
+                add     hl,hl               ; channel * 2 (word index)
                 ld      bc,FCH_RECLENS
                 add     hl,bc
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d              ; FCH_RECLENS[ch] = reclen
+                pop     de                  ; DE = the channel again
                 pop     hl
-                ld      a,(OO_RECLEN_CHAN)
-                ld      e,a
-                ld      d,0                 ; DE = the channel again
                 ; D-OPENSAME: a file already open on another channel is 54, asked
                 ; of disk.rom (hkk_open_check) before the claim
                 push    de
@@ -268,23 +239,15 @@ fo_cross:
                 jr      nc,fo_storemode     ; 4 RANDOM
                 ld      a,DOUT_MODE         ; 2 OUTPUT, 3 APPEND
                 ld      (FCH_MODE),a
-fo_storemode:
-                push    hl                  ; the cursor, for fs_pop_exec
-                ld      a,e
-                ld      ix,p0_fch_modes_ptr
-                call    p0cb                ; HL = &FCH_MODES[ch]
-                ld      a,(FCH_MODE)
-                ld      (hl),a              ; FCH_MODES[ch] = mode (now committed)
-                ld      (OO_DEVTYPE),a      ; D-FCBHDR: what the header stamp reads
-                jr      fo_hdr_tail
+fo_storemode:                               ; A = the mode, now committed: the device
+                ld      (OO_DEVTYPE),a      ; arms' stamp writes FCH_MODES[ch] and the
+                jr      fo_stamp_devtype    ; header (D-FCBHDR) from OO_DEVTYPE
 fo_fail:
                 ; post-claim failure (DE = channel): release the slot, then the
                 ; error -- never before, or the slot stays claimed (D-LOADERR).
                 ; disk_error: disk.rom parked 53 for a missing file, or its DSKIO
                 ; code; with none pending it prints `load error` and RETURNS.
-                ld      a,e
-                ld      ix,p0_fch_modes_ptr
-                call    p0cb
+                call    fs_modes_e
                 xor     a
                 ld      (hl),a              ; FCH_MODES[ch] = 0
                 ld      (FCH_ACTIVE),a      ; no channel live
@@ -326,32 +289,20 @@ fodv_fn:                                    ; skip the rest of the name to its q
                 cp      '"'
                 jr      nz,fodv_fn
                 ld      hl,(FN_RESUME)      ; resume in the program text
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    s2_skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,fodv_as          ; no FOR clause -> OUTPUT (measured)
                 rst     $10                 ; this ROM's RST 10h -> main's CHRGTR
                 cp      OUT_TOKEN           ; OUTPUT = OUT + PUT
                 jr      nz,fodv_notout      ; INPUT: Syntax error; 56 on GRP:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jp      nz,fs_syntax
-                inc     hl
+                call    fs_put
 fodv_as:
-                call    fo_parse_as_chan    ; DE = ch
-                ld      ix,p0_skipsp_test
-                call    p0cb                ; only a terminator may follow (no LEN=)
-                jr      z,fo_stamp_devtype
-                cp      COLON
-                jp      nz,fs_syntax
-; fo_stamp_devtype -- D-CARVE2's shared tail of the device and cassette arms:
+                call    fo_as_term          ; DE = ch; only a terminator may follow
+; fo_stamp_devtype -- D-CARVE2's shared tail of the device, cassette and disk arms:
 ; HL = the cursor, E = the channel; FCH_MODES[ch] := OO_DEVTYPE.
 fo_stamp_devtype:
                 push    hl                  ; the cursor, for fs_pop_exec
-                ld      a,e
-                ld      ix,p0_fch_modes_ptr
-                call    p0cb
+                call    fs_modes_e
                 ld      a,(OO_DEVTYPE)
                 ld      (hl),a
                 ; FALL THROUGH
@@ -380,11 +331,8 @@ fodv_notout:                                ; FOR not followed by OUTPUT
 ; both references (D-NODISKOPEN), other junk after FOR is 2. The arguments are
 ; validated in full before any tape I/O. Entry: HL past "CAS:" in the staged copy.
 fo_dev_cas:
-                ld      ix,p0_cas_capture_cut
-                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
-                ld      hl,(FN_RESUME)      ; resume in the program text
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    fs_cascut           ; HL back in the program text
+                call    s2_skip_spaces
                 cp      FOR_TOKEN
                 jr      nz,focas_nofor      ; CAS: needs FOR (no RANDOM cassette)
                 rst     $10
@@ -400,51 +348,27 @@ focas_nofor:
                 ; so a bad channel there answers before the 56 (order unmeasured)
                 call    fo_parse_as_chan    ; 2 unless `AS [#]n`
 fo_fail_bfname:
-                ld      e,56                ; Bad file name
-                jp      fo_fail_e
+                jp      fs_badname          ; Bad file name
 focas_in:
                 inc     hl
                 ld      a,CAS_IN_MODE
                 jr      focas_setmode
 focas_out:
-                inc     hl
-                ld      a,(hl)
-                cp      PUT_TOKEN
-                jp      nz,fs_syntax
-                inc     hl
+                call    fs_put
                 ld      a,CAS_OUT_MODE
 focas_setmode:
                 ld      (OO_DEVTYPE),a      ; the CAS mode, across the AS/#n parse
-                call    fo_parse_as_chan    ; DE = ch
-                ld      ix,p0_skipsp_test
-                call    p0cb                ; only a terminator may follow (no LEN=)
-                jr      z,focas_argsok
-                cp      COLON
-                jp      nz,fs_syntax
-focas_argsok:
+                call    fo_as_term          ; DE = ch; only a terminator may follow
                 push    de                  ; the channel
                 push    hl                  ; the cursor (the tape BIOS clobbers all)
                 ld      a,(OO_DEVTYPE)
                 cp      CAS_OUT_MODE
                 jr      z,focas_do_out
                 ; FOR INPUT: find the (named) file, require $EA, prime block 1
-                ld      ix,p0_cas_open_match
-                call    p0cb                ; CF = tape end / I-O / Ctrl-STOP
-                jp      c,fs_dio            ; D-CASBRK: 19, raised
-                ld      a,(CAS_HDRID)
-                cp      ASCII_ID            ; a cassette data file is an $EA file
+                call    fs_casopen          ; Z iff a cassette data ($EA) file
                 jr      nz,focas_ioerr
-                pop     hl                  ; D-CASFCB: channel #n's own buffer
-                pop     de
-                push    de
-                push    hl
-                ld      a,e
-                ld      ix,p0_cas_bufp_set
-                call    p0cb
-                ld      ix,p0_cas_ascii_setup
-                call    p0cb                ; prime data block 1
-                jp      c,fs_dio            ; D-CASPRIME: 19, raised
-                jr      focas_mark
+                ld      ix,p0_cas_ascii_setup ; prime data block 1 (D-CASPRIME: 19)
+                jr      focas_buf
 focas_do_out:
                 ; FOR OUTPUT: the $EA header block now, through channel #n's buffer.
                 ; TSV_NAME IS CAS_WANT (D-TSVOVL), so this copies onto itself -- kept
@@ -453,17 +377,20 @@ focas_do_out:
                 ld      de,TSV_NAME
                 ld      bc,6
                 ldir
-                pop     hl
+                ld      ix,p0_cas_write_ea_header ; TAPOON + $EA*10 + TSV_NAME + TAPOOF
+                                            ; (D-CASWBRK: Ctrl-STOP -> 19)
+focas_buf:                                  ; IX = the arm's tape step
+                pop     hl                  ; D-CASFCB: channel #n's own buffer
                 pop     de
                 push    de
                 push    hl
                 ld      a,e
+                push    ix
                 ld      ix,p0_cas_bufp_set
                 call    p0cb
-                ld      ix,p0_cas_write_ea_header
-                call    p0cb                ; TAPOON + $EA*10 + TSV_NAME + TAPOOF
-                jp      c,fs_dio            ; D-CASWBRK: Ctrl-STOP -> 19, raised
-focas_mark:
+                pop     ix
+                call    p0cb                ; the step; CF = tape error / Ctrl-STOP
+                jp      c,fs_dio            ; 19, raised
                 pop     hl                  ; the cursor
                 pop     de                  ; the channel
                 jp      fo_stamp_devtype
@@ -473,6 +400,73 @@ focas_ioerr:                                ; not an $EA file: `load error`, whi
                 ld      de,p0_load_error
                 ret
 
+; fs_devcmp -- main's dev_cmp (HL = the string, DE = a device name in main):
+; Z + HL past the prefix iff it matched; clobbers A, C, DE.
+fs_devcmp:
+                ld      ix,p0_dev_cmp
+                jp      p0cb
+; fs_iscas -- OPEN's and MERGE's shared "is it the tape?": Z (HL past "CAS:" when
+; named) -> the cassette arm; NZ -> the disk arm. On a diskless machine the
+; cassette is the default device and a `d:` name raises 56 inside nodisk_dev
+; (D-NODISKOPEN / D-NODISKVERBS).
+fs_iscas:
+                ld      de,p0_dev_cas
+                call    fs_devcmp
+                ret     z
+                ld      ix,p0_nodisk_dev
+                jp      p0cb
+; fs_modes_e -- main's fch_modes_ptr on channel E: HL = &FCH_MODES[E] (A, HL only)
+fs_modes_e:
+                ld      a,e
+                ld      ix,p0_fch_modes_ptr
+                jp      p0cb
+; fs_put -- HL on OUT: require PUT after it (OUTPUT = OUT + PUT), HL past both
+fs_put:
+                inc     hl
+                ld      a,(hl)
+                cp      PUT_TOKEN
+                jp      nz,fs_syntax
+                inc     hl
+                ret
+; fs_cascut -- the cassette name into CAS_WANT, then HL back in the program text
+fs_cascut:
+                ld      ix,p0_cas_capture_cut
+                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
+                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION
+                ret
+; fs_casopen -- find the (named) tape file, header consumed; Z iff it is an $EA
+; (ASCII) file. Tape end / I-O / Ctrl-STOP is 19, raised (D-CASBRK).
+fs_casopen:
+                ld      ix,p0_cas_open_match
+                call    p0cb
+                jp      c,fs_dio
+                ld      a,(CAS_HDRID)
+                cp      ASCII_ID
+                ret
+; fs_chan -- `[#]n` at HL (A = (HL)): DE = n, HL past it, through fch_check_d
+; (D != 0 -> ERR 5; else A = E, Z <=> channel 0). OPEN and CLOSE.
+fs_chan:
+                cp      '#'
+                jr      nz,fsc_ev
+                inc     hl
+fsc_ev:
+                ld      ix,p0_eval
+                call    p0cb                ; DE = the channel, HL past it
+                ld      ix,p0_fch_check_d
+                jp      p0cb
+
+; fo_as_term / fo_term -- the end of every OPEN form: fo_as_term parses "AS [#]n"
+; first (fo_parse_as_chan's out: DE = the channel); then only end of line or `:`
+; may follow (Z, A = it), else ERR 2. A, F, HL only -- DE survives.
+fo_as_term:
+                call    fo_parse_as_chan
+fo_term:
+                call    s2_skipsp_test
+                ret     z
+                cp      COLON
+                ret     z
+                jp      fs_syntax
+
 ; fo_parse_as_chan -- main's oo_parse_as_chan: the "AS [#]n" clause of every OPEN.
 ; in : HL = the cursor past the mode clause.
 ; out: HL past the channel expression, DE = the channel (D = 0, E in 1..MAXF),
@@ -481,8 +475,7 @@ focas_ioerr:                                ; not an $EA file: `load error`, whi
 ; channel 0, and 5 to `AS #256` / `AS #-1` (D-BADFNUM); a channel already open
 ; is 54 (D-OPENBUSY), checked here before any file work, for every OPEN form.
 fo_parse_as_chan:
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    s2_skip_spaces
                 ld      ix,p0_upcase
                 call    p0cb
                 cp      'A'
@@ -494,28 +487,20 @@ fo_parse_as_chan:
                 cp      'S'
                 jp      nz,fs_syntax
                 rst     $10
-                cp      '#'
-                jr      nz,fopac_num
-                inc     hl
-fopac_num:
-                ld      ix,p0_eval
-                call    p0cb                ; DE = the channel, HL past it
-                ld      ix,p0_fch_check_d
-                call    p0cb                ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
+                call    fs_chan             ; DE = the channel; Z <=> channel 0
                 jp      z,fs_bfn            ; OPEN's channel-0 exception -> ERR 52
                 ld      ix,p0_fch_check_nz
                 call    p0cb                ; > MAXF -> ERR 52; else A = E
                 push    hl
-                ld      ix,p0_fch_modes_ptr
-                call    p0cb                ; HL = &FCH_MODES[ch] (A, HL only)
+                call    fs_modes_e          ; HL = &FCH_MODES[ch] (A, HL only)
                 ld      a,(hl)
                 pop     hl
                 or      a
                 ld      a,e
                 ret     z                   ; free: A = E = the channel
 fo_fail_54:                                 ; D-OPENSAME joins here too
-                ld      e,54                ; File already open
-                jp      fo_fail_e
+                ld      a,54                ; File already open
+                jp      fs_raise
 
 ; ===========================================================================
 ; CLOSE [[#]n [, [#]m ...]]   (main's ex_close)
@@ -527,23 +512,13 @@ fs_close:
                 call    p0cb                ; D-BAREEND: Z iff the statement ends here
                 jr      z,fc_all
 fc_listloop:
-                ld      ix,p0_skip_spaces
-                call    p0cb
-                cp      '#'
-                jr      nz,fc_num
-                inc     hl
-fc_num:
-                ld      ix,p0_eval
-                call    p0cb                ; DE = the channel; HL = the cursor
-                push    hl                  ; guard the cursor
-                ld      ix,p0_fch_check_d
-                call    p0cb                ; D != 0 -> ERR 5; else A = E, Z <=> ch 0
+                call    s2_skip_spaces
+                call    fs_chan             ; DE = the channel; Z <=> channel 0
+                push    hl                  ; guard the cursor (push keeps the flags)
                 jr      z,fc_done           ; channel 0 -> the one lenient no-op
                 ld      ix,p0_fch_check_nz
                 call    p0cb                ; > MAXF -> ERR 52
-                ld      a,e
-                ld      ix,p0_fch_modes_ptr
-                call    p0cb                ; (preserves E)
+                call    fs_modes_e          ; (preserves E)
                 ld      a,(hl)
                 or      a
                 jr      z,fc_done           ; not open -> no-op
@@ -552,8 +527,7 @@ fc_num:
                 call    p0cb                ; flush (if OUTPUT) + mark closed
 fc_done:
                 pop     hl
-                ld      ix,p0_skip_comma
-                call    p0cb                ; Z iff `,`
+                call    s2_skip_comma       ; Z iff `,`
                 jp      nz,fs_exec          ; the list ends: main's dc_finish (exec_stmt)
                 inc     hl                  ; consume ',' and parse the next channel
                 jr      fc_listloop
@@ -607,19 +581,12 @@ fs_maxfiles:
 fs_merge:
                 rst     $10                 ; past the MERGE token
                 or      a
-                jr      nz,fm_arg
                 ld      ix,p0_loc_missing   ; bare MERGE -> ERR 24 (measured)
-                jp      p0cb
-fm_arg:
+                jp      z,p0cb
                 ld      ix,p0_fname_expr
                 call    p0cb                ; HL -> the staged '"'-terminated copy
-                ld      de,p0_dev_cas
-                ld      ix,p0_dev_cmp
-                call    p0cb
-                jr      z,fm_cas            ; "CAS:" -> tape merge (HL past prefix)
-                ld      ix,p0_nodisk_dev
-                call    p0cb                ; D-NODISKVERBS: no disk -> tape, `d:` 56
-                jr      z,fm_cas
+                call    fs_iscas            ; "CAS:" (HL past the prefix), or no disk
+                jr      z,fm_cas            ; -> tape merge; `d:` without a disk is 56
                 ld      ix,p0_pdfcb_resume
                 call    p0cb                ; DISK_FCB_NAME; HL resumes in the text
                 push    hl                  ; guard the cursor across the merge
@@ -630,12 +597,9 @@ fm_arg:
                 call    p0cb                ; tokenise + store each line; CF = bad line
 fm_fin:                                     ; the tape arm joins here
                 pop     hl
-                jr      nc,fm_done
-                ld      ix,p0_dpl_direct    ; 57 Direct statement in file
-                jp      p0cb
-fm_done:
-                ld      de,p0_end_line_end  ; back to command level (a continuation)
-                ret
+                jp      nc,fs_end_line      ; back to command level (a continuation)
+                ld      a,57                ; dpl_direct: 57 Direct statement in file
+                jp      fs_raise
 fm_ioerr:
                 pop     hl
                 ; DISKOP_STATUS 1 = not found, 3 = mount / I-O (not df_or_loaderr:
@@ -643,19 +607,13 @@ fm_ioerr:
                 ld      a,(DISKOP_STATUS)
                 dec     a
                 jp      nz,fs_disk_error    ; 3 -> the mapped DSKIO code
-                ld      ix,p0_df_notfound   ; 1 -> ERR 53 File not found
-                jp      p0cb
+                ld      a,53                ; df_notfound: 1 -> ERR 53 File not found
+                jp      fs_raise
 ; --- MERGE "CAS:name": an $EA ASCII cassette file, the name honoured; NO new_prog
 fm_cas:
-                ld      ix,p0_cas_capture_cut
-                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
-                ld      hl,(FN_RESUME)      ; resume past the EXPRESSION
+                call    fs_cascut           ; HL past the EXPRESSION
                 push    hl
-                ld      ix,p0_cas_open_match
-                call    p0cb                ; the (named) $EA file; header consumed
-                jp      c,fs_dio            ; D-CASBRK: 19, raised
-                ld      a,(CAS_HDRID)
-                cp      ASCII_ID            ; MERGE requires an ASCII ($EA) file
+                call    fs_casopen          ; MERGE requires an ASCII ($EA) file
                 jr      nz,fmc_ioerr
                 ld      ix,p0_cas_ascii_setup
                 call    p0cb                ; prime data block 1

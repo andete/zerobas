@@ -14,8 +14,10 @@
 ;
 ; WHAT STAYS IN MAIN, and is reached through p0cb:
 ;   le_call_op       the lineedit tenant's call (LIST and the line store use it)
-;   print_string / list_num / print_crlf   RENUM's report (shared everywhere)
-;   rn_undefined / in_msg   DATA in main's page-0 islands, read by print_string
+;   print_string / list_num / print_in_hl   RENUM's report (shared everywhere;
+;                    print_in_hl is the error abort's " in <HL>" + CRLF, whose
+;                    in_msg is the text the report's " in " always was)
+;   rn_undefined     DATA in main's page-0 islands, read by print_string
 ;                    while p0cb has main's page 0 mapped -- this ROM's page 0
 ;                    could not hold them (it is switched OUT during the call)
 ; and as CONTINUATIONS (returned in DE, never p0cb'd):
@@ -48,8 +50,8 @@
 ;   DELETE / RENUM / AUTO's parse   the lineedit tenant at S-36, was S-18: 18 B
 ;                    deeper, for the length of one tenant call (RENUM: one call
 ;                    per report round trip, the passes inside it)
-;   RENUM's report   print_string / list_num / print_crlf entered at S-20, was
-;                    S-2: 18 B deeper
+;   RENUM's report   print_string / list_num / print_in_hl entered at S-20, was
+;                    S-2: 18 B deeper (print_in_hl's own `push hl` 2 B more)
 ;   AUTO's loop      exa_loop at S, as before (a continuation, after ex_sub2's
 ;                    `push de / ret`): read_line and dispatch_line at their old depth
 ; RENUM's whole verb runs nested here, report loop included: it ends the run
@@ -107,28 +109,21 @@ per_call:
                 ; changes length, so nothing the variables or the CONT point
                 ; address has moved.
                 jp      z,fs_end_line       ; 0 = the whole renumbering is done
-                dec     a
-                jr      nz,per_raise        ; >= 2 is the ERR CODE ITSELF: 2 for
-                                            ; R-RN14/R-RN15, 5 for R-RN11/12/13
+                cp      1                   ; A IS LE_STATUS (le_call_op's own
+                jp      nz,fs_raise         ; `ld a,(LE_STATUS)`): >= 2 is the ERR
+                                            ; CODE ITSELF -- 2 for R-RN14/R-RN15,
+                                            ; 5 for R-RN11/12/13; raises
                 ld      hl,p0_rn_undefined  ; 1 = report one dangling reference
                 ld      ix,p0_print_string
                 call    p0cb
                 ld      de,(RN_TGT)
                 ld      ix,p0_list_num
                 call    p0cb                ; the target, bare unsigned decimal
-                ld      hl,p0_rn_in
-                ld      ix,p0_print_string
-                call    p0cb
-                ld      de,(RN_LINE)        ; R-RN8: the containing line's OLD
-                ld      ix,p0_list_num
-                call    p0cb                ; number -- `in 1`, not `in 10`
-                ld      ix,p0_print_crlf
-                call    p0cb
+                ld      hl,(RN_LINE)        ; R-RN8: the containing line's OLD
+                ld      ix,p0_print_in_hl   ; number -- `in 1`, not `in 10`: main's
+                call    p0cb                ; " in <HL>" + CRLF (the error abort's)
                 ld      a,LE_OP_RENUM_NEXT
                 jr      per_call
-per_raise:
-                ld      a,(LE_STATUS)
-                jp      fs_raise            ; raises; never returns
 
 ; ===========================================================================
 ; DELETE [<lo>][-[<hi>]]   (main's ex_delete, D-DELETE)

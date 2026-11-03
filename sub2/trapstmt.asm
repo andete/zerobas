@@ -71,17 +71,25 @@ tt_tab:
                 dw      tt_on_interval, tt_interval, tt_strig, tt_key
 
 ; --- the shared tails -------------------------------------------------------------
+; (ERR 5 is filestmt.asm's fs_illegal: gb_illegal / strig_illegal / eoi_err5 are all
+; `ld a,5 / jp raise_error`, and so is that tail -- one copy for both files.)
 tt_syntax:                                  ; trap_syntax = pl_syntax: a trappable ERR 2
-                ld      ix,p0_pl_syntax
-                jp      p0cb                ; raises; never returns
-tt_illegal:                                 ; strig_illegal / eoi_err5 = gb_illegal: ERR 5
-                ld      ix,p0_gb_illegal
-                jp      p0cb
+                ld      a,2                 ; pl_syntax is `ld a,2 / jp raise_error`
+                jp      fs_raise            ; raises; never returns
 tt_pop_exec:                                ; main's `jp pop_exec`
                 pop     hl
 tt_exec:                                    ; main's `jp exec_stmt`
                 ld      de,p0_exec_stmt
                 ret
+
+; tt_entry_paren / tt_eostr_store compute &ZTRAP[i] in 8 bits (main's ztrap_entry
+; is ZTRAP + 3*i): the 18-entry table must not cross a 256-byte page.
+    IF (ZTRAP & $FF) + 3*17 + 2 > $FF
+                db      TT_ZTRAP_CROSSES_A_PAGE
+    ENDIF
+    IF ZTRAP_ENTSZ - 3
+                db      TT_ZTRAP_ENTSZ_IS_NOT_3
+    ENDIF
 
 ; --- ON STOP / ON SPRITE GOSUB [<line>] ----------------------------------------
 tt_on_stop:
@@ -90,23 +98,21 @@ tt_on_stop:
 tt_on_sprite:
                 ld      de,ZTRAP+ZTI_SPRITE*ZTRAP_ENTSZ+1
 tt_eos_common:                              ; DE = &entry.handler; HL on the event token
-                push    de
                 inc     hl                  ; past STOP_TOKEN / SPRITE_TOKEN
+tt_eos_gosub:                               ; ON INTERVAL enters HERE (DE = its field)
+                push    de                  ; (req_gosub reads no DE)
                 ld      ix,p0_req_gosub
                 call    p0cb
-                ld      ix,p0_skip_spaces
-                call    p0cb
-tt_eos_line:                                ; ON INTERVAL enters HERE, its target pushed
+                call    s2_skip_spaces
                 call    tt_line_link        ; CF=1 -> DE = handler LINK
                 jr      c,tt_eos_store
                 ld      de,0
 tt_eos_store:
-                pop     bc                  ; BC = &entry.handler
-                ld      a,e
-                ld      (bc),a
-                inc     bc
-                ld      a,d
-                ld      (bc),a
+                ex      (sp),hl             ; HL = &entry.handler, the cursor stacked
+                ld      (hl),e
+                inc     hl
+                ld      (hl),d
+                pop     hl                  ; HL = the cursor
                 jr      tt_exec             ; continue the same line (as ON ERROR GOTO)
 
 ; --- tt_line_link: main's trap_line_link -- an OPTIONAL `$0E,lo,hi` line ref ------
@@ -137,13 +143,9 @@ ttl_undef:
 
 ; --- INTERVAL ON | OFF | STOP ---------------------------------------------------
 tt_interval:
-                ld      ix,p0_skip_spaces
-                call    p0cb                ; A = (HL)
-                ld      ix,p0_onoff_decode
-                call    p0cb                ; A = the ZTS_ state
-                jp      nc,tt_syntax        ; bare `INTERVAL` / `INTERVAL FOO` -> ERR 2
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl
+                call    s2_skip_spaces      ; A = (HL)
+                call    tt_onoff            ; A = the ZTS_ state, DE = past the sub-keyword
+                push    de                  ; the exec-continue cursor
                 ld      hl,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ
                 ld      ix,p0_set_state
                 call    p0cb                ; (preserves HL)
@@ -157,7 +159,7 @@ tt_interval:
 tt_on_interval:
                 ld      ix,p0_skip_eq
                 call    p0cb                ; A = the next non-blank; Z iff `=`
-                jp      nz,tt_syntax        ; `ON INTERVAL GOSUB 800` -> ERR 2
+                jr      nz,tt_syntax        ; `ON INTERVAL GOSUB 800` -> ERR 2
                 inc     hl
                 ld      ix,p0_eval_addr
                 call    p0cb                ; DE = n (checked address domain)
@@ -165,16 +167,11 @@ tt_on_interval:
                 call    p0cb                ; outside -32768..65535 -> Overflow (ERR 6)
                 ld      a,d
                 or      e
-                jp      z,tt_illegal        ; ON INTERVAL=0 -> Illegal function call
+                jp      z,fs_illegal        ; ON INTERVAL=0 -> Illegal function call
                 ld      (ZINTVAL),de        ; the period...
                 ld      (ZINTCNT),de        ; ...and RELOAD the live counter
-                ld      ix,p0_req_gosub
-                call    p0cb
-                ld      ix,p0_skip_spaces
-                call    p0cb
                 ld      de,ZTRAP+ZTI_INTERVAL*ZTRAP_ENTSZ+1
-                push    de                  ; tt_eos_line pops it as the store target
-                jp      tt_eos_line
+                jp      tt_eos_gosub        ; GOSUB [<line>], as ON STOP's
 
 ; --- ON STRIG GOSUB [<l0>][,<l1>...] / ON KEY GOSUB <l1>[,<l2>...] ----------------
 tt_on_key:
@@ -187,8 +184,7 @@ tt_trap_in:
                 ld      ix,p0_req_gosub
                 call    p0cb
 tt_eostr_lp:
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                call    s2_skip_spaces
                 push    bc                  ; tt_line_link clobbers BC (find_line_bc)
                 call    tt_line_link
                 pop     bc                  ; pop does not disturb CF
@@ -196,25 +192,25 @@ tt_eostr_lp:
                 ld      de,0                ; empty slot -> CLEAR this trigger's handler
 tt_eostr_store:
                 push    hl
-                push    de                  ; the LINK, across ztrap_entry (clobbers DE)
                 ld      a,c
                 bit     3,b                 ; B = 10: ON KEY -- the REVERSED band
                 jr      z,tt_eostr_idx
                 neg
                 add     a,ZTI_KEY1+9-ZTI_STRIG0 ; + ZTI_STRIG0 below = ZTI_KEY1+9-C
 tt_eostr_idx:
-                add     a,ZTI_STRIG0
-                ld      ix,p0_ztrap_entry
-                call    p0cb                ; HL = &ZTRAP[3+C] (the state byte)
-                pop     de
-                inc     hl                  ; -> the handler field
+                add     a,ZTI_STRIG0        ; A = the ZTRAP index
+                ld      l,a
+                add     a,a
+                add     a,l                 ; 3 * index (the assert above: no carry)
+                add     a,low (ZTRAP+1)     ; -> the handler field, DE (the LINK) kept
+                ld      l,a
+                ld      h,high ZTRAP
                 ld      (hl),e
                 inc     hl
                 ld      (hl),d
                 pop     hl                  ; HL = cursor
                 inc     c
-                ld      ix,p0_skip_comma
-                call    p0cb                ; another slot? Z iff `,`
+                call    s2_skip_comma       ; another slot? Z iff `,`
                 jp      nz,tt_exec          ; no -> statement done, continue the line
                 inc     hl                  ; consume the comma
                 ld      a,c
@@ -232,14 +228,11 @@ tt_strig:
                 ld      ix,p0_get_byte_arg
                 call    p0cb                ; A = E = n (ERR 6 > int16, ERR 5 > 255/neg)
                 cp      5                   ; triggers 0..4
-                jp      nc,tt_illegal       ; STRIG(5..255) -> ERR 5
+                jp      nc,fs_illegal       ; STRIG(5..255) -> ERR 5
                 add     a,ZTI_STRIG0
-                call    tt_entry_paren      ; DE = the entry, HL past `)`, A = the state
+                call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
+                push    de                  ; the exec-continue cursor
                 ld      b,a
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl                  ; the exec-continue cursor
-                ex      de,hl               ; HL = the entry pointer
-                ld      a,b
                 cp      ZTS_ON
                 jr      nz,tt_noseed        ; not enabling
                 ld      a,(hl)
@@ -252,9 +245,9 @@ tt_flag:        push    af                  ; carry the decision across set_stat
                 ld      ix,p0_set_state
                 call    p0cb                ; maintains the TRAPENA "# ON" count
                 pop     af
-                jp      z,tt_pop_exec
+                jr      z,tt_px
                 set     6,(hl)              ; seed the edge shadow (ZTS_SHADOW)
-                jp      tt_pop_exec
+                jr      tt_px
 
 ; --- KEY(n) ON | OFF | STOP -------------------------------------------------------
 ; Entered by `jp` from scr_key (sub2/scrstmt.asm, D-P0CB slice D) with HL on the
@@ -267,34 +260,37 @@ tt_key:
                 call    p0cb                ; A = E = n
                 dec     a                   ; 1..10 -> slot 0..9; KEY(0) wraps to 255
                 cp      10
-                jp      nc,tt_illegal       ; KEY(0) and KEY(11..255) -> ERR 5
+                jr      nc,fs_illegal       ; KEY(0) and KEY(11..255) -> ERR 5
                 ld      c,a
                 ld      a,ZTI_KEY1+9
                 sub     c                   ; the REVERSED band
-                call    tt_entry_paren      ; DE = the entry, HL past `)`, A = the state
-                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
-                push    hl                  ; the exec-continue cursor
-                ex      de,hl               ; HL = the entry pointer
+                call    tt_entry_paren      ; HL = the entry, DE = the cursor, A = the state
+                push    de                  ; the exec-continue cursor
                 ld      ix,p0_set_state     ; main's trap_state_done is `call set_state`
                 call    p0cb                ; then `jp pop_exec`: the second half is
-                jp      tt_pop_exec         ; ours (no continuation through p0cb)
+tt_px:          jp      tt_pop_exec         ; ours (no continuation through p0cb)
 
 ; tt_entry_paren -- STRIG(n) / KEY(n)'s shared middle: A = the ZTRAP index ->
-; DE = the entry pointer; `)` required, then ON | OFF | STOP -> A = the state.
-; Both originals spelled it out in full; here it is one copy (sub2 bytes are cheap,
-; but two copies of the same refusals are two places to drift).
+; `)` required, then ON | OFF | STOP. Out: HL = the entry pointer, DE = the cursor
+; past the sub-keyword, A = the state. Both originals spelled it out in full; here
+; it is one copy (two copies of the same refusals are two places to drift).
 tt_entry_paren:
-                push    hl
-                ld      ix,p0_ztrap_entry
-                call    p0cb                ; HL = &ZTRAP[A] (clobbers DE)
-                ex      de,hl               ; DE = the entry pointer, kept to the end
-                pop     hl
-                ld      ix,p0_skip_spaces
-                call    p0cb
+                ld      e,a                 ; &ZTRAP[A] = ZTRAP + 3A, in 8 bits (the
+                add     a,a                 ; assert above), into DE; HL untouched
+                add     a,e
+                add     a,low ZTRAP
+                ld      e,a
+                ld      d,high ZTRAP        ; DE = the entry pointer, kept to the end
+                call    s2_skip_spaces
                 cp      ')'
                 jp      nz,tt_syntax
                 rst     $10                 ; past `)` (this ROM's RST 10h -> CHRGTR)
+; tt_onoff -- ON | OFF | STOP at HL -> A = the state, HL = DE on entry, DE = the
+; cursor past the sub-keyword; anything else is ERR 2. INTERVAL calls it too.
+tt_onoff:
                 ld      ix,p0_onoff_decode
-                call    p0cb                ; A = the state; CF=0 on junk
+                call    p0cb                ; A = the state; CF=0 on junk (DE kept)
                 jp      nc,tt_syntax        ; bare `STRIG(n)` / `KEY(n)` -> ERR 2
+                inc     hl                  ; consume the ON/OFF/STOP sub-keyword
+                ex      de,hl
                 ret

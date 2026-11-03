@@ -121,6 +121,5 @@ p0_exa_loop equ 076DEH   ; main's exa_loop
 p0_le_call_op equ 06E64H   ; main's le_call_op
 p0_print_string equ 045DEH   ; main's print_string
 p0_list_num equ 062A1H   ; main's list_num
-p0_print_crlf equ 05807H   ; main's print_crlf
+p0_print_in_hl equ 07638H   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined
-p0_rn_in equ 01BB3H   ; main's in_msg

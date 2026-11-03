@@ -111,10 +111,10 @@ scr_key:
 sck_store:
                 ld      ix,p0_eval_byte_arg
                 call    p0cb                ; A = n, 0..255 (ERR 6 / ERR 5 outside)
-                or      a
-                jp      z,fs_illegal        ; KEY 0,   -> ERR 5 (measured)
-                cp      11
-                jp      nc,fs_illegal       ; KEY 11,  -> ERR 5 (measured)
+                dec     a                   ; 1..10 -> 0..9; KEY 0, wraps to 255
+                cp      10
+                jp      nc,fs_illegal       ; KEY 0, / KEY 11, -> ERR 5 (measured)
+                inc     a                   ; A = n again (the flags are not read)
                 push    af                  ; [n] across the string's evaluation
                 ld      ix,p0_req_comma
                 call    p0cb                ; KEY n without `,`: ERR 2; CONSUMES it
@@ -138,29 +138,34 @@ sck_drain:                                  ; A = the op, HL = the cursor
 ; -- and have the keystr tenant draw or erase row 23 (C-BIOS's DSPFNK paints
 ; nothing, D-DSPFNK). CRTCNT is WRITTEN ABSOLUTELY, not adjusted (D-SCROLLBOUND:
 ; WIDTH rewrites it underneath, so an inc/dec gated on CNSDFG is not idempotent).
+; ONE body for both: A = the new CNSDFG, 0 (OFF) or $FF (ON) = -1, and the other
+; two values are arithmetic on it -- CRTCNT = CON_ROWS + A (24 / 23, written
+; absolutely) and the op = KEYOP_FNKBLANK - A (BLANK / PAINT). The stores keep
+; their order (CRTCNT, CNSDFG, then the tenant). `push af` parks A across the BIOS
+; call, so ERAFNK / DSPFNK run 2 B deeper than the other BIOS calls here.
+    IF CON_ROWS_KEYON != CON_ROWS - 1 || KEYOP_FNKPAINT != KEYOP_FNKBLANK + 1
+                db      SCK_FNK_ARITHMETIC_NEEDS_KEYON_ROWS_AND_PAINT_ONE_APART
+    ENDIF
 sck_off:
-                inc     hl                  ; past OFF
-                push    hl
                 ld      ix,ERAFNK
-                call    p0cb
-                ld      a,CON_ROWS
-                ld      (CRTCNT),a          ; the console gets all 24 rows
                 xor     a                   ; the line is hidden
-                jr      sck_disp
+                jr      sck_fnk
 sck_on:
-                inc     hl                  ; past ON
-                push    hl
                 ld      ix,DSPFNK
-                call    p0cb
-                ld      a,CON_ROWS_KEYON
-                ld      (CRTCNT),a          ; reserve the bottom row
                 ld      a,$FF               ; the reference's own value, measured
-sck_disp:
+sck_fnk:                                    ; A = the new CNSDFG, IX = the BIOS call
+                inc     hl                  ; past OFF / ON
+                push    hl
+                push    af
+                call    p0cb                ; ERAFNK / DSPFNK
+                pop     af
+                ld      c,a                 ; C = 0 / $FF (= -1)
+                add     a,CON_ROWS          ; 24: all rows / 23: reserve the bottom one
+                ld      (CRTCNT),a
+                ld      a,c
                 ld      (CNSDFG),a
-                or      a
                 ld      a,KEYOP_FNKBLANK
-                jr      z,sck_op
-                ld      a,KEYOP_FNKPAINT
+                sub     c                   ; BLANK / PAINT (= BLANK + 1)
 sck_op:
                 ld      ix,p0_key_op
                 call    p0cb                ; KEYARG := A; the keystr tenant (no drain:
@@ -213,8 +218,7 @@ scr_screen:
                 call    p0cb                ; D-KEYCLS: a text mode gets its key line
                 pop     hl
 scs_extra:                                  ; the trailing arguments
-                ld      ix,p0_skip_comma
-                call    p0cb
+                call    s2_skip_comma       ; (sub2/p0cb.asm's local copy)
                 jp      nz,fs_exec          ; no comma -> done (the ONLY legal way
                                             ; out of this loop)
                 inc     hl                  ; past the comma
@@ -280,12 +284,12 @@ scs_spr:                                    ; A = the op
 ; C carries the bound so slots 1 and 3 share one test, then says which slot.
 scs_extra_arg:
                 ld      a,(GFX_SARGN)
-                dec     a                   ; 0 = slot 1 (size), 2 = slot 3 (baud)
+                dec     a                   ; Z = slot 1 (size); slots 2 / 3 below
                 ld      c,4                 ; sprite size: 0..3
                 jr      z,scs_bound
-                cp      1                   ; slot 2 = the key click
+                dec     a                   ; slot 2 = the key click
                 jr      z,scs_click
-                cp      2                   ; slot 3?  (A = slot - 1)
+                dec     a                   ; slot 3?
                 ret     nz                  ; slots 4 and 5 stay ignored
                 dec     e                   ; baud 1..2 -> 0..1, so ONE bound test
                 ld      c,2                 ; serves both domains
@@ -329,22 +333,17 @@ scr_color:
                 call    scc_eval            ; DE = foreground, VALIDATED 0..15
                 ld      a,e
                 ld      (CLR_SAVE),a        ; D-PARTIAL: the SHADOW, not the sysvar
-                ld      ix,p0_skip_comma
-                call    p0cb
+                call    s2_skip_comma
                 jr      nz,scc_apply
 scc_bg:
-                rst     $10                 ; past the comma
+                rst     $10                 ; past the comma; Z at the statement's
+                jr      z,scc_apply         ; end (00 or ':', CHRGTR's contract)
                 cp      ','                 ; "COLOR fg,,border" -> bg omitted
                 jr      z,scc_bd
-                or      a
-                jr      z,scc_apply
-                cp      COLON
-                jr      z,scc_apply
                 call    scc_eval            ; DE = background, VALIDATED 0..15
                 ld      a,e
                 ld      (CLR_SAVE+1),a      ; D-PARTIAL: the SHADOW, not the sysvar
-                ld      ix,p0_skip_comma
-                call    p0cb
+                call    s2_skip_comma
                 jr      nz,scc_apply
 scc_bd:
                 ld      ix,p0_stmt_bare_end
@@ -367,7 +366,7 @@ scc_apply:
                 ld      (FORCLR),hl         ; FORCLR+BAKCLR are adjacent
                 ; D-ADDR29 S3: the reference's COLOR also sets ATRBYT to the
                 ; foreground (COLOR 5 -> 5; COLOR ,1 leaves it at the fg).
-                ld      a,(FORCLR)
+                ld      a,l                 ; L = the fg just published as FORCLR
                 ld      (ATRBYT),a
                 ld      a,(SCRMOD)          ; CHGCLR wants the current screen mode
                 ld      ix,CHGCLR
@@ -385,12 +384,10 @@ scc_eval:
                 call    p0cb
                 ld      ix,p0_check_expr_errors
                 call    p0cb
-                ld      a,d                 ; the HIGH byte first: 256 has a low
-                or      a                   ; byte of 0 and must NOT pass
-                jp      nz,fs_illegal
-                ld      a,e
-                cp      16
-                ret     c                   ; 0..15 -> good
+                ld      a,e                 ; 16..255 has a bit in $F0, and the
+                and     $F0                 ; HIGH byte joins the test (256 has a
+                or      d                   ; low byte of 0 and must NOT pass)
+                ret     z                   ; 0..15 -> good (E = it, D = 0)
                 jp      fs_illegal          ; ERR 5 Illegal function call
 
 ; ===========================================================================
@@ -410,22 +407,21 @@ scr_width:
                 ld      ix,p0_eval_byte_checked
                 call    p0cb                ; A = the width
                 ld      b,a
+                dec     a                   ; C = width - 1: `WIDTH 0` wraps to 255,
+                ld      c,a                 ; so ONE test refuses it and too-wide
                 ; the MODE-DEPENDENT bound and its slot, measured on the VG-8020:
                 ; 1..32 in SCREEN 1 (LINL32), 1..40 in EVERY other mode (LINL40).
                 ; LINL40/LINL32 are ADJACENT: one `ld de` plus an `inc de`.
                 ld      de,LINL40
                 ld      a,(SCRMOD)
                 dec     a                   ; SCRMOD 1 = text-2
-                ld      a,40                ; (no flags -- the `dec a` Z survives)
+                ld      a,40-1              ; (no flags -- the `dec a` Z survives)
                 jr      nz,scw_bound
                 inc     de                  ; -> LINL32
-                ld      a,32
+                ld      a,32-1
 scw_bound:
-                cp      b
-                jp      c,fs_illegal        ; wanted > the mode's maximum -> ERR 5
-                ld      a,b
-                or      a
-                jp      z,fs_illegal        ; `WIDTH 0` -> ERR 5
+                cp      c
+                jp      c,fs_illegal        ; width-1 > max-1, or `WIDTH 0` -> ERR 5
                 ; D-WIDTHKEEP: a WIDTH to the width ALREADY IN FORCE is a no-op on
                 ; the VG-8020 (the screen and the cursor are kept). Tested against
                 ; LINLEN, not the per-mode cell; nothing at all is written.

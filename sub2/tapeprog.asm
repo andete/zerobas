@@ -121,7 +121,8 @@ ctp_line:
                 jp      c,ls_dio            ; D-CASTAIL CF contract -> 19 (D-CASBRK)
                 push    af                  ; preserve link-low: TAPIN clobbers C
                 call    TAPIN               ; link high
-                jr      c,ctp_link_err      ; must pop before leaving
+                jr      c,ctp_err_pop       ; drops link-low's word (ls_dio reads
+                                            ; no register; the raise resets SP)
                 ld      b,a                 ; B = link high
                 pop     af
                 ld      c,a                 ; C = link low (restored)
@@ -201,14 +202,9 @@ ctp_body:
                 dec     de
                 jr      ctp_body
 
-; ctp_link_err — the second TAPIN (link high) failed with CF; AF (link-low) is on
-; the stack from the push before that call.  Pop it to restore balance, then error.
-ctp_link_err:
-                pop     af
-                jp      ls_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)
-
-; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
-; it before taking the shared error / out-of-memory path so the stack stays balanced.
+; ctp_err_pop / ctp_oom_pop — body length / remaining count (or, from the link
+; word's second TAPIN, link-low's AF) is on the stack; drop it before taking the
+; shared error / out-of-memory path so the stack stays balanced.
 ctp_err_pop:
                 pop     de
                 jp      ls_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)

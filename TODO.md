@@ -666,6 +666,23 @@ item — do **one item per session** to keep context lean.
       ([`p1cb_reloc.out`](scratchpad/p1cb_reloc.out)). Contract-diff: no breaks
       ([`p1cb_contract.out`](scratchpad/p1cb_contract.out)); cassave 40/40
       ([`p1cb_cassave.out`](scratchpad/p1cb_cassave.out)).
+      ✅ **STEP 2b (2026-11-03): THE SUB2 TENANTS REREAD BEFORE THEY MOVE (Joost's order) --
+      +286 B in sub2 page 0, +4 B sub page 1** (sub2 page 0 13850 -> 14136 B free, sub page 1
+      830 -> 834 B on 2026-11-03, [`s2rr_reloc.out`](scratchpad/s2rr_reloc.out)). Two read-only
+      reviewers, each then applying its own list, one after the other: trapstmt + filestmt
+      (+224: shared raise tails through `fs_raise`, `fs_devcmp` / `fs_iscas` / `fs_put` /
+      `fo_term` / `fs_chan` helpers, ON STOP / INTERVAL share one GOSUB tail, the ZTRAP entry
+      address computed inline behind a page / stride assert) and scrstmt + pgmedit + tapeprog
+      (+66: KEY ON / OFF share one body, WIDTH / COLOR range tests folded, RENUM's tail through
+      main's `print_in_hl`). Local `s2_skip_spaces` / `s2_skip_comma` / `s2_skipsp_test` in
+      p0cb.asm replace 19 p0cb crossings. REJECTED: every `rst $10` form (the sub build's
+      closure gate refuses rst, and these move there next), inlining beep's delay (timing).
+      HELD: E14, `call p0cbw / dw target` for every p0cb site (~170 B) -- it would blind
+      z80flow's constant-IX far-call following until z80flow reads the inline word.
+      Contract-diff: no breaks ([`s2rrA_contract.out`](scratchpad/s2rrA_contract.out),
+      [`s2rrB_contract.out`](scratchpad/s2rrB_contract.out)); `tt_tab` rows are its dispatch
+      table read as code. 🎯 the sub2 page-0 tenants left are ~2.16 KB against 1989 B free in
+      the sub ROM (1155 page 0 + 834 page 1): ~170 B short on 2026-11-03, plus the moves' own shims.
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -8940,7 +8957,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11431 (T-6FE392)8 (T-529ABE)` from `TODO.md:17113 (T-529ABE)`: a
+      `TODO.md:11448 (T-6FE392)8 (T-529ABE)` from `TODO.md:17130 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11900,7 +11917,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17113 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17130 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

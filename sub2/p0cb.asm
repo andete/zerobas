@@ -48,6 +48,26 @@ s2_rst:
                 pop     ix
                 ret
 
+; s2_skipsp_test / s2_skip_comma / s2_skip_spaces -- LOCAL copies of main's
+; skipsp_test / skip_comma / skip_spaces (basic/str-engine.asm, basic/interp.asm),
+; same bodies and the same A / F / HL out (BC, DE, IX, AF' kept). Leaves that
+; touch only the program text in RAM need no crossing: a site is a 3-byte call
+; here instead of 7 bytes of `ld ix,p0_X / call p0cb`, and it runs faster.
+s2_skipsp_test:                             ; Z iff the terminator (0) is next
+                call    s2_skip_spaces
+                or      a
+                ret
+s2_skip_comma:                              ; Z iff `,` is next
+                call    s2_skip_spaces
+                cp      ','
+                ret
+s2_skip_spaces:                             ; HL past blanks, A = (HL)
+                ld      a,(hl)
+                cp      ' '
+                ret     nz
+                inc     hl
+                jr      s2_skip_spaces
+
 ; --- p0cb_selftest: page-0 index 2 (SUB2_IDX_P0TEST), the mechanism proven ---
 ; Called by the probe's injected stub (probes/basic/basic_probe_sub2_p0cb.py)
 ; under CALSLT 3-3, never by BASIC. in: HL = a RAM work area W, with W+16 =

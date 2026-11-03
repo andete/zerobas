@@ -1,0 +1,18 @@
+PYTHONPATH=tools/z80flow python3 -m z80flow.contracts diff-rev . HEAD ~/projects/cbios
+base HEAD built in /tmp/zerobas/z80flow-br4cxweq
+1726 routines in both builds, 5 gone, 14 new
+  broken: 0
+  broken_unwind_only: 0
+  wider_in: 1
+       tt_tab [sub2p0] IX D F(C)
+  wider_in_unwind_only: 1
+       tt_entry_paren [sub2p0] A' F'
+  status: 1
+       tt_tab [sub2p0] inferred unknown
+  exits: 1
+       tt_tab [sub2p0] [] ['(0, 0, 0, 0)']
+  more_clob: 1
+       tt_tab [sub2p0] BC DE HL IX IY BC' DE' HL' A A' F F'
+  fewer_clob: 0
+  narrower_in: 1
+       tt_tab [sub2p0] A C
