@@ -196,7 +196,7 @@ def main() -> int:
         cmd += ["-cassetteplayer", args.cassette]
     cmd += ["-command", "set renderer none; set sound_driver null", "-script", tcl_path]
 
-    try:
+    def _launch():
         proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         deadline = time.time() + args.timeout
@@ -204,12 +204,29 @@ def main() -> int:
             time.sleep(0.1)
         if proc.poll() is None:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-            print(f"omsx_run: TIMEOUT after {args.timeout}s "
-                  f"({shlex.join(cmd)})", file=sys.stderr)
-            return 2
+            return "TIMEOUT"
+        return "ok"
+
+    # D-REFBYPASS (2026-11-03): ten probes reach openMSX through THIS CLI as a
+    # subprocess, never through run_cases, so the reference store never saw
+    # them. One chokepoint again: the launch goes through probe_refcache's
+    # cached_run, keyed on the machine's bytes, the Tcl with its temp paths
+    # normalised, and every medium (--cart / --cassette) by content. The capture
+    # and a --record tape are the outputs; a TIMEOUT is never stored.
+    outs = [os.path.abspath(args.out)]
+    if args.record:
+        outs.append(os.path.abspath(args.record))
+    try:
+        import probe_refcache
+        _served, status = probe_refcache.cached_run(
+            cmd, outs, _launch, ok=lambda v: v == "ok")
     finally:
         if not args.keep_tcl:
             os.unlink(tcl_path)
+    if status == "TIMEOUT":
+        print(f"omsx_run: TIMEOUT after {args.timeout}s "
+              f"({shlex.join(cmd)})", file=sys.stderr)
+        return 2
 
     if not os.path.exists(args.out):
         print("omsx_run: openMSX exited without writing a capture "

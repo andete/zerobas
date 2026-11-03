@@ -23,6 +23,7 @@ import os, re, subprocess, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import probe_tmp                                   # noqa: E402  the one temp root
 import omsx_preflight                              # noqa: E402  the spawn guard
+import probe_refcache                              # noqa: E402  D-REFBYPASS: the reference store
 
 REF = "Philips_VG_8020"
 ZB = os.environ.get("ZEROBAS_BASIC_MACHINE", "C-BIOS_MSX1_EU_REPACK_NODISK")
@@ -32,13 +33,17 @@ KEYS = {"CTRL-A": "\\x01", "CTRL-B": "\\x02", "CTRL-E": "\\x05", "CTRL-F": "\\x0
 MATRIX = [(r, b) for r in range(6) for b in range(8)]
 
 
-def openmsx(machine, tcl):
+def openmsx(machine, tcl, out):
     tf = probe_tmp.tmp("ctrlkeys.tcl")
     open(tf, "w").write(tcl)
-    subprocess.run(omsx_preflight.guarded(
-        ["openmsx", "-machine", machine, "-command",
-         "set save_settings_on_exit false; set renderer none; set sound_driver null",
-         "-script", tf]), capture_output=True, timeout=180)
+    cmd = ["openmsx", "-machine", machine, "-command",
+           "set save_settings_on_exit false; set renderer none; set sound_driver null",
+           "-script", tf]
+    # D-REFBYPASS (2026-11-03): served from the reference store when the
+    # machine's bytes and this Tcl are unchanged (probe_refcache.cached_run);
+    # a timeout raises out of `run` and so is never stored
+    probe_refcache.cached_run(cmd, [out], lambda: subprocess.run(
+        omsx_preflight.guarded(cmd), capture_output=True, timeout=180))
 
 
 def code_of(machine, key):
@@ -54,7 +59,7 @@ after time 21 {{ set f [open "{out}" w]
     if {{$c < 32 || $c > 126}} {{append s "."}} else {{append s [format %c $c]}} }}
   puts $f $s
   close $f; exit }}
-''')
+''', out)
     if not os.path.exists(out):
         return None
     m = re.findall(r"\[\s*(-?\d+)\s*\]", open(out).read())
@@ -81,7 +86,7 @@ def matrix_of(machine):
   for {{set i 0}} {{$i < $n}} {{incr i}} {{ append s "<[debug read memory [expr {{0xD000+$i}}]]>" }}
   puts $f "n=$n $s"
   close $f; exit }}''')
-    openmsx(machine, "\n".join(lines) + "\n")
+    openmsx(machine, "\n".join(lines) + "\n", out)
     if not os.path.exists(out):
         return None
     return [int(x) for x in re.findall(r"<(\d+)>", open(out).read())]

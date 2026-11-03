@@ -19,6 +19,7 @@ VRAM, one documented cell, typed BASIC.
 import os, shutil, signal, subprocess, sys, time
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lib"))
 import omsx_preflight                               # noqa: E402
+import probe_refcache                               # noqa: E402  D-REFBYPASS
 import omsx_repl                                    # noqa: E402
 import probe_tmp                                    # noqa: E402
 
@@ -79,16 +80,24 @@ def run(machine, case):
     line = (CASES[case] or "").replace('"', '\\"').replace("$", "\\$")
     open(tcl, "w").write(omsx_repl.key_proc()
                          + TCL.replace("{OUT}", "{" + out + "}").replace("LINE", line))
-    proc = subprocess.Popen(omsx_preflight.guarded(
-                                [OMSX, "-machine", machine, "-command",
-                                 "set renderer none; set sound_driver null", "-script", tcl]),
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                            start_new_session=True)
-    deadline = time.time() + 120
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.2)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+    cmd = [OMSX, "-machine", machine, "-command",
+           "set renderer none; set sound_driver null", "-script", tcl]
+
+    def launch():
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd),
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                start_new_session=True)
+        deadline = time.time() + 120
+        while proc.poll() is None and time.time() < deadline:
+            time.sleep(0.2)
+        if proc.poll() is None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+            return "TIMEOUT"
+        return "ok"
+    # D-REFBYPASS (2026-11-03): served from the reference store when the
+    # machine's bytes, this Tcl and every medium it names are unchanged; a
+    # TIMEOUT is never stored (probes/lib/probe_refcache.py cached_run)
+    if probe_refcache.cached_run(cmd, [out], launch, ok=lambda v: v == "ok")[1] == "TIMEOUT":
         return "TIMEOUT"
     return open(out).read().strip() if os.path.exists(out) else "NO OUTPUT"
 

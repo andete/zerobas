@@ -138,6 +138,8 @@ class Tally:
         self.missed: list[str] = []    # which case never signalled
         self.replayed = 0              # D-REFCACHE: served from the store, so
                                        # these instants describe an EARLIER run
+        self.replayed_subject = 0      # D-REFSONLY: of those, ZEROBAS readings
+                                       # (0 under the battery's `refs` mode)
 
     def add(self, *outs: dict, label: str | None = None) -> None:
         """Fold one `run_cases` call's `settle_out` in. Pass `label` -- 🔴 AN
@@ -153,6 +155,8 @@ class Tally:
             # `line()` can never report a recording as live apparatus health.
             if o.get("replayed"):
                 self.replayed += 1
+                if o.get("replayed_subject"):
+                    self.replayed_subject += 1
             sig = o.get("sentinel", {})
             self.hit += len(sig)
             self.at += list(sig.values())
@@ -167,7 +171,9 @@ class Tally:
              f"{self.fell_back} fell back to {b}")
         if self.replayed:
             s += (f"   \u26a0\ufe0f {self.replayed} REPLAYED from the refcache "
-                  f"-- not measured on this run")
+                  f"-- not measured on this run "
+                  f"({self.replayed - self.replayed_subject} REFERENCE, "
+                  f"{self.replayed_subject} zerobas)")
         if self.at:
             s += (f"   [signalled at {min(self.at):.1f}-{max(self.at):.1f} "
                   f"emulated s]")

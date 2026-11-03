@@ -143,6 +143,45 @@ report. An explicit `ZEROBAS_REFCACHE=verify` is passed through, and caps
 tent-pole starved into the stall watchdog.
 [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
 
+### 6.1 🟢 D-REFSONLY (2026-11-03): "References only"
+
+Joost, asked whether batteries should use the cache: **"References only"**.
+The finding above stands as written: what made `graphics-acceptance` pass
+without measuring anything was replaying the **subject**. The VG-8020 and the
+CF-3300 are fixed ROMs; replaying *them* replays a constant.
+
+What changed:
+
+- **`ZEROBAS_REFCACHE=refs`**, a new mode. A reference machine is served and
+  stored exactly as in mode 1. A zerobas machine is **neither served nor
+  stored** — it is booted and measured every time and counted as
+  `zerobas reading(s) MEASURED`. Applied at both entry points (`run_cases` and
+  `cached_run`), and in `basic_probe_kwram.py`, which keeps its own cache path.
+- **"Zerobas" is decided by bytes first** (`probe_refcache.is_subject`): the
+  machine XML names a ROM built in this repo, or a repo-built ROM is inserted
+  (a cart). The `C-BIOS_MSX1_EU_REPACK*` name is a second check. When the two
+  disagree, or the XML cannot be resolved, the machine is treated as **zerobas**:
+  a wrong "subject" verdict costs a boot, while a wrong "reference" verdict
+  would replay the build under test.
+- **`tools/run_gates.py` forces `refs`** for every unit instead of `0`. An
+  explicit `=verify` (still capped at `--jobs 4`) or `=0` from the environment
+  passes through.
+- **A hard stop, not a counter.** Every hit path calls `refuse_subject_hit()`,
+  which raises if a zerobas reading is about to be served in `refs` mode. The
+  tally line reads `REFS MODE (references replayed, zerobas measured), N
+  REFERENCE reading(s) replayed, … M zerobas reading(s) MEASURED, 0 zerobas
+  replayed`. probe_signal's marker now says `N REPLAYED … (N REFERENCE, 0
+  zerobas)`.
+
+**Why the guarantee still holds.** §6 promises that a battery measures the
+subject, not that it boots the references. Every zerobas reading in a battery is
+still taken live on that run. Selftest arms KS1–KS9 check this: KS5 shows a
+zerobas launch is not served even when a matching entry exists, KS6 is the green
+control (a reference launch *is* served), and KS9 does it end to end through
+`run_cases` on the real `C-BIOS_MSX1_EU_REPACK_NODISK` with a lie planted under
+its exact key. The 14-day expiry and `verify` remain the bound on a bad
+*reference* reading.
+
 ## 7. A MISATTRIBUTION, RECORDED BECAUSE IT WAS NEARLY SHIPPED AS A FINDING
 
 `graphics-acceptance` stalled three times while this slice was being validated.
@@ -210,3 +249,50 @@ asserts a **fresh** entry is *not* expired (without it, every arm below would pa
 on a store that simply never wrote), and KA9 asserts prune **keeps** a fresh entry
 (a prune that deleted everything would pass KA8). KA10 checks the cap-0 escape
 hatch actually disables expiry.
+
+## 9. D-REFBYPASS (2026-11-03) — the probes that launch openMSX themselves
+
+`run_cases` was never the only door. Thirty-odd probes build their own Tcl and
+spawn openMSX directly (the trap probes, cloadverr, eofcas, keyshift, autorun,
+bootkey, resetboot, ctrlkeys …), and `probes/lib/omsx_run.py` is a second
+shared door that ten more probes (and the tape probes, and `z80probe`) use as a
+subprocess. None of them cached, so every repeat re-booted the VG-8020 and the
+CF-3300 for answers that cannot change.
+
+`probe_refcache.cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None)`
+caches ONE launch. The caller keeps its own spawn — its `guarded()` Popen, its
+watchdog, its kill signal — inside `run`; the cache never spawns anything. The
+key (`direct_key`) is the machine's bytes, the argv and every `-script` text
+with each per-run path replaced by a placeholder (`<OUTn>`, `<SCRIPTn>`,
+`<MEDIAn>`), the sha256 of every input file — **auto-detected**, in argv and in
+the Tcl text, so an undeclared tape still keys — the user's `settings.xml` and
+`share/scripts/` (read, never written), every `-ext`'s XML, the binary's
+identity, and `direct_fingerprint()` (the harness fingerprint plus
+`probe_refcache.py` itself). A path that is not a file yet stays in the key
+verbatim: an incomplete normalisation costs a **miss**, never a wrong hit.
+
+Never cached (counted `bypassed`, with the reason in the tally): a Tcl that
+reads the host — `clock …`, `rand()`, `after realtime`, `exec`, `glob`, `env()`
+— or a directory passed as media. The three rules hold unchanged: every
+declared output is stored and replayed together; an output that is missing,
+empty or a non-reading is never stored, and `ok(value)` lets the caller veto a
+watchdog kill; `verify` re-runs and compares byte for byte. Outputs are deleted
+before a real run, so a stale file from an earlier call cannot be stored as
+this run's reading, and the D-CACHEPRE staleness guard runs on the hit path.
+
+🔴 **A repeat inside one process is a re-measurement.** stop-trap runs every
+case `--trials 2` times and asserts the verdict is robust across both; the first
+cut served trial 1 from trial 0's just-stored entry (run 1 on an EMPTY store
+logged `16 hit, 16 miss`), so the second trial measured nothing. The n-th
+identical launch of a process now gets its own key, so every stored reading was
+measured once, separately, and a later process replays each trial from its own
+measurement (arms KD12, KD12b).
+
+omsx_run.py children report into their parent's tally through
+`$ZEROBAS_REFCACHE_TALLY` (the first importer owns it), so a parent that
+imports `probe_refcache` prints the children's hits. Selftest arms KD0–KD12b and
+KD-R (the REPACK machines name every repo-built ROM by absolute, present path,
+so zerobas's key moves with the build). When this section was written the
+battery forced the cache OFF; §6.1 replaced that the same day. The battery now
+runs `refs`, so the reference side of these launches is replayed there too, and
+zerobas is still measured.

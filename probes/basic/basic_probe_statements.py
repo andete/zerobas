@@ -45,6 +45,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+import probe_refcache  # noqa: E402,F401  D-REFBYPASS: owns the tally the omsx_run.py children report their hits into
 
 OMSX_RUN = os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "lib", "omsx_run.py")
 # ⚠️ zerobas now runs on the REPACK machine, which carries the merged main ROM in

@@ -309,10 +309,15 @@ def measure(machine, bodies, extra, plant=None):
              for i, b in enumerate(ctl + bodies)]
     rk = dict(batch=True, capture="screen", boot=8.0)
     rk.update(extra or {})
-    key = cache_key(machine, specs, rk) if rc.ENABLED else None
+    # D-REFSONLY (Joost 2026-11-03, "References only"): this probe keeps its
+    # OWN cache path, so the refs-mode rule has to be applied here too -- the
+    # battery now runs refs, and without this line it would replay zerobas
+    key = (cache_key(machine, specs, rk)
+           if rc.ENABLED and not rc.subject_bypass(machine) else None)
     if key:
         caps, so = rc.load(key)
         if caps is not None and so and "windows" in so and len(caps) == len(specs):
+            rc.refuse_subject_hit(machine)
             CACHE["hit"] += 1
             return so["windows"], caps
     fd, out = tempfile.mkstemp(prefix="kwram-", suffix=".txt")

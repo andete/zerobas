@@ -84,6 +84,11 @@ the worst one this project has:
                             is telling the truth, rather than the cache being
                             trusted because it is convenient. Run it before
                             trusting a long-lived store.
+  ZEROBAS_REFCACHE=refs     D-REFSONLY (Joost 2026-11-03, "References only"),
+                            what tools/run_gates.py forces for every unit:
+                            REFERENCE machines as in `1`, zerobas machines
+                            (is_subject: by ROM bytes, then by name) always
+                            measured, never served, never stored.
 
 Store: $ZEROBAS_REFCACHE_DIR, else ~/.cache/zerobas/refcache. NOT under
 /tmp/zerobas -- that root is wiped on purpose and the whole point is to persist
@@ -94,10 +99,12 @@ the machine-XML race produced 412 torn reads of 1200. [[machxml-race]]
 """
 from __future__ import annotations
 
+import base64
 import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -113,6 +120,13 @@ import probe_tmp                        # noqa: F401 -- sets tempfile.tempdir
 _MODE = (os.environ.get("ZEROBAS_REFCACHE") or "1").strip().lower()
 ENABLED = _MODE not in ("0", "no", "off", "false")
 VERIFY = _MODE in ("verify", "check")
+# D-REFSONLY (Joost 2026-11-03, asked whether batteries should use the cache:
+# "References only"). In `refs` mode a REFERENCE machine is served and stored
+# exactly as in mode 1, and a zerobas machine is NEITHER served NOR stored: it
+# is booted and measured every time. tools/run_gates.py forces this mode for
+# every unit, so the subject is measured on every battery run and only the
+# constants are replayed (docs/spec-refcache.md §6).
+REFS = _MODE in ("refs", "references")
 
 ROOT = (os.environ.get("ZEROBAS_REFCACHE_DIR")
         or os.path.join(os.path.expanduser("~"), ".cache", "zerobas", "refcache"))
@@ -121,7 +135,76 @@ ROOT = (os.environ.get("ZEROBAS_REFCACHE_DIR")
 NON_READINGS = ("<NO OUTPUT>", "<NO CAPTURE>")
 
 STATS = {"hit": 0, "miss": 0, "store": 0, "bypass": 0, "verify_ok": 0,
-         "verify_bad": 0, "refused": 0, "replayed": 0, "expired": 0}
+         "verify_bad": 0, "refused": 0, "replayed": 0, "expired": 0,
+         # D-REFSONLY: zerobas readings taken live under `refs`, and zerobas
+         # readings SERVED from the store (any mode). Under `refs` the second
+         # one is 0 by construction -- and `refuse_subject_hit` dies if not.
+         "subject_measured": 0, "subject_served": 0}
+
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_SUBJECT: dict[str, bool] = {}
+
+
+def _repo_rom(path: str) -> bool:
+    """A ROM file built in THIS repo (build/*.rom and anything else under it)."""
+    p = os.path.realpath(path)
+    return (p.startswith(os.path.realpath(REPO) + os.sep)
+            and p.lower().endswith((".rom", ".bin")))
+
+
+def is_subject(machine: str, files=()) -> bool:
+    """True iff this launch measures ZEROBAS, i.e. must never be replayed in
+    `refs` mode.
+
+    🎯 BY BYTES FIRST: the machine XML names a ROM built in this repo (the KD-R
+    logic -- the REPACK installer writes build/*.rom by absolute path), or an
+    inserted file (`files`: a -cart, a cart= argument) is one. BY NAME SECOND:
+    the C-BIOS_MSX1_EU_REPACK* prefix. The two must agree; when they do not,
+    the answer is SUBJECT (measure) -- a wrong "reference" verdict replays the
+    thing under test, a wrong "subject" verdict only costs a boot. An XML that
+    cannot be resolved is a subject for the same reason."""
+    by_name = machine.startswith("C-BIOS_MSX1_EU_REPACK")
+    if any(f and _repo_rom(str(f)) for f in files):
+        return True
+    if machine not in _SUBJECT:
+        xml = _machine_xml(machine)
+        if xml is None:
+            by_bytes = True
+        else:
+            body = open(xml, encoding="utf-8", errors="replace").read()
+            names = re.findall(r"<filename>\s*([^<]*?)\s*</filename>", body)
+            by_bytes = any(_repo_rom(n) for n in names if os.path.isabs(n))
+        _SUBJECT[machine] = by_bytes or by_name
+        if by_bytes != by_name and xml is not None:
+            sys.stderr.write(
+                f"⚠️ refcache: {machine}: name says "
+                f"{'zerobas' if by_name else 'reference'}, its ROM bytes say "
+                f"{'zerobas' if by_bytes else 'reference'} -- treated as ZEROBAS "
+                f"(measured, never replayed)\n")
+    return _SUBJECT[machine]
+
+
+def subject_bypass(machine: str, files=()) -> bool:
+    """`refs` mode and a zerobas launch: the caller must run for real and must
+    neither load nor store. Counts it, so the tally names what was measured."""
+    if REFS and is_subject(machine, files):
+        STATS["subject_measured"] += 1
+        return True
+    return False
+
+
+def refuse_subject_hit(machine: str, files=()) -> None:
+    """THE GUARD, called on every hit path just before a stored reading is
+    served. In `refs` mode serving zerobas is the one thing that must not
+    happen -- a battery would print ALL PASS for a build it never booted
+    (§6) -- so it is not a counter, it is a hard stop."""
+    if is_subject(machine, files):
+        if REFS:
+            raise SystemExit(
+                f"🔴 refcache: REFUSING TO SERVE A ZEROBAS READING ({machine}) in "
+                f"ZEROBAS_REFCACHE=refs -- the subject must be measured on every "
+                f"battery run (docs/spec-refcache.md §6). This is a harness bug.")
+        STATS["subject_served"] += 1
 
 
 def _sha(b: bytes) -> str:
@@ -470,7 +553,7 @@ def store(key: str, result, machine: str, settle=None) -> bool:
 
 
 def summary() -> str:
-    s = STATS
+    s = _totals()
     # 🔴 THIS GUARD USED TO OMIT verify_ok AND store, WHICH SILENCED THE TALLY IN
     # EXACTLY THE RUN THAT NEEDED IT. A `verify` battery where every entry AGREES
     # increments only verify_ok -- so the report said nothing, and "no output"
@@ -478,11 +561,22 @@ def summary() -> str:
     # was read as evidence on that silence; it was not evidence of anything until
     # this line listed every counter.
     if not any(s[k] for k in ("hit", "miss", "bypass", "verify_ok",
-                              "verify_bad", "store", "refused", "expired")):
+                              "verify_bad", "store", "refused", "expired",
+                              "subject_measured", "subject_served")):
         return ""
     bits = [f"{s['hit']} hit", f"{s['miss']} miss"]
     if VERIFY:
         bits = [f"VERIFY MODE (nothing served; every row re-measured)"] + bits
+    if REFS:
+        # D-REFSONLY: every battery log says, in one line, how many REFERENCE
+        # readings were replayed and that NO zerobas reading was
+        bits = ["REFS MODE (references replayed, zerobas measured)",
+                f"{s['hit']} REFERENCE reading(s) replayed",
+                f"{s['miss']} reference miss",
+                f"{s['subject_measured']} zerobas reading(s) MEASURED",
+                f"{s['subject_served']} zerobas replayed"]
+    elif s["subject_served"]:
+        bits.append(f"{s['subject_served']} of the hits were ZEROBAS readings")
     if s["store"]:
         bits.append(f"{s['store']} stored")
     if s["refused"]:
@@ -490,7 +584,10 @@ def summary() -> str:
     if s["replayed"]:
         bits.append(f"{s['replayed']} replayed provenance")
     if s["bypass"]:
-        bits.append(f"{s['bypass']} bypassed")
+        # D-REFBYPASS: a direct launch is bypassed for a REASON (the Tcl reads
+        # the host clock, ...), and the reason is the finding
+        why = "; ".join(f"{n}x {w}" for w, n in sorted(_BYPASS_WHY.items()))
+        bits.append(f"{s['bypass']} bypassed" + (f" ({why})" if why else ""))
     if s["expired"]:
         # Named, not folded into `miss`: an expired entry is a reading this run
         # DELIBERATELY refused to reuse, and that is a different fact from never
@@ -509,6 +606,7 @@ def report() -> None:
     line = summary()
     if line:
         sys.stderr.write(line + "\n")
+    _tally_close()
 
 
 # 🔴 REGISTERED HERE, NOT ASKED OF 200 CALLERS. The first full battery under
@@ -520,6 +618,466 @@ def report() -> None:
 # [[an-unnamed-outcome-reads-as-no-outcome]] [[one-temp-root]]
 import atexit                                                    # noqa: E402
 atexit.register(report)
+
+
+# ===========================================================================
+# --- D-REFBYPASS (2026-11-03): the probes that launch openMSX THEMSELVES ----
+# ===========================================================================
+# 🔴 THE CHOKEPOINT ABOVE WAS NEVER THE ONLY DOOR. `run_cases` is where most
+# probes reach the emulator, but 29+ probes in probes/basic/ build their own Tcl
+# and spawn openMSX directly (the trap probes, cloadverr, eofcas, keyshift,
+# autorun, bootkey, resetboot, ctrlkeys ...), and the omsx_run.py CLI is a
+# second shared door used as a subprocess by ten more. None of them cached, so
+# every repeat re-booted the VG-8020 and the CF-3300 for answers that cannot
+# change. Joost 2026-11-03: "do it before the sub2 rereads, it'll save time
+# every next test run".
+#
+# `cached_run()` is the same contract as `run_cases` with a different unit:
+# ONE openMSX LAUNCH. The caller keeps its own spawn (its guarded() Popen, its
+# watchdog, its kill signal) inside the `run` callable it hands over -- the
+# cache never spawns anything itself, so every launch still goes through
+# omsx_preflight.guarded() at the line tools/check_probe_preflight.py checks.
+#
+# ═══ THE KEY ═══
+#   * machine_identity(the -machine argument): XML + every ROM it names, by
+#     content. 🎯 For the REPACK machines the XML names build/*.rom by ABSOLUTE
+#     path (tools/install-repack-machine.py), so a rebuild changes the key; the
+#     selftest arm KD-R checks that every repo-built filename is absolute and
+#     present, because a relative or missing one hashes as "ABSENT" and would
+#     make zerobas's key BUILD-INDEPENDENT -- the one wrong hit that matters.
+#   * the argv, and the text of every -script, with each per-run path replaced
+#     by a placeholder: the declared outputs (<OUTn>), the scripts themselves
+#     (<SCRIPTn>), and every input file (<MEDIAn>). Without that every key is
+#     unique (mkstemp names, the per-process probe_tmp directory).
+#   * sha256 of every input file: every argv token that is an existing file
+#     (-diska, -cassetteplayer, -cart, -setting ...) AND every absolute path in
+#     the Tcl / -command text that exists before the run (a `cassetteplayer
+#     insert {...}`, a `diska {...}`, an `open {...} r`). 🎯 AUTO-DETECTED, not
+#     declared: a probe that forgot to declare a tape would otherwise get the
+#     OLD tape's answer. A path that is not a file yet (an undeclared output)
+#     stays in the key VERBATIM -- so the failure mode of an incomplete
+#     normalisation is a key that never repeats, i.e. a MISS, never a wrong hit.
+#   * the user's ~/.openMSX/share/settings.xml and share/scripts/ (openMSX reads
+#     both at startup; READ for the key, never written), unless -setting names
+#     another settings file (then that file is an input like any other).
+#   * every -ext NAME's extension XML, by identity_of_xml; an -ext that cannot
+#     be resolved makes the run UNCACHEABLE.
+#   * direct_fingerprint(): harness_fingerprint() (omsx_repl, omsx_run,
+#     omsx_preflight, the emulator build) + THIS file's bytes, because the key
+#     and the replay are now part of how a direct reading is taken -- and the
+#     identity of the binary argv[0] names when it is not the default one.
+#
+# ═══ NEVER CACHED (counted as `bypassed`) ═══
+#   A Tcl / -command text that reads the HOST: `clock ...`, `rand()`/`srand`,
+#   `after realtime` (fires on the wall clock), `exec`, `glob`, `env(`. openMSX
+#   is deterministic in EMULATED time; those are the ways a script can make its
+#   output depend on something else. A directory passed as media (dir-as-disk)
+#   is not hashed and so not cached either.
+#
+# ═══ THE SAME THREE RULES ═══
+#   ALL-OR-NOTHING per launch: every declared output is stored and replayed.
+#   A NON-READING IS NEVER STORED: every output must exist and be non-empty,
+#   and must not contain <NO OUTPUT>/<NO CAPTURE>; an `ok(value)` predicate
+#   lets the caller veto (a watchdog TIMEOUT whose output may be partial).
+#   VERIFY runs for real and compares byte-for-byte with the stored outputs.
+#   And the D-CACHEPRE staleness guard runs on the HIT path, exactly as in
+#   run_cases: a hit never launches, so it never reached guarded().
+
+_NONDET = (
+    ("clock", re.compile(r"\bclock\s+(seconds|milliseconds|microseconds|clicks|format|scan)\b")),
+    ("rand()", re.compile(r"\bs?rand\s*\(")),
+    ("after realtime", re.compile(r"\bafter\s+realtime\b")),
+    ("exec", re.compile(r"(^|[\s\[;{])exec\s")),
+    ("glob", re.compile(r"(^|[\s\[;{])glob\s")),
+    ("env()", re.compile(r"\benv\(")),
+)
+_PATH_RE = re.compile(r"(/[^\s{}\"'\[\];]+)")
+OMSX_USER_SETTINGS = os.path.expanduser("~/.openMSX/share/settings.xml")
+OMSX_USER_SCRIPTS = os.path.expanduser("~/.openMSX/share/scripts")
+# a direct entry's outputs above this many bytes are not stored (a recorded WAV
+# can be tens of MB; the store is JSON)
+DIRECT_MAX_BYTES = 16 * 1024 * 1024
+
+_DIRECT_FP: str | None = None
+
+
+def direct_fingerprint() -> str:
+    """harness_fingerprint() plus this file: for a direct launch the key-builder
+    and the replay ARE part of the instrument (the D-REFBYPASS brief)."""
+    global _DIRECT_FP
+    if _DIRECT_FP is None:
+        _DIRECT_FP = _sha((harness_fingerprint() + "\n").encode()
+                          + open(os.path.abspath(__file__), "rb").read())
+    return _DIRECT_FP
+
+
+_EMU_OF: dict[str, str] = {}
+
+
+def _emu_of(exe: str) -> str:
+    """The identity of argv[0]. The default binary is already in
+    harness_fingerprint(); any OTHER one (an --omsx override) gets its own
+    `-v`, so a reading taken by a different build can never be served."""
+    path = exe if os.path.sep in exe else (shutil.which(exe) or exe)
+    real = os.path.realpath(path)
+    dflt = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
+    if real == os.path.realpath(dflt):
+        return "default"
+    if real not in _EMU_OF:
+        try:
+            out = subprocess.run([real, "-v"], capture_output=True, text=True,
+                                 timeout=30).stdout
+            _EMU_OF[real] = out.splitlines()[0].strip() if out.strip() else ""
+        except (OSError, subprocess.SubprocessError):
+            _EMU_OF[real] = ""
+        if not _EMU_OF[real]:
+            _EMU_OF[real] = "UNREADABLE:" + os.urandom(8).hex()
+    return _EMU_OF[real]
+
+
+def _dir_sha(d: str) -> str:
+    if not os.path.isdir(d):
+        return "ABSENT"
+    parts = []
+    for dirpath, _dirs, files in sorted(os.walk(d)):
+        for fn in sorted(files):
+            fp = os.path.join(dirpath, fn)
+            parts.append(f"{os.path.relpath(fp, d)}:{_file_sha(fp)}")
+    return _sha("\n".join(parts).encode())
+
+
+def _variants(p: str) -> list[str]:
+    """A path as a script may spell it: as given, absolute, and resolved
+    (macOS /tmp is /private/tmp)."""
+    out = []
+    for v in (p, os.path.abspath(p), os.path.realpath(p)):
+        if v and v not in out:
+            out.append(v)
+    return out
+
+
+def direct_key(cmd, outs, inouts=(), media=()):
+    """-> (key, None) or (None, reason-it-is-uncacheable).
+
+    Pure function of the launch's INPUTS (see the section header): it never
+    looks at what the run produced."""
+    argv = [str(a) for a in cmd]
+    if "-machine" not in argv or argv.index("-machine") + 1 >= len(argv):
+        return None, "no -machine in argv"
+    machine = argv[argv.index("-machine") + 1]
+    scripts = [argv[j + 1] for j, a in enumerate(argv)
+               if a == "-script" and j + 1 < len(argv)]
+    texts = []
+    for s in scripts:
+        try:
+            texts.append(open(s, encoding="utf-8", errors="surrogateescape").read())
+        except OSError:
+            return None, f"-script {s} unreadable"
+    commands = [argv[j + 1] for j, a in enumerate(argv)
+                if a == "-command" and j + 1 < len(argv)]
+    for t in texts + commands:
+        for why, rx in _NONDET:
+            if rx.search(t):
+                return None, f"the Tcl reads the host ({why})"
+
+    # every per-run path -> a placeholder; inputs also -> their content hash
+    subst: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    def add(p, ph):
+        for v in _variants(p):
+            if v not in seen:
+                seen.add(v)
+                subst.append((v, ph))
+
+    for i, p in enumerate(outs):
+        add(p, f"<OUT{i}>")
+    for i, p in enumerate(inouts):
+        add(p, f"<INOUT{i}>")
+    for i, p in enumerate(scripts):
+        add(p, f"<SCRIPT{i}>")
+    cands = list(media)
+    for j, a in enumerate(argv[1:], 1):
+        if argv[j - 1] in ("-script",) or a in seen:
+            continue
+        if os.path.isdir(a) and argv[j - 1].startswith("-"):
+            return None, f"a directory is passed as media ({a}); its content is not hashed"
+        if os.path.isfile(a):
+            cands.append(a)
+    for t in texts + commands:
+        cands += [m for m in _PATH_RE.findall(t) if os.path.isfile(m)]
+    media_sha = []
+    for p in cands:
+        if any(v in seen for v in _variants(p)):
+            continue
+        add(p, f"<MEDIA{len(media_sha)}>")
+        media_sha.append(_file_sha(p))
+    inout_sha = [_file_sha(p) for p in inouts]
+    subst.sort(key=lambda kv: -len(kv[0]))       # longest first: no prefix clash
+
+    def norm(s: str) -> str:
+        for v, ph in subst:
+            s = s.replace(v, ph)
+        return s
+
+    exts = []
+    for j, a in enumerate(argv):
+        if a == "-ext" and j + 1 < len(argv):
+            name = argv[j + 1]
+            found = None
+            for root in (os.path.expanduser("~/.openMSX/share/extensions"),
+                         *[os.path.join(s, "extensions") for s in _share_dirs()]):
+                c = os.path.join(root, name + ".xml")
+                if os.path.exists(c):
+                    found = c
+                    break
+            if found is None:
+                return None, f"-ext {name} does not resolve to an extension XML"
+            exts.append(f"{name}:{identity_of_xml(found)}")
+    settings = ("given" if "-setting" in argv
+                else _file_sha(OMSX_USER_SETTINGS))
+    payload = {
+        "v": 1, "kind": "direct",
+        "machine_id": machine_identity(machine),
+        "harness": direct_fingerprint(),
+        "emu": _emu_of(argv[0]),
+        "argv": [norm(a) for a in argv[1:]],
+        "scripts": [norm(t) for t in texts],
+        "media": media_sha, "inouts": inout_sha, "ext": exts,
+        "settings": settings, "user_scripts": _dir_sha(OMSX_USER_SCRIPTS),
+        "outs": len(outs),
+    }
+    return _sha(json.dumps(payload, sort_keys=True).encode()), None
+
+
+def _share_dirs() -> list[str]:
+    sys.path.insert(0, os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "tools"))
+    try:
+        import openmsx_paths as P
+        return list(getattr(P, "SHARE_CANDIDATES", []))
+    except Exception:
+        return []
+
+
+def _read_outs(paths) -> list[bytes] | None:
+    got = []
+    for p in paths:
+        try:
+            with open(p, "rb") as fh:
+                got.append(fh.read())
+        except OSError:
+            return None
+    return got
+
+
+def direct_storable(blobs) -> bool:
+    """Every declared output exists, is non-empty, holds no non-reading."""
+    if blobs is None or not blobs:
+        return False
+    if sum(len(b) for b in blobs) > DIRECT_MAX_BYTES:
+        return False
+    for b in blobs:
+        if not b.strip():
+            return False
+        if any(n.encode() in b for n in NON_READINGS):
+            return False
+    return True
+
+
+def _direct_load(key: str):
+    path = _path(key)
+    if expired(path):
+        STATS["expired"] += 1
+        return None
+    try:
+        with open(path) as fh:
+            d = json.load(fh)
+        if d.get("kind") != "direct":
+            return None
+        return [base64.b64decode(x) for x in d["outs"]]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _direct_store(key: str, blobs, machine: str) -> bool:
+    if not direct_storable(blobs):
+        STATS["refused"] += 1
+        return False
+    d = _path(key)
+    os.makedirs(os.path.dirname(d), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(d), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            json.dump({"key": key, "kind": "direct", "machine": machine,
+                       "outs": [base64.b64encode(b).decode() for b in blobs]}, fh)
+        os.replace(tmp, d)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        return False
+    STATS["store"] += 1
+    return True
+
+
+def _hit_preflight(cmd) -> None:
+    """D-CACHEPRE on the direct hit path (see run_cases): a hit never launches,
+    so it would otherwise never reach guarded()'s stale-ROM refusal. A
+    function of its own so the selftest can drive a planted machine."""
+    import omsx_preflight
+    omsx_preflight.guard_cmd(list(cmd))
+
+
+def cached_run(cmd, outs, run, *, inouts=(), media=(), ok=None):
+    """Run ONE openMSX launch through the reference store.
+
+    cmd     the argv the caller is about to spawn, BEFORE guarded() (guarded's
+            own additions are a function of omsx_preflight.py, which is in the
+            fingerprint)
+    outs    every file the run writes that the caller reads afterwards. They
+            are DELETED before a real run, so a stale file from an earlier call
+            can never be stored as this run's reading.
+    inouts  files that are both an input and an output (a disk the run SAVEs
+            onto): hashed BEFORE the run for the key, stored AFTER, never
+            deleted
+    run     a zero-argument callable doing the real spawn (guarded Popen +
+            watchdog); its return value is handed back on a miss
+    media   extra input files to hash (inputs are auto-detected too)
+    ok      ok(value) -> False vetoes the store (e.g. a watchdog timeout)
+
+    -> (served_from_cache: bool, value). value is None on a hit.
+    """
+    if not ENABLED:
+        return False, run()
+    _argv = [str(a) for a in cmd]
+    _m = _argv[_argv.index("-machine") + 1] if "-machine" in _argv[:-1] else "?"
+    _files = [a for a in _argv[1:] if os.path.isfile(a)] + list(media)
+    if subject_bypass(_m, _files):
+        # D-REFSONLY: zerobas is measured, never loaded and never stored
+        return False, run()
+    key, why = direct_key(cmd, outs, inouts, media)
+    if key is None:
+        STATS["bypass"] += 1
+        _BYPASS_WHY.setdefault(why, 0)
+        _BYPASS_WHY[why] += 1
+        return False, run()
+    # 🔴 A REPEAT INSIDE ONE PROCESS IS A DELIBERATE RE-MEASUREMENT, NOT A
+    # REPEAT TO SKIP. stop-trap runs every case `--trials 2` times and asserts
+    # the verdict is "robust across 2 trials"; the first cut of this function
+    # served trial 1 from trial 0's fresh entry (measured: run 1 of
+    # stop-trap-acceptance logged `16 hit, 16 miss` on an EMPTY store), so the
+    # second trial measured nothing while the log still claimed two. So the
+    # n-th identical launch of a process gets its own key: every stored reading
+    # was measured once, separately, and a later process replays trial 1 from
+    # trial 1's own measurement. [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+    n = _OCCURRENCE.get(key, 0)
+    _OCCURRENCE[key] = n + 1
+    if n:
+        key = _sha(f"{key}#{n}".encode())
+    argv = [str(a) for a in cmd]
+    machine = argv[argv.index("-machine") + 1]
+    stored = _direct_load(key)
+    if stored is not None and len(stored) == len(outs) + len(inouts) \
+            and not VERIFY:
+        refuse_subject_hit(machine, _files)
+        _hit_preflight(cmd)
+        for p, b in zip(list(outs) + list(inouts), stored):
+            with open(p, "wb") as fh:
+                fh.write(b)
+        STATS["hit"] += 1
+        return True, None
+    for p in outs:
+        try:
+            os.unlink(p)
+        except OSError:
+            pass
+    value = run()
+    blobs = _read_outs(list(outs) + list(inouts))
+    if VERIFY and stored is not None and len(stored) == len(outs) + len(inouts):
+        if blobs == stored:
+            STATS["verify_ok"] += 1
+        else:
+            STATS["verify_bad"] += 1
+            bad = [i for i in range(len(stored))
+                   if blobs is None or i >= len(blobs) or blobs[i] != stored[i]]
+            sys.stderr.write(
+                f"🔴 refcache VERIFY MISMATCH on {machine} (direct launch): "
+                f"output(s) {bad} differ between the stored reading and a fresh "
+                f"one. The store is WRONG or the machine moved; key {key[:12]}\n")
+    else:
+        STATS["miss"] += 1
+    if ok is not None and not ok(value):
+        STATS["refused"] += 1
+        return False, value
+    _direct_store(key, blobs, machine)
+    return False, value
+
+
+_BYPASS_WHY: dict[str, int] = {}
+_OCCURRENCE: dict[str, int] = {}
+
+
+# --- the tally of CHILD processes -------------------------------------------
+# 🔴 omsx_run.py RUNS AS A SUBPROCESS, so its hits were counted in a process
+# whose stderr most callers send to DEVNULL -- a cache whose hits are invisible
+# is what this module's header says must not exist. The first process to
+# import this module names a tally file in the environment; every descendant
+# that imports it appends its counters there at exit, and the owner folds them
+# into its own summary. The owner deletes the file; a descendant opens it
+# WITHOUT O_CREAT, so one outliving its parent leaks nothing.
+_TALLY_ENV = "ZEROBAS_REFCACHE_TALLY"
+_TALLY_OWNER = False
+if not os.environ.get(_TALLY_ENV):
+    try:
+        _fd, _tp = tempfile.mkstemp(prefix=f"refcache_tally_{os.getpid()}_",
+                                    suffix=".txt")
+        os.close(_fd)
+        os.environ[_TALLY_ENV] = _tp
+        _TALLY_OWNER = True
+    except OSError:
+        pass
+
+
+def _totals() -> dict:
+    s = dict(STATS)
+    if _TALLY_OWNER:
+        try:
+            with open(os.environ.get(_TALLY_ENV, ""), "r") as fh:
+                for ln in fh:
+                    try:
+                        for k, v in json.loads(ln).items():
+                            if k in s:
+                                s[k] += int(v)
+                    except (ValueError, TypeError, AttributeError):
+                        pass
+        except OSError:
+            pass
+    return s
+
+
+def _tally_close() -> None:
+    path = os.environ.get(_TALLY_ENV, "")
+    if not path:
+        return
+    if _TALLY_OWNER:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        return
+    if not any(STATS.values()):
+        return
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND)
+    except OSError:
+        return
+    try:
+        os.write(fd, (json.dumps(STATS) + "\n").encode())
+    finally:
+        os.close(fd)
 
 
 # ===========================================================================
@@ -676,8 +1234,9 @@ def _selftest() -> int:
           f" -- see the comment above; this is a statement of fact, not an arm.")
     saved_root, RC.ROOT = RC.ROOT, tempfile.mkdtemp(prefix="refcache-verify-")
     saved_verify, RC.VERIFY = RC.VERIFY, True
-    # 🔴 AND `ENABLED` TOO. The battery now forces ZEROBAS_REFCACHE=0 for every
-    # unit (a gate measures, it never replays -- spec-refcache.md §6), which
+    # 🔴 AND `ENABLED` TOO. The battery forced ZEROBAS_REFCACHE=0 for every
+    # unit (a gate measures, it never replays -- spec-refcache.md §6; `refs`
+    # since D-REFSONLY, which leaves ENABLED on), which
     # made this gate's own K9 arms go dark: run_cases bypassed the module
     # entirely, so the tamper could not be caught and the arm reported "did not
     # fire". The suite must drive the module it is testing rather than inherit
@@ -848,6 +1407,271 @@ def _selftest() -> int:
     finally:
         shutil.rmtree(RC.ROOT, ignore_errors=True)
         RC.ROOT = saved_root
+
+    # --- D-REFBYPASS: the DIRECT-launch key (cached_run) -------------------
+    # Pure key arithmetic plus a fake `run` -- no emulator -- except KD-R,
+    # which reads the REAL installed REPACK machine XML (never its ROM bytes
+    # beyond the hash the identity already takes).
+    global _machine_xml, _hit_preflight, VERIFY, ENABLED, REFS
+    saved_mx, saved_hp = _machine_xml, _hit_preflight
+    saved_root, saved_v, saved_en, saved_refs = ROOT, VERIFY, ENABLED, REFS
+    REFS = False                        # the KD arms are about mode 1
+    tmp = tempfile.mkdtemp(prefix="refbypass-selftest-")
+    try:
+        rom = os.path.join(tmp, "fake.rom")
+        open(rom, "wb").write(b"\x00" * 64)
+        mxml = os.path.join(tmp, "Fake_Direct.xml")
+        open(mxml, "w").write(
+            f"<msxconfig><machine><devices><primary><ROM><rom>"
+            f"<filename>{rom}</filename></rom></ROM></primary>"
+            f"</devices></machine></msxconfig>")
+        zxml = os.path.join(tmp, "zb_plant.xml")      # NAME says zerobas, bytes don't
+        open(zxml, "w").write(open(mxml).read())
+        rxml = os.path.join(tmp, "ref_plant.xml")     # BYTES say zerobas, name doesn't
+        open(rxml, "w").write(
+            f"<msxconfig><filename>{os.path.join(REPO, 'build', 'zerobas-main-eu.rom')}"
+            f"</filename></msxconfig>")
+        plants = {"Fake_Direct": mxml, "C-BIOS_MSX1_EU_REPACK_PLANT": zxml,
+                  "Fake_Ref_With_Repo_Rom": rxml}
+        _machine_xml = lambda m: plants.get(m) or saved_mx(m)  # noqa: E731
+        _hit_preflight = lambda cmd: None                                   # noqa: E731
+
+        def launch(sub, tcl_body="after time 9 {type \"PRINT 1\\r\"}\n",
+                   cas_bytes=b"CAS" * 10, inner_bytes=b"DSK" * 10):
+            """write one launch's files under `sub`, as a probe would"""
+            d = os.path.join(tmp, sub)
+            os.makedirs(d, exist_ok=True)
+            out = os.path.join(d, f"cap_{sub}.txt")
+            cas = os.path.join(d, f"tape_{sub}.cas")
+            inner = os.path.join(d, f"disk_{sub}.dsk")
+            tcl = os.path.join(d, f"run_{sub}.tcl")
+            open(cas, "wb").write(cas_bytes)
+            open(inner, "wb").write(inner_bytes)
+            open(tcl, "w").write(f"diska {{{inner}}}\n" + tcl_body
+                                 + f"after time 20 {{set f [open {{{out}}} w]; "
+                                   f"puts $f x; close $f; exit}}\n")
+            cmd = ["openmsx", "-machine", "Fake_Direct", "-cassetteplayer", cas,
+                   "-command", "set renderer none; set sound_driver null",
+                   "-script", tcl]
+            return cmd, out
+
+        _MACHINE_ID.pop("Fake_Direct", None)
+        ca, oa = launch("a")
+        ka, _ = direct_key(ca, [oa])
+        cb, ob = launch("b-another-temp-dir")
+        kb, _ = direct_key(cb, [ob])
+        arm("KD0 GREEN CONTROL: the same launch from ANOTHER temp dir (out, tcl, "
+            "tape and Tcl-named disk all renamed) gives the SAME key",
+            ka is not None and ka == kb, f"{(ka or '-')[:8]} vs {(kb or '-')[:8]}")
+        c2, o2 = launch("c", cas_bytes=b"CAS" * 9 + b"CAT")
+        k2, _ = direct_key(c2, [o2])
+        arm("KD1 one byte of an ARGV medium (-cassetteplayer) -> MISS",
+            k2 != ka, f"{ka[:8]} vs {(k2 or '-')[:8]}")
+        c3, o3 = launch("d", inner_bytes=b"DSK" * 9 + b"DSL")
+        k3, _ = direct_key(c3, [o3])
+        arm("KD2 one byte of a medium named ONLY in the Tcl text (`diska {...}`) "
+            "-> MISS (auto-detected, not declared)",
+            k3 != ka, f"{ka[:8]} vs {(k3 or '-')[:8]}")
+        c4, o4 = launch("e", tcl_body="after time 9 {type \"PRINT 2\\r\"}\n")
+        k4, _ = direct_key(c4, [o4])
+        arm("KD3 one character of the Tcl -> MISS", k4 != ka,
+            f"{ka[:8]} vs {(k4 or '-')[:8]}")
+        open(rom, "wb").write(b"\x00" * 63 + b"\x01")
+        _MACHINE_ID.pop("Fake_Direct", None)
+        k5, _ = direct_key(ca, [oa])
+        open(rom, "wb").write(b"\x00" * 64)
+        _MACHINE_ID.pop("Fake_Direct", None)
+        k5b, _ = direct_key(ca, [oa])
+        arm("KD4 one byte of a ROM the machine names -> MISS, through cached_run's "
+            "own key", k5 != ka, f"{ka[:8]} vs {(k5 or '-')[:8]}")
+        arm("KD4b restoring the ROM restores the key (control)", k5b == ka)
+        for body, why in (("set t [clock seconds]\n", "clock"),
+                          ("set r [expr {rand()}]\n", "rand"),
+                          ("after realtime 1 {exit}\n", "after realtime"),
+                          ("exec ls\n", "exec"), ("set g [glob /tmp/*]\n", "glob"),
+                          ("puts $env(HOME)\n", "env")):
+            c6, o6 = launch("f", tcl_body=body)
+            k6, r6 = direct_key(c6, [o6])
+            arm(f"KD5 a Tcl that reads the host ({why}) is UNCACHEABLE",
+                k6 is None, r6 or "")
+        # KD-R: the REAL zerobas machines. A repo-built ROM named by a relative
+        # or missing path hashes as ABSENT -- then zerobas's key would NOT move
+        # with the build, and that is the wrong hit this cache must never make.
+        repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        for m in ("C-BIOS_MSX1_EU_REPACK_NODISK", "C-BIOS_MSX1_EU_REPACK_DISK"):
+            x = saved_mx(m)
+            if x is None:
+                print(f"SKIP  KD-R {m}: not installed (make repack-machine)")
+                continue
+            body = open(x, encoding="utf-8", errors="replace").read()
+            names = re.findall(r"<filename>\s*([^<]*?)\s*</filename>", body)
+            ours = [n for n in names if "zerobas" in n or n.startswith(repo)]
+            badn = [n for n in ours if not (os.path.isabs(n) and os.path.isfile(n))]
+            arm(f"KD-R {m}: every repo-built ROM it names is ABSOLUTE and PRESENT, "
+                f"so its bytes are in the key", bool(ours) and not badn,
+                f"{len(ours)} repo ROM(s){'; BAD ' + repr(badn) if badn else ''}")
+        # KD6 end to end on a fake run: miss -> store -> hit replays the bytes
+        ROOT, VERIFY, ENABLED = tempfile.mkdtemp(prefix="refbypass-rt-"), False, True
+        calls = []
+
+        def fake_run(out, data):
+            def r():
+                calls.append(out)
+                if data is not None:
+                    open(out, "wb").write(data)
+                return "ran"
+            return r
+
+        h0 = STATS["hit"]
+        _OCCURRENCE.clear()
+        s1 = cached_run(ca, [oa], fake_run(oa, b"READING 1\n"))
+        open(oa, "wb").write(b"STALE")
+        _OCCURRENCE.clear()                  # a NEW process, as far as the key goes
+        s2 = cached_run(cb, [ob], fake_run(ob, b"SHOULD NOT RUN\n"))
+        arm("KD6 miss -> stored -> the SAME launch from another temp dir is a "
+            "HIT, the run is NOT called, and the output is replayed byte-exact",
+            s1 == (False, "ran") and s2 == (True, None) and len(calls) == 1
+            and open(ob, "rb").read() == b"READING 1\n" and STATS["hit"] == h0 + 1,
+            f"{s1} {s2} calls={len(calls)}")
+        # KD12: the SAME launch AGAIN in the same process (a --trials repeat)
+        # is RE-MEASURED, not served the first trial's reading ...
+        s3 = cached_run(cb, [ob], fake_run(ob, b"TRIAL 2\n"))
+        arm("KD12 a repeat of an identical launch INSIDE one process is re-measured "
+            "(a `--trials` repeat must not be a copy of trial 1)",
+            s3 == (False, "ran") and len(calls) == 2, f"{s3} calls={len(calls)}")
+        # ... and a later process replays EACH trial from its own measurement
+        _OCCURRENCE.clear()
+        t1 = cached_run(ca, [oa], fake_run(oa, b"X\n")); r1 = open(oa, "rb").read()
+        t2 = cached_run(ca, [oa], fake_run(oa, b"X\n")); r2 = open(oa, "rb").read()
+        arm("KD12b a later process serves trial 1 and trial 2 from their OWN entries",
+            t1 == t2 == (True, None) and (r1, r2) == (b"READING 1\n", b"TRIAL 2\n")
+            and len(calls) == 2, f"{r1!r} {r2!r}")
+        cx, ox = launch("g", tcl_body="after time 9 {type \"PRINT 3\\r\"}\n")
+        cached_run(cx, [ox], fake_run(ox, b""))
+        _OCCURRENCE.clear()   # else the 2nd call misses as a TRIAL, proving nothing
+        cached_run(cx, [ox], fake_run(ox, b"later\n"))
+        arm("KD7 an EMPTY output is never stored (the next call runs)",
+            calls[-2:] == [ox, ox])
+        cy, oy = launch("h", tcl_body="after time 9 {type \"PRINT 4\\r\"}\n")
+        cached_run(cy, [oy], fake_run(oy, b"partial\n"), ok=lambda v: False)
+        _OCCURRENCE.clear()
+        cached_run(cy, [oy], fake_run(oy, b"partial\n"))
+        arm("KD8 an `ok` veto (a watchdog timeout) is never stored",
+            calls[-2:] == [oy, oy])
+        open(oa, "wb").write(b"STALE FROM AN EARLIER CALL\n")
+        cz, oz = launch("i", tcl_body="after time 9 {type \"PRINT 5\\r\"}\n")
+        open(oz, "wb").write(b"STALE FROM AN EARLIER CALL\n")
+        cached_run(cz, [oz], fake_run(oz, None))     # the run writes NOTHING
+        arm("KD9 a stale output file from an earlier call is DELETED before the "
+            "run, so it can never be stored as this run's reading",
+            not os.path.exists(oz) and _direct_load(direct_key(cz, [oz])[0]) is None)
+        VERIFY = True
+        vb = STATS["verify_bad"]; vo = STATS["verify_ok"]
+        _OCCURRENCE.clear()
+        cached_run(ca, [oa], fake_run(oa, b"READING 1\n"))
+        arm("KD10 VERIFY agrees with an untampered entry (green control)",
+            STATS["verify_ok"] == vo + 1)
+        _OCCURRENCE.clear()
+        cached_run(ca, [oa], fake_run(oa, b"A DIFFERENT READING\n"))
+        arm("KD11 VERIFY catches a reading that moved (the arm that matters)",
+            STATS["verify_bad"] == vb + 1)
+        # --- D-REFSONLY: `refs` mode -- references replayed, zerobas measured --
+        VERIFY = False
+        arm("KS1 the real machines classify: REPACK_NODISK/_DISK are zerobas, "
+            "the VG-8020 and CF-3300 are references",
+            is_subject("C-BIOS_MSX1_EU_REPACK_NODISK")
+            and is_subject("C-BIOS_MSX1_EU_REPACK_DISK")
+            and not is_subject("Philips_VG_8020")
+            and not is_subject("National_CF-3300"))
+        arm("KS2 name and bytes DISAGREE -> zerobas, both ways round (a REPACK "
+            "name over foreign ROMs; a reference name over a repo-built ROM)",
+            is_subject("C-BIOS_MSX1_EU_REPACK_PLANT")
+            and is_subject("Fake_Ref_With_Repo_Rom")
+            and not is_subject("Fake_Direct"))
+        arm("KS3 a repo-built ROM inserted as a cart makes a REFERENCE machine's "
+            "launch a zerobas measurement",
+            is_subject("Philips_VG_8020", [os.path.join(REPO, "build", "x.rom")]))
+        # a zerobas launch whose entry IS in the store (stored in mode 1) ...
+        cz2 = [a.replace("Fake_Direct", "C-BIOS_MSX1_EU_REPACK_PLANT") for a in ca]
+        _OCCURRENCE.clear()
+        cached_run(cz2, [oa], fake_run(oa, b"OLD ZEROBAS READING\n"))
+        kz, _ = direct_key(cz2, [oa])
+        arm("KS4 (control) the zerobas entry really is in the store",
+            _direct_load(kz) == [b"OLD ZEROBAS READING\n"])
+        REFS = True
+        n0, sm0 = len(calls), STATS["subject_measured"]
+        _OCCURRENCE.clear()
+        served = cached_run(cz2, [oa], fake_run(oa, b"NEW ZEROBAS READING\n"))
+        arm("KS5 🔴 THE ARM THAT MATTERS: in refs mode a zerobas launch is NEVER "
+            "served, even with a matching entry -- it runs, and is counted",
+            served == (False, "ran") and len(calls) == n0 + 1
+            and open(oa, "rb").read() == b"NEW ZEROBAS READING\n"
+            and STATS["subject_measured"] == sm0 + 1, f"{served}")
+        arm("KS5b ... and is not STORED either (the old entry is untouched)",
+            _direct_load(kz) == [b"OLD ZEROBAS READING\n"])
+        _OCCURRENCE.clear()
+        n1 = len(calls)
+        served = cached_run(ca, [oa], fake_run(oa, b"SHOULD NOT RUN\n"))
+        arm("KS6 in refs mode a REFERENCE launch is still served (the green "
+            "control: without it KS5 passes on a mode that serves nothing)",
+            served == (True, None) and len(calls) == n1)
+        try:
+            refuse_subject_hit("C-BIOS_MSX1_EU_REPACK_PLANT")
+            died = False
+        except SystemExit:
+            died = True
+        arm("KS7 the hit-path guard is a HARD STOP for zerobas in refs mode", died)
+        arm("KS8 the tally names both sides", "zerobas reading(s) MEASURED"
+            in summary() and "0 zerobas replayed" in summary(), summary())
+        REFS = False
+    finally:
+        _machine_xml, _hit_preflight = saved_mx, saved_hp
+        REFS = saved_refs
+        if ROOT != saved_root:
+            shutil.rmtree(ROOT, ignore_errors=True)
+        ROOT, VERIFY, ENABLED = saved_root, saved_v, saved_en
+        _MACHINE_ID.pop("Fake_Direct", None)
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # --- KS9 refs mode END TO END through run_cases, on the REAL zerobas ---
+    # Plant a LIE under the exact run_cases key of a zerobas reading, switch
+    # the imported instance to `refs`, and require a live boot's answer.
+    import probe_refcache as RC
+    saved = (RC.ROOT, RC.ENABLED, RC.VERIFY, RC.REFS)
+    RC.ROOT = tempfile.mkdtemp(prefix="refsonly-")
+    RC.ENABLED, RC.VERIFY, RC.REFS = True, False, True
+    try:
+        import inspect
+        import omsx_repl
+        ZM = "C-BIOS_MSX1_EU_REPACK_NODISK"
+        CASE = [("direct", ["NEW", 'PRINT "REFSONLY"'])]
+        KW = dict(batch=False, boot=8.0, step=8.0, cap_gap=10.0, timeout=300.0)
+        b = inspect.signature(omsx_repl._run_cases_impl).bind(ZM, CASE, **KW)
+        b.apply_defaults()
+        a2 = dict(b.arguments); a2.pop("machine"); a2.pop("cases"); a2.pop("settle_out", None)
+        RC.store(RC.key_for(ZM, CASE, a2), ["A DELIBERATE LIE"], ZM)
+        got = omsx_repl.run_cases(ZM, CASE, **KW)
+        arm("KS9 🔴 refs mode, run_cases, the REAL zerobas machine with a LIE "
+            "planted under its exact key: the lie is NOT served -- zerobas boots",
+            bool(got) and got[0] != "A DELIBERATE LIE" and "REFSONLY" in (got[0] or ""),
+            (got[0] or "NOTHING")[:40] if got else "NOTHING")
+    except SystemExit as e:
+        # Two different exits. omsx_preflight refuses with code 2 when the
+        # installed machine does not match the build (the static gate tier does
+        # not install it; it went RED there on 2026-11-03 for that reason) --
+        # nothing was measured, so it is a SKIP, said out loud. The guard's own
+        # exit carries its REFUSING message: that is the failure this arm exists
+        # to catch.
+        if e.code == 2:
+            print("SKIP  KS9 end-to-end refs: openMSX preflight refused the "
+                  "zerobas machine (not installed for this build) -- NOT measured")
+        else:
+            arm("KS9 refs mode end to end", False, f"SystemExit: {e}")
+    except Exception as e:                       # an emulator-less host
+        print(f"SKIP  KS9 end-to-end refs: {type(e).__name__}: {e}")
+    finally:
+        shutil.rmtree(RC.ROOT, ignore_errors=True)
+        RC.ROOT, RC.ENABLED, RC.VERIFY, RC.REFS = saved
 
     print()
     print("ALL PASS — refcache falsification suite" if not fails

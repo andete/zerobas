@@ -1879,6 +1879,11 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
         rc = None
     if rc is None or not rc.ENABLED:
         return _run_cases_impl(machine, cases, **kw)
+    # D-REFSONLY (Joost 2026-11-03, "References only"): under
+    # ZEROBAS_REFCACHE=refs -- what the battery runs -- a zerobas machine (by
+    # its ROM bytes, then its name) is measured live, never loaded, never stored.
+    if rc.subject_bypass(machine, [args.get("cart")]):
+        return _run_cases_impl(machine, cases, **kw)
 
     key = rc.key_for(machine, cases, args)
     cached, settle_cached = rc.load(key)
@@ -1912,6 +1917,8 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
         # starvation, which the stall watchdog names in its own message.
         # Memoised per process: within one process the ROM is fixed, and a knife
         # runner rebuilds BETWEEN probe invocations, each a fresh process.
+        # the hard stop: in `refs` mode a zerobas reading is never served
+        rc.refuse_subject_hit(machine, [args.get("cart")])
         if machine not in _PREFLIGHTED:
             omsx_preflight.preflight(machine)
             _PREFLIGHTED.add(machine)
@@ -1922,6 +1929,9 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
             settle.clear()
             settle.update(settle_cached)
             settle["replayed"] = True
+            # D-REFSONLY: WHICH kind of machine was replayed, so probe_signal's
+            # marker can say "N REFERENCE, 0 zerobas" rather than just "N"
+            settle["replayed_subject"] = rc.is_subject(machine, [args.get("cart")])
             rc.STATS["replayed"] += 1
         return cached
 

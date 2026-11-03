@@ -792,7 +792,7 @@ def main():
 
     os.environ["ZB_TEST_TMP"] = os.path.abspath(os.path.join(OUT, "test_tmp"))
 
-    # --- 🔴 THE BATTERY MEASURES; IT NEVER REPLAYS --------------------------
+    # --- 🔴 THE BATTERY MEASURES THE SUBJECT; IT NEVER REPLAYS IT -----------
     # D-REFCACHE serves a stored reading when the machine bytes and the typed
     # lines are unchanged. That is right for ITERATING on a slice and wrong for
     # a GATE: with a warm store, `make graphics-acceptance` on an unchanged tree
@@ -806,8 +806,21 @@ def main():
     # with the skip named in the report. An explicit ZEROBAS_REFCACHE=verify (an
     # audit, which serves nothing and re-measures everything) is passed through.
     # [[a-case-that-agrees-can-agree-for-the-wrong-reason]]
+    # 🟢 D-REFSONLY (Joost 2026-11-03, asked whether batteries should use the
+    # cache: "References only"). The finding above was about replaying the
+    # SUBJECT; the VG-8020 and CF-3300 are fixed ROMs whose readings cannot
+    # move. So every unit now runs ZEROBAS_REFCACHE=refs: a reference machine is
+    # served from the store, a zerobas machine (by its ROM bytes, then its name;
+    # probe_refcache.is_subject) is booted and measured EVERY time, and serving
+    # one is a hard stop (refuse_subject_hit). The subject is still measured on
+    # every battery run; only constants are replayed, and every unit's tally
+    # line says how many REFERENCE readings were and that 0 zerobas ones were.
+    # An explicit =verify or =0 from the environment passes through unchanged.
     _rc = os.environ.get("ZEROBAS_REFCACHE", "").strip().lower()
-    if _rc in ("verify", "check"):
+    if _rc in ("0", "no", "off", "false"):
+        print(f"=== ZEROBAS_REFCACHE={_rc} from the environment: refcache OFF "
+              f"for every unit, nothing replayed ===", flush=True)
+    elif _rc in ("verify", "check"):
         # verify does the FULL emulator work with no cache relief, and at J=8
         # that starved the tent-pole into the stall watchdog. An audit is worth
         # more correct than fast.
@@ -817,9 +830,11 @@ def main():
                   flush=True)
             jobs = 4
     else:
-        os.environ["ZEROBAS_REFCACHE"] = "0"
-        print("=== refcache OFF for every unit: a gate measures, it never "
-              "replays (docs/spec-refcache.md §7) ===", flush=True)
+        os.environ["ZEROBAS_REFCACHE"] = "refs"
+        print("=== refcache REFS for every unit: REFERENCE readings (VG-8020, "
+              "CF-3300) are replayed from the store, zerobas is MEASURED on "
+              "every run and never replayed (docs/spec-refcache.md §6) ===",
+              flush=True)
 
     # --- D-GATESKIP: is the emulator tier provably unable to move? ----------
     skip_emu, skip_why = False, ""

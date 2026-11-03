@@ -27,6 +27,7 @@ from cas_encode import build_cas_basic      # noqa: E402
 from bas_tokenise import make_multiline_program  # noqa: E402
 from omsx_run import _tcl_dquote            # noqa: E402
 import omsx_preflight                       # noqa: E402
+import probe_refcache                       # noqa: E402  D-REFBYPASS: the reference store
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 TXTBASE, WITNESS = 0x8001, 0xD0FF
@@ -48,14 +49,22 @@ def run(machine, cas, cap_time=40.0, timeout=110.0):
               "  close $f; exit }", f"after time {cap_time} {{ cap }}"]
     tcl = out + ".tcl"
     open(tcl, "w").write("\n".join(lines) + "\n")
-    p = subprocess.Popen(omsx_preflight.guarded([OMSX, "-machine", machine, "-cassetteplayer", cas,
-                                                 "-script", tcl]),
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    dl = time.time() + timeout
-    while p.poll() is None and time.time() < dl:
-        time.sleep(0.1)
-    if p.poll() is None:
-        os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+    cmd = [OMSX, "-machine", machine, "-cassetteplayer", cas, "-script", tcl]
+
+    def launch():
+        p = subprocess.Popen(omsx_preflight.guarded(cmd),
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        dl = time.time() + timeout
+        while p.poll() is None and time.time() < dl:
+            time.sleep(0.1)
+        if p.poll() is None:
+            os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "ok"
+    # D-REFBYPASS (2026-11-03): served from the reference store when the
+    # machine's bytes, this Tcl and the tape's bytes are unchanged; a watchdog
+    # kill is never stored (probes/lib/probe_refcache.py cached_run)
+    probe_refcache.cached_run(cmd, [out], launch, ok=lambda v: v == "ok")
     if not os.path.exists(out):
         return None
     v = open(out).read().strip().partition("=")[2]

@@ -723,13 +723,22 @@ def measure_verify(*, machine: str = VERIFY_MACHINE, omsx: str | None = None,
     cmd = [binary, "-machine", machine,
            "-command", "set autoruncassettes off",
            "-cassetteplayer", cas, "-script", tcl]
-    proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL, start_new_session=True)
-    deadline = time.time() + timeout
-    while proc.poll() is None and time.time() < deadline:
-        time.sleep(0.1)
-    if proc.poll() is None:
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+
+    def launch():
+        proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL, start_new_session=True)
+        deadline = time.time() + timeout
+        while proc.poll() is None and time.time() < deadline:
+            time.sleep(0.1)
+        if proc.poll() is None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "ok"
+    # D-REFBYPASS (2026-11-03): this is a VG-8020 reading -- served from the
+    # reference store when the machine's bytes, this Tcl and the tape are
+    # unchanged; a watchdog kill is never stored (probe_refcache.cached_run)
+    import probe_refcache
+    probe_refcache.cached_run(cmd, [out], launch, ok=lambda v: v == "ok")
     scr = None
     if os.path.exists(out):
         scr = ""

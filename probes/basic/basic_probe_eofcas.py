@@ -34,6 +34,7 @@ sys.path.insert(0, os.path.join(REPO, "probes", "lib"))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 sys.path.insert(0, os.path.join(REPO, "probes", "basic"))
 import omsx_preflight                                              # noqa: E402
+import probe_refcache                                              # noqa: E402  D-REFBYPASS
 from make_test_dsk import Fat12Image                               # noqa: E402
 from basic_probe_cas_ascii import build_ascii_cas                  # noqa: E402
 
@@ -120,13 +121,22 @@ def run(machine, lines=None, tape_lines=("HELLO", "WORLD"), cap=60.0, timeout=18
     open(tp, "w").write(tcl)
     cmd = [OMSX, "-machine", machine, "-diska", dk, "-cassetteplayer", tape,
            "-script", tp]
-    p = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, start_new_session=True)
-    dl = time.time() + timeout
-    while p.poll() is None and time.time() < dl:
-        time.sleep(0.1)
-    if p.poll() is None:
-        os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+
+    def launch():
+        p = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, start_new_session=True)
+        dl = time.time() + timeout
+        while p.poll() is None and time.time() < dl:
+            time.sleep(0.1)
+        if p.poll() is None:
+            os.killpg(os.getpgid(p.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "ok"
+    # D-REFBYPASS (2026-11-03): served from the reference store when the
+    # machine's bytes, this Tcl, the disk and the tape are byte-identical (the
+    # disk is not read back afterwards, so it is an input only). A watchdog
+    # kill is never stored.
+    probe_refcache.cached_run(cmd, [out], launch, ok=lambda v: v == "ok")
     if not os.path.exists(out):
         return None
     for ln in open(out):

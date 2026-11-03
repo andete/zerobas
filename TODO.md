@@ -696,6 +696,23 @@ item — do **one item per session** to keep context lean.
         "inferred unknown" `wider_in` row one commit earlier). 🔭 The CLASS is open: any probe
         row that runs disk I/O and is read `step` after `RUN` has the same thin window --
         D-DISKWINDOW below.
+      - [x] ✅ **D-REFBYPASS + D-REFSONLY (2026-11-03): THE REFERENCE MACHINES ARE MEASURED
+        ONCE, NOT ON EVERY RUN.** Joost, asked why a VG-8020 run is not a fixed result:
+        *"do it before the sub2 rereads, it'll save time every next test run"*. Two holes:
+        29 probes launched openMSX THEMSELVES, past run_cases' reference cache (ctrlkeys, the
+        five trap probes, the tape / boot probes, and everything through omsx_run.py); and
+        tools/run_gates.py forced the cache OFF for every battery (spec-refcache §6: a warm
+        store once let a gate pass on zerobas readings it never measured). Fixed:
+        `cached_run` (probes/lib/probe_refcache.py) keys a direct launch on the machine's
+        bytes, the script with per-run paths as placeholders, every input file's hash and the
+        harness; omsx_run.py goes through it; 12 probes wrapped. 🏗️ **JOOST, same day: "References
+        only"** -- batteries now run `ZEROBAS_REFCACHE=refs`: a REFERENCE reading is replayed,
+        zerobas (decided by its ROM bytes, name as a cross-check) is measured on every run and
+        never replayed, and a served zerobas reading stops the run (spec-refcache §6.1).
+        Measured: ctrlkeys 515 -> 0.3 s and the trap probes 35-105 -> ~0.5 s on a repeat in mode 1;
+        interval-trap-acceptance in `refs` mode 96 s -> 44 s (42 references replayed, 42 zerobas
+        boots, the same rows); verify mode 0 mismatches on six probes; probe_refcache selftest 78
+        arms green. The first battery under `refs` re-measures every reference once.
       - [ ] 🔭 **D-DISKWINDOW: SWEEP THE PROBES FOR DISK ROWS READ `step` AFTER `RUN` (found by
         D-MULHANG, 2026-11-03).** 🎚️ APPARATUS -- a row that passes by less than a disk
         revolution goes red on any unrelated carve and reads as a ROM defect. 🤖
@@ -8923,7 +8940,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11414 (T-6FE392)8 (T-529ABE)` from `TODO.md:17096 (T-529ABE)`: a
+      `TODO.md:11431 (T-6FE392)8 (T-529ABE)` from `TODO.md:17113 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11883,7 +11900,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17096 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17113 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

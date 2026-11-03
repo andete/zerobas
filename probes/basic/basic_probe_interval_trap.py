@@ -67,6 +67,7 @@ import os as _zbo, sys as _zbs  # noqa: E402
 _zbs.path.insert(0, _zbo.path.join(_zbo.path.dirname(
     _zbo.path.dirname(_zbo.path.abspath(__file__))), "lib"))
 import omsx_preflight  # noqa: E402
+import probe_refcache  # noqa: E402  D-REFBYPASS: the reference store
 
 OMSX = os.environ.get("OPENMSX") or shutil.which("openmsx") or "/opt/homebrew/bin/openmsx"
 if not (os.path.sep in OMSX and os.path.isfile(OMSX)):
@@ -131,7 +132,8 @@ def run(machine, prog, *, span=SPAN_DEFAULT, boot=8.0, step=3.0, poll_from=2.0,
     os.write(fd, ("\n".join(lines) + "\n").encode())
     os.close(fd)
     cmd = [OMSX, "-machine", machine, "-command", "set renderer none; set sound_driver null", "-script", tcl_path]
-    try:
+
+    def launch():
         proc = subprocess.Popen(omsx_preflight.guarded(cmd), stdout=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL, start_new_session=True)
         dl = time.time() + timeout
@@ -139,6 +141,13 @@ def run(machine, prog, *, span=SPAN_DEFAULT, boot=8.0, step=3.0, poll_from=2.0,
             time.sleep(0.1)
         if proc.poll() is None:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return "TIMEOUT"
+        return "ok"
+    try:
+        # D-REFBYPASS (2026-11-03): served from the reference store when the
+        # machine's bytes and this Tcl are unchanged; a watchdog kill is never
+        # stored (probes/lib/probe_refcache.py cached_run)
+        probe_refcache.cached_run(cmd, [out_path], launch, ok=lambda v: v == "ok")
     finally:
         os.unlink(tcl_path)
     if not os.path.exists(out_path):
