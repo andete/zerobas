@@ -13,8 +13,10 @@ themselves be $00 (`256` is $1C $00 $01; scratchpad/txttab_saveload2.out).
 
 Rows, each on images SAVEd from $8001 and from $C001:
   * tok_payload against the format table, all 256 byte values (the tape
-    reader's copy, zerobas-sub2 page 0);
-  * CLOAD / LOAD's tape loop (sub2/tapeprog.asm ctp_line), TAPIN served by the test;
+    reader's copy: zerobas-sub's page 1, shared with the tape file skip, since
+    D-SUB2RETIRE moved the reader out of zerobas-sub2 page 0);
+  * CLOAD / LOAD's tape loop (sub2/tapeprog.asm ctp_line, assembled into the sub
+    ROM's page 1), TAPIN served by the test;
   * the disk LOAD (disk/kernel.asm hk_dpload), on test_hk_dpbload's FAT12 model;
   * the tape file skip (basic/casmatch-body.inc csd_tok, zerobas-sub): it must
     consume exactly the image, or the search loses its place on the tape.
@@ -30,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-from msxtest import Machine, _build_sub2rom  # noqa: E402
+from msxtest import Machine, _build_subrom  # noqa: E402
 import test_hk_dpbload as D  # noqa: E402  (the FAT12 model and the disk build)
 
 BASIC_BASE = 0x2781
@@ -93,19 +95,19 @@ def feeder(m, data):
     return used
 
 
-def sub2_call(m, label, **regs):
-    """Run a zerobas-sub2 PAGE-0 routine from main machine `m`, as main reaches it:
-    through subrom2_call, which msxtest bridges into sub2 (with p0cb back into main
-    -- so main's TAPIN / TAPIOF traps serve the tape) once SUBSLOT2 says the ROM is
-    there. D-P0CB's tape-loop slice moved the reader (and its tok_payload) there."""
-    m.mem[m.sym["SUBSLOT2"]] = 0x8F         # slot 3-3, as the boot records it
-    return m.call("subrom2_call", ix=SUB2_SYM[label], **regs)
+def sub_call(m, label, **regs):
+    """Run a zerobas-sub PAGE-1 routine from main machine `m`, as main reaches it:
+    through subrom_call, which msxtest bridges into the sub ROM's page 1 over main's
+    own low region -- so main's TAPIN / TAPIOF traps serve the tape the reader
+    `call`s directly -- with p1cb back into main. D-SUB2RETIRE moved the reader
+    there from zerobas-sub2's page 0 (D-P0CB's tape-loop slice had put it in sub2)."""
+    return m.call("subrom_call", ix=SUB_SYMS[label], **regs)
 
 
 def run():
     build()
-    global SUB2_SYM
-    SUB2_SYM = _build_sub2rom()[1]
+    global SUB_SYMS
+    SUB_SYMS = _build_subrom()[1]
     fails = 0
 
     def check(ok, msg):
@@ -123,9 +125,9 @@ def run():
             check(False, f"{label}: the loader ran away ({type(e).__name__})")
             return False
 
-    # --- tok_payload, all 256 values (the tape reader's copy, sub2 page 0) -----
-    m = Machine(MAIN_ROM, MAIN_SYM, rom_base=BASIC_BASE)
-    bad = [b for b in range(256) if sub2_call(m, "tok_payload", a=b).a != PAYLOAD.get(b, 0)]
+    # --- tok_payload, all 256 values (the tape reader's copy, sub page 1) ------
+    sm = Machine(SUB_ROM, SUB_SYM, rom_base=0x0000)
+    bad = [b for b in range(256) if sm.call("tok_payload", a=b).a != PAYLOAD.get(b, 0)]
     check(not bad, f"tok_payload matches the format table for all 256 bytes (wrong: {bad[:8]})")
 
     TXTTAB_CELL = 0xF676
@@ -136,7 +138,7 @@ def run():
 
         # --- CLOAD / LOAD: ctp_line (sub2/tapeprog.asm) -----------------------
         # The read ends at ctp_done, whose tail is main's load_commit_prog
-        # through p0cb: trapped there, so CLPTR is what the loop left.
+        # through p1cb: trapped there, so CLPTR is what the loop left.
         m = Machine(MAIN_ROM, MAIN_SYM, rom_base=BASIC_BASE)
         s = m.sym
         m.trap("load_commit_prog", lambda mach: None)
@@ -144,7 +146,7 @@ def run():
         feeder(m, image(base))
         m.poke(s["CAS_VERIFY"], b"\x00")
         m.poke_w(s["CLINK"], TXTBASE)       # stale: the loader's own start must set it
-        if guarded(lambda: sub2_call(m, "ctp_begin"), f"CLOAD {tag}"):
+        if guarded(lambda: sub_call(m, "ctp_begin"), f"CLOAD {tag}"):
             end = m.mem[s["CLPTR"]] | m.mem[s["CLPTR"] + 1] << 8
             check(bytes(m.mem[at:end]) == want,
                   f"CLOAD {tag}: {end - at} B stored at ${at:04X} (want {len(want)}, the same bytes)")

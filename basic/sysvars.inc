@@ -5815,6 +5815,13 @@ SUBROM_IDX_EDCTRL    equ 30     ; edctrl_tenant (sub2/edctrl.asm): the editor's
 SUBROM_IDX_FRELIVE   equ 31     ; frelive_tenant (sub2/frelive.asm): FRE(n)'s
                                 ; live-stack depth (D-FREPLUS14), HL = the
                                 ; result word's address, DE = the mark.
+SUBROM_IDX_LOADSAVE  equ 32     ; ls_tenant (sub2/loadsave.asm + sub2/tapeprog.asm):
+                                ; SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD /
+                                ; RUN <name> (D-P0CB slice C2), C = the token,
+                                ; HL = the cursor; DE / HL out = the main
+                                ; continuation (main's ex_ls). PAGE 1, calling
+                                ; main back through p1cb (sub/sub.asm). From
+                                ; zerobas-sub2's page 0 (D-SUB2RETIRE, 2026-11-03).
 ; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
 ; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
 ; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave

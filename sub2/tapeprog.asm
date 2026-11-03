@@ -1,6 +1,8 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
-; tapeprog.asm -- zerobas-sub2 PAGE 0: the TAPE PROGRAM READER of CLOAD, CLOAD?,
+; tapeprog.asm -- zerobas-sub PAGE 1 since D-SUB2RETIRE's p1cb slice (2026-11-03,
+; with its only caller sub2/loadsave.asm; zerobas-sub2 page 0 before): the TAPE
+; PROGRAM READER of CLOAD, CLOAD?,
 ; LOAD "CAS:" and RUN "CAS:" (D-P0CB, the tape-loop slice, docs/spec-sub2-p0cb.md
 ; §5). Moved out of main page 1 (basic/cload.asm) on 2026-10-24: do_tape_prog's
 ; header dispatch, the tokenised ($D3) line loop (ctp_begin / ctp_line / ctp_len /
@@ -13,33 +15,27 @@
 ; IN MAIN BY SLICE C2. It moved after the TAPIN timing study (TODO, D-P0CB,
 ; 2026-10-24): CLOAD's byte loop has >= ~1270 T of slack per byte on the worst
 ; tape measured (openMSX's .cas playback; a VG-8020-written 2400-baud tape is
-; more tolerant). The move spends, PER PROGRAM BYTE, exactly ONE p0cb round trip
-; -- the TAPIN call -- and nothing else: the CLPTR / TXTCEIL bounds check reads
-; the RAM cells here, and cas_put and tok_payload are this ROM's own copies.
-;   ctp_body per byte, TAPIN's own body excluded, load mode, counted from the
-;   instructions (nominal T, no M1 wait):
-;     main (before)   256 T   (`call TAPIN` 17 T)
-;     here            392 T   (`ld ix,TAPIN` 14 + `call p0cb` 17 + p0cb 43 +
-;                              CLPRIM 79 = 153 T in place of the 17)
-;   = +136 T per byte (+153 T counting the MSX's one M1 wait per opcode fetch).
-;   Every other TAPIN of the read (the link word, the line number, the first
-;   line's scan) pays the same +136 T; cas_put (99 T load, 104 T verify) and
-;   tok_payload cost what they cost in main.
+; more tolerant). In sub2's page 0 it spent, PER PROGRAM BYTE, ONE p0cb round
+; trip (the TAPIN call: +136 T against main's 256 T loop). In THIS ROM's page 1
+; the BIOS is mapped (page 0 is main's), so TAPION / TAPIN / TAPIOF are plain
+; `call`s again, as casmatch's are (sub/casmatch.asm): the per-byte cost is
+; main's original 256 T (`call TAPIN` 17 T); the CLPTR / TXTCEIL bounds check
+; reads the RAM cells here, and cas_put and tok_payload (casmatch.asm's include,
+; the same file sub2 carried its own copy of) are this ROM's.
 ;
-; 📏 STACK -- the loop runs NO deeper than it did. Counted from the statement's SP
-; (S, ex_sub2's entry): this tenant runs at S-14 (scrstmt.asm's header: ex_sub2's
-; call, sr_slot's push iy, C-BIOS's CALSLT frame), and a p0cb adds 6 B (its call,
-; the old $A8, clprim's call). Before, ls_* p0cb'd main's do_tape_prog, so the
-; loop ran at S-20 and entered TAPIN at S-24 (its `push de` / `push af` + the
-; call). Now the loop runs at S-16 (the `call` from ls_*) and enters TAPIN at
-; S-24 (its push + the p0cb frame): the same depth. cas_put is 4 B SHALLOWER
-; (S-20, a local call); every other main routine -- cas_open_match, TAPION,
-; TAPIOF, print_msg, and the tails cas_ascii_load / load_commit_prog / dpl_oom /
-; dpl_err, which are `jp p0cb` and reuse this routine's own return address --
-; runs at exactly the depth it had.
+; 📏 STACK -- counted from the statement's SP (S, ex_ls's entry): this tenant runs
+; at S-14 (ex_ls's call, sr_slot's push iy, C-BIOS's CALSLT frame -- the frames
+; sub2's entry had), the loop at S-16 (the `call` from ls_*), and TAPIN is entered
+; at S-20 (its push + the call): 4 B SHALLOWER than in sub2, where the p0cb frame
+; (its call, the old $A8, clprim's call -- 6 B, less the `call`) sat between.
+; Every main routine reached through p1cb -- cas_open_match, print_msg, and the
+; tails cas_ascii_load / load_commit_prog / dpl_oom / dpl_err, which are `jp p1cb`
+; and reuse this routine's own return address -- runs at the depth it had under
+; p0cb (p1cb's frame is p0cb's, byte for byte).
 ;
-; WHAT STAYS IN MAIN, and is reached through p0cb:
-;   TAPION / TAPIN / TAPIOF   the BIOS, by its fixed jump-table address.
+; WHAT STAYS IN MAIN, and is reached through p1cb (main's page 1 mapped back):
+;   TAPION / TAPIN / TAPIOF   the BIOS, by its fixed jump-table address -- a
+;                     direct `call` here, page 0 being main's.
 ;   cas_open_match    the header search (OPEN "CAS:", MERGE "CAS:" call it too).
 ;   cas_ascii_load    an $EA program: new_prog, then the ASCII reader
 ;                     (ascii_read_lines / store_line) -- long, and it stays in
@@ -54,7 +50,7 @@
 ; ls_load / ls_run then return bp_ret (run NOTHING: both references print their
 ; message and stop); ls_cload returns either way, the line ends.
 ; A TAPE BIOS failure (the search, TAPION, TAPIN: an I/O error or Ctrl-STOP)
-; RAISES 19 (dpl_dio, D-CASBRK) -- through p0cb it never returns, as the main
+; RAISES 19 (dpl_dio, D-CASBRK) -- through p1cb it never returns, as the main
 ; `jp` it replaces never returned, and raise_error's SP reset discards this
 ; ROM's frames. The CONTENT faults (an unknown file id, CLOAD? of an $EA file)
 ; stay on dpl_err's printed `load error`.
@@ -65,8 +61,8 @@
 ; count crosses a TAPIN on the stack, as it did in main.
 do_tape_prog:
                 ld      ix,p0_cas_open_match
-                call    p0cb                ; find the (named) file; header consumed
-                jp      c,fs_dio            ; tape error / Ctrl-STOP abort: 19 (D-CASBRK)
+                call    p1cb                ; find the (named) file; header consumed
+                jp      c,ls_dio            ; tape error / Ctrl-STOP abort: 19 (D-CASBRK)
                 ld      a,(CAS_HDRID)
                 cp      BASIC_ID            ; tokenised BASIC -> the store/compare loop
                 jr      z,ctp_data_tokenised
@@ -77,21 +73,20 @@ do_tape_prog:
                 or      a
                 jr      nz,ctp_bad_file
                 ld      ix,p0_cas_ascii_load
-                jp      p0cb                ; its CF is this routine's (a tail)
+                jp      p1cb                ; its CF is this routine's (a tail)
 ctp_bad_file:                               ; main's `jp nz,dpl_err`: `load error`,
                 ld      ix,p0_dpl_err       ; printed, CF set
-                jp      p0cb
+                jp      p1cb
 ctp_data_tokenised:
                 ; --- data block: skip its leader tone -----------------------
                 ; Like BLOAD, the program data is a SEPARATE tape block, so it
                 ; needs its own TAPION to re-lock onto the data block's leader.
-                ld      ix,TAPION
-                call    p0cb
-                jp      c,fs_dio            ; D-CASTAIL CF contract -> 19 (D-CASBRK)
+                call    TAPION
+                jp      c,ls_dio            ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 
                 ; --- start a fresh program: store cursor at the text base ---
 ctp_begin:                                  ; (tests/test_loadbase.py enters here,
-                                            ;  through tests/msxtest.py's sub2 bridge)
+                                            ;  through tests/msxtest.py's sub bridge)
                 ld      hl,(TXTTAB)         ; D-TXTTAB: at the base as it stands
                 ld      (CLPTR),hl
                 ld      hl,0                ; 🔴 D-LOADBASE: A_0, the SAVING machine's
@@ -122,12 +117,10 @@ ctp_begin:                                  ; (tests/test_loadbase.py enters her
                 ; the computed body byte count. The saved links are stored as-is;
                 ; relink (token-aware, in load_commit_prog) recomputes them.
 ctp_line:
-                ld      ix,TAPIN
-                call    p0cb                ; link low
-                jp      c,fs_dio            ; D-CASTAIL CF contract -> 19 (D-CASBRK)
+                call    TAPIN               ; link low
+                jp      c,ls_dio            ; D-CASTAIL CF contract -> 19 (D-CASBRK)
                 push    af                  ; preserve link-low: TAPIN clobbers C
-                ld      ix,TAPIN
-                call    p0cb                ; link high
+                call    TAPIN               ; link high
                 jr      c,ctp_link_err      ; must pop before leaving
                 ld      b,a                 ; B = link high
                 pop     af
@@ -177,12 +170,10 @@ ctp_len:
                 call    cas_put
 
                 ; line number (2 bytes)
-                ld      ix,TAPIN
-                call    p0cb
+                call    TAPIN
                 jr      c,ctp_err_pop
                 call    cas_put
-                ld      ix,TAPIN
-                call    p0cb
+                call    TAPIN
                 jr      c,ctp_err_pop
                 call    cas_put
                 pop     de                  ; DE = body length
@@ -192,7 +183,7 @@ ctp_len:
                 jr      z,ctp_scan
 
                 ; token body: copy EXACTLY DE bytes (embedded $00s and all). The
-                ; per-byte path: ONE p0cb (the TAPIN), everything else local.
+                ; per-byte path: ONE BIOS call (the TAPIN), everything else local.
 ctp_body:
                 ld      a,d
                 or      e
@@ -203,8 +194,7 @@ ctp_body:
                 or      a
                 sbc     hl,de
                 jr      nc,ctp_oom_pop
-                ld      ix,TAPIN
-                call    p0cb
+                call    TAPIN
                 jr      c,ctp_err_pop
                 call    cas_put             ; store or compare the body byte
                 pop     de                  ; DE = remaining count
@@ -215,13 +205,13 @@ ctp_body:
 ; the stack from the push before that call.  Pop it to restore balance, then error.
 ctp_link_err:
                 pop     af
-                jp      fs_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)
+                jp      ls_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 
 ; ctp_err_pop / ctp_oom_pop — body length / remaining count is on the stack; drop
 ; it before taking the shared error / out-of-memory path so the stack stays balanced.
 ctp_err_pop:
                 pop     de
-                jp      fs_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)
+                jp      ls_dio              ; D-CASTAIL CF contract -> 19 (D-CASBRK)
 ctp_oom_pop:
                 pop     de
                 jr      ctp_oom
@@ -238,8 +228,7 @@ ctps_lp:
                 or      a
                 sbc     hl,de
                 jr      nc,ctp_oom_pop
-                ld      ix,TAPIN
-                call    p0cb
+                call    TAPIN
                 jr      c,ctp_err_pop
                 pop     de
                 ld      d,a                 ; D = the byte (cas_put keeps D, E)
@@ -257,15 +246,14 @@ ctps_tok:
                 jr      ctps_lp
 
 ctp_done:
-                ld      ix,TAPIOF
-                call    p0cb                ; motor off (program fully read)
+                call    TAPIOF              ; motor off (program fully read)
                 ld      a,(CAS_VERIFY)
                 or      a
                 jr      nz,ctp_verify_done  ; CLOAD? -> report, do NOT mutate memory
                 ; the commit (end marker, PRGEND, relink, H.STKE): main's
                 ; load_commit_prog, shared with the disk LOAD (dpl_done). CF clear.
                 ld      ix,p0_load_commit_prog
-                jp      p0cb
+                jp      p1cb
 
 ; --- ctp_verify_done: CLOAD? end-of-tape -> report Ok / Verify error ----------
 ; Verify is NON-DESTRUCTIVE: no marker, no PRGEND, no relink — CAS_VMIS holds the
@@ -291,11 +279,10 @@ ctp_verify_done:
 ctp_verify_error:
                 ld      a,20
                 ld      ix,p0_raise_error
-                jp      p0cb
+                jp      p1cb
 
 ctp_oom:
-                ld      ix,TAPIOF
-                call    p0cb                ; stop the motor before reporting
+                call    TAPIOF              ; stop the motor before reporting
                 ld      a,(CAS_VERIFY)
                 or      a
                 jr      nz,ctp_verify_error ; CLOAD? overrun = mismatch, do NOT wipe
@@ -303,7 +290,7 @@ ctp_oom:
                 ; program, "Out of memory" -- shared with the disk LOAD on purpose
                 ; (they are filed as mirrors, so an edit to one is an edit to both).
                 ld      ix,p0_dpl_oom
-                jp      p0cb
+                jp      p1cb
 
 ; --- cas_put: store-or-compare one program byte at CLPTR, advance CLPTR --------
 ; The single mode-flagged emit point of the tokenised tape reader (spec §B).
@@ -312,7 +299,7 @@ ctp_oom:
 ; CLPTR and set the sticky CAS_VMIS on any difference, WITHOUT writing (verify is
 ; non-destructive). CLPTR advances TXTBASE.. either way, so in verify mode it is
 ; exactly the in-memory comparand cursor. The program area is RAM (pages 2-3),
-; mapped while this page-0 tenant runs, so no crossing is needed here.
+; mapped while this page-1 tenant runs, so no crossing is needed here.
 ;   in: A = the program byte just read from tape.
 ; Preserves B, DE; clobbers A, C, HL (BC is dead at every call site — the link
 ; bytes are stored before the next TAPIN, and TAPIN then trashes BC anyway).
@@ -335,5 +322,6 @@ cput_adv:
                 ld      (CLPTR),hl
                 ret
 
-                include "basic/tokpay-body.inc"   ; tok_payload (D-LOADBASE): this
-                                                  ; ROM's own copy, the fourth
+; tok_payload (D-LOADBASE) is this ROM's copy of basic/tokpay-body.inc, included
+; by sub/casmatch.asm (the tape file skip) -- sub2 carried its own until
+; D-SUB2RETIRE moved this reader here.

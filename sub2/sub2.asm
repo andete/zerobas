@@ -83,14 +83,12 @@ sub2_p0_table:
                                                 ;   trap statements (D-P0CB slice B),
                                                 ;   and OPEN / CLOSE / MERGE / MAXFILES
                                                 ;   by token (slice C1, filestmt.asm),
-                                                ;   SAVE / CSAVE / BSAVE / LOAD / CLOAD /
-                                                ;   BLOAD / RUN <name> (slice C2,
-                                                ;   loadsave.asm), SCREEN / COLOR /
-                                                ;   WIDTH / KEY (slice D,
-                                                ;   scrstmt.asm), DELETE / AUTO /
-                                                ;   RENUM (pgmedit.asm); the tape
-                                                ;   program reader they call is
-                                                ;   tapeprog.asm
+                                                ;   SCREEN / COLOR / WIDTH / KEY (slice
+                                                ;   D, scrstmt.asm), DELETE / AUTO /
+                                                ;   RENUM (pgmedit.asm). (The SAVE /
+                                                ;   LOAD family, slice C2, and its tape
+                                                ;   reader: zerobas-sub page 1 since
+                                                ;   D-SUB2RETIRE, SUBROM_IDX_LOADSAVE.)
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -111,9 +109,10 @@ sub2_p0_ping:
                 include "sub2/p0cb.asm"
                 include "sub2/trapstmt.asm"
                 include "sub2/filestmt.asm"
-                include "sub2/loadsave.asm"     ; D-P0CB slice C2: SAVE / LOAD family
+                ; (sub2/loadsave.asm -- the SAVE / LOAD family, D-P0CB slice C2 -- and
+                ; sub2/tapeprog.asm, its tape program reader, moved to zerobas-sub's
+                ; page 1 with D-SUB2RETIRE's p1cb slice, 2026-11-03: SUBROM_IDX_LOADSAVE.)
                 include "sub2/scrstmt.asm"      ; D-P0CB slice D: SCREEN / COLOR / WIDTH / KEY
-                include "sub2/tapeprog.asm"     ; D-P0CB: the tape program reader (CLOAD's loop)
                 include "sub2/pgmedit.asm"      ; D-P0CB: DELETE / AUTO / RENUM
 
 ; __MEAS_SUB2_P0_END: page-0 free space is $4000 - __MEAS_SUB2_P0_END

@@ -14,10 +14,10 @@
 ; here: main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm), so C = the statement token (exec_stmt hands every
 ; handler A = its token -- tests/test_stmt_dispatch.py asserts it). A token that
-; is none of the four goes on to ls_tenant (sub2/loadsave.asm, D-P0CB slice C2:
-; the SAVE / LOAD family, which shares the same byte), and from there to
-; scr_tenant (sub2/scrstmt.asm, slice D: SCREEN / COLOR / WIDTH / KEY, which use
-; this file's shared tails too).
+; is none of the four goes on to scr_tenant (sub2/scrstmt.asm, slice D: SCREEN /
+; COLOR / WIDTH / KEY, which use this file's shared tails too). The SAVE / LOAD
+; family (sub2/loadsave.asm, D-P0CB slice C2) sat between until D-SUB2RETIRE's
+; p1cb slice (2026-11-03) moved it to the sub ROM's page 1, with its own tails.
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract)
 ;        C  = the statement token
 ;   out  DE = the main address to continue at, HL = what it expects (below)
@@ -56,10 +56,12 @@ file_tenant:                                ; A = C = the token (trap_tenant's h
                 jp      z,fs_merge
                 cp      MAX_TOKEN
                 jp      z,fs_maxfiles
-                jp      ls_tenant           ; D-P0CB slice C2: SAVE / CSAVE / BSAVE /
-                                            ; LOAD / CLOAD / BLOAD / RUN <name>
-                                            ; (sub2/loadsave.asm, which shares the
-                                            ; tails below)
+                jp      scr_tenant          ; SCREEN / COLOR / WIDTH / KEY and on
+                                            ; (sub2/scrstmt.asm). SAVE / LOAD's family
+                                            ; (ls_tenant, D-P0CB slice C2) was the
+                                            ; stop between until D-SUB2RETIRE moved
+                                            ; it to the sub ROM's page 1: main's ex_ls
+                                            ; reaches it there, never through here
 
 ; --- the shared tails -------------------------------------------------------------
 fs_syntax:                                  ; oo_synerr / oo_fail_syn: stmt_error, ERR 2
@@ -92,6 +94,9 @@ fs_exec:                                    ; main's `jp exec_stmt`
 fs_disk_error:                              ; main's `jp disk_error`: a continuation
                 ld      de,p0_disk_error
                 ret
+fs_end_line:                                ; main's `jp end_line_end`: a continuation
+                ld      de,p0_end_line_end  ; (sub2/pgmedit.asm's; loadsave's
+                ret                         ; ls_end_line until D-SUB2RETIRE)
 
 ; ===========================================================================
 ; OPEN "name" [FOR INPUT|OUTPUT|APPEND] AS [#]n [LEN=r]   (main's ex_open/do_open)

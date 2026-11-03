@@ -1,41 +1,42 @@
 ; Copyright (c) 2026 Joost Yervante Damad
 ; SPDX-License-Identifier: 0BSD
-; loadsave.asm -- zerobas-sub2 PAGE 0: the program SAVE / LOAD statements SAVE,
-; CSAVE, BSAVE, LOAD, CLOAD, BLOAD and the name arm of RUN (D-P0CB slice C2,
-; docs/spec-sub2-p0cb.md §5). Moved out of main page 1 (basic/save.asm,
+; loadsave.asm -- zerobas-sub PAGE 1 (SUBROM_IDX_LOADSAVE, 32) since D-SUB2RETIRE's
+; p1cb slice (2026-11-03; zerobas-sub2 page 0 before): the program SAVE / LOAD
+; statements SAVE, CSAVE, BSAVE, LOAD, CLOAD, BLOAD and the name arm of RUN (D-P0CB
+; slice C2, docs/spec-sub2-p0cb.md §5). Moved out of main page 1 (basic/save.asm,
 ; basic/cload.asm, basic/bload.asm) and main's low region (tape_parse_cut,
 ; basic/main.asm) on 2026-10-21. Only what these verbs alone reach moved: the
 ; PARSE -- the name and its device, the option tails (`,R` / `,S` / `,A`, BLOAD's
 ; offset, BSAVE's addresses and fourth slot, CSAVE's speed) -- and the decision
 ; each statement makes at its end.
 ;
-; THE TAPE PROGRAM READER IS THIS ROM'S: do_tape_prog (sub2/tapeprog.asm), moved
+; THE TAPE PROGRAM READER IS THIS ROM'S: do_tape_prog (sub2/tapeprog.asm; it moved
+; to the sub ROM's page 1 WITH this file -- a page-1 tenant cannot call sub2), moved
 ; out of main after the TAPIN timing study (D-P0CB, 2026-10-24) -- its loop is
-; real-time, and it pays one p0cb (the TAPIN) per program byte; ls_cload /
-; ls_load / ls_run `call` it. It was main's, run whole through ONE p0cb, until
-; then.
-; THE OTHER LOADERS AND THE WRITERS STAY IN MAIN, and are reached through p0cb:
+; real-time; in sub2 it paid one p0cb (the TAPIN) per program byte, here TAPIN is
+; a plain BIOS `call` (page 0 is main's); ls_cload / ls_load / ls_run `call` it.
+; It was main's, run whole through ONE p0cb, until then.
+; THE OTHER LOADERS AND THE WRITERS STAY IN MAIN, and are reached through p1cb:
 ;   disk_prog_load   autoexec_run (main's init) calls it too.
 ;   sv_tenant / bload_sub   the sub-ROM tape engines (sub/save.asm, sub/bload.asm)
 ;                    are reached through an INLINE-byte call (sc_inl1), which a
-;                    p0cb'd caller cannot hand over: IX is p0cb's target. So each
+;                    p1cb'd caller cannot hand over: IX is p1cb's target. So each
 ;                    keeps a main wrapper that carries its byte.
 ;   load_commit_prog, cas_ascii_load, cas_write_ea_header, cas_ascii_finish,
 ;   list_all, fopen_cross ...   shared with OPEN / CLOSE / LIST / disk.rom.
 ;
-; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant
-; (sub2/filestmt.asm), which forwards every token it does not own here. Main's
-; six entry labels share ex_open's ONE byte, `ld c,a` in front of ex_sub2
-; (basic/program.asm): exec_stmt hands a handler A = its token. RUN's name arm is
-; the exception -- main keeps bare RUN and RUN <line> (basic/cload.asm do_run)
-; and sends only a NAME here, with C = RUN_TOKEN. Any token that is none of
-; these seven is forwarded on to scr_tenant (sub2/scrstmt.asm, D-P0CB slice D:
-; SCREEN / COLOR / WIDTH / KEY, which share the same byte).
+; Entered from main's ex_ls (basic/program.asm) through subrom_call: main's six
+; entry labels share ONE byte, `ld c,a` in front of ex_ls -- exec_stmt hands a
+; handler A = its token, and CALSLT hands this tenant A = the slot id, so the
+; token rides in C. RUN's name arm is the exception -- main keeps bare RUN and
+; RUN <line> (basic/cload.asm do_run) and sends only a NAME here, with C =
+; RUN_TOKEN. Main sends no other token (until D-SUB2RETIRE it came through sub2's
+; trap_tenant -> file_tenant chain, which forwarded what it did not own here).
 ;   in   HL = the cursor ON the statement token (exec_stmt's contract) -- for
 ;             RUN, on the first non-space byte AFTER it (do_run's skipsp_test)
 ;        A = C = the token
 ;   out  DE = the main address to continue at, HL = what it expects (below)
-; ex_sub2 then does `push de / ret` with the stack exactly as the statement was
+; ex_ls then does `push de / ret` with the stack exactly as the statement was
 ; entered, so a continuation behaves as main's `jp` to it did. The continuations:
 ;   exec_stmt       HL = the cursor   (SAVE / BSAVE to disk: `ks_nz_diskerr`)
 ;   disk_error      nothing; raises a pending DSKIO code, else PRINTS `load
@@ -49,18 +50,25 @@
 ;                   a load that FAILED and already reported (D-RUNTAIL / D-CASTAIL
 ;                   defect B), and the tape writes' `jp sv_tenant`, whose `ret z`
 ;                   returned from the handler
-; None of them is ever reached through p0cb: execution must not go on INSIDE
-; this CALSLT (a loaded program would run with page 0 on this ROM).
+; None of them is ever reached through p1cb: execution must not go on INSIDE
+; this CALSLT (a loaded program would run with page 1 on this ROM).
 ;
-; Every other main routine is reached through p0cb (sub2/p0cb.asm) with its
-; `p0_` alias from basic-resident-abi.inc; `rst $10` / `rst $18` are this ROM's
-; RST 10h / 18h (main's CHRGTR / OUTDO). A raise reached through p0cb never
-; returns -- raise_error resets SP and runs main's error path with main's page 0
-; mapped -- exactly as the `jp` it replaces never returned. The one HOOK call
-; (SAVE ,A's `call H_CHCLOSE`) goes through p0cb as well: the hook's CALLF is
-; main's RST 30h. The shared tails fs_syntax (stmt_error, ERR 2), fs_illegal
-; (gb_illegal, ERR 5), fs_dio (dpl_dio, ERR 19), fs_exec and fs_disk_error are
-; sub2/filestmt.asm's.
+; Every other main routine is reached through p1cb (sub/sub.asm, page 1: p0cb's
+; twin, main's PAGE 1 mapped back through CLPRIM) with its `p0_` alias from
+; basic-resident-abi.inc -- the alias names the main address, whichever page it is
+; in. RST: page 0 is MAIN's here, so an `rst` would reach main's vectors -- but
+; tools/check_tenant_closure.py refuses any `rst` in the sub build (a page-0
+; tenant's would land in the sub ROM's own), so CHRGTR is `call p0_chrgtr`
+; (main-LOW, basic/islands.asm: H.CHRG then RAM reads only, no page-1 code) and
+; the one OUTDO goes through p1cb (main's outdo ends `jp pchar`, main PAGE 1).
+; A raise reached through p1cb never returns -- raise_error resets SP and runs
+; main's error path with main's page 1 mapped -- exactly as the `jp` it replaces
+; never returned. The one HOOK call (SAVE ,A's `call H_CHCLOSE`) goes through p1cb
+; as well, so disk.rom's handler is entered with main's page 1 mapped, as before.
+; The shared tails ls_syntax (stmt_error, ERR 2), ls_illegal (gb_illegal, ERR 5),
+; ls_dio (dpl_dio, ERR 19), ls_fail_ifc (ERR 5), ls_exec and ls_disk_error are
+; this file's own copies of sub2/filestmt.asm's fs_* (a page-1 tenant cannot
+; reach sub2).
 ; The code is otherwise main's, statement for statement, and each arm keeps the
 ; original's order of checks, so the errors and their order are the ones the
 ; save / load / tape gates already pin. The history behind each check is in git
@@ -68,7 +76,8 @@
 ; here is the measured rule each one encodes.
 
 ; --- the dispatch -------------------------------------------------------------
-ls_tenant:                                  ; A = C = the token (file_tenant's tail)
+ls_tenant:                                  ; C = the token (A = the slot id)
+                ld      a,c
                 cp      SAVE_TOKEN
                 jp      z,ls_save
                 cp      CSAVE_TOKEN
@@ -81,11 +90,9 @@ ls_tenant:                                  ; A = C = the token (file_tenant's t
                 jp      z,ls_cload
                 cp      BLOAD_TOKEN
                 jp      z,ls_bload
-                cp      RUN_TOKEN
-                jp      nz,scr_tenant       ; D-P0CB slice D: SCREEN / COLOR / WIDTH /
-                                            ; KEY (sub2/scrstmt.asm) -- every other
-                                            ; token main sends is one of those four
-                ; FALL THROUGH: RUN_TOKEN (do_run's name arm)
+                ; FALL THROUGH: RUN_TOKEN (do_run's name arm) -- main sends no other
+                ; (SCREEN / COLOR / WIDTH / KEY, which this used to forward to
+                ; sub2's scr_tenant, go to sub2 straight from file_tenant now)
 
 ; ===========================================================================
 ; RUN <name expression>   (main's do_run, from its fname_dev on)
@@ -102,14 +109,14 @@ ls_run:                                     ; HL on the first non-space byte
                 call    ls_fname_dev        ; Z = "CAS:" (HL past it), else the disk
                 jr      z,lrn_cas
                 ld      ix,p0_pdfcb_resume
-                call    p0cb                ; DISK_FCB; HL resumes in the text
+                call    p1cb                ; DISK_FCB; HL resumes in the text
                 call    ls_pcr_load         ; the only '"' is fname_expr's own
                 ld      ix,p0_disk_prog_load
-                call    p0cb                ; CF = failed, already reported
+                call    p1cb                ; CF = failed, already reported
                 jr      lrn_loaded
 lrn_cas:
                 ld      ix,p0_cas_capture_cut
-                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
+                call    p1cb                ; -> CAS_WANT + CAS_WANT_ON (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNRUN: resume past the EXPRESSION
                 call    ls_pcr_load         ; (+ a harmless ,R: run is implicit)
                 call    do_tape_prog        ; tokenised OR $EA ASCII; CF = failed
@@ -133,17 +140,17 @@ ls_load:
                 call    ls_fname_dev
                 jr      nz,lld_disk         ; no "CAS:" prefix -> disk (HL restored)
                 ld      ix,p0_cas_capture_cut
-                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON; a . ends the name
+                call    p1cb                ; -> CAS_WANT + CAS_WANT_ON; a . ends the name
                 ld      hl,(FN_RESUME)      ; the ,R tail lives in the PROGRAM TEXT
                 call    ls_pcr_load
                 call    do_tape_prog        ; CF = failed, already reported
                 jr      lld_loaded
 lld_disk:
                 ld      ix,p0_pdfcb_resume
-                call    p0cb                ; DISK_FCB; HL resumes in the text
+                call    p1cb                ; DISK_FCB; HL resumes in the text
                 call    ls_pcr_load         ; ,R tail only -- no quote in the text
                 ld      ix,p0_disk_prog_load
-                call    p0cb                ; CF = failed, already reported
+                call    p1cb                ; CF = failed, already reported
 lld_loaded:                                 ; main's dl_loaded
                 jr      c,ls_ret            ; failed: ,R must not run what was resident
                 ld      a,(RUNFLAG)
@@ -169,7 +176,7 @@ ls_cload:
                 xor     a
                 ld      (CAS_VERIFY),a      ; default: a real load (not CLOAD?)
                 ld      ix,p0_skip_spaces
-                call    p0cb
+                call    p1cb
                 cp      PRINT_TOKEN         ; CLOAD? -> compare-mode verify
                 jr      nz,lcl_name
                 inc     hl                  ; past the '?' (PRINT_TOKEN)
@@ -178,16 +185,16 @@ ls_cload:
                 xor     a
                 ld      (CAS_VMIS),a        ; fresh verify (no mismatch yet)
                 ld      ix,p0_skip_spaces
-                call    p0cb
+                call    p1cb
 lcl_name:                                   ; A = (HL): a name, or a terminator
                 or      a
                 jr      z,lcl_noname        ; bare CLOAD / CLOAD? -> next tape file
                 cp      COLON
                 jr      z,lcl_noname        ; CLOAD : ... -> bare form
                 ld      ix,p0_fname_expr
-                call    p0cb                ; HL -> the staged '"'-terminated copy
+                call    p1cb                ; HL -> the staged '"'-terminated copy
                 ld      ix,p0_cas_capture_name
-                call    p0cb                ; -> CAS_WANT + CAS_WANT_ON=1 (no ,R)
+                call    p1cb                ; -> CAS_WANT + CAS_WANT_ON=1 (no ,R)
                 jr      lcl_load
 lcl_noname:
                 xor     a
@@ -212,14 +219,14 @@ lcl_load:
 ls_bload:
                 inc     hl                  ; past the BLOAD token (main's ex_bload)
                 ld      ix,p0_fname_expr
-                call    p0cb                ; HL -> the staged '"'-terminated copy
+                call    p1cb                ; HL -> the staged '"'-terminated copy
                 ld      (BL_PTR),hl         ; staged name ptr -> tenant
                 call    ls_pcr_bload        ; D-BLOADOFS: the whole tail, HERE
                 ld      ix,p0_fch_park
-                call    p0cb                ; D-ASAVECHAN2: park the live channel
+                call    p1cb                ; D-ASAVECHAN2: park the live channel
                 xor     a                   ; D-CASFCB: a tape BLOAD's search skips
                 ld      ix,p0_cas_bufp_set  ;  other files through channel #0's
-                call    p0cb                ;  buffer
+                call    p1cb                ;  buffer
                 ; 📼 D-BLOADSTK (2026-10-23): the LOAD runs in main, not under this
                 ; tenant's CALSLT. Run from here (p0cb -> bload_sub -> its sub-ROM
                 ; call) a tape BLOAD sat ~26 B deeper than the VG-8020's, inside RAM a
@@ -239,7 +246,7 @@ ls_bload:
 ls_save:
                 inc     hl                  ; past the SAVE token (main's ex_save)
                 ld      ix,p0_fname_expr
-                call    p0cb                ; HL -> the staged '"'-terminated copy
+                call    p1cb                ; HL -> the staged '"'-terminated copy
                 ; D-SAVEDEV (2026-10-29): SAVE to the printer, the screen and the
                 ; graphics screen. Measured on the VG-8020 (no disk) and the
                 ; CF-3300 alike: the run ENDS first, then `SAVE "LPT:"` lists the
@@ -248,59 +255,60 @@ ls_save:
                 ; Here all three were 56 (and tape names before D-NODEV).
                 ld      de,p0_dev_lpt
                 ld      ix,p0_dev_cmp
-                call    p0cb                ; Z iff "LPT:" (HL past it; else unchanged)
+                call    p1cb                ; Z iff "LPT:" (HL past it; else unchanged)
                 jp      z,lsv_lpt
                 ld      de,p0_dev_crt
                 ld      ix,p0_dev_cmp
-                call    p0cb
+                call    p1cb
                 jp      z,lsv_crt
                 ld      de,p0_dev_grp
                 ld      ix,p0_dev_cmp
-                call    p0cb
+                call    p1cb
                 jp      z,lsv_grp
                 call    ls_fname_cas
                 jp      z,lsv_cas           ; matched "CAS:" -> tape (HL past the prefix)
                 ld      ix,p0_pdfcb_resume
-                call    p0cb                ; DISK_FCB; HL -> the tail
+                call    p1cb                ; DISK_FCB; HL -> the tail
                 ld      ix,p0_skip_comma
-                call    p0cb
+                call    p1cb
                 jr      z,lsv_ascii_flag    ; SAVE"name",<flag> -> check for ,A
                 dec     hl                  ; stmt_bare_end opens with rst $10
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; Z iff 0 or ':'
-                jp      nz,fs_syntax        ; junk: ERR 2, nothing written
+                call    p1cb                ; Z iff 0 or ':'
+                jp      nz,ls_syntax        ; junk: ERR 2, nothing written
                 push    hl                  ; the statement's end, for exec_stmt
                 ld      a,FOPEN_SEL_SAVE    ; D-SAVEPORT: disk.rom writes it
 lsv_cross:                                  ; BSAVE's disk arm joins here (main's sv_cross)
                 ld      ix,p0_fopen_cross
-                call    p0cb                ; unclaimed -> ERR 5; A = DISKOP_STATUS, Z iff 0
+                call    p1cb                ; unclaimed -> ERR 5; A = DISKOP_STATUS, Z iff 0
                 pop     hl                  ; flags survive the pop
-                jp      nz,fs_disk_error    ; main's ks_nz_diskerr: 3 = mount / full /
-                jp      fs_exec             ; write / I-O; 0 = written, the line runs on
+                jp      nz,ls_disk_error    ; main's ks_nz_diskerr: 3 = mount / full /
+                jp      ls_exec             ; write / I-O; 0 = written, the line runs on
 lsv_ascii_flag:
                 call    ls_flag_a
                 ; SAVE ,A to disk (main's ascii_save): the LIST walk into the
                 ; file, with NO channel live -- which is how disk.rom tells this
                 ; stream from an OPEN's (D-ASAVEDOUT)
                 ld      ix,p0_fch_park
-                call    p0cb                ; D-ASAVECHAN
+                call    p1cb                ; D-ASAVECHAN
                 ld      a,FOPEN_SEL_MAKE
                 ld      ix,p0_fopen_cross
-                call    p0cb                ; unclaimed -> ERR 5; Z iff created
-                jp      nz,fs_disk_error    ; the pending code (a continuation)
+                call    p1cb                ; unclaimed -> ERR 5; Z iff created
+                jp      nz,ls_disk_error    ; the pending code (a continuation)
                 xor     a
                 ld      (PRDEV),a           ; 0 = the disk sink (D-ASAVEDEV)
                 inc     a
                 ld      (PRDEST),a          ; 1 = pchar -> the file
                 ld      ix,p0_list_all
-                call    p0cb                ; list_ALL: a preceding LIST range must not
+                call    p1cb                ; list_ALL: a preceding LIST range must not
                                             ; cut the save short (D-LSTRNG)
                 ld      a,$1A               ; Ctrl-Z soft-EOF (ASCII program terminator)
-                rst     $18
+                ld      ix,p0_outdo         ; main's RST 18h: OUTDO ends `jp pchar`,
+                call    p1cb                ; main PAGE 1 -- so not `rst $18` here
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink before Close
                 ld      ix,H_CHCLOSE        ; disk.rom: the partial sector + the entry
-                call    p0cb                ; (a HOOK: its CALLF is main's RST 30h)
+                call    p1cb                ; (a HOOK: its CALLF is main's RST 30h)
                 ei                          ; a CALLF returns DI (cg_back's note)
                 jp      ls_end_line         ; D-KWSAVEEND: the run stops, as LIST's does
 ; --- D-SAVEDEV: the three device arms (see ls_save) ----------------------
@@ -319,7 +327,7 @@ lsv_list:
                 ld      (PRDEST),a
                 ld      (PRDEV),a
                 ld      ix,p0_list_all
-                call    p0cb                ; the whole program, as SAVE ,A writes it
+                call    p1cb                ; the whole program, as SAVE ,A writes it
                 xor     a
                 ld      (PRDEST),a          ; the screen sink back
                 ld      (PRDEV),a           ; the default device back
@@ -328,27 +336,27 @@ lsv_grp:
                 call    lsv_dev_tail
                 ld      a,1
                 ld      (DIRECTF),a         ; the run is over: ERR 5 in 65535
-                jp      fo_fail_ifc         ; ERR 5
+                jp      ls_fail_ifc         ; ERR 5
 lsv_dev_tail:
                 ld      hl,(FN_RESUME)      ; past the name EXPRESSION, in the text
                 ld      ix,p0_skip_comma
-                call    p0cb
+                call    p1cb
                 jp      z,ls_flag_a         ; `,A`, its end checked (a tail call)
                 dec     hl                  ; stmt_bare_end opens with rst $10
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; Z iff 0 or ':'
-                jp      nz,fs_syntax        ; junk: ERR 2
+                call    p1cb                ; Z iff 0 or ':'
+                jp      nz,ls_syntax        ; junk: ERR 2
                 ret
 lsv_cas:
                 call    ls_tape_parse_cut   ; TSV_NAME; a . ends the name (D-CASDOT)
                 ld      hl,(FN_RESUME)      ; D-FNEXPR2: resume past the EXPRESSION
                 ld      ix,p0_skip_comma
-                call    p0cb
+                call    p1cb
                 jr      z,lsv_cas_flag      ; SAVE"CAS:name",<flag> -> check for ,A
                 or      a
                 jr      z,ls_cas_ascii_save
                 cp      ':'
-                jp      nz,fs_syntax        ; D-TAPETAIL: junk after the name is 2
+                jp      nz,ls_syntax        ; D-TAPETAIL: junk after the name is 2
                 jr      ls_cas_ascii_save   ; D-CASSAVE: no flag -> ASCII, as ,A does
 lsv_cas_flag:
                 call    ls_flag_a
@@ -363,18 +371,18 @@ ls_cas_ascii_save:
                 ld      (DIRECTF),a
                 xor     a                   ; D-CASFCB: through channel #0's buffer
                 ld      ix,p0_cas_bufp_set
-                call    p0cb
+                call    p1cb
                 ld      ix,p0_cas_write_ea_header
-                call    p0cb                ; $EA header block (name in TSV_NAME)
-                jp      c,fs_dio            ; D-CASWBRK: Ctrl-STOP -> 19, raised
+                call    p1cb                ; $EA header block (name in TSV_NAME)
+                jp      c,ls_dio            ; D-CASWBRK: Ctrl-STOP -> 19, raised
                 ld      a,1
                 ld      (PRDEST),a          ; route pchar (LIST's emit) to a sink
                 ld      a,3
                 ld      (PRDEV),a           ; sink 3 = cassette (cas_wbyte)
                 ld      ix,p0_list_all
-                call    p0cb
+                call    p1cb
                 ld      ix,p0_cas_ascii_finish
-                call    p0cb                ; Ctrl-Z EOF + pad the final block (flush)
+                call    p1cb                ; Ctrl-Z EOF + pad the final block (flush)
                 xor     a
                 ld      (PRDEST),a          ; restore the screen sink
                 ld      (PRDEV),a           ; restore the default (disk) device
@@ -385,14 +393,14 @@ ls_cas_ascii_save:
 ; else a TRAPPABLE ERR 2 (D-SAVETAIL), and `SAVE "X.BAS",A:PRINT 1` is legal
 ; (D-SAVECOLON: end of STATEMENT, not of line).
 ls_flag_a:
-                rst     $10                 ; past the ','
+                call    p0_chrgtr           ; past the ','
                 ld      ix,p0_upcase
-                call    p0cb                ; accept ,a as well
+                call    p1cb                ; accept ,a as well
                 cp      'A'
-                jp      nz,fs_syntax        ; only ,A is supported
+                jp      nz,ls_syntax        ; only ,A is supported
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past the 'A'
-                jp      nz,fs_syntax        ; trailing junk after ,A
+                call    p1cb                ; past the 'A'
+                jp      nz,ls_syntax        ; trailing junk after ,A
                 ret
 
 ; ===========================================================================
@@ -411,7 +419,7 @@ ls_bsave:
                 call    ls_fname_dev
                 jr      z,lbs_cas           ; matched "CAS:" -> tape (HL past the prefix)
                 ld      ix,p0_pdfcb_resume
-                call    p0cb                ; DISK_FCB; HL -> the tail
+                call    p1cb                ; DISK_FCB; HL -> the tail
                 call    ls_comma_eval       ; ,start
                 ld      (CURPTR),de         ; the source walk cursor
                 ld      (EXECPTR),de        ; default exec = start
@@ -429,10 +437,10 @@ lbs_set_exec:
                 ld      (EXECPTR),de
 lbs_open:
                 ld      ix,p0_mxf_require_end
-                call    p0cb                ; HL on the 0 / ':'; else ERR 2, no file
+                call    p1cb                ; HL on the 0 / ':'; else ERR 2, no file
                 push    hl                  ; the cursor, for lsv_cross's pop
                 ld      ix,p0_fch_park
-                call    p0cb                ; D-ASAVECHAN: park the live channel
+                call    p1cb                ; D-ASAVECHAN: park the live channel
                 ld      a,FOPEN_SEL_BSAVE   ; disk.rom's hk_dpbsave
                 jp      lsv_cross           ; SAVE's tail: the crossing + decode
 lbs_cas:
@@ -451,7 +459,7 @@ lbs_cas_open:
                 ld      a,SV_OP_BSV_CAS     ; BSAVE -> tape
 ls_sv_tenant:                               ; main's `jp sv_tenant`: the tape engine,
                 ld      ix,p0_sv_tenant     ; which raises 19 on a break and otherwise
-                call    p0cb                ; RETURNED FROM THE HANDLER (`ret z`) --
+                call    p1cb                ; RETURNED FROM THE HANDLER (`ret z`) --
                 jp      ls_ret              ; so this statement's continuation is a `ret`
 
 ; ls_opt4 -- main's bsave_opt4: the disk BSAVE's 4th slot.
@@ -460,34 +468,34 @@ ls_sv_tenant:                               ; main's `jp sv_tenant`: the tape en
 ; is 2 on the CF-3300 (D-BSAVEVAR); any other start is the exec expression.
 ls_opt4:
                 ld      ix,p0_skip_comma
-                call    p0cb
+                call    p1cb
                 jr      z,lo4_have
 lo4_none:
                 xor     a                   ; no 4th argument (A=0, CF clear)
                 ret
 lo4_have:
-                rst     $10                 ; past the comma
+                call    p0_chrgtr           ; past the comma
                 ld      ix,p0_upcase
-                call    p0cb
+                call    p1cb
                 cp      'S'
                 jr      nz,lo4_expr         ; anything else starts the exec expression
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; Z iff the statement ends here
-                jp      nz,fs_syntax        ; `,SX` / `,S+1`: 2 on the CF-3300
+                call    p1cb                ; Z iff the statement ends here
+                jp      nz,ls_syntax        ; `,SX` / `,S+1`: 2 on the CF-3300
                 ld      a,1                 ; A = 1: ",S" flag
                 or      a                   ; CF clear
                 ret
 ; ls_opt4_cas -- main's bsave_opt4_cas: the tape BSAVE's 4th slot, ,exec only
 ls_opt4_cas:
                 ld      ix,p0_skip_comma
-                call    p0cb
+                call    p1cb
                 jr      nz,lo4_none         ; no 4th argument
-                rst     $10                 ; past the comma
+                call    p0_chrgtr           ; past the comma
 lo4_expr:
                 ld      ix,p0_eval_addr
-                call    p0cb                ; DE = exec, an ADDRESS (D-TAPETAIL)
+                call    p1cb                ; DE = exec, an ADDRESS (D-TAPETAIL)
                 ld      ix,p0_check_expr_errors
-                call    p0cb                ; a string 13, past 65535 6
+                call    p1cb                ; a string 13, past 65535 6
                 ld      a,2                 ; A = 2: expression
                 or      a                   ; CF clear
                 ret
@@ -496,9 +504,9 @@ lo4_expr:
 ; trappable: D-SAVETRAP), then the expression. DE = value, HL advanced.
 ls_comma_eval:
                 ld      ix,p0_req_comma
-                call    p0cb                ; past the comma, or ERR 2
+                call    p1cb                ; past the comma, or ERR 2
                 ld      ix,p0_eval
-                jp      p0cb                ; DE = value, HL advanced
+                jp      p1cb                ; DE = value, HL advanced
 
 ; ===========================================================================
 ; CSAVE "name"[,speed]   (main's do_csave)
@@ -510,22 +518,22 @@ ls_comma_eval:
 ls_csave:
                 inc     hl                  ; past the CSAVE token (main's ex_csave)
                 ld      ix,p0_skipsp_test
-                call    p0cb
+                call    p1cb
                 jr      z,lcs_noname        ; bare CSAVE -> Missing operand
                 cp      COLON
                 jr      z,lcs_noname        ; `CSAVE:` -> Missing operand
                 cp      ','
-                jp      z,fs_syntax         ; `CSAVE,2` -> Syntax error (measured)
+                jp      z,ls_syntax         ; `CSAVE,2` -> Syntax error (measured)
                 ld      ix,p0_fname_expr
-                call    p0cb                ; HL -> the staged '"'-terminated copy
+                call    p1cb                ; HL -> the staged '"'-terminated copy
                 call    ls_tape_parse_name  ; fills TSV_NAME from the staged copy
                 ld      hl,(FN_RESUME)      ; resume just past the expression
                 call    ls_csav_speed       ; optional ,1/,2 speed; raises 5 / 2 itself
                 ld      a,SV_OP_SAV_CAS     ; CSAVE -> tape, tokenised (D-CASSAVE)
-                jr      ls_sv_tenant
+                jp      ls_sv_tenant        ; (jp: the call-for-rst sites put it past jr)
 lcs_noname:
                 ld      ix,p0_loc_missing   ; ERR 24
-                jp      p0cb
+                jp      p1cb
 
 ; ls_csav_speed -- main's csav_speed: the optional ,speed of CSAVE. 1 = 1200,
 ; 2 = 2400 baud: the active LOW word ACT_LOW ($F406) is set to the reference word
@@ -533,23 +541,23 @@ lcs_noname:
 ; (D-TAPETAIL, VG-8020). In: HL past the name. Out: HL advanced.
 ls_csav_speed:
                 ld      ix,p0_skipsp_test
-                call    p0cb
+                call    p1cb
                 ret     z                   ; end of statement -> no speed
                 cp      COLON
                 ret     z                   ; ':' separator -> no speed
                 cp      ','
-                jp      nz,fs_syntax        ; junk after the name
+                jp      nz,ls_syntax        ; junk after the name
                 inc     hl                  ; past the comma
                 ld      ix,p0_eval
-                call    p0cb                ; DE = speed value, HL past it
+                call    p1cb                ; DE = speed value, HL past it
                 ld      a,d
                 or      a
-                jp      nz,fs_illegal       ; > 255 -> 5
+                jp      nz,ls_illegal       ; > 255 -> 5
                 ld      a,e
                 cp      1
                 jr      z,lcsp_1200
                 cp      2
-                jp      nz,fs_illegal       ; only ,1 / ,2: `CSAVE "X",3` is 5
+                jp      nz,ls_illegal       ; only ,1 / ,2: `CSAVE "X",3` is 5
                 ld      de,CAS_LOW_2400     ; selected active-LOW word
                 jr      lcsp_apply
 lcsp_1200:
@@ -557,11 +565,11 @@ lcsp_1200:
 lcsp_apply:
                 ld      (ACT_LOW),de        ; active LOW = the selected rate
                 ld      ix,p0_skipsp_test
-                call    p0cb                ; HL is past the speed
+                call    p1cb                ; HL is past the speed
                 ret     z                   ; clean end
                 cp      COLON
                 ret     z
-                jp      fs_syntax           ; junk: `CSAVE "X",1,2` is 2
+                jp      ls_syntax           ; junk: `CSAVE "X",1,2` is 2
 
 ; ===========================================================================
 ; the shared parse helpers
@@ -573,25 +581,25 @@ lcsp_apply:
 ; the frame this call adds is discarded with the rest.
 ls_fname_dev:
                 ld      ix,p0_fname_expr
-                call    p0cb                ; HL -> the staged '"'-terminated copy
+                call    p1cb                ; HL -> the staged '"'-terminated copy
 ls_fname_cas:                               ; SAVE joins here: its name is staged and
                                             ; its device arms checked (D-SAVEDEV)
                 ld      de,p0_dev_cas       ; main's data: dev_cmp reads it
                 ld      ix,p0_dev_cmp
-                call    p0cb                ; Z + HL past the prefix iff it matched
+                call    p1cb                ; Z + HL past the prefix iff it matched
                 ret     z                   ; "CAS:" -> the tape arm
                 ld      ix,p0_nodisk_dev
-                jp      p0cb                ; no disk -> Z (tape), `d:` -> 56, else NZ
+                jp      p1cb                ; no disk -> Z (tape), `d:` -> 56, else NZ
 
 ; ls_pcr_load -- main's pcr_load: LOAD / RUN's option tail, `,R` or nothing.
 ; An unknown flag, junk after it and `,S` (BLOAD's option, not LOAD's) are a
 ; TRAPPABLE 2 (D-LOADTAIL). Out: RUNFLAG (and VRAM_FLAG = 0).
 ls_pcr_load:
                 call    ls_pcr_noquote
-                jp      c,fs_syntax         ; unknown option or junk after it
+                jp      c,ls_syntax         ; unknown option or junk after it
                 ld      a,(VRAM_FLAG)
                 or      a
-                jp      nz,fs_syntax        ; ,S
+                jp      nz,ls_syntax        ; ,S
                 ret
 ; ls_pcr_noquote -- main's pcr_noquote: one optional flag, ,R or ,S, then only a
 ; terminator. in: HL past the name (FN_RESUME). out: CF on any error; else CF
@@ -601,15 +609,15 @@ ls_pcr_noquote:
                 ld      (RUNFLAG),a         ; default: no ,R handoff
                 ld      (VRAM_FLAG),a       ; default: RAM load
                 ld      ix,p0_skipsp_test
-                call    p0cb
+                call    p1cb
                 jr      z,lpn_ok            ; end of statement -> plain load
                 cp      COLON
                 jr      z,lpn_ok            ; statement separator -> plain load
                 cp      ','
                 jr      nz,lpn_err          ; junk after the name -> error
-                rst     $10                 ; past the comma
+                call    p0_chrgtr           ; past the comma
                 ld      ix,p0_upcase
-                call    p0cb                ; accept ,r / ,s as well
+                call    p1cb                ; accept ,r / ,s as well
                 cp      'R'
                 jr      z,lpn_run
                 cp      'S'
@@ -624,7 +632,7 @@ lpn_vram:
                 ld      (VRAM_FLAG),a
 lpn_flag_end:
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past the letter; Z iff the end
+                call    p1cb                ; past the letter; Z iff the end
                 jr      z,lpn_ok
 lpn_err:
                 scf
@@ -645,15 +653,15 @@ ls_pcr_bload:
                 ld      (RUNFLAG),a
                 ld      (VRAM_FLAG),a
                 ld      ix,p0_skipsp_test
-                call    p0cb
+                call    p1cb
                 jr      z,lpb_done          ; `BLOAD "f"`
                 cp      COLON
                 jr      z,lpb_done
                 cp      ','
-                jp      nz,fs_syntax
-                rst     $10                 ; past the comma
+                jp      nz,ls_syntax
+                call    p0_chrgtr           ; past the comma
                 ld      ix,p0_upcase
-                call    p0cb
+                call    p1cb
                 ld      de,RUNFLAG
                 cp      'R'
                 jr      z,lpb_flag
@@ -664,22 +672,22 @@ lpb_flag:
                 ld      a,1
                 ld      (de),a
                 ld      ix,p0_stmt_bare_end
-                call    p0cb                ; past the letter; Z iff the end
+                call    p1cb                ; past the letter; Z iff the end
                 jr      z,lpb_done
                 cp      ','
-                jp      nz,fs_syntax
+                jp      nz,ls_syntax
                 inc     hl                  ; past the comma
 lpb_ofs:
                 ld      ix,p0_eval_addr
-                call    p0cb                ; DE = the offset, wrapped to 16 bits
+                call    p1cb                ; DE = the offset, wrapped to 16 bits
                 ld      ix,p0_check_expr_errors
-                call    p0cb                ; a string 13, past 65535 6
+                call    p1cb                ; a string 13, past 65535 6
                 ld      (BL_OFS),de
                 ld      ix,p0_skipsp_test
-                call    p0cb
+                call    p1cb
                 jr      z,lpb_done
                 cp      COLON
-                jp      nz,fs_syntax
+                jp      nz,ls_syntax
 lpb_done:
                 ld      (FN_RESUME),hl
                 ret
@@ -691,7 +699,7 @@ lpb_done:
 ls_tape_parse_cut:
                 call    ls_tape_parse_name
                 ld      ix,p0_cas_name_cut
-                jp      p0cb
+                jp      p1cb
 ; ls_tape_parse_name -- main's tape_parse_name: up to 6 name chars to TSV_NAME,
 ; space-padded. in: HL at the first char of the STAGED copy (RAM, '"'-ended).
 ; out: HL on the closing '"' (or a NUL). Clobbers A, B, DE. A RAM-only leaf.
@@ -726,3 +734,26 @@ ltpn_fill:
                 inc     de
                 djnz    ltpn_fill
                 ret
+
+; --- the shared tails (sub2/filestmt.asm's fs_*, copied: a page-1 tenant cannot
+; reach sub2) ---------------------------------------------------------------------
+ls_exec:                                    ; main's `jp exec_stmt`
+                ld      de,p0_exec_stmt
+                ret
+ls_disk_error:                              ; main's `jp disk_error`: a continuation
+                ld      de,p0_disk_error
+                ret
+ls_syntax:                                  ; stmt_error, ERR 2
+                ld      ix,p0_stmt_error
+                jp      p1cb                ; raises; never returns
+ls_illegal:                                 ; gb_illegal: ERR 5
+                ld      ix,p0_gb_illegal
+                jp      p1cb
+ls_dio:                                     ; dpl_dio: motor off, ERR 19
+                ld      ix,p0_dpl_dio
+                jp      p1cb
+ls_fail_ifc:                                ; SAVE "GRP:": ERR 5 (fs's fo_fail_ifc)
+                ld      e,5
+                ld      a,e
+                ld      ix,p0_raise_error
+                jp      p1cb

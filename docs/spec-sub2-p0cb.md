@@ -124,3 +124,27 @@ sub2 closure-check mode follow the ROM-1 pattern (`Makefile`, `sub/basic-residen
   stopwatch on PSET / LINE / PUT SPRITE.
 
 Estimates are the 2026-10-21 study's (label spans, ±10%); each slice re-measures.
+
+## 6. `p1cb` -- the same call back from the sub ROM's PAGE 1 (D-SUB2RETIRE, 2026-11-03)
+
+D-SUB2RETIRE's p1cb slice moved slice C2 (sub2/loadsave.asm) and the tape reader
+it calls (sub2/tapeprog.asm) to the sub ROM's page 1 (`SUBROM_IDX_LOADSAVE`, 32;
+main's `ex_ls` in basic/program.asm). A page-1 tenant has main's page 0 mapped
+and NOT main's page 1, so `p1cb` (sub/sub.asm) is p0cb with the other mask:
+`ex af,af' / in a,($A8) / push af / and $F3 / jp CLPRIM` (9 B). Its contract is
+p0cb's (§2) exactly -- AF, BC, DE, HL both ways, IX consumed, AF' clobbered,
+interrupt state untouched, a 6 B frame.
+
+**Why not CALSLT** (disk.rom's `calbak`): C-BIOS's CALSLT switches only the page
+the target address lies in. A low-region target (`stmt_error`, `chrgtr`, ...)
+would map page 0 -- already main's -- and leave the sub ROM in page 1 for
+whatever that routine calls in main page 1. CALSLT would also enter the callee DI
+and return DI, and clobber BC' / DE' / HL'.
+
+**RST in the moved code.** In page 1, page 0 is main's, so `rst $10` would reach
+main's CHRGTR (low, safe) and `rst $18` main's OUTDO, which ends `jp pchar` in
+main PAGE 1 (unsafe). `check_tenant_closure.py --page0` refuses any `rst` in the
+sub build, so the moved `rst $10`s are `call p0_chrgtr` (direct) and the one
+`rst $18` is `ld ix,p0_outdo / call p1cb`. The tape reader's TAPION / TAPIN /
+TAPIOF are plain BIOS calls again (main's original 256 T per byte, not p0cb's
++136 T), and its `tok_payload` is the sub ROM's own (casmatch.asm's include).

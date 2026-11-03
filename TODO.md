@@ -649,6 +649,30 @@ item — do **one item per session** to keep context lean.
       TKHAVESIG / TKEXPD and deffn's FN_DPTR-on-error writes (cell contents change -- NUMBUF's
       class); `branch_lineno` as a table and one deffn add (knives K6 / K-DF1 anchor there).
       🎯 sub free is 3517 B against a ~3.99 KB sub2 page-0 payload: ~0.5 KB short.
+      🏗️ **JOOST, 2026-11-03 (asked with three options):** close the last ~0.5 KB by
+      building *"p1cb now"*; the cursor-geometry carve: *"measure first"* (what the VG-8020
+      does with a POKEd TXTNAM); the RAM rung: *"back to tier order"* once this is done. And,
+      the same evening: *"we could also first reread the sub2 tenants before trying to move
+      them?"* -- yes: the remaining tenants are being reread in sub2 before they move.
+      ✅ **STEP 2a (2026-11-03): `p1cb`, AND LOADSAVE + TAPEPROG IN THE SUB ROM's PAGE 1.**
+      p1cb (sub/sub.asm, 9 B) is p0cb with the page-1 mask -- page 1 := main through the BIOS
+      RAM primitive CLPRIM; same register contract, no di / ei (docs/spec-sub2-p0cb.md §6).
+      NOT the disk ROM's CALSLT shape: C-BIOS's CALSLT switches only the page IX points into,
+      so a low-region target would leave the sub ROM in page 1 under main code. loadsave
+      (SUBROM_IDX_LOADSAVE 32) took tapeprog with it (it called do_tape_prog directly);
+      TAPION / TAPIN / TAPIOF are plain BIOS calls again. RST $10 sites are `call p0_chrgtr`,
+      RST $18 goes through p1cb (main's outdo ends in page 1). 📏 sub page 1 2362 -> 830 B
+      free, sub2 page 0 +1535 B, main page 1 -10 B, low region unchanged, all on 2026-11-03
+      ([`p1cb_reloc.out`](scratchpad/p1cb_reloc.out)). Contract-diff: no breaks
+      ([`p1cb_contract.out`](scratchpad/p1cb_contract.out)); cassave 40/40
+      ([`p1cb_cassave.out`](scratchpad/p1cb_cassave.out)).
+      - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
+        PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
+        index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
+        closure-checked. 🤖 **AUTONOMOUS** -- walk the whole table (skip retired rows), and
+        teach the gate p1cb's IX-target class (the 46 `p0_*` names) and CLPRIM ($F38C, RAM).
+        Run by hand with ls_tenant + p1cb as seeds on 2026-11-03: no call into sub page 0,
+        sub2 or main page 1.
       - [ ] 🔢 **D-EXPWRAP (suspected 2026-11-03, UNMEASURED): `1E65540` may crunch as `1E4`.**
         🎚️ TIER 6 — every error, until measured. 🤖 **AUTONOMOUS** -- batch 3's tkfloat reviewer read
         `tke_dloop` as multiplying the exponent by 10 mod 65536 BEFORE its 9999 clamp, so a
@@ -8899,7 +8923,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11390 (T-6FE392)8 (T-529ABE)` from `TODO.md:17072 (T-529ABE)`: a
+      `TODO.md:11414 (T-6FE392)8 (T-529ABE)` from `TODO.md:17096 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11859,7 +11883,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17072 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17096 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

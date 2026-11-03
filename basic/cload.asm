@@ -111,8 +111,8 @@ do_run:
                 jr      z,dr_stored         ; `RUN : ...`      -> bare RUN
                 cp      LINENO_TOKEN        ; $0E -> RUN <lineno>
                 jr      z,dr_lineno         ; D-RUNLINE: start AT that line
-                ld      c,RUN_TOKEN         ; RUN <name>: zerobas-sub2 page 0, HL on
-                jp      ex_sub2             ; the name (basic/program.asm)
+                ld      c,RUN_TOKEN         ; RUN <name>: zerobas-sub page 1 (ls_tenant,
+                jp      ex_ls               ; D-SUB2RETIRE), HL on the name (program.asm)
 dr_stored:
                 jr      run_prog_top        ; bare RUN: the stored program from the top,
                                             ; at TOP LEVEL like every sibling arm.

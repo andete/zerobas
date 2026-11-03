@@ -27,8 +27,9 @@
 ;                    here and HL = the cursor.
 ;
 ; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant
-; (sub2/filestmt.asm) -> ls_tenant (sub2/loadsave.asm), which forwards every
-; token but RUN here; a token that is none of these four goes on to pe_tenant
+; (sub2/filestmt.asm), which forwards every token it does not own here (through
+; sub2/loadsave.asm's ls_tenant until D-SUB2RETIRE moved that to the sub ROM);
+; a token that is none of these four goes on to pe_tenant
 ; (sub2/pgmedit.asm: DELETE / AUTO / RENUM, D-P0CB 2026-10-24). Main's four entry labels share ex_open's ONE byte, `ld c,a`
 ; in front of ex_sub2 (basic/program.asm): exec_stmt hands a handler A = its
 ; token (tests/test_stmt_dispatch.py asserts it).
@@ -65,7 +66,7 @@
 ; long runs here: KEY LIST's print loop is key_drain's, in main, off this frame.
 
 ; --- the dispatch -------------------------------------------------------------
-scr_tenant:                                 ; A = C = the token (ls_tenant's tail)
+scr_tenant:                                 ; A = C = the token (file_tenant's tail)
                 cp      SCREEN_TOKEN
                 jp      z,scr_screen
                 cp      COLOR_TOKEN

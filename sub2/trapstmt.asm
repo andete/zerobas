@@ -13,8 +13,9 @@
 ;        C  = which statement (TT_* below) -- or, for OPEN / CLOSE / MERGE /
 ;             MAXFILES (D-P0CB slice C1), their token: trap_tenant forwards
 ;             C >= TT_COUNT to file_tenant (sub2/filestmt.asm), which passes
-;             the SAVE / LOAD family (C2) and SCREEN / COLOR / WIDTH / KEY (D)
-;             on through ls_tenant
+;             SCREEN / COLOR / WIDTH / KEY (D) and DELETE / AUTO / RENUM on
+;             to scr_tenant (the SAVE / LOAD family, C2, is the sub ROM's
+;             page 1 since D-SUB2RETIRE: main's ex_ls)
 ;   out  DE = the main address to continue at (exec_stmt), HL = its cursor
 ; ex_sub2 then does `push de / ret`. A handler that used to end in `jp pop_exec`
 ; pops its own cursor here and returns exec_stmt: execution must never continue

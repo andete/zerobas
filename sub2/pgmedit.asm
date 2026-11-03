@@ -25,7 +25,7 @@
 ;                    main at the statement's own SP, OFF this tenant's CALSLT
 ;                    frame (the D-BLOADSTK rule: nothing long runs nested here)
 ;
-; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant -> ls_tenant ->
+; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant ->
 ; scr_tenant (sub2/scrstmt.asm), which forwards every token but KEY here. Main's
 ; three entry labels share ex_open's ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm): exec_stmt hands a handler A = its token
@@ -35,8 +35,8 @@
 ;   out  DE = the main continuation (above); HL is not read by either
 ; A raise reached through p0cb never returns (raise_error resets SP and runs
 ; main's error path with main's page 0 mapped), exactly as the `jp raise_error`
-; it replaces never returned. fs_raise (A = the ERR code) and ls_end_line (the
-; end_line_end continuation) are sub2/filestmt.asm's / sub2/loadsave.asm's.
+; it replaces never returned. fs_raise (A = the ERR code) and fs_end_line (the
+; end_line_end continuation) are sub2/filestmt.asm's.
 ;
 ; 📏 STACK, counted from the statement's SP (S, ex_sub2's entry). This tenant runs
 ; at S-14 (scrstmt.asm's header: ex_sub2's call, sr_slot's push iy, C-BIOS's
@@ -106,7 +106,7 @@ per_call:
                 ; RENUM is not a program EDIT in the sense DELETE is: no byte
                 ; changes length, so nothing the variables or the CONT point
                 ; address has moved.
-                jp      z,ls_end_line       ; 0 = the whole renumbering is done
+                jp      z,fs_end_line       ; 0 = the whole renumbering is done
                 dec     a
                 jr      nz,per_raise        ; >= 2 is the ERR CODE ITSELF: 2 for
                                             ; R-RN14/R-RN15, 5 for R-RN11/12/13
@@ -162,7 +162,7 @@ pe_delete:
                 ; loop tests ENDFLAG immediately after `exec` returns and BEFORE it
                 ; dereferences CURLINE, which matters here: the text this
                 ; statement just memmoved is where CURLINE points.
-                jp      ls_end_line         ; main's `jp end_line_end`
+                jp      fs_end_line         ; main's `jp end_line_end`
 
 ; ===========================================================================
 ; AUTO [<start>][,<inc>]   (main's ex_auto head, D-EDITVERB)

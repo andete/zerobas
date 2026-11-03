@@ -3144,9 +3144,12 @@ ex_interval:
 ; which is why they are continuations, never p0cb calls.
 ; --- and SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD (D-P0CB slice C2) ----------
 ; Their parse and their end-of-statement decisions are sub2/loadsave.asm's since
-; 2026-10-21 (from basic/save.asm, cload.asm, bload.asm); the six rows land on the
-; same byte, and file_tenant forwards the token on. RUN <name> joins from do_run
-; (basic/cload.asm) with C = RUN_TOKEN; bare RUN and RUN <line> stay there. The
+; 2026-10-21 (from basic/save.asm, cload.asm, bload.asm). 🏗️ D-SUB2RETIRE (the p1cb
+; slice, 2026-11-03): that file -- with the tape reader it calls -- is zerobas-sub's
+; PAGE-1 tenant SUBROM_IDX_LOADSAVE now, calling main back through p1cb, so the six
+; rows land on their own `ld c,a` in front of ex_ls (below), a subrom_call that
+; shares ex_sub2's tail. RUN <name> joins ex_ls from do_run (basic/cload.asm) with
+; C = RUN_TOKEN; bare RUN and RUN <line> stay there. The
 ; loaders and writers themselves stay in main (do_tape_prog's real-time TAPIN
 ; loop, disk_prog_load, sv_tenant, bload_sub) and are called back through p0cb;
 ; the continuations added: run_prog_top, load_handoff and bp_ret (a handler's
@@ -3162,6 +3165,17 @@ ex_interval:
 ; Their statement halves are sub2/pgmedit.asm's (scr_tenant forwards the token);
 ; the engines stay the sub ROM's lineedit tenant, through le_call_op. AUTO's modal
 ; loop stays here as the continuation exa_loop (above), off sub2's frame.
+ex_save:
+ex_csave:
+ex_bsave:
+ex_load:
+ex_cload:
+ex_bload:
+                ld      c,a                 ; C = the statement token
+ex_ls:                                      ; do_run's name arm: C = RUN_TOKEN
+                ld      ix,SUBROM_ENTRY_BASE_P1+3*SUBROM_IDX_LOADSAVE
+                call    subrom_call         ; HL / C in; DE / HL out
+                jr      exs_tail            ; the same absent test and continuation
 ex_delete:
 ex_auto:
 ex_renum:
@@ -3169,12 +3183,6 @@ ex_screen:
 ex_color:
 ex_width:
 ex_key:
-ex_save:
-ex_csave:
-ex_bsave:
-ex_load:
-ex_cload:
-ex_bload:
 ex_open:
 ex_close:
 ex_merge:
@@ -3183,10 +3191,12 @@ ex_maxfiles:
 ex_sub2:
                 ld      ix,SUBROM_ENTRY_BASE_P0+3*SUB2_IDX_TRAPS
                 call    subrom2_call        ; HL / C in; DE / HL out
+exs_tail:
                 jp      c,subrom_absent_error
                 push    de
-                ; DE = sub2's continuation: every `ld de,p0_X / ret` exit of the tenants trap_tenant
-                ; reaches (trapstmt, filestmt, loadsave, scrstmt, pgmedit; sub2.sym: p0_X = main's X)
+                ; DE = the tenant's continuation: every `ld de,p0_X / ret` exit of the tenants
+                ; trap_tenant reaches (trapstmt, filestmt, scrstmt, pgmedit; sub2.sym: p0_X = main's
+                ; X) and of ls_tenant (sub2/loadsave.asm + tapeprog.asm, in sub.sym since D-SUB2RETIRE)
                 ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop
                 ret                         ; -> the continuation, HL = its cursor
 

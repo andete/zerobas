@@ -298,7 +298,7 @@ class Machine:
         (D-WSZERO S16.0). Transparent to every test that tokenises a
         numeric literal (page 0) or reaches a page-1 tenant like fatprim/
         lineedit through a resident shim."""
-        sub_bytes, _ = _build_subrom()
+        sub_bytes, sub_sym = _build_subrom()
         sub0 = object.__new__(Machine)         # bare Machine, page-0 half only
         sub0.mem = bytearray(0x10000)
         sub0.mem[0:0x4000] = sub_bytes[0:0x4000]
@@ -338,6 +338,24 @@ class Machine:
         def copy_back(dst, src):
             dst[RAM_LO:0x10000] = src[RAM_LO:0x10000]
 
+        def p1cb_for(mach):
+            """D-SUB2RETIRE's p1cb (sub/sub.asm): a PAGE-1 tenant calls main back
+            with main's page 1 mapped (CLPRIM, as sub2's p0cb maps page 0). Run IX
+            in the CALLER's own machine -- its whole image is main's -- on the
+            tenant's SP, A / F / BC / DE / HL / IY over and back, RAM copied
+            across both ways; a raise propagates as the test trap's exception."""
+            def p1cb(s1m):
+                c, r = s1m.cpu, mach.cpu
+                sp_keep = r.sp
+                mach.mem[RAM_LO:0x10000] = s1m.mem[RAM_LO:0x10000]
+                r.a, r.f, r.bc, r.de, r.hl, r.ix, r.iy = c.a, c.f, c.bc, c.de, c.hl, c.ix, c.iy
+                r.sp = c.sp                         # one RAM, one stack
+                mach.call(c.ix, keep_sp=True)
+                s1m.mem[RAM_LO:0x10000] = mach.mem[RAM_LO:0x10000]
+                c.a, c.f, c.bc, c.de, c.hl, c.ix = r.a, r.f, r.bc, r.de, r.hl, r.ix
+                r.sp = sp_keep
+            return p1cb
+
         def bridge(mach):
             cpu = mach.cpu
             if cpu.ix < 0x4000:
@@ -365,9 +383,13 @@ class Machine:
                 # ⚠️ ONLY the borrowed range: a trap on a $4000..$7FFF address belongs
                 # to MAIN's page 1, which is exactly what this island switches OUT.
                 sub1.traps = {a: fn for a, fn in mach.traps.items() if a < 0x4000}
+                if "p1cb" in sub_sym:              # D-SUB2RETIRE: the call back to main
+                    sub1.traps[sub_sym["p1cb"]] = p1cb_for(mach)
+                sub_sp = cpu.sp                    # p1cb's nested run moves mach's SP
                 sub1.cpu.sp = cpu.sp                                  # the CALLER's stack
                 sub1.call(cpu.ix, keep_sp=True, hl=cpu.hl, de=cpu.de, bc=cpu.bc)
                 copy_back(mach.mem, sub1.mem)                         # results back
+                cpu.sp = sub_sp
                 res = sub1.cpu
             cpu.hl, cpu.de, cpu.bc, cpu.a = res.hl, res.de, res.bc, res.a
             cpu.f &= ~0x01                     # CF=0: dispatch completed (never "absent" here)

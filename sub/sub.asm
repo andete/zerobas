@@ -716,6 +716,12 @@ sub_p1_table:
                 jp      frelive_tenant          ; index 31 (SUBROM_IDX_FRELIVE): FRE(n)'s
                                                 ;   live-stack depth (D-FREPLUS14;
                                                 ;   sub2/frelive.asm). From sub2.
+                jp      ls_tenant               ; index 32 (SUBROM_IDX_LOADSAVE): SAVE /
+                                                ;   CSAVE / BSAVE / LOAD / CLOAD / BLOAD /
+                                                ;   RUN <name> (D-P0CB slice C2;
+                                                ;   sub2/loadsave.asm + tapeprog.asm),
+                                                ;   C = the token. From sub2's page 0
+                                                ;   (D-SUB2RETIRE, the p1cb slice).
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
@@ -913,6 +919,48 @@ sub_p1_ping:
                 include "sub2/grpprt.asm"
                 include "sub2/edctrl.asm"
                 include "sub2/frelive.asm"
+
+; --- p1cb (D-SUB2RETIRE, 2026-11-03): the call back into MAIN from this page ----
+; sub2/p0cb.asm's twin for a PAGE-1 tenant. While one runs, main's page 0 (the
+; BIOS, the low region, $0038) is mapped and main's PAGE 1 is not -- this ROM is
+; there. The p0_* targets (basic-resident-abi.inc's p0cb class) sit in BOTH main
+; pages, so a call back must map main's page 1 for its duration.
+; WHY NOT CALSLT (disk.rom's calbak, `ld iy,(EXPTBL-1) / call CALSLT`): C-BIOS's
+; CALSLT switches only the page the TARGET address is in (src/slot.asm: the page
+; from IX's top two bits). A low-region target (stmt_error, chrgtr, ... < $4000)
+; would map page 0 -- already main's -- and run with THIS ROM still in page 1, so
+; whatever it calls in main page 1 would execute sub-ROM bytes. p1cb maps page 1
+; whatever the target, through the BIOS's own RAM primitive CLPRIM ($F38C, the one
+; CALSLT jumps to and p0cb uses -- no new RAM, Joost 2026-10-21), so the contract
+; is p0cb's exactly:
+;   in   IX = a main address, either page; A, F, BC, DE, HL = the callee's inputs
+;        (AF crosses through AF': ex af,af' here, ex af,af' in CLPRIM)
+;   out  the callee's A, F, BC, DE, HL; IX = whatever the callee left; AF'
+;        clobbered; IY and BC' / DE' / HL' untouched (CLPRIM never touches them;
+;        CALSLT would have clobbered the alternates). A callee that RAISES never
+;        returns (raise_error resets SP and runs main's error path with main's
+;        page 1 -- and page 0 -- already mapped; slot 3's secondary register is
+;        left with this ROM in page 1, harmless while the primary says slot 0).
+;   interrupts: UNCHANGED both ways, as p0cb (CLPRIM has no di / ei; CALSLT would
+;        have entered the callee DI and returned DI). An interrupt while the
+;        callee runs takes main's $0038 with main in both pages; one while THIS
+;        page runs takes main's $0038 too, and htimi_guard maps main's page 1 for
+;        PLAY / the traps (basic/subromcall.asm).
+;   stack: 6 B for the call (its call, the old $A8, clprim's call), as p0cb.
+; Main is slot 0, unexpanded on both repack machines, so "page 1 := main" is
+; clearing bits 2-3 of the primary register (htimi_guard's invariant too).
+p1cb:
+                ex      af,af'              ; the caller's AF -> AF' (the callee gets it)
+                in      a,($A8)
+                push    af                  ; the live primary slots: CLPRIM restores them
+                and     $F3                 ; page 1 := slot 0, main (page 0 already is)
+                jp      CLPRIM              ; ...whose `ret` returns to OUR caller
+; ls_tenant (index 32): SAVE / CSAVE / BSAVE / LOAD / CLOAD / BLOAD / RUN <name>,
+; and do_tape_prog, the tape program reader they call (D-SUB2RETIRE, the p1cb
+; slice: both from zerobas-sub2's page 0, their files keep the sub2/ path). Every
+; call back into main is p1cb's (above).
+                include "sub2/loadsave.asm"
+                include "sub2/tapeprog.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same
