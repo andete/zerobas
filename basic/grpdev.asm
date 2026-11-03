@@ -23,9 +23,9 @@
 ; pch_grp -- D-OPENGRP: one byte to the GRP: channel. SCREEN 0 / 1 is `Illegal
 ; function call` HERE, at PRINT #, not at the OPEN -- measured on the VG-8020
 ; (rounds 1 and 5: SCREEN 0, SCREEN 1, and a SCREEN 2 -> SCREEN 0 switch after
-; the OPEN). The drawing is zerobas-sub2's grpprt_tenant (sub2/grpprt.asm),
-; byte in E. IX is guarded as pch_disk guards it (a CALSLT clobbers it, and
-; pchar's contract is every register). Without sub2 (CF=1) nothing is drawn:
+; the OPEN). The drawing is zerobas-sub's page-1 grpprt_tenant (sub2/grpprt.asm,
+; moved from zerobas-sub2 by D-SUB2RETIRE), byte in E. IX is guarded as pch_disk guards it (a CALSLT clobbers it, and
+; pchar's contract is every register). Without the sub-ROM (CF=1) nothing is drawn:
 ; both shipped machines carry it, and 3 B of `jp c` buys only a third-party
 ; machine config an error message.
 pch_grp:
@@ -34,7 +34,7 @@ pch_grp:
                 jp      c,gfx_err5          ; SCREEN 0/1 -> ERR 5
                 ld      e,c
                 push    ix
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUB2_IDX_GRPPRT
-                call    subrom2_call
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_GRPPRT
+                call    subrom_call
                 pop     ix
                 jp      pch_done

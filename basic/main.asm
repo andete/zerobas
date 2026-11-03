@@ -603,9 +603,9 @@ __MEAS_LOW_END:
 ; expression shape. The reference counts FRE(0) down to the live Z80 stack, so
 ; whatever its evaluator holds open when FRE runs -- a `(`, a pending operator
 ; with its left operand, a function, a subscript -- is missing from it; zerobas's
-; value is fixed against the control pool's frontier. So FRE(n) asks zerobas-sub2's
-; frelive_tenant (sub2/frelive.asm) what the reference holds HERE: it re-scans the
-; current statement (SAVTXT) up to this FRE's own `)` and sums the measured costs
+; value is fixed against the control pool's frontier. So FRE(n) asks the sub-ROM's
+; page-1 frelive_tenant (sub2/frelive.asm; zerobas-sub2's until D-SUB2RETIRE)
+; what the reference holds HERE: it re-scans the current statement (SAVTXT) up to this FRE's own `)` and sums the measured costs
 ; (docs/spec-basic-frelive.md; scratchpad/freshape_run3.out), plus the
 ; statement's base -- 18 B below the fixed value in a LET, 14 in a PRINT or an IF
 ; condition, 20 in a FOR. The hot evaluator is untouched: only FRE(n) pays (T5).
@@ -613,12 +613,12 @@ __MEAS_LOW_END:
 ;        space), IX = one past FRE's `)` -- the mark the tenant stops at.
 ;   out: HL = the free bytes (never below 0). Clobbers as sh_go.
 ; FRE(s$) is sh_go untouched: the string pool has no stack in it.
-; Without zerobas-sub2 the result word stays 0 and FRE(n) reads the fixed value.
+; Without the sub-ROM the result word stays 0 and FRE(n) reads the fixed value.
 ; Placed here, the image's last code, so the 0-byte call site ahead of the pins
 ; moves nothing and no existing label moves either.
 ; 🎯 D-DEEPEXPR P3 (2026-10-20): both ops go through the GUARDED gateway, and a
 ; skipped op reads 0 -- not STR_EMPTY's address (18648, a plausible FRE), with ERR 7
-; pending behind it -- and FRE(n) then skips the sub2 CALSLT too, which would
+; pending behind it -- and FRE(n) then skips the tenant CALSLT too, which would
 ; otherwise run with less than the reserve free. +7 B, past the pins.
 ; T-states added: FRE(n) 139 (sh_go_g 132 + the untaken `jr nz`), FRE(s$) ~160
 ; (its tail is a call and `ret z` now, where it was a bare `jp`).
@@ -629,13 +629,13 @@ fre_go:
                 push    ix                  ; the mark (sh_go clobbers IX)
                 call    sh_go_g             ; HL = the free variable space
                 pop     de                  ; DE = the mark (pop keeps the flags)
-                jr      nz,fre_zero         ; P3: skipped -> 0, and no sub2 call
+                jr      nz,fre_zero         ; P3: skipped -> 0, and no tenant call
                 push    hl
                 ld      hl,0
                 push    hl                  ; the tenant's result word, 0 = none
                 add     hl,sp               ; HL = its address (CALSLT passes HL, DE)
-                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUB2_IDX_FRELIVE
-                call    subrom2_call        ; writes the bytes the reference holds
+                ld      ix,SUBROM_ENTRY_BASE_P1 + 3*SUBROM_IDX_FRELIVE
+                call    subrom_call         ; writes the bytes the reference holds
                 pop     de                  ; DE = them
                 pop     hl                  ; HL = the free space
                 or      a

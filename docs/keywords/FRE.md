@@ -147,7 +147,9 @@ argument's type (`ev_fre_num` for a number); the string-heap code in
 [sub/strheap.asm](../../sub/strheap.asm) answers the two pools' sizes. For
 `FRE(0)`, `fre_go` in [basic/main.asm](../../basic/main.asm) takes off
 what [sub2/frelive.asm](../../sub2/frelive.asm) works out the reference would
-be holding at that point of the statement.
+be holding at that point of the statement. That code runs in the sub-ROM's
+page 1 (it moved there from the second sub-ROM on 2026-11-03; the file kept
+its path).
 
 ## Related concepts
 

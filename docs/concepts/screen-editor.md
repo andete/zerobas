@@ -200,8 +200,9 @@ The wait for a key stays in the main ROM: `read_line` in
 began, waits inside the BIOS `CHGET` with interrupts on (so `PLAY` and the
 `ON … GOSUB` traps keep running while you type), and hands each key to the
 editor. The CTRL editing keys go first to `ek_ctrl` in
-[sub2/edctrl.asm](../../sub2/edctrl.asm), in the second sub-ROM (it moved out
-of the main ROM on 2026-10-12 to make room there); every other key goes, one
+[sub2/edctrl.asm](../../sub2/edctrl.asm), in the sub-ROM's page 1 (it moved out
+of the main ROM on 2026-10-12 to make room there, into the second sub-ROM, and
+on to the first on 2026-11-03); every other key goes, one
 per call, to `readline_tenant` in [sub/readline.asm](../../sub/readline.asm),
 which lives in the first sub-ROM. It echoes ordinary characters and the cursor keys through the
 BIOS `CHPUT`, implements insert mode and DEL / BS by shifting the cells of the

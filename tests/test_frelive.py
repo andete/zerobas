@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Joost Yervante Damad
 # SPDX-License-Identifier: 0BSD
-"""Unit test: zerobas-sub2's frelive_tenant (D-FREPLUS14), no emulator.
+"""Unit test: the sub ROM's frelive_tenant (D-FREPLUS14; in zerobas-sub2 until
+D-SUB2RETIRE, 2026-11-03), no emulator.
 
 FRE(n) reads what the VG-8020 reads in every expression shape (Joost,
 2026-10-16): the reference counts FRE(0) down to its LIVE stack, so whatever its
@@ -133,7 +134,8 @@ def mark_of(t, nth):
 def build():
     subprocess.run(["pasmo", "--bin", os.path.join(ROOT, "basic", "main.asm"), MAIN_ROM, MAIN_SYM],
                    check=True, capture_output=True, cwd=ROOT)
-    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub2/sub2.asm", SUB2_ROM, SUB2_SYM],
+    # D-SUB2RETIRE (2026-11-03): frelive_tenant moved to sub page 1 (SUBROM_IDX_FRELIVE)
+    subprocess.run(["pasmo", "-I", "sub", "--bin", "sub/sub.asm", SUB2_ROM, SUB2_SYM],
                    check=True, capture_output=True, cwd=ROOT)
 
 

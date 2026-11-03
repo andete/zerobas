@@ -132,25 +132,19 @@ __MEAS_SUB2_P0_END:
     ENDIF
 sub2_p1_table:
                 jp      sub2_p1_ping            ; index 0: round-trip ping
-                jp      grpprt_tenant           ; index 1 (SUB2_IDX_GRPPRT): one byte
-                                                ;   of PRINT # to OPEN "GRP:"
-                                                ;   (D-OPENGRP; sub2/grpprt.asm)
-                jp      edctrl_tenant           ; index 2 (SUB2_IDX_EDCTRL): the
-                                                ;   editor's CTRL-B/E/F/N/U (D-EDCTRL,
-                                                ;   moved from main: D-EDCARVE)
-                jp      frelive_tenant          ; index 3 (SUB2_IDX_FRELIVE): FRE(n)'s
-                                                ;   live-stack depth, the reference's
-                                                ;   evaluator re-scanned (D-FREPLUS14)
+                ; (indexes 1-3 -- grpprt / edctrl / frelive -- RETIRED by
+                ; D-SUB2RETIRE 2026-11-03: they are zerobas-sub's page-1
+                ; indexes 29-31 now, files unchanged under sub2/.)
 
 sub2_p1_ping:
                 ld      a,SUB2_PING_P1
                 ld      (SUB_PING),a
                 ret
 
-                include "sub2/grpprt.asm"
-                include "basic-resident-abi.inc"   ; main-low: rl_vpeek / rl_vpoke / rl_lastrow
-                include "sub2/edctrl.asm"
-                include "sub2/frelive.asm"
+; The resident ABI (equates only, no bytes): page 0's p0cb class resolves through
+; it (the forward reference noted at p0cb.asm's include above), so it stays
+; although page 1 has no tenant left.
+                include "basic-resident-abi.inc"
 
 ; __MEAS_SUB2_P1_END: page-1 free space is $8000 - __MEAS_SUB2_P1_END.
 __MEAS_SUB2_P1_END:

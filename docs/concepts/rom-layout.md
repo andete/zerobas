@@ -54,7 +54,10 @@ The second sub-ROM (marker `"Z2"`) exists because the first one filled up:
 the first feature that needed it is `OPEN "GRP:"`, whose drawing lives there.
 It is called exactly as the first is, by slot. It also takes code moved out of
 the main ROM to make room there -- the first was the screen editor's CTRL
-keys, on 2026-10-12. Each page also answers a test ping
+keys, on 2026-10-12. On 2026-11-03 its three page-1 tenants (`GRP:`'s
+drawing, the CTRL keys, `FRE(0)`'s live depth) moved on to the first sub-ROM's
+page 1, which had the room: the second sub-ROM's page 1 is empty now, a first
+step toward not needing a second sub-ROM at all. Each page also answers a test ping
 ([`sub2c_ping.out`](../../scratchpad/sub2c_ping.out)).
 Its marker cannot be the first one's `"ZB"`: the boot scan keeps the last
 subslot that carries `"ZB"`, so a second one would be taken for the first

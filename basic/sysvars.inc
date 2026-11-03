@@ -5104,10 +5104,9 @@ GRP_HDR         equ     $F953   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending
                                 ; GRP: channel (the next byte draws glyph byte-64).
                                 ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
 CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address (2 B)
-SUB2_IDX_GRPPRT equ     1       ; zerobas-sub2 page-1 index: grpprt_tenant (D-OPENGRP)
-SUB2_IDX_EDCTRL equ     2       ; zerobas-sub2 page-1 index: edctrl_tenant (D-EDCARVE)
-SUB2_IDX_FRELIVE equ    3       ; zerobas-sub2 page-1 index: frelive_tenant -- FRE(n)'s
-                                ; live-stack depth (D-FREPLUS14, sub2/frelive.asm)
+; (SUB2_IDX_GRPPRT 1 / EDCTRL 2 / FRELIVE 3, zerobas-sub2's page-1 indexes, are
+; RETIRED by D-SUB2RETIRE 2026-11-03: those tenants are SUBROM_IDX_GRPPRT 29 /
+; EDCTRL 30 / FRELIVE 31 on zerobas-sub's page 1 now. sub2 page 1 is empty.)
 SUB2_IDX_BEEP   equ     1       ; zerobas-sub2 PAGE-0 index: beep_tenant (sub/beep.asm;
                                 ; moved from zerobas-sub page 0 by D-TOKOVF). No args,
                                 ; no result, cannot fail, so nothing marshals.
@@ -5801,6 +5800,21 @@ SUBROM_IDX_PARSELN   equ 23     ; parseln_tenant (sub/lineno.asm): the ASCII
                                 ; apply. Marshals BC/HL back through PLN_NUM/
                                 ; PLN_PTR; HL rides IN through subrom_call.
                                 ; Sole caller basic/program.asm `parse_lineno`.
+; D-SUB2RETIRE (2026-11-03): the three page-1 tenants zerobas-sub2 used to host
+; (its SUB2_IDX_GRPPRT 1 / EDCTRL 2 / FRELIVE 3) moved HERE, to zerobas-sub's
+; page 1, unchanged -- sub2's page 1 is empty now. Their files keep the sub2/
+; path; main reaches them through subrom_call, not subrom2_call.
+SUBROM_IDX_GRPPRT    equ 29     ; grpprt_tenant (sub2/grpprt.asm): one byte of
+                                ; PRINT # to OPEN "GRP:" (D-OPENGRP), E = the
+                                ; byte. PAGE 1: it CALSLTs the graphics tenant's
+                                ; plot on this ROM's page 0 (BIOS is page 0).
+SUBROM_IDX_EDCTRL    equ 30     ; edctrl_tenant (sub2/edctrl.asm): the editor's
+                                ; CTRL-B/E/F/N/U (D-EDCTRL, D-EDCARVE), key in
+                                ; RL_KEY, A = 0 handled. PAGE 1: RDVRM/WRTVRM
+                                ; through main-low rl_vpeek / rl_vpoke.
+SUBROM_IDX_FRELIVE   equ 31     ; frelive_tenant (sub2/frelive.asm): FRE(n)'s
+                                ; live-stack depth (D-FREPLUS14), HL = the
+                                ; result word's address, DE = the mark.
 ; EXBRSA ($FAF8): published MSX2 work area for the MSX2 SUB-ROM slot id (D-6).
 ; 🔴 NOT WRITTEN since D-SUBSIG (2026-10-11): it belongs to the real MSX2
 ; SUB-ROM, our sub ROM is our own (marker "ZB"), and both MSX1 references leave

@@ -4,7 +4,8 @@
 ; CTRL-B / CTRL-E / CTRL-F / CTRL-N / CTRL-U, handled before a key goes to the
 ; sub-ROM readline tenant (basic/repl.asm rl_get). 🔁 MOVED OUT OF MAIN 2026-10-12
 ; (D-EDCARVE, the first main carve into zerobas-sub2): it was basic/edctrl.asm in
-; main page 1; it is zerobas-sub2's page-1 index 2 now, behind edctrl_tenant
+; main page 1; it was zerobas-sub2's page-1 index 2, and since D-SUB2RETIRE
+; (2026-11-03) it is zerobas-sub's page-1 index 30, behind edctrl_tenant
 ; below. It moved WHOLE: its only callees are main-LOW (rl_vpeek / rl_vpoke /
 ; rl_lastrow, the resident ABI the readline tenant already uses) and work-area
 ; cells, which a page-1 tenant sees. Each behaviour below
@@ -29,7 +30,8 @@
 ; CRTCNT, LINTTB, INSFLG) and the RDVRM/WRTVRM BIOS entries. No reference-ROM
 ; disassembly; the behaviours are black-box readings of the screen and RAM.
 
-; --- edctrl_tenant: zerobas-sub2 page-1 index 2 (SUB2_IDX_EDCTRL) ------------
+; --- edctrl_tenant: zerobas-sub page-1 index 30 (SUBROM_IDX_EDCTRL) ----------
+; (zerobas-sub2's page-1 index 2 until D-SUB2RETIRE, 2026-11-03)
 ; in: RL_KEY = the key (main stored it just before). out: A = 0 if the key was
 ; an editing key and is done, 1 if not ours -- subrom_call's closing `or a`
 ; turns that into main's Z / NZ, the flag ek_ctrl used to hand back in place.

@@ -4,8 +4,9 @@
 ; ===========================================================================
 ; frelive_tenant -- the stack the reference's evaluator holds at one FRE(n)
 ; (D-FREPLUS14, 2026-10-17; docs/spec-basic-frelive.md)
-; zerobas-sub2 page-1 index 3 (SUB2_IDX_FRELIVE), reached from main's fre_go
-; (basic/main.asm) through subrom2_call, for FRE(n) only.
+; zerobas-sub page-1 index 31 (SUBROM_IDX_FRELIVE), reached from main's fre_go
+; (basic/main.asm) through subrom_call, for FRE(n) only. (zerobas-sub2's
+; page-1 index 3 until D-SUB2RETIRE, 2026-11-03.)
 ;   in:  HL = the address of a result word (on the caller's stack),
 ;        DE = the MARK: one past this FRE's own `)` (the evaluator's cursor),
 ;        SAVTXT = the current statement's start (exec_stmt writes it at every
@@ -197,8 +198,11 @@ fl_op_2:
                 ld      hl,fl_sbtok
                 ld      bc,fl_sbtok_n
                 cpir                        ; Z: found, HL one past it
-                ld      bc,fl_sbtok_n-1     ; -> its row in fl_sbtyp (`add hl` and
-                add     hl,bc               ;  the loads keep Z)
+                ld      bc,fl_sbtyp-fl_sbtok-1 ; -> its row in fl_sbtyp (`add hl` and
+                add     hl,bc               ;  the loads keep Z). = fl_sbtok_n-1, the
+                                            ; rows being adjacent; named so the
+                                            ; dead-code gate sees the table's reader
+                                            ; (D-SUB2RETIRE: sub2 was never swept)
                 ld      a,(hl)
                 pop     bc
                 pop     hl

@@ -706,6 +706,16 @@ sub_p1_table:
                                                 ;   sub/bload.asm). Its disk text
                                                 ;   reader (D-SEQEOF) is disk.rom's
                                                 ;   hk_chin since S10.C.
+                jp      grpprt_tenant           ; index 29 (SUBROM_IDX_GRPPRT): one
+                                                ;   byte of PRINT # to OPEN "GRP:"
+                                                ;   (D-OPENGRP; sub2/grpprt.asm).
+                                                ;   From zerobas-sub2 (D-SUB2RETIRE).
+                jp      edctrl_tenant           ; index 30 (SUBROM_IDX_EDCTRL): the
+                                                ;   editor's CTRL-B/E/F/N/U (D-EDCTRL;
+                                                ;   sub2/edctrl.asm). From sub2.
+                jp      frelive_tenant          ; index 31 (SUBROM_IDX_FRELIVE): FRE(n)'s
+                                                ;   live-stack depth (D-FREPLUS14;
+                                                ;   sub2/frelive.asm). From sub2.
 
 
 ; --- Page-1 PING (S2a boot-gate tenant) -----------------------------------
@@ -895,6 +905,13 @@ sub_p1_ping:
 ; cursor_tenant (index 26, sub/cursor.asm): the block cursor while the line
 ; editor waits in CHGET (D-CURSORBLOCK).
                 include "cursor.asm"
+; D-SUB2RETIRE (2026-11-03): zerobas-sub2's three page-1 tenants, moved here
+; whole (indexes 29-31). Their callees are main-LOW (rl_vpeek / rl_vpoke /
+; rl_lastrow, basic-resident-abi.inc above), work-area RAM and BIOS -- all
+; visible from this island exactly as from sub2's.
+                include "sub2/grpprt.asm"
+                include "sub2/edctrl.asm"
+                include "sub2/frelive.asm"
 
 ; --- pad page 1 to the 32 KB ($8000) end -----------------------------------
 ; __MEAS_SUB_P1_END: page-1 free space is $8000 - __MEAS_SUB_P1_END. Same

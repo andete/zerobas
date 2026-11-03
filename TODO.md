@@ -496,6 +496,11 @@ item — do **one item per session** to keep context lean.
       address), every `ret c / ret z` run (a conditional ret returns to the SITE), vars_reset
       (ctl_reset shares the machine stack), the ev_f_err family, and everything under 4 B.
       ➡️ Batching is the way: ~50 B per FULL battery instead of ~8.
+      🏁 **CONCLUDED 2026-11-03 at 60 B (vaof_oom 8 + batch 2 52).** Re-ranked after batch 2:
+      the main ROM is mined out (what is left is <= ~6 B a row, most of it on the rejected list);
+      the big sub / sub2 rows (`call $0544 / xor a` x17, mid-label) are DATA decoded as code --
+      no source names $0544 anywhere; the tool takes every label outside main as code. The space
+      for D-SUB2RETIRE comes from moving tenants, not from folds.
       HELD BACK (reviewers' counts, 2026-11-01): fn_call F1-F3
       (13 B; IX / CF across sub-ROM calls), DEFINT's verdict in A (7 B main; a tenant
       interface change), PLAY's P2-P4 / P6, mkf_back S2 / S3 / S6 / S7, ex_get (6 B, only into
@@ -561,6 +566,22 @@ item — do **one item per session** to keep context lean.
       2691 B page 1) -> ~3 KB more to free across main + sub. RE-MEASURE, never quote.
       📏 2026-11-01: D-REREAD-EDGES' ranking puts that route at ~1.2 KB upper bound across all
       ROMs (a few hundred real) -- not enough alone.
+      ✅ **STEP 1, 2026-11-03: SUB2's PAGE 1 IS EMPTY.** Its three tenants -- grpprt (`GRP:`'s
+      drawing), edctrl (the CTRL editing keys), frelive (`FRE(0)`'s live depth) -- moved to the
+      sub ROM's page 1 as SUBROM_IDX_GRPPRT / EDCTRL / FRELIVE (29-31); main calls them through
+      subrom_call; the Makefile's SUB_PARTS took the three files. 📏 sub page 1 2691 -> 1225 B
+      free, sub2 page 1 16359 B free on 2026-11-03 (header + the ping only)
+      ([`s2p1_reloc.out`](scratchpad/s2p1_reloc.out)). Found on the way: the dead-code check
+      had never swept sub2 -- `fl_sbtyp` (reached only by offset arithmetic) read as dead in
+      sub, fixed with a byte-identical operand (`fl_sbtyp-fl_sbtok-1`). Contract-diff: one row
+      ([`s2p1_contract.out`](scratchpad/s2p1_contract.out)), `fp_stash_ok` (fatprim's table
+      +60) now reads A and clobbers less -- its bytes are unchanged and the new contract is the
+      TRUE one (it stores HL and A): routine matching after the label churn, accepted.
+      tests/test_frelive.py assembles sub now. ➡️ **STEP 2 is the hard half: sub2's page-0
+      tenants (~4 KB: loadsave ~1.16 KB, filestmt ~1.09 KB, scrstmt, trapstmt, tapeprog,
+      p0cb, pgmedit, beep) need the callable-from-main island, and sub's page 0 has 35 B
+      free** -- a structural carve of sub page 0 (or moving sub page-0 tenants that do not
+      need page 0 up to sub page 1, which had 1225 B free on 2026-11-03) comes first.
       ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
       routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
       main / sub duplicate removal.
@@ -8778,7 +8799,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11269 (T-6FE392)8 (T-529ABE)` from `TODO.md:16951 (T-529ABE)`: a
+      `TODO.md:11290 (T-6FE392)8 (T-529ABE)` from `TODO.md:16972 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11738,7 +11759,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16951 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

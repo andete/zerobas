@@ -3,9 +3,10 @@
 
 ; ===========================================================================
 ; grpprt_tenant -- one byte of PRINT # to an OPEN "GRP:" channel (D-OPENGRP)
-; zerobas-sub2 page-1 index 1 (SUB2_IDX_GRPPRT), reached from main's pchar
-; (basic/print.asm pch_grp) through subrom2_call. The FIRST tenant of the
-; second sub ROM (D-SUB2 stage d).
+; zerobas-sub page-1 index 29 (SUBROM_IDX_GRPPRT), reached from main's pchar
+; (basic/grpdev.asm pch_grp) through subrom_call. It was the FIRST tenant of the
+; second sub ROM (D-SUB2 stage d), sub2 page-1 index 1, until D-SUB2RETIRE
+; (2026-11-03) moved it here; the file keeps its sub2/ path.
 ;   in:  E = the byte. Main has already refused SCREEN 0/1 (ERR 5).
 ;   out: nothing; GRPACX/GRPACY moved. Clobbers everything (it is a CALSLT).
 ;

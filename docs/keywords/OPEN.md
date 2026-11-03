@@ -275,7 +275,8 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 - `GRP:`: the `OPEN` arm is `fo_dev_grp` in
   [sub2/filestmt.asm](../../sub2/filestmt.asm), `pchar`'s sink is in
   [basic/grpdev.asm](../../basic/grpdev.asm); the drawing is `grpprt_tenant` in
-  [sub2/grpprt.asm](../../sub2/grpprt.asm), in the second sub-ROM.
+  [sub2/grpprt.asm](../../sub2/grpprt.asm), in the sub-ROM's page 1 (the second
+  sub-ROM's until 2026-11-03).
 - A disk file open for input (`hk_finp`) and reading it — the Ctrl-Z end, the
   line feed, a numeric item (`hk_chin`) — are the disk ROM's, in
   [disk/fat.asm](../../disk/fat.asm), since S10.C (2026-10-15).

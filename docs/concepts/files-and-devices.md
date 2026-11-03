@@ -222,8 +222,9 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 [basic/files.asm](../../basic/files.asm), with one channel-number rule,
 `fch_check` (5, 59 or 52), for every channel statement. `do_open` tells the
 devices apart by name (`dev_cmp`); `PRINT #` to `LPT:` or `CRT:` goes to the
-printer or the screen, `CAS:` to the tape, `GRP:` to the second sub-ROM's
-`grpprt_tenant` ([sub2/grpprt.asm](../../sub2/grpprt.asm)), anything else is
+printer or the screen, `CAS:` to the tape, `GRP:` to the sub-ROM's
+`grpprt_tenant` ([sub2/grpprt.asm](../../sub2/grpprt.asm), in the sub-ROM's
+page 1 since 2026-11-03), anything else is
 a disk name.
 
 Channel blocks are carved out of free memory when `MAXFILES` is set, 265 bytes
