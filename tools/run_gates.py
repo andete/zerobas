@@ -756,6 +756,10 @@ def main():
                          "static tier); every other run leaves them out")
     a = ap.parse_args()
     excl = set(x for x in a.exclude.split(",") if x)
+    # Units left out BY SCHEDULE, not by request: kwtime / kwram (their own run,
+    # 2026-10-31) and the daily suites (Joost 2026-11-01). They do not stop a
+    # run from being the full green the 24 h rule reads -- see LAST_GREEN below.
+    sched = set()
     solo = set(x for x in a.solo.split(",") if x)
     jobs = 1 if a.serial else a.jobs
 
@@ -837,6 +841,7 @@ def main():
         excl |= set(SLOW_SWEEPS)
         _daily_out = set(DAILY_SUITES) - keep
         excl |= _daily_out
+        sched |= set(SLOW_SWEEPS) | _daily_out
         if _daily_out:
             print(f"=== ⏱ {len(_daily_out)} daily suite(s) not in this run (Joost "
                   "2026-11-01; `make gates-sweeps` runs them)"
@@ -1174,7 +1179,12 @@ def main():
     # ⚠️ A SKIPPED RUN NEVER WRITES THIS. If it did, a chain of skips would end
     # up vouching for nothing but the first link, and the proof would decay into
     # a habit. Every skip traces to a battery that really booted the machines.
-    if ok and not skip_emu and not skips and not excl:
+    # 🔴 `not excl` alone (until 2026-11-03) was never true again once kwtime /
+    # kwram (10-31) and then the daily suites (11-01) left every battery BY
+    # SCHEDULE: no record was written after 2026-10-31 20:55, so pick_gates.py
+    # asked for FULL on every commit. A unit excluded on request, or a skipped
+    # emulator tier, still disqualifies; a scheduled one does not.
+    if ok and not skip_emu and not skips and not (excl - sched):
         try:
             with open(LAST_GREEN, "w") as fh:
                 # `when`: tools/pick_gates.py forces a full battery once this is
