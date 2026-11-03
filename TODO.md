@@ -6163,6 +6163,10 @@ item — do **one item per session** to keep context lean.
       shift undone -> `input-acceptance` RED on the console INPUT rows only,
       restored green; 🔮 HIT. `tests/test_input.py` gained the same negative
       control (a line at LINEBUF+0 must misread).
+      📏 **RE-MEASURED 2026-11-03 ([`fremem_20261103.out`](scratchpad/fremem_20261103.out)):
+      the diskless gap is 0 in all eight states** -- boot 28815 on both, every delta and
+      every `FRE("")` identical (D-WSZERO moved the diskless ceiling to `$F380`). Goal (a)
+      holds on the diskless build; (b) / (c) moves stay Joost's, per the rung.
       ➡️ **NEXT: (4) FLD_DESC, and PRINT USING's scratch into FBUFFR.**
       📏 **(4) LOOKED AT 2026-10-14.** FLD_DESC is ALREADY on the diskless
       floor (DISK-ONLY, program RAM without a disk): moving it gains the
@@ -8895,7 +8899,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11386 (T-6FE392)8 (T-529ABE)` from `TODO.md:17068 (T-529ABE)`: a
+      `TODO.md:11390 (T-6FE392)8 (T-529ABE)` from `TODO.md:17072 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11855,7 +11859,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17068 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17072 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
