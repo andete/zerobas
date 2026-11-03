@@ -90,7 +90,7 @@ svt_go:
                 ; 2026-10-19: the two DISK selectors (0 BSAVE, 2 SAVE) are gone --
                 ; disk.rom writes both files -- so 1 and 3 are all that arrive.
                 dec     a
-                jp      z,bsv_cas_open      ; SV_OP_BSV_CAS
+                jr      z,bsv_cas_open      ; SV_OP_BSV_CAS
                 jp      tape_save_basic     ; SV_OP_SAV_CAS
 
 ; sv_fail -- record the SV_STAT code in A and ABORT to save_tenant, whatever depth
@@ -108,6 +108,35 @@ sv_fail:                                    ; A = the SV_STAT code
 sv_tape_err:
                 ld      a,19
                 jr      sv_fail
+
+; sv_hdr -- BOTH tape engines' header block and the data block's leader:
+; TAPOON(long) + 10x the id in A + the 6-char name + TAPOOF, then TAPOON(short).
+; The id rides on the stack (TAPOUT clobbers every register). A failure jumps to
+; sv_tape_err, whose sv_fail unwinds to SVT_SP from any depth -- so the pushed id
+; and this call's own return address need no unwinding.
+sv_hdr:                                     ; A = the file-type id
+                push    af
+                ld      a,$FF               ; non-zero -> long header
+                call    TAPOON
+                jr      c,sv_tape_err
+                ld      a,10
+                ld      (TSV_CNT),a
+svh_id:
+                pop     af
+                push    af
+                call    TAPOUT
+                jr      c,sv_tape_err
+                ld      hl,TSV_CNT
+                dec     (hl)
+                jr      nz,svh_id
+                pop     af
+                call    tape_name_emit      ; the 6-char name from TSV_NAME
+                jr      c,sv_tape_err
+                call    TAPOOF              ; end of header block
+                xor     a                   ; zero -> short header
+                call    TAPOON
+                jr      c,sv_tape_err
+                ret
 
 ; --- sub-local COPIES of the resident helpers the engines call --------------
 ; tape_name_emit keeps a resident caller too (header, "WHAT STAYS RESIDENT"), so

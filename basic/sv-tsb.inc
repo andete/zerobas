@@ -18,29 +18,11 @@
 ; TAPOON/TAPOUT failure, else returns to the REPL).
 ; Format source: MSX2 TH cassette chapter; cas_encode.py build_cas_basic().
 tape_save_basic:
-                ; --- header block: TAPOON(long) + 10x$D3 + 6-char name + TAPOOF ---
-                ld      a,$FF               ; non-zero -> long leader
-                call    TAPOON
-                jp      c,sv_tape_err
-                ; emit 10x BASIC_ID ($D3)
-                ld      a,10
-                ld      (TSV_CNT),a
-tsb_id:
+                ; --- header block: TAPOON(long) + 10x$D3 + 6-char name + TAPOOF,
+                ; then the data block's TAPOON(short): sub/save.asm sv_hdr ---
                 ld      a,BASIC_ID          ; $D3
-                call    TAPOUT
-                jp      c,sv_tape_err
-                ld      a,(TSV_CNT)
-                dec     a
-                ld      (TSV_CNT),a
-                jr      nz,tsb_id
-                ; emit 6-char name
-                call    tape_name_emit
-                jp      c,sv_tape_err
-                call    TAPOOF              ; end of header block
-                ; --- data block: TAPOON(short) + program image + TAPOOF ------
-                xor     a                   ; zero -> short leader
-                call    TAPOON
-                jp      c,sv_tape_err
+                call    sv_hdr
+                ; --- data block: program image + TAPOOF ------
                 ; Set up the image walk: TSV_PTR = TXTBASE, TSV_END = PRGEND+1
                 ld      hl,(TXTTAB)  ; D-BASICROM: the program START is TXTTAB (a cartridge program sits at TEXT+1)
                 ld      (TSV_PTR),hl
@@ -54,14 +36,10 @@ tsb_data:
                 jp      c,sv_tape_err
                 ld      hl,(TSV_PTR)
                 ld      de,(TSV_END)
-                ld      a,h
-                cp      d
-                jr      nz,tsb_next
-                ld      a,l
-                cp      e
+                or      a
+                sbc     hl,de
+                add     hl,de               ; HL = TSV_PTR again (Z kept from sbc)
                 jr      z,tsb_fin           ; cur == end -> done
-tsb_next:
-                ld      hl,(TSV_PTR)
                 inc     hl
                 ld      (TSV_PTR),hl
                 jr      tsb_data
@@ -84,5 +62,5 @@ tsb_tail:
                 ld      hl,TSV_CNT
                 dec     (hl)                ; TAPOUT clobbers all; reload each pass
                 jr      nz,tsb_tail
-                call    TAPOOF              ; end of data block; motor off
-                ret                         ; back to the REPL
+                jp      TAPOOF              ; end of data block; motor off; its ret
+                                            ; goes back to the REPL

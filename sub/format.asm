@@ -78,15 +78,9 @@ write_sector:
                 ld      ix,DSKIO_ENTRY      ; standard DSKIO entry ($4010)
                 pop     af                  ; restore A=drive and the direction Cy
                 call    CALSLT              ; cross-slot DSKIO; returns DSKIO's Cy/A/B
-                jr      c,ws_err
-                xor     a
-                ld      (FMT_RESULT),a
-                or      a                   ; Cy = 0
-                ret
-ws_err:
-                ld      a,1
-                ld      (FMT_RESULT),a
-                scf                         ; Cy = 1
+                sbc     a,a                 ; Cy -> $FF / 0, Cy kept
+                neg                         ; -> 1 / 0, and Cy = 1 / 0 again
+                ld      (FMT_RESULT),a      ; 0 ok / 1 write error
                 ret
 
 ; The shared build/write body (fmt_selected../fmt_boot + fmt_geom_byte/word +

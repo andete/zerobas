@@ -151,19 +151,15 @@ flog_no_fold:
 
                 ; --- step 3: s := (m-Khat[j])/(m+Khat[j]) -> MATH_A ---------
                 ; (m retired) -------------------------------------------------
-                call    cpy_y_arga  ; ARGA := m
-                ld      a,(MATH_J)
+                call    cpy_y_arga  ; ARGA := m (an ldir copy: A = j kept)
                 ld      hl,POW8_TBL
-                call    fexp_tbl18addr      ; HL := POW8_TBL + 18*j
-                call    cpy_argb    ; ARGB := Khat[j]
+                call    flog_jarg_a         ; ARGB := Khat[j]
                 call    fp_sub              ; FAC/ARGA := m-Khat[j] = num
                 call    widen_to_arga
                 call    cpy_to_x    ; MATH_T := num
                 call    cpy_y_arga  ; ARGA := m (still intact)
-                ld      a,(MATH_J)
                 ld      hl,POW8_TBL
-                call    fexp_tbl18addr      ; HL := POW8_TBL + 18*j (re-fetch)
-                call    cpy_argb    ; ARGB := Khat[j]
+                call    flog_jarg           ; ARGB := Khat[j] (re-fetch)
                 call    fp_add              ; FAC/ARGA := m+Khat[j] = den
                 call    widen_to_arga
                 call    cpy_argb    ; ARGB := den
@@ -190,31 +186,24 @@ flog_no_fold:
                 call    cpy_to_y    ; MATH_A := r (replaces s)
 
                 ; --- step 5: reconstruct -------------------------------------
-                ld      hl,(MATH_N)
-                ld      de,-1
-                or      a
-                sbc     hl,de               ; HL := e' - (-1) = e'+1
+                ld      hl,(MATH_N)         ; HL = e' (kept through the tests)
                 ld      a,h
-                or      l
+                and     l
+                inc     a                   ; Z iff H = L = $FF: e' == -1
                 jr      nz,flog_not_negone
                 ; e' == -1: FAC := r + NEGLNK_TBL[j]
                 call    cpy_y_arga  ; ARGA := r
-                ld      a,(MATH_J)
                 ld      hl,NEGLNK_TBL
-                call    fexp_tbl18addr
-                call    cpy_argb    ; ARGB := NEGLNK_TBL[j]
+                call    flog_jarg           ; ARGB := NEGLNK_TBL[j]
                 jp      fp_add              ; tail: FAC := r+NEGLNK_TBL[j]
                                             ; (COMPUTE-ONLY; round_and_
                                             ; finalize packs FAC)
-flog_not_negone:
-                ld      hl,(MATH_N)
+flog_not_negone:                            ; HL = e'
                 ld      a,h
                 or      l
                 jr      z,flog_no_e1
                 ; e' != 0: e'fp := widen(|e'|) + sign -> MATH_T
-                ld      hl,(MATH_N)
-                ld      a,h
-                bit     7,a
+                bit     7,h
                 jr      z,flog_epos
                 xor     a
                 sub     l
@@ -227,19 +216,10 @@ flog_not_negone:
 flog_epos:
                 ex      de,hl               ; DE := e' (already >=0)
                 xor     a
-flog_ewiden:
-                push    af                  ; stash the sign flag across the
-                                            ; widen_uint_to call
+flog_ewiden:                                ; A = the sign (0 / $80)
                 ld      hl,MATH_T
-                xor     a
-                call    widen_uint_to       ; MATH_T := widen(|e'|), sign
-                                            ; forced 0
-                pop     af
-                or      a
-                jr      z,flog_enosign
-                ld      a,$80
-                ld      (MATH_T+FPNUM_SIGN),a
-flog_enosign:
+                call    widen_uint_to       ; MATH_T := widen(|e'|) with sign A
+                                            ; (|e'| >= 1, so the sign is stored)
                 ; r += e'fp*LN10_C2
                 call    cpy_x_arga  ; ARGA := e'fp
                 ld      hl,LN10_C2
@@ -256,12 +236,10 @@ flog_no_e1:
                 ld      a,(MATH_J)
                 or      a
                 jr      z,flog_no_j
-                call    cpy_y_arga  ; ARGA := r
-                ld      a,(MATH_J)
+                call    cpy_y_arga  ; ARGA := r (an ldir copy: A = j kept)
                 dec     a                   ; j-1 (0-based LNK_TBL index)
                 ld      hl,LNK_TBL
-                call    fexp_tbl18addr
-                call    cpy_argb    ; ARGB := LNK_TBL[j-1]
+                call    flog_jarg_a         ; ARGB := LNK_TBL[j-1]
                 call    fp_add              ; FAC/ARGA := r + LNK_TBL[j-1]
                 call    widen_to_arga
                 call    cpy_to_y    ; MATH_A := updated r
@@ -285,3 +263,12 @@ flog_no_j:
                 call    cpy_argb    ; ARGB := product
                 call    cpy_y_arga  ; ARGA := r
                 jp      fp_add              ; tail: FAC := r + product (final)
+
+; flog_jarg / flog_jarg_a: ARGB := the 18-byte record [A] of the table at HL
+; (flog_jarg: A = j from MATH_J). Leaf copies only -- no error exit, so the one
+; extra call level is invisible to everything below it.
+flog_jarg:
+                ld      a,(MATH_J)
+flog_jarg_a:
+                call    fexp_tbl18addr      ; HL := table + 18*A
+                jp      cpy_argb            ; ARGB := that record

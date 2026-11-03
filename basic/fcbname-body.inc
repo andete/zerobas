@@ -41,15 +41,13 @@
 ;     REJECTED (CF set) — the caller raises `Bad file name` (ERR 56)
 build_83_name:
                 ; pre-fill the 11-byte field with spaces
-                push    hl
-                ld      hl,DISK_FCB_NAME
+                ld      de,DISK_FCB_NAME
                 ld      b,11
                 ld      a,' '
 bn_fill:
-                ld      (hl),a
-                inc     hl
+                ld      (de),a
+                inc     de
                 djnz    bn_fill
-                pop     hl
                 ; --- name part: up to 8 chars, until '.', '"', or NUL --------
                 ld      de,DISK_FCB_NAME    ; DE -> name field write cursor
                 ld      b,8                 ; max name chars remaining
@@ -95,11 +93,6 @@ bn_ext_pos:                                 ; ...or entered with NO dot at all,
                 ld      de,DISK_FCB_NAME + 8 ; DE -> ext field write cursor
                 ld      b,3                 ; max ext chars remaining
 bn_ext_loop:
-                ld      a,(hl)
-                cp      '"'
-                jr      z,bn_done
-                or      a
-                jr      z,bn_done
                 ; 🔴 D-FSPEC: THE FULL TEST COMES BEFORE THE '.' TEST, AND THE
                 ; ORDER IS THE WHOLE OF `TOOLONGNAME.BAS`. Once three extension
                 ; characters are in, everything left is IGNORED -- including a
@@ -109,8 +102,13 @@ bn_ext_loop:
                 ld      a,b
                 or      a
                 jr      z,bn_skip           ; ext full -> swallow the rest (NOT
-                                            ; an error: `AB.EXTRA` -> `AB.EXT`)
+                                            ; an error: `AB.EXTRA` -> `AB.EXT`;
+                                            ; bn_skip ends on '"' / NUL itself)
                 ld      a,(hl)
+                cp      '"'
+                jr      z,bn_done
+                or      a
+                jr      z,bn_done
                 cp      '.'
                 jr      z,bn_reject         ; a second '.' WHILE STILL FILLING is
                                             ; malformed -- `A.B.C` is `Bad file
@@ -128,8 +126,9 @@ bn_done:
                 ; reject an empty name (e.g. "" or ".EXT" or "A:")
                 ld      a,(DISK_FCB_NAME)
                 cp      ' '
-                jr      z,bn_reject         ; first name char still space -> empty
-                or      a                   ; CF clear = success
+                ret     nz                  ; CF clear = success: a stored char is
+                                            ; never below ' ' (bn_chk refuses them)
+                scf                         ; first name char still space -> empty
                 ret
 bn_skip:
                 ; the 8.3 field is full; consume the rest of the quoted name and
@@ -205,12 +204,7 @@ bn_star_ext:
                 call    bn_star_fill        ; DE[0..B) := '?'
 bn_star_eskip:
                 inc     hl                  ; skip source chars until '"' or NUL
-                ld      a,(hl)
-                cp      '"'
-                jr      z,bn_done
-                or      a
-                jr      z,bn_done
-                jr      bn_star_eskip
+                jr      bn_skip
 ; bn_star_fill — write '?' to (DE) B times (B may be 0 = field already full).
 bn_star_fill:
                 ld      a,b

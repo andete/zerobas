@@ -183,8 +183,8 @@ csd_ascii:
                 ld      b,0                 ; 256-byte scan (djnz with b=0 -> 256)
 csd_asc_scan:
                 ld      a,(hl)
-                cp      $1A                 ; Ctrl-Z -> file complete
-                jr      z,csd_ok
+                cp      $1A                 ; Ctrl-Z -> file complete: `cp`'s
+                ret     z                   ; equal leaves CF clear = consumed
                 inc     hl
                 djnz    csd_asc_scan
                 jr      csd_ascii           ; no Ctrl-Z in this block -> next block
@@ -211,7 +211,8 @@ csd_tok_line:
                 ld      c,a                 ; BC = saved link word L_n
                 ld      a,b
                 or      c
-                jr      z,csd_ok            ; $0000 link -> file complete
+                ret     z                   ; $0000 link -> file complete (`or`:
+                                            ; CF clear = data consumed)
                 ld      hl,(CLINK)          ; A_n
                 ld      (CLINK),bc          ; advance CLINK = L_n
                 ld      a,h                 ; D-LOADBASE: A_n = 0 -> the first line
@@ -260,9 +261,6 @@ csdts_tok:
                 call    tok_payload
                 ld      e,a
                 jr      csdts_lp
-csd_ok:
-                or      a                   ; CF clear = data consumed
-                ret
 csd_tok_perr:
                 pop     af                  ; rebalance the pushed link-low
 csd_tok_err:

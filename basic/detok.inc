@@ -91,29 +91,23 @@ dt_colon:
                 jr      z,dt_else
                 cp      REM_TOKEN           ; ':' $8F $E6 -> ' (apostrophe comment)
                 jr      z,dt_apos_try
-                dec     hl                  ; plain ':' -> emit it verbatim
-                ld      a,COLON
-                call    pchar
-                inc     hl
+dt_col_plain:                               ; plain ':' -> emit it verbatim (HL
+                ld      a,COLON             ; stays past it: pchar keeps HL, and
+                call    pchar               ; its abort resumes from DT_TOK, not HL)
                 jr      dt_lp
 dt_else:
                 ld      a,COLON             ; ELSE is the 2-byte token $3A,$A1; render it
                 ld      c,ELSE_TOKEN        ; via the tlen==2 kwtable lookup -> "ELSE"
                 call    detok_kw2
-                inc     hl                  ; step past $A1
-                jp      dt_lp               ; (jp: D-LISTFLT's dispatch put the
-                                            ; loop head out of jr range)
+                jr      dt_step1            ; step past $A1 (dt_step1: inc hl, and
+                                            ; the loop head, out of jr range here)
 dt_apos_try:
                 inc     hl
                 ld      a,(hl)
                 cp      APOS_MARK           ; the $E6 marker confirms the ' form
                 jr      z,dt_apos
                 dec     hl                  ; not ':REM... ' form: it was ':' then REM
-                ld      a,COLON
-                call    pchar
-                jp      dt_lp               ; HL on the REM token -> dt_rem handles it
-                                            ; (jp: D-DETOKBUF's token mark at dt_lp
-                                            ; put the loop head out of jr range)
+                jr      dt_col_plain        ; HL on the REM token -> dt_rem handles it
 dt_apos:
                 inc     hl                  ; past $E6
                 ld      a,QUOTE_REM         ; print '
@@ -158,10 +152,10 @@ dt_str_lp:
                 or      a
                 ret     z                   ; unterminated -> stop at EOL
                 call    pchar
-                inc     hl
                 cp      '"'                 ; through the closing quote
-                jr      nz,dt_str_lp
-                jp      dt_lp
+                jr      z,dt_step1          ; (dt_step1 steps past it)
+                inc     hl
+                jr      dt_str_lp
 
 ; --- dt_func: $FF,<fn> two-byte function token -----------------------------
 ; Only PEEK ($FF $97) exists today. detok_kw reverse-looks-up the 2-byte form.
@@ -170,16 +164,14 @@ dt_func:
                 inc     hl
                 ld      c,(hl)              ; C = the second token byte
                 call    detok_kw2           ; print the matching 2-byte keyword
-                inc     hl                  ; step past the second byte
-                jp      dt_lp
+                jr      dt_step1            ; step past the second byte
 
 ; --- dt_digit: $11..$1A -> a single ASCII digit -----------------------------
 dt_digit:
                 sub     INT_DIGIT_BASE      ; 0..9
                 add     a,'0'
                 call    pchar
-                inc     hl
-                jp      dt_lp
+                jr      dt_step1
 
 ; --- dt_byte: $0F,<byte> -> decimal -----------------------------------------
 dt_byte:
@@ -187,20 +179,20 @@ dt_byte:
                 ld      e,(hl)
                 ld      d,0
                 inc     hl                  ; HL past the operand
-                call    detok_dec
-                jp      dt_lp
+                jr      dt_ln_dec
 
 ; --- dt_word / dt_lineno: $1C / $0E / $0D ,<word LE> -> decimal --------------
+; (dt_laddr shares the operand read: A still holds the token byte here.)
 dt_word:
 dt_lineno:
+dt_laddr:
                 inc     hl
                 ld      e,(hl)              ; value low
                 inc     hl
                 ld      d,(hl)              ; value high
                 inc     hl                  ; HL past the operand
-dt_ln_dec:
-                call    detok_dec
-                jp      dt_lp
+                cp      LINEADDR_TOKEN
+                jr      nz,dt_ln_dec
 
 ; --- dt_laddr: $0D,<pointer LE> -> the NUMBER of the line it points at -------
 ; D-LISTLPTR (2026-10-13): the reference rewrites a jump's `$0E <number>` into
@@ -209,12 +201,7 @@ dt_ln_dec:
 ; at $800B) -- so the number sits at pointer+3, past the line's link word. A BASIC
 ; cartridge saved after it ran carries this form; this printed the pointer
 ; (`GOSUB 2000` as `GOSUB37271`), and the VG-8020 prints the number.
-dt_laddr:
-                inc     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)              ; DE = the pointer
-                inc     hl                  ; HL past the operand
+; DE = the pointer, HL past the operand (read above, shared with dt_word).
                 ex      de,hl
                 inc     hl
                 inc     hl
@@ -224,10 +211,19 @@ dt_laddr:
                 ld      h,(hl)
                 ld      l,a
                 ex      de,hl               ; DE = that number, HL = the cursor
-                jr      dt_ln_dec
+dt_ln_dec:
+                call    detok_dec
+                jp      dt_lp
 
-; --- dt_hex: $0C,<word LE> -> &Hxxxx ----------------------------------------
+; --- dt_hex / dt_oct: $0C / $0B,<word LE> -> &Hxxxx / &Oxxxx -----------------
+; &O is reserved but never emitted by the tokeniser; rendered here so the
+; detokeniser covers the whole `tok_skip` token set. C = the radix letter.
+dt_oct:
+                ld      c,'O'
+                jr      dt_ho
 dt_hex:
+                ld      c,'H'
+dt_ho:
                 inc     hl
                 ld      e,(hl)
                 inc     hl
@@ -236,27 +232,15 @@ dt_hex:
                 push    hl                  ; guard the cursor across the print
                 ld      a,'&'
                 call    pchar
-                ld      a,'H'
-                call    pchar
+                ld      a,c
+                call    pchar               ; (pchar keeps A and flags)
+                cp      'H'
+                jr      nz,dt_ho_oct
                 call    detok_hex16         ; DE -> uppercase hex, no leading zeros
-                pop     hl
-                jp      dt_lp
-
-; --- dt_oct: $0B,<word LE> -> &Oxxxx ----------------------------------------
-; &O is reserved but never emitted by the tokeniser; rendered here so the
-; detokeniser covers the whole `tok_skip` token set.
-dt_oct:
-                inc     hl
-                ld      e,(hl)
-                inc     hl
-                ld      d,(hl)
-                inc     hl
-                push    hl
-                ld      a,'&'
-                call    pchar
-                ld      a,'O'
-                call    pchar
+                jr      dt_ho_end
+dt_ho_oct:
                 call    detok_oct16
+dt_ho_end:
                 pop     hl
                 jp      dt_lp
 
@@ -445,10 +429,8 @@ dde_wr:
 dde_tail:
                 ; the digits are popped up to the $FF sentinel, as in main's ln_div_entry
                 ; z80flow: depth 0
-                xor     a
-                ld      (de),a
-                ld      hl,NUMBUF
-                jp      print_string
+                ex      de,hl               ; HL = the end: do_term terminates it
+                jr      do_term             ; and prints NUMBUF
 
 ; --- detok_hex16: print DE as uppercase hex, no leading zeros (>=1 digit) ----
 ; Build into NUMBUF most-significant nibble first, skipping leading zeros.
@@ -462,12 +444,9 @@ detok_hex16:
                 ld      a,e
                 call    dh_nib_hi
                 ld      a,e
-                ld      c,a                 ; the last nibble is always emitted
-                call    dh_nib_lo_last
-                xor     a
-                ld      (hl),a              ; 0-terminate
-                ld      hl,NUMBUF
-                jp      print_string
+                and     $0F                 ; the last nibble is always emitted
+                call    dh_emit
+                jr      do_term             ; 0-terminate + print (detok_oct16's)
 dh_nib_hi:
                 rrca
                 rrca
@@ -482,14 +461,11 @@ dh_nib_lo:
                 xor     a                   ; (a zero after a non-zero) -> emit 0
 dh_emit:
                 ld      b,1                 ; mark: from now on emit everything
-                call    hex_digit
-                ld      (hl),a
-                inc     hl
-                ret
-dh_nib_lo_last:
-                ld      a,c
-                and     $0F
-                call    hex_digit
+                cp      10                  ; -> ASCII hex digit
+                jr      c,dh_dec
+                add     a,'A'-10-'0'
+dh_dec:
+                add     a,'0'
                 ld      (hl),a
                 inc     hl
                 ret
@@ -501,13 +477,9 @@ dh_nib_lo_last:
 detok_oct16:
                 ld      b,0                 ; leading-zero suppression flag
                 ld      hl,NUMBUF
-                ld      a,d                 ; digit 0 = bit 15 (0 or 1)
-                rlca                        ; CF = bit 15
-                ld      a,0
-                rla                         ; A = bit 15
+                xor     a                   ; digit 0 = bit 15 (0 or 1): shifted
+                call    dsh1                ; out of DE into A (DE <<= 1)
                 call    do_odigit_susp      ; emit unless a suppressed leading zero
-                sla     e                   ; discard bit 15 (already emitted)
-                rl      d
                 ld      c,5                 ; five remaining 3-bit groups
 do_olp:
                 call    de_shift3           ; A = next 3 bits (DE <<= 3)
@@ -516,9 +488,10 @@ do_olp:
                 call    do_odigit_susp
                 jr      do_olp
 do_olast:
-                call    oct_digit
+                add     a,'0'               ; -> ASCII octal digit
                 ld      (hl),a
                 inc     hl
+do_term:                                    ; HL = NUMBUF's end: 0-terminate, print
                 xor     a
                 ld      (hl),a
                 ld      hl,NUMBUF
@@ -533,37 +506,20 @@ do_odigit_susp:
                 xor     a                   ; non-leading zero -> emit '0'
 do_oset:
                 ld      b,1
-                call    oct_digit
+                add     a,'0'               ; -> ASCII octal digit
                 ld      (hl),a
                 inc     hl
                 ret
 ; de_shift3: shift DE left 3 bits, return the 3 bits that fell off the top in A.
+; (A starts 0, so only its low 3 bits can be set: no mask needed.)
 de_shift3:
-                ld      a,0
-                ; bit 1
+                xor     a
+                call    dsh1
+                call    dsh1
+dsh1:                                       ; one bit: DE <<= 1, its top -> A bit 0
                 sla     e
                 rl      d
                 rla
-                sla     e
-                rl      d
-                rla
-                sla     e
-                rl      d
-                rla
-                and     7
-                ret
-
-; --- hex_digit / oct_digit: A (0..15 / 0..7) -> ASCII -----------------------
-hex_digit:
-                cp      10
-                jr      c,hd_dec
-                add     a,'A'-10
-                ret
-hd_dec:
-                add     a,'0'
-                ret
-oct_digit:
-                add     a,'0'
                 ret
 
 ; --- detok_op: single-byte operator token -> its source char ----------------
@@ -652,25 +608,16 @@ dk_next:
                 jr      dk_entry
 dk_hit:
                 ; IY -> klen keyword chars; print B of them.
-dk_print:
+dk_print:                                   ; (pchar keeps BC and IY)
                 ld      a,(iy+0)
-                push    bc
-                push    iy
                 call    pchar
-                pop     iy
-                pop     bc
                 inc     iy
                 djnz    dk_print
-                pop     ix
-                pop     bc
-                pop     hl
                 scf
-                ret
-dk_none:
-                pop     ix
+dk_none:                                    ; (from `or a` with A = 0: CF clear ->
+                pop     ix                  ;  not a keyword token)
                 pop     bc
                 pop     hl
-                or      a                   ; CF clear -> not a keyword token
                 ret
 
 ; --- detok_kw2: 2-byte function/keyword token ($FF + C) -> its text ----------
@@ -686,7 +633,7 @@ detok_kw2:
 dk2_entry:
                 ld      a,(ix+0)            ; klen (0 = end)
                 or      a
-                jr      z,dk2_none
+                jr      z,dk_none           ; (detok_kw's: same pushes, same pops)
                 push    ix
                 pop     iy
                 inc     iy                  ; IY -> keyword chars
@@ -711,31 +658,6 @@ dk2_next:
                 add     ix,de
                 jr      dk2_entry
 dk2_hit:
-                ; klen = (address of [tlen]) - (address of first keyword char). IY
-                ; points at the chars, IX at [tlen], so the difference is klen.
-                push    ix
-                pop     de                  ; DE = address of [tlen]
-                push    iy
-                pop     hl                  ; HL = address of first char
-                ex      de,hl
-                or      a
-                sbc     hl,de               ; HL = [tlen]addr - charsaddr = klen
-                ld      b,l                 ; B = klen (fits in a byte)
-dk2_print:
-                ld      a,(iy+0)
-                push    bc
-                push    iy
-                call    pchar
-                pop     iy
-                pop     bc
-                inc     iy
-                djnz    dk2_print
-                pop     ix
-                pop     bc
-                pop     hl
-                ret
-dk2_none:
-                pop     ix
-                pop     bc
-                pop     hl
-                ret
+                ld      b,(iy-1)            ; B = klen, the byte before the chars
+                jr      dk_print            ; detok_kw's loop + tail (its CF: no
+                                            ; caller of detok_kw2 reads flags)

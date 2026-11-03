@@ -43,11 +43,8 @@ fcbname_tenant:
                 ld      hl,(BN_PTR)         ; source filename ptr (from the stub)
                 call    build_83_name       ; HL advanced -> closing quote; CF = reject
                 ld      (BN_PTR),hl         ; advanced ptr back (ld preserves CF)
-                jr      c,fcbn_reject
-                xor     a
-                jr      fcbn_store
-fcbn_reject:
-                ld      a,1
+                ld      a,0                 ; (`ld`: CF survives)
+                rla                         ; A = CF: 1 reject / 0 ok
 fcbn_store:
                 ld      (BN_STAT),a
                 ret

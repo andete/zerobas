@@ -322,5 +322,6 @@ dde_tail:
 ; here for str-engine.asm's HEX$/OCT$ are GONE — HEX$/OCT$ moved their digit-
 ; building bodies into the sub-ROM tenant (sub/strheap.asm sh_hex_build/
 ; sh_oct_build, with their own local digit leaves), so nothing in the repack
-; main ROM references hex_digit/oct_digit any more. detok.inc carries the
-; sub-side twins.)
+; main ROM references hex_digit/oct_digit any more. detok.inc's sub-side
+; twins are gone too: inlined into dh_emit and the octal path on 2026-11-03,
+; D-REREAD sub batch 1.)

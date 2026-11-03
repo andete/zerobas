@@ -113,8 +113,8 @@ cas_ascii_setup:
                 ret     c                   ; block 1 unreadable -> CF
                 xor     a                   ; CF clear: block 1 primed OK
                 ld      (CAL_NEEDFILL),a    ; more blocks may follow (learned on drain)
-                ld      (CAL_CNT),a         ; serve from position 0 (cal_refill left 0)
-                ret
+                ret                         ; (CAL_CNT: cal_refill's success exit
+                                            ; leaves it 0 -- serve from position 0)
 
                 include "basic/casmatch-body.inc"    ; cas_open_match..cas_skip_data
                 include "basic/tokpay-body.inc"      ; tok_payload (D-LOADBASE)

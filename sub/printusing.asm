@@ -62,10 +62,13 @@ ppc_full:
                 or      a                   ; NC: "not the no-field answer"
                 ret                         ; ...out of the scanner
 
-; --- pu_fmtp: HL = the format's CURRENT body (D-PULONG) ----------------------
+; --- pu_fmtc / pu_fmte: HL = the format's CURRENT body + C / + E (D-PULONG) ---
 ; Through PU_FMTD's [len][ptr]: the GC may have moved a heap body since the last
-; read. Preserves every register but HL.
-pu_fmtp:
+; read. Out: HL = body + index, DE = index (D = 0); A kept, flags as `add hl,de`.
+pu_fmtc:
+                ld      e,c
+pu_fmte:
+                ld      d,0
                 push    af
                 ld      hl,(PU_FMTD)
                 inc     hl
@@ -74,6 +77,7 @@ pu_fmtp:
                 ld      h,(hl)
                 ld      l,a
                 pop     af
+                add     hl,de
                 ret
 
 ; --- pu_tofield_tenant: the SUBROM_IDX_PU_TOFIELD entry --------------------

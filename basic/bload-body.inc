@@ -69,6 +69,7 @@ parse_dev:
                 jr      parse_dev
 is_tape:
                 pop     af                  ; discard saved filename start
+is_tape_named:                              ; (isd_tape: nothing pushed)
                 ; The `,R` / `,S` / `,offset` tail is ALREADY parsed: main's
                 ; pcr_bload (basic/bload.asm) did it before calling in, because
                 ; the offset needs `eval` (D-BLOADOFS). RUNFLAG / VRAM_FLAG /
@@ -122,19 +123,14 @@ load_loop:
                 ld      hl,(CURPTR)
                 ld      (hl),a              ; store the byte
                 ld      de,(ENDPTR)
-                ld      a,h
-                cp      d
-                jr      nz,load_next        ; high bytes differ -> more to do
-                ld      a,l
-                cp      e
-                jr      z,load_done         ; cur == end -> last byte stored
-load_next:
+                or      a
+                sbc     hl,de
+                add     hl,de               ; HL = CURPTR again (Z kept from sbc)
+                jp      z,TAPIOF            ; cur == end -> last byte stored: motor
+                                            ; off; its `ret` ends the tape load
                 inc     hl
                 ld      (CURPTR),hl
                 jr      load_loop
-
-load_done:
-                jp      TAPIOF              ; motor off; its `ret` ends the tape load
                 ; ✅ D-CASOFS2X (2026-10-19): this was `call TAPIOF` and FELL INTO
                 ; bl_apply_ofs, adding BL_OFS a SECOND time after the data (to
                 ; CURPTR, ENDPTR and EXECPTR), so `BLOAD"CAS:X",R,ofs` ran exec +
@@ -197,8 +193,7 @@ isd_tape:
                 dec     hl                  ; D-CASBIN: back to the name's FIRST char --
                                             ; is_tape now reads the name (the `cp ':'`
                                             ; above stepped one past it)
-                push    hl                  ; is_tape drops the saved name start
-                jp      is_tape
+                jr      is_tape_named       ; (past is_tape's drop of a pushed start)
 isd_disk:
                 ; 🏗️ D-ROMSIZE step 1 (2026-10-19): THE LOAD IS disk.rom's NOW. This
                 ; was `jr do_disk_bload` -- mount, find, the $FE header, the offset

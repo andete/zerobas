@@ -48,22 +48,17 @@ fmt_selected:
 fmt_zloop:
                 ld      a,GM_LASTSYS
                 call    fmt_geom_byte       ; lastSys (low byte; < 256)
-                ld      c,a
-                ld      a,(FMT_SEC)
-                cp      c
-                jr      c,fmt_zwrite        ; sec < lastSys -> write
-                jr      z,fmt_zwrite        ; sec == lastSys -> write (inclusive)
-                jr      fmt_fatheads        ; sec > lastSys -> done clearing
-fmt_zwrite:
-                ld      a,(FMT_SEC)
-                ld      e,a
+                ld      hl,FMT_SEC
+                cp      (hl)
+                jr      c,fmt_fatheads      ; sec > lastSys -> done clearing
+fmt_zwrite:                                 ; sec <= lastSys (inclusive) -> write
+                ld      e,(hl)              ; DE = sec
                 ld      d,0
                 ld      hl,FAT_DBUF
                 call    write_sector
                 ret     c
-                ld      a,(FMT_SEC)
-                inc     a
-                ld      (FMT_SEC),a
+                ld      hl,FMT_SEC
+                inc     (hl)
                 jr      fmt_zloop
                 ; --- stamp each FAT copy's head: [media][$FF][$FF] ---
 fmt_fatheads:
@@ -126,11 +121,7 @@ fmt_geom_byte:
                 ld      a,(hl)
                 ret
 fmt_geom_word:
-                ld      hl,(FMT_DESC)
-                ld      e,a
-                ld      d,0
-                add     hl,de
-                ld      a,(hl)
+                call    fmt_geom_byte       ; HL -> the field, A = its low byte
                 inc     hl
                 ld      h,(hl)
                 ld      l,a

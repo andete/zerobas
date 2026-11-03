@@ -21,5 +21,4 @@ tape_putword:
                 ld      hl,(TSV_PTR)        ; reload (TAPOUT clobbered HL)
                 inc     hl
                 ld      a,(hl)              ; high byte
-                call    TAPOUT
-                ret                         ; CF from TAPOUT
+                jp      TAPOUT              ; CF from TAPOUT

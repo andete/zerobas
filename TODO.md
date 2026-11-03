@@ -582,6 +582,31 @@ item — do **one item per session** to keep context lean.
       p0cb, pgmedit, beep) need the callable-from-main island, and sub's page 0 has 35 B
       free** -- a structural carve of sub page 0 (or moving sub page-0 tenants that do not
       need page 0 up to sub page 1, which had 1225 B free on 2026-11-03) comes first.
+      📏 **WHICH TENANTS NEED PAGE 0? (read-only study, 2026-11-03)** NONE of sub2's page-0
+      tenants does: each reaches main only through `p0cb` (`ld ix,p0_X / call p0cb`), and only
+      p0cb's slot mask ties that to page 0; a page-1 `p1cb` (about eight bytes of code, the shape of disk.rom's
+      calbak) would serve them -- UNPROVEN. But the payload (~3.99 KB) is larger than sub's free
+      space (~1.26 KB then): retirement is ~2.7 KB short. Duplicate data between sub and main
+      (the readable windows both ways) was measured at 89 B, all of it `tok_skip`, code a page-0
+      tenant may not call -- that route is empty.
+      🏗️ **JOOST, 2026-11-03:** p1cb + moving trapstmt / scrstmt / pgmedit = *"maybe later"*;
+      moving the tokeniser / detok to page 1 so sub's kwtable copy can go = *"let's not do that
+      yet either, let's first optimize a bit more"*.
+      ✅ **D-REREAD ON THE SUB ROM, BATCH 1 (2026-11-03): +390 B** -- sub page 0 35 -> 276 B
+      free, sub page 1 1225 -> 1374 B ([`subrr1_reloc.out`](scratchpad/subrr1_reloc.out); main
+      unchanged). Ranked by [`reread_rank_sub.py`](scratchpad/reread_rank_sub.py); proposed and
+      applied by a scoped agent, 30 edits in the sub-only bodies: detok.inc (pushes around
+      pchar, which keeps every register; shared tails; inlined digit helpers), pu-render.inc +
+      printusing.asm (shared literal tails, `pu_fmtc` / `pu_fmte` for 11 call sites -- jr only
+      around pu_pchar, which must run at the scanner's depth), the tape SAVE header shared as
+      `sv_hdr`, readdata, format, fcbname, casmatch, bload, fp_log. Contract-diff: the first
+      cut had one `broken` row (bl_apply_ofs, 6 B, read as a model artifact) -- TAKEN BACK by
+      the fix-or-revert rule; after: no breaks, three rows read as stub artifacts
+      ([`subrr1_contract.out`](scratchpad/subrr1_contract.out)). Knife pins unchanged; tapes:
+      all 42 classes as before. HELD BACK: detok's NUMBUF staging (~20 B; changes NUMBUF's RAM
+      contents -- a ruling), fmt_menu_text (16 B; the dead-code gate's vacuity check), cm_six's
+      CHPUT push / pop (BIOS-dependent). 🔧 The ranking misses labels in NESTED .inc bodies, so
+      its spans overstate -- fix before batch 2.
       ➡️ Byte-level rereading cannot close it (D-REREAD stopped at ~2 B / routine); the
       routes are structural: D-REREAD-EDGES (below, in D-REREAD's block), tenant merges,
       main / sub duplicate removal.
@@ -8799,7 +8824,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11290 (T-6FE392)8 (T-529ABE)` from `TODO.md:16972 (T-529ABE)`: a
+      `TODO.md:11315 (T-6FE392)8 (T-529ABE)` from `TODO.md:16997 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11759,7 +11784,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:16972 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:16997 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it
