@@ -1933,8 +1933,10 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
             # marker can say "N REFERENCE, 0 zerobas" rather than just "N"
             settle["replayed_subject"] = rc.is_subject(machine, [args.get("cart")])
             rc.STATS["replayed"] += 1
+        rc.replay_media(rc.load_media(key), args)   # a disk the run wrote
         return cached
 
+    _media0 = rc.media_snapshot(args)
     result = _run_cases_impl(machine, cases, **kw)
     if rc.VERIFY and cached is not None and len(cached) == len(cases):
         if cached == result:
@@ -1958,7 +1960,8 @@ def run_cases(machine: str, cases: list[tuple[str, list[str]]], **kw):
             f"{SCR_ADDR:#06x}), so a machine whose `reset` does not put it there "
             f"reads the pattern generator table as if it were text.\n")
     else:
-        rc.store(key, result, machine, settle=settle)
+        rc.store(key, result, machine, settle=settle,
+                 media=rc.media_changes(_media0))
     return result
 
 

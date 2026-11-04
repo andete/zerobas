@@ -33,8 +33,19 @@ vlf_unset_int   equ     vptr_none
                                 ; (was basic/vars.asm)
 ; (rn_in -- `equ in_msg`, D-ISLDATA2 -- left with RENUM's report loop for
 ; sub2/pgmedit.asm, D-P0CB 2026-10-24: it imports in_msg itself, as p0_rn_in)
-; (eoi_err5 -- ON INTERVAL=0's ERR 5 -- gone with the trap statements to
-; sub2/trapstmt.asm, D-P0CB slice B 2026-10-21: tt_illegal raises gb_illegal there)
+; (eoi_err5 -- ON INTERVAL=0's ERR 5 -- went with the trap statements to
+; sub2/trapstmt.asm, D-P0CB slice B 2026-10-21; they are main's again since
+; D-SUB2RETIRE step 2c, basic/trapstmt.asm, which jumps to gb_illegal itself)
+; trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements -- NOT
+; `jp stmt_error`, which prints and aborts the RUN, so an `ON ERROR GOTO` program
+; would never see it. The reference raises a trappable ERR 2 for every malformed
+; trap statement (VG-8020-measured for `ON STRIG` and `ON STRIG GOTO`,
+; spec-traps-t2-strig.md §1.3, cases S6/S7). D-DUPSPAN: an ALIAS of play.asm's
+; byte-identical pl_syntax; un-alias it for a distinct face and nothing moves.
+trap_syntax     equ     pl_syntax   ; ERR 2 (malformed trap statement)
+                                ; (was basic/program.asm; moved here by D-SUB2RETIRE
+                                ; step 2c: basic/trapstmt.asm and interp.asm use it
+                                ; above program.asm)
 fchk_ifc        equ     gb_illegal  ; ERR 5 (err_msgtab[5])
                                 ; (was basic/files.asm)
 ex_donothing    equ     gb_illegal

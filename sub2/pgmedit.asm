@@ -27,7 +27,7 @@
 ;                    main at the statement's own SP, OFF this tenant's CALSLT
 ;                    frame (the D-BLOADSTK rule: nothing long runs nested here)
 ;
-; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant ->
+; Entered through file_tenant (sub2/filestmt.asm, index 3) ->
 ; scr_tenant (sub2/scrstmt.asm), which forwards every token but KEY here. Main's
 ; three entry labels share ex_open's ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm): exec_stmt hands a handler A = its token

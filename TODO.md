@@ -683,6 +683,23 @@ item — do **one item per session** to keep context lean.
       [`s2rrB_contract.out`](scratchpad/s2rrB_contract.out)); `tt_tab` rows are its dispatch
       table read as code. 🎯 the sub2 page-0 tenants left are ~2.16 KB against 1989 B free in
       the sub ROM (1155 page 0 + 834 page 1): ~170 B short on 2026-11-03, plus the moves' own shims.
+      🏗️ **JOOST, 2026-11-04 (asked with four options): trapstmt goes "Into main (543 B low
+      free)".** After step 2b the sub2 tenants were filestmt 917, scrstmt 500, trapstmt 393,
+      p0cb + helpers 175, pgmedit 107, beep 74 B; the sub ROM's 1155 + 834 B take all but
+      trapstmt. ➡️ PLAN, one gated slice each: **2c** trapstmt into main's low region (its p0cb
+      crossings become direct calls); **2d** scrstmt + pgmedit + beep into sub page 1 through
+      p1cb; **2e** filestmt into sub page 0 with a page-0 callback, then sub2 itself goes (its
+      ROM, slot 3-3 in the machine configs, the tests and docs that name it).
+      ✅ **STEP 2c (2026-11-04): TRAPSTMT LIVES IN MAIN'S LOW REGION** (basic/trapstmt.asm,
+      included last in the low region so no pin moves). Its p0cb crossings are direct calls,
+      `s2_skip_*` are main's own, and main's seven `ld c,TT_x / jr ex_sub2` stubs are gone --
+      the arms took the old ex_on_* / ex_*_stmt names. 📏 2026-11-04: main low region 543 ->
+      270 B free (the code is 273 B), main page 1 385 -> 411, sub2 page 0 14136 -> 14521
+      ([`s2c_reloc.out`](scratchpad/s2c_reloc.out)). sub2's index 3 keeps its slot (now
+      `jp file_tenant`); scrstmt reaches KEY(n) through the continuation `p0_ex_key_stmt`.
+      Contract-diff: every category 0 ([`s2c_contract.out`](scratchpad/s2c_contract.out)); the
+      moved arms compared by hand lose IX / AF' clobbers. Trap suites stop / strig / key /
+      sprite / interval all pass.
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -736,6 +753,13 @@ item — do **one item per session** to keep context lean.
         Now a media parameter is keyed by its bytes (`_param_key`, selftest KM1 / KM2).
         Measured, refs mode twice: wszero 85 -> 40 s (74 / 74 replayed), namspc 91 -> 36 s
         (201 / 201), zerobas measured on every run of both.
+        🔴 **AND THE FIX OPENED THE NEXT HOLE (2026-11-04): a disk-writing call has TWO results.**
+        Once media was keyed by bytes, the six disk-write suites (savedate, diskfull, asavechan,
+        asavedev, putdir, wcache) began to HIT -- and read "INSTRUMENT FAULT: the CF-3300 wrote
+        nothing", because a hit replayed the screen and never the disk the probe reads back.
+        Now an entry carries every media file the run changed (compressed) and a hit writes it
+        back; media-carrying keys moved to version 2 so no older entry is served (selftest KM3;
+        savedate in refs mode twice: both PASS, the second from the store).
       - [ ] 🔭 **D-DISKWINDOW: SWEEP THE PROBES FOR DISK ROWS READ `step` AFTER `RUN` (found by
         D-MULHANG, 2026-11-03).** 🎚️ APPARATUS -- a row that passes by less than a disk
         revolution goes red on any unrelated carve and reads as a ROM defect. 🤖
@@ -8963,7 +8987,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11454 (T-6FE392)8 (T-529ABE)` from `TODO.md:17136 (T-529ABE)`: a
+      `TODO.md:11478 (T-6FE392)8 (T-529ABE)` from `TODO.md:17160 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11923,7 +11947,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17136 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17160 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

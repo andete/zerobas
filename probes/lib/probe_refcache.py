@@ -376,8 +376,12 @@ def _param_key(k, v):
 
 
 def key_for(machine: str, cases, params: dict) -> str:
+    # "v" 2 for a call that carries a media file: entries stored before
+    # 2026-11-04 hold no post-run media bytes (see media_snapshot), so they
+    # must never be served to a caller that reads its disk back.
+    has_media = any(params.get(k) for k in MEDIA_PARAMS)
     payload = {
-        "v": 1,
+        "v": 2 if has_media else 1,
         "machine_id": machine_identity(machine),
         "harness": harness_fingerprint(),
         "cases": [[c[0], list(c[1])] for c in cases],
@@ -541,7 +545,56 @@ def storable(result) -> bool:
     return True
 
 
-def store(key: str, result, machine: str, settle=None) -> bool:
+# 🔴 A DISK-WRITING CALL HAS TWO RESULTS, AND A HIT REPLAYED ONLY ONE (2026-11-04).
+# run_cases returns the screen; a probe that SAVEs to its diska then reads the
+# IMAGE back (savedate, diskfull, putdir, wcache, asave*). Once the media key
+# was made content-based those calls began to hit, and six suites reported
+# "INSTRUMENT FAULT: the CF-3300 wrote nothing" -- the reference disk was never
+# written because nothing ran. So the entry carries every media file the run
+# CHANGED, compressed, and a hit writes those bytes back. The key holds the
+# pre-run bytes, so replaying the post-run bytes is exact.
+def media_snapshot(params: dict) -> dict:
+    """{param: (path, sha)} for every media file a call names."""
+    out = {}
+    for k in MEDIA_PARAMS:
+        v = params.get(k)
+        if isinstance(v, str) and os.path.isfile(v):
+            out[k] = (v, _file_sha(v))
+    return out
+
+
+def media_changes(before: dict) -> dict:
+    """{param: base64(zlib(bytes))} for each media file whose bytes changed."""
+    import base64
+    import zlib
+    out = {}
+    for k, (path, sha) in before.items():
+        if _file_sha(path) != sha:
+            with open(path, "rb") as fh:
+                out[k] = base64.b64encode(zlib.compress(fh.read(), 9)).decode()
+    return out
+
+
+def load_media(key: str) -> dict:
+    try:
+        with open(_path(key)) as fh:
+            return json.load(fh).get("media") or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def replay_media(media: dict, params: dict) -> None:
+    import base64
+    import zlib
+    for k, blob in media.items():
+        path = params.get(k)
+        if isinstance(path, str):
+            with open(path, "wb") as fh:
+                fh.write(zlib.decompress(base64.b64decode(blob)))
+            STATS["media_replayed"] = STATS.get("media_replayed", 0) + 1
+
+
+def store(key: str, result, machine: str, settle=None, media=None) -> bool:
     if not storable(result):
         STATS["refused"] += 1
         return False
@@ -553,7 +606,8 @@ def store(key: str, result, machine: str, settle=None) -> bool:
     try:
         with os.fdopen(fd, "w") as fh:
             json.dump({"key": key, "machine": machine, "result": result,
-                       "settle": _enc(settle) if settle else None}, fh)
+                       "settle": _enc(settle) if settle else None,
+                       "media": media or None}, fh)
         os.replace(tmp, d)
     except Exception:
         try:
@@ -1662,6 +1716,17 @@ def _selftest() -> int:
             fh.write(b"\x00" * 63 + b"\x01")
         arm("KM2 one changed disk byte gives a NEW key",
             key_for("Fake_Media", cs, {"diska": pb}) != ka)
+        before = media_snapshot({"diska": pa})
+        with open(pa, "wb") as fh:
+            fh.write(b"\x00" * 60 + b"SAVE")          # the run "wrote" the disk
+        ch = media_changes(before)
+        pc = os.path.join(_md, "c.dsk")
+        with open(pc, "wb") as fh:
+            fh.write(b"\x00" * 64)                    # the next caller's fresh copy
+        replay_media(ch, {"diska": pc})
+        arm("KM3 a disk the run WROTE is replayed byte for byte on a hit (the "
+            "six disk-write suites that read their image back)",
+            list(ch) == ["diska"] and open(pc, "rb").read() == b"\x00" * 60 + b"SAVE")
     finally:
         shutil.rmtree(_md, ignore_errors=True)
         _MACHINE_ID.pop("Fake_Media", None)

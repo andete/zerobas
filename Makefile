@@ -93,7 +93,7 @@ DEPS  := basic/interp.asm basic/initext.asm basic/islands.asm basic/title.asm ba
          basic/field.asm basic/format.asm basic/printusing.asm basic/program.asm basic/float.asm \
          basic/float-arith.asm basic/subromcall.asm basic/edscreen.asm basic/input.asm \
          basic/arrays.asm basic/sound.asm basic/play.asm basic/graphics.asm basic/traps.asm \
-         basic/missing.asm \
+         basic/missing.asm basic/trapstmt.asm \
          basic/tokenise.inc basic/detok.inc basic/pu-render.inc basic/format-body.inc \
          basic/fat-prim-body.inc basic/fat-delete-body.inc \
          basic/casmatch-body.inc basic/cal-refill-body.inc basic/cascap-body.inc basic/cascut-body.inc \
@@ -294,7 +294,7 @@ sub: $(SUB_ROM)
 # or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
 SUB2_SRC  := sub2/sub2.asm
 SUB2_PARTS := sub/equates.inc basic/sysvars.inc sub/beep.asm \
-              sub2/p0cb.asm sub2/trapstmt.asm sub2/filestmt.asm sub2/scrstmt.asm \
+              sub2/p0cb.asm sub2/filestmt.asm sub2/scrstmt.asm \
               sub2/pgmedit.asm \
               sub/basic-resident-abi.inc
 SUB2_ROM  := $(BUILD)/sub2.rom

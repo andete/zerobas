@@ -79,16 +79,20 @@ sub2_p0_table:
                                                 ;   zerobas-sub page 0 by D-TOKOVF
                 jp      p0cb_selftest           ; index 2 (SUB2_IDX_P0TEST): the
                                                 ;   page-0 call-back, proven (D-P0CB)
-                jp      trap_tenant             ; index 3 (SUB2_IDX_TRAPS): the event-
-                                                ;   trap statements (D-P0CB slice B),
-                                                ;   and OPEN / CLOSE / MERGE / MAXFILES
-                                                ;   by token (slice C1, filestmt.asm),
+                jp      file_tenant             ; index 3 (SUB2_IDX_TRAPS): OPEN /
+                                                ;   CLOSE / MERGE / MAXFILES by token
+                                                ;   (slice C1, filestmt.asm),
                                                 ;   SCREEN / COLOR / WIDTH / KEY (slice
                                                 ;   D, scrstmt.asm), DELETE / AUTO /
                                                 ;   RENUM (pgmedit.asm). (The SAVE /
                                                 ;   LOAD family, slice C2, and its tape
                                                 ;   reader: zerobas-sub page 1 since
                                                 ;   D-SUB2RETIRE, SUBROM_IDX_LOADSAVE.)
+                                                ;   The event-trap statements (slice B,
+                                                ;   trap_tenant, which forwarded tokens
+                                                ;   here) are main's low region again
+                                                ;   since D-SUB2RETIRE step 2c: the row
+                                                ;   keeps its index and its name.
 
 ; --- Page-0 PING: stamp SUB_PING with this island's own tag and return. The
 ; tag differs from ROM 1's page-0 $C0, so a CALSLT that reached 3-2 instead of
@@ -107,7 +111,9 @@ sub2_p0_ping:
 ; basic-resident-abi.inc's p0cb class (tools/gen_resident_abi.py), which page 1
 ; includes below (pasmo resolves the forward references).
                 include "sub2/p0cb.asm"
-                include "sub2/trapstmt.asm"
+                ; (sub2/trapstmt.asm -- the event-trap statements, D-P0CB slice B -- went
+                ; back to main's low region with D-SUB2RETIRE step 2c, 2026-11-04:
+                ; basic/trapstmt.asm.)
                 include "sub2/filestmt.asm"
                 ; (sub2/loadsave.asm -- the SAVE / LOAD family, D-P0CB slice C2 -- and
                 ; sub2/tapeprog.asm, its tape program reader, moved to zerobas-sub's

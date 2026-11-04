@@ -3093,52 +3093,22 @@ oe_reraise:
                 call    derive_directf
                 jp      rerr_msg
 
-; --- the EVENT-TRAP STATEMENTS: zerobas-sub2 page 0 (D-P0CB slice B, 2026-10-21) --
+; --- the EVENT-TRAP STATEMENTS: main's LOW region (D-SUB2RETIRE step 2c) --------
 ; ON STOP / SPRITE / STRIG / KEY / INTERVAL GOSUB, INTERVAL ON|OFF|STOP, STRIG(n)
-; ON|OFF|STOP and KEY(n) ON|OFF|STOP ran here (~300 B of main page 1); their parse
-; and their writes into ZTRAP are sub2/trapstmt.asm's now, reached through ONE
-; CALSLT per statement and calling main back through p0cb (docs/spec-sub2-p0cb.md).
-; The trap MACHINERY -- check_traps, set_state, ztrap_entry, the ISR side -- stays.
-; Each entry keeps its label, so ex_on / ex_ff_stmt reach it as before (screen.asm's
-; ex_key reached ex_key_stmt until slice D moved KEY itself to sub2);
-; C says which statement (sub2/trapstmt.asm's TT_*). ex_sub2 runs the tenant and
-; jumps where it says: DE = the continuation (exec_stmt), HL = its cursor.
-ex_on_stop:
-                ld      c,0                 ; TT_ON_STOP
-                jr      ex_sub2
-    IF TRAPS_T4
-ex_on_sprite:
-                ld      c,1                 ; TT_ON_SPRITE
-                jr      ex_sub2
-    ENDIF
-    IF TRAPS_T3
-ex_on_key:
-                ld      c,2                 ; TT_ON_KEY
-                jr      ex_sub2
-                ; (KEY(n) ON|OFF|STOP's stub, ex_key_stmt -- `ld c,7` -- went with
-                ; D-P0CB slice D: KEY_TOKEN reaches sub2 through the shared byte
-                ; below, and sub2's scr_key jumps to tt_key on the `(` itself.)
-    ENDIF
-ex_on_strig:
-                ld      c,3                 ; TT_ON_STRIG
-                jr      ex_sub2
-ex_strig_stmt:
-                ld      c,6                 ; TT_STRIG
-                jr      ex_sub2
-    IF TRAPS_T5
-ex_on_interval:
-                ld      c,4                 ; TT_ON_INTERVAL
-                jr      ex_sub2
-ex_interval:
-                ld      c,5                 ; TT_INTERVAL
-                jr      ex_sub2
-    ENDIF
+; ON|OFF|STOP and KEY(n) ON|OFF|STOP ran here (~300 B of main page 1) until D-P0CB
+; slice B (2026-10-21) moved them to zerobas-sub2 page 0, reached from 4-byte
+; `ld c,TT_x / jr ex_sub2` stubs here. D-SUB2RETIRE step 2c (2026-11-04) brought
+; them back into main's low region: basic/trapstmt.asm, under the same labels
+; (ex_on_stop .. ex_key_stmt), so ex_on / ex_ff_stmt reach them directly and the
+; stubs are gone. The trap MACHINERY -- check_traps, set_state, ztrap_entry, the
+; ISR side -- never left.
 ; --- OPEN / CLOSE / MERGE / MAXFILES: zerobas-sub2 page 0 (D-P0CB slice C1) -----
 ; ~1 KB of basic/files.asm (and OPEN "GRP:"'s arm, basic/grpdev.asm) is
 ; sub2/filestmt.asm's since 2026-10-21. The four stmt_table rows land on ONE byte:
 ; exec_stmt enters every handler with A = its token (tests/test_stmt_dispatch.py
-; asserts it), so `ld c,a` hands the token over and trap_tenant forwards any
-; C >= 8 (a token is >= $80; TT_* are 0..7) to file_tenant. The continuations
+; asserts it), so `ld c,a` hands the token over and sub2's file_tenant
+; dispatches on it (it took trap_tenant's index 3 when the trap statements came
+; back to main, D-SUB2RETIRE step 2c). The continuations
 ; it hands back in DE: exec_stmt, clr_wipe (MAXFILES), end_line_end (MERGE), and
 ; disk_error / load_error, which print and RETURN to the statement's caller --
 ; which is why they are continuations, never p0cb calls.
@@ -3195,22 +3165,16 @@ exs_tail:
                 jp      c,subrom_absent_error
                 push    de
                 ; DE = the tenant's continuation: every `ld de,p0_X / ret` exit of the tenants
-                ; trap_tenant reaches (trapstmt, filestmt, scrstmt, pgmedit; sub2.sym: p0_X = main's
-                ; X) and of ls_tenant (sub2/loadsave.asm + tapeprog.asm, in sub.sym since D-SUB2RETIRE)
-                ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop
+                ; file_tenant reaches (filestmt, scrstmt, pgmedit; sub2.sym: p0_X = main's X) and of
+                ; ls_tenant (sub2/loadsave.asm + tapeprog.asm, in sub.sym since D-SUB2RETIRE);
+                ; ex_key_stmt is scr_key's KEY(n) exit (basic/trapstmt.asm, D-SUB2RETIRE 2c)
+                ; z80flow: targets exec_stmt run_prog_top end_line_end bp_ret bload_cont key_drain disk_error load_error clr_wipe exa_loop ex_key_stmt
                 ret                         ; -> the continuation, HL = its cursor
 
-; --- trap_syntax: a TRAPPABLE Syntax error (ERR 2) for the trap statements ----
-; NOT `jp stmt_error`: that prints and aborts the RUN, so an `ON ERROR GOTO`
-; program would never see it. The reference raises a trappable ERR 2 for every
-; malformed trap statement -- VG-8020-measured for `ON STRIG` and `ON STRIG GOTO`
-; (spec-traps-t2-strig.md §1.3, cases S6/S7), which is also what arc spec §7
-; specified. Same convention as graphics' gfx_syntax.
-; D-DUPSPAN: an ALIAS, not a second copy -- byte-identical to play.asm's
-; pl_syntax, which is the family's canonical tail because its four callers
-; are the only ones close enough to reach it with `jr`. The NAME and every
-; call site survive; un-alias here for a distinct face and nothing moves.
-trap_syntax     equ     pl_syntax   ; ERR 2 (malformed trap statement)
+; (trap_syntax -- the trappable ERR 2 of the trap statements, an alias of
+; pl_syntax -- is in basic/aliases-early.inc since D-SUB2RETIRE step 2c: its users
+; in the low region (basic/trapstmt.asm) and interp.asm sit ABOVE this file, and
+; pasmo 0.5.3 reads such an alias as 0 there (D-PASMO053). Its notes moved with it.)
 
 ; --- onoff_decode: MOVED to basic/files.asm (where fch_modes_ptr was), 2026-10-19
 ; 📌 A PIN REFILL: its 24 B take back what fch_modes_ptr's move and FCH_MODE's
@@ -3276,10 +3240,10 @@ ex_ff_stmt:
                 inc     hl                  ; -> the selector byte
                 ld      a,(hl)
                 cp      STRIG_TOKEN         ; STRIG(n) ON|OFF|STOP  (traps T2)
-                jr      z,ex_strig_stmt     ; (entered with HL on the selector)
+                jp      z,ex_strig_stmt     ; (entered with HL on the selector)
     IF TRAPS_T5
                 call    iv_match            ; INTERVAL ON|OFF|STOP  (traps T5)
-                jr      c,ex_interval       ; CF=0 leaves HL on the selector, so
+                jp      c,ex_interval       ; CF=0 leaves HL on the selector, so
     ENDIF                                   ; ex_mid_stmt's Syntax error is unchanged
                 jp      ex_mid_stmt
 

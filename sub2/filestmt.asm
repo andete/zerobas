@@ -10,8 +10,9 @@
 ; the main image by tests/test_open_len.py) and the device-name strings, which
 ; main's dev_cmp reads. Only what these four statements alone reach moved.
 ;
-; Entered through trap_tenant (sub2/trapstmt.asm), which forwards every C >= 8
-; here: main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
+; Entered as zerobas-sub2's page-0 index 3 (SUB2_IDX_TRAPS -- trap_tenant's row
+; until D-SUB2RETIRE step 2c took the trap statements back to main, after which
+; it forwarded nothing but these): main's four entry labels share ONE byte, `ld c,a` in front of ex_sub2
 ; (basic/program.asm), so C = the statement token (exec_stmt hands every
 ; handler A = its token -- tests/test_stmt_dispatch.py asserts it). A token that
 ; is none of the four goes on to scr_tenant (sub2/scrstmt.asm, slice D: SCREEN /
@@ -47,7 +48,10 @@
 ; is the measured rule each one encodes.
 
 ; --- the dispatch -------------------------------------------------------------
-file_tenant:                                ; A = C = the token (trap_tenant's head)
+file_tenant:                                ; index 3: C = the token (main's ex_sub2)
+                ld      a,c                 ; A = C (trap_tenant's head did this
+                                            ; until D-SUB2RETIRE step 2c took the
+                                            ; trap statements back to main)
                 cp      OPEN_TOKEN
                 jr      z,fs_open
                 cp      CLOSE_TOKEN
@@ -78,8 +82,11 @@ fs_badname:                                 ; pdf_badname: ERR 56
 fs_bfn:                                     ; oo_fail_bfn: ERR 52
                 ld      a,52
                 jr      fs_raise
+fs_trsyntax:                                ; pl_syntax (trap_syntax): a TRAPPABLE
+                ld      a,2                 ; ERR 2 -- scrstmt.asm's SCREEN arity
+                jr      fs_raise            ; (trapstmt.asm's tt_syntax until step 2c)
 fs_illegal:                                 ; gb_illegal: ERR 5 (also LEN= out of
-                ld      a,5                 ; 1..256, D-RECLEN2; and trapstmt.asm's)
+                ld      a,5                 ; 1..256, D-RECLEN2)
 fs_raise:                                   ; A = the ERR code (sub2/pgmedit.asm's)
                 ld      ix,p0_raise_error
                 jp      p0cb

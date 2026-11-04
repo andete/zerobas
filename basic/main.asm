@@ -342,6 +342,12 @@ ndd_tape:
                 pop     hl                  ; Z already (the cassette): both arrivals set
                 ret                         ; it, and pop keeps F
 
+; The event-trap STATEMENTS (D-SUB2RETIRE step 2c, 2026-11-04, Joost: trapstmt goes
+; "Into main (543 B low free)"): back from zerobas-sub2 page 0, with every p0cb
+; crossing a direct call. LAST in the region, after every low-region pin, so no
+; existing label moves; ex_on / ex_ff_stmt in page 1 reach it by `jp`.
+                include "basic/trapstmt.asm"
+
 ; low-region overflow guard: the low-region tenants must not reach the $4000 header.
 ; If they do, the `ds` below would be negative (pasmo warns + emits nothing, a silent
 ; corruption), so assert first — an overrun references an undefined symbol -> clean

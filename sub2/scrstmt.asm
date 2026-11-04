@@ -7,7 +7,9 @@
 ; spr_extra_arg, sea_click) from main page 1 (basic/graphics.asm), and COLOR's
 ; three helpers (clr_eval, clr_prep, clr_commit) from main's LOW region
 ; (basic/main.asm). KEY(n) ON|OFF|STOP -- the trap form -- was already slice B's
-; (sub2/trapstmt.asm tt_key); KEY's peek for `(` now jumps there directly.
+; (sub2/trapstmt.asm tt_key); KEY's peek for `(` jumped there directly until
+; D-SUB2RETIRE step 2c took the trap arms back to main's low region, and now
+; returns main's ex_key_stmt (basic/trapstmt.asm) as a CONTINUATION.
 ;
 ; WHAT STAYS IN MAIN, and is reached through p0cb:
 ;   key_repaint      shared with CLS (cls_keyline) and the prompt's txt_mode
@@ -26,8 +28,7 @@
 ;                    long runs nested under this ROM's frame), with KEYARG set
 ;                    here and HL = the cursor.
 ;
-; Entered through trap_tenant (sub2/trapstmt.asm) -> file_tenant
-; (sub2/filestmt.asm), which forwards every token it does not own here (through
+; Entered through file_tenant (sub2/filestmt.asm, index 3), which forwards every token it does not own here (through
 ; sub2/loadsave.asm's ls_tenant until D-SUB2RETIRE moved that to the sub ROM);
 ; a token that is none of these four goes on to pe_tenant
 ; (sub2/pgmedit.asm: DELETE / AUTO / RENUM, D-P0CB 2026-10-24). Main's four entry labels share ex_open's ONE byte, `ld c,a`
@@ -38,6 +39,7 @@
 ;   out  DE = the main address to continue at, HL = what it expects:
 ;          exec_stmt    HL = the cursor (main's `jp exec_stmt` / `jp pop_exec`)
 ;          key_drain    HL = the cursor, KEYARG = the op
+;          ex_key_stmt  HL on KEY(n)'s `(` (main's trap arm, basic/trapstmt.asm)
 ; ex_sub2 then does `push de / ret` with the stack exactly as the statement was
 ; entered. No continuation is ever reached through p0cb.
 ;
@@ -47,8 +49,8 @@
 ; runs main's error path with main's page 0 mapped -- exactly as the `jp` it
 ; replaces never returned; a frame this code pushed is discarded by the same
 ; unwind. The shared tails fs_illegal (gb_illegal, ERR 5), fs_exec and
-; fs_pop_exec are sub2/filestmt.asm's; tt_syntax (pl_syntax, a trappable ERR 2)
-; is sub2/trapstmt.asm's.
+; fs_pop_exec are sub2/filestmt.asm's, and so is fs_trsyntax (pl_syntax, a
+; trappable ERR 2; sub2/trapstmt.asm's tt_syntax until D-SUB2RETIRE step 2c).
 ; The code is otherwise main's, statement for statement, and each arm keeps the
 ; original's order of checks and of side effects (CHGMOD before the trailing
 ; SCREEN arguments are evaluated; COLOR's shadow published only after every way
@@ -82,7 +84,7 @@ scr_tenant:                                 ; A = C = the token (file_tenant's t
 ; ===========================================================================
 ; KEY OFF | KEY ON | KEY LIST | KEY n,"text"   (main's ex_key)
 ; ===========================================================================
-; KEY(n) ON|OFF|STOP is the T3 trap form: slice B's arm (sub2/trapstmt.asm).
+; KEY(n) ON|OFF|STOP is the T3 trap form: main's ex_key_stmt (basic/trapstmt.asm).
 scr_key:
                 ; D-BAREFORM: a BARE `KEY` (or `KEY:`) is `Missing operand`, ERR 24
                 ; on BOTH references. stmt_bare_end does the `inc hl` past the KEY
@@ -92,8 +94,10 @@ scr_key:
                 jp      z,scr_missing
     IF TRAPS_T3
                 cp      '('                 ; KEY(n) ON|OFF|STOP -- tested AHEAD of
-                jp      z,tt_key            ; ON/OFF (oracle case K10); HL on `(`, the
-                                            ; stack as trap_tenant hands its arms
+                jr      nz,sck_nparen       ; ON/OFF (oracle case K10)
+                ld      de,p0_ex_key_stmt   ; a CONTINUATION: main's trap arm
+                ret                         ; (basic/trapstmt.asm), HL on the `(`
+sck_nparen:
     ENDIF
                 cp      OFF_TOKEN
                 jr      z,sck_off
@@ -236,7 +240,7 @@ scs_extra:                                  ; the trailing arguments
                 ; fires here, before req_operand. GFX_SARGN counts TRAILING slots
                 ; (1 = sprite size .. 4 = printer): 5 is a 6th argument.
                 cp      5
-                jp      nc,tt_syntax        ; ERR 2 (pl_syntax)
+                jp      nc,fs_trsyntax      ; ERR 2 (pl_syntax)
     ENDIF
                 ld      ix,p0_req_operand
                 call    p0cb                ; a comma PROMISED an argument: ERR 24 at
