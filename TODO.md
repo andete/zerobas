@@ -19991,6 +19991,23 @@ open work; the disk/file story (`OPEN`/`CLOSE`/`PRINT#`/…) already landed in
       compare the rule against zerobas's own reduction (sub/fp_sin.asm) before writing
       code. TIER 6 stands: no program is
       known to take the sine of 1E12.
+      📐 **MODELLED 2026-11-04 -- THE RULE IS BLACK-BOX AND IT IS NOT ONLY HUGE ANGLES**
+      ([`tanbig_model.py`](scratchpad/tanbig_model.py) -> [`tanbig_model.out`](scratchpad/tanbig_model.out)).
+      SIN(x) = sin(2π·frac(r14(x·r14(1/2π)))), COS(x) = SIN(r14(x + r14(π/2))), TAN = SIN/COS
+      (0/0 -> Overflow), r14 = round half-up to 14 significant digits. Every one of the
+      11 VG-8020 rows (1E10..1E38, both edges of 5E13/7E13) reproduces to the last digit
+      (Python's float sin aside), AND so does `SIN(1000)` = `.82687954054849`, the figure
+      docs/keywords/SIN.md cites as the reference's error. 🔴 That falsifies SIN.md's
+      premise for the 2026-07-13 "be accurate and record the difference" sign-off
+      (*"copying the reference's digits would need its internal constants, which can only
+      be read from its ROM"*): the two constants are 1/2π and π/2 rounded to 14 digits,
+      no ROM byte read. The polynomial is a separate question (the doc says "up to 4
+      units high in the 14th digit"); the reduction alone would move zerobas from
+      "3-6 orders better" to the reference's own digits on every angle it reduces.
+      🙋 **QUESTION FOR JOOST:** the 07-13 accuracy sign-off and the same day's
+      bug-for-bug principle (numerics never "more accurate") now disagree on a measured,
+      clean-room-reachable fact. Adopt the reference's reduction for SIN/COS/TAN
+      (sub/fp_sin.asm, sub-ROM page 1; also closes D-TANBIG), or keep the accurate one?
 
 - [ ] **Keyword-completeness gaps — the measured remainder of MSX1 BASIC.**
       **The coverage denominator now exists** (2026-07-26,
