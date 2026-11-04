@@ -134,12 +134,12 @@ None known.
 
 ## Where it lives
 
-- `ls_cload` in [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second
-  sub-ROM's page 0 since 2026-10-21 (main's `ex_cload` hands it over), takes
+- `ls_cload` in [sub2/loadsave.asm](../../sub2/loadsave.asm), in the
+  sub-ROM's page 1 since 2026-11-03 (the second sub-ROM's page 0 from 2026-10-21; main's `ex_cload` hands it over), takes
   the name (or none) and the `?`, marks the search as "tokenised only", and
   calls `do_tape_prog` in [sub2/tapeprog.asm](../../sub2/tapeprog.asm), the
-  tape loader `LOAD "CAS:"` and `RUN "CAS:"` share -- in the second sub-ROM
-  too since 2026-10-24, reading the tape through main's `TAPIN` byte by byte;
+  tape loader `LOAD "CAS:"` and `RUN "CAS:"` share -- in the sub-ROM's page 1
+  too since 2026-11-03 (the second sub-ROM's from 2026-10-24), reading the tape through main's `TAPIN` byte by byte;
   `cas_open_match` (main) runs the search.
 - The name match, the type filter and the `Found:` / `Skip :` rows:
   [basic/casmatch-body.inc](../../basic/casmatch-body.inc), a sub-ROM tenant;

@@ -457,6 +457,15 @@ entry-table version byte for forward-compat, but S1 does not require one.)
 > `init_ext_roms` before the scan). The gate's fifth call goes through it;
 > knife K-2C (`scratchpad/sub2c_knife.out`) drops the store and turns it red.
 
+> 🏁 **Amended 2026-11-04 (D-SUB2RETIRE step 2f): zerobas-sub2 is RETIRED.**
+> Every tenant moved to main or this ROM (steps 1 and 2a-2e); `subrom2_call` went
+> in step 2e, and step 2f deleted `sub2/sub2.asm` and `build/sub2.rom`, the `"Z2"`
+> arm of `try_sub_slot`, `make sub2-acceptance`, `check_sub_walls.py --sub2`, and
+> the 3-3 ROM in both repack machines and the user machines -- slot 3-3 is empty
+> again (D-2's map). `SUBSLOT2` ($FD0B since D-WSZERO) is kept in sysvars.inc,
+> unused, pending a RAM ruling. The tenant sources still under `sub2/` assemble
+> into this ROM (Makefile `SUB_PARTS`). The paragraph above is history.
+
 ## 4. Decisions to ratify (S1 sign-off)
 
 | # | Decision | Proposed | Basis |

@@ -5097,9 +5097,11 @@ INT_MAIN_PRIM   equ     $F951   ; page-0 primary field of the MAIN (BIOS) slot (
 ; $F14B-$F14C were INT_SUB_PRIM / INT_SUB_SUBSL until D-SUB2 stage 2a
 ; (2026-10-12): the trampoline now restores the live entry state
 ; (basic/subromcall.asm). $F14B is SUBSLOT2 since stage 2c, $F14C GRP_HDR.
-SUBSLOT2        equ     $FD0B   ; slot id of zerobas-sub2 ("Z2", 3-3: $8F); 0 = absent.
-                                ; Cleared by init_ext_roms before the scan (RAM survives
-                                ; a reset, D-RESETBOOT), set by try_sub_slot. (1 B)
+SUBSLOT2        equ     $FD0B   ; UNUSED: zerobas-sub2's slot id until it was retired (2f)
+                                ; D-SUB2RETIRE step 2f, 2026-11-04: it held zerobas-sub2's
+                                ; slot ("Z2", 3-3: $8F), cleared by init_ext_roms and set
+                                ; by try_sub_slot. No code reads or writes it now; the cell
+                                ; is kept, not freed -- moving RAM is a ruling. (1 B)
 GRP_HDR         equ     $F953   ; D-OPENGRP: bit 0 = a CHR$(1) header is pending on the
                                 ; GRP: channel (the next byte draws glyph byte-64).
                                 ; Cleared by OPEN "GRP:"; sub2/grpprt.asm owns it. (1 B)
@@ -5110,9 +5112,11 @@ CGPNT           equ     $F91F   ; published: the font's slot (1 B) then address 
 ; (SUB2_IDX_BEEP 1, zerobas-sub2's page-0 index for beep_tenant since D-TOKOVF, is
 ; RETIRED by D-SUB2RETIRE step 2d, 2026-11-04: BEEP is SUBROM_IDX_BEEP 34 on
 ; zerobas-sub's page 1 now; sub2's row 1 is `ret / nop / nop`.)
-SUB2_IDX_P0TEST equ     2       ; zerobas-sub2 PAGE-0 index: p0cb_selftest (D-P0CB,
-                                ; docs/spec-sub2-p0cb.md): the page-0 call-back proven by
-                                ; injection (probes/basic/basic_probe_sub2_p0cb.py)
+; (SUB2_IDX_P0TEST 2, zerobas-sub2's page-0 index for p0cb_selftest (D-P0CB,
+; docs/spec-sub2-p0cb.md) -- the page-0 call-back proven by injection through
+; probes/basic/basic_probe_sub2_p0cb.py -- is RETIRED with zerobas-sub2 itself by
+; D-SUB2RETIRE step 2f, 2026-11-04. zerobas-sub's own p0cb / p1cb are exercised by
+; the statements that use them: OPEN / CLOSE / MERGE / MAXFILES, SAVE / LOAD, SCREEN.)
 ; (SUB2_IDX_TRAPS 3, zerobas-sub2's page-0 index for trap_tenant (D-P0CB slice B)
 ; and then file_tenant, is RETIRED by D-SUB2RETIRE step 2e, 2026-11-04: OPEN /
 ; CLOSE / MERGE / MAXFILES are SUBROM_IDX_FILESTMT 19 on zerobas-sub's page 0 now;

@@ -163,8 +163,8 @@ of documented work-area cells each machine writes is not the same.
 
 ## Where it lives
 
-`scr_key`, `sck_on` and `sck_off` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm) (the second sub-ROM, since
-2026-10-24) parse the statement; `key_repaint` in
+`scr_key`, `sck_on` and `sck_off` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm) (the sub-ROM's page 1 since
+2026-11-04; the second sub-ROM's from 2026-10-24) parse the statement; `key_repaint` in
 [basic/screen.asm](../../basic/screen.asm) keeps the key row reserved. The texts, `KEY LIST` and the drawing of the line are the
 key-string tenant in [sub/keystr.asm](../../sub/keystr.asm).
 

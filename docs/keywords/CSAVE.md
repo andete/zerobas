@@ -117,8 +117,8 @@ that long does not break it here. A short press gives the same screen on both.
 ## Where it lives
 
 - `ls_csave` and `ls_csav_speed` in
-  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second sub-ROM's page 0
-  since 2026-10-21 (main's `ex_csave` hands it over): the name, the speed and
+  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the sub-ROM's page 1
+  since 2026-11-03 (the second sub-ROM's page 0 from 2026-10-21; main's `ex_csave` hands it over): the name, the speed and
   the error faces. It then calls back into main's `sv_tenant`
   ([basic/save.asm](../../basic/save.asm)), which hands the write to the
   sub-ROM's save tenant ([sub/save.asm](../../sub/save.asm)).

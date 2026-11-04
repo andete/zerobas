@@ -372,7 +372,8 @@ tokenise_ei:
 ; (basic/tokskip-body.inc).
                 include "readdata.asm"
 ; --- (BEEP's body, sub/beep.asm, lived here until D-TOKOVF moved it to
-; zerobas-sub2 page 0 -- sub2/sub2.asm. Its 71 B fund the crunch bound.)
+; zerobas-sub2 page 0 -- sub2/sub2.asm. Its 71 B fund the crunch bound. It is
+; this ROM's page 1 since D-SUB2RETIRE step 2d; sub2 itself is retired, 2f.)
 ; --- (the FIELDed-variable READ hook, sub/fldlook.asm -- the D-CLP funding
 ; carve -- lived here until D-FLDDESC, 2026-10-17: with no field table there is
 ; nothing to look up; a FIELDed variable's descriptor points into its record.)
@@ -391,8 +392,8 @@ tokenise_ei:
                 include "keystr.asm"
 
 ; --- p0cb (D-SUB2RETIRE step 2e, 2026-11-04): the call back into MAIN from this
-; page -- zerobas-sub2's p0cb (sub2/p0cb.asm, docs/spec-sub2-p0cb.md §2), the
-; same bytes, for the first page-0 tenant of THIS ROM that calls main. While a
+; page -- zerobas-sub2's p0cb (sub2/p0cb.asm, deleted with that ROM by step 2f;
+; docs/spec-sub2-p0cb.md §2), the same bytes, for the first page-0 tenant of THIS ROM that calls main. While a
 ; page-0 tenant runs, main's page 0 (the BIOS, the low region, $0038) is switched
 ; out -- this ROM is there -- and only main's page 1 stays mapped. p0cb maps
 ; main's page 0 back for one call, through the BIOS's RAM primitive CLPRIM
@@ -980,7 +981,8 @@ sub_p1_ping:
                 include "sub2/frelive.asm"
 
 ; --- p1cb (D-SUB2RETIRE, 2026-11-03): the call back into MAIN from this page ----
-; sub2/p0cb.asm's twin for a PAGE-1 tenant. While one runs, main's page 0 (the
+; sub2/p0cb.asm's twin (that file went with sub2, step 2f; this ROM's page-0
+; p0cb above is its copy) for a PAGE-1 tenant. While one runs, main's page 0 (the
 ; BIOS, the low region, $0038) is mapped and main's PAGE 1 is not -- this ROM is
 ; there. The p0_* targets (basic-resident-abi.inc's p0cb class) sit in BOTH main
 ; pages, so a call back must map main's page 1 for its duration.

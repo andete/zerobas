@@ -28,7 +28,7 @@ rl_vpoke equ 03A68H
 rl_vaddr equ 03A75H
 rl_lastrow equ 03A9CH
 
-; --- page-0 call-back (p0cb) targets: zerobas-sub2 page 0 reaches these through CLPRIM, never by absolute address ---
+; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach these through CLPRIM, never by absolute address ---
 p0_chrgtr equ 00160H   ; main's chrgtr
 p0_outdo equ 00177H   ; main's outdo
 p0_bp_ret equ 066B9H   ; main's bp_ret
@@ -61,7 +61,7 @@ p0_nodisk_dev equ 0280AH   ; main's nodisk_dev
 p0_pdfcb_resume equ 06D1EH   ; main's pdfcb_resume
 p0_skipsp_test equ 028D9H   ; main's skipsp_test
 p0_upcase equ 042C6H   ; main's upcase
-p0_eval equ 04AC1H   ; main's eval
+p0_eval equ 04AB6H   ; main's eval
 p0_eval_byte_arg equ 04542H   ; main's eval_byte_arg
 p0_stmt_bare_end equ 042D6H   ; main's stmt_bare_end
 p0_mxf_require_end equ 03D53H   ; main's mxf_require_end
@@ -107,7 +107,7 @@ p0_print_msg equ 07662H   ; main's print_msg
 p0_err_verify equ 06487H   ; main's err_verify
 p0_exa_loop equ 076DEH   ; main's exa_loop
 p0_le_call_op equ 06E64H   ; main's le_call_op
-p0_print_string equ 045DEH   ; main's print_string
+p0_print_string equ 045D3H   ; main's print_string
 p0_list_num equ 062A1H   ; main's list_num
 p0_print_in_hl equ 07638H   ; main's print_in_hl
 p0_rn_undefined equ 001B5H   ; main's rn_undefined

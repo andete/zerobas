@@ -5,7 +5,11 @@ SPDX-License-Identifier: 0BSD
 
 # zerobas-sub2 page-0 call-back (`p0cb`): moving cold statements out of main
 
-Status: **slices A and B BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 18h
+Status: 🏁 **zerobas-sub2 RETIRED 2026-11-04 (D-SUB2RETIRE step 2f).** The mechanism
+lives on in zerobas-sub: its page-0 `p0cb` (§7) and page-1 `p1cb` (§6). sub2's own
+`p0cb`, RST 10h / 18h shims and `p0cb_selftest` (sub2/p0cb.asm) were deleted with the
+ROM, and so was `make sub2-acceptance`; the sections below are the record of how the
+statements got out of main. Earlier status: **slices A and B BUILT 2026-10-21** (D-P0CB): `p0cb`, sub2's RST 10h / 18h
 and a self-test (`make sub2-acceptance`, both repack machines), then the event-trap
 statements moved (main page 1 +255 B). Slice C1 (OPEN / CLOSE / MERGE / MAXFILES,
 sub2/filestmt.asm) is DRAFTED 2026-10-21: ~800 B of main page 1, all of it pad in
@@ -183,5 +187,5 @@ page 1 mapped, main's page 0 not -- so the sub ROM's page 0 carries its own
   through `p0cb` to main's CHRGTR (no IX save -- no site holds anything in it).
 
 sub2's index 3 is a retired `ret / nop / nop` row and main's `subrom2_call`
-went with its last caller; sub2 keeps its ping and the p0cb self-test until
-step 2f retires the ROM.
+went with its last caller; sub2 kept its ping and the p0cb self-test until
+step 2f retired the ROM, the same day.

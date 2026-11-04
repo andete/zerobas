@@ -195,9 +195,6 @@ def run():
 
     # --- WIDTH n (ex_width sets LINLEN) --------------------------------------
     m = Machine(ROM, SYM, rom_base=BASIC_BASE)
-    m.mem[m.sym["SUBSLOT2"]] = 0x8F        # sub2 present (3-3); WIDTH ran there
-                                            # until D-SUB2RETIRE step 2d (sub page 1
-                                            # now), the seed is harmless
     run_prog_cap(m, [(10, "WIDTH 32")])
     check("WIDTH 32 sets LINLEN", m.mem[m.sym["LINLEN"]], 32)
 
@@ -214,7 +211,6 @@ def run():
 
     def edit_machine():
         m1 = Machine(ROM, SYM, rom_base=BASIC_BASE)
-        m1.mem[m1.sym["SUBSLOT2"]] = 0x8F      # sub2 present (slot 3-3)
 
         def raise_trap(mm):
             raise Raised(mm.cpu.a)
@@ -263,8 +259,9 @@ def run():
     # (scratchpad/letnew_probe.py -> scratchpad/letnew_run.out): FRE(0) inside
     # `X=...FRE(0)...` with X new reads the new entry already spent -- 11 B for a
     # double, 5 int, 7 single, 6 for a string's entry, 11 for `FOR I=FRE(0)`, 0 on
-    # every `.pre` twin. These machines leave SUBSLOT2 at 0, so msxtest's sub2
-    # bridge reports sub2 ABSENT and FRE(0)'s live-stack tenant never runs, so
+    # every `.pre` twin. These machines left SUBSLOT2 at 0, so msxtest's sub2
+    # bridge (retired with sub2, D-SUB2RETIRE 2f) reported sub2 ABSENT and FRE(0)'s
+    # live-stack tenant never ran, so
     # the witness is VARPTR, which FINDS and never creates (D-VPTRDOM): VARPTR(X)
     # inside X's own right side is Illegal function call unless X already exists.
     # Before this slice every row below printed `Illegal function call in 10`.

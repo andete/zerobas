@@ -232,8 +232,8 @@ saved binary to try it on).
 ## Where it lives
 
 - `ls_bload` and `ls_pcr_bload` in
-  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the second sub-ROM's page 0
-  since 2026-10-21 (main's `ex_bload` hands it over), evaluate the name and
+  [sub2/loadsave.asm](../../sub2/loadsave.asm), in the sub-ROM's page 1
+  since 2026-11-03 (the second sub-ROM's page 0 from 2026-10-21; main's `ex_bload` hands it over), evaluate the name and
   parse the whole tail (`,R`, `,S`, offset), then call the sub-ROM through
   main's `bload_sub`. For a disk file they then hand the load to the disk ROM
   through the `$FE5D` hook, the one the CF-3300's BLOAD uses too.

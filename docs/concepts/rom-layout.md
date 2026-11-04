@@ -6,7 +6,9 @@ SPDX-License-Identifier: 0BSD
 
 # ROM layout — how zerobas is put together
 
-> **Status (2026-10-11):** the parts a program can see — the published BIOS
+> **Status (2026-11-04):** the second sub-ROM (slot 3-3) is retired: three
+> ROMs remain, and slot 3-3 is empty.
+> **(2026-10-11):** the parts a program can see — the published BIOS
 > entry points, the slot conventions, the hooks and their addresses — follow
 > the published MSX interfaces; where the code sits inside the ROMs is
 > zerobas's own and differs from a real MSX by design. Open: `RST 8` (SYNCHR)
@@ -18,18 +20,16 @@ SPDX-License-Identifier: 0BSD
 
 On a real MSX1 the BIOS and MSX-BASIC share one 32 KB ROM in slot 0, and a
 disk interface brings its own ROM with Disk BASIC in it. zerobas has the same
-shape, built from four ROMs:
+shape, built from three ROMs:
 
 - **the main ROM** in slot 0 (`$0000`–`$7FFF`): the open-source C-BIOS in the
   low part, zerobas's interpreter in the rest;
 - **a sub-ROM** in slot 3-2: 32 KB of interpreter code that did not fit in the
   main ROM;
-- **a second sub-ROM** in slot 3-3, the same shape: 32 KB more room (since
-  2026-10-12; empty so far, see below);
 - **a disk ROM** in slot 3-1, on the disk machine only: Disk BASIC and the
   MSX-DOS kernel.
 
-The same main ROM and sub-ROMs run on both targets: the diskless machine
+The same main ROM and sub-ROM run on both targets: the diskless machine
 (compared with the Philips VG-8020) has nothing in slot 3-1. A program sees
 none of this except through published addresses — work-area variables, hooks,
 BIOS entry points — and those are where a real MSX has them.
@@ -45,23 +45,28 @@ BIOS entry points — and those are where a real MSX has them.
 | 3-0 | RAM | RAM | RAM |
 | 3-1 | | disk ROM (disk machine only) | |
 | 3-2 | sub-ROM, page 0 | sub-ROM, page 1 | |
-| 3-3 | second sub-ROM, page 0 | second sub-ROM, page 1 | |
+| 3-3 | | | |
 
 Slot bytes: `$83` RAM, `$87` disk ROM, `$8B` sub-ROM (the 2026-07-11 slot
-map, [spec-basic-subrom.md](../spec-basic-subrom.md)), `$8F` second sub-ROM.
+map, [spec-basic-subrom.md](../spec-basic-subrom.md)). Slot 3-3 (`$8F`) is
+empty.
 
-The second sub-ROM (marker `"Z2"`) exists because the first one filled up:
+**History: the second sub-ROM (2026-10-12 to 2026-11-04).** A second sub-ROM
+(marker `"Z2"`) sat in slot 3-3 because the first one had filled up:
 the first feature that needed it is `OPEN "GRP:"`, whose drawing lives there.
 It is called exactly as the first is, by slot. It also takes code moved out of
 the main ROM to make room there -- the first was the screen editor's CTRL
 keys, on 2026-10-12. On 2026-11-03 its three page-1 tenants (`GRP:`'s
 drawing, the CTRL keys, `FRE(0)`'s live depth) moved on to the first sub-ROM's
-page 1, which had the room: the second sub-ROM's page 1 is empty now, a first
-step toward not needing a second sub-ROM at all. Each page also answers a test ping
+page 1, which had the room. Between 2026-11-03 and 2026-11-04 the rest of its
+code moved too, into the main ROM and the first sub-ROM, after that code had been
+made smaller there; then the second sub-ROM was removed, with its slot in the
+machine definitions. Each page used to answer a test ping
 ([`sub2c_ping.out`](../../scratchpad/sub2c_ping.out)).
-Its marker cannot be the first one's `"ZB"`: the boot scan keeps the last
-subslot that carries `"ZB"`, so a second one would be taken for the first
-([`sub2b_knife.out`](../../scratchpad/sub2b_knife.out)).
+Its marker could not be the first one's `"ZB"`: the boot scan keeps the last
+subslot that carries `"ZB"`, so a second one would have been taken for the first
+([`sub2b_knife.out`](../../scratchpad/sub2b_knife.out)). The boot scan no longer
+looks for `"Z2"`.
 
 ### C-BIOS, and zerobas as a patch next to it
 
@@ -216,8 +221,9 @@ never for the code it points at. The allowed sources are listed in the
 
 ## Differences from the reference
 
-- **There are sub-ROMs.** An MSX1 has none; zerobas's own (markers `"ZB"`
-  in slot 3-2 and `"Z2"` in slot 3-3) hold the code that did not fit. A program could tell by
+- **There is a sub-ROM.** An MSX1 has none; zerobas's own (marker `"ZB"`,
+  slot 3-2) holds the code that did not fit (a second one, `"Z2"` in slot 3-3,
+  was retired on 2026-11-04). A program could tell by
   reading `EXBRSA` (`&HFAF8`) until 2026-10-11: both references leave it 0 and
   zerobas wrote its sub-ROM's slot, 139. It no longer writes it
   ([`subsig_probe.out`](../../scratchpad/subsig_probe.out)).

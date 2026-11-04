@@ -137,8 +137,8 @@ any, are on their pages.
 ## Where it lives
 
 `ON INTERVAL` and the other `ON … GOSUB` trap statements are parsed in the
-second sub ROM since 2026-10-21 ([sub2/trapstmt.asm](../../sub2/trapstmt.asm),
-reached from `ex_on` in [basic/program.asm](../../basic/program.asm)); the
+main ROM's low region since 2026-11-04 ([basic/trapstmt.asm](../../basic/trapstmt.asm);
+the second sub-ROM's from 2026-10-21), reached from `ex_on` in [basic/program.asm](../../basic/program.asm); the
 shared trap machinery (the per-frame poll in
 [basic/traps.asm](../../basic/traps.asm)) serves all five interrupt traps.
 

@@ -12,8 +12,8 @@ Facts taken from zerobas's source comments / build tool, not inferred:
     (basic/subromcall.asm, D-STUBINL) -- used only to CROSS-CHECK the inference;
   * subrom_call / sc_call and the four inline stubs are the
     sub-ROM tenant call wrappers (far calls by IX);
-  * p0cb (sub2/p0cb.asm) is sub2's call back into main, through CLPRIM; it lives
-    in the sub2 image, which v0 does not analyse.
+  * p0cb (sub2/p0cb.asm, and sub/sub.asm's copy since D-SUB2RETIRE 2e) is a
+    sub ROM's page-0 call back into main, through CLPRIM.
 """
 import os
 
@@ -39,6 +39,15 @@ def in_island(a):
 # tenant sees main page 1, a page-1 tenant sees main page 0 (BIOS + low region).
 SUBROM_CTX = {"sub": (1, 2), "sub2": (3, 4)}      # image -> (page-0 ctx, page-1 ctx)
 SUBROM_CODE = {"sub": (0x0040, 0x4010), "sub2": (0x0010, 0x4010)}   # first code byte per page
+# zerobas-sub2 is RETIRED (D-SUB2RETIRE step 2f, 2026-11-04). It is still mapped
+# for a tree that has its source -- a `contract-diff BASE=` rev from before the
+# retirement -- so a base and a head can be compared across it; a later tree
+# (or a stale build/sub2.rom left in build/) maps zerobas-sub alone.
+SUBROM_TOP = {"sub": "sub/sub.asm", "sub2": "sub2/sub2.asm"}
+
+
+def subroms(zerobas_dir):
+    return [k for k in ("sub", "sub2") if os.path.exists(os.path.join(zerobas_dir, SUBROM_TOP[k]))]
 DISK_CTX = 5    # build/disk.rom: page 1 of slot 3-1 ($4000-$7FFF), main page 0 shared
 
 
@@ -117,7 +126,8 @@ def add_subroms(p, zerobas_dir, byname, whole_image):
     SUBSLOT2 + IX) and sub2's p0cb call-back (IX = a main address)."""
     from .decode import m
     imgs = {}
-    for k in ("sub", "sub2"):
+    present = subroms(zerobas_dir)
+    for k in present:
         data = open(os.path.join(zerobas_dir, "build", k + ".rom"), "rb").read()
         imgs[k] = data
         c0, c1 = SUBROM_CTX[k]
@@ -142,8 +152,9 @@ def add_subroms(p, zerobas_dir, byname, whole_image):
             p.boundaries.add(g)
             if v >= (lo0 if page == 0 else lo1) and imgs[k][v] != 0xFF:
                 p.roots.setdefault(g, name)
-    slot_of = {("m", byname["SUBSLOT"]): "sub", ("m", byname["SUBSLOT2"]): "sub2",
-               ("m", byname["DISKSLOT"]): "disk"}
+    slot_of = {("m", byname["SUBSLOT"]): "sub", ("m", byname["DISKSLOT"]): "disk"}
+    if "sub2" in present:
+        slot_of[("m", byname["SUBSLOT2"])] = "sub2"
 
     def resolve(iyh, ixs):
         k = slot_of.get(iyh)
@@ -348,7 +359,8 @@ def source_images(zerobas_dir, p, with_subroms=True):
                         lambda v: 0 if v <= ZEROBAS_HI else None, lambda c: "")]
     if not with_subroms:
         return out
-    for k, top in (("sub", "sub/sub.asm"), ("sub2", "sub2/sub2.asm")):
+    for k in subroms(zerobas_dir):
+        top = SUBROM_TOP[k]
         s = syms(k + ".sym")
         if s is None:
             continue

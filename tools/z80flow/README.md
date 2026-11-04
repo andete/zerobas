@@ -6,7 +6,8 @@ SPDX-License-Identifier: 0BSD
 # z80flow — register contracts for zerobas
 
 Static Z80 control-flow and liveness analysis of the built images (the main
-ROM, `sub.rom`, `sub2.rom`, `disk.rom`). For every routine it infers its
+ROM, `sub.rom`, `disk.rom`; `sub2.rom` too for a tree from before D-SUB2RETIRE
+step 2f, 2026-11-04, which retired it). For every routine it infers its
 **contract**: what it reads on entry, what it changes, how it exits, and which
 of the registers it changes its callers actually read afterwards. Comparing the
 contracts of two builds finds the interface breaks a rewrite can introduce

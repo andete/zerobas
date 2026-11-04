@@ -174,7 +174,7 @@ sector with interrupts on (D-FDCDI).
 
 - `ls_save`, `ls_flag_a` (the `,A` parse, shared by disk and tape) and
   `ls_cas_ascii_save` in [sub2/loadsave.asm](../../sub2/loadsave.asm), in the
-  second sub-ROM's page 0 since 2026-10-21 (main's `ex_save` hands it over).
+  sub-ROM's page 1 since 2026-11-03 (the second sub-ROM's page 0 from 2026-10-21; main's `ex_save` hands it over).
   It calls back into main for what other verbs share: `fname_expr`, the disk
   hook crossing (`fopen_cross`), the `LIST` walk (`list_all`) and the tape
   writers (`cas_write_ea_header`, `cas_wbyte`, `cas_ascii_finish` in

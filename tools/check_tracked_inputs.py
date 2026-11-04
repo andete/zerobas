@@ -63,7 +63,7 @@ def includes(tracked: set[str], read=None) -> list[tuple[str, int, str]]:
     return out
 
 
-INCDIRS = ("sub",)                            # the Makefile's `pasmo -I sub` (sub.rom, sub2.rom)
+INCDIRS = ("sub",)                            # the Makefile's `pasmo -I sub` (sub.rom; sub2.rom until D-SUB2RETIRE 2f)
 
 
 def resolve(inc: str, src: str, exists) -> str | None:

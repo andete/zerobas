@@ -426,7 +426,7 @@ Profile = collections.namedtuple("Profile", "code ram callback what p0cb",
 # what it must NOT be is mistaken for a CODE import -- a page-1 tenant calling one
 # of these by absolute address would find its page 0 switched out -- so it is
 # emitted under its own header, and check_tenant_closure.py's seed scan stops there.
-P0CB_HEADER = ("; --- page-0 call-back (p0cb) targets: zerobas-sub2 page 0 reaches "
+P0CB_HEADER = ("; --- page-0 call-back (p0cb) targets: zerobas-sub's p0cb / p1cb reach "
                "these through CLPRIM, never by absolute address ---")
 REQUIRED_SUB2_P0CB: list[str] = [
     # Every name ALIASED `p0_`: the file is shared with zerobas-sub, which has
@@ -434,8 +434,8 @@ REQUIRED_SUB2_P0CB: list[str] = [
     # site that the address is for p0cb's IX, never for a `call`.
     "p0_chrgtr=chrgtr",         # sub2's RST 10h (s2_chrgtr)
     "p0_outdo=outdo",           # sub2's RST 18h (s2_outdo)
-    "p0_bp_ret=bp_ret",         # a bare `ret`: p0cb_selftest's register round trip
-    "p0_skip_spaces=skip_spaces",  # p0cb_selftest: a page-1 routine with a contract
+    "p0_bp_ret=bp_ret",         # a bare `ret` (p0cb_selftest's round trip until sub2 retired, 2f; loadsave's continuation)
+    "p0_skip_spaces=skip_spaces",  # a page-1 routine with a contract (the selftest's, then loadsave's)
     # D-P0CB slice B (2026-10-21): the event-trap statements, sub2/trapstmt.asm.
     # D-SUB2RETIRE step 2c (2026-11-04) moved them back into main's low region
     # (basic/trapstmt.asm) with every crossing a direct call, so the names only

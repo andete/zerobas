@@ -10,7 +10,7 @@
                                                         tree, diff it with ZEROBAS
 
 ZEROBAS is a zerobas tree with its build/ made (main ROM, basic-reloc.sym,
-sub/sub2/disk ROMs with their .sym). The analysis is pass 2 (the whole image,
+sub/disk ROMs with their .sym; sub2 too for a rev before D-SUB2RETIRE 2f). The analysis is pass 2 (the whole image,
 every context) with the `; z80flow:` markers of that tree's sources.
 
 `diff` sorts every routine the two builds share (by name and context):
@@ -172,8 +172,12 @@ def build_rev(zerobas_dir, rev, cbios):
     arc = subprocess.run(["git", "-C", zerobas_dir, "archive", rev], check=True, capture_output=True).stdout
     subprocess.run(["tar", "-x", "-C", d], input=arc, check=True)
     # ROM builds only (no emulator): the argv is a literal list (tools/check_probe_preflight.py)
+    # build/sub2.rom only for a REV that still has zerobas-sub2 (retired by
+    # D-SUB2RETIRE step 2f, 2026-11-04): a later rev has no rule for it.
     r = subprocess.run(["make", "-C", d, "build/zerobas-main-eu.rom", "build/basic-reloc.sym", "build/sub.rom",
-                        "build/sub2.rom", "build/disk.rom", "CBIOS=" + cbios], capture_output=True, text=True)
+                        "build/disk.rom", "CBIOS=" + cbios], capture_output=True, text=True)
+    if not r.returncode and os.path.exists(os.path.join(d, "sub2", "sub2.asm")):
+        r = subprocess.run(["make", "-C", d, "build/sub2.rom"], capture_output=True, text=True)
     if r.returncode:
         sys.exit(f"contracts: building {rev} failed:\n{r.stdout[-2000:]}{r.stderr[-2000:]}")
     return d

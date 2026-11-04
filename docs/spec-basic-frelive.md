@@ -59,11 +59,14 @@ reference's depth **at the call**:
    calls `fre_go` ([basic/main.asm](../basic/main.asm), the image's last code, past every pin)
    where it called `sh_go` — the same 3 bytes, so nothing ahead of the pins
    moved. `fre_go` is `sh_go` untouched for `FRE("")` (op 15). For `FRE(n)`
-   (op 17) it calls zerobas-sub2's page-1 tenant `frelive_tenant`
-   ([sub2/frelive.asm](../sub2/frelive.asm), index 3, `SUB2_IDX_FRELIVE`) with
+   (op 17) it calls the page-1 tenant `frelive_tenant`
+   ([sub2/frelive.asm](../sub2/frelive.asm)) with
    **the mark** — the evaluator's cursor one past this `FRE`'s own `)` — and the
    address of a result word on its stack, and subtracts what comes back (never
-   below 0; without zerobas-sub2 the word stays 0).
+   below 0; without the sub ROM the word stays 0). The tenant was zerobas-sub2's
+   page-1 index 3 (`SUB2_IDX_FRELIVE`) until D-SUB2RETIRE step 1 (2026-11-03) made
+   it zerobas-sub's `SUBROM_IDX_FRELIVE` 31; zerobas-sub2 itself was retired on
+   2026-11-04 (step 2f), and the file kept its path.
 2. The tenant reads the statement's start from `SAVTXT` (`$F6AF`). In zerobas
    `exec_stmt` writes it at **every** statement head — line start, after each
    `:` (`ex_sep` re-enters `exec_stmt` past it), after `THEN` and after `ELSE`

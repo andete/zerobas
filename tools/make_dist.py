@@ -14,12 +14,13 @@ openMSX user folder and nothing points back into this checkout:
 
     share/machines/zerobas_MSX1.xml          no disk (the VG-8020's shape)
     share/machines/zerobas_MSX1_disk.xml     + zerobas-disk behind a WD2793 in 3-1
-    share/machines/zerobas/*.rom             main, logo, sub, sub2, disk
+    share/machines/zerobas/*.rom             main, logo, sub, disk
     share/machines/zerobas/LICENSE*, README.txt
 
 The machine definition is the GATED one (tools/install-repack-machine.py
 `config()`, the machines every acceptance suite runs on) -- not
-install-openmsx-machine.py's, whose BASIC machines had no sub2 in 3-3.
+install-openmsx-machine.py's. (sub2.rom shipped here, in 3-3, from D-SUB2 until
+D-SUB2RETIRE step 2f, 2026-11-04 retired it.)
 
 THE MAIN ROM: build/zerobas-main-eu.rom when it exists (a build with a C-BIOS
 checkout, CBIOS=<path>, or CI). Otherwise it is made here from the TRACKED patch
@@ -151,7 +152,7 @@ def build(logo: str | None = None) -> str:
                      "install openMSX, or build with CBIOS=<checkout>")
         main_rom, how = main_rom_from_patch(stock), f"the tracked patch on {stock}"
     open(os.path.join(rom_dir, "zerobas-main-eu.rom"), "wb").write(main_rom)
-    for n in ("sub.rom", "sub2.rom", "disk.rom"):
+    for n in ("sub.rom", "disk.rom"):
         src = os.path.join(BUILD, n)
         if not os.path.isfile(src):
             sys.exit(f"missing build/{n} -- run `make` first")
@@ -170,7 +171,7 @@ def build(logo: str | None = None) -> str:
     rel = lambda n: "zerobas/" + n
     for name, disk, desc in MACHINES:
         cfg = irm.config(rel("zerobas-main-eu.rom"), rel("cbios_logo_msx1.rom"),
-                         rel("disk.rom") if disk else "", rel("sub.rom"), rel("sub2.rom"))
+                         rel("disk.rom") if disk else "", rel("sub.rom"))
         old = "<code>repack disk (acceptance)</code>"
         if cfg.count(old) != 1:
             sys.exit("install-repack-machine.config() changed shape: <code> not found")

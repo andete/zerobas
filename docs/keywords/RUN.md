@@ -126,7 +126,7 @@ And **RAM usage**.
 `ex_run` in [basic/interp.asm](../../basic/interp.asm) hands over to `do_run`
 in [basic/cload.asm](../../basic/cload.asm), which tells the four forms apart.
 A file name goes on to `ls_run` in [sub2/loadsave.asm](../../sub2/loadsave.asm)
-(the second sub-ROM's page 0, since 2026-10-21), which loads the file through
+(the sub-ROM's page 1 since 2026-11-03; the second sub-ROM's page 0 from 2026-10-21), which loads the file through
 main's loaders and hands back `run_prog_top`. `run_prog` and `run_prog_at` in
 [basic/program.asm](../../basic/program.asm) close the files, clear the
 variables and start the run loop; `dl_bare` there decides which typed `RUN`

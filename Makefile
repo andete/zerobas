@@ -122,8 +122,9 @@ DISK_PARTS := disk/equates.inc disk/init.asm disk/pageenv.asm disk/driver.asm \
               basic/fatiocreate-body.inc basic/fatiow-body.inc \
               basic/sv-diskwr.inc basic/sv-savdisk.inc basic/sv-bsvdisk.inc \
               basic/tokpay-body.inc
-# A bare `make` builds `all`, wherever that rule sits: it moved below SUB2_ROM's
-# definition (2026-10-13), and the first rule in the file would otherwise win.
+# A bare `make` builds `all`, wherever that rule sits: it moved below the (since
+# retired) SUB2_ROM's definition (2026-10-13), and the first rule in the file would
+# otherwise win.
 .DEFAULT_GOAL := all
 DISK_ROM := $(BUILD)/disk.rom
 # D-DISKDEAD: disk.rom needs a symbol table like the other two builds, because
@@ -260,11 +261,12 @@ TAPE_PATCHES := tape/zerobas-tape-msx1.ips tape/zerobas-tape-msx1.bps
 # Default goal: everything buildable with pasmo + python3 + openMSX's bundled ROMs.
 # The BASIC image itself is $(RELOC_ROM) (a proof/staging target) and $(MAIN_ROM)
 # (the shipped merge, needs a C-BIOS checkout), so neither is here.
-# 🔴 `all` IS DECLARED AFTER SUB2_ROM (below), NOT HERE: make expands a rule's
-# prerequisites when it READS the rule, and SUB2_ROM was defined 33 lines later,
-# so `all` depended on an EMPTY name and a fresh `make` never built sub2.rom --
-# every gate builds it through other targets, so nothing saw it until the CI's
-# nightly job ran `make all` on a clean runner (2026-10-13).
+# 🔴 `all` IS DECLARED AFTER $(SUB_ROM) (below), NOT HERE: make expands a rule's
+# prerequisites when it READS the rule. When SUB2_ROM was defined 33 lines later,
+# `all` depended on an EMPTY name and a fresh `make` never built sub2.rom --
+# every gate built it through other targets, so nothing saw it until the CI's
+# nightly job ran `make all` on a clean runner (2026-10-13). Keep `all` below every
+# variable it names.
 
 $(BUILD):
 	mkdir -p $(BUILD)
@@ -289,24 +291,12 @@ $(SUB_ROM): $(SUB_SRC) $(SUB_PARTS) | $(BUILD)
 
 sub: $(SUB_ROM)
 
-# zerobas-sub2 (D-SUB2, ruled 2026-10-11): the SECOND plain 32 KB sub ROM, in
-# slot 3-3, the same two-island shape as sub.rom (sub2/sub2.asm). `-I sub` so it
-# shares sub/'s equates; it includes no tenant body yet, so it has no PARTS list
-# beyond the two shared .inc files -- add one with the first tenant (step d),
-# or a stale sub2.rom ships ([[makefile-subparts-stale-tenant]]).
-SUB2_SRC  := sub2/sub2.asm
-SUB2_PARTS := sub/equates.inc basic/sysvars.inc \
-              sub2/p0cb.asm \
-              sub/basic-resident-abi.inc
-SUB2_ROM  := $(BUILD)/sub2.rom
-SUB2_SYM  := $(BUILD)/sub2.sym
-all: $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM) $(TAPE_PATCHES)
-
-$(SUB2_ROM): $(SUB2_SRC) $(SUB2_PARTS) | $(BUILD)
-	$(PASMO) -I sub --bin $(SUB2_SRC) $(SUB2_ROM) $(SUB2_SYM)
-	python3 tools/pad_rom.py $(SUB2_ROM) 32768
-
-sub2: $(SUB2_ROM)
+# (zerobas-sub2 -- D-SUB2, ruled 2026-10-11: the SECOND plain 32 KB sub ROM in
+# slot 3-3, sub2/sub2.asm, $(BUILD)/sub2.rom -- is RETIRED by D-SUB2RETIRE step 2f,
+# 2026-11-04: every tenant moved to main or zerobas-sub (steps 1, 2a-2e), and the
+# ROM, its `sub2` target and slot 3-3 in the machine configs went with it. The
+# tenant sources that still live under sub2/ are zerobas-sub's: SUB_PARTS above.)
+all: $(DISK_ROM) $(SUB_ROM) $(TAPE_PATCHES)
 
 # --- Relocated BASIC proof (cbios-repack arc, WS-2 / S3) -----------------------
 # $(RELOC_SYM)/$(RELOC_ROM) get their OWN file rule here (depending ONLY on the
@@ -414,11 +404,10 @@ subrom-closure-check: sub/basic-resident-abi.inc $(RELOC_SYM) $(SUB_ROM)
 # (a frozen-baseline pin, the ONLY reader of that argument). S2 deleted the check;
 # S3 deleted the build. Checks 1-3 read only $(RELOC_ROM), the wall readout only
 # $(RELOC_SYM).
-basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(SUB2_ROM) $(DISK_ROM)
+basic-reloc: $(RELOC_SYM) $(RELOC_ROM) $(SUB_ROM) $(DISK_ROM)
 	python3 tools/check_reloc.py $(RELOC_ROM) $(RELOC_SYM)
 	python3 tools/pin_plan.py --holes --rom $(RELOC_ROM)
 	python3 tools/check_sub_walls.py $(SUB_ROM) $(SUB_SYM)
-	python3 tools/check_sub_walls.py --sub2 $(SUB2_ROM) $(SUB2_SYM)
 	python3 tools/check_disk_walls.py $(DISK_ROM)
 	python3 tools/check_kwtable_identity.py $(RELOC_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB_SYM)
 	python3 tools/check_resident_abi.py $(RELOC_SYM) sub/basic-resident-abi.inc
@@ -826,9 +815,8 @@ tape-patches: $(TAPE_PATCHES)
 # The gates' freshness is covered separately, by $(MAIN_ROM)'s real file rule via
 # `repack-machine` ([[ips-rebuild-after-basic-change]]) -- `machines` is the
 # RELEASE-INSTALL path, not a gate path.
-machines: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM)
-	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM) \
-	  --sub2-rom $(SUB2_ROM)
+machines: $(TAPE_PATCHES) $(DISK_ROM) $(SUB_ROM)
+	python3 tools/install-openmsx-machine.py --disk-rom $(DISK_ROM) --sub-rom $(SUB_ROM)
 
 # --- the openMSX download (Joost, 2026-10-13) -----------------------------------
 # "the primary use is with openMSX": a ready-to-unzip package with the
@@ -961,11 +949,11 @@ bdos-acceptance: $(DISK_ROM)
 # (build/disk.rom) under the real CF-3300 BIOS — the string-engine arc does not touch the
 # disk ROM, so BDOS behaviour was identical across the lean and repack BASIC builds.
 REPACK_MACHINE  := C-BIOS_MSX1_EU_REPACK_DISK
-repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM) $(SUB2_ROM)
+repack-machine: $(MAIN_ROM) $(DISK_ROM) $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --disk-rom $(DISK_ROM) \
-	  --sub-rom $(SUB_ROM) --sub2-rom $(SUB2_ROM)
+	  --sub-rom $(SUB_ROM)
 	python3 tools/install-repack-machine.py --merged $(MAIN_ROM) --sub-rom $(SUB_ROM) \
-	  --sub2-rom $(SUB2_ROM) --no-disk
+	  --no-disk
 
 # --- the DISKLESS target (Joost, 2026-09-03) --------------------------------
 # "it should also be possible to ship zerobas without a disk ROM ... any disk
@@ -2787,16 +2775,9 @@ instr128-acceptance: repack-machine
 opengrp-acceptance: repack-machine
 	python3 -u probes/basic/basic_probe_opengrp.py
 
-# --- sub2-acceptance: both sub ROMs present, placed and page-selective (D-SUB2 b)
-# Four CALSLTs by injection -- 3-2 and 3-3, page 0 and page 1 -- on BOTH repack
-# machines, four distinct ping tags, and discovery still on ROM 1 (SUBSLOT $8B).
-# D-P0CB slice A (2026-10-21, docs/spec-sub2-p0cb.md): and the PAGE-0 CALL-BACK
-# into main through the BIOS's RAM CLPRIM -- p0cb_selftest (sub2/p0cb.asm) by the
-# same injection: RST 10h -> main's CHRGTR, every register through a p0cb round
-# trip, a page-1 routine, IX kept, EI inside the 3-3 page-0 tenant (D-SUB2EI).
-sub2-acceptance: repack-machine
-	python3 -u probes/basic/basic_probe_sub2_ping.py
-	python3 -u probes/basic/basic_probe_sub2_p0cb.py
+# (sub2-acceptance -- D-SUB2 b's four-island ping by injection and D-P0CB slice A's
+# p0cb_selftest, probes/basic/basic_probe_sub2_ping.py / _p0cb.py -- is RETIRED with
+# zerobas-sub2 by D-SUB2RETIRE step 2f, 2026-11-04: there is no 3-3 ROM to ping.)
 
 # --- resetboot-acceptance: after a RESET the machine boots into BASIC and BASIC
 # works (D-RESETBOOT, Joost's report). RAM survives a reset; a stale SUBSLOT_OK
@@ -4521,7 +4502,7 @@ gates-scoped:
 #   make contract-diff BASE=<rev>     what changed since <rev>; exit 1 on `broken`
 #   make contracts                    every routine -> build/contracts.json
 Z80FLOW       := PYTHONPATH=tools/z80flow python3 -m z80flow
-Z80FLOW_DEPS  := $(MAIN_ROM) $(RELOC_SYM) $(SUB_ROM) $(SUB2_ROM) $(DISK_ROM)
+Z80FLOW_DEPS  := $(MAIN_ROM) $(RELOC_SYM) $(SUB_ROM) $(DISK_ROM)
 
 contract: $(Z80FLOW_DEPS)
 	@test -n "$(NAME)" || { echo "usage: make contract NAME=<routine> [NAME='a b']"; exit 2; }

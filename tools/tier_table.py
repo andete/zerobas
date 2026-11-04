@@ -603,9 +603,10 @@ def knife_connected(path=KNIFE_PIN):
     # ⚠️ MUST EQUAL scratchpad/knife_guard.py IMAGES, IN ORDER -- the pin's
     # fingerprint is knife_guard.hashes(). D-SUB2 added build/sub2.rom there and
     # not here, and this refused a fresh pin as "a machine that no longer
-    # exists" (2026-10-12, the stage-(c) FULL battery's one red).
+    # exists" (2026-10-12, the stage-(c) FULL battery's one red). D-SUB2RETIRE
+    # step 2f (2026-11-04) took it out of BOTH lists, together.
     IMAGES = ("build/zerobas-main-eu.rom", "build/sub.rom", "build/disk.rom",
-              "build/basic-reloc.rom", "build/sub2.rom")
+              "build/basic-reloc.rom")
     try:
         with open(path, encoding="utf-8") as fh:
             pin = json.load(fh)

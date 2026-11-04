@@ -247,7 +247,7 @@ jobs:
       - name: Build the ROMs with a bare `make`, as QUICKSTART says
         run: |
           make
-          ls -l build/basic-reloc.rom build/disk.rom build/sub.rom build/sub2.rom
+          ls -l build/basic-reloc.rom build/disk.rom build/sub.rom
 
       - name: Clean-room mechanical floor
         run: make audit-citations

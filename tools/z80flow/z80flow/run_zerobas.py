@@ -289,7 +289,7 @@ def main():
                             [st.get(k, 0) for k in ["inferred", "conservative-boundary", "unknown",
                                                     "unknown-via-callee", "inlined"]])
     inputs = {}
-    for k in ("sub.rom", "sub.sym", "sub2.rom", "sub2.sym", "disk.rom", "disk.sym"):
+    for k in ("sub.rom", "sub.sym", "disk.rom", "disk.sym"):   # sub2: retired (D-SUB2RETIRE 2f)
         fp = os.path.join(args.zerobas, "build", k)
         if os.path.exists(fp):
             inputs[k] = hashlib.sha1(open(fp, "rb").read()).hexdigest()

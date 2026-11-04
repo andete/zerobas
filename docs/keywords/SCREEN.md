@@ -122,8 +122,8 @@ writes is not the same.
 
 ## Where it lives
 
-`scr_screen` and `scs_extra` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm), a tenant of the second sub-ROM since
-2026-10-24 (D-P0CB slice D); the per-argument checks for the sprite size, key
+`scr_screen` and `scs_extra` in [sub2/scrstmt.asm](../../sub2/scrstmt.asm), a tenant of the sub-ROM's page 1 since
+2026-11-04 (the second sub-ROM's from 2026-10-24, D-P0CB slice D); the per-argument checks for the sprite size, key
 click and baud are `scs_extra_arg` there. The return
 to text is `txt_mode` in [basic/repl.asm](../../basic/repl.asm).
 

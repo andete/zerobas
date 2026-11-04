@@ -250,7 +250,7 @@ nothing points back into this checkout. See [QUICKSTART.md](QUICKSTART.md).
 `make machines` installs the older configs, which point at openMSX's own C-BIOS
 and apply the patch at load time — a `C-BIOS_MSX1_EU_BASIC` (no disk) and a
 `C-BIOS_MSX1_EU_BASIC_DISK` (+ zerobas-disk in slot 3-1), each with zerobas-sub in
-slot 3-2 and zerobas-sub2 in 3-3, plus a `*_TAPE` machine per C-BIOS region:
+slot 3-2, plus a `*_TAPE` machine per C-BIOS region:
 
 ```sh
 make machines                                        # -> C-BIOS_MSX1_EU_BASIC[_DISK]

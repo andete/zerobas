@@ -96,8 +96,8 @@ sr_slot:                                    ; A = the slot id (D-SUB2 c's join)
 ; joining at sr_slot with SUBSLOT2's id (D-SUB2 c, 2026-10-12) -- is GONE with
 ; D-SUB2RETIRE step 2e, 2026-11-04: its last caller, ex_sub2 (OPEN / CLOSE / MERGE
 ; / MAXFILES), calls zerobas-sub's page 0 now (ex_file, SUBROM_IDX_FILESTMT). 8 B
-; of the low region back. sub2 itself is still placed and discovered (SUBSLOT2);
-; only the injected probes reach it.)
+; of the low region back. sub2 itself -- its ROM, its slot 3-3 and its discovery
+; into SUBSLOT2 -- went with step 2f, the same day.)
 
 ; subrom_absent_error: defensive statement abort for a sub-ROM-backed statement in
 ; a build without the sub-ROM (never reached on the merged machine, which always

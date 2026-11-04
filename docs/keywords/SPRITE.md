@@ -153,9 +153,9 @@ in [sub/graphics.asm](../../sub/graphics.asm):
   bytes.
 - `ex_put_sprite` parses `PUT SPRITE`; `gfx_spr_attr` writes the plane's
   attribute entry.
-- `ON SPRITE GOSUB` is parsed by `tt_on_sprite` in
-  [sub2/trapstmt.asm](../../sub2/trapstmt.asm) (the second sub ROM, since
-  2026-10-21), which arms the handler; the once-per-frame collision check is
+- `ON SPRITE GOSUB` is parsed by `ex_on_sprite` in
+  [basic/trapstmt.asm](../../basic/trapstmt.asm) (the main ROM's low region since
+  2026-11-04; the second sub-ROM's from 2026-10-21), which arms the handler; the once-per-frame collision check is
   [basic/sprtrap-body.inc](../../basic/sprtrap-body.inc).
 
 ## Related concepts

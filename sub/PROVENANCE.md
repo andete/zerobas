@@ -168,7 +168,9 @@ Allowed sources (same master list as [`../README.md`](../README.md)):
   ours is reconstructed from the MSX2 TH Ch.5 mechanism + our own `page0_ram_in`,
   with no stock code read. Faithful in *mechanism*; the RAM-stub placement + the
   unexpanded-main-slot simplification are documented own-design choices.
-- **(d) zerobas-sub2, the second sub-ROM in slot 3-3 (D-SUB2, 2026-10-12).**
+- **(d) zerobas-sub2, the second sub-ROM in slot 3-3 (D-SUB2, 2026-10-12;
+  RETIRED 2026-11-04 by D-SUB2RETIRE step 2f -- `sub2/sub2.asm` is deleted, and
+  the tenant sources still under `sub2/` assemble into THIS ROM). History:**
   `sub2/sub2.asm` is the same own-design two-island shape as this ROM (markers
   at `$0000` / `$4000`, a `$0038` jump to the same RAM trampoline, jp tables at
   `$0040` / `$4010`), with its own markers `"Z2"` / `"S2"`. Every byte is own

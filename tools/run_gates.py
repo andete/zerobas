@@ -170,7 +170,7 @@ dosmode-acceptance bootkeys-acceptance
 diskfre-acceptance deepexpr-acceptance fcb0-acceptance prec-acceptance dimedge-acceptance loaddi-acceptance wcache-acceptance fdcdi-acceptance geteject-acceptance
 caswbrk-acceptance casrbrk-acceptance subsig-acceptance
 casdirect-acceptance autorun-acceptance listflt-acceptance
-resetboot-acceptance keyshift-acceptance sub2-acceptance
+resetboot-acceptance keyshift-acceptance
 opengrp-acceptance instr128-acceptance ceiling-acceptance officialcell-acceptance basicrom-acceptance diskalias-acceptance floorcensus-acceptance""".split()
 
 # ⚠️ POSTCHECKS IS NOT HERE. `GATES` is what the POOL runs, and a post-pool unit
@@ -184,7 +184,7 @@ GATES = STATIC + EMULATOR
 # boots but the fingerprint does not cover is a hole you could drive a
 # regression through: `~/.openMSX/share/machines/*.xml` names all four.
 IMAGES = ["build/basic-reloc.rom", "build/sub.rom", "build/zerobas-main-eu.rom",
-          "build/disk.rom", "build/sub2.rom"]   # D-SUB2: the machines boot FIVE
+          "build/disk.rom"]   # build/sub2.rom (D-SUB2) left with D-SUB2RETIRE 2f
 
 LAST_GREEN = os.path.join(OUT, "..", "gate_last_green.json")
 

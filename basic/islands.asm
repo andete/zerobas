@@ -91,7 +91,8 @@ init_ext_roms:
                 xor     a
                 ld      (DISKSLOT_OK),a     ; no disk-ROM slot recorded yet
                 ld      (SUBSLOT_OK),a      ; no zerobas-sub slot recorded yet (subrom S2b)
-                ld      (SUBSLOT2),a        ; nor zerobas-sub2 (D-SUB2 c): 0 = absent
+                ; (SUBSLOT2 was cleared here for zerobas-sub2 until D-SUB2RETIRE
+                ; step 2f, 2026-11-04 retired that ROM; the cell is unused.)
                 di                          ; slot switching must be uninterrupted
                 in      a,(PSLTREG)         ; primary slot select register
                 rrca

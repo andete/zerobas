@@ -107,10 +107,9 @@ def run():
     # sub-ROM tenant (sub2/scrstmt.asm; zerobas-sub's page 1 since D-SUB2RETIRE
     # step 2d). The handler labels are one shared byte, `ld c,a`, in front of
     # ex_scr: they take the TOKEN in A, as exec_stmt hands it
-    # (tests/test_stmt_dispatch.py), so each call below passes it. SUBSLOT2 (the
-    # sub2 bridge's presence flag, $8F = slot 3-3) is still seeded -- harmless now
-    # that these no longer reach sub2. CLS stayed main's.
-    m.mem[s["SUBSLOT2"]] = 0x8F
+    # (tests/test_stmt_dispatch.py), so each call below passes it. (SUBSLOT2, the
+    # sub2 bridge's presence flag, was seeded here until D-SUB2RETIRE step 2f
+    # retired zerobas-sub2 and the bridge.) CLS stayed main's.
 
     fails = 0
 

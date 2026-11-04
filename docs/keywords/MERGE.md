@@ -132,8 +132,8 @@ The one rung not yet proven is **RAM usage**. Not measured on the reference:
 
 ## Where it lives
 
-- `fs_merge` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
-  sub-ROM's page 0 since 2026-10-21 (main's `ex_merge` hands it over): the
+- `fs_merge` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the
+  sub-ROM's page 0 since 2026-11-04 (the second sub-ROM's from 2026-10-21; main's `ex_merge` hands it over): the
   name, the device, and the end of the program. A disk file is opened by the disk ROM
   (`dsk_aopen`) and its bytes are read through it one at a time
   (`dsk_ascii_drive`); each line is tokenised and stored in main, as on the

@@ -553,7 +553,7 @@ item — do **one item per session** to keep context lean.
       against HEAD is only `TODO(-done).md:<n>` numbers (removed == added once normalised)
       is not a change; selftest P17 / P17b (a real change beside it still counts) / P17c.
 
-- [ ] 💰 **RETIRE SUB2 — "HAVING A NEED FOR A SUB2 FEELS LIKE A FAILURE" (D-SUB2RETIRE, Joost
+- [x] 💰 **RETIRE SUB2 — "HAVING A NEED FOR A SUB2 FEELS LIKE A FAILURE" (D-SUB2RETIRE, Joost
       2026-11-01).**
       🎚️ BUDGET — elegance and speed: fewer ROMs, fewer slot crossings.
       🤖 **AUTONOMOUS** — a standing goal, not a ban: correctness and completeness come first
@@ -724,6 +724,19 @@ item — do **one item per session** to keep context lean.
       badfnum, fcbhdr, casdirect, cas-ascii, nodisk, nodiskverbs, eofcas, fcb0, lvfix, dskmsg,
       diskascii, castail, dout, sub2). ➡️ **STEP 2f: delete sub2** -- its ROM, slot 3-3 in the
       machine configs, its probes / tests / docs.
+      ✅✅ **STEP 2f (2026-11-04): SUB2 IS RETIRED.** zerobas-sub2 is gone from the build, the
+      machine configs (slot 3-3 empty again), the gates (sub2-acceptance and its two probes) and
+      the docs (docs/concepts/rom-layout.md, README, 21 keyword pages' "where it lives"). The
+      boot scan's "Z2" arm and the SUBSLOT2 clear are gone (main page 1 +11 B, in the pad
+      before the $4EF8 pin); main did not grow. 📏 2026-11-04
+      ([`s2f_reloc.out`](scratchpad/s2f_reloc.out)): main low 278, main page-1 tail 401, sub
+      page 0 229, sub page 1 130, disk 753 B free. Contract-diff: every category 0
+      ([`s2f_contract.out`](scratchpad/s2f_contract.out)). Smoke: nodisk, diskascii and subrom
+      acceptance pass. **Left open:** (1) the tenant sources still live under `sub2/` (included
+      by sub/sub.asm) -- a rename touches ~100 comment references, cosmetic; (2) SUBSLOT2
+      ($FD0B) is unused but kept -- freeing a RAM cell is Joost's ruling; (3) nothing tests p0cb
+      in isolation now (p0cb_selftest left with sub2); (4) the closure gates' blind spots,
+      D-P1CLOSURE below.
       - [ ] 🔧 **D-P1CLOSURE: `check_tenant_closure.py --page1` NEVER WALKS THE PAGE-1 TENANTS
         PAST INDEX 13 (found 2026-11-03 by step 2a).** 🎚️ APPARATUS — it stops at the retired
         index 13's `ret / nop / nop`, so grpprt, edctrl, frelive and now loadsave are never
@@ -9017,7 +9030,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11508 (T-6FE392)8 (T-529ABE)` from `TODO.md:17190 (T-529ABE)`: a
+      `TODO.md:11521 (T-6FE392)8 (T-529ABE)` from `TODO.md:17203 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -11977,7 +11990,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17190 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17203 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

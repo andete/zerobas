@@ -115,8 +115,9 @@ other does not. Nothing a program can observe through `FRE` differs.
 (`psg_silence`, same file) and then calls the body, `beep_tenant` in
 [sub/beep.asm](../../sub/beep.asm). It moved from the main ROM to the first
 sub-ROM on 2026-07-23 to make room for `STICK` and `STRIG`, and from there to
-the second sub-ROM ([sub2/sub2.asm](../../sub2/sub2.asm)) on 2026-10-12 to make
-room for the line-length check in the crunch (D-TOKOVF).
+the second sub-ROM on 2026-10-12 to make room for the line-length check in the
+crunch (D-TOKOVF), and back to the first sub-ROM's page 1 on 2026-11-04, when
+the second sub-ROM was retired.
 
 ## Related concepts
 

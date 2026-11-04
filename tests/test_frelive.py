@@ -16,8 +16,8 @@ MEASURED on the VG-8020 (scratchpad/freshape_probe.py -> freshape_run3.out; the
 the degrade-to-the-base rows the tenant's header promises.
 
 What it does NOT cover: the main side (fre_go's subtraction and the CALSLT --
-msxtest bridges zerobas-sub2 since D-P0CB slice D, but only for a test that
-seeds SUBSLOT2, which this one does not) and the VG-8020 itself -- that is
+the tenant is zerobas-sub's page 1 since D-SUB2RETIRE step 1; zerobas-sub2 and
+msxtest's bridge to it are retired, step 2f) and the VG-8020 itself -- that is
 scratchpad/freshape_probe.py on both machines.
 """
 

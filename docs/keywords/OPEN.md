@@ -262,8 +262,8 @@ Run on the CF-3300 and on zerobas on 2026-10-09; both print exactly this
 
 ## Where it lives
 
-- `fs_open` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
-  sub-ROM's page 0 since 2026-10-21 (main's `ex_open` hands it over): the name,
+- `fs_open` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the
+  sub-ROM's page 0 since 2026-11-04 (the second sub-ROM's from 2026-10-21; main's `ex_open` hands it over): the name,
   the device, the mode, the `AS` clause (`fo_parse_as_chan`) and the header
   (`fo_hdr_tail`, which calls `t_fch_hdr` in
   [sub/fatprim.asm](../../sub/fatprim.asm)). `MAXFILES` (`fs_maxfiles`) is in

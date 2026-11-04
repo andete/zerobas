@@ -117,8 +117,8 @@ sector with interrupts on (D-FDCDI).
 
 ## Where it lives
 
-- `fs_close` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the second
-  sub-ROM's page 0 since 2026-10-21 (main's `ex_close` hands it over): the
+- `fs_close` in [sub2/filestmt.asm](../../sub2/filestmt.asm), in the
+  sub-ROM's page 0 since 2026-11-04 (the second sub-ROM's from 2026-10-21; main's `ex_close` hands it over): the
   list and the channel-0 rule. It calls back into
   [basic/files.asm](../../basic/files.asm) for the channel checks,
   `fch_do_close_ch` for one channel and `fch_close_all` for the bare form.
