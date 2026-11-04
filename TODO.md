@@ -4689,7 +4689,7 @@ item — do **one item per session** to keep context lean.
       remains is sc_call's sub-ROM frame under the read. 🔮 Scored: "SP >= $F080 during the
       load" HIT ($F084); "noclear3 prints" HIT.
 
-- [ ] 🧮 **D-DEFFNARY — `DEF FNA(C(1))=…` DIMS THE ARRAY `C` AT THE DEF ON THE VG-8020; zerobas
+- [x] 🧮 **D-DEFFNARY — `DEF FNA(C(1))=…` DIMS THE ARRAY `C` AT THE DEF ON THE VG-8020; zerobas
       LEAVES IT FOR THE CALL (found 2026-10-23 by D-DEFFNVAR)**
       🎚️ TIER 6 — every error: an array element written as a formal, which the call rejects.
       🤖 **AUTONOMOUS** — measured ([`deffnvar_cases.out`](scratchpad/deffnvar_cases.out),
@@ -4697,6 +4697,15 @@ item — do **one item per session** to keep context lean.
       ➡️ Whether the subscript is EVALUATED at the DEF (an out-of-range `C(11)`, a `C(1/0)`)
       decides the shape; then ex_deffn's formal scan calls the array resolver instead of
       stopping at the `(`.
+      ✅ **FIXED 2026-11-04.** Measured ([`deffnary_probe.py`](scratchpad/deffnary_probe.py) ->
+      [`deffnary_run.out`](scratchpad/deffnary_run.out)): the subscript IS evaluated -- `C(11)` 9,
+      `C(1/0)` 11, `X=20:..C(X)` 9, and C / C$ / 2-D D are DIMmed (a later DIM is 10); the call
+      stays ERR 2 on both. 🔮 4/4 HIT. basic/deffn.asm: an array formal goes through LET's
+      ary_op0_resolve (FPERR raised via fp_runtime_error), then the same `,` / `)` check; +8 B
+      of the $6CF3 pad. Gate: deffn-acceptance rows o.aryform.ok / .dim / .bs / .dz, 4/4 on
+      VG-8020, CF-3300 and zerobas ([`deffnary_gate.out`](scratchpad/deffnary_gate.out)); knife
+      (HEAD's deffn.asm) 3 DIFF, the control stays ([`deffnary_knife.out`](scratchpad/deffnary_knife.out)).
+      Docs: FN.md.
 
 - [ ] 🔁 **D-BASICPUB — THE PUBLISHED BASIC-ROM ENTRY POINTS (MATH-PACK + INTERPRETER
       INTERNALS) ARE NOT AT THEIR ADDRESSES (found 2026-10-15 by D-BASICINT)**
@@ -9081,7 +9090,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       DESTINATION's prior content.
       🔴 **(2) THE CITATION REPOINTER CORRUPTS OVERLAPPING REWRITES — 19
       citations in 12 files.** It produced
-      `TODO.md:11572 (T-6FE392)8 (T-529ABE)` from `TODO.md:17254 (T-529ABE)`: a
+      `TODO.md:11581 (T-6FE392)8 (T-529ABE)` from `TODO.md:17263 (T-529ABE)`: a
       rewrite for one citation landed INSIDE another's line number, because the
       old-line → new-line map is applied as plain text substitution and
       `TODO.md:461` is a prefix of `TODO.md:4618`. Every damaged file was  NOT-A-CITATION
@@ -12041,7 +12050,7 @@ list. **When a slice lands, grep this list for what it just shipped.**
       unsupported"*, so `ex_key` handles only `KEY ON` / `KEY OFF` (plus the T3
       `KEY(n)` arming form).
       🔴 **IT WAS ALREADY WRITTEN DOWN, INSIDE A `- [x]` BLOCK, AND THEREFORE
-      INVISIBLE** — TODO.md:17254 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
+      INVISIBLE** — TODO.md:17263 (T-529ABE), a Phase-1 entry ending *"all Phase-3 scope"*.
       That is the exact failure this section's own preamble exists to prevent,
       and it survived the 2026-08-09 staleness sweep because the sweep
       enumerated `- [ ]` items. `docs/kwsweep-msx1-coverage.md` cannot see it

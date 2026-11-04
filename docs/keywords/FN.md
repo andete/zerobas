@@ -6,10 +6,10 @@ SPDX-License-Identifier: 0BSD
 
 # `FN` and `DEF FN` — one-line functions of your own
 
-> **Status (2026-10-09):** level 3 — happy path ✓ · reasonable time ✓ · common
-> errors ✓ · RAM usage not yet proven · every error ✓. Recorded differences:
-> an argument that reads the caller's own parameter after it was rebound, and
-> an array-element parameter (below). Since 2026-10-27 a parameter list that is
+> **Status (2026-11-04):** level 3 — happy path ✓ · reasonable time ✓ · common
+> errors ✓ · RAM usage not yet proven · every error ✓. One recorded difference:
+> an argument that reads the caller's own parameter after it was rebound
+> (below). An array-element parameter agrees since 2026-11-04. Since 2026-10-27 a parameter list that is
 > not a list of names is `Syntax error` at the `DEF`, as on the VG-8020.
 > Speed is deliberately left out of these docs until on-par speed is
 > established for every keyword.
@@ -46,8 +46,10 @@ Up to nine parameters. A function with none is called without parentheses.
 - **`DEF FN` does not look at the body** until the function is called, so
   `DEF FNA(X)=X+*2` is accepted until the first call. What it does check:
   the name must start with a letter (`DEF FN1(X)` is a syntax error at the
-  `DEF`), and on the VG-8020 a parameter must be a name — zerobas does not
-  check that yet (see *Differences*).
+  `DEF`), and each parameter must be a name, or `Syntax error` at the `DEF`.
+  A parameter written as an array element (`C(1)`) is looked up there like
+  any other element — dimensioning the array, with its subscript errors —
+  and the function then cannot be called (`Syntax error`).
 - **The definition is made when the `DEF FN` statement runs**, not when the
   line is typed. `CLEAR` erases it, like a variable.
 - **`FNA` and the variable `A` are different things** and can both exist.
@@ -107,9 +109,6 @@ Run on the VG-8020 and on zerobas on 2026-10-09; both print exactly this
   argument. Joost ruled on 2026-09-09 *"we need to match the reference"*, and
   on 2026-09-27 chose the route: evaluate every argument into the
   control-frame pool before binding. Open, TIER 6.
-- **A parameter written like an array element** (`DEF FNA(C(1))=…`) makes
-  the VG-8020 dimension the array `C` at the `DEF`; zerobas leaves it until the
-  call (D-DEFFNVAR, 2026-10-23). Open, TIER 6.
 
 The rung not yet proven is **RAM usage**. The free memory now agrees: defining
 and calling a numeric function in the sweep's row costs 22 bytes of `FRE(0)` on
@@ -119,6 +118,16 @@ both machines, a string function 12 (it was 11 and 6 here before D-DEFFNVAR,
 writes still differ, as they do for every keyword.
 
 ## What we found, and how
+
+- **A parameter written like an array element was left for the call**
+  (fixed 2026-11-04, D-DEFFNARY). On both references `DEF FNA(C(1))=…` is an
+  ordinary reference to an element of `C` at the `DEF`: it dimensions `C`, so a
+  later `DIM C(5)` is `Redimensioned array`; `C(11)` is `Subscript out of
+  range` and `C(1/0)` `Division by zero`, at the `DEF` line. Calling such a
+  function is still `Syntax error`. zerobas skipped the parameter until the
+  call; it now resolves it as `LET` does
+  ([`deffnary_run.out`](../../scratchpad/deffnary_run.out),
+  [`deffnary_gate.out`](../../scratchpad/deffnary_gate.out)).
 
 - **A parameter list that was not a list of names was accepted** (fixed
   2026-10-27, D-DEFFNPARAM, found 2026-09-27 by the every-error sweep). On the

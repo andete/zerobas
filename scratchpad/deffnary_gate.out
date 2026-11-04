@@ -1,0 +1,7 @@
+    capture-on-signal: 12 on signal, 0 fell back to the scheduled budget   [signalled at 64.0-94.1 emulated s]
+ok   o.aryform.bs   ref='ERR 9 AT 20'  vg8020='ERR 9 AT 20'  cf3300='ERR 9 AT 20'  zb='ERR 9 AT 20'
+ok   o.aryform.dim  ref='ERR 10 AT 30'  vg8020='ERR 10 AT 30'  cf3300='ERR 10 AT 30'  zb='ERR 10 AT 30'
+ok   o.aryform.dz   ref='ERR 11 AT 20'  vg8020='ERR 11 AT 20'  cf3300='ERR 11 AT 20'  zb='ERR 11 AT 20'
+ok   o.aryform.ok   ref='OK'  vg8020='OK'  cf3300='OK'  zb='OK'
+ROWS: 4 printed, 4 scored — 0 of 4 DEF FN rows still divergent; 0 of 11 controls failed
+refcache: 0 hit, 12 miss, 12 stored

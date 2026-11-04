@@ -1,0 +1,8 @@
+    capture-on-signal: 4 on signal, 0 fell back to the scheduled budget   [signalled at 64.1-72.1 emulated s]
+DIFF o.aryform.bs   ref='ERR 9 AT 20'  zb='OK'
+DIFF o.aryform.dim  ref='ERR 10 AT 30'  zb='OK'
+DIFF o.aryform.dz   ref='ERR 11 AT 20'  zb='OK'
+ok   o.aryform.ok   ref='OK'  zb='OK'
+ROWS: 4 printed, 4 scored — 3 of 4 DEF FN rows still divergent; 0 of 11 controls failed
+DEF FN not implemented (expected until the verb ships): o.aryform.bs, o.aryform.dim, o.aryform.dz
+refcache: 0 hit, 4 miss, 4 stored

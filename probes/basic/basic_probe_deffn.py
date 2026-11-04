@@ -205,6 +205,13 @@ CASES = {
     'z.addr2'           : (['DEFINT A-Z', 'DEF FNA(X)=VARPTR(X)', 'DEF FNB(X)=FNA(0)*0+VARPTR(X)'], 'FNB(2)'),
     'z.addr2i'          : (['DEFINT A-Z', 'DEF FNA(X)=VARPTR(X)', 'DEF FNB(X)=FNA(0)'], 'FNB(2)'),
     'z.p10def'          : (['DEF FNA(A,B,C,D,E,F,G,H,I,J)=A'], '"OK"'),
+    # 🧮 D-DEFFNARY (2026-11-04): an ARRAY formal is resolved at the DEF, as an
+    # ordinary element reference (scratchpad/deffnary_run.out, VG-8020): it DIMs
+    # the array, evaluates the subscripts, and raises what a reference would.
+    'o.aryform.ok'      : (['DEF FNA(C(1))=1'], '"OK"'),
+    'o.aryform.dim'     : (['DEF FNA(C(1))=1', 'DIM C(5)'], '"OK"'),
+    'o.aryform.bs'      : (['DEF FNA(C(11))=1'], '"OK"'),
+    'o.aryform.dz'      : (['DEF FNA(C(1/0))=1'], '"OK"'),
 }
 
 DIRECT = {
@@ -244,6 +251,10 @@ WANT = {
     'o.gcroot.ctln'     : 'ABCD',   # D-FNGCROOT 2026-08-27
     'o.gcroot.ctlv'     : 'ABCD',   # D-FNGCROOT 2026-08-27
     'o.aryformal'       : 'ERR 2 AT 60',   # round5
+    'o.aryform.ok'      : 'OK',   # D-DEFFNARY 2026-11-04
+    'o.aryform.dim'     : 'ERR 10 AT 30',   # D-DEFFNARY: C was DIMmed at the DEF
+    'o.aryform.bs'      : 'ERR 9 AT 20',   # D-DEFFNARY: the subscript is evaluated
+    'o.aryform.dz'      : 'ERR 11 AT 20',   # D-DEFFNARY
     'o.badname'         : 'ERR 2 AT 20',   # round5
     'o.barecall'        : 'ERR 2 AT 60',   # round5
     'o.clearwipe.ctl'   : '3',   # round6

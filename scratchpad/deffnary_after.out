@@ -1,0 +1,11 @@
+C-BIOS_MSX1_EU_REPACK_NODISK   a0     DEF FNA(C(1))=1                [OK | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   a11    DEF FNA(C(11))=1               [E 9  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   adz    DEF FNA(C(1/0))=1              [E 11  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   avar   X=20:DEF FNA(C(X))=1           [E 9  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   adim   DEF FNA(C(1))=1:DIM C(5)       [E 10  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   astr   DEF FNA(C$(1))=1:DIM C$(3)     [E 10  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   a2d    DEF FNA(D(1,2))=1:DIM D(3)     [E 10  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   acall  DEF FNA(C(1))=1:PRINT FNA(2)   [E 2  20 | ZB | color   auto    goto    list    run]
+C-BIOS_MSX1_EU_REPACK_NODISK   ctrl   DEF FNA(X)=X+1:PRINT FNA(2)    [ 3 | OK | ZB | color   auto    goto    list    run]
+refcache: 0 hit, 9 miss, 9 stored
+refcache: 0 hit, 9 miss, 9 stored

@@ -119,10 +119,13 @@ exdf_run:
                 ; after a name are Syntax error at the DEF -- `(5)`, `()`, `(X,5)`,
                 ; `(,X)`, `(X,)`, `(X+1)`, `(X=1` -- while `(X Y)` is one name and
                 ; nothing after the `)` is read (`(X))=1`, `(X)1` pass: o.noeq,
-                ; o.lazybody) (scratchpad/deffnparam_run.out). The scan stops,
-                ; unchecked, at a name followed by `(` --
-                ; the reference DIMs such an array formal at the DEF, which this does
-                ; not (filed, D-DEFFNVAR).
+                ; o.lazybody) (scratchpad/deffnparam_run.out).
+                ; 🧮 D-DEFFNARY (2026-11-04): AN ARRAY FORMAL IS RESOLVED AT THE DEF,
+                ; as an ordinary element reference: `DEF FNA(C(1))=1` DIMs C, `C(11)`
+                ; is Subscript out of range, `C(1/0)` Division by zero, and a later
+                ; `DIM C(5)` Redimensioned array, string and 2-D alike, on the
+                ; VG-8020 (scratchpad/deffnary_run.out). The CALL still rejects it
+                ; (ERR 2, o.aryformal). LET's own resolver, ary_op0_resolve.
                 ld      a,(hl)
                 cp      '('
                 jr      nz,dfv_done         ; `DEF FNA=..`: no list
@@ -132,19 +135,20 @@ dfv_next:
                                             ; var_str_type: A = 1 for a string name (HL kept)
                 push    af
                 call    var_name_key        ; BC = key, HL past name + suffix
-                pop     af
-                ld      e,a                 ; E = string? (var_name_key set VARTYPE)
+                pop     af                  ; A = string? (var_name_key set VARTYPE)
+                or      a
+                jr      nz,dfv_type         ; A = 1: the string chain / array type 1
+                ld      a,(VARTYPE)
+dfv_type:
+                ld      e,a                 ; E = the type, for either lookup
                 ld      a,(hl)
                 cp      '('
-                jr      z,dfv_done          ; an array formal: left for the call
                 ld      a,e
-                or      a
-                jr      nz,dfv_alloc        ; A = 1: the string chain
-                ld      a,(VARTYPE)
-dfv_alloc:
+                jr      z,dfv_ary           ; an array formal: resolved now
                 push    hl
                 call    vaof_oom            ; created zero-valued if new; Out of
                 pop     hl                  ; memory raised inside (the raise resets SP)
+dfv_after:
                 call    skip_spaces         ; A = the character after the name
                 cp      ','
                 jr      z,dfv_next
@@ -161,6 +165,10 @@ dfv_done:
                 ld      c,COLON
                 call    tok_skip_to
                 jp      exec_stmt
+dfv_ary:
+                call    ary_op0_resolve     ; DIMs on first use, subscripts evaluated;
+                jp      nz,fp_runtime_error ; NZ: FPERR set (9, 11, ...); HL past `)`
+                jr      dfv_after
 
 ; ===========================================================================
 ; The call
